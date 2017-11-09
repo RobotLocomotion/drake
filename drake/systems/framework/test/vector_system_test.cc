@@ -245,7 +245,7 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  context->get_mutable_continuous_state_vector()->SetFromVector(
+  context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
@@ -268,7 +268,7 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  context->get_mutable_discrete_state(0)->SetFromVector(
+  context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
   output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
@@ -303,7 +303,7 @@ TEST_F(VectorSystemTest, TimeDerivatives) {
   dut.DeclareContinuousState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  context->get_mutable_continuous_state_vector()->SetFromVector(
+  context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   derivatives = dut.AllocateTimeDerivatives();
   dut.CalcTimeDerivatives(*context, derivatives.get());
@@ -332,14 +332,14 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   dut.set_prototype_discrete_state_count(1);
   context = dut.CreateDefaultContext();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  context->get_mutable_discrete_state(0)->SetFromVector(
+  context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
   discrete_updates = dut.AllocateDiscreteVariables();
   dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 1);
-  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 2.0);
-  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(1), 3.0);
+  EXPECT_EQ(discrete_updates->get_vector(0).GetAtIndex(0), 2.0);
+  EXPECT_EQ(discrete_updates->get_vector(0).GetAtIndex(1), 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_time_derivatives_count(), 0);
@@ -377,7 +377,7 @@ class NoInputContinuousTimeSystem : public VectorSystem<double> {
 TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   NoInputContinuousTimeSystem dut;
   auto context = dut.CreateDefaultContext();
-  context->get_mutable_continuous_state()->SetFromVector(Vector1d::Ones());
+  context->get_mutable_continuous_state().SetFromVector(Vector1d::Ones());
 
   // Ensure that time derivatives get calculated correctly.
   std::unique_ptr<ContinuousState<double>> derivatives =
@@ -416,12 +416,12 @@ class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
 TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
   NoInputNoOutputDiscreteTimeSystem dut;
   auto context = dut.CreateDefaultContext();
-  context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(
+  context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(
       Vector1d::Constant(2.0));
 
   auto discrete_updates = dut.AllocateDiscreteVariables();
   dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
-  EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 8.0);
+  EXPECT_EQ(discrete_updates->get_vector(0).GetAtIndex(0), 8.0);
 
   EXPECT_EQ(dut.get_num_output_ports(), 0);
 }
@@ -540,7 +540,7 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
   MissingMethodsDiscreteTimeSystem dut;
   auto context = dut.CreateDefaultContext();
 
-  context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(
+  context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(
       Vector1d::Constant(2.0));
   auto discrete_updates = dut.AllocateDiscreteVariables();
   EXPECT_THROW(

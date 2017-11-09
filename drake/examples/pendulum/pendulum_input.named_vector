@@ -1,0 +1,6 @@
+namespace: "drake::examples::pendulum"
+
+element {
+    name: "tau"
+    doc: "tau"
+}

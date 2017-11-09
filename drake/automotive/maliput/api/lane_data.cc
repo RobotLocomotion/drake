@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "drake/common/default_scalars.h"
+
 namespace drake {
 namespace maliput {
 namespace api {
@@ -21,14 +23,6 @@ std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position) {
       << ", z = " << geo_position.z() << ")";
 }
 
-bool operator==(const GeoPosition& lhs, const GeoPosition& rhs) {
-  return (lhs.xyz() == rhs.xyz());
-}
-
-bool operator!=(const GeoPosition& lhs, const GeoPosition& rhs) {
-  return (lhs.xyz() != rhs.xyz());
-}
-
 std::ostream& operator<<(std::ostream& out, const LanePosition& lane_position) {
   return out << "(s = " << lane_position.s() << ", r = " << lane_position.r()
       << ", h = " << lane_position.h() << ")";
@@ -37,3 +31,9 @@ std::ostream& operator<<(std::ostream& out, const LanePosition& lane_position) {
 }  // namespace api
 }  // namespace maliput
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::maliput::api::GeoPositionT)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::maliput::api::LanePositionT)

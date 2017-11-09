@@ -57,7 +57,7 @@ class PoseSmootherTest : public ::testing::Test {
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
     context_->set_time(input_time);
 
-    dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+    dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());
 
     auto output_pose_value =

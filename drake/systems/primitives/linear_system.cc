@@ -6,9 +6,8 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
@@ -19,6 +18,11 @@
 
 namespace drake {
 namespace systems {
+namespace {
+
+enum class WhichAction { DoLinearize, DoThrow };
+
+}  // namespace
 
 using std::make_unique;
 using std::unique_ptr;
@@ -113,56 +117,68 @@ double GetTimePeriodIfDiscreteUpdatesArePeriodic(
   return time_period;
 }
 
+void ThrowNonEquilibrium() {
+  throw std::runtime_error(
+      "The nominal operating point (x0,u0) is not an equilibrium point of "
+      "the system.  Without additional information, a time-invariant "
+      "linearization of this system is not well defined.");
+}
+
 // Builds the A and B matrices of the system's discrete/continuous state
-// equation.
-Eigen::MatrixXd MakeStateAndInputMatrices(
+// equation.  Returns a pair consisting of the concatenated matrix [A, B], along
+// with the value of the state equation f(x0,u0) (note that this is *not* the
+// affine term f0).
+std::pair<Eigen::MatrixXd, Eigen::VectorXd>
+MakeStateAndInputMatrices(
     const VectorX<AutoDiffXd>& autodiff_x0_vec,
     double equilibrium_check_tolerance,
     const System<AutoDiffXd>& autodiff_system,
-    Context<AutoDiffXd>* autodiff_context) {
-  const std::string nonequilibrium_error_msg =
-      "The nominal operating point (x0,u0) is not an equilibrium point of "
-      "the system.  Without additional information, a time-invariant "
-      "linearization of this system is not well defined.";
+    Context<AutoDiffXd>* autodiff_context,
+    WhichAction which_action) {
   if (autodiff_context->has_only_continuous_state()) {
-    autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(
+    autodiff_context->get_mutable_continuous_state_vector().SetFromVector(
         autodiff_x0_vec);
     std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
         autodiff_system.AllocateTimeDerivatives();
-    autodiff_system.CalcTimeDerivatives(*autodiff_context,
-                                        autodiff_xdot.get());
+    autodiff_system.CalcTimeDerivatives(*autodiff_context, autodiff_xdot.get());
     auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
-    // Ensure that xdot0 = f(x0,u0) == 0.
     if (!math::autoDiffToValueMatrix(autodiff_xdot_vec)
-        .isZero(equilibrium_check_tolerance)) {
-      throw std::runtime_error(nonequilibrium_error_msg);
+             .isZero(equilibrium_check_tolerance)) {
+      if (which_action == WhichAction::DoThrow) {
+        // Ensure that xdot0 = f(x0,u0) == 0 if we require an equilibrium point.
+        ThrowNonEquilibrium();
+      }
     }
-    return math::autoDiffToGradientMatrix(autodiff_xdot_vec);
+    return std::make_pair(math::autoDiffToGradientMatrix(autodiff_xdot_vec),
+                          math::autoDiffToValueMatrix(autodiff_xdot_vec));
   }
-  auto autodiff_x0 =
-      autodiff_context->get_mutable_discrete_state()->get_mutable_vector();
-  autodiff_x0->SetFromVector(autodiff_x0_vec);
+  auto& autodiff_x0 =
+      autodiff_context->get_mutable_discrete_state().get_mutable_vector();
+  autodiff_x0.SetFromVector(autodiff_x0_vec);
   std::unique_ptr<DiscreteValues<AutoDiffXd>> autodiff_x1 =
       autodiff_system.AllocateDiscreteVariables();
   autodiff_system.CalcDiscreteVariableUpdates(*autodiff_context,
                                               autodiff_x1.get());
-  auto autodiff_x1_vec = autodiff_x1->get_vector()->CopyToVector();
+  auto autodiff_x1_vec = autodiff_x1->get_vector().CopyToVector();
 
-  // Ensure that x1 = f(x0,u0) == x0.
   if (!(math::autoDiffToValueMatrix(autodiff_x1_vec) -
-        math::autoDiffToValueMatrix(autodiff_x0_vec)).isZero(
-            equilibrium_check_tolerance)) {
-    throw std::runtime_error(nonequilibrium_error_msg);
+        math::autoDiffToValueMatrix(autodiff_x0_vec))
+           .isZero(equilibrium_check_tolerance)) {
+    if (which_action == WhichAction::DoThrow) {
+      // Ensure that x1 = f(x0,u0) == x0 if we require an equilibrium point.
+      ThrowNonEquilibrium();
+    }
   }
-  return math::autoDiffToGradientMatrix(autodiff_x1_vec);
+  return std::make_pair(math::autoDiffToGradientMatrix(autodiff_x1_vec),
+                        math::autoDiffToValueMatrix(autodiff_x1_vec));
 }
 
-}  // namespace
-
-std::unique_ptr<LinearSystem<double>> Linearize(
-    const System<double>& system, const Context<double>& context,
-    double equilibrium_check_tolerance) {
+std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
+    const System<double>& system,
+    const Context<double>& context,
+    double equilibrium_check_tolerance,
+    WhichAction which_action) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
   const bool has_only_discrete_states_contained_in_one_group =
@@ -173,6 +189,8 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 
   const double time_period =
       GetTimePeriodIfDiscreteUpdatesArePeriodic(system, context);
+  // N.B. Placement here allows us to fail fast if non-periodic updates are
+  // detected.
 
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
@@ -193,15 +211,16 @@ std::unique_ptr<LinearSystem<double>> Linearize(
       autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
+  const Eigen::VectorXd x0 =
+      (context.has_only_continuous_state())
+          ? context.get_continuous_state_vector().CopyToVector()
+          : context.get_discrete_state(0).get_value();
+  const int num_states = x0.size();
+
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
   if (num_inputs > 0) {
     u0 = system.EvalEigenVectorInput(context, 0);
   }
-
-  const Eigen::VectorXd x0 = (context.has_only_continuous_state())
-      ? context.get_continuous_state_vector().CopyToVector()
-      : context.get_discrete_state(0)->get_value();
-  const int num_states = x0.size();
 
   auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
   if (num_inputs > 0) {
@@ -212,16 +231,19 @@ std::unique_ptr<LinearSystem<double>> Linearize(
         std::make_unique<FreestandingInputPortValue>(std::move(input_vector)));
   }
 
-  const Eigen::MatrixXd AB =
-      MakeStateAndInputMatrices(std::get<0>(autodiff_args),
-                                equilibrium_check_tolerance,
-                                *autodiff_system, autodiff_context.get());
-  const Eigen::MatrixXd A = AB.leftCols(num_states);
-  const Eigen::MatrixXd B = AB.rightCols(num_inputs);
+  Eigen::MatrixXd AB;
+  Eigen::VectorXd f_at_basepoint;
+  std::tie(AB, f_at_basepoint) = MakeStateAndInputMatrices(
+      std::get<0>(autodiff_args), equilibrium_check_tolerance, *autodiff_system,
+      autodiff_context.get(), which_action);
+  const Eigen::MatrixXd& A = AB.leftCols(num_states);
+  const Eigen::MatrixXd& B = AB.rightCols(num_inputs);
+  const Eigen::VectorXd& f0 = f_at_basepoint - A * x0 - B * u0;
 
   Eigen::MatrixXd C = Eigen::MatrixXd::Zero(num_outputs, num_states);
   Eigen::MatrixXd D = Eigen::MatrixXd::Zero(num_outputs, num_inputs);
 
+  Eigen::VectorXd y0 = Eigen::VectorXd::Zero(num_outputs);
   if (num_outputs > 0) {
     std::unique_ptr<SystemOutput<AutoDiffXd>> autodiff_y0 =
         autodiff_system->AllocateOutput(*autodiff_context);
@@ -231,9 +253,34 @@ std::unique_ptr<LinearSystem<double>> Linearize(
     Eigen::MatrixXd CD = math::autoDiffToGradientMatrix(autodiff_y0_vec);
     C = CD.leftCols(num_states);
     D = CD.rightCols(num_inputs);
+
+    const Eigen::VectorXd& y_at_basepoint =
+        math::autoDiffToValueMatrix(autodiff_y0_vec);
+    y0 = y_at_basepoint - C * x0 - D * u0;
   }
 
-  return std::make_unique<LinearSystem<double>>(A, B, C, D, time_period);
+  return std::make_unique<AffineSystem<double>>(
+      A, B, f0, C, D, y0, time_period);
+}
+
+}  // namespace
+
+std::unique_ptr<LinearSystem<double>> Linearize(
+    const System<double>& system, const Context<double>& context,
+    double equilibrium_check_tolerance) {
+  std::unique_ptr<AffineSystem<double>> affine =
+      DoFirstOrderTaylorApproximation(
+          system, context, equilibrium_check_tolerance, WhichAction::DoThrow);
+  return std::make_unique<LinearSystem<double>>(
+      affine->A(), affine->B(), affine->C(), affine->D(),
+      affine->time_period());
+}
+
+std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
+    const System<double>& system, const Context<double>& context) {
+  return DoFirstOrderTaylorApproximation(
+      system, context, 0. /* equilibrium tolerance (not used) */,
+      WhichAction::DoLinearize);
 }
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
@@ -287,3 +334,6 @@ bool IsObservable(const LinearSystem<double>& sys, double threshold) {
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::LinearSystem)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::TimeVaryingLinearSystem)

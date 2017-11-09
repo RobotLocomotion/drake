@@ -3,9 +3,8 @@
 #include <algorithm>
 #include <string>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/cond.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {

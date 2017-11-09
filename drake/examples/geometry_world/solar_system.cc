@@ -66,7 +66,7 @@ template <typename T>
 void SolarSystem<T>::SetDefaultState(const systems::Context<T>&,
                      systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  ContinuousState<T>* xc = state->get_mutable_continuous_state();
+  ContinuousState<T>& xc = state->get_mutable_continuous_state();
   VectorX<T> initial_state;
   initial_state.resize(kBodyCount * 2);
   // clang-format off
@@ -79,12 +79,12 @@ void SolarSystem<T>::SetDefaultState(const systems::Context<T>&,
                    2 * M_PI / 6,    // Mars revolution lasts 6 seconds.
                    2 * M_PI / 1.1;  // phobos revolution lasts 1.1 seconds.
   // clang-format on
-  DRAKE_DEMAND(xc->size() == initial_state.size());
-  xc->SetFromVector(initial_state);
-  DiscreteValues<T>* xd = state->get_mutable_discrete_state();
-  for (int i = 0; i < xd->num_groups(); i++) {
-    BasicVector<T>* s = xd->get_mutable_vector(i);
-    s->SetFromVector(VectorX<T>::Zero(s->size()));
+  DRAKE_DEMAND(xc.size() == initial_state.size());
+  xc.SetFromVector(initial_state);
+  DiscreteValues<T>& xd = state->get_mutable_discrete_state();
+  for (int i = 0; i < xd.num_groups(); i++) {
+    BasicVector<T>& s = xd.get_mutable_vector(i);
+    s.SetFromVector(VectorX<T>::Zero(s.size()));
   }
 }
 
@@ -280,9 +280,9 @@ template <typename T>
 void SolarSystem<T>::DoCalcTimeDerivatives(
     const MyContext& context, MyContinuousState* derivatives) const {
   const BasicVector<T>& state = get_state(context);
-  BasicVector<T>* derivative_vector = get_mutable_state(derivatives);
-  derivative_vector->SetZero();
-  derivative_vector->get_mutable_value().head(kBodyCount) =
+  BasicVector<T>& derivative_vector = get_mutable_state(derivatives);
+  derivative_vector.SetZero();
+  derivative_vector.get_mutable_value().head(kBodyCount) =
       state.get_value().tail(kBodyCount);
 }
 

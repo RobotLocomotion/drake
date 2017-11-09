@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/lcmtypes/drake/lcmt_viewer_link_data.hpp"
+#include "drake/lcmt_viewer_link_data.hpp"
 #include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_vector.h"
 

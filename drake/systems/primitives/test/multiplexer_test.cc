@@ -100,7 +100,7 @@ TEST_F(MultiplexerTest, ModelVectorConstructor) {
 
 TEST_F(MultiplexerTest, IsStateless) {
   Reset({1});
-  EXPECT_EQ(0, context_->get_continuous_state()->size());
+  EXPECT_EQ(0, context_->get_continuous_state().size());
 }
 
 }  // namespace

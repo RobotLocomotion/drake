@@ -64,7 +64,7 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
 
   context->FixInputPort(0, y);
   context->FixInputPort(1, u);
-  context->get_mutable_continuous_state_vector()->SetFromVector(xhat);
+  context->get_mutable_continuous_state_vector().SetFromVector(xhat);
 
   observer->CalcTimeDerivatives(*context, derivatives.get());
   observer->CalcOutput(*context, output.get());

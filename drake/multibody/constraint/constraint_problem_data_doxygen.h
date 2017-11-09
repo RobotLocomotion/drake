@@ -61,7 +61,7 @@ further in @ref constraint_types.
 Constraints can be categorized as either bilateral or unilateral, which
 roughly can be translated to equality (e.g., c(q) = 0) or inequality
 constraints (e.g., c(q) ≥ 0). The former can be realized through the
-latter through a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
+latter using a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
 the constraint problem structure distinguishes the two types to maximize
 computational efficiency in the solution algorithms. It is assumed throughout
 this documentation that c() is a vector function. In general, the constraint
@@ -185,8 +185,8 @@ than science (see [Ascher 1992]).
 @ingroup constraint_overview
 
 It can be both numerically advantageous and a desirable modeling feature to
-soften otherwise "rigid" constraints. For example, consider modifying the
-unilateral complementarity constraint above to:<pre>
+soften otherwise "rigid" constraints. For example, consider modifying a 
+unilateral complementarity constraint to:<pre>
 0 ≤ c(t,q,v;v̇,λ) + γλ  ⊥  λ ≥ 0
 </pre>
 where γ is a non-negative scalar; alternatively, it can represent a diagonal
@@ -202,9 +202,8 @@ complementarity problem becomes solvable given sufficient regularization
 
 <h4>Softening introduces compliance</h4>
 Second (in concert with constraint stabilization), constraint
-softening introduces (coarse) compliant effects, e.g., at joint stops and
-between contacting bodies; such effects are often desirable for effecting
-robotic manipulation.
+softening introduces compliant effects, e.g., at joint stops and
+between contacting bodies; such effects are often desirable.
 
 Unfortunately, not all constraints can be intuitively softened. While
 [Lacoursiere 2007] convincingly argues for softening interpenetration
@@ -213,14 +212,66 @@ for doing so), users typically expect stiction and Coulomb friction constraints
 to be maintained to high tolerances. Without softening *all* constraints, the
 regularization benefits noted above disappear.
 
-<h4>Softening at the acceleration-level</h4>
-
 <h4>Softening at the velocity level</h4>
-Simplest constraint: Mv = v +  
+[Catto 2011] showed how the combination of constraint softening, constraint
+stabilization, and a particular integration scheme results in numerically
+stable spring-like constraints. For a one-dimensional particle with dynamics
+defined by: 
+<pre>
+mẍ = f
+</pre>
+The "hard constraint" ẍ = 0 can be added, resulting in: 
+<pre>
+mẍ = f + λ
+ẍ = 0
+</pre>
+This hard constraint can be softened and stabilized, resulting in:
+<pre>
+mẍ = f + λ
+ẍ + 2αẋ + β²x + γλ = 0
+</pre>
+[Catto 2011] showed that the solution to this system yields the dynamics
+of a harmonic oscillator by solving the following system of equations for
+ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
+<pre>
+ẋ(t+h) = ẋ(t) + hf/m + hλ/m
+ẋ(t+h) + βx(t)/h + γλ = 0
+x(t+h) = x(t) + hẋ(t+h)
+</pre>
+where:
+<pre>
+γ = ?
+β = ? 
+</pre>
+β and α can be selected to effect the desired undamping angular frequency
+and damping ratio as described in @ref constraint_stabilization, and 
+HOW DO WE GET beta and gamma? While Catto
+studied a mass-spring system, these results apply to general multibody systems
+as well, as discussed in [Lacoursiere 2007]. The most interesting part of this
+formulation is that γ acts as both a numerical (regularization) parameter and
+as a physical modeling parameter. 
+
+<h4>Softening at the acceleration-level</h4>
+Starting from the same canonical system:
+<pre>
+mẍ = f + λ
+ẍ + 2αẋ + β²x + γλ = 0
+</pre>
+the parameters β and α can now be set independently to stabilize the
+constraint with a particular undamped frequency and damping ratio. γ now
+controls only the amplitude of the constraint errors. From a numerical
+standpoint, γ becomes strictly a regularization parameter: larger values make
+linear equations and linear complementarity problems easier to solve but yield
+larger constraint errors to be stabilized.
+
+From another viewpoint, γ → ∞ turns the approach into a pure "penalty method".
+In contrast, γ → 0 minimizes the constraint violation and implies greater
+accuracy without computational stiffness. For constraints that do not lead to
+computational stiffness as γ → ∞, solving the constraint equations results in
+greater computational work than using a penalty method.
 
 <h4>Bilateral constraints</h4>
 Note that Drake does not soften bilateral constraints.
-
 */
 
 /** @defgroup constraint_Jacobians Constraint Jacobian matrices

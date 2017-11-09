@@ -1,3 +1,10 @@
 <package format="2">
   <name>prius</name>
+  <version>0.0.0</version>
+  <description>
+    This package provides Prius models.
+  </description>
+  <author email="drake-users@mit.edu">Drake Users</author>
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
+  <license>Unknown</license>
 </package>

@@ -454,11 +454,10 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 
 // Helper function to publish load robot model message.
 void PublishLoadRobotModelMessageHelper(
-    const DrakeVisualizer& dut, Context<double>* context) {
-  std::unique_ptr<State<double>> tmp_state = context->CloneState();
-  dut.CalcDiscreteVariableUpdates(*context,
-      tmp_state->get_mutable_discrete_state());
-  context->get_mutable_state()->CopyFrom(*tmp_state);
+    const DrakeVisualizer& dut, const Context<double>& context) {
+  auto init_events = dut.AllocateCompositeEventCollection();
+  dut.GetInitializationEvents(context, init_events.get());
+  dut.Publish(context, init_events->get_publish_events());
 }
 
 // Tests the basic functionality of the DrakeVisualizer.
@@ -484,7 +483,8 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
              std::move(input_data)));
 
   // Publishes the `RigidBodyTree` visualization messages.
-  PublishLoadRobotModelMessageHelper(dut, context.get());
+  PublishLoadRobotModelMessageHelper(dut, *context);
+
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
@@ -512,12 +512,12 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
-  PublishLoadRobotModelMessageHelper(dut, simulator.get_mutable_context());
   simulator.Initialize();
+  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
-    EXPECT_NEAR(simulator.get_mutable_context()->get_time(), time, 1e-10);
+    EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
     // Note that the expected time is in milliseconds.
     const double expected_time =
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;

@@ -8,7 +8,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/unused.h"
 
 namespace drake {

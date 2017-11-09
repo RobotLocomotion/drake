@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace examples {
@@ -14,7 +14,7 @@ GTEST_TEST(PendulumPlantTest, ToAutoDiff) {
   PendulumPlant<double> plant;
   auto context = plant.CreateDefaultContext();
   // Pretend the state has evolved due to simulation.
-  auto& xc = *context->get_mutable_continuous_state_vector();
+  auto& xc = context->get_mutable_continuous_state_vector();
   xc[0] = 42.0;  // position
   xc[1] = 76.0;  // velocity
 
@@ -26,7 +26,7 @@ GTEST_TEST(PendulumPlantTest, ToAutoDiff) {
   // Construct a new context based on autodiff.
   auto ad_context = ad_plant->CreateDefaultContext();
   ad_context->SetTimeStateAndParametersFrom(*context);
-  auto& ad_xc = *ad_context->get_mutable_continuous_state_vector();
+  auto& ad_xc = ad_context->get_mutable_continuous_state_vector();
   EXPECT_EQ(42.0, ad_xc[0].value());
   EXPECT_EQ(0, ad_xc[0].derivatives().size());
   EXPECT_EQ(76.0, ad_xc[1].value());
@@ -44,11 +44,11 @@ GTEST_TEST(PendulumPlantTest, CalcTotalEnergy) {
   const auto context = plant.CreateDefaultContext();
 
   const auto params = dynamic_cast<const PendulumParams<double>*>(
-      context->get_numeric_parameter(0));
+      &context->get_numeric_parameter(0));
   EXPECT_TRUE(params);
 
   auto* state = dynamic_cast<PendulumState<double>*>(
-      context->get_mutable_continuous_state_vector());
+      &context->get_mutable_continuous_state_vector());
   EXPECT_TRUE(state);
 
   const double kTol = 1e-6;

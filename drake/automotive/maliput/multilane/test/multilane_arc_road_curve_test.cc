@@ -243,6 +243,413 @@ TEST_F(MultilaneArcRoadCurveTest, OffsetTest) {
   }
 }
 
+// Checks World function evaluation at different values of [p, r, h].
+TEST_F(MultilaneArcRoadCurveTest, WorldFunction) {
+  const std::vector<double> r_vector{-5., 0., 5.};
+  const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
+  const std::vector<double> h_vector{-5., 0., 5.};
+
+  // Checks for a flat curve.
+  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const Vector3<double> kGeoCenter(kCenter.x(), kCenter.y(), 0.);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 flat_rotation(0., 0., flat_dut.heading_of_p(p));
+        const double angle = kTheta0 + kDTheta * p;
+        const Vector3<double> geo_position =
+            kGeoCenter +
+            kRadius * Vector3<double>(std::cos(angle), std::sin(angle), 0.) +
+            flat_rotation.apply({0., r, h});
+        EXPECT_TRUE(CompareMatrices(flat_dut.W_of_prh(p, r, h), geo_position,
+                                    kVeryExact));
+      }
+    }
+  }
+
+  // Checks for linear elevated curve.
+  const double kElevationSlope = 15. / (kRadius * kDTheta);
+  const double kElevationOffset = 10. / (kRadius * kDTheta);
+  const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
+                                         0.);
+  const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
+                                  linear_elevation, zp);
+  // Computes the rotation along the RoadCurve.
+  const Vector3<double> z_vector(0., 0., kRadius * kDTheta);
+  const double kZeroRoll{0.};
+  const double kLinearElevatedPitch = -std::atan(linear_elevation.f_dot_p(0.));
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 elevated_rotation(kZeroRoll, kLinearElevatedPitch,
+                                     flat_dut.heading_of_p(p));
+        const double angle = kTheta0 + kDTheta * p;
+        const Vector3<double> geo_position =
+            kGeoCenter +
+            kRadius * Vector3<double>(std::cos(angle), std::sin(angle), 0.) +
+            linear_elevation.f_p(p) * z_vector +
+            elevated_rotation.apply({0., r, h});
+        EXPECT_TRUE(CompareMatrices(elevated_dut.W_of_prh(p, r, h),
+                                    geo_position, kVeryExact));
+      }
+    }
+  }
+
+  // Checks for a curve with constant non zero superelevation.
+  const double kSuperelevationOffset = M_PI / 4.;
+  const CubicPolynomial constant_offset_superelevation(
+      kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
+  const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
+                                       constant_offset_superelevation);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 superelevated_rotation(kSuperelevationOffset, 0.,
+                                          flat_dut.heading_of_p(p));
+        const double angle = kTheta0 + kDTheta * p;
+        const Vector3<double> geo_position =
+            kGeoCenter +
+            kRadius * Vector3<double>(std::cos(angle), std::sin(angle), 0.) +
+            superelevated_rotation.apply({0., r, h});
+        EXPECT_TRUE(CompareMatrices(superelevated_dut.W_of_prh(p, r, h),
+                                    geo_position, kVeryExact));
+      }
+    }
+  }
+}
+
+// Checks world function derivative evaluation at different values of [p, r, h].
+TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
+  const std::vector<double> r_vector{-5., 0., 5.};
+  const std::vector<double> p_vector{0.0, 0.1, 0.2, 0.5, 0.7, 0.99};
+  const std::vector<double> h_vector{-5., 0., 5.};
+
+  // Numerical evaluation of the world function derivative, both in code and
+  // in external software (e.g. Octave), shows a lowest discrepancy with the
+  // analytical solution that's larger than the `kVeryExact` tolerance being
+  // used throughout these tests and heavily dependent on the chosen
+  // differential. The choices for these quantities below reflect this fact.
+  const double kQuiteExact = 1e-11;
+  const double kDifferential = 1e-3;
+  // Numerically evaluates the derivative of a road curve world function
+  // with respect to p at [p, r, h] with a five-point stencil.
+  auto numeric_w_prime_of_prh = [kDifferential](const RoadCurve& dut,
+                                                double p, double r, double h)
+                                -> Vector3<double> {
+    const Vector3<double> dw =
+      -dut.W_of_prh(p + 2. * kDifferential, r, h) +
+      8. * dut.W_of_prh(p + kDifferential, r, h) -
+      8. * dut.W_of_prh(p - kDifferential, r, h) +
+      dut.W_of_prh(p - 2. * kDifferential, r, h);
+    return dw / (12. * kDifferential);
+  };
+
+  // Checks for a flat curve.
+  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const Vector3<double> kGeoCenter(kCenter.x(), kCenter.y(), 0.);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        // Computes the rotation along the RoadCurve at [p, r, h].
+        const Rot3 rotation = flat_dut.Rabg_of_p(p);
+        const double g_prime = flat_dut.elevation().f_dot_p(p);
+        const Vector3<double> w_prime =
+            flat_dut.W_prime_of_prh(p, r, h, rotation, g_prime);
+        const Vector3<double> numeric_w_prime =
+            numeric_w_prime_of_prh(flat_dut, p, r, h);
+        EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
+        const Vector3<double> s_hat =
+            flat_dut.s_hat_of_prh(p, r, h, rotation, g_prime);
+        EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
+      }
+    }
+  }
+
+  // Checks for linear elevated curve.
+  const double kElevationSlope = 15. / (kRadius * kDTheta);
+  const double kElevationOffset = 10. / (kRadius * kDTheta);
+  const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
+                                         0.);
+  const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
+                                  linear_elevation, zp);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        // Computes the rotation along the RoadCurve at [p, r, h].
+        const Rot3 rotation = elevated_dut.Rabg_of_p(p);
+        const double g_prime = elevated_dut.elevation().f_dot_p(p);
+        const Vector3<double> w_prime = elevated_dut.W_prime_of_prh(
+            p, r, h, rotation, g_prime);
+        const Vector3<double> numeric_w_prime =
+            numeric_w_prime_of_prh(elevated_dut, p, r, h);
+        EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
+        const Vector3<double> s_hat = elevated_dut.s_hat_of_prh(
+            p, r, h, rotation, g_prime);
+        EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
+      }
+    }
+  }
+
+  // Checks for a curve with constant non zero superelevation.
+  const double kSuperelevationOffset = M_PI / 4.;
+  const CubicPolynomial constant_offset_superelevation(
+      kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
+  const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
+                                       constant_offset_superelevation);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        // Computes the rotation along the RoadCurve at [p, r, h].
+        const Rot3 rotation = superelevated_dut.Rabg_of_p(p);
+        const double g_prime = superelevated_dut.elevation().f_dot_p(p);
+        const Vector3<double> w_prime = superelevated_dut.W_prime_of_prh(
+            p, r, h, rotation, g_prime);
+        const Vector3<double> numeric_w_prime =
+            numeric_w_prime_of_prh(superelevated_dut, p, r, h);
+        EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
+        const Vector3<double> s_hat = superelevated_dut.s_hat_of_prh(
+            p, r, h, rotation, g_prime);
+        EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
+      }
+    }
+  }
+}
+
+// Checks reference curve rotation for different values of p. To compute the
+// values being used below, the same curve functions were composed and
+// numerically evaluated using Octave.
+TEST_F(MultilaneArcRoadCurveTest, ReferenceCurveRotation) {
+  // Wraps angles in [-π, π) range.
+  auto wrap = [](double theta) {
+    double theta_new = std::fmod(theta + M_PI, 2. * M_PI);
+    if (theta_new < 0.) theta_new += 2. * M_PI;
+    return theta_new - M_PI;
+  };
+
+  const double kZeroRoll{0.};
+  const double kZeroPitch{0.};
+  // Checks for a flat curve.
+  {
+    const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+
+    // Computes the rotation matrix and r versor at different p values and
+    // checks versor direction and pitch and yaw angles which are not constants.
+    Rot3 rotation = flat_dut.Rabg_of_p(0.);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(rotation.pitch(), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), 3. * M_PI / 4., kVeryExact);
+    Vector3<double> r_hat = flat_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(-0.707106781186548, -0.707106781186548, 0.),
+        kVeryExact));
+
+    rotation = flat_dut.Rabg_of_p(0.5);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(rotation.pitch(), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -M_PI, kVeryExact);
+    r_hat = flat_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(
+        CompareMatrices(r_hat, Vector3<double>(0., -1., 0.), kVeryExact));
+
+    rotation = flat_dut.Rabg_of_p(0.75);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(rotation.pitch(), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -7. * M_PI / 8., kVeryExact);
+    r_hat = flat_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(0.382683432365090, -0.923879532511287, 0.),
+        kVeryExact));
+
+    rotation = flat_dut.Rabg_of_p(1.);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(rotation.pitch(), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -3. * M_PI / 4., kVeryExact);
+    r_hat = flat_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(0.707106781186548, -0.707106781186548, 0.),
+        kVeryExact));
+  }
+
+  // Checks for a linearly elevated curve.
+  {
+    const double kElevationSlope = 15. / (kRadius * kDTheta);
+    const double kElevationOffset = 10. / (kRadius * kDTheta);
+    const double kElevationPitch = -std::atan(kElevationSlope);
+    const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope,
+                                           0., 0.);
+    const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
+                                    linear_elevation, zp);
+
+    // Computes the rotation matrix and r versor at different p values and
+    // checks versor direction and pitch and yaw angles which are not constants.
+    Rot3 rotation = elevated_dut.Rabg_of_p(0.);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kElevationPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), 3. * M_PI / 4., kVeryExact);
+    Vector3<double> r_hat = elevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(-0.707106781186548, -0.707106781186548, 0.),
+        kVeryExact));
+
+    rotation = elevated_dut.Rabg_of_p(0.5);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kElevationPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -M_PI, kVeryExact);
+    r_hat = elevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(
+        CompareMatrices(r_hat, Vector3<double>(0., -1., 0.), kVeryExact));
+
+    rotation = elevated_dut.Rabg_of_p(0.75);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kElevationPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -7. * M_PI / 8., kVeryExact);
+    r_hat = elevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(0.382683432365090, -0.923879532511287, 0.),
+        kVeryExact));
+
+    rotation = elevated_dut.Rabg_of_p(1.);
+    EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kElevationPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -3. * M_PI / 4., kVeryExact);
+    r_hat = elevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(0.707106781186548, -0.707106781186548, 0.),
+        kVeryExact));
+  }
+
+  // Checks for a curve with constant non zero superelevation.
+  {
+    const double kSuperelevationOffset = M_PI / 3.;
+    const CubicPolynomial constant_offset_superelevation(
+        kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
+    const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
+                                         constant_offset_superelevation);
+
+    // Computes the rotation matrix and r versor at different p values and
+    // checks versor direction and pitch and yaw angles which are not constants.
+    Rot3 rotation = superelevated_dut.Rabg_of_p(0.);
+    EXPECT_NEAR(wrap(rotation.roll()), kSuperelevationOffset, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), 3. * M_PI / 4., kVeryExact);
+    Vector3<double> r_hat = superelevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(-0.353553390593274, -0.353553390593274,
+                               0.866025403784439),
+        kVeryExact));
+
+    rotation = superelevated_dut.Rabg_of_p(0.5);
+    EXPECT_NEAR(rotation.roll(), kSuperelevationOffset, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -M_PI, kVeryExact);
+    r_hat = superelevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(0.0, -0.5, 0.866025403784439), kVeryExact));
+
+    rotation = superelevated_dut.Rabg_of_p(0.75);
+    EXPECT_NEAR(rotation.roll(), kSuperelevationOffset, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -7. * M_PI / 8., kVeryExact);
+    r_hat = superelevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(0.191341716182545, -0.461939766255643,
+                               0.866025403784439),
+        kVeryExact));
+
+    rotation = superelevated_dut.Rabg_of_p(1.);
+    EXPECT_NEAR(rotation.roll(), kSuperelevationOffset, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.pitch()), kZeroPitch, kVeryExact);
+    EXPECT_NEAR(wrap(rotation.yaw()), -3. * M_PI / 4., kVeryExact);
+    r_hat = superelevated_dut.r_hat_of_Rabg(rotation);
+    EXPECT_TRUE(CompareMatrices(
+        r_hat, Vector3<double>(0.353553390593274, -0.353553390593274,
+                               0.866025403784439),
+        kVeryExact));
+  }
+}
+
+// Checks orientation for different values of [p, r, h].
+TEST_F(MultilaneArcRoadCurveTest, Orientation) {
+  const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
+  const std::vector<double> r_vector{-5., 0., 5.};
+  const std::vector<double> h_vector{-5., 0., 5.};
+
+  // Wraps angles in [-π, π) range.
+  auto wrap = [](double theta) {
+    double theta_new = std::fmod(theta + M_PI, 2. * M_PI);
+    if (theta_new < 0.) theta_new += 2. * M_PI;
+    return theta_new - M_PI;
+  };
+
+  // Checks for a flat curve.
+  const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const double kZeroRoll{0.};
+  const double kZeroPitch{0.};
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 rotation = flat_dut.Orientation(p, r, h);
+        EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+        EXPECT_NEAR(rotation.pitch(), kZeroPitch, kVeryExact);
+        EXPECT_NEAR(wrap(rotation.yaw()),
+                    wrap(kTheta0 + kDTheta * p + M_PI / 2.0), kVeryExact);
+      }
+    }
+  }
+
+  // Checks for a linearly elevated curve.
+  const double kElevationSlope = 15. / (kRadius * kDTheta);
+  const double kElevationOffset = 10. / (kRadius * kDTheta);
+  const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
+                                         0.);
+  const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
+                                  linear_elevation, zp);
+  // Checks that the roll angle remains zero for all the points.
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        EXPECT_NEAR(flat_dut.Orientation(p, r, h).roll(), kZeroRoll,
+                    kVeryExact);
+      }
+    }
+  }
+  // Computes the rotation matrix at different [p, r, h] points and checks
+  // pitch and yaw angles which are not constants.
+  Rot3 elevated_rotation = elevated_dut.Orientation(0., -5., -5.);
+  EXPECT_NEAR(wrap(elevated_rotation.pitch()), -0.55527957697788, kVeryExact);
+  EXPECT_NEAR(wrap(elevated_rotation.yaw()), 2.5824595079564, kVeryExact);
+
+  elevated_rotation = elevated_dut.Orientation(0., 0., 0.);
+  EXPECT_NEAR(wrap(elevated_rotation.pitch()), -0.76234753416487, kVeryExact);
+  EXPECT_NEAR(wrap(elevated_rotation.yaw()), 2.3561944901923, kVeryExact);
+
+  elevated_rotation = elevated_dut.Orientation(0.5, 5., 5.);
+  EXPECT_NEAR(wrap(elevated_rotation.pitch()), -1.0040908130143, kVeryExact);
+  EXPECT_NEAR(wrap(elevated_rotation.yaw()), 2.5371890112688, kVeryExact);
+
+  elevated_rotation = elevated_dut.Orientation(1., -5., 5.);
+  EXPECT_NEAR(wrap(elevated_rotation.pitch()), -0.55527957697788, kVeryExact);
+  EXPECT_NEAR(wrap(elevated_rotation.yaw()), -2.5824595079564, kVeryExact);
+
+  // Checks for a curve with constant non zero superelevation.
+  const double kSuperelevationOffset = M_PI / 3.;
+  const CubicPolynomial constant_offset_superelevation(
+      kSuperelevationOffset / (kRadius * kDTheta), 0., 0., 0.);
+  const ArcRoadCurve superelevated_dut(kCenter, kRadius, kTheta0, kDTheta, zp,
+                                       constant_offset_superelevation);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 rotation = superelevated_dut.Orientation(p, r, h);
+        EXPECT_NEAR(wrap(rotation.pitch()), kZeroPitch, kVeryExact);
+        EXPECT_NEAR(wrap(rotation.roll()), kSuperelevationOffset, kVeryExact);
+        EXPECT_NEAR(wrap(rotation.yaw()),
+                    wrap(kTheta0 + kDTheta * p + M_PI / 2.0), kVeryExact);
+      }
+    }
+  }
+}
+
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake

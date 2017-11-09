@@ -975,6 +975,12 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
   VectorDecisionVariable<9> R_flat;
   R_flat << R.col(0), R.col(1), R.col(2);
   MatrixDecisionVariable<9, 9> W;
+  // We cannot call W.cast<symbolic::Expression>() directly, since the diagonal
+  // entries in W is un-assigned, namely they are dummy variables. Converting a
+  // dummy variable to a symbolic expression is illegal. So we create this new
+  // W_expr, containing W(i, j) on the off-diagonal entries.
+  Eigen::Matrix<symbolic::Expression, 9, 9> W_expr;
+  W_expr.setZero();
   for (int i = 0; i < 9; ++i) {
     int Ri_row, Ri_col;
     std::tie(Ri_row, Ri_col) = Index2Subscripts(i, 3, 3);
@@ -985,6 +991,7 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
           "R(" + std::to_string(Ri_row) + "," + std::to_string(Ri_col) +
           ")*R(" + std::to_string(Rj_row) + "," + std::to_string(Rj_col) + ")";
       W(i, j) = prog->NewContinuousVariables<1>(W_ij_name)(0);
+      W_expr(i, j) = symbolic::Expression(W(i, j));
 
       auto lambda_bilinear = AddBilinearProductMcCormickEnvelopeSos2(
           prog, R(Ri_row, Ri_col), R(Rj_row, Rj_col), W(i, j), phi, phi,
@@ -1011,6 +1018,7 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
               .sum()
               .transpose() == lambda[Rj_row][Rj_col]);
       W(j, i) = W(i, j);
+      W_expr(j, i) = W_expr(i, j);
     }
   }
   for (int i = 0; i < 3; ++i) {
@@ -1019,13 +1027,13 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
       prog->AddLinearConstraint(
           ReplaceBilinearTerms(
               R.col(i).dot(R.col(j).cast<symbolic::Expression>()), R_flat,
-              R_flat, W) == 0);
+              R_flat, W_expr) == 0);
       // Orthogonal constraint between R.row(i), R.row(j)
       prog->AddLinearConstraint(
           ReplaceBilinearTerms(
               R.row(i).transpose().dot(
                   R.row(j).cast<symbolic::Expression>().transpose()),
-              R_flat, R_flat, W) == 0);
+              R_flat, R_flat, W_expr) == 0);
     }
   }
 
@@ -1038,13 +1046,13 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
         R.row(j).transpose().cast<symbolic::Expression>());
     for (int row = 0; row < 3; ++row) {
       // R.col(i) x R.col(j) = R.col(k).
-      prog->AddLinearConstraint(ReplaceBilinearTerms(cross_product1(row),
-                                                     R_flat, R_flat,
-                                                     W) == R(row, k));
+      prog->AddLinearConstraint(
+          ReplaceBilinearTerms(cross_product1(row), R_flat, R_flat,
+                               W_expr) == R(row, k));
       // R.row(i) x R.row(j) = R.row(k).
-      prog->AddLinearConstraint(ReplaceBilinearTerms(cross_product2(row),
-                                                     R_flat, R_flat,
-                                                     W) == R(k, row));
+      prog->AddLinearConstraint(
+          ReplaceBilinearTerms(cross_product2(row), R_flat, R_flat,
+                               W_expr) == R(k, row));
     }
   }
 }

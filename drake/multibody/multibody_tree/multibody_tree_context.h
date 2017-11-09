@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -70,12 +70,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
   /// Returns the size of the generalized positions vector.
   int get_num_positions() const {
-    return this->get_continuous_state()->get_generalized_position().size();
+    return this->get_continuous_state().get_generalized_position().size();
   }
 
   /// Returns the size of the generalized velocities vector.
   int get_num_velocities() const {
-    return this->get_continuous_state()->get_generalized_velocity().size();
+    return this->get_continuous_state().get_generalized_velocity().size();
   }
 
   /// Returns an Eigen expression of the vector of generalized positions.
@@ -111,7 +111,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // PR #6049 gets merged.
     Eigen::VectorBlock<const VectorX<T>> xc =
         dynamic_cast<const systems::BasicVector<T>&>(
-            this->get_continuous_state()->get_vector()).get_value();
+            this->get_continuous_state().get_vector()).get_value();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -129,8 +129,8 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
     // PR #6049 gets merged.
     Eigen::VectorBlock<VectorX<T>> xc =
-        dynamic_cast<systems::BasicVector<T>*>(
-            this->get_mutable_continuous_state()->get_mutable_vector())->
+        dynamic_cast<systems::BasicVector<T>&>(
+            this->get_mutable_continuous_state().get_mutable_vector()).
             get_mutable_value();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
@@ -150,7 +150,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // PR #6049 gets merged.
     Eigen::VectorBlock<const VectorX<T>> xc =
         dynamic_cast<const systems::BasicVector<T>&>(
-            this->get_continuous_state()->get_vector()).get_value();
+            this->get_continuous_state().get_vector()).get_value();
     // xc.nestedExpression() resolves to "const VectorX<T>&" since the
     // continuous state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -168,8 +168,8 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
     // PR #6049 gets merged.
     Eigen::VectorBlock<VectorX<T>> xc =
-        dynamic_cast<systems::BasicVector<T>*>(
-            this->get_mutable_continuous_state()->get_mutable_vector())->
+        dynamic_cast<systems::BasicVector<T>&>(
+            this->get_mutable_continuous_state().get_mutable_vector()).
             get_mutable_value();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.

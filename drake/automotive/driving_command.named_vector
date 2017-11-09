@@ -1,0 +1,14 @@
+namespace: "drake::automotive"
+
+element {
+     name: "steering_angle"
+     doc: "The desired steering angle of a virtual center wheel, positive results in the vehicle turning left."
+     doc_units: "rad"
+     default_value: "0.0"
+}
+element {
+     name: "acceleration"
+     doc: "The signed acceleration, positive means speed up; negative means slow down, but should not move in reverse."
+     doc_units: "m/s^2"
+     default_value: "0.0"
+}

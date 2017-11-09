@@ -47,10 +47,10 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
-                                          simulator.get_mutable_context());
-  PendulumState<double>* state = pendulum->get_mutable_state(&pendulum_context);
-  state->set_theta(1.);
-  state->set_thetadot(0.);
+                                          &simulator.get_mutable_context());
+  PendulumState<double>& state = pendulum->get_mutable_state(&pendulum_context);
+  state.set_theta(1.);
+  state.set_thetadot(0.);
 
   const double initial_energy = pendulum->CalcTotalEnergy(pendulum_context);
 

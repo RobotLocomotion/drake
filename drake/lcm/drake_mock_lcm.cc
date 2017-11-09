@@ -21,7 +21,7 @@ void DrakeMockLcm::StopReceiveThread() {
 }
 
 void DrakeMockLcm::Publish(const std::string& channel, const void* data,
-                           int data_size) {
+                           int data_size, double) {
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
     last_published_messages_[channel] = LastPublishedMessage();
@@ -31,7 +31,7 @@ void DrakeMockLcm::Publish(const std::string& channel, const void* data,
 
   DRAKE_DEMAND(saved_message);
 
-  const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
+  const uint8_t* bytes = static_cast<const uint8_t*>(data);
   saved_message->data = std::vector<uint8_t>(&bytes[0], &bytes[data_size]);
 
   if (enable_loop_back_) {

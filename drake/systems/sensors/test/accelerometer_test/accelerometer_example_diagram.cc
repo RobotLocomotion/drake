@@ -114,12 +114,11 @@ void AccelerometerExampleDiagram::SetInitialState(Context<double>* context,
     double q, double v) {
   Context<double>& plant_context =
       GetMutableSubsystemContext(*plant_, context);
-  ContinuousState<double>* plant_state =
+  ContinuousState<double>& plant_state =
       plant_context.get_mutable_continuous_state();
-  DRAKE_DEMAND(plant_state != nullptr);
-  DRAKE_DEMAND(plant_state->size() == 2);
-  (*plant_state)[0] = q;
-  (*plant_state)[1] = v;
+  DRAKE_DEMAND(plant_state.size() == 2);
+  plant_state[0] = q;
+  plant_state[1] = v;
 }
 
 }  // namespace sensors

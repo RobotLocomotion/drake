@@ -2,10 +2,10 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/analysis/test/discontinuous_spring_mass_damper_system.h"
-#include "drake/systems/analysis/test/robertson_system.h"
-#include "drake/systems/analysis/test/spring_mass_damper_system.h"
-#include "drake/systems/analysis/test/stiff_double_mass_spring_system.h"
+#include "drake/systems/analysis/test_utilities/discontinuous_spring_mass_damper_system.h"
+#include "drake/systems/analysis/test_utilities/robertson_system.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_damper_system.h"
+#include "drake/systems/analysis/test_utilities/stiff_double_mass_spring_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
@@ -35,8 +35,8 @@ class StationarySystem final : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {
     // State does not evolve.
-    derivatives->get_mutable_vector()->SetAtIndex(0, 0.0);
-    derivatives->get_mutable_vector()->SetAtIndex(1, 0.0);
+    derivatives->get_mutable_vector().SetAtIndex(0, 0.0);
+    derivatives->get_mutable_vector().SetAtIndex(1, 0.0);
   }
 };
 
@@ -48,10 +48,10 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Stationary) {
   std::unique_ptr<Context<double>> context = stationary->CreateDefaultContext();
 
   // Set the initial condition for the stationary system.
-  VectorBase<double>* state = context->get_mutable_continuous_state()->
+  VectorBase<double>& state = context->get_mutable_continuous_state().
       get_mutable_vector();
-  state->SetAtIndex(0, 0.0);
-  state->SetAtIndex(1, 0.0);
+  state.SetAtIndex(0, 0.0);
+  state.SetAtIndex(1, 0.0);
 
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*stationary, context.get());
@@ -64,8 +64,8 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Stationary) {
   integrator.IntegrateWithMultipleSteps(1.0);
 
   // Verify the solution.
-  EXPECT_NEAR(state->GetAtIndex(0), 0, std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(state->GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(state.GetAtIndex(0), 0, std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(state.GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
 }
 
 // Tests the implicit integrator on Robertson's stiff chemical reaction
@@ -78,11 +78,11 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
   // Set the initial conditions for Robertson's system.
-  VectorBase<double>* state = context->get_mutable_continuous_state()->
+  VectorBase<double>& state = context->get_mutable_continuous_state().
                                 get_mutable_vector();
-  state->SetAtIndex(0, 1);
-  state->SetAtIndex(1, 0);
-  state->SetAtIndex(2, 0);
+  state.SetAtIndex(0, 1);
+  state.SetAtIndex(1, 0);
+  state.SetAtIndex(2, 0);
 
   const double t_final = robertson->get_end_time();
   const double tol = 5e-5;
@@ -108,9 +108,9 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
 
   // Verify the solution.
   const Eigen::Vector3d sol = robertson->GetSolution(t_final);
-  EXPECT_NEAR(state->GetAtIndex(0), sol(0), tol);
-  EXPECT_NEAR(state->GetAtIndex(1), sol(1), tol);
-  EXPECT_NEAR(state->GetAtIndex(2), sol(2), tol);
+  EXPECT_NEAR(state.GetAtIndex(0), sol(0), tol);
+  EXPECT_NEAR(state.GetAtIndex(1), sol(1), tol);
+  EXPECT_NEAR(state.GetAtIndex(2), sol(2), tol);
 }
 
 class ImplicitIntegratorTest : public ::testing::TestWithParam<bool> {
@@ -331,8 +331,8 @@ TEST_P(ImplicitIntegratorTest, DoubleSpringMassDamper) {
 
   // Get the solution at the target time.
   const double t_final = 1.0;
-  stiff_double_system_->GetSolution(*dspring_context_, t_final,
-                                    state_copy->get_mutable_continuous_state());
+  stiff_double_system_->GetSolution(
+      *dspring_context_, t_final, &state_copy->get_mutable_continuous_state());
 
   // Take all the defaults.
   integrator.Initialize();
@@ -341,9 +341,9 @@ TEST_P(ImplicitIntegratorTest, DoubleSpringMassDamper) {
   integrator.IntegrateWithMultipleSteps(t_final);
 
   // Check the solution.
-  const VectorX<double> nsol = dspring_context_->get_continuous_state()->
+  const VectorX<double> nsol = dspring_context_->get_continuous_state().
       get_generalized_position().CopyToVector();
-  const VectorX<double> sol = state_copy->get_continuous_state()->
+  const VectorX<double> sol = state_copy->get_continuous_state().
       get_generalized_position().CopyToVector();
 
   for (int i = 0; i < nsol.size(); ++i)
@@ -388,7 +388,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassDamperStiff) {
   EXPECT_NEAR(context_->get_time(), t_final, ttol);
 
   // Get the final position and velocity.
-  const VectorBase<double>& xc_final = context_->get_continuous_state()->
+  const VectorBase<double>& xc_final = context_->get_continuous_state().
       get_vector();
   double x_final = xc_final.GetAtIndex(0);
   double v_final = xc_final.GetAtIndex(1);
@@ -489,7 +489,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStep) {
 
   // Get the final position.
   double x_final =
-      context_->get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_continuous_state().get_vector().GetAtIndex(0);
 
   // Compute the true solution at t_final.
   double x_final_true, v_final_true;
@@ -518,7 +518,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStep) {
 
   // Check results again.
   x_final =
-      context_->get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_continuous_state().get_vector().GetAtIndex(0);
   EXPECT_NEAR(x_final_true, x_final, 5e-3);
   EXPECT_NEAR(context_->get_time(), t_final, ttol);
 
@@ -540,7 +540,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStep) {
 
   // Check results again.
   x_final =
-      context_->get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_continuous_state().get_vector().GetAtIndex(0);
   EXPECT_NEAR(x_final_true, x_final, 5e-3);
   EXPECT_NEAR(context_->get_time(), t_final, ttol);
 
@@ -619,7 +619,7 @@ TEST_P(ImplicitIntegratorTest, ErrorEstimation) {
 
       // Get the final position of the spring.
       const double x_final =
-          context_->get_continuous_state()->get_vector().GetAtIndex(0);
+          context_->get_continuous_state().get_vector().GetAtIndex(0);
 
       // Get the true position.
       double x_final_true, v_final_true;
@@ -730,7 +730,7 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
   // Get the final position.
   double x_final =
-      context_->get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_continuous_state().get_vector().GetAtIndex(0);
 
   // Verify that solution and integrator statistics are valid and reset the
   // statistics.
@@ -752,7 +752,7 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
   // Check the solution and the time again, and reset the statistics again.
   x_final =
-      context_->get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_continuous_state().get_vector().GetAtIndex(0);
   EXPECT_NEAR(context_->get_time(), t_final, ttol);
   EXPECT_NEAR(0.0, x_final, sol_tol);
   CheckGeneralStatsValidity(&integrator);
@@ -772,7 +772,7 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
   // Check the solution and the time again.
   x_final =
-      context_->get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_continuous_state().get_vector().GetAtIndex(0);
   EXPECT_NEAR(context_->get_time(), t_final, ttol);
   EXPECT_NEAR(0.0, x_final, sol_tol);
   CheckGeneralStatsValidity(&integrator);

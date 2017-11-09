@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
@@ -42,7 +42,8 @@ enum class SystemConstraintType {
 /// (e.g. by populating the Context with the decision variables and calling
 /// Calc).
 ///
-/// @see LeafSystem<T>::DeclareConstraint for use cases.
+/// @see LeafSystem<T>::DeclareEqualityConstraint and
+///      LeafSystem<T>::DeclareInequalityConstraint for use cases.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:

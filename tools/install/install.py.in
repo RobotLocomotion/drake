@@ -1,0 +1,252 @@
+#!/usr/bin/env python
+
+import argparse
+import filecmp
+import os
+import re
+import shutil
+import stat
+import sys
+from subprocess import check_output, check_call, CalledProcessError
+
+subdirs = set()
+prefix = None
+libs = {}
+list_only = False
+# On linux, dynamic libraries may have their version number
+# as a suffix (e.g. my_lib.so.x.y.z).
+dylib_match = r"(.*\.so)(\.\d+)*$|(.*\.dylib)$"
+
+
+def needs_install(src, dst):
+    # Get canonical destination.
+    dst_full = os.path.join(prefix, dst)
+
+    # Check if destination exists.
+    if not os.path.exists(dst_full):
+        # Destination doesn't exist -> installation needed.
+        return True
+
+    # Check if files are different.
+    if filecmp.cmp(src, dst_full, shallow=False):
+        # Files are the same -> no installation needed.
+        return False
+
+    # File needs to be installed.
+    return True
+
+
+def install(src, dst):
+    global subdirs
+
+    # In list-only mode, just display the filename, don't do any real work.
+    if list_only:
+        print(dst)
+        return
+
+    # Ensure destination subdirectory exists, creating it if necessary.
+    subdir = os.path.dirname(dst)
+    if subdir not in subdirs:
+        subdir_full = os.path.join(prefix, subdir)
+        if not os.path.exists(subdir_full):
+            os.makedirs(subdir_full)
+        subdirs.add(subdir)
+
+    installed = False
+    dst_full = os.path.join(prefix, dst)
+    # Install file, if not up to date.
+    if needs_install(src, dst):
+        print("[Installing] %s" % dst)
+        if os.path.exists(dst_full):
+            os.remove(dst_full)
+        shutil.copy2(src, dst_full)
+        installed = True
+    else:
+        print("[Up to date] %s" % dst)
+    re_result = re.match(dylib_match, dst)
+    if re_result is not None:
+        basename = os.path.basename(re_result.group(0))
+        # Check that dependency is only referenced once
+        # in the library dictionary. If it is referenced multiple times,
+        # we do not know which one to use, and fail fast.
+        if basename in libs:
+            sys.stderr.write(
+                "Multiple installation rules found for %s." % (basename))
+            sys.exit(1)
+        libs[basename] = (dst_full, installed)
+
+
+def fix_libraries_rpaths():
+    # Only fix libraries that are installed now.
+    fix_libs = [(k, libs[k][0]) for k in libs.keys() if libs[k][1]]
+    for basename, dst_full in fix_libs:
+        # Enable write permissions to allow modification.
+        os.chmod(dst_full, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                 stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+        if sys.platform == "darwin":
+            macos_fix_libraries_rpaths(basename, dst_full)
+        else:
+            linux_fix_libraries_rpaths(dst_full)
+
+
+def macos_fix_libraries_rpaths(basename, dst_full):
+    # Update library ID (remove relative path).
+    check_call(
+        ['install_name_tool', "-id", "@rpath/" + basename, dst_full]
+        )
+    # Check if library dependencies are specified with relative paths.
+    file_output = check_output(["otool", "-L", dst_full])
+    for line in file_output.splitlines():
+        # keep only file path, remove version information.
+        relative_path = line.split(' (')[0].strip()
+        # If path is relative, it needs to be replaced by absolute path.
+        if "@loader_path" not in relative_path:
+            continue
+        dep_basename = os.path.basename(relative_path)
+        # Look for the absolute path in the dictionary of libraries.
+        if dep_basename not in libs.keys():
+            continue
+        lib_dirname = os.path.dirname(dst_full)
+        diff_path = os.path.relpath(libs[dep_basename][0], lib_dirname)
+        check_call(
+            ['install_name_tool',
+             "-change", relative_path,
+             os.path.join('@loader_path', diff_path),
+             dst_full]
+            )
+    # Remove RPATH values that contain $ORIGIN. These are from the build
+    # tree and are irrelevant in the install tree. RPATH is not necessary as
+    # relative or absolute path to each library is already known.
+    file_output = check_output(["otool", "-l", dst_full])
+    for line in file_output.splitlines():
+        split_line = line.strip().split(' ')
+        if len(split_line) >= 2 \
+                and split_line[0] == 'path' \
+                and split_line[1].startswith('$ORIGIN'):
+            check_call(
+                ['install_name_tool', "-delete_rpath", split_line[1], dst_full]
+            )
+
+
+def linux_fix_libraries_rpaths(dst_full):
+    # Check that library has an rpath or a runpath tag
+    try:
+        check_output(["chrpath", "-l", dst_full])
+    except OSError as ex:
+        if ex.errno == 2 and ex.strerror == "No such file or directory":
+            print("`chrpath` not found. Please run install_prereqs.sh.")
+        raise ex
+    except CalledProcessError as ex:
+        if ex.returncode == 2 and \
+                ex.output.strip().endswith('no rpath or runpath tag found.'):
+            # Cannot be modified with `chrpath`, so we skip it.
+            return
+        raise ex
+    # Check if library dependencies are found and not in install prefix.
+    # The found libraries outside of the install prefix are the system
+    # libraries and we do not worry about these. We only make sure that
+    # the installed libraries would be found.
+    file_output = check_output(["ldd", dst_full])
+    rpath = set()
+    for line in file_output.splitlines():
+        ldd_result = line.strip().split(' => ')
+        # If library found, then skip.
+        if len(ldd_result) < 2 or \
+                not (ldd_result[1] == "not found"
+                     or ldd_result[1].startswith(prefix)):
+            continue
+        re_result = re.match(dylib_match, ldd_result[0])
+        # Look for the absolute path in the dictionary of libraries using the
+        # library name without its possible version number.
+        soname, _, _ = re_result.groups()
+        if soname not in libs.keys():
+            continue
+        lib_dirname = os.path.dirname(dst_full)
+        diff_path = os.path.dirname(
+            os.path.relpath(libs[soname][0], lib_dirname)
+        )
+        rpath.add('$ORIGIN' + '/' + diff_path)
+    # Replace build tree RPATH with computed install tree RPATH. Build tree
+    # RPATH are automatically removed by this call. RPATH will contain the
+    # necessary relative paths to find the libraries that are needed. RPATH
+    # will typically be set to `$ORIGIN` or `$ORIGIN/../../..` .
+    if rpath:
+        str_rpath = ":".join(x for x in rpath)
+        check_output(
+            ['chrpath',
+             "-r", str_rpath,
+             dst_full]
+        )
+
+
+def create_java_launcher(filename, classpath, main_class):
+    # In list-only mode, just display the filename, don't do any real work.
+    if list_only:
+        print(filename)
+        return
+    # Make sure install directory exists.
+    filename = os.path.join(prefix, filename)
+    filepath = os.path.dirname(filename)
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+    # Converting classpath to string
+    strclasspath = '"{}"'.format('" "'.join(classpath))
+    # Write launcher.
+    if os.path.exists(filename):
+        os.chmod(filename, stat.S_IWUSR)
+    with open(filename, 'w') as launcher_file:
+        content = """#!/bin/bash
+# autogenerated - do not edit.
+set -euo pipefail
+
+# This file is installed to <prefix>/bin.
+readonly prefix=$(python -c 'import os;\
+    print(os.path.realpath(os.path.join(\"'\"$0\"'\", os.pardir, os.pardir)))')
+
+for jar_file in %s; do
+  if [ -f "$jar_file" ]; then
+    export CLASSPATH="${CLASSPATH:+$CLASSPATH:}$jar_file"
+  fi
+done
+
+java %s
+""" % (strclasspath, main_class)
+        launcher_file.write(content)
+    os.chmod(filename, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |
+             stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def main(args):
+    global prefix
+    global list_only
+
+    # Set up options.
+    parser = argparse.ArgumentParser()
+    parser.add_argument('prefix', type=str, help='Install prefix')
+    parser.add_argument(
+        '--list', action='store_true', default=False,
+        help='print the list of installed files; do not install anything')
+    args = parser.parse_args(args)
+
+    # Get install prefix.
+    prefix = args.prefix
+    list_only = args.list
+
+    # Because Bazel executes us in a strange working directory and not the
+    # working directory of the user's shell, enforce that the install
+    # location is an absolute path so that the user is not surprised.
+    if not os.path.isabs(prefix):
+        sys.stderr.write(
+            "Install prefix must be an absolute path (got %r)\n"
+            % prefix)
+        sys.exit(1)
+
+    # Execute the install actions.
+    <<actions>>
+
+    # Libraries paths may need to be updated.
+    fix_libraries_rpaths()
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

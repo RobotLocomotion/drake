@@ -101,9 +101,9 @@ void ManipulatorJointSpaceController::Initialize(
     systems::Context<double>* context) {
   systems::Context<double>& plan_eval_context =
       GetMutableSubsystemContext(*plan_eval_, context);
-  systems::State<double>* plan_eval_state =
+  systems::State<double>& plan_eval_state =
       plan_eval_context.get_mutable_state();
-  plan_eval_->Initialize(plan_eval_state);
+  plan_eval_->Initialize(&plan_eval_state);
 }
 
 }  // namespace qp_inverse_dynamics

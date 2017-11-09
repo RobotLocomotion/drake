@@ -71,9 +71,8 @@ auto RegisterBinding(py::handle* pscope,
   // Register overloads for MathematicalProgram class
   prog_cls
     .def("EvalBindingAtSolution",
-          (Eigen::VectorXd(MathematicalProgram::*)(
-           const B&) const)
-          &MathematicalProgram::EvalBindingAtSolution);
+         static_cast<Eigen::VectorXd(MathematicalProgram::*)(const B&) const>(
+             &MathematicalProgram::EvalBindingAtSolution));
   return binding_cls;
 }
 
@@ -83,11 +82,11 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   py::module m("_pydrake_mathematicalprogram",
                "Drake MathematicalProgram Bindings");
 
-  py::object variable = (py::object)
+  py::object variable =
     py::module::import("pydrake.symbolic").attr("Variable");
-  py::object expression = (py::object)
+  py::object expression =
     py::module::import("pydrake.symbolic").attr("Expression");
-  py::object formula = (py::object)
+  py::object formula =
     py::module::import("pydrake.symbolic").attr("Formula");
 
   py::class_<MathematicalProgramSolverInterface>(
@@ -119,64 +118,71 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
   py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram");
   prog_cls
     .def(py::init<>())
-    .def("NewContinuousVariables", (VectorXDecisionVariable
-          (MathematicalProgram::*)(
-          int,
-          const std::string&))
-         &MathematicalProgram::NewContinuousVariables,
+    .def("NewContinuousVariables",
+         static_cast<VectorXDecisionVariable
+         (MathematicalProgram::*)(
+             int,
+             const std::string&)
+         >(&MathematicalProgram::NewContinuousVariables),
          py::arg("rows"),
          py::arg("name") = "x")
-    .def("NewContinuousVariables", (MatrixXDecisionVariable
-          (MathematicalProgram::*)(
-          int,
-          int,
-          const std::string&))
-         &MathematicalProgram::NewContinuousVariables,
+    .def("NewContinuousVariables",
+         static_cast<MatrixXDecisionVariable
+         (MathematicalProgram::*)(
+             int,
+             int,
+             const std::string&)
+         >(&MathematicalProgram::NewContinuousVariables),
          py::arg("rows"),
          py::arg("cols"),
          py::arg("name") = "x")
-    .def("NewBinaryVariables", (VectorXDecisionVariable
+    .def("NewBinaryVariables",
+         static_cast<VectorXDecisionVariable
          (MathematicalProgram::*)(
-         int,
-         const std::string&))
-         &MathematicalProgram::NewBinaryVariables,
+             int,
+             const std::string&)
+         >(&MathematicalProgram::NewBinaryVariables),
          py::arg("rows"),
          py::arg("name") = "b")
-    .def("NewBinaryVariables", (MatrixXDecisionVariable
+    .def("NewBinaryVariables",
+         static_cast<MatrixXDecisionVariable
          (MathematicalProgram::*)(
-         int,
-         int,
-         const std::string&))
-         &MathematicalProgram::NewBinaryVariables,
+             int,
+             int,
+             const std::string&)
+         >(&MathematicalProgram::NewBinaryVariables),
          py::arg("rows"),
          py::arg("cols"),
          py::arg("name") = "b")
     .def("AddLinearConstraint",
-         (Binding<LinearConstraint>
-          (MathematicalProgram::*)(
-          const Expression&,
-          double,
-          double))
-          &MathematicalProgram::AddLinearConstraint)
+         static_cast<Binding<LinearConstraint>
+         (MathematicalProgram::*)(
+             const Expression&,
+             double,
+             double)
+         >(&MathematicalProgram::AddLinearConstraint))
     .def("AddLinearConstraint",
-         (Binding<LinearConstraint>
-          (MathematicalProgram::*)(
-          const Formula&))
-          &MathematicalProgram::AddLinearConstraint)
+         static_cast<Binding<LinearConstraint>
+         (MathematicalProgram::*)(
+             const Formula&)
+         >(&MathematicalProgram::AddLinearConstraint))
     .def("AddLinearCost",
-         (Binding<LinearCost>
-          (MathematicalProgram::*)(
-          const Expression&))
-          &MathematicalProgram::AddLinearCost)
-    .def("AddQuadraticCost", (Binding<QuadraticCost>
+         static_cast<Binding<LinearCost>
          (MathematicalProgram::*)(
-          const Eigen::Ref<const Eigen::MatrixXd>&,
-          const Eigen::Ref<const Eigen::VectorXd>&,
-          const Eigen::Ref<const VectorXDecisionVariable>&))
-         &MathematicalProgram::AddQuadraticCost)
-    .def("AddQuadraticCost", (Binding<QuadraticCost>
-         (MathematicalProgram::*)(const Expression&))
-         &MathematicalProgram::AddQuadraticCost)
+          const Expression&)
+         >(&MathematicalProgram::AddLinearCost))
+    .def("AddQuadraticCost",
+         static_cast<Binding<QuadraticCost>
+         (MathematicalProgram::*)(
+             const Eigen::Ref<const Eigen::MatrixXd>&,
+             const Eigen::Ref<const Eigen::VectorXd>&,
+             const Eigen::Ref<const VectorXDecisionVariable>&)
+         >(&MathematicalProgram::AddQuadraticCost))
+    .def("AddQuadraticCost",
+         static_cast<Binding<QuadraticCost>
+         (MathematicalProgram::*)(
+             const Expression&)
+         >(&MathematicalProgram::AddQuadraticCost))
     .def("Solve", &MathematicalProgram::Solve)
     .def("GetSolverId", [](const MathematicalProgram& prog) {
         return deref_optional(prog.GetSolverId());

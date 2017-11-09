@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -190,6 +190,47 @@ TYPED_TEST(SpatialQuantityTest, RawDataAccessors) {
   EXPECT_EQ(V[3], const_data[3]);
   EXPECT_EQ(V[4], const_data[4]);
   EXPECT_EQ(V[5], const_data[5]);
+}
+
+// Tests maximum absolute difference between two spatial vectors.
+TYPED_TEST(SpatialQuantityTest, GetMaximumAbsoluteDifferences) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  const double w_delta = 2.2 * kEpsilon;
+  const double v_delta = 4.4 * kEpsilon;
+  const Vector3<T> wA(1.1, 2.2, -3.3), vA(9.9, 8.8, -7.7);
+  const Vector3<T> wB = wA + Vector3<T>(w_delta, w_delta, -w_delta);
+  const Vector3<T> vB = vA + Vector3<T>(v_delta, v_delta, -v_delta);
+  const SpatialQuantity A(wA, vA), B(wB, vB);
+
+  T w_difference, v_difference;
+  std::tie(w_difference, v_difference) = A.GetMaximumAbsoluteDifferences(B);
+
+  // Compare actual results with expected results.
+  using std::abs;
+  EXPECT_TRUE(w_difference < 4 * w_delta);
+  EXPECT_TRUE(v_difference < 4 * v_delta);
+  EXPECT_FALSE(w_difference < 0.25 * w_delta);
+  EXPECT_FALSE(v_difference < 0.25 * v_delta);
+}
+
+// Tests the comparison between two spatial vectors (with absolute tolerances).
+TYPED_TEST(SpatialQuantityTest, IsNearlyEqualWithinAbsoluteTolerance) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  const double w_delta = 2.2 * kEpsilon;
+  const double v_delta = 4.4 * kEpsilon;
+  const Vector3<T> wA(1.1, 2.2, -3.3), vA(9.9, 8.8, -7.7);
+  const Vector3<T> wB = wA + Vector3<T>(w_delta, w_delta, -w_delta);
+  const Vector3<T> vB = vA + Vector3<T>(v_delta, v_delta, -v_delta);
+  const SpatialQuantity A(wA, vA), B(wB, vB);
+
+  EXPECT_TRUE(A.IsNearlyEqualWithinAbsoluteTolerance(B, 4 * w_delta,
+                                                     4 * v_delta));
+  EXPECT_FALSE(A.IsNearlyEqualWithinAbsoluteTolerance(B, 0.25 * w_delta,
+                                                      0.25 * v_delta));
 }
 
 // Tests comparison to a given precision.

@@ -9,8 +9,8 @@
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmtypes/drake/lcmt_viewer_geometry_data.hpp"
-#include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_geometry_data.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {

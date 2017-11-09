@@ -1,0 +1,31 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install_data.bzl", "install_data")
+
+package(default_visibility = ["//visibility:public"])
+
+genrule(
+    name = "speed_bump_genrule",
+    srcs = ["speed_bump/speed_bump.yaml"],
+    outs = [
+        "speed_bump/speed_bump.obj",
+        "speed_bump/speed_bump.mtl",
+    ],
+    cmd = " ".join([
+        "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
+        "--yaml_file '$<'",
+        "--obj_dir $(@D)/speed_bump",
+        "--obj_file speed_bump",
+    ]),
+    tools = ["//drake/automotive/maliput/utility:yaml_to_obj"],
+)
+
+install_data(
+    extra_prod_models = [
+        "speed_bump/speed_bump.mtl",
+        "speed_bump/speed_bump.obj",
+    ],
+)
+
+add_lint_tests()

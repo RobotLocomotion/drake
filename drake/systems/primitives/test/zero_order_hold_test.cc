@@ -112,10 +112,9 @@ TEST_P(ZeroOrderHoldTest, InitialState) {
   const Eigen::Vector3d value_expected = Eigen::Vector3d::Zero();
   Eigen::Vector3d value;
   if (!is_abstract_) {
-    const VectorBase<double>* xd = context_->get_discrete_state(0);
-    ASSERT_NE(nullptr, xd);
-    EXPECT_EQ(kLength, xd->size());
-    value = xd->CopyToVector();
+    const BasicVector<double>& xd = context_->get_discrete_state(0);
+    EXPECT_EQ(kLength, xd.size());
+    value = xd.CopyToVector();
   } else {
     const SimpleAbstractType& state_value =
         context_->get_abstract_state<SimpleAbstractType>(0);
@@ -129,9 +128,8 @@ TEST_P(ZeroOrderHoldTest, Output) {
   const Eigen::Vector3d output_expected = state_value_override_;
   Eigen::Vector3d output;
   if (!is_abstract_) {
-    BasicVector<double>* xd = dynamic_cast<BasicVector<double>*>(
-        context_->get_mutable_discrete_state(0));
-    xd->get_mutable_value() << output_expected;
+    BasicVector<double>& xd = context_->get_mutable_discrete_state(0);
+    xd.get_mutable_value() << output_expected;
 
     hold_->CalcOutput(*context_, output_.get());
 
@@ -187,12 +185,12 @@ TEST_P(ZeroOrderHoldTest, Update) {
         hold_->AllocateDiscreteVariables();
     hold_->CalcDiscreteVariableUpdates(*context_, update.get());
     // Check that the state has been updated to the input.
-    const VectorBase<double>* xd = update->get_vector(0);
-    value = xd->CopyToVector();
+    const BasicVector<double>& xd = update->get_vector(0);
+    value = xd.CopyToVector();
   } else {
-    State<double>* state = context_->get_mutable_state();
-    hold_->CalcUnrestrictedUpdate(*context_, state);
-    value = state->get_abstract_state<SimpleAbstractType>(0).value();
+    State<double>& state = context_->get_mutable_state();
+    hold_->CalcUnrestrictedUpdate(*context_, &state);
+    value = state.get_abstract_state<SimpleAbstractType>(0).value();
   }
   EXPECT_EQ(input_value_, value);
 }
@@ -221,7 +219,7 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
     context_ = hold_->CreateDefaultContext();
     context_->FixInputPort(0, BasicVector<symbolic::Expression>::Make(
         symbolic::Variable("u0")));
-    auto& xd = *context_->get_mutable_discrete_state(0);
+    auto& xd = context_->get_mutable_discrete_state(0);
     xd[0] = symbolic::Variable("x0");
 
     output_ = hold_->AllocateOutput(*context_);
@@ -243,7 +241,7 @@ TEST_F(SymbolicZeroOrderHoldTest, Output) {
 
 TEST_F(SymbolicZeroOrderHoldTest, Update) {
   hold_->CalcDiscreteVariableUpdates(*context_, update_.get());
-  const auto& xd = *update_->get_vector(0);
+  const auto& xd = update_->get_vector(0);
   EXPECT_EQ("u0", xd[0].to_string());
 }
 

@@ -18,10 +18,12 @@ PYBIND11_PLUGIN(_pydrake_ik) {
                   const Eigen::Vector2d& >(),
          py::arg("model"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
-    .def("setJointLimits", (void(PostureConstraint::*)(
-      const Eigen::VectorXi&,
-      const Eigen::VectorXd&,
-      const Eigen::VectorXd&)) &PostureConstraint::setJointLimits);
+    .def("setJointLimits",
+         static_cast<void(PostureConstraint::*)(
+             const Eigen::VectorXi&,
+             const Eigen::VectorXd&,
+             const Eigen::VectorXd&)>(
+                 &PostureConstraint::setJointLimits));
 
   py::class_<WorldPositionConstraint, RigidBodyConstraint>(
     m, "WorldPositionConstraint")
@@ -178,9 +180,10 @@ PYBIND11_PLUGIN(_pydrake_ik) {
     .def("setActive", &QuasiStaticConstraint::setActive)
     .def("bounds", &QuasiStaticConstraint::bounds)
     .def("setShrinkFactor", &QuasiStaticConstraint::setShrinkFactor)
-    .def("addContact", (void(QuasiStaticConstraint::*)(
-           std::vector<int>, const Eigen::Matrix3Xd&))
-         &QuasiStaticConstraint::addContact);
+    .def("addContact",
+         static_cast<void(QuasiStaticConstraint::*)(
+             std::vector<int>, const Eigen::Matrix3Xd&)>(
+                 &QuasiStaticConstraint::addContact));
 
   py::class_<IKoptions>(m, "IKoptions")
     .def(py::init<RigidBodyTree<double> *>())
@@ -217,22 +220,24 @@ PYBIND11_PLUGIN(_pydrake_ik) {
     .def("setAdditionaltSamples", &IKoptions::setAdditionaltSamples)
     .def("getAdditionaltSamples", &IKoptions::getAdditionaltSamples);
 
-  m.def("InverseKin", (IKResults(*)(
-      RigidBodyTree<double>*,
-      const Eigen::VectorXd&,
-      const Eigen::VectorXd&,
-      const std::vector<RigidBodyConstraint*>&,
-      const IKoptions&))
-    &inverseKinSimple);
+  m.def("InverseKin",
+        static_cast<IKResults(*)(
+            RigidBodyTree<double>*,
+            const Eigen::VectorXd&,
+            const Eigen::VectorXd&,
+            const std::vector<RigidBodyConstraint*>&,
+            const IKoptions&)>(
+                &inverseKinSimple));
 
-  m.def("InverseKinPointwise", (IKResults(*)(
-      RigidBodyTree<double>*,
-      const Eigen::VectorXd&,
-      const Eigen::MatrixXd&,
-      const Eigen::MatrixXd&,
-      const std::vector<RigidBodyConstraint*>&,
-      const IKoptions&))
-    &inverseKinPointwiseSimple);
+  m.def("InverseKinPointwise",
+        static_cast<IKResults(*)(
+            RigidBodyTree<double>*,
+            const Eigen::VectorXd&,
+            const Eigen::MatrixXd&,
+            const Eigen::MatrixXd&,
+            const std::vector<RigidBodyConstraint*>&,
+            const IKoptions&)>(
+                &inverseKinPointwiseSimple));
 
   m.def("InverseKinTraj", &inverseKinTrajSimple);
 

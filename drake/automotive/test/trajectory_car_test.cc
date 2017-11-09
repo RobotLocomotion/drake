@@ -89,13 +89,13 @@ GTEST_TEST(TrajectoryCarTest, ConstantSpeedTest) {
     const double end_time = finish_position / it.speed;
 
     systems::Simulator<double> simulator(car_dut);
-    systems::Context<double>* context = simulator.get_mutable_context();
+    systems::Context<double>& context = simulator.get_mutable_context();
     std::unique_ptr<systems::SystemOutput<double>> all_output =
-        car_dut.AllocateOutput(*context);
+        car_dut.AllocateOutput(context);
 
     // Specify the initial position and speed.
     auto car_state = dynamic_cast<TrajectoryCarState<double>*>(
-        context->get_mutable_continuous_state_vector());
+        &context.get_mutable_continuous_state_vector());
     ASSERT_NE(nullptr, car_state);
     car_state->set_position(it.start_position);
     car_state->set_speed(it.speed);  // This speed will be held constant
@@ -113,7 +113,7 @@ GTEST_TEST(TrajectoryCarTest, ConstantSpeedTest) {
       const double kMaxErrorPos = 1e-6;
       const double kMaxErrorRad = 1e-6;
 
-      car_dut.CalcOutput(*context, all_output.get());
+      car_dut.CalcOutput(context, all_output.get());
 
       ASSERT_EQ(3, all_output->get_num_ports());
 
@@ -176,13 +176,13 @@ GTEST_TEST(TrajectoryCarTest, AccelerationInputTest) {
   auto context = dut.CreateDefaultContext();
   auto derivatives = dut.AllocateTimeDerivatives();
   auto car_derivatives = dynamic_cast<const TrajectoryCarState<double>*>(
-      derivatives->get_mutable_vector());
+      &derivatives->get_mutable_vector());
   ASSERT_NE(nullptr, car_derivatives);
   const TrajectoryCarParams<double> default_params;
 
   // Set the initial position and speed.
   auto car_state = dynamic_cast<TrajectoryCarState<double>*>(
-      context->get_mutable_continuous_state_vector());
+      &context->get_mutable_continuous_state_vector());
   ASSERT_NE(nullptr, car_state);
   car_state->set_position(kInitialPathPosition);
   car_state->set_speed(kInitialSpeed);
@@ -212,13 +212,13 @@ GTEST_TEST(TrajectoryCarTest, SaturatingSpeedTest) {
   auto context = dut.CreateDefaultContext();
   auto derivatives = dut.AllocateTimeDerivatives();
   auto car_derivatives = dynamic_cast<const TrajectoryCarState<double>*>(
-      derivatives->get_mutable_vector());
+      &derivatives->get_mutable_vector());
   ASSERT_NE(nullptr, car_derivatives);
   const TrajectoryCarParams<double> default_params;
 
   // Set the initial position and speed.
   auto car_state = dynamic_cast<TrajectoryCarState<double>*>(
-      context->get_mutable_continuous_state_vector());
+      &context->get_mutable_continuous_state_vector());
   ASSERT_NE(nullptr, car_state);
   car_state->set_position(kInitialPathPosition);
 

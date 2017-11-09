@@ -1,20 +1,22 @@
 # -*- python -*-
 
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
 exports_files(
     ["com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh"],
     visibility = [
+        "//common:__pkg__",
+        # TODO(6996) Remove the next line once #6996 is fully merged.
         "//drake/common:__pkg__",
-        "//tools:__pkg__",
+        "//tools/cc_toolchain:__pkg__",
     ],
 )
 
 exports_files(
     ["net_sf_jchart2d_jchart2d/LICENSE"],
-    visibility = ["//tools/install/jchart2d:__pkg__"],
+    visibility = ["//tools/workspace/jchart2d:__pkg__"],
 )
 
 exports_files(

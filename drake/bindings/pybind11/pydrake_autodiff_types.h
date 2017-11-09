@@ -3,8 +3,7 @@
 #include <Eigen/Core>
 #include <pybind11/pybind11.h>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 
 PYBIND11_NUMPY_OBJECT_DTYPE(drake::AutoDiffXd);
 

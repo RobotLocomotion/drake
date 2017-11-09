@@ -1,0 +1,31 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("//tools:drake.bzl", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+# This should encompass every cc_library in this package.
+drake_cc_library(
+    name = "test_utilities",
+    testonly = 1,
+    deps = [
+        ":multilane_types_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "multilane_types_compare",
+    testonly = 1,
+    srcs = ["multilane_types_compare.cc"],
+    hdrs = ["multilane_types_compare.h"],
+    deps = [
+        "//drake/automotive/maliput/multilane",
+        "//drake/common:essential",
+        "//drake/math:geometric_transform",
+        "@gtest//:without_main",
+    ],
+)
+
+add_lint_tests()

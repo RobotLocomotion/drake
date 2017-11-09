@@ -1,0 +1,18 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "tinydir",
+    hdrs = ["tinydir.h"],
+    includes = ["."],
+)
+
+# We do not install the header file (its a private dependency), but we still
+# need to install its license file.
+install(
+    name = "install",
+    docs = ["COPYING"],
+)

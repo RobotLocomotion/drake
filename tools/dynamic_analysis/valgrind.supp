@@ -1,0 +1,102 @@
+# This is the valgrind.supp used by `bazel test --config memcheck`.
+
+# LCM (via glib) leaks a few hundred bytes in some global handler allocation.
+{
+   lcm_glib_leak
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:g_slice_alloc
+   ...
+   fun:g_static_rec_mutex_lock
+   fun:lcm_handle
+}
+
+{
+    <mosek-1>
+    Memcheck:Addr4
+    ...
+    fun:checkout_from_flexlm
+}
+
+{
+    <mosek-2>
+    Memcheck:Addr16
+    ...
+    fun:checkout_from_flexlm
+}
+
+{
+    <mosek-3>
+    Memcheck:Cond
+    ...
+    fun:MSK_sysenv_getsysinfo
+}
+
+# One of the other places MOSEK's issues with Valgrind have been suppressed quite sweepingly:
+# https://github.com/casadi/casadi/blob/master/test/internal/valgrind-casadi.supp#L242
+{
+    <mosek-4>
+    Memcheck:Cond
+    fun:__intel_sse2_strcpy
+    fun:MSKP_strdupenv
+    ...
+    fun:MSK_ehajakopr
+    fun:MSK_optimize
+    fun:MSK_optimizetrm
+    fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+}
+
+{
+    <mosek-5>
+    Memcheck:Cond
+    fun:MSK_hom_optlp
+    fun:MSK_hs_optlp
+    fun:MSK_opt_ipmslv
+    fun:MSK_contoptimizer
+    fun:MSK_optimizeunlicensed
+    fun:MSK_optimize
+    fun:MSK_optimizetrm
+    fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+}
+
+{
+    <mosek-6>
+    Memcheck:Cond
+    fun:mkl_lapack_ps_avx2_xdlansy
+    fun:mkl_lapack_ps_xdlansy
+    fun:mkl_lapack_dlansy
+    fun:mkl_lapack_dsyevd
+    fun:DSYEVD
+    fun:MSK_INTEL_P4_mathenv_symeig
+    fun:intpnt_sdp_ntscaling
+    fun:intpnt_inititer
+    fun:intpnt_conicoptimizer
+    fun:MSK_intpnt_optcone
+    fun:MSK_conic_optimizer
+    fun:MSKP_optimizeconic
+}
+
+# Similar to <mosek-4>, but specific to calling MSK_checkoutlicense via
+# MosekSolver::AcquireLicense().
+{
+   <mosek-7>
+   Memcheck:Cond
+   fun:__intel_sse2_strcpy
+   fun:MSKP_strdupenv
+   fun:checkout_from_flexlm
+   fun:MSK_ehajakopr
+   fun:MSK_checkoutlicense
+   ...
+   fun:_ZN5drake7solvers11MosekSolver14AcquireLicenseEv
+}
+
+# Started happening when Gurobi got updated to 7.0.2. PR 6332.
+{
+    <gurobi-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:mkl_serv_thread_free_buffers
+    fun:PRIVATE*
+}

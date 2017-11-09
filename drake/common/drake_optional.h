@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/thirdParty/boost/tcbrindle_cpp17_headers/stx/optional.hpp"
+#include <stx/optional.hpp>
 
 /// @file
 /// Provides drake::optional as an alias for the appropriate implementation of

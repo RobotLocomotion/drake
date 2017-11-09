@@ -42,9 +42,9 @@ int DoMain() {
 
   // Prepare to linearize around the vertical equilibrium point (with tau=0)
   auto pendulum_context = pendulum->CreateDefaultContext();
-  auto desired_state = pendulum->get_mutable_state(pendulum_context.get());
-  desired_state->set_theta(M_PI);
-  desired_state->set_thetadot(0);
+  auto& desired_state = pendulum->get_mutable_state(pendulum_context.get());
+  desired_state.set_theta(M_PI);
+  desired_state.set_thetadot(0);
   auto input = std::make_unique<PendulumInput<double>>();
   input->set_tau(0.0);
   pendulum_context->FixInputPort(0, std::move(input));
@@ -73,18 +73,18 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& sim_pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
-                                          simulator.get_mutable_context());
-  auto state = pendulum->get_mutable_state(&sim_pendulum_context);
-  state->set_theta(M_PI + 0.1);
-  state->set_thetadot(0.2);
+                                          &simulator.get_mutable_context());
+  auto& state = pendulum->get_mutable_state(&sim_pendulum_context);
+  state.set_theta(M_PI + 0.1);
+  state.set_thetadot(0.2);
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
 
   // Adds a numerical test to make sure we're stabilizing the fixed point.
-  DRAKE_DEMAND(is_approx_equal_abstol(state->get_value(),
-                                      desired_state->get_value(), 1e-3));
+  DRAKE_DEMAND(is_approx_equal_abstol(state.get_value(),
+                                      desired_state.get_value(), 1e-3));
 
   return 0;
 }

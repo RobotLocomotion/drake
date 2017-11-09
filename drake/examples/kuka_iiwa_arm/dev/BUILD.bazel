@@ -1,0 +1,8 @@
+# -*- python -*-
+
+# This file exists to make our directory into a Bazel package, so that we can
+# be sure that dev code always has "dev" in its package name.
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+add_lint_tests()

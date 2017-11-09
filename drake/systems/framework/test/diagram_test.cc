@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
-#include "drake/systems/analysis/test/stateless_system.h"
+#include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -30,6 +30,243 @@ class DoubleOnlySystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleOnlySystem);
   DoubleOnlySystem() = default;
 };
+
+/// A stateless system that can set an arbitrary periodic discrete update.
+template <class T>
+class EmptySystem : public LeafSystem<T> {
+ public:
+  ~EmptySystem() override {}
+
+  // Adds an arbitrary periodic discrete update.
+  void AddPeriodicDiscreteUpdate() {
+    const double default_period = 1.125;
+    const double default_offset = 2.25;
+    this->DeclarePeriodicDiscreteUpdate(default_period, default_offset);
+  }
+
+  // Adds a specific periodic discrete update.
+  void AddPeriodicDiscreteUpdate(double period, double offset) {
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
+  }
+};
+
+/// A recursive diagram of purely empty systems used for testing that diagram
+/// mechanics are working for periodic discrete update events.
+class EmptySystemDiagram : public Diagram<double> {
+ public:
+  // Enum for how many periodic discrete updates are performed at each level
+  // of the diagram.
+  enum UpdateType {
+    kTwoUpdatesPerLevel,
+    kOneUpdatePerLevelSys1,
+    kOneUpdatePerLevelSys2,
+    kOneUpdateAtLastLevelSys1,
+    kOneUpdateAtLastLevelSys2,
+    kTwoUpdatesAtLastLevel,
+  };
+
+  // Creates a diagram of "empty" systems with the specified recursion depth.
+  // A recursion depth of zero will create two empty systems only; Otherwise,
+  // 2*`recursion_depth` empty systems will be created.
+  EmptySystemDiagram(UpdateType num_periodic_discrete_updates,
+                     int recursion_depth,
+                     bool unique_updates) {
+    DRAKE_DEMAND(recursion_depth >= 0);
+
+    DiagramBuilder<double> builder;
+
+    // Add in two empty systems.
+    auto sys1 = builder.AddSystem<EmptySystem<double>>();
+    auto sys2 = builder.AddSystem<EmptySystem<double>>();
+
+    switch (num_periodic_discrete_updates) {
+      case kTwoUpdatesPerLevel:
+        if (unique_updates) {
+          sys1->AddPeriodicDiscreteUpdate();
+          sys2->AddPeriodicDiscreteUpdate();
+        } else {
+          sys1->AddPeriodicDiscreteUpdate(recursion_depth + 1,
+                                          recursion_depth * 3);
+          sys2->AddPeriodicDiscreteUpdate(recursion_depth + 3,
+                                          recursion_depth * 5);
+        }
+        break;
+
+      case kOneUpdatePerLevelSys1:
+        if (unique_updates) {
+          sys1->AddPeriodicDiscreteUpdate();
+        } else {
+          sys1->AddPeriodicDiscreteUpdate(recursion_depth * 7, recursion_depth);
+        }
+        break;
+
+      case kOneUpdatePerLevelSys2:
+        if (unique_updates) {
+          sys2->AddPeriodicDiscreteUpdate();
+        } else {
+          sys2->AddPeriodicDiscreteUpdate(recursion_depth,
+                                          recursion_depth * 11);
+        }
+        break;
+
+      case kOneUpdateAtLastLevelSys1:
+        if (recursion_depth == 0) {
+          if (unique_updates) {
+            sys1->AddPeriodicDiscreteUpdate();
+          } else {
+            sys1->AddPeriodicDiscreteUpdate(13, 17);
+          }
+        }
+        break;
+
+      case kOneUpdateAtLastLevelSys2:
+        if (recursion_depth == 0) {
+          if (unique_updates) {
+            sys2->AddPeriodicDiscreteUpdate();
+          } else {
+            sys2->AddPeriodicDiscreteUpdate(19, 23);
+          }
+        }
+        break;
+
+      case kTwoUpdatesAtLastLevel:
+        if (recursion_depth == 0) {
+          if (unique_updates) {
+            sys1->AddPeriodicDiscreteUpdate();
+            sys2->AddPeriodicDiscreteUpdate();
+          } else {
+            sys1->AddPeriodicDiscreteUpdate(29, 31);
+            sys2->AddPeriodicDiscreteUpdate(37, 43);
+          }
+        }
+        break;
+    }
+
+    // Now add a sub-StatelessDiagram with one less recursion depth (if the
+    // recursion depth is not zero).
+    if (recursion_depth > 0) {
+      builder.AddSystem<EmptySystemDiagram>(
+        num_periodic_discrete_updates,
+        recursion_depth - 1,
+        unique_updates);
+    }
+    builder.BuildInto(this);
+  }
+};
+
+template <typename T>
+void CheckPeriodAndOffset(const typename Event<T>::PeriodicAttribute& attr) {
+  EXPECT_EQ(attr.period_sec, 1.125);
+  EXPECT_EQ(attr.offset_sec, 2.25);
+}
+
+// Tests whether the diagram exhibits the correct behavior for
+// GetUniquePeriodicDiscreteUpdateAttribute().
+GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
+  // Check diagrams with no recursion.
+  optional<Event<double>::PeriodicAttribute> periodic_attr;
+  EmptySystemDiagram d_sys2upd_zero(
+      EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, true);
+  EmptySystemDiagram d_sys1upd_zero(
+      EmptySystemDiagram::kOneUpdatePerLevelSys2, 0, true);
+  EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0,
+      true);
+  ASSERT_TRUE(periodic_attr =
+      d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+  CheckPeriodAndOffset<double>(periodic_attr.value());
+  ASSERT_TRUE(periodic_attr =
+      d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+  CheckPeriodAndOffset<double>(periodic_attr.value());
+  ASSERT_TRUE(periodic_attr =
+      d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+  CheckPeriodAndOffset<double>(periodic_attr.value());
+
+  // Check systems with up to three levels of recursion.
+  for (int i = 1; i <= 3; ++i) {
+    // Create the systems.
+    EmptySystemDiagram d_sys1upd(
+        EmptySystemDiagram::kOneUpdatePerLevelSys1, i, true);
+    EmptySystemDiagram d_sys2upd(
+        EmptySystemDiagram::kOneUpdatePerLevelSys2, i, true);
+    EmptySystemDiagram d_bothupd(
+        EmptySystemDiagram::kTwoUpdatesPerLevel, i, true);
+    EmptySystemDiagram d_sys1_last(
+        EmptySystemDiagram::kOneUpdateAtLastLevelSys1, i, true);
+    EmptySystemDiagram d_sys2_last(
+        EmptySystemDiagram::kOneUpdateAtLastLevelSys2, i, true);
+    EmptySystemDiagram d_both_last(
+        EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, true);
+
+    // All of these should return "true". Check them.
+    ASSERT_TRUE(periodic_attr =
+        d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
+    CheckPeriodAndOffset<double>(periodic_attr.value());
+    ASSERT_TRUE(periodic_attr =
+        d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
+    CheckPeriodAndOffset<double>(periodic_attr.value());
+    ASSERT_TRUE(periodic_attr =
+        d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
+    CheckPeriodAndOffset<double>(periodic_attr.value());
+    ASSERT_TRUE(periodic_attr =
+        d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
+    CheckPeriodAndOffset<double>(periodic_attr.value());
+    ASSERT_TRUE(periodic_attr =
+        d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
+    CheckPeriodAndOffset<double>(periodic_attr.value());
+    ASSERT_TRUE(periodic_attr =
+        d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
+    CheckPeriodAndOffset<double>(periodic_attr.value());
+  }
+}
+
+// Tests whether the diagram exhibits the correct behavior for
+// GetUniquePeriodicDiscreteUpdateAttribute() with non-unique updates
+GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
+  // Check diagrams with no recursion.
+  Event<double>::PeriodicAttribute periodic_attr;
+  EmptySystemDiagram d_sys2upd_zero(
+      EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, false);
+  EmptySystemDiagram d_sys1upd_zero(
+      EmptySystemDiagram::kOneUpdatePerLevelSys2, 0, false);
+  EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0,
+      false);
+  EXPECT_TRUE(d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+  EXPECT_TRUE(d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+  EXPECT_FALSE(d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+
+  // Check systems with up to three levels of recursion.
+  for (int i = 1; i <= 3; ++i) {
+    // Create the systems.
+    EmptySystemDiagram d_sys1upd(
+        EmptySystemDiagram::kOneUpdatePerLevelSys1, i, false);
+    EmptySystemDiagram d_sys2upd(
+        EmptySystemDiagram::kOneUpdatePerLevelSys2, i, false);
+    EmptySystemDiagram d_bothupd(
+        EmptySystemDiagram::kTwoUpdatesPerLevel, i, false);
+    EmptySystemDiagram d_sys1_last(
+        EmptySystemDiagram::kOneUpdateAtLastLevelSys1, i, false);
+    EmptySystemDiagram d_sys2_last(
+        EmptySystemDiagram::kOneUpdateAtLastLevelSys2, i, false);
+    EmptySystemDiagram d_both_last(
+        EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, false);
+
+    // None of these should have a unique periodic event.
+    EXPECT_FALSE(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
+    EXPECT_EQ(d_sys1upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_FALSE(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
+    EXPECT_EQ(d_sys2upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_FALSE(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
+    EXPECT_EQ(d_bothupd.GetPeriodicEvents().size(), 2 * (i + 1));
+    EXPECT_FALSE(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
+    EXPECT_EQ(d_both_last.GetPeriodicEvents().size(), 2);
+
+    // All of these should have a unique periodic event.
+    EXPECT_TRUE(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
+    EXPECT_EQ(d_sys1_last.GetPeriodicEvents().size(), 1);
+    EXPECT_TRUE(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
+    EXPECT_EQ(d_sys2_last.GetPeriodicEvents().size(), 1);
+  }
+}
 
 /// ExampleDiagram has the following structure:
 /// adder0_: (input0_ + input1_) -> A
@@ -119,21 +356,19 @@ class DiagramTest : public ::testing::Test {
     input2_ = BasicVector<double>::Make({64, 128, 256});
 
     // Initialize the integrator states.
-    auto integrator0_xc = GetMutableContinuousState(integrator0());
-    ASSERT_TRUE(integrator0_xc != nullptr);
-    integrator0_xc->get_mutable_vector()->SetAtIndex(0, 3);
-    integrator0_xc->get_mutable_vector()->SetAtIndex(1, 9);
-    integrator0_xc->get_mutable_vector()->SetAtIndex(2, 27);
+    auto& integrator0_xc = GetMutableContinuousState(integrator0());
+    integrator0_xc.get_mutable_vector().SetAtIndex(0, 3);
+    integrator0_xc.get_mutable_vector().SetAtIndex(1, 9);
+    integrator0_xc.get_mutable_vector().SetAtIndex(2, 27);
 
-    auto integrator1_xc = GetMutableContinuousState(integrator1());
-    ASSERT_TRUE(integrator1_xc != nullptr);
-    integrator1_xc->get_mutable_vector()->SetAtIndex(0, 81);
-    integrator1_xc->get_mutable_vector()->SetAtIndex(1, 243);
-    integrator1_xc->get_mutable_vector()->SetAtIndex(2, 729);
+    auto& integrator1_xc = GetMutableContinuousState(integrator1());
+    integrator1_xc.get_mutable_vector().SetAtIndex(0, 81);
+    integrator1_xc.get_mutable_vector().SetAtIndex(1, 243);
+    integrator1_xc.get_mutable_vector().SetAtIndex(2, 729);
   }
 
   // Returns the continuous state of the given @p system.
-  ContinuousState<double>* GetMutableContinuousState(
+  ContinuousState<double>& GetMutableContinuousState(
       const System<double>* system) {
     return diagram_->GetMutableSubsystemState(*system, context_.get())
         .get_mutable_continuous_state();
@@ -285,11 +520,11 @@ TEST_F(DiagramTest, GetMutableSubsystemState) {
   State<double>& state_from_context = diagram_->GetMutableSubsystemState(
       *diagram_->integrator0(), context_.get());
   State<double>& state_from_state = diagram_->GetMutableSubsystemState(
-      *diagram_->integrator0(), context_->get_mutable_state());
+      *diagram_->integrator0(), &context_->get_mutable_state());
 
   EXPECT_EQ(&state_from_context, &state_from_state);
   const ContinuousState<double>& xc =
-      *state_from_context.get_continuous_state();
+      state_from_context.get_continuous_state();
   EXPECT_EQ(3, xc[0]);
   EXPECT_EQ(9, xc[1]);
   EXPECT_EQ(27, xc[2]);
@@ -532,22 +767,22 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     State<double>& integrator0_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator0(), &d0_context);
     integrator0_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 3);
+        .get_mutable_vector().SetAtIndex(0, 3);
 
     State<double>& integrator1_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator1(), &d0_context);
     integrator1_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 9);
+        .get_mutable_vector().SetAtIndex(0, 9);
 
     State<double>& integrator2_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator0(), &d1_context);
     integrator2_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 27);
+        .get_mutable_vector().SetAtIndex(0, 27);
 
     State<double>& integrator3_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator1(), &d1_context);
     integrator3_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 81);
+        .get_mutable_vector().SetAtIndex(0, 81);
   }
 
   const int kSize = 1;
@@ -952,7 +1187,7 @@ class SecondOrderStateSystem : public LeafSystem<double> {
 
   SecondOrderStateVector* x(Context<double>* context) const {
     return dynamic_cast<SecondOrderStateVector*>(
-        context->get_mutable_continuous_state_vector());
+        &context->get_mutable_continuous_state_vector());
   }
 
  protected:
@@ -1021,7 +1256,7 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
 
   BasicVector<double> qdot(2);
   const VectorBase<double>& v =
-      context->get_continuous_state()->get_generalized_velocity();
+      context->get_continuous_state().get_generalized_velocity();
   diagram.MapVelocityToQDot(*context, v, &qdot);
 
   // The order of these derivatives is defined to be the same as the order
@@ -1051,7 +1286,12 @@ const double kTestPublishPeriod = 19.0;
 
 class TestPublishingSystem : public LeafSystem<double> {
  public:
-  TestPublishingSystem() { this->DeclarePeriodicPublish(kTestPublishPeriod); }
+  TestPublishingSystem() {
+    this->DeclarePeriodicPublish(kTestPublishPeriod);
+
+    // Verify that no periodic discrete updates are registered.
+    EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
+  }
 
   ~TestPublishingSystem() override {}
 
@@ -1150,10 +1390,10 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Initialize the zero-order holds to different values than their input ports.
   Context<double>& ctx1 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold1(), context_.get());
-  ctx1.get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
+  ctx1.get_mutable_discrete_state(0).SetAtIndex(0, 1001.0);
   Context<double>& ctx2 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold2(), context_.get());
-  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0).SetAtIndex(0, 1002.0);
 
   // Allocate the discrete variables.
   std::unique_ptr<DiscreteValues<double>> updates =
@@ -1172,12 +1412,12 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(9.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
-  context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
+  context_->get_mutable_discrete_state().SetFrom(*updates);
+  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0).GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
 
   // Restore hold2 to its original value.
-  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0).SetAtIndex(0, 1002.0);
   // Set the time to 11.5, so both hold1 and hold2 update.
   context_->set_time(11.5);
   time = diagram_.CalcNextUpdateTime(*context_, events.get());
@@ -1188,9 +1428,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(12.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
-  context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(17.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
+  context_->get_mutable_discrete_state().SetFrom(*updates);
+  EXPECT_EQ(17.0, ctx1.get_discrete_state(0).GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
 }
 
 // Tests that a publish action is taken at 19 sec.
@@ -1214,6 +1454,10 @@ class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+
+    // Verify that no periodic discrete updates are registered.
+    Event<double>::PeriodicAttribute attr;
+    EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
   }
 
   ~SystemWithAbstractState() override {}
@@ -1230,7 +1474,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
-                            ->get_mutable_value(0)
+                            .get_mutable_value(0)
                             .GetMutableValue<double>();
     state_num = id_ + context.get_time();
   }
@@ -1322,7 +1566,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // Swaps in the new state, and the abstract data for sys0 should be updated.
-  context_->get_mutable_state()->CopyFrom(*x_buf);
+  context_->get_mutable_state().CopyFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
@@ -1341,7 +1585,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
   // Both sys0 and sys1's abstract data should be updated.
-  context_->get_mutable_state()->CopyFrom(*x_buf);
+  context_->get_mutable_state().CopyFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
@@ -1433,16 +1677,16 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
 
   big_diagram_->GetMutableSubsystemContext(*integrator0_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 1);
+      .SetAtIndex(0, 1);
   big_diagram_->GetMutableSubsystemContext(*integrator1_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 2);
+      .SetAtIndex(0, 2);
   big_diagram_->GetMutableSubsystemContext(*integrator2_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 3);
+      .SetAtIndex(0, 3);
   big_diagram_->GetMutableSubsystemContext(*integrator3_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 4);
+      .SetAtIndex(0, 4);
 
   // Checks states.
   EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator0_, *big_context_)
@@ -1481,40 +1725,40 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
-  State<double>* big_state = big_context_->get_mutable_state();
+  State<double>& big_state = big_context_->get_mutable_state();
   big_diagram_
-      ->GetMutableSubsystemState(*integrator0_, big_state)
+      ->GetMutableSubsystemState(*integrator0_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 1);
+      .get_mutable_vector()
+      .SetAtIndex(0, 1);
   big_diagram_
-      ->GetMutableSubsystemState(*integrator1_, big_state)
+      ->GetMutableSubsystemState(*integrator1_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 2);
+      .get_mutable_vector()
+      .SetAtIndex(0, 2);
   big_diagram_
-      ->GetMutableSubsystemState(*integrator2_, big_state)
+      ->GetMutableSubsystemState(*integrator2_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 3);
+      .get_mutable_vector()
+      .SetAtIndex(0, 3);
   big_diagram_
-      ->GetMutableSubsystemState(*integrator3_, big_state)
+      ->GetMutableSubsystemState(*integrator3_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 4);
+      .get_mutable_vector()
+      .SetAtIndex(0, 4);
 
   // Checks state.
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, big_state)
+                .get_continuous_state().get_vector()[0],
             1);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator1_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator1_, big_state)
+                .get_continuous_state().get_vector()[0],
             2);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator2_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator2_, big_state)
+                .get_continuous_state().get_vector()[0],
             3);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator3_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator3_, big_state)
+                .get_continuous_state().get_vector()[0],
             4);
 
   // Checks output.
@@ -1579,7 +1823,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
  private:
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override {
-    (*state->get_mutable_discrete_state())[0] = 0;
+    state->get_mutable_discrete_state()[0] = 0;
     state->get_mutable_abstract_state<std::string>(0) = "wow";
   }
 
@@ -1587,7 +1831,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const override {
-    (*discrete_state)[0] = context.get_discrete_state(0)->GetAtIndex(0) + 1;
+    (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
   }
 
   void DoCalcUnrestrictedUpdate(
@@ -1595,7 +1839,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
     int int_num =
-        static_cast<int>(context.get_discrete_state(0)->GetAtIndex(0));
+        static_cast<int>(context.get_discrete_state(0).GetAtIndex(0));
     state->get_mutable_abstract_state<std::string>(0) =
         "wow" + std::to_string(int_num);
   }
@@ -1657,13 +1901,13 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   // Does unrestricted update first.
   diagram->CalcUnrestrictedUpdate(
       *context, events->get_unrestricted_update_events(), tmp_state.get());
-  context->get_mutable_state()->CopyFrom(*tmp_state);
+  context->get_mutable_state().CopyFrom(*tmp_state);
 
   // Does discrete updates second.
   diagram->CalcDiscreteVariableUpdates(*context,
                                        events->get_discrete_update_events(),
                                        tmp_discrete_state.get());
-  context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
+  context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
   diagram->Publish(*context, events->get_publish_events());
@@ -1675,17 +1919,17 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
   // sys0 doesn't have any updates.
   auto& sys0_context = diagram->GetSubsystemContext(*sys0, *context);
-  EXPECT_EQ(sys0_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys0_context.get_discrete_state(0).GetAtIndex(0), 0);
   EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
 
   // sys1 should have an unrestricted update then a discrete update.
   auto& sys1_context = diagram->GetSubsystemContext(*sys1, *context);
-  EXPECT_EQ(sys1_context.get_discrete_state(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(sys1_context.get_discrete_state(0).GetAtIndex(0), 1);
   EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
 
   // sys2 should have a unrestricted update then a publish.
   auto& sys2_context = diagram->GetSubsystemContext(*sys2, *context);
-  EXPECT_EQ(sys2_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys2_context.get_discrete_state(0).GetAtIndex(0), 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }
 
@@ -1696,6 +1940,10 @@ class MyEventTestSystem : public LeafSystem<double> {
   MyEventTestSystem(const std::string& name, double p) {
     if (p > 0) {
       DeclarePeriodicPublish(p);
+
+      // Verify that no periodic discrete updates are registered.
+      Event<double>::PeriodicAttribute attr;
+      EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
     } else {
       DeclarePerStepEvent<PublishEvent<double>>(
           PublishEvent<double>(Event<double>::TriggerType::kPerStep));
@@ -1851,12 +2099,12 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   // Set sys1 context.
   diagram->GetMutableSubsystemContext(*sys1, context.get())
       .get_mutable_continuous_state_vector()
-      ->SetFromVector(Eigen::Vector2d(5.0, 7.0));
+      .SetFromVector(Eigen::Vector2d(5.0, 7.0));
 
   // Set sys2 context.
   diagram->GetMutableSubsystemContext(*sys2, context.get())
       .get_mutable_continuous_state_vector()
-      ->SetFromVector(Eigen::Vector2d(11.0, 12.0));
+      .SetFromVector(Eigen::Vector2d(11.0, 12.0));
 
   Eigen::VectorXd value;
   // Check system 1's x0 constraint.
@@ -1942,10 +2190,10 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
 
   // Get pointers to the parameters.
   auto params1 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
-      diagram->GetMutableSubsystemContext(*pendulum1, context.get())
+      &diagram->GetMutableSubsystemContext(*pendulum1, context.get())
           .get_mutable_numeric_parameter(0));
   auto params2 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
-      diagram->GetMutableSubsystemContext(*pendulum2, context.get())
+      &diagram->GetMutableSubsystemContext(*pendulum2, context.get())
           .get_mutable_numeric_parameter(0));
 
   const double original_damping = params1->damping();
@@ -1964,6 +2212,177 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
   diagram->SetDefaultParameters(*context, &context->get_mutable_parameters());
   // Check that the original value is restored.
   EXPECT_EQ(params2->damping(), original_damping);
+}
+
+// Note: this class is duplicated from leaf_system_test.
+class RandomContextTestSystem : public LeafSystem<double> {
+ public:
+  RandomContextTestSystem() {
+    this->DeclareContinuousState(
+        BasicVector<double>(Eigen::Vector2d(-1.0, -2.0)));
+    this->DeclareNumericParameter(
+        BasicVector<double>(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  }
+
+  void SetRandomState(const Context<double>& context, State<double>* state,
+                      RandomGenerator* generator) const override {
+    std::normal_distribution<double> normal;
+    for (int i = 0; i < context.get_continuous_state_vector().size(); i++) {
+      state->get_mutable_continuous_state().get_mutable_vector().SetAtIndex(
+          i, normal(*generator));
+    }
+  }
+  void SetRandomParameters(const Context<double>& context,
+                           Parameters<double>* params,
+                           RandomGenerator* generator) const override {
+    std::uniform_real_distribution<double> uniform;
+    for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
+      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
+                                                          uniform(*generator));
+    }
+  }
+};
+
+GTEST_TEST(RandomContextTest, SetRandomTest) {
+  DiagramBuilder<double> builder;
+
+  builder.AddSystem<RandomContextTestSystem>();
+  builder.AddSystem<RandomContextTestSystem>();
+
+  const auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+
+  // Back-up the numeric context values.
+  Eigen::Vector4d state = context->get_continuous_state_vector().CopyToVector();
+  Eigen::Vector3d params0 = context->get_numeric_parameter(0).CopyToVector();
+  Eigen::Vector3d params1 = context->get_numeric_parameter(1).CopyToVector();
+
+  // Should return the (same) original values.
+  diagram->SetDefaultContext(context.get());
+  EXPECT_TRUE((state.array() ==
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE((params0.array() ==
+               context->get_numeric_parameter(0).get_value().array())
+                  .all());
+  EXPECT_TRUE((params1.array() ==
+               context->get_numeric_parameter(1).get_value().array())
+                  .all());
+
+  RandomGenerator generator;
+
+  // Should return different values.
+  diagram->SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE((state.array() !=
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE((params0.array() !=
+               context->get_numeric_parameter(0).get_value().array())
+                  .all());
+  EXPECT_TRUE((params1.array() !=
+               context->get_numeric_parameter(1).get_value().array())
+                  .all());
+
+  // Update backup.
+  state = context->get_continuous_state_vector().CopyToVector();
+  params0 = context->get_numeric_parameter(0).CopyToVector();
+  params1 = context->get_numeric_parameter(1).CopyToVector();
+
+  // Should return different values (again).
+  diagram->SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE((state.array() !=
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE((params0.array() !=
+               context->get_numeric_parameter(0).get_value().array())
+                  .all());
+  EXPECT_TRUE((params1.array() !=
+               context->get_numeric_parameter(1).get_value().array())
+                  .all());
+}
+
+// Tests initialization works properly for all subsystems.
+GTEST_TEST(InitializationTest, InitializationTest) {
+  // Note: this class is duplicated in leaf_system_test.
+  class InitializationTestSystem : public LeafSystem<double> {
+   public:
+    InitializationTestSystem() {
+      PublishEvent<double> pub_event(
+          Event<double>::TriggerType::kInitialization,
+          std::bind(&InitializationTestSystem::InitPublish, this,
+                    std::placeholders::_1, std::placeholders::_2));
+      DeclareInitializationEvent(pub_event);
+
+      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
+          Event<double>::TriggerType::kInitialization));
+      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
+          Event<double>::TriggerType::kInitialization));
+    }
+
+    bool get_pub_init() const { return pub_init_; }
+    bool get_dis_update_init() const { return dis_update_init_; }
+    bool get_unres_update_init() const { return unres_update_init_; }
+
+   private:
+    void InitPublish(const Context<double>&,
+                     const PublishEvent<double>& event) const {
+      EXPECT_EQ(event.get_trigger_type(),
+                Event<double>::TriggerType::kInitialization);
+      pub_init_ = true;
+    }
+
+    void DoCalcDiscreteVariableUpdates(
+        const Context<double>&,
+        const std::vector<const DiscreteUpdateEvent<double>*>& events,
+        DiscreteValues<double>*) const final {
+      EXPECT_EQ(events.size(), 1);
+      EXPECT_EQ(events.front()->get_trigger_type(),
+                Event<double>::TriggerType::kInitialization);
+      dis_update_init_ = true;
+    }
+
+    void DoCalcUnrestrictedUpdate(
+        const Context<double>&,
+        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+        State<double>*) const final {
+      EXPECT_EQ(events.size(), 1);
+      EXPECT_EQ(events.front()->get_trigger_type(),
+                Event<double>::TriggerType::kInitialization);
+      unres_update_init_ = true;
+    }
+
+    mutable bool pub_init_{false};
+    mutable bool dis_update_init_{false};
+    mutable bool unres_update_init_{false};
+  };
+
+  DiagramBuilder<double> builder;
+
+  auto sys0 = builder.AddSystem<InitializationTestSystem>();
+  auto sys1 = builder.AddSystem<InitializationTestSystem>();
+
+  auto dut = builder.Build();
+
+  auto context = dut->CreateDefaultContext();
+  auto discrete_updates = dut->AllocateDiscreteVariables();
+  auto state = context->CloneState();
+  auto init_events = dut->AllocateCompositeEventCollection();
+  dut->GetInitializationEvents(*context, init_events.get());
+
+  dut->Publish(*context, init_events->get_publish_events());
+  dut->CalcDiscreteVariableUpdates(*context,
+                                   init_events->get_discrete_update_events(),
+                                   discrete_updates.get());
+  dut->CalcUnrestrictedUpdate(
+      *context, init_events->get_unrestricted_update_events(), state.get());
+
+  EXPECT_TRUE(sys0->get_pub_init());
+  EXPECT_TRUE(sys0->get_dis_update_init());
+  EXPECT_TRUE(sys0->get_unres_update_init());
+  EXPECT_TRUE(sys1->get_pub_init());
+  EXPECT_TRUE(sys1->get_dis_update_init());
+  EXPECT_TRUE(sys1->get_unres_update_init());
 }
 
 // TODO(siyuan) add direct tests for EventCollection

@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -95,9 +95,9 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
 
 // Tests that PassThrough allocates no state variables in the context_.
 TEST_P(PassThroughTest, PassThroughIsStateless) {
-  EXPECT_EQ(0, context_->get_continuous_state()->size());
-  EXPECT_EQ(0, context_->get_abstract_state()->size());
-  EXPECT_EQ(0, context_->get_discrete_state()->num_groups());
+  EXPECT_EQ(0, context_->get_continuous_state().size());
+  EXPECT_EQ(0, context_->get_abstract_state().size());
+  EXPECT_EQ(0, context_->get_discrete_state().num_groups());
 }
 
 // Tests that PassThrough is direct feedthrough.

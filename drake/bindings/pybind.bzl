@@ -26,7 +26,7 @@ def drake_pybind_cc_binary(name, srcs = [], copts = [], **kwargs):
     drake_cc_binary(
         name = name,
         # This is how you tell Bazel to link in a shared library.
-        srcs = srcs + ["//drake:libdrake.so"],
+        srcs = srcs + ["//tools/install/libdrake:libdrake.so"],
         # These copts are per pybind11 deficiencies.
         copts = [
             "-Wno-#warnings",
@@ -41,8 +41,11 @@ def drake_pybind_cc_binary(name, srcs = [], copts = [], **kwargs):
             # Even though "libdrake.so" appears in srcs above, we have to list
             # :drake_shared_library here in order to get its headers onto the
             # include path, and its prerequisite *.so's onto LD_LIBRARY_PATH.
-            "//drake:drake_shared_library",
+            "//tools/install/libdrake:drake_shared_library",
             "@pybind11",
+            # TODO(jwnimmer-tri) We should be getting stx header path from
+            # :drake_shared_library, but that isn't working yet.
+            "@stx",
         ],
         **kwargs
     )

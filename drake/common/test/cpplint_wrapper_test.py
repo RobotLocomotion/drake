@@ -8,18 +8,27 @@ import subprocess
 import sys
 import unittest
 
+# Set on command-line to the location of cpplint_wrapper.
+_cpplint_wrapper_exe = None
+
+# Set on command-line to the location of a valid header file.
+_valid_header = None
+
 
 class TestStringMethods(unittest.TestCase):
 
     def get_valid_header_filename(self):
         """This header should always exist, and pass cpplint."""
-        return "drake/common/eigen_types.h"
+        self.assertTrue(os.path.exists(_valid_header))
+        return _valid_header
 
     def run_and_expect(self, args, expected_exitcode, expected_regexps=None):
         try:
-            cpplint_wrapper = "drake/common/cpplint_wrapper"
+            self.assertTrue(_cpplint_wrapper_exe is not None)
+            self.assertTrue(
+                os.path.exists(_cpplint_wrapper_exe), _cpplint_wrapper_exe)
             output = subprocess.check_output(
-                [sys.executable, cpplint_wrapper] + args,
+                [sys.executable, _cpplint_wrapper_exe] + args,
                 stderr=subprocess.STDOUT)
             returncode = 0
         except subprocess.CalledProcessError as e:
@@ -53,7 +62,7 @@ class TestStringMethods(unittest.TestCase):
     def test_true_positive(self):
         # Test that the header is clean by default.
         filename = (
-            "external/google_styleguide/cpplint/cpplint_test_header.h")
+            "external/styleguide/cpplint/cpplint_test_header.h")
         self.run_and_expect(
             [filename],
             0,
@@ -69,8 +78,9 @@ class TestStringMethods(unittest.TestCase):
              r"whitespace/line_length"])
 
     def test_ignored_extension(self):
+        some_py_filename = sys.argv[0]
         self.run_and_expect(
-            ["drake/common/test/cpplint_wrapper_test.py"],
+            [some_py_filename],
             0,
             [r"Ignoring .*[/\\]cpplint_wrapper_test.py",
              r"TOTAL 0 files"])
@@ -99,4 +109,6 @@ class TestStringMethods(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    _cpplint_wrapper_exe = sys.argv.pop(1)
+    _valid_header = sys.argv.pop(1)
     unittest.main()

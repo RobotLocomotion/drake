@@ -119,12 +119,13 @@ int main() {
 
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
-  auto context = simulator->get_mutable_context();
+  Context<double>& context = simulator->get_mutable_context();
   simulator->reset_integrator<RungeKutta2Integrator<double>>(*diagram,
                                                              FLAGS_timestep,
-                                                             context);
+                                                             &context);
   // Set initial state.
-  auto& plant_context = diagram->GetMutableSubsystemContext(plant, context);
+  Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, &context);
   // 6 1-dof joints * 2 = 6 * (x, ẋ) * 2
   const int kStateSize = 24;
   DRAKE_DEMAND(plant_context.get_continuous_state_vector().size() ==

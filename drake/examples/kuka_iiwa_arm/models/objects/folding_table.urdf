@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<robot name="folding_table">
+  <link name="table_surface_center"/>
+  <link name="table_top">
+    <inertial>
+      <mass value="1.0" />
+      <inertia ixx="0.0225" ixy="0" ixz="0" iyy="0.0225" iyz="0" izz="0.0450" />
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.48 0.37 0.015"/>
+      </geometry>
+      <material name="DarkBrown">
+        <color rgba="0.2 0.165 0.110 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.48 0.37 0.015"/>
+      </geometry>
+    </collision>
+   </link>
+   <joint name="table_top_joint" type="fixed">
+     <origin xyz="0 0 -0.0075"/>
+     <parent link="table_surface_center"/>
+     <child link="table_top"/>
+   </joint>
+</robot>

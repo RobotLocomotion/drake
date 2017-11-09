@@ -4,7 +4,7 @@
 #include <map>
 #include <utility>
 
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"

@@ -3,7 +3,7 @@
 #include <string>
 #include <utility>
 
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"

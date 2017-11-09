@@ -41,7 +41,7 @@ class DrakeMockLcm : public DrakeLcmInterface {
   void StopReceiveThread() override;
 
   void Publish(const std::string& channel, const void* data,
-               int data_size) override;
+               int data_size, double time_sec = 0) override;
 
   /**
    * Obtains the most recently "published" message on a particular channel.
