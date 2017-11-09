@@ -1,4 +1,4 @@
-#include "drake/examples/double_pendulum/frame_cache.h"
+#include "drake/multibody/parsing/sdf/frame_cache.h"
 
 #include <algorithm>
 
