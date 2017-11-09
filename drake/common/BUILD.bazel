@@ -378,6 +378,34 @@ install(
 
 drake_cc_googletest(
     name = "autodiffxd_test",
+    # The following `autodiffxd_*_test.cc` files were in a single
+    # `autodiffxd_test.cc`. We found that it takes more than 150 sec to build
+    # this test. So we split it into multiple .cc files. We observed about
+    # 8x speed-up.
+    srcs = [
+        "test/autodiffxd_abs2_test.cc",
+        "test/autodiffxd_abs_test.cc",
+        "test/autodiffxd_acos_test.cc",
+        "test/autodiffxd_addition_test.cc",
+        "test/autodiffxd_asin_test.cc",
+        "test/autodiffxd_atan2_test.cc",
+        "test/autodiffxd_cos_test.cc",
+        "test/autodiffxd_cosh_test.cc",
+        "test/autodiffxd_division_test.cc",
+        "test/autodiffxd_exp_test.cc",
+        "test/autodiffxd_log_test.cc",
+        "test/autodiffxd_max_test.cc",
+        "test/autodiffxd_min_test.cc",
+        "test/autodiffxd_multiplication_test.cc",
+        "test/autodiffxd_pow_test.cc",
+        "test/autodiffxd_sin_test.cc",
+        "test/autodiffxd_sinh_test.cc",
+        "test/autodiffxd_sqrt_test.cc",
+        "test/autodiffxd_subtraction_test.cc",
+        "test/autodiffxd_tan_test.cc",
+        "test/autodiffxd_tanh_test.cc",
+        "test/autodiffxd_test.h",
+    ],
     deps = [
         ":autodiff",
     ],
