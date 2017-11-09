@@ -222,7 +222,7 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
   pick_and_place::PlannerConfiguration planner_configuration_;
   int initial_table_index_;
   int final_table_index_;
-  double dt_{1e-3};
+  double dt_{3e-4};
 };
 
 TEST_P(SingleMoveTests, FinalObjectStateTest) {
