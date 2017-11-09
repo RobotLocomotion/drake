@@ -12,11 +12,15 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+// The "Iiwa" and "Wsg" values below are the number of joints in
+// "iiwa14_polytope_collision.urdf" and "schunk_wsg_50_ball_contact.sdf"
+// respectively. The "Object" values are the number of positions and velocities
+// for a Quaternion floating-base joint.
 constexpr int kNumIiwaPositions = 7;
-constexpr int kNumWsgPositions = 5;
+constexpr int kNumWsgPositions = 2;
 constexpr int kNumObjectPositions = 7;
 constexpr int kNumIiwaVelocities = 7;
-constexpr int kNumWsgVelocities = 5;
+constexpr int kNumWsgVelocities = 2;
 constexpr int kNumObjectVelocities = 6;
 
 class IiwaAndWsgPlantWithStateEstimatorTest : public ::testing::Test {
