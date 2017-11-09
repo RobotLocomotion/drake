@@ -13,9 +13,9 @@
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/side.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/robotInterfaces/Side.h"
 
 namespace drake {
 namespace systems {
