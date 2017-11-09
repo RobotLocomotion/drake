@@ -74,14 +74,6 @@
       "Hints": ["@prefix@/lib/cmake/tinyobjloader"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "VTK": {
-      "Version": "8.0.1",
-      "Hints": [
-        "@prefix@/lib/cmake/vtk-8.0",
-        "/usr/local/opt/vtk@8.0/lib/cmake/vtk-8.0"
-      ],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "yaml-cpp": {
       "Version": "0.5.5",
       "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
@@ -105,15 +97,6 @@
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
-        "vtkCommonCore",
-        "vtkCommonDataModel",
-        "vtkCommonTransforms",
-        "vtkFiltersGeneral",
-        "vtkFiltersSources",
-        "vtkIOGeometry",
-        "vtkIOImage",
-        "vtkRenderingCore",
-        "vtkRenderingOpenGL2",
         "ZLIB:ZLIB"
       ],
       "Requires": [
