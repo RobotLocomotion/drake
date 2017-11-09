@@ -575,16 +575,28 @@ drake_cc_library(
 
 drake_cc_library(
     name = "scs_solver",
-    srcs = [
-        "no_scs.cc",
-        "scs_solver_common.cc",
-    ],
+    srcs = select({
+        "//tools:no_scs": [
+            "no_scs.cc",
+            "scs_solver_common.cc",
+        ],
+        "//conditions:default": [
+            "scs_solver.cc",
+            "scs_solver_common.cc",
+        ],
+    }),
     hdrs = ["scs_solver.h"],
-    deps = [
-        ":mathematical_program_api",
-        "//drake/common:essential",
-        "@scs//:scsdir",
-    ],
+    deps = select({
+        "//conditions:default": [
+            ":mathematical_program_api",
+            "//drake/common:essential",
+            "//drake/math:eigen_sparse_triplet",
+            "@scs//:scsdir",
+        ],
+        "//tools:no_scs": [
+            ":mathematical_program_api",
+        ],
+    }),
 )
 
 # This library is empty unless Gurobi is available.
@@ -940,6 +952,19 @@ drake_cc_googletest(
         ":mathematical_program",
         ":rotation_constraint",
         "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scs_solver_test",
+    srcs = [
+        "test/scs_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
     ],
 )
 
