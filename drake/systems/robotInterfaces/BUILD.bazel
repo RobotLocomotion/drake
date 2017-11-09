@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools/skylark:drake_cc.bzl",
+    "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
