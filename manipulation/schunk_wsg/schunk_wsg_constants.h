@@ -16,9 +16,9 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-constexpr int kSchunkWsgNumActuators = 1;
-constexpr int kSchunkWsgNumPositions = 5;
-constexpr int kSchunkWsgNumVelocities = 5;
+constexpr int kSchunkWsgNumActuators = 2;
+constexpr int kSchunkWsgNumPositions = 2;
+constexpr int kSchunkWsgNumVelocities = 2;
 
 constexpr int kSchunkWsgPositionIndex = 0;
 constexpr int kSchunkWsgVelocityIndex =

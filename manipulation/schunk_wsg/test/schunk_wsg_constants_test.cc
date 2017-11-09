@@ -34,15 +34,6 @@ GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
 
   EXPECT_EQ(position_index, kSchunkWsgPositionIndex);
   EXPECT_EQ(velocity_index, kSchunkWsgVelocityIndex);
-
-  MatrixX<double> feedback_matrix = MatrixX<double>::Zero(
-      2 * wsg.get_num_actuators(), 2 * wsg.get_num_positions());
-  feedback_matrix(0, position_index) = 1.;
-  feedback_matrix(1, velocity_index) = 1.;
-
-  EXPECT_TRUE(drake::CompareMatrices(
-      feedback_matrix, GetSchunkWsgFeedbackSelector<double>(), 1e-15,
-      drake::MatrixCompareType::absolute));
 }
 
 }  // namespace
