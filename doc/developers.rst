@@ -125,7 +125,7 @@ green ``+###`` number as reported by github), and *must not* include more than
   - This rule may be overridden by agreement of at least two platform reviewers
     (listed below).
 
-The utility ``drake/tools/prstat`` will report the total added or changed
+The utility ``tools/prstat`` will report the total added or changed
 lines, excluding files that are easily identified to meet the exemptions above.
 
 We use https://reviewable.io for code reviews. You can sign in for free with
