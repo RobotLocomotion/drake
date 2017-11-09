@@ -25,7 +25,7 @@ GTEST_TEST(LinearProgramTest, Test0) {
     SolutionResult sol_result = solver.Solve(prog);
     EXPECT_EQ(sol_result, SolutionResult::kUnbounded);
   }
-
+/*
   // Now add the constraint x(1) <= 1. The problem should still be unbounded.
   prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 1, x(1));
   if (solver.available()) {
@@ -62,9 +62,27 @@ GTEST_TEST(LinearProgramTest, Test0) {
     EXPECT_NEAR(prog.GetOptimalCost(), 11, tol);
     const Eigen::Vector2d x_expected(2, 0);
     EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, tol, MatrixCompareType::absolute));
-  }
+  }*/
 }
 
+GTEST_TEST(LinearProgramTest, Test1) {
+  // Test a linear program with only equality constraints
+  // min x(0) + 2 * x(1)
+  // s.t x(0) + x(1) = 1
+  //     2x(0) + x(1) = 2
+  //     x(0) - 2x(1) = 3
+  // This problem is infeasible.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>("x");
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1 && 2 * x(0) + x(1) == 2);
+  prog.AddLinearEqualityConstraint(x(0) - 2 * x(1) == 3);
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    SolutionResult sol_result = scs_solver.Solve(prog);
+    EXPECT_EQ(sol_result, SolutionResult::kInfeasibleConstraints);
+  }
+}
+/*
 TEST_P(LinearProgramTest, TestLP) {
   ScsSolver solver;
   prob()->RunProblem(&solver);
@@ -74,7 +92,7 @@ INSTANTIATE_TEST_CASE_P(
     SCSTest, LinearProgramTest,
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
-                       ::testing::ValuesIn(linear_problems())));
+                       ::testing::ValuesIn(linear_problems())));*/
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

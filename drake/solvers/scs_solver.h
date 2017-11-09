@@ -23,6 +23,13 @@ class ScsSolver : public MathematicalProgramSolverInterface {
 
   /// @return same as MathematicalProgramSolverInterface::solver_id()
   static SolverId id();
+
+  // If the user want the solver to print out debug message, then set this to
+  // true; otherwise set it to false. The default is false.
+  void SetVerbose(bool verbose) {verbose_ = verbose;}
+
+ private:
+  bool verbose_ = false;
 };
 
 }  // namespace solvers

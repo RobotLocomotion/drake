@@ -2,8 +2,8 @@
 
 #include <Eigen/Sparse>
 
-#include "linsys/amatrix.h"
 #include "scs.h"
+#include "linsys/amatrix.h"
 
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
@@ -108,6 +108,8 @@ std::string Scs_return_info(scs_int scs_status) {
       return "SCS solved";
     case SCS_SOLVED_INACCURATE:
       return "SCS solved inaccurate";
+    default :
+      throw std::runtime_error("Unknown scs status.");
   }
 }
 
@@ -120,6 +122,8 @@ void ExtractSolution(MathematicalProgram* prog,
   prog->SetDecisionVariableValues(
       Eigen::Map<Eigen::VectorXd>(scs_sol_vars.x, prog->num_vars()));
 }
+
+bool ScsSolver::available() const {return true;}
 
 SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // SCS solves the problem in this form
@@ -153,8 +157,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   std::vector<Eigen::Triplet<double>> A_triplets;
 
   // cone stores all the cones K in the problem.
-  SCS_CONE cone;
-  cone.f = 0;
+  SCS_CONE* cone = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
+  /*cone.f = 0;
   cone.l = 0;
   cone.q = nullptr;
   cone.qsize = 0;
@@ -163,7 +167,7 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   cone.ep = 0;
   cone.ed = 0;
   cone.p = nullptr;
-  cone.psize = 0;
+  cone.psize = 0;*/
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
   Eigen::VectorXd b(0);
@@ -175,36 +179,53 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   ParseLinearCost(prog, &c, &cost_constant);
 
   // Parse linear equality constraint
-  ParseLinearEqualityConstraint(prog, &A_triplets, &b, &A_row_count, &cone);
+  ParseLinearEqualityConstraint(prog, &A_triplets, &b, &A_row_count, cone);
 
   // Parse bounding box constraint
-  ParseBoundingBoxConstraint(prog, &A_triplets, &b, &A_row_count, &cone);
+  ParseBoundingBoxConstraint(prog, &A_triplets, &b, &A_row_count, cone);
 
-  SCS_PROBLEM_DATA scs_problem_data;
-  scs_problem_data.m = A_row_count;
-  scs_problem_data.n = num_vars;
-  Eigen::SparseMatrix<double> A(scs_problem_data.m, scs_problem_data.n);
+  SCS_PROBLEM_DATA* scs_problem_data = static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
+  scs_problem_data->m = A_row_count;
+  scs_problem_data->n = num_vars;
+  Eigen::SparseMatrix<double> A(scs_problem_data->m, scs_problem_data->n);
+  std::cout << "rows: " << scs_problem_data->m << " cols: " << scs_problem_data->n << std::endl;
+  for (const auto& triplet : A_triplets) {
+    std::cout << "(" << triplet.row() << "," << triplet.col() <<"):" << triplet.value() << std::endl;
+  }
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
-  scs_problem_data.A->x = A.valuePtr();
-  scs_problem_data.A->i = A.innerIndexPtr();
-  scs_problem_data.A->p = A.outerIndexPtr();
-  scs_problem_data.A->m = scs_problem_data.m;
-  scs_problem_data.A->n = scs_problem_data.n;
-  scs_problem_data.b = b.data();
+  scs_problem_data->A = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
+  scs_problem_data->A->x = A.valuePtr();
+  scs_problem_data->A->i = A.innerIndexPtr();
+  scs_problem_data->A->p = A.outerIndexPtr();
+  scs_problem_data->A->m = scs_problem_data->m;
+  scs_problem_data->A->n = scs_problem_data->n;
+  scs_problem_data->b = b.data();
+  scs_problem_data->c = c.data();
+  // Set the parameters to default values.
+  scs_problem_data->stgs = static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
+  scs_problem_data->stgs->alpha = ALPHA;
+  scs_problem_data->stgs->cg_rate = CG_RATE;
+  scs_problem_data->stgs->eps = EPS;
+  scs_problem_data->stgs->max_iters = MAX_ITERS;
+  scs_problem_data->stgs->normalize = NORMALIZE;
+  scs_problem_data->stgs->rho_x = RHO_X;
+  scs_problem_data->stgs->scale = SCALE;
+  scs_problem_data->stgs->verbose = verbose_ ? VERBOSE : 0;
+  scs_problem_data->stgs->warm_start = WARM_START;
 
-  SCS_INFO scs_info;
-  SCS_WORK* scs_work = scs_init(&scs_problem_data, &cone, &scs_info);
+  SCS_INFO scs_info{0};
+  SCS_WORK* scs_work = scs_init(scs_problem_data, cone, &scs_info);
 
-  SCS_SOL_VARS scs_sol;
+  SCS_SOL_VARS* scs_sol = static_cast<SCS_SOL_VARS*>(scs_calloc(1, sizeof(SCS_SOL_VARS)));
 
   scs_int scs_status =
-      scs_solve(scs_work, &scs_problem_data, &cone, &scs_sol, &scs_info);
+      scs_solve(scs_work, scs_problem_data, cone, scs_sol, &scs_info);
 
   SolutionResult sol_result{SolutionResult::kUnknownError};
   if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
     sol_result = SolutionResult::kSolutionFound;
-    ExtractSolution(&prog, scs_sol);
+    ExtractSolution(&prog, *scs_sol);
   } else if (scs_status == SCS_UNBOUNDED ||
              scs_status == SCS_UNBOUNDED_INACCURATE) {
     sol_result = SolutionResult::kUnbounded;
@@ -219,6 +240,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
 
   // Free allocated memory
   scs_finish(scs_work);
+  freeData(scs_problem_data, cone);
+  freeSol(scs_sol);
   return sol_result;
 }
 }  // namespace solvers
