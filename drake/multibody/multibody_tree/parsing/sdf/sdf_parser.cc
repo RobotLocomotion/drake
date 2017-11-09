@@ -40,7 +40,8 @@ Isometry3<double> ParsePose(sdf::ElementPtr sdf_pose_element) {
 
 // Parses inertial information (mass, COM) from the given SDF
 // element and updates the given body accordingly.
-void ParseInertial(sdf::ElementPtr sdf_inertial_element, SDFLink* link) {
+void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
+                              SDFLink* link) {
   DRAKE_DEMAND(sdf_inertial_element != nullptr);
   DRAKE_DEMAND(sdf_inertial_element->GetName() == "inertial");
   DRAKE_DEMAND(link != nullptr);
@@ -86,12 +87,10 @@ void ParseInertial(sdf::ElementPtr sdf_inertial_element, SDFLink* link) {
 // given SDF element and adds a RigidBody instance to the given tree as part
 // of the given model instance. The frame cache is updated with the body frame's
 // pose (B) in its model frame (D).
-void ParseLink(const sdf::ElementPtr sdf_link_element,
-               SDFSpec* sdf_spec,
-               SDFModel* sdf_model) {
+void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
+                          SDFModel* sdf_model) {
   DRAKE_DEMAND(sdf_link_element != nullptr);
   DRAKE_DEMAND(sdf_link_element->GetName() == "link");
-  DRAKE_DEMAND(sdf_spec != nullptr);
   DRAKE_DEMAND(sdf_model != nullptr);
 
   const auto link_name = sdf_link_element->Get<std::string>("name");
@@ -103,7 +102,10 @@ void ParseLink(const sdf::ElementPtr sdf_link_element,
     sdf::ElementPtr sdf_pose_element = sdf_link_element->GetElement("pose");
     X_DL = ParsePose(sdf_pose_element);
   }
-  sdf_model->SetLinkPoseInModelFrame(sdf_link.name(), X_DL);
+  sdf_link.set_pose_in_model(X_DL);
+  // "Remember" the pose of this new link in the model frame D.
+  GetModelFrameCache(sdf_model->name()).Update(
+      sdf_model->name(), link_name, X_DL);
 
   if (sdf_link_element->HasElement("inertial")) {
     sdf::ElementPtr sdf_inertial_element =
@@ -276,15 +278,13 @@ void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   // Create a new SDF model.
   const auto model_name = sdf_model_element->Get<std::string>("name");
   SDFModel& sdf_model = spec->AddModel(model_name);
-
-  // Define a model instance and a pose tree rooted at the model's frame (D).
-  // Create cache here or in the Spec class?
-  //FrameCache<double> frame_cache(model_name);
+  model_name_to_frame_cache_map_.emplace(
+      model_name, std::make_unique<FrameCache<double>>(model_name));
 
   if (sdf_model_element->HasElement("link")) {
     sdf::ElementPtr sdf_link_element = sdf_model_element->GetElement("link");
     while (sdf_link_element != nullptr) {
-      ParseLink(sdf_link_element, spec, &sdf_model);
+      ParseLink(sdf_link_element, &sdf_model);
       sdf_link_element = sdf_link_element->GetNextElement("link");
     }
   }

@@ -24,7 +24,7 @@ class SDFModel {
   /// Per SDF specification, `model_name` must not match any other model name in
   /// the world (<world>).
   explicit SDFModel(const std::string& model_name) :
-      name_(model_name), frame_cache_(model_name) {}
+      name_(model_name) {}
 
   /// Returns the name of `this` link.
   const std::string& name() const { return name_; }
@@ -54,13 +54,6 @@ class SDFModel {
     return links_[it->second];
   }
 
-  void SetLinkPoseInModelFrame(const std::string& link_name,
-                               const Isometry3<double>& X_DL) {
-    SDFLink& link = GetMutableLinkByName(link_name);
-    link.set_pose_in_model(X_DL);
-    frame_cache_.Update(this->name(), link_name, X_DL);
-  }
-
  private:
   SDFLink& GetMutableLinkByName(const std::string& link_name) {
     const auto it = links_name_to_index_map_.find(link_name);
@@ -80,9 +73,6 @@ class SDFModel {
 
   // Vector of links in the model.
   std::vector<SDFLink> links_;
-
-  // Cached poses. Used to compute relative poses between frames during parsing.
-  FrameCache<double> frame_cache_;
 };
 
 }  // namespace parsing
