@@ -36,18 +36,16 @@ class SDFParser {
   // <inertial> element and adds them to `link`.
   void ParseInertial(sdf::ElementPtr sdf_inertial_element, SDFLink* link);
 
-  // Helper to return the FrameCache for a particular model being parsed by
-  // name.
-  FrameCache<double>& GetModelFrameCache(const std::string& model_name) {
-    auto it = model_name_to_frame_cache_map_.find(model_name);
-    DRAKE_DEMAND(it != model_name_to_frame_cache_map_.end());
-    return *it->second;
-  }
+  // Parses a joint from the given SDF element and adds a SDFJoint to
+  // `sdf_model`.
+  // The model's frame cache is updated to "remember" the joint's frame pose.
+  void ParseJoint(sdf::ElementPtr sdf_joint_element, SDFModel* sdf_model);
 
-  // So far we have a cache object per model. Probably better having a single
-  // cache per root <world> and all models get added to it.
-  std::unordered_map<std::string, std::unique_ptr<FrameCache<double>>>
-      model_name_to_frame_cache_map_;
+  // Parses joints by their particular joint type filling in addition fields
+  // to fully specify a joint in `sdf_joint`.
+  void ParseJointType(const sdf::ElementPtr sdf_joint_element,
+                      const SDFModel& sdf_model,
+                      SDFJoint* sdf_joint);
 };
 
 }  // namespace parsing

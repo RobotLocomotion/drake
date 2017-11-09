@@ -104,8 +104,7 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
   }
   sdf_link.set_pose_in_model(X_DL);
   // "Remember" the pose of this new link in the model frame D.
-  GetModelFrameCache(sdf_model->name()).Update(
-      sdf_model->name(), link_name, X_DL);
+  sdf_model->CachePose(sdf_model->name(), link_name, X_DL);
 
   if (sdf_link_element->HasElement("inertial")) {
     sdf::ElementPtr sdf_inertial_element =
@@ -116,23 +115,26 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
   // TODO: parse visual and collision elements.
 }
 
-#if 0
 // Parses a joint type from the given SDF element and instantiates the
 // corresponding DrakeJoint instance. It is assumed that the parent body
 // frame is already present in the frame cache.
-std::unique_ptr<DrakeJoint>
-ParseJointType(const sdf::ElementPtr sdf_joint_element,
-               const ModelInstance& instance,
-               const RigidBody<double>& parent_body,
-               const FrameCache<double>& frame_cache) {
+void SDFParser::ParseJointType(
+    const sdf::ElementPtr sdf_joint_element,
+    const SDFModel& sdf_model,
+    SDFJoint* sdf_joint) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
+  DRAKE_DEMAND(sdf_joint != nullptr);
   DRAKE_DEMAND(sdf_joint_element->GetName() == "joint");
   const auto joint_name = sdf_joint_element->Get<std::string>("name");
   const auto joint_type = sdf_joint_element->Get<std::string>("type");
   if (joint_type == "revolute") {
     sdf::ElementPtr sdf_axis_element = sdf_joint_element->GetElement("axis");
     sdf::ElementPtr sdf_xyz_element = sdf_axis_element->GetElement("xyz");
-    Vector3<double> axis_of_rotation = ToVector(
+    // axis can be in either the "joint" frame M or in the model
+    // frame D, depending on the boolean value for <use_parent_model_frame>.
+    // use_parent_model_frame = false --> axis is in the joint frame M.
+    // use_parent_model_frame = true --> axis is in the model frame D.
+    Vector3<double> axis = ToVector(
         sdf_xyz_element->Get<ignition::math::Vector3d>());
     if (sdf_joint_element->HasElement("use_parent_model_frame")) {
       sdf::ElementPtr sdf_use_parent_frame_element =
@@ -142,100 +144,56 @@ ParseJointType(const sdf::ElementPtr sdf_joint_element,
 
         // Joint frame's (M) pose in model frame (D).
         const Isometry3<double> X_DM =
-            frame_cache.Transform(instance.name, joint_name);
+            sdf_model.GetPose(sdf_model.name(), joint_name);
+
         // Axis of rotation must be rotated back to the joint
         // frame (M), so the inverse of the rotational part of the
         // pose of the joint frame (M) in the model frame (D)
         // is applied.
-        axis_of_rotation = X_DM.linear().inverse() * axis_of_rotation;
+        axis = X_DM.linear().inverse() * axis;
       }
-    }
-    // To instantiate the joint we require the joint location as seen from
-    // the parent body frame. That is, the joint frame's (F) pose in the parent
-    // body frame (P).
-    const Isometry3<double> X_PF =
-        frame_cache.Transform(parent_body.get_name(), joint_name);
-    auto joint = std::make_unique<RevoluteJoint>(
-        joint_name, X_PF, axis_of_rotation);
-    return std::move(joint);
+    }  // At this point, axis is expressed in the joint frame M.
+    sdf_joint->set_axis(axis);
+  } else {
+    // TODO(amcastro-tri): Support prismatic and fixed joints.
+    DRAKE_ABORT_MSG("Unsupported joint type!");
   }
-  // TODO(hidmic): Support prismatic and fixed joints.
-  DRAKE_ABORT_MSG("Unsupported joint type!");
 }
 
-// Parses a joint from the given SDF element and adds a DrakeJoint instance
-// to link the parent and child bodies in the tree.
-// It is assumed that all body frames are already present in the frame cache,
-// which is further updated with the joint frame's (M) pose in the child body
-// frame (B).
-void ParseJoint(sdf::ElementPtr sdf_joint_element,
-                const ModelInstance& instance,
-                RigidBodyTree<double>* tree,
-                FrameCache<double>* frame_cache) {
+void SDFParser::ParseJoint(sdf::ElementPtr sdf_joint_element,
+                           SDFModel* sdf_model) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
   DRAKE_DEMAND(sdf_joint_element->GetName() == "joint");
-  DRAKE_DEMAND(tree != nullptr);
-  DRAKE_DEMAND(frame_cache != nullptr);
+  DRAKE_DEMAND(sdf_model != nullptr);
 
   const auto joint_name = sdf_joint_element->Get<std::string>("name");
   sdf::ElementPtr sdf_parent_link_element =
       sdf_joint_element->GetElement("parent");
   const auto parent_link_name = sdf_parent_link_element->Get<std::string>();
-  RigidBody<double>* parent_body = tree->FindBody(
-      parent_link_name, instance.name, instance.id);
 
   sdf::ElementPtr sdf_child_link_element =
       sdf_joint_element->GetElement("child");
   const auto child_link_name = sdf_child_link_element->Get<std::string>();
-  RigidBody<double>* child_body = tree->FindBody(
-      child_link_name, instance.name, instance.id);
 
-  // Joint frame's (M) pose in child body frame (B).
-  auto X_BM = Isometry3<double>::Identity();
+  // Joint frame's (M) pose in child link frame (L).
+  auto X_LM = Isometry3<double>::Identity();
   if (sdf_joint_element->HasElement("pose")) {
     sdf::ElementPtr sdf_pose_element = sdf_joint_element->GetElement("pose");
-    // Joint poses specified in SDF files are, by default, in the child body
-    // frame (B). See http://sdformat.org/spec?ver=1.4&elem=joint for details.
-    X_BM = ParsePose(sdf_pose_element);
+    // Joint poses specified in SDF files are, by default, in the child link
+    // frame (L), per SDF specification version 1.4.
+    // See http://sdformat.org/spec?ver=1.4&elem=joint for details.
+    X_LM = ParsePose(sdf_pose_element);
   }
-  frame_cache->Update(child_link_name, joint_name, X_BM);
+  // "Remember" the pose of M in L.
+  sdf_model->CachePose(child_link_name, joint_name, X_LM);
 
-  // All child link's inertia, visual, and collision
-  // elements reference frames must be this joint's frame.
-  child_body->ApplyTransformToJointFrame(X_BM.inverse());
+  const auto joint_type = sdf_joint_element->Get<std::string>("type");
 
-  tree->transformCollisionFrame(child_body, X_BM.inverse());
+  SDFJoint& sdf_joint = sdf_model->AddJoint(
+      joint_name, parent_link_name, child_link_name, joint_type);
 
-  // Update child link's parent and joint.
-  child_body->setJoint(ParseJointType(
-      sdf_joint_element, instance, *parent_body, *frame_cache));
-  child_body->set_parent(parent_body);
+  ParseJointType(sdf_joint_element, *sdf_model, &sdf_joint);
 }
-
-// Welds all bodies that have no parent to the world for the given
-// model instance in the given tree.
-void FixDanglingLinks(const ModelInstance& instance,
-                      RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(tree != nullptr);
-  const int& world_index = RigidBodyTreeConstants::kWorldBodyIndex;
-  const std::string world_name = RigidBodyTreeConstants::kWorldName;
-  RigidBody<double>* world = tree->bodies[world_index].get();
-
-  for (auto& body : tree->bodies) {
-    // Filter out by model instance id but also make
-    // sure we're not dealing with the world body.
-    if (body->get_model_instance_id() == instance.id &&
-        !body->has_joint() && body->get_name() != world_name) {
-      // Fix dangling link body to the world body.
-      auto fixed_joint = std::make_unique<FixedJoint>(
-          body->get_name() + "_to_world_joint",
-          Isometry3<double>::Identity());
-      body->setJoint(std::move(fixed_joint));
-      body->set_parent(world);
-    }
-  }
-}
-#endif
 
 std::unique_ptr<SDFSpec> SDFParser::ParseSDFModelFromFile(
     const std::string& sdf_path) {
@@ -278,8 +236,6 @@ void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   // Create a new SDF model.
   const auto model_name = sdf_model_element->Get<std::string>("name");
   SDFModel& sdf_model = spec->AddModel(model_name);
-  model_name_to_frame_cache_map_.emplace(
-      model_name, std::make_unique<FrameCache<double>>(model_name));
 
   if (sdf_model_element->HasElement("link")) {
     sdf::ElementPtr sdf_link_element = sdf_model_element->GetElement("link");
@@ -289,18 +245,13 @@ void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
     }
   }
 
-#if 0
   if (sdf_model_element->HasElement("joint")) {
     sdf::ElementPtr sdf_joint_element = sdf_model_element->GetElement("joint");
     while (sdf_joint_element != nullptr) {
-      ParseJoint(sdf_joint_element, instance, tree, &frame_cache);
+      ParseJoint(sdf_joint_element, &sdf_model);
       sdf_joint_element = sdf_joint_element->GetNextElement("joint");
     }
   }
-
-  FixDanglingLinks(instance, tree);
-  return model_id;
-#endif
 }
 
 }  // namespace parsing

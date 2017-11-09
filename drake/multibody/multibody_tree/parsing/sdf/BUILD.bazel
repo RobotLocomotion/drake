@@ -14,6 +14,7 @@ drake_cc_library(
     srcs = [
     ],
     hdrs = [
+        "sdf_joint.h",
         "sdf_link.h",
         "sdf_model.h",
         "sdf_spec.h",

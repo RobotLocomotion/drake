@@ -42,6 +42,8 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
   EXPECT_EQ(model_id, 0);
 
   PRINT_VAR(model.get_num_links());
+
+  // Verify links:
   EXPECT_EQ(model.get_num_links(), 3);
 
   const std::vector<SDFLink>& links = model.get_links();
@@ -88,6 +90,45 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
 
   EXPECT_TRUE(X_UI.isApprox(X_UI_expected, kEpsilon));
   EXPECT_TRUE(X_LI.isApprox(X_LI_expected, kEpsilon));
+
+  // Verify joints:
+  EXPECT_EQ(model.get_num_joints(), 2);
+  const std::vector<SDFJoint>& joints = model.get_joints();
+
+  const auto& is_joint_in_vector = [](
+      const std::vector<SDFJoint>& v, const std::string& name) {
+    return
+        std::find_if(v.begin(), v.end(), [&name](const SDFJoint& joint) {
+          return joint.name() == name;
+        }) != v.end();
+  };
+  EXPECT_TRUE(is_joint_in_vector(joints, "upper_joint"));
+  EXPECT_TRUE(is_joint_in_vector(joints, "lower_joint"));
+
+  const SDFJoint& lower_joint = model.GetJointByName("lower_joint");
+  const SDFJoint& upper_joint = model.GetJointByName("upper_joint");
+
+  EXPECT_EQ(upper_joint.joint_type(), "revolute");
+  EXPECT_EQ(upper_joint.parent_link(), "base");
+  EXPECT_EQ(upper_joint.child_link(), "upper_link");
+  EXPECT_TRUE(upper_joint.get_axis().isApprox(
+      Vector3<double>::UnitX(), kEpsilon));
+
+  EXPECT_EQ(lower_joint.joint_type(), "revolute");
+  EXPECT_EQ(lower_joint.parent_link(), "upper_link");
+  EXPECT_EQ(lower_joint.child_link(), "lower_link");
+  EXPECT_TRUE(lower_joint.get_axis().isApprox(
+      Vector3<double>::UnitX(), kEpsilon));
+
+  // To create a model out of the SDF specs we'll need to get the pose of a
+  // joint frame in a link frame. Here we test that:
+  const Isometry3<double> X_UJu =
+      model.GetPose(upper_link.name(), upper_joint.name());
+  const Isometry3<double> X_LJl =
+      model.GetPose(lower_link.name(), lower_joint.name());
+
+  EXPECT_TRUE(X_UJu.isApprox(Isometry3<double>::Identity()));
+  EXPECT_TRUE(X_LJl.isApprox(Isometry3<double>::Identity()));
 }
 
 }  // namespace
