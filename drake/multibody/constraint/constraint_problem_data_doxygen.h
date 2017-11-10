@@ -256,10 +256,12 @@ signed distance (using, e.g., the point contact non-interpenetration constraint
 as the motivating example).
 
 <h4>Softening at the acceleration-level</h4>
-Starting from the same canonical system:
+Starting from the same canonical system, but now putting the stabilization
+terms on the right hand side of dynamics equation (rather than the constraint
+equation, as above), we arrive at:
 <pre>
-mẍ = f + λ
-ẍ + 2αẋ + β²x + γλ = 0
+mẍ = f + λ + 2αẋ + β²x
+ẍ + γλ = 0
 </pre>
 the parameters β and α can now be set independently to stabilize the
 constraint with a particular undamped frequency and damping ratio. γ now
@@ -270,9 +272,11 @@ larger constraint errors to be stabilized.
 
 From another viewpoint, γ → ∞ turns the approach into a pure "penalty method".
 In contrast, γ → 0 minimizes the constraint violation and implies greater
-accuracy without computational stiffness. For constraints that do not lead to
-computational stiffness as γ → ∞, solving the constraint equations results in
-greater computational work than using a penalty method.
+constraint satisfaction accuracy without large β and α (and associated
+computational stiffness). For constraints that need not be solved to tight
+accuracy, solving the constraint equations results in greater computational
+work than using a penalty method (i.e., assuming that λ = 0 and using the
+2αẋ + β²x terms to minimize ||ẍ||).
 
 <h4>Bilateral constraints</h4>
 Note that Drake does not soften bilateral constraints.
