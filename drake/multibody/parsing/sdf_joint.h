@@ -32,6 +32,10 @@ class SDFJoint {
   ///   The name of the parent link as defined in the
   ///   <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_child">
   ///   &lt;child&gt; element</a> documentation.
+  /// @param[in] joint_type
+  ///   The type of the joint. E.g: revolute, prismatic. See documentation on
+  ///   the <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_type">
+  ///   &lt;<type>&gt; element</a> for details.
   SDFJoint(
       const std::string& joint_name,
       const std::string& parent_link_name,
@@ -54,11 +58,16 @@ class SDFJoint {
   const std::string& joint_type() const { return joint_type_; }
 
   /// Returns the axis of this joint expressed in the joint frame.
+  /// For details on how this frame is defined refer to the documenatation for
+  /// the <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_axis">
+  /// &lt;<axis>&gt; element</a>.
   const Vector3<double>& get_axis() const {
     DRAKE_DEMAND(JointHasAxis());
     return axis_;
   }
 
+  /// Sets the axis for this joint, expressed in the joint frame.
+  /// @sa get_axis()
   void set_axis(const Vector3<double>& axis) {
     DRAKE_DEMAND(JointHasAxis());
     axis_ = axis;

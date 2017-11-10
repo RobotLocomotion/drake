@@ -16,8 +16,12 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
-/// This class provides a representation of a `<model>` entry within an SDF
-/// file.
+/// This class provides a representation of a `<model>` element within a given
+/// SDF specification.
+/// For details on the specification of models, including conventions and
+/// default values, please refer to the documentation for the
+/// <a href="http://sdformat.org/spec?ver=1.6&elem=model">
+/// &lt;model&gt; element</a>.
 class SDFModel {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SDFModel)
@@ -31,14 +35,20 @@ class SDFModel {
   /// Returns the name of `this` link.
   const std::string& name() const { return name_; }
 
+  /// Returns the number of links (corresponding to `<link>` elements) in
+  /// `this` model.
   int get_num_links() const {
     return static_cast<int>(links_.size());
   }
 
+  /// Returns the number of joints (corresponding to `<joint>` elements) in
+  /// `this` model.
   int get_num_joints() const {
     return static_cast<int>(joints_.size());
   }
 
+  /// Adds a new link named `link_name` to `this` model and returns a reference
+  /// to the newly added link.
   SDFLink& AddLink(const std::string& link_name) {
     const int link_index = get_num_links();
     links_.emplace_back(link_name);
@@ -46,6 +56,9 @@ class SDFModel {
     return links_.back();
   }
 
+  /// Adds a new joint named `joint_name` to `this` model and returns a
+  /// reference to the newly added joint. Please refer to the SDFJoint class's
+  /// documentation for details on the arguments for this method.
   SDFJoint& AddJoint(const std::string& joint_name,
                      const std::string& parent_link_name,
                      const std::string& child_link_name,
@@ -57,14 +70,22 @@ class SDFModel {
     return joints_.back();
   }
 
+  /// Returns an std::vector of SDFLink objects containing all the links in
+  /// `this` model.
   const std::vector<SDFLink>& get_links() const {
     return links_;
   }
 
+  /// Returns an std::vector of SDFJoint objects containing all the joints in
+  /// `this` model.
   const std::vector<SDFJoint>& get_joints() const {
     return joints_;
   }
 
+  /// Returns a const reference to the SDFLink object with unique name within
+  /// this model `link_name`.
+  /// This method throws a std::runtime_error if the model does not contain a
+  /// link named `link_name`.
   const SDFLink& GetLinkByName(const std::string& link_name) const {
     const auto it = links_name_to_index_map_.find(link_name);
     if (it == links_name_to_index_map_.end()) {
@@ -75,6 +96,10 @@ class SDFModel {
     return links_[it->second];
   }
 
+  /// Returns a const reference to the SDFJoint object with unique name within
+  /// this model `joint_name`.
+  /// This method throws a std::runtime_error if the model does not contain a
+  /// joint named `joint_name`.
   const SDFJoint& GetJointByName(const std::string& joint_name) const {
     const auto it = joints_name_to_index_map_.find(joint_name);
     if (it == joints_name_to_index_map_.end()) {
@@ -101,16 +126,6 @@ class SDFModel {
   }
 
  private:
-  SDFLink& GetMutableLinkByName(const std::string& link_name) {
-    const auto it = links_name_to_index_map_.find(link_name);
-    if (it == links_name_to_index_map_.end()) {
-      throw std::runtime_error(
-          "Link \"" + link_name + "\" not found in model \"" + this->name()
-              + "\"");
-    }
-    return links_[it->second];
-  }
-
   // Name of the root frame of this cache.
   std::string name_;
 

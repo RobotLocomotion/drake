@@ -19,19 +19,23 @@ class SDFParser {
  public:
   SDFParser() {}
 
-  /// Parses a single `<model>` from file `sdf_file`.
-  std::unique_ptr<SDFSpec> ParseSDFModelFromFile(
-      const std::string& sdf_path);
+  /// Parses a single `<model>` from file a file named `sdf_path`.
+  /// A new SDFSpec object is created which will contain the single model from
+  /// the file.
+  std::unique_ptr<SDFSpec> ParseSDFModelFromFile(const std::string& sdf_path);
 
  private:
+  /// Parses a <model> from the <sdf> element, referenced by
+  /// `sdf_model_element`.
   void ParseModel(::sdf::ElementPtr sdf_model_element, SDFSpec* spec);
 
-  // Parses from `sdf_link_element` a new link that gets added to `sdf_model`.
-  // It caches the the link's poses.
+  // Parses from `sdf_link_element` (referencing a `<link>` element) a new link
+  // that gets added to `sdf_model`. It caches the the link's poses in
+  // `sdf_model`.
   void ParseLink(const ::sdf::ElementPtr sdf_link_element, SDFModel* sdf_model);
 
-  // Parses from `sdf_inertial_element` the properties specified in an
-  // <inertial> element and adds them to `link`.
+  // Parses from `sdf_inertial_element` (referencing an `<inertial>` element)
+  // the properties specified in an <inertial> element and adds them to `link`.
   void ParseInertial(::sdf::ElementPtr sdf_inertial_element, SDFLink* link);
 
   // Parses a joint from the given SDF element and adds a SDFJoint to
