@@ -39,6 +39,12 @@ install(
     name = "install",
     targets = ["libdrake.so"],
     guess_hdrs = "WORKSPACE",
+    guess_hdrs_exclude = [
+        # This is private visibility; we don't want to have a vtk dependency
+        # in our published headers.  TODO(jwnimmer-tri) Update the guess_hdrs
+        # logic to exclude non-public headers by default.
+        "drake/systems/sensors/vtk_util.h",
+    ],
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
     deps = [
         ":install_cmake_config",
@@ -96,8 +102,8 @@ cc_library(
 # required *.so's that are WORKSPACE downloads (such as VTK, Gurobi, etc).
 #
 # TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
-# *.so files (Gurobi, Mosek, SCS, TinyXML2, VTK) for us, without us having to
-# know up-front here which dependencies are coming from the WORKSPACE in the
+# *.so files (Gurobi, LCM, Mosek, SCS, TinyXML2, VTK) for us, without us having
+# to know up-front here which dependencies are coming from the WORKSPACE in the
 # form of *.so.
 cc_library(
     name = "drake_shared_library",
@@ -107,6 +113,7 @@ cc_library(
         ":libdrake_headers",
         ":mosek_deps",
         ":vtk_deps",
+        "@lcm",
         "@scs//:scsdir",
         "@tinyxml2",
     ],

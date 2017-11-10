@@ -1,7 +1,4 @@
-// This file is the Bazel build's implementation of drake_path.h.
-/* clang-format off to disable clang-format-includes */
 #include "drake/common/drake_path.h"
-/* clang-format on */
 
 #include <spruce.hh>
 
