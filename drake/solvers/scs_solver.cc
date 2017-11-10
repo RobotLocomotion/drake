@@ -217,6 +217,43 @@ void SetScsProblemSettingsToDefault(SCS_SETTINGS* settings) {
   settings->warm_start = WARM_START;
 }
 
+void SetScsProblemData(int A_row_count, int num_vars,
+                       const Eigen::SparseMatrix<double>& A,
+                       const std::vector<double>& b, const Eigen::VectorXd& c,
+                       SCS_PROBLEM_DATA* scs_problem_data) {
+  scs_problem_data->m = A_row_count;
+  scs_problem_data->n = num_vars;
+
+  scs_problem_data->A = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
+  scs_problem_data->A->x = new scs_float[A.nonZeros()];
+  scs_problem_data->A->i = new scs_int[A.nonZeros()];
+  scs_problem_data->A->p = new scs_int[scs_problem_data->n + 1];
+  // TODO(hongkai.dai): should I use memcpy for the assignment in the for loop?
+  for (int i = 0; i < A.nonZeros(); ++i) {
+    scs_problem_data->A->x[i] = *(A.valuePtr() + i);
+    scs_problem_data->A->i[i] = *(A.innerIndexPtr() + i);
+  }
+  for (int i = 0; i < scs_problem_data->n + 1; ++i) {
+    scs_problem_data->A->p[i] = *(A.outerIndexPtr() + i);
+  }
+  scs_problem_data->A->m = scs_problem_data->m;
+  scs_problem_data->A->n = scs_problem_data->n;
+
+  scs_problem_data->b = new scs_float[b.size()];
+  for (int i = 0; i < static_cast<int>(b.size()); ++i) {
+    scs_problem_data->b[i] = b[i];
+  }
+  scs_problem_data->c = new scs_float[num_vars];
+  for (int i = 0; i < num_vars; ++i) {
+    scs_problem_data->c[i] = c(i);
+  }
+
+  // Set the parameters to default values.
+  scs_problem_data->stgs =
+      static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
+  SetScsProblemSettingsToDefault(scs_problem_data->stgs);
+}
+
 SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // SCS solves the problem in this form
   // min  cᵀx
@@ -270,52 +307,13 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // Parse linear constraint
   ParseLinearConstraint(prog, &A_triplets, &b, &A_row_count, cone);
 
-  SCS_PROBLEM_DATA* scs_problem_data =
-      static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
-  scs_problem_data->m = A_row_count;
-  scs_problem_data->n = num_vars;
-  Eigen::SparseMatrix<double> A(scs_problem_data->m, scs_problem_data->n);
-  std::cout << "rows: " << scs_problem_data->m
-            << " cols: " << scs_problem_data->n << std::endl;
-  for (const auto& triplet : A_triplets) {
-    std::cout << "(" << triplet.row() << "," << triplet.col()
-              << "):" << triplet.value() << std::endl;
-  }
+  Eigen::SparseMatrix<double> A(A_row_count, num_vars);
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
-  scs_problem_data->A = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
-  scs_problem_data->A->x = new scs_float[A.nonZeros()];
-  scs_problem_data->A->i = new scs_int[A.nonZeros()];
-  scs_problem_data->A->p = new scs_int[scs_problem_data->n + 1];
-  // TODO(hongkai.dai): should I use memcpy for the assignment in the for loop?
-  for (int i = 0; i < A.nonZeros(); ++i) {
-    scs_problem_data->A->x[i] = *(A.valuePtr() + i);
-    scs_problem_data->A->i[i] = *(A.innerIndexPtr() + i);
-  }
-  for (int i = 0; i < scs_problem_data->n + 1; ++i) {
-    scs_problem_data->A->p[i] = *(A.outerIndexPtr() + i);
-  }
-  scs_problem_data->A->m = scs_problem_data->m;
-  scs_problem_data->A->n = scs_problem_data->n;
-  std::cout << "c:" << c.transpose() << std::endl;
-  std::cout << "b:\n";
-  for (int i = 0; i < static_cast<int>(b.size()); ++i) {
-    std::cout << b[i] << " ";
-  }
-  std::cout << std::endl;
-  scs_problem_data->b = new scs_float[b.size()];
-  for (int i = 0; i < static_cast<int>(b.size()); ++i) {
-    scs_problem_data->b[i] = b[i];
-  }
-  scs_problem_data->c = new scs_float[num_vars];
-  for (int i = 0; i < num_vars; ++i) {
-    scs_problem_data->c[i] = c(i);
-  }
 
-  // Set the parameters to default values.
-  scs_problem_data->stgs =
-      static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
-  SetScsProblemSettingsToDefault(scs_problem_data->stgs);
+  SCS_PROBLEM_DATA* scs_problem_data =
+      static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
+  SetScsProblemData(A_row_count, num_vars, A, b, c, scs_problem_data);
   scs_problem_data->stgs->verbose = verbose_ ? VERBOSE : 0;
 
   SCS_INFO scs_info{0};

@@ -97,7 +97,8 @@ GTEST_TEST(LinearProgramTest, Test1) {
 }
 
 GTEST_TEST(LinearProgramTest, Test2) {
-  // Test a linear program with bounding box, linear equality and inequality constraints
+  // Test a linear program with bounding box, linear equality and inequality
+  // constraints
   // min x(0) + 2 * x(1) + 3 * x(2) + 2
   // s.t  x(0) + x(1) = 2
   //      x(0) + 2x(2) = 3
@@ -118,9 +119,12 @@ GTEST_TEST(LinearProgramTest, Test2) {
        0, 1, 2,
        -1, 0, 2;
   // clang-format on
-  prog.AddLinearConstraint(A, Eigen::Vector3d(-2, -5, -std::numeric_limits<double>::infinity()), Eigen::Vector3d(10, 9, 7), x);
+  prog.AddLinearConstraint(
+      A, Eigen::Vector3d(-2, -5, -std::numeric_limits<double>::infinity()),
+      Eigen::Vector3d(10, 9, 7), x);
   prog.AddLinearConstraint(-x(1) + 3 * x(2) >= -10);
-  prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 10, x(0));
+  prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 10,
+                                x(0));
   prog.AddBoundingBoxConstraint(1, 9, x(2));
 
   ScsSolver scs_solver;
@@ -129,7 +133,8 @@ GTEST_TEST(LinearProgramTest, Test2) {
     const SolutionResult sol_result = scs_solver.Solve(prog);
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
     EXPECT_NEAR(prog.GetOptimalCost(), 8, tol);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), Eigen::Vector3d(1, 1, 1), tol, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), Eigen::Vector3d(1, 1, 1),
+                                tol, MatrixCompareType::absolute));
   }
 }
 
