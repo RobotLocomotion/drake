@@ -58,8 +58,9 @@ AddRelaxNonConvexQuadraticConstraintInTrustRegion(
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const Eigen::MatrixXd>& Q1,
     const Eigen::Ref<const Eigen::MatrixXd>& Q2,
+    const Eigen::Ref<const VectorXDecisionVariable>& y,
     const Eigen::Ref<const Eigen::VectorXd>& p,
-    const Eigen::Ref<const VectorXDecisionVariable>& y, double lower_bound,
+    double lower_bound,
     double upper_bound,
     const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
     double trust_region_gap) {
