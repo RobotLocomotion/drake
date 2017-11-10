@@ -31,6 +31,8 @@ optional<SolverType> successor(optional<SolverType> solver_type) {
       return SolverType::kNlopt;
     case SolverType::kNlopt:
       return SolverType::kSnopt;
+    case SolverType::kScs:
+      return SolverType::kSnopt;
     case SolverType::kSnopt:
       return nullopt;
   }

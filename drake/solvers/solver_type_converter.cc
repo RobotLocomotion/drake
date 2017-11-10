@@ -9,8 +9,8 @@
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
-#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/scs_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
