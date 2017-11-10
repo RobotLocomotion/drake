@@ -213,7 +213,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/analysis:simulator",
     "//drake/systems/controllers/plan_eval:generic_plan",
     "//drake/systems/controllers/plan_eval:plan_eval_base_system",
-    "//drake/systems/controllers/plan_eval:test_common",
     "//drake/systems/controllers/qp_inverse_dynamics:id_controller_config",
     "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
     "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
