@@ -1,10 +1,10 @@
-#include "drake/examples/double_pendulum/frame_cache.h"
+#include "drake/multibody/parsing/frame_cache.h"
 
 #include <algorithm>
 
 namespace drake {
-namespace examples {
-namespace double_pendulum {
+namespace multibody {
+namespace parsing {
 
 template<typename T>
 FrameCache<T>::FrameCache(const std::string& root_frame)
@@ -80,6 +80,6 @@ Isometry3<T> FrameCache<T>::RootTransform(std::string frame) const {
 template class FrameCache<double>;
 template struct FramedIsometry3<double>;
 
-}  // namespace double_pendulum
-}  // namespace examples
+}  // namespace parsing
+}  // namespace multibody
 }  // namespace drake
