@@ -54,13 +54,15 @@ std::tuple<Binding<LinearConstraint>,
            std::vector<Binding<RotatedLorentzConeConstraint>>,
            VectorXDecisionVariable>
 AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const VectorXDecisionVariable> &x,
-    const Eigen::Ref<const Eigen::MatrixXd> &Q1,
-    const Eigen::Ref<const Eigen::MatrixXd> &Q2,
-    const Eigen::Ref<const Eigen::VectorXd> &p, double lower_bound,
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q1,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q2,
+    const Eigen::Ref<const VectorXDecisionVariable>& y,
+    const Eigen::Ref<const Eigen::VectorXd>& p,
+    double lower_bound,
     double upper_bound,
-    const Eigen::Ref<const Eigen::VectorXd> &linearization_point,
+    const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
     double trust_region_gap) {
   const auto& x0 = linearization_point;
   if (Q1.rows() != Q1.cols()) {
@@ -69,8 +71,8 @@ AddRelaxNonConvexQuadraticConstraintInTrustRegion(
   if (Q2.rows() != Q2.cols()) {
     throw std::runtime_error("Q2 should be a square matrix.");
   }
-  if (Q1.rows() != Q2.rows() || Q1.rows() != p.rows() ||
-      Q1.rows() != x0.rows() || Q1.rows() != x.rows()) {
+  if (Q1.rows() != Q2.rows() || Q1.rows() != x0.rows() ||
+      Q1.rows() != x.rows() || p.rows() != y.rows()) {
     throw std::runtime_error(
         "The dimensions of the inputs are not consistent.");
   }
@@ -117,7 +119,7 @@ AddRelaxNonConvexQuadraticConstraintInTrustRegion(
     Eigen::Vector2d linear_ub(std::numeric_limits<double>::infinity(),
                               upper_bound);
     Vector2<symbolic::Expression> linear_expr(2 * x0.dot(nonzero_Q * x) - z(0),
-                                              p.dot(x) + z_coeff * z(0));
+                                              p.dot(y) + z_coeff * z(0));
     Binding<LinearConstraint> linear_constraint = prog->AddConstraint(
         internal::ParseLinearConstraint(linear_expr, linear_lb, linear_ub));
     std::vector<Binding<RotatedLorentzConeConstraint>> lorentz_cones{
@@ -128,7 +130,7 @@ AddRelaxNonConvexQuadraticConstraintInTrustRegion(
   // Neither Q1 nor Q2 is zero.
   auto z = prog->NewContinuousVariables<2>("z");
   Vector3<symbolic::Expression> linear_expressions;
-  linear_expressions << z(0) - z(1) + p.dot(x), z(0) - 2 * x0.dot(Q1 * x),
+  linear_expressions << z(0) - z(1) + p.dot(y), z(0) - 2 * x0.dot(Q1 * x),
       z(1) - 2 * x0.dot(Q2 * x);
   const Eigen::Vector3d linear_lb(lower_bound,
                                   -std::numeric_limits<double>::infinity(),
