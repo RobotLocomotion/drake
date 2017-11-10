@@ -879,6 +879,9 @@ drake_py_test(
 drake_py_test(
     name = "resource_tool_test",
     srcs = ["test/resource_tool_test.py"],
+    args = [
+        "$(location :resource_tool)",
+    ],
     data = [
         "test/resource_tool_test_data.txt",
         ":resource_tool",
