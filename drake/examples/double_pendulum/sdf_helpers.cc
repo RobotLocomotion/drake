@@ -12,7 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
-#include "drake/multibody/parsing/sdf/frame_cache.h"
+#include "drake/multibody/parsing/frame_cache.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"

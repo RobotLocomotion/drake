@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/sdf/frame_cache.h"
+#include "drake/multibody/parsing/frame_cache.h"
 
 #include <algorithm>
 
