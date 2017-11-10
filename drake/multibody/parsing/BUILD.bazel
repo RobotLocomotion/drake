@@ -74,6 +74,7 @@ drake_cc_googletest(
     deps = [
         ":sdf_parser",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -52,6 +52,14 @@
       <inertial>
         <pose>0 0 0.5 0 0 0</pose>
         <mass>30.0</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <iyy>2.0</iyy>
+          <izz>3.0</izz>
+          <ixy>0.1</ixy>
+          <ixz>0.2</ixz>
+          <iyz>0.3</iyz>
+        </inertia>
       </inertial>
       <visual name='vis_upper_joint'>
         <pose>-0.05 0 0 0 1.5708 0</pose>

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace multibody {
@@ -33,12 +34,10 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
   PRINT_VAR(sdf_spec->version());
   PRINT_VAR(sdf_spec->get_num_models());
   const SDFModel& model = sdf_spec->GetModelByName(kModelName);
-  const int model_id = sdf_spec->GetModelIdByName("double_pendulum_with_base");
   PRINT_VAR(model.name());
 
   EXPECT_EQ(sdf_spec->version(), "1.6");
   EXPECT_TRUE(sdf_spec->HasModel(kModelName));
-  EXPECT_EQ(model_id, 0);
 
   PRINT_VAR(model.get_num_links());
 
@@ -89,6 +88,15 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
 
   EXPECT_TRUE(X_UI.isApprox(X_UI_expected, kEpsilon));
   EXPECT_TRUE(X_LI.isApprox(X_LI_expected, kEpsilon));
+
+  // Verify the value of the inertia matrix for each link.
+  const Matrix3<double>& I_Icm_I = upper_link.get_inertia_matrix();
+  const Matrix3<double> I_Icm_I_expected = (Matrix3<double>()
+      << 1.0, 0.1, 0.2,
+         0.1, 2.0, 0.3,
+         0.2, 0.3, 3.0).finished();
+  EXPECT_TRUE(CompareMatrices(I_Icm_I, I_Icm_I_expected, kEpsilon,
+                              MatrixCompareType::relative));
 
   // Verify joints:
   EXPECT_EQ(model.get_num_joints(), 2);
