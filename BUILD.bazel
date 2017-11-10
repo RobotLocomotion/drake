@@ -12,6 +12,7 @@ package(
 
 exports_files([
     "CPPLINT.cfg",
+    ".bazelproject",
     ".clang-format",
     ".drake-resource-sentinel",
 ])
