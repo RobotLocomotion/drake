@@ -7,7 +7,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 namespace {
 
 // Makes sure that FrameCache correctly keeps frames and the transforms that
@@ -94,7 +93,6 @@ GTEST_TEST(FrameCacheTest, NonExistentFramesTest) {
 }
 
 }  // namespace
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

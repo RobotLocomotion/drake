@@ -5,7 +5,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 
 template<typename T>
 FrameCache<T>::FrameCache(const std::string& root_frame)
@@ -81,7 +80,6 @@ Isometry3<T> FrameCache<T>::RootTransform(std::string frame) const {
 template class FrameCache<double>;
 template struct FramedIsometry3<double>;
 
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake
