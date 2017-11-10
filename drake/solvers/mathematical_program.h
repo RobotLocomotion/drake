@@ -2283,6 +2283,7 @@ class MathematicalProgram {
       equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> scs_solver_;
 
   template <typename T>
   void NewVariables_impl(
