@@ -3,13 +3,14 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/parsing/frame_cache.h"
-#include "drake/multibody/parsing/sdf_link.h"
 #include "drake/multibody/parsing/sdf_joint.h"
+#include "drake/multibody/parsing/sdf_link.h"
 
 namespace drake {
 namespace multibody {
@@ -44,7 +45,7 @@ class SDFModel {
     links_name_to_index_map_.insert({link_name, link_index});
     return links_.back();
   }
-  
+
   SDFJoint& AddJoint(const std::string& joint_name,
                      const std::string& parent_link_name,
                      const std::string& child_link_name,
@@ -115,13 +116,13 @@ class SDFModel {
 
   // Vector of links in the model.
   std::vector<SDFLink> links_;
-  
+
   // Mapping from link name to an index into std::vector links_.
   std::unordered_map<std::string, int> links_name_to_index_map_;
 
   // Vector of joints in the model.
   std::vector<SDFJoint> joints_;
-  
+
   // Mapping from joint name to an index into std::vector joints_.
   std::unordered_map<std::string, int> joints_name_to_index_map_;
 

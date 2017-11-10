@@ -14,7 +14,8 @@ namespace parsing {
 /// A representation of a `<link>` element in an SDF file.
 /// For details on the specification of links, including conventions and default
 /// values, please refer to the documentation for the
-/// <a href="http://sdformat.org/spec?ver=1.6&elem=link">&lt;link&gt; element</a>.
+/// <a href="http://sdformat.org/spec?ver=1.6&elem=link">
+/// &lt;link&gt; element</a>.
 class SDFLink {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SDFLink);
@@ -38,8 +39,9 @@ class SDFLink {
   /// `<inertial>` element of an SDF file. The inertial frame `Icm` is defined
   /// by elements `<frame>` and `<pose>` within the `<inertial>` element.
   /// Refere to the documentation for the
-  /// <a href="http://sdformat.org/spec?ver=1.6&elem=link#link_inertial">&lt;inertial&gt; element</a>
-  /// for details on how the inertial frame is defined.
+  /// <a href="http://sdformat.org/spec?ver=1.6&elem=link#link_inertial">
+  /// &lt;inertial&gt; element</a> for details on how the inertial frame is
+  /// defined.
   const Matrix3<double>& get_inertia_matrix() const {
     return I_Icm_;
   }

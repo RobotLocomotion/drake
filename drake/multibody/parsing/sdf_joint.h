@@ -12,13 +12,26 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
-/// A representation of a `<joint>` entry in an SDF file.
+/// A representation of a `<joint>` element in an SDF file.
+/// For details on the specification of links, including conventions and default
+/// values, please refer to the documentation for the
+/// <a href="http://sdformat.org/spec?ver=1.6&elem=joint">
+/// &lt;joint&gt; element</a>.
 class SDFJoint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SDFJoint);
+
   /// Creates a new joint object specification with the given `joint_name`.
   /// Per SDF specification, `joint_name` must be unique within the scope of the
   /// joint's model.
+  /// @param[in] parent_link_name
+  ///   The name of the parent link as defined in the
+  ///   <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_parent">
+  ///   &lt;parent&gt; element</a> documentation.
+  /// @param[in] child_link_name
+  ///   The name of the parent link as defined in the
+  ///   <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_child">
+  ///   &lt;child&gt; element</a> documentation.
   SDFJoint(
       const std::string& joint_name,
       const std::string& parent_link_name,

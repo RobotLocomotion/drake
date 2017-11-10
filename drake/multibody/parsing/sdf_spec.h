@@ -1,7 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
