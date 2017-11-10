@@ -17,6 +17,10 @@ content = """
       "Type": "interface",
       "Includes": [ "@prefix@/include/eigen3" ]
     }
+  },
+  "X-CMake-Variables": {
+    "EIGEN_FOUND": "ON",
+    "EIGEN_INCLUDE_DIRS": "${CMAKE_CURRENT_LIST_DIR}/../../../include/eigen3"
   }
 }
 """ % defs
