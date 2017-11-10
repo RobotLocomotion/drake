@@ -14,7 +14,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 
 class SDFParser {
  public:
@@ -47,7 +46,6 @@ class SDFParser {
                       SDFJoint* sdf_joint);
 };
 
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

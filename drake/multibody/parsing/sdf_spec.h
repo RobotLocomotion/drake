@@ -11,7 +11,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 
 /// This class provides a representation of an SDF specification.
 class SDFSpec {
@@ -73,7 +72,6 @@ class SDFSpec {
   std::vector<std::unique_ptr<SDFModel>> models_;
 };
 
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

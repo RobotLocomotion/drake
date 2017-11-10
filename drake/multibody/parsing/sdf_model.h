@@ -14,7 +14,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 
 /// This class provides a representation of a `<model>` entry within an SDF
 /// file.
@@ -130,7 +129,6 @@ class SDFModel {
   FrameCache<double> frame_cache_;
 };
 
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

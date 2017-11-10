@@ -21,7 +21,7 @@ namespace drake {
 namespace examples {
 namespace double_pendulum {
 
-using multibody::parsing::sdf::FrameCache;
+using multibody::parsing::FrameCache;
 
 // RigidBodyTree model instance descriptor. Helpful
 // to carry model name and instance id around.

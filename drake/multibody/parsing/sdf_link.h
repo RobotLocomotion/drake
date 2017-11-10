@@ -10,7 +10,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 
 // Default values for non-required parameters for a link in an SDF files.
 // Most of these are guesses since the SDF specification does not specify
@@ -106,7 +105,6 @@ class SDFLink {
   Isometry3<double> X_DL_;
 };
 
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

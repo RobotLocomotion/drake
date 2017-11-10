@@ -9,7 +9,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -132,7 +131,6 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
 }
 
 }  // namespace
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

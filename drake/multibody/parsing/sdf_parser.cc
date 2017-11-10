@@ -14,7 +14,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 
 // Helper function to express an ignition::math::Vector3d instance as
 // a Vector3<double> instance.
@@ -254,7 +253,6 @@ void SDFParser::ParseModel(::sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   }
 }
 
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

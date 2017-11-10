@@ -11,7 +11,6 @@
 namespace drake {
 namespace multibody {
 namespace parsing {
-namespace sdf {
 
 /// A representation of a `<joint>` entry in an SDF file.
 class SDFJoint {
@@ -66,7 +65,6 @@ class SDFJoint {
       Vector3<double>::Constant(std::numeric_limits<double>::quiet_NaN())};
 };
 
-}  // namespace sdf
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake
