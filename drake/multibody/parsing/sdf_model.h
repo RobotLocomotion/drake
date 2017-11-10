@@ -7,9 +7,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/parsing/sdf/frame_cache.h"
-#include "drake/multibody/parsing/sdf/sdf_link.h"
-#include "drake/multibody/parsing/sdf/sdf_joint.h"
+#include "drake/multibody/parsing/frame_cache.h"
+#include "drake/multibody/parsing/sdf_link.h"
+#include "drake/multibody/parsing/sdf_joint.h"
 
 namespace drake {
 namespace multibody {

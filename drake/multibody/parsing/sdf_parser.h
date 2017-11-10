@@ -6,10 +6,10 @@
 
 #include "sdf/sdf.hh"
 
-#include "drake/multibody/parsing/sdf/frame_cache.h"
-#include "drake/multibody/parsing/sdf/sdf_link.h"
-#include "drake/multibody/parsing/sdf/sdf_model.h"
-#include "drake/multibody/parsing/sdf/sdf_spec.h"
+#include "drake/multibody/parsing/frame_cache.h"
+#include "drake/multibody/parsing/sdf_link.h"
+#include "drake/multibody/parsing/sdf_model.h"
+#include "drake/multibody/parsing/sdf_spec.h"
 
 namespace drake {
 namespace multibody {

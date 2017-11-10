@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/sdf/sdf_parser.h"
+#include "drake/multibody/parsing/sdf_parser.h"
 
 #include <limits>
 
@@ -19,7 +19,7 @@ const double kEpsilon = std::numeric_limits<double>::epsilon();
 #define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 static const char* const kTestSdfPath =
-    "drake/multibody/parsing/sdf/models/double_pendulum.sdf";
+    "drake/multibody/parsing/models/double_pendulum.sdf";
 
 GTEST_TEST(SDFParserTest, ParsingTest) {
   // Parse tree from test SDF.

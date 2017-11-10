@@ -6,7 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/parsing/sdf/sdf_model.h"
+#include "drake/multibody/parsing/sdf_model.h"
 
 namespace drake {
 namespace multibody {
