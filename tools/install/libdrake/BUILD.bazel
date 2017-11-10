@@ -40,6 +40,10 @@ install(
     targets = ["libdrake.so"],
     guess_hdrs = "WORKSPACE",
     guess_hdrs_exclude = [
+        # This is private visibility; we don't want to have a yaml dependency
+        # in our published headers.  TODO(jwnimmer-tri) Update the guess_hdrs
+        # logic to exclude non-public headers by default.
+        "drake/systems/controllers/yaml_util.h",
         # This is private visibility; we don't want to have a vtk dependency
         # in our published headers.  TODO(jwnimmer-tri) Update the guess_hdrs
         # logic to exclude non-public headers by default.
