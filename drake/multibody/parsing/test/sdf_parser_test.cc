@@ -14,10 +14,6 @@ namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 static const char* const kTestSdfPath =
     "drake/multibody/parsing/models/double_pendulum.sdf";
 
@@ -26,20 +22,16 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
   const std::string sdf_path = FindResourceOrThrow(kTestSdfPath);
   const std::string kModelName = "double_pendulum_with_base";
 
-  PRINT_VAR(sdf_path);
-
   SDFParser parser;
   auto sdf_spec = parser.ParseSDFModelFromFile(sdf_path);
 
-  PRINT_VAR(sdf_spec->version());
-  PRINT_VAR(sdf_spec->get_num_models());
+  // The method above parses a single model.
+  EXPECT_EQ(sdf_spec->get_num_models(), 1);
   const SDFModel& model = sdf_spec->GetModelByName(kModelName);
-  PRINT_VAR(model.name());
 
+  EXPECT_EQ(model.name(), kModelName);
   EXPECT_EQ(sdf_spec->version(), "1.6");
   EXPECT_TRUE(sdf_spec->HasModel(kModelName));
-
-  PRINT_VAR(model.get_num_links());
 
   // Verify links:
   EXPECT_EQ(model.get_num_links(), 3);
