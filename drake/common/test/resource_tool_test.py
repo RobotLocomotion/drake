@@ -5,7 +5,12 @@ command-line API through all corner cases.
 import re
 import subprocess
 import os
+import sys
 import unittest
+
+
+# Set on command-line to the location of resource_tool.
+_resource_tool_exe = None
 
 
 class TestResourceTool(unittest.TestCase):
@@ -14,7 +19,7 @@ class TestResourceTool(unittest.TestCase):
         """
         try:
             output = subprocess.check_output(
-                ["drake/common/resource_tool"] + args,
+                [_resource_tool_exe] + args,
                 stderr=subprocess.STDOUT)
             returncode = 0
         except subprocess.CalledProcessError as e:
@@ -95,4 +100,5 @@ class TestResourceTool(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    _resource_tool_exe = sys.argv.pop(1)
     unittest.main()
