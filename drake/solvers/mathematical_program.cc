@@ -647,9 +647,6 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
-             scs_solver_->available()) {
-    return scs_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);
@@ -662,6 +659,9 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
+      scs_solver_->available()) {
+    return scs_solver_->Solve(*this);
   } else {
     throw runtime_error(
         "MathematicalProgram::Solve: "
