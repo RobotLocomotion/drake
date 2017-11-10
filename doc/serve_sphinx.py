@@ -43,7 +43,7 @@ print >>sys.stderr
 # Try the default browser, then wait.
 print >>sys.stderr, "Opening webbrowser and waiting ... use Ctrl-C to exit."
 if sys.platform == "darwin":
-    # OS X
+    # macOS
     webbrowser.open(http_url)
 else:
     # Ubuntu

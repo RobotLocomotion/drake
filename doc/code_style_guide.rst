@@ -91,7 +91,7 @@ Additional Rules
 
     #!/usr/bin/env python
 
-  Rationale: ``/usr/bin/env`` enables a ``PATH`` search for python. On OSX
+  Rationale: ``/usr/bin/env`` enables a ``PATH`` search for python. On macOS
   systems configured for Drake, this gives a better result than
   ``/usr/bin/python``.
 

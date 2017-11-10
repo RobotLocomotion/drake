@@ -24,7 +24,7 @@ with the environment you actually want!
 installs binaries in reasonable, standard paths, and because most CLion launch
 mechanisms will have already sourced the ``.bashrc``.
 
-**Mac users** will get broken behavior by default.  When you run an Mac app
+**macOS users** will get broken behavior by default.  When you run an macOS app
 graphically, the parent process is `launchd` (PID 1), which provides its own
 standard environment variables to the child process.  In particular, it provides
 a minimal ``PATH`` that does not include ``/usr/local/bin``, where most Homebrew

@@ -1,8 +1,8 @@
 .. _build_from_source:
 
-**********************************
-Source installation (Mac, Ubuntu)
-**********************************
+***********************************
+Source installation (macOS, Ubuntu)
+***********************************
 
 .. _getting_drake:
 
