@@ -183,7 +183,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, Test1) {
       &prog_, x_, Q1, Q2, p, x_, lower_bound, upper_bound, linearization_point,
       trust_region_gap);
 
-  // Check the case in which the variable y in the linear term are not the same
+  // Check the case in which the variable y in the linear term is not the same
   // as the variable x in the quadratic term.
   auto x_prime = prog_.NewContinuousVariables<2>();
   const Eigen::Vector3d p_prime(3, 2, 1);
@@ -296,8 +296,8 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, SolveProblem1) {
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, SolveProblem2) {
-  // Check the case in which the variable y in the linear term are not the same
-  // as the variable x in the quadratic term.
+  // The variable y in the linear term is not the same as the variable x in the
+  // quadratic term.
   Eigen::Matrix2d Q1, Q2;
   Q1 << 1, 0, 0, 2;
   Q2 << 2, 0.1, 0.1, 1;
@@ -512,8 +512,8 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test3) {
-  // Check the case in which the variable y in the linear term is not the same
-  // as the variable x in the quadratic term.
+  // The variable y in the linear term is not the same as the variable x in the
+  // quadratic term.
   // -1 <= -x(0)² - 4x(1)² - 2x(0)x(1) + 2x(1) + 3z(0) + 2z(1) <= 4
   // -1 <= z(0) <= 1
   // -1 <= z(1) <= 1
@@ -566,8 +566,8 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test3) {
-  // Check the case in which the variable y in the linear term are not the same
-  // as the variable x in the quadratic term.
+  // The variable y in the linear term is not the same as the variable x in the
+  // quadratic term.
   // -1 <= x(0)² + 3x(1)² + x(0)x(1) + 2x(0) + 4x(1) + 3y(0) <= 4
   // -1 <= y(0) <= 1
   Eigen::Matrix2d Q;
