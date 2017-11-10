@@ -40,10 +40,10 @@ To change your custom user preferences, go to "Sublime Text", "Preferences",
 
 Full File Path Display
 ----------------------
-Note that this only needs to be done on Mac since the full path appears by
+Note that this only needs to be done on macOS since the full path appears by
 default on Linux machines.
 
-To display the current file's full path in the title bar on Mac::
+To display the current file's full path in the title bar on macOS::
 
     "show_full_path": true,
 

@@ -80,14 +80,12 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.6.1  | | Clang 3.9     | OpenJDK 8  | R2017a            | 2.7.11 |
 |                             | | CMake 3.5.1  | | GCC 5.4       |            |                   |        |
 +-----------------------------+----------------+-----------------+------------+                   +--------+
-| OS X 10.11 ("El Capitan")   | | Bazel 0.6.1  | Apple Clang 8.0 | Oracle 1.8 |                   | 2.7.14 |
-+-----------------------------+ | CMake 3.10.0 +-----------------+            |                   |        |
-| macOS 10.12 ("Sierra")      |                | Apple Clang 9.0 |            |                   |        |
-+-----------------------------+                |                 |            +-------------------+        |
+| macOS 10.12 ("Sierra")      | | Bazel 0.6.1  | Apple Clang 9.0 | Oracle 1.8 |                   | 2.7.14 |
++-----------------------------+ | CMake 3.10.0 |                 |            +-------------------+        |
 | macOS 10.13 ("High Sierra") |                |                 |            | R2017b            |        |
 +-----------------------------+----------------+-----------------+------------+-------------------+--------+
 
-macOS 10.13 ("High Sierra") support is experimental and untested in continuous
+macOS 10.13 ("High Sierra") MATLAB support is experimental and untested in continuous
 integration.
 
 Code Review
