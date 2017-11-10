@@ -197,6 +197,9 @@ def lcm_cc_library(
         includes = includes,
         **kwargs)
 
+    # We report the computed output filenames for use by calling code.
+    return struct(hdrs = outs)
+
 def lcm_c_library(
         name,
         lcm_srcs,
