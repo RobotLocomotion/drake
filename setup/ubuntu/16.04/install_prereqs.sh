@@ -34,6 +34,7 @@ while true; do
       add-apt-repository -s -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
       apt update
       apt install --no-install-recommends clang-3.9 clang-format-3.9 lldb-3.9
+      apt install --no-install-recommends clang-4.0 clang-format-4.0 lldb-4.0
       break
       ;;
     [Nn]*) break ;;
