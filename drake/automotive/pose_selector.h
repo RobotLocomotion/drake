@@ -12,6 +12,7 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/road_odometry.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_vector.h"
 
@@ -138,9 +139,9 @@ class PoseSelector {
  private:
   // Given a @p lane_direction, returns its default branch and updates @p
   // lane_direction to match the `lane` and `with_s` of that branch.  If there
-  // is no default branch, returns `nullptr` and sets `lane_direction->lane` to
+  // is no default branch, returns `nullopt` and sets `lane_direction->lane` to
   // `nullptr`.
-  static std::unique_ptr<maliput::api::LaneEnd> GetDefaultOngoingLane(
+  static optional<maliput::api::LaneEnd> GetDefaultOngoingLane(
       LaneDirection* lane_direction);
 
   // Returns a RoadOdometry that contains an infinite `s` position, zero `r` and

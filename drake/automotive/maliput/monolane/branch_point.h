@@ -8,6 +8,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -72,7 +73,7 @@ class BranchPoint : public api::BranchPoint {
   const api::LaneEndSet* DoGetOngoingBranches(
       const api::LaneEnd& end) const override;
 
-  std::unique_ptr<api::LaneEnd> DoGetDefaultBranch(
+  optional<api::LaneEnd> DoGetDefaultBranch(
       const api::LaneEnd& end) const override;
 
   const api::LaneEndSet* DoGetASide() const override { return &a_side_; }

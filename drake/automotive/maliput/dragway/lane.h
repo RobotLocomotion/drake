@@ -4,6 +4,7 @@
 
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
@@ -139,7 +140,7 @@ class Lane final : public api::Lane {
   const api::LaneEndSet* DoGetOngoingBranches(
       const api::LaneEnd::Which which_end) const final;
 
-  std::unique_ptr<api::LaneEnd> DoGetDefaultBranch(
+  optional<api::LaneEnd> DoGetDefaultBranch(
       const api::LaneEnd::Which which_end) const final;
 
   double do_length() const final { return length_; }
