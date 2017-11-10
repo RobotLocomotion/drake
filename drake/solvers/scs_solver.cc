@@ -2,8 +2,12 @@
 
 #include <Eigen/Sparse>
 
+// clang-format off
+// scs.h should be included before linsys/amatrix.h, since amatrix.h uses types
+// scs_float, scs_int, etc, defined in scs.h
 #include "scs.h"
 #include "linsys/amatrix.h"
+// clang-format on
 
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
@@ -26,7 +30,7 @@ void ParseLinearCost(const MathematicalProgram& prog, Eigen::VectorXd* c,
 
 void ParseLinearEqualityConstraint(
     const MathematicalProgram& prog,
-    std::vector<Eigen::Triplet<double>>* A_triplets, Eigen::VectorXd* b,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
     int* A_row_count, SCS_CONE* cone) {
   int num_linear_equality_constraints_rows = 0;
   // The linear equality constraint A x = b is converted to
@@ -51,9 +55,10 @@ void ParseLinearEqualityConstraint(
     }
     const int num_Ai_rows =
         linear_equality_constraint.constraint()->num_constraints();
-    b->resize(b->rows() + num_Ai_rows);
-    b->bottomRows(num_Ai_rows) =
-        linear_equality_constraint.constraint()->lower_bound();
+    b->reserve(b->size() + num_Ai_rows);
+    for (int i = 0; i < num_Ai_rows; ++i) {
+      b->push_back(linear_equality_constraint.constraint()->lower_bound()(i));
+    }
     *A_row_count += num_Ai_rows;
     num_linear_equality_constraints_rows += num_Ai_rows;
   }
@@ -62,7 +67,7 @@ void ParseLinearEqualityConstraint(
 
 void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
                                 std::vector<Eigen::Triplet<double>>* A_triplets,
-                                Eigen::VectorXd* b, int* A_row_count,
+                                std::vector<double>* b, int* A_row_count,
                                 SCS_CONE* cone) {
   // A bounding box constraint l <= x <= u is converted to the SCS form as
   // x + s1 = u, -x + s2 = -l, s1, s2 in the positive cone.
@@ -71,17 +76,27 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
   // it to x + s = l, s in zero cone.
   int num_bounding_box_constraint_rows = 0;
   for (const auto& bounding_box_constraint : prog.bounding_box_constraints()) {
+    int num_scs_new_constraint = 0;
     const VectorXDecisionVariable& xi = bounding_box_constraint.variables();
     const int num_xi_rows = xi.rows();
     A_triplets->reserve(A_triplets->size() + 2 * num_xi_rows);
+    b->reserve(b->size() + 2 * num_xi_rows);
     for (int i = 0; i < num_xi_rows; ++i) {
-      A_triplets->emplace_back(i + *A_row_count, prog.FindDecisionVariableIndex(xi(i)), 1);
-      A_triplets->emplace_back(i + *A_row_count + num_xi_rows, prog.FindDecisionVariableIndex(xi(i)), -1);
+      if (!std::isinf(bounding_box_constraint.constraint()->upper_bound()(i))) {
+        A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
+                                 prog.FindDecisionVariableIndex(xi(i)), 1);
+        b->push_back(bounding_box_constraint.constraint()->upper_bound()(i));
+        ++num_scs_new_constraint;
+      }
+      if (!std::isinf(bounding_box_constraint.constraint()->lower_bound()(i))) {
+        A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
+                                 prog.FindDecisionVariableIndex(xi(i)), -1);
+        b->push_back(-bounding_box_constraint.constraint()->lower_bound()(i));
+        ++num_scs_new_constraint;
+      }
     }
-    b->resize(b->rows() + 2 * num_xi_rows);
-    b->bottomRows(2 * num_xi_rows) << bounding_box_constraint.constraint()->upper_bound(), -bounding_box_constraint.constraint()->lower_bound();
-    *A_row_count += 2 * num_xi_rows;
-    num_bounding_box_constraint_rows += 2 * num_xi_rows;
+    *A_row_count += num_scs_new_constraint;
+    num_bounding_box_constraint_rows += num_scs_new_constraint;
   }
   cone->l += num_bounding_box_constraint_rows;
 }
@@ -108,7 +123,7 @@ std::string Scs_return_info(scs_int scs_status) {
       return "SCS solved";
     case SCS_SOLVED_INACCURATE:
       return "SCS solved inaccurate";
-    default :
+    default:
       throw std::runtime_error("Unknown scs status.");
   }
 }
@@ -123,7 +138,7 @@ void ExtractSolution(MathematicalProgram* prog,
       Eigen::Map<Eigen::VectorXd>(scs_sol_vars.x, prog->num_vars()));
 }
 
-bool ScsSolver::available() const {return true;}
+bool ScsSolver::available() const { return true; }
 
 SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // SCS solves the problem in this form
@@ -158,19 +173,10 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
 
   // cone stores all the cones K in the problem.
   SCS_CONE* cone = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
-  /*cone.f = 0;
-  cone.l = 0;
-  cone.q = nullptr;
-  cone.qsize = 0;
-  cone.s = nullptr;
-  cone.ssize = 0;
-  cone.ep = 0;
-  cone.ed = 0;
-  cone.p = nullptr;
-  cone.psize = 0;*/
+
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
-  Eigen::VectorXd b(0);
+  std::vector<double> b;
 
   Eigen::VectorXd c = Eigen::VectorXd::Zero(num_vars);
   double cost_constant{0};
@@ -184,26 +190,51 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // Parse bounding box constraint
   ParseBoundingBoxConstraint(prog, &A_triplets, &b, &A_row_count, cone);
 
-  SCS_PROBLEM_DATA* scs_problem_data = static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
+  SCS_PROBLEM_DATA* scs_problem_data =
+      static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
   scs_problem_data->m = A_row_count;
   scs_problem_data->n = num_vars;
   Eigen::SparseMatrix<double> A(scs_problem_data->m, scs_problem_data->n);
-  std::cout << "rows: " << scs_problem_data->m << " cols: " << scs_problem_data->n << std::endl;
+  std::cout << "rows: " << scs_problem_data->m
+            << " cols: " << scs_problem_data->n << std::endl;
   for (const auto& triplet : A_triplets) {
-    std::cout << "(" << triplet.row() << "," << triplet.col() <<"):" << triplet.value() << std::endl;
+    std::cout << "(" << triplet.row() << "," << triplet.col()
+              << "):" << triplet.value() << std::endl;
   }
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
   scs_problem_data->A = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
-  scs_problem_data->A->x = A.valuePtr();
-  scs_problem_data->A->i = A.innerIndexPtr();
-  scs_problem_data->A->p = A.outerIndexPtr();
+  scs_problem_data->A->x = new scs_float[A.nonZeros()];
+  scs_problem_data->A->i = new scs_int[A.nonZeros()];
+  scs_problem_data->A->p = new scs_int[scs_problem_data->n + 1];
+  // TODO(hongkai.dai): should I use memcpy for the assignment in the for loop?
+  for (int i = 0; i < A.nonZeros(); ++i) {
+    scs_problem_data->A->x[i] = *(A.valuePtr() + i);
+    scs_problem_data->A->i[i] = *(A.innerIndexPtr() + i);
+  }
+  for (int i = 0; i < scs_problem_data->n + 1; ++i) {
+    scs_problem_data->A->p[i] = *(A.outerIndexPtr() + i);
+  }
   scs_problem_data->A->m = scs_problem_data->m;
   scs_problem_data->A->n = scs_problem_data->n;
-  scs_problem_data->b = b.data();
-  scs_problem_data->c = c.data();
+  std::cout << "c:" << c.transpose() << std::endl;
+  std::cout << "b:\n";
+  for (int i = 0; i < static_cast<int>(b.size()); ++i) {
+    std::cout << b[i] << " ";
+  }
+  std::cout << std::endl;
+  scs_problem_data->b = new scs_float[b.size()];
+  for (int i = 0; i < static_cast<int>(b.size()); ++i) {
+    scs_problem_data->b[i] = b[i];
+  }
+  scs_problem_data->c = new scs_float[num_vars];
+  for (int i = 0; i < num_vars; ++i) {
+    scs_problem_data->c[i] = c(i);
+  }
+
   // Set the parameters to default values.
-  scs_problem_data->stgs = static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
+  scs_problem_data->stgs =
+      static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
   scs_problem_data->stgs->alpha = ALPHA;
   scs_problem_data->stgs->cg_rate = CG_RATE;
   scs_problem_data->stgs->eps = EPS;
@@ -217,7 +248,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   SCS_INFO scs_info{0};
   SCS_WORK* scs_work = scs_init(scs_problem_data, cone, &scs_info);
 
-  SCS_SOL_VARS* scs_sol = static_cast<SCS_SOL_VARS*>(scs_calloc(1, sizeof(SCS_SOL_VARS)));
+  SCS_SOL_VARS* scs_sol =
+      static_cast<SCS_SOL_VARS*>(scs_calloc(1, sizeof(SCS_SOL_VARS)));
 
   scs_int scs_status =
       scs_solve(scs_work, scs_problem_data, cone, scs_sol, &scs_info);
@@ -226,6 +258,7 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
     sol_result = SolutionResult::kSolutionFound;
     ExtractSolution(&prog, *scs_sol);
+    prog.SetOptimalCost(scs_info.pobj + cost_constant);
   } else if (scs_status == SCS_UNBOUNDED ||
              scs_status == SCS_UNBOUNDED_INACCURATE) {
     sol_result = SolutionResult::kUnbounded;

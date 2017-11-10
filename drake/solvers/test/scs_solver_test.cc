@@ -25,26 +25,37 @@ GTEST_TEST(LinearProgramTest, Test0) {
     SolutionResult sol_result = solver.Solve(prog);
     EXPECT_EQ(sol_result, SolutionResult::kUnbounded);
   }
-/*
-  // Now add the constraint x(1) <= 1. The problem should still be unbounded.
-  prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 1, x(1));
+
+  // Now add the constraint x(1) <= 1. The problem is
+  // min x(0) + 2 * x(1)
+  // s.t x(0) + x(1) = 2
+  //     x(1) <= 1
+  // the problem should still be unbounded.
+  prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 1,
+                                x(1));
   if (solver.available()) {
     SolutionResult sol_result = solver.Solve(prog);
     EXPECT_EQ(sol_result, SolutionResult::kUnbounded);
   }
 
-  // The accuracy of SCS is not high, so we choose 1E-3 here, same as the
+  // The accuracy of SCS is not high, so we choose 1E-2 here, 10x the
   // epsilon defined in SCS.
-  const double tol{1E-3};
-  // Now add the constraint x(0) <= 5. The problem should be feasible. The
-  // optimal cost is -1, with x = (5, -3)
-  prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 5, x(0));
+  const double tol{1E-2};
+  // Now add the constraint x(0) <= 5. The problem is
+  // min x(0) + 2x(1)
+  // s.t x(0) + x(1) = 2
+  //     x(1) <= 1
+  //     x(0) <= 5
+  // the problem should be feasible. The optimal cost is -1, with x = (5, -3)
+  prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 5,
+                                x(0));
   if (solver.available()) {
     SolutionResult sol_result = solver.Solve(prog);
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
     EXPECT_NEAR(prog.GetOptimalCost(), -1, tol);
     const Eigen::Vector2d x_expected(5, -3);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, tol, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, tol,
+                                MatrixCompareType::absolute));
   }
 
   // Now change the cost to 3x(0) - x(1) + 5, and add the constraint 2 <= x(0)
@@ -61,8 +72,9 @@ GTEST_TEST(LinearProgramTest, Test0) {
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
     EXPECT_NEAR(prog.GetOptimalCost(), 11, tol);
     const Eigen::Vector2d x_expected(2, 0);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, tol, MatrixCompareType::absolute));
-  }*/
+    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, tol,
+                                MatrixCompareType::absolute));
+  }
 }
 
 GTEST_TEST(LinearProgramTest, Test1) {
@@ -74,6 +86,7 @@ GTEST_TEST(LinearProgramTest, Test1) {
   // This problem is infeasible.
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>("x");
+  prog.AddLinearCost(x(0) + 2 * x(1));
   prog.AddLinearEqualityConstraint(x(0) + x(1) == 1 && 2 * x(0) + x(1) == 2);
   prog.AddLinearEqualityConstraint(x(0) - 2 * x(1) == 3);
   ScsSolver scs_solver;
