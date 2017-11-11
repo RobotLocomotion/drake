@@ -183,6 +183,78 @@ toolchain {
   linking_mode_flags { mode: DYNAMIC }
 }
 
+# Clang 4.0 on Linux
+toolchain {
+  toolchain_identifier: "clang-4.0-linux"
+  abi_libc_version: "local"
+  abi_version: "local"
+  builtin_sysroot: ""
+  compiler: "clang-4.0"
+  compiler_flag: "-U_FORTIFY_SOURCE"
+  compiler_flag: "-fstack-protector"
+  compiler_flag: "-Wall"
+  compiler_flag: "-B/usr/bin"
+  compiler_flag: "-B/usr/bin"
+  compiler_flag: "-fcolor-diagnostics"
+  compiler_flag: "-fno-omit-frame-pointer"
+  cxx_builtin_include_directory: "/usr/include/c++/5.4.0"
+  cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu/c++/5.4.0"
+  cxx_builtin_include_directory: "/usr/include/c++/5.4.0/backward"
+  cxx_builtin_include_directory: "/usr/local/include"
+  cxx_builtin_include_directory: "/usr/include/clang/4.0.0/include"
+  cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu"
+  cxx_builtin_include_directory: "/usr/include"
+  cxx_flag: "-std=c++0x"
+  host_system_name: "local"
+  linker_flag: "-lstdc++"
+  linker_flag: "-lm"
+  linker_flag: "-fuse-ld=gold"
+  linker_flag: "-B/usr/bin"
+  linker_flag: "-B/usr/bin"
+  needsPic: true
+  objcopy_embed_flag: "-I"
+  objcopy_embed_flag: "binary"
+  supports_fission: false
+  supports_gold_linker: true
+  supports_incremental_linker: false
+  supports_interface_shared_objects: false
+  supports_normalizing_ar: false
+  supports_start_end_lib: true
+  target_cpu: "k8"
+  target_libc: "local"
+  target_system_name: "local"
+  unfiltered_cxx_flag: "-Wno-builtin-macro-redefined"
+  unfiltered_cxx_flag: "-D__DATE__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIMESTAMP__=\"redacted\""
+  unfiltered_cxx_flag: "-D__TIME__=\"redacted\""
+  tool_path {name: "ar" path: "/usr/bin/ar" }
+  tool_path {name: "cpp" path: "/usr/bin/cpp" }
+  tool_path {name: "dwp" path: "/usr/bin/dwp" }
+  tool_path {name: "gcc" path: "/usr/bin/clang-4.0" }
+  tool_path {name: "gcov" path: "/usr/bin/gcov" }
+  tool_path {name: "ld" path: "/usr/bin/ld" }
+  tool_path {name: "nm" path: "/usr/bin/nm" }
+  tool_path {name: "objcopy" path: "/usr/bin/objcopy" }
+  tool_path {name: "objdump" path: "/usr/bin/objdump" }
+  tool_path {name: "strip" path: "/usr/bin/strip" }
+
+  compilation_mode_flags {
+    mode: DBG
+    compiler_flag: "-g"
+  }
+  compilation_mode_flags {
+    mode: OPT
+    compiler_flag: "-g0"
+    compiler_flag: "-O2"
+    compiler_flag: "-D_FORTIFY_SOURCE=1"
+    compiler_flag: "-DNDEBUG"
+    compiler_flag: "-ffunction-sections"
+    compiler_flag: "-fdata-sections"
+    linker_flag: "-Wl,--gc-sections"
+  }
+  linking_mode_flags { mode: DYNAMIC }
+}
+
 # Clang 3.9 on Linux
 toolchain {
   toolchain_identifier: "clang-3.9-linux"
