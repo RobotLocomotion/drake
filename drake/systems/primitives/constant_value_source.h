@@ -28,7 +28,13 @@ class ConstantValueSource : public LeafSystem<T> {
   /// @p value The constant value to emit.
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit ConstantValueSource(const ConstantValueSource<U>&);
+
  private:
+  template <typename> friend class ConstantValueSource;
+
   // TODO(david-german-tri): move source_value_ to the system's parameters.
   const std::unique_ptr<AbstractValue> source_value_;
 };

@@ -43,7 +43,16 @@ class Multiplexer : public LeafSystem<T> {
   /// `model_vector`.
   explicit Multiplexer(const systems::BasicVector<T>& model_vector);
 
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Multiplexer(const Multiplexer<U>&);
+
  private:
+  template <typename> friend class Multiplexer;
+
+  Multiplexer(std::vector<int> input_sizes,
+              const systems::BasicVector<T>& model_vector);
+
   // This is the calculator for the output port.
   void CombineInputsToOutput(const Context<T>& context,
                              BasicVector<T>* output) const;
