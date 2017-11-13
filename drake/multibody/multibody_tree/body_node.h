@@ -780,6 +780,37 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
+  void CalcAcrossNodePointsGeometricJacobianInWorld(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<SpatialVelocity<T>>& Jimob_PB_W,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_BQi_set,
+      EigenPtr<MatrixX<T>> J_PBqi_W) const {
+    DRAKE_DEMAND(
+        static_cast<int>(Jimob_PB_W.size()) == get_num_mobilizer_velocites());
+    DRAKE_DEMAND(J_PBqi_W != nullptr);
+    const int num_points = p_BQi_set.cols();
+    const int Jnum_rows = 3 * num_points;
+    DRAKE_DEMAND(J_PBqi_W->rows() == Jnum_rows);
+    DRAKE_DEMAND(J_PBqi_W->cols() ==  get_num_mobilizer_velocites());
+
+    const Matrix3<T>& R_WB = get_X_WB(pc).linear();
+
+    for (int ipoint = 0; ipoint < num_points; ++ipoint) {
+      const int Jrow = 3 * ipoint;
+      const auto& p_BQi = p_BQi_set.col(ipoint);
+      const Vector3<T> p_BQi_W = R_WB * p_BQi;
+
+      for (int imobility = 0;
+           imobility < get_num_mobilizer_velocites(); ++imobility) {
+        const SpatialVelocity<T>& V_PB_W = Jimob_PB_W[imobility];
+        const SpatialVelocity<T> V_PBqi_W = V_PB_W.Shift(p_BQi_W);
+        J_PBqi_W->cols(imobility) = V_PBqi_W.get_coeffs();
+      }
+    }
+  }
+
  protected:
   /// Returns the inboard frame F of this node's mobilizer.
   /// @throws std::runtime_error if called on the root node corresponding to
@@ -795,7 +826,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return get_mobilizer().get_outboard_frame();
   }
 
- private:
   // Returns the index to the parent body of the body associated with this node.
   // For the root node, corresponding to the world body, this method returns an
   // invalid body index. Attempts to using invalid indexes leads to an exception
@@ -1007,6 +1037,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return get_mutable_velocities_from_array(tau);
   }
 
+ private:
   // Helper method to be called within a base-to-tip recursion that computes
   // into the PositionKinematicsCache:
   // - X_PB(qb_P, qm_B, qb_B)
@@ -1092,6 +1123,48 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_ASSERT(pc != nullptr);
     Isometry3<T>& X_FM = get_mutable_X_FM(pc);
     X_FM = get_mobilizer().CalcAcrossMobilizerTransform(context);
+  }
+
+  void CalcAcrossNodeJacobianInWorld(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      EigenPtr<MatrixX<T>> Jimob_PB_W) const {
+    DRAKE_DEMAND(topology_.body != world_index());
+    DRAKE_DEMAND(Jimob_PB_W != nullptr);
+    DRAKE_DEMAND(
+        static_cast<int>(Jimob_PB_W->size()) == get_num_mobilizer_velocites());
+
+    // Inboard frame F of this node's mobilizer.
+    const Frame<T>& frame_F = get_inboard_frame();
+    // Outboard frame M of this node's mobilizer.
+    const Frame<T>& frame_M = get_outboard_frame();
+
+    const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
+    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
+
+    // Pose of the parent body P in world frame W.
+    // Available since we are called within a base-to-tip recursion.
+    const Isometry3<T>& X_WP = get_X_WP(pc);
+
+    // Orientation (rotation) of frame F with respect to the world frame W.
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
+
+    // Vector from Mo to Bo expressed in frame F as needed below:
+    const Vector3<T> p_MB_F =
+        /* p_MB_F = R_FM * p_MB_M */
+        get_X_FM(pc).linear() * X_MB.translation();
+
+    // Compute the imob-th column in J_PB_W:
+    VectorUpTo6<T> v = VectorUpTo6<T>::Zero(get_num_mobilizer_velocites());
+    for (int imob = 0; imob < get_num_mobilizer_velocites(); ++imob) {
+      v(imob) = 1.0;
+      const SpatialVelocity<T> Jimob_FM =
+          get_mobilizer().CalcAcrossMobilizerSpatialVelocity(context, v);
+      v(imob) = 0.0;
+      // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
+      //         = R_WF * V_FM.Shift(p_MoBo_F)
+      Jimob_PB_W->col(imob) = (R_WF * Jimob_FM.Shift(p_MB_F)).get_coeffs();
+    }
   }
 
   // This method computes the total force Ftot_BBo on body B that must be

@@ -506,6 +506,77 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 }
 
 template <typename T>
+Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
+    const systems::Context<T>& context,
+    const Frame<T>& from_frame_B, const Frame<T>& to_frame_A) const {
+  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
+  PositionKinematicsCache<T> pc(this->get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  const Isometry3<T>& X_WA =
+      pc.get_X_WB(to_frame_A.get_body().get_node_index());
+  const Isometry3<T>& X_WB =
+      pc.get_X_WB(from_frame_B.get_body().get_node_index());
+  return X_WA.inverse() * X_WB;
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcPointsPositions(
+    const systems::Context<T>& context,
+    const Frame<T>& from_frame_B, const Frame<T>& to_frame_A,
+    const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+    EigenPtr<Matrix3X<T>> p_AQi) const {
+  DRAKE_DEMAND(p_BQi.rows() == 3);
+  DRAKE_DEMAND(p_AQi != nullptr);
+  DRAKE_DEMAND(p_AQi->rows() == 3);
+  DRAKE_DEMAND(p_AQi->cols() == p_BQi.cols());
+  const Isometry3<T> X_AB =
+      CalcRelativeTransform(context, from_frame_B, to_frame_A);
+  *p_AQi = X_AB * p_BQi;
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcPointsGeometricJacobianInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BPi,
+    EigenPtr<MatrixX<T>> J_WPi) const {
+  DRAKE_DEMAND(p_BPi.rows() == 3);
+  const int num_points = p_BPi.cols();
+  DRAKE_DEMAND(J_WPi != nullptr);
+  DRAKE_DEMAND(J_WPi->rows() == 3 * num_points);
+  DRAKE_DEMAND(J_WPi->cols() == get_num_velocities());
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // Body to which frame B is attached to:
+  const Body<T>& body_B = frame_B.get_body();
+  const BodyNodeTopology& body_B_node =
+      topology_.get_body_node(body_B.get_node_index());
+
+  // Compute kinematic path from body B to the world:
+  const int path_size = body_B_node.level + 1;
+  std::vector<BodyNodeIndex> path_to_world(path_size);
+  topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
+
+  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
+  PositionKinematicsCache<T> pc(this->get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+
+  // Performs a scan of all bodies in the kinematic path from body_B to the
+  // world computing each node's contribution to J_WPi.
+  const int Jnrows = 3 * num_points;  // Number of rows in J_WPi.
+  for (BodyNodeIndex body_node_index : path_to_world) {
+    const BodyNode<T>& node = *body_nodes_[body_node_index];
+    const BodyNodeTopology& node_topology = node.get_topology();
+    const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
+    const int num_velocities = node_topology.num_mobilizer_velocities;
+    auto Jnode_WPi = J_WPi->block(0, start_index_in_v, Jnrows, num_velocities);
+    node.CalcAcrossMobilizerPointsGeometricJacobianInWorld(
+        mbt_context, pc, frame_B, p_BPi, &Jnode_WPi);
+  }
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.

@@ -20,6 +20,13 @@ class BodyNodeWelded : public BodyNode<T> {
  public:
   explicit BodyNodeWelded(const Body<T>* body) :
       BodyNode<T>(nullptr, body, nullptr) {}
+
+  void CalcAcrossMobilizerPointsGeometricJacobianInWorld(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_WQi_set,
+      EigenPtr<MatrixX<T>> J_WQi) const override {}
 };
 
 }  // namespace internal

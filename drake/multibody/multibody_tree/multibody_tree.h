@@ -1000,6 +1000,23 @@ class MultibodyTree {
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
+  ///  Computes the relative transform X_AB from a frame B to a frame A.
+  ///  That is, the position of a point Q measured and expressed in frame A can
+  ///  be computed from the position p_BQ of this point measured and expressed
+  ///  in a frame B using the transformation `p_AQ = X_AB * p_BQ`.
+  Isometry3<T> CalcRelativeTransform(
+      const systems::Context<T>& context,
+      const Frame<T>& from_frame_B, const Frame<T>& to_frame_A) const;
+
+  ///  Given a vector of positions p_BQi for a set of points Qi measured in a
+  ///  frame B, this method computes the position `p_BPi` of each point Pi in
+  ///  another frame A.
+  void CalcPointsPositions(
+      const systems::Context<T>& context,
+      const Frame<T>& from_frame_B, const Frame<T>& to_frame_A,
+      const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+      EigenPtr<Matrix3X<T>> p_AQi) const;
+
   /// @name Methods to compute multibody Jacobians.
   /// @{
 
@@ -1040,8 +1057,8 @@ class MultibodyTree {
   ///   the number of generalized velocities.
   void CalcPointsGeometricJacobianInWorld(
       const systems::Context<T>& context,
-      const Frame& frame_B,
-      const Matrix3X<T>& p_BPi, EigenPtr<MatrixX<T>> J_WPi);
+      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BPi,
+      EigenPtr<MatrixX<T>> J_WPi) const;
 
 
   // --------------------------------------
