@@ -67,7 +67,7 @@ drake_lcm_cc_library(
     includes = ["test"],
     lcm_package = "drake",
     lcm_srcs = ["test/lcmt_sample_t.lcm"],
-    strip_include_prefix = "/" + native.package_name() + "/test",
+    strip_include_prefix = "/tools/vector_gen/test",
 )
 
 # From sample.named_vector, create gen/sample_translator.{h,cc}.
