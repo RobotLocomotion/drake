@@ -76,12 +76,139 @@ def _check_library_deps_blacklist(name, deps):
         return
     if type(deps) != 'list':
         # We can't handle select() yet.
+        # TODO(jwnimmer-tri) We should handle select.
         return
     for dep in deps:
         if dep.endswith(":main"):
             fail("The cc_library '" + name + "' must not depend on a :main " +
                  "function from a cc_library; only cc_binary program should " +
                  "have a main function")
+
+def _prune_private_hdrs(srcs):
+    """Returns (new_srcs, private_hdrs), where .h files have been split out of
+    srcs into private_hdrs, leaving new_srcs remaining.
+    """
+    if type(srcs) == "select":
+        # We can't handle select() yet.
+        # TODO(jwnimmer-tri) We should handle select.
+        return srcs, []
+    private_hdrs = [x for x in srcs if x.endswith(".h")]
+    if private_hdrs:
+        srcs = [x for x in srcs if x not in private_hdrs]
+    return srcs, private_hdrs
+
+def installed_headers_for_dep(dep):
+    """Convert a cc_library label to a DrakeCc provider label.  Given a label
+    `dep` for a cc_library, such as would be found in the the `deps = []` of
+    some cc_library, returns the corresponding label for the matching DrakeCc
+    provider associated with that library.  The returned label is appropriate
+    to use in the deps of of a `drake_installed_headers()` rule.
+
+    Once our rules are better able to call native rules like native.cc_binary,
+    instead of having two labels we would prefer to tack a DrakeCc provider
+    onto the cc_library target directly.
+
+    Related links from upstream:
+    https://github.com/bazelbuild/bazel/issues/2163
+    https://docs.bazel.build/versions/master/skylark/cookbook.html#macro-multiple-rules
+    """
+    suffix = ".installed_headers"
+    if ":" in dep:
+        # The label is already fully spelled out; just tack on our suffix.
+        result = dep + suffix
+    else:
+        # The label is the form //foo/bar which means //foo/bar:bar.
+        last_slash = dep.rindex("/")
+        libname = dep[last_slash + 1:]
+        result = dep + ":" + libname + suffix
+    return result
+
+def installed_headers_for_drake_deps(deps):
+    """Filters `deps` to find drake labels (i.e., discard third_party labels),
+    and then maps `installed_headers_for_dep()` over that list of drake deps.
+
+    This is useful for computing the deps of a `drake_installed_headers()` rule
+    from the deps of a `cc_library()` rule.
+    """
+    if type(deps) == "select":
+        # We can't handle select() yet.
+        # TODO(jwnimmer-tri) We should handle select.
+        return []
+    return [
+        installed_headers_for_dep(x)
+        for x in deps if not x.startswith("@")
+    ]
+
+# A provider to collect Drake metadata about C++ rules.  For background, see
+# https://docs.bazel.build/versions/master/skylark/rules.html#providers.
+DrakeCc = provider()
+
+def _drake_installed_headers_impl(ctx):
+    hdrs = list(ctx.files.hdrs)
+    for x in ctx.files.hdrs_exclude:
+        hdrs.remove(x)
+    transitive_hdrs = depset(hdrs)
+    for dep in ctx.attr.deps:
+        transitive_hdrs += depset(dep[DrakeCc].transitive_hdrs)
+    return [
+        DrakeCc(
+            transitive_hdrs = transitive_hdrs,
+        )
+    ]
+
+"""Declares a rule to provide DrakeCc information about headers that should be
+installed.  We use this instead of the built-in `cc` provider so that we can
+adjust and filter what is going to be installed, versus everything that is
+required to compile.
+"""
+
+drake_installed_headers = rule(
+    attrs = {
+        "hdrs": attr.label_list(
+            mandatory = True,
+            allow_files = True,
+        ),
+        "hdrs_exclude": attr.label_list(
+            allow_files = True,
+        ),
+        "deps": attr.label_list(
+            mandatory = True,
+            providers = [DrakeCc],
+        ),
+    },
+    implementation = _drake_installed_headers_impl,
+)
+
+def _gather_transitive_hdrs_impl(ctx):
+    result = depset()
+    for dep in ctx.attr.deps:
+        result += dep[DrakeCc].transitive_hdrs
+    return struct(files = result)
+
+_gather_transitive_hdrs = rule(
+    attrs = {
+        "deps": attr.label_list(
+            allow_files = False,
+            providers = [DrakeCc],
+        ),
+    },
+    implementation = _gather_transitive_hdrs_impl,
+)
+
+def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
+    """Declare a filegroup that contains the transtive installed hdrs of the
+    targets named by `deps`.
+    """
+    _gather_transitive_hdrs(
+        name = name + "_gather",
+        deps = [installed_headers_for_dep(x) for x in deps],
+        visibility = []
+    )
+    native.filegroup(
+        name = name,
+        srcs = [":" + name + "_gather"],
+        **kwargs
+    )
 
 def drake_cc_library(
         name,
@@ -91,13 +218,20 @@ def drake_cc_library(
         copts = [],
         gcc_copts = [],
         linkstatic = 1,
+        install_hdrs_exclude = [],
         **kwargs):
     """Creates a rule to declare a C++ library.
 
     By default, we produce only static libraries, to reduce compilation time
     on all platforms, and to avoid mysterious dyld errors on OS X. This default
     could be revisited if binary size becomes a concern.
+
+    The deps= of a drake_cc_library must either be another drake_cc_library, or
+    be named like "@something//etc..." (i.e., come from the workspace, not part
+    of Drake).  In other words, all of Drake's C++ libraries must be declared
+    using the drake_cc_library macro.
     """
+    _, private_hdrs = _prune_private_hdrs(srcs)
     _check_library_deps_blacklist(name, deps)
     if native.package_name().startswith("drake"):
         strip_include_prefix = None
@@ -116,6 +250,20 @@ def drake_cc_library(
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         **kwargs)
+    # We install private_hdrs by default, because Bazel's visibility denotes
+    # whether headers can be *directly* included when using cc_library; it does
+    # not precisely relate to which headers should appear in the install tree.
+    # For example, common/symbolic.h is the only public-visibility header for
+    # its cc_library, but we also need to install all of its child headers that
+    # it includes, such as common/symbolic_expression.h.
+    drake_installed_headers(
+        name = name + ".installed_headers",
+        hdrs = hdrs + private_hdrs,
+        hdrs_exclude = install_hdrs_exclude,
+        deps = installed_headers_for_drake_deps(deps),
+        tags = ["nolint"],
+        visibility = ["//visibility:public"],
+    )
 
 def drake_cc_binary(
         name,
