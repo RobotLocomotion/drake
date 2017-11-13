@@ -21,6 +21,8 @@ def drake_cc_proto_library(
     cc_proto_library(
         name = name,
         srcs = srcs,
+        protoc = "@drake//tools/skylark:drake_protoc",
+        default_runtime = "@systemprotobuf",
         tags = tags + ["nolint"],
         **kwargs)
     drake_installed_headers(
@@ -37,5 +39,7 @@ def drake_py_proto_library(
     """A wrapper to insert Drake-specific customizations."""
     py_proto_library(
         name = name,
+        protoc = "@drake//tools/skylark:drake_protoc",
+        default_runtime = None,  # Use the system default.
         tags = tags + ["nolint"],
         **kwargs)

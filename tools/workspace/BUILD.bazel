@@ -28,6 +28,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcmtypes_robotlocomotion",
     "libbot",
     "octomap",
+    "protobuf_cmake",
     "pybind11",
     "scs",
     "sdformat",
@@ -42,7 +43,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gflags",
     "jchart2d",
     "optitrack_driver",
-    "protobuf",
 ]]
 
 install(
