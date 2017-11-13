@@ -127,6 +127,12 @@ def installed_headers_for_drake_deps(deps):
     """Filters `deps` to find drake labels (i.e., discard third_party labels),
     and then maps `installed_headers_for_dep()` over that list of drake deps.
 
+    (Absolute paths to Drake's lcmtypes headers are also filtered out, because
+    LCM headers follow a different #include convention, and so are installed
+    separately.  Refer to drake/lcmtypes/BUILD.bazel for details.  Note that
+    within-package paths are left unchanged, so that this macro can still be
+    used within Drake's lcmtypes folder.)
+
     This is useful for computing the deps of a `drake_installed_headers()` rule
     from the deps of a `cc_library()` rule.
     """
@@ -136,7 +142,10 @@ def installed_headers_for_drake_deps(deps):
         return []
     return [
         installed_headers_for_dep(x)
-        for x in deps if not x.startswith("@")
+        for x in deps if (
+            not x.startswith("@") and
+            not x.startswith("//drake/lcmtypes:")
+        )
     ]
 
 # A provider to collect Drake metadata about C++ rules.  For background, see
