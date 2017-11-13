@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/frame_id_vector.h"
@@ -39,7 +40,14 @@ using FrameIdSet = std::unordered_set<FrameId>;
  GeometryWorld's context-dependent state includes values and structure -- the
  topology of the world.
 
- @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
+ @tparam T The scalar type. Must be a valid Eigen scalar.
+
+ Instantiated templates for the following kinds of T's are provided:
+ - double
+ - AutoDiffXd
+
+ They are already available to link against in the containing library.
+ No other values for T are currently supported. */
 template <typename T>
 class GeometryState {
  public:
@@ -55,6 +63,20 @@ class GeometryState {
 
   /** Default constructor. */
   GeometryState();
+
+  /** Allow assignment from a %GeometryState<double> to a %GeometryState<T>.
+   @internal The SFINAE is required to prevent collision with the default
+   defined assignment operator where T is double. */
+  template <class T1 = T>
+  typename std::enable_if<!std::is_same<T1, double>::value,
+                          GeometryState<T>&>::type
+  operator=(const GeometryState<double>& other) {
+    // This reuses the private copy *conversion* constructor. It is *not*
+    // intended to be performant -- but no one should be copying geometry
+    // world's state frequently anyways.
+    GeometryState<T> temp{other};
+    return *this = temp;
+  }
 
   /** @name        State introspection
 
@@ -249,6 +271,7 @@ class GeometryState {
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
+
   /** Removes all frames and geometry registered from the identified source.
    The source remains registered and further frames and geometry can be
    registered on it.
@@ -324,7 +347,53 @@ class GeometryState {
 
   //@}
 
+  /** Scalar conversion */
+  //@{
+
+  /** Returns a deep copy of this state using the AutoDiffXd scalar with all
+   scalar values initialized from the current values. If this is invoked on an
+   instance already instantiated on AutoDiffXd, it is equivalent to cloning
+   the instance. */
+  std::unique_ptr<GeometryState<AutoDiffXd>> ToAutoDiffXd() const;
+
+  //@}
+
  private:
+  // GeometryState of one scalar type is friends with all other scalar types.
+  template <typename>
+  friend class GeometryState;
+
+  // Conversion constructor. In the initial implementation, this is only
+  // intended to be used to clone an AutoDiff instance from a double instance.
+  template <typename U>
+  GeometryState(const GeometryState<U>& source)
+      : source_frame_id_map_(source.source_frame_id_map_),
+        source_root_frame_map_(source.source_root_frame_map_),
+        source_names_(source.source_names_),
+        source_anchored_geometry_map_(source.source_anchored_geometry_map_),
+        frames_(source.frames_),
+        geometries_(source.geometries_),
+        anchored_geometries_(source.anchored_geometries_),
+        geometry_index_id_map_(source.geometry_index_id_map_),
+        anchored_geometry_index_id_map_(source.anchored_geometry_index_id_map_),
+        X_FG_(source.X_FG_),
+        pose_index_to_frame_map_(source.pose_index_to_frame_map_) {
+    // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we *can*
+    // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
+    auto convert = [](const std::vector<Isometry3<U>>& s,
+                      std::vector<Isometry3<T>>* d) {
+      std::vector<Isometry3<T>>& dest = *d;
+      dest.resize(s.size());
+      for (size_t i = 0; i < s.size(); ++i) {
+        dest[i].matrix() = s[i].matrix();
+      }
+    };
+
+    convert(source.X_PF_, &X_PF_);
+    convert(source.X_WG_, &X_WG_);
+    convert(source.X_WF_, &X_WF_);
+  }
+
   // Allow geometry dispatch to peek into GeometryState.
   friend void DispatchLoadMessage(const GeometryState<double>&);
 

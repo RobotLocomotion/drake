@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
@@ -71,6 +72,15 @@ GTEST_TEST(FrameKinematicsVector, MoveConstructor) {
     Vector3<double> pose{kValue, kValue, kValue};
     EXPECT_EQ(poses.mutable_vector()[i].translation(), pose);
   }
+}
+
+GTEST_TEST(FrameKinematicsVector, AutoDiffInstantiation) {
+  SourceId source_id = SourceId::get_new_id();
+  FramePoseVector<AutoDiffXd> poses(source_id);
+
+  EXPECT_EQ(poses.get_source_id(), source_id);
+  EXPECT_EQ(poses.vector().size(), 0);
+  EXPECT_EQ(poses.vector().begin(), poses.vector().end());
 }
 
 }  // namespace test
