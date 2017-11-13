@@ -1000,6 +1000,48 @@ class MultibodyTree {
 
   /// @name Methods to compute multibody Jacobians.
   /// @{
+
+  /// Given a set of points `Pi` with position `p_WPi` in the world frame, this
+  /// method computes the geometric Jacobian `J_WPi` defined by: <pre>
+  ///   J_WPi(q) = d(v_WPi(q, v))/dv
+  /// </pre>
+  /// where `v_WPi` is the translational velocity of point `Pi` in the world
+  /// frame W and v is the vector of generalized velocities. Since the spatial
+  /// velocity of each point `Pi` is linear in the generalized velocities, the
+  /// geometric Jacobian `J_WPi` is a function of the generalized coordinates q
+  /// only.
+  ///
+  /// The position of each point `Pi` in the set is specified by its (fixed)
+  /// position `p_BPi` in a frame B.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q.
+  /// @param[in] frame_B
+  ///   The positions `p_BPi` of each point in the input set are measured and
+  ///   expressed in this frame B and are constant (fixed) in this frame.
+  /// @param[in] p_BPi
+  ///   A matrix with the fixed position of a set of points `Pi` measured and
+  ///   expressed in `frame_B`.
+  ///   Each column of this matrix contains the position vector `p_BPi` for a
+  ///   point `Pi` measured and expressed in frame B. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] J_WPi
+  ///   The geometric Jacobian `J_WPi(q)`, function of the generalized positions
+  ///   q only. This Jacobian relates the translational velocity `v_WPi` of
+  ///   each point `Pi` in the input set by: <pre>
+  ///     `v_WPi = J_WPi⋅v`
+  ///   </pre>
+  ///   so that `v_WPi` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Pi` in the same order they were given in the
+  ///   input set. Therefore `J_WPi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities.
+  void CalcPointsGeometricJacobianInWorld(
+      const systems::Context<T>& context,
+      const Frame& frame_B,
+      const Matrix3X<T>& p_BPi, EigenPtr<MatrixX<T>> J_WPi);
+
+
   // --------------------------------------
   // From SimbodyMatterSubsystem.h:
   // --------------------------------------
