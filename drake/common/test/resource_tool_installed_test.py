@@ -21,7 +21,7 @@ class TestResourceTool(unittest.TestCase):
             f.write("tmp_resource")
 
         # Remove the un-installed copy, so we _know_ it won't be used.
-        os.remove(".drake-resource-sentinel")
+        os.remove("drake/.drake-find_resource-sentinel")
         os.remove("drake/__init__.py")
         os.remove("drake/common/__init__.py")
         os.remove("drake/common/install")

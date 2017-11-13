@@ -69,7 +69,7 @@ GTEST_TEST(FindResourceTest, AlternativeDirectory) {
   const std::string candidate_filename = "drake/candidate.ext";
   spruce::dir::mkdir(test_directory);
   spruce::dir::mkdir(test_directory + "/drake");
-  Touch(test_directory + "/.drake-resource-sentinel");
+  Touch(test_directory + "/drake/.drake-find_resource-sentinel");
   Touch(test_directory + "/" + candidate_filename);
   AddResourceSearchPath(test_directory);
   EXPECT_TRUE(!GetResourceSearchPaths().empty());

@@ -226,7 +226,7 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 
-DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
+DRAKE_RESOURCE_SENTINEL = "//drake:.drake-find_resource-sentinel"
 
 drake_cc_library(
     name = "find_resource",
@@ -369,7 +369,7 @@ install(
     # package name in the installed path.  For now, we'll just specify it
     # manually.
     runtime_dest = "libexec/drake/drake/common",
-    data_dest = "share/drake",
+    data_dest = "share/drake/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )
