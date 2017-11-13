@@ -4,10 +4,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using std::make_unique;
 
@@ -101,6 +104,34 @@ TEST_F(MultiplexerTest, ModelVectorConstructor) {
 TEST_F(MultiplexerTest, IsStateless) {
   Reset({1});
   EXPECT_EQ(0, context_->get_continuous_state().size());
+}
+
+// Tests conversion to AutoDiffXd.
+TEST_F(MultiplexerTest, ToAutoDiff) {
+  Reset({1, 1, 1});
+  EXPECT_TRUE(is_autodiffxd_convertible(*mux_, [&](const auto& converted) {
+    EXPECT_EQ(3, converted.get_num_input_ports());
+    EXPECT_EQ(1, converted.get_num_output_ports());
+
+    EXPECT_EQ(1, converted.get_input_port(0).size());
+    EXPECT_EQ(1, converted.get_input_port(1).size());
+    EXPECT_EQ(1, converted.get_input_port(2).size());
+    EXPECT_EQ(3, converted.get_output_port(0).size());
+  }));
+}
+
+// Tests conversion to symbolic::Expression.
+TEST_F(MultiplexerTest, ToSymbolic) {
+  Reset({1, 1, 1});
+  EXPECT_TRUE(is_symbolic_convertible(*mux_, [&](const auto& converted) {
+    EXPECT_EQ(3, converted.get_num_input_ports());
+    EXPECT_EQ(1, converted.get_num_output_ports());
+
+    EXPECT_EQ(1, converted.get_input_port(0).size());
+    EXPECT_EQ(1, converted.get_input_port(1).size());
+    EXPECT_EQ(1, converted.get_input_port(2).size());
+    EXPECT_EQ(3, converted.get_output_port(0).size());
+  }));
 }
 
 }  // namespace

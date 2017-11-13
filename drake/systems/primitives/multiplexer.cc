@@ -14,29 +14,39 @@ Multiplexer<T>::Multiplexer(int num_scalar_inputs)
 
 template <typename T>
 Multiplexer<T>::Multiplexer(std::vector<int> input_sizes)
-    : input_sizes_(input_sizes) {
-  for (const int input_size : input_sizes_) {
-    this->DeclareInputPort(kVectorValued, input_size);
-  }
-  const int output_size = std::accumulate(
-      input_sizes.begin(), input_sizes.end(), 0, std::plus<int>{});
-  this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                &Multiplexer::CombineInputsToOutput);
-}
+    : Multiplexer<T>(input_sizes, BasicVector<T>(std::accumulate(
+                                      input_sizes.begin(), input_sizes.end(), 0,
+                                      std::plus<int>{}))) {}
 
 template <typename T>
 Multiplexer<T>::Multiplexer(const systems::BasicVector<T>& model_vector)
-    : input_sizes_(std::vector<int>(model_vector.size(), 1)) {
-  for (int i = 0; i < model_vector.size(); ++i) {
-    this->DeclareInputPort(kVectorValued, 1);
+    : Multiplexer<T>(std::vector<int>(model_vector.size(), 1), model_vector) {}
+
+template <typename T>
+Multiplexer<T>::Multiplexer(std::vector<int> input_sizes,
+                            const systems::BasicVector<T>& model_vector)
+    : LeafSystem<T>(SystemTypeTag<systems::Multiplexer>{}),
+      input_sizes_(input_sizes) {
+  DRAKE_DEMAND(model_vector.size() == std::accumulate(input_sizes_.begin(),
+                                                      input_sizes_.end(), 0,
+                                                      std::plus<int>{}));
+  for (const int input_size : input_sizes_) {
+    this->DeclareInputPort(kVectorValued, input_size);
   }
   this->DeclareVectorOutputPort(model_vector,
                                 &Multiplexer::CombineInputsToOutput);
 }
 
 template <typename T>
-void Multiplexer<T>::CombineInputsToOutput(
-    const Context<T>& context, BasicVector<T>* output) const {
+template <typename U>
+Multiplexer<T>::Multiplexer(const Multiplexer<U>& other)
+    : Multiplexer<T>(other.input_sizes_,
+                     systems::BasicVector<T>(other.get_output_port(0).size())) {
+}
+
+template <typename T>
+void Multiplexer<T>::CombineInputsToOutput(const Context<T>& context,
+                                           BasicVector<T>* output) const {
   auto output_vector = output->get_mutable_value();
   int output_vector_index{0};
   for (int i = 0; i < this->get_num_input_ports(); ++i) {

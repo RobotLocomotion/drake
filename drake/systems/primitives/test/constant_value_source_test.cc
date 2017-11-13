@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/framework/value.h"
 
 using Eigen::Matrix;
@@ -43,6 +44,15 @@ TEST_F(ConstantValueSourceTest, Output) {
 // Tests that ConstantValueSource allocates no state variables in the context_.
 TEST_F(ConstantValueSourceTest, ConstantValueSourceIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state().size());
+}
+
+// Tests conversion to different scalar types.
+TEST_F(ConstantValueSourceTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*source_));
+}
+
+TEST_F(ConstantValueSourceTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*source_));
 }
 
 }  // namespace
