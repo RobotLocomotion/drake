@@ -125,12 +125,10 @@ optional<string> file_exists(
   return file_query.getStr();
 }
 
-constexpr const char* const kSentinelName = ".drake-resource-sentinel";
-
 optional<string> check_candidate_dir(const spruce::path& candidate_dir) {
   // If we found the sentinel, we win.
   spruce::path candidate_file = candidate_dir;
-  candidate_file.append(kSentinelName);
+  candidate_file.append("drake/.drake-find_resource-sentinel");
   if (candidate_file.isFile()) {
     return candidate_dir.getStr();
   }
@@ -193,21 +191,16 @@ Result FindResource(string resource_path) {
   // to drake::FindResource to start with "drake" is redundant, but preserves
   // compatibility with the original semantics of this function; if we want to
   // offer a function that takes paths without "drake", we can use a new name.
-  // In the checks below, note that we also special-case the top-level sentinel
-  // file (which does not start with "drake/"), since GetDrakePath needs to be
-  // able to find it.
   if (!is_relative_path(resource_path)) {
     return Result::make_error(
         std::move(resource_path),
         "resource_path is not a relative path");
   }
-  if (resource_path != kSentinelName) {
-    const std::string prefix("drake/");
-    if (resource_path.compare(0, prefix.size(), prefix) != 0) {
-      return Result::make_error(
-          std::move(resource_path),
-          "resource_path does not start with " + prefix);
-    }
+  const std::string prefix("drake/");
+  if (resource_path.compare(0, prefix.size(), prefix) != 0) {
+    return Result::make_error(
+        std::move(resource_path),
+        "resource_path does not start with " + prefix);
   }
 
   // Collect a list of (priority-ordered) directories to check.
