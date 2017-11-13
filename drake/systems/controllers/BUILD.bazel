@@ -157,7 +157,10 @@ drake_cc_library(
     name = "yaml_util",
     srcs = ["yaml_util.cc"],
     hdrs = ["yaml_util.h"],
-    visibility = [],
+    # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
+    # headers; yaml_util.h is only included internally within this package.
+    install_hdrs_exclude = ["yaml_util.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":qp_common",
         "//drake/common:essential",
