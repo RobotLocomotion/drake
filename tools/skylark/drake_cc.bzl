@@ -85,9 +85,9 @@ def _check_library_deps_blacklist(name, deps):
 
 def drake_cc_library(
         name,
-        hdrs = None,
-        srcs = None,
-        deps = None,
+        hdrs = [],
+        srcs = [],
+        deps = [],
         copts = [],
         gcc_copts = [],
         linkstatic = 1,
@@ -119,9 +119,8 @@ def drake_cc_library(
 
 def drake_cc_binary(
         name,
-        hdrs = None,
-        srcs = None,
-        deps = None,
+        srcs = [],
+        deps = [],
         copts = [],
         gcc_copts = [],
         linkstatic = 1,
@@ -144,7 +143,6 @@ def drake_cc_binary(
     """
     native.cc_binary(
         name = name,
-        hdrs = hdrs,
         srcs = srcs,
         deps = deps,
         copts = _platform_copts(copts, gcc_copts),
@@ -164,13 +162,12 @@ def drake_cc_binary(
         cmd = _dsym_command(name),
     )
 
-    if "@gtest//:main" in (deps or []):
+    if "@gtest//:main" in deps:
         fail("Use drake_cc_googletest to declare %s as a test" % name)
 
     if add_test_rule:
         drake_cc_test(
             name = name + "_test",
-            hdrs = hdrs,
             srcs = srcs,
             deps = deps,
             copts = copts,
@@ -184,7 +181,7 @@ def drake_cc_binary(
 def drake_cc_test(
         name,
         size = None,
-        srcs = None,
+        srcs = [],
         copts = [],
         gcc_copts = [],
         disable_in_compilation_mode_dbg = False,
@@ -201,7 +198,7 @@ def drake_cc_test(
     """
     if size == None:
         size = "small"
-    if srcs == None:
+    if not srcs:
         srcs = ["test/%s.cc" % name]
     if disable_in_compilation_mode_dbg:
         # Remove the test declarations from the test in debug mode.
@@ -231,7 +228,7 @@ def drake_cc_test(
 
 def drake_cc_googletest(
         name,
-        deps = None,
+        deps = [],
         use_default_main = True,
         **kwargs):
     """Creates a rule to declare a C++ unit test using googletest.
@@ -245,8 +242,6 @@ def drake_cc_googletest(
     in debug-mode builds, so the test will trivially pass. This option should
     be used only rarely, and the reason should always be documented.
     """
-    if deps == None:
-        deps = []
     if use_default_main:
         deps += ["//drake/common/test_utilities:drake_cc_googletest_main"]
     else:
