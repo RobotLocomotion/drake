@@ -85,9 +85,6 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | macOS 10.13 ("High Sierra") |                |                 |            | R2017b            |        |
 +-----------------------------+----------------+-----------------+------------+-------------------+--------+
 
-macOS 10.13 ("High Sierra") MATLAB support is experimental and untested in continuous
-integration.
-
 Code Review
 ===========
 
