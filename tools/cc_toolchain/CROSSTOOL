@@ -20,7 +20,7 @@ default_toolchain {
 # We use Clang on Ubuntu by default. To use gcc, specify --compiler=gcc-5.
 default_toolchain {
   cpu: "k8"
-  toolchain_identifier: "clang-3.9-linux"
+  toolchain_identifier: "clang-4.0-linux"
 }
 
 # GCC 6.x on Linux
