@@ -12,7 +12,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/test/expect_error_message.h"
+#include "drake/geometry/test_utilities/expect_error_message.h"
 
 namespace drake {
 namespace geometry {

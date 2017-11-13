@@ -16,10 +16,10 @@
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
-#include "drake/systems/analysis/test/logistic_system.h"
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
-#include "drake/systems/analysis/test/stateless_system.h"
+#include "drake/systems/analysis/test_utilities/controlled_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/logistic_system.h"
+#include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
@@ -1493,6 +1493,83 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
     EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
   }
+}
+
+// Tests initialization from the simulator.
+GTEST_TEST(SimulatorTest, Initialization) {
+  class InitializationTestSystem : public LeafSystem<double> {
+   public:
+    InitializationTestSystem() {
+      PublishEvent<double> pub_event(
+          Event<double>::TriggerType::kInitialization,
+          std::bind(&InitializationTestSystem::InitPublish, this,
+                    std::placeholders::_1, std::placeholders::_2));
+      DeclareInitializationEvent(pub_event);
+
+      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
+          Event<double>::TriggerType::kInitialization));
+      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
+          Event<double>::TriggerType::kInitialization));
+
+      DeclarePeriodicDiscreteUpdate(0.1);
+      DeclarePerStepEvent<UnrestrictedUpdateEvent<double>>(
+          UnrestrictedUpdateEvent<double>(
+              Event<double>::TriggerType::kPerStep));
+    }
+
+    bool get_pub_init() const { return pub_init_; }
+    bool get_dis_update_init() const { return dis_update_init_; }
+    bool get_unres_update_init() const { return unres_update_init_; }
+
+   private:
+    void InitPublish(const Context<double>& context,
+                     const PublishEvent<double>& event) const {
+      EXPECT_EQ(context.get_time(), 0);
+      EXPECT_EQ(event.get_trigger_type(),
+                Event<double>::TriggerType::kInitialization);
+      pub_init_ = true;
+    }
+
+    void DoCalcDiscreteVariableUpdates(
+        const Context<double>& context,
+        const std::vector<const DiscreteUpdateEvent<double>*>& events,
+        DiscreteValues<double>*) const final {
+      EXPECT_EQ(events.size(), 1);
+      if (events.front()->get_trigger_type() ==
+          Event<double>::TriggerType::kInitialization) {
+        EXPECT_EQ(context.get_time(), 0);
+        dis_update_init_ = true;
+      } else {
+        EXPECT_TRUE(dis_update_init_);
+      }
+    }
+
+    void DoCalcUnrestrictedUpdate(
+        const Context<double>& context,
+        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+        State<double>*) const final {
+      EXPECT_EQ(events.size(), 1);
+      if (events.front()->get_trigger_type() ==
+          Event<double>::TriggerType::kInitialization) {
+        EXPECT_EQ(context.get_time(), 0);
+        unres_update_init_ = true;
+      } else {
+        EXPECT_TRUE(unres_update_init_);
+      }
+    }
+
+    mutable bool pub_init_{false};
+    mutable bool dis_update_init_{false};
+    mutable bool unres_update_init_{false};
+  };
+
+  InitializationTestSystem sys;
+  Simulator<double> simulator(sys);
+  simulator.StepTo(1);
+
+  EXPECT_TRUE(sys.get_pub_init());
+  EXPECT_TRUE(sys.get_dis_update_init());
+  EXPECT_TRUE(sys.get_unres_update_init());
 }
 
 }  // namespace

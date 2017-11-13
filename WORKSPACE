@@ -18,30 +18,38 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
-load("//tools/workspace:os.bzl", "os_specific_alias_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
     name = "kythe",
+    # TODO(jwnimmer-tri) According to Bazel documentation, the `path` argument
+    # to `local_repository()` is supposed be an absolute path.  We should be
+    # using using the __workspace_dir__ prefix here, like the other third_party
+    # workspace items below.  However, doing so causes loading-phase errors.
+    # We suspect that those errors are due to a Bazel bug, possibly related to
+    # either bazelbuild/bazel#2811 and/or bazelbuild/bazel#269.  Since the only
+    # use of kythe tooling is for pkg_config_package, and we plan to implement
+    # our own version of that soon anyway, we'll leave this alone for now,
+    # rather than diagnosing the errors.
     path = "third_party/com_github_google_kythe",
 )
 
 new_local_repository(
     name = "tinydir",
     build_file = "tools/workspace/tinydir/tinydir.BUILD.bazel",
-    path = "third_party/com_github_cxong_tinydir",
+    path = __workspace_dir__ + "/third_party/com_github_cxong_tinydir",
 )
 
 new_local_repository(
     name = "spruce",
     build_file = "tools/workspace/spruce/spruce.BUILD.bazel",
-    path = "third_party/josephdavisco_spruce",
+    path = __workspace_dir__ + "/third_party/josephdavisco_spruce",
 )
 
 new_local_repository(
     name = "stx",
     build_file = "tools/workspace/stx/stx.BUILD.bazel",
-    path = "third_party/com_github_tcbrindle_cpp17_headers",
+    path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
@@ -157,8 +165,8 @@ maven_jar(
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
-    commit = "992959adfbda78a13a858a514636e7929f27ed16",
-    sha256 = "d4cb964161cc9352c5831092631a2184da49e4fcac3155ae1fbceebe9c445ad4",  # noqa
+    commit = "87866bd0dbb1f9d5a0f662a6f5caecf469fd42d2",
+    sha256 = "fd0afaf29954c26a725626b7bd24e873e303e84bb62dfcc05162be3f5ae30cd1",  # noqa
     build_file = "tools/workspace/lcm/lcm.BUILD.bazel",
 )
 
@@ -209,19 +217,16 @@ pkg_config_package(
     modname = "ipopt",
 )
 
-github_archive(
+pkg_config_package(
     name = "nlopt",
-    repository = "stevengj/nlopt",
-    commit = "45553da97c890ef58f95e7ef73c5409d2169e824",
-    sha256 = "931fd125c50acf7cd7e709887ab4923af42a8a07be139572bf8b76bccca76450",  # noqa
-    build_file = "tools/workspace/nlopt/nlopt.BUILD.bazel",
+    modname = "nlopt",
 )
 
 github_archive(
     name = "optitrack_driver",
     repository = "RobotLocomotion/optitrack-driver",
-    commit = "3c53cefbe16b3fcb0747034d2435cef7f9892265",
-    sha256 = "d09882fd6a9296b020a3e258ec943b8db03ed80c795e7613dac56acbc289c7a4",  # noqa
+    commit = "b0d633570966e08b8915dee0867747596839d06c",
+    sha256 = "5f7f46273f36073dc15191fe37dc538b4b23eaeaae63de153abeaa61d1134ad6",  # noqa
 )
 
 github_archive(
@@ -246,6 +251,24 @@ github_archive(
     commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
     sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",  # noqa
     build_file = "tools/workspace/lcmtypes_robotlocomotion/lcmtypes_robotlocomotion.BUILD.bazel",  # noqa
+)
+
+pkg_config_package(
+    name = "blas",
+    modname = "blas",
+)
+
+pkg_config_package(
+    name = "lapack",
+    modname = "lapack",
+)
+
+github_archive(
+    name = "scs",
+    repository = "cvxgrp/scs",
+    commit = "v1.2.6",
+    sha256 = "b4bebb43a1257b6e88a5f97c855c0559d6c8a8c0548d3156fc5a28d82bb9533f",  # noqa
+    build_file = "tools/workspace/scs/scs.BUILD.bazel",
 )
 
 github_archive(

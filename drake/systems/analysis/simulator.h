@@ -431,6 +431,17 @@ void Simulator<T>::Initialize() {
   // Initialize the integrator.
   integrator_->Initialize();
 
+  // Process all the initialization events.
+  auto init_events = system_.AllocateCompositeEventCollection();
+  system_.GetInitializationEvents(*context_, init_events.get());
+
+  // Do unrestricted updates first.
+  HandleUnrestrictedUpdate(init_events->get_unrestricted_update_events());
+  // Do restricted (discrete variable) updates next.
+  HandleDiscreteUpdate(init_events->get_discrete_update_events());
+  // Do any publishes last.
+  HandlePublish(init_events->get_publish_events());
+
   // Gets all per-step events to be handled.
   per_step_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(per_step_events_ != nullptr);

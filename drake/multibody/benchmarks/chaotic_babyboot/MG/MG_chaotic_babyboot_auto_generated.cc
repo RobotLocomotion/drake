@@ -6,7 +6,7 @@
 // This copyright notice must appear in all copies and distributions.
 // MotionGenesis Professional Licensee: Toyota Research Institute.
 // -----------------------------------------------------------------------------
-#include "MG_chaotic_babyboot_auto_generated.h"
+#include "drake/multibody/benchmarks/chaotic_babyboot/MG/MG_chaotic_babyboot_auto_generated.h"
 
 #include <cmath>
 

@@ -9,7 +9,6 @@ drake_cc_library(
     name = "util",
     srcs = [
         "drakeGeometryUtil.cpp",
-        "drakeUtil.cpp",
     ],
     hdrs = [
         "drakeGeometryUtil.h",
@@ -23,51 +22,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "convex_hull",
-    srcs = ["convexHull.cpp"],
-    hdrs = ["convexHull.h"],
-    deps = [
-        "//drake/common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "lcm_util",
     srcs = ["lcmUtil.cpp"],
     hdrs = ["lcmUtil.h"],
     deps = [
         ":util",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/lcmtypes:piecewise_polynomial",
-        "//drake/lcmtypes:polynomial",
-        "//drake/lcmtypes:polynomial_matrix",
-        "//drake/lcmtypes:qp_controller_input",
         "//drake/math:geometric_transform",
         "@eigen",
         "@lcmtypes_bot2_core",
     ],
 )
 
-drake_cc_library(
-    name = "yaml_util",
-    srcs = ["yaml/yamlUtil.cpp"],
-    hdrs = ["yaml/yamlUtil.h"],
-    deps = [
-        "//drake/common:essential",
-        "//drake/systems/controllers:qp_common",
-        "@yaml_cpp",
-    ],
-)
-
 # === test/ ===
-
-drake_cc_googletest(
-    name = "testConvexHull",
-    srcs = ["test/testConvexHull.cpp"],
-    deps = [
-        ":convex_hull",
-    ],
-)
 
 drake_cc_googletest(
     name = "testDrakeGeometryUtil",

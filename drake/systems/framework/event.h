@@ -51,6 +51,12 @@ class Event {
     kUnknown,
 
     /**
+     * This trigger indicates that an associated event is triggered at system
+     * initialization.
+     */
+    kInitialization,
+
+    /**
      * This trigger indicates that an associated event is triggered by directly
      * calling the corresponding public system API for event handling (e.g.
      * Publish(context)).

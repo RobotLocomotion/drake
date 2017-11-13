@@ -1399,6 +1399,23 @@ class Diagram : public System<T>,
     }
   }
 
+  void DoGetInitializationEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* event_info) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      CompositeEventCollection<T>& subinfo =
+          info->get_mutable_subevent_collection(i);
+
+      registered_systems_[i]->GetInitializationEvents(subcontext, &subinfo);
+    }
+  }
+
   // A structural outline of a Diagram, produced by DiagramBuilder.
   struct Blueprint {
     // The ordered subsystem ports that are inputs to the entire diagram.

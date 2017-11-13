@@ -1,6 +1,10 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -16,11 +20,17 @@ drake_cc_library(
 
 drake_cc_library(
     name = "qp_locomotion_plan",
-    srcs = ["QPLocomotionPlan.cpp"],
-    hdrs = ["QPLocomotionPlan.h"],
+    srcs = [
+        "QPLocomotionPlan.cpp",
+        "verify_subtype_sizes.cc",
+        "verify_subtype_sizes.h",
+    ],
+    hdrs = [
+        "QPLocomotionPlan.h",
+    ],
     deps = [
         ":body_motion_data",
-        ":side",
+        ":convex_hull",
         "//drake/common:essential",
         "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
@@ -32,18 +42,31 @@ drake_cc_library(
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers:polynomial_encode_decode",
+        "//drake/systems/controllers:side",
         "//drake/systems/controllers:zmp_util",
         "//drake/util",
-        "//drake/util:convex_hull",
         "//drake/util:lcm_util",
     ],
 )
 
 drake_cc_library(
-    name = "side",
-    srcs = ["Side.cpp"],
-    hdrs = ["Side.h"],
-    deps = [],
+    name = "convex_hull",
+    srcs = ["convex_hull.cc"],
+    hdrs = ["convex_hull.h"],
+    visibility = [],
+    deps = [
+        "@eigen",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "convex_hull_test",
+    deps = [
+        ":convex_hull",
+    ],
 )
 
 add_lint_tests()

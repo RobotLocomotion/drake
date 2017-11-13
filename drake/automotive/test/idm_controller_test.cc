@@ -5,6 +5,7 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace automotive {
@@ -23,9 +24,8 @@ class IdmControllerTest : public ::testing::Test {
   void SetUp() override {
     // Create a straight road with one lane.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId("Single-Lane Dragway"),
-        1 /* num_lanes */, 100. /* length */, 2. /* lane_width */,
-        0. /* shoulder_width */,
+        maliput::api::RoadGeometryId("Single-Lane Dragway"), 1 /* num_lanes */,
+        100. /* length */, 2. /* lane_width */, 0. /* shoulder_width */,
         5. /* maximum_height */,
         std::numeric_limits<double>::epsilon() /* linear_tolerance */,
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
@@ -116,8 +116,7 @@ TEST_F(IdmControllerTest, Topology) {
   EXPECT_EQ(systems::kAbstractValued, traffic_input_descriptor.get_data_type());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
-  const auto& output_port =
-      dut_->get_output_port(acceleration_output_index_);
+  const auto& output_port = dut_->get_output_port(acceleration_output_index_);
   EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
   EXPECT_EQ(1 /* accleration output */, output_port.size());
 }
@@ -175,6 +174,54 @@ TEST_F(IdmControllerTest, Output) {
 
   // Expect an enormous deceleration.
   EXPECT_GT(closing_accel, (*result)[0]);
+}
+
+TEST_F(IdmControllerTest, ToAutoDiff) {
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
+
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
+    const auto other_context = other_dut.CreateDefaultContext();
+    const auto other_output = other_dut.AllocateOutput(*other_context);
+
+    // Verify that CalcOutput returns a result and validate its AutoDiff
+    // derivatives.
+    const AutoDiffXd kZeroDerivative{0., Vector1d(0.)};
+
+    auto pose = std::make_unique<PoseVector<AutoDiffXd>>();
+    const Translation3<AutoDiffXd> translation(
+        AutoDiffXd(0., Vector1d(1.)), /* x */
+        kZeroDerivative,              /* y */
+        kZeroDerivative);             /* z */
+    pose->set_translation(translation);
+    other_context->FixInputPort(ego_pose_input_index_, std::move(pose));
+
+    auto velocity = std::make_unique<FrameVelocity<AutoDiffXd>>();
+    const multibody::SpatialVelocity<AutoDiffXd> velocity_vector(
+        Vector3<AutoDiffXd>(kZeroDerivative /* ωx */, kZeroDerivative /* ωy */,
+                            kZeroDerivative /* ωz */),
+        Vector3<AutoDiffXd>(kZeroDerivative /* vx */, kZeroDerivative /* vy */,
+                            kZeroDerivative /* vz */));
+    velocity->set_velocity(velocity_vector);
+    other_context->FixInputPort(ego_velocity_input_index_, std::move(velocity));
+
+    systems::rendering::PoseBundle<AutoDiffXd> poses(1);
+    FrameVelocity<AutoDiffXd> traffic_velocity;
+    traffic_velocity.set_velocity(velocity_vector);
+    poses.set_velocity(0, traffic_velocity);
+    poses.set_pose(0, Isometry3<AutoDiffXd>(translation));
+    other_context->FixInputPort(traffic_input_index_,
+                                systems::AbstractValue::Make(poses));
+
+    const auto result =
+        other_output->get_vector_data(acceleration_output_index_);
+    other_dut.CalcOutput(*other_context, other_output.get());
+
+    // It suffices to check that the autodiff derivative seeded at the inputs
+    // produces a sane value and that the derivatives field is correctly sized.
+    EXPECT_LT(0., (*result)[0]);
+    EXPECT_EQ(1, (*result)[0].derivatives().size());
+    EXPECT_EQ(0., (*result)[0].derivatives()(0));
+  }));
 }
 
 }  // namespace

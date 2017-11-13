@@ -45,8 +45,11 @@ class Rod2DDAETest : public ::testing::Test {
     dut_->set_rod_mass(2.0);
 
     // Set cfm to be very small, so that the complementarity problems are
-    // well conditioned but the system is still nearly perfectly rigid.
-    dut_->set_cfm(100 * std::numeric_limits<double>::epsilon());
+    // well conditioned but the system is still nearly perfectly rigid. erp is
+    // to be set to 0.2 (a reasonable default).
+    const double cfm = 100 * std::numeric_limits<double>::epsilon();
+    const double erp = 0.2;
+    dut_->SetStiffnessAndDissipation(cfm, erp);
 
     // Set a zero input force (this is the default).
     std::unique_ptr<BasicVector<double>> ext_input =
@@ -284,6 +287,37 @@ class Rod2DDAETest : public ::testing::Test {
       contact_solver_;
 };
 
+// Verifies that the state vector functions throw no exceptions.
+TEST_F(Rod2DDAETest, NamedStateVectorsNoThrow) {
+  EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(context_.get()));
+  EXPECT_NO_THROW(Rod2D<double>::get_state(*context_));
+  EXPECT_NO_THROW(Rod2D<double>::get_state(context_->get_continuous_state()));
+  EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(
+      &context_->get_mutable_continuous_state()));
+}
+
+// Tests that named state vector components are at expected indices.
+TEST_F(Rod2DDAETest, ExpectedIndices) {
+  // Set the state.
+  Rod2dStateVector<double>& state = Rod2D<double>::get_mutable_state(
+      context_.get());
+  state.set_x(1.0);
+  state.set_y(2.0);
+  state.set_theta(3.0);
+  state.set_xdot(5.0);
+  state.set_ydot(7.0);
+  state.set_thetadot(11.0);
+
+  // Check the indices.
+  const VectorBase<double>& x = context_->get_continuous_state_vector();
+  EXPECT_EQ(state.x(), x[0]);
+  EXPECT_EQ(state.y(), x[1]);
+  EXPECT_EQ(state.theta(), x[2]);
+  EXPECT_EQ(state.xdot(), x[3]);
+  EXPECT_EQ(state.ydot(), x[4]);
+  EXPECT_EQ(state.thetadot(), x[5]);
+}
+
 // Checks that the output port represents the state.
 TEST_F(Rod2DDAETest, Output) {
   const ContinuousState<double>& xc = context_->get_continuous_state();
@@ -349,7 +383,7 @@ TEST_F(Rod2DDAETest, ImpactWorks) {
 
   // Verify that the state has been modified such that the body is no longer
   // in an impacting state and the configuration has not been modified.
-  const double tol = 10 * dut_->get_cfm();
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(xc[0], 0.0, tol);
   EXPECT_NEAR(xc[1], half_len, tol);
   EXPECT_NEAR(xc[2], M_PI_2, tol);
@@ -692,11 +726,11 @@ TEST_F(Rod2DDAETest, MultiPoint) {
 
   // Compute the derivatives and verify that the linear and angular acceleration
   // are approximately zero.
-  const double eps = 10 * dut_->get_cfm();
+  const double tol = 250 * std::numeric_limits<double>::epsilon();
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_NEAR((*derivatives_)[3], 0, eps);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+  EXPECT_NEAR((*derivatives_)[3], 0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 
   // Set the coefficient of friction to "very large".
   const double large = 100.0;
@@ -705,9 +739,9 @@ TEST_F(Rod2DDAETest, MultiPoint) {
   // TODO(edrumwri): Check derivatives now.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[3], -large *
-      std::abs(dut_->get_gravitational_acceleration()), eps * large);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+      std::abs(dut_->get_gravitational_acceleration()), tol * large);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 
   // Set the rod velocity to zero.
   xc[3] = 0.0;
@@ -724,17 +758,17 @@ TEST_F(Rod2DDAETest, MultiPoint) {
 
   // Verify that the linear and angular acceleration are still zero.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_NEAR((*derivatives_)[3], 0, eps);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+  EXPECT_NEAR((*derivatives_)[3], 0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 
   // Set the coefficient of friction to zero. Now the force should result
   // in the rod being pushed to the right.
   dut_->set_mu_coulomb(0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_NEAR((*derivatives_)[3], fX/dut_->get_rod_mass(), eps);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+  EXPECT_NEAR((*derivatives_)[3], fX/dut_->get_rod_mass(), tol);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 }
 
 // Verify that the Painlevé configuration does not correspond to an impacting
@@ -1164,8 +1198,9 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
 
   // Set "one step" constraint stabilization (not generally recommended, but
   // works for a single step) and small regularization.
-  ts.set_cfm(std::numeric_limits<double>::epsilon());
-  ts.set_erp(1.0);
+  const double cfm = std::numeric_limits<double>::epsilon();
+  const double erp = 1.0;
+  ts.SetStiffnessAndDissipation(cfm, erp);
 
   // Create contexts for both.
   std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
@@ -1234,8 +1269,9 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
 
   // Set "one step" constraint stabilization (not generally recommended, but
   // works for a single step) and small regularization.
-  ts.set_cfm(std::numeric_limits<double>::epsilon());
-  ts.set_erp(1.0);
+  const double cfm = std::numeric_limits<double>::epsilon();
+  const double erp = 1.0;
+  ts.SetStiffnessAndDissipation(cfm, erp);
 
   // Create contexts for both.
   std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();

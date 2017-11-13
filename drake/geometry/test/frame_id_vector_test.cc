@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/test/expect_error_message.h"
+#include "drake/geometry/test_utilities/expect_error_message.h"
 
 namespace drake {
 namespace geometry {

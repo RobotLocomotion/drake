@@ -37,7 +37,7 @@ const api::LaneEndSet* BranchPoint::DoGetOngoingBranches(
   }
 }
 
-std::unique_ptr<api::LaneEnd> BranchPoint::DoGetDefaultBranch(
+optional<api::LaneEnd> BranchPoint::DoGetDefaultBranch(
     const api::LaneEnd& end) const {
   // The result should be an ongoing branch for the given input. Thus, a Start
   // input should yield a Finish output (since start connects to finish) and
@@ -45,9 +45,9 @@ std::unique_ptr<api::LaneEnd> BranchPoint::DoGetDefaultBranch(
   //
   // Since there is only one LaneEnd per side, return it as the default.
   if (end.end == api::LaneEnd::kStart) {
-    return std::make_unique<api::LaneEnd>(finish_side_lane_end_set_.get(0));
+    return finish_side_lane_end_set_.get(0);
   } else {
-    return std::make_unique<api::LaneEnd>(start_side_lane_end_set_.get(0));
+    return start_side_lane_end_set_.get(0);
   }
 }
 

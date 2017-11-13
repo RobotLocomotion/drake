@@ -168,8 +168,8 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
        py::arg("model_id") = -1,
        py::return_value_policy::reference)
     .def("world",
-         (RigidBody<double>& (RigidBodyTree<double>::*)
-          ()) &RigidBodyTree<double>::world,
+         static_cast<RigidBody<double>& (RigidBodyTree<double>::*)()>(
+             &RigidBodyTree<double>::world),
          py::return_value_policy::reference)
     .def("findFrame", &RigidBodyTree<double>::findFrame,
          py::arg("frame_name"), py::arg("model_id") = -1)
