@@ -191,6 +191,7 @@ toolchain {
   builtin_sysroot: ""
   compiler: "clang-4.0"
   compiler_flag: "-U_FORTIFY_SOURCE"
+  compiler_flag: "-D_FORTIFY_SOURCE=1"
   compiler_flag: "-fstack-protector"
   compiler_flag: "-Wall"
   compiler_flag: "-B/usr/bin"
@@ -204,7 +205,9 @@ toolchain {
   cxx_builtin_include_directory: "/usr/include/clang/4.0.0/include"
   cxx_builtin_include_directory: "/usr/include/x86_64-linux-gnu"
   cxx_builtin_include_directory: "/usr/include"
-  cxx_flag: "-std=c++0x"
+  # Next line is a Drake fix for https://github.com/bazelbuild/bazel/issues/3977.
+  cxx_builtin_include_directory: "/usr/lib/llvm-4.0/lib/clang/4.0.0/include"
+  cxx_flag: "-std=c++1y" # Modified for Drake.
   host_system_name: "local"
   linker_flag: "-lstdc++"
   linker_flag: "-lm"
@@ -246,7 +249,6 @@ toolchain {
     mode: OPT
     compiler_flag: "-g0"
     compiler_flag: "-O2"
-    compiler_flag: "-D_FORTIFY_SOURCE=1"
     compiler_flag: "-DNDEBUG"
     compiler_flag: "-ffunction-sections"
     compiler_flag: "-fdata-sections"
