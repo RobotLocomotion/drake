@@ -31,13 +31,9 @@ const Connection* Builder::Connect(const std::string& id, int num_lanes,
                                    double r0, double left_shoulder,
                                    double right_shoulder, const Endpoint& start,
                                    double length, const EndpointZ& z_end) {
-  const Endpoint end(
-      EndpointXy(start.xy().x() + (length * std::cos(start.xy().heading())),
-                 start.xy().y() + (length * std::sin(start.xy().heading())),
-                 start.xy().heading()),
-      z_end);
-  connections_.push_back(std::make_unique<Connection>(
-      id, start, end, num_lanes, r0, left_shoulder, right_shoulder));
+  connections_.push_back(
+      std::make_unique<Connection>(id, start, z_end, num_lanes, r0, lane_width_,
+                                   left_shoulder, right_shoulder, length));
   return connections_.back().get();
 }
 
@@ -46,20 +42,9 @@ const Connection* Builder::Connect(const std::string& id, int num_lanes,
                                    double right_shoulder, const Endpoint& start,
                                    const ArcOffset& arc,
                                    const EndpointZ& z_end) {
-  const double alpha = start.xy().heading();
-  const double theta0 = alpha - std::copysign(M_PI / 2., arc.d_theta());
-  const double theta1 = theta0 + arc.d_theta();
-
-  const double cx = start.xy().x() - (arc.radius() * std::cos(theta0));
-  const double cy = start.xy().y() - (arc.radius() * std::sin(theta0));
-  const Endpoint end(EndpointXy(cx + (arc.radius() * std::cos(theta1)),
-                                cy + (arc.radius() * std::sin(theta1)),
-                                alpha + arc.d_theta()),
-                     z_end);
-
-  connections_.push_back(std::make_unique<Connection>(
-      id, start, end, num_lanes, r0, left_shoulder, right_shoulder, cx, cy,
-      arc.radius(), arc.d_theta()));
+  connections_.push_back(
+      std::make_unique<Connection>(id, start, z_end, num_lanes, r0, lane_width_,
+                                   left_shoulder, right_shoulder, arc));
   return connections_.back().get();
 }
 
@@ -86,22 +71,6 @@ Group* Builder::MakeGroup(const std::string& id,
 
 
 namespace {
-// Construct a CubicPolynomial such that:
-//    f(0) = Y0 / dX           f'(0) = Ydot0
-//    f(1) = (Y0 + dY) / dX    f'(1) = Ydot1
-//
-// This is equivalent to taking a cubic polynomial g such that:
-//    g(0) = Y0          g'(0) = Ydot0
-//    g(dX) = Y0 + dY    g'(1) = Ydot1
-// and isotropically scaling it (scale both axes) by a factor of 1/dX
-CubicPolynomial MakeCubic(double dX, double Y0, double dY,
-                          double Ydot0, double Ydot1) {
-  return CubicPolynomial(Y0 / dX,
-                         Ydot0,
-                         (3. * dY / dX) - (2. * Ydot0) - Ydot1,
-                         Ydot0 + Ydot1 - (2. * dY / dX));
-}
-
 // Determine the heading (in xy-plane) along the centerline when
 // travelling towards/into the lane, from the specified end.
 double HeadingIntoLane(const api::Lane* const lane,
@@ -115,34 +84,6 @@ double HeadingIntoLane(const api::Lane* const lane,
     }
     default: { DRAKE_ABORT(); }
   }
-}
-
-// Computes the location and heading of a `lane` at given `end` creating an
-// Endpoint with that information. `road_curve` is used to compute z
-// derivative with respect to p at the start or end of the `lane` respectively.
-Endpoint ComputeEndpointForLane(const RoadCurve& road_curve, const Lane* lane,
-                                const api::LaneEnd::Which end,
-                                const EndpointZ& zpoint) {
-  double p{}, length{};
-  switch (end) {
-    case api::LaneEnd::kStart:
-      p = 0.;
-      length = 0.;
-      break;
-    case api::LaneEnd::kFinish:
-      p = 1.;
-      length = lane->length();
-      break;
-    default: { DRAKE_ABORT(); }
-  }
-  const api::GeoPosition position = lane->ToGeoPosition({length, 0., 0.});
-  const api::Rotation rotation = lane->GetOrientation({length, 0., 0.});
-  const Vector3<double> w_prime =
-      road_curve.W_prime_of_prh(p, lane->r0(), 0., road_curve.Rabg_of_p(p),
-                                road_curve.elevation().f_dot_p(p));
-  return Endpoint(
-      EndpointXy(position.x(), position.y(), rotation.yaw()),
-      EndpointZ(position.z(), w_prime.z(), zpoint.theta(), zpoint.theta_dot()));
 }
 }  // namespace
 
@@ -211,89 +152,24 @@ std::vector<Lane*> Builder::BuildConnection(
     const Connection* const conn, Junction* const junction,
     RoadGeometry* const road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const {
-  std::unique_ptr<RoadCurve> p_road_curve;
-  switch (conn->type()) {
-    case Connection::kLine: {
-      const V2 xy0(conn->start().xy().x(),
-                   conn->start().xy().y());
-      const V2 dxy(conn->end().xy().x() - xy0.x(),
-                   conn->end().xy().y() - xy0.y());
-      const CubicPolynomial elevation(MakeCubic(
-          dxy.norm(),
-          conn->start().z().z(),
-          conn->end().z().z() - conn->start().z().z(),
-          conn->start().z().z_dot(),
-          conn->end().z().z_dot()));
-      const CubicPolynomial superelevation(MakeCubic(
-          dxy.norm(),
-          conn->start().z().theta(),
-          conn->end().z().theta() - conn->start().z().theta(),
-          conn->start().z().theta_dot(),
-          conn->end().z().theta_dot()));
-      p_road_curve =
-          std::make_unique<LineRoadCurve>(xy0, dxy, elevation, superelevation);
-      break;
-    }
-    case Connection::kArc: {
-      const V2 center(conn->cx(), conn->cy());
-      const double radius = conn->radius();
-      const double theta0 = std::atan2(conn->start().xy().y() - center.y(),
-                                       conn->start().xy().x() - center.x());
-      const double d_theta = conn->d_theta();
-      const double arc_length = radius * std::abs(d_theta);
-      const CubicPolynomial elevation(MakeCubic(
-          arc_length,
-          conn->start().z().z(),
-          conn->end().z().z() - conn->start().z().z(),
-          conn->start().z().z_dot(),
-          conn->end().z().z_dot()));
-      const CubicPolynomial superelevation(MakeCubic(
-          arc_length,
-          conn->start().z().theta(),
-          conn->end().z().theta() - conn->start().z().theta(),
-          conn->start().z().theta_dot(),
-          conn->end().z().theta_dot()));
-      p_road_curve = std::make_unique<ArcRoadCurve>(
-          center, radius, theta0, d_theta, elevation, superelevation);
-      break;
-    }
-    default: {
-      DRAKE_ABORT();
-    }
-  }
-  // Computes segment lateral extent.
-  const double r_min = conn->r0() - lane_width_ / 2. - conn->right_shoulder();
-  const double r_max =
-      conn->r0() +
-      lane_width_ * (static_cast<double>(conn->num_lanes() - 1) + 0.5) +
-      conn->left_shoulder();
-  const RoadCurve& road_curve = *p_road_curve;
   Segment* segment = junction->NewSegment(
-      api::SegmentId{std::string("s:") + conn->id()}, std::move(p_road_curve),
-      r_min, r_max, elevation_bounds_);
+      api::SegmentId{std::string("s:") + conn->id()}, conn->CreateRoadCurve(),
+      conn->r_min(), conn->r_max(), elevation_bounds_);
   std::vector<Lane*> lanes;
   for (int i = 0; i < conn->num_lanes(); i++) {
     Lane* lane =
         segment->NewLane(api::LaneId{std::string("l:") + conn->id() +
                                      std::string("_") + std::to_string(i)},
-                         conn->r0() + lane_width_ * static_cast<double>(i),
-                         {-lane_width_ / 2., lane_width_ / 2.});
-    // Creates endpoints for the extents of the lane since they may not be
-    // over the reference curve.
-    const Endpoint start_endpoint = ComputeEndpointForLane(
-        road_curve, lane, api::LaneEnd::kStart, conn->start().z());
-    const Endpoint finish_endpoint = ComputeEndpointForLane(
-        road_curve, lane, api::LaneEnd::kFinish, conn->end().z());
-    AttachBranchPoint(start_endpoint, lane, api::LaneEnd::kStart, road_geometry,
-                      bp_map);
-    AttachBranchPoint(finish_endpoint, lane, api::LaneEnd::kFinish,
+                         conn->lane_offset(i),
+                         {-conn->lane_width() / 2., conn->lane_width() / 2.});
+    AttachBranchPoint(conn->LaneStart(i), lane, api::LaneEnd::kStart,
+                      road_geometry, bp_map);
+    AttachBranchPoint(conn->LaneEnd(i), lane, api::LaneEnd::kFinish,
                       road_geometry, bp_map);
     lanes.push_back(lane);
   }
-
   return lanes;
 }
-
 
 std::unique_ptr<const api::RoadGeometry> Builder::Build(
     const api::RoadGeometryId& id) const {
