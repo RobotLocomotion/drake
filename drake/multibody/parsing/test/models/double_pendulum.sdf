@@ -179,7 +179,7 @@
       <child>lower_link</child>
       <axis>
         <xyz>1.0 0 0</xyz>
-        <use_parent_model_frame>true</use_parent_model_frame>
+        <use_parent_model_frame>false</use_parent_model_frame>
         <limit>
           <effort>0.0</effort>
         </limit>

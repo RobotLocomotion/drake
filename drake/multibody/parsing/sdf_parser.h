@@ -25,11 +25,11 @@ class SDFParser {
   std::unique_ptr<SDFSpec> ParseSDFModelFromFile(const std::string& sdf_path);
 
  private:
-  /// Parses a <model> from the <sdf> element, referenced by
-  /// `sdf_model_element`.
+  // Parses a <model> from the <sdf> element, referenced by
+  // `sdf_model_element`.
   void ParseModel(::sdf::ElementPtr sdf_model_element, SDFSpec* spec);
 
-  // Parses from `sdf_link_element` (referencing a `<link>` element) a new link
+  // Parses a new link from `sdf_link_element` (referencing a `<link>` element)
   // that gets added to `sdf_model`. It caches the the link's poses in
   // `sdf_model`.
   void ParseLink(const ::sdf::ElementPtr sdf_link_element, SDFModel* sdf_model);
@@ -38,13 +38,12 @@ class SDFParser {
   // the properties specified in an <inertial> element and adds them to `link`.
   void ParseInertial(::sdf::ElementPtr sdf_inertial_element, SDFLink* link);
 
-  // Parses a joint from the given SDF element and adds a SDFJoint to
+  // Parses a new joint from the given SDF element and adds a SDFJoint to
   // `sdf_model`.
   // The model's frame cache is updated to "remember" the joint's frame pose.
   void ParseJoint(::sdf::ElementPtr sdf_joint_element, SDFModel* sdf_model);
 
-  // Parses joints by their particular joint type filling in addition fields
-  // to fully specify a joint in `sdf_joint`.
+  // Parses joint specific parameters according to their `<type>` tag.
   void ParseJointType(const ::sdf::ElementPtr sdf_joint_element,
                       const SDFModel& sdf_model,
                       SDFJoint* sdf_joint);

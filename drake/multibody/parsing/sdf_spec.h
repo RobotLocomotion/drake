@@ -37,8 +37,7 @@ class SDFSpec {
   /// Returns `true` if `this` specification contains a model named
   /// `model_name`.
   bool HasModel(const std::string& model_name) const {
-    const auto it = model_ids_.find(model_name);
-    return it != model_ids_.end();
+    return model_ids_.count(model_name) > 0;
   }
 
   /// Returns a const reference to a model uniquely identified by its name,
@@ -59,23 +58,14 @@ class SDFSpec {
   }
 
  private:
-  // Helper to returns an iterator in model_ids_ for the model with name given
-  // by `model_name`. This method throws an excpetion if `model_name` is not in
-  // model_ids_.
-  std::unordered_map<std::string, int>::const_iterator
-  GetValidModelIteratorOrThrow(const std::string& model_name) const {
-    const auto it = model_ids_.find(model_name);
-    if (it == model_ids_.end()) {
-      throw std::runtime_error("Model \"" + model_name + "\" not found");
-    }
-    return it;
-  }
-
   // Helper method. Given the name of a model, it returns the index of this
   // model into the internal array (models_) of models.
   // It throws an exception if `model_name` is not present.
   int GetModelIdByName(const std::string& model_name) const {
-    auto it = GetValidModelIteratorOrThrow(model_name);
+    const auto it = model_ids_.find(model_name);
+    if (it == model_ids_.end()) {
+      throw std::runtime_error("Model \"" + model_name + "\" not found");
+    }
     return it->second;
   }
 

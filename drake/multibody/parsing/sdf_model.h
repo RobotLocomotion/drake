@@ -28,11 +28,11 @@ class SDFModel {
 
   /// Creates a new SDF model object specification with the given `model_name`.
   /// Per SDF specification, `model_name` must not match any other model name in
-  /// the world (<world>).
+  /// the world (`<world>`).
   explicit SDFModel(const std::string& model_name) :
       name_(model_name), frame_cache_(model_name) {}
 
-  /// Returns the name of `this` link.
+  /// Returns the name of `this` model.
   const std::string& name() const { return name_; }
 
   /// Returns the number of links (corresponding to `<link>` elements) in
@@ -47,28 +47,42 @@ class SDFModel {
     return static_cast<int>(joints_.size());
   }
 
+
+  /// @name Methods to add model components.
+  /// @{
+  // TODO(amcastro-tri): have a method VerifyModel(), or similar, which can
+  // verify the correctness of some invariants. For instance, joints should make
+  // reference to links that do exist in this model.
+
   /// Adds a new link named `link_name` to `this` model and returns a reference
   /// to the newly added link.
+  /// This method aborts if `this` model already contains a link named
+  /// `link_name`.
   SDFLink& AddLink(const std::string& link_name) {
+    DRAKE_DEMAND(!HasLink(link_name));
     const int link_index = get_num_links();
     links_.emplace_back(link_name);
-    links_name_to_index_map_.insert({link_name, link_index});
+    link_name_to_index_map_.insert({link_name, link_index});
     return links_.back();
   }
 
   /// Adds a new joint named `joint_name` to `this` model and returns a
   /// reference to the newly added joint. Please refer to the SDFJoint class's
   /// documentation for details on the arguments for this method.
+  /// This method aborts if `this` model already contains a joint named
+  /// `joint_name`.
   SDFJoint& AddJoint(const std::string& joint_name,
                      const std::string& parent_link_name,
                      const std::string& child_link_name,
                      const std::string& joint_type) {
+    DRAKE_DEMAND(!HasJoint(joint_name));
     const int joint_index = get_num_joints();
     joints_.emplace_back(
         joint_name, parent_link_name, child_link_name, joint_type);
-    joints_name_to_index_map_.insert({joint_name, joint_index});
+    joint_name_to_index_map_.insert({joint_name, joint_index});
     return joints_.back();
   }
+  /// @}
 
   /// Returns an std::vector of SDFLink objects containing all the links in
   /// `this` model.
@@ -82,16 +96,25 @@ class SDFModel {
     return joints_;
   }
 
+  /// Returns `true` if `this` model contains a link named `link_name`.
+  bool HasLink(const std::string& link_name) const {
+    return link_name_to_index_map_.count(link_name) > 0;
+  }
+
+  /// Returns `true` if `this` model contains a joint named `joint_name`.
+  bool HasJoint(const std::string& joint_name) const {
+    return joint_name_to_index_map_.count(joint_name) > 0;
+  }
+
   /// Returns a const reference to the SDFLink object with unique name within
   /// this model `link_name`.
   /// This method throws a std::runtime_error if the model does not contain a
   /// link named `link_name`.
   const SDFLink& GetLinkByName(const std::string& link_name) const {
-    const auto it = links_name_to_index_map_.find(link_name);
-    if (it == links_name_to_index_map_.end()) {
+    const auto it = link_name_to_index_map_.find(link_name);
+    if (it == link_name_to_index_map_.end()) {
       throw std::runtime_error(
-          "Link \"" + link_name + "\" not found in model \"" + this->name()
-              + "\"");
+          "Link '" + link_name + "' not found in model '" + this->name() + "'");
     }
     return links_[it->second];
   }
@@ -101,11 +124,11 @@ class SDFModel {
   /// This method throws a std::runtime_error if the model does not contain a
   /// joint named `joint_name`.
   const SDFJoint& GetJointByName(const std::string& joint_name) const {
-    const auto it = joints_name_to_index_map_.find(joint_name);
-    if (it == joints_name_to_index_map_.end()) {
+    const auto it = joint_name_to_index_map_.find(joint_name);
+    if (it == joint_name_to_index_map_.end()) {
       throw std::runtime_error(
-          "Joint \"" + joint_name + "\" not found in model \"" + this->name()
-              + "\"");
+          "Joint '" + joint_name + "' not found in model '" + this->name()
+              + "'");
     }
     return joints_[it->second];
   }
@@ -125,21 +148,27 @@ class SDFModel {
     return frame_cache_.Transform(measured_in_frame_name, frame_name);
   }
 
+  /// Returns the pose `X_DF` of a frame F named `frame_name` as measured in
+  /// `this` model frame D.
+  Isometry3<double> GetPoseInModelFrame(const std::string& frame_name) const {
+    return frame_cache_.Transform(name_, frame_name);
+  }
+
  private:
-  // Name of the root frame of this cache.
+  // The name of this model.
   std::string name_;
 
   // Vector of links in the model.
   std::vector<SDFLink> links_;
 
   // Mapping from link name to an index into std::vector links_.
-  std::unordered_map<std::string, int> links_name_to_index_map_;
+  std::unordered_map<std::string, int> link_name_to_index_map_;
 
   // Vector of joints in the model.
   std::vector<SDFJoint> joints_;
 
   // Mapping from joint name to an index into std::vector joints_.
-  std::unordered_map<std::string, int> joints_name_to_index_map_;
+  std::unordered_map<std::string, int> joint_name_to_index_map_;
 
   // Model "remembers" frames defined during parsing and their relative poses.
   FrameCache<double> frame_cache_;

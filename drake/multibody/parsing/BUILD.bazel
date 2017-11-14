@@ -69,7 +69,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sdf_parser_test",
     data = [
-        ":models",
+        ":test/models",
     ],
     deps = [
         ":sdf_parser",

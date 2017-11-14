@@ -13,8 +13,8 @@ namespace multibody {
 namespace parsing {
 
 /// A representation of a `<joint>` element in an SDF file.
-/// For details on the specification of links, including conventions and default
-/// values, please refer to the documentation for the
+/// For details on the specification of joints, including conventions and
+/// default values, please refer to the documentation for the
 /// <a href="http://sdformat.org/spec?ver=1.6&elem=joint">
 /// &lt;joint&gt; element</a>.
 class SDFJoint {
@@ -23,7 +23,12 @@ class SDFJoint {
 
   /// Creates a new joint object specification with the given `joint_name`.
   /// Per SDF specification, `joint_name` must be unique within the scope of the
-  /// joint's model.
+  /// joint's model. Uniqueness is **not** enforced by %SDFJoint.
+  ///
+  /// @param[in] joint_name
+  ///   The name of this joint as specified in the
+  ///   <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_name">
+  ///   &lt;name&gt; element</a> documentation.
   /// @param[in] parent_link_name
   ///   The name of the parent link as defined in the
   ///   <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_parent">
@@ -35,15 +40,15 @@ class SDFJoint {
   /// @param[in] joint_type
   ///   The type of the joint. E.g: revolute, prismatic. See documentation on
   ///   the <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_type">
-  ///   &lt;<type>&gt; element</a> for details.
+  ///   &lt;type&gt; element</a> for details.
   SDFJoint(
       const std::string& joint_name,
       const std::string& parent_link_name,
       const std::string& child_link_name,
-      const std::string& joint_type) :
-      name_(joint_name),
-      parent_link_name_(parent_link_name), child_link_name_(child_link_name),
-      joint_type_(joint_type) {}
+      const std::string& joint_type)
+      : name_(joint_name),
+        parent_link_name_(parent_link_name), child_link_name_(child_link_name),
+        joint_type_(joint_type) {}
 
   /// Returns the name of `this` joint.
   const std::string& name() const { return name_; }
@@ -57,16 +62,26 @@ class SDFJoint {
   /// Returns the name of the type of `this` joint.
   const std::string& joint_type() const { return joint_type_; }
 
+  /// Returns `true` if `this` joint type has an "axis" property, as it is the
+  /// case for revolute and prismatic joint types.
+  bool JointHasAxis() const {
+    return joint_type_ == "revolute" || joint_type_ == "prismatic";
+  }
+
   /// Returns the axis of this joint expressed in the joint frame.
   /// For details on how this frame is defined refer to the documenatation for
   /// the <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_axis">
-  /// &lt;<axis>&gt; element</a>.
+  /// &lt;axis&gt; element</a>.
+  /// @warning This method aborts for joint types that do not have an axis
+  /// property.
   const Vector3<double>& get_axis() const {
     DRAKE_DEMAND(JointHasAxis());
     return axis_;
   }
 
   /// Sets the axis for this joint, expressed in the joint frame.
+  /// @warning This method aborts for joint types that do not have an axis
+  /// property.
   /// @sa get_axis()
   void set_axis(const Vector3<double>& axis) {
     DRAKE_DEMAND(JointHasAxis());
@@ -74,10 +89,6 @@ class SDFJoint {
   }
 
  private:
-  bool JointHasAxis() const {
-    return joint_type_ == "revolute" || joint_type_ == "prismatic";
-  }
-
   // Name of the root frame of this cache.
   std::string name_;
   std::string parent_link_name_;

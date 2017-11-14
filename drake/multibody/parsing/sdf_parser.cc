@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-#include "sdf/sdf.hh"
+#include <sdf/sdf.hh>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -38,7 +38,7 @@ Isometry3<double> ParsePose(sdf::ElementPtr sdf_pose_element) {
 }
 
 // Parses inertial information (mass, COM) from the given SDF
-// element and updates the given body accordingly.
+// element and updates the given link accordingly.
 void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
                               SDFLink* link) {
   DRAKE_DEMAND(sdf_inertial_element != nullptr);
@@ -102,7 +102,6 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
     sdf::ElementPtr sdf_pose_element = sdf_link_element->GetElement("pose");
     X_DL = ParsePose(sdf_pose_element);
   }
-  sdf_link.set_pose_in_model(X_DL);
   // "Remember" the pose of this new link in the model frame D.
   sdf_model->CachePose(sdf_model->name(), link_name, X_DL);
 
@@ -112,19 +111,20 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
     ParseInertial(sdf_inertial_element, &sdf_link);
   }
 
-  // TODO(amcastro-tri): parse visual and collision elements.
+  // TODO(SeanCurtis-TRI): parse visual and collision elements.
 }
 
-// Parses a joint type from the given SDF element and instantiates the
-// corresponding DrakeJoint instance. It is assumed that the parent body
-// frame is already present in the frame cache.
+// Parses a joint type from the given SDF element and reads its parameters
+// accordingly into sdf_joint. It is assumed that the parent body frame is
+// already present in the frame cache.
 void SDFParser::ParseJointType(
     const sdf::ElementPtr sdf_joint_element,
     const SDFModel& sdf_model,
     SDFJoint* sdf_joint) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
-  DRAKE_DEMAND(sdf_joint != nullptr);
   DRAKE_DEMAND(sdf_joint_element->GetName() == "joint");
+  DRAKE_DEMAND(sdf_joint != nullptr);
+
   const auto joint_name = sdf_joint_element->Get<std::string>("name");
   const auto joint_type = sdf_joint_element->Get<std::string>("type");
   if (joint_type == "revolute") {
@@ -150,7 +150,8 @@ void SDFParser::ParseJointType(
         // frame (M), so the inverse of the rotational part of the
         // pose of the joint frame (M) in the model frame (D)
         // is applied.
-        axis = X_DM.linear().inverse() * axis;
+        // Here we are doing: axis_M = R_MD * axis_D:
+        axis = X_DM.inverse().linear() * axis;
       }
     }  // At this point, axis is expressed in the joint frame M.
     sdf_joint->set_axis(axis);
