@@ -259,8 +259,8 @@ as the motivating example).
 <h4>Softening at the acceleration-level</h4>
 Starting from the same stabilized and softened spring mass system:
 <pre>
-mẍ = f + λ
-ẍ + 2αẋ + β²x + γλ = 0
+mẍ = f + λ + 2αẋ + β²x
+ẍ + γλ = 0
 </pre>
 γ now becomes strictly a regularization parameter: larger values make
 linear equations and linear complementarity problems easier to solve but yield
