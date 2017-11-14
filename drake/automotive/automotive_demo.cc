@@ -12,6 +12,7 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/text_logging_gflags.h"
+#include "drake/lcm/drake_lcm.h"
 
 DEFINE_int32(num_simple_car, 0, "Number of SimpleCar vehicles. The cars are "
              "named \"0\", \"1\", \"2\", etc. If this option is provided, "
@@ -381,7 +382,8 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
   const RoadNetworkType road_network_type = DetermineRoadNetworkType();
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeLcm>());
   const maliput::api::RoadGeometry* road_geometry =
       AddTerrain(road_network_type, simulator.get());
   AddVehicles(road_network_type, road_geometry, simulator.get());
