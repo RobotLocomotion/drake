@@ -5,3 +5,9 @@
 **/BUILD.bazel diff=python
 WORKSPACE diff=python
 **/*.cps diff=json
+
+# These lines tell git diff viewers to ignore data objects.
+# Wavefront geometry definition
+*.obj -diff
+# VTK polygon data
+*.vtp -diff
