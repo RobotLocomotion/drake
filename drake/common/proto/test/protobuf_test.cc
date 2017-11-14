@@ -5,12 +5,15 @@
 #include <gtest/gtest.h>
 #include "google/protobuf/io/coded_stream.h"
 
+#include "drake/common/find_resource.h"
+
 namespace drake {
 namespace {
 
 GTEST_TEST(ProtobufUtilsTest, MakeFileInputStreamSucceeds) {
-  auto istream = MakeFileInputStreamOrThrow(
-      "drake/common/proto/test/test_string.txt");
+  const std::string absolute_path =
+      FindResourceOrThrow("drake/common/proto/test/test_string.txt");
+  auto istream = MakeFileInputStreamOrThrow(absolute_path);
   google::protobuf::io::CodedInputStream coded_stream(istream.get());
   std::string expected("test string");
   std::string contents;
