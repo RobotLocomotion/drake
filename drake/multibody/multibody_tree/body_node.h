@@ -470,13 +470,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WP = get_X_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
-    // TODO(amcastro-tri): consider caching X_WF since also used to compute
-    // H_PB_W.
+    // TODO(amcastro-tri): consider caching X_WF since it is also used to
+    // compute H_PB_W.
     const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
-    // TODO(amcastro-tri): consider caching this since also used to compute
-    // H_PB_W.
+    // TODO(amcastro-tri): consider caching this since it is also used to
+    // compute H_PB_W.
     const Vector3<T> p_MB_F =
         /* p_MB_F = R_FM * p_MB_M */
         get_X_FM(pc).linear() * X_MB.translation();
@@ -753,11 +753,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
-  /// Computes the geometric Jacobian `H_PB_W` which relates to spatial velocity
-  /// of a body B in its parent body P by `V_PB_W = H_PB_W(q)⋅v(B)`,
-  /// where v(B) denotes the generalized velocities associated with body B's
+  /// Computes the geometric Jacobian `H_PB_W` which relates to the spatial
+  /// velocity of a body B in its parent body P by `V_PB_W = H_PB_W(q)⋅v_B`,
+  /// where v_B denotes the generalized velocities associated with body B's
   /// node. `H_PB_W ∈ ℝ⁶ˣⁿᵐ` where `nm` is the number of mobilities associated
-  /// with body B's node. `H_PB_W(q)` is a function of this node's generalized
+  /// with body B's node. `H_PB_W(q)` is a function of the model's generalized
   /// positions q only.
   ///
   /// @param[in] context
@@ -767,7 +767,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[out] H_PB_W
   ///   The geometric Jacobian which relates the velocity `V_PB_W` of this
   ///   node's body B in its parent body P, expressed in W, by
-  ///   `V_PB_W = H_PB_W⋅v(B)`.
+  ///   `V_PB_W = H_PB_W⋅v_B`.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
@@ -820,9 +820,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     }
   }
 
-  /// Helper method to retrive a Jacobian matrix for `this` node from an array
-  /// containing the columns of a set of Jacobian matrices for each node.
-  /// This method is used by MultibodyTree implementations to retrive per-node
+  /// Helper method to retrieve a Jacobian matrix for `this` node from an array
+  /// storing the columns of a set of Jacobian matrices for each node.
+  /// This method is used by MultibodyTree implementations to retrieve per-node
   /// Jacobian matrices from a `std::vector` that would usually live in the
   /// cache.
   /// @param[in] H_array
