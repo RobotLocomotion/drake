@@ -141,12 +141,12 @@ direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
 @ingroup constraint_overview
  
 Both truncation and rounding errors can prevent constraints from being 
-exactly satisfied.
-For example, consider the bilateral constraint equation c(t,q) = 0. Even if
+exactly satisfied. For example, consider the bilateral holonomic constraint
+equation c(t,q) = 0. Even if
 c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, c(t₁,q(t₁))
 is unlikely to be zero for sufficiently large Δt = t₁ - t₀. Consequently,
 we can modify holonomic unilateral constraints to:<pre>
-0 ≤ c̈ + 2αċ + β²c + γλ ⊥  λ ≥ 0
+0 ≤ c̈ + 2αċ + β²c  ⊥  λ ≥ 0
 </pre>
 and holonomic bilateral constraints to:<pre>
 c̈ + 2αċ + β²c = 0
