@@ -65,15 +65,22 @@ int DoMain() {
                           visualizer_publisher.get_input_port(0));
 
   // Set contact parameters that support gripping.
-  const double kStaticFriction = 1;
-  const double kDynamicFriction = 5e-1;
-  const double kStictionSlipTolerance = 1e-3;
-  plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                          kStictionSlipTolerance);
-
   const double kStiffness = 1000;
   const double kDissipation = 100;
-  plant_->set_normal_contact_parameters(kStiffness, kDissipation);
+  const double kStaticFriction = 1;
+  const double kDynamicFriction = 5e-1;
+  systems::CompliantMaterial default_material;
+  default_material.set_stiffness(kStiffness);
+  default_material.set_dissipation(kDissipation);
+  default_material.set_friction(kStaticFriction, kDynamicFriction);
+  plant_->set_default_compliant_material(default_material);
+
+  const double kStictionSlipTolerance = 1e-3;
+  const double kContactArea = 2;
+  systems::CompliantContactParameters model_parameters;
+  model_parameters.characteristic_area = kContactArea;
+  model_parameters.v_stiction_tolerance = kStictionSlipTolerance;
+  plant_->set_contact_model_parameters(model_parameters);
 
   // Create the simulator.
   std::unique_ptr<systems::Diagram<double>> diagram = diagram_builder.Build();

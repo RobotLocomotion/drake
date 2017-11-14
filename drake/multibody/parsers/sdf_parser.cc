@@ -18,6 +18,7 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/parser_common.h"
 #include "drake/multibody/parsers/xml_util.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 // from
@@ -274,6 +275,8 @@ void ParseSdfCollision(RigidBody<double>* body, XMLElement* node,
                         ": ERROR: Failed to parse collision element in link " +
                         body->get_name() + ".");
   }
+
+  element.set_compliant_material(ParseCollisionCompliance(node));
 
   if (element.hasGeometry())
     model->addCollisionElement(element, *body, group_name);

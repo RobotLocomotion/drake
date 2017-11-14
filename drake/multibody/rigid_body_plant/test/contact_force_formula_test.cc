@@ -64,16 +64,28 @@ class ContactFormulaTest : public ::testing::Test {
     velocities.SetFromVector(target_velocities);
 
     SetContactParameters();
-    plant_->set_normal_contact_parameters(stiffness_, dissipation_);
-    plant_->set_friction_contact_parameters(static_friction_, dynamic_friction_,
-                                            v_stiction_tolerance_);
+    // This sets default *material* properties. However, for *contact*
+    // properties for objects with identical material parameters, the resultant
+    // contact stiffness is half the material value. All other values are the
+    // same for homogeneous materials. See contact_model_doxygen.h
+    // @ref per_object_contact for details.
+    systems::CompliantMaterial default_material;
+    default_material.set_stiffness(stiffness_);
+    default_material.set_dissipation(dissipation_);
+    default_material.set_friction(static_friction_, dynamic_friction_);
+    plant_->set_default_compliant_material(default_material);
+
+    systems::CompliantContactParameters model_parameters;
+    model_parameters.characteristic_area = contact_area_;
+    model_parameters.v_stiction_tolerance = v_stiction_tolerance_;
+    plant_->set_contact_model_parameters(model_parameters);
 
     plant_->CalcOutput(*context_.get(), output_.get());
     contacts_ =
         output_->get_data(port_index)->GetValue<ContactResults<double>>();
   }
 
-  // Specifies the values to use as the rigid body plant's global contact
+  // Specifies the values to use as the rigid body plant's global _contact_
   // parameters.
   // TODO(SeanCurtis-TRI): Modify this as materials come into play.
   virtual void SetContactParameters() {
@@ -143,6 +155,7 @@ class ContactFormulaTest : public ::testing::Test {
   double static_friction_ = 0.7;
   double dynamic_friction_ = 0.5;
   double v_stiction_tolerance_ = 0.01;
+  double contact_area_ = 2;
   double dissipation_ = 0.5;
 
   // dummy_precision is a very tight threshold for these tests. It is well

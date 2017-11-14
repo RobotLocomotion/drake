@@ -59,10 +59,19 @@ class ValkyrieSimulationDiagram : public systems::Diagram<double> {
     const double kDissipation = 5.0;
     const double kStaticFriction = 0.9;
     const double kDynamicFriction = 0.5;
+    systems::CompliantMaterial default_material;
+    default_material.set_stiffness(kStiffness);
+    default_material.set_dissipation(kDissipation);
+    default_material.set_friction(kStaticFriction, kDynamicFriction);
+    plant_->set_default_compliant_material(default_material);
+
     const double kStictionSlipTolerance = 0.01;
-    plant_->set_normal_contact_parameters(kStiffness, kDissipation);
-    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                            kStictionSlipTolerance);
+    const double kContactArea = 2;
+    systems::CompliantContactParameters model_parameters;
+    model_parameters.characteristic_area = kContactArea;
+    model_parameters.v_stiction_tolerance = kStictionSlipTolerance;
+    plant_->set_contact_model_parameters(model_parameters);
+
     const auto& tree = plant_->get_rigid_body_tree();
 
     // RigidBodyActuators.

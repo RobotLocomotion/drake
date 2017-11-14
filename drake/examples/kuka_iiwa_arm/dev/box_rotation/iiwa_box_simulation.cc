@@ -49,6 +49,7 @@ DEFINE_double(dissipation, 5, "Contact Dissipation");
 DEFINE_double(static_friction, 0.5, "Static Friction");
 DEFINE_double(dynamic_friction, 0.2, "Dynamic Friction");
 DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol");
+DEFINE_double(contact_area, 2.0, "The characteristic scale of contact area.");
 DEFINE_bool(use_visualizer, true, "Use Drake Visualizer?");
 
 namespace drake {
@@ -150,10 +151,15 @@ int DoMain() {
       BuildCombinedPlant<double>(&iiwa_instance, &box_instance);
   model_ptr->set_name("plant");
 
-  model_ptr->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  model_ptr->set_friction_contact_parameters(FLAGS_static_friction,
-                                             FLAGS_dynamic_friction,
-                                             FLAGS_v_stiction_tol);
+  systems::CompliantMaterial default_material;
+  default_material.set_stiffness(FLAGS_stiffness);
+  default_material.set_dissipation(FLAGS_dissipation);
+  default_material.set_friction(FLAGS_static_friction, FLAGS_dynamic_friction);
+  model_ptr->set_default_compliant_material(default_material);
+  systems::CompliantContactParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tol;
+  model_ptr->set_contact_model_parameters(model_parameters);
 
   auto model =
       builder.template AddSystem<IiwaAndBoxPlantWithStateEstimator<double>>(

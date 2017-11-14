@@ -25,6 +25,7 @@ during stiction).
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -42,6 +43,7 @@ DEFINE_double(stiffness, 10000, "The contact material stiffness");
 DEFINE_double(dissipation, 2.0, "The contact material dissipation");
 DEFINE_double(v_stiction_tolerance, 0.01,
               "The maximum slipping speed allowed during stiction");
+DEFINE_double(contact_area, 1.0, "The characteristic scale of contact area.");
 DEFINE_double(sim_duration, 5, "Amount of time to simulate");
 DEFINE_bool(playback, true,
             "If true, simulation begins looping playback when complete");
@@ -89,14 +91,22 @@ int main() {
   // Command-line specified contact parameters.
   std::cout << "Contact properties:\n";
   std::cout << "\tStiffness:                " << FLAGS_stiffness << "\n";
+  std::cout << "\tDissipation:              " << FLAGS_dissipation << "\n";
   std::cout << "\tstatic friction:          " << FLAGS_us << "\n";
   std::cout << "\tdynamic friction:         " << FLAGS_ud << "\n";
   std::cout << "\tAllowed stiction speed:   " << FLAGS_v_stiction_tolerance
             << "\n";
   std::cout << "\tDissipation:              " << FLAGS_dissipation << "\n";
-  plant->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  plant->set_friction_contact_parameters(FLAGS_us, FLAGS_ud,
-                                         FLAGS_v_stiction_tolerance);
+
+  systems::CompliantMaterial default_material;
+  default_material.set_stiffness(FLAGS_stiffness);
+  default_material.set_dissipation(FLAGS_dissipation);
+  default_material.set_friction(FLAGS_us, FLAGS_ud);
+  plant->set_default_compliant_material(default_material);
+  systems::CompliantContactParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tolerance;
+  plant->set_contact_model_parameters(model_parameters);
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.
