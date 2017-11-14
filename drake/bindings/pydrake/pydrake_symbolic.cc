@@ -2,7 +2,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 
-#include "drake/bindings/pybind11/pydrake_symbolic_types.h"
+#include "drake/bindings/pydrake/pydrake_symbolic_types.h"
 
 namespace py = pybind11;
 

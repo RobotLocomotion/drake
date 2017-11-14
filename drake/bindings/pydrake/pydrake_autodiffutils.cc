@@ -2,7 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/bindings/pybind11/pydrake_autodiff_types.h"
+#include "drake/bindings/pydrake/pydrake_autodiff_types.h"
 
 namespace py = pybind11;
 
