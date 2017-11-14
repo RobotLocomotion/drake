@@ -41,6 +41,29 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "lcm_plant",
+    srcs = ["lcm_plant.cc"],
+    hdrs = [
+        "lcm_plant.h",
+    ],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
+        "//drake/manipulation/util:frame_pose_tracker",
+        "//drake/systems/sensors:optitrack_encoder",
+        "//drake/systems/sensors:optitrack_sender",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
 drake_cc_binary(
     name = "pick_and_place_demo",
     srcs = [
