@@ -123,8 +123,6 @@ class PidControlledSystemTest : public ::testing::Test {
 
     auto controller = builder.AddSystem<PidControlledSystem>(
         std::move(plant), feedback_selector, Kp_, Ki_, Kd_);
-    // Check that the controller automatically assigns a name to the plant.
-    controller->set_name("controller");
 
     builder.Connect(input_source->get_output_port(),
                     controller->get_input_port(0));
@@ -153,18 +151,6 @@ class PidControlledSystemTest : public ::testing::Test {
   const Vector1d Kd_{0.1};
   std::unique_ptr<Diagram<double>> diagram_;
 };
-
-// Tests that the PidController assigns default names to the plant.
-TEST_F(PidControlledSystemTest, DefaultNamesAssigned) {
-  auto plant = std::make_unique<TestPlantWithMinOutputs>();
-  auto plant_ptr = plant.get();
-  const int state_size = plant->get_output_port(0).size();
-
-  PidControlledSystem<double> controller(
-      std::move(plant), MatrixX<double>::Identity(state_size, state_size),
-      Kp_, Ki_, Kd_);
-  EXPECT_EQ("plant", plant_ptr->get_name());
-}
 
 // Tests that the PidController preserves the names of the plant.
 TEST_F(PidControlledSystemTest, ExistingNamesRespected) {
@@ -217,22 +203,18 @@ class ConnectControllerTest : public ::testing::Test {
         plant_ptr->get_output_port(0).size());
 
     plant_ = builder_.AddSystem(std::move(plant_ptr));
-    plant_->set_name("plant");
 
     input_source_ = builder_.AddSystem<ConstantVectorSource>(plant_input_);
-    input_source_->set_name("input");
     state_source_ = builder_.AddSystem<ConstantVectorSource>(desired_state_);
-    state_source_->set_name("state");
-
     builder_.ExportOutput(plant_->get_output_port(0));
   }
 
   void ConnectPidPorts(
       PidControlledSystem<double>::ConnectResult plant_pid_ports) {
     builder_.Connect(input_source_->get_output_port(),
-                             plant_pid_ports.control_input_port);
+                     plant_pid_ports.control_input_port);
     builder_.Connect(state_source_->get_output_port(),
-                             plant_pid_ports.state_input_port);
+                     plant_pid_ports.state_input_port);
   }
 
   double ComputePidInput() {
@@ -304,6 +286,26 @@ TEST_F(ConnectControllerTest, SaturatingController) {
   double calculated_input = saturation_max;
 
   EXPECT_EQ(pid_input, calculated_input);
+}
+
+// Ensure that multiple plants can coexist in the same diagram (yes,
+// this was broken at one point).
+TEST_F(ConnectControllerTest, MultipleControllerTest) {
+  auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
+      plant_->get_input_port(0), plant_->get_output_port(0),
+      feedback_selector_, Kp, Ki, Kd, &builder_);
+
+  ConnectPidPorts(plant_pid_ports);
+
+  // Add another PidControlledSystem and confirm there's nothing that
+  // prevents two plants from existing in the same diagram.
+  SetUp();
+  auto second_plant_pid_ports = PidControlledSystem<double>::ConnectController(
+      plant_->get_input_port(0), plant_->get_output_port(0),
+      feedback_selector_, Kp, Ki, Kd, &builder_);
+
+  ConnectPidPorts(second_plant_pid_ports);
+  EXPECT_NO_THROW(builder_.Build());
 }
 
 }  // namespace
