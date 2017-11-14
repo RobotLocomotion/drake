@@ -199,6 +199,9 @@ following values for the fields:
 
 Leave the checkbox options in their default state.
 
+This assumes that ``clang-format`` is on your ``$PATH``; on Ubuntu, you may
+have to set the Program to be ``clang-format-4.0`` instead.
+
 Clang format selected lines
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -212,6 +215,9 @@ following values for the fields:
   :Working directory: ``$FileDir$``
 
 Leave the checkbox options in their default state.
+
+This assumes that ``clang-format`` is on your ``$PATH``; on Ubuntu, you may
+have to set the Program to be ``clang-format-4.0`` instead.
 
 Correct #include ordering
 ^^^^^^^^^^^^^^^^^^^^^^^^^

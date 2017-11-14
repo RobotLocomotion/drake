@@ -57,7 +57,7 @@ The
 already install clang-format.  On Ubuntu, you may wish to create an alias
 (assuming ``$HOME/bin`` is already on your ``$PATH``)::
 
-    ln -s /usr/bin/clang-format-3.9 $HOME/bin/clang-format
+    ln -s /usr/bin/clang-format-4.0 $HOME/bin/clang-format
 
 You can check whether you've installed it correctly by executing::
 

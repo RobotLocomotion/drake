@@ -33,7 +33,7 @@ while true; do
       # added, since it otherwise duplicates the commented deb-src line.
       add-apt-repository -s -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
       apt update
-      apt install --no-install-recommends clang-3.9 clang-format-3.9 lldb-3.9
+      apt install --no-install-recommends clang-3.9 lldb-3.9
       break
       ;;
     [Nn]*) break ;;
