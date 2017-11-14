@@ -4,8 +4,8 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
-#include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -40,6 +40,13 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+TEST_P(TestEllipsoidsSeparation, TestSOCP) {
+  MosekSolver mosek_solver;
+  SolveAndCheckSolution(mosek_solver);
+}
+
+INSTANTIATE_TEST_CASE_P(MosekTest, TestEllipsoidsSeparation,
+                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
