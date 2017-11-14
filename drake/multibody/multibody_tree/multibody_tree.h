@@ -1055,11 +1055,12 @@ class MultibodyTree {
   ///   velocity of all points `Pi` in the same order they were given in the
   ///   input set. Therefore `J_WPi` is a matrix of size `3⋅np x nv`, with `nv`
   ///   the number of generalized velocities.
+#if 0
   void CalcPointsGeometricJacobianInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BPi,
-      EigenPtr<MatrixX<T>> J_WPi) const;
-
+      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+      EigenPtr<MatrixX<T>> J_WQi) const;
+#endif
 
   // --------------------------------------
   // From SimbodyMatterSubsystem.h:
@@ -1463,6 +1464,13 @@ class MultibodyTree {
   // This method will throw a std::logic_error if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
+
+  // Computes the cache entry associated with the geometric Jacobian H_PB_W for
+  // each node.
+  void CalcAcrossNodeGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      std::vector<SpatialVelocity<T>>* H_PB_W_cache) const;
 
   // Implementation for CalcMassMatrixViaInverseDynamics().
   // It assumes:

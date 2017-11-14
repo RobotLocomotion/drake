@@ -217,6 +217,10 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
   // corresponding to flexible bodies.
 
+  // TODO(amcastro-tri): Eval H_PB_W from the cache.
+  std::vector<SpatialVelocity<T>> H_PB_W_cache(get_num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, depth = 0.
   for (int depth = 1; depth < get_tree_height(); ++depth) {
@@ -226,8 +230,11 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
       DRAKE_ASSERT(node.get_topology().level == depth);
       DRAKE_ASSERT(node.get_index() == body_node_index);
 
+      Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+          node.GetJacobianFromArray(H_PB_W_cache);
+
       // Update per-node kinematics.
-      node.CalcVelocityKinematicsCache_BaseToTip(mbt_context, pc, vc);
+      node.CalcVelocityKinematicsCache_BaseToTip(mbt_context, pc, H_PB_W, vc);
     }
   }
 }
@@ -535,15 +542,40 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    std::vector<SpatialVelocity<T>>* H_PB_W_cache) const {
+  DRAKE_DEMAND(H_PB_W_cache != nullptr);
+  DRAKE_DEMAND(static_cast<int>(H_PB_W_cache->size()) == get_num_velocities());
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  for (BodyNodeIndex node_index(1);
+       node_index < get_num_bodies(); ++node_index) {
+    const BodyNode<T>& node = *body_nodes_[node_index];
+
+    // Jacobian matrix for this node:
+    Eigen::Map<MatrixUpTo6<T>> H_PB_W =
+        node.GetMutableJacobianFromArray(H_PB_W_cache);
+
+    node.CalcAcrossNodeGeometricJacobianExpressedInWorld(
+        mbt_context, pc, &H_PB_W);
+  }
+}
+
+#if 0
+template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BPi,
-    EigenPtr<MatrixX<T>> J_WPi) const {
-  DRAKE_DEMAND(p_BPi.rows() == 3);
-  const int num_points = p_BPi.cols();
-  DRAKE_DEMAND(J_WPi != nullptr);
-  DRAKE_DEMAND(J_WPi->rows() == 3 * num_points);
-  DRAKE_DEMAND(J_WPi->cols() == get_num_velocities());
+    const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+    EigenPtr<MatrixX<T>> J_WQi) const {
+  DRAKE_DEMAND(p_BQi.rows() == 3);
+  const int num_points = p_BQi.cols();
+  DRAKE_DEMAND(J_WQi != nullptr);
+  DRAKE_DEMAND(J_WQi->rows() == 3 * num_points);
+  DRAKE_DEMAND(J_WQi->cols() == get_num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -563,18 +595,19 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianInWorld(
   CalcPositionKinematicsCache(context, &pc);
 
   // Performs a scan of all bodies in the kinematic path from body_B to the
-  // world computing each node's contribution to J_WPi.
-  const int Jnrows = 3 * num_points;  // Number of rows in J_WPi.
+  // world computing each node's contribution to J_WQi.
+  const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
   for (BodyNodeIndex body_node_index : path_to_world) {
     const BodyNode<T>& node = *body_nodes_[body_node_index];
     const BodyNodeTopology& node_topology = node.get_topology();
     const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
     const int num_velocities = node_topology.num_mobilizer_velocities;
-    auto Jnode_WPi = J_WPi->block(0, start_index_in_v, Jnrows, num_velocities);
+    auto Jnode_WPi = J_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
     node.CalcAcrossMobilizerPointsGeometricJacobianInWorld(
-        mbt_context, pc, frame_B, p_BPi, &Jnode_WPi);
+        mbt_context, pc, frame_B, p_BQi, &Jnode_WPi);
   }
 }
+#endif
 
 template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(

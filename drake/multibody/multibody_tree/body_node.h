@@ -242,11 +242,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void CalcVelocityKinematicsCache_BaseToTip(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
+      const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       VelocityKinematicsCache<T>* vc) const {
     // This method must not be called for the "world" body node.
     DRAKE_ASSERT(topology_.body != world_index());
 
     DRAKE_ASSERT(vc != nullptr);
+    DRAKE_DEMAND(H_PB_W.rows() == 6);
+    DRAKE_DEMAND(H_PB_W.cols() == get_num_mobilizer_velocites());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -298,6 +301,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // this restriction in preparation of the more general case considering
     // flexible bodies.
 
+#if 0
     // Body for this node. Its body frame is also referred to as B whenever no
     // ambiguity can arise.
     const Body<T>& body_B = get_body();
@@ -312,6 +316,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Outboard frame M of this node's mobilizer.
     const Frame<T>& frame_M = get_outboard_frame();
     DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
+#endif
 
     // Generalized velocities local to this node's mobilizer.
     const auto& vm = this->get_mobilizer_velocities(context);
@@ -323,6 +328,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     SpatialVelocity<T>& V_FM = get_mutable_V_FM(vc);
     V_FM = get_mobilizer().CalcAcrossMobilizerSpatialVelocity(context, vm);
 
+#if 0
     const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
     const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
 
@@ -337,6 +343,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Vector3<T> p_MB_F =
         /* p_MB_F = R_FM * p_MB_M */
         get_X_FM(pc).linear() * X_MB.translation();
+#endif
 
     // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
     // Side note to developers: in operator form for rigid bodies this would be
@@ -345,7 +352,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //          = H_PB_W * vm
     // where H_PB_W = R_WF * phiT_MB_F * H_FM.
     SpatialVelocity<T>& V_PB_W = get_mutable_V_PB_W(vc);
-    V_PB_W = R_WF * V_FM.Shift(p_MB_F);
+    //V_PB_W = R_WF * V_FM.Shift(p_MB_F);
+
+    V_PB_W.get_coeffs() = H_PB_W * vm;
 
     // =========================================================================
     // Computation of V_WPb in Eq. (1). See summary at the top of this method.
@@ -780,6 +789,61 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
+  /// Computes the geometric Jacobian `H_PB_W` which relates to spatial velocity
+  /// of a body B in its parent body P by `V_PB_W = H_PB_W * v(B)`, where v(B)
+  /// denotes the generalized velocities associated with body B's node.
+  /// `H_PB_W ∈ ℝ⁶ˣⁿᵐ` where `nm` is the number of mobilities associated with
+  /// body B's node.
+  void CalcAcrossNodeGeometricJacobianExpressedInWorld(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      EigenPtr<MatrixX<T>> H_PB_W) const {
+    // This method must not be called for the "world" body node.
+    DRAKE_ASSERT(topology_.body != world_index());
+    // Checks on the input arguments.
+    DRAKE_DEMAND(topology_.body != world_index());
+    DRAKE_DEMAND(H_PB_W != nullptr);
+    DRAKE_DEMAND(H_PB_W->rows() == 6);
+    DRAKE_DEMAND(H_PB_W->cols() == get_num_mobilizer_velocites());
+
+    // Inboard frame F of this node's mobilizer.
+    const Frame<T>& frame_F = get_inboard_frame();
+    // Outboard frame M of this node's mobilizer.
+    const Frame<T>& frame_M = get_outboard_frame();
+
+    const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
+    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
+
+    // Pose of the parent body P in world frame W.
+    // Available since we are called within a base-to-tip recursion.
+    const Isometry3<T>& X_WP = get_X_WP(pc);
+
+    // Orientation (rotation) of frame F with respect to the world frame W.
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
+
+    // Vector from Mo to Bo expressed in frame F as needed below:
+    const Vector3<T> p_MB_F =
+        /* p_MB_F = R_FM * p_MB_M */
+        get_X_FM(pc).linear() * X_MB.translation();
+
+    // Compute the imob-th column in J_PB_W:
+    VectorUpTo6<T> v = VectorUpTo6<T>::Zero(get_num_mobilizer_velocites());
+    // We compute H_FM(q) one column at a time by calling the multiplication by
+    // H_FM operation on a vector of generalized velocities which is zero except
+    // for its imob-th component, which is one.
+    for (int imob = 0; imob < get_num_mobilizer_velocites(); ++imob) {
+      v(imob) = 1.0;
+      // Compute the imob-th column of H_FM:
+      const SpatialVelocity<T> Himob_FM =
+          get_mobilizer().CalcAcrossMobilizerSpatialVelocity(context, v);
+      v(imob) = 0.0;
+      // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
+      //         = R_WF * V_FM.Shift(p_MoBo_F)
+      H_PB_W->col(imob) = (R_WF * Himob_FM.Shift(p_MB_F)).get_coeffs();
+    }
+  }
+
+#if 0
   void CalcAcrossNodePointsGeometricJacobianInWorld(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -809,6 +873,29 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         J_PBqi_W->cols(imobility) = V_PBqi_W.get_coeffs();
       }
     }
+  }
+#endif
+
+  Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
+      const std::vector<SpatialVelocity<T>>& H_PB_array) const {
+    const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
+    const int num_velocities = get_topology().num_mobilizer_velocities;
+    // The first column of this node's Jacobian matrix H_PB_W:
+    const SpatialVelocity<T>& H_PB_W_col0 = H_PB_array[start_index_in_v];
+    // Create an Eigen map to the full H_PB_W for this node:
+    return Eigen::Map<const MatrixUpTo6<T>>(
+        H_PB_W_col0.data(), 6, num_velocities);
+  }
+
+  Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
+      std::vector<SpatialVelocity<T>>* H_PB_array) const {
+    const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
+    const int num_velocities = get_topology().num_mobilizer_velocities;
+    // The first column of this node's Jacobian matrix H_PB_W:
+    SpatialVelocity<T>& H_PB_W_col0 = (*H_PB_array)[start_index_in_v];
+    // Create an Eigen map to the full H_PB_W for this node:
+    return Eigen::Map<MatrixUpTo6<T>>(
+        H_PB_W_col0.mutable_data(), 6, num_velocities);
   }
 
  protected:
@@ -1123,48 +1210,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_ASSERT(pc != nullptr);
     Isometry3<T>& X_FM = get_mutable_X_FM(pc);
     X_FM = get_mobilizer().CalcAcrossMobilizerTransform(context);
-  }
-
-  void CalcAcrossNodeJacobianInWorld(
-      const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      EigenPtr<MatrixX<T>> Jimob_PB_W) const {
-    DRAKE_DEMAND(topology_.body != world_index());
-    DRAKE_DEMAND(Jimob_PB_W != nullptr);
-    DRAKE_DEMAND(
-        static_cast<int>(Jimob_PB_W->size()) == get_num_mobilizer_velocites());
-
-    // Inboard frame F of this node's mobilizer.
-    const Frame<T>& frame_F = get_inboard_frame();
-    // Outboard frame M of this node's mobilizer.
-    const Frame<T>& frame_M = get_outboard_frame();
-
-    const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
-    const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
-
-    // Pose of the parent body P in world frame W.
-    // Available since we are called within a base-to-tip recursion.
-    const Isometry3<T>& X_WP = get_X_WP(pc);
-
-    // Orientation (rotation) of frame F with respect to the world frame W.
-    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
-
-    // Vector from Mo to Bo expressed in frame F as needed below:
-    const Vector3<T> p_MB_F =
-        /* p_MB_F = R_FM * p_MB_M */
-        get_X_FM(pc).linear() * X_MB.translation();
-
-    // Compute the imob-th column in J_PB_W:
-    VectorUpTo6<T> v = VectorUpTo6<T>::Zero(get_num_mobilizer_velocites());
-    for (int imob = 0; imob < get_num_mobilizer_velocites(); ++imob) {
-      v(imob) = 1.0;
-      const SpatialVelocity<T> Jimob_FM =
-          get_mobilizer().CalcAcrossMobilizerSpatialVelocity(context, v);
-      v(imob) = 0.0;
-      // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
-      //         = R_WF * V_FM.Shift(p_MoBo_F)
-      Jimob_PB_W->col(imob) = (R_WF * Jimob_FM.Shift(p_MB_F)).get_coeffs();
-    }
   }
 
   // This method computes the total force Ftot_BBo on body B that must be
