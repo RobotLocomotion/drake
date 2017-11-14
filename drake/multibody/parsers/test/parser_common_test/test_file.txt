@@ -1,2 +1,0 @@
-This file is intentially left empty. It is used by parser_common_test.cc for
-testing purposes.
