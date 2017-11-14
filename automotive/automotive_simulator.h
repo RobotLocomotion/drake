@@ -47,10 +47,14 @@ class AutomotiveSimulator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutomotiveSimulator)
 
-  /// A constructor that configures this object to use DrakeLcm, which
-  /// encapsulates a _real_ LCM instance.
+  /// The default constructor that configures this object with a default-
+  /// constructed DrakeLcm instance.
   AutomotiveSimulator();
+
+  /// A constructor that configures this object to use a DrakeLcmInterface
+  /// instance. If nullptr, no visualization is produced.
   explicit AutomotiveSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
+
   ~AutomotiveSimulator();
 
   /// Returns the LCM object used by this AutomotiveSimulator.
@@ -68,14 +72,15 @@ class AutomotiveSimulator {
   /// @param name The car's name, which must be unique among all cars. Otherwise
   /// a std::runtime_error will be thrown.
   ///
-  /// @param channel_name  The SimpleCar will subscribe to an LCM channel of
-  /// this name to receive commands.  It must be non-empty.
+  /// @param channel_name The SimpleCar will subscribe to an LCM channel of this
+  /// name to receive commands.  If empty, then the input port is fixed to a
+  /// DrivingCommand created using its default constructor.
   ///
   /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddPriusSimpleCar(
-      const std::string& name, const std::string& channel_name,
+      const std::string& name, const std::string& channel_name = std::string(),
       const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
   /// Adds a SimpleCar to this simulation controlled by a MOBIL planner coupled
@@ -118,6 +123,32 @@ class AutomotiveSimulator {
   int AddPriusTrajectoryCar(const std::string& name,
                             const Curve2<double>& curve, double speed,
                             double start_time);
+
+  /// Adds a lane-following SimpleCar with IdmController and
+  /// PurePursuitController to this simulation that takes as input a constant
+  /// source that contains the @p goal_lane as the destination lane for the car.
+  /// The car is visualized as a Toyota Prius. This includes its
+  /// EulerFloatingJoint output.
+  ///
+  /// @pre Start() has NOT been called.
+  ///
+  /// @param name The car's name, which must be unique among all cars. Otherwise
+  /// a std::runtime_error will be thrown.
+  ///
+  /// @param initial_with_s Initial travel direction in the lane. True means
+  /// that the car is initially oriented in the positive-s direction.
+  ///
+  /// @param initial_state The SimpleCar's initial state.
+  ///
+  /// @param goal_lane The goal lane for the car. If goal_lane is nullptr or not
+  /// a member of the road supplied via SetRoadGeometry(), a std::runtime_error
+  /// will be thrown.
+  ///
+  /// @return The ID of the car that was just added to the simulation.
+  int AddIdmControlledCar(const std::string& name,
+                          bool initial_with_s,
+                          const SimpleCarState<T>& initial_state,
+                          const maliput::api::Lane* goal_lane);
 
   /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
   ///
@@ -220,20 +251,27 @@ class AutomotiveSimulator {
   /// Builds the Diagram.  No further changes to the diagram may occur after
   /// this has been called.
   ///
-  /// @pre Build() has NOT been called.
+  /// @pre Build() and BuildandInitialize() have NOT been called.
   void Build();
+
+  /// Builds the Diagram and intializes the Diagram Context to the predefined
+  /// initial states.
+  ///
+  /// @pre Build() and BuildandInitialize() have NOT been called.
+  void BuildAndInitialize(
+      std::unique_ptr<systems::Context<double>> initial_context = nullptr);
 
   /// Returns the System containing the entire AutomotiveSimulator diagram.
   ///
-  /// @pre Build() has been called.
+  /// @pre either Build() or BuildandInitialize() have been called.
   const systems::System<T>& GetDiagram() const {
     DRAKE_DEMAND(diagram_ != nullptr);
     return *diagram_;
   }
 
-  /// Calls Build() on the diagram (if it has not been build already) and
-  /// initializes the Simulator.  No further changes to the diagram may occur
-  /// after this has been called.
+  /// Calls BuildAndInitialize() on the diagram (if it has not been build
+  /// already) and initializes the Simulator.  No further changes to the diagram
+  /// may occur after this has been called.
   ///
   /// @pre Start() has NOT been called.
   ///
@@ -242,7 +280,9 @@ class AutomotiveSimulator {
   //
   // TODO(jwnimmer-tri) Perhaps our class should be AutomotiveSimulatorBuilder?
   // Port a few more demo programs, then decide what looks best.
-  void Start(double target_realtime_rate = 0.0);
+  void Start(double target_realtime_rate = 0.0,
+             std::unique_ptr<systems::Context<double>>
+             initial_context = nullptr);
 
   /// Returns whether the automotive simulator has started.
   bool has_started() const { return simulator_ != nullptr; }
