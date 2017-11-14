@@ -39,7 +39,7 @@ GTEST_TEST(FindResourceTest, NonRelativeRequest) {
 }
 
 GTEST_TEST(FindResourceTest, NotFound) {
-  const string relpath = "this file does not exist";
+  const string relpath = "drake/this_file_does_not_exist";
   const auto& result = FindResource(relpath);
   EXPECT_EQ(result.get_resource_path(), relpath);
 
@@ -66,9 +66,10 @@ GTEST_TEST(FindResourceTest, AlternativeDirectory) {
   // an empty file in a scratch directory with a sentinel file. Bazel tests are
   // run in a scratch directory, so we don't need to remove anything manually.
   const std::string test_directory = "find_resource_test_scratch";
-  const std::string candidate_filename = "candidate.ext";
+  const std::string candidate_filename = "drake/candidate.ext";
   spruce::dir::mkdir(test_directory);
-  Touch(test_directory + "/.drake-resource-sentinel");
+  spruce::dir::mkdir(test_directory + "/drake");
+  Touch(test_directory + "/drake/.drake-find_resource-sentinel");
   Touch(test_directory + "/" + candidate_filename);
   AddResourceSearchPath(test_directory);
   EXPECT_TRUE(!GetResourceSearchPaths().empty());

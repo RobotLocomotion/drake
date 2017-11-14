@@ -20,6 +20,7 @@ drake_cc_library(
         ":diagram_continuous_state",
         ":discrete_values",
         ":event_collection",
+        ":framework_common",
         ":input_port_descriptor",
         ":input_port_evaluator_interface",
         ":input_port_value",
@@ -32,7 +33,6 @@ drake_cc_library(
         ":single_output_vector_source",
         ":state",
         ":system",
-        ":system_common",
         ":system_constraint",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
@@ -183,12 +183,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "system_common",
+    name = "framework_common",
     srcs = [],
     hdrs = [
-        "system_common.h",
+        "framework_common.h",
     ],
     deps = [
+        "//drake/common:type_safe_index",
     ],
 )
 
@@ -201,7 +202,7 @@ drake_cc_library(
         "input_port_descriptor.h",
     ],
     deps = [
-        ":system_common",
+        ":framework_common",
         "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
@@ -297,7 +298,7 @@ drake_cc_library(
         ":cache",
         ":context",
         ":event_collection",
-        ":system_common",
+        ":framework_common",
         ":system_constraint",
         ":system_scalar_converter",
         ":value",
