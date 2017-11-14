@@ -268,6 +268,7 @@ def drake_cc_library(
 def drake_cc_binary(
         name,
         srcs = [],
+        data = [],
         deps = [],
         copts = [],
         gcc_copts = [],
@@ -275,6 +276,7 @@ def drake_cc_binary(
         testonly = 0,
         add_test_rule = 0,
         test_rule_args = [],
+        test_rule_data = [],
         test_rule_size = None,
         test_rule_flaky = 0,
         **kwargs):
@@ -292,6 +294,7 @@ def drake_cc_binary(
     native.cc_binary(
         name = name,
         srcs = srcs,
+        data = data,
         deps = deps,
         copts = _platform_copts(copts, gcc_copts),
         testonly = testonly,
@@ -317,6 +320,7 @@ def drake_cc_binary(
         drake_cc_test(
             name = name + "_test",
             srcs = srcs,
+            data = data + test_rule_data,
             deps = deps,
             copts = copts,
             size = test_rule_size,
