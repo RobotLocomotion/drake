@@ -201,7 +201,8 @@ complementarity problem becomes solvable given sufficient regularization
 [Cottle 1992]; more softening results in greater regularization. 
 
 <h4>Softening introduces compliance</h4>
-Second (in concert with constraint stabilization), constraint
+Second (in concert with constraint stabilization and a particular discretization
+of the constrained multibody dynamics equations), constraint
 softening introduces compliant effects, e.g., at joint stops and
 between contacting bodies; such effects are often desirable.
 
@@ -250,29 +251,22 @@ multibody systems as well, as discussed in [Lacoursiere 2007]. The most
 interesting part of this formulation is that γ acts as both a numerical
 (regularization) parameter and as a physical modeling parameter. 
 
-Implementing a time stepping scheme in Drake using ConstraintSolver, one would
-use α and β to correspondingly set gammaN to γ and kN to ν/h times the
+By using ConstraintSolver to help implement a time stepping scheme in Drake,
+one would use α and β to correspondingly set gammaN to γ and kN to ν/h times the
 signed distance (using, e.g., the point contact non-interpenetration constraint
 as the motivating example).
 
 <h4>Softening at the acceleration-level</h4>
-Starting from the same canonical system:
+Starting from the same stabilized and softened spring mass system:
 <pre>
 mẍ = f + λ
 ẍ + 2αẋ + β²x + γλ = 0
 </pre>
-the parameters β and α can now be set independently to stabilize the
-constraint with a particular undamped frequency and damping ratio. γ now
-controls only the amplitude of the constraint errors. From a numerical
-standpoint, γ becomes strictly a regularization parameter: larger values make
+γ now becomes strictly a regularization parameter: larger values make
 linear equations and linear complementarity problems easier to solve but yield
-larger constraint errors to be stabilized.
-
-From another viewpoint, γ → ∞ turns the approach into a pure "penalty method".
-In contrast, γ → 0 minimizes the constraint violation and implies greater
-accuracy without computational stiffness. For constraints that do not lead to
-computational stiffness as γ → ∞, solving the constraint equations results in
-greater computational work than using a penalty method.
+larger constraint errors to be stabilized. α and β are no longer be interpreted
+as dynamic (stiffness and damping) parameters, and now are viewed as
+constraint stabilization parameters.
 
 <h4>Bilateral constraints</h4>
 Note that Drake does not soften bilateral constraints.
