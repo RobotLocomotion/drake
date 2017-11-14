@@ -180,7 +180,7 @@ drake_py_test(
     name = "yaml_load_test",
     size = "small",
     srcs = ["test/yaml_load_test.py"],
-    args = ["drake/automotive/maliput/multilane/yaml_load"],
+    args = ["$(location :yaml_load)"],
     data = [
         ":yaml_load",
         ":yamls",
