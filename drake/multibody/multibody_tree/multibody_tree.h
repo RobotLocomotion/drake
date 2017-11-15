@@ -1000,17 +1000,51 @@ class MultibodyTree {
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
-  ///  Computes the relative transform `X_AB` from a frame B to a frame A.
-  ///  That is, the position of a point Q measured and expressed in frame A can
-  ///  be computed from the position p_BQ of this point measured and expressed
-  ///  in a frame B using the transformation `p_AQ = X_AB⋅p_BQ`.
+  /// Computes the relative transform `X_AB(q)` from a frame B to a frame A, as
+  /// a function of the generalized positions q of the model.
+  /// That is, the position `p_AQ(q)` of a point Q measured and expressed in
+  /// frame A can be computed from the position `p_BQ` of this point measured
+  /// and expressed in frame B using the transformation
+  /// `p_AQ(q) = X_AB(q)⋅p_BQ`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q of the model.
+  /// @param[in] to_frame_A
+  ///   The target frame A in the computed relative transform `X_AB`.
+  /// @param[in] from_frame_B
+  ///   The source frame B in the computed relative transform `X_AB`.
+  /// @retval X_AB
+  ///   The relative transform from frame B to frame A, such that
+  ///   `p_AQ = X_AB⋅p_BQ`.
   Isometry3<T> CalcRelativeTransform(
       const systems::Context<T>& context,
       const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const;
 
-  ///  Given a vector of positions p_BQi for a set of points Qi measured in a
-  ///  frame B, this method computes the position `p_BPi` of each point Pi in
-  ///  another frame A.
+  ///  Given the positions `p_BQi` for a set of points `Qi` measured and
+  ///  expressed in a frame B, this method computes the positions `p_AQi(q)` of
+  ///  each point `Qi` in the set as measured and expressed in another frame A,
+  ///  as a function of the generalized positions q of the model.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q of the model.
+  /// @param[in] from_frame_B
+  ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
+  ///   given.
+  /// @param[in] p_BQi
+  ///   The input positions of each point `Qi` in frame B. `p_BQi ∈ ℝ³ˣⁿᵖ` with
+  ///   `np` the number of points in the set. Each column of `p_BQi` corresponds
+  ///   to a vector in ℝ³ holding the position of one of the points in the set
+  ///   as measured and expressed in frame B.
+  /// @param[in] to_frame_A
+  ///   The frame A in which it is desired to compute the positions `p_AQi` of
+  ///   each point `Qi` in the set.
+  /// @param[out] p_AQi
+  ///   The output positions of each point `Qi` now computed as measured and
+  ///   expressed in frame A. The output `p_AQi` **must** have the same size as
+  ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
+  ///   **must** be in `ℝ³ˣⁿᵖ`.
   void CalcPointsPositions(
       const systems::Context<T>& context,
       const Frame<T>& from_frame_B,
