@@ -10,9 +10,7 @@ load(
 )
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
 )
 
 package(
@@ -58,18 +56,6 @@ cc_library(
     ],
 )
 
-cmake_config(
-    package = "fcl",
-    script = "@drake//tools/workspace/fcl:fcl-create-cps.py",
-    version_file = "CMakeModules/FCLVersion.cmake",
-    deps = [
-        "@eigen//:cps",
-        "@octomap//:cps",
-    ],
-)
-
-install_cmake_config(package = "fcl")  # Creates rule :install_cmake_config.
-
 install(
     name = "install",
     targets = [":fcl"],
@@ -77,5 +63,4 @@ install(
     hdr_strip_prefix = ["include/fcl"],
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE"],
-    deps = [":install_cmake_config"],
 )

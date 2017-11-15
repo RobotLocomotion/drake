@@ -21,11 +21,6 @@
       "Hints": ["@prefix@/lib/cmake/eigen3"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "fcl": {
-      "Version": "0.6.0",
-      "Hints": ["@prefix@/lib/cmake/fcl"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "fmt": {
       "Version": "3.0.1",
       "Hints": ["@prefix@/lib/cmake/fmt"],
@@ -121,7 +116,6 @@
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Bullet:BulletCollision",
         "Eigen3:Eigen",
-        "fcl:fcl",
         "ignition-math3:ignition-math3",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
