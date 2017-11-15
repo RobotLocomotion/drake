@@ -1,0 +1,18 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install_files",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+install_files(
+    name = "install",
+    dest = "lib/cmake/drake/modules",
+    files = [
+        "3.10/Modules/FindProtobuf.cmake",
+        "3.10/Copyright.txt"
+    ],
+    strip_prefix = ["3.10/Modules"],
+)

@@ -124,6 +124,7 @@ cc_library(
         ":vtk_deps",
         "@bullet//:BulletCollision",
         "@lcm",
+        "@libprotobuf",
         "@scs//:scsdir",
         "@tinyxml2",
     ],
