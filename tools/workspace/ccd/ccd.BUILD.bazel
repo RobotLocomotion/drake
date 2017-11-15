@@ -6,9 +6,7 @@ load(
 )
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
 )
 
 package(
@@ -60,14 +58,6 @@ cc_library(
     includes = ["src"],
 )
 
-cmake_config(
-    package = "ccd",
-    script = "@drake//tools/workspace/ccd:ccd-create-cps.py",
-    version_file = "CMakeLists.txt",
-)
-
-install_cmake_config(package = "ccd")  # Creates rule :install_cmake_config.
-
 install(
     name = "install",
     targets = [":ccd"],
@@ -75,5 +65,4 @@ install(
     hdr_dest = "include/ccd",
     hdr_strip_prefix = ["**/"],
     docs = ["BSD-LICENSE"],
-    deps = [":install_cmake_config"],
 )

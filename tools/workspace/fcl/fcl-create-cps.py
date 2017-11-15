@@ -13,11 +13,6 @@ content = """
   "License": ["BSD-3-Clause"],
   "Version": "%(MAJOR_VERSION)s.%(MINOR_VERSION)s.%(PATCH_VERSION)s",
   "Requires": {
-    "ccd": {
-      "Version": "%(ccd_VERSION)s",
-      "Hints": ["@prefix@/lib/cmake/ccd"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
-    },
     "Eigen3": {
       "Version": "%(Eigen3_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/eigen3"],
@@ -35,7 +30,7 @@ content = """
       "Type": "dylib",
       "Location": "@prefix@/lib/libfcl.so",
       "Includes": [ "@prefix@/include" ],
-      "Requires": [ "ccd:ccd", "Eigen3:Eigen", "octomap:octomap" ]
+      "Requires": [ "Eigen3:Eigen", "octomap:octomap" ]
     }
   }
 }
