@@ -50,6 +50,7 @@ cc_library(
         ":fcl_h_genrule",
     ],
     includes = ["include"],
+    linkstatic=1,
     deps = [
         "@ccd",
         "@eigen",
