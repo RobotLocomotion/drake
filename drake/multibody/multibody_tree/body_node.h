@@ -781,8 +781,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H_PB_W) const {
-    // This method must not be called for the "world" body node.
-    DRAKE_ASSERT(topology_.body != world_index());
     // Checks on the input arguments.
     DRAKE_DEMAND(topology_.body != world_index());
     DRAKE_DEMAND(H_PB_W != nullptr);
@@ -798,7 +796,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
 
     // Pose of the parent body P in world frame W.
-    // Available since we are called within a base-to-tip recursion.
     const Isometry3<T>& X_WP = get_X_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
@@ -879,6 +876,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return get_mobilizer().get_outboard_frame();
   }
 
+ private:
   // Returns the index to the parent body of the body associated with this node.
   // For the root node, corresponding to the world body, this method returns an
   // invalid body index. Attempts to using invalid indexes leads to an exception
@@ -1090,7 +1088,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return get_mutable_velocities_from_array(tau);
   }
 
- private:
   // Helper method to be called within a base-to-tip recursion that computes
   // into the PositionKinematicsCache:
   // - X_PB(qb_P, qm_B, qb_B)
