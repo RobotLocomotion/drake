@@ -25,8 +25,7 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
   const std::string sdf_path = FindResourceOrThrow(kTestSdfPath);
   const std::string kModelName = "double_pendulum_with_base";
 
-  SDFParser parser;
-  auto sdf_spec = parser.ParseSDFModelFromFile(sdf_path);
+  auto sdf_spec = ParseSDFModelFromFile(sdf_path);
   EXPECT_EQ(sdf_spec->version(), "1.6");
 
   // The method above parses a single model.

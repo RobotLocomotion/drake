@@ -39,8 +39,7 @@ Isometry3<double> ParsePose(sdf::ElementPtr sdf_pose_element) {
 
 // Parses inertial information (mass, COM) from the given SDF
 // element and updates the given link accordingly.
-void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
-                              SDFLink* link) {
+void ParseInertial(sdf::ElementPtr sdf_inertial_element, SDFLink* link) {
   DRAKE_DEMAND(sdf_inertial_element != nullptr);
   DRAKE_DEMAND(sdf_inertial_element->GetName() == "inertial");
   DRAKE_DEMAND(link != nullptr);
@@ -87,8 +86,7 @@ void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
 // given SDF element and adds a RigidBody instance to the given tree as part
 // of the given model instance. The frame cache is updated with the body frame's
 // pose (B) in its model frame (D).
-void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
-                          SDFModel* sdf_model) {
+void ParseLink(const sdf::ElementPtr sdf_link_element, SDFModel* sdf_model) {
   DRAKE_DEMAND(sdf_link_element != nullptr);
   DRAKE_DEMAND(sdf_link_element->GetName() == "link");
   DRAKE_DEMAND(sdf_model != nullptr);
@@ -117,7 +115,7 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
 // Parses a joint type from the given SDF element and reads its parameters
 // accordingly into sdf_joint. It is assumed that the parent body frame is
 // already present in the frame cache.
-void SDFParser::ParseJointType(
+void ParseJointType(
     const sdf::ElementPtr sdf_joint_element,
     const SDFModel& sdf_model,
     SDFJoint* sdf_joint) {
@@ -161,8 +159,7 @@ void SDFParser::ParseJointType(
   }
 }
 
-void SDFParser::ParseJoint(sdf::ElementPtr sdf_joint_element,
-                           SDFModel* sdf_model) {
+void ParseJoint(sdf::ElementPtr sdf_joint_element, SDFModel* sdf_model) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
   DRAKE_DEMAND(sdf_joint_element->GetName() == "joint");
   DRAKE_DEMAND(sdf_model != nullptr);
@@ -196,8 +193,38 @@ void SDFParser::ParseJoint(sdf::ElementPtr sdf_joint_element,
   ParseJointType(sdf_joint_element, *sdf_model, &sdf_joint);
 }
 
-std::unique_ptr<SDFSpec> SDFParser::ParseSDFModelFromFile(
-    const std::string& sdf_path) {
+// Parses all bodies and joints of a model from the given SDF element
+// and adds RigidBody and DrakeJoint instances to describe such model
+// within the given tree.
+//
+// Returns the model instance id.
+void ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
+  DRAKE_DEMAND(sdf_model_element != nullptr);
+  DRAKE_DEMAND(sdf_model_element->GetName() == "model");
+  DRAKE_DEMAND(spec != nullptr);
+
+  // Create a new SDF model.
+  const auto model_name = sdf_model_element->Get<std::string>("name");
+  SDFModel& sdf_model = spec->AddModel(model_name);
+
+  if (sdf_model_element->HasElement("link")) {
+    sdf::ElementPtr sdf_link_element = sdf_model_element->GetElement("link");
+    while (sdf_link_element != nullptr) {
+      ParseLink(sdf_link_element, &sdf_model);
+      sdf_link_element = sdf_link_element->GetNextElement("link");
+    }
+  }
+
+  if (sdf_model_element->HasElement("joint")) {
+    sdf::ElementPtr sdf_joint_element = sdf_model_element->GetElement("joint");
+    while (sdf_joint_element != nullptr) {
+      ParseJoint(sdf_joint_element, &sdf_model);
+      sdf_joint_element = sdf_joint_element->GetNextElement("joint");
+    }
+  }
+}
+
+std::unique_ptr<SDFSpec> ParseSDFModelFromFile(const std::string& sdf_path) {
   sdf::SDFPtr parsed_sdf(new sdf::SDF());
   sdf::init(parsed_sdf);
   sdf::readFile(sdf_path, parsed_sdf);
@@ -222,37 +249,6 @@ std::unique_ptr<SDFSpec> SDFParser::ParseSDFModelFromFile(
   auto spec = std::make_unique<SDFSpec>(version);
   ParseModel(sdf_model_element, spec.get());
   return spec;
-}
-
-// Parses all bodies and joints of a model from the given SDF element
-// and adds RigidBody and DrakeJoint instances to describe such model
-// within the given tree.
-//
-// Returns the model instance id.
-void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
-  DRAKE_DEMAND(sdf_model_element != nullptr);
-  DRAKE_DEMAND(sdf_model_element->GetName() == "model");
-  DRAKE_DEMAND(spec != nullptr);
-
-  // Create a new SDF model.
-  const auto model_name = sdf_model_element->Get<std::string>("name");
-  SDFModel& sdf_model = spec->AddModel(model_name);
-
-  if (sdf_model_element->HasElement("link")) {
-    sdf::ElementPtr sdf_link_element = sdf_model_element->GetElement("link");
-    while (sdf_link_element != nullptr) {
-      ParseLink(sdf_link_element, &sdf_model);
-      sdf_link_element = sdf_link_element->GetNextElement("link");
-    }
-  }
-
-  if (sdf_model_element->HasElement("joint")) {
-    sdf::ElementPtr sdf_joint_element = sdf_model_element->GetElement("joint");
-    while (sdf_joint_element != nullptr) {
-      ParseJoint(sdf_joint_element, &sdf_model);
-      sdf_joint_element = sdf_joint_element->GetNextElement("joint");
-    }
-  }
 }
 
 }  // namespace parsing
