@@ -1470,7 +1470,7 @@ class MultibodyTree {
   void CalcAcrossNodeGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      std::vector<SpatialVelocity<T>>* H_PB_W_cache) const;
+      std::vector<Vector6<T>>* H_PB_W_cache) const;
 
   // Implementation for CalcMassMatrixViaInverseDynamics().
   // It assumes:
