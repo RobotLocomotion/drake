@@ -10,7 +10,7 @@ namespace multibody {
 namespace parsing {
 
 /// Parses a single `<model>` from file a file named `sdf_path`.
-/// A new SDFSpec object is created which will contain the single model from
+/// A new SdfSpec object is created which will contain the single model from
 /// the file.
 // TODO(amcastro-tri): throw an exception if more than one <model> is found.
 std::unique_ptr<SdfSpec> ParseSdfModelFromFile(const std::string& sdf_path);

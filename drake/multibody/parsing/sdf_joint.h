@@ -23,7 +23,7 @@ class SdfJoint {
 
   /// Creates a new joint object specification with the given `joint_name`.
   /// Per SDF specification, `joint_name` must be unique within the scope of the
-  /// joint's model. Uniqueness is **not** enforced by %SDFJoint.
+  /// joint's model. Uniqueness is **not** enforced by %SdfJoint.
   ///
   /// @param[in] joint_name
   ///   The name of this joint as specified in the

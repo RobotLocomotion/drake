@@ -67,7 +67,7 @@ class SdfModel {
   }
 
   /// Adds a new joint named `joint_name` to `this` model and returns a
-  /// reference to the newly added joint. Please refer to the SDFJoint class's
+  /// reference to the newly added joint. Please refer to the SdfJoint class's
   /// documentation for details on the arguments for this method.
   /// This method aborts if `this` model already contains a joint named
   /// `joint_name`.
@@ -84,13 +84,13 @@ class SdfModel {
   }
   /// @}
 
-  /// Returns an std::vector of SDFLink objects containing all the links in
+  /// Returns an std::vector of SdfLink objects containing all the links in
   /// `this` model.
   const std::vector<SdfLink>& get_links() const {
     return links_;
   }
 
-  /// Returns an std::vector of SDFJoint objects containing all the joints in
+  /// Returns an std::vector of SdfJoint objects containing all the joints in
   /// `this` model.
   const std::vector<SdfJoint>& get_joints() const {
     return joints_;
@@ -106,7 +106,7 @@ class SdfModel {
     return joint_name_to_index_map_.count(joint_name) > 0;
   }
 
-  /// Returns a const reference to the SDFLink object with unique name within
+  /// Returns a const reference to the SdfLink object with unique name within
   /// this model `link_name`.
   /// This method throws a std::runtime_error if the model does not contain a
   /// link named `link_name`.
@@ -119,7 +119,7 @@ class SdfModel {
     return links_[it->second];
   }
 
-  /// Returns a const reference to the SDFJoint object with unique name within
+  /// Returns a const reference to the SdfJoint object with unique name within
   /// this model `joint_name`.
   /// This method throws a std::runtime_error if the model does not contain a
   /// joint named `joint_name`.

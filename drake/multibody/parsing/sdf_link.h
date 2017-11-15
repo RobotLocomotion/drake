@@ -22,7 +22,7 @@ class SdfLink {
 
   /// Creates a new link object specification with the given `link_name`.
   /// Per SDF specification, `link_name` must be unique within the scope of the
-  /// link's model. Uniqueness is **not** enforced by %SDFLink.
+  /// link's model. Uniqueness is **not** enforced by %SdfLink.
   explicit SdfLink(const std::string& link_name) : name_(link_name) {}
 
   /// Returns the name of `this` link.
