@@ -22,14 +22,14 @@ namespace parsing {
 /// default values, please refer to the documentation for the
 /// <a href="http://sdformat.org/spec?ver=1.6&elem=model">
 /// &lt;model&gt; element</a>.
-class SDFModel {
+class SdfModel {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SDFModel)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SdfModel)
 
   /// Creates a new SDF model object specification with the given `model_name`.
   /// Per SDF specification, `model_name` must not match any other model name in
   /// the world (`<world>`).
-  explicit SDFModel(const std::string& model_name) :
+  explicit SdfModel(const std::string& model_name) :
       name_(model_name), frame_cache_(model_name) {}
 
   /// Returns the name of `this` model.
@@ -58,7 +58,7 @@ class SDFModel {
   /// to the newly added link.
   /// This method aborts if `this` model already contains a link named
   /// `link_name`.
-  SDFLink& AddLink(const std::string& link_name) {
+  SdfLink& AddLink(const std::string& link_name) {
     DRAKE_DEMAND(!HasLink(link_name));
     const int link_index = get_num_links();
     links_.emplace_back(link_name);
@@ -71,7 +71,7 @@ class SDFModel {
   /// documentation for details on the arguments for this method.
   /// This method aborts if `this` model already contains a joint named
   /// `joint_name`.
-  SDFJoint& AddJoint(const std::string& joint_name,
+  SdfJoint& AddJoint(const std::string& joint_name,
                      const std::string& parent_link_name,
                      const std::string& child_link_name,
                      const std::string& joint_type) {
@@ -86,13 +86,13 @@ class SDFModel {
 
   /// Returns an std::vector of SDFLink objects containing all the links in
   /// `this` model.
-  const std::vector<SDFLink>& get_links() const {
+  const std::vector<SdfLink>& get_links() const {
     return links_;
   }
 
   /// Returns an std::vector of SDFJoint objects containing all the joints in
   /// `this` model.
-  const std::vector<SDFJoint>& get_joints() const {
+  const std::vector<SdfJoint>& get_joints() const {
     return joints_;
   }
 
@@ -110,7 +110,7 @@ class SDFModel {
   /// this model `link_name`.
   /// This method throws a std::runtime_error if the model does not contain a
   /// link named `link_name`.
-  const SDFLink& GetLinkByName(const std::string& link_name) const {
+  const SdfLink& GetLinkByName(const std::string& link_name) const {
     const auto it = link_name_to_index_map_.find(link_name);
     if (it == link_name_to_index_map_.end()) {
       throw std::runtime_error(
@@ -123,7 +123,7 @@ class SDFModel {
   /// this model `joint_name`.
   /// This method throws a std::runtime_error if the model does not contain a
   /// joint named `joint_name`.
-  const SDFJoint& GetJointByName(const std::string& joint_name) const {
+  const SdfJoint& GetJointByName(const std::string& joint_name) const {
     const auto it = joint_name_to_index_map_.find(joint_name);
     if (it == joint_name_to_index_map_.end()) {
       throw std::runtime_error(
@@ -159,13 +159,13 @@ class SDFModel {
   std::string name_;
 
   // Vector of links in the model.
-  std::vector<SDFLink> links_;
+  std::vector<SdfLink> links_;
 
   // Mapping from link name to an index into std::vector links_.
   std::unordered_map<std::string, int> link_name_to_index_map_;
 
   // Vector of joints in the model.
-  std::vector<SDFJoint> joints_;
+  std::vector<SdfJoint> joints_;
 
   // Mapping from joint name to an index into std::vector joints_.
   std::unordered_map<std::string, int> joint_name_to_index_map_;

@@ -18,12 +18,12 @@ namespace parsing {
 /// For details on the SDF specification, including conventions and default
 /// values, please refer to the documentation for the
 /// <a href="http://sdformat.org">SDFormat library</a>.
-class SDFSpec {
+class SdfSpec {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SDFSpec)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdfSpec)
 
   /// Creates a new SDF specification with the given `version`.
-  explicit SDFSpec(const std::string& version) : version_(version) {}
+  explicit SdfSpec(const std::string& version) : version_(version) {}
 
   /// Returns the version of `this` specification.
   const std::string& version() const { return version_; }
@@ -44,15 +44,15 @@ class SDFSpec {
   /// `model_name`.
   /// This method throws an std::runtime_error If `model_name` is no present in
   /// this specification.
-  const SDFModel& GetModelByName(const std::string& model_name) const {
+  const SdfModel& GetModelByName(const std::string& model_name) const {
     return *models_[GetModelIdByName(model_name)];
   }
 
   /// Adds a new model, named `model_name`, to `this` specification.
-  SDFModel& AddModel(const std::string& model_name) {
+  SdfModel& AddModel(const std::string& model_name) {
     const int model_id = get_num_models();
     model_ids_.insert({model_name, model_id});
-    models_.push_back(std::make_unique<SDFModel>(model_name));
+    models_.push_back(std::make_unique<SdfModel>(model_name));
     DRAKE_DEMAND(model_ids_.size() == models_.size());
     return *models_.back();
   }
@@ -76,7 +76,7 @@ class SDFSpec {
   std::unordered_map<std::string, int> model_ids_;
 
   // SDF models ordered by id.
-  std::vector<std::unique_ptr<SDFModel>> models_;
+  std::vector<std::unique_ptr<SdfModel>> models_;
 };
 
 }  // namespace parsing

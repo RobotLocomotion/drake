@@ -17,9 +17,9 @@ namespace parsing {
 /// default values, please refer to the documentation for the
 /// <a href="http://sdformat.org/spec?ver=1.6&elem=joint">
 /// &lt;joint&gt; element</a>.
-class SDFJoint {
+class SdfJoint {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SDFJoint);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SdfJoint);
 
   /// Creates a new joint object specification with the given `joint_name`.
   /// Per SDF specification, `joint_name` must be unique within the scope of the
@@ -41,7 +41,7 @@ class SDFJoint {
   ///   The type of the joint. E.g: revolute, prismatic. See documentation on
   ///   the <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_type">
   ///   &lt;type&gt; element</a> for details.
-  SDFJoint(
+  SdfJoint(
       const std::string& joint_name,
       const std::string& parent_link_name,
       const std::string& child_link_name,

@@ -16,14 +16,14 @@ namespace parsing {
 /// values, please refer to the documentation for the
 /// <a href="http://sdformat.org/spec?ver=1.6&elem=link">
 /// &lt;link&gt; element</a>.
-class SDFLink {
+class SdfLink {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SDFLink);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SdfLink);
 
   /// Creates a new link object specification with the given `link_name`.
   /// Per SDF specification, `link_name` must be unique within the scope of the
   /// link's model. Uniqueness is **not** enforced by %SDFLink.
-  explicit SDFLink(const std::string& link_name) : name_(link_name) {}
+  explicit SdfLink(const std::string& link_name) : name_(link_name) {}
 
   /// Returns the name of `this` link.
   const std::string& name() const { return name_; }

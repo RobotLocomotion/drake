@@ -17,7 +17,7 @@ namespace {
 
 const double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
 
-GTEST_TEST(SDFParserTest, ParsingTest) {
+GTEST_TEST(SdfParserTest, ParsingTest) {
   static const char* const kTestSdfPath =
       "drake/multibody/parsing/test/models/double_pendulum.sdf";
 
@@ -25,25 +25,25 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
   const std::string sdf_path = FindResourceOrThrow(kTestSdfPath);
   const std::string kModelName = "double_pendulum_with_base";
 
-  auto sdf_spec = ParseSDFModelFromFile(sdf_path);
+  auto sdf_spec = ParseSdfModelFromFile(sdf_path);
   EXPECT_EQ(sdf_spec->version(), "1.6");
 
   // The method above parses a single model.
   EXPECT_EQ(sdf_spec->get_num_models(), 1);
   EXPECT_TRUE(sdf_spec->HasModel(kModelName));
-  const SDFModel& model = sdf_spec->GetModelByName(kModelName);
+  const SdfModel& model = sdf_spec->GetModelByName(kModelName);
 
   EXPECT_EQ(model.name(), kModelName);
 
   // Verify links:
   EXPECT_EQ(model.get_num_links(), 3);
 
-  const std::vector<SDFLink>& links = model.get_links();
+  const std::vector<SdfLink>& links = model.get_links();
 
   const auto is_link_in_vector = [](
-      const std::vector<SDFLink>& v, const std::string& name) {
+      const std::vector<SdfLink>& v, const std::string& name) {
     return
-        std::find_if(v.begin(), v.end(), [&name](const SDFLink& link) {
+        std::find_if(v.begin(), v.end(), [&name](const SdfLink& link) {
           return link.name() == name;
         }) != v.end();
   };
@@ -52,8 +52,8 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
   EXPECT_TRUE(is_link_in_vector(links, "base"));
   EXPECT_TRUE(is_link_in_vector(links, "upper_link"));
 
-  const SDFLink& lower_link = model.GetLinkByName("lower_link");
-  const SDFLink& upper_link = model.GetLinkByName("upper_link");
+  const SdfLink& lower_link = model.GetLinkByName("lower_link");
+  const SdfLink& upper_link = model.GetLinkByName("upper_link");
   const Isometry3<double> X_DL = model.GetPoseInModelFrame(lower_link.name());
   const Isometry3<double> X_DU = model.GetPoseInModelFrame(upper_link.name());
 
@@ -94,20 +94,20 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
 
   // Verify joints:
   EXPECT_EQ(model.get_num_joints(), 2);
-  const std::vector<SDFJoint>& joints = model.get_joints();
+  const std::vector<SdfJoint>& joints = model.get_joints();
 
   const auto is_joint_in_vector = [](
-      const std::vector<SDFJoint>& v, const std::string& name) {
+      const std::vector<SdfJoint>& v, const std::string& name) {
     return
-        std::find_if(v.begin(), v.end(), [&name](const SDFJoint& joint) {
+        std::find_if(v.begin(), v.end(), [&name](const SdfJoint& joint) {
           return joint.name() == name;
         }) != v.end();
   };
   EXPECT_TRUE(is_joint_in_vector(joints, "upper_joint"));
   EXPECT_TRUE(is_joint_in_vector(joints, "lower_joint"));
 
-  const SDFJoint& lower_joint = model.GetJointByName("lower_joint");
-  const SDFJoint& upper_joint = model.GetJointByName("upper_joint");
+  const SdfJoint& lower_joint = model.GetJointByName("lower_joint");
+  const SdfJoint& upper_joint = model.GetJointByName("upper_joint");
 
   // TODO(amcastro-tri): write more unit tests per PR #4615 that properly
   // verify the poses of joint and link frames.
