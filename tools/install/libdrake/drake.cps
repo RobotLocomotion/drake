@@ -50,10 +50,9 @@
       "Hints": ["@prefix@/lib/cmake/optitrack"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "protobuf": {
-      "Version": "3.1.0",
-      "Hints": ["@prefix@/lib/cmake/protobuf"],
-      "X-CMake-Find-Args": ["CONFIG"]
+    "Protobuf": {
+      "Version": "2.6.1",
+      "X-CMake-Find-Args": ["MODULE"]
     },
     "robotlocomotion-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
@@ -115,7 +114,7 @@
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
         "optitrack:lcmtypes_optitrack-cpp",
-        "protobuf:protobuf",
+        "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "stx:stx",
@@ -135,5 +134,8 @@
   },
   "X-CMake-Variables": {
     "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
+  },
+  "X-CMake-Variables-Init": {
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
   }
 }
