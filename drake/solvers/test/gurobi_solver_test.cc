@@ -208,6 +208,14 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(GurobiTest, TestEllipsoidsSeparation,
                         ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+
+TEST_P(TestQPasSOCP, TestSOCP) {
+  GurobiSolver gurobi_solver;
+  SolveAndCheckSolution(gurobi_solver);
+}
+
+INSTANTIATE_TEST_CASE_P(GurobiTest, TestQPasSOCP,
+                        ::testing::ValuesIn(GetQPasSOCPProblems()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

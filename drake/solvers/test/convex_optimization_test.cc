@@ -40,122 +40,6 @@ void GetSemidefiniteProgramSolvers(
 //// Second order conic program ////////
 ////////////////////////////////////////
 
-// This example is taken from
-// https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
-// For a quadratic program
-// 0.5 * x' * Q * x + c' * x
-// s.t b_lb <= A * x <= b_ub
-// It can be casted as an SOCP, as follows
-// By introducing a new variable w = Q^{1/2}*x and y, z
-// The equivalent SOCP is
-// min c'x + y
-// s.t 2 * y >= w' * w
-//     w = Q^{1/2} * x
-//     b_lb <= A * x <= b_ub
-// @param Q A positive definite matrix
-// @param c A column vector
-// @param A A matrix
-// @param b_lb A column vector
-// @param b_ub A column vector
-template <typename DerivedQ, typename DerivedC, typename DerivedA,
-          typename DerivedBlower, typename DerivedBupper>
-void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
-                   const Eigen::MatrixBase<DerivedC>& c,
-                   const Eigen::MatrixBase<DerivedA>& A,
-                   const Eigen::MatrixBase<DerivedBlower>& b_lb,
-                   const Eigen::MatrixBase<DerivedBupper>& b_ub,
-                   const MathematicalProgramSolverInterface& solver) {
-  DRAKE_ASSERT(Q.rows() == Q.cols());
-  Eigen::MatrixXd Q_symmetric = 0.5 * (Q + Q.transpose());
-  const int kXdim = Q.rows();
-  DRAKE_ASSERT(c.rows() == kXdim);
-  DRAKE_ASSERT(c.cols() == 1);
-  DRAKE_ASSERT(A.cols() == kXdim);
-  DRAKE_ASSERT(A.rows() == b_lb.rows());
-  DRAKE_ASSERT(b_lb.cols() == 1);
-  DRAKE_ASSERT(A.rows() == b_ub.rows());
-  DRAKE_ASSERT(b_ub.cols() == 1);
-
-  MathematicalProgram prog_socp;
-
-  auto x_socp = prog_socp.NewContinuousVariables(kXdim, "x");
-  auto y = prog_socp.NewContinuousVariables<1>("y");
-  Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
-  Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
-  VectorX<symbolic::Expression> e(2 + kXdim);
-  e << +y(0), 2, Q_sqrt * x_socp;
-  prog_socp.AddRotatedLorentzConeConstraint(e);
-
-  prog_socp.AddLinearConstraint(A, b_lb, b_ub, x_socp);
-
-  auto cost_socp1 = make_shared<LinearCost>(c.transpose());
-  prog_socp.AddCost(cost_socp1, x_socp);
-  prog_socp.AddLinearCost(drake::Vector1d(1.0), y);
-  RunSolver(&prog_socp, solver);
-  const auto& x_socp_value = prog_socp.GetSolution(x_socp);
-  double objective_value_socp =
-      c.transpose() * x_socp_value + prog_socp.GetSolution(y(0));
-
-  // Check the solution
-  EXPECT_NEAR(2 * prog_socp.GetSolution(y(0)),
-              (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
-  EXPECT_GE(prog_socp.GetSolution(y(0)), 0);
-
-  // Now solve the problem as a QP.
-  MathematicalProgram prog_qp;
-  auto x_qp = prog_qp.NewContinuousVariables(kXdim, "x");
-  prog_qp.AddQuadraticCost(Q, c, x_qp);
-  prog_qp.AddLinearConstraint(A, b_lb, b_ub, x_qp);
-  RunSolver(&prog_qp, solver);
-  const auto& x_qp_value = prog_qp.GetSolution(x_qp);
-  Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
-  Eigen::VectorXd Q_x_qp = Q * x_qp_value;
-  double objective_value_qp = c.transpose() * x_qp_value;
-  for (int i = 0; i < kXdim; ++i) {
-    objective_value_qp += 0.5 * x_qp_value(i) * Q_x_qp(i);
-  }
-
-  // TODO(hongkai.dai@tri.global): tighten the tolerance. socp does not really
-  // converge to true optimal yet.
-  EXPECT_TRUE(CompareMatrices(x_qp_value, x_socp_value, 2e-4,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(std::abs(objective_value_qp - objective_value_socp) < 1E-6);
-}
-
-void TestQPasSOCP(const MathematicalProgramSolverInterface& solver) {
-  // Solve an un-constrained QP
-  Eigen::MatrixXd Q = Eigen::Matrix2d::Identity();
-  Eigen::VectorXd c = Eigen::Vector2d::Ones();
-  Eigen::MatrixXd A = Eigen::RowVector2d(0, 0);
-  Eigen::VectorXd b_lb =
-      Eigen::VectorXd::Constant(1, -std::numeric_limits<double>::infinity());
-  Eigen::VectorXd b_ub =
-      Eigen::VectorXd::Constant(1, std::numeric_limits<double>::infinity());
-  SolveQPasSOCP(Q, c, A, b_lb, b_ub, solver);
-
-  // Solve a constrained QP
-  Q = Eigen::Matrix3d::Zero();
-  Q(0, 0) = 1.0;
-  Q(1, 1) = 1.3;
-  Q(2, 2) = 2.0;
-  Q(1, 2) = 0.01;
-  Q(0, 1) = -0.2;
-  c = Eigen::Vector3d::Zero();
-  c(0) = -1.0;
-  c(1) = -2.0;
-  c(2) = 1.2;
-
-  A = Eigen::Matrix<double, 2, 3>::Zero();
-  A << 1, 0, 2, 0, 1, 3;
-  b_lb = Eigen::Vector2d::Zero();
-  b_lb(0) = -1;
-  b_lb(1) = -2;
-  b_ub = Eigen::Vector2d::Zero();
-  b_ub(0) = 2;
-  b_ub(1) = 4;
-  SolveQPasSOCP(Q, c, A, b_lb, b_ub, solver);
-}
-
 // This example is taken from the paper
 // Applications of second-order cone programming
 // By M.S.Lobo, L.Vandenberghe, S.Boyd and H.Lebret,
@@ -300,14 +184,6 @@ void TestFindSpringEquilibrium(
                         solver);
 }
 }  // namespace
-
-GTEST_TEST(TestSOCP, TestQPasSOCP) {
-  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
-  GetSecondOrderConicProgramSolvers(&solvers);
-  for (const auto& solver : solvers) {
-    TestQPasSOCP(*solver);
-  }
-}
 
 GTEST_TEST(TestSOCP, TestFindSpringEquilibrium) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;

@@ -24,7 +24,7 @@ class TestEllipsoidsSeparation
 
   void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver);
 
- protected:
+ private:
   Eigen::VectorXd x1_;
   Eigen::VectorXd x2_;
   Eigen::MatrixXd R1_;
@@ -39,13 +39,15 @@ enum class QPasSOCPProblem {
   kProblem1
 };
 
+std::vector<QPasSOCPProblem> GetQPasSOCPProblems();
+
 class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
  public:
   TestQPasSOCP();
 
   void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver);
 
- protected:
+ private:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd c_;
   Eigen::MatrixXd A_;

@@ -171,6 +171,10 @@ void TestEllipsoidsSeparation::SolveAndCheckSolution(
   }
 }
 
+std::vector<QPasSOCPProblem> GetQPasSOCPProblems() {
+  return {QPasSOCPProblem::kProblem0, QPasSOCPProblem::kProblem1};
+}
+
 TestQPasSOCP::TestQPasSOCP() {
   switch (GetParam()) {
     case QPasSOCPProblem::kProblem0 :
@@ -206,7 +210,7 @@ TestQPasSOCP::TestQPasSOCP() {
   Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
   VectorX<symbolic::Expression> e(2 + kXdim);
-  e << y_(0), 2, Q_sqrt * x_socp_;
+  e << y_, 2, Q_sqrt * x_socp_;
   prog_socp_.AddRotatedLorentzConeConstraint(e);
 
   prog_socp_.AddLinearConstraint(A_, b_lb_, b_ub_, x_socp_);
@@ -227,11 +231,28 @@ void TestQPasSOCP::SolveAndCheckSolution(const MathematicalProgramSolverInterfac
       c_.dot(x_socp_value) + prog_socp_.GetSolution(y_);
 
   // Check the solution
+  const int kXdim = Q_.rows();
+  const Eigen::MatrixXd Q_symmetric = 0.5 * (Q_ + Q_.transpose());
   Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
   EXPECT_NEAR(2 * prog_socp_.GetSolution(y_),
               (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
-  EXPECT_GE(prog_socp.GetSolution(y(0)), 0);
+  EXPECT_GE(prog_socp_.GetSolution(y_), 0);
+
+  RunSolver(&prog_qp_, solver);
+  const auto& x_qp_value = prog_qp_.GetSolution(x_qp_);
+  const Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
+  Eigen::VectorXd Q_x_qp = Q_ * x_qp_value;
+  double objective_value_qp = c_.dot(x_qp_value);
+  for (int i = 0; i < kXdim; ++i) {
+    objective_value_qp += 0.5 * x_qp_value(i) * Q_x_qp(i);
+  }
+
+  // TODO(hongkai.dai@tri.global): tighten the tolerance. socp does not really
+  // converge to true optimal yet.
+  EXPECT_TRUE(CompareMatrices(x_qp_value, x_socp_value, 2e-4,
+                              MatrixCompareType::absolute));
+  EXPECT_NEAR(objective_value_qp, objective_value_socp, 1E-6);
 }
 }  // namespace test
 }  // namespace solvers

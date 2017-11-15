@@ -47,6 +47,14 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(MosekTest, TestEllipsoidsSeparation,
                         ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+
+TEST_P(TestQPasSOCP, TestSOCP) {
+  MosekSolver mosek_solver;
+  SolveAndCheckSolution(mosek_solver);
+}
+
+INSTANTIATE_TEST_CASE_P(MosekTest, TestQPasSOCP,
+                        ::testing::ValuesIn(GetQPasSOCPProblems()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
