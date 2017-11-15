@@ -16,21 +16,6 @@ exports_files([
     ".clang-format",
 ])
 
-alias(
-    name = "protoc",
-    actual = "@com_google_protobuf//:protoc",
-)
-
-alias(
-    name = "protobuf",
-    actual = "@com_google_protobuf//:protobuf",
-)
-
-alias(
-    name = "protobuf_python",
-    actual = "@com_google_protobuf//:protobuf_python",
-)
-
 install(
     name = "install",
     docs = ["LICENSE.TXT"],
