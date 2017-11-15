@@ -64,7 +64,6 @@ cmake_config(
     deps = [
         "@ccd//:cps",
         "@eigen//:cps",
-        "@octomap//:cps",
     ],
 )
 

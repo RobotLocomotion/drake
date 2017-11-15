@@ -23,11 +23,6 @@ content = """
       "Hints": ["@prefix@/lib/cmake/eigen3"],
       "X-CMake-Find-Args": [ "CONFIG" ]
     },
-    "octomap": {
-      "Version": "%(octomap_VERSION)s",
-      "Hints": ["@prefix@/lib/cmake/octomap"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
-    }
   },
   "Default-Components": [ ":fcl" ],
   "Components": {
@@ -35,7 +30,7 @@ content = """
       "Type": "dylib",
       "Location": "@prefix@/lib/libfcl.so",
       "Includes": [ "@prefix@/include" ],
-      "Requires": [ "ccd:ccd", "Eigen3:Eigen", "octomap:octomap" ]
+      "Requires": [ "ccd:ccd", "Eigen3:Eigen" ]
     }
   }
 }
