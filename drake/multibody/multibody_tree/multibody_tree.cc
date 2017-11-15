@@ -577,20 +577,18 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
   }
 }
 
-#if 0
 template <typename T>
-void MultibodyTree<T>::CalcPointsGeometricJacobianInWorld(
+void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi,
-    EigenPtr<MatrixX<T>> J_WQi) const {
-  DRAKE_DEMAND(p_BQi.rows() == 3);
-  const int num_points = p_BQi.cols();
+    const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi_set,
+    EigenPtr<Matrix3X<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const {
+  DRAKE_DEMAND(p_BQi_set.rows() == 3);
+  const int num_points = p_BQi_set.cols();
+  DRAKE_DEMAND(p_WQi_set != nullptr);
+  DRAKE_DEMAND(p_WQi_set->cols() == num_points);
   DRAKE_DEMAND(J_WQi != nullptr);
   DRAKE_DEMAND(J_WQi->rows() == 3 * num_points);
   DRAKE_DEMAND(J_WQi->cols() == get_num_velocities());
-
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   // Body to which frame B is attached to:
   const Body<T>& body_B = frame_B.get_body();
@@ -606,6 +604,13 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianInWorld(
   PositionKinematicsCache<T> pc(this->get_topology());
   CalcPositionKinematicsCache(context, &pc);
 
+  // TODO(amcastro-tri): Eval H_PB_W from the cache.
+  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  CalcPointsPositions(
+      context, frame_B, get_world_frame(), p_BQi_set, p_WQi_set);
+
   // Performs a scan of all bodies in the kinematic path from body_B to the
   // world computing each node's contribution to J_WQi.
   const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
@@ -614,12 +619,47 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianInWorld(
     const BodyNodeTopology& node_topology = node.get_topology();
     const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
     const int num_velocities = node_topology.num_mobilizer_velocities;
-    auto Jnode_WPi = J_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
-    node.CalcAcrossMobilizerPointsGeometricJacobianInWorld(
-        mbt_context, pc, frame_B, p_BQi, &Jnode_WPi);
-  }
-}
+
+    // Across-node Jacobian.
+    Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+        node.GetJacobianFromArray(H_PB_W_cache);
+    auto J_PBq_W = J_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
+
+    // Position of this node's body Bi in the world W.
+    const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();
+
+    for (int ipoint = 0; ipoint < num_points; ++ipoint) {
+      const auto p_WQi = p_WQi_set->col(ipoint);
+      // Position of point Qi measured from Bi, expressed in the world W.
+      const Vector3<T> p_BiQi_W = p_WQi - p_WBi;
+
+      // Alias to Hv_PBqi_W for the ipoint-th point. Hv denotes the
+      // translational components of the entire geometric Jacobian H.
+      auto Hv_PBqi_W = J_PBq_W.block(3 * ipoint, 0, 3, num_velocities);
+
+      // Aliases to translational and angular components in H_PB_W:
+      const auto Hw_PB_W = H_PB_W.template topRows<3>();
+      const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
+
+      // Now "shift" H_PB_W to H_PBqi_W.
+      // We do it by shifting one column at a time:
+      Hv_PBqi_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BiQi_W);
+
+#if 0
+      // Now "shift" H_PB_W to H_PBqi_W.
+      // We do it by shifting one column at a time:
+      for (int imobility = 0; imobility < num_velocities; ++imobility) {
+        // Shift the imobility-th column from Bi to Qi:
+        const SpatialVelocity<T> Himob_PBqi_W =
+            SpatialVelocity<T>(H_PB_W.col(imobility)).Shift(p_BiQi_W);
+        // Hv_PBqi only corresponds to the translational component of the full
+        // geometric Jacobian H_PBqi
+        Hv_PBqi_W.col(imobility) = Himob_PBqi_W.translational();
+      }
 #endif
+    }  // ipoint.
+  }  // body_node_index
+}
 
 template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(

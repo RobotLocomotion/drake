@@ -1000,10 +1000,10 @@ class MultibodyTree {
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
-  ///  Computes the relative transform X_AB from a frame B to a frame A.
+  ///  Computes the relative transform `X_AB` from a frame B to a frame A.
   ///  That is, the position of a point Q measured and expressed in frame A can
   ///  be computed from the position p_BQ of this point measured and expressed
-  ///  in a frame B using the transformation `p_AQ = X_AB * p_BQ`.
+  ///  in a frame B using the transformation `p_AQ = X_AB⋅p_BQ`.
   Isometry3<T> CalcRelativeTransform(
       const systems::Context<T>& context,
       const Frame<T>& from_frame_B, const Frame<T>& to_frame_A) const;
@@ -1055,12 +1055,10 @@ class MultibodyTree {
   ///   velocity of all points `Pi` in the same order they were given in the
   ///   input set. Therefore `J_WPi` is a matrix of size `3⋅np x nv`, with `nv`
   ///   the number of generalized velocities.
-#if 0
-  void CalcPointsGeometricJacobianInWorld(
+  void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi,
-      EigenPtr<MatrixX<T>> J_WQi) const;
-#endif
+      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi_set,
+      EigenPtr<Matrix3X<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const;
 
   // --------------------------------------
   // From SimbodyMatterSubsystem.h:
