@@ -5,9 +5,11 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include <utility>
-
+/* clang-format off to disable clang-format-includes */
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+/* clang-format on */
+
+#include <utility>
 
 namespace drake {
 namespace systems {
