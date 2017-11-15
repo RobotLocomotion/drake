@@ -1,6 +1,7 @@
 #include "drake/geometry/geometry_state.h"
 
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -25,54 +26,72 @@ using std::vector;
 
 template <class T>
 class GeometryStateTester {
-  using State = GeometryState<T>;
-
  public:
-  void set_state(State* state) { state_ = state; }
+  void set_state(GeometryState<T>* state) { state_ = state; }
 
-  FrameId get_world_frame() {
+  FrameId get_world_frame() const {
     return internal::InternalFrame::get_world_frame_id();
   }
 
-  const std::unordered_map<SourceId, FrameIdSet>& get_source_frame_id_map() {
+  const std::unordered_map<SourceId, std::string>& get_source_name_map() const {
+    return state_->source_names_;
+  }
+
+  const std::unordered_map<SourceId, FrameIdSet>& get_source_frame_id_map()
+      const {
     return state_->source_frame_id_map_;
   }
 
-  const std::unordered_map<SourceId, FrameIdSet>& get_source_root_frame_map() {
+  const std::unordered_map<SourceId, FrameIdSet>& get_source_root_frame_map()
+      const {
     return state_->source_root_frame_map_;
   }
 
-  const std::unordered_map<FrameId, internal::InternalFrame>& get_frames() {
+  const std::unordered_map<SourceId, std::unordered_set<GeometryId>>&
+  get_source_anchored_geometry_map() const {
+    return state_->source_anchored_geometry_map_;
+  }
+
+  const std::unordered_map<FrameId, internal::InternalFrame>& get_frames()
+      const {
     return state_->frames_;
   }
 
   const std::unordered_map<GeometryId, internal::InternalGeometry>&
-  get_geometries() {
+  get_geometries() const {
     return state_->geometries_;
   }
 
   const std::unordered_map<GeometryId, internal::InternalAnchoredGeometry>&
-  get_anchored_geometries() {
+  get_anchored_geometries() const {
     return state_->anchored_geometries_;
   }
 
-  const vector<GeometryId>& get_geometry_index_id_map() {
+  const vector<GeometryId>& get_geometry_index_id_map() const {
     return state_->geometry_index_id_map_;
   }
 
-  const vector<GeometryId>& get_anchored_geometry_index_id_map() {
+  const vector<GeometryId>& get_anchored_geometry_index_id_map() const {
     return state_->anchored_geometry_index_id_map_;
   }
 
-  const vector<Isometry3<T>>& get_geometry_frame_poses() {
+  const vector<FrameId>& get_pose_index_frame_id_map() const {
+    return state_->pose_index_to_frame_map_;
+  }
+
+  const vector<Isometry3<double>>& get_geometry_frame_poses() const {
     return state_->X_FG_;
   }
 
-  const vector<Isometry3<T>>& get_geometry_world_poses() {
+  const vector<Isometry3<T>>& get_geometry_world_poses() const {
     return state_->X_WG_;
   }
 
-  const vector<Isometry3<T>>& get_frame_parent_poses() {
+  const vector<Isometry3<T>>& get_frame_world_poses() const {
+    return state_->X_WF_;
+  }
+
+  const vector<Isometry3<T>>& get_frame_parent_poses() const {
     return state_->X_PF_;
   }
 
@@ -91,7 +110,7 @@ class GeometryStateTester {
   }
 
  private:
-  State* state_;
+  GeometryState<T>* state_;
 };
 
 namespace {
@@ -314,6 +333,87 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   EXPECT_EQ(geometry_state_.get_num_geometries(), single_tree_geometry_count());
   SourceId false_id = SourceId::get_new_id();
   EXPECT_FALSE(geometry_state_.source_is_registered(false_id));
+}
+
+// Compares the autodiff geometry state (embedded in its tester) against the
+// double state to confirm they have the same values/topology.
+void ExpectSuccessfulTransmogrification(
+    const GeometryStateTester<AutoDiffXd>& ad_tester,
+    const GeometryStateTester<double>& d_tester) {
+
+  // 1. Test all of the identifier -> trivially testable value maps
+  EXPECT_EQ(ad_tester.get_source_name_map(), d_tester.get_source_name_map());
+  EXPECT_EQ(ad_tester.get_source_name_map(), d_tester.get_source_name_map());
+  EXPECT_EQ(ad_tester.get_source_frame_id_map(),
+            d_tester.get_source_frame_id_map());
+  EXPECT_EQ(ad_tester.get_source_root_frame_map(),
+            d_tester.get_source_root_frame_map());
+  EXPECT_EQ(ad_tester.get_source_anchored_geometry_map(),
+            d_tester.get_source_anchored_geometry_map());
+  EXPECT_EQ(ad_tester.get_geometries(), d_tester.get_geometries());
+  EXPECT_EQ(ad_tester.get_frames(), d_tester.get_frames());
+  EXPECT_EQ(ad_tester.get_anchored_geometries(),
+            d_tester.get_anchored_geometries());
+
+  // 2. Test the vectors of ids
+  EXPECT_EQ(ad_tester.get_geometry_index_id_map(),
+            d_tester.get_geometry_index_id_map());
+  EXPECT_EQ(ad_tester.get_geometry_index_id_map(),
+            d_tester.get_geometry_index_id_map());
+  EXPECT_EQ(ad_tester.get_anchored_geometry_index_id_map(),
+            d_tester.get_anchored_geometry_index_id_map());
+  EXPECT_EQ(ad_tester.get_pose_index_frame_id_map(),
+            d_tester.get_pose_index_frame_id_map());
+
+  // 3. Compare Isometry3<double> with Isometry3<double>
+  EXPECT_EQ(ad_tester.get_geometry_frame_poses().size(),
+            d_tester.get_geometry_frame_poses().size());
+  for (size_t i = 0; i < ad_tester.get_geometry_frame_poses().size(); ++i) {
+    EXPECT_TRUE(CompareMatrices(
+        ad_tester.get_geometry_frame_poses()[i].matrix().block<3, 4>(0, 0),
+        d_tester.get_geometry_frame_poses()[i].matrix().block<3, 4>(0, 0)));
+  }
+
+  // 4. Compare Isometry3<AutoDiffXd> with Isometry3<double>
+  auto test_ad_vs_double = [](const std::vector<Isometry3<AutoDiffXd>>& test,
+                              const std::vector<Isometry3<double>>& ref) {
+    EXPECT_EQ(test.size(), ref.size());
+    for (size_t i = 0; i < ref.size(); ++i) {
+      for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 4; ++col) {
+          EXPECT_EQ(test[i](row, col).value(), ref[i](row, col));
+        }
+      }
+    }
+  };
+
+  test_ad_vs_double(ad_tester.get_frame_parent_poses(),
+                    d_tester.get_frame_parent_poses());
+  test_ad_vs_double(ad_tester.get_geometry_world_poses(),
+                    d_tester.get_geometry_world_poses());
+  test_ad_vs_double(ad_tester.get_frame_world_poses(),
+                    d_tester.get_frame_world_poses());
+}
+
+// This tests the ability to assign a GeometryState<double> to a
+// GeometryState<T>. Implicitly uses transmogrification.
+TEST_F(GeometryStateTest, AssignDoubleToAutoDiff) {
+  SetUpSingleSourceTree();
+  GeometryState<AutoDiffXd> ad_state{};
+  ad_state = geometry_state_;
+  GeometryStateTester<AutoDiffXd> ad_tester;
+  ad_tester.set_state(&ad_state);
+  ExpectSuccessfulTransmogrification(ad_tester, gs_tester_);
+}
+
+// Uses the single source tree to confirm that the data has migrated properly.
+TEST_F(GeometryStateTest, Transmogrify) {
+  SetUpSingleSourceTree();
+  unique_ptr<GeometryState<AutoDiffXd>> ad_state =
+      geometry_state_.ToAutoDiffXd();
+  GeometryStateTester<AutoDiffXd> ad_tester;
+  ad_tester.set_state(ad_state.get());
+  ExpectSuccessfulTransmogrification(ad_tester, gs_tester_);
 }
 
 // Confirms that the actions of initializing the single-source tree leave the

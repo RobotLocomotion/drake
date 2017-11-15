@@ -5,6 +5,10 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
+#include "drake/systems/analysis/implicit_euler_integrator.h"
+/* clang-format on */
+
 #include <algorithm>
 #include <limits>
 #include <memory>
@@ -12,7 +16,6 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
 
 namespace drake {
 namespace systems {

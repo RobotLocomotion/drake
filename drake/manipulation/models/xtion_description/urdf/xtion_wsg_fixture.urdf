@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="xtion_wsg_fixture">
+  <!--
+  Provides X_GX, the placement of Xtion base (X) on the WSG gripper body (G).
+  The `rpy` transform corresponds to aligning the follower {X, Y, Z} axes to
+  the base axes {Y, X, -Z}.
+  -->
+  <link name="base"/>
+  <frame name="xtion_wsg_fixture" link="base"
+      rpy="3.14159265358979 0 1.5707963267949" xyz="0 -0.015 -0.025"/>
+</robot>

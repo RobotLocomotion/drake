@@ -86,7 +86,8 @@ std::vector<std::string> GetResourceSearchPaths();
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake
-/// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.
+/// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.  Paths that do
+/// not start with "drake/" will return a failed result.
 ///
 /// The search scans for the resource in the following places and in
 /// the following order: 1) in the DRAKE_RESOURCE_ROOT environment variable

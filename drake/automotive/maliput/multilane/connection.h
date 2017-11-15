@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 
@@ -183,73 +184,51 @@ class Connection {
   /// Possible connection geometries:  line- or arc-segment.
   enum Type { kLine, kArc };
 
-  /// Constructs a line-segment connection joining `start` to `end`.
+  /// Constructs a line-segment connection.
+  ///
+  /// Segment's reference curve begins at `start` and extends on the plane
+  /// z=0 `line_length` distance with `start.xy().heading()` heading angle.
+  /// `end_z` will be used to build elevation and superelevation information of
+  /// the road.
+  ///
+  /// `line_length` must be non negative.
   ///
   /// Segments will contain `num_lanes` lanes, which must be greater than zero.
   /// First Lane centerline will be placed at `r0` distance from the reference
-  /// curve.
+  /// curve. Each lane's width will be `lane_width`, which should be greater or
+  /// equal to zero.
   ///
   /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
   /// and left side of the first and last lanes of the Segment. They will be
   /// added to Segment's bounds and must be greater or equal to zero.
+  Connection(const std::string& id, const Endpoint& start,
+             const EndpointZ& end_z, int num_lanes, double r0,
+             double lane_width, double left_shoulder, double right_shoulder,
+             double line_length);
 
-  // TODO(agalbachicar)    `end` should be removed in order to avoid
-  //                       inconsistencies when describing the geometry.
-  Connection(const std::string& id, const Endpoint& start, const Endpoint& end,
-             int num_lanes, double r0, double left_shoulder,
-             double right_shoulder)
-      : type_(kLine),
-        id_(id),
-        start_(start),
-        end_(end),
-        num_lanes_(num_lanes),
-        r0_(r0),
-        left_shoulder_(left_shoulder),
-        right_shoulder_(right_shoulder) {
-    DRAKE_DEMAND(num_lanes_ > 0);
-    DRAKE_DEMAND(left_shoulder_ >= 0);
-    DRAKE_DEMAND(right_shoulder_ >= 0);
-  }
-
-  /// Constructs an arc-segment connection joining `start` to `end`.
+  /// Constructs an arc-segment connection.
   ///
-  /// `cx`, `cy` specify the center of the arc. `radius` is the radius,
-  /// and `d_theta` is the angle of arc.
+  /// Segment's reference curve begins at `start` and extends on the plane z=0
+  /// with `arc_offset.radius()` and angle span of `arc_offset.d_theta()`.
+  /// `end_z` will be used to build elevation and superelevation information of
+  /// the road.
   ///
-  /// `radius` must be positive.  `d_theta` > 0 indicates a
-  /// counterclockwise arc from start to end.
+  /// `arc_offset.radius()` must be positive. `arc_offset.d_theta()` > 0
+  /// indicates a counterclockwise arc from `start` with initial heading angle
+  /// `start.heading()`.
   ///
   /// Segments will contain `num_lanes` lanes, which must be greater than zero.
   /// First Lane centerline will be placed at `r0` distance from the reference
-  /// curve.
+  /// curve.  Each lane's width will be `lane_width`, which should be greater or
+  /// equal to zero.
   ///
   /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
   /// and left side of the first and last lanes of the Segment. They will be
   /// added to Segment's bounds and must be greater or equal to zero.
-
-  // TODO(agalbachicar)    `end` should be removed in order to avoid
-  //                       inconsistencies when describing the geometry.
-  Connection(const std::string& id, const Endpoint& start, const Endpoint& end,
-             int num_lanes, double r0, double left_shoulder,
-             double right_shoulder, double cx, double cy, double radius,
-             double d_theta)
-      : type_(kArc),
-        id_(id),
-        start_(start),
-        end_(end),
-        num_lanes_(num_lanes),
-        r0_(r0),
-        left_shoulder_(left_shoulder),
-        right_shoulder_(right_shoulder),
-        cx_(cx),
-        cy_(cy),
-        radius_(radius),
-        d_theta_(d_theta) {
-    DRAKE_DEMAND(num_lanes_ > 0);
-    DRAKE_DEMAND(left_shoulder_ >= 0);
-    DRAKE_DEMAND(right_shoulder_ >= 0);
-    DRAKE_DEMAND(radius_ > 0);
-  }
+  Connection(const std::string& id, const Endpoint& start,
+             const EndpointZ& end_z, int num_lanes, double r0,
+             double lane_width, double left_shoulder, double right_shoulder,
+             const ArcOffset& arc_offset);
 
   /// Returns the geometric type of the path.
   Type type() const { return type_; }
@@ -263,16 +242,10 @@ class Connection {
   /// Returns the parameters of the endpoint.
   const Endpoint& end() const { return end_; }
 
-  /// Returns the x-component of the arc center (for arc connections only).
-  double cx() const {
-    DRAKE_DEMAND(type_ == kArc);
-    return cx_;
-  }
-
-  /// Returns the y-component of the arc center (for arc connections only).
-  double cy() const {
-    DRAKE_DEMAND(type_ == kArc);
-    return cy_;
+  /// Returns the length of the line (for line connections only).
+  double line_length() const {
+    DRAKE_DEMAND(type_ == kLine);
+    return line_length_;
   }
 
   /// Returns the radius of the arc (for arc connections only).
@@ -294,27 +267,62 @@ class Connection {
   /// centerline.
   double r0() const { return r0_; }
 
+  /// Returns lanes' width.
+  double lane_width() const { return lane_width_; }
+
   /// Returns the left shoulder distance of the segment.
   double left_shoulder() const { return left_shoulder_; }
 
   /// Returns the right shoulder distance of the segment.
   double right_shoulder() const { return right_shoulder_; }
 
+  /// Returns `lane_index` lane lateral distance to the reference curve.
+  ///
+  /// `lane_index` must be non-negative and smaller than the number of lanes of
+  /// this connection.
+  double lane_offset(int lane_index) const {
+    DRAKE_DEMAND(lane_index >= 0 && lane_index < num_lanes_);
+    return r0_ + lane_width_ * static_cast<double>(lane_index);
+  }
+
+  /// Returns the distance from the reference curve to the right extent of the
+  /// Segment.
+  double r_min() const { return r_min_; }
+
+  /// Returns the distance from the reference curve to the left extent of the
+  /// Segment.
+  double r_max() const { return r_max_; }
+
+  /// Returns an Endpoint describing the start of the `lane_index` lane.
+  Endpoint LaneStart(int lane_index) const;
+
+  /// Returns an Endpoint describing the end of the `lane_index` lane.
+  Endpoint LaneEnd(int lane_index) const;
+
+  /// Creates a RoadCurve that describes the reference curve of this Connection.
+  std::unique_ptr<RoadCurve> CreateRoadCurve() const;
+
  private:
-  Type type_{};
-  std::string id_;
-  Endpoint start_;
-  Endpoint end_;
+  const Type type_{};
+  const std::string id_;
+  const Endpoint start_{};
+  Endpoint end_{};
   const int num_lanes_{};
   const double r0_{};
+  const double lane_width_{};
   const double left_shoulder_{};
   const double right_shoulder_{};
-
+  const double r_min_{};
+  const double r_max_{};
+  std::unique_ptr<RoadCurve> road_curve_;
+  // Bits specific to type_ == kLine:
+  double line_length_{};
   // Bits specific to type_ == kArc:
-  double cx_{};
-  double cy_{};
   double radius_{};
   double d_theta_{};
+  double theta0_{};
+  double cx_{};
+  double cy_{};
 };
 
 /// A group of Connections.

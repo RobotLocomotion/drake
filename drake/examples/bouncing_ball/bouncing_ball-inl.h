@@ -5,7 +5,9 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
 #include "drake/examples/bouncing_ball/bouncing_ball.h"
+/* clang-format on */
 
 #include <algorithm>
 #include <limits>

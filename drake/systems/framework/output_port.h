@@ -10,7 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_common.h"
+#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
