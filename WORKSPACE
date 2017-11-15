@@ -52,6 +52,24 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
+# This local repository imports the protobuf build rules for Bazel (based on
+# the upstream protobuf.bzl build rules).  The protobuf runtime is loaded
+# into "systemprotobuf" via pkg-config below.
+local_repository(
+    name = "protobuf",
+    # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
+    # this should use an absolute path (so this should be prepended by
+    # __workspace_dir__).  However, in a clean build, this did not work.  We
+    # should investigate that and fix it.
+    path = "third_party/com_github_google_protobuf",
+)
+
+new_local_repository(
+    name = "protobuf_cmake",
+    build_file = "tools/workspace/protobuf/protobuf_cmake.BUILD.bazel",
+    path = __workspace_dir__ + "/third_party/com_kitware_gitlab_cmake_cmake",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
@@ -62,6 +80,13 @@ pkg_config_package(
 pkg_config_package(
     name = "gthread",
     modname = "gthread-2.0",
+)
+
+# Load in the paths and flags to the system version of the protobuf runtime;
+# the Bazel build rules are loaded into "protobuf" via local_repository above.
+pkg_config_package(
+    name = "systemprotobuf",
+    modname = "protobuf",
 )
 
 load("//tools/workspace/python:python.bzl", "python_repository")
@@ -333,15 +358,6 @@ bind(
     actual = "@six_archive//:six",
 )
 
-# When updating the version of protobuf,
-# update tools/install/protobuf/protobuf.cps
-github_archive(
-    name = "com_google_protobuf",
-    repository = "google/protobuf",
-    commit = "v3.5.0",
-    sha256 = "0cc6607e2daa675101e9b7398a436f09167dffb8ca0489b0307ff7260498c13c",  # noqa
-)
-
 pypi_archive(
     name = "semantic_version",
     version = "2.6.0",
@@ -353,8 +369,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "a6110cf2e769e9ff262a98ed18506ad565a14e89",
-    sha256 = "62b5054705152ba971a6e9a358bfcc1359eca6f3ba8e5788befd82d606933d98",  # noqa
+    commit = "544c1ded81b926a05b3dedb06504bd17bc8d0a95",
+    sha256 = "0b97cbaae107e5ddbe89073b6e42b679130f1eb81b913aa93da9e72e032a137b",  # noqa
     build_file = "tools/workspace/pycps/pycps.BUILD.bazel",
 )
 
