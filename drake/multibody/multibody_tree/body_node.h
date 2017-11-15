@@ -226,11 +226,17 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// This method aborts in Debug builds when:
   /// - Called on the _root_ node.
   /// - `vc` is nullptr.
-  /// @param[in] context The context with the state of the MultibodyTree model.
-  /// @param[in] pc An already updated position kinematics cache in sync with
-  ///               `context`.
-  /// @param[out] vc A pointer to a valid, non nullptr, velocity kinematics
-  ///                cache.
+  /// @param[in] context
+  ///   The context with the state of the MultibodyTree model.
+  /// @param[in] pc
+  ///   An already updated position kinematics cache in sync with `context`.
+  /// @param[in] H_PB_W
+  ///   The across-node Jacobian matrix that relates to the spatial velocity
+  ///   `V_PB_W` of this node's body B in its parent node body P, expressed in
+  ///   the world frame W, with this node's generalized velocities
+  ///   (or mobilities) `v_B` by `V_PB_W = H_PB_W⋅v_B`.
+  /// @param[out] vc
+  ///   A pointer to a valid, non nullptr, velocity kinematics cache.
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
   /// @pre CalcVelocityKinematicsCache_BaseToTip() must have already been called
@@ -829,34 +835,33 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   This array stores a Jacobian matrix `H` for each node in the tree. Each
   ///   matrix has size `6 x nm` with `nm` the number of mobilities of the node.
   ///   `H_array` stores the columns of these matrices and therefore it consists
-  ///   of a `std::vector` of spatial velocities with as many entries as number
+  ///   of a `std::vector` of vectors in ℝ⁶ with as many entries as the number
   ///   of generalized velocities in the model.
   ///   `H_array` must be of size MultibodyTree::get_num_velocities().
   /// @retval H
   ///   An Eigen::Map to a matrix of size `6 x nm` corresponding to the Jacobian
   ///   matrix for this node.
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
-      const std::vector<SpatialVelocity<T>>& H_array) const {
+      const std::vector<Vector6<T>>& H_array) const {
     DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
         this->get_parent_tree().get_num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
     // The first column of this node's Jacobian matrix H_PB_W:
-    const SpatialVelocity<T>& H_col0 = H_array[start_index_in_v];
+    const Vector6<T>& H_col0 = H_array[start_index_in_v];
     // Create an Eigen map to the full H_PB_W for this node:
     return Eigen::Map<const MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
   /// Mutable version of GetJacobianFromArray().
   Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
-      std::vector<SpatialVelocity<T>>* H_PB_array) const {
+      std::vector<Vector6<T>>* H_PB_array) const {
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
     // The first column of this node's Jacobian matrix H_PB_W:
-    SpatialVelocity<T>& H_PB_W_col0 = (*H_PB_array)[start_index_in_v];
+    Vector6<T>& H_PB_W_col0 = (*H_PB_array)[start_index_in_v];
     // Create an Eigen map to the full H_PB_W for this node:
-    return Eigen::Map<MatrixUpTo6<T>>(
-        H_PB_W_col0.mutable_data(), 6, num_velocities);
+    return Eigen::Map<MatrixUpTo6<T>>(H_PB_W_col0.data(), 6, num_velocities);
   }
 
  protected:
