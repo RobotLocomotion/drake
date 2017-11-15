@@ -755,17 +755,6 @@ class MultibodyTreeTopology {
   /// Returns the total size of the state vector in the model.
   int get_num_states() const { return num_states_; }
 
-  void GetKinematicPathToWorld(
-      BodyNodeIndex from, std::vector<BodyNodeIndex>* path_to_world) const {
-    const int path_size = get_body_node(from).level + 1;
-    DRAKE_DEMAND(static_cast<int>(path_to_world->size()) == path_size);
-    // Navigate the tree inwards starting at "from" and ending at the root.
-    for (BodyNodeIndex node = from; node == BodyNodeIndex(0);
-        node = get_body_node(node).parent_body_node) {
-      (*path_to_world)[get_body_node(node).level] = node;
-    }
-  }
-
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the frames with indexes `frame` and `frame2`.

@@ -823,39 +823,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     }
   }
 
-#if 0
-  void CalcAcrossNodePointsGeometricJacobianInWorld(
-      const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialVelocity<T>>& Jimob_PB_W,
-      const Frame<T>& frame_B,
-      const Eigen::Ref<const Matrix3X<T>>& p_BQi_set,
-      EigenPtr<MatrixX<T>> J_PBqi_W) const {
-    DRAKE_DEMAND(
-        static_cast<int>(Jimob_PB_W.size()) == get_num_mobilizer_velocites());
-    DRAKE_DEMAND(J_PBqi_W != nullptr);
-    const int num_points = p_BQi_set.cols();
-    const int Jnum_rows = 3 * num_points;
-    DRAKE_DEMAND(J_PBqi_W->rows() == Jnum_rows);
-    DRAKE_DEMAND(J_PBqi_W->cols() ==  get_num_mobilizer_velocites());
-
-    const Matrix3<T>& R_WB = get_X_WB(pc).linear();
-
-    for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-      const int Jrow = 3 * ipoint;
-      const auto& p_BQi = p_BQi_set.col(ipoint);
-      const Vector3<T> p_BQi_W = R_WB * p_BQi;
-
-      for (int imobility = 0;
-           imobility < get_num_mobilizer_velocites(); ++imobility) {
-        const SpatialVelocity<T>& V_PB_W = Jimob_PB_W[imobility];
-        const SpatialVelocity<T> V_PBqi_W = V_PB_W.Shift(p_BQi_W);
-        J_PBqi_W->cols(imobility) = V_PBqi_W.get_coeffs();
-      }
-    }
-  }
-#endif
-
   /// Helper method to retrieve a Jacobian matrix for `this` node from an array
   /// storing the columns of a set of Jacobian matrices for each node.
   /// This method is used by MultibodyTree implementations to retrieve per-node
