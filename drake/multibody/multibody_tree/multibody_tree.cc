@@ -522,7 +522,7 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 template <typename T>
 Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
-    const Frame<T>& from_frame_B, const Frame<T>& to_frame_A) const {
+    const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const {
   // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
   PositionKinematicsCache<T> pc(this->get_topology());
   CalcPositionKinematicsCache(context, &pc);
@@ -536,15 +536,16 @@ Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
 template <typename T>
 void MultibodyTree<T>::CalcPointsPositions(
     const systems::Context<T>& context,
-    const Frame<T>& from_frame_B, const Frame<T>& to_frame_A,
+    const Frame<T>& from_frame_B,
     const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+    const Frame<T>& to_frame_A,
     EigenPtr<Matrix3X<T>> p_AQi) const {
   DRAKE_DEMAND(p_BQi.rows() == 3);
   DRAKE_DEMAND(p_AQi != nullptr);
   DRAKE_DEMAND(p_AQi->rows() == 3);
   DRAKE_DEMAND(p_AQi->cols() == p_BQi.cols());
   const Isometry3<T> X_AB =
-      CalcRelativeTransform(context, from_frame_B, to_frame_A);
+      CalcRelativeTransform(context, to_frame_A, from_frame_B);
   *p_AQi = X_AB * p_BQi;
 }
 
@@ -608,8 +609,9 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
 
-  CalcPointsPositions(
-      context, frame_B, get_world_frame(), p_BQi_set, p_WQi_set);
+  CalcPointsPositions(context,
+                      frame_B, p_BQi_set,            /* From frame B */
+                      get_world_frame(), p_WQi_set); /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from body_B to the
   // world computing each node's contribution to J_WQi.

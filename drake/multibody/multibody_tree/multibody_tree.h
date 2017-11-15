@@ -1006,15 +1006,16 @@ class MultibodyTree {
   ///  in a frame B using the transformation `p_AQ = X_AB⋅p_BQ`.
   Isometry3<T> CalcRelativeTransform(
       const systems::Context<T>& context,
-      const Frame<T>& from_frame_B, const Frame<T>& to_frame_A) const;
+      const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const;
 
   ///  Given a vector of positions p_BQi for a set of points Qi measured in a
   ///  frame B, this method computes the position `p_BPi` of each point Pi in
   ///  another frame A.
   void CalcPointsPositions(
       const systems::Context<T>& context,
-      const Frame<T>& from_frame_B, const Frame<T>& to_frame_A,
+      const Frame<T>& from_frame_B,
       const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+      const Frame<T>& to_frame_A,
       EigenPtr<Matrix3X<T>> p_AQi) const;
 
   /// @name Methods to compute multibody Jacobians.
