@@ -69,20 +69,20 @@ functions do not maintain consistent units: the units of the iᵗʰ dimension of
 c() are not necessarily equivalent to the units of the jᵗʰ dimension of c().
 
 Constraints may be posed at the position level:<pre>
-c(t;q) → ℝᵐ
+c(t;q)
 </pre>
 at the velocity level:<pre>
-c(t,q;v) → ℝᵐ
+c(t,q;v)
 </pre>
 or at the acceleration level:<pre>
-c(t,q,v;v̇,λ) → ℝᵐ
+c(t,q,v;v̇,λ)
 </pre>
-where λ ∈ ℝᵐ are *constraint-space forces*. Note the semicolon in these
+where λ is a vector of *constraint-space forces*. Note the semicolon in these
 definitions, which separates general constraint dependencies (q,v,t) from
 variables that must be determined using the constraints (v̇,λ). *The three
-constraint equations listed above can then
-be categorized as having position-level unknowns, velocity-level unknowns,
-or acceleration-level unknowns*, respectively.
+constraint equations listed above can then be categorized as having
+position-level unknowns, velocity-level unknowns, or acceleration-level
+unknowns*, respectively.
 
 <h4>Constraints with velocity-level unknowns</h4>
 This document and class does not generally attempt (or need) to distinguish
