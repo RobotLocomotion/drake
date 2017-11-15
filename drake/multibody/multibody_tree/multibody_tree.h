@@ -1256,6 +1256,20 @@ class MultibodyTree {
   // previously called on this tree.
   void FinalizeInternals();
 
+  // Computes the cache entry associated with the geometric Jacobian H_PB_W for
+  // each node.
+  // The geometric Jacobian `H_PB_W` relates to the spatial velocity of B in P
+  // by `V_PB_W = H_PB_W(q)⋅v_B`, where `v_B` corresponds to the generalized
+  // velocities associated to body B. `H_PB_W` has size `6 x nm` with `nm` the
+  // number of mobilities associated with body B.
+  // `H_PB_W_cache` stores the Jacobian matrices for all nodes in the tree as a
+  // vector of the columns of these matrices. Therefore `H_PB_W_cache` has as
+  // many entries as number of generalized velocities in the tree.
+  void CalcAcrossNodeGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      std::vector<Vector6<T>>* H_PB_W_cache) const;
+
   // Implementation for CalcMassMatrixViaInverseDynamics().
   // It assumes:
   //  - The position kinematics cache object is already updated to be in sync
