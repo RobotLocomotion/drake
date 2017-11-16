@@ -1,9 +1,9 @@
-/** @defgroup constraint_overview Constraints in Drake 
+/** @defgroup constraint_overview Multibody dynamics constraints in Drake
 
-This documentation describes the types of constraints supported in Drake,
-including specialized constraint types- namely point-based contact constraints-
-which allow Drake's constraint solver to readily incorporate the Coulomb
-friction model.
+This documentation describes the types of multibody constraints supported in
+Drake, including specialized constraint types- namely point-based contact
+constraints- which allow Drake's constraint solver to readily incorporate the
+Coulomb friction model.
 
 Drake allows constraints to be imposed at both the acceleration-level- for when
 constraint forces are non-impulsive- and at the velocity-level, for admitting
@@ -101,26 +101,25 @@ at the position level can be corrected only when the constraint is posed
 at the position level (this property follows from the non-integrability of
 nonholonomic constraints). See @ref constraint_stabilization.
 
-Constraints with velocity-level unknowns can also include impulsive
-constraint-space forces; the function definition would appear as c(t, q; v, λ) 
-or ċ(t, q; v, λ). We do not use notation in this documentation to distinguish
-between impulsive and non-impulsive constraint forces. 
-
 <h4>Constraints with acceleration-level unknowns</h4>
 A bilateral constraint equation with acceleration-level unknowns will take the
 form:
 <pre>
-c̈(t,q,v;v̇,λ) = 0
+c̈(t,q,v;v̇) = 0
 </pre>
-if c() is holonomic,<pre>
-ċ(t,q,v;v̇,λ) = 0
+if c() is holonomic, or<pre>
+ċ(t,q,v;v̇) = 0
 </pre>
-if c() is nonholonomic, or- generically:
-<pre>
-c(t,q,v;v̇,λ) = 0
+if c() is nonholonomic. Both of these constraints have been differentiated (once
+or twice) with respect to time. Constraints with acceleration-level unknowns
+can be also be augmented with terms dependent on constraint forces, like:<pre>
+cₐ(t,q,v;v̇,λ) = 0
 </pre>
-Similarly, unilateral constraints with acceleration-level variables may also be
-differentiated with respect to time once, twice, or not at all.
+where<pre>
+cₐ(t,q,v;v̇,λ) ≡ c̈(t,q,v;v̇) + λ
+</pre>
+The equation above was constructed purely for pedagogic purposes, but a similar
+construct is introduced in @ref constraint_softening.
 
 <h4>Complementarity conditions</h4>
 Each unilateral constraint comprises a triplet of equations. For example:<pre>
@@ -164,21 +163,16 @@ viscous damping coefficient and β² the stiffness coefficient. These two
 coefficients make predicting the motion of the oscillator challenging to
 interpret, so one typically converts them to undamped angular frequency (ω₀) 
 and damping ratio (ζ) via the following equations:<pre>
-ω₀² = m̂⁻¹β²
-ζ² = m̂⁻¹α²/β²
+ω₀² = β²
+ζ = α/β
 </pre>
-where m̂⁻¹ is the *inverse effective inertia* of the constraint and is determined
-by GM⁻¹Gᵀ, where G ≡ ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the constraint
-function with respect to the quasi-coordinates (see @ref quasi_coordinates;
-equivalently, G maps generalized velocities to the time derivative of the
-constraints, i.e., ċ) and M is the generalized inertia matrix. Note that 
-GM⁻¹Gᵀ is a scalar since c() maps to a scalar.
 
 To eliminate constraint errors as quickly as possible, one will typically use
-ζ=1, implying *critical damping*, and an undamped angular frequency that is
+ζ=1, implying *critical damping*, and undamped angular frequency ω₀ that is
 high enough to correct errors rapidly but low enough to avoid computational
 stiffness. Picking that parameter is currently considered to be more art
-than science (see [Ascher 1992]).
+than science (see [Ascher 1992]). Given ω₀ and ζ, α and β are set using the
+equations above.
 */
 
 /** @defgroup constraint_softening Constraint softening
@@ -220,63 +214,58 @@ defined by:
 <pre>
 mẍ = f
 </pre>
-The "hard constraint" ẍ = 0 can be added, resulting in: 
+The "hard constraint" ẋ = 0 can be added, resulting in:
 <pre>
 mẍ = f + λ
-ẍ = 0
+ẋ = 0
 </pre>
 This hard constraint can be softened and stabilized, resulting in:
 <pre>
 mẍ = f + λ
-ẍ + 2αẋ + β²x + γλ = 0
+ẋ + xν/h + γλ = 0
 </pre>
-[Catto 2011] showed that the solution to this system yields the dynamics
-of a harmonic oscillator by solving the following system of equations for
-ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
+where `h` will be used for discretization (see immediately below) and ν ∈ [0,1].
+[Catto 2011] showed that a particular discretization of this system yields the
+dynamics of a harmonic oscillator by solving the following system of equations
+for ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
 <pre>
 ẋ(t+h) = ẋ(t) + hf/m + hλ/m
 ẋ(t+h) + x(t)ν/h + γλ = 0
 x(t+h) = x(t) + hẋ(t+h)
 </pre>
-β and α can be selected to effect the desired undamping angular frequency
-and damping ratio as described in @ref constraint_stabilization, and 
-γ and ν are then determined using the formula:
+γ and ν can be selected to effect the desired undamping angular frequency
+and damping ratio (a process also described in @ref constraint_stabilization)
+using the formula:
 <pre>
-γ = 1/(2α + hβ²) 
-ν = hβ²/(2α + hβ²)
+γ = 1 / (2m̂ζω + hm̂ω²)
+ν = hm̂ω² / (2m̂ζω + hm̂ω²)
 </pre>
-While Catto studied a mass-spring system, these results apply to general
-multibody systems as well, as discussed in [Lacoursiere 2007]. The most
-interesting part of this formulation is that γ acts as both a numerical
-(regularization) parameter and as a physical modeling parameter. 
+where m̂ is the *effective inertia* of the constraint and is determined
+by 1/(GM⁻¹Gᵀ), where G ≡ ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the
+constraint function with respect to the quasi-coordinates (see
+@ref quasi_coordinates; equivalently, G maps generalized velocities to the time
+derivative of the constraints, i.e., ċ) and M is the generalized inertia matrix.
+Considering c() to be a scalar function for simplicity of presentation
+should make it clear that GM⁻¹Gᵀ would be a scalar as well.
 
-Implementing a time stepping scheme in Drake using ConstraintSolver, one would
-use α and β to correspondingly set gammaN to γ and kN to ν/h times the
-signed distance (using, e.g., the point contact non-interpenetration constraint
-as the motivating example).
+While Catto studied a mass-spring system, these results apply to general
+multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
+ time stepping scheme in Drake using ConstraintSolver, one would
+use ω and ζ to correspondingly set gammaN to γ and kN to ν/h times the
+signed constraint distance (using, e.g., signed distance for the point contact
+non-interpenetration constraint).
 
 <h4>Softening at the acceleration-level</h4>
 Starting from the same canonical system, but now putting the stabilization
 terms on the right hand side of dynamics equation (rather than the constraint
 equation, as above), we arrive at:
 <pre>
-mẍ = f + λ + 2αẋ + β²x
+mẍ = f + λ
 ẍ + γλ = 0
 </pre>
-the parameters β and α can now be set independently to stabilize the
-constraint with a particular undamped frequency and damping ratio. γ now
-controls only the amplitude of the constraint errors. From a numerical
-standpoint, γ becomes strictly a regularization parameter: larger values make
+γ now becomes strictly a regularization parameter: larger values make
 linear equations and linear complementarity problems easier to solve but yield
 larger constraint errors to be stabilized.
-
-From another viewpoint, γ → ∞ turns the approach into a pure "penalty method".
-In contrast, γ → 0 minimizes the constraint violation and implies greater
-constraint satisfaction accuracy without large β and α (and associated
-computational stiffness). For constraints that need not be solved to tight
-accuracy, solving the constraint equations results in greater computational
-work than using a penalty method (i.e., assuming that λ = 0 and using the
-2αẋ + β²x terms to minimize ||ẍ||).
 
 <h4>Bilateral constraints</h4>
 Note that Drake does not soften bilateral constraints.
