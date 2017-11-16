@@ -1046,8 +1046,9 @@ class MultibodyTree {
   ///   **must** be in `ℝ³ˣⁿᵖ`.
   ///
   /// @note Both `p_BQi` and `p_BQi` must have three rows. Otherwise this
-  /// method will abort. This method also aborts if `p_BQi` and `p_BQi` differ
-  /// in the number of columns.
+  /// method will throw a std::runtime_error exception. This method also throws
+  /// a std::runtime_error exception if `p_BQi` and `p_BQi` differ in the number
+  /// of columns.
   void CalcPointsPositions(
       const systems::Context<T>& context,
       const Frame<T>& from_frame_B,
