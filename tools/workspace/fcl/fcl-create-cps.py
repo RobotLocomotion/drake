@@ -22,7 +22,7 @@ content = """
       "Version": "%(Eigen3_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/eigen3"],
       "X-CMake-Find-Args": [ "CONFIG" ]
-    },
+    }
   },
   "Default-Components": [ ":fcl" ],
   "Components": {
