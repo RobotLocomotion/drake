@@ -62,7 +62,8 @@ class SdfJoint {
       const std::string& child_link_name,
       const std::string& joint_type)
       : name_(joint_name),
-        parent_link_name_(parent_link_name), child_link_name_(child_link_name),
+        parent_link_name_(parent_link_name),
+        child_link_name_(child_link_name),
         joint_type_(joint_type) {}
 
   /// Returns the name of `this` joint.

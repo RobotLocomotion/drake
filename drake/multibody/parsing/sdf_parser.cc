@@ -121,8 +121,8 @@ void ParseLink(const sdf::ElementPtr sdf_link_element, SdfModel* sdf_model) {
 }
 
 // Parses a joint type from the given SDF element and reads its parameters
-// accordingly into sdf_joint. It is assumed that the parent body frame is
-// already present in the frame cache.
+// into sdf_joint. It is assumed that the parent body frame is already present
+// in the frame cache.
 void ParseJointType(
     const sdf::ElementPtr sdf_joint_element,
     const SdfModel& sdf_model,
@@ -202,11 +202,8 @@ void ParseJoint(sdf::ElementPtr sdf_joint_element, SdfModel* sdf_model) {
   ParseJointType(sdf_joint_element, *sdf_model, &sdf_joint);
 }
 
-// Parses all bodies and joints of a model from the given SDF element
-// and adds RigidBody and DrakeJoint instances to describe such model
-// within the given tree.
-//
-// Returns the model instance id.
+// Parses a `<model>` element represented in `sdf_model_element` and adds a new
+// SdfModel to the `spec`.
 void ParseModel(sdf::ElementPtr sdf_model_element, SdfSpec* spec) {
   DRAKE_DEMAND(sdf_model_element != nullptr);
   DRAKE_DEMAND(sdf_model_element->GetName() == "model");
