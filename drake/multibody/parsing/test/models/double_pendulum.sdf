@@ -165,6 +165,10 @@
     <joint name='upper_joint' type='revolute'>
       <parent>base</parent>
       <child>upper_link</child>
+      <!-- The joint frame J is defined with its z-versor aligned with the
+           model frame's x-versor. It's origin is offset in by -0.025 along
+           the axis. -->
+      <pose>-0.025 0.0 0.0 0 1.57079632679 0</pose>
       <axis>
         <xyz>1.0 0 0</xyz>
         <use_parent_model_frame>true</use_parent_model_frame>

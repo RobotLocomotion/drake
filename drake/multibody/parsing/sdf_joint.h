@@ -13,10 +13,25 @@ namespace multibody {
 namespace parsing {
 
 /// A representation of a `<joint>` element in an SDF file.
+/// A joint connects two `<link>` elements imposing a kinematic relationship
+/// between them. The particulars of this kinematic relationship are determined
+/// by the joint's **type** attribute. Examples of joints's types include;
+/// revolute, prismatic, ball, among others.
+/// Throughout this documentation, we denote the frames of the parent and child
+/// links with P and C, respectively.
 /// For details on the specification of joints, including conventions and
 /// default values, please refer to the documentation for the
 /// <a href="http://sdformat.org/spec?ver=1.6&elem=joint">
 /// &lt;joint&gt; element</a>.
+///
+/// <h3> Definition of the Joint Frame J </h3>
+///
+/// The SDF specification defines a _joint frame_, which in this documentation
+/// we will refer to with the letter J. Per SDF specification version 1.4, the
+/// pose of this frame J is defined relative to the joint's child link's
+/// frame C, see the documentation for the
+/// <a href="http://sdformat.org/spec?ver=1.4&elem=joint#joint_pose">
+/// &lt;joint&gt;/&lt;pose&gt; element</a>.
 class SdfJoint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SdfJoint);
@@ -68,7 +83,8 @@ class SdfJoint {
     return joint_type_ == "revolute" || joint_type_ == "prismatic";
   }
 
-  /// Returns the axis of this joint expressed in the joint frame.
+  /// Returns the axis of this joint expressed in the joint frame J as defined
+  /// in this class's documentation.
   /// For details on how this frame is defined refer to the documenatation for
   /// the <a href="http://sdformat.org/spec?ver=1.6&elem=joint#joint_axis">
   /// &lt;axis&gt; element</a>.
@@ -76,16 +92,17 @@ class SdfJoint {
   /// property.
   const Vector3<double>& get_axis() const {
     DRAKE_DEMAND(JointHasAxis());
-    return axis_;
+    return axis_J_;
   }
 
-  /// Sets the axis for this joint, expressed in the joint frame.
+  /// Sets the axis for this joint, expressed in the joint frame J as defined
+  /// in this class's documentation.
   /// @warning This method aborts for joint types that do not have an axis
   /// property.
   /// @sa get_axis()
   void set_axis(const Vector3<double>& axis) {
     DRAKE_DEMAND(JointHasAxis());
-    axis_ = axis;
+    axis_J_ = axis;
   }
 
  private:
@@ -94,7 +111,8 @@ class SdfJoint {
   std::string parent_link_name_;
   std::string child_link_name_;
   std::string joint_type_;
-  Vector3<double> axis_{
+  // Joint's axis expressed in the joint's frame J.
+  Vector3<double> axis_J_{
       Vector3<double>::Constant(std::numeric_limits<double>::quiet_NaN())};
 };
 
