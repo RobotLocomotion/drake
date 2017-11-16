@@ -140,12 +140,12 @@ direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
 @ingroup constraint_overview
  
 Both truncation and rounding errors can prevent constraints from being 
-exactly satisfied.
-For example, consider the bilateral constraint equation c(t,q) = 0. Even if
+exactly satisfied. For example, consider the bilateral holonomic constraint
+equation c(t,q) = 0. Even if
 c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, c(t₁,q(t₁))
 is unlikely to be zero for sufficiently large Δt = t₁ - t₀. Consequently,
 we can modify holonomic unilateral constraints to:<pre>
-0 ≤ c̈ + 2αċ + β²c + γλ ⊥  λ ≥ 0
+0 ≤ c̈ + 2αċ + β²c  ⊥  λ ≥ 0
 </pre>
 and holonomic bilateral constraints to:<pre>
 c̈ + 2αċ + β²c = 0
@@ -195,7 +195,8 @@ complementarity problem becomes solvable given sufficient regularization
 [Cottle 1992]; more softening results in greater regularization. 
 
 <h4>Softening introduces compliance</h4>
-Second (in concert with constraint stabilization), constraint
+Second (in concert with constraint stabilization and a particular discretization
+of the constrained multibody dynamics equations), constraint
 softening introduces compliant effects, e.g., at joint stops and
 between contacting bodies; such effects are often desirable.
 
@@ -256,9 +257,7 @@ signed constraint distance (using, e.g., signed distance for the point contact
 non-interpenetration constraint).
 
 <h4>Softening at the acceleration-level</h4>
-Starting from the same canonical system, but now putting the stabilization
-terms on the right hand side of dynamics equation (rather than the constraint
-equation, as above), we arrive at:
+Starting from the same stabilized and softened spring mass system:
 <pre>
 mẍ = f + λ
 ẍ + γλ = 0
