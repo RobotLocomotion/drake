@@ -52,7 +52,7 @@ const proto::Model& GetModelOrThrow(
     const proto::PickAndPlaceConfiguration& configuration,
     const proto::ModelInstance& model_instance) {
   auto items = configuration.model().items();
-  for (unsigned int i = 0; i < items.size(); i++) {
+  for (int i = 0; i < items.size(); i++) {
     auto current_item = items.Get(i);
     if (!current_item.has_key() || !current_item.has_value()) {
       continue;
