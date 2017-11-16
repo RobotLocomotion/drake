@@ -177,7 +177,7 @@ std::vector<QPasSOCPProblem> GetQPasSOCPProblems() {
 
 TestQPasSOCP::TestQPasSOCP() {
   switch (GetParam()) {
-    case QPasSOCPProblem::kProblem0 :
+    case QPasSOCPProblem::kProblem0:
       // Un-constrained QP
       Q_ = Eigen::Matrix2d::Identity();
       c_ = Eigen::Vector2d::Ones();
@@ -185,7 +185,7 @@ TestQPasSOCP::TestQPasSOCP() {
       b_lb_ = Vector1<double>(-std::numeric_limits<double>::infinity());
       b_ub_ = Vector1<double>(std::numeric_limits<double>::infinity());
       break;
-    case QPasSOCPProblem::kProblem1 :
+    case QPasSOCPProblem::kProblem1:
       // Constrained QP
       Q_ = Eigen::Matrix3d::Zero();
       Q_(0, 0) = 1.0;
@@ -224,7 +224,8 @@ TestQPasSOCP::TestQPasSOCP() {
   prog_qp_.AddLinearConstraint(A_, b_lb_, b_ub_, x_qp_);
 }
 
-void TestQPasSOCP::SolveAndCheckSolution(const MathematicalProgramSolverInterface &solver) {
+void TestQPasSOCP::SolveAndCheckSolution(
+    const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog_socp_, solver);
   const auto& x_socp_value = prog_socp_.GetSolution(x_socp_);
   double objective_value_socp =
@@ -253,6 +254,114 @@ void TestQPasSOCP::SolveAndCheckSolution(const MathematicalProgramSolverInterfac
   EXPECT_TRUE(CompareMatrices(x_qp_value, x_socp_value, 2e-4,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(objective_value_qp, objective_value_socp, 1E-6);
+}
+
+std::vector<FindSpringEquilibriumProblem> GetFindSpringEquilibriumProblems() {
+  return {FindSpringEquilibriumProblem::kProblem0};
+}
+
+TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
+  switch (GetParam()) {
+    case FindSpringEquilibriumProblem::kProblem0:
+      weight_.resize(5);
+      weight_ << 1, 2, 3, 2.5, 4;
+      spring_rest_length_ = 0.2;
+      spring_stiffness_ = 10;
+      end_pos1_ << 0, 1;
+      end_pos2_ << 1, 0.9;
+  }
+  const int num_nodes = weight_.rows();
+  x_ = prog_.NewContinuousVariables(num_nodes, "x");
+  y_ = prog_.NewContinuousVariables(num_nodes, "y");
+  t_ = prog_.NewContinuousVariables(num_nodes - 1, "t");
+  prog_.AddBoundingBoxConstraint(end_pos1_, end_pos1_,
+                                 {x_.head<1>(), y_.head<1>()});
+  prog_.AddBoundingBoxConstraint(
+      end_pos2_, end_pos2_,
+      {x_.segment<1>(num_nodes - 1), y_.segment<1>(num_nodes - 1)});
+  prog_.AddBoundingBoxConstraint(
+      Eigen::VectorXd::Zero(num_nodes - 1),
+      Eigen::VectorXd::Constant(num_nodes - 1,
+                                std::numeric_limits<double>::infinity()),
+      t_);
+
+  // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
+  for (int i = 0; i < num_nodes - 1; ++i) {
+    // A_lorentz1 * [x(i); x(i+1); y(i); y(i+1); t(i)] + b_lorentz1
+    //     = [ti + spring_rest_length; x(i) - x(i+1); y(i) - y(i+1)]
+    Eigen::Matrix<double, 3, 5> A_lorentz1;
+    A_lorentz1.setZero();
+    A_lorentz1(0, 4) = 1;
+    A_lorentz1(1, 0) = 1;
+    A_lorentz1(1, 1) = -1;
+    A_lorentz1(2, 2) = 1;
+    A_lorentz1(2, 3) = -1;
+    Eigen::Vector3d b_lorentz1(spring_rest_length_, 0, 0);
+    prog_.AddLorentzConeConstraint(
+        A_lorentz1, b_lorentz1,
+        {x_.segment<2>(i), y_.segment<2>(i), t_.segment<1>(i)});
+  }
+
+  // Add constraint z >= t_1^2 + .. + t_(N-1)^2
+  z_ = prog_.NewContinuousVariables<1>("z")(0);
+  prog_.AddRotatedLorentzConeConstraint(
+      +z_, 1, t_.cast<symbolic::Expression>().squaredNorm());
+
+  prog_.AddLinearCost(spring_stiffness_ / 2 * z_);
+  prog_.AddLinearCost(weight_.dot(y_));
+}
+
+void TestFindSpringEquilibrium::SolveAndCheckSolution(
+    const MathematicalProgramSolverInterface& solver, double tol) {
+  RunSolver(&prog_, solver);
+
+  const optional<SolverId> solver_id = prog_.GetSolverId();
+  ASSERT_TRUE(solver_id);
+  const int num_nodes = weight_.rows();
+  for (int i = 0; i < num_nodes - 1; ++i) {
+    Eigen::Vector2d spring(
+        prog_.GetSolution(x_(i + 1)) - prog_.GetSolution(x_(i)),
+        prog_.GetSolution(y_(i + 1)) - prog_.GetSolution(y_(i)));
+    if (spring.norm() < spring_rest_length_) {
+      EXPECT_LE(prog_.GetSolution(t_(i)), 1E-3);
+      EXPECT_GE(prog_.GetSolution(t_(i)), 0 - 1E-10);
+    } else {
+      EXPECT_TRUE(std::abs(spring.norm() - spring_rest_length_ -
+                           prog_.GetSolution(t_(i))) < 1E-3);
+    }
+  }
+  const auto& t_value = prog_.GetSolution(t_);
+  EXPECT_NEAR(prog_.GetSolution(z_), t_value.squaredNorm(), 1E-3);
+  // Now test equilibrium.
+  for (int i = 1; i < num_nodes - 1; i++) {
+    Eigen::Vector2d left_spring(
+        prog_.GetSolution(x_(i - 1)) - prog_.GetSolution(x_(i)),
+        prog_.GetSolution(y_(i - 1)) - prog_.GetSolution(y_(i)));
+    Eigen::Vector2d left_spring_force;
+    double left_spring_length = left_spring.norm();
+    if (left_spring_length < spring_rest_length_) {
+      left_spring_force.setZero();
+    } else {
+      left_spring_force = (left_spring_length - spring_rest_length_) *
+                          spring_stiffness_ * left_spring / left_spring_length;
+    }
+    Eigen::Vector2d right_spring(
+        prog_.GetSolution(x_(i + 1)) - prog_.GetSolution(x_(i)),
+        prog_.GetSolution(y_(i + 1)) - prog_.GetSolution(y_(i)));
+    Eigen::Vector2d right_spring_force;
+    double right_spring_length = right_spring.norm();
+    if (right_spring_length < spring_rest_length_) {
+      right_spring_force.setZero();
+    } else {
+      right_spring_force = (right_spring_length - spring_rest_length_) *
+                           spring_stiffness_ * right_spring /
+                           right_spring_length;
+    }
+    Eigen::Vector2d weight_i(0, -weight_(i));
+    EXPECT_TRUE(CompareMatrices(
+        weight_i + left_spring_force + right_spring_force,
+        Eigen::Vector2d::Zero(), tol, MatrixCompareType::absolute));
+  }
 }
 }  // namespace test
 }  // namespace solvers

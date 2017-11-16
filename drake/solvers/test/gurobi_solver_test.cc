@@ -216,6 +216,14 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(GurobiTest, TestQPasSOCP,
                         ::testing::ValuesIn(GetQPasSOCPProblems()));
+
+TEST_P(TestFindSpringEquilibrium, TestSOCP) {
+  GurobiSolver gurobi_solver;
+  SolveAndCheckSolution(gurobi_solver, 2E-2);
+}
+
+INSTANTIATE_TEST_CASE_P(GurobiTest, TestFindSpringEquilibrium,
+                        ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -55,6 +55,14 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(MosekTest, TestQPasSOCP,
                         ::testing::ValuesIn(GetQPasSOCPProblems()));
+
+TEST_P(TestFindSpringEquilibrium, TestSOCP) {
+  MosekSolver mosek_solver;
+  SolveAndCheckSolution(mosek_solver);
+}
+
+INSTANTIATE_TEST_CASE_P(MosekTest, TestFindSpringEquilibrium,
+                        ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
