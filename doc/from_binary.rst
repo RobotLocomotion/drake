@@ -1,3 +1,5 @@
+.. _binary-installation:
+
 ***********************************
 Binary installation (macOS, Ubuntu)
 ***********************************
@@ -11,7 +13,7 @@ change.
 
 We are actively working on a binary release of the new software, but are not
 quite finished.  See https://github.com/RobotLocomotion/drake/issues/1766 for
-details.
+details. For the compilers used to produce these releases, see :ref:`binary-packages`.
 
 In the meantime, we suggest you :ref:`build from source <build_from_source>`
 instead.
