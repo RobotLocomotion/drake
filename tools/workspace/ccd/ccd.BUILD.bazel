@@ -4,10 +4,6 @@ load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
 
 package(
     default_visibility = ["//visibility:public"],
@@ -56,13 +52,4 @@ cc_library(
     defines = ["CCD_STATIC_DEFINE"],
     includes = ["src"],
     linkstatic = 1,
-)
-
-install(
-    name = "install",
-    targets = [":ccd"],
-    hdrs = CCD_PUBLIC_HEADERS,
-    hdr_dest = "include/ccd",
-    hdr_strip_prefix = ["**/"],
-    docs = ["BSD-LICENSE"],
 )
