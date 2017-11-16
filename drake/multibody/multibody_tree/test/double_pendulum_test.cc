@@ -1330,10 +1330,10 @@ TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
 
   // World positions of the set of points Qi:
   Matrix3X<double> p_WQi_set(3, 3);
-  ASSERT_DEATH(model_->CalcPointsPositions(
+  EXPECT_THROW(model_->CalcPointsPositions(
       *context_,
       lower_link_->get_body_frame(), p_LQi_set,
-      model_->get_world_frame(), &p_WQi_set), "rows");
+      model_->get_world_frame(), &p_WQi_set), std::runtime_error);
 }
 
 }  // namespace

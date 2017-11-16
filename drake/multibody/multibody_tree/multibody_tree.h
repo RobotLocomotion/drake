@@ -1002,10 +1002,9 @@ class MultibodyTree {
 
   /// Computes the relative transform `X_AB(q)` from a frame B to a frame A, as
   /// a function of the generalized positions q of the model.
-  /// That is, the position `p_AQ(q)` of a point Q measured and expressed in
+  /// That is, the position `p_AQ` of a point Q measured and expressed in
   /// frame A can be computed from the position `p_BQ` of this point measured
-  /// and expressed in frame B using the transformation
-  /// `p_AQ(q) = X_AB(q)⋅p_BQ`.
+  /// and expressed in frame B using the transformation `p_AQ = X_AB⋅p_BQ`.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores

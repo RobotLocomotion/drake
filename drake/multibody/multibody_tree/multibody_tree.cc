@@ -6,6 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -540,10 +541,10 @@ void MultibodyTree<T>::CalcPointsPositions(
     const Eigen::Ref<const MatrixX<T>>& p_BQi,
     const Frame<T>& to_frame_A,
     EigenPtr<MatrixX<T>> p_AQi) const {
-  DRAKE_DEMAND(p_BQi.rows() == 3);
-  DRAKE_DEMAND(p_AQi != nullptr);
-  DRAKE_DEMAND(p_AQi->rows() == 3);
-  DRAKE_DEMAND(p_AQi->cols() == p_BQi.cols());
+  DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi != nullptr);
+  DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
   const Isometry3<T> X_AB =
       CalcRelativeTransform(context, to_frame_A, from_frame_B);
   // We demanded above that these matrices have three rows. Therefore we tell
