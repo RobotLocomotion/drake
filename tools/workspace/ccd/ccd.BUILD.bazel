@@ -54,8 +54,8 @@ cc_library(
     hdrs = CCD_PUBLIC_HEADERS,
     copts = CCD_COPTS,
     defines = ["CCD_STATIC_DEFINE"],
-    linkstatic = 1,
     includes = ["src"],
+    linkstatic = 1,
 )
 
 install(
