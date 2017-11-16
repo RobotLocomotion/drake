@@ -1,31 +1,33 @@
 model {
-  key: "cube"
-  value: {
-    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"
+  items {
+    key: "cube"
+    value: {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"
+    }
   }
-}
-model {
-  key: "big_robot_toy"
-  value {
-    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
+  items {
+    key: "big_robot_toy"
+    value {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
+    }
   }
-} 
-model {
-  key: "yellow_post"
-  value {
-    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/yellow_post.urdf"
+  items {
+    key: "yellow_post"
+    value {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/yellow_post.urdf"
+    }
   }
-}
-model {
-  key: "extra_heavy_duty_table"
-  value: {
-    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table_surface_only_collision.sdf";
+  items {
+    key: "extra_heavy_duty_table"
+    value: {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table_surface_only_collision.sdf";
+    }
   }
-}
-model {
-  key: "iiwa"
-  value: {
-    simulation_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
+  items {
+    key: "iiwa"
+    value: {
+      simulation_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
+    }
   }
 }
 

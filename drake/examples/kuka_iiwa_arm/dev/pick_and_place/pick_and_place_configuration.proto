@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package drake.examples.kuka_iiwa_arm.pick_and_place.proto;
 
@@ -23,51 +23,60 @@ message Pose {
 message OptitrackInfo {
     // The unique identifier assigned to this object by the motion-capture
     // system.
-    int32 id = 1;
+    optional int32 id = 1;
     // Pose of the Optitrack frame relative to the model frame.
     // The transform from the Optitrack rigid-body frame (F) to the model base
     // frame (M).
     // DEFAULT: Identity
-    Pose X_MF = 2;
+    optional Pose X_MF = 2;
 }
 
 // Next ID: 3
 message Model{
     // Path to the model file for simulation (relative to DRAKE_RESOURCE_ROOT).
-    string simulation_model_path = 1;
+    optional string simulation_model_path = 1;
     // Path to the model file for planning (relative to DRAKE_RESOURCE_ROOT).
     // DEFAULT: simulation_model_path
-    string planning_model_path = 2;
+    optional string planning_model_path = 2;
 }
 
 // Next ID: 4
 message ModelInstance {
     // The name of the model. This should correspond to a key in the model
     // field of the PickAndPlaceConfiguration message.
-    string name = 1;
+    optional string name = 1;
     // The Optitrack information for the model base.
-    OptitrackInfo optitrack_info = 2;
+    optional OptitrackInfo optitrack_info = 2;
     // The [initial] world-pose of the model base.
     // DEFAULT: Identity
-    Pose pose = 3;
+    optional Pose pose = 3;
 }
 
 // Next ID: 4
 message PickAndPlaceTask {
     // The index of the robot arm to be used for this task.
     // DEFAULT: 0
-    int32 robot_index = 1;
+    optional int32 robot_index = 1;
     // The index of the object to be used as the target for this task.
     // DEFAULT: 0
-    int32 target_index = 2;
+    optional int32 target_index = 2;
     // The name of the end-effector body in the robot.
-    string end_effector_name = 3;
+    optional string end_effector_name = 3;
+}
+
+message MapFieldEntry {
+    required string key = 1;
+    required Model value = 2;
+}
+
+message Map {
+    repeated MapFieldEntry items = 1;
 }
 
 // Next ID: 11
 message PickAndPlaceConfiguration {
     // Map of model names to Model messages
-    map<string, Model> model = 1;
+    optional Map model = 1;
 
     repeated PickAndPlaceTask task = 2;
 
@@ -80,17 +89,17 @@ message PickAndPlaceConfiguration {
 
     // Static friction coefficient
     // DEFAULT: 0.9
-    double static_friction_coefficient = 6;
+    optional double static_friction_coefficient = 6;
     // Dynamic friction coefficient
     // DEFAULT: 0.5
-    double dynamic_friction_coefficient = 7;
+    optional double dynamic_friction_coefficient = 7;
     // Stiction velocity tolerance
     // DEFAULT: 0.01
-    double v_stiction_tolerance = 8;
+    optional double v_stiction_tolerance = 8;
     // Contact stiffness
     // DEFAULT: 10000
-    double stiffness = 9;
+    optional double stiffness = 9;
     // Contact dissipation
     // DEFAULT: 2
-    double dissipation = 10;
+    optional double dissipation = 10;
 }
