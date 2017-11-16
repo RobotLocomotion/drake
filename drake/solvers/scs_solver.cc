@@ -32,54 +32,54 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
                            std::vector<Eigen::Triplet<double>>* A_triplets,
                            std::vector<double>* b, int* A_row_count,
                            SCS_CONE* cone) {
-  // The linear constraint l <= aᵀx <= u is converted to
-  //  aᵀx + s1 = u,
-  // -aᵀx + s2 = l
+  // The linear constraint lb ≤ aᵀx ≤ ub is converted to
+  //  aᵀx + s1 = ub,
+  // -aᵀx + s2 = lb
   // s1, s2 in the positive cone.
-  // The special cases are when u = ∞ or l = -∞.
-  // When u = ∞, then we only add the constraint
-  // -aᵀx + s = l, s in the positive cone.
-  // When l = -∞, then we only add the constraint
-  // aᵀx + s = u, s in the positive cone.
+  // The special cases are when ub = ∞ or lb = -∞.
+  // When ub = ∞, then we only add the constraint
+  // -aᵀx + s = lb, s in the positive cone.
+  // When lb = -∞, then we only add the constraint
+  // aᵀx + s = ub, s in the positive cone.
   int num_linear_constraint_rows = 0;
   for (const auto& linear_constraint : prog.linear_constraints()) {
-    const Eigen::VectorXd& u = linear_constraint.constraint()->upper_bound();
-    const Eigen::VectorXd& l = linear_constraint.constraint()->lower_bound();
+    const Eigen::VectorXd& ub = linear_constraint.constraint()->upper_bound();
+    const Eigen::VectorXd& lb = linear_constraint.constraint()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
     const Eigen::MatrixXd& Ai = linear_constraint.constraint()->A();
     for (int i = 0; i < static_cast<int>(
                             linear_constraint.constraint()->num_constraints());
          ++i) {
-      const bool is_u_inf{std::isinf(u(i))};
-      const bool is_l_inf{std::isinf(l(i))};
-      if (!is_u_inf || !is_l_inf) {
-        // If l != -∞, then the constraint -aᵀx + s = l will be added to the
+      const bool is_ub_finite{!std::isinf(ub(i))};
+      const bool is_lb_finite{!std::isinf(lb(i))};
+      if (is_ub_finite || is_lb_finite) {
+        // If lb != -∞, then the constraint -aᵀx + s = lb will be added to the
         // matrix A, in the row lower_bound_row_index.
         const int lower_bound_row_index =
             *A_row_count + num_linear_constraint_rows;
-        // If u != ∞, then the constraint aᵀx + s = u will be added to the
+        // If ub != ∞, then the constraint aᵀx + s = ub will be added to the
         // matrix A, in the row upper_bound_row_index.
         const int upper_bound_row_index =
-            *A_row_count + num_linear_constraint_rows + (is_l_inf ? 0 : 1);
+            *A_row_count + num_linear_constraint_rows + (is_lb_finite ? 1 : 0);
         for (int j = 0; j < x.rows(); ++j) {
           if (Ai(i, j) != 0) {
             const int xj_index = prog.FindDecisionVariableIndex(x(j));
-            if (!is_u_inf) {
+            if (is_ub_finite) {
               A_triplets->emplace_back(upper_bound_row_index, xj_index,
                                        Ai(i, j));
             }
-            if (!is_l_inf) {
+            if (is_lb_finite) {
               A_triplets->emplace_back(lower_bound_row_index, xj_index,
                                        -Ai(i, j));
             }
           }
         }
-        if (!is_l_inf) {
-          b->push_back(-l(i));
+        if (is_lb_finite) {
+          b->push_back(-lb(i));
           ++num_linear_constraint_rows;
         }
-        if (!is_u_inf) {
-          b->push_back(u(i));
+        if (is_ub_finite) {
+          b->push_back(ub(i));
           ++num_linear_constraint_rows;
         }
       }
@@ -130,9 +130,8 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
                                 std::vector<Eigen::Triplet<double>>* A_triplets,
                                 std::vector<double>* b, int* A_row_count,
                                 SCS_CONE* cone) {
-  // A bounding box constraint l <= x <= u is converted to the SCS form as
-  // x + s1 = u, -x + s2 = -l, s1, s2 in the positive cone.
-  // Here we assume that u > l.
+  // A bounding box constraint lb ≤ x ≤ ub is converted to the SCS form as
+  // x + s1 = ub, -x + s2 = -lb, s1, s2 in the positive cone.
   // TODO(hongkai.dai) : handle the special case l = u, such that we can convert
   // it to x + s = l, s in zero cone.
   int num_bounding_box_constraint_rows = 0;
@@ -144,7 +143,7 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
     b->reserve(b->size() + 2 * num_xi_rows);
     for (int i = 0; i < num_xi_rows; ++i) {
       if (!std::isinf(bounding_box_constraint.constraint()->upper_bound()(i))) {
-        // if u != ∞, then add the constraint x + s1 = u, s1 in the positive
+        // if ub != ∞, then add the constraint x + s1 = ub, s1 in the positive
         // cone.
         A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
                                  prog.FindDecisionVariableIndex(xi(i)), 1);
@@ -152,7 +151,7 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
         ++num_scs_new_constraint;
       }
       if (!std::isinf(bounding_box_constraint.constraint()->lower_bound()(i))) {
-        // if l != -∞, then add the constraint -x + s2 = -l, s2 in the positive
+        // if lb != -∞, then add the constraint -x + s2 = -lb, s2 in the positive
         // cone.
         A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
                                  prog.FindDecisionVariableIndex(xi(i)), -1);
@@ -206,6 +205,8 @@ void ExtractSolution(MathematicalProgram* prog,
 bool ScsSolver::available() const { return true; }
 
 void SetScsProblemSettingsToDefault(SCS_SETTINGS* settings) {
+  // These macro's are defined in SCS. For their actual value, please refer to
+  // https://github.com/cvxgrp/scs/blob/master/include/constants.h
   settings->alpha = ALPHA;
   settings->cg_rate = CG_RATE;
   settings->eps = EPS;
@@ -260,7 +261,7 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // s.t A x + s = b
   //     s in K
   // where K is a Cartesian product of some primitive cones.
-  // The cones has to be in this order
+  // The cones have to be in this order
   // Zero cone {x | x = 0 }
   // Positive orthant {x | x ≥ 0 }
   // Second-order cone {(t, x) | |x|₂ ≤ t }
