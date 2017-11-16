@@ -1,3 +1,5 @@
+.. _binary-installation:
+
 ***********************************
 Binary installation (macOS, Ubuntu)
 ***********************************
