@@ -46,12 +46,12 @@ class RotationMatrix {
   const Matrix3<T>& get_as_Matrix3() const { return R_AB_; }
 
   /// @returns R_BA, the tranpose of this %RotationMatrix.
-  const RotationMatrix<T> transpose() const {
+  RotationMatrix<T> transpose() const {
     return RotationMatrix(R_AB_.transpose());
   }
 
   /// @returns R_BA, the inverse (transpose) of this %RotationMatrix.
-  const RotationMatrix<T> inverse() const { return transpose(); }
+  RotationMatrix<T> inverse() const { return transpose(); }
 
   /// Const access to the i, j component of this %RotationMatrix. The bounds on
   /// i, j are only checked in Debug builds (avoids overhead in Release builds).
