@@ -1318,6 +1318,24 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
       R_UL, R_UL_expected, kTolerance, MatrixCompareType::relative));
 }
 
+TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+  shoulder_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
+  elbow_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
+
+  // Create a set of points with the wrong number of rows (it must be 3).
+  // The values do not matter for this test, just the size.
+  MatrixX<double> p_LQi_set = MatrixX<double>::Zero(4, 3);
+
+  // World positions of the set of points Qi:
+  Matrix3X<double> p_WQi_set(3, 3);
+  ASSERT_DEATH(model_->CalcPointsPositions(
+      *context_,
+      lower_link_->get_body_frame(), p_LQi_set,
+      model_->get_world_frame(), &p_WQi_set), "rows");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

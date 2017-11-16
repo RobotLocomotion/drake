@@ -1040,17 +1040,21 @@ class MultibodyTree {
   /// @param[in] to_frame_A
   ///   The frame A in which it is desired to compute the positions `p_AQi` of
   ///   each point `Qi` in the set.
-  /// @param[out] p_AQi
+  /// @param[out] p_BQi
   ///   The output positions of each point `Qi` now computed as measured and
   ///   expressed in frame A. The output `p_AQi` **must** have the same size as
   ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
   ///   **must** be in `ℝ³ˣⁿᵖ`.
+  ///
+  /// @note Both `p_BQi` and `p_BQi` must have three rows. Otherwise this
+  /// method will abort. This method also aborts if `p_BQi` and `p_BQi` differ
+  /// in the number of columns.
   void CalcPointsPositions(
       const systems::Context<T>& context,
       const Frame<T>& from_frame_B,
-      const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+      const Eigen::Ref<const MatrixX<T>>& p_BQi,
       const Frame<T>& to_frame_A,
-      EigenPtr<Matrix3X<T>> p_AQi) const;
+      EigenPtr<MatrixX<T>> p_AQi) const;
 
   /// Transforms generalized velocities v to time derivatives `qdot` of the
   /// generalized positions vector `q` (stored in `context`). `v` and `qdot`
