@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "drake/solvers/mathematical_program.h"

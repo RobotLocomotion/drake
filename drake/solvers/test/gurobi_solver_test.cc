@@ -203,7 +203,9 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   GurobiSolver gurobi_solver;
-  SolveAndCheckSolution(gurobi_solver);
+  if (gurobi_solver.available()) {
+    SolveAndCheckSolution(gurobi_solver);
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(GurobiTest, TestEllipsoidsSeparation,
@@ -211,7 +213,9 @@ INSTANTIATE_TEST_CASE_P(GurobiTest, TestEllipsoidsSeparation,
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   GurobiSolver gurobi_solver;
-  SolveAndCheckSolution(gurobi_solver);
+  if (gurobi_solver.available()) {
+    SolveAndCheckSolution(gurobi_solver);
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(GurobiTest, TestQPasSOCP,
@@ -219,11 +223,14 @@ INSTANTIATE_TEST_CASE_P(GurobiTest, TestQPasSOCP,
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   GurobiSolver gurobi_solver;
-  SolveAndCheckSolution(gurobi_solver, 2E-2);
+  if (gurobi_solver.available()) {
+    SolveAndCheckSolution(gurobi_solver, 2E-2);
+  }
 }
 
-INSTANTIATE_TEST_CASE_P(GurobiTest, TestFindSpringEquilibrium,
-                        ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+INSTANTIATE_TEST_CASE_P(
+    GurobiTest, TestFindSpringEquilibrium,
+    ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

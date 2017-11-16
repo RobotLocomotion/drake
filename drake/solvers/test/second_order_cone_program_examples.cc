@@ -1,5 +1,8 @@
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 
+#include <limits>
+#include <memory>
+
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
