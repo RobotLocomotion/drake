@@ -714,23 +714,6 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
-# test that doesn't.
-drake_cc_googletest(
-    name = "convex_optimization_test",
-    srcs = [
-        "test/convex_optimization_test.cc",
-    ],
-    # This test uses Gurobi if present, but does not require it.
-    tags = gurobi_test_tags(gurobi_required = False),
-    deps = [
-        ":add_solver_util",
-        ":mathematical_program",
-        ":mathematical_program_test_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
 drake_cc_googletest(
     name = "create_constraint_test",
     deps = [
