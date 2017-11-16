@@ -4,7 +4,6 @@ load("@drake//tools/install:install.bzl", "InstallInfo")
 
 # List of exact file names of license files
 LICENSE_LITERALS = [
-    "BSD-LICENSE",  # ccd
     "COPYING",
     "Copyright.txt",  # vtk
     "LICENSE",
