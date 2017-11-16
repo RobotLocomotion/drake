@@ -18,8 +18,8 @@ void trigger_an_assertion_failure() {
 }
 }  // namespace
 
-PYBIND11_PLUGIN(_pydrake_common) {
-  py::module m("_pydrake_common", "Bindings for //drake/common:common");
+PYBIND11_MODULE(_pydrake_common, m) {
+  m.doc() = "Bindings for //drake/common:common";
 
   // Turn DRAKE_ASSERT and DRAKE_DEMAND exceptions into native SystemExit.
   // Admittedly, it's unusual for a python library like pydrake to raise
@@ -60,6 +60,4 @@ PYBIND11_PLUGIN(_pydrake_common) {
         "Set Drake's assertion failure mechanism to be exceptions");
   m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
         "Trigger a Drake C++ assertion failure");
-
-  return m.ptr();
 }

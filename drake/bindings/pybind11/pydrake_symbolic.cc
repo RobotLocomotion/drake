@@ -6,14 +6,13 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(_pydrake_symbolic) {
+PYBIND11_MODULE(_pydrake_symbolic, m) {
   using drake::symbolic::Variable;
   using drake::symbolic::Expression;
   using drake::symbolic::Formula;
   using drake::symbolic::pow;
 
-  py::module m("_pydrake_symbolic",
-               "Symbolic variables, expressions, and formulae");
+  m.doc() = "Symbolic variables, expressions, and formulae";
 
   py::class_<Variable>(m, "Variable")
     .def(py::init<const std::string&>())
@@ -248,6 +247,4 @@ PYBIND11_PLUGIN(_pydrake_symbolic) {
     .def("logical_not", [](const Formula& a) {
           return !a;
     });
-
-  return m.ptr();
 }
