@@ -13,7 +13,7 @@ Frequently Asked Questions
 Why Does Build Fail with "this rule is missing dependency declarations" on macOS?
 =================================================================================
 
-Symptom: After upgrading Xcode on macOS, you encounter an error similar to the
+**Symptom**: After upgrading Xcode on macOS, you encounter an error similar to the
 following::
 
     $ bazel build ...
@@ -26,7 +26,7 @@ following::
       '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/
       Developer/SDKs/MacOSX10.12.sdk/usr/include/ctype.h'
 
-Solution: Install Xcode's command-line tools and reset the tools' path to be
+**Solution**: Install Xcode's command-line tools and reset the tools' path to be
 the default. To install Xcode's command-line tools::
 
     $ xcode-select --install
@@ -54,7 +54,7 @@ default, reset it to be the default by executing the following command::
 Why doesn't Drake Visualizer work in VMWare Fusion or Workstation?
 ==================================================================
 
-Symptom: The simulation runs and the visualization window appears, but no
+**Symptom**: The simulation runs and the visualization window appears, but no
 objects are actually drawn. This appeared to be due to display drivers and/or
 non support of hardware-accelerated rendering. To address this, go to
 ``Virtual Machine Settings``, and check the ``Accelerate 3D Graphics`` box under
@@ -65,7 +65,7 @@ Display settings; now the simulations draw properly.
 Why do OpenGL-based VTK targets run with ``bazel test`` sometimes fail on Linux?
 ================================================================================
 
-Symptom: While the binary works with ``bazel run``, when you run a test using ``bazel test``, such as::
+**Symptom**: While the binary works with ``bazel run``, when you run a test using ``bazel test``, such as::
 
     $ bazel test //drake/systems/sensors:rgbd_camera_test
 
@@ -83,7 +83,7 @@ you encounter a slew of errors from VTK / OpenGL::
     ERROR: In /vtk/Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx, line 1858
     vtkXOpenGLRenderWindow (0x55880715b760): Hardware does not support the number of textures defined.
 
-Solution: The best workaround is to first mark the test as as `local <https://docs.bazel.build/versions/master/be/general.html#genrule.local>`_ in the ``BUILD`` file, either
+**Solution**: The best workaround is to first mark the test as as `local <https://docs.bazel.build/versions/master/be/general.html#genrule.local>`_ in the ``BUILD`` file, either
 with ``local = 1``, or ``tags = [.., "local"],``. Doing so will make the specific target run without sandboxing, such that it has an environment similar to that of ``bazel run``.
 
 As an example, in ``drake/systems/sensors/BUILD``::
