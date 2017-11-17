@@ -168,17 +168,28 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
 
 std::string Scs_return_info(scs_int scs_status) {
   switch (scs_status) {
-    case SCS_INFEASIBLE_INACCURATE:return "SCS infeasible inaccurate";
-    case SCS_UNBOUNDED_INACCURATE:return "SCS unbounded inaccurate";
-    case SCS_SIGINT:return "SCS sigint";
-    case SCS_FAILED:return "SCS failed";
-    case SCS_INDETERMINATE:return "SCS indeterminate";
-    case SCS_INFEASIBLE:return "SCS primal infeasible, dual unbounded";
-    case SCS_UNBOUNDED:return "SCS primal unbounded, dual infeasible";
-    case SCS_UNFINISHED:return "SCS unfinished";
-    case SCS_SOLVED:return "SCS solved";
-    case SCS_SOLVED_INACCURATE:return "SCS solved inaccurate";
-    default:throw std::runtime_error("Unknown scs status.");
+    case SCS_INFEASIBLE_INACCURATE:
+      return "SCS infeasible inaccurate";
+    case SCS_UNBOUNDED_INACCURATE:
+      return "SCS unbounded inaccurate";
+    case SCS_SIGINT:
+      return "SCS sigint";
+    case SCS_FAILED:
+      return "SCS failed";
+    case SCS_INDETERMINATE:
+      return "SCS indeterminate";
+    case SCS_INFEASIBLE:
+      return "SCS primal infeasible, dual unbounded";
+    case SCS_UNBOUNDED:
+      return "SCS primal unbounded, dual infeasible";
+    case SCS_UNFINISHED:
+      return "SCS unfinished";
+    case SCS_SOLVED:
+      return "SCS solved";
+    case SCS_SOLVED_INACCURATE:
+      return "SCS solved inaccurate";
+    default:
+      throw std::runtime_error("Unknown scs status.");
   }
 }
 
