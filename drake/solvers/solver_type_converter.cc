@@ -9,7 +9,6 @@
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
-#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
 namespace drake {
@@ -35,8 +34,6 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
       return NloptSolver::id();
     case SolverType::kSnopt:
       return SnoptSolver::id();
-    case SolverType::kScs:
-      return ScsSolver::id();
   }
   DRAKE_ABORT();
 }
@@ -60,8 +57,6 @@ optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
     return SolverType::kNlopt;
   } else if (solver_id == SnoptSolver::id()) {
     return SolverType::kSnopt;
-  } else if (solver_id == ScsSolver::id()) {
-    return SolverType::kScs;
   } else {
     return nullopt;
   }

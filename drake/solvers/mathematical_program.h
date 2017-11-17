@@ -90,14 +90,6 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </tr>
- * <tr><td>&dagger; <a href="https://github.com/cvxgrp/scs">
- *    SCS</a></td>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
- *    <td></td>
- *    <td></td>
- * </tr>
  * </table>
  *
  * <b>Mixed-Integer Convex Optimization</b>
@@ -2291,7 +2283,6 @@ class MathematicalProgram {
       equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> scs_solver_;
 
   template <typename T>
   void NewVariables_impl(
