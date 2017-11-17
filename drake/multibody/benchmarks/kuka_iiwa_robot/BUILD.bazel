@@ -28,6 +28,9 @@ drake_cc_googletest(
     size = "small",
     deps = [
         ":kuka_iiwa_robot_library",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/math:gradient",
+        "//drake/math:jacobian",
         "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
 )
