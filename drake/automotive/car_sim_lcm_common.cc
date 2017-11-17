@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -34,14 +35,14 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   auto plant = make_unique<RigidBodyPlant<double>>(move(tree));
 
   // Contact parameters
-  const double kStiffness = 500000;
-  const double kDissipation = 2;
   const double kStaticFriction = 10;
   const double kDynamicFriction = 5;
-  const double kStictionSlipTolerance = 0.001;
-  plant->set_normal_contact_parameters(kStiffness, kDissipation);
-  plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                         kStictionSlipTolerance);
+  systems::CompliantMaterial default_material;
+  default_material.set_friction(kStaticFriction, kDynamicFriction);
+  plant->set_default_compliant_material(default_material);
+  const double kStictionSlipTolerance = 0.001;  // m/s
+  const double kContactArea = 1;  // m^2
+  plant->set_contact_model_parameters({kStictionSlipTolerance, kContactArea});
 
   // Instantiates a PID controller for controlling the actuators in the
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
