@@ -110,6 +110,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           memcpy(mxGetPr(rhs[i]), message.rhs(i).data().data(), num_bytes);
           break;
         }
+        case drake::common::MatlabArray::INT: {
+          rhs[i] = mxCreateDoubleMatrix(message.rhs(i).rows(),
+                                        message.rhs(i).cols(), mxREAL);
+          // MATLAB is pretty picky about "figure()" and other HG arguments.
+          // Just convert the integers to doubles and call it done.
+          const int size = message.rhs(i).rows() * message.rhs(i).cols();
+          DRAKE_DEMAND(static_cast<int>(sizeof(int)) * size == num_bytes);
+          auto array_in =
+              reinterpret_cast<const int*>(message.rhs(i).data().data());
+          double* array_out = mxGetPr(rhs[i]);
+          for (int j = 0; j < size; j++)
+            array_out[j] = static_cast<double>(array_in[j]);
+          break;
+        }
         case drake::common::MatlabArray::CHAR: {
           mwSize dims[2];
           dims[0] = message.rhs(i).rows();
