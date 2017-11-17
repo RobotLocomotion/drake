@@ -13,6 +13,7 @@ enum class SolverType {
   kMosek,
   kNlopt,
   kSnopt,
+  kScs,
 };
 
 }  // namespace solvers

@@ -25,7 +25,7 @@ config_setting(
 # :scsindir. They are unlikely to happily coexist in libdrake.so and currently
 # libdrake.so links only to :scsdir.
 
-SCS_HDRS = glob(["include/*.h"])
+SCS_HDRS = glob(["include/*.h"]) + ["linsys/amatrix.h"]
 
 # TODO(jamiesnape): Use system AMD and LDL instead of outdated versions in
 # linsys/direct/external. These are licensed under the LGPL so only build a
@@ -35,7 +35,7 @@ cc_binary(
     name = "libscsdir.so",
     srcs = SCS_HDRS + glob([
         "linsys/*.c",
-        "linsys/*.h",
+        "linsys/common.h",
         "linsys/direct/**/*.c",
         "linsys/direct/**/*.h",
         "src/*.c",
@@ -70,7 +70,7 @@ cc_library(
     name = "scsindir",
     srcs = glob([
         "linsys/*.c",
-        "linsys/*.h",
+        "linsys/common.h",
         "linsys/indirect/*.c",
         "linsys/indirect/*.h",
         "src/*.c",
