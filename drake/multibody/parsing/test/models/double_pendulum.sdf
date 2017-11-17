@@ -3,7 +3,13 @@
 <!-- Licensed under the Apache License, Version 2.0 -->
 <!-- Provided SDF model originally taken from
      https://bitbucket.org/osrf/sdformat/src/deca28cd6cd5/test/integration/model/double_pendulum.sdf
-     has undergone modifications -->
+     The original file has undergone the following modifications:
+     - <inertia> properties are provided for the upper and lower links for the
+       purpose of testing the <ineratia> element parsing.
+     - The pose for the joint frame of "upper_joint" is explicitly given with a
+       <pose> element to test the proper parsing of joints's frames.
+     - We use use_parent_model_frame=false for the "lower_joint" in order to
+       verify the proper parsing of a joint's axis in this case. -->
 <sdf version='1.6'>
   <model name='double_pendulum_with_base'>
     <link name='base'>

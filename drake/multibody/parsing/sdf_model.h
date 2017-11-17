@@ -1,12 +1,11 @@
 #pragma once
 
-#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/parsing/frame_cache.h"
 #include "drake/multibody/parsing/sdf_joint.h"

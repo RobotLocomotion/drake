@@ -1,10 +1,8 @@
 #pragma once
 
-#include <map>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -74,11 +72,11 @@ class SdfLink {
   std::string name_;
 
   // The mass of this link.
-  // TODO(amcastro-tri): default value must be provided by sdformat library.
+  // TODO(amcastro-tri): default should ideally be provided by sdformat library.
   double mass_{0.0};
 
   // The pose of the <inertial> frame I in a measured-in frame L.
-  // TODO(amcastro-tri): default value must be provided by sdformat library.
+  // TODO(amcastro-tri): default should ideally be provided by sdformat library.
   Isometry3<double> X_LIcm_{Isometry3<double>::Identity()};
 
   // Rotational inertia of this link about its center of mass.
