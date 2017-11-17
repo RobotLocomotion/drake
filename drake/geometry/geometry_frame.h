@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/geometry_ids.h"
 
 namespace drake {
 namespace geometry {
@@ -38,13 +39,22 @@ class GeometryFrame {
                             defaults to the common, 0 group. */
   GeometryFrame(const std::string& frame_name, const Isometry3<double>& X_PF,
                 int frame_group_id = 0)
-      : name_(frame_name), X_PF_(X_PF), frame_group_(frame_group_id) {}
+      : id_(FrameId::get_new_id()),
+        name_(frame_name),
+        X_PF_(X_PF),
+        frame_group_(frame_group_id) {}
 
+  FrameId id() const { return id_; }
   const std::string& get_name() const { return name_; }
   const Isometry3<double>& get_pose() const { return X_PF_; }
   int get_frame_group() const { return frame_group_; }
 
  private:
+  // The *globally* unique identifier for this instance. It is functionally
+  // const (i.e. defined in construction) but not marked const to allow for
+  // default copying/assigning.
+  FrameId id_{};
+
   // The name of the frame. Must be unique across frames from the same geometry
   // source.
   std::string name_;
