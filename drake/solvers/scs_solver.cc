@@ -15,6 +15,7 @@
 
 namespace drake {
 namespace solvers {
+namespace {
 void ParseLinearCost(const MathematicalProgram& prog, Eigen::VectorXd* c,
                      double* constant) {
   for (const auto& linear_cost : prog.linear_costs()) {
@@ -48,7 +49,7 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
     const VectorXDecisionVariable& x = linear_constraint.variables();
     const Eigen::MatrixXd& Ai = linear_constraint.constraint()->A();
     for (int i = 0; i < static_cast<int>(
-                            linear_constraint.constraint()->num_constraints());
+        linear_constraint.constraint()->num_constraints());
          ++i) {
       const bool is_ub_finite{!std::isinf(ub(i))};
       const bool is_lb_finite{!std::isinf(lb(i))};
@@ -97,7 +98,7 @@ void ParseLinearEqualityConstraint(
   // The linear equality constraint A x = b is converted to
   // A x + s = b. s in zero cone.
   for (const auto& linear_equality_constraint :
-       prog.linear_equality_constraints()) {
+      prog.linear_equality_constraints()) {
     const Eigen::SparseMatrix<double> Ai =
         linear_equality_constraint.constraint()->GetSparseMatrix();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
@@ -167,28 +168,17 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
 
 std::string Scs_return_info(scs_int scs_status) {
   switch (scs_status) {
-    case SCS_INFEASIBLE_INACCURATE:
-      return "SCS infeasible inaccurate";
-    case SCS_UNBOUNDED_INACCURATE:
-      return "SCS unbounded inaccurate";
-    case SCS_SIGINT:
-      return "SCS sigint";
-    case SCS_FAILED:
-      return "SCS failed";
-    case SCS_INDETERMINATE:
-      return "SCS indeterminate";
-    case SCS_INFEASIBLE:
-      return "SCS primal infeasible, dual unbounded";
-    case SCS_UNBOUNDED:
-      return "SCS primal unbounded, dual infeasible";
-    case SCS_UNFINISHED:
-      return "SCS unfinished";
-    case SCS_SOLVED:
-      return "SCS solved";
-    case SCS_SOLVED_INACCURATE:
-      return "SCS solved inaccurate";
-    default:
-      throw std::runtime_error("Unknown scs status.");
+    case SCS_INFEASIBLE_INACCURATE:return "SCS infeasible inaccurate";
+    case SCS_UNBOUNDED_INACCURATE:return "SCS unbounded inaccurate";
+    case SCS_SIGINT:return "SCS sigint";
+    case SCS_FAILED:return "SCS failed";
+    case SCS_INDETERMINATE:return "SCS indeterminate";
+    case SCS_INFEASIBLE:return "SCS primal infeasible, dual unbounded";
+    case SCS_UNBOUNDED:return "SCS primal unbounded, dual infeasible";
+    case SCS_UNFINISHED:return "SCS unfinished";
+    case SCS_SOLVED:return "SCS solved";
+    case SCS_SOLVED_INACCURATE:return "SCS solved inaccurate";
+    default:throw std::runtime_error("Unknown scs status.");
   }
 }
 
@@ -201,8 +191,6 @@ void ExtractSolution(MathematicalProgram* prog,
   prog->SetDecisionVariableValues(
       Eigen::Map<Eigen::VectorXd>(scs_sol_vars.x, prog->num_vars()));
 }
-
-bool ScsSolver::available() const { return true; }
 
 void SetScsProblemSettingsToDefault(SCS_SETTINGS* settings) {
   // These macro's are defined in SCS. For their actual value, please refer to
@@ -254,6 +242,9 @@ void SetScsProblemData(int A_row_count, int num_vars,
       static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
   SetScsProblemSettingsToDefault(scs_problem_data->stgs);
 }
+} // namespace
+
+bool ScsSolver::available() const { return true; }
 
 SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // SCS solves the problem in this form

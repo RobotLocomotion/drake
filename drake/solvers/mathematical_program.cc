@@ -661,6 +661,9 @@ SolutionResult MathematicalProgram::Solve() {
     return nlopt_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
       scs_solver_->available()) {
+    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
+    // modest accuracy quite fast, but then slows down significantly if the user
+    // wants high accuracy.
     return scs_solver_->Solve(*this);
   } else {
     throw runtime_error(

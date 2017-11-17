@@ -26,7 +26,9 @@ class ScsSolver : public MathematicalProgramSolverInterface {
 
   // If the user want the solver to print out debug message, then set this to
   // true; otherwise set it to false. The default is false.
-  void SetVerbose(bool verbose) {verbose_ = verbose;}
+  // TODO(hongkai.dai): add function to set the option through
+  // MathematicalProgram.
+  void SetVerbose(bool verbose) { verbose_ = verbose; }
 
  private:
   bool verbose_ = false;

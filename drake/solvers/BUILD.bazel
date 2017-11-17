@@ -577,12 +577,12 @@ drake_cc_library(
 drake_cc_library(
     name = "scs_solver",
     srcs = select({
-        "//tools:no_scs": [
-            "no_scs.cc",
-            "scs_solver_common.cc",
-        ],
         "//conditions:default": [
             "scs_solver.cc",
+            "scs_solver_common.cc",
+        ],
+        "//tools:no_scs": [
+            "no_scs.cc",
             "scs_solver_common.cc",
         ],
     }),
