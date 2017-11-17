@@ -29,7 +29,6 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
           this->DeclareVectorOutputPort(
               BasicVector<double>(1),
               &SchunkWsgTrajectoryGenerator::OutputForce).get_index()) {
-  this->set_name("SchunkWsgTrajectoryGenerator");
   this->DeclareAbstractInputPort();
   this->DeclareInputPort(systems::kVectorValued, input_size);
   // The update period below matches the polling rate from
@@ -182,7 +181,6 @@ SchunkWsgStatusSender::
 SchunkWsgStatusSender(int input_size,
                       int position_index, int velocity_index)
     : position_index_(position_index), velocity_index_(velocity_index) {
-  this->set_name("SchunkWsgStatusSender");
   this->DeclareInputPort(systems::kVectorValued, input_size);
   this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
 }

@@ -60,4 +60,14 @@ config_setting(
     values = {"define": "NO_NLOPT=ON"},
 )
 
+# SCS is an open-source solver, and is included in the Drake build by default.
+# The SCS solver is irrelevant to some users of MathematicalProgram, so we
+# provide a hidden switch to shut it off for developers who don't actually need
+# it. This is not a supported configuration. Use at your own risk:
+# --define=NO_SCS=ON
+config_setting(
+    name = "no_scs",
+    values = {"define": "NO_SCS=ON"},
+)
+
 add_lint_tests()

@@ -3,6 +3,7 @@
 /* clang-format on */
 
 #include <cmath>
+#include <ostream>
 
 #include <gtest/gtest.h>
 
@@ -351,6 +352,20 @@ struct EndpointZTestParameters{
   double r0{};
   int num_lanes{};
 };
+
+// Stream insertion operator overload for EndpointZTestParameters
+// instances. Necessary for gtest printouts that would otherwise fail
+// at properly printing the struct's bytes (its default behavior when
+// no stream insertion operator overload is present) and trigger Valgrind
+// errors.
+std::ostream& operator<<(std::ostream& stream,
+                         const EndpointZTestParameters& endpoint_z_test_param) {
+  return stream << "EndpointZTestParameters( start_z: ("
+                << endpoint_z_test_param.start_z  << "), end_z: ("
+                << endpoint_z_test_param.end_z << "), r0: "
+                << endpoint_z_test_param.r0 << ", num_lanes: "
+                << endpoint_z_test_param.num_lanes << ")";
+}
 
 // Groups common test constants as well as each test case parameters.
 class MultilaneConnectionEndpointZTest

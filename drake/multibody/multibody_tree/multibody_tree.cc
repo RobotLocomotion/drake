@@ -6,6 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -537,16 +538,18 @@ template <typename T>
 void MultibodyTree<T>::CalcPointsPositions(
     const systems::Context<T>& context,
     const Frame<T>& from_frame_B,
-    const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+    const Eigen::Ref<const MatrixX<T>>& p_BQi,
     const Frame<T>& to_frame_A,
-    EigenPtr<Matrix3X<T>> p_AQi) const {
-  DRAKE_DEMAND(p_BQi.rows() == 3);
-  DRAKE_DEMAND(p_AQi != nullptr);
-  DRAKE_DEMAND(p_AQi->rows() == 3);
-  DRAKE_DEMAND(p_AQi->cols() == p_BQi.cols());
+    EigenPtr<MatrixX<T>> p_AQi) const {
+  DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi != nullptr);
+  DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
   const Isometry3<T> X_AB =
       CalcRelativeTransform(context, to_frame_A, from_frame_B);
-  *p_AQi = X_AB * p_BQi;
+  // We demanded above that these matrices have three rows. Therefore we tell
+  // Eigen so.
+  p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
 }
 
 template <typename T>

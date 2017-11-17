@@ -1002,10 +1002,9 @@ class MultibodyTree {
 
   /// Computes the relative transform `X_AB(q)` from a frame B to a frame A, as
   /// a function of the generalized positions q of the model.
-  /// That is, the position `p_AQ(q)` of a point Q measured and expressed in
+  /// That is, the position `p_AQ` of a point Q measured and expressed in
   /// frame A can be computed from the position `p_BQ` of this point measured
-  /// and expressed in frame B using the transformation
-  /// `p_AQ(q) = X_AB(q)⋅p_BQ`.
+  /// and expressed in frame B using the transformation `p_AQ = X_AB⋅p_BQ`.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores
@@ -1045,12 +1044,17 @@ class MultibodyTree {
   ///   expressed in frame A. The output `p_AQi` **must** have the same size as
   ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
   ///   **must** be in `ℝ³ˣⁿᵖ`.
+  ///
+  /// @note Both `p_BQi` and `p_BQi` must have three rows. Otherwise this
+  /// method will throw a std::runtime_error exception. This method also throws
+  /// a std::runtime_error exception if `p_BQi` and `p_BQi` differ in the number
+  /// of columns.
   void CalcPointsPositions(
       const systems::Context<T>& context,
       const Frame<T>& from_frame_B,
-      const Eigen::Ref<const Matrix3X<T>>& p_BQi,
+      const Eigen::Ref<const MatrixX<T>>& p_BQi,
       const Frame<T>& to_frame_A,
-      EigenPtr<Matrix3X<T>> p_AQi) const;
+      EigenPtr<MatrixX<T>> p_AQi) const;
 
   /// @name Methods to compute multibody Jacobians.
   /// @{
