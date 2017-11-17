@@ -5,7 +5,7 @@ Using Drake from MATLAB
 ***********************
 
 MATLAB code/bindings available in Drake are unit tested on MATLAB R2017a.
-Other MATLAB versions R2016a or above may work but are not officially
+Other MATLAB versions may work (namely R2016a or above) but are not officially
 supported.
 
 We are currently experimenting with a few solutions for implementing the
@@ -19,6 +19,8 @@ may also prove useful.
 
 Building the MATLAB Bindings
 ----------------------------
+
+.. code-block:: shell
 
     export PATH=/usr/local/MATLAB/R2017a/bin:$PATH  # Ubuntu
     git clone https://github.com/RobotLocomotion/drake.git

@@ -4,10 +4,10 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(parsers) {
+PYBIND11_MODULE(parsers, m) {
   using drake::parsers::PackageMap;
 
-  py::module m("parsers", "Tools for loading robots from various files");
+  m.doc() = "Tools for loading robots from various files";
 
   py::class_<PackageMap>(m, "PackageMap")
     .def(py::init<>(), py::return_value_policy::reference)
@@ -18,6 +18,4 @@ PYBIND11_PLUGIN(parsers) {
     .def("PopulateFromFolder", &PackageMap::PopulateFromFolder)
     .def("PopulateFromEnvironment", &PackageMap::PopulateFromEnvironment)
     .def("PopulateUpstreamToDrake", &PackageMap::PopulateUpstreamToDrake);
-
-  return m.ptr();
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>xtion_description</name>
-  <version>1.0</version>
+  <version>1.0.0</version>
   <description>
     This package contains the URDF of the Xtion PRO Live camera.
   </description>

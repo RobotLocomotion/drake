@@ -852,13 +852,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   /// Mutable version of GetJacobianFromArray().
   Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
-      std::vector<Vector6<T>>* H_PB_array) const {
+      std::vector<Vector6<T>>* H_array) const {
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
     // The first column of this node's Jacobian matrix H_PB_W:
-    Vector6<T>& H_PB_W_col0 = (*H_PB_array)[start_index_in_v];
+    Vector6<T>& H_col0 = (*H_array)[start_index_in_v];
     // Create an Eigen map to the full H_PB_W for this node:
-    return Eigen::Map<MatrixUpTo6<T>>(H_PB_W_col0.data(), 6, num_velocities);
+    return Eigen::Map<MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
  protected:

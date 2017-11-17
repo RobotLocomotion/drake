@@ -6,6 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -517,6 +518,38 @@ void MultibodyTree<T>::DoCalcBiasTerm(
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
                       &A_WB_array, &F_BMo_W_array, Cv);
+}
+
+template <typename T>
+Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
+    const systems::Context<T>& context,
+    const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const {
+  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
+  PositionKinematicsCache<T> pc(this->get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  const Isometry3<T>& X_WA =
+      pc.get_X_WB(to_frame_A.get_body().get_node_index());
+  const Isometry3<T>& X_WB =
+      pc.get_X_WB(from_frame_B.get_body().get_node_index());
+  return X_WA.inverse() * X_WB;
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcPointsPositions(
+    const systems::Context<T>& context,
+    const Frame<T>& from_frame_B,
+    const Eigen::Ref<const MatrixX<T>>& p_BQi,
+    const Frame<T>& to_frame_A,
+    EigenPtr<MatrixX<T>> p_AQi) const {
+  DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi != nullptr);
+  DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
+  const Isometry3<T> X_AB =
+      CalcRelativeTransform(context, to_frame_A, from_frame_B);
+  // We demanded above that these matrices have three rows. Therefore we tell
+  // Eigen so.
+  p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
 }
 
 template <typename T>

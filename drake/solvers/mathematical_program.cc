@@ -23,6 +23,7 @@
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/symbolic_extraction.h"
 
@@ -83,6 +84,10 @@ AttributesSet kMosekCapabilities =
      kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
      kPositiveSemidefiniteConstraint | kBinaryVariable);
 
+// Scs solver capatilities.
+AttributesSet kScsCapabilities =
+    (kLinearEqualityConstraint | kLinearConstraint | kLinearCost);
+
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =
     (kGenericCost | kGenericConstraint | kQuadraticCost | kQuadraticConstraint |
@@ -118,7 +123,8 @@ MathematicalProgram::MathematicalProgram()
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
       gurobi_solver_(new GurobiSolver()),
-      mosek_solver_(new MosekSolver()) {}
+      mosek_solver_(new MosekSolver()),
+      scs_solver_(new ScsSolver()) {}
 
 MatrixXDecisionVariable MathematicalProgram::NewVariables(
     VarType type, int rows, int cols, bool is_symmetric,
@@ -653,6 +659,12 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
+      scs_solver_->available()) {
+    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
+    // modest accuracy quite fast, but then slows down significantly if the user
+    // wants high accuracy.
+    return scs_solver_->Solve(*this);
   } else {
     throw runtime_error(
         "MathematicalProgram::Solve: "

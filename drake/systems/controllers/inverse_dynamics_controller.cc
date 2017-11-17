@@ -19,7 +19,6 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
                                          const VectorX<double>& ki,
                                          const VectorX<double>& kd) {
   DiagramBuilder<T> builder;
-  this->set_name("InverseDynamicsController");
 
   const RigidBodyTree<T>& robot = *robot_for_control_;
   DRAKE_DEMAND(robot.get_num_positions() == kp.size());
@@ -43,20 +42,16 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
 
   // Adds a PID.
   pid_ = builder.template AddSystem<PidController<T>>(kp, ki, kd);
-  pid_->set_name("pid");
 
   // Adds inverse dynamics.
   auto inverse_dynamics =
       builder.template AddSystem<InverseDynamics<T>>(robot, false);
-  inverse_dynamics->set_name("inverse_dynamics");
 
   // Redirects estimated state input into PID and inverse dynamics.
   auto pass_through = builder.template AddSystem<PassThrough<T>>(2 * dim);
-  pass_through->set_name("passthrough");
 
   // Adds a adder to do PID's acceleration + reference acceleration.
   auto adder = builder.template AddSystem<Adder<T>>(2, dim);
-  adder->set_name("adder");
 
   // Connects estimated state to PID.
   builder.Connect(pass_through->get_output_port(),
@@ -86,7 +81,6 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
     auto zero_feedforward_acceleration =
         builder.template AddSystem<ConstantVectorSource<T>>(
             VectorX<T>::Zero(robot.get_num_velocities()));
-    zero_feedforward_acceleration->set_name("zero");
     builder.Connect(zero_feedforward_acceleration->get_output_port(),
                     adder->get_input_port(1));
   } else {

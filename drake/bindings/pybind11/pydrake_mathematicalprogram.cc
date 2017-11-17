@@ -78,9 +78,8 @@ auto RegisterBinding(py::handle* pscope,
 
 }  // namespace
 
-PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
-  py::module m("_pydrake_mathematicalprogram",
-               "Drake MathematicalProgram Bindings");
+PYBIND11_MODULE(_pydrake_mathematicalprogram, m) {
+  m.doc() = "Drake MathematicalProgram Bindings";
 
   py::object variable =
     py::module::import("pydrake.symbolic").attr("Variable");
@@ -271,6 +270,4 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
 
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
-
-  return m.ptr();
 }

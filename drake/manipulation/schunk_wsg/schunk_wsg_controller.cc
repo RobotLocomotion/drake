@@ -64,7 +64,6 @@ SchunkWsgController::SchunkWsgController() {
                   saturation->get_min_value_port());
   builder.ExportOutput(saturation->get_output_port());
   builder.BuildInto(this);
-  set_name("SchunkWsgController");
 }
 
 }  // namespace schunk_wsg

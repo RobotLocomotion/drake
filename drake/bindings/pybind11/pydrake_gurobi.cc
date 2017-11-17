@@ -4,10 +4,10 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(gurobi) {
+PYBIND11_MODULE(gurobi, m) {
   using drake::solvers::GurobiSolver;
 
-  py::module m("gurobi", "Gurobi solver bindings for MathematicalProgram");
+  m.doc() = "Gurobi solver bindings for MathematicalProgram";
 
   py::object solverinterface =
       py::module::import("pydrake.solvers.mathematicalprogram").attr(
@@ -15,6 +15,4 @@ PYBIND11_PLUGIN(gurobi) {
 
   py::class_<GurobiSolver>(m, "GurobiSolver", solverinterface)
     .def(py::init<>());
-
-  return m.ptr();
 }

@@ -42,7 +42,7 @@ struct FramedIsometry3 {
 template <typename T>
 class FrameCache {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FrameCache);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameCache);
   /// Constructor that takes the @p root_frame.
   explicit FrameCache(const std::string& root_frame);
 
@@ -77,7 +77,8 @@ class FrameCache {
   Isometry3<T> RootTransform(std::string frame) const;
 
   // Name of the root frame of this cache.
-  const std::string root_frame_;
+  std::string root_frame_;
+
   // Map to keep all known frames' transforms.
   std::map<std::string, FramedIsometry3<T>> X_TS_cache_;
 };

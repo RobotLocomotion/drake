@@ -4,10 +4,6 @@
 
 #include "drake/common/never_destroyed.h"
 
-// TODO(jamiesnape, hongkai-dai): Currently only the unavailable version of
-// this solver class is implemented; remove this comment when the available
-// version is implemented.
-
 namespace drake {
 namespace solvers {
 

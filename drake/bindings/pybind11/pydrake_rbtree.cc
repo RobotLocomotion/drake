@@ -11,8 +11,8 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(_pydrake_rbtree) {
-  py::module m("_pydrake_rbtree", "Bindings for the RigidBodyTree class");
+PYBIND11_MODULE(_pydrake_rbtree, m) {
+  m.doc() = "Bindings for the RigidBodyTree class";
 
   using drake::AutoDiffXd;
   using drake::multibody::joints::FloatingBaseType;
@@ -200,6 +200,4 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         &drake::parsers::urdf::\
           AddModelInstanceFromUrdfStringSearchingInRosPackages);
-
-  return m.ptr();
 }

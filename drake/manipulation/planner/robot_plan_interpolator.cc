@@ -50,7 +50,6 @@ RobotPlanInterpolator::RobotPlanInterpolator(
     double update_interval)
     : plan_input_port_(this->DeclareAbstractInputPort().get_index()),
       interp_type_(interp_type) {
-  this->set_name("RobotPlanInterpolator");
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
   // TODO(sam.creasey) This implementation doesn't know how to

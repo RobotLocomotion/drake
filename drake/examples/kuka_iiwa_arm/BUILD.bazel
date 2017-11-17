@@ -223,9 +223,11 @@ sh_test(
 install(
     name = "install",
     targets = [
+        ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
+        ":kuka_simulation",
     ],
-    runtime_strip_prefix = ["install"],
+    runtime_dest = "share/drake/examples/kuka_iiwa_arm",
     visibility = ["//visibility:public"],
 )
 

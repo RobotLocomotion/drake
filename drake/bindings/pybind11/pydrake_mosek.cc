@@ -4,10 +4,10 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(mosek) {
+PYBIND11_MODULE(mosek, m) {
   using drake::solvers::MosekSolver;
 
-  py::module m("mosek", "Mosek solver bindings for MathematicalProgram");
+  m.doc() = "Mosek solver bindings for MathematicalProgram";
 
   py::object solverinterface =
       py::module::import("pydrake.solvers.mathematicalprogram").attr(
@@ -15,6 +15,4 @@ PYBIND11_PLUGIN(mosek) {
 
   py::class_<MosekSolver>(m, "MosekSolver", solverinterface)
     .def(py::init<>());
-
-  return m.ptr();
 }

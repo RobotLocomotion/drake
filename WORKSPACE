@@ -238,8 +238,8 @@ github_archive(
 github_archive(
     name = "pybind11",
     repository = "RobotLocomotion/pybind11",
-    commit = "6d72785766558047ee2e2075198c07d8c25eb631",
-    sha256 = "08b4813b3b17f607efc4e8ba8b73bf55759ba744cab125e9fc666b5161cb1d0a",  # noqa
+    commit = "ffcf754ae9e766632610975d22372a86a7b63014",
+    sha256 = "7cd6f4efb02bf9ae17eeb2afba68023af913e61ae76e8b4254203d0eec019525",  # noqa
     build_file = "tools/workspace/pybind11/pybind11.BUILD.bazel",
 )
 

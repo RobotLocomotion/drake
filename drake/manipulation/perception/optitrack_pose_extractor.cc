@@ -26,7 +26,6 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
                   &OptitrackPoseExtractor::OutputMeasuredPose)
               .get_index()},
       X_WO_(X_WO) {
-  this->set_name("Optitrack pose extractor");
   DeclareAbstractState(
       systems::AbstractValue::Make<Isometry3<double>>(
           Isometry3<double>::Identity()));
