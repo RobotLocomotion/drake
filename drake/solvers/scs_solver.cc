@@ -241,7 +241,7 @@ void ParseSecondOrderConeConstraints(const MathematicalProgram& prog, std::vecto
     lorentz_cone_length.push_back(bi.rows());
   }
   cone->qsize = lorentz_cone_length.size();
-  cone->q = new scs_int[cone->qsize];
+  cone->q = static_cast<scs_int*>(scs_calloc(cone->qsize, sizeof(scs_int)));
   for (int i = 0; i < cone->qsize; ++i) {
     cone->q[i] = lorentz_cone_length[i];
   }
