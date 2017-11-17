@@ -9,9 +9,6 @@
 #include <limits>
 #include <string>
 
-#include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 
@@ -74,16 +71,33 @@ void ToMatlabArray(const std::string& str, MatlabArray* matlab_array) {
   matlab_array->set_data(str.data(), num_bytes);
 }
 
-void internal::PublishCallMatlab(const MatlabRPC& message) {
-  // TODO(russt): Provide option for setting the filename.
+namespace internal {
 
+std::unique_ptr<google::protobuf::io::FileOutputStream>
+CreateOutputStream(const std::string& filename) {
   // NOTE(russt): This code violates the style-guide by expecting the file to be
-  // closed properly at program termination.  Experimentally we found that the
-  // output file could be corrupt unless we included *both* the Flush() call and
-  // the SetCloseOnDelete() calls below.  Sadly, I cannot explain why.
-  static google::protobuf::io::FileOutputStream raw_output(
-      open("/tmp/matlab_rpc", O_WRONLY | O_CREAT, S_IRWXU));
-  raw_output.SetCloseOnDelete(true);
+  // closed properly at program termination (these streams will be stored as
+  // static globals).  Experimentally we found that the output file could be
+  // corrupt unless we included *both* the Flush() call and the
+  // SetCloseOnDelete() calls below.  Sadly, I cannot explain why.
+  auto raw_output =
+      std::make_unique<google::protobuf::io::FileOutputStream>(
+          open(filename.c_str(), O_WRONLY | O_CREAT, S_IRWXU));
+  raw_output->SetCloseOnDelete(true);
+  return raw_output;
+}
+
+void PublishCallMatlab(const MatlabRPC& message) {
+  // TODO(russt): Provide option for setting the filename.
+  static auto raw_output = CreateOutputStream("/tmp/matlab_rpc");
+  PublishCall(raw_output.get(), message);
+}
+
+void PublishCall(
+    google::protobuf::io::FileOutputStream* praw_output,
+    const MatlabRPC& message) {
+  DRAKE_DEMAND(praw_output);
+  auto& raw_output = *praw_output;
 
   {  // Defines the lifetime of the CodedOutputStream.
     google::protobuf::io::CodedOutputStream output(&raw_output);
@@ -107,5 +121,6 @@ void internal::PublishCallMatlab(const MatlabRPC& message) {
   raw_output.Flush();
 }
 
+}  // namespace internal
 }  // namespace common
 }  // namespace drake

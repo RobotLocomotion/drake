@@ -1,7 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
@@ -65,6 +69,13 @@ void AssembleCallMatlabMsg(MatlabRPC* msg, T first, Types... args) {
   ToMatlabArray(first, msg->add_rhs());
   AssembleCallMatlabMsg(msg, args...);
 }
+
+std::unique_ptr<google::protobuf::io::FileOutputStream>
+CreateOutputStream(const std::string& filename);
+
+void PublishCall(
+    google::protobuf::io::FileOutputStream* praw_output,
+    const MatlabRPC& message);
 
 // Simple wrapper to prevent the outside world from needing to worry about
 // creating a the i/o stream object.
