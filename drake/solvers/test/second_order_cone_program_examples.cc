@@ -225,14 +225,14 @@ void TestQPasSOCP::SolveAndCheckSolution(
       c_.dot(x_socp_value) + prog_socp_.GetSolution(y_);
 
   // Check the solution
-  //const int kXdim = Q_.rows();
+  const int kXdim = Q_.rows();
   const Eigen::MatrixXd Q_symmetric = 0.5 * (Q_ + Q_.transpose());
   const Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   const Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
   EXPECT_NEAR(2 * prog_socp_.GetSolution(y_),
               (Q_sqrt * x_socp_value).squaredNorm(), tol);
   EXPECT_GE(prog_socp_.GetSolution(y_), 0);
-  /*
+
   RunSolver(&prog_qp_, solver);
   const auto& x_qp_value = prog_qp_.GetSolution(x_qp_);
   const Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
@@ -246,7 +246,7 @@ void TestQPasSOCP::SolveAndCheckSolution(
   // converge to true optimal yet.
   EXPECT_TRUE(CompareMatrices(x_qp_value, x_socp_value, 200 * tol,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(objective_value_qp, objective_value_socp, tol);*/
+  EXPECT_NEAR(objective_value_qp, objective_value_socp, tol);
 }
 
 std::vector<FindSpringEquilibriumProblem> GetFindSpringEquilibriumProblems() {

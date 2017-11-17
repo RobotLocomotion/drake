@@ -193,17 +193,22 @@ void ParseSecondOrderConeConstraints(const MathematicalProgram& prog, std::vecto
     lorentz_cone_length.push_back(num_Ai_rows);
     *A_row_count += num_Ai_rows;
   }
+
   // Our RotatedLorentzConeConstraint encodes that Ax + b is in the rotated
-  // Lorentz cone, equivalently the vector
+  // Lorentz cone, namely
+  //  (a₀ᵀx + b₀) (a₁ᵀx + b₁) ≥ (a₂ᵀx + b₂)² + ... + (aₙ₋₁ᵀx + bₙ₋₁)²
+  //  (a₀ᵀx + b₀) ≥ 0
+  //  (a₁ᵀx + b₁) ≥ 0
+  // , where aᵢᵀ is the i'th row of A, bᵢ is the i'th row of b. Equivalently the
+  // vector
   // [ 0.5(a₀ + a₁)ᵀx + 0.5(b₀ + b₁) ]
   // [ 0.5(a₀ - a₁)ᵀx + 0.5(b₀ - b₁) ]
   // [           a₂ᵀx +           b₂ ]
   //             ...
   // [         aₙ₋₁ᵀx +         bₙ₋₁ ]
-  // is in the Lorentz cone, where aᵢᵀ is the i'th row of A, bᵢ is the i'th row
-  // of b. We convert this to the SCS form, that
-  // Cx + s = d
-  // s in Lorentz cone,
+  // is in the Lorentz cone. We convert this to the SCS form, that
+  //  Cx + s = d
+  //  s in Lorentz cone,
   // where C = [ -0.5(a₀ + a₁)ᵀ ]   d = [ 0.5(b₀ + b₁) ]
   //           [ -0.5(a₀ - a₁)ᵀ ]       [ 0.5(b₀ - b₁) ]
   //           [           -a₂ᵀ ]       [           b₂ ]
@@ -225,15 +230,15 @@ void ParseSecondOrderConeConstraints(const MathematicalProgram& prog, std::vecto
       } else {
         A_triplets->emplace_back(*A_row_count + Ai_triplet.row(), x_index, -Ai_triplet.value());
       }
-      const Eigen::VectorXd& bi = rotated_lorentz_cone.constraint()->b();
-      b->push_back(0.5 * (bi(0) + bi(1)));
-      b->push_back(0.5 * (bi(0) - bi(1)));
-      for (int i = 2; i < bi.rows(); ++i) {
-        b->push_back(bi(i));
-      }
-      *A_row_count += bi.rows();
-      lorentz_cone_length.push_back(bi.rows());
     }
+    const Eigen::VectorXd& bi = rotated_lorentz_cone.constraint()->b();
+    b->push_back(0.5 * (bi(0) + bi(1)));
+    b->push_back(0.5 * (bi(0) - bi(1)));
+    for (int i = 2; i < bi.rows(); ++i) {
+      b->push_back(bi(i));
+    }
+    *A_row_count += bi.rows();
+    lorentz_cone_length.push_back(bi.rows());
   }
   cone->qsize = lorentz_cone_length.size();
   cone->q = new scs_int[cone->qsize];
@@ -437,6 +442,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   scs_finish(scs_work);
   freeData(scs_problem_data, cone);
   freeSol(scs_sol);
+
+  prog.SetSolverId(id());
   return sol_result;
 }
 }  // namespace solvers

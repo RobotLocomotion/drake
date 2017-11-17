@@ -155,7 +155,7 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   if (scs_solver.available()) {
     SolveAndCheckSolution(scs_solver, 1.3e-3);
   }
-}*/
+}
 
 INSTANTIATE_TEST_CASE_P(SCSTest, TestEllipsoidsSeparation,
                         ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
@@ -169,12 +169,11 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(SCSTest, TestQPasSOCP,
                         ::testing::ValuesIn(GetQPasSOCPProblems()));
-
+*/
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    scs_solver.SetVerbose(true);
-    SolveAndCheckSolution(scs_solver, 2E-2);
+    SolveAndCheckSolution(scs_solver, 2E-3);
   }
 }
 
