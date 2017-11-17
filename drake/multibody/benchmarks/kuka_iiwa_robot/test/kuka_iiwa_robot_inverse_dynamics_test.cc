@@ -27,7 +27,7 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>>& q,
   // v_NGo_N    | Go's velocity in N, expressed in N.
   // alpha_NG_N | G's angular acceleration in N, expressed in N.
   // a_NGo_N    | Go's acceleration in N, expressed in N.
-  DrakeKukaIIwaRobot drake_kuka_robot(gravity);
+  DrakeKukaIIwaRobot<double> drake_kuka_robot(gravity);
   const SpatialKinematicsPVA<double> drake_kinematics =
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
@@ -67,7 +67,7 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>>& q,
   // origin Mo.  The spatial force on B at Mo expressed in W (world) if F_BMo_W.
   const int number_of_links = drake_kuka_robot.get_number_of_rigid_bodies();
   std::vector<SpatialForce<double>> F_BMo_W_array(number_of_links);
-  const KukaRobotJointReactionForces forces =
+  const KukaRobotJointReactionForces<double> forces =
       drake_kuka_robot.CalcJointReactionForces(q, qDt, qDDt);
 
   // Inverse dynamics: Get corresponding MotionGenesis information.
