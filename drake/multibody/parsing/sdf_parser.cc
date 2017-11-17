@@ -260,6 +260,9 @@ std::unique_ptr<SdfSpec> ParseSdfModelFromFile(const std::string& sdf_path) {
   // This is the first <model> element found. Other <model> elements are
   // ignored.
   sdf::ElementPtr sdf_model_element = sdf_element->GetElement("model");
+  // We throw an exception if <model> has other sibling models since this
+  // function can only parse a single model per file.
+  DRAKE_THROW_UNLESS(sdf_model_element->GetNextElement("model") == nullptr);
 
   auto spec = std::make_unique<SdfSpec>(version);
   ParseModel(sdf_model_element, spec.get());

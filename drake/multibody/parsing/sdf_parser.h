@@ -12,7 +12,8 @@ namespace parsing {
 /// Parses a single `<model>` from file a file named `sdf_path`.
 /// A new SdfSpec object is created which will contain the single model from
 /// the file.
-// TODO(amcastro-tri): throw an exception if more than one <model> is found.
+/// @throws std::runtime_error if there is more than one `<model>` element in
+/// the file.
 std::unique_ptr<SdfSpec> ParseSdfModelFromFile(const std::string& sdf_path);
 
 }  // namespace parsing
