@@ -525,6 +525,7 @@ TEST_F(GeometryStateTest, AddFrameToInvalidSource) {
 TEST_F(GeometryStateTest, AddFirstFrameToValidSource) {
   SourceId s_id = NewSource();
   FrameId fid = geometry_state_.RegisterFrame(s_id, *frame_.get());
+  EXPECT_EQ(fid, frame_->id());
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
   const auto &frame_set = geometry_state_.GetFramesForSource(s_id);
   EXPECT_NE(frame_set.find(fid), frame_set.end());
@@ -539,6 +540,7 @@ TEST_F(GeometryStateTest, AddFirstFrameToValidSource) {
 TEST_F(GeometryStateTest, AddFrameToSourceWithFrames) {
   SourceId s_id = SetUpSingleSourceTree();
   FrameId fid = geometry_state_.RegisterFrame(s_id, *frame_);
+  EXPECT_EQ(fid, frame_->id());
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
   const auto &frame_set = geometry_state_.GetFramesForSource(s_id);
   EXPECT_NE(frame_set.find(fid), frame_set.end());
@@ -555,6 +557,7 @@ TEST_F(GeometryStateTest, AddFrameToNewSourceWithFrames) {
   SourceId s_id = SetUpSingleSourceTree();
   SourceId new_s_id = geometry_state_.RegisterNewSource("new_source");
   FrameId fid = geometry_state_.RegisterFrame(new_s_id, *frame_.get());
+  EXPECT_EQ(fid, frame_->id());
   // Confirm addition.
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, new_s_id));
   {
@@ -574,6 +577,7 @@ TEST_F(GeometryStateTest, AddFrameToNewSourceWithFrames) {
 TEST_F(GeometryStateTest, AddFrameOnFrame) {
   SourceId s_id = SetUpSingleSourceTree();
   FrameId fid = geometry_state_.RegisterFrame(s_id, frames_[0], *frame_);
+  EXPECT_EQ(fid, frame_->id());
   EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount + 1);
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
 
@@ -684,8 +688,10 @@ TEST_F(GeometryStateTest, RemoveFrameInvalid) {
 TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   SourceId s_id = NewSource();
   FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
+  GeometryId expected_g_id = instance_->id();
   GeometryId g_id = geometry_state_.RegisterGeometry(s_id, f_id,
                                                      move(instance_));
+  EXPECT_EQ(g_id, expected_g_id);
   EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
   Isometry3<double> X_FG = geometry_state_.GetPoseInFrame(g_id);
@@ -744,10 +750,12 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
   const FrameId frame_id = geometry_state_.GetFrameId(parent_id);
   auto instance =
       make_unique<GeometryInstance>(pose, unique_ptr<Shape>(new Sphere(1)));
+  GeometryId expected_g_id = instance->id();
   GeometryId g_id =
       geometry_state_.RegisterGeometryWithParent(s_id,
                                                  parent_id,
                                                  move(instance));
+  EXPECT_EQ(g_id, expected_g_id);
 
   // This relies on the gᵗʰ geometry having position [ g+1 0 0 ]ᵀ. The parent
   // geometry is at [parent_index + 1, 0, 0] and this is at [3, 2, 1]. They
@@ -772,7 +780,7 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
 }
 
 // Tests the response to the erroneous action of trying to hang a new geometry
-// on a non-existant geometry id.
+// on a non-existent geometry id.
 TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
   SourceId s_id = SetUpSingleSourceTree();
   Isometry3<double> pose = Isometry3<double>::Identity();
@@ -974,7 +982,9 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto instance = make_unique<GeometryInstance>(
       pose, unique_ptr<Shape>(new Sphere(1)));
+  GeometryId expected_g_id = instance->id();
   auto g_id = geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
+  EXPECT_EQ(g_id, expected_g_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
 }
 
