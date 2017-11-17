@@ -31,6 +31,10 @@
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
+#include <iostream>
+//#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
+#define PRINT_VARn(a) (void)a;
+
 namespace drake {
 namespace multibody {
 
@@ -760,10 +764,16 @@ class MultibodyTreeTopology {
     const int path_size = get_body_node(from).level + 1;
     DRAKE_DEMAND(static_cast<int>(path_to_world->size()) == path_size);
     // Navigate the tree inwards starting at "from" and ending at the root.
-    for (BodyNodeIndex node = from; node == BodyNodeIndex(0);
+    PRINT_VARn(from);
+    for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
         node = get_body_node(node).parent_body_node) {
+      PRINT_VARn(node);
+      PRINT_VARn(get_body_node(node).level);
       (*path_to_world)[get_body_node(node).level] = node;
     }
+    // Verify the last added node to the path is a child of the world.
+    DRAKE_DEMAND(get_body_node((*path_to_world)[1]).level == 1);
+    (*path_to_world)[0] = BodyNodeIndex(0);  // Add the world.
   }
 
  private:

@@ -218,6 +218,14 @@ class DrakeKukaIIwaRobot {
     return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
   }
 
+  void CalcEndEffectorGeometricJacobian(
+      const Eigen::Ref<const VectorX<T>>& q,
+      EigenPtr<Vector3<T>> p_NG, EigenPtr<MatrixX<T>> J_NG) {
+    const VectorX<T> v = VectorX<T>::Zero(7);
+    SetJointAnglesAnd1stDerivatives(q.data(), v.data());
+    model_->CalcPointsGeometricJacobianExpressedInWorld(
+        *context_, linkG_->get_body_frame(), Vector3<T>::Zero(), p_NG, J_NG);
+  }
 
   /// This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
   /// robot, from known joint angles and their 1st and 2nd time-derivatives.

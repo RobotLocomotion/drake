@@ -109,6 +109,13 @@ GTEST_TEST(KukaIIwaRobotKinematics, GeometricJacobian) {
   // Then number of generalized positions in the Kuka arm model.
   const int kNumPositions = 7;
 
+  // Acceleration of gravity is not an important parameter for this purely
+  // kinematic tests.
+  const double kGravity = 0.0;
+
+  // Numerical tolerance to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
   // A random set of values for the joint's angles.
   double q30 = M_PI / 6, q60 = M_PI / 3;
   double qA = q60;
@@ -136,9 +143,9 @@ GTEST_TEST(KukaIIwaRobotKinematics, GeometricJacobian) {
 
   // This helper lambda computes v_NG, the translational velocity of the end
   // effector frame G in the world (Newtonian) frame N.
-  auto end_effector_velocity = [](const auto& q, const auto& v) {
+  auto end_effector_velocity = [&](const auto& q, const auto& v) {
     using T = typename std::remove_reference<decltype(q)>::type::Scalar;
-    DrakeKukaIIwaRobot<T> drake_kuka_robot(0);
+    DrakeKukaIIwaRobot<T> drake_kuka_robot(kGravity);
     // The value of vdot is arbitrary for the computation of the end effector
     // velocity.
     const VectorX<T> vdot = VectorX<T>::Zero(kNumPositions);
@@ -183,6 +190,26 @@ GTEST_TEST(KukaIIwaRobotKinematics, GeometricJacobian) {
   PRINT_VARn(v_NG_derivs);
 
   PRINT_VARn(v_NG_derivs * vvalue);
+
+  DrakeKukaIIwaRobot<double> drake_kuka_robot(kGravity);
+  Vector3<double> p_NG;
+  Matrix3X<double> J_NG(3, kNumPositions);
+  drake_kuka_robot.CalcEndEffectorGeometricJacobian(qvalue, &p_NG, &J_NG);
+
+  PRINT_VARn(p_NG);
+  PRINT_VARn(J_NG);
+  PRINT_VARn(J_NG*vvalue);
+
+  // Verify the computed Jacobian matches the one obtained using automatic
+  // differentiation.
+  EXPECT_TRUE(J_NG.isApprox(v_NG_derivs, kTolerance));
+  EXPECT_TRUE(CompareMatrices(J_NG, v_NG_derivs,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify that v_NG = J_NG * v:
+  const Vector3<double> J_NG_times_v = J_NG * vvalue;
+  EXPECT_TRUE(CompareMatrices(J_NG_times_v, v_NG,
+                              kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

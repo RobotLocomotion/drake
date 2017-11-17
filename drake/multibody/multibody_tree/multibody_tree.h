@@ -1096,8 +1096,8 @@ class MultibodyTree {
   ///   the number of generalized velocities.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi_set,
-      EigenPtr<Matrix3X<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const;
+      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const;
 
   // --------------------------------------
   // From SimbodyMatterSubsystem.h:

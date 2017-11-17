@@ -584,15 +584,15 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
 template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BQi_set,
-    EigenPtr<Matrix3X<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const {
-  DRAKE_DEMAND(p_BQi_set.rows() == 3);
+    const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const {
+  DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
   const int num_points = p_BQi_set.cols();
-  DRAKE_DEMAND(p_WQi_set != nullptr);
-  DRAKE_DEMAND(p_WQi_set->cols() == num_points);
-  DRAKE_DEMAND(J_WQi != nullptr);
-  DRAKE_DEMAND(J_WQi->rows() == 3 * num_points);
-  DRAKE_DEMAND(J_WQi->cols() == get_num_velocities());
+  DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
+  DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
+  DRAKE_THROW_UNLESS(J_WQi != nullptr);
+  DRAKE_THROW_UNLESS(J_WQi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(J_WQi->cols() == get_num_velocities());
 
   // Body to which frame B is attached to:
   const Body<T>& body_B = frame_B.get_body();
@@ -619,7 +619,9 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   // Performs a scan of all bodies in the kinematic path from body_B to the
   // world computing each node's contribution to J_WQi.
   const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
-  for (BodyNodeIndex body_node_index : path_to_world) {
+  // Skip the world (ilevel = 0).
+  for (int ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
+    BodyNodeIndex body_node_index = path_to_world[ilevel];
     const BodyNode<T>& node = *body_nodes_[body_node_index];
     const BodyNodeTopology& node_topology = node.get_topology();
     const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
