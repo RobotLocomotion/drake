@@ -225,9 +225,15 @@ void SetScsProblemData(int A_row_count, int num_vars,
   scs_problem_data->n = num_vars;
 
   scs_problem_data->A = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
-  scs_problem_data->A->x = new scs_float[A.nonZeros()];
-  scs_problem_data->A->i = new scs_int[A.nonZeros()];
-  scs_problem_data->A->p = new scs_int[scs_problem_data->n + 1];
+  scs_problem_data->A->x =
+    static_cast<scs_float*>(scs_calloc(A.nonZeros(), sizeof(scs_float)));
+
+  scs_problem_data->A->i =
+    static_cast<scs_int*>(scs_calloc(A.nonZeros(), sizeof(scs_int)));
+
+  scs_problem_data->A->p =
+    static_cast<scs_int*>(scs_calloc(scs_problem_data->n + 1, sizeof(scs_int)));
+
   // TODO(hongkai.dai): should I use memcpy for the assignment in the for loop?
   for (int i = 0; i < A.nonZeros(); ++i) {
     scs_problem_data->A->x[i] = *(A.valuePtr() + i);
@@ -239,11 +245,14 @@ void SetScsProblemData(int A_row_count, int num_vars,
   scs_problem_data->A->m = scs_problem_data->m;
   scs_problem_data->A->n = scs_problem_data->n;
 
-  scs_problem_data->b = new scs_float[b.size()];
+  scs_problem_data->b =
+      static_cast<scs_float*>(scs_calloc(b.size(), sizeof(scs_float)));
+
   for (int i = 0; i < static_cast<int>(b.size()); ++i) {
     scs_problem_data->b[i] = b[i];
   }
-  scs_problem_data->c = new scs_float[num_vars];
+  scs_problem_data->c =
+      static_cast<scs_float*>(scs_calloc(num_vars, sizeof(scs_float)));
   for (int i = 0; i < num_vars; ++i) {
     scs_problem_data->c[i] = c(i);
   }
