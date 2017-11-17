@@ -64,6 +64,7 @@ EOF
 
 pip2 install --upgrade $(tr '\n' ' ' <<EOF
 lxml
+matplotlib
 pip
 pygame
 PyYAML

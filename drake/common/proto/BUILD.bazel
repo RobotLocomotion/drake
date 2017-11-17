@@ -8,6 +8,7 @@ load(
 load(
     "@drake//tools/skylark:drake_proto.bzl",
     "drake_cc_proto_library",
+    "drake_py_proto_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -15,6 +16,13 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_proto_library(
     name = "matlab_rpc",
+    srcs = [
+        "matlab_rpc.proto",
+    ],
+)
+
+drake_py_proto_library(
+    name = "matlab_rpc_py",
     srcs = [
         "matlab_rpc.proto",
     ],
@@ -40,12 +48,63 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "call_python",
+    testonly = 1,
+    srcs = ["call_python.cc"],
+    hdrs = ["call_python.h"],
+    deps = [
+        ":call_matlab",
+        "//drake/common:copyable_unique_ptr",
+    ],
+)
+
+py_library(
+    name = "call_python_client",
+    srcs = ["call_python_client.py"],
+    imports = ["."],
+    deps = [
+        ":matlab_rpc_py",
+    ],
+)
+
+py_binary(
+    name = "call_python_client_cli",
+    srcs = ["call_python_client.py"],
+    main = "call_python_client.py",
+    deps = [
+        ":call_python_client",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
     name = "call_matlab_test",
     deps = [
         ":call_matlab",
+    ],
+)
+
+drake_cc_googletest(
+    name = "call_python_test",
+    srcs = ["test/call_python_test.cc"],
+    tags = ["manual"],
+    deps = [
+        ":call_python",
+    ],
+)
+
+sh_test(
+    name = "call_python_full_test",
+    srcs = ["test/call_python_full_test.sh"],
+    args = [
+        "$(location :call_python_test)",
+        "$(location :call_python_client_cli)",
+    ],
+    data = [
+        ":call_python_client_cli",
+        ":call_python_test",
     ],
 )
 

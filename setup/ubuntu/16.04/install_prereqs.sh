@@ -103,6 +103,7 @@ protobuf-compiler
 python-dev
 python-gtk2
 python-lxml
+python-matplotlib
 python-numpy
 python-protobuf
 python-pygame
