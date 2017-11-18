@@ -201,6 +201,12 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                         const GeometryFrame& frame) {
   FrameId frame_id = frame.id();
 
+  if (frames_.count(frame_id) > 0) {
+    throw std::logic_error(
+        "Registering frame with an id that has already been registered: " +
+            to_string(frame_id));
+  }
+
   FrameIdSet& f_set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
   if (parent_id != InternalFrame::get_world_frame_id()) {
     FindOrThrow(parent_id, f_set, [parent_id, source_id]() {
@@ -233,14 +239,20 @@ GeometryId GeometryState<T>::RegisterGeometry(
         "Registering null geometry to frame " + to_string(frame_id) +
             ", on source " + to_string(source_id) + ".");
   }
+
+  GeometryId geometry_id = geometry->id();
+  if (geometries_.count(geometry_id) > 0) {
+    throw std::logic_error(
+        "Registering geometry with an id that has already been registered: " +
+            to_string(geometry_id));
+  }
+
   FrameIdSet& set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
 
   FindOrThrow(frame_id, set, [frame_id, source_id]() {
     return "Referenced frame " + to_string(frame_id) + " for source " +
         to_string(source_id) + ", but the frame doesn't belong to the source.";
   });
-
-  GeometryId geometry_id = geometry->id();
   geometry_index_id_map_.push_back(geometry_id);
 
   // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the
@@ -318,9 +330,17 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
         "Registering null anchored geometry on source "
         + to_string(source_id) + ".");
   }
-  auto& set = GetMutableValueOrThrow(source_id, &source_anchored_geometry_map_);
 
   GeometryId geometry_id = geometry->id();
+  if (anchored_geometries_.count(geometry_id) > 0) {
+    throw std::logic_error(
+        "Registering anchored geometry with an id that has already been "
+        "registered: " +
+        to_string(geometry_id));
+  }
+
+  auto& set = GetMutableValueOrThrow(source_id, &source_anchored_geometry_map_);
+
   set.emplace(geometry_id);
 
   // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the

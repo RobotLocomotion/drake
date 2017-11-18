@@ -594,6 +594,18 @@ TEST_F(GeometryStateTest, AddFrameOnFrame) {
   EXPECT_TRUE(parent.has_child(fid));
 }
 
+// Confirms that adding two frames with the same id causes an error.
+TEST_F(GeometryStateTest, AddFrameWithDuplicateId) {
+  SourceId s_id = NewSource();
+  FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_.get());
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterFrame(s_id, *frame_), std::logic_error,
+      "Registering frame with an id that has already been registered: \\d+");
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterFrame(s_id, f_id, *frame_), std::logic_error,
+      "Registering frame with an id that has already been registered: \\d+");
+}
+
 // Tests the valid removal of an existing frame (and its attached geometry).
 TEST_F(GeometryStateTest, RemoveFrame) {
   SourceId s_id = SetUpSingleSourceTree();
@@ -703,6 +715,18 @@ TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   EXPECT_FALSE(geometry.get_parent_id());
 }
 
+// Confirms that registering two geometries with the same id causes failure.
+TEST_F(GeometryStateTest, RegisterDuplicateGeometry) {
+  SourceId s_id = NewSource();
+  FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
+  auto instance_copy = make_unique<GeometryInstance>(*instance_);
+  geometry_state_.RegisterGeometry(s_id, f_id, move(instance_));
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_copy)),
+      std::logic_error,
+      "Registering geometry with an id that has already been registered: \\d+");
+}
+
 // Tests registration of geometry on invalid source.
 TEST_F(GeometryStateTest, RegisterGeometryMissingSource) {
   SourceId s_id = SourceId::get_new_id();
@@ -713,7 +737,7 @@ TEST_F(GeometryStateTest, RegisterGeometryMissingSource) {
                        "Referenced geometry source \\d+ is not registered.");
 }
 
-// Tests registration of geometry on valid source and non-existant frame.
+// Tests registration of geometry on valid source and non-existent frame.
 TEST_F(GeometryStateTest, RegisterGeometryMissingFrame) {
   SourceId s_id = NewSource();
 
@@ -986,6 +1010,18 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   auto g_id = geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
   EXPECT_EQ(g_id, expected_g_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
+}
+
+// Confirms that registering two geometries with the same id causes failure.
+TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
+  SourceId s_id = NewSource();
+  auto instance_copy = make_unique<GeometryInstance>(*instance_);
+  geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_));
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_copy)),
+      std::logic_error,
+      "Registering anchored geometry with an id that has already been "
+      "registered: \\d+");
 }
 
 // Tests the attempt to register anchored geometry on an invalid source.
