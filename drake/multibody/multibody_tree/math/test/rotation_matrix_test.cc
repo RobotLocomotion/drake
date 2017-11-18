@@ -13,11 +13,8 @@ namespace multibody {
 namespace math {
 namespace {
 
-using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
-using Eigen::MatrixXd;
-using Eigen::NumTraits;
-using Eigen::Vector3d;
+
 
 #ifdef DRAKE_ASSERT_IS_DISARMED
 // With assertion disarmed, expect no exception.
@@ -39,7 +36,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // Test default constructor - should be identity matrix.
 GTEST_TEST(RotationMatrix, DefaultRotationMatrixIsIdentity) {
   RotationMatrix<double> R;
-  Matrix3d zero_matrix = R.get_as_Matrix3() - Matrix3d::Identity();
+  Matrix3d zero_matrix = R.matrix() - Matrix3d::Identity();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
@@ -53,7 +50,7 @@ GTEST_TEST(RotationMatrix, MakeMatrix3Unchecked) {
        0, -sin_theta, cos_theta;
 
   RotationMatrix<double> R = RotationMatrix<double>::MakeUnchecked(m);
-  Matrix3d zero_matrix = m - R.get_as_Matrix3();
+  Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
@@ -67,7 +64,7 @@ GTEST_TEST(RotationMatrix, MakeMatrix3Checked) {
        0, -sin_theta, cos_theta;
 
   RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
-  Matrix3d zero_matrix = m - R.get_as_Matrix3();
+  Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
   // TODO(Mitiguy) Implement test to check throwing assertion.
@@ -90,7 +87,7 @@ GTEST_TEST(RotationMatrix, Transpose) {
 
   RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
   RotationMatrix<double> R_transpose = R.transpose();
-  Matrix3d zero_matrix = m.transpose() - R_transpose.get_as_Matrix3();
+  Matrix3d zero_matrix = m.transpose() - R_transpose.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
@@ -147,11 +144,11 @@ GTEST_TEST(RotationMatrix, MultiplyRotationMatrices) {
   RotationMatrix<double> R1, R2;
   R1 = RotationMatrix<double>::MakeChecked(m1, 5*kEpsilon);
   R2 = RotationMatrix<double>::MakeChecked(m2, 5*kEpsilon);
-  Matrix3d zero_matrix = m_mult - (R1 * R2).get_as_Matrix3();
+  Matrix3d zero_matrix = m_mult - (R1 * R2).matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
-// Test IsValidRotationMatrix.
+// Test IsValid.
 GTEST_TEST(RotationMatrix, IsValidRotationMatrix) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
@@ -161,13 +158,13 @@ GTEST_TEST(RotationMatrix, IsValidRotationMatrix) {
        0, -sin_theta, cos_theta;
 
   RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
-  EXPECT_TRUE(R.IsValidRotationMatrix(5*kEpsilon));
+  EXPECT_TRUE(R.IsValid(5*kEpsilon));
 
   m << 1, 10*kEpsilon, 10*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
   R = RotationMatrix<double>::MakeUnchecked(m);
-  EXPECT_FALSE(R.IsValidRotationMatrix(5*kEpsilon));
+  EXPECT_FALSE(R.IsValid(5*kEpsilon));
 }
 
 
