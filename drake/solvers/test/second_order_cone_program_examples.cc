@@ -18,21 +18,23 @@ std::vector<EllipsoidsSeparationProblem> GetEllipsoidsSeparationProblems() {
 
 TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
   switch (GetParam()) {
-    case EllipsoidsSeparationProblem::kProblem0:
+    case EllipsoidsSeparationProblem::kProblem0: {
       x1_ = Eigen::Vector3d::Zero();
       x2_ = Eigen::Vector3d::Zero();
       x2_(0) = 2.0;
       R1_ = 0.5 * Eigen::Matrix3d::Identity();
       R2_ = Eigen::Matrix3d::Identity();
       break;
-    case EllipsoidsSeparationProblem::kProblem1:
+    }
+    case EllipsoidsSeparationProblem::kProblem1: {
       x1_ = Eigen::Vector3d::Zero();
       x2_ = Eigen::Vector3d::Zero();
       x2_(0) = 1.0;
       R1_ = Eigen::Matrix3d::Identity();
       R2_ = Eigen::Matrix3d::Identity();
       break;
-    case EllipsoidsSeparationProblem::kProblem2:
+    }
+    case EllipsoidsSeparationProblem::kProblem2: {
       x1_ = Eigen::Vector2d(1.0, 0.2);
       x2_ = Eigen::Vector2d(0.5, 0.4);
       R1_.resize(2, 2);
@@ -40,7 +42,8 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
       R2_.resize(2, 2);
       R2_ << -0.4, 1.5, 1.7, 0.3;
       break;
-    case EllipsoidsSeparationProblem::kProblem3:
+    }
+    case EllipsoidsSeparationProblem::kProblem3: {
       x1_ = Eigen::Vector3d(1.0, 0.2, 0.8);
       x2_ = Eigen::Vector3d(3.0, -1.5, 1.9);
       R1_.resize(3, 3);
@@ -48,6 +51,7 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
       R2_.resize(3, 2);
       R2_ << 0.1, 0.2, -0.1, 0.01, -0.2, 0.1;
       break;
+    }
   }
   const int kXdim = x1_.rows();
   t_ = prog_.NewContinuousVariables<2>("t");
@@ -63,26 +67,12 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
   // b_lorentz2 = 0;
   // And both A_lorentz1*[t;a]+b_lorentz1, A_lorentz2*[t;a]+b_lorentz2 are
   // in the Lorentz cone.
-  Eigen::MatrixXd A_lorentz1(1 + R1_.cols(), 1 + R1_.rows());
-  Eigen::MatrixXd A_lorentz2(1 + R2_.cols(), 1 + R2_.rows());
-  A_lorentz1.setZero();
-  A_lorentz2.setZero();
-  // clang-format off
-  A_lorentz1 << 1, Eigen::RowVectorXd::Zero(R1_.rows()),
-      Eigen::VectorXd::Zero(R1_.cols()), R1_.transpose();
-  A_lorentz2 << 1, Eigen::RowVectorXd::Zero(R2_.rows()),
-      Eigen::VectorXd::Zero(R2_.cols()), R2_.transpose();
-  // clang-format on
-  Eigen::VectorXd b_lorentz1 = Eigen::VectorXd::Zero(1 + R1_.cols());
-  Eigen::VectorXd b_lorentz2 = Eigen::VectorXd::Zero(1 + R2_.cols());
-  auto lorentz_cone1 = prog_
-                           .AddLorentzConeConstraint(A_lorentz1, b_lorentz1,
-                                                     {t_.segment<1>(0), a_})
-                           .constraint();
-  auto lorentz_cone2 = prog_
-                           .AddLorentzConeConstraint(A_lorentz2, b_lorentz2,
-                                                     {t_.segment<1>(1), a_})
-                           .constraint();
+  VectorX<symbolic::Expression> lorentz_expr1(1 + R1_.cols());
+  VectorX<symbolic::Expression> lorentz_expr2(1 + R2_.cols());
+  lorentz_expr1 << t_(0), R1_.transpose() * a_;
+  lorentz_expr2 << t_(1), R2_.transpose() * a_;
+  prog_.AddLorentzConeConstraint(lorentz_expr1).constraint();
+  prog_.AddLorentzConeConstraint(lorentz_expr2).constraint();
   // a'*(x2 - x1) = 1
   prog_.AddLinearEqualityConstraint((x2_ - x1_).transpose(), 1.0, a_);
 
@@ -231,14 +221,14 @@ void TestQPasSOCP::SolveAndCheckSolution(
     const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog_socp_, solver);
   const auto& x_socp_value = prog_socp_.GetSolution(x_socp_);
-  double objective_value_socp =
+  const double objective_value_socp =
       c_.dot(x_socp_value) + prog_socp_.GetSolution(y_);
 
   // Check the solution
   const int kXdim = Q_.rows();
   const Eigen::MatrixXd Q_symmetric = 0.5 * (Q_ + Q_.transpose());
-  Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
-  Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
+  const Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
+  const Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
   EXPECT_NEAR(2 * prog_socp_.GetSolution(y_),
               (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
   EXPECT_GE(prog_socp_.GetSolution(y_), 0);
@@ -265,13 +255,14 @@ std::vector<FindSpringEquilibriumProblem> GetFindSpringEquilibriumProblems() {
 
 TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
   switch (GetParam()) {
-    case FindSpringEquilibriumProblem::kProblem0:
+    case FindSpringEquilibriumProblem::kProblem0: {
       weight_.resize(5);
       weight_ << 1, 2, 3, 2.5, 4;
       spring_rest_length_ = 0.2;
       spring_stiffness_ = 10;
       end_pos1_ << 0, 1;
       end_pos2_ << 1, 0.9;
+    }
   }
   const int num_nodes = weight_.rows();
   x_ = prog_.NewContinuousVariables(num_nodes, "x");
@@ -360,7 +351,7 @@ void TestFindSpringEquilibrium::SolveAndCheckSolution(
                            spring_stiffness_ * right_spring /
                            right_spring_length;
     }
-    Eigen::Vector2d weight_i(0, -weight_(i));
+    const Eigen::Vector2d weight_i(0, -weight_(i));
     EXPECT_TRUE(CompareMatrices(
         weight_i + left_spring_force + right_spring_force,
         Eigen::Vector2d::Zero(), tol, MatrixCompareType::absolute));

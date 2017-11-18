@@ -149,9 +149,7 @@ void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver) {
   F1 << 1, 0.2, 0.3,
       0.2, 2, -0.1,
       0.3, -0.1, 4;
-  // clang-format on
   Matrix3d F2;
-  // clang-format off
   F2 << 2, 0.4, 0.7,
       0.4, -1, 0.1,
       0.7, 0.1, 5;
@@ -168,7 +166,7 @@ void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver) {
 
   RunSolver(&prog, solver);
 
-  double z_value = prog.GetSolution(z(0));
+  const double z_value = prog.GetSolution(z(0));
   auto x_value = prog.GetSolution(x);
   auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
 
