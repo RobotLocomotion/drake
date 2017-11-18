@@ -37,6 +37,10 @@ void ParseLinearCost(const MathematicalProgram& prog, Eigen::VectorXd* c,
   }
 }
 
+/*void ParseQuadraticCost(const MathematicalProgram& prog, Eigen::VectorXd* c, double* constant, std::vector,Eigen::Triplet<double>>* A_triplets, std::vector<double>* b, int* A_row_count, SCS_CONE* cone, int* num_x) {
+
+}*/
+
 void ParseLinearConstraint(const MathematicalProgram& prog,
                            std::vector<Eigen::Triplet<double>>* A_triplets,
                            std::vector<double>* b, int* A_row_count,
@@ -369,7 +373,19 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   //   A x + s = b
   //   s in positive orthant cone.
   // by introducing the slack variable s.
-  const int num_vars = prog.num_vars();
+
+  // num_x is the number of variables in `x`. It can contain more variables
+  // than in prog. For some constraint/cost, we need to append slack variables
+  // to convert the constraint/cost to the SCS form. For example, SCS does not
+  // support quadratic cost. So we need to convert the quadratic cost
+  //   min 0.5zᵀQz + bᵀz + d
+  // to the form
+  //   min y
+  //   s.t 2(y - bᵀz - d) ≥ zᵀQz     (1)
+  // now the cost is a linear function of y, with a rotated Lorentz cone
+  // constraint(1). So we need to append the slack variable `y` to the variables
+  // in `prog`.
+  int num_x = prog.num_vars();
 
   // We need to construct a sparse matrix in Column Compressed Storage (CCS)
   // format. On the other hand, we add the constraint row by row, instead of
@@ -385,7 +401,10 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   int A_row_count = 0;
   std::vector<double> b;
 
-  Eigen::VectorXd c = Eigen::VectorXd::Zero(num_vars);
+  // `c` is the coefficient in the linear cost cᵀx
+  Eigen::VectorXd c = Eigen::VectorXd::Zero(num_x);
+  // Our cost (LinearCost, QuadraticCost, etc) also allows a constant term, we
+  // add these constant terms to `cost_constant`.
   double cost_constant{0};
 
   // Parse linear cost
@@ -403,13 +422,13 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // Parse Lorentz cone and rotated Lorentz cone constraint
   ParseSecondOrderConeConstraints(prog, &A_triplets, &b, &A_row_count, cone);
 
-  Eigen::SparseMatrix<double> A(A_row_count, num_vars);
+  Eigen::SparseMatrix<double> A(A_row_count, num_x);
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
 
   SCS_PROBLEM_DATA* scs_problem_data =
       static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
-  SetScsProblemData(A_row_count, num_vars, A, b, c, scs_problem_data);
+  SetScsProblemData(A_row_count, num_x, A, b, c, scs_problem_data);
   scs_problem_data->stgs->verbose = verbose_ ? VERBOSE : 0;
 
   SCS_INFO scs_info{0};

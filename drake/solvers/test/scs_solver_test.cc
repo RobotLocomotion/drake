@@ -149,7 +149,7 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
-
+*/
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
@@ -159,7 +159,7 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(SCSTest, TestEllipsoidsSeparation,
                         ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
-
+/*
 TEST_P(TestQPasSOCP, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
