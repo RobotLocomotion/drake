@@ -4,10 +4,13 @@
 #include <string>
 #include <vector>
 
+#include <tinyxml2.h>
+
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
@@ -91,6 +94,36 @@ int AddFloatingJoint(
     const std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     const PoseMap* pose_map,
     RigidBodyTree<double>* tree);
+
+/// Instantiates a CompliantMaterial instance from an XMLNode.
+/// It ignores unrecognized elements, but throws an exception if a recognized
+/// element's contents cannot be converted to a double. Omitted property
+/// elements remain tied to the default parameter value.
+/// If either friction coefficient is defined, _both_ must be defined.
+/// Furthermore, the coefficient for static friction must be greater than or
+/// equal to the dynamic friction and both must be non-negative.
+///
+/// Looks for the following tags in URDF and SDF:
+///
+/// ```xml
+/// ...
+/// <collision ...>
+///   <geometry...>
+///   </geometry>
+///
+///   <drake_compliance>
+///     <youngs_modulus>##</youngs_modulus>
+///     <dissipation>##</dissipation>
+///     <static_friction>##</static_friction>
+///     <dynamic_friction>##</dynamic_friction>
+///   </drake_compliance>
+///
+/// </collision>
+/// ...
+/// ```
+/// @param[in] node The *parent* node which ostensibly contains a declaration of
+/// drake compliance.
+systems::CompliantMaterial ParseCollisionCompliance(tinyxml2::XMLElement* node);
 
 }  // namespace parsers
 }  // namespace drake

@@ -165,8 +165,12 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     camera->AddToTree(tree_builder.get(), xtion_wsg_fixture);
   }
 
-  return std::make_unique<systems::RigidBodyPlant<double>>(
+  auto plant = std::make_unique<systems::RigidBodyPlant<double>>(
       tree_builder->Build());
+  plant->set_contact_model_parameters(tree_builder->contact_model_parameters());
+  plant->set_default_compliant_material(
+      tree_builder->default_contact_material());
+  return plant;
 }
 
 
