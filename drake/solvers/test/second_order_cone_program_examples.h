@@ -19,20 +19,20 @@ enum class EllipsoidsSeparationProblem {
 
 std::vector<EllipsoidsSeparationProblem> GetEllipsoidsSeparationProblems();
 
-/// This test is taken from
-/// https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_ell_sep.html
+/// This test is taken from the course notes of EE127A from University of
+/// California, Berkeley
 /// The goal is to find a hyperplane, that separates two ellipsoids
-/// E1 = x1 + R1 * u1, u1' * u1<=1
-/// E2 = x2 + R2 * u2, u2' * u2<=1
-/// A hyperplane a' * x = b separates these two ellipsoids, if and only if for
-/// SOCP p* = min t1 + t2
-///           s.t t1 >= |R1' * a|
-///               t2 >= |R2' * a|
-///               a'*(x2-x1) = 1
-/// the optimal solution p* is no larger than 1. In that case, an approppriate
-/// value of b is b = 0.5 * (b1 + b2), where
-/// b1 = a' * x1 + |R1' * a|
-/// b2 = a' * x2 - |R2' * a|
+/// E₁ = x₁ + R₁ * u₁, |u₁| ≤ 1
+/// E₂ = x₂ + R₂ * u₂, |u₂| ≤ 1
+/// A hyperplane aᵀ * x = b separates these two ellipsoids, if and only if for
+/// SOCP p* = min t₁ + t₂
+///           s.t t₁ ≥ |R₁ᵀ * a|
+///               t₂ ≥ |R₂ᵀ * a|
+///               aᵀ(x₂-x₁) = 1
+/// the optimal solution p* is no larger than 1. In that case, an appropriate
+/// value of b is b = 0.5(b₁ + b₂), where
+/// b₁ = aᵀx₁ + |R₁ᵀ * a|
+/// b₂ = aᵀx₂ - |R₂ᵀ * a|
 /// @param x1  the center of ellipsoid 1
 /// @param x2  the center of ellipsoid 2
 /// @param R1  the shape of ellipsoid 1
@@ -58,8 +58,8 @@ enum class QPasSOCPProblem { kProblem0, kProblem1 };
 
 std::vector<QPasSOCPProblem> GetQPasSOCPProblems();
 
-/// This example is taken from
-/// https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
+/// This example is taken from the course notes of EE127A from University of
+/// California, Berkeley
 /// For a quadratic program
 /// 0.5 * x' * Q * x + c' * x
 /// s.t b_lb <= A * x <= b_ub
@@ -100,25 +100,24 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
 /// Section 3.6
 /// http://www.seas.ucla.edu/~vandenbe/publications/socp.pdf
 /// The problem tries to find the equilibrium state of a mechanical
-/// system, which consists of N nodes at position (x1,y1), (x2,y2), ..., (xN,yN)
-/// in R2.
+/// system, which consists of n nodes at position (x₁,y₁), (x₂,y₂), ...,
+/// (xₙ,yₙ) in ℝ².
 /// The nodes are connected by springs with given coefficient.
 /// The spring generate force when it is stretched,
 /// but not when it is compressed.
 /// Namely, the spring force is
 /// (spring_length - spring_rest_length) * spring_stiffness,
-/// if spring_length >= spring_rest_length;
+/// if spring_length ≥ spring_rest_length;
 /// otherwise the spring force is zero.
-/// weight_i is the mass * gravity_acceleration
+/// weightᵢ is the mass * gravity_acceleration
 /// of the i'th link.
 /// The equilibrium point is obtained when the total energy is minimized
-/// namely min sum_i weight_i * yi + stiffness/2 * t_i^2
-///        s.t  sqrt((x(i) - x(i+1))^2 + (y(i) - y(i+1))^2) - spring_rest_length
-/// <= t_i
-///             0 <= t_i
-///             (x1,y1) = end_pos1
-///             (xN,yN) = end_pos2
-/// By introducing a slack variable z >= t_1^2 + ... + t_(N-1)^2, the problem
+/// namely min ∑ᵢ weightᵢ * yᵢ + stiffness/2 * tᵢ²
+///        s.t  sqrt((xᵢ - xᵢ₊₁)² + (yᵢ - yᵢ₊₁)²) - spring_rest_length ≤ tᵢ
+///             0 ≤ tᵢ
+///             (x₁,y₁) = end_pos1
+///             (xₙ,yₙ) = end_pos2
+/// By introducing a slack variable z ≥ t₁² + ... + tₙ₋₁², the problem
 /// becomes
 /// an SOCP, with both Lorentz cone and rotated Lorentz cone constraints
 enum class FindSpringEquilibriumProblem { kProblem0 };
