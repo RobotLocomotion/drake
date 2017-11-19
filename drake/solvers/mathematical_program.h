@@ -93,8 +93,8 @@ namespace solvers {
  * <tr><td>&dagger; <a href="https://github.com/cvxgrp/scs">
  *    SCS</a></td>
  *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
  * </tr>
