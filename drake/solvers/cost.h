@@ -104,13 +104,14 @@ class QuadraticCost : public Cost {
   template <typename DerivedQ, typename Derivedb>
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.)
-      : Cost(Q.rows()), Q_(Q), b_(b), c_(c) {
+      : Cost(Q.rows()), Q_((Q + Q.transpose()) / 2), b_(b), c_(c) {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
   }
 
   ~QuadraticCost() override {}
 
+  // Returns the symmetric matrix Q, as the Hessian of the cost.
   const Eigen::MatrixXd& Q() const { return Q_; }
 
   const Eigen::VectorXd& b() const { return b_; }

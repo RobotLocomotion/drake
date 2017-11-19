@@ -135,6 +135,9 @@ GTEST_TEST(testCost, testQuadraticCost) {
   auto cost = make_shared<QuadraticCost>(Q, b);
   Eigen::VectorXd y(1);
 
+  EXPECT_TRUE(CompareMatrices(cost->Q(), (Q + Q.transpose()) / 2, 1E-10,
+                              MatrixCompareType::absolute));
+
   cost->Eval(x0, y);
   EXPECT_EQ(y.rows(), 1);
   EXPECT_NEAR(y(0), obj_expected, tol);

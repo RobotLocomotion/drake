@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace solvers {
-namespace test {/*
+namespace test {
 GTEST_TEST(LinearProgramTest, Test0) {
   // Test a linear program with only equality constraint.
   // min x(0) + 2 * x(1)
@@ -149,7 +149,7 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
-*/
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
@@ -159,7 +159,7 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(SCSTest, TestEllipsoidsSeparation,
                         ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
-/*
+
 TEST_P(TestQPasSOCP, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
@@ -169,7 +169,7 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 
 INSTANTIATE_TEST_CASE_P(SCSTest, TestQPasSOCP,
                         ::testing::ValuesIn(GetQPasSOCPProblems()));
-*/
+
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
@@ -180,6 +180,26 @@ TEST_P(TestFindSpringEquilibrium, TestSOCP) {
 INSTANTIATE_TEST_CASE_P(
     SCSTest, TestFindSpringEquilibrium,
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+
+TEST_P(QuadraticProgramTest, TestQP) {
+  ScsSolver solver;
+  if (solver.available()) {
+    prob()->RunProblem(&solver);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ScsTest, QuadraticProgramTest,
+    ::testing::Combine(::testing::ValuesIn(quadratic_cost_form()),
+                       ::testing::ValuesIn(linear_constraint_form()),
+                       ::testing::ValuesIn(quadratic_problems())));
+
+GTEST_TEST(QPtest, TestUnitBallExample) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestQPonUnitBallExample(solver);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

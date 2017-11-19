@@ -32,6 +32,7 @@ class ScsSolver : public MathematicalProgramSolverInterface {
 
  private:
   bool verbose_ = false;
+  double eps_ = -1;
 };
 
 }  // namespace solvers
