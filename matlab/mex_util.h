@@ -6,10 +6,9 @@
 #include <string>
 #include <vector>
 
-#include <mex.h>
-
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+#include <mex.h>
 
 #include "drake/common/autodiff.h"
 
@@ -42,16 +41,16 @@ DLL_EXPORT_SYM mxArray* mxGetFieldOrPropertySafe(const mxArray* array,
                                                  size_t index,
                                                  std::string const& field_name);
 
-// Mex pointers shared through matlab
-// Note: the same mex function which calls this method will be called with the
-// syntax mexFunction(drake_mex_ptr) as the destructor
+// MEX pointers shared through MATLAB. Note that the same MEX function which
+// calls this method will be called with the syntax mexFunction(drake_mex_ptr)
+// as the destructor.
 
 DLL_EXPORT_SYM mxArray* createDrakeMexPointer(
     void* ptr, const std::string& name = "", int type_id = -1,
     int num_additional_inputs = 0,
     mxArray* delete_fcn_additional_inputs[] = nullptr,
     const std::string& subclass_name = "",
-    const std::string& mex_function_name_prefix = "");  // increments lock count
+    const std::string& mex_function_name_prefix = "");  // Increment lock count.
 
 DLL_EXPORT_SYM void* getDrakeMexPointer(const mxArray* mx);
 
@@ -59,12 +58,12 @@ template <typename Derived>
 inline void destroyDrakeMexPointer(const mxArray* mx) {
   if (!isa(mx, "DrakeMexPointer")) {
     mexErrMsgIdAndTxt("Drake:destroyDrakeMexPointer:BadInputs",
-                      "This object is not a DrakeMexPointer.  Delete failed.");
+                      "This object is not a DrakeMexPointer. Delete failed.");
   }
 
   Derived typed_ptr = reinterpret_cast<Derived>(getDrakeMexPointer(mx));
   delete typed_ptr;
-  mexUnlock();  // decrement lock count
+  mexUnlock();  // Decrement lock count.
 }
 
 template <typename Derived>
@@ -73,9 +72,9 @@ DLL_EXPORT_SYM mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const& M,
 
 template <typename DerivedA>
 mxArray* eigenToMatlab(const DerivedA& m) {
-  // this avoids zero initialization that would occur using mxCreateDoubleMatrix
-  // with nonzero dimensions.
-  // see https://classes.soe.ucsc.edu/ee264/Fall11/cmex.pdf, page 8
+  // This avoids zero initialization that would occur using
+  // mxCreateDoubleMatrix with nonzero dimensions, see
+  // https://classes.soe.ucsc.edu/ee264/Fall11/cmex.pdf, page 8.
   mxArray* pm = mxCreateDoubleMatrix(0, 0, mxREAL);
   const int rows = static_cast<int>(m.rows());
   const int cols = static_cast<int>(m.cols());
@@ -104,36 +103,36 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(
 template <int Rows, int Cols>
 Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
     const mxArray* mex) {
-  Eigen::Index rows, cols;  // at runtime
+  Eigen::Index rows, cols;  // At runtime.
   if (mxIsEmpty(mex)) {
-    // be lenient when it comes to dimensions in the empty input case
+    // Be lenient when it comes to dimensions in the empty input case.
     if (Rows == Eigen::Dynamic && Cols == Eigen::Dynamic) {
-      // if both dimensions are dynamic, then follow the dimensions of
-      // the Matlab matrix
+      // If both dimensions are dynamic, then follow the dimensions of the
+      // MATLAB matrix.
       rows = mxGetM(mex);
       cols = mxGetN(mex);
     } else {
-      // if only one dimension is dynamic, use the known dimension at
-      // compile time and set the other dimension to zero
+      // If only one dimension is dynamic, use the known dimension at compile
+      // time and set the other dimension to zero.
       rows = Rows == Eigen::Dynamic ? 0 : Rows;
       cols = Cols == Eigen::Dynamic ? 0 : Cols;
     }
   } else {
-    // the non-empty case
+    // The non-empty case.
     rows = Rows == Eigen::Dynamic ? mxGetM(mex) : Rows;
     cols = Cols == Eigen::Dynamic ? mxGetN(mex) : Cols;
   }
 
   if (Rows != Eigen::Dynamic && Rows != rows) {
     std::ostringstream stream;
-    stream << "Error converting Matlab matrix. Expected " << Rows
+    stream << "Error converting MATLAB matrix. Expected " << Rows
            << " rows, but got " << mxGetM(mex) << ".";
     throw std::runtime_error(stream.str().c_str());
   }
 
   if (Cols != Eigen::Dynamic && Cols != cols) {
     std::ostringstream stream;
-    stream << "Error converting Matlab matrix. Expected " << Cols
+    stream << "Error converting MATLAB matrix. Expected " << Cols
            << " cols, but got " << mxGetN(mex) << ".";
     throw std::runtime_error(stream.str().c_str());
   }
@@ -169,9 +168,9 @@ DLL_EXPORT_SYM void sizecheck(const mxArray* mat, mwSize M, mwSize N);
 template <size_t Rows, size_t Cols>
 void matlabToCArrayOfArrays(const mxArray* source,
                             double (&destination)[Rows][Cols]) {
-  // Matlab arrays come in as column-major data. The format used in e.g. LCM
+  // MATLAB arrays come in as column-major data. The format used in e.g., LCM
   // messages is an array of arrays.
-  // from http://stackoverflow.com/a/17569578/2228557
+  // From http://stackoverflow.com/a/17569578/2228557.
   sizecheck(source, static_cast<int>(Rows), static_cast<int>(Cols));
   double* source_data = mxGetPr(source);
 
