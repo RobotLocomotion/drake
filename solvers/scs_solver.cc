@@ -336,8 +336,10 @@ void ParseSecondOrderConeConstraints(
 
 // This function parses both PositiveSemidefinite and
 // LinearMatrixInequalityConstraint.
-void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
-                                         int* A_row_count, SCS_CONE* cone) {
+void ParsePositiveSemidefiniteConstraint(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, SCS_CONE* cone) {
   std::vector<int> psd_cone_length;
   const double sqrt2 = std::sqrt(2);
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
@@ -363,11 +365,15 @@ void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::v
     DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
     b->reserve(b->size() + X_rows * (X_rows + 1) / 2);
     for (int j = 0; j < X_rows; ++j) {
-      A_triplets->emplace_back(*A_row_count + x_index_count, prog.FindDecisionVariableIndex(flat_X(j * X_rows + j)), -1);
+      A_triplets->emplace_back(
+          *A_row_count + x_index_count,
+          prog.FindDecisionVariableIndex(flat_X(j * X_rows + j)), -1);
       b->push_back(0);
       ++x_index_count;
       for (int i = j + 1; i < X_rows; ++i) {
-        A_triplets->emplace_back(*A_row_count + x_index_count, prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)), -sqrt2);
+        A_triplets->emplace_back(
+            *A_row_count + x_index_count,
+            prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)), -sqrt2);
         b->push_back(0);
         ++x_index_count;
       }
@@ -375,7 +381,8 @@ void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::v
     (*A_row_count) += X_rows * (X_rows + 1) / 2;
     psd_cone_length.push_back(X_rows);
   }
-  for (const auto& lmi_constraint : prog.linear_matrix_inequality_constraints()) {
+  for (const auto& lmi_constraint :
+       prog.linear_matrix_inequality_constraints()) {
     // LinearMatrixInequalityConstraint encodes
     // F₀ + x₁*F₁ + x₂*F₂ + ... + xₙFₙ is p.s.d
     // We convert this to SCS form as
@@ -404,7 +411,9 @@ void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::v
       for (int i = j; i < F_rows; ++i) {
         const double scale_factor = i == j ? 1 : sqrt2;
         for (int k = 1; k < static_cast<int>(F.size()); ++k) {
-          A_triplets->emplace_back(*A_row_count + A_cone_row_count, x_indices[k - 1], -scale_factor * F[k](i, j));
+          A_triplets->emplace_back(*A_row_count + A_cone_row_count,
+                                   x_indices[k - 1],
+                                   -scale_factor * F[k](i, j));
         }
         b->push_back(scale_factor * F[0](i, j));
         ++A_cone_row_count;
@@ -609,7 +618,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   }
 
   // Parse PositiveSemidefiniteConstraint and LinearMatrixInequalityConstraint.
-  ParsePositiveSemidefiniteConstraint(prog, &A_triplets, &b, &A_row_count, cone);
+  ParsePositiveSemidefiniteConstraint(prog, &A_triplets, &b, &A_row_count,
+                                      cone);
 
   Eigen::SparseMatrix<double> A(A_row_count, num_x);
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
