@@ -339,6 +339,7 @@ void ParseSecondOrderConeConstraints(
 void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
                                          int* A_row_count, SCS_CONE* cone) {
   std::vector<int> psd_cone_length;
+  const double sqrt2 = std::sqrt(2);
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
     // PositiveSemidefiniteConstraint encodes the matrix X being psd.
     // We convert it to SCS form
@@ -360,7 +361,6 @@ void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::v
     int x_index_count = 0;
     const VectorXDecisionVariable& flat_X = psd_constraint.variables();
     DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
-    const double sqrt2 = std::sqrt(2);
     b->reserve(b->size() + X_rows * (X_rows + 1) / 2);
     for (int j = 0; j < X_rows; ++j) {
       A_triplets->emplace_back(*A_row_count + x_index_count, prog.FindDecisionVariableIndex(flat_X(j * X_rows + j)), -1);
@@ -374,6 +374,44 @@ void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::v
     }
     (*A_row_count) += X_rows * (X_rows + 1) / 2;
     psd_cone_length.push_back(X_rows);
+  }
+  for (const auto& lmi_constraint : prog.linear_matrix_inequality_constraints()) {
+    // LinearMatrixInequalityConstraint encodes
+    // F₀ + x₁*F₁ + x₂*F₂ + ... + xₙFₙ is p.s.d
+    // We convert this to SCS form as
+    // A_cone * x + s = b_cone
+    // s in SCS positive semidefinite cone.
+    // where A_cone = -[  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)]
+    //                 [√2F₁(1, 0) √2F₂(1, 0) ... √2Fₙ(1, 0)]
+    //                 [√2F₁(2, 0) √2F₂(2, 0) ... √2Fₙ(2, 0)]
+    //                              ...
+    //                 [  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)]
+    // b_cone = [  F₀(0, 0)]
+    //          [√2F₀(1, 0)]
+    //          [√2F₀(2, 0)]
+    //              ...
+    //          [  F₀(m, m)]
+    // x = [x₁; x₂; ... ; xₙ]
+    // As explained above, the off-diagonal rows are scaled by √2. Please refer
+    // to https://github.com/cvxgrp/scs about the scaling factor √2.
+    const std::vector<Eigen::MatrixXd>& F = lmi_constraint.constraint()->F();
+    const VectorXDecisionVariable& x = lmi_constraint.variables();
+    const int F_rows = lmi_constraint.constraint()->matrix_rows();
+    const std::vector<int> x_indices = FindAllDecisionVariableIndices(prog, x);
+    int A_cone_row_count = 0;
+    b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
+    for (int j = 0; j < F_rows; ++j) {
+      for (int i = j; i < F_rows; ++i) {
+        const double scale_factor = i == j ? 1 : sqrt2;
+        for (int k = 1; k < static_cast<int>(F.size()); ++k) {
+          A_triplets->emplace_back(*A_row_count + A_cone_row_count, x_indices[k - 1], -scale_factor * F[k](i, j));
+        }
+        b->push_back(scale_factor * F[0](i, j));
+        ++A_cone_row_count;
+      }
+    }
+    *A_row_count += F_rows * (F_rows + 1) / 2;
+    psd_cone_length.push_back(F_rows);
   }
   cone->ssize = psd_cone_length.size();
   cone->s = static_cast<scs_int*>(scs_calloc(cone->ssize, sizeof(scs_int)));

@@ -212,10 +212,24 @@ GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    FindCommonLyapunov(scs_solver, 5E-4);
+  }
+}
+
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
     FindOuterEllipsoid(scs_solver, 1E-3);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    SolveEigenvalueProblem(scs_solver, 1E-3);
   }
 }
 }  // namespace test

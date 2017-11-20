@@ -82,7 +82,7 @@ GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindCommonLyapunov(mosek_solver);
+    FindCommonLyapunov(mosek_solver, 1E-8);
   }
 }
 
@@ -96,7 +96,7 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    SolveEigenvalueProblem(mosek_solver);
+    SolveEigenvalueProblem(mosek_solver, 1E-7);
   }
 }
 }  // namespace test

@@ -36,10 +36,11 @@ void TestTrivialSDP(const MathematicalProgramSolverInterface& solver, double tol
   EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), tol));
 }
 
-void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver) {
+void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver, double tol) {
   MathematicalProgram prog;
   auto P = prog.NewSymmetricContinuousVariables<3>("P");
-  prog.AddPositiveSemidefiniteConstraint(P - 1E-3 * Matrix3d::Identity());
+  const double psd_epsilon{1E-3};
+  prog.AddPositiveSemidefiniteConstraint(P - psd_epsilon * Matrix3d::Identity());
   Eigen::Matrix3d A1;
   // clang-format off
   A1 << -1, -1, -2,
@@ -47,7 +48,7 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver) {
       0, 0, -1;
   // clang-format on
   auto binding1 = prog.AddPositiveSemidefiniteConstraint(
-      -A1.transpose() * P - P * A1 - 1E-3 * Matrix3d::Identity());
+      -A1.transpose() * P - P * A1 - psd_epsilon * Matrix3d::Identity());
 
   Eigen::Matrix3d A2;
   // clang-format off
@@ -56,7 +57,7 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver) {
       0, 0, -0.4;
   // clang-format on
   auto binding2 = prog.AddPositiveSemidefiniteConstraint(
-      -A2.transpose() * P - P * A2 - 1E-3 * Matrix3d::Identity());
+      -A2.transpose() * P - P * A2 - psd_epsilon * Matrix3d::Identity());
 
   RunSolver(&prog, solver);
 
@@ -78,11 +79,11 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver) {
   Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_Q2(Q2_value);
   EXPECT_GE(eigen_solver_Q2.eigenvalues().minCoeff(), 0);
   EXPECT_TRUE(CompareMatrices(
-      A1.transpose() * P_value + P_value * A1 + 1E-3 * Matrix3d::Identity(),
-      -Q1_value, 1E-8, MatrixCompareType::absolute));
+      A1.transpose() * P_value + P_value * A1 + psd_epsilon * Matrix3d::Identity(),
+      -Q1_value, tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
-      A2.transpose() * P_value + P_value * A2 + 1E-3 * Matrix3d::Identity(),
-      -Q2_value, 1E-8, MatrixCompareType::absolute));
+      A2.transpose() * P_value + P_value * A2 + psd_epsilon * Matrix3d::Identity(),
+      -Q2_value, tol, MatrixCompareType::absolute));
 }
 
 void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver, double tol) {
@@ -142,7 +143,7 @@ void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver, double
   EXPECT_NEAR(M_min_eigenvalue, 0, tol);
 }
 
-void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver) {
+void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver, double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   Matrix3d F1;
@@ -159,22 +160,22 @@ void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver) {
   prog.AddLinearMatrixInequalityConstraint(
       {Matrix3d::Zero(), Matrix3d::Identity(), -F1, -F2}, {z, x});
 
-  Vector2d x_lb(0.1, 1);
-  Vector2d x_ub(2, 3);
+  const Vector2d x_lb(0.1, 1);
+  const Vector2d x_ub(2, 3);
   prog.AddBoundingBoxConstraint(x_lb, x_ub, x);
 
-  prog.AddLinearCost(drake::Vector1d(1), z);
+  prog.AddLinearCost(z(0));
 
   RunSolver(&prog, solver);
 
   const double z_value = prog.GetSolution(z(0));
-  auto x_value = prog.GetSolution(x);
-  auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
+  const auto x_value = prog.GetSolution(x);
+  const auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
 
   Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_xF(xF_sum);
-  // The comparison tolerance is set to 1E-7, slightly larger than Mosek's
-  // default feasibility tolerance 1E-8.
-  EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), 1E-7);
+  EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), tol);
+  EXPECT_TRUE(((x_value - x_lb).array() >= -tol).all());
+  EXPECT_TRUE(((x_value - x_ub).array() <= tol).all());
 }
 }  // namespace test
 }  // namespace solvers
