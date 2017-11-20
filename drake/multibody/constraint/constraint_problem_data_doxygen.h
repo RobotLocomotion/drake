@@ -78,7 +78,7 @@ or at the acceleration level:<pre>
 c(t,q,v;v̇,λ)
 </pre>
 where λ is a vector of *constraint-space forces*. Note the semicolon in these
-definitions, which separates general constraint dependencies (q,v,t) from
+definitions, which separates general constraint dependencies (t,q,v) from
 variables that must be determined using the constraints (v̇,λ). *The three
 constraint equations listed above can then be categorized as having
 position-level unknowns, velocity-level unknowns, or acceleration-level
@@ -94,12 +94,12 @@ vs. equations that **must** be posed at at the velocity-level
 (i.e., nonholonomic constraints):<pre>
 c(t, q; v).
 </pre>
-Both cases yield a constraint with velocity-level unknowns usable for a
-velocity-level constraint formulation. The only case where the distinction
-is important in practice is in constraint stabilization: constraint errors
-at the position level can be corrected only when the constraint is posed
-at the position level (this property follows from the non-integrability of
-nonholonomic constraints). See @ref constraint_stabilization.
+Both cases yield a constraint with velocity-level unknowns, thereby
+admitting the constraint's immediate use (i.e., no further time differentiation
+is required) in a velocity-level constraint formulation. Note that truncation
+and discretization errors can cause the former constraint to "drift": c(t; q)
+may increasingly deviate from zero over time unless corrected. See
+@ref constraint_stabilization for further information.
 
 <h4>Constraints with acceleration-level unknowns</h4>
 A bilateral constraint equation with acceleration-level unknowns will take the
@@ -112,11 +112,12 @@ ċ(t,q,v;v̇) = 0
 </pre>
 if c() is nonholonomic. Both of these constraints have been differentiated (once
 or twice) with respect to time. Constraints with acceleration-level unknowns
-can be also be augmented with terms dependent on constraint forces, like:<pre>
-cₐ(t,q,v;v̇,λ) = 0
+can be also be modified to incorporate terms dependent on constraint forces,
+like:<pre>
+c̅(t,q,v;v̇,λ) = 0
 </pre>
 where<pre>
-cₐ(t,q,v;v̇,λ) ≡ c̈(t,q,v;v̇) + λ
+c̅(t,q,v;v̇,λ) ≡ c̈(t,q,v;v̇) + λ
 </pre>
 The equation above was constructed purely for pedagogic purposes, but a similar
 construct is introduced in @ref constraint_softening.
@@ -239,7 +240,7 @@ and damping ratio (a process also described in @ref constraint_stabilization)
 using the formula:
 <pre>
 γ = 1 / (2m̂ζω + hm̂ω²)
-ν = hm̂ω² / (2m̂ζω + hm̂ω²)
+ν = hm̂ω²γ
 </pre>
 where m̂ is the *effective inertia* of the constraint and is determined
 by 1/(GM⁻¹Gᵀ), where G ≡ ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the
@@ -290,12 +291,12 @@ using the notation within the citation for
 quasi-coordinates means we write the Jacobian as ∂c/∂q̅ (quasi-coordinates
 possess the property that ∂q̅/∂v = Iₙₓₙ, the n × n identity matrix).
 
-Fortunately, for constraints defined strictly in the form c(q), the
-Jacobians are described completely by the equation ċ = ∂c/∂q̅⋅v, where v are
-the generalized velocities of the system. Since the problem data
-specifically requires operators (see ConstraintAccelProblemData and
+Fortunately, for constraints defined in the form c(t,q), the Jacobians are
+described completely by the equation ċ = ∂c/∂q̅⋅v + ∂c/∂t, where v are the
+generalized velocities of the system. Since the problem data specifically
+requires operators (see ConstraintAccelProblemData and
 ConstraintVelProblemData) that compute (∂c/∂q̅⋅v), one can simply
-evaluate ċ for a given v: no Jacobian need be formed explicitly.
+evaluate ċ - ∂c/∂t for a given v: no Jacobian need be formed explicitly. 
 */
 
 /** @defgroup noninterpenetration_constraints Noninterpenetration constraints
@@ -517,7 +518,7 @@ c̈(q,v;v̇) = q̈ᵢ
 </pre>
 would allow this constraint to be used with an acceleration-level constraint
 formulation and yields the complementarity condition:<pre>
-0 ≤ c̈(q)  ⊥  λᵢ ≥ 0
+0 ≤ c̈(q,v;v̇)  ⊥  λᵢ ≥ 0
 </pre>
 For this simple range of motion constraint example, it will generally be
 the case that q̇ᵢ = vᵢ.
