@@ -15,7 +15,7 @@ using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Matrix4d;
 
-void TestTrivialSDP(const MathematicalProgramSolverInterface& solver) {
+void TestTrivialSDP(const MathematicalProgramSolverInterface& solver, double tol) {
   MathematicalProgram prog;
 
   auto S = prog.NewSymmetricContinuousVariables<2>("S");
@@ -33,8 +33,7 @@ void TestTrivialSDP(const MathematicalProgramSolverInterface& solver) {
 
   auto S_value = prog.GetSolution(S);
 
-  // Choose 1E-8 since that is Mosek's default feasibility tolerance.
-  EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), 1E-8));
+  EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), tol));
 }
 
 void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver) {
@@ -86,7 +85,7 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver) {
       -Q2_value, 1E-8, MatrixCompareType::absolute));
 }
 
-void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver) {
+void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver, double tol) {
   std::array<Matrix3d, 3> Q;
   std::array<Vector3d, 3> b;
   Q[0] = Matrix3d::Identity();
@@ -117,22 +116,19 @@ void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver) {
     prog.AddPositiveSemidefiniteConstraint(M);
   }
 
-  // I have to compute trace of P in the loop, instead of using P.trace(),
-  // since Variable cannot be cast to Expression implicitly.
-  symbolic::Expression P_trace{0};
-  for (int i = 0; i < 3; ++i) {
-    P_trace += P(i, i);
-  }
-  prog.AddLinearCost(-P_trace);
+  prog.AddLinearCost(-P.cast<symbolic::Expression>().trace());
 
   RunSolver(&prog, solver);
 
-  auto P_value = prog.GetSolution(P);
-  auto s_value = prog.GetSolution(s);
-  auto c_value = prog.GetSolution(c);
+  const auto P_value = prog.GetSolution(P);
+  const auto s_value = prog.GetSolution(s);
+  const auto c_value = prog.GetSolution(c);
 
-  Eigen::SelfAdjointEigenSolver<Matrix3d> es_P(P_value);
-  EXPECT_TRUE((es_P.eigenvalues().array() >= -1E-6).all());
+  const Eigen::SelfAdjointEigenSolver<Matrix3d> es_P(P_value);
+  EXPECT_TRUE((es_P.eigenvalues().array() >= -tol).all());
+  // The minimal eigen value of M should be 0, since the optimality happens at
+  // the boundary of the PSD cone.
+  double M_min_eigenvalue = std::numeric_limits<double>::infinity();
   for (int i = 0; i < 3; ++i) {
     Matrix4d M_value;
     // clang-format off
@@ -140,8 +136,10 @@ void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver) {
         s_value(i) * b[i].transpose() - c_value.transpose(), 1 - s_value(i);
     // clang-format on
     Eigen::SelfAdjointEigenSolver<Matrix4d> es_M(M_value);
-    EXPECT_TRUE((es_M.eigenvalues().array() >= -1E-6).all());
+    EXPECT_TRUE((es_M.eigenvalues().array() >= -tol).all());
+    M_min_eigenvalue = std::min(M_min_eigenvalue, es_M.eigenvalues().minCoeff());
   }
+  EXPECT_NEAR(M_min_eigenvalue, 0, tol);
 }
 
 void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver) {

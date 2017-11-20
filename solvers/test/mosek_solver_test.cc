@@ -75,7 +75,7 @@ INSTANTIATE_TEST_CASE_P(
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    TestTrivialSDP(mosek_solver);
+    TestTrivialSDP(mosek_solver, 1E-8);
   }
 }
 
@@ -89,7 +89,7 @@ GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    FindOuterEllipsoid(mosek_solver);
+    FindOuterEllipsoid(mosek_solver, 1E-6);
   }
 }
 

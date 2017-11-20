@@ -334,6 +334,54 @@ void ParseSecondOrderConeConstraints(
   }
 }
 
+// This function parses both PositiveSemidefinite and
+// LinearMatrixInequalityConstraint.
+void ParsePositiveSemidefiniteConstraint(const MathematicalProgram& prog, std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+                                         int* A_row_count, SCS_CONE* cone) {
+  std::vector<int> psd_cone_length;
+  for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
+    // PositiveSemidefiniteConstraint encodes the matrix X being psd.
+    // We convert it to SCS form
+    // A * x + s = 0
+    // s in positive semidefinite cone.
+    // where A is a diagonal matrix, with its diagonal entries being the stacked
+    // column vector of the lower triangular part of matrix
+    // [ -1 -√2 -√2 ... -√2]
+    // [-√2  -1 -√2 ... -√2]
+    // [-√2 -√2  -1 ... -√2]
+    // [    ...            ]
+    // [-√2 -√2 -√2 ...  -1]
+    // The √2 scaling factor in the off-diagonal entries are required by SCS,
+    // as it uses only the lower triangular part of the symmetric matrix, as
+    // explained in https://github.com/cvxgrp/scs
+    // x is the stacked column vector of the lower triangular part of the
+    // symmetric matrix X.
+    const int X_rows = psd_constraint.constraint()->matrix_rows();
+    int x_index_count = 0;
+    const VectorXDecisionVariable& flat_X = psd_constraint.variables();
+    DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
+    const double sqrt2 = std::sqrt(2);
+    b->reserve(b->size() + X_rows * (X_rows + 1) / 2);
+    for (int j = 0; j < X_rows; ++j) {
+      A_triplets->emplace_back(*A_row_count + x_index_count, prog.FindDecisionVariableIndex(flat_X(j * X_rows + j)), -1);
+      b->push_back(0);
+      ++x_index_count;
+      for (int i = j + 1; i < X_rows; ++i) {
+        A_triplets->emplace_back(*A_row_count + x_index_count, prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)), -sqrt2);
+        b->push_back(0);
+        ++x_index_count;
+      }
+    }
+    (*A_row_count) += X_rows * (X_rows + 1) / 2;
+    psd_cone_length.push_back(X_rows);
+  }
+  cone->ssize = psd_cone_length.size();
+  cone->s = static_cast<scs_int*>(scs_calloc(cone->ssize, sizeof(scs_int)));
+  for (int i = 0; i < cone->ssize; ++i) {
+    cone->s[i] = psd_cone_length[i];
+  }
+}
+
 std::string Scs_return_info(scs_int scs_status) {
   switch (scs_status) {
     case SCS_INFEASIBLE_INACCURATE:
@@ -521,6 +569,9 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   for (int i = 0; i < cone->qsize; ++i) {
     cone->q[i] = lorentz_cone_length[i];
   }
+
+  // Parse PositiveSemidefiniteConstraint and LinearMatrixInequalityConstraint.
+  ParsePositiveSemidefiniteConstraint(prog, &A_triplets, &b, &A_row_count, cone);
 
   Eigen::SparseMatrix<double> A(A_row_count, num_x);
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
