@@ -519,6 +519,41 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   VerifyTopology(autodiff_topology);
 }
 
+TEST_F(TreeTopologyTests, KinematicPathToWorld) {
+  FinalizeModel();
+  const MultibodyTreeTopology& topology = model_->get_topology();
+
+  const BodyIndex body6_index(6);
+  const BodyNodeIndex body6_node_index =
+      topology.get_body(body6_index).body_node;
+  const BodyNodeTopology& body6_node =
+      topology.get_body_node(body6_node_index);
+
+  // Compute kinematic path from body 6 to the world. See documentation for the
+  // test fixture TreeTopologyTests for details on the topology under test.
+  const int path_size = body6_node.level + 1;
+  std::vector<BodyNodeIndex> path_to_world(path_size);
+  topology.GetKinematicPathToWorld(body6_node_index, &path_to_world);
+
+  // These are the expected bodies in the path.
+  const std::vector<BodyIndex> expected_bodies_path =
+      {BodyIndex(0), BodyIndex(4), BodyIndex(1), BodyIndex(6)};
+
+  for (BodyIndex body_index : expected_bodies_path) {
+    // The path is computed in terms of body node indexes. Therefore obtain
+    // the expected value of the node index from the expected value of the
+    // body index.
+    const BodyNodeIndex expected_node_index =
+        topology.get_body(body_index).body_node;
+    const BodyNodeTopology& node = topology.get_body_node(expected_node_index);
+    // Both, expected and computed nodes must be at the same level (depth) in
+    // the tree.
+    const int level = node.level;
+    // Verify the
+    EXPECT_EQ(path_to_world[level], expected_node_index);
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
