@@ -8,8 +8,8 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(_pydrake_ik) {
-  py::module m("_pydrake_ik", "RigidBodyTree inverse kinematics");
+PYBIND11_MODULE(_pydrake_ik, m) {
+  m.doc() = "RigidBodyTree inverse kinematics";
 
   py::class_<RigidBodyConstraint>(m, "RigidBodyConstraint");
 
@@ -245,6 +245,4 @@ PYBIND11_PLUGIN(_pydrake_ik) {
     .def_readonly("q_sol", &IKResults::q_sol)
     .def_readonly("info", &IKResults::info)
     .def_readonly("infeasible_constraints", &IKResults::infeasible_constraints);
-
-  return m.ptr();
 }
