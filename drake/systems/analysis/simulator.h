@@ -698,12 +698,16 @@ void Simulator<T>::IsolateWitnessTriggers(
   };
 
   // Loop until the isolation window is sufficiently small.
+  SPDLOG_DEBUG(drake::log(),
+      "Isolating witness functions using isolation window of {} over [{}, {}]",
+      witness_iso_len.value(), t0, tf);
   VectorX<T> wc(witnesses.size());
   T a = t0;
   T b = tf;
   do {
     // Compute the midpoint and evaluate the witness functions at it.
     T c = (a + b) / 2;
+    SPDLOG_DEBUG(drake::log(), "Integrating forward to time {}", c);
     integrate_forward(c);
 
     // See whether any witness functions trigger.
@@ -724,6 +728,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       // events first). That change would avoid handling unnecessary per-step
       // events- we know no other events are to be handled between t0 and tf-
       // but the current logic appears easier to follow.
+      SPDLOG_DEBUG(drake::log(), "No witness functions triggered up to {}", c);
       triggered_witnesses->clear();
       return;
     } else {
@@ -749,6 +754,10 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
                                           const T& next_sample_time,
                                           const T& boundary_dt,
                                           CompositeEventCollection<T>* events) {
+  // Clear the composite event collection.
+  DRAKE_ASSERT(events);
+  events->Clear();
+
   // Save the time and current state.
   const Context<T>& context = get_context();
   const T t0 = context.get_time();
