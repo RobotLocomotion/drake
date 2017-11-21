@@ -20,11 +20,14 @@ void TestTrivialSDP(const MathematicalProgramSolverInterface& solver) {
 
   auto S = prog.NewSymmetricContinuousVariables<2>("S");
 
+  // S is p.s.d
   prog.AddPositiveSemidefiniteConstraint(S);
 
+  // S(1, 0) = 1
   prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
 
-  prog.AddLinearCost(Eigen::Vector2d(1, 1), S.diagonal());
+  // Min S.trace()
+  prog.AddLinearCost(S.cast<symbolic::Expression>().trace());
 
   RunSolver(&prog, solver);
 
