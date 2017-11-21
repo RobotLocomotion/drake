@@ -519,6 +519,9 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   VerifyTopology(autodiff_topology);
 }
 
+// Verifies the correctness of the method
+// MultibodyTreeTopology::GetKinematicPathToWorld() by computing the path from a
+// given body to the world (root) of the tree on a known topology.
 TEST_F(TreeTopologyTests, KinematicPathToWorld) {
   FinalizeModel();
   const MultibodyTreeTopology& topology = model_->get_topology();
