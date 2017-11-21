@@ -5,8 +5,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
-#include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -200,6 +200,37 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
   }
 }
 }  // namespace TestCallbacks
+
+TEST_P(TestEllipsoidsSeparation, TestSOCP) {
+  GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    SolveAndCheckSolution(gurobi_solver);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(GurobiTest, TestEllipsoidsSeparation,
+                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+
+TEST_P(TestQPasSOCP, TestSOCP) {
+  GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    SolveAndCheckSolution(gurobi_solver);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(GurobiTest, TestQPasSOCP,
+                        ::testing::ValuesIn(GetQPasSOCPProblems()));
+
+TEST_P(TestFindSpringEquilibrium, TestSOCP) {
+  GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    SolveAndCheckSolution(gurobi_solver, 2E-2);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    GurobiTest, TestFindSpringEquilibrium,
+    ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
