@@ -651,19 +651,6 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
       // Now "shift" H_PB_W to H_PBqi_W.
       // We do it by shifting one column at a time:
       Hv_PBqi_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BiQi_W);
-
-#if 0
-      // Now "shift" H_PB_W to H_PBqi_W.
-      // We do it by shifting one column at a time:
-      for (int imobility = 0; imobility < num_velocities; ++imobility) {
-        // Shift the imobility-th column from Bi to Qi:
-        const SpatialVelocity<T> Himob_PBqi_W =
-            SpatialVelocity<T>(H_PB_W.col(imobility)).Shift(p_BiQi_W);
-        // Hv_PBqi only corresponds to the translational component of the full
-        // geometric Jacobian H_PBqi
-        Hv_PBqi_W.col(imobility) = Himob_PBqi_W.translational();
-      }
-#endif
     }  // ipoint.
   }  // body_node_index
 }

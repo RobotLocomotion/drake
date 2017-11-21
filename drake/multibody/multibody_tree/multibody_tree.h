@@ -1045,9 +1045,9 @@ class MultibodyTree {
   ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
   ///   **must** be in `ℝ³ˣⁿᵖ`.
   ///
-  /// @note Both `p_BQi` and `p_BQi` must have three rows. Otherwise this
+  /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
   /// method will throw a std::runtime_error exception. This method also throws
-  /// a std::runtime_error exception if `p_BQi` and `p_BQi` differ in the number
+  /// a std::runtime_error exception if `p_BQi` and `p_AQi` differ in the number
   /// of columns.
   void CalcPointsPositions(
       const systems::Context<T>& context,
@@ -1059,189 +1059,57 @@ class MultibodyTree {
   /// @name Methods to compute multibody Jacobians.
   /// @{
 
-  /// Given a set of points `Pi` with position `p_WPi` in the world frame, this
-  /// method computes the geometric Jacobian `J_WPi` defined by: <pre>
-  ///   J_WPi(q) = d(v_WPi(q, v))/dv
+  /// Given a set of points `Qi` with position vectors `p_WQi` in the world
+  /// frame W, this method computes the geometric Jacobian `J_WQi` defined by:
+  /// <pre>
+  ///   J_WQi(q) = d(v_WQi(q, v))/dv
   /// </pre>
-  /// where `v_WPi` is the translational velocity of point `Pi` in the world
+  /// where `v_WQi` is the translational velocity of point `Qi` in the world
   /// frame W and v is the vector of generalized velocities. Since the spatial
-  /// velocity of each point `Pi` is linear in the generalized velocities, the
-  /// geometric Jacobian `J_WPi` is a function of the generalized coordinates q
+  /// velocity of each point `Qi` is linear in the generalized velocities, the
+  /// geometric Jacobian `J_WQi` is a function of the generalized coordinates q
   /// only.
   ///
-  /// The position of each point `Pi` in the set is specified by its (fixed)
-  /// position `p_BPi` in a frame B.
+  /// The position of each point `Qi` in the set is specified by its (fixed)
+  /// position `p_BQi` in a frame B.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores
   ///   the generalized positions q.
   /// @param[in] frame_B
-  ///   The positions `p_BPi` of each point in the input set are measured and
+  ///   The positions `p_BQi` of each point in the input set are measured and
   ///   expressed in this frame B and are constant (fixed) in this frame.
-  /// @param[in] p_BPi
-  ///   A matrix with the fixed position of a set of points `Pi` measured and
+  /// @param[in] p_BQi_set
+  ///   A matrix with the fixed position of a set of points `Qi` measured and
   ///   expressed in `frame_B`.
-  ///   Each column of this matrix contains the position vector `p_BPi` for a
-  ///   point `Pi` measured and expressed in frame B. Therefore this input
+  ///   Each column of this matrix contains the position vector `p_BQi` for a
+  ///   point `Qi` measured and expressed in frame B. Therefore this input
   ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] J_WPi
-  ///   The geometric Jacobian `J_WPi(q)`, function of the generalized positions
-  ///   q only. This Jacobian relates the translational velocity `v_WPi` of
-  ///   each point `Pi` in the input set by: <pre>
-  ///     `v_WPi = J_WPi⋅v`
+  /// @param[out] p_WQi_set
+  ///   The output positions of each point `Qi` now computed as measured and
+  ///   expressed in frame W. These positions are computed in the process of
+  ///   computing the geometric Jacobian `J_WQi` and therefore external storage
+  ///   must be provided.
+  ///   The output `p_WQi_set` **must** have the same size
+  ///   as the input set `p_BQi_set` or otherwise this method throws a
+  ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
+  ///   `ℝ³ˣⁿᵖ`.
+  /// @param[out] J_WQi
+  ///   The geometric Jacobian `J_WQi(q)`, function of the generalized positions
+  ///   q only. This Jacobian relates the translational velocity `v_WQi` of
+  ///   each point `Qi` in the input set by: <pre>
+  ///     `v_WQi(q, v) = J_WQi(q)⋅v`
   ///   </pre>
-  ///   so that `v_WPi` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `Pi` in the same order they were given in the
-  ///   input set. Therefore `J_WPi` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities.
+  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Qi` in the same order they were given in the
+  ///   input set. Therefore `J_WQi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WQi` **must**
+  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
+  ///   exception.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
       EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const;
-
-  // --------------------------------------
-  // From SimbodyMatterSubsystem.h:
-  // --------------------------------------
-
-  // multiplyByStationJacobian:
-  // Simbody method to compute v_WP = J*v for a given point p, with v_WP only
-  // the translational velocity.
-
-  // calcStationJacobian:
-  // Under the hood it actually computes J^T by performing multiplications with
-  // spatial forces on each body corresponding to a force on point Qi with only
-  // one component equal to one.
-  // See: SimbodyMatterSubsystemRep::multiplyBySystemJacobianTranspose() in
-  // SimbodyMatterSubsystemRep.cpp, L 6089.
-  // See: RigidBodyNodeSpec::multiplyBySystemJacobianTranspose() in
-  // RigidBodyNodeSpec.cpp, L. 794.
-  //
-  // This could be validated against an AutoDiffXd approach for unit testing.
-  // Explicitly computes a Jacobian for a given set of stations.
-  // Costs about 42*nstations + 54*nbodies + 33*nvels flops.
-
-  // calcBiasForStationJacobian:
-  // Computes Jdot_WS for a station point S.
-
-  // multiplyBySystemJacobian:
-  // Computes J_WB * v with cost 12*(nb+n) flops. Multiplication by J, even if
-  // already available, costs 12*nb*n flops. Multiplication costs 6*nt*n.
-
-  // calcSystemJacobian:
-  // Computes the full system Jacobian of size nbodies x num_velocities such that
-  // V_WB = J_WB(q) * v
-
-  // calcBiasForSystemJacobian:
-  // Computes the system wide Jdot_WB, as in A_WB = J_WB * vdot + Jdot_WB * v.
-
-  // I think what we want is:
-  // multiplyByFrameJacobian: computes the spatial velocity of a station frame F
-  // on a body B.
-
-  // calcFrameJacobian:
-  // Explcitly forms the frame Jacobian above.
-
-  // calcBiasForFrameJacobian:
-  // Computes Jdot for the frame Jacobian.
-
-  // Inverse Kinematics Notes:
-  // Look in controlled_kuka_demo.cc the ussage of WorldPositionConstraint (
-  // rigid_body_constraint.h, L 383) for
-  // specifying a set of points on a body to lie within a bounding box within
-  // sertain time span.
-  // Added in line 115, which effectively resolves into a call to inverseKinBackend
-  // in inverse_kinematics_backend.cc, L. 195.
-  // WorldPositionConstraint is a RigidBodyConstraint::SingleTimeKinematicConstraintCategory
-  // Therefore L 235 gets executed in inverse_kinematics_backend.cc and the contraint
-  // gets wrapped by a SingleTimeKinematicConstraintWrapper (constraint_wrappers.h, L 39).
-  // This wrapper implements DoEval for the solver to call, which in turns calls
-  // eval() on the original WorldPositionConstraint.
-  //
-  // WorldPositionConstraint must implement evalPositions(cache, pos, J).
-  // L 707 of rigid_body_constraint.cc. THAT, is what you need to implement first!!
-
-  // The following line computes the pose of a series of points, stations,
-  // (get_pts()) originally expressed in the body frame for body_, in the world
-  // frame (index 0 in the arguments).
-  //
-  // pos = getRobotPointer()->transformPoints(cache, get_pts(), body_, 0);
-  //
-  //
-  // The following line seems to compute J_WP for all those points, such taht
-  // v_WP = Jq_WP * qdot (in_terms_of_qdot = true, last argument).
-  // J = getRobotPointer()->transformPointsJacobian(cache, get_pts(), body_, 0,true);
-  //
-  // That is, that call computes Jq_WP = d(p_WP)/dq, the so called analytic Jacobian.
-  //
-  // Equivalences:
-  //  transformPointsJacobian (RBT) == calcStationJacobian (Simbody)
-  //  transformPoints (RBT) == None it looks like?
-  // For MBT probably we'd like thing to look like:
-  //
-  //  Computes the relative transform X_BA from a frame A to a frame B.
-  //  That is, the position of a point Q measured and expressed in frame B can
-  //  be computed from the position p_AQ of this point measured and expressed in
-  //  frame A using the transformation p_BQ = X_BA * p_AQ.
-  //  Isometry3<T> CalcRelativeTransform(
-  //    const Context&, const Frame& from_frame_A, const Frame& to_frame_B)
-  //
-  //  Given a vector of positions p_APi of points Pi in A, computes the
-  //  position p_BPi of each point Pi in frame B.
-  //  CalcPointsPositions(
-  //    const Context&,
-  //    const Frame& from_frame_A, const Frame& to_frame_B,
-  //    const Matrix3X<T>& points_in_A, EigenPtr<Matrix3X<T>> points_in_B)
-  //
-  //  This method computes the analytical Jacobian for the positions p_AQi in a
-  //  frame A of set of points Qi, given the knowledge of these points (fixed)
-  //  position p_BQi in a frame B.
-  //  The analytical Jacobian for the position p_AQi of a point Q in frame A is
-  //  defined as: <pre>
-  //    J_AQi = d(p_AQi(q))/dq
-  //  </pre>
-  //  that is, the analytical Jacobian J_AQi is the gradient of `p_AQi(q)` with
-  //  respect to the generalized positions q.
-  //  @pre from_frame_B
-  //   The input points are measured and expressed in this frame B and are
-  //   constant (fixed) in this frame.
-  //  @pre to_frame_A
-  //  @pre p_BQi
-  //    A matrix with the fixed position of a set of points `Qi` in a frame B.
-  //    Each column of this matrix contains the position vector p_BQi for a
-  //    point `Qi` measured and expressed in frame B.
-  //  CalcPointsAnalyticalJacobian(
-  //    const Context&,
-  //    const Frame& from_frame_B, const Frame& to_frame_A,
-  //    const Matrix3X<T>& p_BQi, EigenPtr<MatrixX<T>> J_AQi)
-  //
-  // Likewise, we could introduce:
-  //  CalcPointsGeometricJacobian(
-  //    const Context&,
-  //    const Frame& from_frame_B, const Frame& to_frame_A,
-  //    const Matrix3X<T>& p_BQi, EigenPtr<MatrixX<T>> J_AQi)
-  //
-  // Others (for orientation)
-  // Quaternion<T> CalcRelativeQuaternion(context, from_frame_B, to_frame_A)
-  //   see: RBT::relativeQuaternion()
-  // CalcRelativeQuaternionAnalyticalJacobian(
-  //    contex, from_frame_B, to_frame_A, J)
-  //   see: RBT::relativeQuaternionJacobian()
-  //
-  // CalcRelativeSpaceXYZAngles(context, from_frame_B, to_frame_A)
-  //   see: RBT::relativeRollPitchYaw
-  // CalcRelativeSpaceXYZAnglesAnalyticalJacobian(context, from_frame_B, to_frame_A)
-  //   see: RBT::relativeRollPitchYawJacobian
-  //
-  //
-  // ACTION LIST:
-  // 1. Implement CalcRelativeTransform()
-  // 2. Implement CalcPointsPositions() using (1).
-  // 3. Implement MultiplyBySystemJacobianTranspose(), with options:
-  //      a) As in Simbody, cave a BodyNode::MultiplyBySystemJacobianTranspose()
-  //      b) could we use inverse dynamics with some bits disabled?
-  // 4. Implement CalcPointsAnalyticalJacobian() using 3.
-  // 5. Verify CalcPointsAnalyticalJacobian() using AutoDiffXd in (2) to compute
-  //    the same Jacobian.
 
   /// @}
   // End of multibody Jacobian methods section.
