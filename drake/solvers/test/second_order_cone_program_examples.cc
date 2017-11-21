@@ -282,7 +282,8 @@ TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
     Vector3<symbolic::Expression> lorentz_cone_expr;
-    lorentz_cone_expr << t_(i) + spring_rest_length_, x_(i) - x_(i + 1), y_(i) - y_(i + 1);
+    lorentz_cone_expr << t_(i) + spring_rest_length_, x_(i) - x_(i + 1),
+        y_(i) - y_(i + 1);
     prog_.AddLorentzConeConstraint(lorentz_cone_expr);
   }
 
