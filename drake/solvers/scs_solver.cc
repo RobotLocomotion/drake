@@ -97,7 +97,6 @@ void ParseRotatedLorentzConeConstraint(
 }
 
 void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
-                        double* constant,
                         std::vector<Eigen::Triplet<double>>* A_triplets,
                         std::vector<double>* b, int* A_row_count,
                         std::vector<int>* lorentz_cone_length, int* num_x) {
@@ -507,7 +506,7 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   // Parse quadratic cost. This MUST be called after parsing the second order
   // cone constraint, as we convert quadratic cost to second order cone
   // constraint.
-  ParseQuadraticCost(prog, &c, &cost_constant, &A_triplets, &b, &A_row_count,
+  ParseQuadraticCost(prog, &c, &A_triplets, &b, &A_row_count,
                      &lorentz_cone_length, &num_x);
 
   // Set the lorentz cone length in the SCS cone.
