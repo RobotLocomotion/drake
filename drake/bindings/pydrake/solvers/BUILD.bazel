@@ -29,6 +29,9 @@ drake_py_library(
 drake_pybind_library(
     name = "ik_py",
     cc_srcs = ["ik_py.cc"],
+    py_deps = [
+        "//drake/bindings/pydrake:rbtree_py",
+    ],
     py_srcs = ["ik.py"],
 )
 
@@ -50,18 +53,21 @@ drake_pybind_library(
     name = "gurobi_py",
     cc_so_name = "gurobi",
     cc_srcs = ["gurobi_py.cc"],
+    py_deps = [":mathematicalprogram_py"],
 )
 
 drake_pybind_library(
     name = "ipopt_py",
     cc_so_name = "ipopt",
     cc_srcs = ["ipopt_py.cc"],
+    py_deps = [":mathematicalprogram_py"],
 )
 
 drake_pybind_library(
     name = "mosek_py",
     cc_so_name = "mosek",
     cc_srcs = ["mosek_py.cc"],
+    py_deps = [":mathematicalprogram_py"],
 )
 
 PYBIND_MODULES = [
@@ -94,7 +100,7 @@ drake_py_test(
     srcs = ["test/gurobi_solver_test.py"],
     main = "test/gurobi_solver_test.py",
     tags = gurobi_test_tags(),
-    deps = ["//drake/bindings/pydrake"],
+    deps = [":gurobi_py"],
 )
 
 drake_py_test(
@@ -106,7 +112,7 @@ drake_py_test(
         "//conditions:default": [],
     }),
     main = "test/ipopt_solver_test.py",
-    deps = ["//drake/bindings/pydrake"],
+    deps = [":ipopt_py"],
 )
 
 drake_py_test(
@@ -115,7 +121,7 @@ drake_py_test(
     srcs = ["test/mosek_solver_test.py"],
     main = "test/mosek_solver_test.py",
     tags = mosek_test_tags(),
-    deps = ["//drake/bindings/pydrake"],
+    deps = [":mosek_py"],
 )
 
 drake_py_test(
@@ -124,7 +130,7 @@ drake_py_test(
     srcs = ["test/mathematicalprogram_test.py"],
     main = "test/mathematicalprogram_test.py",
     tags = gurobi_test_tags(),
-    deps = ["//drake/bindings/pydrake"],
+    deps = [":mathematicalprogram_py"],
 )
 
 drake_py_test(
@@ -134,7 +140,7 @@ drake_py_test(
     data = ["//drake/examples/pr2:models"],
     main = "test/pr2_ik_test.py",
     tags = ["snopt"],
-    deps = ["//drake/bindings/pydrake"],
+    deps = [":ik_py"],
 )
 
 drake_py_test(
@@ -144,7 +150,7 @@ drake_py_test(
     data = ["//drake/examples/pendulum:models"],
     main = "test/rbt_ik_test.py",
     tags = ["snopt"],
-    deps = ["//drake/bindings/pydrake"],
+    deps = [":ik_py"],
 )
 
 add_lint_tests()
