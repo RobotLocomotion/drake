@@ -8,7 +8,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(_pydrake_ik, m) {
+PYBIND11_MODULE(_ik_py, m) {
   m.doc() = "RigidBodyTree inverse kinematics";
 
   py::class_<RigidBodyConstraint>(m, "RigidBodyConstraint");

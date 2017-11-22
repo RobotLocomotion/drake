@@ -2,7 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/bindings/pydrake/pydrake_autodiff_types.h"
+#include "drake/bindings/pydrake/autodiff_types_py.h"
 
 namespace py = pybind11;
 
@@ -23,7 +23,7 @@ AutoDiffXd eval(const Eigen::AutoDiffScalar<Derived>& x) {
   return AutoDiffXd(x.value(), x.derivatives());
 }
 
-PYBIND11_MODULE(_pydrake_autodiffutils, m) {
+PYBIND11_MODULE(_autodiffutils_py, m) {
   m.doc() = "Bindings for Eigen AutoDiff Scalars";
 
   py::class_<AutoDiffXd>(m, "AutoDiffXd")
