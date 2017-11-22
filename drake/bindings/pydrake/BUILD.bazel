@@ -77,6 +77,7 @@ drake_pybind_library(
     py_deps = [
         ":autodiffutils_py",
         ":common_py",
+        ":parsers_py",
     ],
     py_srcs = ["rbtree.py"],
 )
@@ -146,7 +147,7 @@ drake_py_test(
     srcs = ["test/atlas_constructor_test.py"],
     data = ["//drake/examples/atlas:models"],
     main = "test/atlas_constructor_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -155,7 +156,7 @@ drake_py_test(
     srcs = ["test/common_test.py"],
     data = ["//drake/examples/atlas:models"],
     main = "test/common_test.py",
-    deps = [":pydrake"],
+    deps = [":common_py"],
 )
 
 # `//:install` is run in this test to verify that once installed
@@ -178,7 +179,7 @@ drake_py_test(
     size = "small",
     srcs = ["test/forward_diff_test.py"],
     main = "test/forward_diff_test.py",
-    deps = [":pydrake"],
+    deps = [":autodiffutils_py"],
 )
 
 drake_py_test(
@@ -187,7 +188,7 @@ drake_py_test(
     srcs = ["test/rbt_transform_points_test.py"],
     data = ["//drake/examples/pendulum:models"],
     main = "test/rbt_transform_points_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -196,7 +197,7 @@ drake_py_test(
     srcs = ["test/rbt_com_test.py"],
     data = ["//drake/examples/pendulum:models"],
     main = "test/rbt_com_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -204,7 +205,7 @@ drake_py_test(
     size = "small",
     srcs = ["test/symbolic_test.py"],
     main = "test/symbolic_test.py",
-    deps = [":pydrake"],
+    deps = [":symbolic_py"],
 )
 
 drake_py_test(
@@ -213,7 +214,7 @@ drake_py_test(
     srcs = ["test/test_urdf_parser.py"],
     data = ["//drake/examples/pr2:models"],
     main = "test/test_urdf_parser.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 add_lint_tests()
