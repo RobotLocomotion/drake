@@ -746,6 +746,12 @@ void Simulator<T>::IsolateWitnessTriggers(
 
 // Integrates the continuous state forward in time while attempting to locate
 // the first zero of any triggered witness functions.
+// @param next_publish_dt the time step at which the next publish event occurs.
+// @param next_update_dt the time step at which the next update event occurs.
+// @param next_sample_time the time at which the next event occurs.
+// @param boundary_dt the maximum time step to take.
+// @param events a non-null collection of events, which the method will clear
+//        on entry.
 // @returns `true` if integration terminated on a sample time, indicating that
 //          an event needs to be handled at the state/time on return.
 template <class T>
