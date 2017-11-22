@@ -8,7 +8,7 @@ from . import common
 
 from . import rbtree
 
-from .pydrake_path import getDrakePath
+from .path import getDrakePath
 
 # Adding searchable path as inferred by pydrake. This assumes that the python
 # module has not been moved outside of the installation directory (in which

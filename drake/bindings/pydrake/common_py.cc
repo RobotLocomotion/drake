@@ -18,7 +18,7 @@ void trigger_an_assertion_failure() {
 }
 }  // namespace
 
-PYBIND11_MODULE(_pydrake_common, m) {
+PYBIND11_MODULE(_common_py, m) {
   m.doc() = "Bindings for //drake/common:common";
 
   // Turn DRAKE_ASSERT and DRAKE_DEMAND exceptions into native SystemExit.
