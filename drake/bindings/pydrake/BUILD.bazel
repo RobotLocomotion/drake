@@ -23,9 +23,20 @@ package(default_visibility = ["//drake/bindings/pydrake:__subpackages__"])
 
 # N.B. Any common headers should be shared via a HEADER ONLY library.
 
+# This is a pure-python, standalone library.
+# Keep this away from `common_py` to simplify test dependencies.
+drake_py_library(
+    name = "util_py",
+    srcs = ["util.py"],
+    imports = [".."],
+)
+
 drake_pybind_library(
     name = "common_py",
     cc_srcs = ["common_py.cc"],
+    py_deps = [
+        ":util_py",
+    ],
     py_srcs = [
         "__init__.py",
         "common.py",
@@ -65,6 +76,7 @@ drake_pybind_library(
     py_deps = [
         ":autodiffutils_py",
         ":common_py",
+        ":parsers_py",
     ],
     py_srcs = ["rbtree.py"],
 )
@@ -107,6 +119,9 @@ PYBIND_MODULES = [
 
 install(
     name = "install",
+    targets = [
+        ":util_py",
+    ],
     visibility = ["//visibility:public"],
     deps = get_drake_pybind_installs(PYBIND_MODULES),
 )
@@ -123,7 +138,7 @@ drake_py_test(
     srcs = ["test/atlas_constructor_test.py"],
     data = ["//drake/examples/atlas:models"],
     main = "test/atlas_constructor_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -132,7 +147,7 @@ drake_py_test(
     srcs = ["test/common_test.py"],
     data = ["//drake/examples/atlas:models"],
     main = "test/common_test.py",
-    deps = [":pydrake"],
+    deps = [":common_py"],
 )
 
 # `//:install` is run in this test to verify that once installed
@@ -155,7 +170,7 @@ drake_py_test(
     size = "small",
     srcs = ["test/forward_diff_test.py"],
     main = "test/forward_diff_test.py",
-    deps = [":pydrake"],
+    deps = [":autodiffutils_py"],
 )
 
 drake_py_test(
@@ -164,7 +179,7 @@ drake_py_test(
     srcs = ["test/rbt_transform_points_test.py"],
     data = ["//drake/examples/pendulum:models"],
     main = "test/rbt_transform_points_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -173,7 +188,7 @@ drake_py_test(
     srcs = ["test/rbt_com_test.py"],
     data = ["//drake/examples/pendulum:models"],
     main = "test/rbt_com_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -181,7 +196,7 @@ drake_py_test(
     size = "small",
     srcs = ["test/symbolic_test.py"],
     main = "test/symbolic_test.py",
-    deps = [":pydrake"],
+    deps = [":symbolic_py"],
 )
 
 drake_py_test(
@@ -190,7 +205,35 @@ drake_py_test(
     srcs = ["test/test_urdf_parser.py"],
     data = ["//drake/examples/pr2:models"],
     main = "test/test_urdf_parser.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
+)
+
+drake_py_library(
+    name = "module_shim_example",
+    testonly = 1,
+    srcs = [
+        "test/module_shim_example/__init__.py",
+        "test/module_shim_example/sub_module.py",
+    ],
+    imports = ["test"],
+    deps = [":util_py"],
+)
+
+drake_py_test(
+    name = "module_shim_test",
+    srcs = ["test/module_shim_test.py"],
+    deps = [
+        ":module_shim_example",
+    ],
+)
+
+drake_py_test(
+    name = "rbtree_shim_test",
+    srcs = ["test/rbtree_shim_test.py"],
+    deps = [
+        ":common_py",
+        ":rbtree_py",
+    ],
 )
 
 add_lint_tests()
