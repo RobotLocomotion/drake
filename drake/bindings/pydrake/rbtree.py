@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from ._pydrake_rbtree import *
+from ._rbtree_py import *
 
 # TODO: Remove this direct import and ask users to import
 # pydrake.parsers.PackageMap instead
