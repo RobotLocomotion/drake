@@ -1,3 +1,3 @@
 from __future__ import absolute_import
 
-from ._pydrake_mathematicalprogram import *
+from ._mathematicalprogram_py import *

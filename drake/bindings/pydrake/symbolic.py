@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-from ._pydrake_symbolic import *
+from ._symbolic_py import *
 
 # Explicitly import private symbols
-from ._pydrake_symbolic import __logical_and, __logical_or
+from ._symbolic_py import __logical_and, __logical_or
 
 
 def logical_and(*formulas):

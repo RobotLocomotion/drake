@@ -2,11 +2,11 @@
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 
-#include "drake/bindings/pydrake/pydrake_symbolic_types.h"
+#include "drake/bindings/pydrake/symbolic_types_py.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(_pydrake_symbolic, m) {
+PYBIND11_MODULE(_symbolic_py, m) {
   using drake::symbolic::Variable;
   using drake::symbolic::Expression;
   using drake::symbolic::Formula;
