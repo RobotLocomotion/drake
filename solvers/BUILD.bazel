@@ -601,6 +601,7 @@ drake_cc_library(
     name = "scs_solver",
     srcs = select({
         "//conditions:default": [
+            "scs_bnb.cc",
             "scs_solver.cc",
             "scs_solver_common.cc",
         ],
@@ -609,7 +610,15 @@ drake_cc_library(
             "scs_solver_common.cc",
         ],
     }),
-    hdrs = ["scs_solver.h"],
+    hdrs = select({
+        "//conditions:default": [
+            "scs_solver.h",
+            "scs_bnb.h",
+        ],
+        "//tools:no_scs": [
+            "scs_solver.h",
+        ],
+    }),
     deps = select({
         "//conditions:default": adjust_labels_for_drake_hoist([
             ":mathematical_program_api",
@@ -976,6 +985,16 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scs_bnb_test",
+    srcs = [
+        "test/scs_bnb_test.cc",
+    ],
+    deps = [
+        "scs_solver",
     ],
 )
 
