@@ -224,23 +224,23 @@ ẋ = 0
 This hard constraint can be softened and stabilized, resulting in:
 <pre>
 mẍ = f + λ
-ẋ + xν/h + γλ = 0
+ẋ + xϱ/h + hγλ = 0
 </pre>
-where `h` will be used for discretization (see immediately below) and ν ∈ [0,1].
+where `h` will be used for discretization (see immediately below) and ϱ ∈ [0,1].
 [Catto 2011] showed that a particular discretization of this system yields the
 dynamics of a harmonic oscillator by solving the following system of equations
 for ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
 <pre>
 ẋ(t+h) = ẋ(t) + hf/m + hλ/m
-ẋ(t+h) + x(t)ν/h + γλ = 0
+ẋ(t+h) + x(t)ϱ/h + hγλ = 0
 x(t+h) = x(t) + hẋ(t+h)
 </pre>
-γ and ν can be selected to effect the desired undamping angular frequency
+γ and ϱ can be selected to effect the desired undamping angular frequency
 and damping ratio (a process also described in @ref constraint_stabilization)
 using the formula:
 <pre>
 γ = 1 / (2m̂ζω + hm̂ω²)
-ν = hm̂ω²γ
+ϱ = hm̂ω²γ
 </pre>
 where m̂ is the *effective inertia* of the constraint and is determined
 by 1/(GM⁻¹Gᵀ), where G ≡ ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the
@@ -252,13 +252,13 @@ should make it clear that GM⁻¹Gᵀ would be a scalar as well.
 
 While Catto studied a mass-spring system, these results apply to general
 multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
- time stepping scheme in Drake using ConstraintSolver, one would
-use ω and ζ to correspondingly set gammaN to γ and kN to ν/h times the
+time stepping scheme in Drake using ConstraintSolver, one would
+use ω and ζ to correspondingly set gammaN to γ and kN to ϱ/h times the
 signed constraint distance (using, e.g., signed distance for the point contact
 non-interpenetration constraint).
 
 <h4>Softening at the acceleration-level</h4>
-Starting from the same stabilized and softened spring mass system:
+Starting from the same stabilized and "softened" spring mass system:
 <pre>
 mẍ = f + λ
 ẍ + γλ = 0
