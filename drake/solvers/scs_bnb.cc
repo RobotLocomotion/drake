@@ -5,6 +5,15 @@
 // This code is in C style, to be compatible with the SCS source code.
 namespace drake {
 namespace solvers {
+ScsNode::ScsNode()
+    : A_{static_cast<AMatrix*>(malloc(sizeof(AMatrix)))},
+      b_{nullptr},
+      c_{nullptr},
+      scs_sol_{static_cast<SCS_SOL_VARS*>(scs_calloc(1, sizeof(SCS_SOL_VARS)))},
+      cost_{NAN},
+      found_integral_sol_{false},
+      larger_than_upper_bound_{false}{}
+
 ScsNode::ScsNode(AMatrix* A, scs_float* b, scs_float* c, const std::list<int>& binary_var_indices, double cost_constant)
     : A_{static_cast<AMatrix*>(malloc(sizeof(AMatrix)))},
       b_{static_cast<scs_float*>(scs_calloc(A->m, sizeof(scs_float)))},
@@ -12,8 +21,11 @@ ScsNode::ScsNode(AMatrix* A, scs_float* b, scs_float* c, const std::list<int>& b
       y_index_(-1),
       y_val_{-1},
       cost_constant_{cost_constant},
-      upper_{std::numeric_limits<double>::infinity()},
-      lower_{-std::numeric_limits<double>::infinity()},
+      scs_sol_{static_cast<SCS_SOL_VARS*>(scs_calloc(1, sizeof(SCS_SOL_VARS)))},
+      scs_info_{0},
+      cost_{NAN},
+      found_integral_sol_{false},
+      larger_than_upper_bound_{false},
       binary_var_indices_{binary_var_indices},
       left_child_{nullptr},
       right_child_{nullptr},
@@ -47,8 +59,13 @@ ScsNode::~ScsNode() {
     delete right_child_;
   }
   freeAMatrix(A_);
-  scs_free(b_);
-  scs_free(c_);
+  if (b_) {
+    scs_free(b_);
+  }
+  if (c_) {
+    scs_free(c_);
+  }
+  freeSol(scs_sol_);
 }
 
 void ScsNode::Branch(int binary_var_index) {
@@ -62,7 +79,6 @@ void ScsNode::Branch(int binary_var_index) {
   // The A matrix of both the left and the right child nodes are the same, so we
   // compute the A matrix for left node first, and then just copy its value to
   // the right node later.
-  left_child_->A_ = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
   left_child_->A_->m = this->A_->m;
   left_child_->A_->n = this->A_->n - 1;
   left_child_->A_->p = static_cast<scs_int*>(scs_calloc(left_child_->A_->n + 1, sizeof(scs_int)));
@@ -128,15 +144,44 @@ void ScsNode::Branch(int binary_var_index) {
   right_child_->y_index_= binary_var_index;
   right_child_->y_val_ = 1;
 }
-// Given a mixed-integer convex optimization program in SCS format
-// min cᵀx
-// s.t Ax + s = b
-//     s in K
-// And the indices of variable x that should only take binary value {0, 1},
-// solve this mixed-integer optimization problem through branch-and-bound.
-class ScsBranchAndBound {
- private:
 
-};
+scs_int ScsNode::Solve(const SCS_CONE* const cone, const SCS_SETTINGS* const scs_settings, double best_upper_bound) {
+  SCS_PROBLEM_DATA* scs_problem_data = static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
+  scs_problem_data->m = A_->m;
+  scs_problem_data->n = A_->n;
+  scs_problem_data->A = A_;
+  scs_problem_data->b = b_;
+  scs_problem_data->c = c_;
+  scs_problem_data->stgs = const_cast<SCS_SETTINGS*>(scs_settings);
+
+  SCS_WORK* scs_work = scs_init(scs_problem_data, cone, &scs_info_);
+
+  scs_int scs_status = scs_solve(scs_work, scs_problem_data, cone, scs_sol_, &scs_info_);
+
+  if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
+    cost_ = scs_info_.pobj + cost_constant_;
+    // If the remaining variables all take integer value, then update the upper
+    // bound, otherwise, the upper bound is the same as the root.
+    found_integral_sol_ = true;
+    for (auto it = binary_var_indices_.begin(); it != binary_var_indices_.end(); ++it) {
+      const double x_val{scs_sol_->x[*it]};
+      if (x_val > integer_tol_ && x_val < 1 - integer_tol_) {
+        found_integral_sol_ = false;
+        break;
+      }
+    }
+    if (cost_ > best_upper_bound) {
+      larger_than_upper_bound_ = true;
+    }
+  } else if (scs_status == SCS_INFEASIBLE || scs_status == SCS_INFEASIBLE_INACCURATE) {
+    cost_ = std::numeric_limits<double>::infinity();
+  } else if (scs_status == SCS_UNBOUNDED || scs_status == SCS_UNBOUNDED_INACCURATE) {
+    cost_ = -std::numeric_limits<double>::infinity();
+  }
+  // Free allocated memory
+  scs_finish(scs_work);
+  scs_free(scs_problem_data);
+  return scs_status;
+}
 }
 }

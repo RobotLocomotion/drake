@@ -78,10 +78,24 @@ class TestScsNode : public ::testing::Test {
     A.makeCompressed();
     scs_A_ = ConstructScsAmatrix(A);
     binary_var_indices_ = {0, 2};
+
+    cone_ = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
+    cone_->f = 1;
+    cone_->l = 2;
   }
 
   ~TestScsNode() {
     freeAMatrix(scs_A_);
+    if (cone_->q) {
+      scs_free(cone_->q);
+    }
+    if (cone_->s) {
+      scs_free(cone_->s);
+    }
+    if (cone_->p) {
+      scs_free(cone_->p);
+    }
+    scs_free(cone_);
   }
 
  protected:
@@ -89,6 +103,7 @@ class TestScsNode : public ::testing::Test {
   scs_float b_[3] = {2, -1, 5};
   scs_float c_[4] = {1, 2, 0, -3};
   std::list<int> binary_var_indices_;
+  SCS_CONE* cone_;
 };
 
 TEST_F(TestScsNode, TestConstructor) {
@@ -106,6 +121,8 @@ TEST_F(TestScsNode, TestConstructor) {
     EXPECT_EQ(c_[i], root.c()[i]);
   }
   EXPECT_EQ(root.cost_constant(), 1);
+  EXPECT_FALSE(root.found_integral_sol());
+  EXPECT_FALSE(root.larger_than_upper_bound());
 }
 
 TEST_F(TestScsNode, TestBranch) {
@@ -162,6 +179,26 @@ TEST_F(TestScsNode, TestBranch) {
   EXPECT_EQ(root.right_child()->y_index(), 0);
   EXPECT_EQ(root.left_child()->y_val(), 0);
   EXPECT_EQ(root.right_child()->y_val(), 1);
+}
+
+TEST_F(TestScsNode, TestSolve) {
+  SCS_SETTINGS* settings = static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
+  settings->alpha = ALPHA;
+  settings->cg_rate = CG_RATE;
+  settings->eps = EPS;
+  settings->max_iters = MAX_ITERS;
+  settings->normalize = NORMALIZE;
+  settings->rho_x = RHO_X;
+  settings->scale = SCALE;
+  settings->verbose = VERBOSE;
+  settings->warm_start = WARM_START;
+
+  ScsNode root(scs_A_, b_, c_, binary_var_indices_, 1);
+
+  root.Solve(cone_, settings, std::numeric_limits<double>::infinity());
+  EXPECT_EQ(root.cost(), -std::numeric_limits<double>::infinity());
+
+  scs_free(settings);
 }
 }  // namespace
 }  // namespace solvers

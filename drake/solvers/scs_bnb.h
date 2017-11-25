@@ -34,11 +34,18 @@ class ScsNode {
   // Branch on one binary variable, create two child nodes
   void Branch(int binary_var_index);
 
+  // Solve the optimization problem in this node.
+  scs_int Solve(const SCS_CONE* const cone, const SCS_SETTINGS* const scs_settings, double best_upper_bound);
+
   AMatrix* A() const { return A_; }
 
   scs_float* b() const { return b_; }
 
   scs_float* c() const { return c_; }
+
+  bool found_integral_sol() const { return found_integral_sol_;}
+
+  bool larger_than_upper_bound() const { return larger_than_upper_bound_;}
 
   const std::list<int>& binary_var_indices() const { return binary_var_indices_; }
 
@@ -54,8 +61,14 @@ class ScsNode {
 
   ScsNode* parent() const { return parent_; }
 
+  double cost() const { return cost_;}
+
+  const SCS_SOL_VARS* const scs_sol() const {return scs_sol_;}
+
+  SCS_INFO scs_info() const { return scs_info_;}
+
  private:
-  ScsNode() {}
+  ScsNode();
   AMatrix* A_;
   scs_float* b_;
   scs_float* c_;
@@ -65,8 +78,17 @@ class ScsNode {
   int y_val_;
   // The optimization program can add a constant term to the cost.
   double cost_constant_;
-  double upper_; // upper bound
-  double lower_; // lower bound
+  SCS_SOL_VARS* scs_sol_;
+  SCS_INFO scs_info_;
+  double cost_;
+  // If a node is fathomed, then there is no need to branch on this node.
+  // There are two possible cases to make a node fathomed_
+  // 1. The optimal solution to the relaxed problem satisfy all the integral
+  //    constraints.
+  // 2. The optimal solution to the relaxed problem is larger than the current
+  //    best upper bound.
+  bool found_integral_sol_;
+  bool larger_than_upper_bound_;
   // binary_var_indices_ are the indices of the remaining binary variables, in
   // the vector x. The indices are in the ascending order.
   std::list<int> binary_var_indices_;
@@ -74,8 +96,12 @@ class ScsNode {
   ScsNode* left_child_ = nullptr;
   ScsNode* right_child_ = nullptr;
   ScsNode* parent_;
+
+  // If the solution is within integer_tol to an integer value, then we regard
+  // the solution as taking the integer value.
+  double integer_tol_ = 1E-2;
 };
-/*
+
 // Given a mixed-integer convex optimization program in SCS format
 // min cᵀx
 // s.t Ax + s = b
@@ -87,7 +113,9 @@ class ScsBranchAndBound {
   // scs_data_ includes the data on c, A, b, and the cone K. It also contains
   // the settings of the problem, such as iteration limit, accuracy, etc.
   SCS_PROBLEM_DATA* scs_data_;
-  std::list<int>
-};*/
+  // binary_var_indices_ records the indices of all binary variables in x.
+  // We suppose that binary_var_indices_ are in the ascending order.
+  std::list<int> binary_var_indices_;
+};
 }  // namespace solvers
 }  // namespace drake
