@@ -16,7 +16,7 @@ further in @ref constraint_types.
  This discussion will encompass:
  - @ref constraint_types
  - @ref constraint_stabilization
- - @ref constraint_softening
+ - @ref constraint_regularization
  - @ref constraint_Jacobians
  - @ref noninterpenetration_constraints
  - @ref frictional_constraints
@@ -51,8 +51,7 @@ further in @ref constraint_types.
 - β ∈ ℝ   A non-negative scalar used to correct position-level constraint
           errors via the same error feedback process (Baumgarte
           Stabilization) that uses α.
-- γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly
-          "rigid" constraint.
+- γ,ε ∈ ℝ Non-negative scalars used to regularize constraints. 
 */
 
 /** @defgroup constraint_types Constraint types
@@ -120,7 +119,7 @@ where<pre>
 c̅(t,q,v;v̇,λ) ≡ c̈(t,q,v;v̇) + λ
 </pre>
 The equation above was constructed purely for pedagogic purposes, but a similar
-construct is introduced in @ref constraint_softening.
+construct is introduced in @ref constraint_regularization.
 
 <h4>Complementarity conditions</h4>
 Each unilateral constraint comprises a triplet of equations. For example:<pre>
@@ -176,30 +175,30 @@ than science (see [Ascher 1992]). Given ω₀ and ζ, α and β are set using th
 equations above.
 */
 
-/** @defgroup constraint_softening Constraint softening
+/** @defgroup constraint_regularization Constraint regularization and softening
 @ingroup constraint_overview
 
 It can be both numerically advantageous and a desirable modeling feature to
-soften otherwise "rigid" constraints. For example, consider modifying a 
+regularize constraints. For example, consider modifying a 
 unilateral complementarity constraint to:<pre>
-0 ≤ c(t,q,v;v̇,λ) + γλ  ⊥  λ ≥ 0
+0 ≤ c(t,q,v;v̇,λ) + ελ  ⊥  λ ≥ 0
 </pre>
-where γ is a non-negative scalar; alternatively, it can represent a diagonal
+where ε is a non-negative scalar; alternatively, it can represent a diagonal
 matrix with the same number of rows/columns as the dimension of c and λ,
 permitting different coefficients for each constraint equation.
-With γλ > 0, it becomes easier to satisfy the constraint
-c(t,q,v;v̇,λ) + γλ ≥ 0, though the resulting v̇ and λ will not quite
+With ελ > 0, it becomes easier to satisfy the constraint
+c(t,q,v;v̇,λ) + ελ ≥ 0, though the resulting v̇ and λ will not quite
 satisfy c ≥ 0: c will become slightly negative. As hinted above,
-softening grants two benefits. First, the complementarity problems resulting
-from the softened unilateral constraints are regularized, and any
+regularization can confer two benefits. First, the resulting complementarity
+problems become easier to solve; more importantly, any
 complementarity problem becomes solvable given sufficient regularization
-[Cottle 1992]; more softening results in greater regularization. 
+[Cottle 1992]. 
 
-<h4>Softening introduces compliance</h4>
+<h4>Regularization introduces compliance</h4>
 Second (in concert with constraint stabilization and a particular discretization
-of the constrained multibody dynamics equations), constraint
-softening introduces compliant effects, e.g., at joint stops and
-between contacting bodies; such effects are often desirable.
+of the constrained multibody dynamics equations), regularization introduces
+compliant effects, e.g., at joint stops and between contacting bodies; such
+*softening* effects are often desirable.
 
 Unfortunately, not all constraints can be intuitively softened. While
 [Lacoursiere 2007] convincingly argues for softening interpenetration
@@ -208,7 +207,7 @@ for doing so), users typically expect stiction and Coulomb friction constraints
 to be maintained to high tolerances. Without softening *all* constraints, the
 regularization benefits noted above disappear.
 
-<h4>Softening at the velocity level</h4>
+<h4>Regularizing at the velocity level</h4>
 [Catto 2011] showed how the combination of constraint softening, constraint
 stabilization, and a particular integration scheme results in numerically
 stable spring-like constraints. For a one-dimensional particle with dynamics
@@ -221,10 +220,12 @@ The "hard constraint" ẋ = 0 can be added, resulting in:
 mẍ = f + λ
 ẋ = 0
 </pre>
-This hard constraint can be softened and stabilized, resulting in:
+This hard constraint can be regularized and stabilized using γ, which takes the
+place of ε but provides identical functionality (albeit not identical units),
+resulting in:
 <pre>
 mẍ = f + λ
-ẋ + xϱ/h + hγλ = 0
+ẋ + xϱ/h + γλ = 0
 </pre>
 where `h` will be used for discretization (see immediately below) and ϱ ∈ [0,1].
 [Catto 2011] showed that a particular discretization of this system yields the
@@ -232,13 +233,12 @@ dynamics of a harmonic oscillator by solving the following system of equations
 for ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
 <pre>
 ẋ(t+h) = ẋ(t) + hf/m + hλ/m
-ẋ(t+h) + x(t)ϱ/h + hγλ = 0
+ẋ(t+h) + x(t)ϱ/h + γλ = 0
 x(t+h) = x(t) + hẋ(t+h)
 </pre>
-γ and ϱ can be selected to effect the desired undamping angular frequency
-and damping ratio (a process also described in @ref constraint_stabilization)
-using the formula:
-<pre>
+γ and ϱ can be selected to effect the desired undamping angular frequency and
+damping ratio (a process also described in @ref constraint_stabilization) using
+the formula:<pre>
 γ = 1 / (2m̂ζω + hm̂ω²)
 ϱ = hm̂ω²γ
 </pre>
@@ -257,18 +257,18 @@ use ω and ζ to correspondingly set gammaN to γ and kN to ϱ/h times the
 signed constraint distance (using, e.g., signed distance for the point contact
 non-interpenetration constraint).
 
-<h4>Softening at the acceleration-level</h4>
-Starting from the same stabilized and "softened" spring mass system:
+<h4>Regularization at the acceleration-level</h4>
+Starting from the same stabilized and regularized spring mass system:
 <pre>
 mẍ = f + λ
-ẍ + γλ = 0
+ẍ + ελ = 0
 </pre>
-γ now becomes strictly a regularization parameter: larger values make
-linear equations and linear complementarity problems easier to solve but yield
-larger constraint errors to be stabilized.
+the softening benefits are not realized, but the linear equations and linear
+complementarity problems become easier to solve (albeit at the expense of
+larger constraint errors to be stabilized).
 
 <h4>Bilateral constraints</h4>
-Note that Drake does not soften bilateral constraints.
+Note that Drake does not regularize bilateral constraints.
 */
 
 /** @defgroup constraint_Jacobians Constraint Jacobian matrices
