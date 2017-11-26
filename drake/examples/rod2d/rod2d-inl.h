@@ -585,8 +585,6 @@ void Rod2D<T>::CalcConstraintProblemData(
         context, points[contact_index], contact_tangent);
   }
   data->kF = Fdot * v;
-  data->gammaF.setZero(nr);
-  data->gammaE.setZero(non_sliding_contacts.size());
   data->F_mult = [F](const VectorX<T>& w) -> VectorX<T> { return F * w; };
   data->F_transpose_mult = [F](const VectorX<T>& w) -> VectorX<T> {
     return F.transpose() * w;
