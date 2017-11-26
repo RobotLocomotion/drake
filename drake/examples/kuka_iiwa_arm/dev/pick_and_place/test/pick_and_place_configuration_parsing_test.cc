@@ -70,9 +70,9 @@ const std::vector<int> kObjectOptitrackIds{8};
 
 const std::vector<std::string> kObjectModelPaths{kCubePath};
 
-const std::vector<Vector3<double>> kObjectPositions{{0.30, -0.9, 1.05}};
+const std::vector<Vector3<double>> kObjectPositions{{0.80, 0.36, 1.05}};
 
-const std::vector<Vector3<double>> kObjectRpy{{0.0, 0.0, 1.571}};
+const std::vector<Vector3<double>> kObjectRpy{{0.0, 0.0, 0.0}};
 
 const char kConfigurationFile[] =
     "drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/"
