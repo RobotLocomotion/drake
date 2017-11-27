@@ -10,18 +10,15 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
 WorldState::WorldState(const std::string& iiwa_model_path,
-                       const std::string& end_effector_name, int num_tables,
-                       const Vector3<double>& object_dimensions)
+                       const std::string& end_effector_name)
     : iiwa_model_path_(iiwa_model_path),
-      end_effector_name_(end_effector_name),
-      object_dimensions_(object_dimensions) {
+      end_effector_name_(end_effector_name) {
   iiwa_time_ = -1;
   iiwa_base_ = Isometry3<double>::Identity();
   iiwa_end_effector_pose_ = Isometry3<double>::Identity();
   iiwa_q_ = VectorX<double>::Zero(kIiwaArmNumJoints);
   iiwa_v_ = VectorX<double>::Zero(kIiwaArmNumJoints);
   iiwa_end_effector_vel_.setZero();
-  table_poses_.resize(num_tables, Isometry3<double>::Identity());
 
   wsg_time_ = -1;
   wsg_q_ = 0;
@@ -35,9 +32,9 @@ WorldState::WorldState(const std::string& iiwa_model_path,
 
 WorldState::~WorldState() { }
 
-void WorldState::HandleIiwaStatus(const lcmt_iiwa_status& iiwa_msg,
-                                  const Isometry3<double>& iiwa_base) {
-  iiwa_base_ = iiwa_base;
+void WorldState::HandleIiwaStatus(const bot_core::robot_state_t& iiwa_msg) {
+  iiwa_base_ = DecodePose(iiwa_msg.pose);
+
   if (iiwa_time_ == -1) {
     auto base_frame = std::allocate_shared<RigidBodyFrame<double>>(
         Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
@@ -54,13 +51,13 @@ void WorldState::HandleIiwaStatus(const lcmt_iiwa_status& iiwa_msg,
   iiwa_time_ = iiwa_msg.utime / 1e6;
 
   DRAKE_ASSERT(static_cast<size_t>(iiwa_msg.num_joints) ==
-               iiwa_msg.joint_velocity_estimated.size());
+      iiwa_msg.joint_velocity.size());
   DRAKE_ASSERT(static_cast<size_t>(iiwa_msg.num_joints) ==
-               iiwa_msg.joint_position_measured.size());
+      iiwa_msg.joint_position.size());
 
   for (int i = 0; i < iiwa_msg.num_joints; ++i) {
-    iiwa_v_[i] = iiwa_msg.joint_velocity_estimated[i];
-    iiwa_q_[i] = iiwa_msg.joint_position_measured[i];
+    iiwa_v_[i] = iiwa_msg.joint_velocity[i];
+    iiwa_q_[i] = iiwa_msg.joint_position[i];
   }
 
   KinematicsCache<double> cache = iiwa_->doKinematics(iiwa_q_, iiwa_v_, true);
@@ -97,12 +94,6 @@ void WorldState::HandleObjectStatus(const bot_core::robot_state_t& obj_msg) {
   obj_time_ = obj_msg.utime / 1e6;
   obj_pose_ = DecodePose(obj_msg.pose);
   obj_vel_ = DecodeTwist(obj_msg.twist);
-}
-
-void WorldState::HandleTableStatus(int index, const Isometry3<double>& pose) {
-  DRAKE_THROW_UNLESS(index >= 0 &&
-                     index < static_cast<int>(table_poses_.size()));
-  table_poses_[index] = pose;
 }
 
 }  // namespace pick_and_place
