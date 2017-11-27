@@ -142,6 +142,8 @@ void IsSameRelaxedConstraint(const AMatrix& A1, const AMatrix& A2,
 }
 
 GTEST_TEST(TestSparseMatrix, TestConversion) {
+  // Test if ScsAmatrixToEigenSparseMatrix is the inversion of
+  // ConstructScsAmatrix
   std::vector<Eigen::SparseMatrix<double>> X;
   Eigen::SparseMatrix<double> Xi(2, 2);
   Xi.setZero();
@@ -158,6 +160,95 @@ GTEST_TEST(TestSparseMatrix, TestConversion) {
   for (const auto& Xi : X) {
     EXPECT_TRUE(Xi.isApprox(
         ScsAmatrixToEigenSparseMatrix(*ConstructScsAmatrix(Xi)), 1E-10));
+  }
+}
+
+void freeCone(SCS_CONE* cone) {
+  if (cone) {
+    if (cone->q) {
+      scs_free(cone->q);
+    }
+    if (cone->s) {
+      scs_free(cone->s);
+    }
+    if (cone->p) {
+      scs_free(cone->p);
+    }
+    scs_free(cone);
+  }
+}
+
+std::unique_ptr<SCS_CONE, void (*)(SCS_CONE*)> CopyScsCone(
+    const SCS_CONE* const cone) {
+  SCS_CONE* new_cone = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
+  new_cone->f = cone->f;
+  new_cone->l = cone->l;
+  new_cone->qsize = cone->qsize;
+  if (cone->q) {
+    new_cone->q =
+        static_cast<scs_int*>(scs_calloc(new_cone->qsize, sizeof(scs_int)));
+    for (int i = 0; i < new_cone->qsize; ++i) {
+      new_cone->q[i] = cone->q[i];
+    }
+  } else {
+    new_cone->q = nullptr;
+  }
+  new_cone->ssize = cone->ssize;
+  if (cone->s) {
+    new_cone->s =
+        static_cast<scs_int*>(scs_calloc(new_cone->ssize, sizeof(scs_int)));
+    for (int i = 0; i < new_cone->ssize; ++i) {
+      new_cone->s[i] = cone->s[i];
+    }
+  } else {
+    new_cone->s = nullptr;
+  }
+  new_cone->ep = cone->ep;
+  new_cone->ed = cone->ed;
+  new_cone->psize = cone->psize;
+  if (cone->p) {
+    new_cone->p =
+        static_cast<scs_float*>(scs_calloc(new_cone->psize, sizeof(scs_float)));
+    for (int i = 0; i < new_cone->psize; ++i) {
+      new_cone->p[i] = cone->p[i];
+    }
+  } else {
+    new_cone->p = nullptr;
+  }
+  return std::unique_ptr<SCS_CONE, void (*)(SCS_CONE*)>(new_cone, &freeCone);
+}
+
+void IsConeEqual(const SCS_CONE& cone1, const SCS_CONE& cone2) {
+  EXPECT_EQ(cone1.f, cone2.f);
+  EXPECT_EQ(cone1.l, cone2.l);
+  EXPECT_EQ(cone1.qsize, cone2.qsize);
+  if (cone1.q) {
+    EXPECT_NE(cone2.q, nullptr);
+    for (int i = 0; i < cone1.qsize; ++i) {
+      EXPECT_EQ(cone1.q[i], cone2.q[i]);
+    }
+  } else {
+    EXPECT_EQ(cone2.q, nullptr);
+  }
+  EXPECT_EQ(cone1.ssize, cone2.ssize);
+  if (cone1.s) {
+    EXPECT_NE(cone2.s, nullptr);
+    for (int i = 0; i < cone1.ssize; ++i) {
+      EXPECT_EQ(cone1.s[i], cone2.s[i]);
+    }
+  } else {
+    EXPECT_EQ(cone2.s, nullptr);
+  }
+  EXPECT_EQ(cone1.ep, cone2.ep);
+  EXPECT_EQ(cone1.ed, cone2.ed);
+  EXPECT_EQ(cone1.psize, cone2.psize);
+  if (cone1.p) {
+    EXPECT_NE(cone2.s, nullptr);
+    for (int i = 0; i < cone1.psize; ++i) {
+      EXPECT_EQ(cone1.p[i], cone2.p[i]);
+    }
+  } else {
+    EXPECT_EQ(cone2.p, nullptr);
   }
 }
 
@@ -269,6 +360,11 @@ class TestScsNode : public ::testing::Test {
       EXPECT_EQ(c_[i], root.c()[i]);
     }
     EXPECT_EQ(root.cost_constant(), 1);
+    // Check the cones
+    auto root_cone_expected = CopyScsCone(cone_);
+    root_cone_expected->l += 2 * binary_var_indices.size();
+    IsConeEqual(*(root.cone()), *root_cone_expected);
+
     EXPECT_FALSE(root.found_integral_sol());
     EXPECT_FALSE(root.larger_than_upper_bound());
     IsBinaryVarIndicesEqual(root.binary_var_indices(), binary_var_indices);
@@ -289,6 +385,19 @@ TEST_F(TestScsNode, TestConstructor1) {
 
 TEST_F(TestScsNode, TestConstructor2) {
   TestConstructorWithBinaryVarIndices({0});
+}
+
+TEST_F(TestScsNode, TestConstructor3) {
+  TestConstructorWithBinaryVarIndices({1});
+}
+
+TEST_F(TestScsNode, TestConstructor4) {
+  TestConstructorWithBinaryVarIndices({3});
+}
+
+TEST_F(TestScsNode, TestConstructorError) {
+  EXPECT_THROW(ScsNode(*scs_A_, b_, c_, *cone_, {0, 4}, 1), std::runtime_error);
+  EXPECT_THROW(ScsNode(*scs_A_, b_, c_, *cone_, {-1, 0}, 1), std::runtime_error);
 }
 /*
 TEST_F(TestScsNode, TestBranch) {
