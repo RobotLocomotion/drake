@@ -178,8 +178,8 @@ void freeCone(SCS_CONE* cone) {
   }
 }
 
-std::unique_ptr<SCS_CONE, void (*)(SCS_CONE*)> CopyScsCone(
-    const SCS_CONE* const cone) {
+std::unique_ptr<SCS_CONE, void (*)(SCS_CONE*)> DeepCopyScsCone(
+    const SCS_CONE *const cone) {
   SCS_CONE* new_cone = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
   new_cone->f = cone->f;
   new_cone->l = cone->l;
@@ -312,13 +312,13 @@ class TestScsNode : public ::testing::Test {
     scs_free(cone_);
   }
 
-  void TestConstructorWithBinaryVarIndices(
-      const std::unordered_set<int>& binary_var_indices) {
-    const ScsNode root(*scs_A_, b_, c_, *cone_, binary_var_indices, 1);
-    EXPECT_EQ(root.y_index(), -1);
-    EXPECT_EQ(root.left_child(), nullptr);
-    EXPECT_EQ(root.right_child(), nullptr);
-    EXPECT_EQ(root.parent(), nullptr);
+  void TestConstructRootNode(
+      const std::unordered_set<int> &binary_var_indices) {
+    const auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, binary_var_indices, 1);
+    EXPECT_EQ(root->y_index(), -1);
+    EXPECT_EQ(root->left_child(), nullptr);
+    EXPECT_EQ(root->right_child(), nullptr);
+    EXPECT_EQ(root->parent(), nullptr);
     Eigen::SparseMatrix<double> root_A(
         A_.rows() + 2 * binary_var_indices.size(), A_.cols());
     std::vector<Eigen::Triplet<double>> root_A_triplets;
@@ -349,25 +349,25 @@ class TestScsNode : public ::testing::Test {
     root_b[2 * binary_var_indices.size() + 2] = b_[2];
     auto root_scs_A = ConstructScsAmatrix(root_A);
 
-    IsSameRelaxedConstraint(*root_scs_A, *(root.A()), root_b, root.b(), 0, 1,
+    IsSameRelaxedConstraint(*root_scs_A, *(root->A()), root_b, root->b(), 0, 1,
                             binary_var_indices.size());
 
     for (int i = 0; i < scs_A_->m + 2 * binary_var_indices.size(); ++i) {
-      EXPECT_EQ(root_b[i], root.b()[i]);
+      EXPECT_EQ(root_b[i], root->b()[i]);
     }
     delete[] root_b;
     for (int i = 0; i < 4; ++i) {
-      EXPECT_EQ(c_[i], root.c()[i]);
+      EXPECT_EQ(c_[i], root->c()[i]);
     }
-    EXPECT_EQ(root.cost_constant(), 1);
+    EXPECT_EQ(root->cost_constant(), 1);
     // Check the cones
-    auto root_cone_expected = CopyScsCone(cone_);
+    auto root_cone_expected = DeepCopyScsCone(cone_);
     root_cone_expected->l += 2 * binary_var_indices.size();
-    IsConeEqual(*(root.cone()), *root_cone_expected);
+    IsConeEqual(*(root->cone()), *root_cone_expected);
 
-    EXPECT_FALSE(root.found_integral_sol());
-    EXPECT_FALSE(root.larger_than_upper_bound());
-    IsBinaryVarIndicesEqual(root.binary_var_indices(), binary_var_indices);
+    EXPECT_FALSE(root->found_integral_sol());
+    EXPECT_FALSE(root->larger_than_upper_bound());
+    IsBinaryVarIndicesEqual(root->binary_var_indices(), binary_var_indices);
   }
 
  protected:
@@ -379,25 +379,40 @@ class TestScsNode : public ::testing::Test {
   SCS_CONE* cone_;
 };
 
-TEST_F(TestScsNode, TestConstructor1) {
-  TestConstructorWithBinaryVarIndices(binary_var_indices_);
+TEST_F(TestScsNode, TestConstructor) {
+  ScsNode node(2, 3);
+  EXPECT_EQ(node.A()->m, 2);
+  EXPECT_EQ(node.A()->n, 3);
+  EXPECT_EQ(node.y_index(), -1);
+  EXPECT_EQ(node.y_val(), -1);
+  EXPECT_TRUE(std::isnan(node.cost()));
+  EXPECT_EQ(node.cost_constant(), 0);
+  EXPECT_FALSE(node.found_integral_sol());
+  EXPECT_FALSE(node.larger_than_upper_bound());
+  EXPECT_TRUE(node.binary_var_indices().empty());
+  EXPECT_EQ(node.left_child(), nullptr);
+  EXPECT_EQ(node.right_child(), nullptr);
 }
 
-TEST_F(TestScsNode, TestConstructor2) {
-  TestConstructorWithBinaryVarIndices({0});
+TEST_F(TestScsNode, TestConstructRoot1) {
+  TestConstructRootNode(binary_var_indices_);
 }
 
-TEST_F(TestScsNode, TestConstructor3) {
-  TestConstructorWithBinaryVarIndices({1});
+TEST_F(TestScsNode, TestConstructRoot2) {
+  TestConstructRootNode({0});
 }
 
-TEST_F(TestScsNode, TestConstructor4) {
-  TestConstructorWithBinaryVarIndices({3});
+TEST_F(TestScsNode, TestConstructRoot3) {
+  TestConstructRootNode({1});
 }
 
-TEST_F(TestScsNode, TestConstructorError) {
-  EXPECT_THROW(ScsNode(*scs_A_, b_, c_, *cone_, {0, 4}, 1), std::runtime_error);
-  EXPECT_THROW(ScsNode(*scs_A_, b_, c_, *cone_, {-1, 0}, 1), std::runtime_error);
+TEST_F(TestScsNode, TestConstructRoot4) {
+  TestConstructRootNode({3});
+}
+
+TEST_F(TestScsNode, TestConstructRootError) {
+  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {0, 4}, 1), std::runtime_error);
+  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {-1, 0}, 1), std::runtime_error);
 }
 /*
 TEST_F(TestScsNode, TestBranch) {
