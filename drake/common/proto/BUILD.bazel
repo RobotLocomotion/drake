@@ -30,7 +30,6 @@ drake_py_proto_library(
 
 drake_cc_library(
     name = "call_matlab",
-    testonly = 1,
     srcs = ["call_matlab.cc"],
     hdrs = ["call_matlab.h"],
     deps = [
@@ -50,7 +49,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "call_python",
-    testonly = 1,
     srcs = ["call_python.cc"],
     hdrs = ["call_python.h"],
     deps = [
