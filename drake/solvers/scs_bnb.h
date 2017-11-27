@@ -25,6 +25,7 @@ class ScsNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScsNode)
 
+  ScsNode(int num_A_rows, int num_A_cols);
   /**
    * Create the root node from the SCS problem data. The constraint
    * Ax + s = b does NOT include the integral constraint on the binary
@@ -38,33 +39,45 @@ class ScsNode {
    * @param binary_var_indices
    * @param cost_constant
    */
-  ScsNode(const AMatrix& A, const scs_float* const b, const scs_float* const c, const SCS_CONE& cone, const std::unordered_set<int>& binary_var_indices, double cost_constant);
+  static std::unique_ptr<ScsNode> ConstructRootNode(
+      const AMatrix& A, const scs_float* const b, const scs_float* const c,
+      const SCS_CONE& cone, const std::unordered_set<int>& binary_var_indices,
+      double cost_constant);
 
   ~ScsNode();
 
-  // Branch on one binary variable, create two child nodes
+  /**
+   * Branches on one binary variable, and creates two child nodes. In each child
+   * node, that binary variable is fixed to either 0 or 1.
+   * @param binary_var_index The binary variable with this index will be fixed
+   * to either 0 or 1 in the child node, and being removed from the decision
+   * variables.
+   */
   void Branch(int binary_var_index);
 
   // Solve the optimization problem in this node.
-  scs_int Solve(const SCS_SETTINGS* const scs_settings, double best_upper_bound);
+  scs_int Solve(const SCS_SETTINGS* const scs_settings,
+                double best_upper_bound);
 
   // Getter for A matrix.
-  const AMatrix* const A() const { return A_; }
+  const AMatrix* const A() const { return A_.get(); }
 
   // Getter for b vector.
-  const scs_float* const b() const { return b_; }
+  const scs_float* const b() const { return b_.get(); }
 
   // Getter for c vector, the linear coefficient of the cost.
-  const scs_float* const c() const { return c_; }
+  const scs_float* const c() const { return c_.get(); }
 
   // Getter for the cones.
-  const SCS_CONE* const cone() const { return cone_; }
+  const SCS_CONE* const cone() const { return cone_.get(); }
 
-  bool found_integral_sol() const { return found_integral_sol_;}
+  bool found_integral_sol() const { return found_integral_sol_; }
 
-  bool larger_than_upper_bound() const { return larger_than_upper_bound_;}
+  bool larger_than_upper_bound() const { return larger_than_upper_bound_; }
 
-  const std::unordered_set<int>& binary_var_indices() const { return binary_var_indices_; }
+  const std::unordered_set<int>& binary_var_indices() const {
+    return binary_var_indices_;
+  }
 
   int y_index() const { return y_index_; }
 
@@ -78,11 +91,11 @@ class ScsNode {
 
   ScsNode* parent() const { return parent_; }
 
-  double cost() const { return cost_;}
+  double cost() const { return cost_; }
 
-  const SCS_SOL_VARS* const scs_sol() const {return scs_sol_;}
+  const SCS_SOL_VARS* const scs_sol() const { return scs_sol_.get(); }
 
-  SCS_INFO scs_info() const { return scs_info_;}
+  SCS_INFO scs_info() const { return scs_info_; }
 
  private:
   // We will solve the problem
@@ -97,20 +110,20 @@ class ScsNode {
   // y + s = 1
   // s in positive cone
   // where N is the length of the binary_var_indices_;
-  AMatrix* A_;
-  scs_float* b_;
-  scs_float* c_;
+  std::unique_ptr<AMatrix, void (*)(AMatrix*)> A_;
+  std::unique_ptr<scs_float, void (*)(void*)> b_;
+  std::unique_ptr<scs_float, void (*)(void*)> c_;
   // ScsNode does not own cone_->q, cone_->s, cone_->p. Notice that only
   // cone_->l changes between each node, the length of other constraints, such
   // as second order cone, semi-definite cone, etc, do not change.
-  SCS_CONE* cone_;
+  std::unique_ptr<SCS_CONE, void (*)(void*)> cone_;
   // This node is created from its parent node, by fixing a variable y to a
   // binary value. That variable y has index y_index_ in the parent node.
   int y_index_;
   int y_val_;
   // The optimization program can add a constant term to the cost.
   double cost_constant_;
-  SCS_SOL_VARS* scs_sol_;
+  std::unique_ptr<SCS_SOL_VARS, void (*)(SCS_SOL_VARS*)> scs_sol_;
   SCS_INFO scs_info_;
   double cost_;
   // If a node is fathomed, then there is no need to branch on this node.
