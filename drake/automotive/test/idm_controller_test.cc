@@ -30,7 +30,7 @@ class IdmControllerTest : public ::testing::Test {
         std::numeric_limits<double>::epsilon() /* linear_tolerance */,
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
 
-    // Initialize IdmController with the road.
+    // Initialize IdmController with the road.  Sets check_branches to false.
     dut_.reset(new IdmController<double>(*road_));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
@@ -222,6 +222,21 @@ TEST_F(IdmControllerTest, ToAutoDiff) {
     EXPECT_EQ(1, (*result)[0].derivatives().size());
     EXPECT_EQ(0., (*result)[0].derivatives()(0));
   }));
+}
+
+// Check the soundness of the result when check_branches == true.
+TEST_F(IdmControllerTest, CheckBranches) {
+  dut_.reset(new IdmController<double>(*road_, true /* check_branches */ ));
+
+  // Set the lead car to be immediately ahead of the ego car and moving
+  // slower than it.
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
+  dut_->CalcOutput(*context_, output_.get());
+  const auto result = output_->get_vector_data(acceleration_output_index_);
+  const double closing_accel = (*result)[0];
+
+  // Expect the car to decelerate.
+  EXPECT_GT(0., closing_accel);
 }
 
 }  // namespace
