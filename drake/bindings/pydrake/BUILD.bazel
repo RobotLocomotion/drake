@@ -23,12 +23,23 @@ package(default_visibility = ["//drake/bindings/pydrake:__subpackages__"])
 
 # N.B. Any common headers should be shared via a HEADER ONLY library.
 
+# This is a pure-python, standalone library.
+# Keep this away from `common_py` to simplify test dependencies.
+drake_py_library(
+    name = "util_py",
+    srcs = ["util.py"],
+    imports = [".."],
+)
+
 drake_pybind_library(
     name = "common_py",
     cc_devel_deps = [
         "//drake/common",
     ],
     cc_srcs = ["common_py.cc"],
+    py_deps = [
+        ":util_py",
+    ],
     py_srcs = [
         "__init__.py",
         "common.py",
@@ -117,6 +128,9 @@ drake_pybind_library(
 
 install(
     name = "install",
+    targets = [
+        ":util_py",
+    ],
     visibility = ["//visibility:public"],
     deps = get_drake_pybind_installs([
         ":common_py",
@@ -215,6 +229,22 @@ drake_py_test(
     data = ["//drake/examples/pr2:models"],
     main = "test/test_urdf_parser.py",
     deps = [":rbtree_py"],
+)
+
+drake_py_library(
+    name = "module_shim_example",
+    testonly = 1,
+    srcs = ["test/module_shim_example.py"],
+    imports = ["test"],
+    deps = [":util_py"],
+)
+
+drake_py_test(
+    name = "module_shim_test",
+    srcs = ["test/module_shim_test.py"],
+    deps = [
+        ":module_shim_example",
+    ],
 )
 
 add_lint_tests()
