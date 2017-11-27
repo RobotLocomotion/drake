@@ -44,13 +44,6 @@ PostureInterpolationResult PlanInterpolatingMotion(
 
   const int kNumKnots = times.size();
 
-  drake::log()->debug("Processing interpolation request:");
-  drake::log()->debug("\tNumber of knots: {}", kNumKnots);
-  drake::log()->debug("\tPosition tolerance: {}", position_tolerance);
-  drake::log()->debug("\tOrientation tolerance: {}", orientation_tolerance);
-  drake::log()->debug("\tFall back to joint space: {}",
-                      fall_back_to_joint_space_interpolation);
-
   int kNumJoints{robot->get_num_positions()};
   const VectorX<int> joint_indices =
       VectorX<int>::LinSpaced(kNumJoints, 0, kNumJoints - 1);
@@ -87,19 +80,6 @@ PostureInterpolationResult PlanInterpolatingMotion(
       Quaternion<double>(X_WG_initial.linear()),
       Quaternion<double>(X_WG_final.linear())};
 
-  if (straight_line_motion) {
-    drake::log()->debug("Planning straight line from {} {} to {} {}",
-                        r_WG.first.transpose(),
-                        math::rotmat2rpy(X_WG_initial.rotation()).transpose(),
-                        r_WG.second.transpose(),
-                        math::rotmat2rpy(X_WG_final.rotation()).transpose());
-  } else {
-    drake::log()->debug(
-        "Planning motion from {} to {}, above z = {}", r_WG.first.transpose(),
-        r_WG.second.transpose(),
-        (r_WG.first.z() < r_WG.second.z()) ? r_WG.first : r_WG.second);
-  }
-
   // Define active times for intermediate and final constraints
   const double& start_time = times.front();
   const double& end_time = times.back();
@@ -115,6 +95,11 @@ PostureInterpolationResult PlanInterpolatingMotion(
 
   // Construct intermediate constraints for via points
   if (straight_line_motion) {
+    drake::log()->debug("Planning straight line from {} {} to {} {}",
+                        r_WG.first.transpose(),
+                        math::rotmat2rpy(X_WG_initial.rotation()).transpose(),
+                        r_WG.second.transpose(),
+                        math::rotmat2rpy(X_WG_final.rotation()).transpose());
     // We will impose a Point2LineSegDistConstraint and WorldGazeDirConstraint
     // on the via points.
     Eigen::Matrix<double, 3, 2> line_ends_W;
@@ -163,15 +148,14 @@ PostureInterpolationResult PlanInterpolatingMotion(
       constraint_array.push_back(posture_change_constraints.back().get());
     }
   } else {
+    drake::log()->debug("Planning motion from {} to {}, above z = {}",
+                        r_WG.first.transpose(), r_WG.second.transpose(),
+                        X_WL.translation().z());
     // We will constrain the z-component of the end-effector position to be
     // above the lower of the two end points at all via points.
     Isometry3<double> X_WL{Isometry3<double>::Identity()};  // World to fLoor
     X_WL.translation() =
         (r_WG.first.z() < r_WG.second.z()) ? r_WG.first : r_WG.second;
-
-    drake::log()->debug("Planning motion from {} to {}, above z = {}",
-                        r_WG.first.transpose(), r_WG.second.transpose(),
-                        X_WL.translation().z());
 
     Vector3<double> lb{-std::numeric_limits<double>::infinity(),
                        -std::numeric_limits<double>::infinity(),
@@ -323,7 +307,7 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   drake::log()->debug("R_WO_initial = \n{}", X_WO_initial->linear());
   // Check that the object is oriented correctly
   if (X_WO_initial->linear()(2, 2) < std::cos(20 * M_PI / 180)) {
-    drake::log()->debug(
+    drake::log()->warn(
         "Improper object orientation relative to robot base. Please reset "
         "object and/or check Optitrack markers.");
     return false;
@@ -360,7 +344,7 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   drake::log()->debug("Destination Table Index: {}", destination_table_index);
 
   if (destination_table_index < 0) {
-    drake::log()->debug("Cannot find a suitable destination table.");
+    drake::log()->warn("Cannot find a suitable destination table.");
     return false;
   }
 
@@ -436,7 +420,6 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
   // Set ApproachPick pose
   Isometry3<double> X_OiO{Isometry3<double>::Identity()};
   X_WG_desired_.emplace(PickAndPlaceState::kApproachPick, X_WOi * X_OiO * X_OG);
-
   // Set ApproachPickPregrasp pose
   Isometry3<double> X_GGoffset{Isometry3<double>::Identity()};
   X_OiO.setIdentity();
@@ -445,23 +428,19 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
   X_OiO.translation()[2] = sin(approach_angle) * pregrasp_offset;
   X_WG_desired_.emplace(PickAndPlaceState::kApproachPickPregrasp,
                         X_WOi * X_OiO * X_OG * X_GGoffset);
-
   // Set LiftFromPick pose
   X_OiO.setIdentity();
   X_OiO.translation()[2] = pregrasp_offset;
   X_WG_desired_.emplace(PickAndPlaceState::kLiftFromPick, X_WOi * X_OiO * X_OG);
-
   // Set ApproachPlace pose
   Isometry3<double> X_OfO{Isometry3<double>::Identity()};
   X_WG_desired_.emplace(PickAndPlaceState::kApproachPlace,
                         X_WOf * X_OfO * X_OG);
-
   // Set ApproachPlacePregrasp pose
   X_OfO.setIdentity();
   X_OfO.translation()[2] = pregrasp_offset;
   X_WG_desired_.emplace(PickAndPlaceState::kApproachPlacePregrasp,
                         X_WOf * X_OfO * X_OG);
-
   // Set LiftFromPlace pose
   X_OfO.setIdentity();
   X_OfO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
@@ -637,7 +616,6 @@ bool PickAndPlaceStateMachine::ComputeTrajectories(
     q_0 << q_traj_last.value(q_traj_last.getEndTime());
   }
   drake::log()->debug("\tq_0 = [{}]", q_0.transpose());
-  drake::log()->debug("Clearing interpolation_result_map_.");
   interpolation_result_map_.clear();
   const double kExtraShortDuration = 0.5;
   const double kShortDuration = 1;
