@@ -6,6 +6,8 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
+#include "drake/automotive/maliput/monolane/road_geometry.h"
+#include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
@@ -15,15 +17,25 @@ namespace automotive {
 namespace {
 
 using maliput::api::GeoPosition;
+using maliput::api::HBounds;
+using maliput::api::Lane;
 using maliput::api::LaneEnd;
+using maliput::api::LanePosition;
+using maliput::api::RBounds;
 using maliput::api::RoadPosition;
+using maliput::api::Rotation;
+using maliput::monolane::ArcOffset;
 using maliput::monolane::Builder;
 using maliput::monolane::Connection;
 using maliput::monolane::Endpoint;
+using maliput::monolane::EndpointXy;
+using maliput::monolane::EndpointZ;
 using math::RollPitchYawToQuaternion;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 using systems::rendering::PoseBundle;
+
+constexpr double infty = std::numeric_limits<double>::infinity();
 
 // Constants for Dragway tests.
 constexpr double kDragwayLaneLength{100.};
@@ -51,6 +63,16 @@ constexpr double kRoadSegmentLength{15.};
 
 // Specifies zero elevation/super-elevation.
 const maliput::monolane::EndpointZ kEndZ{0., 0., 0., 0.};
+
+static const Lane* GetLaneByJunctionId(
+    const maliput::api::RoadGeometry& road, const std::string& lane_id) {
+  for (int i = 0; i < road.num_junctions(); ++i) {
+    if (road.junction(i)->id().string() == lane_id) {
+      return road.junction(i)->segment(0)->lane(0);
+    }
+  }
+  throw std::runtime_error("No matching junction name in the road network");
+}
 
 class PoseSelectorDragwayTest : public ::testing::Test {
  protected:
@@ -108,7 +130,7 @@ static void SetDefaultDragwayPoses(PoseVector<T>* ego_pose,
                           Isometry3<T>(translation_far_behind));
 }
 
-static void SetDefaultDragwayPoseDerivatives(
+static void SetDefaultDerivatives(
     PoseVector<AutoDiffXd>* ego_pose, PoseBundle<AutoDiffXd>* traffic_poses) {
   Eigen::Translation<AutoDiffXd, 3> ego_translation =
       ego_pose->get_translation();
@@ -160,8 +182,8 @@ static void SetPoses(const T& s_offset, const T& r_offset,
 
 // Returns the lane in the road associated with the provided pose.
 template <typename T>
-const maliput::api::Lane* get_lane(const PoseVector<T>& pose,
-                                   const maliput::api::RoadGeometry& road) {
+const Lane* get_lane(const PoseVector<T>& pose,
+                     const maliput::api::RoadGeometry& road) {
   const GeoPosition geo_position{
       ExtractDoubleOrThrow(pose.get_translation().x()),
       ExtractDoubleOrThrow(pose.get_translation().y()),
@@ -213,14 +235,11 @@ TEST_F(PoseSelectorDragwayTest, TwoLaneDragway) {
             scan_ahead_distance);
 
     // Expect to see no cars in the left lane.
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
-              closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
-    EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
+    EXPECT_EQ(-infty,
               closest_poses.at(AheadOrBehind::kBehind).odometry.pos.s());
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
-              closest_poses.at(AheadOrBehind::kAhead).distance);
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
-              closest_poses.at(AheadOrBehind::kBehind).distance);
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).distance);
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kBehind).distance);
   }
 
   // Bump the "just ahead" car into the lane to the left.
@@ -266,10 +285,8 @@ TEST_F(PoseSelectorDragwayTest, TwoLaneDragway) {
                                               scan_ahead_distance);
 
     // Looking forward, we expect there to be no car in sight.
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
-              closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
-              closest_poses.at(AheadOrBehind::kAhead).distance);
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).distance);
     for (int i = 0; i < 6; ++i) {
       EXPECT_EQ(0., closest_poses.at(AheadOrBehind::kAhead).odometry.vel[i]);
       // N.B. Defaults to zero velocity.
@@ -287,11 +304,42 @@ TEST_F(PoseSelectorDragwayTest, TwoLaneDragway) {
     // ahead" car to be leading.
     EXPECT_EQ(kJustAheadSPosition,
               closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
-    EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+    EXPECT_EQ(-infty,
               closest_poses.at(AheadOrBehind::kBehind).odometry.pos.s());
     EXPECT_EQ(kJustAheadSPosition - kEgoSPosition,
               closest_poses.at(AheadOrBehind::kAhead).distance);
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kBehind).distance);
+  }
+}
+
+// Verifies the result when using the analogous branch checking functions.
+TEST_F(PoseSelectorDragwayTest, TwoLaneDragwayCheckBranches) {
+  MakeDragway(2 /* num lanes */, kDragwayLaneLength);
+
+  PoseVector<double> ego_pose;
+  PoseBundle<double> traffic_poses(kNumDragwayTrafficCars);
+
+  // Define the default poses.
+  SetDefaultDragwayPoses(&ego_pose, &traffic_poses);
+
+  // Choose a scan-ahead distance shorter than the lane length.
+  const double scan_ahead_distance = kDragwayLaneLength / 2.;
+  {
+    const std::map<AheadOrBehind, const ClosestPose<double>> closest_poses =
+        PoseSelector<double>::FindClosestPairCheckBranches(
+            get_lane(ego_pose, *road_), ego_pose, traffic_poses,
+            scan_ahead_distance);
+
+    // Verifies that the ego car and traffic cars are on the road and that the
+    // correct leading and trailing cars are identified within the path of the
+    // ego.
+    EXPECT_EQ(kJustAheadSPosition,
+              closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
+    EXPECT_EQ(kJustBehindSPosition,
+              closest_poses.at(AheadOrBehind::kBehind).odometry.pos.s());
+    EXPECT_EQ(kJustAheadSPosition - kEgoSPosition,
+              closest_poses.at(AheadOrBehind::kAhead).distance);
+    EXPECT_EQ(kEgoSPosition - kJustBehindSPosition,
               closest_poses.at(AheadOrBehind::kBehind).distance);
   }
 }
@@ -304,7 +352,7 @@ TEST_F(PoseSelectorDragwayTest, TwoLaneDragwayAutoDiff) {
 
   // Define the default poses.
   SetDefaultDragwayPoses(&ego_pose, &traffic_poses);
-  SetDefaultDragwayPoseDerivatives(&ego_pose, &traffic_poses);
+  SetDefaultDerivatives(&ego_pose, &traffic_poses);
 
   // Choose a scan-ahead distance shorter than the lane length.
   const AutoDiffXd scan_ahead_distance(kDragwayLaneLength / 2.);
@@ -458,10 +506,8 @@ TEST_F(PoseSelectorDragwayTest, NoCarsOnShortRoad) {
           scan_ahead_distance);
 
   // Expect infinite distances.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(),
-            closest_poses.at(AheadOrBehind::kAhead).distance);
-  EXPECT_EQ(std::numeric_limits<double>::infinity(),
-            closest_poses.at(AheadOrBehind::kBehind).distance);
+  EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).distance);
+  EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kBehind).distance);
 }
 
 TEST_F(PoseSelectorDragwayTest, NoCarsOnShortRoadAutoDiff) {
@@ -475,7 +521,7 @@ TEST_F(PoseSelectorDragwayTest, NoCarsOnShortRoadAutoDiff) {
 
   // Define the default poses.
   SetDefaultDragwayPoses(&ego_pose, &traffic_poses);
-  SetDefaultDragwayPoseDerivatives(&ego_pose, &traffic_poses);
+  SetDefaultDerivatives(&ego_pose, &traffic_poses);
 
   // Choose a scan-ahead distance greater than the lane length.
   const AutoDiffXd scan_ahead_distance(kShortLaneLength + 10.);
@@ -491,10 +537,8 @@ TEST_F(PoseSelectorDragwayTest, NoCarsOnShortRoadAutoDiff) {
 
   // Expect distances to have infinite value and zero derivatives in both the
   // ahead and behind directions.
-  EXPECT_EQ(std::numeric_limits<double>::infinity(),
-            closest_poses.at(AheadOrBehind::kAhead).distance);
-  EXPECT_EQ(std::numeric_limits<double>::infinity(),
-            closest_poses.at(AheadOrBehind::kBehind).distance);
+  EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).distance);
+  EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kBehind).distance);
   EXPECT_TRUE(CompareMatrices(
       Vector3<double>(0., 0., 0.),
       closest_poses.at(AheadOrBehind::kAhead).distance.derivatives()));
@@ -549,10 +593,8 @@ TEST_F(PoseSelectorDragwayTest, IdenticalSValues) {
             kDragwayLaneLength / 2. /* scan_ahead_distance */);
 
     // Verifies that no traffic car is seen ahead.
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
-              closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
-    EXPECT_EQ(std::numeric_limits<double>::infinity(),
-              closest_poses.at(AheadOrBehind::kAhead).distance);
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
+    EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kAhead).distance);
     EXPECT_EQ(kEgoSPosition,
               closest_poses.at(AheadOrBehind::kBehind).odometry.pos.s());
     EXPECT_EQ(0., closest_poses.at(AheadOrBehind::kBehind).distance);
@@ -562,7 +604,7 @@ TEST_F(PoseSelectorDragwayTest, IdenticalSValues) {
 TEST_F(PoseSelectorDragwayTest, TestGetSigmaVelocity) {
   MakeDragway(1 /* num lanes */, kDragwayLaneLength);
 
-  const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  const Lane* lane = road_->junction(0)->segment(0)->lane(0);
 
   RoadPosition position(lane, maliput::api::LanePosition(0., 0., 0.));
   FrameVelocity<double> velocity{};
@@ -596,12 +638,9 @@ TEST_F(PoseSelectorDragwayTest, TestGetSigmaVelocity) {
 std::unique_ptr<const maliput::api::RoadGeometry> MakeThreeSegmentMonolaneRoad(
     bool is_opposing) {
   Builder builder(
-      maliput::api::RBounds(-std::abs(kEgoRPosition) - 2.,
-                            std::abs(kEgoRPosition) + 2.) /* lane_bounds */,
-      maliput::api::RBounds(
-          -std::abs(kEgoRPosition) - 2.,
-          std::abs(kEgoRPosition) + 2.) /* driveable_bounds */,
-      maliput::api::HBounds(0., 5.) /* elevation bounds */,
+      RBounds(-std::abs(kEgoRPosition) - 2., std::abs(kEgoRPosition) + 2.),
+      RBounds(-std::abs(kEgoRPosition) - 2., std::abs(kEgoRPosition) + 2.),
+      HBounds(0., 5.) /* elevation bounds */,
       0.01 /* linear tolerance */, 0.01 /* angular_tolerance */);
   const Connection* c0 = builder.Connect(
       "0_fwd" /* id */, Endpoint({0., 0., 0.}, kEndZ) /* start */,
@@ -685,6 +724,221 @@ GTEST_TEST(PoseSelectorTest, MultiSegmentRoad) {
       // Expect the detected distance to be the offset distance.
       EXPECT_EQ(s_offset, closest_pose_behind.distance);
     }
+  }
+}
+
+// Construct a monolane road with three confluent feeder lanes correponding to
+// three distinct branch points.
+std::unique_ptr<const maliput::api::RoadGeometry> BuildOnrampRoad() {
+  std::unique_ptr<Builder> rb(
+      new Builder(RBounds(-2., 2.) /* lane bounds */,
+                  RBounds(-4., 4.) /* driveable bounds */,
+                  HBounds(0., 5.) /* elevation bounds */,
+                  0.01 /* linear tolerance */, 0.01 /* angular_tolerance */));
+
+  // Initialize the road from the origin.
+  const EndpointXy kOriginXy{0., 0., 0.};
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const Endpoint kRoadOrigin{kOriginXy, kFlatZ};
+
+  const double kArcLength = 25.;
+  const double kArcRadius = 40.;
+  const auto& lane6 = rb->Connect(
+      "lane6", kRoadOrigin,
+      ArcOffset(kArcLength, -kArcRadius / kArcLength), kFlatZ);
+  const auto& lane5 = rb->Connect(
+      "lane5", lane6->end(),
+      ArcOffset(kArcLength, kArcRadius / kArcLength), kFlatZ);
+  const auto& lane4 = rb->Connect(
+      "lane4", lane5->end(),
+      ArcOffset(kArcLength, -kArcRadius / kArcLength), kFlatZ);
+  const auto& lane3 = rb->Connect(
+      "lane3", lane4->end(),
+      ArcOffset(kArcLength, kArcRadius / kArcLength), kFlatZ);
+  const auto& lane2 = rb->Connect(
+      "lane2", lane3->end(),
+      ArcOffset(kArcLength, -kArcRadius / kArcLength), kFlatZ);
+  const auto& lane1 = rb->Connect(
+      "lane1", lane2->end(),
+      ArcOffset(kArcLength, kArcRadius / kArcLength), kFlatZ);
+  const double& kLinearLength = 100.;
+  const auto& lane0 =
+      rb->Connect("lane0", lane1->end(), kLinearLength, kFlatZ);
+
+  // Construct the three branches (working backwards from each branch point).
+  const double& kBranchArcLength = 35.;
+  const double& kBranchArcRadius = 50.;
+  const double& kBranchLinearLength = 100.;
+  const auto& b0_lane1 = rb->Connect(
+      "b0_lane1", lane1->end(),
+      ArcOffset(kBranchArcLength, kBranchArcRadius / kBranchArcLength), kFlatZ);
+  const auto& b0_lane0 =
+      rb->Connect("b0_lane0", b0_lane1->end(), kBranchLinearLength, kFlatZ);
+  const auto& b1_lane1 = rb->Connect(
+      "b1_lane1", lane3->end(),
+      ArcOffset(kBranchArcLength, kBranchArcRadius / kBranchArcLength), kFlatZ);
+  const auto& b1_lane0 =
+      rb->Connect("b1_lane0", b1_lane1->end(), kBranchLinearLength, kFlatZ);
+  const auto& b2_lane1 = rb->Connect(
+      "b2_lane1", lane5->end(),
+      ArcOffset(kBranchArcLength, kBranchArcRadius / kBranchArcLength), kFlatZ);
+  const auto& b2_lane0 =
+      rb->Connect("b2_lane0", b2_lane1->end(), kBranchLinearLength, kFlatZ);
+
+  // Manually specify the default branches for all junctions in the road.
+  rb->SetDefaultBranch(lane0, LaneEnd::kStart, lane1, LaneEnd::kFinish);
+  rb->SetDefaultBranch(lane1, LaneEnd::kStart, lane2, LaneEnd::kFinish);
+  rb->SetDefaultBranch(lane2, LaneEnd::kStart, lane3, LaneEnd::kFinish);
+  rb->SetDefaultBranch(lane3, LaneEnd::kStart, lane4, LaneEnd::kFinish);
+  rb->SetDefaultBranch(lane4, LaneEnd::kStart, lane5, LaneEnd::kFinish);
+  rb->SetDefaultBranch(lane5, LaneEnd::kStart, lane6, LaneEnd::kFinish);
+  rb->SetDefaultBranch(b0_lane1, LaneEnd::kStart, lane1, LaneEnd::kFinish);
+  rb->SetDefaultBranch(b0_lane0, LaneEnd::kStart, b0_lane1, LaneEnd::kFinish);
+  rb->SetDefaultBranch(b1_lane1, LaneEnd::kStart, lane3, LaneEnd::kFinish);
+  rb->SetDefaultBranch(b1_lane0, LaneEnd::kStart, b1_lane1, LaneEnd::kFinish);
+  rb->SetDefaultBranch(b2_lane1, LaneEnd::kStart, lane5, LaneEnd::kFinish);
+  rb->SetDefaultBranch(b2_lane0, LaneEnd::kStart, b2_lane1, LaneEnd::kFinish);
+
+  return rb->Build(maliput::api::RoadGeometryId{"three_feeder_lanes"});
+}
+
+enum class LanePolarity { kWithS, kAgainstS };
+
+static void SetDefaultOnrampPoses(const Lane* ego_lane,
+                                  const Lane* traffic_lane,
+                                  const double& traffic_speed,
+                                  const double& ego_speed,
+                                  PoseVector<double>* ego_pose,
+                                  FrameVelocity<double>* ego_velocity,
+                                  PoseBundle<double>* traffic_poses,
+                                  LanePolarity orientation) {
+  DRAKE_DEMAND(traffic_poses->get_num_poses() == 1);
+
+  // Set the ego vehicle at s = 1. in the ego_lane.
+  const LanePosition srh_near_start{1., 0., 0.};
+  const GeoPosition ego_xyz = ego_lane->ToGeoPosition(srh_near_start);
+  ego_pose->set_translation(
+      Eigen::Translation3d(ego_xyz.x(), ego_xyz.y(), ego_xyz.z()));
+  const Rotation ego_rotation = ego_lane->GetOrientation(srh_near_start);
+  const Rotation new_rotation = Rotation::FromRpy(ego_rotation.roll(),
+                                                  ego_rotation.pitch(),
+                                                  ego_rotation.yaw() + M_PI);
+  ego_pose->set_rotation(RollPitchYawToQuaternion(new_rotation.rpy()));
+
+  const Eigen::Matrix3d ego_rotmat = math::rpy2rotmat(new_rotation.rpy());
+  drake::Vector6<double> velocity{};
+  velocity.head(3) = Vector3<double>::Zero();             /* ω */
+  velocity.tail(3) = ego_speed * ego_rotmat.leftCols(1);  /* v */
+  ego_velocity->set_velocity(multibody::SpatialVelocity<double>(velocity));
+
+  // Set the traffic car at s = Lane::length() - 1 in the traffic_lane.
+  Eigen::Isometry3d isometry = Eigen::Isometry3d::Identity();
+  const LanePosition srh_near_finish{traffic_lane->length() - 1., 0., 0.};
+  const GeoPosition traffic_xyz = traffic_lane->ToGeoPosition(srh_near_finish);
+  const Eigen::Vector3d translation_ahead(
+      traffic_xyz.x(), traffic_xyz.y(), traffic_xyz.z());
+  isometry.translate(translation_ahead);
+
+  const Rotation traffic_rotation =
+      traffic_lane->GetOrientation(srh_near_finish);
+  Vector3<double> rpy = traffic_rotation.rpy();
+  rpy.z() -= (orientation == LanePolarity::kWithS) ? 0. : M_PI;
+  isometry.rotate(RollPitchYawToQuaternion(rpy));
+
+  traffic_poses->set_pose(0, isometry);
+
+  FrameVelocity<double> velocity_ahead{};
+  velocity_ahead.get_mutable_value().head(3) = Vector3<double>::Zero();  /* ω */
+  const Eigen::Matrix3d traffic_rotmat = math::rpy2rotmat(rpy);
+  velocity_ahead.get_mutable_value().tail(3) =
+      traffic_speed * traffic_rotmat.leftCols(1);  /* v */
+  traffic_poses->set_velocity(0, velocity_ahead);
+}
+
+void CheckOnrampPosesInBranches(const maliput::api::RoadGeometry& road,
+                                const PoseVector<double>& ego_pose,
+                                const PoseBundle<double>& traffic_poses,
+                                std::string expected_traffic_lane,
+                                double expected_s_position,
+                                double expected_distance) {
+  const GeoPosition ego_geo_position{ego_pose.get_translation().x(),
+        ego_pose.get_translation().y(),
+        ego_pose.get_translation().z()};
+  const RoadPosition& ego_position =
+      road.ToRoadPosition(ego_geo_position, nullptr, nullptr, nullptr);
+
+  ClosestPose<double> closest_pose_leading =
+      PoseSelector<double>::FindSingleClosestPoseCheckBranches(
+          ego_position.lane, ego_pose, traffic_poses,
+          1000. /* scan_ahead_distance */, AheadOrBehind::kAhead);
+
+  // Verifies that we are on the road and that the correct car was identified.
+  EXPECT_EQ(expected_traffic_lane,
+            closest_pose_leading.odometry.lane->id().string());
+  if (expected_distance == infty) {
+    EXPECT_EQ(-infty, closest_pose_leading.odometry.pos.s());
+    EXPECT_EQ(infty, closest_pose_leading.distance);
+  } else {
+    EXPECT_NEAR(expected_s_position, closest_pose_leading.odometry.pos.s(),
+                1e-6);
+    EXPECT_NEAR(expected_distance, closest_pose_leading.distance, 1e-6);
+  }
+
+  const std::map<AheadOrBehind, const ClosestPose<double>> closest_poses =
+      PoseSelector<double>::FindClosestPairCheckBranches(
+          ego_position.lane, ego_pose, traffic_poses,
+          1000. /* scan_ahead_distance */);
+
+  // Verifies that the kAhead closest pose agrees with closest_pose_leading.
+  EXPECT_EQ(closest_pose_leading.odometry.lane->id(),
+            closest_poses.at(AheadOrBehind::kAhead).odometry.lane->id());
+  EXPECT_EQ(closest_pose_leading.odometry.pos.s(),
+            closest_poses.at(AheadOrBehind::kAhead).odometry.pos.s());
+  EXPECT_EQ(closest_pose_leading.distance,
+            closest_poses.at(AheadOrBehind::kAhead).distance);
+  // Verifies that the kBehind closest pose is infinity in the ego car's lane.
+  EXPECT_EQ(ego_position.lane->id(),
+            closest_poses.at(AheadOrBehind::kBehind).odometry.lane->id());
+  EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kBehind).odometry.pos.s());
+  EXPECT_EQ(infty, closest_poses.at(AheadOrBehind::kBehind).distance);
+}
+
+GTEST_TEST(PoseSelectorOnrampTest, CheckBranches) {
+  const auto road = BuildOnrampRoad();
+
+  PoseVector<double> ego_pose;
+  FrameVelocity<double> ego_velocity;
+  PoseBundle<double> traffic_poses(1);
+
+  struct TestCase {
+    std::string ego_lane;
+    std::string traffic_lane;
+    LanePolarity orientation;
+    double expected_distance;
+    std::string expected_traffic_lane;
+  };
+  const std::vector<TestCase> test_cases{
+    {"j:b0_lane0", "j:lane6", LanePolarity::kWithS, 252., "l:lane6"},
+    {"j:b0_lane0", "j:lane0", LanePolarity::kWithS, 50., "l:lane0"},
+    {"j:b1_lane0", "j:lane2", LanePolarity::kWithS, 50., "l:lane2"},
+    {"j:b2_lane0", "j:lane4", LanePolarity::kWithS, 50., "l:lane4"},
+    {"j:lane0", "j:b0_lane0", LanePolarity::kAgainstS, infty, "l:lane0"},
+    {"j:lane0", "j:b1_lane0", LanePolarity::kAgainstS, infty, "l:lane0"},
+    {"j:lane0", "j:b1_lane1", LanePolarity::kAgainstS, 32., "l:b1_lane1"},
+    {"j:lane0", "j:b2_lane0", LanePolarity::kAgainstS, 62., "l:b2_lane0"},
+    {"j:lane0", "j:b2_lane1", LanePolarity::kAgainstS, 112., "l:b2_lane1"},
+  };
+
+  for (const auto& it : test_cases) {
+    const Lane* traffic_lane = GetLaneByJunctionId(*road, it.traffic_lane);
+    SetDefaultOnrampPoses(GetLaneByJunctionId(*road, it.ego_lane),
+                          traffic_lane, 10. /* traffic_speed */,
+                          10. /* ego_speed */, &ego_pose, &ego_velocity,
+                          &traffic_poses, it.orientation);
+    CheckOnrampPosesInBranches(*road, ego_pose, traffic_poses,
+                               it.expected_traffic_lane,
+                               traffic_lane->length() - 1. /* expected s-pos */,
+                               it.expected_distance);
   }
 }
 

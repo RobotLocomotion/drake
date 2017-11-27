@@ -53,14 +53,23 @@ class IdmController : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmController)
 
-  /// Constructor.
+  /// Default constructor.  The IDM controller performs computations using
+  /// vehicles on the default path.
   /// @param road is the pre-defined RoadGeometry.
   explicit IdmController(const maliput::api::RoadGeometry& road);
+
+  /// Constructor with traffic car search options.
+  /// @param road is the pre-defined RoadGeometry.
+  /// @param check_branches If true, performs IDM computations using vehicles
+  /// detected in confluent branches; otherwise, limits to vehicles on the
+  /// default path.  See documentation for
+  /// PoseSelector::FindSingleClosestPose().
+  IdmController(const maliput::api::RoadGeometry& road, bool check_branches);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit IdmController(const IdmController<U>& other)
-      : IdmController<T>(other.road_) {}
+      : IdmController<T>(other.road_, other.check_branches_) {}
 
   ~IdmController() override;
 
@@ -98,6 +107,7 @@ class IdmController : public systems::LeafSystem<T> {
                         systems::BasicVector<T>* accel_output) const;
 
   const maliput::api::RoadGeometry& road_;
+  const bool check_branches_{};
 
   // Indices for the input / output ports.
   const int ego_pose_index_{};

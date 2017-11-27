@@ -27,18 +27,23 @@ static constexpr int kIdmParamsIndex{0};
 
 template <typename T>
 IdmController<T>::IdmController(const RoadGeometry& road)
+    : IdmController(road, false) {}
+
+template <typename T>
+IdmController<T>::IdmController(const RoadGeometry& road, bool check_branches)
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<automotive::IdmController>{}),
       road_(road),
-      ego_pose_index_{
-          this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
-      ego_velocity_index_{
-          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
-      traffic_index_{this->DeclareAbstractInputPort().get_index()},
-      acceleration_index_{
+      check_branches_(check_branches),
+      ego_pose_index_(
+          this->DeclareVectorInputPort(PoseVector<T>()).get_index()),
+      ego_velocity_index_(
+          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()),
+      traffic_index_(this->DeclareAbstractInputPort().get_index()),
+      acceleration_index_(
           this->DeclareVectorOutputPort(systems::BasicVector<T>(1),
                                         &IdmController::CalcAcceleration)
-              .get_index()} {
+              .get_index()) {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
 }
 
@@ -113,9 +118,14 @@ void IdmController<T>::ImplCalcAcceleration(
       road_.ToRoadPosition(geo_position, nullptr, nullptr, nullptr);
 
   // Find the single closest car ahead.
-  const ClosestPose<T> lead_car_pose = PoseSelector<T>::FindSingleClosestPose(
-      ego_position.lane, ego_pose, traffic_poses,
-      idm_params.scan_ahead_distance(), AheadOrBehind::kAhead);
+  const ClosestPose<T> lead_car_pose =
+      (check_branches_)
+          ? PoseSelector<T>::FindSingleClosestPoseCheckBranches(
+                ego_position.lane, ego_pose, traffic_poses,
+                idm_params.scan_ahead_distance(), AheadOrBehind::kAhead)
+          : PoseSelector<T>::FindSingleClosestPose(
+                ego_position.lane, ego_pose, traffic_poses,
+                idm_params.scan_ahead_distance(), AheadOrBehind::kAhead);
   const T headway_distance = lead_car_pose.distance;
 
   const LanePositionT<T> lane_position(T(ego_position.pos.s()),
