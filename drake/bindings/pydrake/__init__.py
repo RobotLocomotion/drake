@@ -1,13 +1,14 @@
 from __future__ import absolute_import, division, print_function
 from os.path import dirname, join, pardir, realpath
 from platform import python_version_tuple
+from sys import stderr
 
 # We specifically do this prior to loading any other pydrake modules, in order
 # to get assertion configuration done as early as possible.
 from . import common
 
-# Add alias.
 from .path import getDrakePath
+from .util import ModuleShim
 
 # Adding searchable path as inferred by pydrake. This assumes that the python
 # module has not been moved outside of the installation directory (in which
@@ -25,3 +26,22 @@ if path.endswith("lib/python" + version + "/site-packages/pydrake"):
                       pardir, pardir, pardir, pardir,
                       "share/drake"))
     )
+
+__all__ = ['common', 'getDrakePath', 'path', 'version']
+
+
+def _getattr_handler(name, import_type):
+    # Deprecate direct usage of "rbtree" without having imported the module.
+    if name == "rbtree":
+        if import_type == "direct":
+            stderr.write(
+                "`import pydrake; pydrake.rbtree` will soon be deprecated." +
+                "\n  Please use `import pydrake.rbtree` or `from pydrake " +
+                "import rbtree` instead.\n")
+        import pydrake.rbtree
+        return pydrake.rbtree
+    else:
+        raise AttributeError()
+
+
+ModuleShim.install(__name__, _getattr_handler)
