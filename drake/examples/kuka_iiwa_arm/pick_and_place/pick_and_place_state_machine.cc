@@ -95,11 +95,6 @@ PostureInterpolationResult PlanInterpolatingMotion(
 
   // Construct intermediate constraints for via points
   if (straight_line_motion) {
-    drake::log()->debug("Planning straight line from {} {} to {} {}",
-                        r_WG.first.transpose(),
-                        math::rotmat2rpy(X_WG_initial.rotation()).transpose(),
-                        r_WG.second.transpose(),
-                        math::rotmat2rpy(X_WG_final.rotation()).transpose());
     // We will impose a Point2LineSegDistConstraint and WorldGazeDirConstraint
     // on the via points.
     Eigen::Matrix<double, 3, 2> line_ends_W;
@@ -148,9 +143,6 @@ PostureInterpolationResult PlanInterpolatingMotion(
       constraint_array.push_back(posture_change_constraints.back().get());
     }
   } else {
-    drake::log()->debug("Planning motion from {} to {}, above z = {}",
-                        r_WG.first.transpose(), r_WG.second.transpose(),
-                        X_WL.translation().z());
     // We will constrain the z-component of the end-effector position to be
     // above the lower of the two end points at all via points.
     Isometry3<double> X_WL{Isometry3<double>::Identity()};  // World to fLoor
@@ -302,9 +294,6 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   Isometry3<double> X_WS{env_state.get_iiwa_base().inverse()};
   *X_WO_initial = X_WS * env_state.get_object_pose();
 
-  drake::log()->debug("r_WO_initial = [{}]",
-                      X_WO_initial->translation().transpose());
-  drake::log()->debug("R_WO_initial = \n{}", X_WO_initial->linear());
   // Check that the object is oriented correctly
   if (X_WO_initial->linear()(2, 2) < std::cos(20 * M_PI / 180)) {
     drake::log()->warn(
@@ -323,7 +312,6 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
     const Isometry3<double> X_WT = X_WS * table_poses[i];
     Vector3<double> r_WT_in_xy_plane{X_WT.translation()};
     r_WT_in_xy_plane.z() = 0;
-    drake::log()->debug("Table {}: Distance: {} m", i, r_WT_in_xy_plane.norm());
     if (r_WT_in_xy_plane.norm() < kMaxReach) {
       Vector3<double> r_WO_in_xy_plane{X_WO_initial->translation()};
       r_WO_in_xy_plane.z() = 0;
@@ -332,16 +320,12 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
       double y = (r_WT_in_xy_plane - x * (-dir_WO_in_xy_plane))
                      .dot(Vector3<double>::UnitZ().cross(-dir_WO_in_xy_plane));
       double angle = std::atan2(y, x) + M_PI;
-      drake::log()->debug("Table {}: x = {}, y = {}, Angle: {} degrees", i, x,
-                          y, angle * 180 / M_PI);
       if (angle > 20 * M_PI / 180 && angle < min_angle) {
-        drake::log()->debug("Table {} is the new destination candidate.", i);
         destination_table_index = i;
         min_angle = angle;
       }
     }
   }
-  drake::log()->debug("Destination Table Index: {}", destination_table_index);
 
   if (destination_table_index < 0) {
     drake::log()->warn("Cannot find a suitable destination table.");
@@ -351,8 +335,6 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   // Pose of destination table in world
   const Isometry3<double> X_WT = X_WS * table_poses.at(destination_table_index);
   const Vector3<double> r_WT = X_WT.translation();
-  drake::log()->debug("r_WT = [{}]", X_WT.translation().transpose());
-  drake::log()->debug("R_WT = \n{}", X_WT.linear());
 
   Vector3<double> dir_TO_final = -X_WT.linear().inverse() * r_WT;
   dir_TO_final.z() = 0;
@@ -367,10 +349,6 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   X_TO_final.translation() = r_TO_final;
   X_TO_final.linear() = R_TO_final;
   *X_WO_final = X_WT * X_TO_final;
-  drake::log()->debug("dir_TO_final = [{}]", dir_TO_final.transpose());
-  drake::log()->debug("r_TO_final = [{}]",
-                      X_WO_final->translation().transpose());
-  drake::log()->debug("R_WO_final = \n{}", X_WO_final->linear());
   return true;
 }
 
@@ -586,8 +564,6 @@ bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
   }
   if (success) {
     for (int i = 1; i < kNumKnots; ++i) {
-      drake::log()->debug("State {}: q = ({})", states[i - 1],
-                          ik_res.q_sol[i].transpose());
       nominal_q_map_.emplace(states[i - 1], ik_res.q_sol[i]);
     }
   }
@@ -608,14 +584,11 @@ bool PickAndPlaceStateMachine::ComputeTrajectories(
   VectorX<double> q_0{robot->get_num_positions()};
   if (interpolation_result_map_.empty()) {
     q_0 << env_state.get_iiwa_q();
-    drake::log()->debug("Using current configuration as q_0.");
   } else {
-    drake::log()->debug("Using end of the last plan as q_0.");
     const PiecewisePolynomial<double>& q_traj_last =
         interpolation_result_map_.at(states.back()).q_traj;
     q_0 << q_traj_last.value(q_traj_last.getEndTime());
   }
-  drake::log()->debug("\tq_0 = [{}]", q_0.transpose());
   interpolation_result_map_.clear();
   const double kExtraShortDuration = 0.5;
   const double kShortDuration = 1;
@@ -757,8 +730,6 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         iiwa_callback(&plan);
 
         drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
-        drake::log()->debug("\tq_0 = [{}]", q.front().transpose());
-        drake::log()->debug("\tq_f = [{}]", q.back().transpose());
       }
       if (iiwa_move_.ActionFinished(env_state)) {
         // If the object has moved since kPlan, we need to replan.
