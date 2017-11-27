@@ -57,7 +57,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "monolithic_pick_and_place_system_test",
-    size = "medium",
+    size = "large",
     # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
     # one of the steps in this demo.  We should see if this improves
     # when #3128 is fixed.
