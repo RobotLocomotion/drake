@@ -2,7 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import unittest
 import pydrake
-import pydrake.rbtree
+# TODO(eric.cousineau): Use `import pydrake.rbtree` once the compatibility shim
+# in `pydrake.__init__` can be removed.
 import os.path
 
 

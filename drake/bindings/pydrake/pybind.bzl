@@ -1,7 +1,6 @@
 # -*- python -*-
 
-# For some reason, `install` *must* be loaded via `@drake//` rather than
-# just `//`.
+# @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
 load("@drake//tools/install:install.bzl", "install")
 load(
     "//tools:drake.bzl",
