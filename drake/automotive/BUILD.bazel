@@ -564,6 +564,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "pose_selector_test",
     deps = [
+        "//drake/automotive:monolane_onramp_merge",
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane:builder",
