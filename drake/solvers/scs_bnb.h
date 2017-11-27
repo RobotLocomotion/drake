@@ -25,10 +25,19 @@ class ScsNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScsNode)
 
-  // Create the root node from the SCS problem data. The constraint
-  // Ax + s = b does NOT include the integral constraint on the binary
-  // variables. Neither does it include the relaxed constraint on the binary
-  // variable y (i.e, 0 <= y <= 1)
+  /**
+   * Create the root node from the SCS problem data. The constraint
+   * Ax + s = b does NOT include the integral constraint on the binary
+   * variables. Neither does it include the relaxed constraint on the binary
+   * variable y (i.e, 0 <= y <= 1)
+   * @param A
+   * @param b
+   * @param c
+   * @param cone The life of the cone must outlive the life of the node and the
+   * tree for the branch and bound.
+   * @param binary_var_indices
+   * @param cost_constant
+   */
   ScsNode(const AMatrix& A, const scs_float* const b, const scs_float* const c, const SCS_CONE& cone, const std::unordered_set<int>& binary_var_indices, double cost_constant);
 
   ~ScsNode();
@@ -39,11 +48,17 @@ class ScsNode {
   // Solve the optimization problem in this node.
   scs_int Solve(const SCS_SETTINGS* const scs_settings, double best_upper_bound);
 
+  // Getter for A matrix.
   const AMatrix* const A() const { return A_; }
 
+  // Getter for b vector.
   const scs_float* const b() const { return b_; }
 
+  // Getter for c vector, the linear coefficient of the cost.
   const scs_float* const c() const { return c_; }
+
+  // Getter for the cones.
+  const SCS_CONE* const cone() const { return cone_; }
 
   bool found_integral_sol() const { return found_integral_sol_;}
 
