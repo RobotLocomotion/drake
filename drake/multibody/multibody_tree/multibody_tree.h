@@ -1059,19 +1059,18 @@ class MultibodyTree {
   /// @name Methods to compute multibody Jacobians.
   /// @{
 
-  /// Given a set of points `Qi` with position vectors `p_WQi` in the world
-  /// frame W, this method computes the geometric Jacobian `J_WQi` defined by:
+  /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
+  /// B, (that is, their time derivative `ᴮd/dt(p_BQi)` in frame B is zero),
+  /// this method computes the geometric Jacobian `J_WQi` defined by:
   /// <pre>
   ///   J_WQi(q) = d(v_WQi(q, v))/dv
   /// </pre>
-  /// where `v_WQi` is the translational velocity of point `Qi` in the world
-  /// frame W and v is the vector of generalized velocities. Since the spatial
-  /// velocity of each point `Qi` is linear in the generalized velocities, the
-  /// geometric Jacobian `J_WQi` is a function of the generalized coordinates q
-  /// only.
-  ///
-  /// The position of each point `Qi` in the set is specified by its (fixed)
-  /// position `p_BQi` in a frame B.
+  /// where `p_WQi` is the position vector in the world frame for each point
+  /// `Qi` in the input set, `v_WQi` is the translational velocity of point `Qi`
+  /// in the world frame W and v is the vector of generalized velocities. Since
+  /// the spatial velocity of each point `Qi` is linear in the generalized
+  /// velocities, the geometric Jacobian `J_WQi` is a function of the
+  /// generalized coordinates q only.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores

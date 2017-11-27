@@ -755,10 +755,30 @@ class MultibodyTreeTopology {
   /// Returns the total size of the state vector in the model.
   int get_num_states() const { return num_states_; }
 
+  /// Given a node in `this` topology, specified by its BodyNodeIndex `from`,
+  /// this method computes the kinematic path formed by all the nodes in the
+  /// tree that connect `from` with the root (corresponding to the world).
+  ///
+  /// @param[in] from
+  ///   A node in the tree topology to which the path to the root (world) is to
+  ///   be computed.
+  /// @param[out] path_to_world
+  ///   A std::vector of body node indexes that on output will contain the path
+  ///   to the root of the tree. Forward iteration (from element 0 to element
+  ///   size()-1) of `path_to_world` will traverse all nodes in the tree
+  ///   starting at the root along the path to `from`. That is, forward
+  ///   iteration starts with the root of the tree at `path_to_world[0]` and
+  ///   ends with `from` at `path_to_world.back()`.
+  ///   On input, `path_to_world` must be a valid pointer to a pre-allocated
+  ///   vector with at least as many elements as the level
+  ///   (BodyNodeTopology::level) of body node `from` plus one (so that we can
+  ///   include the root node in the path). This method will throw a
+  ///   std::runtime_error exception if these conditions are not met.
   void GetKinematicPathToWorld(
       BodyNodeIndex from, std::vector<BodyNodeIndex>* path_to_world) const {
     const int path_size = get_body_node(from).level + 1;
-    DRAKE_DEMAND(static_cast<int>(path_to_world->size()) == path_size);
+    DRAKE_THROW_UNLESS(path_to_world != nullptr);
+    DRAKE_THROW_UNLESS(static_cast<int>(path_to_world->size()) == path_size);
     // Navigate the tree inwards starting at "from" and ending at the root.
     for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
         node = get_body_node(node).parent_body_node) {
