@@ -1,23 +1,16 @@
 #include "drake/solvers/scs_bnb.h"
 
 #include <limits>
+#include <unordered_set>
 
 // This code is in C style, to be compatible with the SCS source code.
 namespace drake {
 namespace solvers {
-ScsNode::ScsNode()
+ScsNode::ScsNode(const AMatrix& A, const scs_float* const b, const scs_float* const c, const SCS_CONE& cone, const std::unordered_set<int>& binary_var_indices, double cost_constant)
     : A_{static_cast<AMatrix*>(malloc(sizeof(AMatrix)))},
-      b_{nullptr},
-      c_{nullptr},
-      scs_sol_{static_cast<SCS_SOL_VARS*>(scs_calloc(1, sizeof(SCS_SOL_VARS)))},
-      cost_{NAN},
-      found_integral_sol_{false},
-      larger_than_upper_bound_{false}{}
-
-ScsNode::ScsNode(AMatrix* A, scs_float* b, scs_float* c, const std::list<int>& binary_var_indices, double cost_constant)
-    : A_{static_cast<AMatrix*>(malloc(sizeof(AMatrix)))},
-      b_{static_cast<scs_float*>(scs_calloc(A->m, sizeof(scs_float)))},
-      c_{static_cast<scs_float*>(scs_calloc(A->n, sizeof(scs_float)))},
+      b_{static_cast<scs_float*>(scs_calloc(A.m + 2 * binary_var_indices.size(), sizeof(scs_float)))},
+      c_{static_cast<scs_float*>(scs_calloc(A.n, sizeof(scs_float)))},
+      cone_{static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)))},
       y_index_(-1),
       y_val_{-1},
       cost_constant_{cost_constant},
@@ -30,25 +23,81 @@ ScsNode::ScsNode(AMatrix* A, scs_float* b, scs_float* c, const std::list<int>& b
       left_child_{nullptr},
       right_child_{nullptr},
       parent_{nullptr} {
-  A_->m = A->m;
-  A_->n = A->n;
-  const int A_nnz = A->p[A->n];
+  // We need to add the constraint 0 ≤ y ≤ 1 to Ax + s = b, where y is the
+  // binary variables.
+  // 0 ≤ y ≤ 1 is converted to SCS format as
+  // -y + s₁ = 0
+  // y + s₂ = 1
+  // s₁, s₂ in the positive cone.
+  A_->m = A.m + 2 * binary_var_indices.size();
+  A_->n = A.n;
+  const int A_nnz = A.p[A.n] + 2 * binary_var_indices.size();
   A_->x = static_cast<scs_float*>(scs_calloc(A_nnz, sizeof(scs_float)));
   A_->i = static_cast<scs_int*>(scs_calloc(A_nnz, sizeof(scs_int)));
-  A_->p = static_cast<scs_int*>(scs_calloc((A->n) + 1, sizeof(scs_int)));
-  for (int i = 0; i < A_nnz; ++i) {
-    A_->x[i] = A->x[i];
-    A_->i[i] = A->i[i];
+  A_->p = static_cast<scs_int*>(scs_calloc((A.n) + 1, sizeof(scs_int)));
+  // The linear equality constraints in A_*x + s = b_ is the same as in
+  // Ax + s = b
+  // We add the constraint
+  // -y + s₁ = 0
+  // y + s₂ = 1
+  // s₁, s₂ in the positive cone.
+  // to the top of the linear inequality constraints.
+  // The number of columns in A_ is the same as that in A.
+  A_->p[0] = 0;
+  int binary_var_count = 0;
+  for (int j = 1; j <= A.n; ++j) {
+    A_->p[j] = A_->p[j - 1] + (A.p[j] - A.p[j-1]);
+    // If the variable in this column is a binary variable, then add two rows of
+    // constraints to A_ * x + s = b_
+    const bool is_binary_column = binary_var_indices_.find(j - 1) != binary_var_indices_.end();
+    A_->p[j] += is_binary_column ? 2 : 0;
+    int column_nonzero_index = 0;
+    for (; A.i[A.p[j-1] + column_nonzero_index] < cone.f; ++column_nonzero_index) {
+      A_->x[A_->p[j-1] + column_nonzero_index] = A.x[A.p[j-1] + column_nonzero_index];
+      A_->i[A_->p[j-1] + column_nonzero_index] = A.i[A.p[j-1] + column_nonzero_index];
+    }
+    if (is_binary_column) {
+      // We add the constraint
+      // -y + s₁ = 0
+      // y + s₂ = 1
+      // s₁, s₂ in the positive cone.
+      // to the top of the linear inequality constraints.
+      A_->x[A_->p[j-1] + column_nonzero_index] = -1;
+      A_->x[A_->p[j-1] + column_nonzero_index + 1] = 1;
+      A_->i[A_->p[j-1] + column_nonzero_index] = cone.f + 2 * binary_var_count;
+      A_->i[A_->p[j-1] + column_nonzero_index + 1] = cone.f + 2 * binary_var_count + 1;
+    }
+    const int num_added_constraints = is_binary_column ? 2 : 0;
+    // The other constraints (such as second order cone, semi-definite cone, etc) are un-changed.
+    for (; column_nonzero_index < A.p[j] - A.p[j-1]; ++column_nonzero_index) {
+      A_->x[A_->p[j-1] + column_nonzero_index + num_added_constraints] = A.x[A.p[j-1] + column_nonzero_index];
+      A_->i[A_->p[j-1] + column_nonzero_index + num_added_constraints] = A.i[A.p[j-1] + column_nonzero_index] + 2 * binary_var_indices.size();
+    }
+    binary_var_count += is_binary_column ? 1 : 0;
   }
-  for (int i = 0; i < (A->n) + 1; ++i) {
-    A_->p[i] = A->p[i];
-  }
-  for (int i = 0; i < A->m; ++i) {
+  for (int i = 0; i < cone.f; ++i) {
     b_[i] = b[i];
   }
-  for (int i = 0; i < A->n; ++i) {
+  for (int i = 0; i < static_cast<int>(binary_var_indices.size()); ++i) {
+    b_[cone.f + 2 * i] = 0;
+    b_[cone.f + 2 * i + 1] = 1;
+  }
+  for (int i = 0; i < A.m - cone.f; ++i) {
+    b_[cone.f + 2 * binary_var_indices.size() + i] = b[cone.f + i];
+  }
+  for (int i = 0; i < A.n; ++i) {
     c_[i] = c[i];
   }
+  cone_->f = cone.f;
+  cone_->l = cone.l + 2 * binary_var_indices.size();
+  cone_->q = cone.q;
+  cone_->qsize = cone.qsize;
+  cone_->s = cone.s;
+  cone_->ssize = cone.ssize;
+  cone_->ep = cone.ep;
+  cone_->ed = cone.ed;
+  cone_->p = cone.p;
+  cone_->psize = cone.psize;
 }
 
 ScsNode::~ScsNode() {
@@ -65,9 +114,10 @@ ScsNode::~ScsNode() {
   if (c_) {
     scs_free(c_);
   }
+  scs_free(cone_);
   freeSol(scs_sol_);
 }
-
+/*
 void ScsNode::Branch(int binary_var_index) {
   // We first compute the matrix A and b for the remaining variables.
   // We can write Ax+s = b as
@@ -182,6 +232,6 @@ scs_int ScsNode::Solve(const SCS_CONE* const cone, const SCS_SETTINGS* const scs
   scs_finish(scs_work);
   scs_free(scs_problem_data);
   return scs_status;
-}
+}*/
 }
 }
