@@ -186,6 +186,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   simple_car_state.set_velocity(10);
   const int id_mobil =
       simulator->AddMobilControlledSimpleCar("mobil", true /* with_s */,
+                                             ScanStrategy::kPath,
                                              simple_car_state);
   EXPECT_EQ(id_mobil, 0);
 
@@ -573,10 +574,12 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
           std::numeric_limits<double>::epsilon() /* linear_tolerance */,
           std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   simulator->AddIdmControlledPriusMaliputRailcar(
-      "Alice", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      "Alice", LaneDirection(road->junction(0)->segment(0)->lane(0)),
+      ScanStrategy::kPath, params,
       MaliputRailcarState<double>() /* initial state */);
   simulator->AddIdmControlledPriusMaliputRailcar(
-      "Bob", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      "Bob", LaneDirection(road->junction(0)->segment(0)->lane(0)),
+      ScanStrategy::kPath, params,
       MaliputRailcarState<double>() /* initial state */);
 
   EXPECT_NO_THROW(simulator->Start());
@@ -604,7 +607,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestRailcarVelocityOutput) {
       LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
       alice_initial_state);
   const int bob_id = simulator->AddIdmControlledPriusMaliputRailcar("Bob",
-      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      LaneDirection(road->junction(0)->segment(0)->lane(0)),
+      ScanStrategy::kPath, params,
       MaliputRailcarState<double>() /* initial state */);
 
   EXPECT_NO_THROW(simulator->Start());
