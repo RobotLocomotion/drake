@@ -48,7 +48,11 @@ void IiwaMove::MoveJoints(const WorldState& est_state,
   ApplyJointVelocityLimits(kMaxIiwaJointVelocity, q_mat, &time);
   *plan = EncodeKeyFrames(iiwa, time, info, q_mat);
   StartAction(est_state.get_iiwa_time());
-  duration_ = time.back();
+  // Set the duration for this action to be longer than that of the plan to
+  // ensure that we do not advance to the next action befor the robot finishes
+  // executing the plan.
+  const double additional_duaration{0.5};
+  duration_ = time.back() + additional_duaration;
 }
 
 void IiwaMove::Reset() {

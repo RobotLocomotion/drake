@@ -92,6 +92,15 @@ and the combination of Bazel + Clang 3.9 is deprecated.
 macOS 10.13 ("High Sierra") MATLAB support is experimental and untested in continuous
 integration.
 
+.. _binary-packages:
+
+Binary Packages
+---------------
+
+The binary releases of Drake are built with GCC 5.4 on Ubuntu 16.04 and Apple Clang 9.0 on macOS 10.13.
+
+The links for these packages are listed in :ref:`binary-installation`.
+
 Code Review
 ===========
 

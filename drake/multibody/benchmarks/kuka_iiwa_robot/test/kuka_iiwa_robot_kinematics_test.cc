@@ -24,7 +24,7 @@ void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
   // v_NGo_N    | Go's velocity in N, expressed in N.
   // alpha_NG_N | G's angular acceleration in N, expressed in N.
   // a_NGo_N    | Go's acceleration in N, expressed in N.
-  DrakeKukaIIwaRobot drake_kuka_robot(0);
+  DrakeKukaIIwaRobot<double> drake_kuka_robot(0);
   const SpatialKinematicsPVA<double> drake_kinematics =
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 

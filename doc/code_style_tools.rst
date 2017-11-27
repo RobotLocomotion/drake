@@ -54,15 +54,12 @@ C/C++: Clang-Format
 
 The
 :ref:`Mandatory platform specific instructions <platform_specific_setup>`
-already install clang-format.  On Ubuntu, you may wish to create an alias
-(assuming ``$HOME/bin`` is already on your ``$PATH``)::
-
-    ln -s /usr/bin/clang-format-3.9 $HOME/bin/clang-format
+already install ``clang-format-4.0``.
 
 You can check whether you've installed it correctly by executing::
 
-    clang-format --help
+    clang-format-4.0 --help
 
 To run clang-format::
 
-    clang-format -i -style=file [file name]
+    clang-format-4.0 -i -style=file [file name]

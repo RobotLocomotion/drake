@@ -4,8 +4,9 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
-#include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
+#include "drake/solvers/test/semidefinite_program_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -40,6 +41,64 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
+TEST_P(TestEllipsoidsSeparation, TestSOCP) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveAndCheckSolution(mosek_solver);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(MosekTest, TestEllipsoidsSeparation,
+                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+
+TEST_P(TestQPasSOCP, TestSOCP) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveAndCheckSolution(mosek_solver);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(MosekTest, TestQPasSOCP,
+                        ::testing::ValuesIn(GetQPasSOCPProblems()));
+
+TEST_P(TestFindSpringEquilibrium, TestSOCP) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveAndCheckSolution(mosek_solver);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    MosekTest, TestFindSpringEquilibrium,
+    ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+
+GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    TestTrivialSDP(mosek_solver);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    FindCommonLyapunov(mosek_solver);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    FindOuterEllipsoid(mosek_solver);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveEigenvalueProblem(mosek_solver);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

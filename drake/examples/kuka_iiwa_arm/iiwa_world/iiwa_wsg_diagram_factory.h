@@ -127,6 +127,10 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
     return this->get_output_port(output_port_contact_results_);
   }
 
+  const systems::OutputPort<T>& get_output_port_kinematics_results() const {
+    return this->get_output_port(output_port_kinematics_results_);
+  }
+
  private:
   std::vector<std::unique_ptr<RigidBodyTree<T>>> objects_;
   systems::RigidBodyPlant<T>* plant_{nullptr};
@@ -140,6 +144,7 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   std::vector<int> output_port_object_robot_state_t_;
   int output_port_plant_state_{-1};
   int output_port_contact_results_{-1};
+  int output_port_kinematics_results_{-1};
 };
 
 }  // namespace kuka_iiwa_arm

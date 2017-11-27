@@ -129,6 +129,9 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   output_port_contact_results_ =
       base_builder->ExportOutput(plant_->contact_results_output_port());
 
+  output_port_kinematics_results_ =
+      base_builder->ExportOutput(plant_->kinematics_results_output_port());
+
   builder.BuildInto(this);
 }
 template class IiwaAndWsgPlantWithStateEstimator<double>;

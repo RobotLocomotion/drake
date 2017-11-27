@@ -2,8 +2,8 @@
 
 #include <limits>
 
-// mxIsClass seems to not be able to handle derived classes. so i'll implement
-// what I need by calling back to matlab
+// mxIsClass seems to not be able to handle derived classes, so I will
+// implement what I need by calling back to MATLAB.
 bool isa(const mxArray* mxa, const char* class_str) {
   mxArray* plhs;
   mxArray* prhs[2];
@@ -54,7 +54,7 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
 
       mexPrintf(
           "Not Enough Outputs: Asked for %d outputs, but function only "
-          "returned %d\n",
+          "returned %d.\n",
           nrhs, i);
       return true;
     }
@@ -63,12 +63,11 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
 }
 
 /*
- * @param subclass_name (optional) if you want to call a class that derives from
- * DrakeMexPointer (e.g. so that you can refer to it as something more specific
- * in
- * your matlab code), then you can pass in the alternative name here.  The
- * constructor
- * for this class must take the same inputs as the DrakeMexPointer constructor.
+ * @param subclass_name (optional) if you want to call a class that derives
+ * from DrakeMexPointer (e.g., so that you can refer to it as something more
+ * specific in your MATLAB code), then you can pass in the alternative name
+ * here. The constructor for this class must take the same inputs as the
+ * DrakeMexPointer constructor.
  */
 mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
                                int num_additional_inputs,
@@ -106,7 +105,7 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
     prhs[4 + i] = delete_fcn_additional_inputs[i];
   }
 
-  // call matlab to construct mex pointer object
+  // Call MATLAB to construct MEX pointer object.
   if (!subclass_name.empty()) {
     mexCallMATLABsafe(1, plhs, nrhs, prhs, subclass_name.c_str());
 
@@ -114,7 +113,7 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
       mxDestroyArray(plhs[0]);
       mexErrMsgIdAndTxt(
           "Drake:createDrakeMexPointer:InvalidSubclass",
-          "subclass_name is not a valid subclass of DrakeMexPointer");
+          "subclass_name is not a valid subclass of DrakeMexPointer.");
     }
   } else {
     mexCallMATLABsafe(1, plhs, nrhs, prhs, "DrakeMexPointer");
@@ -128,19 +127,19 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
 
 void* getDrakeMexPointer(const mxArray* mx) {
   if (mx == nullptr) {
-    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "null mxArray");
+    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "null mxArray.");
   }
 
   void* ptr = nullptr;
 
-  // todo: optimize this by caching the pointer values, as described in
-  // http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
+  // TODO(russt): Optimize this by caching the pointer values, as described in
+  // http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590.
   mxArray* ptr_array = mxGetProperty(mx, 0, "ptr");
 
   if (ptr_array == nullptr) {
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs",
-                      "cannot retrieve 'ptr' field from this mxArray.  are you "
-                      "sure it's a valid DrakeMexPointer object?");
+                      "Cannot retrieve 'ptr' field from this mxArray. Are you "
+                      "sure it is a valid DrakeMexPointer object?");
   }
 
   switch (sizeof(void*)) {
@@ -148,14 +147,14 @@ void* getDrakeMexPointer(const mxArray* mx) {
       if (!mxIsUint32(ptr_array)) {
         mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize",
                           "DrakeMexPointer expected a 32-bit ptr field but got "
-                          "something else");
+                          "something else.");
       }
       break;
     case 8:
       if (!mxIsUint64(ptr_array)) {
         mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize",
                           "DrakeMexPointer expected a 64-bit ptr field but got "
-                          "something else");
+                          "something else.");
       }
       break;
     default:
@@ -166,12 +165,12 @@ void* getDrakeMexPointer(const mxArray* mx) {
 
   if (!mxIsNumeric(ptr_array) || mxGetNumberOfElements(ptr_array) != 1) {
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs",
-                      "the ptr property of this DrakeMexPointer does not "
-                      "appear to contain a valid pointer");
+                      "The ptr property of this DrakeMexPointer does not "
+                      "appear to contain a valid pointer.");
   }
 
   std::memcpy(&ptr, mxGetData(ptr_array),
-              sizeof(ptr));  // note: could use a reinterpret_cast here instead
+              sizeof(ptr));  // Could use a reinterpret_cast here instead.
 
   return ptr;
 }
@@ -184,7 +183,7 @@ Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex) {
   auto rows = mxGetM(mex);
   auto cols = mxGetN(mex);
   //  auto num_non_zero_max = mxGetNzmax(mex);
-  auto num_non_zero = jc[cols];  // from mxgetnzmax.c example
+  auto num_non_zero = jc[cols];  // From mxgetnzmax.c example.
 
   Eigen::SparseMatrix<double> ret(rows, cols);
   std::vector<Eigen::Triplet<double>> triplets;
@@ -225,7 +224,7 @@ std::string mxGetStdString(const mxArray* array) {
 
 std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array) {
   if (!mxIsCell(array)) {
-    throw std::runtime_error("the input is not a cell array");
+    throw std::runtime_error("The input is not a cell array.");
   }
 
   std::vector<std::string> strings;
@@ -256,7 +255,7 @@ double* mxGetPrSafe(const mxArray* pobj) {
   if (!mxIsDouble(pobj)) {
     mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs",
                       "mxGetPr can only be called on arguments which "
-                      "correspond to Matlab doubles");
+                      "correspond to MATLAB doubles.");
   }
 
   return mxGetPr(pobj);
@@ -324,15 +323,15 @@ mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index,
 
 template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in) {
-  // works for both row vectors and column vectors
+  // Works for both row vectors and column vectors.
 
   if (mxGetNumberOfElements(in) == 0) {
-    // if input is empty, output is an empty vector
+    // If input is empty, output is an empty vector.
     return std::vector<T>();
   }
 
   if (mxGetM(in) != 1 && mxGetN(in) != 1) {
-    throw std::runtime_error("Not a vector");
+    throw std::runtime_error("Not a vector.");
   }
 
   std::vector<T> ret;
@@ -357,9 +356,9 @@ const std::vector<T> matlabToStdVector(const mxArray* in) {
 template <>
 DLL_EXPORT_SYM const std::vector<double> matlabToStdVector<double>(
     const mxArray* in) {
-  // works for both row vectors and column vectors
+  // Works for both row vectors and column vectors.
   if (mxGetM(in) != 1 && mxGetN(in) != 1) {
-    throw std::runtime_error("Not a vector");
+    throw std::runtime_error("Not a vector.");
   }
 
   double* data = mxGetPrSafe(in);
@@ -381,19 +380,19 @@ mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
 void sizecheck(const mxArray* mat, mwSize M, mwSize N) {
   if (mxGetM(mat) != M) {
     mexErrMsgIdAndTxt("Drake:WrongSize",
-                      "wrong number of rows. Expected: %d but got: %d", M,
+                      "wrong number of rows. Expected: %d but got: %d.", M,
                       mxGetM(mat));
   }
 
   if (mxGetN(mat) != N) {
     mexErrMsgIdAndTxt("Drake:WrongSize",
-                      "wrong number of columns. Expected: %d but got: %d", N,
+                      "wrong number of columns. Expected: %d but got: %d.", N,
                       mxGetN(mat));
   }
 }
 
-// builds a matlab sparse matrix in mex from a given eigen matrix
-// the caller is responsible for destroying the resulting array
+// Builds a MATLAB sparse matrix in MEX from a given Eigen matrix. The caller
+// is responsible for destroying the resulting array.
 template <typename Derived>
 mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const& M,
                              int* num_non_zero) {

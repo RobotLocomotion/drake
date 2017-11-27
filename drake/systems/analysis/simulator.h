@@ -698,12 +698,16 @@ void Simulator<T>::IsolateWitnessTriggers(
   };
 
   // Loop until the isolation window is sufficiently small.
+  SPDLOG_DEBUG(drake::log(),
+      "Isolating witness functions using isolation window of {} over [{}, {}]",
+      witness_iso_len.value(), t0, tf);
   VectorX<T> wc(witnesses.size());
   T a = t0;
   T b = tf;
   do {
     // Compute the midpoint and evaluate the witness functions at it.
     T c = (a + b) / 2;
+    SPDLOG_DEBUG(drake::log(), "Integrating forward to time {}", c);
     integrate_forward(c);
 
     // See whether any witness functions trigger.
@@ -724,6 +728,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       // events first). That change would avoid handling unnecessary per-step
       // events- we know no other events are to be handled between t0 and tf-
       // but the current logic appears easier to follow.
+      SPDLOG_DEBUG(drake::log(), "No witness functions triggered up to {}", c);
       triggered_witnesses->clear();
       return;
     } else {
@@ -741,6 +746,12 @@ void Simulator<T>::IsolateWitnessTriggers(
 
 // Integrates the continuous state forward in time while attempting to locate
 // the first zero of any triggered witness functions.
+// @param next_publish_dt the time step at which the next publish event occurs.
+// @param next_update_dt the time step at which the next update event occurs.
+// @param next_sample_time the time at which the next event occurs.
+// @param boundary_dt the maximum time step to take.
+// @param events a non-null collection of events, which the method will clear
+//        on entry.
 // @returns `true` if integration terminated on a sample time, indicating that
 //          an event needs to be handled at the state/time on return.
 template <class T>
@@ -749,6 +760,10 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
                                           const T& next_sample_time,
                                           const T& boundary_dt,
                                           CompositeEventCollection<T>* events) {
+  // Clear the composite event collection.
+  DRAKE_ASSERT(events);
+  events->Clear();
+
   // Save the time and current state.
   const Context<T>& context = get_context();
   const T t0 = context.get_time();
