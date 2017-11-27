@@ -620,7 +620,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   // world computing each node's contribution to J_WQi.
   const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
   // Skip the world (ilevel = 0).
-  for (int ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
+  for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
     BodyNodeIndex body_node_index = path_to_world[ilevel];
     const BodyNode<T>& node = *body_nodes_[body_node_index];
     const BodyNodeTopology& node_topology = node.get_topology();
