@@ -240,23 +240,34 @@ ParseSimulatedPlantConfigurationOrThrow(const std::string& filename) {
   ExtractBasePosesForModels(configuration.object(),
                             &plant_configuration.object_poses);
 
-  if (configuration.static_friction_coefficient() > 0) {
-    plant_configuration.static_friction_coef =
-        configuration.static_friction_coefficient();
+  if (configuration.has_compliant_model_parameters()) {
+    const auto& proto_parameters = configuration.compliant_model_parameters();
+    if (proto_parameters.characteristic_area() > 0) {
+      plant_configuration.contact_model_parameters.characteristic_area =
+          proto_parameters.characteristic_area();
+    }
+    if (proto_parameters.v_stiction_tolerance() > 0) {
+      plant_configuration.contact_model_parameters.v_stiction_tolerance =
+          proto_parameters.v_stiction_tolerance();
+    }
   }
-  if (configuration.dynamic_friction_coefficient() > 0) {
-    plant_configuration.dynamic_friction_coef =
-        configuration.dynamic_friction_coefficient();
-  }
-  if (configuration.v_stiction_tolerance() > 0) {
-    plant_configuration.v_stiction_tolerance =
-        configuration.v_stiction_tolerance();
-  }
-  if (configuration.stiffness() > 0) {
-    plant_configuration.stiffness = configuration.stiffness();
-  }
-  if (configuration.dissipation() > 0) {
-    plant_configuration.dissipation = configuration.dissipation();
+  if (configuration.has_default_compliant_material()) {
+    const auto& material = configuration.default_compliant_material();
+    if (material.youngs_modulus() > 0) {
+      plant_configuration.default_contact_material.set_youngs_modulus(
+          material.youngs_modulus());
+    }
+    if (material.dissipation() > 0) {
+      plant_configuration.default_contact_material.set_dissipation(
+          material.dissipation());
+    }
+    double u_s = material.static_friction_coefficient();
+    double u_d = material.dynamic_friction_coefficient();
+    if (u_s > 0 || u_d > 0) {
+      // NOTE: The *validity* of these values will be tested in the `set`
+      // method.
+      plant_configuration.default_contact_material.set_friction(u_s, u_d);
+    }
   }
 
   return plant_configuration;

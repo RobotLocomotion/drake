@@ -132,5 +132,7 @@ task {
   end_effector_name: "iiwa_link_ee"
 }
 
-stiffness: 3000
-dissipation: 5
+default_compliant_material {
+    youngs_modulus: 3e7
+    dissipation: 5
+}

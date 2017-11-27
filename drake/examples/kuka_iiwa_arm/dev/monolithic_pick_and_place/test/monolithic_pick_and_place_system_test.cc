@@ -112,8 +112,8 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
     plant_configuration_.object_poses.back().rotate(AngleAxis<double>(
         ExpectedObjectOrientation(kTablePositions[initial_table_index_]),
         Vector3<double>::UnitZ()));
-    plant_configuration_.stiffness = 3e3;
-    plant_configuration_.dissipation = 5;
+    plant_configuration_.default_contact_material.set_youngs_modulus(3e7);
+    plant_configuration_.default_contact_material.set_dissipation(5);
 
     // Set planner parameters
     planner_configuration_.model_path = kIiwaPath;

@@ -141,16 +141,27 @@ void ValidateSimulatedPlantConfiguration(
             expected_plant_configuration.table_models);
   EXPECT_EQ(plant_configuration.object_models,
             expected_plant_configuration.object_models);
-  EXPECT_EQ(plant_configuration.static_friction_coef,
-            expected_plant_configuration.static_friction_coef);
-  EXPECT_EQ(plant_configuration.dynamic_friction_coef,
-            expected_plant_configuration.dynamic_friction_coef);
-  EXPECT_EQ(plant_configuration.v_stiction_tolerance,
-            expected_plant_configuration.v_stiction_tolerance);
-  EXPECT_EQ(plant_configuration.stiffness,
-            expected_plant_configuration.stiffness);
-  EXPECT_EQ(plant_configuration.dissipation,
-            expected_plant_configuration.dissipation);
+  // Compliant contact model parameters
+  const systems::CompliantContactModelParameters test_parameters =
+      plant_configuration.contact_model_parameters;
+  const systems::CompliantContactModelParameters expected_parameters =
+      expected_plant_configuration.contact_model_parameters;
+  EXPECT_EQ(test_parameters.characteristic_area,
+            expected_parameters.characteristic_area);
+  EXPECT_EQ(test_parameters.v_stiction_tolerance,
+            expected_parameters.v_stiction_tolerance);
+
+  // Default compliant material
+  const systems::CompliantMaterial& test_material =
+      plant_configuration.default_contact_material;
+  const systems::CompliantMaterial& expected_material =
+      expected_plant_configuration.default_contact_material;
+  EXPECT_EQ(test_material.youngs_modulus(), expected_material.youngs_modulus());
+  EXPECT_EQ(test_material.dissipation(), expected_material.dissipation());
+  EXPECT_EQ(test_material.static_friction(),
+            expected_material.static_friction());
+  EXPECT_EQ(test_material.dynamic_friction(),
+            expected_material.dynamic_friction());
 }
 
 void ValidateOptitrackConfiguration(
@@ -221,8 +232,8 @@ class ConfigurationParsingTests : public ::testing::Test {
           AngleAxis<double>(kObjectRpy[i].z(), Vector3<double>::UnitZ()));
     }
 
-    plant_configuration_.stiffness = 3e3;
-    plant_configuration_.dissipation = 5;
+    plant_configuration_.default_contact_material.set_youngs_modulus(3e7);
+    plant_configuration_.default_contact_material.set_dissipation(5);
 
     // Set planner parameters
     planner_configuration_.model_path = kIiwaPath;
