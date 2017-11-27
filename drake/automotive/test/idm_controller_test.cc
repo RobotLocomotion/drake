@@ -21,7 +21,7 @@ static constexpr int kEgoIndex{1};
 
 class IdmControllerTest : public ::testing::Test {
  protected:
-  void SetUp() override {
+  void SetUpIdm(bool check_branches = false) {
     // Create a straight road with one lane.
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId("Single-Lane Dragway"), 1 /* num_lanes */,
@@ -31,7 +31,7 @@ class IdmControllerTest : public ::testing::Test {
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
 
     // Initialize IdmController with the road.
-    dut_.reset(new IdmController<double>(*road_));
+    dut_.reset(new IdmController<double>(*road_, check_branches));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
@@ -101,6 +101,8 @@ class IdmControllerTest : public ::testing::Test {
 };
 
 TEST_F(IdmControllerTest, Topology) {
+  SetUpIdm();
+
   ASSERT_EQ(3, dut_->get_num_input_ports());
   const auto& ego_pose_input_descriptor =
       dut_->get_input_port(ego_pose_input_index_);
@@ -122,6 +124,8 @@ TEST_F(IdmControllerTest, Topology) {
 }
 
 TEST_F(IdmControllerTest, Output) {
+  SetUpIdm();
+
   // Define a pointer to where the BasicVector results end up.
   const auto result = output_->get_vector_data(acceleration_output_index_);
 
@@ -177,6 +181,7 @@ TEST_F(IdmControllerTest, Output) {
 }
 
 TEST_F(IdmControllerTest, ToAutoDiff) {
+  SetUpIdm();
   SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
 
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
@@ -222,6 +227,22 @@ TEST_F(IdmControllerTest, ToAutoDiff) {
     EXPECT_EQ(1, (*result)[0].derivatives().size());
     EXPECT_EQ(0., (*result)[0].derivatives()(0));
   }));
+}
+
+// Check that, when check_branches == true, we can instantiate an IdmController
+// and CalcOutput produces an expected result.
+TEST_F(IdmControllerTest, CheckBranches) {
+  SetUpIdm(true /* check_branches */);
+
+  // Set the lead car to be immediately ahead of the ego car and moving
+  // slower than it.
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
+  dut_->CalcOutput(*context_, output_.get());
+  const auto result = output_->get_vector_data(acceleration_output_index_);
+  const double closing_accel = (*result)[0];
+
+  // Expect the car to decelerate.
+  EXPECT_GT(0., closing_accel);
 }
 
 }  // namespace
