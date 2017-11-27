@@ -23,6 +23,7 @@ drake_cc_library(
     srcs = [],
     deps = [
         ":autodiff",
+        ":autodiffxd_make_coherent",
         ":cond",
         ":copyable_unique_ptr",
         ":double",
@@ -136,6 +137,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "autodiffxd_make_coherent",
+    hdrs = ["autodiffxd_make_coherent.h"],
+    deps = [
+        ":autodiff",
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
     hdrs = [
@@ -150,33 +160,35 @@ drake_cc_library(
 
 drake_cc_library(
     name = "symbolic",
+    # We only expose `symbolic.h` to the users of symbolic target and hide the
+    # rest of the header files by adding them in `srcs` section.
     srcs = [
         "symbolic.cc",
         "symbolic_environment.cc",
+        "symbolic_environment.h",
         "symbolic_expression.cc",
+        "symbolic_expression.h",
         "symbolic_expression_cell.cc",
+        "symbolic_expression_cell.h",
+        "symbolic_expression_visitor.h",
         "symbolic_formula.cc",
+        "symbolic_formula.h",
         "symbolic_formula_cell.cc",
+        "symbolic_formula_cell.h",
+        "symbolic_formula_visitor.h",
         "symbolic_monomial.cc",
+        "symbolic_monomial.h",
         "symbolic_monomial_util.cc",
+        "symbolic_monomial_util.h",
         "symbolic_polynomial.cc",
+        "symbolic_polynomial.h",
         "symbolic_variable.cc",
+        "symbolic_variable.h",
         "symbolic_variables.cc",
+        "symbolic_variables.h",
     ],
     hdrs = [
         "symbolic.h",
-        "symbolic_environment.h",
-        "symbolic_expression.h",
-        "symbolic_expression_cell.h",
-        "symbolic_expression_visitor.h",
-        "symbolic_formula.h",
-        "symbolic_formula_cell.h",
-        "symbolic_formula_visitor.h",
-        "symbolic_monomial.h",
-        "symbolic_monomial_util.h",
-        "symbolic_polynomial.h",
-        "symbolic_variable.h",
-        "symbolic_variables.h",
     ],
     deps = [
         ":cond",
@@ -214,7 +226,7 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 
-DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
+DRAKE_RESOURCE_SENTINEL = "//drake:.drake-find_resource-sentinel"
 
 drake_cc_library(
     name = "find_resource",
@@ -231,7 +243,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "drake_path",
-    srcs = ["drake_path_bazel.cc"],
+    srcs = ["drake_path.cc"],
     hdrs = ["drake_path.h"],
     data = [
         DRAKE_RESOURCE_SENTINEL,
@@ -357,7 +369,7 @@ install(
     # package name in the installed path.  For now, we'll just specify it
     # manually.
     runtime_dest = "libexec/drake/drake/common",
-    data_dest = "share/drake",
+    data_dest = "share/drake/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )
@@ -366,6 +378,34 @@ install(
 
 drake_cc_googletest(
     name = "autodiffxd_test",
+    # The following `autodiffxd_*_test.cc` files were in a single
+    # `autodiffxd_test.cc`. We found that it takes more than 150 sec to build
+    # this test. So we split it into multiple .cc files. We observed about
+    # 8x speed-up.
+    srcs = [
+        "test/autodiffxd_abs2_test.cc",
+        "test/autodiffxd_abs_test.cc",
+        "test/autodiffxd_acos_test.cc",
+        "test/autodiffxd_addition_test.cc",
+        "test/autodiffxd_asin_test.cc",
+        "test/autodiffxd_atan2_test.cc",
+        "test/autodiffxd_cos_test.cc",
+        "test/autodiffxd_cosh_test.cc",
+        "test/autodiffxd_division_test.cc",
+        "test/autodiffxd_exp_test.cc",
+        "test/autodiffxd_log_test.cc",
+        "test/autodiffxd_max_test.cc",
+        "test/autodiffxd_min_test.cc",
+        "test/autodiffxd_multiplication_test.cc",
+        "test/autodiffxd_pow_test.cc",
+        "test/autodiffxd_sin_test.cc",
+        "test/autodiffxd_sinh_test.cc",
+        "test/autodiffxd_sqrt_test.cc",
+        "test/autodiffxd_subtraction_test.cc",
+        "test/autodiffxd_tan_test.cc",
+        "test/autodiffxd_tanh_test.cc",
+        "test/autodiffxd_test.h",
+    ],
     deps = [
         ":autodiff",
     ],
@@ -556,6 +596,14 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_googletest(
+    name = "autodiffxd_make_coherent_test",
+    deps = [
+        ":autodiffxd_make_coherent",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -831,6 +879,9 @@ drake_py_test(
 drake_py_test(
     name = "resource_tool_test",
     srcs = ["test/resource_tool_test.py"],
+    args = [
+        "$(location :resource_tool)",
+    ],
     data = [
         "test/resource_tool_test_data.txt",
         ":resource_tool",

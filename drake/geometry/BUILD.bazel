@@ -21,6 +21,7 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_ids",
+        "//drake/common:autodiff",
         "//drake/common:essential",
     ],
 )

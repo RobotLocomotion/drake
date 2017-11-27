@@ -28,7 +28,7 @@ const api::LaneEndSet* Lane::DoGetOngoingBranches(
   return GetBranchPoint(which_end)->GetOngoingBranches({this, which_end});
 }
 
-std::unique_ptr<api::LaneEnd> Lane::DoGetDefaultBranch(
+optional<api::LaneEnd> Lane::DoGetDefaultBranch(
     api::LaneEnd::Which which_end) const {
   return GetBranchPoint(which_end)->GetDefaultBranch({this, which_end});
 }

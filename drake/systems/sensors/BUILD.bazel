@@ -161,6 +161,10 @@ drake_cc_library(
     name = "vtk_util",
     srcs = ["vtk_util.cc"],
     hdrs = ["vtk_util.h"],
+    # We must not expose `#include <vtk/...>` in any of our installed headers;
+    # vtk_util.h is only included internally within this package.
+    install_hdrs_exclude = ["vtk_util.h"],
+    visibility = ["//visibility:private"],
     deps = [
         "//drake/common:essential",
         "@eigen",

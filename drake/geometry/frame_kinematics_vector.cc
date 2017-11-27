@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "drake/common/autodiff.h"
+
 namespace drake {
 namespace geometry {
 
@@ -24,6 +26,7 @@ FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
 
 // Explicitly instantiates on the most common scalar types.
 template class FrameKinematicsVector<Isometry3<double>>;
+template class FrameKinematicsVector<Isometry3<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake

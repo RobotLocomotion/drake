@@ -21,7 +21,7 @@ drake_py_library(
 drake_py_library(
     name = "util",
     srcs = ["util.py"],
-    data = ["//:.drake-resource-sentinel"],
+    data = ["//:.bazelproject"],
     visibility = ["//visibility:private"],
 )
 

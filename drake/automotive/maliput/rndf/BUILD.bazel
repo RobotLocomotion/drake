@@ -100,12 +100,12 @@ drake_cc_binary(
     testonly = 1,
     srcs = ["test/rndf_load.cc"],
     add_test_rule = 1,
-    data = [
-        ":test_maps",
-    ],
     test_rule_args = [
         "-rndf_file",
-        "drake/automotive/maliput/rndf/test/maps/cross.rndf",
+        "$(location :test/maps/cross.rndf)",
+    ],
+    test_rule_data = [
+        ":test/maps/cross.rndf",
     ],
     test_rule_size = "small",
     deps = [

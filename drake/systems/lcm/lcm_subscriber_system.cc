@@ -285,7 +285,7 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
 
   if (channel == channel_) {
     const uint8_t* const rbuf_begin =
-        reinterpret_cast<const uint8_t*>(message_buffer);
+        static_cast<const uint8_t*>(message_buffer);
     const uint8_t* const rbuf_end = rbuf_begin + message_size;
     std::lock_guard<std::mutex> lock(received_message_mutex_);
     received_message_.clear();

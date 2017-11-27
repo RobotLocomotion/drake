@@ -44,13 +44,14 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
 
 /**
  * For a non-convex quadratic constraint
- *   lb ≤ xᵀQ₁x - xᵀQ₂x + pᵀx ≤ ub
- * where Q₁, Q₂ are both positive semidefinite matrices, we relax this
- * constraint by several convex constraints. The steps are
+ *   lb ≤ xᵀQ₁x - xᵀQ₂x + pᵀy ≤ ub
+ * where Q₁, Q₂ are both positive semidefinite matrices. `y` is a vector that
+ * can overlap with `x`. We relax this non-convex constraint by several convex
+ * constraints. The steps are
  * 1. Introduce two new variables z₁, z₂, to replace xᵀQ₁x and xᵀQ₂x
  *    respectively. The constraint becomes
  *    <pre>
- *      lb ≤ z₁ - z₂ + pᵀx ≤ ub              (1)
+ *      lb ≤ z₁ - z₂ + pᵀy ≤ ub              (1)
  *    </pre>
  * 2. Ideally, we would like to enforce z₁ = xᵀQ₁x and z₂ = xᵀQ₂x through convex
  *    constraints. To this end, we first bound z₁ and z₂ from below, as
@@ -99,23 +100,23 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *
  * The special cases are when Q₁ = 0 or Q₂ = 0.
  * 1. When Q₁ = 0, the original constraint becomes
- *    lb ≤ -xᵀQ₂x + pᵀx ≤ ub
+ *    lb ≤ -xᵀQ₂x + pᵀy ≤ ub
  *    If ub = +∞, then the original constraint is the convex rotated Lorentz
- *    cone constraint xᵀQ₂x ≤ pᵀx - lb. The user should not call this function
+ *    cone constraint xᵀQ₂x ≤ pᵀy - lb. The user should not call this function
  *    to relax this convex constraint.
  *    @throws std::runtime_error if Q₁ = 0 and ub = +∞.
  *    If ub < +∞, then we introduce a new variable z, with the constraints
- *    lb ≤ -z + pᵀx ≤ ub
+ *    lb ≤ -z + pᵀy ≤ ub
  *    z ≥ xᵀQ₂x
  *    z ≤ 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d
  * 2. When Q₂ = 0, the constraint becomes
- *    lb ≤ xᵀQ₁x + pᵀx ≤ ub
+ *    lb ≤ xᵀQ₁x + pᵀy ≤ ub
  *    If lb = -∞, then the original constraint is the convex rotated Lorentz
- *    cone constraint xᵀQ₁x ≤ ub - pᵀx. The user should not call this function
+ *    cone constraint xᵀQ₁x ≤ ub - pᵀy. The user should not call this function
  *    to relax this convex constraint.
  *    @throws std::runtime_error if Q₂ = 0 and lb = -∞.
  *    If lb > -∞, then we introduce a new variable z, with the constraints
- *    lb ≤ z + pᵀx ≤ ub
+ *    lb ≤ z + pᵀy ≤ ub
  *    z ≥ xᵀQ₁x
  *    z ≤ 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d
  * 3. If both Q₁ and Q₂ are zero, then the original constraint is a convex
@@ -127,7 +128,8 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  * constraint.
  * @param Q1 A positive semidefinite matrix.
  * @param Q2 A positive semidefinite matrix.
- * @param p A vector, the linear coefficients in the quadratic form.
+ * @param y A vector, the variables in the linear term of the quadratic form.
+ * @param p A vector, the linear coefficients of the quadratic form.
  * @param linearization_point The vector `x₀` in the documentation above.
  * @param lower_bound The left-hand side of the original non-convex constraint.
  * @param upper_bound The right-hand side of the original non-convex constraint.
@@ -142,21 +144,23 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  * z is the newly added variable.
  * @pre 1. Q1, Q2 are positive semidefinite.
  *      2. d is positive.
- *      3. Q1, Q2, p, x, x₀ are all of the consistent size.
- *      4. lower_bound ≤ upper_bound.
+ *      3. Q1, Q2, x, x₀ are all of the consistent size.
+ *      4. p and y are of the consistent size.
+ *      5. lower_bound ≤ upper_bound.
  *      @throws std::runtime_error when the precondition is not satisfied.
  */
 std::tuple<Binding<LinearConstraint>,
            std::vector<Binding<RotatedLorentzConeConstraint>>,
            VectorXDecisionVariable>
 AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const VectorXDecisionVariable> &x,
-    const Eigen::Ref<const Eigen::MatrixXd> &Q1,
-    const Eigen::Ref<const Eigen::MatrixXd> &Q2,
-    const Eigen::Ref<const Eigen::VectorXd> &p, double lower_bound,
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q1,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q2,
+    const Eigen::Ref<const VectorXDecisionVariable>& y,
+    const Eigen::Ref<const Eigen::VectorXd>& p, double lower_bound,
     double upper_bound,
-    const Eigen::Ref<const Eigen::VectorXd> &linearization_point,
+    const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
     double trust_region_gap);
 }  // namespace solvers
 }  // namespace drake

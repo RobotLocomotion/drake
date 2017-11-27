@@ -114,14 +114,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "side",
+    srcs = ["side.cc"],
+    hdrs = ["side.h"],
+    deps = [],
+)
+
+drake_cc_library(
     name = "qp_common",
     srcs = [],
     hdrs = ["QPCommon.h"],
     deps = [
         ":control_util",
+        ":side",
         "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
-        "//drake/systems/robotInterfaces:side",
         "//drake/util",
     ],
 )
@@ -131,9 +138,9 @@ drake_cc_library(
     srcs = ["zmp_planner.cc"],
     hdrs = ["zmp_planner.h"],
     deps = [
+        ":linear_quadratic_regulator",
         "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/systems/controllers:linear_quadratic_regulator",
     ],
 )
 
@@ -150,7 +157,10 @@ drake_cc_library(
     name = "yaml_util",
     srcs = ["yaml_util.cc"],
     hdrs = ["yaml_util.h"],
-    visibility = [],
+    # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
+    # headers; yaml_util.h is only included internally within this package.
+    install_hdrs_exclude = ["yaml_util.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":qp_common",
         "//drake/common:essential",

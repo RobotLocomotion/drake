@@ -6,6 +6,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -99,12 +100,10 @@ class BranchPoint {
   /// a turn).
   ///
   /// If @p end has no default-branch at this BranchPoint, the return
-  /// value will be nullptr.
+  /// value will be nullopt.
   ///
   /// @pre @p end must be connected to the BranchPoint.
-  // TODO(maddog@tri.global)  The return type yearns to be
-  //                          const boost::optional<LaneEnd>&.
-  std::unique_ptr<LaneEnd> GetDefaultBranch(const LaneEnd& end) const {
+  optional<LaneEnd> GetDefaultBranch(const LaneEnd& end) const {
     return DoGetDefaultBranch(end);
   }
 
@@ -132,7 +131,7 @@ class BranchPoint {
   virtual const LaneEndSet* DoGetOngoingBranches(
       const LaneEnd& end) const = 0;
 
-  virtual std::unique_ptr<LaneEnd> DoGetDefaultBranch(
+  virtual optional<LaneEnd> DoGetDefaultBranch(
       const LaneEnd& end) const = 0;
 
   virtual const LaneEndSet* DoGetASide() const = 0;

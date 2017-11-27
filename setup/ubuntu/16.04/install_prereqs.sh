@@ -48,6 +48,8 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 bash-completion
 binutils
 chrpath
+clang-4.0
+clang-format-4.0
 cmake
 cmake-curses-gui
 coinor-libclp-dev
@@ -65,6 +67,7 @@ git
 graphviz
 libblas-dev
 libboost-all-dev
+libbz2-dev
 libexpat1-dev
 libfreetype6-dev
 libglib2.0-dev
@@ -90,6 +93,7 @@ libtool
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
+lldb-4.0
 make
 mesa-common-dev
 openjdk-8-jdk

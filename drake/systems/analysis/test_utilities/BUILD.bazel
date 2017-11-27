@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -9,6 +9,7 @@ drake_cc_library(
     name = "test_utilities",
     testonly = 1,
     deps = [
+        ":controlled_spring_mass_system",
         ":discontinuous_spring_mass_damper_system",
         ":explicit_error_controlled_integrator_test",
         ":logistic_system",
@@ -17,6 +18,23 @@ drake_cc_library(
         ":spring_mass_damper_system",
         ":stateless_system",
         ":stiff_double_mass_spring_system",
+    ],
+)
+
+drake_cc_library(
+    name = "controlled_spring_mass_system",
+    testonly = 1,
+    srcs = ["controlled_spring_mass_system.cc"],
+    hdrs = ["controlled_spring_mass_system.h"],
+    deps = [
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework",
+        "//drake/systems/plants/spring_mass_system",
+        "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:gain",
+        "//drake/systems/primitives:multiplexer",
     ],
 )
 
@@ -86,6 +104,13 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["stiff_double_mass_spring_system.h"],
     deps = [],
+)
+
+drake_cc_googletest(
+    name = "controlled_spring_mass_system_test",
+    deps = [
+        ":controlled_spring_mass_system",
+    ],
 )
 
 add_lint_tests()

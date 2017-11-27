@@ -7,9 +7,9 @@ import sys
 
 def get_clang_format_path():
     if sys.platform == "darwin":
-        preferred = "/usr/local/bin/clang-format"
+        path = "/usr/local/bin/clang-format"
     else:
-        preferred = "/usr/bin/clang-format-3.9"
-    if os.path.isfile(preferred):
-        return preferred
-    return "clang-format"
+        path = "/usr/bin/clang-format-3.9"
+    if os.path.isfile(path):
+        return path
+    raise RuntimeError("Could not find required clang-format at " + path)

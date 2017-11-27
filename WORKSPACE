@@ -136,29 +136,35 @@ github_archive(
     build_file = "tools/workspace/fmt/fmt.BUILD.bazel",
 )
 
+MAVEN_REPOSITORY = "https://jcenter.bintray.com"
+
 # In the unlikely event that you update the version here, verify that the
 # licenses in tools/third_party/jchart2d/LICENSE are still applicable.
 maven_jar(
     name = "net_sf_jchart2d_jchart2d",
     artifact = "net.sf.jchart2d:jchart2d:3.3.2",
+    repository = MAVEN_REPOSITORY,
     sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
 maven_jar(
     name = "com_jidesoft_jide_oss",
     artifact = "com.jidesoft:jide-oss:2.9.7",
+    repository = MAVEN_REPOSITORY,
     sha1 = "a9bb0d8384012c25c1519f6dd9adc80dd720a050",
 )
 
 maven_jar(
     name = "commons_io_commons_io",
     artifact = "commons-io:commons-io:1.3.1",
+    repository = MAVEN_REPOSITORY,
     sha1 = "b90b6ac57cf27a2858eaa490d02ba7945d18ca7b",
 )
 
 maven_jar(
     name = "org_apache_xmlgraphics_xmlgraphics_commons",
     artifact = "org.apache.xmlgraphics:xmlgraphics-commons:1.3.1",
+    repository = MAVEN_REPOSITORY,
     sha1 = "f7d0fa54e2750acd82b1a241c043be6fce1bf0dc",
 )
 
@@ -199,8 +205,8 @@ github_archive(
 github_archive(
     name = "octomap",
     repository = "OctoMap/octomap",
-    commit = "v1.7.2",
-    sha256 = "fe55efbb9ebf2b3388860e54b1c8a53d23e5a05de5956c043278013e01066c34",  # noqa
+    commit = "v1.8.1",
+    sha256 = "8b18ef7693e87f1400b9a8bc41f86e3b28259ac98c0b458037232652380aa6af",  # noqa
     build_file = "tools/workspace/octomap/octomap.BUILD.bazel",
 )
 
@@ -251,6 +257,24 @@ github_archive(
     commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
     sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",  # noqa
     build_file = "tools/workspace/lcmtypes_robotlocomotion/lcmtypes_robotlocomotion.BUILD.bazel",  # noqa
+)
+
+pkg_config_package(
+    name = "blas",
+    modname = "blas",
+)
+
+pkg_config_package(
+    name = "lapack",
+    modname = "lapack",
+)
+
+github_archive(
+    name = "scs",
+    repository = "cvxgrp/scs",
+    commit = "v1.2.6",
+    sha256 = "b4bebb43a1257b6e88a5f97c855c0559d6c8a8c0548d3156fc5a28d82bb9533f",  # noqa
+    build_file = "tools/workspace/scs/scs.BUILD.bazel",
 )
 
 github_archive(
