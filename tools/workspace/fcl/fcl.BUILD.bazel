@@ -5,16 +5,23 @@ load(
     "cmake_configure_file",
 )
 load(
-    "@drake//tools/workspace:generate_include_header.bzl",
-    "drake_generate_include_header",
+    "@drake//tools/workspace:generate_export_header.bzl",
+    "generate_export_header",
 )
 load(
-    "@drake//tools/install:install.bzl",
-    "install",
+    "@drake//tools/workspace:generate_include_header.bzl",
+    "drake_generate_include_header",
 )
 
 package(
     default_visibility = ["//visibility:public"],
+)
+
+# Generate header to provide ABI export symbols for fcl.
+generate_export_header(
+    out = "include/fcl/export.h",
+    lib = "fcl",
+    static_define = "FCL_STATIC_DEFINE",
 )
 
 # Generates config.h based on the version numbers in CMake code.
@@ -46,34 +53,16 @@ cc_library(
     hdrs = glob(["include/**/*.h"]) + [
         ":config",
         ":fcl_h_genrule",
+        "include/fcl/export.h",
     ],
     includes = ["include"],
+    linkstatic = 1,
+    copts = ["-fvisibility=hidden"],
+    defines = ["FCL_STATIC_DEFINE",
+               "FCL_HAVE_OCTOMAP"],
     deps = [
         "@ccd",
         "@eigen",
         "@octomap",
     ],
-)
-
-cmake_config(
-    package = "fcl",
-    script = "@drake//tools/workspace/fcl:fcl-create-cps.py",
-    version_file = "CMakeModules/FCLVersion.cmake",
-    deps = [
-        "@ccd//:cps",
-        "@eigen//:cps",
-        "@octomap//:cps",
-    ],
-)
-
-install_cmake_config(package = "fcl")  # Creates rule :install_cmake_config.
-
-install(
-    name = "install",
-    targets = [":fcl"],
-    hdr_dest = "include/fcl",
-    hdr_strip_prefix = ["include/fcl"],
-    guess_hdrs = "PACKAGE",
-    docs = ["LICENSE"],
-    deps = [":install_cmake_config"],
 )

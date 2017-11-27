@@ -18,7 +18,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
     "drake_visualizer",
     "eigen",
-    "fcl",
     "fmt",
     "ignition_math",
     "ignition_rndf",
