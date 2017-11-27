@@ -55,12 +55,16 @@ class IdmController : public systems::LeafSystem<T> {
 
   /// Constructor.
   /// @param road is the pre-defined RoadGeometry.
-  explicit IdmController(const maliput::api::RoadGeometry& road);
+  /// @param check_branches If true, performs IDM computations using vehicles
+  /// detected in confluent branches; otherwise, limits vehicles to the default
+  /// path.  @default false.  See PoseSelector.
+  explicit IdmController(const maliput::api::RoadGeometry& road,
+                         bool check_branches = false);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit IdmController(const IdmController<U>& other)
-      : IdmController<T>(other.road_) {}
+      : IdmController<T>(other.road_, other.check_branches_) {}
 
   ~IdmController() override;
 
@@ -98,6 +102,7 @@ class IdmController : public systems::LeafSystem<T> {
                         systems::BasicVector<T>* accel_output) const;
 
   const maliput::api::RoadGeometry& road_;
+  const bool check_branches_{};
 
   // Indices for the input / output ports.
   const int ego_pose_index_{};
