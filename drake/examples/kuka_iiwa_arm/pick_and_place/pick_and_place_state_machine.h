@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include "robotlocomotion/robot_plan_t.hpp"
@@ -10,7 +9,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/action.h"
-#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
@@ -46,29 +44,34 @@ class PickAndPlaceStateMachine {
   typedef std::function<void(
       const lcmt_schunk_wsg_command*)> WsgPublishCallback;
 
-  /// Construct a pick and place state machine.  The state machine will move the
-  /// item counter-clockwise around the tables specified in @p configuration.
-  /// If @p single_move is true, the state machine will remain in the kDone
-  /// state after moving the object once, otherwise it will loop through the
-  /// pick and place.
+  /// Construct a pick and place state machine.  @p place_locations
+  /// should contain a list of locations to place the target.  The
+  /// state machine will cycle through the target locations, placing
+  /// the item then picking it back up at the next target.  If @p loop
+  /// is true, the state machine will loop through the pick and place
+  /// locations, otherwise it will remain in the kDone state once
+  /// complete.
   PickAndPlaceStateMachine(
-      const pick_and_place::PlannerConfiguration& configuration,
-      bool single_move);
-
+      const std::vector<Isometry3<double>>& place_locations, bool loop);
   ~PickAndPlaceStateMachine();
 
   /// Update the state machine based on the state of the world in @p
   /// env_state.  When a new robot plan is available, @p iiwa_callback
   /// will be invoked with the new plan.  If the desired gripper state
-  /// changes, @p wsg_callback is invoked.
+  /// changes, @p wsg_callback is invoked.  @p planner should contain
+  /// an appropriate planner for the robot.
   void Update(const WorldState& env_state,
               const IiwaPublishCallback& iiwa_callback,
-              const WsgPublishCallback& wsg_callback);
+              const WsgPublishCallback& wsg_callback,
+              manipulation::planner::ConstraintRelaxingIk* planner);
+
 
   PickAndPlaceState state() const { return state_; }
 
  private:
-  bool single_move_;
+  std::vector<Isometry3<double>> place_locations_;
+  int next_place_location_;
+  bool loop_;
 
   WsgAction wsg_act_;
   IiwaMove iiwa_move_;
@@ -91,11 +94,6 @@ class PickAndPlaceStateMachine {
 
   Vector3<double> loose_pos_tol_;
   double loose_rot_tol_;
-
-  pick_and_place::PlannerConfiguration configuration_;
-
-  Isometry3<double> X_WO_initial_;
-  Isometry3<double> X_WO_final_;
 };
 
 }  // namespace pick_and_place
