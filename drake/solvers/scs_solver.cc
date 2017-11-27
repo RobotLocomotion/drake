@@ -271,8 +271,7 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
       }
       if (!std::isinf(bounding_box_constraint.constraint()->lower_bound()(i))) {
         // if lb != -∞, then add the constraint -x + s2 = -lb, s2 in the
-        // positive
-        // cone.
+        // positive cone.
         A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
                                  prog.FindDecisionVariableIndex(xi(i)), -1);
         b->push_back(-bounding_box_constraint.constraint()->lower_bound()(i));
