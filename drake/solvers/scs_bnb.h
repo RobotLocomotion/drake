@@ -10,17 +10,23 @@
 #include "drake/common/symbolic.h"
 namespace drake {
 namespace solvers {
-// Inside each node, we solve an SCS problem
-// min cᵀx
-// s.t Ax + s = b
-//     s in K
-// This node is created from its parent node, by fixing a binary variable y to
-// either 0 or 1. The parent node solves the problem
-// min c_primeᵀ * x_prime
-// s.t A_prime * x_prime + s_prime = b_prime
-//     s_prime in K_prime
-// where x is obtained by removing the binary variable y from x_prime.
-// Notice that the matrix A, b, c will change from node to node.
+/**
+ * Inside each node, we solve an SCS problem
+ * <pre>
+ * min cᵀx
+ * s.t Ax + s = b
+ *     s in K
+ * </pre>
+ * This node is created from its parent node, by fixing a binary variable y to
+ * either 0 or 1. The parent node solves the problem
+ * <pre>
+ * min c_primeᵀ * x_prime
+ * s.t A_prime * x_prime + s_prime = b_prime
+ *     s_prime in K_prime
+ * </pre>
+ * where x is obtained by removing the binary variable y from x_prime.
+ * Notice that the matrix A, b, c will change from node to node.
+ */
 class ScsNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScsNode)
