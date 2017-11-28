@@ -98,8 +98,9 @@ class PickAndPlaceStateMachine {
   PickAndPlaceState state() const { return state_; }
 
  private:
-  bool ComputeNominalConfigurations(const WorldState& env_state,
-                                    RigidBodyTree<double>* iiwa);
+  optional<std::map<PickAndPlaceState, VectorX<double>>>
+  ComputeNominalConfigurations(const WorldState& env_state,
+                               RigidBodyTree<double>* iiwa);
 
   bool ComputeDesiredPoses(const WorldState& env_state, double yaw_offset,
                            double pitch_offset);
@@ -137,7 +138,7 @@ class PickAndPlaceStateMachine {
   std::map<PickAndPlaceState, Isometry3<double>> X_WG_desired_;
 
   // Desired joint configuration for various states
-  std::map<PickAndPlaceState, VectorX<double>> nominal_q_map_;
+  optional<std::map<PickAndPlaceState, VectorX<double>>> nominal_q_map_;
 
   // Desired interpolation results for various states
   optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
