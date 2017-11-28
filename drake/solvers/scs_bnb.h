@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_set>
+#include <list>
 
 // clang-format off
 #include "scs.h"
@@ -41,7 +41,7 @@ class ScsNode {
    */
   static std::unique_ptr<ScsNode> ConstructRootNode(
       const AMatrix& A, const scs_float* const b, const scs_float* const c,
-      const SCS_CONE& cone, const std::unordered_set<int>& binary_var_indices,
+      const SCS_CONE& cone, const std::list<int>& binary_var_indices,
       double cost_constant);
 
   ~ScsNode();
@@ -75,7 +75,7 @@ class ScsNode {
 
   bool larger_than_upper_bound() const { return larger_than_upper_bound_; }
 
-  const std::unordered_set<int>& binary_var_indices() const {
+  const std::list<int>& binary_var_indices() const {
     return binary_var_indices_;
   }
 
@@ -136,7 +136,7 @@ class ScsNode {
   bool larger_than_upper_bound_;
   // binary_var_indices_ are the indices of the remaining binary variables, in
   // the vector x. The indices are in the ascending order.
-  std::unordered_set<int> binary_var_indices_;
+  std::list<int> binary_var_indices_;
 
   ScsNode* left_child_ = nullptr;
   ScsNode* right_child_ = nullptr;
@@ -160,7 +160,7 @@ class ScsBranchAndBound {
   SCS_PROBLEM_DATA* scs_data_;
   // binary_var_indices_ records the indices of all binary variables in x.
   // We suppose that binary_var_indices_ are in the ascending order.
-  std::unordered_set<int> binary_var_indices_;
+  std::list<int> binary_var_indices_;
 };
 }  // namespace solvers
 }  // namespace drake

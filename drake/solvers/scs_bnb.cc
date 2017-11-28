@@ -42,8 +42,18 @@ ScsNode::ScsNode(int num_A_rows, int num_A_cols)
 
 std::unique_ptr<ScsNode> ScsNode::ConstructRootNode(
     const AMatrix& A, const scs_float* const b, const scs_float* const c,
-    const SCS_CONE& cone, const std::unordered_set<int>& binary_var_indices,
+    const SCS_CONE& cone, const std::list<int>& binary_var_indices,
     double cost_constant) {
+  // Make sure binary_var_indices has no duplication.
+  std::unordered_set<int> binary_var_indices_set;
+  binary_var_indices_set.reserve(binary_var_indices.size());
+  for (const auto index : binary_var_indices) {
+    auto it = binary_var_indices_set.find(index);
+    if (it != binary_var_indices_set.end()) {
+      throw std::runtime_error("binary_var_indices contains duplicate entries.");
+    }
+    binary_var_indices_set.emplace_hint(it, index);
+  }
   auto root =
       std::make_unique<ScsNode>(A.m + 2 * binary_var_indices.size(), A.n);
   root->binary_var_indices_ = binary_var_indices;
@@ -74,8 +84,8 @@ std::unique_ptr<ScsNode> ScsNode::ConstructRootNode(
     root->A_->p[j] = root->A_->p[j - 1] + (A.p[j] - A.p[j - 1]);
     // If the variable in this column is a binary variable, then add two rows of
     // constraints to A_ * x + s = b_
-    const bool is_binary_column = root->binary_var_indices_.find(j - 1) !=
-                                  root->binary_var_indices_.end();
+    const bool is_binary_column = binary_var_indices_set.find(j - 1) !=
+                                  binary_var_indices_set.end();
     root->A_->p[j] += is_binary_column ? 2 : 0;
     int column_nonzero_index = 0;
     for (; A.i[A.p[j - 1] + column_nonzero_index] < cone.f;
@@ -180,98 +190,136 @@ void ScsNode::Branch(int binary_var_index) {
   // Notice that the matrix in the left node Aₗ is the same as the matrix in the
   // right node Aᵣ, so are the cones Kₗ and Kᵣ.
 
-  /*
-    // We first compute the matrix A and b for the remaining variables.
-    // We can write Ax+s = b as
-    // A_bar * x_bar + s = b - a * z
-    // where z is the value of the binary variable. `a` is the column in A,
-    // corresponding to that binary variable. x_bar contains the remaining
-    // variables.
-    left_child_ = new ScsNode();
-    // The A matrix of both the left and the right child nodes are the same, so
-  we
-    // compute the A matrix for left node first, and then just copy its value to
-    // the right node later.
-    left_child_->A_->m = this->A_->m;
-    left_child_->A_->n = this->A_->n - 1;
-    left_child_->A_->p = static_cast<scs_int*>(scs_calloc(left_child_->A_->n +
-  1,
-  sizeof(scs_int)));
-    // a_nnz is the number of num-zero entries in the column vector a.
-    const int a_nnz = this->A_->p[binary_var_index + 1] -
-  this->A_->p[binary_var_index];
-    for (int i = 0; i < binary_var_index; ++i) {
-      left_child_->A_->p[i] = this->A_->p[i];
-    }
-    for (int i = binary_var_index; i < left_child_->A_->n + 1; ++i) {
-      left_child_->A_->p[i] = this->A_->p[i + 1] - a_nnz;
-    }
-    const int A_bar_nnz = left_child_->A_->p[left_child_->A_->n];
-    left_child_->A_->i = static_cast<scs_int*>(scs_calloc(A_bar_nnz,
-  sizeof(scs_int)));
-    left_child_->A_->x = static_cast<scs_float*>(scs_calloc(A_bar_nnz,
-  sizeof(scs_float)));
-    for (int i = 0; i < this->A_->p[binary_var_index]; ++i) {
-      left_child_->A_->i[i] = this->A_->i[i];
-      left_child_->A_->x[i] = this->A_->x[i];
-    }
-    for (int i = this->A_->p[binary_var_index]; i < A_bar_nnz; ++i) {
-      left_child_->A_->i[i] = this->A_->i[i + a_nnz];
-      left_child_->A_->x[i] = this->A_->x[i + a_nnz];
-    }
-    left_child_->b_ = static_cast<scs_float*>(scs_calloc(left_child_->A_->m,
-  sizeof(scs_float)));
-    // We fix the binary variable z to 0 in the left child, and to 1 in the
-  right
-  child.
-    for (int i = 0; i < left_child_->A_->m; ++i) {
-      left_child_->b_[i] = b_[i];
-    }
-
-    // We need to remove the binary variable z from binary_var_indices of the
-    // child nodes. Also the indices after z should decrement by 1.
-    left_child_->binary_var_indices_ = binary_var_indices_;
-    for (auto it = left_child_->binary_var_indices_.begin(); it !=
-  left_child_->binary_var_indices_.end(); ++it) {
-      if ((*it) == binary_var_index) {
-        left_child_->binary_var_indices_.erase(it);
-        break;
+  // We will first compute the left node, the right node will be copied and
+  // changed from the left node.
+  left_child_ = new ScsNode(A_->m - 2, A_->n - 1);
+  right_child_ = new ScsNode(A_->m - 2, A_->n - 1);
+  left_child_->A_->p = static_cast<scs_int*>(scs_calloc(left_child_->A_->n + 1, sizeof(scs_int)));
+  right_child_->A_->p = static_cast<scs_int*>(scs_calloc(right_child_->A_->n + 1, sizeof(scs_int)));
+  const int A_l_nnz{A_->p[A_->n] - (A_->p[binary_var_index + 1] - A_->p[binary_var_index])};
+  left_child_->A_->i = static_cast<scs_int*>(scs_calloc(A_l_nnz, sizeof(scs_int)));
+  right_child_->A_->i = static_cast<scs_int*>(scs_calloc(A_l_nnz, sizeof(scs_int)));
+  left_child_->A_->x = static_cast<scs_float*>(scs_calloc(A_l_nnz, sizeof(scs_float)));
+  right_child_->A_->x = static_cast<scs_float*>(scs_calloc(A_l_nnz, sizeof(scs_float)));
+  left_child_->A_->p[0] = 0;
+  // There are two consecutive rows being removed from A. The first row
+  // corresponds to 0 ≤ z, the second row corresponds to z ≤ 1. We find the
+  // index of the first removed row in A.
+  int removed_row_index0 = -1;
+  // This first removed row is between row cone_->f to
+  // cone_->f + 2 * (binary_var_indices.size()). It has only one non-zero entry
+  // in this row, and that entry is in the binary_var_index'th column. That
+  // entry has value -1.
+  for (int i = A_->p[binary_var_index]; i < A_->p[binary_var_index + 1]; ++i) {
+    if (A_->i[i] >= cone_->f && A_->i[i] < cone_->f + 2 * binary_var_indices_.size() && A_->x[i] == -1) {
+      removed_row_index0 = A_->i[i];
+      if (A_->x[i + 1] != 1) {
+        // The row after 0 ≤ z should be the row representing z ≤ 1. In SCS,
+        // 0 ≤ z is written as -z + s = 0, s ≥ 0.
+        // z ≤ 1 is written as z + s = 1, s ≥ 0. So the non-zero entry in this
+        // column immediately after -1 should be 1.
+        throw std::runtime_error("The next constraint after z >= 0 should be z <= 1.");
       }
+      break;
     }
-    for (auto it = left_child_->binary_var_indices_.begin(); it !=
-  left_child_->binary_var_indices_.end(); ++it) {
-      if ((*it) > binary_var_index) {
-        (*it)--;
-      }
+  }
+  if (removed_row_index0 == -1) {
+    // We do not find a row representing z ≥ 0 in the A matrix.
+    throw std::runtime_error("We cannot find a row in A representing z >= 0.");
+  }
+  // We need to remove the column in A corresponding to binary variable z, i.e.,
+  // the binary_var_index'th column.
+  for (int col = 1; col < left_child_->A_->n + 1; ++col) {
+    const int A_col = col < binary_var_index? col : col + 1;
+    const int column_nnz{A_->p[A_col] - A_->p[A_col - 1]};
+    left_child_->A_->p[col] = left_child_->A_->p[col - 1] + column_nnz;
+    for (int i = 0; i < column_nnz; ++i) {
+      left_child_->A_->x[left_child_->A_->p[col - 1] + i] = A_->x[A_->p[A_col - 1] + i];
+      // The indices of the rows above the row representing z ≥ 0 is unchanged.
+      // The indices of the rows below the row representing z ≤ 1 is decremented
+      // by 2, since we are going to remove the two rows representing 0 ≤ z ≤ 1.
+      const int A_row_index = A_->i[A_->p[A_col - 1] + i];
+      left_child_->A_->i[left_child_->A_->p[col - 1] + i] = A_row_index < removed_row_index0 ? A_row_index : A_row_index - 2;
     }
-    // left_child_->c is the same as this->c, execpt removing the entry for the
-    // binary variable z.
-    left_child_->c_ = static_cast<scs_float*>(scs_calloc(left_child_->A_->n,
-  sizeof(scs_float)));
-    for (int i = 0; i < binary_var_index; ++i) {
-      left_child_->c_[i] = this->c_[i];
-    }
-    for (int i = binary_var_index; i < left_child_->A_->n; ++i) {
-      left_child_->c_[i] = this->c_[i + 1];
-    }
-    left_child_->cost_constant_ = this->cost_constant_;
-    left_child_->parent_ = this;
-    left_child_->y_index_ = binary_var_index;
-    left_child_->y_val_ = 0;
+  }
 
-    // Now copy the A matrix from left node to the right node.
-    right_child_ = new ScsNode(left_child_->A_, left_child_->b_,
-  left_child_->c_,
-  left_child_->binary_var_indices_, this->cost_constant_ +
-  this->c_[binary_var_index]);
-    for (int i = this->A_->p[binary_var_index]; i < this->A_->p[binary_var_index
-  +
-  1]; ++i) {
-      right_child_->b_[this->A_->i[i]] -= this->A_->x[i];
+  // The left node and the right node has the same A matrix, so copy Aₗ to Aᵣ
+  for (int i = 0; i < left_child_->A_->n + 1; ++i) {
+    right_child_->A_->p[i] = left_child_->A_->p[i];
+  }
+  for (int i = 0; i < A_l_nnz; ++i) {
+    right_child_->A_->x[i] = left_child_->A_->x[i];
+    right_child_->A_->i[i] = left_child_->A_->i[i];
+  }
+
+  // In the left node, the binary variable z is fixed to 0. So bₗ is obtained by
+  // removing the two rows from b.
+  for (int i = 0; i < left_child_->A_->m; ++i) {
+    left_child_->b_.get()[i] = i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
+  }
+
+  // In the right node, the binary variable z is fixed to 1. So bᵣ is obtained
+  // by first removing the two rows from b, and then subtract the column in A
+  // corresponding to variable z from A.
+  for (int i = 0; i < right_child_->A_->m; ++i) {
+    right_child_->b_.get()[i] = i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
+  }
+  for (int i = A_->p[binary_var_index]; i < A_->p[binary_var_index + 1]; ++i) {
+    const int row_index = A_->i[i];
+    if (row_index < removed_row_index0) {
+      right_child_->b_.get()[row_index] -= A_->x[i];
+    } else if (row_index > removed_row_index0 + 1) {
+      right_child_->b_.get()[row_index - 2] -= A_->x[i];
     }
-    right_child_->parent_ = this;
-    right_child_->y_index_= binary_var_index;
-    right_child_->y_val_ = 1;*/
+  }
+
+  for (int i = 0; i < left_child_->A_->n; ++i) {
+    // Remove the coefficient for the fixed binary variable.
+    left_child_->c_.get()[i] = i < binary_var_index ? c_.get()[i] : c_.get()[i + 1];
+    right_child_->c_.get()[i] = left_child_->c_.get()[i];
+  }
+  left_child_->cost_constant_ = this->cost_constant_;
+  right_child_->cost_constant_ = this->cost_constant_ + this->c()[binary_var_index];
+
+  left_child_->cone_->f = this->cone_->f;
+  left_child_->cone_->l = this->cone_->l - 2;
+  left_child_->cone_->qsize = this->cone_->qsize;
+  left_child_->cone_->q = this->cone_->q;
+  left_child_->cone_->ssize = this->cone_->ssize;
+  left_child_->cone_->s = this->cone_->s;
+  left_child_->cone_->ed = this->cone_->ed;
+  left_child_->cone_->ep = this->cone_->ep;
+  left_child_->cone_->psize = this->cone_->psize;
+  left_child_->cone_->p = this->cone_->p;
+  // Shallow copy the cone of the left node to the right.
+  *(right_child_->cone_) = *(left_child_->cone_);
+
+  left_child_->y_index_ = binary_var_index;
+  right_child_->y_index_ = binary_var_index;
+  left_child_->y_val_ = 0;
+  right_child_->y_val_ = 1;
+
+  // We need to remove the binary variable z from binary_var_indices of the
+  // child nodes. Also the indices after z should decrement by 1.
+  left_child_->binary_var_indices_ = binary_var_indices_;
+  for (auto it = left_child_->binary_var_indices_.begin(); it !=
+      left_child_->binary_var_indices_.end(); ++it) {
+    if ((*it) == binary_var_index) {
+      left_child_->binary_var_indices_.erase(it);
+      break;
+    }
+  }
+  for (auto it = left_child_->binary_var_indices_.begin(); it !=
+      left_child_->binary_var_indices_.end(); ++it) {
+    if ((*it) > binary_var_index) {
+      (*it)--;
+    }
+  }
+  right_child_->binary_var_indices_ = left_child_->binary_var_indices_;
+
+  // Set the parent node for the left and right child nodes.
+  left_child_->parent_ = this;
+  right_child_->parent_ = this;
 }
 /*
 scs_int ScsNode::Solve(const SCS_CONE* const cone, const SCS_SETTINGS* const
