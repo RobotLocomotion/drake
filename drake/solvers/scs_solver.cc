@@ -5,7 +5,7 @@
 // clang-format off
 // scs.h should be included before linsys/amatrix.h, since amatrix.h uses types
 // scs_float, scs_int, etc, defined in scs.h
-#include "scs.h"
+#include <scs.h>
 #include "linsys/amatrix.h"
 // clang-format on
 
@@ -422,7 +422,7 @@ void SetScsProblemData(int A_row_count, int num_vars,
       static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
   SetScsProblemSettingsToDefault(scs_problem_data->stgs);
 }
-} // namespace
+}  // namespace
 
 bool ScsSolver::available() const { return true; }
 
