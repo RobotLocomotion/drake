@@ -279,9 +279,8 @@ std::ostream& operator<<(std::ostream& os, const PickAndPlaceState value) {
   }
 }
 
-bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
-                                       Isometry3<double>* X_WO_initial,
-                                       Isometry3<double>* X_WO_final) {
+optional<std::pair<Isometry3<double>, Isometry3<double>>>
+ComputeInitialAndFinalObjectPoses(const WorldState& env_state) {
   // W -- World frame, coincides with robot base frame.
   // S -- fixed Sensor frame. All poses returned by methods of env_state are
   //      expressed relative to this frame.
@@ -291,15 +290,15 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   // Since env_state.get_iiwa_base() returns the pose of the robot's base
   // relative to fixed sensor frame, inverting the returned transform yields the
   // world pose of the fixed sensor frame.
-  Isometry3<double> X_WS{env_state.get_iiwa_base().inverse()};
-  *X_WO_initial = X_WS * env_state.get_object_pose();
+  const Isometry3<double> X_WS{env_state.get_iiwa_base().inverse()};
+  const Isometry3<double> X_WO_initial = X_WS * env_state.get_object_pose();
 
   // Check that the object is oriented correctly
-  if (X_WO_initial->linear()(2, 2) < std::cos(20 * M_PI / 180)) {
+  if (X_WO_initial.linear()(2, 2) < std::cos(20 * M_PI / 180)) {
     drake::log()->warn(
         "Improper object orientation relative to robot base. Please reset "
         "object and/or check Optitrack markers.");
-    return false;
+    return nullopt;
   }
 
   // Find the destination table
@@ -313,7 +312,7 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
     Vector3<double> r_WT_in_xy_plane{X_WT.translation()};
     r_WT_in_xy_plane.z() = 0;
     if (r_WT_in_xy_plane.norm() < kMaxReach) {
-      Vector3<double> r_WO_in_xy_plane{X_WO_initial->translation()};
+      Vector3<double> r_WO_in_xy_plane{X_WO_initial.translation()};
       r_WO_in_xy_plane.z() = 0;
       const Vector3<double> dir_WO_in_xy_plane{r_WO_in_xy_plane.normalized()};
       double x = r_WT_in_xy_plane.dot(-dir_WO_in_xy_plane);
@@ -329,7 +328,7 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
 
   if (destination_table_index < 0) {
     drake::log()->warn("Cannot find a suitable destination table.");
-    return false;
+    return nullopt;
   }
 
   // Pose of destination table in world
@@ -348,8 +347,8 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   Isometry3<double> X_TO_final;
   X_TO_final.translation() = r_TO_final;
   X_TO_final.linear() = R_TO_final;
-  *X_WO_final = X_WT * X_TO_final;
-  return true;
+  const Isometry3<double> X_WO_final = X_WT * X_TO_final;
+  return std::make_pair(X_WO_initial, X_WO_final);
 }
 
 optional<std::map<PickAndPlaceState, Isometry3<double>>>
@@ -374,57 +373,61 @@ PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
   // Position the gripper 30cm above the object before grasp.
   const double pregrasp_offset = 0.3;
 
-  Isometry3<double> X_WOi;
-  Isometry3<double> X_WOf;
-  if (!ComputeInitialAndFinalObjectPoses(env_state, &X_WOi, &X_WOf)) {
+  if (auto X_WO_initial_and_final =
+          ComputeInitialAndFinalObjectPoses(env_state)) {
+    std::map<PickAndPlaceState, Isometry3<double>> X_WG_desired;
+    Isometry3<double>& X_WOi = X_WO_initial_and_final->first;
+    Isometry3<double>& X_WOf = X_WO_initial_and_final->second;
+
+    X_WOi.rotate(AngleAxis<double>(yaw_offset, Vector3<double>::UnitZ()));
+
+    // A conservative estimate of the fingers' length.
+    const double finger_length = 0.07;
+
+    // The grasp frame (G) should be at the center of the object if possible,
+    // but no further than finger_length*cos(pitch_offset) from the back edge of
+    // the object.
+    Isometry3<double> X_OG{Isometry3<double>::Identity()};
+    X_OG.rotate(AngleAxis<double>(pitch_offset, Vector3<double>::UnitY()));
+    X_OG.translation().x() =
+        std::min<double>(0, -0.5 * env_state.get_object_dimensions().x() +
+                                finger_length * std::cos(pitch_offset));
+    // Set ApproachPick pose
+    Isometry3<double> X_OiO{Isometry3<double>::Identity()};
+    X_WG_desired.emplace(PickAndPlaceState::kApproachPick,
+                         X_WOi * X_OiO * X_OG);
+    // Set ApproachPickPregrasp pose
+    Isometry3<double> X_GGoffset{Isometry3<double>::Identity()};
+    X_OiO.setIdentity();
+    const double approach_angle = 70.0 * M_PI / 180.0;
+    X_OiO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
+    X_OiO.translation()[2] = sin(approach_angle) * pregrasp_offset;
+    X_WG_desired.emplace(PickAndPlaceState::kApproachPickPregrasp,
+                         X_WOi * X_OiO * X_OG * X_GGoffset);
+    // Set LiftFromPick pose
+    X_OiO.setIdentity();
+    X_OiO.translation()[2] = pregrasp_offset;
+    X_WG_desired.emplace(PickAndPlaceState::kLiftFromPick,
+                         X_WOi * X_OiO * X_OG);
+    // Set ApproachPlace pose
+    Isometry3<double> X_OfO{Isometry3<double>::Identity()};
+    X_WG_desired.emplace(PickAndPlaceState::kApproachPlace,
+                         X_WOf * X_OfO * X_OG);
+    // Set ApproachPlacePregrasp pose
+    X_OfO.setIdentity();
+    X_OfO.translation()[2] = pregrasp_offset;
+    X_WG_desired.emplace(PickAndPlaceState::kApproachPlacePregrasp,
+                         X_WOf * X_OfO * X_OG);
+    // Set LiftFromPlace pose
+    X_OfO.setIdentity();
+    X_OfO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
+    X_OfO.translation()[2] = sin(approach_angle) * pregrasp_offset;
+    X_WG_desired.emplace(PickAndPlaceState::kLiftFromPlace,
+                         X_WOf * X_OfO * X_OG);
+    return X_WG_desired;
+  } else {
     return nullopt;
   }
-  std::map<PickAndPlaceState, Isometry3<double>> X_WG_desired;
-
-  X_WOi.rotate(AngleAxis<double>(yaw_offset, Vector3<double>::UnitZ()));
-
-  // A conservative estimate of the fingers' length.
-  const double finger_length = 0.07;
-
-  // The grasp frame (G) should be at the center of the object if possible, but
-  // no further than finger_length*cos(pitch_offset) from the back edge of the
-  // object.
-  Isometry3<double> X_OG{Isometry3<double>::Identity()};
-  X_OG.rotate(AngleAxis<double>(pitch_offset, Vector3<double>::UnitY()));
-  X_OG.translation().x() =
-      std::min<double>(0, -0.5 * env_state.get_object_dimensions().x() +
-                              finger_length * std::cos(pitch_offset));
-  // Set ApproachPick pose
-  Isometry3<double> X_OiO{Isometry3<double>::Identity()};
-  X_WG_desired.emplace(PickAndPlaceState::kApproachPick, X_WOi * X_OiO * X_OG);
-  // Set ApproachPickPregrasp pose
-  Isometry3<double> X_GGoffset{Isometry3<double>::Identity()};
-  X_OiO.setIdentity();
-  const double approach_angle = 70.0 * M_PI / 180.0;
-  X_OiO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
-  X_OiO.translation()[2] = sin(approach_angle) * pregrasp_offset;
-  X_WG_desired.emplace(PickAndPlaceState::kApproachPickPregrasp,
-                        X_WOi * X_OiO * X_OG * X_GGoffset);
-  // Set LiftFromPick pose
-  X_OiO.setIdentity();
-  X_OiO.translation()[2] = pregrasp_offset;
-  X_WG_desired.emplace(PickAndPlaceState::kLiftFromPick, X_WOi * X_OiO * X_OG);
-  // Set ApproachPlace pose
-  Isometry3<double> X_OfO{Isometry3<double>::Identity()};
-  X_WG_desired.emplace(PickAndPlaceState::kApproachPlace,
-                        X_WOf * X_OfO * X_OG);
-  // Set ApproachPlacePregrasp pose
-  X_OfO.setIdentity();
-  X_OfO.translation()[2] = pregrasp_offset;
-  X_WG_desired.emplace(PickAndPlaceState::kApproachPlacePregrasp,
-                        X_WOf * X_OfO * X_OG);
-  // Set LiftFromPlace pose
-  X_OfO.setIdentity();
-  X_OfO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
-  X_OfO.translation()[2] = sin(approach_angle) * pregrasp_offset;
-  X_WG_desired.emplace(PickAndPlaceState::kLiftFromPlace,
-                        X_WOf * X_OfO * X_OG);
-  return X_WG_desired;
 }
 
 PickAndPlaceStateMachine::PickAndPlaceStateMachine(
