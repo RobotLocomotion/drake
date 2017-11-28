@@ -561,22 +561,16 @@ PickAndPlaceStateMachine::PickAndPlaceStateMachine(
       tight_rot_tol_(0.05),
       loose_pos_tol_(0.1, 0.1, 0.1),
       loose_rot_tol_(30 * M_PI / 180),
-      configuration_(configuration),
-      q_seed_(VectorX<double>::Zero(0)) {}
+      configuration_(configuration) {}
 
 PickAndPlaceStateMachine::~PickAndPlaceStateMachine() {}
 
 optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
-PickAndPlaceStateMachine::ComputeTrajectories(const WorldState& env_state,
-                                              RigidBodyTree<double>* robot) {
-  VectorX<double> q_initial{env_state.get_iiwa_q()};
-  if (q_seed_.size() == 0) {
-    q_seed_ = q_initial;
-  }
-  auto q_seed_traj = PiecewisePolynomial<double>::FirstOrderHold(
-      {0.0, 1.0}, {q_initial, q_seed_});
+PickAndPlaceStateMachine::ComputeTrajectories(
+    const WorldState& env_state, const PiecewisePolynomial<double>& q_traj_seed,
+    RigidBodyTree<double>* robot) {
   if (auto nominal_q_map = ComputeNominalConfigurations(
-          env_state, q_seed_traj, tight_rot_tol_, tight_pos_tol_, robot)) {
+          env_state, q_traj_seed, tight_rot_tol_, tight_pos_tol_, robot)) {
     std::vector<PickAndPlaceState> states{
         PickAndPlaceState::kApproachPickPregrasp,
         PickAndPlaceState::kApproachPick,
@@ -661,12 +655,9 @@ PickAndPlaceStateMachine::ComputeTrajectories(const WorldState& env_state,
       interpolation_result_map.emplace(state, result);
       q_0 = q_f;
     }
-    q_seed_.resize(0);
     planning_failure_count_ = 0;
     return interpolation_result_map;
   } else {
-    // Set a random seed for the next call to ComputeNominalConfigurations.
-    q_seed_ = robot->getRandomConfiguration(rand_generator_);
     drake::log()->warn(
         "Attempt {} failed while computing keyframe configurations.",
         planning_failure_count_++);
@@ -821,11 +812,23 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
                              std::move(grasp_frame_fixed_joint));
       robot->add_rigid_body(std::move(grasp_frame));
       robot->compile();
-      interpolation_result_map_ = ComputeTrajectories(env_state, robot.get());
+
+      VectorX<double> q_initial{env_state.get_iiwa_q()};
+      interpolation_result_map_ = ComputeTrajectories(
+          env_state,
+          q_traj_seed_.value_or(PiecewisePolynomial<double>::ZeroOrderHold(
+              {0.0, 1.0}, {q_initial, q_initial})),
+          robot.get());
       if (interpolation_result_map_) {
         // Proceed to execution
         state_ = PickAndPlaceState::kApproachPickPregrasp;
-      }  // otherwise re-plan on next call to Update.
+      } else {
+        // otherwise re-plan on next call to Update.
+        // Set a random seed for the next call to ComputeNominalConfigurations.
+        VectorX<double> q_seed = robot->getRandomConfiguration(rand_generator_);
+        q_traj_seed_.emplace(PiecewisePolynomial<double>::FirstOrderHold(
+            {0.0, 1.0}, {q_initial, q_seed}));
+      }
     } break;
     case PickAndPlaceState::kReset: {
       if (single_move_) {
