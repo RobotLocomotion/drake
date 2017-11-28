@@ -17,6 +17,7 @@ load(
     "//drake/bindings/pydrake:pybind.bzl",
     "drake_pybind_library",
     "get_drake_pybind_installs",
+    "get_pybind_pkg_dest",
 )
 
 package(default_visibility = ["//drake/bindings/pydrake:__subpackages__"])
@@ -121,6 +122,7 @@ install(
     targets = [
         ":util_py",
     ],
+    py_dest = get_pybind_pkg_dest(),
     visibility = ["//visibility:public"],
     deps = get_drake_pybind_installs(PYBIND_MODULES),
 )
