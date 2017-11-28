@@ -58,13 +58,6 @@ struct PostureInterpolationRequest {
   double max_joint_position_change;
 };
 
-struct PostureInterpolationResult {
-  // Configuration trajectory
-  PiecewisePolynomial<double> q_traj;
-  // Success
-  bool success;
-};
-
 /// A class which controls the pick and place actions for moving a
 /// single target in the environment.
 class PickAndPlaceStateMachine {
@@ -98,10 +91,10 @@ class PickAndPlaceStateMachine {
   PickAndPlaceState state() const { return state_; }
 
  private:
-  optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
+  optional<std::map<PickAndPlaceState, PiecewisePolynomial<double>>>
   ComputeTrajectories(const WorldState& env_state,
                       const PiecewisePolynomial<double>& q_traj_seed,
-                      RigidBodyTree<double>* iiwa);
+                      RigidBodyTree<double>* iiwa) const;
 
   bool single_move_;
 
@@ -130,7 +123,7 @@ class PickAndPlaceStateMachine {
   pick_and_place::PlannerConfiguration configuration_;
 
   // Desired interpolation results for various states
-  optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
+  optional<std::map<PickAndPlaceState, PiecewisePolynomial<double>>>
       interpolation_result_map_{};
 
   // Measured location of object at planning time

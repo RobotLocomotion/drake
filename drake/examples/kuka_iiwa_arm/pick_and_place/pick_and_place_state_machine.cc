@@ -26,6 +26,13 @@ using manipulation::util::WorldSimTreeBuilder;
 
 const char kGraspFrameName[] = "grasp_frame";
 
+struct PostureInterpolationResult {
+  // Configuration trajectory
+  PiecewisePolynomial<double> q_traj;
+  // Success
+  bool success;
+};
+
 // Generates a sequence (@p num_via_points + 1) of key frames s.t. the end
 // effector moves in a straight line between @pX_WEndEffector0 and
 // @p X_WEndEffector1.
@@ -565,10 +572,10 @@ PickAndPlaceStateMachine::PickAndPlaceStateMachine(
 
 PickAndPlaceStateMachine::~PickAndPlaceStateMachine() {}
 
-optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
+optional<std::map<PickAndPlaceState, PiecewisePolynomial<double>>>
 PickAndPlaceStateMachine::ComputeTrajectories(
     const WorldState& env_state, const PiecewisePolynomial<double>& q_traj_seed,
-    RigidBodyTree<double>* robot) {
+    RigidBodyTree<double>* robot) const {
   if (auto nominal_q_map = ComputeNominalConfigurations(
           env_state, q_traj_seed, tight_rot_tol_, tight_pos_tol_, robot)) {
     std::vector<PickAndPlaceState> states{
@@ -580,7 +587,7 @@ PickAndPlaceStateMachine::ComputeTrajectories(
         PickAndPlaceState::kLiftFromPlace};
     VectorX<double> q_0{robot->get_num_positions()};
     q_0 << env_state.get_iiwa_q();
-    std::map<PickAndPlaceState, PostureInterpolationResult>
+    std::map<PickAndPlaceState, PiecewisePolynomial<double>>
         interpolation_result_map;
     const double kExtraShortDuration = 0.5;
     const double kShortDuration = 1;
@@ -648,19 +655,18 @@ PickAndPlaceStateMachine::ComputeTrajectories(
         if (!result.success) {
           drake::log()->warn(
               "Attempt {} failed while computing trajectory for {}.",
-              planning_failure_count_++, state);
+              planning_failure_count_, state);
           return nullopt;
         }
       }
-      interpolation_result_map.emplace(state, result);
+      interpolation_result_map.emplace(state, result.q_traj);
       q_0 = q_f;
     }
-    planning_failure_count_ = 0;
     return interpolation_result_map;
   } else {
     drake::log()->warn(
         "Attempt {} failed while computing keyframe configurations.",
-        planning_failure_count_++);
+        planning_failure_count_);
     return nullopt;
   }
 }
@@ -716,15 +722,15 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
     case PickAndPlaceState::kApproachPickPregrasp:
     case PickAndPlaceState::kApproachPlacePregrasp: {
       if (!iiwa_move_.ActionStarted()) {
+        DRAKE_THROW_UNLESS(bool(interpolation_result_map_));
         robotlocomotion::robot_plan_t plan{};
         std::vector<VectorX<double>> q;
-        PostureInterpolationResult& result =
+        PiecewisePolynomial<double>& q_traj =
             interpolation_result_map_->at(state_);
-        DRAKE_THROW_UNLESS(result.success);
-        const std::vector<double>& times{result.q_traj.getSegmentTimes()};
+        const std::vector<double>& times{q_traj.getSegmentTimes()};
         q.reserve(times.size());
         for (double t : times) {
-          q.push_back(result.q_traj.value(t));
+          q.push_back(q_traj.value(t));
         }
         std::unique_ptr<RigidBodyTree<double>> robot{
             BuildTree(configuration_.drake_relative_model_path)};
@@ -822,12 +828,14 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
       if (interpolation_result_map_) {
         // Proceed to execution
         state_ = PickAndPlaceState::kApproachPickPregrasp;
+        planning_failure_count_ = 0;
       } else {
         // otherwise re-plan on next call to Update.
         // Set a random seed for the next call to ComputeNominalConfigurations.
         VectorX<double> q_seed = robot->getRandomConfiguration(rand_generator_);
         q_traj_seed_.emplace(PiecewisePolynomial<double>::FirstOrderHold(
             {0.0, 1.0}, {q_initial, q_seed}));
+        ++planning_failure_count_;
       }
     } break;
     case PickAndPlaceState::kReset: {
