@@ -17,6 +17,21 @@ namespace kuka_iiwa_arm {
 
 constexpr int kIiwaArmNumJoints = 7;
 
+// Kuka publishes these in degrees, they've been converted to radians here.
+// clang-format off
+const VectorX<double> kIiwaMaxJointVelocities =
+    (VectorX<double>(7) <<
+     1.483529,
+     1.483529,
+     1.745329,
+     1.308996,
+     2.268928,
+     2.268928,
+     2.356194)
+        .finished();
+// clang-format on
+
+
 /// Computes the lumped inertia parameters of the gripper and the end effector
 /// link expressed in the end effector frame.
 /// @param world_tree The RigidBodyTree that contains the arm and the gripper
@@ -52,8 +67,7 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
 /// Scales a plan so that no step exceeds the maximum joint velocity
 /// specified.  The number of columns in @p keyframes must match the
 /// size of @p time.  Times must be in strictly increasing order.
-void ApplyJointVelocityLimits(double max_joint_velocity,
-                              const MatrixX<double>& keyframes,
+void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
                               std::vector<double>* time);
 
 
