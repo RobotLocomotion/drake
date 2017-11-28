@@ -102,8 +102,8 @@ class PickAndPlaceStateMachine {
   ComputeNominalConfigurations(const WorldState& env_state,
                                RigidBodyTree<double>* iiwa);
 
-  bool ComputeDesiredPoses(const WorldState& env_state, double yaw_offset,
-                           double pitch_offset);
+  optional<std::map<PickAndPlaceState, Isometry3<double>>> ComputeDesiredPoses(
+      const WorldState& env_state, double yaw_offset, double pitch_offset);
 
   optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
   ComputeTrajectories(const WorldState& env_state, RigidBodyTree<double>* iiwa);
@@ -133,12 +133,6 @@ class PickAndPlaceStateMachine {
   double loose_rot_tol_;
 
   pick_and_place::PlannerConfiguration configuration_;
-
-  // Desired grasp frame end-pose for various states
-  std::map<PickAndPlaceState, Isometry3<double>> X_WG_desired_;
-
-  // Desired joint configuration for various states
-  optional<std::map<PickAndPlaceState, VectorX<double>>> nominal_q_map_;
 
   // Desired interpolation results for various states
   optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
