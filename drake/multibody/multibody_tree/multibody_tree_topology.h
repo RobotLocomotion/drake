@@ -778,9 +778,7 @@ class MultibodyTreeTopology {
     DRAKE_THROW_UNLESS(path_to_world != nullptr);
 
     const int path_size = get_body_node(from).level + 1;
-    // Only reallocate if path_to_world.size() < path_size.
-    path_to_world->clear();
-    path_to_world->reserve(path_size);
+    path_to_world->resize(path_size);
 
     // Navigate the tree inwards starting at "from" and ending at the root.
     for (BodyNodeIndex node = from; node > BodyNodeIndex(0);

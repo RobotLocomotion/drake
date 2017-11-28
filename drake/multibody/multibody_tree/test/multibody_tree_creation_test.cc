@@ -534,9 +534,11 @@ TEST_F(TreeTopologyTests, KinematicPathToWorld) {
 
   // Compute kinematic path from body 6 to the world. See documentation for the
   // test fixture TreeTopologyTests for details on the topology under test.
-  const int path_size = body6_node.level + 1;
-  std::vector<BodyNodeIndex> path_to_world(path_size);
+  std::vector<BodyNodeIndex> path_to_world;
   topology.GetKinematicPathToWorld(body6_node_index, &path_to_world);
+
+  const int expected_path_size = body6_node.level + 1;
+  EXPECT_EQ(static_cast<int>(path_to_world.size()), expected_path_size);
 
   // These are the expected bodies in the path.
   const std::vector<BodyIndex> expected_bodies_path =

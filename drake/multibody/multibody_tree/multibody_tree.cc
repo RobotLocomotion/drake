@@ -600,8 +600,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
       topology_.get_body_node(body_B.get_node_index());
 
   // Compute kinematic path from body B to the world:
-  const int path_size = body_B_node.level + 1;
-  std::vector<BodyNodeIndex> path_to_world(path_size);
+  std::vector<BodyNodeIndex> path_to_world;
   topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
 
   // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
