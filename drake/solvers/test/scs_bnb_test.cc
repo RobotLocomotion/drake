@@ -346,6 +346,7 @@ TEST_F(TestScsNode, TestConstructor) {
   EXPECT_TRUE(node.binary_var_indices().empty());
   EXPECT_EQ(node.left_child(), nullptr);
   EXPECT_EQ(node.right_child(), nullptr);
+  EXPECT_EQ(node.parent(), nullptr);
 }
 
 TEST_F(TestScsNode, TestConstructRoot1) {
