@@ -13,6 +13,7 @@
 /// warning that can indicate if something has changed in the system such that
 /// the final system no longer reproduces the expected baseline behavior.
 
+#include <queue>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -31,7 +32,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -48,8 +49,7 @@ namespace {
 
 using drake::systems::Multiplexer;
 using drake::systems::Demultiplexer;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::ImplicitEulerIntegrator;
+using drake::systems::RungeKutta2Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
@@ -60,6 +60,8 @@ using Eigen::Vector3d;
 // Initial height of the box's origin.
 const double kBoxInitZ = 0.076;
 
+// TODO(rcory): Remove and replace (like Obamacare) after the Sinusoid
+// block PR goes through.
 class Sinusoid : public systems::LeafSystem<double> {
  public:
   Sinusoid(double tstart, double freq, double amp, double offset) : freq_(freq), amp_(amp), offset_(offset), tstart_(tstart) {
@@ -86,6 +88,30 @@ class Sinusoid : public systems::LeafSystem<double> {
   double freq_{0.0}, amp_{0.0}, offset_{0.0}, tstart_{0.0};
 };
 
+RigidBody<double>* FindEndEffector(const RigidBodyTree<double>& tree) {
+  // There should only be one base body.
+  auto base_indices = tree.FindBaseBodies();
+  DRAKE_DEMAND(base_indices.size() == 1);
+
+  std::vector<int> end_effectors;
+  std::queue<int> q;
+  q.push(base_indices.front());
+  while (!q.empty()) {
+    int index = q.front();
+    q.pop();
+    auto children = tree.FindChildrenOfBody(index);
+    if (children.empty()) {
+      end_effectors.push_back(index);
+    } else {
+      for (auto i : children)
+        q.push(i);
+    }
+  }
+
+  DRAKE_DEMAND(end_effectors.size() == 1);
+  return const_cast<RigidBody<double>*>(&tree.get_body(end_effectors.front()));
+}
+
 std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
     int* lifter_instance_id, int* gripper_instance_id) {
   std::unique_ptr<RigidBodyTreed> tree = std::make_unique<RigidBodyTreed>();
@@ -100,11 +126,14 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   EXPECT_EQ(lifter_id_table.size(), 1);
   *lifter_instance_id = lifter_id_table.begin()->second;
 
-  /// Add the gripper.  Offset it slightly back and up so that we can
+  // Get the end-effector link.
+  RigidBody<double>* ee = FindEndEffector(*tree);
+
+  // Add the gripper.  Offset it slightly back and up so that we can
   // locate the target at the origin.
   auto gripper_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "link_frame",
-      tree->FindBody("z_rot_link"), Eigen::Vector3d(0, -0.05, 0.05),
+      ee, Eigen::Vector3d(0, -0.05, 0.05),
       Eigen::Vector3d::Zero());
   const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
       FindResourceOrThrow(
@@ -137,7 +166,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
           BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id));
   plant->set_name("plant");
 
-  ASSERT_EQ(plant->get_num_actuators(), 7);
+  ASSERT_GE(plant->get_num_actuators(), 2);
   ASSERT_EQ(plant->get_num_model_instances(), 3);
 
   // Arbitrary contact parameters.
@@ -146,7 +175,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kVStictionTolerance = 0.01;
-//  const double kVStictionTolerance = 1e-5;
+
   plant->set_normal_contact_parameters(kStiffness, kDissipation);
   plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                          kVStictionTolerance);
@@ -157,10 +186,13 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const auto& lifting_output_port =
       plant->model_instance_state_output_port(lifter_instance_id);
 
+  // Get the number of controllers. 
+  const int num_PID_controllers = plant->get_num_actuators() - 1;
+
   // Constants chosen arbitrarily.
-  const auto lift_kp = VectorX<double>::Ones(6) * 300.0;
-  const auto lift_ki = VectorX<double>::Ones(6) * 0.0;
-  const auto lift_kd = VectorX<double>::Ones(6) * 5.0;
+  const auto lift_kp = VectorX<double>::Ones(num_PID_controllers) * 300.0;
+  const auto lift_ki = VectorX<double>::Ones(num_PID_controllers) * 0.0;
+  const auto lift_kd = VectorX<double>::Ones(num_PID_controllers) * 5.0;
 
   auto lifting_pid_ports =
       systems::controllers::PidControlledSystem<double>::ConnectController(
@@ -169,27 +201,26 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   auto zero_source =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
-          Eigen::VectorXd::Zero(6));
+          Eigen::VectorXd::Zero(num_PID_controllers));
   zero_source->set_name("zero");
   builder.Connect(zero_source->get_output_port(),
                   lifting_pid_ports.control_input_port);
 
-  // Create the sinusoids.
+  // Create the sinusoids: number of sinusoids may vary to accommodate
+  // modifications to the number of links in the test lifter SDF.
   const double kLiftStart = 1.0;
-  const int num_sinusoids = 5;
+  const int num_sinusoids = num_PID_controllers - 1;
   systems::System<double>* sinusoids[num_sinusoids];
-  sinusoids[0] = builder.AddSystem<Sinusoid>(kLiftStart, 9.0, 0.5, 0.0);
-  sinusoids[1] = builder.AddSystem<Sinusoid>(kLiftStart, 11.0, 0.25, 0.0);
-  sinusoids[2] = builder.AddSystem<Sinusoid>(kLiftStart, 13.0, 0.125, 0.0);
-  sinusoids[3] = builder.AddSystem<Sinusoid>(kLiftStart, 15.0, 0.0625, 0.0);
-  sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 17.0, 0.03125, 0.0);
-/*
-  sinusoids[0] = builder.AddSystem<Sinusoid>(kLiftStart, 1.0, 0, 0.0);
-  sinusoids[1] = builder.AddSystem<Sinusoid>(kLiftStart, 3.0, 0, 0.0);
-  sinusoids[2] = builder.AddSystem<Sinusoid>(kLiftStart, 17.0, 0, 0.0);
-  sinusoids[3] = builder.AddSystem<Sinusoid>(kLiftStart, 19.0, 0, 0.0);
-  sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 23.0, 0, 0.0);
-*/
+  if (num_sinusoids > 0)
+    sinusoids[0] = builder.AddSystem<Sinusoid>(kLiftStart, 9.0, 0.5, 0.0);
+  if (num_sinusoids > 1)
+    sinusoids[1] = builder.AddSystem<Sinusoid>(kLiftStart, 11.0, 0.25, 0.0);
+  if (num_sinusoids > 2)
+    sinusoids[2] = builder.AddSystem<Sinusoid>(kLiftStart, 13.0, 0.125, 0.0);
+  if (num_sinusoids > 3)
+    sinusoids[3] = builder.AddSystem<Sinusoid>(kLiftStart, 15.0, 0.0625, 0.0);
+  if (num_sinusoids > 4)
+    sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 17.0, 0.03125, 0.0);
 
   // Demultiplex each of the sinusoid's outputs.
   Demultiplexer<double>* demux[num_sinusoids];
@@ -222,15 +253,18 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Use one more demultiplexer for the lift trajectory outputs.
   auto lift_traj_demux = builder.AddSystem<Demultiplexer<double>>(2, 1);
-  builder.Connect(lift_source->get_output_port(), lift_traj_demux->get_input_port(0));
+  builder.Connect(lift_source->get_output_port(),
+      lift_traj_demux->get_input_port(0));
 
   // Now, multiplex the ports back together to the PID controller.
-  auto mux = builder.AddSystem<Multiplexer<double>>(12);
+  auto mux = builder.AddSystem<Multiplexer<double>>(num_PID_controllers * 2);
   builder.Connect(lift_traj_demux->get_output_port(0), mux->get_input_port(0));
-  builder.Connect(lift_traj_demux->get_output_port(1), mux->get_input_port(6));
+  builder.Connect(lift_traj_demux->get_output_port(1),
+      mux->get_input_port(num_PID_controllers));
   for (int i = 0; i < num_sinusoids; ++i) {
     builder.Connect(demux[i]->get_output_port(0), mux->get_input_port(i+1));
-    builder.Connect(demux[i]->get_output_port(1), mux->get_input_port(i+7));
+    builder.Connect(demux[i]->get_output_port(1),
+        mux->get_input_port(i + 1 + num_PID_controllers));
   }
 
   builder.Connect(mux->get_output_port(0), lifting_pid_ports.state_input_port);
@@ -276,6 +310,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
                   contact_results_publisher.get_input_port(0));
 
   const int plant_output_port = builder.ExportOutput(plant->get_output_port(0));
+
   // Expose the RBPlant kinematics results as a diagram output for body state
   // validation.
   const int kinematrics_results_index =
@@ -299,7 +334,6 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
       = tree.getZeroConfiguration();
 
   auto positions = tree.computePositionNameToIndexMap();
-  ASSERT_EQ(positions["left_finger_sliding_joint"], 6);
 
   // The values below were extracted from the positions corresponding
   // to an open gripper.  Dumping them here is significantly more
@@ -307,21 +341,18 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // tempted to cut and paste this, please consider creating a utility
   // function which can set a segment of a state vector to an open
   // gripper.
-  plant_initial_state(6) = -0.0550667;
-  plant_initial_state(7) = 0.009759;
-  plant_initial_state(8) = 1.27982;
-  plant_initial_state(9) = 0.0550667;
-  plant_initial_state(10) = 0.009759;
+  plant_initial_state(num_PID_controllers+0) = -0.0550667;
+  plant_initial_state(num_PID_controllers+1) = 0.009759;
+  plant_initial_state(num_PID_controllers+2) = 1.27982;
+  plant_initial_state(num_PID_controllers+3) = 0.0550667;
+  plant_initial_state(num_PID_controllers+4) = 0.009759;
   plant->set_state_vector(&plant_context, plant_initial_state);
 
   auto context = simulator.get_mutable_context();
 
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
-//  simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*model, context);
-  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
-  simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
-//  simulator.get_mutable_integrator()->set_target_accuracy(1e-1);
-
+  const double dt = 1e-4;
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(
+      *model, dt, context);
   simulator.Initialize();
 
   // Simulate to one second beyond the trajectory motion.
