@@ -352,12 +352,10 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   return true;
 }
 
-bool PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
-                                                   double yaw_offset,
-                                                   double pitch_offset) {
-  X_WG_desired_.clear();
-
-  //
+optional<std::map<PickAndPlaceState, Isometry3<double>>>
+PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
+                                              double yaw_offset,
+                                              double pitch_offset) {
   //       (ApproachPickPregrasp,                         (ApproachPlacePregrasp
   //        LiftFromPick ),                                LiftFromPlace)
   //       +--------------------------------------------------------+
@@ -379,8 +377,9 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
   Isometry3<double> X_WOi;
   Isometry3<double> X_WOf;
   if (!ComputeInitialAndFinalObjectPoses(env_state, &X_WOi, &X_WOf)) {
-    return false;
+    return nullopt;
   }
+  std::map<PickAndPlaceState, Isometry3<double>> X_WG_desired;
 
   X_WOi.rotate(AngleAxis<double>(yaw_offset, Vector3<double>::UnitZ()));
 
@@ -397,35 +396,35 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
                               finger_length * std::cos(pitch_offset));
   // Set ApproachPick pose
   Isometry3<double> X_OiO{Isometry3<double>::Identity()};
-  X_WG_desired_.emplace(PickAndPlaceState::kApproachPick, X_WOi * X_OiO * X_OG);
+  X_WG_desired.emplace(PickAndPlaceState::kApproachPick, X_WOi * X_OiO * X_OG);
   // Set ApproachPickPregrasp pose
   Isometry3<double> X_GGoffset{Isometry3<double>::Identity()};
   X_OiO.setIdentity();
   const double approach_angle = 70.0 * M_PI / 180.0;
   X_OiO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
   X_OiO.translation()[2] = sin(approach_angle) * pregrasp_offset;
-  X_WG_desired_.emplace(PickAndPlaceState::kApproachPickPregrasp,
+  X_WG_desired.emplace(PickAndPlaceState::kApproachPickPregrasp,
                         X_WOi * X_OiO * X_OG * X_GGoffset);
   // Set LiftFromPick pose
   X_OiO.setIdentity();
   X_OiO.translation()[2] = pregrasp_offset;
-  X_WG_desired_.emplace(PickAndPlaceState::kLiftFromPick, X_WOi * X_OiO * X_OG);
+  X_WG_desired.emplace(PickAndPlaceState::kLiftFromPick, X_WOi * X_OiO * X_OG);
   // Set ApproachPlace pose
   Isometry3<double> X_OfO{Isometry3<double>::Identity()};
-  X_WG_desired_.emplace(PickAndPlaceState::kApproachPlace,
+  X_WG_desired.emplace(PickAndPlaceState::kApproachPlace,
                         X_WOf * X_OfO * X_OG);
   // Set ApproachPlacePregrasp pose
   X_OfO.setIdentity();
   X_OfO.translation()[2] = pregrasp_offset;
-  X_WG_desired_.emplace(PickAndPlaceState::kApproachPlacePregrasp,
+  X_WG_desired.emplace(PickAndPlaceState::kApproachPlacePregrasp,
                         X_WOf * X_OfO * X_OG);
   // Set LiftFromPlace pose
   X_OfO.setIdentity();
   X_OfO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
   X_OfO.translation()[2] = sin(approach_angle) * pregrasp_offset;
-  X_WG_desired_.emplace(PickAndPlaceState::kLiftFromPlace,
+  X_WG_desired.emplace(PickAndPlaceState::kLiftFromPlace,
                         X_WOf * X_OfO * X_OG);
-  return true;
+  return X_WG_desired;
 }
 
 PickAndPlaceStateMachine::PickAndPlaceStateMachine(
@@ -481,7 +480,7 @@ PickAndPlaceStateMachine::ComputeNominalConfigurations(
 
   for (double pitch_offset : pitch_offsets) {
     for (double yaw_offset : yaw_offsets) {
-      if (ComputeDesiredPoses(env_state, yaw_offset, pitch_offset)) {
+      if (auto X_WG_desired = ComputeDesiredPoses(env_state, yaw_offset, pitch_offset)) {
         constraint_arrays.emplace_back();
 
         for (int i = 1; i < kNumKnots; ++i) {
@@ -491,7 +490,7 @@ PickAndPlaceStateMachine::ComputeNominalConfigurations(
           // Extract desired position and orientation of end effector at the
           // given
           // state.
-          const Isometry3<double>& X_WG = X_WG_desired_.at(state);
+          const Isometry3<double>& X_WG = X_WG_desired->at(state);
           const Vector3<double>& r_WG = X_WG.translation();
           const Quaternion<double>& quat_WG{X_WG.rotation()};
 
