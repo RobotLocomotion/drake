@@ -55,11 +55,13 @@ cc_library(
         ":fcl_h_genrule",
         "include/fcl/export.h",
     ],
+    copts = ["-fvisibility=hidden"],
+    defines = [
+        "FCL_STATIC_DEFINE",
+        "FCL_HAVE_OCTOMAP",
+    ],
     includes = ["include"],
     linkstatic = 1,
-    copts = ["-fvisibility=hidden"],
-    defines = ["FCL_STATIC_DEFINE",
-               "FCL_HAVE_OCTOMAP"],
     deps = [
         "@ccd",
         "@eigen",
