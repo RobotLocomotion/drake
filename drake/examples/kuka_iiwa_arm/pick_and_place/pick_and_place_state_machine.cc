@@ -26,6 +26,25 @@ using manipulation::util::WorldSimTreeBuilder;
 
 const char kGraspFrameName[] = "grasp_frame";
 
+struct PostureInterpolationRequest {
+  // Initial configuration
+  MatrixX<double> q_initial;
+  // Final configuration
+  MatrixX<double> q_final;
+  // Knots
+  std::vector<double> times;
+  // Maximum allowable deviation from straight line end-effector path at knot
+  // points
+  double position_tolerance;
+  // Maximum allowable angular deviation at knot points
+  double orientation_tolerance;
+  // If true, interpolate in joint space if the planner fails to find an
+  // interpolation that provides a
+  // straight-line end-effector path
+  bool fall_back_to_joint_space_interpolation;
+  double max_joint_position_change;
+};
+
 struct PostureInterpolationResult {
   // Configuration trajectory
   PiecewisePolynomial<double> q_traj;
