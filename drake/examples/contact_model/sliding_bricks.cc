@@ -47,6 +47,11 @@ DEFINE_double(dissipation, 1.0, "The contact model's dissipation");
 DEFINE_double(sim_duration, 3, "The simulation duration");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
+DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
+              "'compliant' (default) or 'timestepping'");
+DEFINE_double(dt, 1e-3, "The step size to use for "
+              "'simulation_type=timestepping' (ignored for "
+              "'simulation_type=compliant'");
 
 namespace {
 const char* kSlidingBrickUrdf =
@@ -80,8 +85,12 @@ int main() {
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
-  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  if (FLAGS_simulation_type != "timestepping")
+    FLAGS_dt = 0.0;
+  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(
+      move(tree_ptr), FLAGS_dt);
   plant.set_name("plant");
+
   // Contact parameters set arbitrarily.
   plant.set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
   plant.set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
