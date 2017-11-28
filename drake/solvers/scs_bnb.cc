@@ -28,7 +28,6 @@ ScsNode::ScsNode(int num_A_rows, int num_A_cols)
       scs_info_{0},
       cost_{NAN},
       found_integral_sol_{false},
-      larger_than_upper_bound_{false},
       binary_var_indices_{},
       left_child_{nullptr},
       right_child_{nullptr},
@@ -50,7 +49,8 @@ std::unique_ptr<ScsNode> ScsNode::ConstructRootNode(
   for (const auto index : binary_var_indices) {
     auto it = binary_var_indices_set.find(index);
     if (it != binary_var_indices_set.end()) {
-      throw std::runtime_error("binary_var_indices contains duplicate entries.");
+      throw std::runtime_error(
+          "binary_var_indices contains duplicate entries.");
     }
     binary_var_indices_set.emplace_hint(it, index);
   }
@@ -84,8 +84,8 @@ std::unique_ptr<ScsNode> ScsNode::ConstructRootNode(
     root->A_->p[j] = root->A_->p[j - 1] + (A.p[j] - A.p[j - 1]);
     // If the variable in this column is a binary variable, then add two rows of
     // constraints to A_ * x + s = b_
-    const bool is_binary_column = binary_var_indices_set.find(j - 1) !=
-                                  binary_var_indices_set.end();
+    const bool is_binary_column =
+        binary_var_indices_set.find(j - 1) != binary_var_indices_set.end();
     root->A_->p[j] += is_binary_column ? 2 : 0;
     int column_nonzero_index = 0;
     for (; A.i[A.p[j - 1] + column_nonzero_index] < cone.f;
@@ -192,22 +192,32 @@ void ScsNode::Branch(int binary_var_index) {
 
   // First make sure that the variable with the index binary_var_index is a
   // binary variable.
-  if (!std::any_of(binary_var_indices_.begin(), binary_var_indices_.end(), [binary_var_index](int i){return i == binary_var_index;})) {
+  if (!std::any_of(
+          binary_var_indices_.begin(), binary_var_indices_.end(),
+          [binary_var_index](int i) { return i == binary_var_index; })) {
     std::ostringstream oss;
-    oss << "The variable with index " << binary_var_index << " is not a binary variable.\n";
+    oss << "The variable with index " << binary_var_index
+        << " is not a binary variable.\n";
     throw std::runtime_error(oss.str());
   }
   // We will first compute the left node, the right node will be copied and
   // changed from the left node.
   left_child_ = new ScsNode(A_->m - 2, A_->n - 1);
   right_child_ = new ScsNode(A_->m - 2, A_->n - 1);
-  left_child_->A_->p = static_cast<scs_int*>(scs_calloc(left_child_->A_->n + 1, sizeof(scs_int)));
-  right_child_->A_->p = static_cast<scs_int*>(scs_calloc(right_child_->A_->n + 1, sizeof(scs_int)));
-  const int A_l_nnz{A_->p[A_->n] - (A_->p[binary_var_index + 1] - A_->p[binary_var_index])};
-  left_child_->A_->i = static_cast<scs_int*>(scs_calloc(A_l_nnz, sizeof(scs_int)));
-  right_child_->A_->i = static_cast<scs_int*>(scs_calloc(A_l_nnz, sizeof(scs_int)));
-  left_child_->A_->x = static_cast<scs_float*>(scs_calloc(A_l_nnz, sizeof(scs_float)));
-  right_child_->A_->x = static_cast<scs_float*>(scs_calloc(A_l_nnz, sizeof(scs_float)));
+  left_child_->A_->p = static_cast<scs_int*>(
+      scs_calloc(left_child_->A_->n + 1, sizeof(scs_int)));
+  right_child_->A_->p = static_cast<scs_int*>(
+      scs_calloc(right_child_->A_->n + 1, sizeof(scs_int)));
+  const int A_l_nnz{A_->p[A_->n] -
+                    (A_->p[binary_var_index + 1] - A_->p[binary_var_index])};
+  left_child_->A_->i =
+      static_cast<scs_int*>(scs_calloc(A_l_nnz, sizeof(scs_int)));
+  right_child_->A_->i =
+      static_cast<scs_int*>(scs_calloc(A_l_nnz, sizeof(scs_int)));
+  left_child_->A_->x =
+      static_cast<scs_float*>(scs_calloc(A_l_nnz, sizeof(scs_float)));
+  right_child_->A_->x =
+      static_cast<scs_float*>(scs_calloc(A_l_nnz, sizeof(scs_float)));
   left_child_->A_->p[0] = 0;
   // There are two consecutive rows being removed from A. The first row
   // corresponds to 0 ≤ z, the second row corresponds to z ≤ 1. We find the
@@ -218,14 +228,17 @@ void ScsNode::Branch(int binary_var_index) {
   // in this row, and that entry is in the binary_var_index'th column. That
   // entry has value -1.
   for (int i = A_->p[binary_var_index]; i < A_->p[binary_var_index + 1]; ++i) {
-    if (A_->i[i] >= cone_->f && A_->i[i] < cone_->f + 2 * binary_var_indices_.size() && A_->x[i] == -1) {
+    if (A_->i[i] >= cone_->f &&
+        A_->i[i] < cone_->f + 2 * binary_var_indices_.size() &&
+        A_->x[i] == -1) {
       removed_row_index0 = A_->i[i];
       if (A_->x[i + 1] != 1) {
         // The row after 0 ≤ z should be the row representing z ≤ 1. In SCS,
         // 0 ≤ z is written as -z + s = 0, s ≥ 0.
         // z ≤ 1 is written as z + s = 1, s ≥ 0. So the non-zero entry in this
         // column immediately after -1 should be 1.
-        throw std::runtime_error("The next constraint after z >= 0 should be z <= 1.");
+        throw std::runtime_error(
+            "The next constraint after z >= 0 should be z <= 1.");
       }
       break;
     }
@@ -237,16 +250,18 @@ void ScsNode::Branch(int binary_var_index) {
   // We need to remove the column in A corresponding to binary variable z, i.e.,
   // the binary_var_index'th column.
   for (int col = 1; col < left_child_->A_->n + 1; ++col) {
-    const int A_col = col < binary_var_index? col : col + 1;
+    const int A_col = col < binary_var_index ? col : col + 1;
     const int column_nnz{A_->p[A_col] - A_->p[A_col - 1]};
     left_child_->A_->p[col] = left_child_->A_->p[col - 1] + column_nnz;
     for (int i = 0; i < column_nnz; ++i) {
-      left_child_->A_->x[left_child_->A_->p[col - 1] + i] = A_->x[A_->p[A_col - 1] + i];
+      left_child_->A_->x[left_child_->A_->p[col - 1] + i] =
+          A_->x[A_->p[A_col - 1] + i];
       // The indices of the rows above the row representing z ≥ 0 is unchanged.
       // The indices of the rows below the row representing z ≤ 1 is decremented
       // by 2, since we are going to remove the two rows representing 0 ≤ z ≤ 1.
       const int A_row_index = A_->i[A_->p[A_col - 1] + i];
-      left_child_->A_->i[left_child_->A_->p[col - 1] + i] = A_row_index < removed_row_index0 ? A_row_index : A_row_index - 2;
+      left_child_->A_->i[left_child_->A_->p[col - 1] + i] =
+          A_row_index < removed_row_index0 ? A_row_index : A_row_index - 2;
     }
   }
 
@@ -262,14 +277,16 @@ void ScsNode::Branch(int binary_var_index) {
   // In the left node, the binary variable z is fixed to 0. So bₗ is obtained by
   // removing the two rows from b.
   for (int i = 0; i < left_child_->A_->m; ++i) {
-    left_child_->b_.get()[i] = i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
+    left_child_->b_.get()[i] =
+        i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
   }
 
   // In the right node, the binary variable z is fixed to 1. So bᵣ is obtained
   // by first removing the two rows from b, and then subtract the column in A
   // corresponding to variable z from A.
   for (int i = 0; i < right_child_->A_->m; ++i) {
-    right_child_->b_.get()[i] = i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
+    right_child_->b_.get()[i] =
+        i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
   }
   for (int i = A_->p[binary_var_index]; i < A_->p[binary_var_index + 1]; ++i) {
     const int row_index = A_->i[i];
@@ -282,11 +299,13 @@ void ScsNode::Branch(int binary_var_index) {
 
   for (int i = 0; i < left_child_->A_->n; ++i) {
     // Remove the coefficient for the fixed binary variable.
-    left_child_->c_.get()[i] = i < binary_var_index ? c_.get()[i] : c_.get()[i + 1];
+    left_child_->c_.get()[i] =
+        i < binary_var_index ? c_.get()[i] : c_.get()[i + 1];
     right_child_->c_.get()[i] = left_child_->c_.get()[i];
   }
   left_child_->cost_constant_ = this->cost_constant_;
-  right_child_->cost_constant_ = this->cost_constant_ + this->c()[binary_var_index];
+  right_child_->cost_constant_ =
+      this->cost_constant_ + this->c()[binary_var_index];
 
   left_child_->cone_->f = this->cone_->f;
   left_child_->cone_->l = this->cone_->l - 2;
@@ -309,15 +328,15 @@ void ScsNode::Branch(int binary_var_index) {
   // We need to remove the binary variable z from binary_var_indices of the
   // child nodes. Also the indices after z should decrement by 1.
   left_child_->binary_var_indices_ = binary_var_indices_;
-  for (auto it = left_child_->binary_var_indices_.begin(); it !=
-      left_child_->binary_var_indices_.end(); ++it) {
+  for (auto it = left_child_->binary_var_indices_.begin();
+       it != left_child_->binary_var_indices_.end(); ++it) {
     if ((*it) == binary_var_index) {
       left_child_->binary_var_indices_.erase(it);
       break;
     }
   }
-  for (auto it = left_child_->binary_var_indices_.begin(); it !=
-      left_child_->binary_var_indices_.end(); ++it) {
+  for (auto it = left_child_->binary_var_indices_.begin();
+       it != left_child_->binary_var_indices_.end(); ++it) {
     if ((*it) > binary_var_index) {
       (*it)--;
     }
@@ -328,22 +347,21 @@ void ScsNode::Branch(int binary_var_index) {
   left_child_->parent_ = this;
   right_child_->parent_ = this;
 }
-/*
-scs_int ScsNode::Solve(const SCS_CONE* const cone, const SCS_SETTINGS* const
-scs_settings, double best_upper_bound) {
+
+scs_int ScsNode::Solve(const SCS_SETTINGS& scs_settings) {
   SCS_PROBLEM_DATA* scs_problem_data =
-static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
+      static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
   scs_problem_data->m = A_->m;
   scs_problem_data->n = A_->n;
-  scs_problem_data->A = A_;
-  scs_problem_data->b = b_;
-  scs_problem_data->c = c_;
-  scs_problem_data->stgs = const_cast<SCS_SETTINGS*>(scs_settings);
+  scs_problem_data->A = A_.get();
+  scs_problem_data->b = b_.get();
+  scs_problem_data->c = c_.get();
+  scs_problem_data->stgs = const_cast<SCS_SETTINGS*>(&scs_settings);
 
-  SCS_WORK* scs_work = scs_init(scs_problem_data, cone, &scs_info_);
+  SCS_WORK* scs_work = scs_init(scs_problem_data, cone_.get(), &scs_info_);
 
-  scs_int scs_status = scs_solve(scs_work, scs_problem_data, cone, scs_sol_,
-&scs_info_);
+  scs_int scs_status = scs_solve(scs_work, scs_problem_data, cone_.get(),
+                                 scs_sol_.get(), &scs_info_);
 
   if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
     cost_ = scs_info_.pobj + cost_constant_;
@@ -351,27 +369,25 @@ static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
     // bound, otherwise, the upper bound is the same as the root.
     found_integral_sol_ = true;
     for (auto it = binary_var_indices_.begin(); it != binary_var_indices_.end();
-++it) {
+         ++it) {
       const double x_val{scs_sol_->x[*it]};
       if (x_val > integer_tol_ && x_val < 1 - integer_tol_) {
         found_integral_sol_ = false;
         break;
       }
     }
-    if (cost_ > best_upper_bound) {
-      larger_than_upper_bound_ = true;
-    }
-  } else if (scs_status == SCS_INFEASIBLE || scs_status ==
-SCS_INFEASIBLE_INACCURATE) {
+  } else if (scs_status == SCS_INFEASIBLE ||
+             scs_status == SCS_INFEASIBLE_INACCURATE) {
     cost_ = std::numeric_limits<double>::infinity();
-  } else if (scs_status == SCS_UNBOUNDED || scs_status ==
-SCS_UNBOUNDED_INACCURATE) {
+  } else if (scs_status == SCS_UNBOUNDED ||
+             scs_status == SCS_UNBOUNDED_INACCURATE) {
     cost_ = -std::numeric_limits<double>::infinity();
   }
+
   // Free allocated memory
   scs_finish(scs_work);
   scs_free(scs_problem_data);
   return scs_status;
-}*/
+}
 }
 }

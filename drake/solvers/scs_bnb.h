@@ -91,10 +91,16 @@ class ScsNode {
   // There are several possible outcomes by solving the optimization program
   // in this node.
   // 1. The problem is infeasible. Then we do not need to branch on this node.
-  // 2. The problem is feasible, and we find a solution that satisfies the
-  //    integral constraints.
-  scs_int Solve(const SCS_SETTINGS* const scs_settings,
-                double best_upper_bound);
+  // 2. The problem is feasible, we can then update the lower bound, as the
+  //    minimal among all the costs in the leaf nodes.
+  // 3. When the problem is feasible, and we find a solution that satisfies the
+  //    integral constraints. If the cost of this solution is an upper bound of
+  //    the original mixed-integer problem. If the cost is smaller than the best
+  //    upper bound, then we update the best upper bound to this cost.
+  // 3. when the problem is feasible, and the optimal cost is larger than the
+  //    best upper bound, then there is no need to branch on the tree.
+
+  scs_int Solve(const SCS_SETTINGS& scs_settings);
 
   // Getter for A matrix.
   const AMatrix* const A() const { return A_.get(); }
@@ -109,8 +115,6 @@ class ScsNode {
   const SCS_CONE* const cone() const { return cone_.get(); }
 
   bool found_integral_sol() const { return found_integral_sol_; }
-
-  bool larger_than_upper_bound() const { return larger_than_upper_bound_; }
 
   const std::list<int>& binary_var_indices() const {
     return binary_var_indices_;
@@ -170,7 +174,6 @@ class ScsNode {
   // 2. The optimal solution to the relaxed problem is larger than the current
   //    best upper bound.
   bool found_integral_sol_;
-  bool larger_than_upper_bound_;
   // binary_var_indices_ are the indices of the remaining binary variables, in
   // the vector x. The indices are in the ascending order.
   std::list<int> binary_var_indices_;
