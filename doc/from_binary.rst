@@ -1,3 +1,5 @@
+.. _binary-installation:
+
 ***********************************
 Binary installation (macOS, Ubuntu)
 ***********************************
@@ -9,13 +11,16 @@ Drake is currently undergoing a major renovation, with all of the core
 libraries moving into C++.  The examples will move and the existing APIs will
 change.
 
-We are actively working on a binary release of the new software, but are not
-quite finished.  See https://github.com/RobotLocomotion/drake/issues/1766 for
-details.
+There are `experimental binary packages <https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338>`_ of Drake available at:
 
-In the meantime, we suggest you :ref:`build from source <build_from_source>`
+- https://s3.amazonaws.com/drake-packages/drake/nightly/drake-latest-xenial.tar.gz
+- :samp:`https://s3.amazonaws.com/drake-packages/drake/nightly/drake-{yyyymmdd}-xenial.tar.gz`.
+    - Example: https://s3.amazonaws.com/drake-packages/drake/nightly/drake-20170719-xenial.tar.gz
+
+Example usages of these binaries are shown in this `example CMake project <https://github.com/RobotLocomotion/drake-shambhala/tree/master/drake_cmake_installed>`_.
+For the compilers used to produce these releases, see :ref:`binary-packages`.
+If you are unsure of which approach to use, we suggest you :ref:`build from source <build_from_source>`
 instead.
-
 
 Using older (2015) releases
 ===========================

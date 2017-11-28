@@ -5,7 +5,9 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/kinematics_cache.h"
+/* clang-format on */
 
 #include <string>
 #include <vector>

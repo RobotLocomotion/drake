@@ -202,7 +202,8 @@ class GeometryState {
    @param frame        The frame to register.
    @returns  A newly allocated frame id.
    @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source. */
+                             source, or `frame` has an id that has already
+                             been registered. */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame for the given source as a child of a previously
@@ -212,9 +213,11 @@ class GeometryState {
    @param frame        The frame to register.
    @returns  A newly allocated frame id.
    @throws std::logic_error  1. If the `source_id` does _not_ map to a
-                             registered source, or
+                             registered source,
                              2. If the `parent_id` does _not_ map to a known
-                             frame or does not belong to the source. */
+                             frame or does not belong to the source, or
+                             3. `frame` has an id that has already been
+                             registered */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
@@ -229,8 +232,9 @@ class GeometryState {
    @returns  A newly allocated geometry id.
    @throws std::logic_error  1. the `source_id` does _not_ map to a registered
                              source, or
-                             2. the `frame_id` doesn't belong to the source, or
-                             3. The `geometry` is equal to `nullptr`. */
+                             2. the `frame_id` doesn't belong to the source,
+                             3. The `geometry` is equal to `nullptr`, or
+                             4. `geometry` has a previously registered id. */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
@@ -250,8 +254,8 @@ class GeometryState {
    @throws std::logic_error 1. the `source_id` does _not_ map to a registered
                             source, or
                             2. the `geometry_id` doesn't belong to the source,
-                            or
-                            3. the `geometry` is equal to `nullptr`. */
+                            3. the `geometry` is equal to `nullptr`, or
+                            4. `geometry` has a previously registered id. */
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId geometry_id,
       std::unique_ptr<GeometryInstance> geometry);
@@ -267,7 +271,8 @@ class GeometryState {
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
    @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source. */
+                             source, or
+                             `geometry` has a previously registered id. */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);

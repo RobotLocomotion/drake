@@ -14,6 +14,7 @@ drake_cc_library(
     name = "optitrack_pose_extractor",
     srcs = ["optitrack_pose_extractor.cc"],
     hdrs = ["optitrack_pose_extractor.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/math:geometric_transform",
         "//drake/systems/framework",

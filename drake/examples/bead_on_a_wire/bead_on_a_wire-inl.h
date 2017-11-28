@@ -5,10 +5,13 @@
 // Most users should only include that file, not this one.
 // For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
+#include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
+/* clang-format on */
+
 #include <limits>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {

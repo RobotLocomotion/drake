@@ -4,15 +4,15 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/bindings/pybind11/pydrake_autodiff_types.h"
+#include "drake/bindings/pydrake/pydrake_autodiff_types.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN(_pydrake_rbtree) {
-  py::module m("_pydrake_rbtree", "Bindings for the RigidBodyTree class");
+PYBIND11_MODULE(_pydrake_rbtree, m) {
+  m.doc() = "Bindings for the RigidBodyTree class";
 
   using drake::AutoDiffXd;
   using drake::multibody::joints::FloatingBaseType;
@@ -200,6 +200,4 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         &drake::parsers::urdf::\
           AddModelInstanceFromUrdfStringSearchingInRosPackages);
-
-  return m.ptr();
 }
