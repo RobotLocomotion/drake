@@ -10,6 +10,7 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/action.h"
@@ -103,12 +104,8 @@ class PickAndPlaceStateMachine {
   bool ComputeDesiredPoses(const WorldState& env_state, double yaw_offset,
                            double pitch_offset);
 
-  bool ComputeTrajectories(const WorldState& env_state,
-                           RigidBodyTree<double>* iiwa);
-
-  PostureInterpolationRequest CreatePostureInterpolationRequest(
-      const WorldState& env_state, PickAndPlaceState state, double duration,
-      bool fall_back_to_joint_space_interpolation = false);
+  optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
+  ComputeTrajectories(const WorldState& env_state, RigidBodyTree<double>* iiwa);
 
   bool single_move_;
 
@@ -143,8 +140,8 @@ class PickAndPlaceStateMachine {
   std::map<PickAndPlaceState, VectorX<double>> nominal_q_map_;
 
   // Desired interpolation results for various states
-  std::map<PickAndPlaceState, PostureInterpolationResult>
-      interpolation_result_map_;
+  optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
+      interpolation_result_map_{};
 
   // Measured location of object at planning time
   Isometry3<double> expected_object_pose_;
