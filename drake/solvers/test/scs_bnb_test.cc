@@ -52,11 +52,13 @@ void IsAmatrixEqual(const AMatrix& A1, const AMatrix& A2, double tol) {
   }
 }
 
-void IsBinaryVarIndicesEqual(const std::unordered_set<int>& indices1,
-                             const std::unordered_set<int>& indices2) {
+void IsBinaryVarIndicesEqual(const std::list<int>& indices1,
+                             const std::list<int>& indices2) {
   EXPECT_EQ(indices1.size(), indices2.size());
+  auto it2 = indices2.begin();
   for (auto it1 = indices1.begin(); it1 != indices1.end(); ++it1) {
-    EXPECT_NE(indices2.find(*it1), indices2.end());
+    EXPECT_EQ(*it1, *it2);
+    ++it2;
   }
 }
 
@@ -68,77 +70,21 @@ void IsBinaryVarIndicesEqual(const std::unordered_set<int>& indices1,
 // A1,A2,b1 and b2 are obtained by relaxing the constraint
 // A*x + s = b
 // y ∈ {0, 1}
-// Specifically the constraint y ∈ {0, 1} are relaxed as 0 ≤ y ≤ 1. Notice that
-// we only know the indices of y as an unordered set. Since std::unordered_set
-// does NOT guarantee the order of the element, if we
-// change the order of 0 ≤ y ≤ 1, the constraint are still the same. For example
-// if we add 0 ≤ y(0) ≤ 1 first and then add 0 ≤ y(1) ≤ 1, this is the same
-// as adding 0 ≤ y(1) ≤ 1, and then add 0 ≤ y(0) ≤ 1.
 void IsSameRelaxedConstraint(const AMatrix& A1, const AMatrix& A2,
                              const scs_float* const b1, const scs_float* b2,
-                             double tol, int num_linear_equality_constraint,
-                             int num_binary_vars) {
+                             double tol) {
   EXPECT_EQ(A1.m, A2.m);
   EXPECT_EQ(A1.n, A2.n);
+  for (int i = 0; i < A1.n + 1; ++i) {
+    EXPECT_EQ(A1.p[i], A2.p[i]);
+  }
+  for (int i = 0; i < A1.p[A1.n]; ++i) {
+    EXPECT_EQ(A1.i[i], A2.i[i]);
+    EXPECT_NEAR(A1.x[i], A2.x[i], tol);
+  }
   for (int i = 0; i < A1.m; ++i) {
     EXPECT_NEAR(b1[i], b2[i], tol);
   }
-  const Eigen::SparseMatrix<double> A1_sparse =
-      ScsAmatrixToEigenSparseMatrix(A1);
-  const Eigen::SparseMatrix<double> A2_sparse =
-      ScsAmatrixToEigenSparseMatrix(A2);
-  // Except for the first 2 * num_binary_vars rows of the linear inequality
-  // constraints, all other rows in A1, A2 should be the same.
-  for (int i = 0; i < num_linear_equality_constraint; ++i) {
-    for (int j = 0; j < A1.n; ++j) {
-      EXPECT_NEAR(A1_sparse.coeff(i, j), A2_sparse.coeff(i, j), tol);
-    }
-  }
-  for (int i = num_linear_equality_constraint + 2 * num_binary_vars; i < A1.m;
-       ++i) {
-    for (int j = 0; j < A1.n; ++j) {
-      EXPECT_NEAR(A1_sparse.coeff(i, j), A2_sparse.coeff(i, j), tol);
-    }
-  }
-  std::unordered_set<int> binary_var_indices1, binary_var_indices2;
-  binary_var_indices1.reserve(num_binary_vars);
-  binary_var_indices2.reserve(num_binary_vars);
-  for (int i = num_linear_equality_constraint;
-       i < num_linear_equality_constraint + 2 * num_binary_vars; i += 2) {
-    // These are the rows that add the relaxed constraints
-    // 0 ≤ y ≤ 1
-    // These constraints are converted to SCS form as
-    // -y + s₁ = 0
-    // y + s₂ = 1
-    // s₁, s₂ ≥ 0
-    int num_nonzero_in_row_i1 = 0;
-    int num_nonzero_in_row_i2 = 0;
-    for (int j = 0; j < A1.n; ++j) {
-      if (A1_sparse.coeff(i, j) == 0) {
-        EXPECT_EQ(A1_sparse.coeff(i + 1, j), 0);
-      }
-      if (A2_sparse.coeff(i, j) == 0) {
-        EXPECT_EQ(A2_sparse.coeff(i + 1, j), 0);
-      }
-      if (A1_sparse.coeff(i, j) == -1) {
-        EXPECT_EQ(A1_sparse.coeff(i + 1, j), 1);
-        num_nonzero_in_row_i1++;
-        const auto it = binary_var_indices1.find(j);
-        EXPECT_EQ(it, binary_var_indices1.end());
-        binary_var_indices1.emplace_hint(it, j);
-      }
-      if (A2_sparse.coeff(i, j) == -1) {
-        EXPECT_EQ(A2_sparse.coeff(i + 1, j), 1);
-        num_nonzero_in_row_i2++;
-        const auto it = binary_var_indices2.find(j);
-        EXPECT_EQ(it, binary_var_indices2.end());
-        binary_var_indices2.emplace_hint(it, j);
-      }
-    }
-    EXPECT_EQ(num_nonzero_in_row_i1, 1);
-    EXPECT_EQ(num_nonzero_in_row_i2, 1);
-  }
-  IsBinaryVarIndicesEqual(binary_var_indices1, binary_var_indices2);
 }
 
 GTEST_TEST(TestSparseMatrix, TestConversion) {
@@ -179,7 +125,7 @@ void freeCone(SCS_CONE* cone) {
 }
 
 std::unique_ptr<SCS_CONE, void (*)(SCS_CONE*)> DeepCopyScsCone(
-    const SCS_CONE *const cone) {
+    const SCS_CONE* const cone) {
   SCS_CONE* new_cone = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
   new_cone->f = cone->f;
   new_cone->l = cone->l;
@@ -312,9 +258,9 @@ class TestScsNode : public ::testing::Test {
     scs_free(cone_);
   }
 
-  void TestConstructRootNode(
-      const std::unordered_set<int> &binary_var_indices) {
-    const auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, binary_var_indices, 1);
+  void TestConstructRootNode(const std::list<int>& binary_var_indices) {
+    const auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
+                                                 binary_var_indices, 1);
     EXPECT_EQ(root->y_index(), -1);
     EXPECT_EQ(root->left_child(), nullptr);
     EXPECT_EQ(root->right_child(), nullptr);
@@ -349,8 +295,7 @@ class TestScsNode : public ::testing::Test {
     root_b[2 * binary_var_indices.size() + 2] = b_[2];
     auto root_scs_A = ConstructScsAmatrix(root_A);
 
-    IsSameRelaxedConstraint(*root_scs_A, *(root->A()), root_b, root->b(), 0, 1,
-                            binary_var_indices.size());
+    IsSameRelaxedConstraint(*root_scs_A, *(root->A()), root_b, root->b(), 0);
 
     for (int i = 0; i < scs_A_->m + 2 * binary_var_indices.size(); ++i) {
       EXPECT_EQ(root_b[i], root->b()[i]);
@@ -375,7 +320,7 @@ class TestScsNode : public ::testing::Test {
   std::unique_ptr<AMatrix, void (*)(AMatrix*)> scs_A_;
   scs_float b_[3] = {2, -1, 5};
   scs_float c_[4] = {1, 2, 0, -3};
-  std::unordered_set<int> binary_var_indices_;
+  std::list<int> binary_var_indices_;
   SCS_CONE* cone_;
 };
 
@@ -398,81 +343,89 @@ TEST_F(TestScsNode, TestConstructRoot1) {
   TestConstructRootNode(binary_var_indices_);
 }
 
-TEST_F(TestScsNode, TestConstructRoot2) {
-  TestConstructRootNode({0});
-}
+TEST_F(TestScsNode, TestConstructRoot2) { TestConstructRootNode({0}); }
 
-TEST_F(TestScsNode, TestConstructRoot3) {
-  TestConstructRootNode({1});
-}
+TEST_F(TestScsNode, TestConstructRoot3) { TestConstructRootNode({1}); }
 
-TEST_F(TestScsNode, TestConstructRoot4) {
-  TestConstructRootNode({3});
-}
+TEST_F(TestScsNode, TestConstructRoot4) { TestConstructRootNode({3}); }
 
 TEST_F(TestScsNode, TestConstructRootError) {
-  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {0, 4}, 1), std::runtime_error);
-  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {-1, 0}, 1), std::runtime_error);
+  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {0, 4}, 1),
+               std::runtime_error);
+  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {-1, 0}, 1),
+               std::runtime_error);
+  EXPECT_THROW(
+      ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {1, 1, 2}, 1),
+      std::runtime_error);
 }
-/*
+
 TEST_F(TestScsNode, TestBranch) {
-  ScsNode root(scs_A_, b_, c_, binary_var_indices_, 1);
+  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
+                                         binary_var_indices_, 1);
 
   // Branch on x0
-  root.Branch(0);
-  EXPECT_NE(root.left_child(), nullptr);
-  EXPECT_NE(root.right_child(), nullptr);
-  EXPECT_EQ(root.left_child()->parent(), &root);
-  EXPECT_EQ(root.right_child()->parent(), &root);
+  root->Branch(0);
+  EXPECT_NE(root->left_child(), nullptr);
+  EXPECT_NE(root->right_child(), nullptr);
+  EXPECT_EQ(root->left_child()->parent(), root.get());
+  EXPECT_EQ(root->right_child()->parent(), root.get());
 
   const std::list<int> binary_var_indices_child = {1};
-  IsBinaryVarIndicesEqual(root.left_child()->binary_var_indices(),
-binary_var_indices_child);
-  IsBinaryVarIndicesEqual(root.right_child()->binary_var_indices(),
-binary_var_indices_child);
+  IsBinaryVarIndicesEqual(root->left_child()->binary_var_indices(),
+                          binary_var_indices_child);
+  IsBinaryVarIndicesEqual(root->right_child()->binary_var_indices(),
+                          binary_var_indices_child);
 
   // Check the cost vector c
   const scs_float c_child[3] = {2, 0, -3};
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(root.left_child()->c()[i], c_child[i]);
-    EXPECT_EQ(root.right_child()->c()[i], c_child[i]);
+    EXPECT_EQ(root->left_child()->c()[i], c_child[i]);
+    EXPECT_EQ(root->right_child()->c()[i], c_child[i]);
   }
-  EXPECT_EQ(root.left_child()->cost_constant(), 1);
-  EXPECT_EQ(root.right_child()->cost_constant(), 2);
+  EXPECT_EQ(root->left_child()->cost_constant(), 1);
+  EXPECT_EQ(root->right_child()->cost_constant(), 2);
 
   // Check the right-hand side vector b
-  const scs_float b_left[3] = {2, -1, 5};
-  const scs_float b_right[3] = {1, -1, 6};
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(root.left_child()->b()[i], b_left[i]);
-    EXPECT_EQ(root.right_child()->b()[i], b_right[i]);
+  const scs_float b_left[5] = {2, 0, 1, -1, 5};
+  const scs_float b_right[5] = {1, 0, 1, -1, 6};
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(root->left_child()->b()[i], b_left[i]);
+    EXPECT_EQ(root->right_child()->b()[i], b_right[i]);
   }
 
   // Check the left-hand side matrix A
   // A_child = [ 1    0    2]
+  //           [ 0   -1    0]
+  //           [ 0    1    0]
   //           [-1  3.1    0]
   //           [ 0    1  1.2]
   std::vector<Eigen::Triplet<double>> A_child_triplets;
   A_child_triplets.emplace_back(0, 0, 1);
   A_child_triplets.emplace_back(0, 2, 2);
-  A_child_triplets.emplace_back(1, 0, -1);
-  A_child_triplets.emplace_back(1, 1, 3.1);
+  A_child_triplets.emplace_back(1, 1, -1);
   A_child_triplets.emplace_back(2, 1, 1);
-  A_child_triplets.emplace_back(2, 2, 1.2);
-  Eigen::SparseMatrix<double> A_child(3, 3);
+  A_child_triplets.emplace_back(3, 0, -1);
+  A_child_triplets.emplace_back(3, 1, 3.1);
+  A_child_triplets.emplace_back(4, 1, 1);
+  A_child_triplets.emplace_back(4, 2, 1.2);
+  Eigen::SparseMatrix<double> A_child(5, 3);
   A_child.setFromTriplets(A_child_triplets.begin(), A_child_triplets.end());
-  AMatrix* scs_A_child = ConstructScsAmatrix(A_child);
-  IsAmatrixEqual(scs_A_child, root.left_child()->A(), 1E-10);
-  IsAmatrixEqual(scs_A_child, root.right_child()->A(), 1E-10);
-  freeAMatrix(scs_A_child);
+  const auto scs_A_child = ConstructScsAmatrix(A_child);
+  IsAmatrixEqual(*scs_A_child, *(root->left_child()->A()), 1E-10);
+  IsAmatrixEqual(*scs_A_child, *(root->right_child()->A()), 1E-10);
 
   // Check if the y_index and y_val are correct in the child nodes.
-  EXPECT_EQ(root.left_child()->y_index(), 0);
-  EXPECT_EQ(root.right_child()->y_index(), 0);
-  EXPECT_EQ(root.left_child()->y_val(), 0);
-  EXPECT_EQ(root.right_child()->y_val(), 1);
-}
+  EXPECT_EQ(root->left_child()->y_index(), 0);
+  EXPECT_EQ(root->right_child()->y_index(), 0);
+  EXPECT_EQ(root->left_child()->y_val(), 0);
+  EXPECT_EQ(root->right_child()->y_val(), 1);
 
+  auto child_cone = DeepCopyScsCone(root->cone());
+  child_cone->l -= 2;
+  IsConeEqual(*child_cone, *(root->left_child()->cone()));
+  IsConeEqual(*child_cone, *(root->right_child()->cone()));
+}
+/*
 TEST_F(TestScsNode, TestSolve) {
   SCS_SETTINGS* settings =
 static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
