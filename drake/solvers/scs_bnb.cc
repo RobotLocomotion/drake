@@ -10,7 +10,7 @@ namespace solvers {
 namespace {
 void free_scs_pointer(void* scs_pointer) { scs_free(scs_pointer); }
 
-}  // namespace anonymous
+}  // namespace
 
 ScsNode::ScsNode(int num_A_rows, int num_A_cols)
     : A_{static_cast<AMatrix*>(malloc(sizeof(AMatrix))), &freeAMatrix},
@@ -187,8 +187,8 @@ void ScsNode::Branch(int binary_var_index) {
   // we will also need to subtract that column from b in the right node, and add
   // c(binary_var_index) to the constant term in the cost in the right node.
   //
-  // Notice that the matrix in the left node Aₗ is the same as the matrix in the
-  // right node Aᵣ, so are the cones Kₗ and Kᵣ.
+  // Notice that the matrix in the left node Aₗ is the same as the matrix in
+  // the right node Aᵣ, so are the cones Kₗ and Kᵣ.
 
   // First make sure that the variable with the index binary_var_index is a
   // binary variable.
@@ -275,8 +275,8 @@ void ScsNode::Branch(int binary_var_index) {
     right_child_->A_->i[i] = left_child_->A_->i[i];
   }
 
-  // In the left node, the binary variable z is fixed to 0. So bₗ is obtained by
-  // removing the two rows from b.
+  // In the left node, the binary variable z is fixed to 0. So bₗ is obtained
+  // by removing the two rows from b.
   for (int i = 0; i < left_child_->A_->m; ++i) {
     left_child_->b_.get()[i] =
         i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
@@ -390,5 +390,5 @@ scs_int ScsNode::Solve(const SCS_SETTINGS& scs_settings) {
   scs_free(scs_problem_data);
   return scs_status;
 }
-}
-}
+}  // namespace solvers
+}  // namespace drake
