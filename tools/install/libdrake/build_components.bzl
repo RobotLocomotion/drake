@@ -43,6 +43,8 @@ LIBDRAKE_COMPONENTS = [
     "//drake/automotive:simple_car",
     "//drake/automotive:simple_powertrain",
     "//drake/automotive:trajectory_car",
+    "//drake/common/proto:call_matlab",
+    "//drake/common/proto:call_python",
     "//drake/common/proto:matlab_rpc",
     "//drake/common/proto:protobuf",
     "//drake/common/trajectories/qp_spline:continuity_constraint",
