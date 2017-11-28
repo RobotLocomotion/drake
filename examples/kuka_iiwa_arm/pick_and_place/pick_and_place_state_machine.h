@@ -99,7 +99,9 @@ class PickAndPlaceStateMachine {
 
  private:
   optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
-  ComputeTrajectories(const WorldState& env_state, RigidBodyTree<double>* iiwa);
+  ComputeTrajectories(const WorldState& env_state,
+                      const PiecewisePolynomial<double>& q_traj_seed,
+                      RigidBodyTree<double>* iiwa);
 
   bool single_move_;
 
@@ -135,7 +137,7 @@ class PickAndPlaceStateMachine {
   Isometry3<double> expected_object_pose_;
 
   // Joint position seed
-  VectorX<double> q_seed_;
+  optional<PiecewisePolynomial<double>> q_traj_seed_;
 
   // Counter for number of planning failures
   int planning_failure_count_{0};
