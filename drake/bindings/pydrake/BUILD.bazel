@@ -40,7 +40,6 @@ drake_pybind_library(
     py_srcs = [
         "__init__.py",
         "common.py",
-        "path.py",
     ],
 )
 
