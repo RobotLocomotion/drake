@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
@@ -30,39 +31,33 @@ struct TestStep {
 // center of the robot).  The test uses a single place location and
 // does not loop.  The choice of the pick/place location is arbitrary.
 GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
-  Isometry3<double> place_location;
-  place_location.translation() = Eigen::Vector3d(0.80, 0.36, 0);
-  place_location.linear().setIdentity();
-  std::vector<Isometry3<double>> place_locations;
-  place_locations.push_back(place_location);
+  PlannerConfiguration planner_configuration;
+  planner_configuration.model_path = kIiwaUrdf;
+  planner_configuration.end_effector_name = "iiwa_link_ee";
+  planner_configuration.target_dimensions = {0.06, 0.06, 0.06};
+  planner_configuration.num_tables = 2;
+
+  // Arbitrary object (O) initial position.
+  Vector3<double> p_WO{0.8, -0.36, 0.27};
+  // Arbitrary destination table (T) fixed position.
+  Vector3<double> p_WT{0.8, 0.36, 0.0};
 
   // Test the non-looping configuration.
-  PickAndPlaceStateMachine dut(place_locations, false);
+  PickAndPlaceStateMachine dut(planner_configuration, true /*single_move*/);
 
   // Create world state and initialize with a trivial configuration.
-  WorldState world_state(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
+  WorldState world_state(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee",
+                         planner_configuration.num_tables,
+                         planner_configuration.target_dimensions);
 
-  bot_core::robot_state_t iiwa_msg{};
+  Isometry3<double> iiwa_base{Isometry3<double>::Identity()};
+  lcmt_iiwa_status iiwa_msg{};
   iiwa_msg.utime = 1000;
-  iiwa_msg.pose.translation.x = 0;
-  iiwa_msg.pose.translation.y = 0;
-  iiwa_msg.pose.translation.z = 0;
-  iiwa_msg.pose.rotation.w = 1;
-  iiwa_msg.pose.rotation.x = 0;
-  iiwa_msg.pose.rotation.y = 0;
-  iiwa_msg.pose.rotation.z = 0;
   iiwa_msg.num_joints = kIiwaArmNumJoints;
-  iiwa_msg.joint_name.push_back("iiwa_joint_1");
-  iiwa_msg.joint_name.push_back("iiwa_joint_2");
-  iiwa_msg.joint_name.push_back("iiwa_joint_3");
-  iiwa_msg.joint_name.push_back("iiwa_joint_4");
-  iiwa_msg.joint_name.push_back("iiwa_joint_5");
-  iiwa_msg.joint_name.push_back("iiwa_joint_6");
-  iiwa_msg.joint_name.push_back("iiwa_joint_7");
 
-  iiwa_msg.joint_position.resize(kIiwaArmNumJoints, 0);
-  iiwa_msg.joint_velocity.resize(kIiwaArmNumJoints, 0);
-  world_state.HandleIiwaStatus(iiwa_msg);
+  iiwa_msg.joint_position_measured.resize(kIiwaArmNumJoints, 0);
+  iiwa_msg.joint_velocity_estimated.resize(kIiwaArmNumJoints, 0);
+  world_state.HandleIiwaStatus(iiwa_msg, iiwa_base);
 
   lcmt_schunk_wsg_status wsg_msg;
   wsg_msg.utime = iiwa_msg.utime;
@@ -72,14 +67,19 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
 
   bot_core::robot_state_t object_msg{};
   object_msg.utime = 1000;
-  object_msg.pose.translation.x = 0.80;
-  object_msg.pose.translation.y = -0.36;
-  object_msg.pose.translation.z = 0.27;
+  object_msg.pose.translation.x = p_WO.x();
+  object_msg.pose.translation.y = p_WO.y();
+  object_msg.pose.translation.z = p_WO.z();
   object_msg.pose.rotation.w = 1;
   object_msg.pose.rotation.x = 0;
   object_msg.pose.rotation.y = 0;
   object_msg.pose.rotation.z = 0;
   world_state.HandleObjectStatus(object_msg);
+
+  Isometry3<double> X_WT;
+  X_WT.translation() = p_WT;
+  X_WT.linear().setIdentity();
+  world_state.HandleTableStatus(0, X_WT);
 
   int iiwa_plan_count = 0;
   robotlocomotion::robot_plan_t iiwa_plan{};
@@ -103,7 +103,7 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
       FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee",
       Isometry3<double>::Identity());
 
-  dut.Update(world_state, iiwa_callback, wsg_callback, &planner);
+  dut.Update(world_state, iiwa_callback, wsg_callback);
 
   std::vector<TestStep> steps;
   steps.push_back(TestStep{0, 1, kOpenGripper});
@@ -133,9 +133,12 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
     // small number of steps.
     iiwa_msg.utime += 5000000;
     if (!iiwa_plan.plan.empty()) {
-      iiwa_msg.joint_position = iiwa_plan.plan.back().joint_position;
+      for (int i = 0; i < kIiwaArmNumJoints; ++i) {
+        iiwa_msg.joint_position_measured[i] =
+            iiwa_plan.plan.back().joint_position[i];
+      }
     }
-    world_state.HandleIiwaStatus(iiwa_msg);
+    world_state.HandleIiwaStatus(iiwa_msg, iiwa_base);
 
     wsg_msg.utime = iiwa_msg.utime;
     wsg_msg.actual_position_mm = wsg_command.target_position_mm;
@@ -145,11 +148,11 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
     // transitioning to kApproachPlace (this is the y value it would
     // have had after kApproachPlacePregrasp completed successfully).
     if (step.state_expected == kApproachPlace) {
-      object_msg.pose.translation.y = place_location.translation()(1);
+      object_msg.pose.translation.y = X_WT.translation()(1);
       world_state.HandleObjectStatus(object_msg);
     }
 
-    dut.Update(world_state, iiwa_callback, wsg_callback, &planner);
+    dut.Update(world_state, iiwa_callback, wsg_callback);
 
     EXPECT_EQ(iiwa_plan_count, step.iiwa_plan_count_expected);
     EXPECT_EQ(wsg_command_count, step.wsg_command_count_expected);

@@ -94,7 +94,11 @@ void CheckNumPorts(
   const int num_output_ports_per_iiwa = 2;
   const int num_output_ports_per_wsg = 1;
   const int num_output_ports_per_object = 1;
-  const int num_other_output_ports = 2;
+  // Every instance of IiwaAndWsgPlantWithStateEstimator has
+  //  - a port for the full RigidBodyPlant state
+  //  - a port for the contact results of the RigidBodyPlant
+  //  - a port for the kinematics results of the RigidBodyPlant
+  const int num_other_output_ports = 3;
   EXPECT_EQ(iiwa_and_wsg_plant.get_num_output_ports(),
             num_iiwas * num_output_ports_per_iiwa +
                 num_wsgs * num_output_ports_per_wsg +
