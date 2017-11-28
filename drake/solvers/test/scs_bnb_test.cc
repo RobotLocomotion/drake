@@ -243,6 +243,16 @@ class TestScsNode : public ::testing::Test {
     cone_->ed = 0;
     cone_->p = nullptr;
     cone_->psize = 0;
+
+    settings_.alpha = ALPHA;
+    settings_.cg_rate = CG_RATE;
+    settings_.eps = EPS;
+    settings_.max_iters = MAX_ITERS;
+    settings_.normalize = NORMALIZE;
+    settings_.rho_x = RHO_X;
+    settings_.scale = SCALE;
+    settings_.verbose = VERBOSE;
+    settings_.warm_start = WARM_START;
   }
 
   ~TestScsNode() {
@@ -311,7 +321,6 @@ class TestScsNode : public ::testing::Test {
     IsConeEqual(*(root->cone()), *root_cone_expected);
 
     EXPECT_FALSE(root->found_integral_sol());
-    EXPECT_FALSE(root->larger_than_upper_bound());
     IsBinaryVarIndicesEqual(root->binary_var_indices(), binary_var_indices);
   }
 
@@ -322,6 +331,7 @@ class TestScsNode : public ::testing::Test {
   scs_float c_[4] = {1, 2, 0, -3};
   std::list<int> binary_var_indices_;
   SCS_CONE* cone_;
+  SCS_SETTINGS settings_;
 };
 
 TEST_F(TestScsNode, TestConstructor) {
@@ -333,7 +343,6 @@ TEST_F(TestScsNode, TestConstructor) {
   EXPECT_TRUE(std::isnan(node.cost()));
   EXPECT_EQ(node.cost_constant(), 0);
   EXPECT_FALSE(node.found_integral_sol());
-  EXPECT_FALSE(node.larger_than_upper_bound());
   EXPECT_TRUE(node.binary_var_indices().empty());
   EXPECT_EQ(node.left_child(), nullptr);
   EXPECT_EQ(node.right_child(), nullptr);
@@ -432,27 +441,46 @@ TEST_F(TestScsNode, TestBranchError) {
   // Branch on a variable that is NOT binary.
   EXPECT_THROW(root->Branch(1), std::runtime_error);
 }
-/*
-TEST_F(TestScsNode, TestSolve) {
-  SCS_SETTINGS* settings =
-static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
-  settings->alpha = ALPHA;
-  settings->cg_rate = CG_RATE;
-  settings->eps = EPS;
-  settings->max_iters = MAX_ITERS;
-  settings->normalize = NORMALIZE;
-  settings->rho_x = RHO_X;
-  settings->scale = SCALE;
-  settings->verbose = VERBOSE;
-  settings->warm_start = WARM_START;
 
-  ScsNode root(scs_A_, b_, c_, binary_var_indices_, 1);
+TEST_F(TestScsNode, TestSolve1) {
+  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
+                                         binary_var_indices_, 1);
 
-  root.Solve(cone_, settings, std::numeric_limits<double>::infinity());
-  EXPECT_EQ(root.cost(), -std::numeric_limits<double>::infinity());
+  const scs_int scs_status = root->Solve(settings_);
+  EXPECT_EQ(scs_status, SCS_SOLVED);
+  EXPECT_NEAR(root->cost(), 1.5, 1e-3);
+  const scs_float x_expected[4] = {0, 1, 0, 0.5};
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_NEAR(x_expected[i], root->scs_sol()->x[i], 1E-3);
+  }
+  EXPECT_TRUE(root->found_integral_sol());
+}
 
-  scs_free(settings);
-}*/
+TEST_F(TestScsNode, TestSolve2) {
+  // Solve the left and right child nodes of the root.
+  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
+                                         binary_var_indices_, 1);
+
+  root->Branch(0);
+
+  const scs_int scs_status_l = root->left_child()->Solve(settings_);
+  EXPECT_EQ(scs_status_l, SCS_SOLVED);
+  EXPECT_NEAR(root->left_child()->cost(), 1.5, 1e-3);
+  const scs_float x_expected_l[3] = {1, 0, 0.5};
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_NEAR(x_expected_l[i], root->left_child()->scs_sol()->x[i], 1E-3);
+  }
+  EXPECT_TRUE(root->left_child()->found_integral_sol());
+
+  const scs_int scs_status_r = root->right_child()->Solve(settings_);
+  EXPECT_EQ(scs_status_r, SCS_SOLVED);
+  EXPECT_NEAR(root->right_child()->cost(), 4, 2e-3);
+  const scs_float x_expected_r[3] = {1, 0, 0};
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_NEAR(x_expected_r[i], root->right_child()->scs_sol()->x[i], 1E-3);
+  }
+  EXPECT_TRUE(root->right_child()->found_integral_sol());
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
