@@ -62,6 +62,9 @@ const double kBoxInitZ = 0.076;
 
 // TODO(rcory): Remove and replace (like Obamacare) after the Sinusoid
 // block PR goes through.
+// A block that outputs a sinusoid function of time and the time derivative
+// thereof with specified start time (tstart), frequency (freq),
+// amplitude (amp), and phase (offset).
 class Sinusoid : public systems::LeafSystem<double> {
  public:
   Sinusoid(double tstart, double freq, double amp, double offset) : freq_(freq), amp_(amp), offset_(offset), tstart_(tstart) {
@@ -88,6 +91,8 @@ class Sinusoid : public systems::LeafSystem<double> {
   double freq_{0.0}, amp_{0.0}, offset_{0.0}, tstart_{0.0};
 };
 
+// Finds the single end-effector from a RigidBodyTree and returns it. Aborts if
+// there is more than one end-effector or more than one base link.
 RigidBody<double>* FindEndEffector(const RigidBodyTree<double>& tree) {
   // There should only be one base body.
   auto base_indices = tree.FindBaseBodies();
