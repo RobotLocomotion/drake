@@ -131,23 +131,11 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
         plant_configuration_, optitrack_configuration_, planner_configurations,
         true /*single_move*/);
 
-    // Add visualizer. This is not necessary for the test, but makes debugging
-    // much easier.
-    lcm::DrakeLcm lcm;
-    auto drake_visualizer =
-        builder.AddSystem<systems::DrakeVisualizer>(plant->get_tree(), &lcm);
-    drake_visualizer->set_publish_period(kIiwaLcmStatusPeriod);
-
-    builder.Connect(plant->get_output_port_plant_state(),
-                    drake_visualizer->get_input_port(0));
-
     auto sys = builder.Build();
     Simulator<double> simulator(*sys);
     simulator.reset_integrator<RungeKutta2Integrator<double>>(
         *sys, dt_, &simulator.get_mutable_context());
     simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-
-    lcm.StartReceiveThread();
     simulator.set_publish_every_time_step(false);
     simulator.Initialize();
 
@@ -232,11 +220,11 @@ INSTANTIATE_TEST_CASE_P(
     SelectedPairs, SingleMoveTests,
     ::testing::Values(
         std::make_tuple(0, 2),  // Scenario 1
-        std::make_tuple(4, 2),  // Scenario 2
+        std::make_tuple(4, 2)));  // Scenario 2
         // TODO(avalenzu): Uncomment these tests when planning is less brittle.
         // std::make_tuple(4, 1),  // Scenario 3
         // std::make_tuple(1, 3),  // Scenario 4
-        std::make_tuple(2, 0)));  // Scenario 5;
+        // std::make_tuple(2, 0)));  // Scenario 5;
 
 // TODO(avalenzu): Uncomment these tests when planning is less brittle.
 // const std::vector<int> kTableIndices{0, 1, 2, 3, 4, 5};
