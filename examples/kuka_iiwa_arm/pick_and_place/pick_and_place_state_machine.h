@@ -102,9 +102,6 @@ class PickAndPlaceStateMachine {
   ComputeNominalConfigurations(const WorldState& env_state,
                                RigidBodyTree<double>* iiwa);
 
-  optional<std::map<PickAndPlaceState, Isometry3<double>>> ComputeDesiredPoses(
-      const WorldState& env_state, double yaw_offset, double pitch_offset);
-
   optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
   ComputeTrajectories(const WorldState& env_state, RigidBodyTree<double>* iiwa);
 
