@@ -98,10 +98,6 @@ class PickAndPlaceStateMachine {
   PickAndPlaceState state() const { return state_; }
 
  private:
-  optional<std::map<PickAndPlaceState, VectorX<double>>>
-  ComputeNominalConfigurations(const WorldState& env_state,
-                               RigidBodyTree<double>* iiwa);
-
   optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
   ComputeTrajectories(const WorldState& env_state, RigidBodyTree<double>* iiwa);
 
