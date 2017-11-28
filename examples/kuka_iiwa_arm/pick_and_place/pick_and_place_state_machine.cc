@@ -570,10 +570,12 @@ bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
   return success;
 }
 
-bool PickAndPlaceStateMachine::ComputeTrajectories(
-    const WorldState& env_state, RigidBodyTree<double>* robot) {
-  bool success = ComputeNominalConfigurations(env_state, robot);
-  if (!success) return false;
+optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
+PickAndPlaceStateMachine::ComputeTrajectories(const WorldState& env_state,
+                                              RigidBodyTree<double>* robot) {
+  if (!ComputeNominalConfigurations(env_state, robot)) {
+    return nullopt;
+  }
   std::vector<PickAndPlaceState> states{
       PickAndPlaceState::kApproachPickPregrasp,
       PickAndPlaceState::kApproachPick,
@@ -582,14 +584,9 @@ bool PickAndPlaceStateMachine::ComputeTrajectories(
       PickAndPlaceState::kApproachPlace,
       PickAndPlaceState::kLiftFromPlace};
   VectorX<double> q_0{robot->get_num_positions()};
-  if (interpolation_result_map_.empty()) {
-    q_0 << env_state.get_iiwa_q();
-  } else {
-    const PiecewisePolynomial<double>& q_traj_last =
-        interpolation_result_map_.at(states.back()).q_traj;
-    q_0 << q_traj_last.value(q_traj_last.getEndTime());
-  }
-  interpolation_result_map_.clear();
+  q_0 << env_state.get_iiwa_q();
+  std::map<PickAndPlaceState, PostureInterpolationResult>
+      interpolation_result_map;
   const double kExtraShortDuration = 0.5;
   const double kShortDuration = 1;
   const double kLongDuration = 1.5;
@@ -653,13 +650,15 @@ bool PickAndPlaceStateMachine::ComputeTrajectories(
           fall_back_to_joint_space_interpolation;
 
       result = PlanInterpolatingMotion(request, robot);
+      if (!result.success) {
+        return nullopt;
+      }
     }
 
-    interpolation_result_map_.emplace(state, result);
-    success = success && result.success;
+    interpolation_result_map.emplace(state, result);
     q_0 = q_f;
   }
-  return success;
+  return interpolation_result_map;
 }
 
 void PickAndPlaceStateMachine::Update(const WorldState& env_state,
@@ -716,7 +715,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         robotlocomotion::robot_plan_t plan{};
         std::vector<VectorX<double>> q;
         PostureInterpolationResult& result =
-            interpolation_result_map_.at(state_);
+            interpolation_result_map_->at(state_);
         DRAKE_THROW_UNLESS(result.success);
         const std::vector<double>& times{result.q_traj.getSegmentTimes()};
         q.reserve(times.size());
@@ -740,7 +739,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
             if (!env_state.get_object_pose().translation().isApprox(
                     expected_object_pose_.translation(), 0.05)) {
               drake::log()->info("Target moved! Re-planning ...");
-              interpolation_result_map_.clear();
+              interpolation_result_map_->clear();
               state_ = PickAndPlaceState::kPlan;
             }
           } break;
@@ -809,8 +808,8 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
                              std::move(grasp_frame_fixed_joint));
       robot->add_rigid_body(std::move(grasp_frame));
       robot->compile();
-
-      if (ComputeTrajectories(env_state, robot.get())) {
+      interpolation_result_map_ = ComputeTrajectories(env_state, robot.get());
+      if (interpolation_result_map_) {
         // Proceed to execution
         state_ = PickAndPlaceState::kApproachPickPregrasp;
       }  // otherwise re-plan on next call to Update.
