@@ -644,7 +644,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
       // translational components of the entire geometric Jacobian H.
       auto Hv_PBqi_W = J_PBq_W.block(3 * ipoint, 0, 3, num_velocities);
 
-      // Aliases to translational and angular components in H_PB_W:
+      // Aliases to angular and translational components in H_PB_W:
       const auto Hw_PB_W = H_PB_W.template topRows<3>();
       const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
 

@@ -38,25 +38,25 @@ GTEST_TEST(KukaIiwaRobot, GeometricJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  double q30 = M_PI / 6, q60 = M_PI / 3;
-  double qA = q60;
-  double qB = q30;
-  double qC = q60;
-  double qD = q30;
-  double qE = q60;
-  double qF = q30;
-  double qG = q60;
+  const double q30 = M_PI / 6, q60 = M_PI / 3;
+  const double qA = q60;
+  const double qB = q30;
+  const double qC = q60;
+  const double qD = q30;
+  const double qE = q60;
+  const double qF = q30;
+  const double qG = q60;
   VectorX<double> q(kNumPositions);
   q << qA, qB, qC, qD, qE, qF, qG;
 
   // A non-zero set of values for the joint's velocities.
-  double vA = 0.1;
-  double vB = 0.2;
-  double vC = 0.3;
-  double vD = 0.4;
-  double vE = 0.5;
-  double vF = 0.6;
-  double vG = 0.7;
+  const double vA = 0.1;
+  const double vB = 0.2;
+  const double vC = 0.3;
+  const double vD = 0.4;
+  const double vE = 0.5;
+  const double vF = 0.6;
+  const double vG = 0.7;
   VectorX<double> v(kNumPositions);
   v << vA, vB, vC, vD, vE, vF, vG;
 
@@ -95,8 +95,9 @@ GTEST_TEST(KukaIiwaRobot, GeometricJacobian) {
   // <AutoDiffXd> values of v on the same method call as above.
   const Vector3<AutoDiffXd> v_NG_autodiff =
       end_effector_velocity_fixed_positions(v_autodiff);
-  Vector3<double> v_NG_value = math::autoDiffToValueMatrix(v_NG_autodiff);
-  MatrixX<double> v_NG_derivs = math::autoDiffToGradientMatrix(v_NG_autodiff);
+  const Vector3<double> v_NG_value = math::autoDiffToValueMatrix(v_NG_autodiff);
+  const MatrixX<double> v_NG_derivs =
+      math::autoDiffToGradientMatrix(v_NG_autodiff);
 
   // Values obtained with <AutoDiffXd> should match those computed with
   // <double>.
@@ -155,14 +156,14 @@ GTEST_TEST(KukaIiwaRobot, AnalyticJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  double q30 = M_PI / 6, q60 = M_PI / 3;
-  double qA = q60;
-  double qB = q30;
-  double qC = q60;
-  double qD = q30;
-  double qE = q60;
-  double qF = q30;
-  double qG = q60;
+  const double q30 = M_PI / 6, q60 = M_PI / 3;
+  const double qA = q60;
+  const double qB = q30;
+  const double qC = q60;
+  const double qD = q30;
+  const double qE = q60;
+  const double qF = q30;
+  const double qG = q60;
   VectorX<double> q0(kNumPositions);
   q0 << qA, qB, qC, qD, qE, qF, qG;
 
@@ -191,7 +192,7 @@ GTEST_TEST(KukaIiwaRobot, AnalyticJacobian) {
   VectorX<AutoDiffXd> q_autodiff(kNumPositions);
   math::initializeAutoDiff(q0, q_autodiff);
 
-  Matrix3X<AutoDiffXd> p_GPi_autodiff = p_GPi;
+  const Matrix3X<AutoDiffXd> p_GPi_autodiff = p_GPi;
   Matrix3X<AutoDiffXd> p_NGpi_autodiff(3, kNumPoints);
   MatrixX<AutoDiffXd> J_NGpi_autodiff(3 * kNumPoints, kNumPositions);
   kuka_robot_autodiff.CalcPointsOnEndEffectorGeometricJacobian(
