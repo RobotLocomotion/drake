@@ -5,6 +5,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 
 namespace drake {
 namespace examples {
@@ -63,14 +65,12 @@ struct SimulatedPlantConfiguration {
   std::vector<std::string> object_models;
   /// World poses of the model origin of each object in the scenario.
   std::vector<Isometry3<double>> object_poses;
-  /// @name Conact parameters
-  /// Global contact parameters for the simulation.
+  /// @name Contact parameters
+  /// Global contact parameters for the simulation. Configured to use the
+  /// default values.
   ///@{
-  double static_friction_coef{0.9};
-  double dynamic_friction_coef{0.5};
-  double v_stiction_tolerance{0.01};
-  double stiffness{10000};
-  double dissipation{2};
+  systems::CompliantContactModelParameters contact_model_parameters;
+  systems::CompliantMaterial default_contact_material;
   ///@}
 };
 

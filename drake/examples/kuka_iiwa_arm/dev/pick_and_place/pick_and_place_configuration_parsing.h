@@ -29,6 +29,9 @@ ParsePlannerConfigurationsOrThrow(const std::string& filename);
 pick_and_place::SimulatedPlantConfiguration
 ParseSimulatedPlantConfigurationOrThrow(const std::string& filename);
 
+pick_and_place::SimulatedPlantConfiguration
+ParseSimulatedPlantConfigurationStringOrThrow(const std::string& configuration);
+
 pick_and_place::OptitrackConfiguration ParseOptitrackConfigurationOrThrow(
     const std::string& filename);
 

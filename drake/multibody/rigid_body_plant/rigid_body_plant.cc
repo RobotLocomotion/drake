@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/solvers/mathematical_program.h"
 
 using std::make_unique;
@@ -163,27 +164,16 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() {}
 
-// TODO(liang.fok) Remove these methods once a more advanced contact modeling
-// framework is available.
 template <typename T>
-void RigidBodyPlant<T>::set_normal_contact_parameters(
-    double penetration_stiffness, double dissipation) {
-  DRAKE_DEMAND(penetration_stiffness >= 0);
-  DRAKE_DEMAND(dissipation >= 0);
-  compliant_contact_model_->set_normal_contact_parameters(
-      penetration_stiffness, dissipation);
+void RigidBodyPlant<T>::set_contact_model_parameters(
+    const CompliantContactModelParameters& parameters) {
+  compliant_contact_model_->set_model_parameters(parameters);
 }
 
 template <typename T>
-void RigidBodyPlant<T>::set_friction_contact_parameters(
-    double static_friction_coef, double dynamic_friction_coef,
-    double v_stiction_tolerance) {
-  DRAKE_DEMAND(dynamic_friction_coef >= 0);
-  DRAKE_DEMAND(static_friction_coef >= dynamic_friction_coef);
-  DRAKE_DEMAND(v_stiction_tolerance > 0);
-
-  compliant_contact_model_->set_friction_contact_parameters(
-      static_friction_coef, dynamic_friction_coef, v_stiction_tolerance);
+void RigidBodyPlant<T>::set_default_compliant_material(
+    const CompliantMaterial& material) {
+  compliant_contact_model_->set_default_material(material);
 }
 
 template <typename T>

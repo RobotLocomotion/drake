@@ -92,7 +92,7 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   // force are in equilibrium.
   const double k_{m_* g_ / 0.001};
   // Hunt-Crossley's dissipation factor.
-  const double d_{0.0};  // [s/m]
+  const double d_{0.0};  // s/m
 };
 
 }  // namespace bouncing_ball

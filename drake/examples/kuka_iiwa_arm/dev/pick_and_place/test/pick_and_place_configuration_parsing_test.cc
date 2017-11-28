@@ -4,9 +4,11 @@
 #include <vector>
 
 #include <gmock/gmock.h>
+#include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration.pb.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -141,16 +143,27 @@ void ValidateSimulatedPlantConfiguration(
             expected_plant_configuration.table_models);
   EXPECT_EQ(plant_configuration.object_models,
             expected_plant_configuration.object_models);
-  EXPECT_EQ(plant_configuration.static_friction_coef,
-            expected_plant_configuration.static_friction_coef);
-  EXPECT_EQ(plant_configuration.dynamic_friction_coef,
-            expected_plant_configuration.dynamic_friction_coef);
-  EXPECT_EQ(plant_configuration.v_stiction_tolerance,
-            expected_plant_configuration.v_stiction_tolerance);
-  EXPECT_EQ(plant_configuration.stiffness,
-            expected_plant_configuration.stiffness);
-  EXPECT_EQ(plant_configuration.dissipation,
-            expected_plant_configuration.dissipation);
+  // Compliant contact model parameters
+  const systems::CompliantContactModelParameters test_parameters =
+      plant_configuration.contact_model_parameters;
+  const systems::CompliantContactModelParameters expected_parameters =
+      expected_plant_configuration.contact_model_parameters;
+  EXPECT_EQ(test_parameters.characteristic_area,
+            expected_parameters.characteristic_area);
+  EXPECT_EQ(test_parameters.v_stiction_tolerance,
+            expected_parameters.v_stiction_tolerance);
+
+  // Default compliant material
+  const systems::CompliantMaterial& test_material =
+      plant_configuration.default_contact_material;
+  const systems::CompliantMaterial& expected_material =
+      expected_plant_configuration.default_contact_material;
+  EXPECT_EQ(test_material.youngs_modulus(), expected_material.youngs_modulus());
+  EXPECT_EQ(test_material.dissipation(), expected_material.dissipation());
+  EXPECT_EQ(test_material.static_friction(),
+            expected_material.static_friction());
+  EXPECT_EQ(test_material.dynamic_friction(),
+            expected_material.dynamic_friction());
 }
 
 void ValidateOptitrackConfiguration(
@@ -221,8 +234,8 @@ class ConfigurationParsingTests : public ::testing::Test {
           AngleAxis<double>(kObjectRpy[i].z(), Vector3<double>::UnitZ()));
     }
 
-    plant_configuration_.stiffness = 3e3;
-    plant_configuration_.dissipation = 5;
+    plant_configuration_.default_contact_material.set_youngs_modulus(3e7);
+    plant_configuration_.default_contact_material.set_dissipation(5);
 
     // Set planner parameters
     planner_configuration_.model_path = kIiwaPath;
@@ -265,6 +278,92 @@ TEST_F(ConfigurationParsingTests, ParseOptitrackConfiguration) {
   ValidateOptitrackConfiguration(parsed_optitrack_configuration,
                                  optitrack_configuration_);
 }
+
+// Confirms that a configuration file with *no* compliant property specification
+// is completely default-configured
+GTEST_TEST(ConfigurationParsingCompliantParameterTests, AllDefaults) {
+  SimulatedPlantConfiguration parsed_configuration =
+      ParseSimulatedPlantConfigurationStringOrThrow("");
+
+  systems::CompliantContactModelParameters default_parameters;
+  const auto& parsed_parameters = parsed_configuration.contact_model_parameters;
+  EXPECT_EQ(parsed_parameters.v_stiction_tolerance,
+            default_parameters.v_stiction_tolerance);
+  EXPECT_EQ(parsed_parameters.characteristic_area,
+            default_parameters.characteristic_area);
+
+  const auto& parsed_material = parsed_configuration.default_contact_material;
+  EXPECT_TRUE(parsed_material.youngs_modulus_is_default());
+  EXPECT_TRUE(parsed_material.dissipation_is_default());
+  EXPECT_TRUE(parsed_material.friction_is_default());
+}
+
+// Confirms that bad configurations throw an appropriate exception.
+GTEST_TEST(ConfigurationParsingCompliantParameterTests, BadValues) {
+  // Values outside of their valid range
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "default_compliant_material { youngs_modulus: -1 }"),
+               std::runtime_error);
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "default_compliant_material { dissipation: -1 }"),
+               std::runtime_error);
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "default_compliant_material { static_friction_coefficient: -1 "
+      "dynamic_friction_coefficient: -0.5 }"),
+               std::runtime_error);
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "compliant_model_parameters { v_stiction_tolerance: -1 }"),
+               std::runtime_error);
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "compliant_model_parameters { characteristic_area: -1 }"),
+               std::runtime_error);
+
+  // Special friction logic -- only one defined and u_d > u_s.
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "default_compliant_material { static_friction_coefficient: 0.9 }"),
+               std::runtime_error);
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "default_compliant_material { dynamic_friction_coefficient: 0.5 }"),
+               std::runtime_error);
+  EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
+      "default_compliant_material { static_friction_coefficient: 0.5 "
+      "dynamic_friction_coefficient: -0.9 }"),
+               std::runtime_error);
+}
+
+// Confirms that all valid values get written to the configuration properly.
+GTEST_TEST(ConfigurationParsingCompliantParameterTests, ConfiguredValues) {
+  const char* configuration =
+      R"_(
+compliant_model_parameters {
+  v_stiction_tolerance: 1e-3
+  characteristic_area: 1e-1
+}
+
+default_compliant_material {
+  youngs_modulus: 1.5e7
+  dissipation: 1.25
+  static_friction_coefficient: 1.5
+  dynamic_friction_coefficient: 1.0
+}
+)_";
+  SimulatedPlantConfiguration parsed_configuration =
+      ParseSimulatedPlantConfigurationStringOrThrow(configuration);
+
+  const auto& parsed_parameters = parsed_configuration.contact_model_parameters;
+  EXPECT_EQ(parsed_parameters.v_stiction_tolerance, 1e-3);
+  EXPECT_EQ(parsed_parameters.characteristic_area, 1e-1);
+
+  const auto& parsed_material = parsed_configuration.default_contact_material;
+  EXPECT_FALSE(parsed_material.youngs_modulus_is_default());
+  EXPECT_EQ(parsed_material.youngs_modulus(), 1.5e7);
+  EXPECT_FALSE(parsed_material.dissipation_is_default());
+  EXPECT_EQ(parsed_material.dissipation(), 1.25);
+  EXPECT_FALSE(parsed_material.friction_is_default());
+  EXPECT_EQ(parsed_material.static_friction(), 1.5);
+  EXPECT_EQ(parsed_material.dynamic_friction(), 1.0);
+}
+
 }  // namespace
 }  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm

@@ -143,12 +143,10 @@ LcmPlant::LcmPlant(
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
       BuildCombinedPlant(plant_configuration, &iiwa_instances, &wsg_instances,
                          &object_instances, &table_instances);
-  model_ptr->set_normal_contact_parameters(plant_configuration.stiffness,
-                                           plant_configuration.dissipation);
-  model_ptr->set_friction_contact_parameters(
-      plant_configuration.static_friction_coef,
-      plant_configuration.dynamic_friction_coef,
-      plant_configuration.v_stiction_tolerance);
+  model_ptr->set_default_compliant_material(
+      plant_configuration.default_contact_material);
+  model_ptr->set_contact_model_parameters(
+      plant_configuration.contact_model_parameters);
 
   iiwa_and_wsg_plant_ =
       builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(

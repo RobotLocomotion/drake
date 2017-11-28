@@ -7,6 +7,15 @@
 namespace drake {
 namespace systems {
 
+/// The set of parameters for the compliant contact model. These values affect
+/// all contacts in the simulation session. In some sense, they are related
+/// to the scale of the simulation. The values must all be _strictly_ positive.
+/// See @ref drake_contacts for details.
+struct CompliantContactModelParameters {
+  double v_stiction_tolerance{1e-2};      // 1 cm/s (in m/s).
+  double characteristic_area{2e-4};       // Two square-cm (in m²).
+};
+
 /// This class encapsulates the compliant contact model force computations as
 /// described in detail in @ref drake_contacts.
 ///
@@ -35,45 +44,61 @@ class CompliantContactModel {
       const KinematicsCache<T>& kinsol,
       ContactResults<T>* contacts = nullptr) const;
 
-  // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
-  // in detail.  To come in a subsequent PR.
-  // TODO(Naveenoid): The following two methods both have argument lists with
-  // the same type. This needs resolution in the future GeometryWorld
-  // architecture.
-  /// Sets only the parameters for *normal* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
-  void set_normal_contact_parameters(double penetration_stiffness,
-                                     double dissipation);
+  /// Defines the default material property values for this model instance.
+  /// All elements with default-configured values will use the values in the
+  /// provided property set. This can be invoked before or after parsing
+  /// SDF/URDF files; all fields that were left unspecified will default to
+  /// these values.
+  /// See @ref drake_contact and CompliantMaterial for elaboration on
+  /// these values.
+  void set_default_material(const CompliantMaterial& material);
 
-  /// Sets only the parameters for *friction* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
-  void set_friction_contact_parameters(double static_friction_coef,
-                                       double dynamic_friction_coef,
-                                       double v_stiction_tolerance);
+  const CompliantMaterial& default_material() const {
+    return default_material_;
+  }
+
+  /// Configures the model parameters -- these are the global model values that
+  /// affect all contacts. If values are outside of valid ranges, the program
+  /// aborts. (See CompliantContactParameters for details on valid ranges.)
+  void set_model_parameters(const CompliantContactModelParameters& values);
 
  private:
   // Computes the friction coefficient based on the relative tangential
-  // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
+  // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
   //
   // See contact_model_doxygen.h @section tangent_force for details.
-  T ComputeFrictionCoefficient(const T& v_tangent_BAc) const;
+  T ComputeFrictionCoefficient(
+      const T& v_tangent_BAc,
+      const CompliantMaterial& parameters) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
   static T step5(const T& x);
 
-  // Some parameters defining the contact.
-  // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  // These default values are all semi-arbitrary.  They seem to produce,
-  // generally, plausible results. They are in *no* way universally valid or
-  // meaningful.
-  T penetration_stiffness_{10000.0};
-  T dissipation_{2};
+  // Given two collision elements (with their own defined compliant material
+  // properties, computes the _derived_ parameters for the _contact_. Returns
+  // The portion of the squish attributable to Element `a` (sₐ). Element `b`'s
+  // squish factor is simply 1 - sₐ. See contact_model_doxygen.h for details.
+  // @param[in] a            The first element in the contact.
+  // @param[in] b            The second element in the contact.
+  // @param[out] parameters  The net _contact_ parameters.
+  // @retval sₐ  The "squish" factor of Element `a` -- the fraction of the full
+  //             penetration deformation that `a` experiences.
+  double CalcContactParameters(
+      const multibody::collision::Element& a,
+      const multibody::collision::Element& b,
+      CompliantMaterial* parameters) const;
+
   // Note: this is the *inverse* of the v_stiction_tolerance parameter to
   // optimize for the division.
-  T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
-  T static_friction_coef_{0.9};
-  T dynamic_friction_coef_{0.5};
+  double inv_v_stiction_tolerance_{
+      1.0 / CompliantContactModelParameters().v_stiction_tolerance};
+  double characteristic_area_{
+      CompliantContactModelParameters().characteristic_area};
+
+  // The default compliant material properties for *this* model instance.
+  // By default, it uses all hard-coded values.
+  CompliantMaterial default_material_;
 };
 
 }  // namespace systems
