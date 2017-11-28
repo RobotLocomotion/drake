@@ -1,8 +1,7 @@
 #include "drake/solvers/scs_bnb.h"
 
-#include <gtest/gtest.h>
-
 #include <Eigen/SparseCore>
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace solvers {
@@ -307,7 +306,8 @@ class TestScsNode : public ::testing::Test {
 
     IsSameRelaxedConstraint(*root_scs_A, *(root->A()), root_b, root->b(), 0);
 
-    for (int i = 0; i < scs_A_->m + 2 * binary_var_indices.size(); ++i) {
+    for (int i = 0;
+         i < scs_A_->m + 2 * static_cast<int>(binary_var_indices.size()); ++i) {
       EXPECT_EQ(root_b[i], root->b()[i]);
     }
     delete[] root_b;
@@ -446,12 +446,13 @@ TEST_F(TestScsNode, TestSolve1) {
   auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
                                          binary_var_indices_, 1);
 
+  const double tol = 1E-3;
   const scs_int scs_status = root->Solve(settings_);
   EXPECT_EQ(scs_status, SCS_SOLVED);
-  EXPECT_NEAR(root->cost(), 1.5, 1e-3);
+  EXPECT_NEAR(root->cost(), 1.5, tol);
   const scs_float x_expected[4] = {0, 1, 0, 0.5};
   for (int i = 0; i < 4; ++i) {
-    EXPECT_NEAR(x_expected[i], root->scs_sol()->x[i], 1E-3);
+    EXPECT_NEAR(x_expected[i], root->scs_sol()->x[i], tol);
   }
   EXPECT_TRUE(root->found_integral_sol());
 }
@@ -465,19 +466,20 @@ TEST_F(TestScsNode, TestSolve2) {
 
   const scs_int scs_status_l = root->left_child()->Solve(settings_);
   EXPECT_EQ(scs_status_l, SCS_SOLVED);
-  EXPECT_NEAR(root->left_child()->cost(), 1.5, 1e-3);
+  const double tol{1E-3};
+  EXPECT_NEAR(root->left_child()->cost(), 1.5, tol);
   const scs_float x_expected_l[3] = {1, 0, 0.5};
   for (int i = 0; i < 3; ++i) {
-    EXPECT_NEAR(x_expected_l[i], root->left_child()->scs_sol()->x[i], 1E-3);
+    EXPECT_NEAR(x_expected_l[i], root->left_child()->scs_sol()->x[i], tol);
   }
   EXPECT_TRUE(root->left_child()->found_integral_sol());
 
   const scs_int scs_status_r = root->right_child()->Solve(settings_);
   EXPECT_EQ(scs_status_r, SCS_SOLVED);
-  EXPECT_NEAR(root->right_child()->cost(), 4, 2e-3);
+  EXPECT_NEAR(root->right_child()->cost(), 4, 2 * tol);
   const scs_float x_expected_r[3] = {1, 0, 0};
   for (int i = 0; i < 3; ++i) {
-    EXPECT_NEAR(x_expected_r[i], root->right_child()->scs_sol()->x[i], 1E-3);
+    EXPECT_NEAR(x_expected_r[i], root->right_child()->scs_sol()->x[i], tol);
   }
   EXPECT_TRUE(root->right_child()->found_integral_sol());
 }

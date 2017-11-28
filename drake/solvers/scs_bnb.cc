@@ -229,7 +229,8 @@ void ScsNode::Branch(int binary_var_index) {
   // entry has value -1.
   for (int i = A_->p[binary_var_index]; i < A_->p[binary_var_index + 1]; ++i) {
     if (A_->i[i] >= cone_->f &&
-        A_->i[i] < cone_->f + 2 * binary_var_indices_.size() &&
+        A_->i[i] <
+            cone_->f + 2 * static_cast<int>(binary_var_indices_.size()) &&
         A_->x[i] == -1) {
       removed_row_index0 = A_->i[i];
       if (A_->x[i + 1] != 1) {

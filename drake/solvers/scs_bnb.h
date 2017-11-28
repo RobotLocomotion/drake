@@ -109,16 +109,16 @@ class ScsNode {
   scs_int Solve(const SCS_SETTINGS& scs_settings);
 
   // Getter for A matrix.
-  const AMatrix* const A() const { return A_.get(); }
+  const AMatrix* A() const { return A_.get(); }
 
   // Getter for b vector.
-  const scs_float* const b() const { return b_.get(); }
+  const scs_float* b() const { return b_.get(); }
 
   // Getter for c vector, the linear coefficient of the cost.
-  const scs_float* const c() const { return c_.get(); }
+  const scs_float* c() const { return c_.get(); }
 
   // Getter for the cones.
-  const SCS_CONE* const cone() const { return cone_.get(); }
+  const SCS_CONE* cone() const { return cone_.get(); }
 
   bool found_integral_sol() const { return found_integral_sol_; }
 
@@ -140,7 +140,7 @@ class ScsNode {
 
   double cost() const { return cost_; }
 
-  const SCS_SOL_VARS* const scs_sol() const { return scs_sol_.get(); }
+  const SCS_SOL_VARS* scs_sol() const { return scs_sol_.get(); }
 
   SCS_INFO scs_info() const { return scs_info_; }
 
@@ -191,22 +191,6 @@ class ScsNode {
   // If the solution is within integer_tol to an integer value, then we regard
   // the solution as taking the integer value.
   double integer_tol_ = 1E-2;
-};
-
-// Given a mixed-integer convex optimization program in SCS format
-// min cᵀx
-// s.t Ax + s = b
-//     s in K
-// And the indices of variable x that should only take binary value {0, 1},
-// solve this mixed-integer optimization problem through branch-and-bound.
-class ScsBranchAndBound {
- private:
-  // scs_data_ includes the data on c, A, b, and the cone K. It also contains
-  // the settings of the problem, such as iteration limit, accuracy, etc.
-  SCS_PROBLEM_DATA* scs_data_;
-  // binary_var_indices_ records the indices of all binary variables in x.
-  // We suppose that binary_var_indices_ are in the ascending order.
-  std::list<int> binary_var_indices_;
 };
 }  // namespace solvers
 }  // namespace drake
