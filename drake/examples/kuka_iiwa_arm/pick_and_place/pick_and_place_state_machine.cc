@@ -248,37 +248,6 @@ std::unique_ptr<RigidBodyTree<double>> BuildTree(
   return tree_builder.Build();
 }
 
-}  // namespace
-
-std::ostream& operator<<(std::ostream& os, const PickAndPlaceState value) {
-  switch (value) {
-    case (PickAndPlaceState::kOpenGripper):
-      return os << "kOpenGripper";
-    case (PickAndPlaceState::kPlan):
-      return os << "kPlan";
-    case (PickAndPlaceState::kApproachPickPregrasp):
-      return os << "kApproachPickPregrasp";
-    case (PickAndPlaceState::kApproachPick):
-      return os << "kApproachPick";
-    case (PickAndPlaceState::kGrasp):
-      return os << "kGrasp";
-    case (PickAndPlaceState::kLiftFromPick):
-      return os << "kLiftFromPick";
-    case (PickAndPlaceState::kApproachPlacePregrasp):
-      return os << "kApproachPlacePregrasp";
-    case (PickAndPlaceState::kApproachPlace):
-      return os << "kApproachPlace";
-    case (PickAndPlaceState::kPlace):
-      return os << "kPlace";
-    case (PickAndPlaceState::kLiftFromPlace):
-      return os << "kLiftFromPlace";
-    case (PickAndPlaceState::kReset):
-      return os << "kReset";
-    case (PickAndPlaceState::kDone):
-      return os << "kDone";
-  }
-}
-
 optional<std::pair<Isometry3<double>, Isometry3<double>>>
 ComputeInitialAndFinalObjectPoses(const WorldState& env_state) {
   // W -- World frame, coincides with robot base frame.
@@ -351,10 +320,8 @@ ComputeInitialAndFinalObjectPoses(const WorldState& env_state) {
   return std::make_pair(X_WO_initial, X_WO_final);
 }
 
-optional<std::map<PickAndPlaceState, Isometry3<double>>>
-PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
-                                              double yaw_offset,
-                                              double pitch_offset) {
+optional<std::map<PickAndPlaceState, Isometry3<double>>> ComputeDesiredPoses(
+    const WorldState& env_state, double yaw_offset, double pitch_offset) {
   //       (ApproachPickPregrasp,                         (ApproachPlacePregrasp
   //        LiftFromPick ),                                LiftFromPlace)
   //       +--------------------------------------------------------+
@@ -427,6 +394,37 @@ PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
     return X_WG_desired;
   } else {
     return nullopt;
+  }
+}
+
+}  // namespace
+
+std::ostream& operator<<(std::ostream& os, const PickAndPlaceState value) {
+  switch (value) {
+    case (PickAndPlaceState::kOpenGripper):
+      return os << "kOpenGripper";
+    case (PickAndPlaceState::kPlan):
+      return os << "kPlan";
+    case (PickAndPlaceState::kApproachPickPregrasp):
+      return os << "kApproachPickPregrasp";
+    case (PickAndPlaceState::kApproachPick):
+      return os << "kApproachPick";
+    case (PickAndPlaceState::kGrasp):
+      return os << "kGrasp";
+    case (PickAndPlaceState::kLiftFromPick):
+      return os << "kLiftFromPick";
+    case (PickAndPlaceState::kApproachPlacePregrasp):
+      return os << "kApproachPlacePregrasp";
+    case (PickAndPlaceState::kApproachPlace):
+      return os << "kApproachPlace";
+    case (PickAndPlaceState::kPlace):
+      return os << "kPlace";
+    case (PickAndPlaceState::kLiftFromPlace):
+      return os << "kLiftFromPlace";
+    case (PickAndPlaceState::kReset):
+      return os << "kReset";
+    case (PickAndPlaceState::kDone):
+      return os << "kDone";
   }
 }
 
