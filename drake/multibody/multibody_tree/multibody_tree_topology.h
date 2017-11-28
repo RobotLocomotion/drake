@@ -769,16 +769,19 @@ class MultibodyTreeTopology {
   ///   starting at the root along the path to `from`. That is, forward
   ///   iteration starts with the root of the tree at `path_to_world[0]` and
   ///   ends with `from` at `path_to_world.back()`.
-  ///   On input, `path_to_world` must be a valid pointer to a pre-allocated
-  ///   vector with at least as many elements as the level
+  ///   On input, `path_to_world` must be a valid pointer. On output this vector
+  ///   will be resized, only if needed, to store as many elements as the level
   ///   (BodyNodeTopology::level) of body node `from` plus one (so that we can
-  ///   include the root node in the path). This method will throw a
-  ///   std::runtime_error exception if these conditions are not met.
+  ///   include the root node in the path).
   void GetKinematicPathToWorld(
       BodyNodeIndex from, std::vector<BodyNodeIndex>* path_to_world) const {
-    const int path_size = get_body_node(from).level + 1;
     DRAKE_THROW_UNLESS(path_to_world != nullptr);
-    DRAKE_THROW_UNLESS(static_cast<int>(path_to_world->size()) == path_size);
+
+    const int path_size = get_body_node(from).level + 1;
+    // Only reallocate if path_to_world.size() < path_size.
+    path_to_world->clear();
+    path_to_world->reserve(path_size);
+
     // Navigate the tree inwards starting at "from" and ending at the root.
     for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
         node = get_body_node(node).parent_body_node) {
