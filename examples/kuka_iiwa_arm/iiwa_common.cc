@@ -121,8 +121,7 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
   *Ki = Eigen::VectorXd::Zero(7);
 }
 
-void ApplyJointVelocityLimits(double max_joint_velocity,
-                              const MatrixX<double>& keyframes,
+void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
                               std::vector<double>* time) {
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time->size()));
 
@@ -141,15 +140,24 @@ void ApplyJointVelocityLimits(double max_joint_velocity,
     }
   }
 
-  // The code below slows the entire plan such that the fastest step
-  // meets the limits.  If that step is much faster than the others,
-  // the whole plan becomes very slow.
-  const double max_plan_velocity = velocities.maxCoeff();
-  if (max_plan_velocity > max_joint_velocity) {
-    drake::log()->debug("Slowing plan by {}",
-                        max_plan_velocity / max_joint_velocity);
+  DRAKE_ASSERT(velocities.rows() == kIiwaArmNumJoints);
+
+  Eigen::VectorXd velocity_ratios(velocities.rows());
+
+  for (int i = 0; i < velocities.rows(); i++) {
+    const double max_plan_velocity = velocities.row(i).maxCoeff();
+    // Maybe don't try max velocity at first...
+    velocity_ratios(i) = max_plan_velocity / (kIiwaMaxJointVelocities[i] * 0.9);
+  }
+
+  const double max_velocity_ratio = velocity_ratios.maxCoeff();
+  if (max_velocity_ratio > 1) {
+    // The code below slows the entire plan such that the fastest step
+    // meets the limits.  If that step is much faster than the others,
+    // the whole plan becomes very slow.
+    drake::log()->debug("Slowing plan by {}", max_velocity_ratio);
     for (int j = 0; j < num_time_steps; j++) {
-      (*time)[j] *= max_plan_velocity / max_joint_velocity;
+      (*time)[j] *= max_velocity_ratio;
     }
   }
 }

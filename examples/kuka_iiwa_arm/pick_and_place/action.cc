@@ -45,7 +45,7 @@ void IiwaMove::MoveJoints(const WorldState& est_state,
   std::vector<int> info(time.size(), 1);
   MatrixX<double> q_mat(q.front().size(), q.size());
   for (size_t i = 0; i < q.size(); ++i) q_mat.col(i) = q[i];
-  ApplyJointVelocityLimits(kMaxIiwaJointVelocity, q_mat, &time);
+  ApplyJointVelocityLimits(q_mat, &time);
   *plan = EncodeKeyFrames(iiwa, time, info, q_mat);
   StartAction(est_state.get_iiwa_time());
   // Set the duration for this action to be longer than that of the plan to
