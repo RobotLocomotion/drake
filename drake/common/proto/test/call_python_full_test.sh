@@ -24,7 +24,7 @@ if [[ ! -e /tmp/python_rpc ]]; then
 fi
 
 # Start Python binary in the background.
-${py_client_cli} --no_loop &
+${py_client_cli} --no_threading --no_loop &
 pid=$!
 # Execute C++.
 ${cc_bin} ${cc_bin_flags}
