@@ -1,9 +1,10 @@
 #pragma once
 
 #include <list>
+#include <memory>
 
 // clang-format off
-#include "scs.h"
+#include <scs.h>
 #include "linsys/amatrix.h"
 // clang-format on
 

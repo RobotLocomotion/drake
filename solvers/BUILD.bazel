@@ -1088,6 +1088,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "no_nlopt.cc",
     "no_snopt.cc",
     "qp.cc",
+    "scs_bnb.cc",
+    "scs_bnb.h",
     "scs_solver.cc",
     "snopt_solver.cc",
     "snopt_solver.h",
