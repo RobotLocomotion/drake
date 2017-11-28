@@ -11,7 +11,7 @@
 namespace drake {
 namespace solvers {
 /**
- * Inside each node, we solve an SCS problem
+ * Inside each node, we solve an optimization problem in SCS form
  * <pre>
  * min cᵀx
  * s.t Ax + s = b
@@ -147,7 +147,7 @@ class ScsNode {
  private:
   // We will solve the problem
   // min c_ᵀx
-  // s.t A_x + s = b_
+  // s.t A_ * x + s = b_
   //     s in K
   // in this node.
   // We will put the constraint 0 ≤ y ≤ 1 in the first rows of the "linear
@@ -181,15 +181,16 @@ class ScsNode {
   //    best upper bound.
   bool found_integral_sol_;
   // binary_var_indices_ are the indices of the remaining binary variables, in
-  // the vector x. The indices are in the ascending order.
+  // the vector x.
   std::list<int> binary_var_indices_;
 
   ScsNode* left_child_ = nullptr;
   ScsNode* right_child_ = nullptr;
-  ScsNode* parent_;
+  ScsNode* parent_ = nullptr;
 
   // If the solution is within integer_tol to an integer value, then we regard
   // the solution as taking the integer value.
+  // TODO(hongkai.dai) Add a function to set the integer tolerance.
   double integer_tol_ = 1E-2;
 };
 }  // namespace solvers
