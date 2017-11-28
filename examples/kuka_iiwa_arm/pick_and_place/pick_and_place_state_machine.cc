@@ -399,7 +399,7 @@ optional<std::map<PickAndPlaceState, Isometry3<double>>> ComputeDesiredPoses(
 
 optional<std::map<PickAndPlaceState, VectorX<double>>>
 ComputeNominalConfigurations(const WorldState& env_state,
-                             const VectorX<double>& q_seed,
+                             const PiecewisePolynomial<double>& q_traj_seed,
                              const double orientation_tolerance,
                              const Vector3<double>& position_tolerance,
                              RigidBodyTree<double>* robot) {
@@ -500,7 +500,7 @@ ComputeNominalConfigurations(const WorldState& env_state,
     MatrixX<double> q_knots_seed{robot->get_num_positions(), kNumKnots};
     for (int j = 0; j < kNumKnots; ++j) {
       double s = static_cast<double>(j) / static_cast<double>(kNumKnots - 1);
-      q_knots_seed.col(j) = (1 - s) * q_initial + s * q_seed;
+      q_knots_seed.col(j) = q_traj_seed.value(s);
     }
     ik_res = inverseKinTrajSimple(robot, t, q_knots_seed, q_nom,
                                   constraint_array, ikoptions);
@@ -573,8 +573,10 @@ PickAndPlaceStateMachine::ComputeTrajectories(const WorldState& env_state,
   if (q_seed_.size() == 0) {
     q_seed_ = q_initial;
   }
+  auto q_seed_traj = PiecewisePolynomial<double>::FirstOrderHold(
+      {0.0, 1.0}, {q_initial, q_seed_});
   if (auto nominal_q_map = ComputeNominalConfigurations(
-          env_state, q_seed_, tight_rot_tol_, tight_pos_tol_, robot)) {
+          env_state, q_seed_traj, tight_rot_tol_, tight_pos_tol_, robot)) {
     std::vector<PickAndPlaceState> states{
         PickAndPlaceState::kApproachPickPregrasp,
         PickAndPlaceState::kApproachPick,
