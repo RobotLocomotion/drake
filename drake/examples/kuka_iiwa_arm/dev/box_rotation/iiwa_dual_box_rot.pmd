@@ -15,7 +15,7 @@ cmd "0.drake_visualizer" {
 }
 
 cmd "1.iiwa-sim" {
-        exec = "${DRAKE_DISTRO}/bazel-bin/drake/examples/kuka_iiwa_arm/dev/box_rotation/iiwa_box_simulation --urdf drake/examples/kuka_iiwa_arm/dev/box_rotation/models/${URDF} --stiffness 3000 --dissipation 5 --static_friction 0.5 --dynamic_friction 0.2 --v_stiction_tol 0.01 --use_visualizer=true";
+        exec = "${DRAKE_DISTRO}/bazel-bin/drake/examples/kuka_iiwa_arm/dev/box_rotation/iiwa_box_simulation --urdf drake/examples/kuka_iiwa_arm/dev/box_rotation/models/${URDF} --youngs_modulus 3000 --dissipation 5 --static_friction 0.5 --dynamic_friction 0.2 --v_stiction_tol 0.01 --use_visualizer=true";
         host = "localhost";
 }
 

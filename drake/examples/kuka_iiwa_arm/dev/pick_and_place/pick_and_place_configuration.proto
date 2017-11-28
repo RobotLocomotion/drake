@@ -64,7 +64,33 @@ message PickAndPlaceTask {
     string end_effector_name = 3;
 }
 
-// Next ID: 11
+// Next ID: 5
+message CompliantMaterial {
+    // Static friction coefficient (unitless)
+    // DEFAULT: 0.9
+    double static_friction_coefficient = 1;
+    // Dynamic friction coefficient (unitless)
+    // DEFAULT: 0.5
+    double dynamic_friction_coefficient = 2;
+    // Young's modulus (Pa)
+    // DEFAULT: 1e8
+    double youngs_modulus = 3;
+    // Dissipation (1/velocity -- s/m)
+    // DEFAULT: 0.32
+    double dissipation = 4;
+}
+
+// Next ID: 3
+message CompliantModelParameters {
+    // Stiction velocity tolerance (m/s)
+    // DEFAULT: 0.01
+    double v_stiction_tolerance = 1;
+    // Characteristic area (m^2)
+    // DEFAULT: 2e-4
+    double characteristic_area = 2;
+}
+
+// Next ID: 8
 message PickAndPlaceConfiguration {
     // Map of model names to Model messages
     map<string, Model> model = 1;
@@ -78,19 +104,11 @@ message PickAndPlaceConfiguration {
     // The robots that pick and place
     repeated ModelInstance robot = 5;
 
-    // Static friction coefficient
-    // DEFAULT: 0.9
-    double static_friction_coefficient = 6;
-    // Dynamic friction coefficient
-    // DEFAULT: 0.5
-    double dynamic_friction_coefficient = 7;
-    // Stiction velocity tolerance
-    // DEFAULT: 0.01
-    double v_stiction_tolerance = 8;
-    // Contact stiffness
-    // DEFAULT: 10000
-    double stiffness = 9;
-    // Contact dissipation
-    // DEFAULT: 2
-    double dissipation = 10;
+    // Parameters for the compliant contact model
+    // DEFAULT: as configured
+    CompliantModelParameters compliant_model_parameters = 6;
+
+    // Default compliant object contact material
+    // DEFAULT: as configured
+    CompliantMaterial default_compliant_material = 7;
 }
