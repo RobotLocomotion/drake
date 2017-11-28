@@ -8,7 +8,7 @@ load(
     "//drake/bindings/pydrake:pybind.bzl",
     "drake_pybind_library",
     "get_drake_pybind_installs",
-    "get_pybind_pkg_dest",
+    "get_pybind_module_dest",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -90,7 +90,7 @@ install(
     targets = [
         ":module_py",
     ],
-    py_dest = get_pybind_pkg_dest(),
+    py_dest = get_pybind_module_dest(),
     deps = get_drake_pybind_installs(PYBIND_MODULES),
 )
 
