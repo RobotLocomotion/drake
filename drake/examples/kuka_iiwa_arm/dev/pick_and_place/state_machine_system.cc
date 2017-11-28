@@ -81,7 +81,8 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
   this->DeclarePeriodicUnrestrictedUpdate(configuration.period_sec, 0);
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      iiwa_model_path(), multibody::joints::kFixed, &iiwa_tree_);
+      FindResourceOrThrow(iiwa_model_path()),
+      multibody::joints::kFixed, &iiwa_tree_);
 }
 
 std::unique_ptr<systems::AbstractValues>

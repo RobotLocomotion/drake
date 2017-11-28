@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/type_safe_index.h"
 
 namespace drake {
@@ -43,6 +44,11 @@ struct PlannerConfiguration {
   /// Number of tables for which the planner should expect to receive pose
   /// inputs.
   int num_tables{0};
+
+  /// Returns the absolute path for our @p model_path.
+  std::string absolute_model_path() const {
+    return FindResourceOrThrow(model_path);
+  }
 };
 
 /// Information required to set up a simulation of a pick-and-place scenario
