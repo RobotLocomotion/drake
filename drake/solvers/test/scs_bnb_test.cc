@@ -425,6 +425,13 @@ TEST_F(TestScsNode, TestBranch) {
   IsConeEqual(*child_cone, *(root->left_child()->cone()));
   IsConeEqual(*child_cone, *(root->right_child()->cone()));
 }
+
+TEST_F(TestScsNode, TestBranchError) {
+  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
+                                         binary_var_indices_, 1);
+  // Branch on a variable that is NOT binary.
+  EXPECT_THROW(root->Branch(1), std::runtime_error);
+}
 /*
 TEST_F(TestScsNode, TestSolve) {
   SCS_SETTINGS* settings =

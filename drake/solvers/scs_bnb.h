@@ -25,19 +25,43 @@ class ScsNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScsNode)
 
-  ScsNode(int num_A_rows, int num_A_cols);
   /**
-   * Create the root node from the SCS problem data. The constraint
-   * Ax + s = b does NOT include the integral constraint on the binary
-   * variables. Neither does it include the relaxed constraint on the binary
-   * variable y (i.e, 0 <= y <= 1)
-   * @param A
-   * @param b
-   * @param c
+   * Each node solves this optimization program
+   * <pre>
+   *   min cᵀx + d
+   *   s.t Ax + s = b
+   *       s in K
+   * </pre>
+   * Construct a node used in the tree for branch-and-bound. Pre-allocate the
+   * memory for the matrix A, b, and c.
+   * @param num_A_rows The number of rows in the matrix A.
+   * @param num_A_cols The number of columns in the matrix A.
+   */
+  ScsNode(int num_A_rows, int num_A_cols);
+
+  /**
+   * We want to solve this mixed-integer optimization program
+   * <pre>
+   *   min cᵀx + d
+   *   s.t Ax + s = b
+   *       s in K
+   *       y are binary
+   * </pre>
+   * where y is a subset of decision variables x. To solve this problem using
+   * branch and bound algorithm, we create the root node from the SCS problem
+   * data. The constraint Ax + s = b does NOT include the integral constraint on
+   * the binary variables. Neither does it include the relaxed constraint on the
+   * binary variable y (i.e, 0 ≤ y ≤ 1)
+   * @param A The left-hand side of the constraint.
+   * @param b The right-hand side of the constraint.
+   * @param c The coefficients of the linear cost.
    * @param cone The life of the cone must outlive the life of the node and the
    * tree for the branch and bound.
-   * @param binary_var_indices
-   * @param cost_constant
+   * @param binary_var_indices The indices of the binary variables.
+   * @param cost_constant The constant term in the cost.
+   * @pre 1. binary_var_indices is within the range of [0, A.n).
+   * @pre 2. binary_var_indices does not contain duplicate entries.
+   * @throws std::runtime_error if the preconditions are not met.
    */
   static std::unique_ptr<ScsNode> ConstructRootNode(
       const AMatrix& A, const scs_float* const b, const scs_float* const c,
@@ -52,10 +76,23 @@ class ScsNode {
    * @param binary_var_index The binary variable with this index will be fixed
    * to either 0 or 1 in the child node, and being removed from the decision
    * variables.
+   * @pre The variable with the index binary_var_index is a binary variable,
+   * namely it is contained in binary_var_indices_.
+   * @throw std::runtime_error if the preconditions are not met.
    */
   void Branch(int binary_var_index);
 
   // Solve the optimization problem in this node.
+  // <pre>
+  //  min c_ᵀx + d
+  //  s.t A_*x + s = b_
+  //      s_ in cones_
+  // </pre>
+  // There are several possible outcomes by solving the optimization program
+  // in this node.
+  // 1. The problem is infeasible. Then we do not need to branch on this node.
+  // 2. The problem is feasible, and we find a solution that satisfies the
+  //    integral constraints.
   scs_int Solve(const SCS_SETTINGS* const scs_settings,
                 double best_upper_bound);
 

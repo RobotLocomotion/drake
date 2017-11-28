@@ -190,6 +190,13 @@ void ScsNode::Branch(int binary_var_index) {
   // Notice that the matrix in the left node Aₗ is the same as the matrix in the
   // right node Aᵣ, so are the cones Kₗ and Kᵣ.
 
+  // First make sure that the variable with the index binary_var_index is a
+  // binary variable.
+  if (!std::any_of(binary_var_indices_.begin(), binary_var_indices_.end(), [binary_var_index](int i){return i == binary_var_index;})) {
+    std::ostringstream oss;
+    oss << "The variable with index " << binary_var_index << " is not a binary variable.\n";
+    throw std::runtime_error(oss.str());
+  }
   // We will first compute the left node, the right node will be copied and
   // changed from the left node.
   left_child_ = new ScsNode(A_->m - 2, A_->n - 1);
