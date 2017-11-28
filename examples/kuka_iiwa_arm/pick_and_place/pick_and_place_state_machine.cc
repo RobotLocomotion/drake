@@ -444,10 +444,9 @@ PickAndPlaceStateMachine::PickAndPlaceStateMachine(
 
 PickAndPlaceStateMachine::~PickAndPlaceStateMachine() {}
 
-bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
+optional<std::map<PickAndPlaceState, VectorX<double>>>
+PickAndPlaceStateMachine::ComputeNominalConfigurations(
     const WorldState& env_state, RigidBodyTree<double>* robot) {
-  bool success = false;
-  nominal_q_map_.clear();
   //  Create vectors to hold the constraint objects
   std::vector<std::unique_ptr<WorldPositionConstraint>> position_constraints;
   std::vector<std::unique_ptr<WorldQuatConstraint>> orientation_constraints;
@@ -536,13 +535,14 @@ bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
     }
   }
 
-  if (constraint_arrays.empty()) return false;
+  if (constraint_arrays.empty()) return nullopt;
 
   // Solve the IK problem. Re-seed with random values if the initial seed is
   // unsuccessful.
   IKResults ik_res;
   IKoptions ikoptions(robot);
   ikoptions.setFixInitialState(true);
+  bool success = false;
   for (const auto& constraint_array : constraint_arrays) {
     MatrixX<double> q_knots_seed{robot->get_num_positions(), kNumKnots};
     for (int j = 0; j < kNumKnots; ++j) {
@@ -562,103 +562,105 @@ bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
                          planning_failure_count_++, ik_res.info[0]);
     }
   }
-  if (success) {
-    for (int i = 1; i < kNumKnots; ++i) {
-      nominal_q_map_.emplace(states[i - 1], ik_res.q_sol[i]);
-    }
+  if (!success) {
+    return nullopt;
   }
-  return success;
+  std::map<PickAndPlaceState, VectorX<double>> nominal_q_map;
+  for (int i = 1; i < kNumKnots; ++i) {
+    nominal_q_map.emplace(states[i - 1], ik_res.q_sol[i]);
+  }
+  return nominal_q_map;
 }
 
 optional<std::map<PickAndPlaceState, PostureInterpolationResult>>
 PickAndPlaceStateMachine::ComputeTrajectories(const WorldState& env_state,
                                               RigidBodyTree<double>* robot) {
-  if (!ComputeNominalConfigurations(env_state, robot)) {
+  if (auto nominal_q_map = ComputeNominalConfigurations(env_state, robot)) {
+    std::vector<PickAndPlaceState> states{
+        PickAndPlaceState::kApproachPickPregrasp,
+        PickAndPlaceState::kApproachPick,
+        PickAndPlaceState::kLiftFromPick,
+        PickAndPlaceState::kApproachPlacePregrasp,
+        PickAndPlaceState::kApproachPlace,
+        PickAndPlaceState::kLiftFromPlace};
+    VectorX<double> q_0{robot->get_num_positions()};
+    q_0 << env_state.get_iiwa_q();
+    std::map<PickAndPlaceState, PostureInterpolationResult>
+        interpolation_result_map;
+    const double kExtraShortDuration = 0.5;
+    const double kShortDuration = 1;
+    const double kLongDuration = 1.5;
+    const double kExtraLongDuration = 1.5;
+    int kNumJoints = robot->get_num_positions();
+    for (PickAndPlaceState state : states) {
+      drake::log()->info("Planning trajectory for {}.", state);
+      const VectorX<double> q_f = nominal_q_map->at(state);
+      PostureInterpolationResult result;
+      if ((q_f - q_0).array().abs().maxCoeff() < 10 * M_PI / 180) {
+        // If very close, just interpolate in joint space.
+        VectorX<double> q_dot0{VectorX<double>::Zero(kNumJoints)};
+        VectorX<double> q_dotf{VectorX<double>::Zero(kNumJoints)};
+
+        result.success = true;
+        result.q_traj = PiecewisePolynomial<double>::Cubic(
+            {0, kExtraShortDuration}, {q_0, q_f}, q_dot0, q_dotf);
+      } else {
+        double duration{kShortDuration};
+        double position_tolerance{tight_pos_tol_(0)};
+        double orientation_tolerance{tight_rot_tol_};
+        bool fall_back_to_joint_space_interpolation{false};
+        switch (state) {
+          case PickAndPlaceState::kApproachPickPregrasp:
+          case PickAndPlaceState::kApproachPlacePregrasp: {
+            position_tolerance = loose_pos_tol_(0);
+            orientation_tolerance = loose_rot_tol_;
+            fall_back_to_joint_space_interpolation = true;
+            duration = kLongDuration;
+          } break;
+
+          case PickAndPlaceState::kLiftFromPlace: {
+            position_tolerance = loose_pos_tol_(0);
+            orientation_tolerance = loose_rot_tol_;
+            fall_back_to_joint_space_interpolation = true;
+            duration = kExtraLongDuration;
+          } break;
+
+          default:  // No action needed for other cases
+            break;
+        }
+        PostureInterpolationRequest request;
+
+        request.max_joint_position_change = 0.5 * M_PI_4;
+        request.q_initial = q_0;
+        request.q_final = q_f;
+        double max_delta_q{
+            (request.q_final - request.q_initial).cwiseAbs().maxCoeff()};
+        int num_via_points = std::min<int>(
+            3, std::ceil(2 * max_delta_q / request.max_joint_position_change));
+        double dt{duration / static_cast<double>(num_via_points)};
+        request.times.resize(num_via_points + 1);
+        request.times.front() = 0.0;
+        for (int i = 1; i < static_cast<int>(request.times.size()) - 1; ++i) {
+          request.times[i] = i * dt;
+        }
+        request.times.back() = duration;
+        request.position_tolerance = position_tolerance;
+        request.orientation_tolerance = orientation_tolerance;
+        request.fall_back_to_joint_space_interpolation =
+            fall_back_to_joint_space_interpolation;
+
+        result = PlanInterpolatingMotion(request, robot);
+        if (!result.success) {
+          return nullopt;
+        }
+      }
+      interpolation_result_map.emplace(state, result);
+      q_0 = q_f;
+    }
+    return interpolation_result_map;
+  } else {
     return nullopt;
   }
-  std::vector<PickAndPlaceState> states{
-      PickAndPlaceState::kApproachPickPregrasp,
-      PickAndPlaceState::kApproachPick,
-      PickAndPlaceState::kLiftFromPick,
-      PickAndPlaceState::kApproachPlacePregrasp,
-      PickAndPlaceState::kApproachPlace,
-      PickAndPlaceState::kLiftFromPlace};
-  VectorX<double> q_0{robot->get_num_positions()};
-  q_0 << env_state.get_iiwa_q();
-  std::map<PickAndPlaceState, PostureInterpolationResult>
-      interpolation_result_map;
-  const double kExtraShortDuration = 0.5;
-  const double kShortDuration = 1;
-  const double kLongDuration = 1.5;
-  const double kExtraLongDuration = 1.5;
-  int kNumJoints = robot->get_num_positions();
-  for (PickAndPlaceState state : states) {
-    drake::log()->info("Planning trajectory for {}.", state);
-    const VectorX<double> q_f = nominal_q_map_.at(state);
-    PostureInterpolationResult result;
-    if ((q_f - q_0).array().abs().maxCoeff() < 10 * M_PI / 180) {
-      // If very close, just interpolate in joint space.
-      VectorX<double> q_dot0{VectorX<double>::Zero(kNumJoints)};
-      VectorX<double> q_dotf{VectorX<double>::Zero(kNumJoints)};
-
-      result.success = true;
-      result.q_traj = PiecewisePolynomial<double>::Cubic(
-          {0, kExtraShortDuration}, {q_0, q_f}, q_dot0, q_dotf);
-    } else {
-      double duration{kShortDuration};
-      double position_tolerance{tight_pos_tol_(0)};
-      double orientation_tolerance{tight_rot_tol_};
-      bool fall_back_to_joint_space_interpolation{false};
-      switch (state) {
-        case PickAndPlaceState::kApproachPickPregrasp:
-        case PickAndPlaceState::kApproachPlacePregrasp: {
-          position_tolerance = loose_pos_tol_(0);
-          orientation_tolerance = loose_rot_tol_;
-          fall_back_to_joint_space_interpolation = true;
-          duration = kLongDuration;
-        } break;
-
-        case PickAndPlaceState::kLiftFromPlace: {
-          position_tolerance = loose_pos_tol_(0);
-          orientation_tolerance = loose_rot_tol_;
-          fall_back_to_joint_space_interpolation = true;
-          duration = kExtraLongDuration;
-        } break;
-
-        default:  // No action needed for other cases
-          break;
-      }
-      PostureInterpolationRequest request;
-
-      request.max_joint_position_change = 0.5 * M_PI_4;
-      request.q_initial = q_0;
-      request.q_final = q_f;
-      double max_delta_q{
-          (request.q_final - request.q_initial).cwiseAbs().maxCoeff()};
-      int num_via_points = std::min<int>(
-          3, std::ceil(2 * max_delta_q / request.max_joint_position_change));
-      double dt{duration / static_cast<double>(num_via_points)};
-      request.times.resize(num_via_points + 1);
-      request.times.front() = 0.0;
-      for (int i = 1; i < static_cast<int>(request.times.size()) - 1; ++i) {
-        request.times[i] = i * dt;
-      }
-      request.times.back() = duration;
-      request.position_tolerance = position_tolerance;
-      request.orientation_tolerance = orientation_tolerance;
-      request.fall_back_to_joint_space_interpolation =
-          fall_back_to_joint_space_interpolation;
-
-      result = PlanInterpolatingMotion(request, robot);
-      if (!result.success) {
-        return nullopt;
-      }
-    }
-
-    interpolation_result_map.emplace(state, result);
-    q_0 = q_f;
-  }
-  return interpolation_result_map;
 }
 
 void PickAndPlaceStateMachine::Update(const WorldState& env_state,
