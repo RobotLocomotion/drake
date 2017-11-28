@@ -36,7 +36,7 @@ GTEST_TEST(FCLModelTest, SphereSphereDistance) {
 
   EXPECT_TRUE(fcl::distance(&sphere0, transform0, &sphere1, transform1,
                             distance_request, distance_result));
-  EXPECT_DOUBLE_EQ(-5.0, distance_result.min_distance);
+  EXPECT_DOUBLE_EQ(-5, distance_result.min_distance);
 }
 
 }  // namespace
