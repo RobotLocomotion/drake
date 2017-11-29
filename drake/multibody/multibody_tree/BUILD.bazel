@@ -1,0 +1,227 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "multibody_tree_indexes",
+    srcs = [],
+    hdrs = ["multibody_tree_indexes.h"],
+    deps = [
+        "//drake/common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_tree_topology",
+    srcs = [],
+    hdrs = [
+        "multibody_tree_topology.h",
+    ],
+    deps = [
+        ":multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_tree_context",
+    srcs = [
+        "acceleration_kinematics_cache.cc",
+        "multibody_tree_context.cc",
+        "position_kinematics_cache.cc",
+        "velocity_kinematics_cache.cc",
+    ],
+    hdrs = [
+        "acceleration_kinematics_cache.h",
+        "multibody_tree_context.h",
+        "position_kinematics_cache.h",
+        "velocity_kinematics_cache.h",
+    ],
+    deps = [
+        ":multibody_tree_topology",
+        "//drake/common:autodiff",
+        "//drake/multibody/multibody_tree/math:spatial_acceleration",
+        "//drake/multibody/multibody_tree/math:spatial_velocity",
+        "//drake/systems/framework:leaf_context",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_tree_element",
+    srcs = [],
+    hdrs = [
+        "multibody_tree_element.h",
+    ],
+    deps = [
+        ":multibody_tree_topology",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_tree",
+    srcs = [
+        "body.cc",
+        "body_node_impl.cc",
+        "fixed_offset_frame.cc",
+        "joints/revolute_joint.cc",
+        "mobilizer_impl.cc",
+        "multibody_tree.cc",
+        "revolute_mobilizer.cc",
+        "rigid_body.cc",
+        "space_xyz_mobilizer.cc",
+        "uniform_gravity_field_element.cc",
+    ],
+    hdrs = [
+        "body.h",
+        "body_node.h",
+        "body_node_impl.h",
+        "body_node_welded.h",
+        "fixed_offset_frame.h",
+        "force_element.h",
+        "frame.h",
+        "frame_base.h",
+        "joints/joint.h",
+        "joints/revolute_joint.h",
+        "mobilizer.h",
+        "mobilizer_impl.h",
+        "multibody_tree.h",
+        "revolute_mobilizer.h",
+        "rigid_body.h",
+        "space_xyz_mobilizer.h",
+        "uniform_gravity_field_element.h",
+    ],
+    deps = [
+        ":multibody_tree_context",
+        ":multibody_tree_element",
+        ":multibody_tree_indexes",
+        ":spatial_inertia",
+        "//drake/common:autodiff",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "rotational_inertia",
+    srcs = ["rotational_inertia.cc"],
+    hdrs = ["rotational_inertia.h"],
+    deps = [
+        "//drake/common:autodiff",
+        "//drake/common:essential",
+        "//drake/common:extract_double",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_inertia",
+    srcs = ["spatial_inertia.cc"],
+    hdrs = ["spatial_inertia.h"],
+    deps = [
+        ":unit_inertia",
+        "//drake/math:gradient",
+        "//drake/multibody/multibody_tree/math:spatial_algebra",
+    ],
+)
+
+drake_cc_library(
+    name = "unit_inertia",
+    srcs = ["unit_inertia.cc"],
+    hdrs = ["unit_inertia.h"],
+    deps = [
+        ":rotational_inertia",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_library(
+    name = "free_rotating_body_plant",
+    testonly = 1,
+    srcs = ["test/free_rotating_body_plant.cc"],
+    hdrs = ["test/free_rotating_body_plant.h"],
+    deps = [
+        "//drake/common:default_scalars",
+        "//drake/multibody/multibody_tree",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "free_rotating_body_test",
+    size = "small",
+    srcs = [
+        "test/free_rotating_body_test.cc",
+    ],
+    deps = [
+        ":free_rotating_body_plant",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/free_body",
+        "//drake/systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "double_pendulum_test",
+    # Presently times out in valgrind + debug with default size, "small".
+    size = "medium",
+    deps = [
+        ":multibody_tree",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/acrobot",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frames_test",
+    deps = [":multibody_tree"],
+)
+
+drake_cc_googletest(
+    name = "multibody_tree_creation_test",
+    deps = [":multibody_tree"],
+)
+
+drake_cc_googletest(
+    name = "multibody_tree_indexes_test",
+    deps = [":multibody_tree_indexes"],
+)
+
+drake_cc_googletest(
+    name = "rotational_inertia_test",
+    deps = [
+        ":rotational_inertia",
+        "//drake/common:autodiff",
+        "//drake/math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spatial_inertia_test",
+    deps = [
+        ":spatial_inertia",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unit_inertia_test",
+    deps = [
+        ":unit_inertia",
+        "//drake/math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_test",
+    deps = [
+        ":multibody_tree",
+    ],
+)
+
+add_lint_tests()

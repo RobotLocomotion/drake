@@ -8,7 +8,7 @@
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
 namespace drake {
 namespace systems {
@@ -80,7 +80,7 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   auto context = plant.CreateDefaultContext();
 
   // Set free_body to have zero translation, zero rotation, and zero velocity.
-  plant.SetDefaultState(*context, context->get_mutable_state());
+  plant.SetDefaultState(*context, &context->get_mutable_state());
 
   Eigen::Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
   Eigen::Vector3d w0(-4, 5, 6);  // Angular velocity in body's frame.
@@ -111,7 +111,7 @@ GTEST_TEST(IntegratorTest, RigidBody) {
 
   // Re-integrate with semi-explicit Euler.
   context->set_time(0.);
-  plant.SetDefaultState(*context, context->get_mutable_state());
+  plant.SetDefaultState(*context, &context->get_mutable_state());
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
   SemiExplicitEulerIntegrator<double> see(plant, small_dt, context.get());
@@ -181,7 +181,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Get the final position.
   const double x_final =
-      context->get_continuous_state()->get_vector().GetAtIndex(0);
+      context->get_continuous_state().get_vector().GetAtIndex(0);
 
   // Check the solution.
   EXPECT_NEAR(c1 * std::cos(kOmega * t) + c2 * std::sin(kOmega * t), x_final,

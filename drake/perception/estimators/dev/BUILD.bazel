@@ -1,0 +1,103 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_test",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "pose_closed_form",
+    srcs = ["pose_closed_form.cc"],
+    hdrs = ["pose_closed_form.h"],
+    deps = [
+        "//drake/common:essential",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "scene",
+    srcs = ["scene.cc"],
+    hdrs = ["scene.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "articulated_icp",
+    srcs = ["articulated_icp.cc"],
+    hdrs = ["articulated_icp.h"],
+    deps = [
+        ":scene",
+        "//drake/solvers:cost",
+    ],
+)
+
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.obj",
+        "test/**/*.stl",
+        "test/**/*.urdf",
+        "test/**/*.vtp",
+    ]),
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "test_util",
+    testonly = 1,
+    srcs = ["test/test_util.cc"],
+    hdrs = ["test/test_util.h"],
+    data = [":test_models"],
+    deps = [
+        "//drake/common",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/lcm",
+        "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
+        "@gtest//:without_main",
+        "@lcmtypes_bot2_core",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkIOXML",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_closed_form_test",
+    deps = [
+        ":pose_closed_form",
+        ":test_util",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "articulated_icp_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":articulated_icp",
+        ":test_util",
+        "//drake/common:find_resource",
+        "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:create_load_robot_message",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/solvers:mathematical_program",
+    ],
+)
+
+add_lint_tests()

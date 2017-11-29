@@ -5,7 +5,9 @@
 
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -72,6 +74,7 @@ class Lane {
   /// "staying in the lane".
   RBounds lane_bounds(double s) const { return do_lane_bounds(s); }
 
+
   /// Returns the driveable lateral (r) bounds of the lane as a function of s.
   ///
   /// These are the lateral bounds for a position that is considered to be
@@ -91,27 +94,88 @@ class Lane {
   /// @pre The s component of @p lane_pos must be in domain [0, Lane::length()].
   /// @pre The r component of @p lane_pos must be in domain [Rmin, Rmax]
   ///      derived from Lane::driveable_bounds().
+  //
+  // TODO(jadecastro): Generalize `Lane::ToGeoPosition` (and possibly others)
+  // with another member function `Lane::ToGeoPositionT<T>()`.
   GeoPosition ToGeoPosition(const LanePosition& lane_pos) const {
     return DoToGeoPosition(lane_pos);
   }
 
-  /// Determines the LanePosition corresponding to GeoPosition @p geo_position.
+  /// Generalization of ToGeoPosition to arbitrary scalar types, where the
+  /// structures `LanePositionT<T>` and `GeoPositionT<T>` are used in place of
+  /// `LanePosition` and `GeoPosition`, respectively.
+  ///
+  /// When the arguments are of type AutoDiffXd, the return value is a
+  /// GeoPositionT<AutoDiffXd> containing the same partial derivatives as those
+  /// appearing in lane_pos.  The provided lane_pos must be internally
+  /// consistent; the s, r, and h variables must have derivatives of equal size,
+  /// and where the i-th derivative of one variable is taken with respect to the
+  /// same quantity as the i-th derviative of another variable.
+  ///
+  /// Instantiated templates for the following kinds of T's are provided:
+  /// - double
+  /// - drake::AutoDiffXd
+  ///
+  /// They are already available to link against in the containing library.
+  ///
+  /// Note: This is an experimental API that is not necessarily implemented in
+  /// all back-end implementations.
+
+  // TODO(jadecastro): Apply this implementation in all the subclasses of
+  // `api::Lane`.
+  template <typename T>
+  GeoPositionT<T> ToGeoPositionT(const LanePositionT<T>& lane_pos) const;
+
+  /// Determines the LanePosition corresponding to GeoPosition @p geo_pos.
   ///
   /// The return value is the LanePosition of the point within the Lane's
-  /// driveable-bounds which is closest to @p geo_position (as measured by
-  /// the Cartesian metric in the world frame).  If @p nearest_point is
-  /// non-null, then it will be populated with the GeoPosition of that
-  /// nearest point.  If @p distance is non-null, then it will be populated
-  /// with the Cartesian distance from @p geo_position to that nearest point.
+  /// driveable-bounds which is closest to @p geo_pos (as measured by the
+  /// Cartesian metric in the world frame).  If @p nearest_point is non-null,
+  /// then it will be populated with the GeoPosition of that nearest point.  If
+  /// @p distance is non-null, then it will be populated with the Cartesian
+  /// distance from @p geo_pos to that nearest point.
   ///
   /// This method guarantees that its result satisfies the condition that
   /// `ToGeoPosition(result)` is within `linear_tolerance()` of
   /// `*nearest_position`.
-  LanePosition ToLanePosition(const GeoPosition& geo_position,
+  LanePosition ToLanePosition(const GeoPosition& geo_pos,
                               GeoPosition* nearest_point,
                               double* distance) const {
-    return DoToLanePosition(geo_position, nearest_point, distance);
+    return DoToLanePosition(geo_pos, nearest_point, distance);
   }
+
+  /// Generalization of ToLanePosition to arbitrary scalar types, where the
+  /// structures `LanePositionT<T>` and `GeoPositionT<T>` are used in place of
+  /// `LanePosition` and `GeoPosition`, respectively.
+  ///
+  /// When the arguments are of type AutoDiffXd, the return value is a
+  /// LanePositionT<AutoDiffXd> containing the same partial derivatives as those
+  /// appearing in geo_pos.  The provided geo_pos must be internally consistent;
+  /// the x, y, and z variables must have derivatives of equal size, and where
+  /// the i-th derivative of one variable is taken with respect to the same
+  /// quantity as the i-th derviative of another variable.  If either @p
+  /// nearest_point or @p distance are non-null, they will also contain @p
+  /// geo_pos's partial derivatives.
+  ///
+  /// Instantiated templates for the following kinds of T's are provided:
+  /// - double
+  /// - drake::AutoDiffXd
+  ///
+  /// They are already available to link against in the containing library.
+  ///
+  /// Note: This is an experimental API that is not necessarily implemented in
+  /// all back-end implementations.
+  //
+  // TODO(jadecastro): Consider having the client enforce the geo_pos AutoDiffXd
+  // coherency contract rather than api::Lane.  Reevaluate this once an AutoDiff
+  // consumer for api::ToLanePositionT() exists.
+
+  // TODO(jadecastro): Apply this implementation in all the subclasses of
+  // `api::Lane`.
+  template <typename T>
+  LanePositionT<T> ToLanePositionT(const GeoPositionT<T>& geo_pos,
+                                   GeoPositionT<T>* nearest_point,
+                                   T* distance) const;
 
   // TODO(maddog@tri.global) Method to convert LanePosition to that of
   //                         another Lane.  (Should assert that both
@@ -161,13 +225,9 @@ class Lane {
     return DoGetOngoingBranches(which_end);
   }
 
-  /// Returns the default ongoing LaneEnd connected at @p which_end.
-  ///
-  /// @returns nullptr if no default branch has been established
-  ///          at @p which_end.
-  // TODO(maddog@tri.global)  The return type yearns to be
-  //                          const boost::optional<LaneEnd>&.
-  std::unique_ptr<LaneEnd> GetDefaultBranch(
+  /// Returns the default ongoing LaneEnd connected at @p which_end,
+  /// or nullopt if no default branch has been established at @p which_end.
+  optional<LaneEnd> GetDefaultBranch(
       const LaneEnd::Which which_end) const {
     return DoGetDefaultBranch(which_end);
   }
@@ -200,9 +260,10 @@ class Lane {
 
   virtual GeoPosition DoToGeoPosition(const LanePosition& lane_pos) const = 0;
 
-  virtual LanePosition DoToLanePosition(const GeoPosition& geo_position,
-                                        GeoPosition* nearest_point,
-                                        double* distance) const = 0;
+  virtual LanePosition DoToLanePosition(
+      const GeoPosition& geo_pos,
+      GeoPosition* nearest_point,
+      double* distance) const = 0;
 
   virtual Rotation DoGetOrientation(const LanePosition& lane_pos) const = 0;
 
@@ -218,8 +279,29 @@ class Lane {
   virtual const LaneEndSet* DoGetOngoingBranches(
       const LaneEnd::Which which_end) const = 0;
 
-  virtual std::unique_ptr<LaneEnd> DoGetDefaultBranch(
+  virtual optional<LaneEnd> DoGetDefaultBranch(
       const LaneEnd::Which which_end) const = 0;
+
+  // AutoDiffXd overload of DoToGeoPosition().
+  virtual GeoPositionT<AutoDiffXd> DoToGeoPositionAutoDiff(
+      const LanePositionT<AutoDiffXd>&) const {
+    throw std::runtime_error(
+        "DoToGeoPosition has been instantiated with AutoDiffXd arguments, "
+        "but a Lane backend has not overridden its AutoDiffXd specialization.");
+  }
+
+  // AutoDiffXd overload of DoToLanePosition().
+  virtual LanePositionT<AutoDiffXd> DoToLanePositionAutoDiff(
+      const GeoPositionT<AutoDiffXd>&,
+      GeoPositionT<AutoDiffXd>*,
+      AutoDiffXd*) const {
+    throw std::runtime_error(
+        "DoToLanePosition has been instantiated with AutoDiffXd arguments, "
+        "but a Lane backend has not overridden its AutoDiffXd specialization.");
+  }
+
+  // TODO(jadecastro): Template the entire `api::Lane` class to prevent explicit
+  // virtual functions for each member function.
   ///@}
 };
 

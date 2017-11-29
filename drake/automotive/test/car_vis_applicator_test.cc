@@ -10,7 +10,7 @@
 #include "drake/automotive/box_car_vis.h"
 #include "drake/automotive/car_vis.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/lcmtypes/drake/lcmt_viewer_link_data.hpp"
+#include "drake/lcmt_viewer_link_data.hpp"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/rendering/pose_bundle.h"

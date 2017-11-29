@@ -7,8 +7,8 @@
 
 #include <Eigen/Cholesky>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/multibody/kinematics_cache.h"
@@ -148,7 +148,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const auto& tree = this->get_rigid_body_tree();
 
   // Get the system state.
-  auto x = context.get_discrete_state(0)->get_value();
+  auto x = context.get_discrete_state(0).get_value();
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = x.bottomRows(nv);
   auto kcache = tree.doKinematics(q, v);
@@ -230,18 +230,19 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.kL.resize(0);
 
   // Integrate the forces into the velocity.
-  data.v = v + data.solve_inertia(right_hand_side) * dt;
+  const VectorX<T> vprime = v + data.solve_inertia(right_hand_side) * dt;
+  data.Mv = H * vprime;
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
-  constraint_solver_.SolveImpactProblem(cfm_, data, &cf);
+  constraint_solver_.SolveImpactProblem(data, &cf);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
-  vnew += data.v;
+  vnew += vprime;
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
   xn << q + dt * tree.transformVelocityToQDot(kcache, vnew), vnew;
-  updates->get_mutable_vector(0)->SetFromVector(xn);
+  updates->get_mutable_vector(0).SetFromVector(xn);
 }
 
 // Explicitly instantiates on the most common scalar types.

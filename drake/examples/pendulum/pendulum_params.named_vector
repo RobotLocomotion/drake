@@ -1,3 +1,4 @@
+namespace: "drake::examples::pendulum"
 
 element {
     name: "mass"

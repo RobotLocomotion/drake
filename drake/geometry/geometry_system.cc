@@ -1,10 +1,10 @@
 #include "drake/geometry/geometry_system.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/unused.h"
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
@@ -19,18 +19,62 @@ using systems::Context;
 using systems::InputPortDescriptor;
 using systems::LeafContext;
 using systems::LeafSystem;
-using systems::SystemSymbolicInspector;
-using systems::SystemOutput;
 using systems::rendering::PoseBundle;
+using systems::SystemOutput;
+using systems::SystemSymbolicInspector;
+using systems::SystemTypeTag;
+using systems::Value;
 using std::make_unique;
 using std::vector;
 
 #define GS_THROW_IF_CONTEXT_ALLOCATED ThrowIfContextAllocated(__FUNCTION__);
 
+namespace {
 template <typename T>
-GeometrySystem<T>::GeometrySystem() : LeafSystem<T>() {
-  std::unique_ptr<GeometryState<T>> state = make_unique<GeometryState<T>>();
-  auto state_value = AbstractValue::Make<GeometryState<T>>(*state.get());
+class GeometryStateValue final : public Value<GeometryState<T>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue)
+
+  GeometryStateValue() = default;
+  explicit GeometryStateValue(const GeometryState<T>& state)
+      : Value<GeometryState<T>>(state) {}
+
+  std::unique_ptr<AbstractValue> Clone() const override {
+    return make_unique<GeometryStateValue<T>>(this->get_value());
+  }
+
+  void SetFrom(const AbstractValue& other) override {
+    if (!do_double_assign(other)) {
+      Value<GeometryState<T>>::SetFrom(other);
+    }
+  }
+
+  void SetFromOrThrow(const AbstractValue& other) override {
+    if (!do_double_assign(other)) {
+      Value<GeometryState<T>>::SetFromOrThrow(other);
+    }
+  }
+
+ private:
+  bool do_double_assign(const AbstractValue& other) {
+    const GeometryStateValue<double>* double_value =
+        dynamic_cast<const GeometryStateValue<double>*>(&other);
+    if (double_value) {
+      this->get_mutable_value() = double_value->get_value();
+      return true;
+    }
+    return false;
+  }
+
+  template <typename>
+  friend class GeometryStateValue;
+};
+}  // namespace
+
+template <typename T>
+GeometrySystem<T>::GeometrySystem()
+    : LeafSystem<T>(SystemTypeTag<geometry::GeometrySystem>{}) {
+  auto state_value = make_unique<GeometryStateValue<T>>();
   initial_state_ = &state_value->template GetMutableValue<GeometryState<T>>();
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 
@@ -46,15 +90,50 @@ GeometrySystem<T>::GeometrySystem() : LeafSystem<T>() {
 }
 
 template <typename T>
+template <typename U>
+GeometrySystem<T>::GeometrySystem(const GeometrySystem<U>& other)
+    : GeometrySystem() {
+  // NOTE: If other.initial_state_ is not null, it means we're converting a
+  // system that hasn't had its context allocated yet. We want the converted
+  // system to persist the same state.
+  if (other.initial_state_ != nullptr) {
+    *initial_state_ = *(other.initial_state_->ToAutoDiffXd());
+  } else {
+    initial_state_ = nullptr;
+  }
+
+  // We need to guarantee that the same source ids map to the same port indexes.
+  // We'll do this by processing the source ids in monotonically increasing
+  // order. This is predicated on several principles:
+  //   1. Port indices monotonically increase.
+  //   2. SourceIds monotonically increase.
+  //   3. Registering sources generates a source id and its ports at the same
+  //      time.
+  // Therefore, for SourceIds i and j, the if i > j, then the port indices for
+  // source i must all be greater than those for j.
+  std::vector<SourceId> source_ids;
+  for (const auto pair : other.input_source_ids_) {
+    source_ids.push_back(pair.first);
+  }
+  auto comparator = [](const SourceId& a, const SourceId& b) {
+    return a.get_value() < b.get_value();
+  };
+  std::sort(source_ids.begin(), source_ids.end(), comparator);
+
+  for (const auto source_id : source_ids) {
+    MakeSourcePorts(source_id);
+    const auto& new_ports = input_source_ids_[source_id];
+    const auto& ref_ports = other.input_source_ids_.at(source_id);
+    DRAKE_DEMAND(new_ports.id_port == ref_ports.id_port &&
+                 new_ports.pose_port == ref_ports.pose_port);
+  }
+}
+
+template <typename T>
 SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   SourceId source_id = initial_state_->RegisterNewSource(name);
-  // This will fail only if the source generator starts recycling source ids.
-  DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
-  // Create and store the input ports for this source id.
-  SourcePorts& source_ports = input_source_ids_[source_id];
-  source_ports.id_port = this->DeclareAbstractInputPort().get_index();
-  source_ports.pose_port = this->DeclareAbstractInputPort().get_index();
+  MakeSourcePorts(source_id);
   return source_id;
 }
 
@@ -165,6 +244,17 @@ QueryHandle<T> GeometrySystem<T>::MakeQueryHandle(
     const systems::Context<T>&) const {
   return QueryHandle<T>(nullptr, 0);
 }
+
+template <typename T>
+void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
+  // This will fail only if the source generator starts recycling source ids.
+  DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
+  // Create and store the input ports for this source id.
+  SourcePorts& source_ports = input_source_ids_[source_id];
+  source_ports.id_port = this->DeclareAbstractInputPort().get_index();
+  source_ports.pose_port = this->DeclareAbstractInputPort().get_index();
+}
+
 
 template <typename T>
 void GeometrySystem<T>::CalcQueryHandle(const Context<T>& context,
@@ -298,6 +388,7 @@ void GeometrySystem<T>::ThrowUnlessRegistered(SourceId source_id,
 
 // Explicitly instantiates on the most common scalar types.
 template class GeometrySystem<double>;
+template class GeometrySystem<AutoDiffXd>;
 
 // Don't leave the macro defined.
 #undef GS_THROW_IF_CONTEXT_ALLOCATED

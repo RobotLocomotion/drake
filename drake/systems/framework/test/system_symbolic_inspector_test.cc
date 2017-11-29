@@ -59,7 +59,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
               BasicVector<symbolic::Expression>* y1) const {
     const auto& u0 = *(this->EvalVectorInput(context, 0));
     const auto& u1 = *(this->EvalVectorInput(context, 1));
-    const auto& xd = *(context.get_discrete_state(0));
+    const auto& xd = context.get_discrete_state(0);
 
     // Output 1 depends on both inputs and the discrete state.
     y1->set_value(u0.get_value() + u1.get_value() + xd.get_value());
@@ -99,14 +99,14 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     const auto u0 = this->EvalVectorInput(context, 0)->CopyToVector();
     const auto u1 = this->EvalVectorInput(context, 1)->CopyToVector();
     const Vector2<symbolic::Expression> xd =
-        context.get_discrete_state(0)->get_value();
+        context.get_discrete_state(0).get_value();
     const Eigen::Matrix2d A = 7 * Eigen::Matrix2d::Identity();
     const Eigen::Matrix2d B1 = 8 * Eigen::Matrix2d::Identity();
     const Eigen::Matrix2d B2 = 9 * Eigen::Matrix2d::Identity();
     const Eigen::Vector2d f0(10.0, 11.0);
     const Vector2<symbolic::Expression> next_xd =
         A * xd + B1 * u0 + B2 * u1 + f0;
-    discrete_state->get_mutable_vector(0)->SetFromVector(next_xd);
+    discrete_state->get_mutable_vector(0).SetFromVector(next_xd);
   }
 };
 
@@ -205,16 +205,6 @@ TEST_F(PendulumInspectorTest, SymbolicParameters) {
 
   auto derivatives = inspector_->derivatives();
   EXPECT_EQ(symbolic::Polynomial(derivatives[0], v).TotalDegree(), 0);
-
-  EXPECT_FALSE(derivatives[1].is_polynomial());
-  // Set theta, mass, and length so the remaining derivatives are polynomial.
-  // TODO(soonho): remove the substitution pending resolution of #7089.
-  symbolic::Substitution sub;
-  sub.emplace(inspector_->continuous_state()[0], 1.0);
-  sub.emplace(inspector_->numeric_parameters(0)[0], 2.0);
-  sub.emplace(inspector_->numeric_parameters(0)[1], 3.0);
-  derivatives[1] = derivatives[1].Substitute(sub);
-  EXPECT_TRUE(derivatives[1].is_polynomial());
   EXPECT_EQ(symbolic::Polynomial(derivatives[1], v).TotalDegree(), 1);
 
   auto output = inspector_->output(0);

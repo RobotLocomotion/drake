@@ -1,0 +1,56 @@
+# -*- python -*-
+
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = [":__subpackages__"])
+
+drake_cc_library(
+    name = "kuka_iiwa_robot_library",
+    testonly = 1,
+    srcs = [
+        "drake_kuka_iiwa_robot.cc",
+    ],
+    hdrs = [
+        "drake_kuka_iiwa_robot.h",
+    ],
+    deps = [
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree",
+        "//drake/multibody/multibody_tree/test_utilities:spatial_kinematics",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "kuka_iiwa_robot_jacobian_test",
+    size = "small",
+    deps = [
+        ":kuka_iiwa_robot_library",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/math:gradient",
+        "//drake/math:jacobian",
+        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kuka_iiwa_robot_kinematics_test",
+    size = "small",
+    deps = [
+        ":kuka_iiwa_robot_library",
+        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kuka_iiwa_robot_inverse_dynamics_test",
+    size = "small",
+    deps = [
+        ":kuka_iiwa_robot_library",
+        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
+    ],
+)
+
+add_lint_tests()

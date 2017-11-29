@@ -34,15 +34,15 @@ void Particle<T>::DoCalcTimeDerivatives(
   const systems::VectorBase<T>& continuous_state_vector =
     context.get_continuous_state_vector();
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const derivatives_vector =
+  systems::VectorBase<T>& derivatives_vector =
     derivatives->get_mutable_vector();
   // Get current input acceleration value.
   const systems::BasicVector<T>* input_vector =
       this->EvalVectorInput(context, 0);
   // Set the derivatives. The first one is
   // velocity and the second one is acceleration.
-  derivatives_vector->SetAtIndex(0, continuous_state_vector.GetAtIndex(1));
-  derivatives_vector->SetAtIndex(1, input_vector->GetAtIndex(0));
+  derivatives_vector.SetAtIndex(0, continuous_state_vector.GetAtIndex(1));
+  derivatives_vector.SetAtIndex(1, input_vector->GetAtIndex(0));
 }
 
 template class Particle<double>;

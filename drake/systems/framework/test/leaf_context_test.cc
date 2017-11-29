@@ -8,8 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -115,7 +114,7 @@ class LeafContextTest : public ::testing::Test {
 // LeafContextTest::SetUp.
 void VerifyClonedState(const State<double>& clone) {
   // Verify that the state was copied.
-  const ContinuousState<double>& xc = *clone.get_continuous_state();
+  const ContinuousState<double>& xc = clone.get_continuous_state();
   {
     VectorX<double> contents = xc.CopyToVector();
     VectorX<double> expected(kContinuousStateSize);
@@ -123,25 +122,25 @@ void VerifyClonedState(const State<double>& clone) {
     EXPECT_EQ(expected, contents);
   }
 
-  EXPECT_EQ(2, clone.get_discrete_state()->num_groups());
-  const BasicVector<double>* xd0 = clone.get_discrete_state()->get_vector(0);
-  const BasicVector<double>* xd1 = clone.get_discrete_state()->get_vector(1);
+  EXPECT_EQ(2, clone.get_discrete_state().num_groups());
+  const BasicVector<double>& xd0 = clone.get_discrete_state().get_vector(0);
+  const BasicVector<double>& xd1 = clone.get_discrete_state().get_vector(1);
   {
-    VectorX<double> contents = xd0->CopyToVector();
+    VectorX<double> contents = xd0.CopyToVector();
     VectorX<double> expected(1);
     expected << 128.0;
     EXPECT_EQ(expected, contents);
   }
 
   {
-    VectorX<double> contents = xd1->CopyToVector();
+    VectorX<double> contents = xd1.CopyToVector();
     VectorX<double> expected(2);
     expected << 256.0, 512.0;
     EXPECT_EQ(expected, contents);
   }
 
-  EXPECT_EQ(1, clone.get_abstract_state()->size());
-  EXPECT_EQ(42, clone.get_abstract_state()->get_value(0).GetValue<int>());
+  EXPECT_EQ(1, clone.get_abstract_state().size());
+  EXPECT_EQ(42, clone.get_abstract_state().get_value(0).GetValue<int>());
   EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
@@ -290,32 +289,32 @@ TEST_F(LeafContextTest, Clone) {
 
   // Verify that changes to the cloned state do not affect the original state.
   // -- Continuous
-  ContinuousState<double>* xc = clone->get_mutable_continuous_state();
-  xc->get_mutable_generalized_velocity()->SetAtIndex(1, 42.0);
-  EXPECT_EQ(42.0, (*xc)[3]);
+  ContinuousState<double>& xc = clone->get_mutable_continuous_state();
+  xc.get_mutable_generalized_velocity().SetAtIndex(1, 42.0);
+  EXPECT_EQ(42.0, xc[3]);
   EXPECT_EQ(5.0, context_.get_continuous_state_vector().GetAtIndex(3));
 
   // -- Discrete
-  BasicVector<double>* xd1 = clone->get_mutable_discrete_state(1);
-  xd1->SetAtIndex(0, 1024.0);
-  EXPECT_EQ(1024.0, clone->get_discrete_state(1)->GetAtIndex(0));
-  EXPECT_EQ(256.0, context_.get_discrete_state(1)->GetAtIndex(0));
+  BasicVector<double>& xd1 = clone->get_mutable_discrete_state(1);
+  xd1.SetAtIndex(0, 1024.0);
+  EXPECT_EQ(1024.0, clone->get_discrete_state(1).GetAtIndex(0));
+  EXPECT_EQ(256.0, context_.get_discrete_state(1).GetAtIndex(0));
 
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
-  EXPECT_EQ(42, context_.get_abstract_state()->get_value(0).GetValue<int>());
+  EXPECT_EQ(42, context_.get_abstract_state().get_value(0).GetValue<int>());
   EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
   LeafContext<double>* leaf_clone =
       dynamic_cast<LeafContext<double>*>(clone.get());
   EXPECT_EQ(2, leaf_clone->num_numeric_parameters());
-  const BasicVector<double>& param0 = *leaf_clone->get_numeric_parameter(0);
+  const BasicVector<double>& param0 = leaf_clone->get_numeric_parameter(0);
   EXPECT_EQ(1.0, param0[0]);
   EXPECT_EQ(2.0, param0[1]);
   EXPECT_EQ(4.0, param0[2]);
-  const BasicVector<double>& param1 = *leaf_clone->get_numeric_parameter(1);
+  const BasicVector<double>& param1 = leaf_clone->get_numeric_parameter(1);
   EXPECT_EQ(8.0, param1[0]);
   EXPECT_EQ(16.0, param1[1]);
   EXPECT_EQ(32.0, param1[2]);
@@ -325,8 +324,8 @@ TEST_F(LeafContextTest, Clone) {
       &leaf_clone->get_abstract_parameter(0).GetValue<TestAbstractType>()));
 
   // Verify that changes to the cloned parameters do not affect the originals.
-  (*leaf_clone->get_mutable_numeric_parameter(0))[0] = 76.0;
-  EXPECT_EQ(1.0, context_.get_numeric_parameter(0)->GetAtIndex(0));
+  leaf_clone->get_mutable_numeric_parameter(0)[0] = 76.0;
+  EXPECT_EQ(1.0, context_.get_numeric_parameter(0).GetAtIndex(0));
 }
 
 // Tests that a LeafContext can provide a clone of its State.
@@ -338,14 +337,14 @@ TEST_F(LeafContextTest, CloneState) {
 // Tests that the State can be copied from another State.
 TEST_F(LeafContextTest, CopyStateFrom) {
   std::unique_ptr<Context<double>> clone = context_.Clone();
-  (*clone->get_mutable_continuous_state())[0] = 81.0;
-  (*clone->get_mutable_discrete_state(0))[0] = 243.0;
+  clone->get_mutable_continuous_state()[0] = 81.0;
+  clone->get_mutable_discrete_state(0)[0] = 243.0;
   clone->get_mutable_abstract_state<int>(0) = 729;
 
-  context_.get_mutable_state()->CopyFrom(clone->get_state());
+  context_.get_mutable_state().CopyFrom(clone->get_state());
 
-  EXPECT_EQ(81.0, (*context_.get_continuous_state())[0]);
-  EXPECT_EQ(243.0, (*context_.get_discrete_state(0))[0]);
+  EXPECT_EQ(81.0, context_.get_continuous_state()[0]);
+  EXPECT_EQ(243.0, context_.get_discrete_state(0)[0]);
   EXPECT_EQ(729, context_.get_abstract_state<int>(0));
 }
 
@@ -396,14 +395,14 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Verify that time was set.
   EXPECT_EQ(kTime, target.get_time());
   // Verify that state was set.
-  const ContinuousState<AutoDiffXd> &xc = *target.get_continuous_state();
+  const ContinuousState<AutoDiffXd>& xc = target.get_continuous_state();
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
   EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
   EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());
-  EXPECT_EQ(128.0, target.get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(128.0, target.get_discrete_state(0).GetAtIndex(0));
   // Verify that parameters were set.
   target.get_numeric_parameter(0);
-  EXPECT_EQ(2.0, (target.get_numeric_parameter(0)->GetAtIndex(1).value()));
+  EXPECT_EQ(2.0, (target.get_numeric_parameter(0).GetAtIndex(1).value()));
 
   // Set the accuracy in the context.
   context_.set_accuracy(accuracy);

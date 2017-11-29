@@ -1,0 +1,130 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+    "drake_cc_googletest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_cc_proto_library",
+)
+
+package(
+    default_visibility = ["//drake/examples/kuka_iiwa_arm/dev:__subpackages__"],  # noqa
+)
+
+drake_cc_proto_library(
+    name = "pick_and_place_configuration_proto",
+    srcs = [
+        "pick_and_place_configuration.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "pick_and_place_configuration_parsing",
+    srcs = [
+        "pick_and_place_configuration_parsing.cc",
+    ],
+    hdrs = [
+        "pick_and_place_configuration_parsing.h",
+    ],
+    deps = [
+        ":pick_and_place_configuration_proto",
+        "//drake/common:find_resource",
+        "//drake/common/proto:protobuf",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_plant",
+    srcs = ["lcm_plant.cc"],
+    hdrs = [
+        "lcm_plant.h",
+    ],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
+        "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
+        "//drake/manipulation/util:frame_pose_tracker",
+        "//drake/systems/sensors:optitrack_encoder",
+        "//drake/systems/sensors:optitrack_sender",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_planner",
+    srcs = [
+        "lcm_planner.cc",
+        "state_machine_system.cc",
+    ],
+    hdrs = [
+        "lcm_planner.h",
+        "state_machine_system.h",
+    ],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place",
+        "//drake/lcm",
+        "//drake/lcmtypes:iiwa",
+        "//drake/lcmtypes:schunk",
+        "//drake/manipulation/perception:optitrack_pose_extractor",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/lcm",
+        "//drake/systems/primitives:pass_through",
+        "//drake/util:lcm_util",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_binary(
+    name = "pick_and_place_demo",
+    srcs = [
+        "pick_and_place_demo.cc",
+    ],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place",
+        "//drake/util:lcm_util",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "pick_and_place_configuration_parsing_test",
+    data = [
+        ":configuration",
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
+    ],
+)
+
+add_lint_tests()

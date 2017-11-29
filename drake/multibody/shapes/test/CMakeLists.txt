@@ -1,8 +1,0 @@
-drake_add_cc_test(mesh_triangulate_test)
-target_link_libraries(mesh_triangulate_test drakeShapes)
-
-drake_add_cc_test(face_query_test)
-target_link_libraries(face_query_test drakeShapes)
-
-drake_add_cc_test(mesh_scaling_test)
-target_link_libraries(mesh_scaling_test drakeShapes)

@@ -5,10 +5,12 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
+#include "drake/systems/primitives/pass_through.h"
+/* clang-format on */
+
 #include <memory>
 #include <utility>
-
-#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace systems {

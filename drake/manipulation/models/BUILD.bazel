@@ -1,0 +1,17 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install(
+    name = "install_data",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//drake/manipulation/models/iiwa_description:install_data",
+        "//drake/manipulation/models/jaco_description:install_data",
+        "//drake/manipulation/models/wsg_50_description:install_data",
+        "//drake/manipulation/models/xtion_description:install_data",
+    ],
+)
+
+add_lint_tests()

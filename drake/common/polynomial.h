@@ -11,9 +11,8 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/Polynomials>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
  *
@@ -53,7 +52,7 @@ class Polynomial {
 
   template <typename Rhs, typename Lhs>
   struct Product {
-    typedef decltype((Rhs)0 * (Lhs)0) type;
+    typedef decltype(static_cast<Rhs>(0) * static_cast<Lhs>(0)) type;
   };
 
   /// An individual variable raised to an integer power; e.g. x**2.
@@ -199,8 +198,8 @@ class Polynomial {
         value += iter->coefficient;
       else
         value += iter->coefficient *
-                  pow((ProductType) x,
-                      (PowerType) iter->terms[0].power);
+                  pow(static_cast<ProductType>(x),
+                      static_cast<PowerType>(iter->terms[0].power));
     }
     return value;
   }

@@ -154,7 +154,7 @@ template <typename T>
 std::unique_ptr<MatrixX<T>> FeedforwardNeuralNetwork<T>::get_weight_matrix(
     int index, const Context<T>& context) const {
   DRAKE_THROW_UNLESS((0 <= index) &&
-                     ((vector<int>::size_type)index < weight_indices_.size()));
+                     (static_cast<size_t>(index) < weight_indices_.size()));
 
   const BasicVector<T>& encodedMatrix =
       this->template GetNumericParameter<BasicVector>(context,
@@ -168,7 +168,7 @@ template <typename T>
 std::unique_ptr<VectorX<T>> FeedforwardNeuralNetwork<T>::get_bias_vector(
     int index, const Context<T>& context) const {
   DRAKE_THROW_UNLESS((0 <= index) &&
-                     ((vector<int>::size_type)index < bias_indices_.size()));
+                     (static_cast<size_t>(index) < bias_indices_.size()));
 
   const BasicVector<T>& encoded_vector =
       this->template GetNumericParameter<BasicVector>(context,

@@ -37,6 +37,16 @@ struct ConstraintAccelProblemData {
     G_transpose_mult = zero_gv_dim_fn;
   }
 
+  /// Flag for whether the complementarity problem solver should be used to
+  /// solve this particular problem instance. If every constraint in the problem
+  /// data is active, using the linear system solver
+  /// (`use_complementarity_problem_solver=false`) will yield a solution much
+  /// more quickly. If it is unknown whether every constraint is active, the
+  /// complementarity problem solver should be used; otherwise, the inequality
+  /// constraints embedded in the problem data may not be satisfied. The safe
+  /// (and slower) value of `true` is the default.
+  bool use_complementarity_problem_solver{true};
+
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
   /// point of contact), out of the set of all contact indices (0...n-1).
@@ -154,6 +164,10 @@ struct ConstraintAccelProblemData {
 
   /// This ℝⁿ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝⁿ vector represents the diagonal matrix γᴺ.
+  VectorX<T> gammaN;
   /// @}
 
   /// @name Data for non-sliding contact friction constraints
@@ -197,6 +211,14 @@ struct ConstraintAccelProblemData {
 
   /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝʸʳ vector represents the diagonal matrix γᶠ.
+  VectorX<T> gammaF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝᴺ vector represents the diagonal matrix γᴱ.
+  VectorX<T> gammaE;
   /// @}
 
   /// @name Data for unilateral constraints at the acceleration level
@@ -239,6 +261,10 @@ struct ConstraintAccelProblemData {
 
   /// This ℝˢ vector is the vector kᴸ(t,q,v) defined above.
   VectorX<T> kL;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝˢ vector represents the diagonal matrix γᴸ.
+  VectorX<T> gammaL;
   /// @}
 
   /// The ℝᵐ vector tau, the generalized external force vector that
@@ -365,6 +391,10 @@ struct ConstraintVelProblemData {
 
   /// This ℝⁿ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝⁿ vector represents the diagonal matrix γᴺ.
+  VectorX<T> gammaN;
   /// @}
 
   /// @name Data for constraints on contact friction
@@ -407,6 +437,15 @@ struct ConstraintVelProblemData {
 
   /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝʸʳ vector represents the diagonal matrix γᶠ.
+  VectorX<T> gammaF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝʸ vector represents the diagonal matrix γᴱ.
+  VectorX<T> gammaE;
+
   /// @}
 
   /// @name Data for unilateral constraints at the velocity level
@@ -448,11 +487,15 @@ struct ConstraintVelProblemData {
 
   /// This ℝˢ vector is the vector kᴸ(t,q) defined above.
   VectorX<T> kL;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝˢ vector represents the diagonal matrix γᴸ.
+  VectorX<T> gammaL;
   /// @}
 
-  /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
+  /// The ℝᵐ generalized momentum immediately before any impulsive
   /// forces (from impact) are applied.
-  VectorX<T> v;
+  VectorX<T> Mv;
 
   /// A function for solving the equation MX = B for matrix X, given input
   /// matrix B, where M is the generalized inertia matrix for the rigid body

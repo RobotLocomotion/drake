@@ -5,9 +5,10 @@
 #include <vtkSmartPointer.h>
 #include <vtkXMLPolyDataReader.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_geometry_compare.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
 
 using std::pair;
@@ -221,7 +222,8 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       const double distance_tolerance = 0.05;
       Matrix3Xd points_Wm;
       LoadVTPPointCloud(
-          "drake/perception/estimators/dev/test/blue_funnel_meas.vtp",
+          FindResourceOrThrow(
+              "drake/perception/estimators/dev/test/blue_funnel_meas.vtp"),
           &points_Wm, distance_tolerance);
       setup->points_B = X_WmB.inverse() * points_Wm;
       break;

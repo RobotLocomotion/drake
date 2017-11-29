@@ -1,0 +1,58 @@
+# -*- python -*-
+
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "util",
+    srcs = [
+        "drakeGeometryUtil.cpp",
+    ],
+    hdrs = [
+        "drakeGeometryUtil.h",
+        "drakeUtil.h",
+    ],
+    deps = [
+        "//drake/common:essential",
+        "//drake/math:geometric_transform",
+        "//drake/math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_util",
+    srcs = ["lcmUtil.cpp"],
+    hdrs = ["lcmUtil.h"],
+    deps = [
+        ":util",
+        "//drake/math:geometric_transform",
+        "@eigen",
+        "@lcmtypes_bot2_core",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "testDrakeGeometryUtil",
+    srcs = ["test/testDrakeGeometryUtil.cpp"],
+    deps = [
+        ":util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "testLCMUtil",
+    srcs = ["test/testLCMUtil.cpp"],
+    deps = [
+        ":lcm_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:random_polynomial_matrix",
+        "//drake/common/trajectories:random_piecewise_polynomial",
+    ],
+)
+
+add_lint_tests()

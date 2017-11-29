@@ -1,18 +1,26 @@
 # This test should only be invoked via Bazel.
-
 set -ex
 
 find .  # Get some debugging output.
 
+capture_cc_env="$1"
+drake_assert_test_compile_cc="$2"
+
 # Make sure we know what C++ compiler to use.
-source drake/common/capture_cc.env
-[ ! -z "$BAZEL_CC" ]
-[ -x "$BAZEL_CC" ]
+source "$capture_cc_env"
+[[ ! -z "$BAZEL_CC" ]]
+[[ -x "$BAZEL_CC" ]]
 "$BAZEL_CC" --version
+
+# TODO(#6996) Do this unconditionally once #6996 is fully merged.
+if [[ ! -e ./drake ]]; then
+  # Mimic `include_prefix = "drake"` per drake_cc_library's default.
+  ln -s . drake
+fi
 
 # Confirm that it compiles successfully, whether or not assertions are enabled.
 TESTING_CXXFLAGS="-std=c++1y -I . \
-    -c drake/common/test/drake_assert_test_compile.cc \
+    -c $drake_assert_test_compile_cc \
     -o /dev/null"
 "$BAZEL_CC" $TESTING_CXXFLAGS
 "$BAZEL_CC" $TESTING_CXXFLAGS -DDRAKE_ENABLE_ASSERTS -UDRAKE_DISABLE_ASSERTS

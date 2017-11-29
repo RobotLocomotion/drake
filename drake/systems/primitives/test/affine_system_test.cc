@@ -23,7 +23,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
     system_output_ = dut_->AllocateOutput(*context_);
-    state_ = context_->get_mutable_continuous_state();
+    state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
     updates_ = dut_->AllocateDiscreteVariables();
   }
@@ -186,14 +186,14 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   Eigen::Vector3d x0(26, 27, 28);
 
-  context->get_mutable_discrete_state(0)->SetFromVector(x0);
+  context->get_mutable_discrete_state(0).SetFromVector(x0);
   double u0 = 29;
   context->FixInputPort(0, Vector1d::Constant(u0));
 
   auto update = system.AllocateDiscreteVariables();
   system.CalcDiscreteVariableUpdates(*context, update.get());
 
-  EXPECT_TRUE(CompareMatrices(update->get_vector(0)->CopyToVector(),
+  EXPECT_TRUE(CompareMatrices(update->get_vector(0).CopyToVector(),
                               A * x0 + B * u0 + f0));
 
   // Test TimeVaryingAffineSystem accessor methods.
@@ -212,7 +212,8 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
                               C * x0 + D * u0 + y0));
 }
 
-// xdot = rotmat(t)*x, y = x;
+// [ẋ₁, ẋ₂]ᵀ = rotmat(t)*[x₁, x₂]ᵀ + u*[1, 1]ᵀ,
+// [y₁, y₂] = [x₁, x₂] + (u + 1)*[1, 1].
 class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
  public:
   static constexpr int kNumStates = 2;
@@ -254,7 +255,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
 
   auto context = sys.CreateDefaultContext();
   context->set_time(t);
-  context->get_mutable_continuous_state_vector()->SetFromVector(x);
+  context->get_mutable_continuous_state_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
   auto derivs = sys.AllocateTimeDerivatives();
@@ -275,13 +276,13 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
 
   auto context = sys.CreateDefaultContext();
   context->set_time(t);
-  context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(x);
+  context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
   auto updates = sys.AllocateDiscreteVariables();
   sys.CalcDiscreteVariableUpdates(*context, updates.get());
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
-                              updates->get_vector()->CopyToVector()));
+                              updates->get_vector().CopyToVector()));
 
   auto output = sys.AllocateOutput(*context);
   sys.CalcOutput(*context, output.get());

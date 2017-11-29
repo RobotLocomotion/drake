@@ -1,0 +1,119 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+)
+
+# TODO(jwnimmer-tri) This probably deserves to live in drake/common, since it
+# should probably be widely used, but we'll wait until we have more evidence
+# before promoting it.
+drake_py_library(
+    name = "find_data",
+    srcs = ["find_data.py"],
+)
+
+drake_py_library(
+    name = "util",
+    srcs = ["util.py"],
+    data = ["//:.bazelproject"],
+    visibility = ["//visibility:private"],
+)
+
+drake_py_binary(
+    name = "buildifier",
+    srcs = ["buildifier.py"],
+    data = [
+        ":buildifier-tables.json",
+        "@buildifier",
+    ],
+    deps = [
+        ":find_data",
+        ":util",
+    ],
+)
+
+drake_py_library(
+    name = "clang_format",
+    srcs = ["clang_format.py"],
+    data = ["//:.clang-format"],
+)
+
+drake_py_binary(
+    name = "drakelint",
+    srcs = ["drakelint.py"],
+    # The clang-format-includes binary is not used by drakelint, because
+    # drakelint imports the formatter library directly.  However, we add
+    # clang-format-includes here as a data dependency because the formatter
+    # asks the user to run bazel-bin/tools/lint/clang-format-includes for
+    # fixups, and this ensures it always is freshly compiled and available.
+    data = [":clang-format-includes"],
+    deps = [":formatter"],
+)
+
+drake_py_binary(
+    name = "bzlcodestyle",
+    srcs = ["bzlcodestyle.py"],
+    main = "bzlcodestyle.py",
+    deps = ["@pycodestyle//:pycodestyle"],
+)
+
+drake_py_library(
+    name = "formatter",
+    srcs = ["formatter.py"],
+    deps = [":clang_format"],
+)
+
+drake_py_binary(
+    name = "clang-format-includes",
+    srcs = ["clang_format_includes.py"],
+    main = "clang_format_includes.py",
+    deps = [":formatter"],
+)
+
+# === test ===
+
+drake_py_test(
+    name = "buildifier_test",
+    srcs = ["test/buildifier_test.py"],
+    data = [":buildifier"],
+)
+
+drake_py_test(
+    name = "find_data_test",
+    srcs = ["test/find_data_test.py"],
+    data = ["test/find_data_test.txt"],
+    deps = [":find_data"],
+)
+
+drake_py_test(
+    name = "util_test",
+    srcs = ["test/util_test.py"],
+    tags = [
+        # This test looks outside the sandbox.
+        "external",
+        "local",
+    ],
+    deps = [":util"],
+)
+
+drake_py_test(
+    name = "formatter_test",
+    srcs = ["test/formatter_test.py"],
+    deps = [":formatter"],
+)
+
+sh_test(
+    name = "clang_format_includes_test",
+    srcs = ["test/clang_format_includes_test.sh"],
+    data = [
+        ":clang-format-includes",
+    ],
+)
+
+add_lint_tests()

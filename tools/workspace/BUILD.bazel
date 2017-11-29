@@ -1,0 +1,56 @@
+# -*- python -*-
+
+load("@drake//tools/install:check_licenses.bzl", "check_licenses")
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_py_binary(
+    name = "cmake_configure_file",
+    srcs = ["cmake_configure_file.py"],
+    visibility = ["//visibility:public"],
+)
+
+_DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
+    "bullet",
+    "ccd",
+    "drake_visualizer",
+    "eigen",
+    "fcl",
+    "fmt",
+    "ignition_math",
+    "ignition_rndf",
+    "lcm",
+    "lcmtypes_bot2_core",
+    "lcmtypes_robotlocomotion",
+    "libbot",
+    "octomap",
+    "pybind11",
+    "scs",
+    "sdformat",
+    "spdlog",
+    "spruce",
+    "stx",
+    "tinydir",
+    "tinyobjloader",
+    "vtk",
+    "yaml_cpp",
+]] + ["//tools/workspace/%s:install" % p for p in [
+    "gflags",
+    "jchart2d",
+    "optitrack_driver",
+    "protobuf",
+]]
+
+install(
+    name = "install_external_packages",
+    visibility = ["//:__pkg__"],
+    deps = _DRAKE_EXTERNAL_PACKAGE_INSTALLS,
+)
+
+check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)
+
+add_lint_tests()

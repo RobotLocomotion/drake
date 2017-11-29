@@ -23,6 +23,7 @@
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/symbolic_extraction.h"
 
@@ -83,6 +84,10 @@ AttributesSet kMosekCapabilities =
      kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
      kPositiveSemidefiniteConstraint | kBinaryVariable);
 
+// Scs solver capatilities.
+AttributesSet kScsCapabilities =
+    (kLinearEqualityConstraint | kLinearConstraint | kLinearCost);
+
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =
     (kGenericCost | kGenericConstraint | kQuadraticCost | kQuadraticConstraint |
@@ -118,7 +123,8 @@ MathematicalProgram::MathematicalProgram()
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
       gurobi_solver_(new GurobiSolver()),
-      mosek_solver_(new MosekSolver()) {}
+      mosek_solver_(new MosekSolver()),
+      scs_solver_(new ScsSolver()) {}
 
 MatrixXDecisionVariable MathematicalProgram::NewVariables(
     VarType type, int rows, int cols, bool is_symmetric,
@@ -445,9 +451,10 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const Expression& linear_expr, const Expression& quadratic_expr) {
-  return AddConstraint(
-      internal::ParseLorentzConeConstraint(linear_expr, quadratic_expr));
+    const Expression& linear_expression, const Expression& quadratic_expression,
+    double tol) {
+  return AddConstraint(internal::ParseLorentzConeConstraint(
+      linear_expression, quadratic_expression, tol));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
@@ -469,14 +476,21 @@ Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
 
 Binding<RotatedLorentzConeConstraint>
 MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const symbolic::Expression& linear_expression1,
+    const symbolic::Expression& linear_expression2,
+    const symbolic::Expression& quadratic_expression, double tol) {
+  auto binding = internal::ParseRotatedLorentzConeConstraint(
+      linear_expression1, linear_expression2, quadratic_expression, tol);
+  AddConstraint(binding);
+  return binding;
+}
+
+Binding<RotatedLorentzConeConstraint>
+MathematicalProgram::AddRotatedLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v) {
-  DRAKE_DEMAND(v.rows() >= 3);
-  Eigen::MatrixXd A{};
-  Eigen::VectorXd b(v.size());
-  VectorXDecisionVariable vars{};
-  DecomposeLinearExpression(v, &A, &b, &vars);
-  DRAKE_DEMAND(vars.rows() >= 1);
-  return AddRotatedLorentzConeConstraint(A, b, vars);
+  auto binding = internal::ParseRotatedLorentzConeConstraint(v);
+  AddConstraint(binding);
+  return binding;
 }
 
 Binding<RotatedLorentzConeConstraint>
@@ -645,6 +659,12 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
+      scs_solver_->available()) {
+    // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
+    // modest accuracy quite fast, but then slows down significantly if the user
+    // wants high accuracy.
+    return scs_solver_->Solve(*this);
   } else {
     throw runtime_error(
         "MathematicalProgram::Solve: "

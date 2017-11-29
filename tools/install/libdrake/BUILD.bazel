@@ -1,0 +1,119 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_transitive_installed_hdrs_filegroup",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
+
+cmake_config(
+    cps_file_name = "drake.cps",
+    package = "drake",
+)
+
+install_cmake_config(
+    package = "drake",
+    versioned = 0,
+)
+
+# The Drake binary package. libdrake.so contains all the symbols from all the
+# LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
+# that the binary package will not contain any references to shared libraries
+# inside the build tree.
+cc_binary(
+    name = "libdrake.so",
+    linkshared = 1,
+    linkstatic = 1,
+    deps = LIBDRAKE_COMPONENTS,
+)
+
+# Gather all of libdrake.so's dependent headers.
+drake_transitive_installed_hdrs_filegroup(
+    name = "libdrake_headers",
+    visibility = [],
+    deps = LIBDRAKE_COMPONENTS,
+)
+
+# Install libdrake.so along with all transitive headers in the same workspace
+# (i.e. in Drake itself; not externals).
+install(
+    name = "install",
+    targets = ["libdrake.so"],
+    hdrs = [":libdrake_headers"],
+    allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
+    deps = [
+        ":install_cmake_config",
+    ],
+)
+
+# Depend on Gurobi's shared library iff Gurobi is enabled.
+cc_library(
+    name = "gurobi_deps",
+    visibility = [],
+    deps = select({
+        "//tools:with_gurobi": ["@gurobi"],
+        "//conditions:default": [],
+    }),
+)
+
+# Depend on Mosek's shared library iff Mosek is enabled.
+cc_library(
+    name = "mosek_deps",
+    visibility = [],
+    deps = select({
+        "//tools:with_mosek": ["@mosek"],
+        "//conditions:default": [],
+    }),
+)
+
+# Depend on the subset of VTK's shared libraries that Drake uses.
+cc_library(
+    name = "vtk_deps",
+    visibility = [],
+    deps = [
+        # TODO(jwnimmer-tri) This duplicates the list of VTK libraries needed
+        # by //drake/sensors.  We should find a way for ":drake_shared_library"
+        # to be declared without having to repeat this list here.
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkFiltersSources",
+        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+# Provide a cc_library target that provides libdrake.so, its headers, and its
+# required *.so's that are WORKSPACE downloads (such as VTK, Gurobi, etc).
+#
+# TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
+# *.so files (Gurobi, LCM, Mosek, SCS, TinyXML2, VTK) for us, without us having
+# to know up-front here which dependencies are coming from the WORKSPACE in the
+# form of *.so.
+cc_library(
+    name = "drake_shared_library",
+    hdrs = [":libdrake_headers"],
+    visibility = ["//drake/bindings/pydrake:__pkg__"],
+    deps = [
+        ":gurobi_deps",
+        ":mosek_deps",
+        ":vtk_deps",
+        "@lcm",
+        "@scs//:scsdir",
+        "@tinyxml2",
+    ],
+)
+
+add_lint_tests()

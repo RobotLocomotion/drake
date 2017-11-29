@@ -3,7 +3,7 @@
 #include <string>
 #include <utility>
 
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
@@ -12,6 +12,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
+#include "drake/multibody/parsers/xml_util.h"
 
 using std::runtime_error;
 using std::string;
@@ -25,6 +26,8 @@ using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
+using drake::systems::CompliantMaterial;
+using tinyxml2::XMLElement;
 
 const char* const FloatingJointConstants::kFloatingJointName = "base";
 const char* const FloatingJointConstants::kWeldJointName = "weld";
@@ -230,6 +233,53 @@ int AddFloatingJoint(
   }
 
   return num_floating_joints_added;
+}
+
+CompliantMaterial ParseCollisionCompliance(XMLElement* node) {
+  CompliantMaterial material;
+  // TODO(SeanCurtis-TRI): Incomplete validation. This parsing allows redundant
+  // declarations of material. Confirm proper validation via an XSD.
+  XMLElement* compliant_node = node->FirstChildElement("drake_compliance");
+  if (compliant_node) {
+    double static_friction{-1};
+    double dynamic_friction{-1};
+    // Encode the friction values read via bit-masking; 0 = none, 1 = static,
+    // 2 = dynamic, 3 = both.
+    int friction_values_read = 0;
+    for (XMLElement* child = compliant_node->FirstChildElement(); child;
+         child = child->NextSiblingElement()) {
+      const std::string name(child->Value());
+      if (!child->FirstChild()) {
+        throw std::runtime_error("Compliant parameter specified (\"" + name +
+                                 "\") without any numerical value");
+      }
+      const double value = StringToDouble(child->FirstChild()->Value());
+      if (name == "youngs_modulus") {
+        material.set_youngs_modulus(value);
+      } else if (name == "dissipation") {
+        material.set_dissipation(value);
+      } else if (name == "static_friction") {
+        static_friction = value;
+        friction_values_read |= 1;
+      } else if (name == "dynamic_friction") {
+        dynamic_friction = value;
+        friction_values_read |= 2;
+      } else {
+        drake::log()->warn("Unrecognized element in drake_compliance: '{}'",
+                           name);
+      }
+    }
+    // Handle friction
+    if (friction_values_read) {
+      if (friction_values_read < 3) {
+        throw std::runtime_error(
+            "When specifying coefficient of friction, "
+                "both static and dynamic coefficients must be defined");
+      }
+      material.set_friction(static_friction, dynamic_friction);
+    }
+  }
+  return material;
 }
 
 }  // namespace parsers

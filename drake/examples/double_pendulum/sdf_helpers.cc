@@ -10,9 +10,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/double_pendulum/frame_cache.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
+#include "drake/multibody/parsing/frame_cache.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -20,6 +20,8 @@
 namespace drake {
 namespace examples {
 namespace double_pendulum {
+
+using multibody::parsing::FrameCache;
 
 // RigidBodyTree model instance descriptor. Helpful
 // to carry model name and instance id around.

@@ -1,9 +1,10 @@
 #include "drake/multibody/parsers/parser_common.h"
 
+#include <fstream>
 #include <string>
 
 #include <gtest/gtest.h>
-#include "spruce.hh"
+#include <spruce.hh>
 
 using std::string;
 
@@ -14,8 +15,10 @@ namespace {
 // Verifies that GetFullPath() promotes a relative path to an absolute path,
 // and leaves already-absolute paths alone.
 GTEST_TEST(ParserCommonTest, TestGetFullPath_Relative) {
-  const string relative_path =
-      "drake/multibody/parsers/test/parser_common_test/test_file.txt";
+  const string relative_path = "test_file.txt";
+  std::ofstream ostr(relative_path);
+  ASSERT_TRUE(ostr.is_open());
+  ostr.close();
 
   // Relative path -> absolute path.
   string full_path;

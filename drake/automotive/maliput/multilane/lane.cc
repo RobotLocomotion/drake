@@ -30,7 +30,7 @@ const api::LaneEndSet* Lane::DoGetOngoingBranches(
   return GetBranchPoint(which_end)->GetOngoingBranches({this, which_end});
 }
 
-std::unique_ptr<api::LaneEnd> Lane::DoGetDefaultBranch(
+optional<api::LaneEnd> Lane::DoGetDefaultBranch(
     api::LaneEnd::Which which_end) const {
   return GetBranchPoint(which_end)->GetDefaultBranch({this, which_end});
 }
@@ -42,54 +42,18 @@ api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   // Recover parameter p from arc-length position s.
   const double p = road_curve_->p_from_s(lane_pos.s(), r0_);
-  // Calculate z (elevation) of (s,0,0);
-  const double z = road_curve_->elevation().f_p(p) * road_curve_->p_scale();
-  // Calculate x,y of (s,0,0).
-  const V2 xy = road_curve_->xy_of_p(p);
-  // Calculate orientation of (s,r,h) basis at (s,0,0).
-  const Rot3 ypr = road_curve_->Rabg_of_p(p);
-
-  // Rotate (0,r,h) and sum with mapped (s,0,0).
-  const V3 xyz =
-      ypr.apply({0., lane_pos.r() + r0_, lane_pos.h()}) + V3(xy.x(), xy.y(), z);
+  const Vector3<double> xyz =
+      road_curve_->W_of_prh(p, lane_pos.r() + r0_, lane_pos.h());
   return {xyz.x(), xyz.y(), xyz.z()};
 }
 
 
 api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
-  // Recover linear parameter p from arc-length position s.
   const double p = road_curve_->p_from_s(lane_pos.s(), r0_);
-  const double r = lane_pos.r() + r0_;
-  const double h = lane_pos.h();
-  // Calculate orientation of (s,r,h) basis at (s,0,0).
-  const Rot3 Rabg = road_curve_->Rabg_of_p(p);
-  const double real_g_prime = road_curve_->elevation().f_dot_p(p);
-
-  // Calculate s,r basis vectors at (s,r,h)...
-  const V3 s_hat = road_curve_->s_hat_of_prh(p, r, h, Rabg, real_g_prime);
-  const V3 r_hat = road_curve_->r_hat_of_Rabg(Rabg);
-  // ...and then derive orientation from those basis vectors.
-  //
-  // (s_hat  r_hat  h_hat) is an orthonormal basis, obtained by rotating the
-  // (x_hat  y_hat  z_hat) basis by some R-P-Y rotation; in this case, we know
-  // the value of (s_hat  r_hat  h_hat) (w.r.t. 'xyz' world frame), so we are
-  // trying to recover the roll/pitch/yaw.  Since (x_hat  y_hat  z_hat) is an
-  // identity matrix (e.g., x_hat = column vector (1, 0, 0), etc), then
-  // (s_hat  r_hat  h_hat) equals the R-P-Y matrix itself.
-  // If we define a = alpha = roll, b = beta = pitch, g = gamma = yaw,
-  // then s_hat is the first column of the rotation, r_hat is the second:
-  //   s_hat = (cb * cg, cb * sg, - sb)
-  //   r_hat = (- ca * sg + sa * sb * cg, ca * cg + sa * sb * sg, sa * cb)
-  // We solve the above for a, b, g.
-  const double gamma = std::atan2(s_hat.y(),
-                                  s_hat.x());
-  const double beta = std::atan2(-s_hat.z(),
-                                 V2(s_hat.x(), s_hat.y()).norm());
-  const double cb = std::cos(beta);
-  const double alpha =
-      std::atan2(r_hat.z() / cb,
-                 ((r_hat.y() * s_hat.x()) - (r_hat.x() * s_hat.y())) / cb);
-  return api::Rotation::FromRpy(alpha, beta, gamma);
+  const Rot3 rotation =
+      road_curve_->Orientation(p, lane_pos.r() + r0_, lane_pos.h());
+  return api::Rotation::FromRpy(rotation.roll(), rotation.pitch(),
+                                rotation.yaw());
 }
 
 

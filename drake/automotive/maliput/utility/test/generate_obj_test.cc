@@ -4,10 +4,11 @@
 #include <fstream>
 
 #include <gtest/gtest.h>
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/automotive/maliput/monolane/loader.h"
+#include "drake/common/find_resource.h"
 
 namespace drake {
 namespace maliput {
@@ -17,10 +18,6 @@ namespace mono = maliput::monolane;
 
 class GenerateObjTest : public ::testing::Test {
  protected:
-  const std::string kTestDataPath =
-      "drake/automotive/maliput/utility/test/data";
-
-
   void SetUp() override {
     directory_.setAsTemp();
     directory_.append("GenerateObjTest");
@@ -56,9 +53,11 @@ class GenerateObjTest : public ::testing::Test {
 
 
   void ReadExpectedData(const std::string& filename, std::string* destination) {
-    spruce::path path(kTestDataPath);
-    path.append(filename);
-    ReadAsString(path, destination);
+    static constexpr const char* const kTestDataPath =
+        "drake/automotive/maliput/utility/test/data/";
+    const std::string absolute_path =
+        FindResourceOrThrow(std::string(kTestDataPath) + filename);
+    ReadAsString(absolute_path, destination);
   }
 
 

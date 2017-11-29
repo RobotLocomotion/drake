@@ -2,12 +2,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/constants.h"
 #include "drake/common/trajectories/qp_spline/spline_generation.h"
 #include "drake/examples/atlas/atlasUtil.h"
@@ -17,7 +18,9 @@
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/util/convexHull.h"
+#include "drake/systems/controllers/polynomial_encode_decode.h"
+#include "drake/systems/robotInterfaces/convex_hull.h"
+#include "drake/systems/robotInterfaces/verify_subtype_sizes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
@@ -62,6 +65,15 @@ using std::vector;
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps_ =
     QPLocomotionPlan::createSupportLogicMaps();
+
+namespace {
+template <typename T>
+// NOLINTNEXTLINE(runtime/references)
+void addOffset(std::vector<T>& v, const T& offset) {
+  std::transform(v.begin(), v.end(), v.begin(),
+                 std::bind2nd(std::plus<double>(), offset));
+}
+}  // namespace
 
 std::string primaryBodyOrFrameName(const std::string& full_body_name) {
   size_t i = 0;

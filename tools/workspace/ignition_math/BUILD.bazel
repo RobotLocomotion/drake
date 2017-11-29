@@ -1,0 +1,10 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files(
+    ["ignition_math-create-cps.py"],
+    visibility = ["@ignition_math//:__pkg__"],
+)
+
+add_lint_tests()

@@ -57,7 +57,7 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
-  update->SetFrom(*context->get_mutable_discrete_state());
+  update->SetFrom(context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, update.get());
   context->set_discrete_state(std::move(update));
 
@@ -116,31 +116,26 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
   lcmt_iiwa_status status{};
   status.num_joints = kNumJoints;
   status.joint_position_measured.resize(status.num_joints, 0);
+  status.joint_velocity_estimated.resize(status.num_joints, 0);
   status.joint_position_commanded.resize(status.num_joints, 0.1);
   status.joint_position_ipo.resize(status.num_joints, 0);
   status.joint_torque_measured.resize(status.num_joints, 0);
   status.joint_torque_commanded.resize(status.num_joints, 0);
   status.joint_torque_external.resize(status.num_joints, 0);
 
+  Eigen::VectorXd delta(kNumJoints);
+  delta << 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007;
+  for (int i = 0; i < kNumJoints; i++) {
+    status.joint_position_measured[i] += delta(i);
+    status.joint_velocity_estimated[i] = delta(i) / kIiwaLcmStatusPeriod;
+  }
+
   context->FixInputPort(
       0, std::make_unique<systems::Value<lcmt_iiwa_status>>(status));
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
-  update->SetFrom(*context->get_mutable_discrete_state());
-  dut.CalcDiscreteVariableUpdates(*context, update.get());
-  context->set_discrete_state(std::move(update));
-
-  Eigen::VectorXd delta(kNumJoints);
-  delta << 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007;
-  for (int i = 0; i < kNumJoints; i++) {
-    status.joint_position_measured[i] += delta(i);
-  }
-
-  context->FixInputPort(
-      0, std::make_unique<systems::Value<lcmt_iiwa_status>>(status));
-  update = dut.AllocateDiscreteVariables();
-  update->SetFrom(*context->get_mutable_discrete_state());
+  update->SetFrom(context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, update.get());
   context->set_discrete_state(std::move(update));
 
@@ -177,6 +172,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
 
   Eigen::VectorXd state = Eigen::VectorXd::Zero(kNumJoints * 2);
   state.head(kNumJoints) = position;
+  state.tail(kNumJoints) << 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1;
   context->FixInputPort(dut.get_state_input_port().get_index(), state);
 
   dut.CalcOutput(*context, output.get());
@@ -186,6 +182,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
   for (int i = 0; i < kNumJoints; i++) {
     EXPECT_EQ(status.joint_position_commanded[i], command(i));
     EXPECT_EQ(status.joint_position_measured[i], state(i));
+    EXPECT_EQ(status.joint_velocity_estimated[i], state(i + kNumJoints));
   }
 }
 

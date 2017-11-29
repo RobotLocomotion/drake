@@ -108,7 +108,7 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   const AbstractValue& first_msg = dut.WaitForMessage();
   double msg_time =
       dut.get_message_to_time_converter().GetTimeInSeconds(first_msg);
-  dut.get_mutable_context()->set_time(msg_time);
+  dut.get_mutable_context().set_time(msg_time);
 
   // Starts the loop.
   dut.RunToSecondsAssumingInitialized(static_cast<double>(kEnd));

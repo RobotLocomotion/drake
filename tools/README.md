@@ -2,17 +2,6 @@
 This directory contains build system files related to the Bazel build system.
   https://bazel.build/
 
-Files named `*.BUILD` are Drake-specific build rules for external libraries or
-tools that do not natively support Bazel.
-  https://bazel.build/versions/master/docs/external.html#depending-on-non-bazel-projects
+See the `README.md` files in sub-diretories for additional details.
 
-Files named `*.bzl` are Skylark extensions.
-  https://bazel.build/versions/master/docs/skylark/concepts.html
-
-`drake.cps` is the Common Package Specification for Drake, that provides the
-necessary information for Drake to be consumed by other projects. Right now it
-is hand edited. This is used to generate `drake-config.cmake` via `cps2cmake`.
-  https://mwoehlke.github.io/cps/
-  https://github.com/mwoehlke/pycps/
-
-See `drake/doc/bazel.rst` for additional Drake-specific information.
+See `//doc/bazel.rst` for additional Drake-specific information.

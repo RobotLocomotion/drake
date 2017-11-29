@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/multibody/multibody_tree/body_node_impl.h"
 
 namespace drake {
@@ -18,7 +18,8 @@ std::unique_ptr<internal::BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
 
 // Macro used to explicitly instantiate implementations on all sizes needed.
 #define EXPLICITLY_INSTANTIATE_IMPLS(T) \
-template class MobilizerImpl<T, 1, 1>;
+template class MobilizerImpl<T, 1, 1>; \
+template class MobilizerImpl<T, 3, 3>;
 
 // Explicitly instantiates on the most common scalar types.
 EXPLICITLY_INSTANTIATE_IMPLS(double);

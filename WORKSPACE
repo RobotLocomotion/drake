@@ -16,14 +16,40 @@
 
 workspace(name = "drake")
 
-load("//tools:bitbucket.bzl", "bitbucket_archive")
-load("//tools:github.bzl", "github_archive")
-load("//tools:os.bzl", "os_specific_alias_repository")
+load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
     name = "kythe",
+    # TODO(jwnimmer-tri) According to Bazel documentation, the `path` argument
+    # to `local_repository()` is supposed be an absolute path.  We should be
+    # using using the __workspace_dir__ prefix here, like the other third_party
+    # workspace items below.  However, doing so causes loading-phase errors.
+    # We suspect that those errors are due to a Bazel bug, possibly related to
+    # either bazelbuild/bazel#2811 and/or bazelbuild/bazel#269.  Since the only
+    # use of kythe tooling is for pkg_config_package, and we plan to implement
+    # our own version of that soon anyway, we'll leave this alone for now,
+    # rather than diagnosing the errors.
     path = "third_party/com_github_google_kythe",
+)
+
+new_local_repository(
+    name = "tinydir",
+    build_file = "tools/workspace/tinydir/tinydir.BUILD.bazel",
+    path = __workspace_dir__ + "/third_party/com_github_cxong_tinydir",
+)
+
+new_local_repository(
+    name = "spruce",
+    build_file = "tools/workspace/spruce/spruce.BUILD.bazel",
+    path = __workspace_dir__ + "/third_party/josephdavisco_spruce",
+)
+
+new_local_repository(
+    name = "stx",
+    build_file = "tools/workspace/stx/stx.BUILD.bazel",
+    path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
@@ -38,14 +64,14 @@ pkg_config_package(
     modname = "gthread-2.0",
 )
 
-load("//tools:python.bzl", "python_repository")
+load("//tools/workspace/python:python.bzl", "python_repository")
 
 python_repository(
     name = "python",
     version = "2.7",
 )
 
-load("//tools:numpy.bzl", "numpy_repository")
+load("//tools/workspace/numpy:numpy.bzl", "numpy_repository")
 
 numpy_repository(
     name = "numpy",
@@ -57,7 +83,7 @@ github_archive(
     repository = "google/googletest",
     commit = "release-1.8.0",
     sha256 = "58a6f4277ca2bc8565222b3bbd58a177609e9c488e8a72649359ba51450db7d8",  # noqa
-    build_file = "tools/gtest.BUILD",
+    build_file = "tools/workspace/gtest/gtest.BUILD.bazel",
 )
 
 # When updating the version of gflags, update tools/install/gflags/gflags.cps
@@ -69,11 +95,11 @@ github_archive(
 )
 
 github_archive(
-    name = "google_styleguide",
-    repository = "google/styleguide",
-    commit = "159b4c81bbca97a9ca00f1195a37174388398a67",
-    sha256 = "3ed86946e6e637f0fe21749c0323b086e62c4b8b93694d6cedad615cdc584512",  # noqa
-    build_file = "tools/google_styleguide.BUILD",
+    name = "styleguide",
+    repository = "RobotLocomotion/styleguide",
+    commit = "8d38c5909a5ab38824d7f4566b3f3c6ae4557826",
+    sha256 = "09baa2280a63b9d2efe5c07d08f4674339b5b2a0424f71c429c33ac1783a4cd8",  # noqa
+    build_file = "tools/workspace/styleguide/styleguide.BUILD.bazel",  # noqa
 )
 
 github_archive(
@@ -81,7 +107,7 @@ github_archive(
     repository = "PyCQA/pycodestyle",
     commit = "2.3.1",
     sha256 = "e9fc1ca3fd85648f45c0d2e33591b608a17d8b9b78e22c5f898e831351bacb03",  # noqa
-    build_file = "tools/pycodestyle.BUILD",
+    build_file = "tools/workspace/pycodestyle/pycodestyle.BUILD.bazel",
 )
 
 bitbucket_archive(
@@ -91,7 +117,7 @@ bitbucket_archive(
     commit = "3.3.3",
     sha256 = "94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f",  # noqa
     strip_prefix = "eigen-eigen-67e894c6cd8f",
-    build_file = "tools/eigen.BUILD",
+    build_file = "tools/workspace/eigen/eigen.BUILD.bazel",
 )
 
 github_archive(
@@ -99,7 +125,7 @@ github_archive(
     repository = "gabime/spdlog",
     commit = "v0.13.0",
     sha256 = "d798a6ca19165f0a18a43938859359269f5a07fd8e0eb83ab8674739c9e8f361",  # noqa
-    build_file = "tools/spdlog.BUILD",
+    build_file = "tools/workspace/spdlog/spdlog.BUILD.bazel",
 )
 
 github_archive(
@@ -107,41 +133,47 @@ github_archive(
     repository = "fmtlib/fmt",
     commit = "3.0.1",
     sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",  # noqa
-    build_file = "tools/fmt.BUILD",
+    build_file = "tools/workspace/fmt/fmt.BUILD.bazel",
 )
+
+MAVEN_REPOSITORY = "https://jcenter.bintray.com"
 
 # In the unlikely event that you update the version here, verify that the
 # licenses in tools/third_party/jchart2d/LICENSE are still applicable.
 maven_jar(
     name = "net_sf_jchart2d_jchart2d",
     artifact = "net.sf.jchart2d:jchart2d:3.3.2",
+    repository = MAVEN_REPOSITORY,
     sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
 maven_jar(
     name = "com_jidesoft_jide_oss",
     artifact = "com.jidesoft:jide-oss:2.9.7",
+    repository = MAVEN_REPOSITORY,
     sha1 = "a9bb0d8384012c25c1519f6dd9adc80dd720a050",
 )
 
 maven_jar(
     name = "commons_io_commons_io",
     artifact = "commons-io:commons-io:1.3.1",
+    repository = MAVEN_REPOSITORY,
     sha1 = "b90b6ac57cf27a2858eaa490d02ba7945d18ca7b",
 )
 
 maven_jar(
     name = "org_apache_xmlgraphics_xmlgraphics_commons",
     artifact = "org.apache.xmlgraphics:xmlgraphics-commons:1.3.1",
+    repository = MAVEN_REPOSITORY,
     sha1 = "f7d0fa54e2750acd82b1a241c043be6fce1bf0dc",
 )
 
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
-    commit = "c0a0093a950fc83e12e8d5918a0319b590356e7e",
-    sha256 = "f967e74e639ea56318242e93c77a15a504345c8200791cab70d9dad86aa969b2",  # noqa
-    build_file = "tools/lcm.BUILD",
+    commit = "87866bd0dbb1f9d5a0f662a6f5caecf469fd42d2",
+    sha256 = "fd0afaf29954c26a725626b7bd24e873e303e84bb62dfcc05162be3f5ae30cd1",  # noqa
+    build_file = "tools/workspace/lcm/lcm.BUILD.bazel",
 )
 
 # In the unlikely event that you update the version here, verify that the
@@ -151,7 +183,7 @@ github_archive(
     repository = "RobotLocomotion/libbot2",
     commit = "495ae366d5e380b58254368217fc5c798e72aadd",
     sha256 = "c463460a4dd6133d6d21e6ab6e493fdcdca442d2df86bcb56749f6740bc61db5",  # noqa
-    build_file = "tools/libbot.BUILD",
+    build_file = "tools/workspace/libbot/libbot.BUILD.bazel",
 )
 
 github_archive(
@@ -159,7 +191,7 @@ github_archive(
     repository = "bulletphysics/bullet3",
     commit = "2.86.1",
     sha256 = "c058b2e4321ba6adaa656976c1a138c07b18fc03b29f5b82880d5d8228fbf059",  # noqa
-    build_file = "tools/bullet.BUILD",
+    build_file = "tools/workspace/bullet/bullet.BUILD.bazel",
 )
 
 github_archive(
@@ -167,7 +199,7 @@ github_archive(
     repository = "danfis/libccd",
     commit = "v2.0",
     sha256 = "1b4997e361c79262cf1fe5e1a3bf0789c9447d60b8ae2c1f945693ad574f9471",  # noqa
-    build_file = "tools/ccd.BUILD",
+    build_file = "tools/workspace/ccd/ccd.BUILD.bazel",
 )
 
 github_archive(
@@ -175,7 +207,7 @@ github_archive(
     repository = "OctoMap/octomap",
     commit = "v1.7.2",
     sha256 = "fe55efbb9ebf2b3388860e54b1c8a53d23e5a05de5956c043278013e01066c34",  # noqa
-    build_file = "tools/octomap.BUILD",
+    build_file = "tools/workspace/octomap/octomap.BUILD.bazel",
 )
 
 github_archive(
@@ -183,7 +215,7 @@ github_archive(
     repository = "flexible-collision-library/fcl",
     commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
     sha256 = "da86ed593a908d075657a305abec1670b895278a99ba76632b7afb6e678a9978",  # noqa
-    build_file = "tools/fcl.BUILD",
+    build_file = "tools/workspace/fcl/fcl.BUILD.bazel",
 )
 
 pkg_config_package(
@@ -191,27 +223,24 @@ pkg_config_package(
     modname = "ipopt",
 )
 
-github_archive(
+pkg_config_package(
     name = "nlopt",
-    repository = "stevengj/nlopt",
-    commit = "45553da97c890ef58f95e7ef73c5409d2169e824",
-    sha256 = "931fd125c50acf7cd7e709887ab4923af42a8a07be139572bf8b76bccca76450",  # noqa
-    build_file = "tools/nlopt.BUILD",
+    modname = "nlopt",
 )
 
 github_archive(
     name = "optitrack_driver",
     repository = "RobotLocomotion/optitrack-driver",
-    commit = "3c53cefbe16b3fcb0747034d2435cef7f9892265",
-    sha256 = "d09882fd6a9296b020a3e258ec943b8db03ed80c795e7613dac56acbc289c7a4",  # noqa
+    commit = "b0d633570966e08b8915dee0867747596839d06c",
+    sha256 = "5f7f46273f36073dc15191fe37dc538b4b23eaeaae63de153abeaa61d1134ad6",  # noqa
 )
 
 github_archive(
     name = "pybind11",
     repository = "RobotLocomotion/pybind11",
-    commit = "6d72785766558047ee2e2075198c07d8c25eb631",
-    sha256 = "08b4813b3b17f607efc4e8ba8b73bf55759ba744cab125e9fc666b5161cb1d0a",  # noqa
-    build_file = "tools/pybind11.BUILD",
+    commit = "ffcf754ae9e766632610975d22372a86a7b63014",
+    sha256 = "7cd6f4efb02bf9ae17eeb2afba68023af913e61ae76e8b4254203d0eec019525",  # noqa
+    build_file = "tools/workspace/pybind11/pybind11.BUILD.bazel",
 )
 
 github_archive(
@@ -219,7 +248,7 @@ github_archive(
     repository = "openhumanoids/bot_core_lcmtypes",
     commit = "99676541398749c2aab4b5b2c38be77d268085cc",
     sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",  # noqa
-    build_file = "tools/lcmtypes_bot2_core.BUILD",
+    build_file = "tools/workspace/lcmtypes_bot2_core/lcmtypes_bot2_core.BUILD.bazel",  # noqa
 )
 
 github_archive(
@@ -227,7 +256,25 @@ github_archive(
     repository = "RobotLocomotion/lcmtypes",
     commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
     sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",  # noqa
-    build_file = "tools/lcmtypes_robotlocomotion.BUILD",
+    build_file = "tools/workspace/lcmtypes_robotlocomotion/lcmtypes_robotlocomotion.BUILD.bazel",  # noqa
+)
+
+pkg_config_package(
+    name = "blas",
+    modname = "blas",
+)
+
+pkg_config_package(
+    name = "lapack",
+    modname = "lapack",
+)
+
+github_archive(
+    name = "scs",
+    repository = "cvxgrp/scs",
+    commit = "v1.2.6",
+    sha256 = "b4bebb43a1257b6e88a5f97c855c0559d6c8a8c0548d3156fc5a28d82bb9533f",  # noqa
+    build_file = "tools/workspace/scs/scs.BUILD.bazel",
 )
 
 github_archive(
@@ -235,37 +282,7 @@ github_archive(
     repository = "syoyo/tinyobjloader",
     commit = "v1.0.6",
     sha256 = "19ee82cd201761954dd833de551edb570e33b320d6027e0d91455faf7cd4c341",  # noqa
-    build_file = "tools/tinyobjloader.BUILD",
-)
-
-# Necessary for buildifier.
-github_archive(
-    name = "io_bazel_rules_go",
-    repository = "bazelbuild/rules_go",
-    commit = "0.4.4",
-    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",  # noqa
-)
-
-# Necessary for buildifier.
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
-
-# Necessary for buildifier.
-go_repositories()
-
-# Necessary for buildifier.
-new_go_repository(
-    name = "org_golang_x_tools",
-    commit = "3d92dd60033c312e3ae7cac319c792271cf67e37",
-    importpath = "golang.org/x/tools",
-)
-
-github_archive(
-    name = "com_github_bazelbuild_buildtools",
-    repository = "bazelbuild/buildtools",
-    # TODO(mwoehlke-kitware): Bump this commit to a release tag once it is
-    # incorporated in a released version.
-    commit = "7ce605fb1585076ed681e37d82d0ef529244b23a",
-    sha256 = "c6210992d328212a7752a2c888a15f5c597dbf31f03ac0d59457ceff2928a30b",  # noqa
+    build_file = "tools/workspace/tinyobjloader/tinyobjloader.BUILD.bazel",
 )
 
 github_archive(
@@ -273,25 +290,25 @@ github_archive(
     repository = "jbeder/yaml-cpp",
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
     sha256 = "907fb42a502e1448a73959f9a648771b070d6d8513f16d74149f775fc56550ef",  # noqa
-    build_file = "tools/yaml_cpp.BUILD",
+    build_file = "tools/workspace/yaml_cpp/yaml_cpp.BUILD.bazel",
 )
 
-load("//tools:gurobi.bzl", "gurobi_repository")
+load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
+
+buildifier_repository(
+    name = "buildifier",
+)
+
+load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_repository")
 
 gurobi_repository(
     name = "gurobi",
 )
 
-load("//tools:mosek.bzl", "mosek_repository")
+load("//tools/workspace/mosek:mosek.bzl", "mosek_repository")
 
 mosek_repository(
     name = "mosek",
-)
-
-load("//tools:gfortran.bzl", "gfortran_repository")
-
-gfortran_repository(
-    name = "gfortran",
 )
 
 git_repository(
@@ -301,14 +318,14 @@ git_repository(
 )
 
 # Python Libraries
-load("//tools:pypi.bzl", "pypi_archive")
+load("//tools/workspace:pypi.bzl", "pypi_archive")
 
 pypi_archive(
     name = "six_archive",
     package = "six",
     version = "1.10.0",
     sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",  # noqa
-    build_file = "tools/six.BUILD",
+    build_file = "tools/workspace/six/six.BUILD.bazel",
 )
 
 bind(
@@ -330,7 +347,7 @@ pypi_archive(
     version = "2.6.0",
     sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",  # noqa
     strip_prefix = "semantic_version",
-    build_file = "tools/semantic_version.BUILD",
+    build_file = "tools/workspace/semantic_version/semantic_version.BUILD.bazel",  # noqa
 )
 
 github_archive(
@@ -338,7 +355,7 @@ github_archive(
     repository = "mwoehlke/pycps",
     commit = "a6110cf2e769e9ff262a98ed18506ad565a14e89",
     sha256 = "62b5054705152ba971a6e9a358bfcc1359eca6f3ba8e5788befd82d606933d98",  # noqa
-    build_file = "tools/pycps.BUILD",
+    build_file = "tools/workspace/pycps/pycps.BUILD.bazel",
 )
 
 # The "@python_headers//:python_headers" target is required by protobuf
@@ -359,7 +376,7 @@ bitbucket_archive(
     commit = "ignition-math3_3.2.0",
     sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",  # noqa
     strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4",
-    build_file = "tools/ignition_math.BUILD",
+    build_file = "tools/workspace/ignition_math/ignition_math.BUILD.bazel",
 )
 
 bitbucket_archive(
@@ -368,10 +385,10 @@ bitbucket_archive(
     commit = "ignition-rndf_0.1.5",
     sha256 = "fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf",  # noqa
     strip_prefix = "ignitionrobotics-ign-rndf-214a333fbdcb",
-    build_file = "tools/ignition_rndf.BUILD",
+    build_file = "tools/workspace/ignition_rndf/ignition_rndf.BUILD.bazel",
 )
 
-load("//tools:boost.bzl", "boost_repository")
+load("//tools/workspace/boost:boost.bzl", "boost_repository")
 
 boost_repository(
     name = "boost",
@@ -383,16 +400,16 @@ bitbucket_archive(
     commit = "bac3dfb42cc7",
     sha256 = "b10a3ac68ed46f8d5780ddc687e6c89c71cb4c1e4e65449197f8aac76be903d8",  # noqa
     strip_prefix = "osrf-sdformat-bac3dfb42cc7",
-    build_file = "tools/sdformat.BUILD",
+    build_file = "tools/workspace/sdformat/sdformat.BUILD.bazel",
 )
 
-load("//tools:vtk.bzl", "vtk_repository")
+load("//tools/workspace/vtk:vtk.bzl", "vtk_repository")
 
 vtk_repository(
     name = "vtk",
 )
 
-load("//tools:expat.bzl", "expat_repository")
+load("//tools/workspace/expat:expat.bzl", "expat_repository")
 
 expat_repository(
     name = "expat",
@@ -418,13 +435,21 @@ pkg_config_package(
     modname = "tinyxml",
 )
 
-load("//tools:zlib.bzl", "zlib_repository")
+pkg_config_package(
+    name = "tinyxml2",
+    modname = "tinyxml2",
+)
+
+load("//tools/workspace/zlib:zlib.bzl", "zlib_repository")
 
 zlib_repository(
     name = "zlib",
 )
 
-load("//tools:drake_visualizer.bzl", "drake_visualizer_repository")
+load(
+    "//tools/workspace/drake_visualizer:drake_visualizer.bzl",
+    "drake_visualizer_repository",
+)
 
 drake_visualizer_repository(
     name = "drake_visualizer",

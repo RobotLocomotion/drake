@@ -1,0 +1,97 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+    "drake_cc_googletest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "kuka_pick_and_place_monolithic",
+    srcs = [
+        "monolithic_pick_and_place_system.cc",
+    ],
+    hdrs = [
+        "monolithic_pick_and_place_system.h",
+    ],
+    deps = [
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:lcm_plan_interpolator",
+        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:lcm_planner",
+        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:lcm_plant",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/primitives",
+    ],
+)
+
+drake_cc_binary(
+    name = "monolithic_pick_and_place_demo",
+    srcs = ["monolithic_pick_and_place_demo.cc"],
+    add_test_rule = 1,
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:configuration",
+        "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
+    ],
+    # TODO(m-chaturvedi) TSan fails with a data race in LCM for this test. See
+    # #7524.
+    tags = [
+        "no_tsan",
+    ],
+    test_rule_args = ["--quick"],
+    # Flaky because LCM self-test can fail (PR #7311)
+    test_rule_flaky = 1,
+    deps = [
+        ":kuka_pick_and_place_monolithic",
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
+        "//drake/lcm",
+        "//drake/lcmtypes:iiwa",
+        "//drake/systems/analysis:simulator",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_googletest(
+    name = "monolithic_pick_and_place_system_test",
+    size = "large",
+    # TODO(avalenzu) The gtest_filter argument below is required because the
+    # test currently times out when compiled in debug mode. We should try to
+    # split this test up such that this exclusion is no longer necessary.
+    args = select({
+        "//tools/cc_toolchain:debug": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
+    # TODO(sam.creasey) The "snopt" tag is required because IPOPT doesn't find
+    # a reasonable solution for one of the steps in this demo.  We should see
+    # if this improves when #3128 is fixed.
+    # TODO(avalenzu) The "no_*" tags are required because the test currently
+    # times out in those configurations. We should try to split this test up
+    # such that the exclusions are no longer necessary.
+    tags = [
+        "no_asan",
+        "no_lsan",
+        "no_memcheck",
+        "no_tsan",
+        "no_ubsan",
+        "snopt",
+    ],
+    deps = [
+        ":kuka_pick_and_place_monolithic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework",
+    ],
+)
+
+add_lint_tests()

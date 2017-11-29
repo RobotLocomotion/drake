@@ -105,7 +105,7 @@ class EndpointZ {
 
   /// Returns an EndpointZ with reversed direction.
   EndpointZ reverse() const {
-    return EndpointZ(z_, -z_dot_, -theta_, -theta_dot_);
+    return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
   }
 
   double z() const { return z_; }

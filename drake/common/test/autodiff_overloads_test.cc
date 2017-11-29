@@ -1,12 +1,10 @@
-#include "drake/common/autodiff_overloads.h"
-
 #include <type_traits>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/cond.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -116,6 +114,23 @@ GTEST_TEST(AutodiffOverloadsTest, Pow) {
   // By the chain rule, dz/dv is 27.53 * xgrad + 87.19 * ygrad
   EXPECT_DOUBLE_EQ(dzdx * 4.5 + dzdy * 0.0, z.derivatives()[0]);
   EXPECT_DOUBLE_EQ(dzdx * 1.1 + dzdy * 1.0, z.derivatives()[1]);
+}
+
+// Tests that pow(AutoDiffScalar, AutoDiffScalar) computes sane derivatives for
+// base^exponent at the corner case base = 0, exponent.derivatives() = {0}.
+GTEST_TEST(AutodiffOverloadsTest, PowEmptyExponentDerivative) {
+  Eigen::AutoDiffScalar<Vector1d> x;
+  x.value() = 0.;
+  x.derivatives() = Eigen::VectorXd::Unit(1, 0);
+  Eigen::AutoDiffScalar<Vector1d> y;
+  y.value() = 2.5;
+  y.derivatives() = Eigen::VectorXd::Zero(1);
+
+  const auto z = pow(x, y);
+  EXPECT_DOUBLE_EQ(0., z.value());
+  // ∂z/∂v = ∂z/∂x, which is y*x^(y-1) = 0 (as opposed to NAN, had the chain
+  // rule been applied).
+  EXPECT_TRUE(CompareMatrices(Vector1d{0.}, z.derivatives()));
 }
 
 GTEST_TEST(AutodiffOverloadsTest, IfThenElse1) {

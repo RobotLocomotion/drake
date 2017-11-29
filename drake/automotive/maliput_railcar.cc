@@ -125,7 +125,7 @@ const OutputPort<T>& MaliputRailcar<T>::velocity_output() const {
 }
 
 template <typename T>
-MaliputRailcarParams<T>* MaliputRailcar<T>::get_mutable_parameters(
+MaliputRailcarParams<T>& MaliputRailcar<T>::get_mutable_parameters(
     systems::Context<T>* context) const {
   return this->template GetMutableNumericParameter<MaliputRailcarParams>(
       context, 0);
@@ -250,10 +250,9 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
   DRAKE_ASSERT(input->size() == 1);
 
   // Obtains the result structure.
-  VectorBase<T>* const vector_derivatives = derivatives->get_mutable_vector();
-  DRAKE_ASSERT(vector_derivatives);
+  VectorBase<T>& vector_derivatives = derivatives->get_mutable_vector();
   MaliputRailcarState<T>* const rates =
-      dynamic_cast<MaliputRailcarState<T>*>(vector_derivatives);
+      dynamic_cast<MaliputRailcarState<T>*>(&vector_derivatives);
   DRAKE_ASSERT(rates != nullptr);
 
   ImplCalcTimeDerivatives(params, state, lane_direction, *input, rates);
@@ -307,12 +306,12 @@ void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
     State<T>* state) const {
   MaliputRailcarState<T>* railcar_state =
       dynamic_cast<MaliputRailcarState<T>*>(
-          state->get_mutable_continuous_state()->get_mutable_vector());
+          &state->get_mutable_continuous_state().get_mutable_vector());
   DRAKE_DEMAND(railcar_state != nullptr);
   SetDefaultState(railcar_state);
 
   LaneDirection& lane_direction =
-      state->get_mutable_abstract_state()->get_mutable_value(0).
+      state->get_mutable_abstract_state().get_mutable_value(0).
           template GetMutableValue<LaneDirection>();
   lane_direction = initial_lane_direction_;
 }
@@ -389,12 +388,10 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
   // Copies the present state into the new one.
   next_state->CopyFrom(context.get_state());
 
-  ContinuousState<T>* cs = next_state->get_mutable_continuous_state();
-  DRAKE_ASSERT(cs != nullptr);
-  VectorBase<T>* cv = cs->get_mutable_vector();
-  DRAKE_ASSERT(cv != nullptr);
+  ContinuousState<T>& cs = next_state->get_mutable_continuous_state();
+  VectorBase<T>& cv = cs.get_mutable_vector();
   MaliputRailcarState<T>* const next_railcar_state =
-      dynamic_cast<MaliputRailcarState<T>*>(cv);
+      dynamic_cast<MaliputRailcarState<T>*>(&cv);
   DRAKE_ASSERT(next_railcar_state != nullptr);
 
   // Handles the case where no lane change or speed adjustment is necessary. No
@@ -425,34 +422,34 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
         next_state->template get_mutable_abstract_state<LaneDirection>(0);
     // TODO(liang.fok) Generalize the following to support the selection of
     // non-default branches or non-zero ongoing branches. See #5702.
-    std::unique_ptr<LaneEnd> next_branch;
+    optional<LaneEnd> next_branch;
     if (current_with_s) {
       next_branch = current_lane_direction.lane->GetDefaultBranch(
           LaneEnd::kFinish);
-      if (next_branch == nullptr) {
+      if (!next_branch) {
         const maliput::api::LaneEndSet* ongoing_lanes =
             current_lane_direction.lane->GetOngoingBranches(LaneEnd::kFinish);
         if (ongoing_lanes != nullptr) {
           if (ongoing_lanes->size() > 0) {
-            next_branch = std::make_unique<LaneEnd>(ongoing_lanes->get(0));
+            next_branch = ongoing_lanes->get(0);
           }
         }
       }
     } else {
       next_branch = current_lane_direction.lane->GetDefaultBranch(
           LaneEnd::kStart);
-      if (next_branch == nullptr) {
+      if (!next_branch) {
         const maliput::api::LaneEndSet* ongoing_lanes =
             current_lane_direction.lane->GetOngoingBranches(LaneEnd::kStart);
         if (ongoing_lanes != nullptr) {
           if (ongoing_lanes->size() > 0) {
-            next_branch = std::make_unique<LaneEnd>(ongoing_lanes->get(0));
+            next_branch = ongoing_lanes->get(0);
           }
         }
       }
     }
 
-    if (next_branch == nullptr) {
+    if (!next_branch) {
       DRAKE_ABORT_MSG("MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
           "Vehicle should switch lanes but no default or ongoing branch "
           "exists.");

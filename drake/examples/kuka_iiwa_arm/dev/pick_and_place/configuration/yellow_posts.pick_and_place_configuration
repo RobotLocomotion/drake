@@ -1,0 +1,138 @@
+model {
+  key: "cube"
+  value: {
+    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"
+  }
+}
+model {
+  key: "big_robot_toy"
+  value {
+    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
+  }
+} 
+model {
+  key: "yellow_post"
+  value {
+    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/yellow_post.urdf"
+  }
+}
+model {
+  key: "extra_heavy_duty_table"
+  value: {
+    simulation_model_path: "drake/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table_surface_only_collision.sdf";
+  }
+}
+model {
+  key: "iiwa"
+  value: {
+    simulation_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
+  }
+}
+
+table {
+  name: "yellow_post"
+  optitrack_info {
+    id: 2
+    X_MF {
+      xyz: [0.0, 0.0, 1.02]
+    }
+  }
+  pose {
+    xyz: [0.0, 1.0, 0.0]
+  }
+}
+
+table {
+  name: "yellow_post"
+  optitrack_info {
+    id: 3
+    X_MF {
+      xyz: [0.0, 0.0, 1.02]
+    }
+  }
+  pose {
+    xyz: [0.80, 0.36, 0.0]
+  }
+}
+
+table {
+  name: "extra_heavy_duty_table"
+  optitrack_info {
+    id: 4
+    X_MF {
+      xyz: [0.0, 0.0, 0.7645]
+    }
+  }
+  pose {
+    xyz: [0.86, -0.36, -0.07]
+  }
+}
+
+table {
+  name: "yellow_post"
+  optitrack_info {
+    id: 5
+    X_MF {
+      xyz: [0.0, 0.0, 1.02]
+    }
+  }
+  pose {
+    xyz: [0.30, -0.9, 0.0]
+  }
+}
+
+table {
+  name: "yellow_post"
+  optitrack_info {
+    id: 6
+    X_MF {
+      xyz: [0.0, 0.0, 1.02]
+    }
+  }
+  pose {
+    xyz: [-0.1, -1.0, 0.0]
+  }
+}
+
+table {
+  name: "yellow_post"
+  optitrack_info {
+    id: 7
+    X_MF {
+      xyz: [0.0, 0.0, 1.02]
+    }
+  }
+  pose {
+    xyz: [-0.47, -0.8, 0.0]
+  }
+}
+
+robot {
+  name: "iiwa"
+  optitrack_info {
+    id: 1
+  }
+  pose {
+    xyz: [0.0, 0.0, 0.7645];
+  }
+}
+
+object {
+  name: "cube"
+  optitrack_info {
+    id: 8
+  }
+  pose {
+    xyz: [0.80, 0.36, 1.05]
+    rpy: [0.0, 0.0, 0.0]
+  }
+}
+
+task {
+  end_effector_name: "iiwa_link_ee"
+}
+
+default_compliant_material {
+    youngs_modulus: 3e7
+    dissipation: 5
+}

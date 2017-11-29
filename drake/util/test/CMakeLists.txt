@@ -1,2 +1,0 @@
-drake_add_cc_test(NAME testDrakeGeometryUtil EXTENSION cpp)
-target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil)

@@ -8,6 +8,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -55,7 +56,8 @@ class TestSystem : public System<double> {
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override {}
 
-  void SetDefaults(Context<double>* context) const override {}
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* params) const override {}
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
@@ -202,6 +204,13 @@ class TestSystem : public System<double> {
         UnrestrictedUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
+  std::map<Event<double>::PeriodicAttribute,
+      std::vector<const Event<double>*>,
+      PeriodicAttributeComparator<double>>
+      DoGetPeriodicEvents() const override {
+    return {};
+  }
+
  private:
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
@@ -323,11 +332,10 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
-  // Note: This method won't even get evaluated... we're only testing the
-  // management of constraints here.
   SystemConstraint<double>::CalcCallback calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+    unused(context);
+    (*value)[0] = 1.0;
   };
   SystemConstraintIndex test_constraint =
       system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
@@ -336,6 +344,17 @@ TEST_F(SystemTest, SystemConstraintTest) {
 
   EXPECT_NO_THROW(system_.get_constraint(test_constraint));
   EXPECT_EQ(system_.get_constraint(test_constraint).description(), "test");
+
+  const double tol = 1e-6;
+  EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(context_, tol));
+  SystemConstraint<double>::CalcCallback calc_false = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    unused(context);
+    (*value)[0] = -1.0;
+  };
+  system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
+      calc_false, 1, SystemConstraintType::kInequality, "bad constraint"));
+  EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(context_, tol));
 }
 
 // Tests GetMemoryObjectName.
@@ -460,7 +479,8 @@ class ValueIOTestSystem : public System<T> {
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {}
 
-  void SetDefaults(Context<T>* context) const override {}
+  void SetDefaultParameters(const Context<T>& context,
+                            Parameters<T>* params) const override {}
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;
@@ -534,6 +554,11 @@ class ValueIOTestSystem : public System<T> {
   AllocateForcedUnrestrictedUpdateEventCollection() const override {
     return LeafEventCollection<
         UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+    return {};
   }
 };
 

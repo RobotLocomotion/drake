@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package drake.common;
 
@@ -14,14 +14,23 @@ message MatlabArray
     DOUBLE = 1;
     CHAR = 2;
     LOGICAL = 3;
+    INT = 4;
   }
-  ArrayType type = 1;
+  optional ArrayType type = 1;
+
+  enum ShapeType {
+    MATRIX = 0;
+    VECTOR = 1;
+    SCALAR = 2;
+  }
 
   // Dimensions.
-  int32 rows = 2;
-  int32 cols = 3;
+  optional int32 rows = 2;
+  optional int32 cols = 3;
+  // Information.
+  optional ShapeType shape_type = 5;
 
-  bytes data = 4;
+  optional bytes data = 4;
 
   /* TODO: Consider adding support for the remainder of the mxArray type:
    *   - If numeric, whether the variable is real or complex
@@ -44,6 +53,8 @@ message MatlabRPC {
 
   repeated MatlabArray rhs = 2;  // the input argument data
 
-  string function_name = 3;  // any input allowed by matlab's mexcallmatlab command
+  // any input allowed by matlab's mexcallmatlab command
   // (http://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html)
+  // or any expression that resolves to a callable Python object (for Python).
+  optional string function_name = 3;
 }

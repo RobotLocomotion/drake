@@ -1,0 +1,194 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "world_sim_tree_builder",
+    srcs = ["world_sim_tree_builder.cc"],
+    hdrs = ["world_sim_tree_builder.h"],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:compliant_contact_model",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_state_msg_translator",
+    srcs = ["robot_state_msg_translator.cc"],
+    hdrs = ["robot_state_msg_translator.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/util",
+        "//drake/util:lcm_util",
+        "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_diagram_builder",
+    srcs = ["sim_diagram_builder.cc"],
+    hdrs = ["sim_diagram_builder.h"],
+    deps = [
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/controllers:state_feedback_controller_interface",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "simple_tree_visualizer",
+    srcs = ["simple_tree_visualizer.cc"],
+    hdrs = ["simple_tree_visualizer.h"],
+    deps = [
+        "//drake/common:essential",
+        "//drake/lcm",
+        "//drake/lcmtypes:viewer",
+        "//drake/multibody/rigid_body_plant:create_load_robot_message",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/framework",
+        "//drake/systems/rendering:drake_visualizer_client",
+    ],
+)
+
+drake_cc_library(
+    name = "trajectory_utils",
+    srcs = [
+        "trajectory_utils.cc",
+    ],
+    hdrs = [
+        "trajectory_utils.h",
+    ],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/common/trajectories:piecewise_quaternion",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_binary(
+    name = "simple_tree_visualizer_demo",
+    srcs = ["simple_tree_visualizer_demo.cc"],
+    add_test_rule = 1,
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    test_rule_args = ["--num_configurations=1"],
+    deps = [
+        ":simple_tree_visualizer",
+        "//drake/common:essential",
+        "//drake/common:find_resource",
+        "//drake/lcm",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+# TODO(naveenoid) : Move the moving_average_filter to within drake/perception.
+drake_cc_library(
+    name = "moving_average_filter",
+    srcs = ["moving_average_filter.cc"],
+    hdrs = ["moving_average_filter.h"],
+    deps = ["//drake/common:essential"],
+)
+
+drake_cc_library(
+    name = "frame_pose_tracker",
+    srcs = ["frame_pose_tracker.cc"],
+    hdrs = ["frame_pose_tracker.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/multibody_tree/math:spatial_velocity",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/rendering:frame_velocity",
+        "//drake/systems/rendering:pose_bundle",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "robot_state_msg_translator_test",
+    # TODO(siyuan): we should eventually move the models for test outside of
+    # /examples.
+    data = [
+        "//drake/examples/valkyrie:models",
+        "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":robot_state_msg_translator",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "trajectory_utils_test",
+    deps = [
+        ":trajectory_utils",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "moving_average_filter_test",
+    srcs = ["test/moving_average_filter_test.cc"],
+    deps = [
+        ":moving_average_filter",
+        "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_diagram_builder_test",
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":sim_diagram_builder",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/lcm",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_pose_tracker_test",
+    data = ["//drake/manipulation/models/iiwa_description:models"],
+    deps = [
+        ":frame_pose_tracker",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework",
+    ],
+)
+
+add_lint_tests()

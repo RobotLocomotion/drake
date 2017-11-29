@@ -1778,8 +1778,8 @@ void WorldFixedOrientConstraint::bounds(const double* t, int n_breaks,
   if (num_valid_t >= 2) {
     lb.resize(1);
     ub.resize(1);
-    lb(0) = (double)num_valid_t;
-    ub(0) = (double)num_valid_t;
+    lb(0) = static_cast<double>(num_valid_t);
+    ub(0) = static_cast<double>(num_valid_t);
   } else {
     lb.resize(0);
     ub.resize(0);
@@ -1872,8 +1872,8 @@ void WorldFixedBodyPoseConstraint::bounds(const double* t, int n_breaks,
   if (num_valid_t >= 2) {
     lb.resize(2);
     ub.resize(2);
-    lb << 0.0, (double)num_valid_t;
-    ub << 0.0, (double)num_valid_t;
+    lb << 0.0, static_cast<double>(num_valid_t);
+    ub << 0.0, static_cast<double>(num_valid_t);
   } else {
     lb.resize(0);
     ub.resize(0);

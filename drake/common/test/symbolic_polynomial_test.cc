@@ -1,4 +1,5 @@
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -9,6 +10,7 @@
 namespace drake {
 namespace symbolic {
 namespace {
+using std::pair;
 using std::runtime_error;
 using std::to_string;
 using std::vector;
@@ -21,6 +23,8 @@ class SymbolicPolynomialTest : public ::testing::Test {
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
+  const Variables indeterminates_{var_x_, var_y_, var_z_};
+
   const Variable var_a_{"a"};
   const Variable var_b_{"b"};
   const Variable var_c_{"c"};
@@ -506,6 +510,177 @@ TEST_F(SymbolicPolynomialTest, DifferentiateJacobian) {
   EXPECT_PRED2(PolyEqual, J_abc(0, 0), p_a);
   EXPECT_PRED2(PolyEqual, J_abc(0, 1), p_b);
   EXPECT_PRED2(PolyEqual, J_abc(0, 2), p_c);
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructNonPolynomialCoefficients) {
+  // Given a pair of Expression and Polynomial::MapType, `(e, map)`, we check
+  // `Polynomial(e, indeterminates)` has the expected map, `map`.
+  vector<pair<Expression, Polynomial::MapType>> testcases;
+
+  // sin(a)x = sin(a) * x
+  testcases.emplace_back(sin(a_) * x_,
+                         Polynomial::MapType{{{Monomial{x_}, sin(a_)}}});
+
+  // cos(a)(x + 1)² = cos(a) * x² + 2cos(a) * x + cos(a) * 1
+  testcases.emplace_back(
+      cos(a_) * pow(x_ + 1, 2),
+      Polynomial::MapType{{{Monomial{{{var_x_, 2}}}, cos(a_)},
+                           {Monomial{x_}, 2 * cos(a_)},
+                           {Monomial{}, cos(a_)}}});
+
+  //   log(a)(x + 1)² / sqrt(b)
+  // = log(a)/sqrt(b) * x² + 2log(a)/sqrt(b) * x + log(a)/sqrt(b) * 1
+  testcases.emplace_back(
+      log(a_) * pow(x_ + 1, 2) / sqrt(b_),
+      Polynomial::MapType{{{Monomial{{{var_x_, 2}}}, log(a_) / sqrt(b_)},
+                           {Monomial{x_}, 2 * log(a_) / sqrt(b_)},
+                           {Monomial{}, log(a_) / sqrt(b_)}}});
+
+  //   (tan(a)x + 1)²
+  // = (tan(a))² * x² + 2tan(a) * x + 1
+  testcases.emplace_back(
+      pow(tan(a_) * x_ + 1, 2),
+      Polynomial::MapType{{{Monomial{{{var_x_, 2}}}, pow(tan(a_), 2)},
+                           {Monomial{x_}, 2 * tan(a_)},
+                           {Monomial{}, 1}}});
+
+  //   abs(b + 1)x + asin(a) + acos(a) - atan(c) * x
+  // = (abs(b + 1) - atan(c)) * x + (asin(a) + acos(a))
+  testcases.emplace_back(
+      abs(b_ + 1) * x_ + asin(a_) + acos(a_) - atan(c_) * x_,
+      Polynomial::MapType{{{Monomial{x_}, abs(b_ + 1) - atan(c_)},
+                           {Monomial{}, asin(a_) + acos(a_)}}});
+
+  //   atan(b)x * atan2(a, c)y
+  // = (atan(b) * atan2(a, c)) * xy
+  testcases.emplace_back(
+      abs(b_) * x_ * atan2(a_, c_) * y_,
+      Polynomial::MapType{{{Monomial{{{var_x_, 1}, {var_y_, 1}}},  // xy
+                            abs(b_) * atan2(a_, c_)}}});
+
+  //     (sinh(a)x + cosh(b)y + tanh(c)z) / (5 * min(a, b) * max(b, c))
+  // =   (sinh(a) / (5 * min(a, b) * max(b, c))) * x
+  //   + (cosh(b) / (5 * min(a, b) * max(b, c))) * y
+  //   + (tanh(c) / (5 * min(a, b) * max(b, c))) * z
+  testcases.emplace_back(
+      (sinh(a_) * x_ + cosh(b_) * y_ + tanh(c_) * z_) /
+          (5 * min(a_, b_) * max(b_, c_)),
+      Polynomial::MapType{{{
+                               Monomial{x_},
+                               sinh(a_) / (5 * min(a_, b_) * max(b_, c_)),
+                           },
+                           {
+                               Monomial{y_},
+                               cosh(b_) / (5 * min(a_, b_) * max(b_, c_)),
+                           },
+                           {
+                               Monomial{z_},
+                               tanh(c_) / (5 * min(a_, b_) * max(b_, c_)),
+                           }}});
+
+  //     (ceil(a) * x + floor(b) * y)²
+  // =   pow(ceil(a), 2) * x²
+  // = + 2 * ceil(a) * floor(b) * xy
+  // = + pow(floor(a), 2) * y²
+  testcases.emplace_back(
+      pow(ceil(a_) * x_ + floor(b_) * y_, 2),
+      Polynomial::MapType{
+          {{Monomial{{{var_x_, 2}}}, ceil(a_) * ceil(a_)},
+           {Monomial{{{var_x_, 1}, {var_y_, 1}}}, 2 * ceil(a_) * floor(b_)},
+           {Monomial{{{var_y_, 2}}}, floor(b_) * floor(b_)}}});
+
+  //     (ceil(a) * x + floor(b) * y)²
+  // =   pow(ceil(a), 2) * x²
+  // = + 2 * ceil(a) * floor(b) * xy
+  // = + pow(floor(a), 2) * y²
+  testcases.emplace_back(
+      pow(ceil(a_) * x_ + floor(b_) * y_, 2),
+      Polynomial::MapType{
+          {{Monomial{{{var_x_, 2}}}, ceil(a_) * ceil(a_)},
+           {Monomial{{{var_x_, 1}, {var_y_, 1}}}, 2 * ceil(a_) * floor(b_)},
+           {Monomial{{{var_y_, 2}}}, floor(b_) * floor(b_)}}});
+
+  //   UF("unnamed1", {a})) * x * UF("unnamed2", {b}) * x
+  // = UF("unnamed1", {a})) * UF("unnamed2", {b}) * x².
+  const Expression uf1{uninterpreted_function("unnamed1", {var_a_})};
+  const Expression uf2{uninterpreted_function("unnamed2", {var_b_})};
+  testcases.emplace_back(
+      uf1 * x_ * uf2 * x_,
+      Polynomial::MapType{{{Monomial{{{var_x_, 2}}}, uf1 * uf2}}});
+
+  //   (x + y)² = x² + 2xy + y²
+  testcases.emplace_back(pow(x_ + y_, 2),
+                         Polynomial::MapType{{
+                             {Monomial{{{var_x_, 2}}}, 1},
+                             {Monomial{{{var_x_, 1}, {var_y_, 1}}}, 2},
+                             {Monomial{{{var_y_, 2}}}, 1},
+                         }});
+
+  // pow(pow(x, 2.5), 2) = x⁵
+  testcases.emplace_back(pow(pow(x_, 2.5), 2),
+                         Polynomial::MapType{{{Monomial{{{var_x_, 5}}}, 1}}});
+
+  // pow(pow(x * y, 2.5), 2) = (xy)⁵
+  testcases.emplace_back(
+      pow(pow(x_ * y_, 2.5), 2),
+      Polynomial::MapType{{{Monomial{{{var_x_, 5}, {var_y_, 5}}}, 1}}});
+
+  for (const pair<Expression, Polynomial::MapType>& item : testcases) {
+    const Expression& e{item.first};
+    const Polynomial p{e, indeterminates_};
+    const Polynomial::MapType& expected_map{item.second};
+    EXPECT_EQ(p.monomial_to_coefficient_map(), expected_map);
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, NegativeTestConstruction1) {
+  // sin(a) * x is a polynomial.
+  const Expression e1{sin(a_) * x_};
+  EXPECT_NO_THROW(Polynomial(e1, indeterminates_));
+
+  // sin(x) * x is a not polynomial.
+  const Expression e2{sin(x_) * x_};
+  EXPECT_THROW(Polynomial(e2, indeterminates_), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, NegativeTestConstruction2) {
+  // aˣ x is not a polynomial.
+  const Expression e{pow(a_, x_)};
+  EXPECT_THROW(Polynomial(e, indeterminates_), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, NegativeTestConstruction3) {
+  // x⁻¹ is not a polynomial.
+  const Expression e{pow(x_, -1)};
+  EXPECT_THROW(Polynomial(e, indeterminates_), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, NegativeTestConstruction4) {
+  // x^(2.5) is not a polynomial.
+  const Expression e{pow(x_, 2.5)};
+  EXPECT_THROW(Polynomial(e, indeterminates_), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, NegativeTestConstruction5) {
+  // xˣ is not a polynomial.
+  const Expression e{pow(x_, x_)};
+  EXPECT_THROW(Polynomial(e, indeterminates_), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, NegativeTestConstruction6) {
+  // 1 / a is polynomial.
+  const Expression e1{1 / a_};
+  EXPECT_NO_THROW(Polynomial(e1, indeterminates_));
+
+  // However, 1 / x is not a polynomial.
+  const Expression e2{1 / x_};
+  EXPECT_THROW(Polynomial(e2, indeterminates_), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, NegativeTestConstruction7) {
+  // sin(x + a) is not a polynomial.
+  const Expression e{sin(x_ + a_)};
+  EXPECT_THROW(Polynomial(e, indeterminates_), runtime_error);
 }
 
 }  // namespace

@@ -5,10 +5,13 @@
 // Most users should only include that file, not this one.
 // For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
+#include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
+/* clang-format on */
+
 #include <limits>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -68,7 +71,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquations(
   // Get the position of the bead.
   constexpr int three_d = 3;
   Eigen::Matrix<ArcLength, three_d, 1> x;
-  const auto position = context.get_continuous_state()->
+  const auto position = context.get_continuous_state().
       get_generalized_position().CopyToVector();
   for (int i = 0; i < three_d; ++i)
     x(i).value() = position[i];
@@ -109,7 +112,7 @@ Eigen::VectorXd BeadOnAWire<T>::DoEvalConstraintEquationsDot(
   //              d/dt atan2(x(2),x(1)) - | v(1) v(2) v(3) |
 
   // Compute df/dt (f⁻¹(x)). The result will be a vector.
-  const auto& xc = context.get_continuous_state()->get_vector();
+  const auto& xc = context.get_continuous_state().get_vector();
   Eigen::Matrix<BeadOnAWire<T>::ArcLength, three_d, 1> x;
   x(0).value() = xc.GetAtIndex(0);
   x(1).value() = xc.GetAtIndex(1);
@@ -143,7 +146,7 @@ template <typename T>
 void BeadOnAWire<T>::CopyStateOut(const systems::Context<T>& context,
                                   systems::BasicVector<T>* output) const {
   output->get_mutable_value() =
-      context.get_continuous_state()->CopyToVector();
+      context.get_continuous_state().CopyToVector();
 }
 
 /// Gets the number of constraint equations used for dynamics.
@@ -231,8 +234,7 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
-  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
-  DRAKE_ASSERT(f != nullptr);
+  systems::VectorBase<T>& f = derivatives->get_mutable_vector();
 
   // Get the inputs.
   const auto input = this->EvalEigenVectorInput(context, 0);
@@ -270,8 +272,8 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
                           dfds.dot(dfds);
 
     // Set derivative.
-    f->SetAtIndex(0, s_dot);
-    f->SetAtIndex(1, s_ddot);
+    f.SetAtIndex(0, s_dot);
+    f.SetAtIndex(1, s_ddot);
   } else {
     // Compute acceleration from unconstrained Newtonian dynamics.
     const T xdot = state.GetAtIndex(3);
@@ -282,12 +284,12 @@ void BeadOnAWire<T>::DoCalcTimeDerivatives(
     const Vector3<T> fext = input.segment(0, 3);
 
     // Set velocity components of derivative.
-    f->SetAtIndex(0, xdot);
-    f->SetAtIndex(1, ydot);
-    f->SetAtIndex(2, zdot);
-    f->SetAtIndex(3, fext(0));
-    f->SetAtIndex(4, fext(1));
-    f->SetAtIndex(5, fext(2) + get_gravitational_acceleration());
+    f.SetAtIndex(0, xdot);
+    f.SetAtIndex(1, ydot);
+    f.SetAtIndex(2, zdot);
+    f.SetAtIndex(3, fext(0));
+    f.SetAtIndex(4, fext(1));
+    f.SetAtIndex(5, fext(2) + get_gravitational_acceleration());
   }
 }
 
@@ -323,7 +325,7 @@ void BeadOnAWire<T>::SetDefaultState(const systems::Context<T>&,
     x0.resize(state_size);
     x0 << s, s_dot;
   }
-  state->get_mutable_continuous_state()->SetFromVector(x0);
+  state->get_mutable_continuous_state().SetFromVector(x0);
 }
 
 }  // namespace bead_on_a_wire

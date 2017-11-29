@@ -1,0 +1,14 @@
+# -*- python -*-
+
+# This almost-empty file exists to keep the `/drake` folder as its own Bazel
+# package, because it has traditionally been used as such in the past.
+
+package(default_visibility = ["//visibility:public"])
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files([
+    ".drake-find_resource-sentinel",
+])
+
+add_lint_tests()

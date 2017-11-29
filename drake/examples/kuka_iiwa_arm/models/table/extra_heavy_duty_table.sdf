@@ -2,7 +2,7 @@
 <sdf version='1.6'>
   <model name='extra_heavy_duty_table'>
     <link name='link'>
-      <pose frame=''>-0.243716 -0.625087 0 0 -0 0</pose>
+      <pose frame=''>0 0 0 0 -0 0</pose>
       <inertial>
         <mass>53.5</mass>
         <pose frame=''>0 0 0 0 -0 0</pose>

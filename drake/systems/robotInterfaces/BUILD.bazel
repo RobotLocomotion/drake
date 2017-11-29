@@ -1,0 +1,72 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "body_motion_data",
+    srcs = ["BodyMotionData.cpp"],
+    hdrs = ["BodyMotionData.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "qp_locomotion_plan",
+    srcs = [
+        "QPLocomotionPlan.cpp",
+        "verify_subtype_sizes.cc",
+        "verify_subtype_sizes.h",
+    ],
+    hdrs = [
+        "QPLocomotionPlan.h",
+    ],
+    deps = [
+        ":body_motion_data",
+        ":convex_hull",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/common/trajectories/qp_spline:spline_generation",
+        "//drake/examples/atlas:atlas_util",
+        "//drake/lcmtypes:qp_controller_input",
+        "//drake/math:autodiff",
+        "//drake/math:expmap",
+        "//drake/math:geometric_transform",
+        "//drake/math:gradient",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers:polynomial_encode_decode",
+        "//drake/systems/controllers:side",
+        "//drake/systems/controllers:zmp_util",
+        "//drake/util",
+        "//drake/util:lcm_util",
+    ],
+)
+
+drake_cc_library(
+    name = "convex_hull",
+    srcs = ["convex_hull.cc"],
+    hdrs = ["convex_hull.h"],
+    visibility = [],
+    deps = [
+        "@eigen",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "convex_hull_test",
+    deps = [
+        ":convex_hull",
+    ],
+)
+
+add_lint_tests()

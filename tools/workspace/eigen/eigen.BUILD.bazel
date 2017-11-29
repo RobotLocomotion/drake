@@ -1,0 +1,49 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+load("@drake//tools/lint:python_lint.bzl", "python_lint")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "eigen",
+    hdrs = glob(
+        include = [
+            "Eigen/*",
+            "Eigen/**/*.h",
+            "unsupported/Eigen/*",
+            "unsupported/Eigen/CXX11/Tensor",
+            "unsupported/Eigen/**/*.h",
+        ],
+        exclude = ["**/CMakeLists.txt"],
+    ),
+    defines = ["EIGEN_MPL2_ONLY"],
+    includes = ["."],
+)
+
+cmake_config(
+    package = "Eigen3",
+    script = "@drake//tools/workspace/eigen:eigen-create-cps.py",
+    version_file = "Eigen/src/Core/util/Macros.h",
+)
+
+install_cmake_config(package = "Eigen3")  # Creates rule :install_cmake_config.
+
+install(
+    name = "install",
+    targets = [":eigen"],
+    hdr_dest = "include/eigen3",
+    guess_hdrs = "PACKAGE",
+    docs = glob(["COPYING.*"]),
+    doc_dest = "share/doc/eigen3",
+    deps = [":install_cmake_config"],
+)
+
+python_lint()

@@ -40,7 +40,7 @@ Expression ReplaceBilinearTerms(
     const Expression& e,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const MatrixXDecisionVariable>& W) {
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& W) {
   DRAKE_ASSERT(W.rows() == x.rows() && W.cols() == y.rows());
   const MapVarToIndex x_to_index_map = ConstructVarToIndexMap(x);
   const MapVarToIndex y_to_index_map = ConstructVarToIndexMap(y);
@@ -99,14 +99,29 @@ Expression ReplaceBilinearTerms(
                                      "the corresponding variables.";
         throw runtime_error(oss.str());
       }
-      // w_xy is the symbolic variable representing the bilinear term x * y.
-      const Variable& w_xy{W(it_x_idx->second, it_y_idx->second)};
-      if (variables_in_x_y.include(w_xy)) {
-        // Case: w_xy is an indeterminate.
-        poly.AddProduct(p.second, symbolic::Monomial{w_xy});
+      // w_xy_expr is the symbolic expression representing the bilinear term x *
+      // y.
+      const symbolic::Expression& w_xy_expr{
+          W(it_x_idx->second, it_y_idx->second)};
+      if (is_variable(w_xy_expr)) {
+        const symbolic::Variable w_xy = symbolic::get_variable(w_xy_expr);
+        if (variables_in_x_y.include(w_xy)) {
+          // Case: w_xy is an indeterminate.
+          poly.AddProduct(p.second, symbolic::Monomial{w_xy});
+        } else {
+          // Case: w_xy is a decision variable.
+          poly.AddProduct(w_xy * p.second, symbolic::Monomial{});
+        }
       } else {
-        // Case: w_xy is a decision variable.
-        poly.AddProduct(w_xy * p.second, symbolic::Monomial{});
+        if (intersect(w_xy_expr.GetVariables(), variables_in_x_y).size() != 0) {
+          // w_xy_expr contains a variable in x or y.
+          ostringstream oss;
+          oss << "W(" + std::to_string(it_x_idx->second) + "," +
+                     std::to_string(it_y_idx->second) + ")="
+              << w_xy_expr << "contains variables in x or y.";
+          throw std::runtime_error(oss.str());
+        }
+        poly.AddProduct(w_xy_expr * p.second, symbolic::Monomial{});
       }
     }
   }

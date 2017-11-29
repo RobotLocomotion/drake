@@ -17,11 +17,11 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
@@ -89,6 +89,14 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
+ * </tr>
+ * <tr><td>&dagger; <a href="https://github.com/cvxgrp/scs">
+ *    SCS</a></td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
  * </tr>
  * </table>
  *
@@ -159,13 +167,6 @@ namespace solvers {
  *
  * &dagger; indicates that this is a commercial solver which requires a license
  * (note that some have free licenses for academics).
- *
- * Note: Drake must be able to locate each solver on your system during the
- * configuration step (when you run cmake), otherwise that solver will be
- * disabled.  To simplify this process, we have attempted to make solvers
- * available as a part of the Drake superbuild, but we are unable to publicly
- * share the distributions for commercially licensed solvers.
- *
  * @}
  */
 
@@ -189,7 +190,7 @@ enum ProgramAttributes {
 };
 typedef uint32_t AttributesSet;
 
-template<int ...>
+template <int...>
 struct NewVariableNames {};
 /**
    * The type of the names for the newly added variables.
@@ -221,7 +222,7 @@ namespace internal {
  * Return un-initialized new variable names.
  */
 template <int Size>
-typename std::enable_if< Size >= 0, typename NewVariableNames<Size>::type>::type
+typename std::enable_if<Size >= 0, typename NewVariableNames<Size>::type>::type
 CreateNewVariableNames(int) {
   typename NewVariableNames<Size>::type names;
   return names;
@@ -322,7 +323,6 @@ class MathematicalProgram {
     return NewContinuousVariables<Eigen::Dynamic, 1>(rows, 1, name);
   }
 
-
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
@@ -357,8 +357,8 @@ class MathematicalProgram {
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
   MatrixDecisionVariable<Rows, Cols>
   NewContinuousVariables(int rows, int cols, const std::string& name) {
-    rows = Rows == Eigen::Dynamic? rows : Rows;
-    cols = Cols == Eigen::Dynamic? cols : Cols;
+    rows = Rows == Eigen::Dynamic ? rows : Rows;
+    cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
         internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(
             rows * cols);
@@ -1421,15 +1421,18 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint on the linear expression v1 and quadratic
    * expression v2, such that v1 >= sqrt(v2)
-   * @param v1     The linear expression.
-   * @param v2  The quadratic expression.
+   * @param linear_expression The linear expression v1.
+   * @param quadratic_expression  The quadratic expression v2.
+   * @param tol The tolerance to determine if the matrix in v2 is positive
+   * semidefinite or not. @see DecomposePositiveQuadraticForm for more
+   * explanation. @default is 0.
    * @retval binding The newly added Lorentz cone constraint, together with the
    * bound variables.
    * @pre
-   * 1. `linear_expr` is a linear expression, in the form of c'*x + d.
-   * 2. `quadratic_expr` is a quadratic expression, in the form of
+   * 1. `v1` is a linear expression, in the form of c'*x + d.
+   * 2. `v2` is a quadratic expression, in the form of
    *    <pre>
-   *          0.5 * x'*Q*x + b'x + a
+   *          x'*Q*x + b'x + a
    *    </pre>
    *    Also the quadratic expression has to be convex, namely Q is a
    *    positive semidefinite matrix, and the quadratic expression needs
@@ -1440,12 +1443,13 @@ class MathematicalProgram {
    * Lorentz cone, where
    * <pre>
    *  z = v1
-   *  y = [1 / sqrt(2) * R * x + R⁻ᵀb; sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
+   *  y = R * x + d
    * </pre>
-   * while R satisfies Rᵀ * R = Q
+   * while (R, d) satisfies y'*y = x'*Q*x + b'*x + a
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
-      const symbolic::Expression& v1, const symbolic::Expression& v2);
+      const symbolic::Expression& linear_expression,
+      const symbolic::Expression& quadratic_expression, double tol = 0);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
@@ -1545,6 +1549,36 @@ class MathematicalProgram {
    */
   Binding<RotatedLorentzConeConstraint> AddConstraint(
       const Binding<RotatedLorentzConeConstraint>& binding);
+
+  /**
+   * Adds rotated Lorentz cone constraint on the linear expression v1, v2 and
+   * quadratic expression u, such that v1 * v2 >= u, v1 >= 0, v2 >= 0
+   * @param linear_expression1 The linear expression v1.
+   * @param linear_expression2 The linear expression v2.
+   * @param quadratic_expression The quadratic expression u.
+   * @param tol The tolerance to determine if the matrix in v2 is positive
+   * semidefinite or not. @see DecomposePositiveQuadraticForm for more
+   * explanation. @default is 0.
+   * @retval binding The newly added rotated Lorentz cone constraint, together
+   * with the bound variables.
+   * @pre
+   * 1. `linear_expression1` is a linear (affine) expression, in the form of
+   *    v1 = c1'*x + d1.
+   * 2. `linear_expression2` is a linear (affine) expression, in the form of
+   *    v2 = c2'*x + d2.
+   * 2. `quadratic_expression` is a quadratic expression, in the form of
+   *    <pre>
+   *          u = x'*Q*x + b'x + a
+   *    </pre>
+   *    Also the quadratic expression has to be convex, namely Q is a
+   *    positive semidefinite matrix, and the quadratic expression needs
+   *    to be non-negative for any x.
+   * Throws a runtime_error if the preconditions are not satisfied.
+   */
+  Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const symbolic::Expression& linear_expression1,
+      const symbolic::Expression& linear_expression2,
+      const symbolic::Expression& quadratic_expression, double tol = 0);
 
   /**
    * Adds a constraint that a symbolic expression @param v is in the rotated
@@ -1917,14 +1951,12 @@ class MathematicalProgram {
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
    */
   void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option,
-                       double option_value) {
+                       const std::string& solver_option, double option_value) {
     solver_options_double_[solver_id][solver_option] = option_value;
   }
 
   void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option,
-                       int option_value) {
+                       const std::string& solver_option, int option_value) {
     solver_options_int_[solver_id][solver_option] = option_value;
   }
 
@@ -1952,17 +1984,13 @@ class MathematicalProgram {
   /**
    * Sets the ID of the solver that was used to solve this program.
    */
-  void SetSolverId(SolverId solver_id) {
-    solver_id_ = solver_id;
-  }
+  void SetSolverId(SolverId solver_id) { solver_id_ = solver_id; }
 
   /**
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
-  optional<SolverId> GetSolverId() const {
-    return solver_id_;
-  }
+  optional<SolverId> GetSolverId() const { return solver_id_; }
 
   /**
    * Getter for optimal cost at the solution. Will return NaN if there has
@@ -2263,6 +2291,7 @@ class MathematicalProgram {
       equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> scs_solver_;
 
   template <typename T>
   void NewVariables_impl(
@@ -2445,8 +2474,7 @@ class MathematicalProgram {
    */
   template <int Rows>
   MatrixDecisionVariable<Rows, Rows> NewSymmetricVariables(
-      VarType type,
-      const typename NewSymmetricVariableNames<Rows>::type& names,
+      VarType type, const typename NewSymmetricVariableNames<Rows>::type& names,
       int rows = Rows) {
     MatrixDecisionVariable<Rows, Rows> decision_variable_matrix(rows, rows);
     NewVariables_impl(type, names, true, decision_variable_matrix);

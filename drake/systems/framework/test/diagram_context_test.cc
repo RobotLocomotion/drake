@@ -93,15 +93,15 @@ class DiagramContextTest : public ::testing::Test {
 
     context_->MakeState();
     context_->MakeParameters();
-    ContinuousState<double>* xc = context_->get_mutable_continuous_state();
-    xc->get_mutable_vector()->SetAtIndex(0, 42.0);
-    xc->get_mutable_vector()->SetAtIndex(1, 43.0);
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
+    xc.get_mutable_vector().SetAtIndex(0, 42.0);
+    xc.get_mutable_vector().SetAtIndex(1, 43.0);
 
-    DiscreteValues<double>* xd = context_->get_mutable_discrete_state();
-    xd->get_mutable_vector(0)->SetAtIndex(0, 44.0);
+    DiscreteValues<double>& xd = context_->get_mutable_discrete_state();
+    xd.get_mutable_vector(0).SetAtIndex(0, 44.0);
 
-    context_->get_mutable_numeric_parameter(0)->SetAtIndex(0, 76.0);
-    context_->get_mutable_numeric_parameter(0)->SetAtIndex(1, 77.0);
+    context_->get_mutable_numeric_parameter(0).SetAtIndex(0, 76.0);
+    context_->get_mutable_numeric_parameter(0).SetAtIndex(1, 77.0);
   }
 
   void AddSystem(const System<double>& sys, int index) {
@@ -140,23 +140,23 @@ class DiagramContextTest : public ::testing::Test {
 // DiagramContextTest::SetUp.
 void VerifyClonedState(const State<double>& clone) {
   // - Continuous
-  const ContinuousState<double>* xc = clone.get_continuous_state();
-  EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
-  EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
+  const ContinuousState<double>& xc = clone.get_continuous_state();
+  EXPECT_EQ(42.0, xc.get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, xc.get_vector().GetAtIndex(1));
   // - Discrete
-  const DiscreteValues<double>* xd = clone.get_discrete_state();
-  EXPECT_EQ(44.0, xd->get_vector(0)->GetAtIndex(0));
+  const DiscreteValues<double>& xd = clone.get_discrete_state();
+  EXPECT_EQ(44.0, xd.get_vector(0).GetAtIndex(0));
   // - Abstract
-  const AbstractValues* xa = clone.get_abstract_state();
-  EXPECT_EQ(42, xa->get_value(0).GetValue<int>());
+  const AbstractValues& xa = clone.get_abstract_state();
+  EXPECT_EQ(42, xa.get_value(0).GetValue<int>());
 }
 
 // Verifies that the @p params are a clone of the params constructed in
 // DiagramContextTest::SetUp.
 void VerifyClonedParameters(const Parameters<double>& params) {
   ASSERT_EQ(1, params.num_numeric_parameters());
-  EXPECT_EQ(76.0, params.get_numeric_parameter(0)->GetAtIndex(0));
-  EXPECT_EQ(77.0, params.get_numeric_parameter(0)->GetAtIndex(1));
+  EXPECT_EQ(76.0, params.get_numeric_parameter(0).GetAtIndex(0));
+  EXPECT_EQ(77.0, params.get_numeric_parameter(0).GetAtIndex(1));
   ASSERT_EQ(1, params.num_abstract_parameters());
   EXPECT_EQ(2048, UnpackIntValue(params.get_abstract_parameter(0)));
 }
@@ -188,47 +188,47 @@ TEST_F(DiagramContextTest, Time) {
 // transparently through to the constituent system contexts.
 TEST_F(DiagramContextTest, State) {
   // Each integrator has a single continuous state variable.
-  ContinuousState<double>* xc = context_->get_mutable_continuous_state();
-  EXPECT_EQ(2, xc->size());
-  EXPECT_EQ(0, xc->get_generalized_position().size());
-  EXPECT_EQ(0, xc->get_generalized_velocity().size());
-  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
+  EXPECT_EQ(2, xc.size());
+  EXPECT_EQ(0, xc.get_generalized_position().size());
+  EXPECT_EQ(0, xc.get_generalized_velocity().size());
+  EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 
   // The zero-order hold has a discrete state vector of length 1.
-  DiscreteValues<double>* xd = context_->get_mutable_discrete_state();
-  EXPECT_EQ(1, xd->num_groups());
-  EXPECT_EQ(1, xd->get_vector(0)->size());
+  DiscreteValues<double>& xd = context_->get_mutable_discrete_state();
+  EXPECT_EQ(1, xd.num_groups());
+  EXPECT_EQ(1, xd.get_vector(0).size());
 
   // Changes to the diagram state write through to constituent system states.
   // - Continuous
-  ContinuousState<double>* integrator0_xc =
+  ContinuousState<double>& integrator0_xc =
       context_->GetMutableSubsystemContext(2).get_mutable_continuous_state();
-  ContinuousState<double>* integrator1_xc =
+  ContinuousState<double>& integrator1_xc =
       context_->GetMutableSubsystemContext(3).get_mutable_continuous_state();
-  EXPECT_EQ(42.0, integrator0_xc->get_vector().GetAtIndex(0));
-  EXPECT_EQ(43.0, integrator1_xc->get_vector().GetAtIndex(0));
+  EXPECT_EQ(42.0, integrator0_xc.get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, integrator1_xc.get_vector().GetAtIndex(0));
   // - Discrete
-  DiscreteValues<double>* hold_xd =
+  DiscreteValues<double>& hold_xd =
       context_->GetMutableSubsystemContext(4).get_mutable_discrete_state();
-  EXPECT_EQ(44.0, hold_xd->get_vector(0)->GetAtIndex(0));
+  EXPECT_EQ(44.0, hold_xd.get_vector(0).GetAtIndex(0));
 
   // Changes to constituent system states appear in the diagram state.
   // - Continuous
-  integrator1_xc->get_mutable_vector()->SetAtIndex(0, 1000.0);
-  EXPECT_EQ(1000.0, xc->get_vector().GetAtIndex(1));
+  integrator1_xc.get_mutable_vector().SetAtIndex(0, 1000.0);
+  EXPECT_EQ(1000.0, xc.get_vector().GetAtIndex(1));
   // - Discrete
-  hold_xd->get_mutable_vector(0)->SetAtIndex(0, 1001.0);
-  EXPECT_EQ(1001.0, xd->get_vector(0)->GetAtIndex(0));
+  hold_xd.get_mutable_vector(0).SetAtIndex(0, 1001.0);
+  EXPECT_EQ(1001.0, xd.get_vector(0).GetAtIndex(0));
 }
 
 // Tests that the pointers to substates in the DiagramState are equal to the
 // substates in the subsystem contexts.
 TEST_F(DiagramContextTest, DiagramState) {
   auto diagram_state = dynamic_cast<DiagramState<double>*>(
-      context_->get_mutable_state());
+      &context_->get_mutable_state());
   ASSERT_NE(nullptr, diagram_state);
   for (int i = 0; i < kNumSystems; ++i) {
-    EXPECT_EQ(context_->GetMutableSubsystemContext(i).get_mutable_state(),
+    EXPECT_EQ(&context_->GetMutableSubsystemContext(i).get_mutable_state(),
               &diagram_state->get_mutable_substate(i));
   }
 }
@@ -268,9 +268,9 @@ TEST_F(DiagramContextTest, Clone) {
 
   // Verify that changes to the state do not write through to the original
   // context.
-  clone->get_mutable_continuous_state_vector()->SetAtIndex(0, 1024.0);
-  EXPECT_EQ(1024.0, (*clone->get_continuous_state())[0]);
-  EXPECT_EQ(42.0, (*context_->get_continuous_state())[0]);
+  clone->get_mutable_continuous_state_vector().SetAtIndex(0, 1024.0);
+  EXPECT_EQ(1024.0, clone->get_continuous_state()[0]);
+  EXPECT_EQ(42.0, context_->get_continuous_state()[0]);
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.
@@ -292,9 +292,9 @@ TEST_F(DiagramContextTest, CloneState) {
   EXPECT_NE(nullptr, dynamic_cast<DiagramState<double>*>(state.get()));
   // Verify that changes to the state do not write through to the original
   // context.
-  (*state->get_mutable_continuous_state())[1] = 1024.0;
-  EXPECT_EQ(1024.0, (*state->get_continuous_state())[1]);
-  EXPECT_EQ(43.0, (*context_->get_continuous_state())[1]);
+  state->get_mutable_continuous_state()[1] = 1024.0;
+  EXPECT_EQ(1024.0, state->get_continuous_state()[1]);
+  EXPECT_EQ(43.0, context_->get_continuous_state()[1]);
 }
 
 // Verifies that accuracy is set properly.

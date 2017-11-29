@@ -10,7 +10,7 @@
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -133,13 +133,13 @@ int main(int argc, char* argv[]) {
   // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));
   if (FLAGS_simulation_type == "compliant") {
-    auto mut_context = simulator.get_mutable_context();
+    Context<double>& mut_context = simulator.get_mutable_context();
     simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
-                                                                mut_context);
+                                                                &mut_context);
   } else {
-    auto mut_context = simulator.get_mutable_context();
+    Context<double>& mut_context = simulator.get_mutable_context();
     simulator.reset_integrator<RungeKutta3Integrator<double>>(*diagram,
-                                                              mut_context);
+                                                              &mut_context);
   }
   simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);

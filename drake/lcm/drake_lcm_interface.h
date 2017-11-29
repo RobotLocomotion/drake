@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -47,9 +48,12 @@ class DrakeLcmInterface {
    * publish.
    *
    * @param[in] data_size The length of @data in bytes.
+   *
+   * @param[in] time_sec Time in seconds when the publish event occurred. Note
+   * that this argument is only used when generating a Lcm log.
    */
   virtual void Publish(const std::string& channel, const void* data,
-                       int data_size) = 0;
+                       int data_size, double time_sec = 0) = 0;
 
   /**
    * Subscribes to an LCM channel without automatic message decoding. The
@@ -62,6 +66,21 @@ class DrakeLcmInterface {
    */
   virtual void Subscribe(const std::string& channel,
                          DrakeLcmMessageHandlerInterface* handler) = 0;
+
+  /**
+   * Only used for supporting Lcm log playback. Default implementation is no-op.
+   * @see DrakeLcmLog::DispatchMessageAndAdvanceLog
+   */
+  virtual void DispatchMessageAndAdvanceLog(double) {}
+
+  /**
+   * Only used for supporting Lcm log playback. Default implementation returns
+   * infinity.
+   * @see DrakeLcmLog::GetNextMessageTime
+   */
+  virtual double GetNextMessageTime() const {
+    return std::numeric_limits<double>::infinity();
+  }
 };
 
 }  // namespace lcm

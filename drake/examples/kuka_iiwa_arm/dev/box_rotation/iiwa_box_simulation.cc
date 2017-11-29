@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <gflags/gflags.h>
+#include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/dev/box_rotation/iiwa_box_diagram_factory.h"
@@ -17,9 +18,10 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
-#include "drake/lcmtypes/drake/lcmt_contact_results_for_viz.hpp"
+#include "drake/manipulation/util/frame_pose_tracker.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
@@ -34,17 +36,20 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/sensors/optitrack_encoder.h"
+#include "drake/systems/sensors/optitrack_sender.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 DEFINE_string(urdf, "", "Name of urdf file to load");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
-              "Number of seconds to simulate.");
-
-DEFINE_double(stiffness, 3000, "Contact Stiffness");
-DEFINE_double(dissipation, 5, "Contact Dissipation");
+              "Number of seconds to simulate (s)");
+DEFINE_double(youngs_modulus, 3e7, "Default material's Young's modulus (Pa)");
+DEFINE_double(dissipation, 5, "Contact Dissipation (s/m)");
 DEFINE_double(static_friction, 0.5, "Static Friction");
 DEFINE_double(dynamic_friction, 0.2, "Dynamic Friction");
-DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol");
+DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol (m/s)");
+DEFINE_double(contact_area, 2e-4,
+              "The characteristic scale of contact area (m^2)");
 DEFINE_bool(use_visualizer, true, "Use Drake Visualizer?");
 
 namespace drake {
@@ -61,6 +66,9 @@ using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::RigidBodyPlant;
 using systems::Simulator;
+using manipulation::util::FramePoseTracker;
+using systems::sensors::OptitrackEncoder;
+using systems::sensors::OptitrackLCMFrameSender;
 
 const char *const kIiwaUrdf = "drake/examples/kuka_iiwa_arm/dev/box_rotation/"
     "models/dual_iiwa14_primitive_sphere_visual_collision.urdf";
@@ -93,11 +101,11 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // table, and the iiwa arms are fixed to the other two tables.
   tree_builder->AddFixedModelInstance(
       "table", /* right arm */
-      Eigen::Vector3d(0.243716, 0.625087, 0) /* xyz */,
+      Eigen::Vector3d(0, 0, 0) /* xyz */,
       Eigen::Vector3d::Zero() /* rpy */);
   tree_builder->AddFixedModelInstance(
       "table", /* left arm */
-      Eigen::Vector3d(0.243716, 0.9 + 0.625087, 0) /* xyz */,
+      Eigen::Vector3d(0, 0.9, 0) /* xyz */,
       Eigen::Vector3d::Zero() /* rpy */);
   tree_builder->AddFixedModelInstance(
       "large_table", /* box */
@@ -143,10 +151,15 @@ int DoMain() {
       BuildCombinedPlant<double>(&iiwa_instance, &box_instance);
   model_ptr->set_name("plant");
 
-  model_ptr->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  model_ptr->set_friction_contact_parameters(FLAGS_static_friction,
-                                             FLAGS_dynamic_friction,
-                                             FLAGS_v_stiction_tol);
+  systems::CompliantMaterial default_material;
+  default_material.set_youngs_modulus(FLAGS_youngs_modulus)
+      .set_dissipation(FLAGS_dissipation)
+      .set_friction(FLAGS_static_friction, FLAGS_dynamic_friction);
+  model_ptr->set_default_compliant_material(default_material);
+  systems::CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tol;
+  model_ptr->set_contact_model_parameters(model_parameters);
 
   auto model =
       builder.template AddSystem<IiwaAndBoxPlantWithStateEstimator<double>>(
@@ -181,6 +194,45 @@ int DoMain() {
   iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>(14);
   iiwa_status_sender->set_name("iiwa_status_sender");
+
+  // Create the Optitrack sender and publisher. The sender is configured to
+  // send three objects: left arm base, right arm base, and box.
+  auto optitrack_sender = builder.AddSystem<OptitrackLCMFrameSender>(3);
+  optitrack_sender->set_name("optitrack frame sender");
+  auto optitrack_pub = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<optitrack::optitrack_frame_t>(
+          "OPTITRACK_FRAMES", &lcm));
+  optitrack_pub->set_name("optitrack frame publisher");
+  optitrack_pub->set_publish_period(systems::sensors::kLcmStatusPeriod);
+
+  // Create the FramePoseTracker system.
+  std::map<std::string, std::pair<std::string, int>> frame_info;
+  frame_info["left_iiwa_base"] = std::make_pair("left_iiwa_link_0", -1);
+  frame_info["right_iiwa_base"] = std::make_pair("right_iiwa_link_0", -1);
+  frame_info["box"] = std::make_pair("box", -1);
+  auto pose_tracker = builder.AddSystem<FramePoseTracker>(tree, frame_info);
+  pose_tracker->set_name("frame pose tracker");
+
+  // Create the OptitrackEncoder system. This assigns a unique Optitrack ID to
+  // each tracked frame (similar to the Motive software). These are used to
+  // create a tracked Optitrack body.
+  std::map<std::string, int> frame_name_to_id_map;
+  frame_name_to_id_map["left_iiwa_base"] = 1;
+  frame_name_to_id_map["right_iiwa_base"] = 2;
+  frame_name_to_id_map["box"] = 3;
+  auto optitrack_encoder =
+      builder.AddSystem<OptitrackEncoder>(frame_name_to_id_map);
+  optitrack_encoder->set_name("optitrack encoder");
+
+  // Connect the systems related to tracking bodies.
+  builder.Connect(model->get_output_port_kinematics_results(),
+                  pose_tracker->get_kinematics_input_port());
+  builder.Connect(pose_tracker->get_pose_bundle_output_port(),
+                  optitrack_encoder->get_pose_bundle_input_port());
+  builder.Connect(optitrack_encoder->get_optitrack_output_port(),
+                  optitrack_sender->get_optitrack_input_port());
+  builder.Connect(optitrack_sender->get_lcm_output_port(),
+                  optitrack_pub->get_input_port(0));
 
   // TODO(rcory): Do we need this accel source?
   auto iiwa_zero_acceleration_source =
@@ -250,7 +302,7 @@ int DoMain() {
   Simulator<double> simulator(*sys);
 
   simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-      *sys, 1e-3, simulator.get_mutable_context());
+      *sys, 1e-3, &simulator.get_mutable_context());
 
   // TODO(rcory): Explore other integration schemes here.
 //  simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(

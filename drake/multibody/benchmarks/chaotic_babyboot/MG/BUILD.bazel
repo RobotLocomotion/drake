@@ -1,0 +1,39 @@
+# -*- python -*-
+
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = [
+        "//drake/multibody/benchmarks/chaotic_babyboot:__subpackages__",
+    ],
+)
+
+drake_cc_library(
+    name = "MG_chaotic_babyboot_lib",
+    testonly = 1,
+    srcs = [
+        "MG_chaotic_babyboot_auto_generated.cc",
+    ],
+    hdrs = [
+        "MG_chaotic_babyboot_auto_generated.h",
+    ],
+    copts = [
+        "-Wno-old-style-cast",
+        "-Wno-unused-parameter",
+    ],
+    deps = [
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "MG_chaotic_babyboot_test",
+    size = "small",
+    deps = [
+        ":MG_chaotic_babyboot_lib",
+    ],
+)
+
+add_lint_tests()

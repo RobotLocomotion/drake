@@ -9,6 +9,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {
@@ -23,9 +24,9 @@ template <typename Distribution, typename Generator>
 void CheckStatistics(
     const std::function<double(double)>& cumulative_distribution,
     double min_value, double max_value, double h, double fudge_factor,
-    std::unique_ptr<RandomSource<Distribution, Generator>>
+    std::unique_ptr<internal::RandomSource<Distribution, Generator>>
         random_source_system) {
-  systems::DiagramBuilder<double> builder;
+  DiagramBuilder<double> builder;
 
   auto source = builder.AddSystem(std::move(random_source_system));
   source->set_name("source");
@@ -37,10 +38,10 @@ void CheckStatistics(
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  BasicVector<double>* state =
-      simulator.get_mutable_context()->get_mutable_discrete_state(0);
-  for (int i = 0; i < state->size(); i++) {
-    state->SetAtIndex(i, 0.0);
+  BasicVector<double>& state =
+      simulator.get_mutable_context().get_mutable_discrete_state(0);
+  for (int i = 0; i < state.size(); i++) {
+    state.SetAtIndex(i, 0.0);
   }
 
   simulator.Initialize();
@@ -117,6 +118,119 @@ GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
   const double fudge_factor = 2.0;
   CheckStatistics(Phi, min_value, max_value, h, fudge_factor,
                   std::move(random_source));
+}
+
+class TestSystem : public LeafSystem<double> {
+ public:
+  // Make methods available.
+  using LeafSystem::DeclareInputPort;
+  using LeafSystem::EvalVectorInput;
+};
+
+
+//      +-------------------------+
+//      |                         |
+//      | +--------+              |
+//      | |uniform |              |
+//      | +--------+       +----+ |
+//      |          +------>|sys1| |
+// +---------------------->|    | |
+//      |                  +----+ |
+//      | +--------+              |
+//      | |gaussian|---+          |
+//      | +--------+   |   +----+ |
+//      | +--------+   +-->|    | |
+//      | |exponent|------>|sys2| |
+//      | +--------+   +-->|    | |
+//      | +--------+   |   +----+ |
+//      | |constant|---+          |
+//      | +--------+              |
+//      |                         |
+//      +-------------------------+
+GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
+  DiagramBuilder<double> builder;
+
+  auto* sys1 = builder.AddSystem<TestSystem>();
+  sys1->DeclareInputPort(kVectorValued, 3, RandomDistribution::kUniform);
+  sys1->DeclareInputPort(kVectorValued, 2, RandomDistribution::kExponential);
+
+  auto* sys2 = builder.AddSystem<TestSystem>();
+  sys2->DeclareInputPort(kVectorValued, 5, RandomDistribution::kGaussian);
+  sys2->DeclareInputPort(kVectorValued, 2, RandomDistribution::kExponential);
+  sys2->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
+
+  // Export input 1.
+  builder.ExportInput(sys2->get_input_port(1));
+
+  // Connect input 2 to a different block.
+  const auto* constant_input =
+      builder.AddSystem<ConstantVectorSource<double>>(14.0);
+  builder.Connect(constant_input->get_output_port(), sys2->get_input_port(2));
+
+  EXPECT_EQ(AddRandomInputs(1e-3, &builder), 3);
+
+  const auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  // Check that the uniform input port is connected.
+  EXPECT_NE(
+      sys1->EvalVectorInput(diagram->GetSubsystemContext(*sys1, *context), 0),
+      nullptr);
+
+  // Check that the exponential input port is connected.
+  EXPECT_NE(
+      sys1->EvalVectorInput(diagram->GetSubsystemContext(*sys1, *context), 1),
+      nullptr);
+
+  // Check that the Gaussian input port is connected.
+  EXPECT_NE(
+      sys2->EvalVectorInput(diagram->GetSubsystemContext(*sys2, *context), 0),
+      nullptr);
+
+  // Check that the exported input remained exported.
+  EXPECT_EQ(diagram->get_num_input_ports(), 1);
+  EXPECT_EQ(diagram->get_input_port(0).size(), 2);
+
+  // Check that the previously connected input remained connected.
+  EXPECT_EQ(sys2->EvalEigenVectorInput(
+                diagram->GetSubsystemContext(*sys2, *context), 2)[0],
+            14.0);
+}
+
+GTEST_TEST(RandomSourceTest, CorrelationTest) {
+  // Tests that two separate input ports, with the default seeds, are
+  // uncorrelated.
+
+  DiagramBuilder<double> builder;
+  const int kSize = 1;
+  const double kSampleTime = 0.0025;
+  const auto* random1 =
+      builder.AddSystem<GaussianRandomSource>(kSize, kSampleTime);
+  const auto* log1 = LogOutput(random1->get_output_port(0), &builder);
+
+  const auto* random2 =
+      builder.AddSystem<GaussianRandomSource>(kSize, kSampleTime);
+  const auto* log2 = LogOutput(random2->get_output_port(0), &builder);
+
+  const auto diagram = builder.Build();
+
+  systems::Simulator<double> simulator(*diagram);
+  simulator.Initialize();
+  simulator.StepTo(20);
+
+  const auto& x1 = log1->data();
+  const auto& x2 = log2->data();
+
+  EXPECT_EQ(x1.size(), x2.size());
+  const int N = static_cast<int>(x1.size()) / 2;
+  for (int i = 0; i < N; i++) {
+    // Compute cross-correlation
+    const double xcorr =
+        (x1.middleCols(0, N).array() * x2.middleCols(i, N).array()).sum();
+    // Note: The threshold doesn't need to be small.  Any correlations due to
+    // using the same seed will lead to numbers ≊ 1.
+    EXPECT_LE(xcorr / N, 0.1);
+  }
 }
 
 }  // namespace

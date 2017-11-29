@@ -8,7 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "spruce.hh"
+#include <spruce.hh>
+#include <tinyxml2.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
@@ -17,8 +18,8 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/parser_common.h"
 #include "drake/multibody/parsers/xml_util.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 // from
 // http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
@@ -274,6 +275,8 @@ void ParseSdfCollision(RigidBody<double>* body, XMLElement* node,
                         ": ERROR: Failed to parse collision element in link " +
                         body->get_name() + ".");
   }
+
+  element.set_compliant_material(ParseCollisionCompliance(node));
 
   if (element.hasGeometry())
     model->addCollisionElement(element, *body, group_name);

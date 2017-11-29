@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Prerequisite set-up script for Drake with Bazel on Ubuntu 16.04.
+# Prerequisite set-up script for Drake on Ubuntu 16.04.
 
 set -euo pipefail
 
@@ -11,12 +11,12 @@ die () {
 
 me="The Drake prerequisite set-up script"
 
-[[ $EUID -eq 0 ]] || die "$me must run as root. Please use sudo."
+[[ "${EUID}" -eq 0 ]] || die "${me} must run as root. Please use sudo."
 
 apt update
 apt install --no-install-recommends lsb-release wget
 
-[[ "$(lsb_release -sc)" == "xenial" ]] || die "$me only supports Ubuntu 16.04."
+[[ "$(lsb_release -sc)" == "xenial" ]] || die "${me} only supports Ubuntu 16.04."
 
 # Install Clang 3.9
 while true; do
@@ -33,7 +33,7 @@ while true; do
       # added, since it otherwise duplicates the commented deb-src line.
       add-apt-repository -s -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
       apt update
-      apt install --no-install-recommends clang-3.9 clang-format-3.9 lldb-3.9
+      apt install --no-install-recommends clang-3.9 lldb-3.9
       break
       ;;
     [Nn]*) break ;;
@@ -47,7 +47,14 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+chrpath
+clang-4.0
+clang-format-4.0
+cmake
+cmake-curses-gui
+coinor-libclp-dev
 coinor-libipopt-dev
+diffstat
 doxygen
 g++
 g++-5
@@ -59,40 +66,50 @@ gdb
 git
 graphviz
 libblas-dev
-libboost-dev
+libboost-all-dev
+libbz2-dev
 libexpat1-dev
-libfreetype6
+libfreetype6-dev
 libglib2.0-dev
 libglu1-mesa-dev
-libhdf5-10
-libjpeg8
-libjsoncpp1
+libhdf5-dev
+libjpeg8-dev
+libjsoncpp-dev
 liblapack-dev
 liblz4-dev
-libnetcdf-c++4
-libnetcdf11
-libogg0
+libnetcdf-cxx-legacy-dev
+libnetcdf-dev
+libnlopt-dev
+libogg-dev
 libpng-dev
-libqt5multimedia5
-libqt5opengl5
-libqt5x11extras5
-libtheora0
-libtiff5
+libprotobuf-dev
+libqt5opengl5-dev
+libqt5x11extras5-dev
+libtheora-dev
+libtiff5-dev
 libtinyxml-dev
+libtinyxml2-dev
 libtool
-libxml2
-libxt6
+libxml2-dev
+libxt-dev
+libyaml-cpp-dev
+lldb-4.0
+make
 mesa-common-dev
 openjdk-8-jdk
 patchutils
 pkg-config
+protobuf-compiler
 python-dev
 python-gtk2
 python-lxml
+python-matplotlib
 python-numpy
+python-protobuf
 python-pygame
 python-scipy
 python-sphinx
+python-tk
 python-yaml
 valgrind
 zip
@@ -102,14 +119,14 @@ EOF
     )
 
 # Install Bazel.
-wget -O /tmp/bazel_0.5.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.5.2/bazel_0.5.2-linux-x86_64.deb
-if echo "b14c8773dab078d3422fe4082f3ab4d9e14f02313c3b3eb4b5b40c44ce29ed59 /tmp/bazel_0.5.2-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.5.2-linux-x86_64.deb
+wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
+if echo "5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd /tmp/bazel_0.6.1-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.6.1-linux-x86_64.deb
 else
   die "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
 fi
 
-rm /tmp/bazel_0.5.2-linux-x86_64.deb
+rm /tmp/bazel_0.6.1-linux-x86_64.deb
 
 # Remove deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then

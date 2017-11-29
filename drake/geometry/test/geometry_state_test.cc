@@ -1,6 +1,7 @@
 #include "drake/geometry/geometry_state.h"
 
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -12,7 +13,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/test/expect_error_message.h"
+#include "drake/geometry/test_utilities/expect_error_message.h"
 
 namespace drake {
 namespace geometry {
@@ -25,54 +26,72 @@ using std::vector;
 
 template <class T>
 class GeometryStateTester {
-  using State = GeometryState<T>;
-
  public:
-  void set_state(State* state) { state_ = state; }
+  void set_state(GeometryState<T>* state) { state_ = state; }
 
-  FrameId get_world_frame() {
+  FrameId get_world_frame() const {
     return internal::InternalFrame::get_world_frame_id();
   }
 
-  const std::unordered_map<SourceId, FrameIdSet>& get_source_frame_id_map() {
+  const std::unordered_map<SourceId, std::string>& get_source_name_map() const {
+    return state_->source_names_;
+  }
+
+  const std::unordered_map<SourceId, FrameIdSet>& get_source_frame_id_map()
+      const {
     return state_->source_frame_id_map_;
   }
 
-  const std::unordered_map<SourceId, FrameIdSet>& get_source_root_frame_map() {
+  const std::unordered_map<SourceId, FrameIdSet>& get_source_root_frame_map()
+      const {
     return state_->source_root_frame_map_;
   }
 
-  const std::unordered_map<FrameId, internal::InternalFrame>& get_frames() {
+  const std::unordered_map<SourceId, std::unordered_set<GeometryId>>&
+  get_source_anchored_geometry_map() const {
+    return state_->source_anchored_geometry_map_;
+  }
+
+  const std::unordered_map<FrameId, internal::InternalFrame>& get_frames()
+      const {
     return state_->frames_;
   }
 
   const std::unordered_map<GeometryId, internal::InternalGeometry>&
-  get_geometries() {
+  get_geometries() const {
     return state_->geometries_;
   }
 
   const std::unordered_map<GeometryId, internal::InternalAnchoredGeometry>&
-  get_anchored_geometries() {
+  get_anchored_geometries() const {
     return state_->anchored_geometries_;
   }
 
-  const vector<GeometryId>& get_geometry_index_id_map() {
+  const vector<GeometryId>& get_geometry_index_id_map() const {
     return state_->geometry_index_id_map_;
   }
 
-  const vector<GeometryId>& get_anchored_geometry_index_id_map() {
+  const vector<GeometryId>& get_anchored_geometry_index_id_map() const {
     return state_->anchored_geometry_index_id_map_;
   }
 
-  const vector<Isometry3<T>>& get_geometry_frame_poses() {
+  const vector<FrameId>& get_pose_index_frame_id_map() const {
+    return state_->pose_index_to_frame_map_;
+  }
+
+  const vector<Isometry3<double>>& get_geometry_frame_poses() const {
     return state_->X_FG_;
   }
 
-  const vector<Isometry3<T>>& get_geometry_world_poses() {
+  const vector<Isometry3<T>>& get_geometry_world_poses() const {
     return state_->X_WG_;
   }
 
-  const vector<Isometry3<T>>& get_frame_parent_poses() {
+  const vector<Isometry3<T>>& get_frame_world_poses() const {
+    return state_->X_WF_;
+  }
+
+  const vector<Isometry3<T>>& get_frame_parent_poses() const {
     return state_->X_PF_;
   }
 
@@ -91,7 +110,7 @@ class GeometryStateTester {
   }
 
  private:
-  State* state_;
+  GeometryState<T>* state_;
 };
 
 namespace {
@@ -316,6 +335,87 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   EXPECT_FALSE(geometry_state_.source_is_registered(false_id));
 }
 
+// Compares the autodiff geometry state (embedded in its tester) against the
+// double state to confirm they have the same values/topology.
+void ExpectSuccessfulTransmogrification(
+    const GeometryStateTester<AutoDiffXd>& ad_tester,
+    const GeometryStateTester<double>& d_tester) {
+
+  // 1. Test all of the identifier -> trivially testable value maps
+  EXPECT_EQ(ad_tester.get_source_name_map(), d_tester.get_source_name_map());
+  EXPECT_EQ(ad_tester.get_source_name_map(), d_tester.get_source_name_map());
+  EXPECT_EQ(ad_tester.get_source_frame_id_map(),
+            d_tester.get_source_frame_id_map());
+  EXPECT_EQ(ad_tester.get_source_root_frame_map(),
+            d_tester.get_source_root_frame_map());
+  EXPECT_EQ(ad_tester.get_source_anchored_geometry_map(),
+            d_tester.get_source_anchored_geometry_map());
+  EXPECT_EQ(ad_tester.get_geometries(), d_tester.get_geometries());
+  EXPECT_EQ(ad_tester.get_frames(), d_tester.get_frames());
+  EXPECT_EQ(ad_tester.get_anchored_geometries(),
+            d_tester.get_anchored_geometries());
+
+  // 2. Test the vectors of ids
+  EXPECT_EQ(ad_tester.get_geometry_index_id_map(),
+            d_tester.get_geometry_index_id_map());
+  EXPECT_EQ(ad_tester.get_geometry_index_id_map(),
+            d_tester.get_geometry_index_id_map());
+  EXPECT_EQ(ad_tester.get_anchored_geometry_index_id_map(),
+            d_tester.get_anchored_geometry_index_id_map());
+  EXPECT_EQ(ad_tester.get_pose_index_frame_id_map(),
+            d_tester.get_pose_index_frame_id_map());
+
+  // 3. Compare Isometry3<double> with Isometry3<double>
+  EXPECT_EQ(ad_tester.get_geometry_frame_poses().size(),
+            d_tester.get_geometry_frame_poses().size());
+  for (size_t i = 0; i < ad_tester.get_geometry_frame_poses().size(); ++i) {
+    EXPECT_TRUE(CompareMatrices(
+        ad_tester.get_geometry_frame_poses()[i].matrix().block<3, 4>(0, 0),
+        d_tester.get_geometry_frame_poses()[i].matrix().block<3, 4>(0, 0)));
+  }
+
+  // 4. Compare Isometry3<AutoDiffXd> with Isometry3<double>
+  auto test_ad_vs_double = [](const std::vector<Isometry3<AutoDiffXd>>& test,
+                              const std::vector<Isometry3<double>>& ref) {
+    EXPECT_EQ(test.size(), ref.size());
+    for (size_t i = 0; i < ref.size(); ++i) {
+      for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 4; ++col) {
+          EXPECT_EQ(test[i](row, col).value(), ref[i](row, col));
+        }
+      }
+    }
+  };
+
+  test_ad_vs_double(ad_tester.get_frame_parent_poses(),
+                    d_tester.get_frame_parent_poses());
+  test_ad_vs_double(ad_tester.get_geometry_world_poses(),
+                    d_tester.get_geometry_world_poses());
+  test_ad_vs_double(ad_tester.get_frame_world_poses(),
+                    d_tester.get_frame_world_poses());
+}
+
+// This tests the ability to assign a GeometryState<double> to a
+// GeometryState<T>. Implicitly uses transmogrification.
+TEST_F(GeometryStateTest, AssignDoubleToAutoDiff) {
+  SetUpSingleSourceTree();
+  GeometryState<AutoDiffXd> ad_state{};
+  ad_state = geometry_state_;
+  GeometryStateTester<AutoDiffXd> ad_tester;
+  ad_tester.set_state(&ad_state);
+  ExpectSuccessfulTransmogrification(ad_tester, gs_tester_);
+}
+
+// Uses the single source tree to confirm that the data has migrated properly.
+TEST_F(GeometryStateTest, Transmogrify) {
+  SetUpSingleSourceTree();
+  unique_ptr<GeometryState<AutoDiffXd>> ad_state =
+      geometry_state_.ToAutoDiffXd();
+  GeometryStateTester<AutoDiffXd> ad_tester;
+  ad_tester.set_state(ad_state.get());
+  ExpectSuccessfulTransmogrification(ad_tester, gs_tester_);
+}
+
 // Confirms that the actions of initializing the single-source tree leave the
 // geometry state in the expected configuration.
 TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
@@ -425,6 +525,7 @@ TEST_F(GeometryStateTest, AddFrameToInvalidSource) {
 TEST_F(GeometryStateTest, AddFirstFrameToValidSource) {
   SourceId s_id = NewSource();
   FrameId fid = geometry_state_.RegisterFrame(s_id, *frame_.get());
+  EXPECT_EQ(fid, frame_->id());
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
   const auto &frame_set = geometry_state_.GetFramesForSource(s_id);
   EXPECT_NE(frame_set.find(fid), frame_set.end());
@@ -439,6 +540,7 @@ TEST_F(GeometryStateTest, AddFirstFrameToValidSource) {
 TEST_F(GeometryStateTest, AddFrameToSourceWithFrames) {
   SourceId s_id = SetUpSingleSourceTree();
   FrameId fid = geometry_state_.RegisterFrame(s_id, *frame_);
+  EXPECT_EQ(fid, frame_->id());
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
   const auto &frame_set = geometry_state_.GetFramesForSource(s_id);
   EXPECT_NE(frame_set.find(fid), frame_set.end());
@@ -455,6 +557,7 @@ TEST_F(GeometryStateTest, AddFrameToNewSourceWithFrames) {
   SourceId s_id = SetUpSingleSourceTree();
   SourceId new_s_id = geometry_state_.RegisterNewSource("new_source");
   FrameId fid = geometry_state_.RegisterFrame(new_s_id, *frame_.get());
+  EXPECT_EQ(fid, frame_->id());
   // Confirm addition.
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, new_s_id));
   {
@@ -474,6 +577,7 @@ TEST_F(GeometryStateTest, AddFrameToNewSourceWithFrames) {
 TEST_F(GeometryStateTest, AddFrameOnFrame) {
   SourceId s_id = SetUpSingleSourceTree();
   FrameId fid = geometry_state_.RegisterFrame(s_id, frames_[0], *frame_);
+  EXPECT_EQ(fid, frame_->id());
   EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount + 1);
   EXPECT_TRUE(geometry_state_.BelongsToSource(fid, s_id));
 
@@ -488,6 +592,18 @@ TEST_F(GeometryStateTest, AddFrameOnFrame) {
   //  Parent frame has this as child.
   const auto& parent = gs_tester_.get_frames().at(frames_[0]);
   EXPECT_TRUE(parent.has_child(fid));
+}
+
+// Confirms that adding two frames with the same id causes an error.
+TEST_F(GeometryStateTest, AddFrameWithDuplicateId) {
+  SourceId s_id = NewSource();
+  FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_.get());
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterFrame(s_id, *frame_), std::logic_error,
+      "Registering frame with an id that has already been registered: \\d+");
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterFrame(s_id, f_id, *frame_), std::logic_error,
+      "Registering frame with an id that has already been registered: \\d+");
 }
 
 // Tests the valid removal of an existing frame (and its attached geometry).
@@ -584,8 +700,10 @@ TEST_F(GeometryStateTest, RemoveFrameInvalid) {
 TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   SourceId s_id = NewSource();
   FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
+  GeometryId expected_g_id = instance_->id();
   GeometryId g_id = geometry_state_.RegisterGeometry(s_id, f_id,
                                                      move(instance_));
+  EXPECT_EQ(g_id, expected_g_id);
   EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
   Isometry3<double> X_FG = geometry_state_.GetPoseInFrame(g_id);
@@ -595,6 +713,18 @@ TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   const auto& geometry = gs_tester_.get_geometries().at(g_id);
   EXPECT_TRUE(geometry.is_child_of_frame(f_id));
   EXPECT_FALSE(geometry.get_parent_id());
+}
+
+// Confirms that registering two geometries with the same id causes failure.
+TEST_F(GeometryStateTest, RegisterDuplicateGeometry) {
+  SourceId s_id = NewSource();
+  FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
+  auto instance_copy = make_unique<GeometryInstance>(*instance_);
+  geometry_state_.RegisterGeometry(s_id, f_id, move(instance_));
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_copy)),
+      std::logic_error,
+      "Registering geometry with an id that has already been registered: \\d+");
 }
 
 // Tests registration of geometry on invalid source.
@@ -607,7 +737,7 @@ TEST_F(GeometryStateTest, RegisterGeometryMissingSource) {
                        "Referenced geometry source \\d+ is not registered.");
 }
 
-// Tests registration of geometry on valid source and non-existant frame.
+// Tests registration of geometry on valid source and non-existent frame.
 TEST_F(GeometryStateTest, RegisterGeometryMissingFrame) {
   SourceId s_id = NewSource();
 
@@ -644,10 +774,12 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
   const FrameId frame_id = geometry_state_.GetFrameId(parent_id);
   auto instance =
       make_unique<GeometryInstance>(pose, unique_ptr<Shape>(new Sphere(1)));
+  GeometryId expected_g_id = instance->id();
   GeometryId g_id =
       geometry_state_.RegisterGeometryWithParent(s_id,
                                                  parent_id,
                                                  move(instance));
+  EXPECT_EQ(g_id, expected_g_id);
 
   // This relies on the gᵗʰ geometry having position [ g+1 0 0 ]ᵀ. The parent
   // geometry is at [parent_index + 1, 0, 0] and this is at [3, 2, 1]. They
@@ -672,7 +804,7 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
 }
 
 // Tests the response to the erroneous action of trying to hang a new geometry
-// on a non-existant geometry id.
+// on a non-existent geometry id.
 TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
   SourceId s_id = SetUpSingleSourceTree();
   Isometry3<double> pose = Isometry3<double>::Identity();
@@ -874,8 +1006,22 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto instance = make_unique<GeometryInstance>(
       pose, unique_ptr<Shape>(new Sphere(1)));
+  GeometryId expected_g_id = instance->id();
   auto g_id = geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
+  EXPECT_EQ(g_id, expected_g_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
+}
+
+// Confirms that registering two geometries with the same id causes failure.
+TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
+  SourceId s_id = NewSource();
+  auto instance_copy = make_unique<GeometryInstance>(*instance_);
+  geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_));
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_copy)),
+      std::logic_error,
+      "Registering anchored geometry with an id that has already been "
+      "registered: \\d+");
 }
 
 // Tests the attempt to register anchored geometry on an invalid source.

@@ -4,7 +4,7 @@
 #include <map>
 #include <utility>
 
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
@@ -25,7 +25,27 @@ namespace manipulation {
 namespace util {
 
 template <typename T>
-WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {}
+WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {
+  // TODO(SeanCurtis-TRI): These values preserve the historical behavior of the
+  // compliant contact model. However, it has several issues:
+  //  1. Young's modulus is far too small (it does not reflect a reasonable
+  //     value for a real material).
+  //     - the characteristic area is too large for the scenario, but must be
+  //       this large to offset the small Young's modulus.
+  //  2. the dissipation value is not a realistic value for the Hunt-Crossley
+  //     model. According to the original paper, it shouldn't be much larger
+  //     than 0.6 or so.
+  //  3. The Young's modulus value (20000) is twice as big as the old hard-coded
+  //     default. This is because,  *before*, it was a model parameter. Now it
+  //     is a material property. And the combination of two identical material
+  //     Young's modulus values produces an effective Young's modulus half as
+  //     large.
+  contact_model_parameters_.v_stiction_tolerance = 0.01;  // m/s
+  contact_model_parameters_.characteristic_area = 1.0;  // m^2
+  default_contact_material_.set_youngs_modulus(20000);  // Pa
+  default_contact_material_.set_dissipation(2);  // s/m
+  default_contact_material_.set_friction(0.9, 0.5);
+}
 
 template <typename T>
 WorldSimTreeBuilder<T>::~WorldSimTreeBuilder() {}

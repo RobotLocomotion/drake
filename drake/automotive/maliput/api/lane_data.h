@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -14,9 +15,7 @@ namespace drake {
 namespace maliput {
 namespace api {
 
-
 class Lane;
-
 
 /// A specific endpoint of a specific Lane.
 struct LaneEnd {
@@ -123,51 +122,60 @@ class Rotation {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const Rotation& rotation);
 
-/// A position in 3-dimensional geographical Cartesian space, i.e.,
-/// in the world frame, consisting of three components x, y, and z.
-class GeoPosition {
+
+/// A position in 3-dimensional geographical Cartesian space, i.e., in the world
+/// frame, consisting of three components x, y, and z.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - drake::AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+template <typename T>
+class GeoPositionT {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeoPosition)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeoPositionT)
 
   /// Default constructor, initializing all components to zero.
-  GeoPosition() : xyz_(0., 0., 0.) {}
+  GeoPositionT() : xyz_(T(0.), T(0.), T(0.)) {}
 
   /// Fully parameterized constructor.
-  GeoPosition(double x, double y, double z) : xyz_(x, y, z) {}
+  GeoPositionT(const T& x, const T& y, const T& z) : xyz_(x, y, z) {}
 
-  /// Fully parameterized constructor from a 3-vector @p xyz of the form
-  /// `[x, y, z]`.
-  explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
-
-  /// Constructs a GeoPosition from a 3-vector @p xyz of the form `[x, y, z]`.
-  static GeoPosition FromXyz(const Vector3<double>& xyz) {
-    return GeoPosition(xyz);
+  /// Constructs a GeoPositionT from a 3-vector @p xyz of the form `[x, y, z]`.
+  static GeoPositionT<T> FromXyz(const Vector3<T>& xyz) {
+    return GeoPositionT<T>(xyz);
   }
 
   /// Returns all components as 3-vector `[x, y, z]`.
-  const Vector3<double>& xyz() const { return xyz_; }
+  const Vector3<T>& xyz() const { return xyz_; }
   /// Sets all components from 3-vector `[x, y, z]`.
-  void set_xyz(const Vector3<double>& xyz) { xyz_ = xyz; }
+  void set_xyz(const Vector3<T>& xyz) { xyz_ = xyz; }
 
   /// @name Getters and Setters
   //@{
   /// Gets `x` value.
-  double x() const { return xyz_.x(); }
+  T x() const { return xyz_.x(); }
   /// Sets `x` value.
-  void set_x(double x) { xyz_.x() = x; }
+  void set_x(const T& x) { xyz_.x() = x; }
   /// Gets `y` value.
-  double y() const { return xyz_.y(); }
+  T y() const { return xyz_.y(); }
   /// Sets `y` value.
-  void set_y(double y) { xyz_.y() = y; }
-  /// Gets `z` vaue.
-  double z() const { return xyz_.z(); }
+  void set_y(const T& y) { xyz_.y() = y; }
+  /// Gets `z` value.
+  T z() const { return xyz_.z(); }
   /// Sets `z` value.
-  void set_z(double z) { xyz_.z() = z; }
+  void set_z(const T& z) { xyz_.z() = z; }
   //@}
 
  private:
-  Vector3<double> xyz_;
+  explicit GeoPositionT(const Vector3<T>& xyz) : xyz_(xyz) {}
+
+  Vector3<T> xyz_;
 };
+
+// Alias for the double scalar type.
+using GeoPosition = GeoPositionT<double>;
 
 /// Streams a string representation of @p geo_position into @p out. Returns
 /// @p out. This method is provided for the purposes of debugging or
@@ -175,56 +183,72 @@ class GeoPosition {
 std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position);
 
 /// GeoPosition overload for the equality operator.
-bool operator==(const GeoPosition& lhs, const GeoPosition& rhs);
+template <typename T>
+bool operator==(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
+    return (lhs.xyz() == rhs.xyz());
+}
 
 /// GeoPosition overload for the inequality operator.
-bool operator!=(const GeoPosition& lhs, const GeoPosition& rhs);
+template <typename T>
+bool operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
+    return !(lhs.xyz() == rhs.xyz());
+}
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
 ///  * r is lateral position, perpendicular to the reference line at s.
 ///  * h is height above the road surface.
-class LanePosition {
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - drake::AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+template <typename T>
+class LanePositionT {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LanePosition)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LanePositionT)
 
   /// Default constructor, initializing all components to zero.
-  LanePosition() : srh_(0., 0., 0.) {}
+  LanePositionT() : srh_(T(0.), T(0.), T(0.)) {}
 
   /// Fully parameterized constructor.
-  LanePosition(double s, double r, double h) : srh_(s, r, h) {}
+  LanePositionT(const T& s, const T& r, const T& h) : srh_(s, r, h) {}
 
   /// Constructs a LanePosition from a 3-vector @p srh of the form `[s, r, h]`.
-  static LanePosition FromSrh(const Vector3<double>& srh) {
-    return LanePosition(srh);
+  static LanePositionT<T> FromSrh(const Vector3<T>& srh) {
+    return LanePositionT<T>(srh);
   }
 
   /// Returns all components as 3-vector `[s, r, h]`.
-  const Vector3<double>& srh() const { return srh_; }
+  const Vector3<T>& srh() const { return srh_; }
   /// Sets all components from 3-vector `[s, r, h]`.
-  void set_srh(const Vector3<double>& srh) { srh_ = srh; }
+  void set_srh(const Vector3<T>& srh) { srh_ = srh; }
 
   /// @name Getters and Setters
   //@{
   /// Gets `s` value.
-  double s() const { return srh_.x(); }
+  T s() const { return srh_.x(); }
   /// Sets `s` value.
-  void set_s(double s) { srh_.x() = s; }
+  void set_s(const T& s) { srh_.x() = s; }
   /// Gets `r` value.
-  double r() const { return srh_.y(); }
+  T r() const { return srh_.y(); }
   /// Sets `r` value.
-  void set_r(double r) { srh_.y() = r; }
+  void set_r(const T& r) { srh_.y() = r; }
   /// Gets `h` value.
-  double h() const { return srh_.z(); }
+  T h() const { return srh_.z(); }
   /// Sets `h` value.
-  void set_h(double h) { srh_.z() = h; }
+  void set_h(const T& h) { srh_.z() = h; }
   //@}
 
  private:
-  Vector3<double> srh_;
+  explicit LanePositionT(const Vector3<T>& srh) : srh_(srh) {}
 
-  explicit LanePosition(const Vector3<double>& srh) : srh_(srh) {}
+  Vector3<T> srh_;
 };
+
+// Alias for the double scalar type.
+using LanePosition = LanePositionT<double>;
 
 /// Streams a string representation of @p lane_position into @p out. Returns
 /// @p out. This method is provided for the purposes of debugging or
@@ -279,9 +303,11 @@ class RBounds {
   RBounds() = default;
 
   /// Fully parameterized constructor.
+  /// @throws std::runtime_error When @p min is greater than 0.
+  /// @throws std::runtime_error When @p max is smaller than 0.
   RBounds(double min, double max) : min_(min), max_(max) {
-    DRAKE_DEMAND(min <= 0.);
-    DRAKE_DEMAND(max >= 0.);
+    DRAKE_THROW_UNLESS(min <= 0.);
+    DRAKE_THROW_UNLESS(max >= 0.);
   }
 
   /// @name Getters and Setters
@@ -289,11 +315,19 @@ class RBounds {
   /// Gets minimum bound.
   double min() const { return min_; }
   /// Sets minimum bound.
-  void set_min(double min) { min_ = min; }
+  /// @throws std::runtime_error When @p min is greater than 0.
+  void set_min(double min) {
+    DRAKE_THROW_UNLESS(min <= 0.);
+    min_ = min;
+  }
   /// Gets maximum bound.
   double max() const { return max_; }
   /// Sets maximum bound.
-  void set_max(double max) { max_ = max; }
+  /// @throws std::runtime_error When @p max is smaller than 0.
+  void set_max(double max) {
+    DRAKE_THROW_UNLESS(max >= 0.);
+    max_ = max;
+  }
   //@}
 
  private:
@@ -314,9 +348,11 @@ class HBounds {
   HBounds() = default;
 
   /// Fully parameterized constructor.
+  /// @throws std::runtime_error When @p min is greater than 0.
+  /// @throws std::runtime_error When @p max is smaller than 0.
   HBounds(double min, double max) : min_(min), max_(max) {
-    DRAKE_DEMAND(min <= 0.);
-    DRAKE_DEMAND(max >= 0.);
+    DRAKE_THROW_UNLESS(min <= 0.);
+    DRAKE_THROW_UNLESS(max >= 0.);
   }
 
   /// @name Getters and Setters
@@ -324,11 +360,19 @@ class HBounds {
   /// Gets minimum bound.
   double min() const { return min_; }
   /// Sets minimum bound.
-  void set_min(double min) { min_ = min; }
+  /// @throws std::runtime_error When @p min is greater than 0.
+  void set_min(double min) {
+    DRAKE_THROW_UNLESS(min <= 0.);
+    min_ = min;
+  }
   /// Gets maximum bound.
   double max() const { return max_; }
   /// Sets maximum bound.
-  void set_max(double max) { max_ = max; }
+  /// @throws std::runtime_error When @p max is smaller than 0.
+  void set_max(double max) {
+    DRAKE_THROW_UNLESS(max >= 0.);
+    max_ = max;
+  }
   //@}
 
  private:

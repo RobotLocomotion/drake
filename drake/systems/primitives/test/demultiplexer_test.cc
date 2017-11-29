@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -98,7 +98,7 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
 
 // Tests that Demultiplexer allocates no state variables in the context_.
 TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
-  EXPECT_EQ(0, context_->get_continuous_state()->size());
+  EXPECT_EQ(0, context_->get_continuous_state().size());
 }
 
 TEST_F(DemultiplexerTest, DirectFeedthrough) {

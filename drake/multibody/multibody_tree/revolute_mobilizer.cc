@@ -3,7 +3,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -88,6 +88,28 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
   // H_FM = [axis_Fᵀ; 0ᵀ]ᵀ (see CalcAcrossMobilizerSpatialVelocity().)
   // Therefore H_FMᵀ * F_Mo_F = axis_F.dot(F_Mo_F.translational()):
   tau[0] = axis_F_.dot(F_Mo_F.rotational());
+}
+
+template <typename T>
+void RevoluteMobilizer<T>::MapVelocityToQDot(
+    const MultibodyTreeContext<T>&,
+    const Eigen::Ref<const VectorX<T>>& v,
+    EigenPtr<VectorX<T>> qdot) const {
+  DRAKE_ASSERT(v.size() == kNv);
+  DRAKE_ASSERT(qdot != nullptr);
+  DRAKE_ASSERT(qdot->size() == kNq);
+  *qdot = v;
+}
+
+template <typename T>
+void RevoluteMobilizer<T>::MapQDotToVelocity(
+    const MultibodyTreeContext<T>&,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    EigenPtr<VectorX<T>> v) const {
+  DRAKE_ASSERT(qdot.size() == kNq);
+  DRAKE_ASSERT(v != nullptr);
+  DRAKE_ASSERT(v->size() == kNv);
+  *v = qdot;
 }
 
 template <typename T>

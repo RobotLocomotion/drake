@@ -23,38 +23,17 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
       load_message_(multibody::CreateLoadRobotMessage<double>(tree)),
       draw_message_translator_(tree) {
   set_name("drake_visualizer");
-  const int vector_size =
-      tree.get_num_positions() + tree.get_num_velocities();
+  const int vector_size = tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
-  this->DeclareDiscreteState(1);
   if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
+
+  PublishEvent<double> init_event(
+      Event<double>::TriggerType::kInitialization);
+  DeclareInitializationEvent(init_event);
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
   LeafSystem<double>::DeclarePeriodicPublish(period);
-}
-
-void DrakeVisualizer::DoCalcNextUpdateTime(
-    const Context<double>& context, CompositeEventCollection<double>* events,
-    double* time) const {
-  if (is_load_message_sent(context)) {
-    return LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
-  } else {
-    // TODO(siyuan): cleanup after #5725 is resolved.
-    *time = context.get_time() + 0.0001;
-    DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
-    event.add_to_composite(events);
-  }
-}
-
-void DrakeVisualizer::DoCalcDiscreteVariableUpdates(
-    const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
-    DiscreteValues<double>* discrete_state) const {
-  DRAKE_DEMAND(!is_load_message_sent(context));
-
-  PublishLoadRobot();
-  set_is_load_message_sent(discrete_state, true);
 }
 
 void DrakeVisualizer::ReplayCachedSimulation() const {
@@ -112,8 +91,7 @@ void DrakeVisualizer::PlaybackTrajectory(
     // Translates the input vector into an array of bytes representing an LCM
     // message.
     std::vector<uint8_t> message_bytes;
-    draw_message_translator_.Serialize(sim_time, data,
-                                       &message_bytes);
+    draw_message_translator_.Serialize(sim_time, data, &message_bytes);
 
     // Publishes onto the specified LCM channel.
     lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
@@ -130,24 +108,25 @@ void DrakeVisualizer::PlaybackTrajectory(
   // is visualized.
   data.set_value(input_trajectory.value(input_trajectory.getEndTime()));
   std::vector<uint8_t> message_bytes;
-  draw_message_translator_.Serialize(sim_time, data,
-                                     &message_bytes);
+  draw_message_translator_.Serialize(sim_time, data, &message_bytes);
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
                 message_bytes.size());
 }
 
-void DrakeVisualizer::DoPublish(const Context<double>& context,
-    const std::vector<const PublishEvent<double>*>&) const {
-  if (!is_load_message_sent(context)) {
-    drake::log()->warn(
-        "DrakeVisualizer::Publish() called before PublishLoadRobot()");
+void DrakeVisualizer::DoPublish(
+    const Context<double>& context,
+    const std::vector<const PublishEvent<double>*>& event) const {
+  // Initialization should only happen as a singleton event.
+  if (event.size() == 1 && event.front()->get_trigger_type() ==
+      Event<double>::TriggerType::kInitialization) {
+    PublishLoadRobot();
     return;
   }
 
   // Obtains the input vector, which contains the generalized q,v state of the
   // RigidBodyTree.
-  const BasicVector<double>* input_vector = EvalVectorInput(context,
-                                                            kPortIndex);
+  const BasicVector<double>* input_vector =
+      EvalVectorInput(context, kPortIndex);
   if (log_ != nullptr) {
     log_->AddData(context.get_time(), input_vector->get_value());
   }
@@ -170,7 +149,7 @@ void DrakeVisualizer::PublishLoadRobot() const {
   load_message_.encode(lcm_message_bytes.data(), 0, lcm_message_length);
 
   lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", lcm_message_bytes.data(),
-      lcm_message_length);
+                lcm_message_length);
 }
 
 }  // namespace systems

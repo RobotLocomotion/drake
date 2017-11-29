@@ -6,12 +6,16 @@
 #include <vector>
 
 #include "drake/common/cond.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
 namespace automotive {
 
+using maliput::api::GeoPosition;
+using maliput::api::LanePositionT;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
 using maliput::api::Rotation;
@@ -23,7 +27,9 @@ static constexpr int kIdmParamsIndex{0};
 
 template <typename T>
 IdmController<T>::IdmController(const RoadGeometry& road)
-    : road_(road),
+    : systems::LeafSystem<T>(
+          systems::SystemTypeTag<automotive::IdmController>{}),
+      road_(road),
       ego_pose_index_{
           this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
       ego_velocity_index_{
@@ -97,10 +103,12 @@ void IdmController<T>::ImplCalcAcceleration(
   using std::max;
 
   DRAKE_DEMAND(idm_params.IsValid());
+  Isometry3<T> ego_pose_isometry = ego_pose.get_isometry();
+  const auto translation = ego_pose_isometry.translation();
 
-  const auto translation = ego_pose.get_isometry().translation();
-  const maliput::api::GeoPosition geo_position(translation.x(), translation.y(),
-                                               translation.z());
+  const GeoPosition geo_position(ExtractDoubleOrThrow(translation.x()),
+                                 ExtractDoubleOrThrow(translation.y()),
+                                 ExtractDoubleOrThrow(translation.z()));
   const RoadPosition ego_position =
       road_.ToRoadPosition(geo_position, nullptr, nullptr, nullptr);
 
@@ -108,13 +116,17 @@ void IdmController<T>::ImplCalcAcceleration(
   const ClosestPose<T> lead_car_pose = PoseSelector<T>::FindSingleClosestPose(
       ego_position.lane, ego_pose, traffic_poses,
       idm_params.scan_ahead_distance(), AheadOrBehind::kAhead);
-  const double headway_distance = lead_car_pose.distance;
+  const T headway_distance = lead_car_pose.distance;
 
-  T s_dot_ego = PoseSelector<T>::GetSigmaVelocity({ego_position, ego_velocity});
+  const LanePositionT<T> lane_position(T(ego_position.pos.s()),
+                                       T(ego_position.pos.r()),
+                                       T(ego_position.pos.h()));
+  T s_dot_ego = PoseSelector<T>::GetSigmaVelocity(
+      {ego_position.lane, lane_position, ego_velocity});
   T s_dot_lead =
       (abs(lead_car_pose.odometry.pos.s()) ==
        std::numeric_limits<T>::infinity())
-          ? 0.
+          ? T(0.)
           : PoseSelector<T>::GetSigmaVelocity(lead_car_pose.odometry);
 
   // Saturate the net_distance at `idm_params.distance_lower_limit()` away from
@@ -128,8 +140,9 @@ void IdmController<T>::ImplCalcAcceleration(
                                           closing_velocity);
 }
 
-// These instantiations must match the API documentation in idm_controller.h.
-template class IdmController<double>;
-
 }  // namespace automotive
 }  // namespace drake
+
+// These instantiations must match the API documentation in idm_controller.h.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::automotive::IdmController)

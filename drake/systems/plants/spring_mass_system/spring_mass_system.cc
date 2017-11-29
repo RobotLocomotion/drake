@@ -173,10 +173,10 @@ void SpringMassSystem<T>::DoCalcTimeDerivatives(
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector<T>& state = get_state(context);
 
-  SpringMassStateVector<T>* derivative_vector = get_mutable_state(derivatives);
+  SpringMassStateVector<T>& derivative_vector = get_mutable_state(derivatives);
 
   // The derivative of position is velocity.
-  derivative_vector->set_position(state.get_velocity());
+  derivative_vector.set_position(state.get_velocity());
 
   const T external_force = get_input_force(context);
 
@@ -184,12 +184,12 @@ void SpringMassSystem<T>::DoCalcTimeDerivatives(
   // f is the force applied to the body by the spring, and m is the mass of the
   // body.
   const T force_applied_to_body = EvalSpringForce(context) + external_force;
-  derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
+  derivative_vector.set_velocity(force_applied_to_body / mass_kg_);
 
   // We are integrating conservative power to get the work done by conservative
   // force elements, that is, the net energy transferred between the spring and
   // the mass over time.
-  derivative_vector->set_conservative_work(
+  derivative_vector.set_conservative_work(
       this->CalcConservativePower(context));
 }
 

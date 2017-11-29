@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
@@ -1250,6 +1250,90 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
       }  // ishoulder
     }  // iw_elbow
   }  // iw_shoulder
+}
+
+TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
+  // This is the minimum factor of the machine precision within which these
+  // tests pass.
+  const int kEpsilonFactor = 3;
+  const double kTolerance = kEpsilonFactor * kEpsilon;
+
+  shoulder_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
+  elbow_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
+
+  // Set of points Qi measured and expressed in the lower link's frame L.
+  Matrix3X<double> p_LQi_set(3, 3);
+  p_LQi_set.col(0) << 0.0, -2.0, 0.0;  // At the end effector.
+  p_LQi_set.col(1) << 0.0, -1.0, 0.0;  // In the middle of the lower link.
+  p_LQi_set.col(2) << 0.0,  0.0, 0.0;  // At the elbow.
+
+  // World positions of the set of points Qi:
+  Matrix3X<double> p_WQi_set(3, 3);
+  model_->CalcPointsPositions(
+      *context_,
+      lower_link_->get_body_frame(), p_LQi_set,
+      model_->get_world_frame(), &p_WQi_set);
+
+  Matrix3X<double> p_WQi_set_expected(3, 3);
+  p_WQi_set_expected.col(0) << 2.0 + M_SQRT1_2, -M_SQRT1_2, 0.0;
+  p_WQi_set_expected.col(1) << 1.0 + M_SQRT1_2, -M_SQRT1_2, 0.0;
+  p_WQi_set_expected.col(2) << M_SQRT1_2, -M_SQRT1_2, 0.0;
+
+  EXPECT_TRUE(CompareMatrices(
+      p_WQi_set, p_WQi_set_expected, kTolerance, MatrixCompareType::relative));
+
+  // A scond set of points Pi but measured and expressed in the upper link's
+  // frame U.
+  Matrix3X<double> p_UPi_set(3, 3);
+  p_UPi_set.col(0) << 0.0,  1.0, 0.0;  // Projecting 0.5 out from the shoulder.
+  p_UPi_set.col(1) << 0.0,  0.0, 0.0;  // In the middle of the upper link.
+  p_UPi_set.col(2) << 0.0, -1.0, 0.0;  // Projecting 0.5 out from the elbow.
+
+  // World positions of the set of points Qi:
+  Matrix3X<double> p_WPi_set(3, 3);
+  model_->CalcPointsPositions(
+      *context_,
+      upper_link_->get_body_frame(), p_UPi_set,
+      model_->get_world_frame(), &p_WPi_set);
+
+  Matrix3X<double> p_WPi_set_expected(3, 3);
+  p_WPi_set_expected.col(0) = 0.5 * Vector3d(-M_SQRT1_2, M_SQRT1_2, 0.0);
+  p_WPi_set_expected.col(1) = -0.5 * Vector3d(-M_SQRT1_2, M_SQRT1_2, 0.0);
+  p_WPi_set_expected.col(2) = -1.5 * Vector3d(-M_SQRT1_2, M_SQRT1_2, 0.0);
+
+  EXPECT_TRUE(CompareMatrices(
+      p_WPi_set, p_WPi_set_expected, kTolerance, MatrixCompareType::relative));
+
+  const Isometry3d X_UL = model_->CalcRelativeTransform(
+      *context_, upper_link_->get_body_frame(), lower_link_->get_body_frame());
+  const Vector3d p_UL = X_UL.translation();
+  const Matrix3d R_UL = X_UL.linear();
+
+  const Vector3d p_UL_expected(0.0, -0.5, 0.0);
+  const Matrix3d R_UL_expected(Eigen::AngleAxisd(M_PI_4, Vector3d::UnitZ()));
+
+  EXPECT_TRUE(CompareMatrices(
+      p_UL, p_UL_expected, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      R_UL, R_UL_expected, kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+  shoulder_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
+  elbow_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
+
+  // Create a set of points with the wrong number of rows (it must be 3).
+  // The values do not matter for this test, just the size.
+  MatrixX<double> p_LQi_set = MatrixX<double>::Zero(4, 3);
+
+  // World positions of the set of points Qi:
+  Matrix3X<double> p_WQi_set(3, 3);
+  EXPECT_THROW(model_->CalcPointsPositions(
+      *context_,
+      lower_link_->get_body_frame(), p_LQi_set,
+      model_->get_world_frame(), &p_WQi_set), std::runtime_error);
 }
 
 }  // namespace

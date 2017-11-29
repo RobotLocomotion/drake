@@ -1,0 +1,10 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files(
+    ["eigen-create-cps.py"],
+    visibility = ["@eigen//:__pkg__"],
+)
+
+add_lint_tests()

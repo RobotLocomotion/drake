@@ -226,6 +226,11 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// %PiecewisePolynomialTrajectory%.
   virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const = 0;
 
+  double fixed_timestep() const {
+    DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);
+    return fixed_timestep_;
+  }
+
  protected:
   /// Constructs a MultipleShooting instance with fixed sample times.
   ///
@@ -265,11 +270,6 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   bool timesteps_are_decision_variables() const {
     return timesteps_are_decision_variables_;
-  }
-
-  double fixed_timestep() const {
-    DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);
-    return fixed_timestep_;
   }
 
   const solvers::VectorXDecisionVariable& h_vars() const { return h_vars_; }

@@ -60,7 +60,7 @@ void ComputeRegionOfAttraction() {
   const Variable& x = xvec(0);
 
   // Extract the polynomial dynamics.
-  context->get_mutable_continuous_state_vector()->SetAtIndex(0, x);
+  context->get_mutable_continuous_state_vector().SetAtIndex(0, x);
   system.CalcTimeDerivatives(*context, derivatives.get());
 
   // Define the Lyapunov function.
@@ -73,7 +73,7 @@ void ComputeRegionOfAttraction() {
   // Maximize ρ s.t. V̇ ≥ 0 ∧ x ≠ 0 ⇒ V ≥ ρ,
   // implemented as (V(x) - ρ)x² - λ(x)V̇(x) is SOS;
   //                 λ(x) is SOS.
-  const Variable& rho{prog.NewContinuousVariables<1>("rho").coeff(0)};
+  const Variable rho{prog.NewContinuousVariables<1>("rho").coeff(0)};
   const Polynomial rho_poly{rho, {} /* no indeterminate */};
 
   const Polynomial lambda{prog.NewSosPolynomial({x}, 4).first};

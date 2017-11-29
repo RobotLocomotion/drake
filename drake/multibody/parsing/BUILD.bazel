@@ -1,0 +1,83 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "frame_cache",
+    srcs = [
+        "frame_cache.cc",
+    ],
+    hdrs = [
+        "frame_cache.h",
+    ],
+    deps = [
+        "//drake/common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "sdf_spec",
+    srcs = [],
+    hdrs = [
+        "sdf_joint.h",
+        "sdf_link.h",
+        "sdf_model.h",
+        "sdf_spec.h",
+    ],
+    deps = [
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sdf_parser",
+    srcs = [
+        "sdf_parser.cc",
+    ],
+    hdrs = [
+        "sdf_parser.h",
+    ],
+    deps = [
+        ":frame_cache",
+        ":sdf_spec",
+        "//drake/common:essential",
+        "@eigen",
+        "@sdformat",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "frame_cache_test",
+    deps = [
+        ":frame_cache",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sdf_parser_test",
+    data = [
+        ":test/models",
+    ],
+    deps = [
+        ":sdf_parser",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+install_data()
+
+add_lint_tests()

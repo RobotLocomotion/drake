@@ -85,7 +85,7 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs_ = system.AllocateTimeDerivatives();
     qdot_ = std::make_unique<BasicVector<T>>(
-            context->get_continuous_state()->get_generalized_position().size());
+            context->get_continuous_state().get_generalized_position().size());
   }
 
   /**
@@ -115,14 +115,14 @@ template <class T>
 bool SemiExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = this->get_mutable_context();
-  const auto& xc = context->get_mutable_continuous_state();
+  auto& xc = context->get_mutable_continuous_state();
   const auto& system = this->get_system();
 
   // Retrieve the generalized coordinates and velocities and auxiliary
   // variables.
-  VectorBase<T>* q = xc->get_mutable_generalized_position();
-  VectorBase<T>* v = xc->get_mutable_generalized_velocity();
-  VectorBase<T>* z = xc->get_mutable_misc_continuous_state();
+  VectorBase<T>& q = xc.get_mutable_generalized_position();
+  VectorBase<T>& v = xc.get_mutable_generalized_velocity();
+  VectorBase<T>& z = xc.get_mutable_misc_continuous_state();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
@@ -133,13 +133,13 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   const auto& zdot = derivs_->get_misc_continuous_state();
 
   // Update the generalized velocity and auxiliary variables.
-  v->PlusEqScaled({ {dt, vdot} });
-  z->PlusEqScaled({ {dt, zdot} });
+  v.PlusEqScaled({ {dt, vdot} });
+  z.PlusEqScaled({ {dt, zdot} });
 
   // Convert the generalized velocity to the time derivative of generalized
   // coordinates and update the generalized coordinates.
-  system.MapVelocityToQDot(*context, *v, qdot_.get());
-  q->PlusEqScaled({ {dt, *qdot_} });
+  system.MapVelocityToQDot(*context, v, qdot_.get());
+  q.PlusEqScaled({ {dt, *qdot_} });
 
   // Update the time.
   context->set_time(context->get_time() + dt);

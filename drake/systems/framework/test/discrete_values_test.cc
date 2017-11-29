@@ -1,11 +1,11 @@
 #include "drake/systems/framework/discrete_values.h"
 
 #include <memory>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -25,29 +25,39 @@ class DiscreteValuesTest : public ::testing::Test {
 
 TEST_F(DiscreteValuesTest, OwnedState) {
   DiscreteValues<double> xd(std::move(data_));
-  EXPECT_EQ(1.0, xd.get_vector(0)->GetAtIndex(0));
-  EXPECT_EQ(1.0, xd.get_vector(0)->GetAtIndex(1));
-  EXPECT_EQ(2.0, xd.get_vector(1)->GetAtIndex(0));
-  EXPECT_EQ(3.0, xd.get_vector(1)->GetAtIndex(1));
+  EXPECT_EQ(1.0, xd.get_vector(0).GetAtIndex(0));
+  EXPECT_EQ(1.0, xd.get_vector(0).GetAtIndex(1));
+  EXPECT_EQ(2.0, xd.get_vector(1).GetAtIndex(0));
+  EXPECT_EQ(3.0, xd.get_vector(1).GetAtIndex(1));
 }
 
 TEST_F(DiscreteValuesTest, UnownedState) {
   DiscreteValues<double> xd(
       std::vector<BasicVector<double>*>{data_[0].get(), data_[1].get()});
-  EXPECT_EQ(1.0, xd.get_vector(0)->GetAtIndex(0));
-  EXPECT_EQ(1.0, xd.get_vector(0)->GetAtIndex(1));
-  EXPECT_EQ(2.0, xd.get_vector(1)->GetAtIndex(0));
-  EXPECT_EQ(3.0, xd.get_vector(1)->GetAtIndex(1));
+  EXPECT_EQ(1.0, xd.get_vector(0).GetAtIndex(0));
+  EXPECT_EQ(1.0, xd.get_vector(0).GetAtIndex(1));
+  EXPECT_EQ(2.0, xd.get_vector(1).GetAtIndex(0));
+  EXPECT_EQ(3.0, xd.get_vector(1).GetAtIndex(1));
+}
+
+TEST_F(DiscreteValuesTest, NoNullsAllowed) {
+  // Unowned.
+  EXPECT_THROW(DiscreteValues<double>(
+      std::vector<BasicVector<double>*>{nullptr, data_[1].get()}),
+               std::logic_error);
+  // Owned.
+  data_.push_back(nullptr);
+  EXPECT_THROW(DiscreteValues<double>(std::move(data_)), std::logic_error);
 }
 
 TEST_F(DiscreteValuesTest, Clone) {
   DiscreteValues<double> xd(
       std::vector<BasicVector<double>*>{data_[0].get(), data_[1].get()});
   std::unique_ptr<DiscreteValues<double>> clone = xd.Clone();
-  EXPECT_EQ(1.0, clone->get_vector(0)->GetAtIndex(0));
-  EXPECT_EQ(1.0, clone->get_vector(0)->GetAtIndex(1));
-  EXPECT_EQ(2.0, clone->get_vector(1)->GetAtIndex(0));
-  EXPECT_EQ(3.0, clone->get_vector(1)->GetAtIndex(1));
+  EXPECT_EQ(1.0, clone->get_vector(0).GetAtIndex(0));
+  EXPECT_EQ(1.0, clone->get_vector(0).GetAtIndex(1));
+  EXPECT_EQ(2.0, clone->get_vector(1).GetAtIndex(0));
+  EXPECT_EQ(3.0, clone->get_vector(1).GetAtIndex(1));
 }
 
 TEST_F(DiscreteValuesTest, SetFrom) {
@@ -56,7 +66,7 @@ TEST_F(DiscreteValuesTest, SetFrom) {
   DiscreteValues<double> double_xd(BasicVector<double>::Make({3.0, 4.0}));
   ad_xd.SetFrom(double_xd);
 
-  const BasicVector<AutoDiffXd>& vec = *ad_xd.get_vector(0);
+  const BasicVector<AutoDiffXd>& vec = ad_xd.get_vector(0);
   EXPECT_EQ(3.0, vec[0].value());
   EXPECT_EQ(0, vec[0].derivatives().size());
   EXPECT_EQ(4.0, vec[1].value());
@@ -71,8 +81,8 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugar) {
   EXPECT_EQ(42.0, xd[0]);
   EXPECT_EQ(43.0, xd[1]);
   xd[0] = 100.0;
-  EXPECT_EQ(100.0, xd.get_vector()->GetAtIndex(0));
-  xd.get_mutable_vector()->SetAtIndex(1, 1000.0);
+  EXPECT_EQ(100.0, xd.get_vector().GetAtIndex(0));
+  xd.get_mutable_vector().SetAtIndex(1, 1000.0);
   EXPECT_EQ(1000.0, xd[1]);
 }
 

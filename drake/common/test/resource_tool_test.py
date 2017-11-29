@@ -5,7 +5,12 @@ command-line API through all corner cases.
 import re
 import subprocess
 import os
+import sys
 import unittest
+
+
+# Set on command-line to the location of resource_tool.
+_resource_tool_exe = None
 
 
 class TestResourceTool(unittest.TestCase):
@@ -14,7 +19,7 @@ class TestResourceTool(unittest.TestCase):
         """
         try:
             output = subprocess.check_output(
-                ["drake/common/resource_tool"] + args,
+                [_resource_tool_exe] + args,
                 stderr=subprocess.STDOUT)
             returncode = 0
         except subprocess.CalledProcessError as e:
@@ -78,11 +83,12 @@ class TestResourceTool(unittest.TestCase):
         output = output.replace("\n", " ")
         m = re.search(
             (r"-print_resource_path.*`(drake.*)`.*" +
-             r"absolute path.*?`/home/user/tmp/(drake/.*)`"),
+             r"absolute path.*?`/home/user/tmp/(drake/.*?)`"),
             output)
         self.assertTrue(m is not None, "Could not match in " + repr(output))
-        example_relpath, example_abspath = m.groups()
 
+        example_relpath, example_abspath = m.groups()
+        self.assertEqual(example_relpath, example_abspath)
         # Ask for the help message's example and make sure it still works.
         output = self._check_call([
             "--print_resource_path",
@@ -94,4 +100,5 @@ class TestResourceTool(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    _resource_tool_exe = sys.argv.pop(1)
     unittest.main()

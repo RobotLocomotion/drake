@@ -1,0 +1,81 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+)
+
+drake_cc_library(
+    name = "pick_and_place_configuration",
+    hdrs = [
+        "pick_and_place_configuration.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/multibody/rigid_body_plant:compliant_contact_model",
+    ],
+)
+
+drake_cc_library(
+    name = "pick_and_place",
+    srcs = [
+        "action.cc",
+        "pick_and_place_state_machine.cc",
+        "world_state.cc",
+    ],
+    hdrs = [
+        "action.h",
+        "pick_and_place_state_machine.h",
+        "world_state.h",
+    ],
+    deps = [
+        ":pick_and_place_configuration",
+        "//drake/common:essential",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/common/trajectories:piecewise_quaternion",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/lcmtypes:schunk",
+        "//drake/manipulation/planner:constraint_relaxing_ik",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/util:lcm_util",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pick_and_place_state_machine_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    # TODO(eric.cousineau): Remove this tag once #3128 or the IK redux lands.
+    # On some CI machines without SNOPT, system IPOPT is used, and exceeds time
+    # limits under memcheck with -c dbg.
+    tags = ["no_memcheck"],
+    deps = [
+        ":pick_and_place",
+        "//drake/common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "world_state_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":pick_and_place",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()

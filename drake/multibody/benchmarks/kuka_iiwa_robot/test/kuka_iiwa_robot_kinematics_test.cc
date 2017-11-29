@@ -11,41 +11,42 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using drake::multibody::multibody_tree::test_utilities::SpatialKinematicsPVA;
 
 // Compare Drake's MultibodyTree kinematics with MotionGenesis solution.
-void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>> &q,
-                               const Eigen::Ref<const VectorX<double>> &qDt,
-                               const Eigen::Ref<const VectorX<double>> &qDDt) {
-  // Get Drake's end-effector information, including:
+void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
+                               const Eigen::Ref<const VectorX<double>>& qDt,
+                               const Eigen::Ref<const VectorX<double>>& qDDt) {
+  // Get Drake's end-effector kinematics information, including:
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
   // w_NG_N     | G's angular velocity in N, expressed in N.
   // v_NGo_N    | Go's velocity in N, expressed in N.
   // alpha_NG_N | G's angular acceleration in N, expressed in N.
   // a_NGo_N    | Go's acceleration in N, expressed in N.
-  DrakeKukaIIwaRobot drake_kuka_robot;
-  Matrix3d R_NG;
-  Vector3d p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N;
-  std::tie(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N) =
+  DrakeKukaIIwaRobot<double> drake_kuka_robot(0);
+  const SpatialKinematicsPVA<double> drake_kinematics =
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Get corresponding MotionGenesis information.
-  MG::MGKukaIIwaRobot<double> MG_kuka_robot;
-  Matrix3d R_NG_true;
-  Vector3d p_NoGo_N_true, w_NG_N_true, v_NGo_N_true;
-  Vector3d alpha_NG_N_true, a_NGo_N_true;
-  std::tie(R_NG_true, p_NoGo_N_true, w_NG_N_true, v_NGo_N_true,
-           alpha_NG_N_true, a_NGo_N_true) =
+  MG::MGKukaIIwaRobot<double> MG_kuka_robot(0);
+  const SpatialKinematicsPVA<double> MG_kinematics =
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
-  // Compare actual results with expected (true) results.
+  // Kinematics: Compare Drake results with MotionGenesis (expected) results.
   constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(R_NG.isApprox(R_NG_true, kEpsilon));
-  EXPECT_TRUE(p_NoGo_N.isApprox(p_NoGo_N_true, kEpsilon));
-  EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_true, kEpsilon));
-  EXPECT_TRUE(v_NGo_N.isApprox(v_NGo_N_true, kEpsilon));
-  EXPECT_TRUE(alpha_NG_N.isApprox(alpha_NG_N_true, kEpsilon));
-  EXPECT_TRUE(a_NGo_N.isApprox(a_NGo_N_true, kEpsilon));
+  EXPECT_TRUE(drake_kinematics.rotation_matrix().isApprox(
+      MG_kinematics.rotation_matrix(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.position_vector().isApprox(
+      MG_kinematics.position_vector(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.angular_velocity().isApprox(
+      MG_kinematics.angular_velocity(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.translational_velocity().isApprox(
+      MG_kinematics.translational_velocity(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.angular_acceleration().isApprox(
+      MG_kinematics.angular_acceleration(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.translational_acceleration().isApprox(
+      MG_kinematics.translational_acceleration(), kEpsilon));
 }
 
 // Verify methods for MultibodyTree::CalcPositionKinematicsCache(), comparing

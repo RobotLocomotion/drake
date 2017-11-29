@@ -7,6 +7,7 @@
 #include <spruce.hh>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/never_destroyed.h"
 
 using std::string;
 
@@ -16,12 +17,7 @@ using Result = FindResourceResult;
 
 optional<string>
 Result::get_absolute_path() const {
-  // If the resource was not found, return nothing.
-  if (!base_path_) { return nullopt; }
-
-  // Otherwise, return the the full path (base + relative).
-  DRAKE_ASSERT(error_message_ == nullopt);
-  return *base_path_ + '/' + resource_path_;
+  return absolute_path_;
 }
 
 string
@@ -40,12 +36,12 @@ optional<string>
 Result::get_error_message() const {
   // If an error has been set, return it.
   if (error_message_ != nullopt) {
-    DRAKE_ASSERT(base_path_ == nullopt);
+    DRAKE_ASSERT(absolute_path_ == nullopt);
     return error_message_;
   }
 
   // If successful, return no-error.
-  if (base_path_ != nullopt) {
+  if (absolute_path_ != nullopt) {
     return nullopt;
   }
 
@@ -58,13 +54,13 @@ string Result::get_resource_path() const {
   return resource_path_;
 }
 
-Result Result::make_success(string resource_path, string base_path) {
+Result Result::make_success(string resource_path, string absolute_path) {
   DRAKE_THROW_UNLESS(!resource_path.empty());
-  DRAKE_THROW_UNLESS(!base_path.empty());
+  DRAKE_THROW_UNLESS(!absolute_path.empty());
 
   Result result;
   result.resource_path_ = std::move(resource_path);
-  result.base_path_ = std::move(base_path);
+  result.absolute_path_ = std::move(absolute_path);
   result.CheckInvariants();
   return result;
 }
@@ -89,14 +85,14 @@ Result Result::make_empty() {
 void Result::CheckInvariants() {
   if (resource_path_.empty()) {
     // For our "empty" state, both success and error must be empty.
-    DRAKE_DEMAND(base_path_ == nullopt);
+    DRAKE_DEMAND(absolute_path_ == nullopt);
     DRAKE_DEMAND(error_message_ == nullopt);
   } else {
     // For our "non-empty" state, we must have exactly one of success or error.
-    DRAKE_DEMAND((base_path_ == nullopt) != (error_message_ == nullopt));
+    DRAKE_DEMAND((absolute_path_ == nullopt) != (error_message_ == nullopt));
   }
-  // When present, the base_path and error_message cannot be an empty string.
-  DRAKE_DEMAND((base_path_ == nullopt) || !base_path_->empty());
+  // When non-nullopt, the path and error cannot be the empty string.
+  DRAKE_DEMAND((absolute_path_ == nullopt) || !absolute_path_->empty());
   DRAKE_DEMAND((error_message_ == nullopt) || !error_message_->empty());
 }
 
@@ -115,18 +111,24 @@ bool is_relative_path(const string& path) {
   return !path.empty() && (path[0] != '/');
 }
 
-bool file_exists(const string& dirpath, const string& relpath) {
+// Returns the absolute_path iff the `$dirpath/$relpath` exists, else nullopt.
+// As a convenience to callers, if `dirpath` is nullopt, the result is nullopt.
+// (To inquire about an empty `dirpath`, pass the empty string, not nullopt.)
+optional<string> file_exists(
+    const optional<string>& dirpath, const string& relpath) {
   DRAKE_ASSERT(is_relative_path(relpath));
-  const spruce::path dir_query(dirpath);
-  if (!dir_query.isDir()) { return false; }
+  if (!dirpath) { return nullopt; }
+  const spruce::path dir_query(*dirpath);
+  if (!dir_query.isDir()) { return nullopt; }
   const spruce::path file_query(dir_query.getStr() + '/' + relpath);
-  return file_query.exists();
+  if (!file_query.exists()) { return nullopt; }
+  return file_query.getStr();
 }
 
 optional<string> check_candidate_dir(const spruce::path& candidate_dir) {
   // If we found the sentinel, we win.
   spruce::path candidate_file = candidate_dir;
-  candidate_file.append(".drake-resource-sentinel");
+  candidate_file.append("drake/.drake-find_resource-sentinel");
   if (candidate_file.isFile()) {
     return candidate_dir.getStr();
   }
@@ -163,12 +165,42 @@ optional<string> find_sentinel_dir() {
 const char* const kDrakeResourceRootEnvironmentVariableName =
     "DRAKE_RESOURCE_ROOT";
 
+// Saves search directorys path in a persistent variable.
+// This function is only accessible from this file and should not
+// be used outside of `GetResourceSearchPaths()` and
+// `AddResourceSearchPath()`.
+namespace {
+std::vector<string>& GetMutableResourceSearchPaths() {
+  static never_destroyed<std::vector<string>> search_paths;
+  return search_paths.access();
+}
+}  // namespace
+
+std::vector<string> GetResourceSearchPaths() {
+  return GetMutableResourceSearchPaths();
+}
+
+void AddResourceSearchPath(string search_path) {
+  GetMutableResourceSearchPaths().push_back(std::move(search_path));
+}
+
 Result FindResource(string resource_path) {
-  // Check if resource_path is well-formed.
+  // Check if resource_path is well-formed: a relative path that starts with
+  // "drake" as its first directory name.  A valid example would look like:
+  // "drake/common/test/find_resource_test_data.txt".  Requiring strings passed
+  // to drake::FindResource to start with "drake" is redundant, but preserves
+  // compatibility with the original semantics of this function; if we want to
+  // offer a function that takes paths without "drake", we can use a new name.
   if (!is_relative_path(resource_path)) {
     return Result::make_error(
         std::move(resource_path),
         "resource_path is not a relative path");
+  }
+  const std::string prefix("drake/");
+  if (resource_path.compare(0, prefix.size(), prefix) != 0) {
+    return Result::make_error(
+        std::move(resource_path),
+        "resource_path does not start with " + prefix);
   }
 
   // Collect a list of (priority-ordered) directories to check.
@@ -179,17 +211,22 @@ Result FindResource(string resource_path) {
   candidate_dirs.emplace_back(getenv_optional(
       kDrakeResourceRootEnvironmentVariableName));
 
-  // (2) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // (2) Add the list of paths given programmatically. Paths are added only
+  // if the sentinel file can be found.
+  for (const auto& search_path : GetMutableResourceSearchPaths()) {
+      spruce::path candidate_dir(search_path);
+      candidate_dirs.emplace_back(check_candidate_dir(candidate_dir));
+  }
+
+  // (3) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(find_sentinel_dir());
 
-  // TODO(jwnimmer-tri) Add more search heuristics for installed copies of
-  // Drake resources.
-
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
-    if (candidate_dir && file_exists(*candidate_dir, resource_path)) {
-      return Result::make_success(std::move(resource_path), *candidate_dir);
+    if (auto absolute_path = file_exists(candidate_dir, resource_path)) {
+      return Result::make_success(
+          std::move(resource_path), std::move(*absolute_path));
     }
   }
 

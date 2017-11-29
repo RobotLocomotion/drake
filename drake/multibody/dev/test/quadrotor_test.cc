@@ -93,7 +93,7 @@ GTEST_TEST(QuadrotorTest, Equality) {
 
   // Make them use the same "integrator".
   continuous_sim.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
-      continuous_model, step_size, continuous_sim.get_mutable_context());
+      continuous_model, step_size, &continuous_sim.get_mutable_context());
 
   // Initialize the simulators.
   continuous_sim.Initialize();
@@ -106,13 +106,13 @@ GTEST_TEST(QuadrotorTest, Equality) {
   for (int i = 0; i < kQuadrotorStateDim; ++i)
     x0[i] = i + 1;
   auto& continuous_context = continuous_model.GetMutableSubsystemContext(
-    continuous_plant, continuous_sim.get_mutable_context());
-  continuous_context.get_mutable_continuous_state()->SetFromVector(x0);
+    continuous_plant, &continuous_sim.get_mutable_context());
+  continuous_context.get_mutable_continuous_state().SetFromVector(x0);
 
   // Set the initial conditions for the discrete plant.
   Context<double>& discrete_context = discrete_model.GetMutableSubsystemContext(
-      discrete_plant, discrete_sim.get_mutable_context());
-  discrete_context.get_mutable_discrete_state()->get_mutable_vector()->
+      discrete_plant, &discrete_sim.get_mutable_context());
+  discrete_context.get_mutable_discrete_state().get_mutable_vector().
       SetFromVector(x0);
 
   // Step both forward by one step into the future.
@@ -124,7 +124,7 @@ GTEST_TEST(QuadrotorTest, Equality) {
   auto& continuous_state = continuous_sim.get_context().
       get_continuous_state_vector();
   auto& discrete_state = *discrete_sim.get_context().
-      get_discrete_state()->get_data().front();
+      get_discrete_state().get_data().front();
   const double tol = 1e3 * std::numeric_limits<double>::epsilon();
   ASSERT_EQ(continuous_state.size(), discrete_state.size());
   for (int i = 0; i < discrete_state.size(); ++i)

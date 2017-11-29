@@ -21,7 +21,7 @@ class TestResourceTool(unittest.TestCase):
             f.write("tmp_resource")
 
         # Remove the un-installed copy, so we _know_ it won't be used.
-        os.remove(".drake-resource-sentinel")
+        os.remove("drake/.drake-find_resource-sentinel")
         os.remove("drake/__init__.py")
         os.remove("drake/common/__init__.py")
         os.remove("drake/common/install")
@@ -53,6 +53,18 @@ class TestResourceTool(unittest.TestCase):
              "drake/common/test/tmp_resource",
              ],
             env=tool_env,
+            ).strip()
+        with open(absolute_path, 'r') as data:
+            self.assertEqual(data.read(), "tmp_resource")
+
+        # Remove environment variable.
+        absolute_path = subprocess.check_output(
+            [resource_tool,
+             "--print_resource_path",
+             "drake/common/test/tmp_resource",
+             "--add_resource_search_path",
+             "tmp/share/drake",
+             ],
             ).strip()
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), "tmp_resource")

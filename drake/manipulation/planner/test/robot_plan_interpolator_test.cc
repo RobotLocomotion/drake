@@ -110,9 +110,9 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   context->FixInputPort(dut.get_plan_input_port().get_index(),
                         systems::AbstractValue::Make(plan));
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
-                 context->get_mutable_state());
+                 &context->get_mutable_state());
 
-  dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+  dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
 
   // Test we're running the plan through time by watching the
   // positions, velocities, and acceleration change.
@@ -151,7 +151,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
 
   for (const TrajectoryTestCase& kase : cases) {
     context->set_time(kase.time);
-    dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+    dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
     const double position =
         output->get_vector_data(dut.get_state_output_port().get_index())
@@ -177,7 +177,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
       interp_type == InterpolatorType::ZeroOrderHold ||
       interp_type == InterpolatorType::Pchip) {
     context->set_time(t.back() + 0.01);
-    dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+    dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
     const double velocity =
         output->get_vector_data(dut.get_state_output_port().get_index())
@@ -194,7 +194,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   // Check that sending an empty plan causes us to continue to output
   // the same commanded position.
   context->set_time(1);
-  dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+  dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   double position =
       output->get_vector_data(dut.get_state_output_port().get_index())
@@ -206,7 +206,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   plan.plan.clear();
   context->FixInputPort(dut.get_plan_input_port().get_index(),
                         systems::AbstractValue::Make(plan));
-  dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+  dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   position = output->get_vector_data(
       dut.get_state_output_port().get_index())->GetAtIndex(0);

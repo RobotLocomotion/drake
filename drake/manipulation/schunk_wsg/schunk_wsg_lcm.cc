@@ -29,7 +29,6 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
           this->DeclareVectorOutputPort(
               BasicVector<double>(1),
               &SchunkWsgTrajectoryGenerator::OutputForce).get_index()) {
-  this->set_name("SchunkWsgTrajectoryGenerator");
   this->DeclareAbstractInputPort();
   this->DeclareInputPort(systems::kVectorValued, input_size);
   // The update period below matches the polling rate from
@@ -43,7 +42,7 @@ void SchunkWsgTrajectoryGenerator::OutputTarget(
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          context.get_discrete_state(0));
+          &context.get_discrete_state(0));
 
   if (trajectory_) {
     output->get_mutable_value() = trajectory_->value(
@@ -60,7 +59,7 @@ void SchunkWsgTrajectoryGenerator::OutputForce(
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          context.get_discrete_state(0));
+          &context.get_discrete_state(0));
   output->get_mutable_value() = Vector1d(traj_state->max_force());
 }
 
@@ -87,10 +86,10 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          context.get_discrete_state(0));
+          &context.get_discrete_state(0));
   SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
       dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          discrete_state->get_mutable_vector(0));
+          &discrete_state->get_mutable_vector(0));
   new_traj_state->set_last_position(cur_position);
 
   double max_force = command.force;
@@ -182,7 +181,6 @@ SchunkWsgStatusSender::
 SchunkWsgStatusSender(int input_size,
                       int position_index, int velocity_index)
     : position_index_(position_index), velocity_index_(velocity_index) {
-  this->set_name("SchunkWsgStatusSender");
   this->DeclareInputPort(systems::kVectorValued, input_size);
   this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
 }

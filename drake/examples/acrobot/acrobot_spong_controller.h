@@ -43,7 +43,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
 
     // Set nominal state to the upright fixed point.
     AcrobotStateVector<double>* x = dynamic_cast<AcrobotStateVector<double>*>(
-        context0->get_mutable_continuous_state_vector());
+        &context0->get_mutable_continuous_state_vector());
     DRAKE_ASSERT(x != nullptr);
     x->set_theta1(M_PI);
     x->set_theta2(0.0);
@@ -102,7 +102,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     auto context_acrobot = acrobot_.CreateDefaultContext();
     AcrobotStateVector<double>* x_acrobot =
         dynamic_cast<AcrobotStateVector<double>*>(
-            context_acrobot->get_mutable_continuous_state_vector());
+            &context_acrobot->get_mutable_continuous_state_vector());
 
     x_acrobot->set_theta1(x->theta1());
     x_acrobot->set_theta2(x->theta2());

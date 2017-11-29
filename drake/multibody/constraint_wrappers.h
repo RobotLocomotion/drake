@@ -5,7 +5,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
