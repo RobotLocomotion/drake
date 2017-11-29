@@ -45,7 +45,7 @@ GTEST_TEST(TestCallMatlab, RemoteVarTest) {
 }
 
 GTEST_TEST(TestCallMatlab, SimplePlot) {
-  const int N = 100;
+  int N = 100;
 
   Eigen::VectorXd time(N), val(N);
   for (int i = 0; i < N; i++) {
