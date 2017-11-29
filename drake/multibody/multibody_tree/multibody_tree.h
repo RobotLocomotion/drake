@@ -1039,15 +1039,15 @@ class MultibodyTree {
   /// @param[in] to_frame_A
   ///   The frame A in which it is desired to compute the positions `p_AQi` of
   ///   each point `Qi` in the set.
-  /// @param[out] p_BQi
+  /// @param[out] p_AQi
   ///   The output positions of each point `Qi` now computed as measured and
   ///   expressed in frame A. The output `p_AQi` **must** have the same size as
   ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
   ///   **must** be in `ℝ³ˣⁿᵖ`.
   ///
-  /// @note Both `p_BQi` and `p_BQi` must have three rows. Otherwise this
+  /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
   /// method will throw a std::runtime_error exception. This method also throws
-  /// a std::runtime_error exception if `p_BQi` and `p_BQi` differ in the number
+  /// a std::runtime_error exception if `p_BQi` and `p_AQi` differ in the number
   /// of columns.
   void CalcPointsPositions(
       const systems::Context<T>& context,
@@ -1055,6 +1055,63 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_BQi,
       const Frame<T>& to_frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const;
+
+  /// @name Methods to compute multibody Jacobians.
+  /// @{
+
+  /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
+  /// B, (that is, their time derivative `ᴮd/dt(p_BQi)` in frame B is zero),
+  /// this method computes the geometric Jacobian `J_WQi` defined by:
+  /// <pre>
+  ///   J_WQi(q) = d(v_WQi(q, v))/dv
+  /// </pre>
+  /// where `p_WQi` is the position vector in the world frame for each point
+  /// `Qi` in the input set, `v_WQi` is the translational velocity of point `Qi`
+  /// in the world frame W and v is the vector of generalized velocities. Since
+  /// the spatial velocity of each point `Qi` is linear in the generalized
+  /// velocities, the geometric Jacobian `J_WQi` is a function of the
+  /// generalized coordinates q only.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q.
+  /// @param[in] frame_B
+  ///   The positions `p_BQi` of each point in the input set are measured and
+  ///   expressed in this frame B and are constant (fixed) in this frame.
+  /// @param[in] p_BQi_set
+  ///   A matrix with the fixed position of a set of points `Qi` measured and
+  ///   expressed in `frame_B`.
+  ///   Each column of this matrix contains the position vector `p_BQi` for a
+  ///   point `Qi` measured and expressed in frame B. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] p_WQi_set
+  ///   The output positions of each point `Qi` now computed as measured and
+  ///   expressed in frame W. These positions are computed in the process of
+  ///   computing the geometric Jacobian `J_WQi` and therefore external storage
+  ///   must be provided.
+  ///   The output `p_WQi_set` **must** have the same size
+  ///   as the input set `p_BQi_set` or otherwise this method throws a
+  ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
+  ///   `ℝ³ˣⁿᵖ`.
+  /// @param[out] J_WQi
+  ///   The geometric Jacobian `J_WQi(q)`, function of the generalized positions
+  ///   q only. This Jacobian relates the translational velocity `v_WQi` of
+  ///   each point `Qi` in the input set by: <pre>
+  ///     `v_WQi(q, v) = J_WQi(q)⋅v`
+  ///   </pre>
+  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Qi` in the same order they were given in the
+  ///   input set. Therefore `J_WQi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WQi` **must**
+  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
+  ///   exception.
+  void CalcPointsGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const;
+
+  /// @}
+  // End of multibody Jacobian methods section.
 
   /// Transforms generalized velocities v to time derivatives `qdot` of the
   /// generalized positions vector `q` (stored in `context`). `v` and `qdot`
