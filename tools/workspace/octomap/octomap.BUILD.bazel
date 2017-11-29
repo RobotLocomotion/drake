@@ -1,10 +1,5 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-
 package(default_visibility = ["//visibility:public"])
 
 # Lets other packages inspect the CMake code, e.g., for the version number.
@@ -47,17 +42,4 @@ cc_library(
     includes = ["octomap/include"],
     linkstatic = 1,
     deps = [":octomath"],
-)
-
-install(
-    name = "install",
-    targets = [
-        ":octomap",
-        ":octomath",
-    ],
-    hdr_dest = "include",
-    hdr_strip_prefix = ["octomap/include"],
-    guess_hdrs = "PACKAGE",
-    docs = ["octomap/LICENSE.txt"],
-    doc_dest = "share/doc",
 )
