@@ -18,10 +18,6 @@
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 namespace examples {
 namespace multibody_pendulum {
@@ -46,9 +42,6 @@ using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
 
 int do_main() {
-
-  PRINT_VAR(FLAGS_integration_scheme);
-
   systems::DiagramBuilder<double> builder;
 
   auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
