@@ -43,8 +43,8 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
     x = Eigen::Vector4d::Random();
     u = Vector1d::Random();
 
-    context_rbp->get_mutable_continuous_state_vector()->SetFromVector(x);
-    context_p->get_mutable_continuous_state_vector()->SetFromVector(x);
+    context_rbp->get_mutable_continuous_state_vector().SetFromVector(x);
+    context_p->get_mutable_continuous_state_vector().SetFromVector(x);
 
     u_rbp.GetMutableVectorData<double>()->SetFromVector(u);
     u_p.GetMutableVectorData<double>()->SetFromVector(u);

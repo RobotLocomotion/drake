@@ -90,6 +90,14 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </tr>
+ * <tr><td>&dagger; <a href="https://github.com/cvxgrp/scs">
+ *    SCS</a></td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ * </tr>
  * </table>
  *
  * <b>Mixed-Integer Convex Optimization</b>
@@ -159,13 +167,6 @@ namespace solvers {
  *
  * &dagger; indicates that this is a commercial solver which requires a license
  * (note that some have free licenses for academics).
- *
- * Note: Drake must be able to locate each solver on your system during the
- * configuration step (when you run cmake), otherwise that solver will be
- * disabled.  To simplify this process, we have attempted to make solvers
- * available as a part of the Drake superbuild, but we are unable to publicly
- * share the distributions for commercially licensed solvers.
- *
  * @}
  */
 
@@ -2290,6 +2291,7 @@ class MathematicalProgram {
       equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> scs_solver_;
 
   template <typename T>
   void NewVariables_impl(

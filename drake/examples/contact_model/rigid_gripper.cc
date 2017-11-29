@@ -25,6 +25,7 @@ during stiction).
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -38,11 +39,13 @@ during stiction).
 DEFINE_double(accuracy, 5e-5, "Sets the simulation accuracy");
 DEFINE_double(us, 0.9, "The coefficient of static friction");
 DEFINE_double(ud, 0.5, "The coefficient of dynamic friction");
-DEFINE_double(stiffness, 10000, "The contact material stiffness");
-DEFINE_double(dissipation, 2.0, "The contact material dissipation");
+DEFINE_double(youngs_modulus, 1e8, "The contact material Young's modulus (Pa)");
+DEFINE_double(dissipation, 2.0, "The contact material dissipation (s/m)");
 DEFINE_double(v_stiction_tolerance, 0.01,
-              "The maximum slipping speed allowed during stiction");
-DEFINE_double(sim_duration, 5, "Amount of time to simulate");
+              "The maximum slipping speed allowed during stiction (m/s)");
+DEFINE_double(contact_area, 1e-4,
+              "The characteristic scale of contact area (m^2)");
+DEFINE_double(sim_duration, 5, "Amount of time to simulate (s)");
 DEFINE_bool(playback, true,
             "If true, simulation begins looping playback when complete");
 
@@ -88,15 +91,23 @@ int main() {
 
   // Command-line specified contact parameters.
   std::cout << "Contact properties:\n";
-  std::cout << "\tStiffness:                " << FLAGS_stiffness << "\n";
+  std::cout << "\tYoung's modulus:          " << FLAGS_youngs_modulus << "\n";
+  std::cout << "\tDissipation:              " << FLAGS_dissipation << "\n";
   std::cout << "\tstatic friction:          " << FLAGS_us << "\n";
   std::cout << "\tdynamic friction:         " << FLAGS_ud << "\n";
   std::cout << "\tAllowed stiction speed:   " << FLAGS_v_stiction_tolerance
             << "\n";
   std::cout << "\tDissipation:              " << FLAGS_dissipation << "\n";
-  plant->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  plant->set_friction_contact_parameters(FLAGS_us, FLAGS_ud,
-                                         FLAGS_v_stiction_tolerance);
+
+  systems::CompliantMaterial default_material;
+  default_material.set_youngs_modulus(FLAGS_youngs_modulus)
+      .set_dissipation(FLAGS_dissipation)
+      .set_friction(FLAGS_us, FLAGS_ud);
+  plant->set_default_compliant_material(default_material);
+  systems::CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tolerance;
+  plant->set_contact_model_parameters(model_parameters);
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.
@@ -124,9 +135,9 @@ int main() {
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
   systems::Simulator<double> simulator(*model);
 
-  auto context = simulator.get_mutable_context();
+  systems::Context<double>& context = simulator.get_mutable_context();
 
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, &context);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   std::cout << "Variable-step integrator accuracy: " << FLAGS_accuracy << "\n";
@@ -139,7 +150,7 @@ int main() {
   int step_count =
       static_cast<int>(std::ceil(FLAGS_sim_duration / kPrintPeriod));
   for (int i = 1; i <= step_count; ++i) {
-    double t = context->get_time();
+    double t = context.get_time();
     std::cout << "time: " << t << "\n";
     simulator.StepTo(i * kPrintPeriod);
   }

@@ -141,7 +141,7 @@ class LeafSystem : public System<T> {
     detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
     // -- The discrete state must all be valid BasicVectors.
     for (const BasicVector<T>* group :
-         context->get_state().get_discrete_state()->get_data()) {
+         context->get_state().get_discrete_state().get_data()) {
       detail::CheckBasicVectorInvariants(group);
     }
     // -- The numeric parameters must all be valid BasicVectors.
@@ -166,15 +166,15 @@ class LeafSystem : public System<T> {
                        State<T>* state) const override {
     unused(context);
     DRAKE_DEMAND(state != nullptr);
-    ContinuousState<T>* xc = state->get_mutable_continuous_state();
+    ContinuousState<T>& xc = state->get_mutable_continuous_state();
     if (model_continuous_state_vector_ != nullptr) {
-      xc->SetFromVector(model_continuous_state_vector_->get_value());
+      xc.SetFromVector(model_continuous_state_vector_->get_value());
     } else {
-      xc->SetFromVector(VectorX<T>::Zero(xc->size()));
+      xc.SetFromVector(VectorX<T>::Zero(xc.size()));
     }
-    DiscreteValues<T>* xd = state->get_mutable_discrete_state();
-    for (int i = 0; i < xd->num_groups(); i++) {
-      BasicVector<T>& s = xd->get_mutable_vector(i);
+    DiscreteValues<T>& xd = state->get_mutable_discrete_state();
+    for (int i = 0; i < xd.num_groups(); i++) {
+      BasicVector<T>& s = xd.get_mutable_vector(i);
       s.SetFromVector(VectorX<T>::Zero(s.size()));
     }
   }
@@ -638,11 +638,21 @@ class LeafSystem : public System<T> {
 
   /// Declares a per-step event using @p event, which is deep copied (the
   /// copy is maintained by `this`). @p event's associated trigger type must be
-  /// set to Event::TriggerType::kPerStep.
+  /// set to Event::TriggerType::kPerStep. Aborts otherwise.
   template <typename EventType>
   void DeclarePerStepEvent(const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPerStep);
     event.add_to_composite(&per_step_events_);
+  }
+
+  /// Declares an initialization event by deep copying @p event and storing it
+  /// internally. @p event's associated trigger type must be
+  /// Event::TriggerType::kInitialization. Aborts otherwise.
+  template <typename EventType>
+  void DeclareInitializationEvent(const EventType& event) {
+    DRAKE_DEMAND(event.get_trigger_type() ==
+                 Event<T>::TriggerType::kInitialization);
+    event.add_to_composite(&initialization_events_);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -691,9 +701,8 @@ class LeafSystem : public System<T> {
     MaybeDeclareVectorBaseInequalityConstraint(
         "continuous state", model_vector,
         [](const Context<T>& context) -> const VectorBase<T>& {
-          const ContinuousState<T>* state = context.get_continuous_state();
-          DRAKE_DEMAND(state != nullptr);
-          return state->get_vector();
+          const ContinuousState<T>& state = context.get_continuous_state();
+          return state.get_vector();
         });
   }
 
@@ -1254,7 +1263,7 @@ class LeafSystem : public System<T> {
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
             events);
     // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
-    discrete_state->CopyFrom(*context.get_discrete_state());
+    discrete_state->CopyFrom(context.get_discrete_state());
     // Only call DoCalcDiscreteVariableUpdates if there are discrete update
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
@@ -1283,6 +1292,12 @@ class LeafSystem : public System<T> {
       const Context<T>&,
       CompositeEventCollection<T>* events) const override {
     events->SetFrom(per_step_events_);
+  }
+
+  void DoGetInitializationEvents(
+      const Context<T>&,
+      CompositeEventCollection<T>* events) const override {
+    events->SetFrom(initialization_events_);
   }
 
   // Aborts for scalar types that are not numeric, since there is no reasonable
@@ -1429,6 +1444,9 @@ class LeafSystem : public System<T> {
   // Update or Publish events registered on this system for every simulator
   // major time step.
   LeafCompositeEventCollection<T> per_step_events_;
+
+  // Update or Publish events that need to be handled at system initialization.
+  LeafCompositeEventCollection<T> initialization_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;

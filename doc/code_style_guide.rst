@@ -91,7 +91,7 @@ Additional Rules
 
     #!/usr/bin/env python
 
-  Rationale: ``/usr/bin/env`` enables a ``PATH`` search for python. On OSX
+  Rationale: ``/usr/bin/env`` enables a ``PATH`` search for python. On macOS
   systems configured for Drake, this gives a better result than
   ``/usr/bin/python``.
 
@@ -120,9 +120,6 @@ MATLAB Style
   perform these checks.
 * All methods (including mex) should treat `nargout==0` as if we received
   `nargout==1`
-* The `codeCheck` utility will run `mlint` on the code with appropriate
-  warnings disabled.  Eventually, the code should pass this check (but we're
-  still far from it)
 
 .. _code-style-guide-java:
 

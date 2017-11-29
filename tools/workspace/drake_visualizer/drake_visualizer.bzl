@@ -43,7 +43,7 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_mac:
+    if os_result.is_macos:
         archive = "dv-0.1.0-173-g6e49220-qt-5.9.1-vtk-8.0.1-mac-x86_64.tar.gz"
         sha256 = "65b78914327c82bb8fd7cf2182dedc2a45edeafc44fc229415528ee2180bf9a4"  # noqa
     elif os_result.ubuntu_release == "16.04":

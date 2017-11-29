@@ -13,8 +13,8 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/test/explicit_error_controlled_integrator_test.h"
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
+#include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
 namespace drake {
 namespace systems {
@@ -82,7 +82,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
 
   // Re-integrate with RK3
   context->set_time(0.);
-  plant.SetDefaultState(*context, context->get_mutable_state());
+  plant.SetDefaultState(*context, &context->get_mutable_state());
   for (int i=0; i< plant.get_num_velocities(); ++i)
     plant.set_velocity(context.get(), i, generalized_velocities[i]);
   // Reset the non-identity position and orientation.

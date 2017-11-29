@@ -56,7 +56,7 @@ TEST_F(SingleOutputVectorSourceTest, OutputTest) {
 
 // Tests that the state is empty.
 TEST_F(SingleOutputVectorSourceTest, IsStateless) {
-  EXPECT_EQ(context_->get_continuous_state()->size(), 0);
+  EXPECT_EQ(context_->get_continuous_state().size(), 0);
 }
 
 }  // namespace

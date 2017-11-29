@@ -4,6 +4,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
+    "drake_cc_googletest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -52,6 +53,22 @@ drake_cc_binary(
         "//drake/systems/primitives:trajectory_source",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "iiwa_wsg_diagram_factory_test",
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":iiwa_wsg_diagram_factory",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
     ],
 )
 

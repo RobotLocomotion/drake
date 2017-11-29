@@ -37,6 +37,16 @@ struct ConstraintAccelProblemData {
     G_transpose_mult = zero_gv_dim_fn;
   }
 
+  /// Flag for whether the complementarity problem solver should be used to
+  /// solve this particular problem instance. If every constraint in the problem
+  /// data is active, using the linear system solver
+  /// (`use_complementarity_problem_solver=false`) will yield a solution much
+  /// more quickly. If it is unknown whether every constraint is active, the
+  /// complementarity problem solver should be used; otherwise, the inequality
+  /// constraints embedded in the problem data may not be satisfied. The safe
+  /// (and slower) value of `true` is the default.
+  bool use_complementarity_problem_solver{true};
+
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
   /// point of contact), out of the set of all contact indices (0...n-1).

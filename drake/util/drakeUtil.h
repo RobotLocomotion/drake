@@ -15,25 +15,8 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
-#include "drake/common/eigen_stl_types.h"
 
 // TODO(siyuan.feng): Cleanup the naming according to the style guide.
-
-template <typename Key, typename T>
-using eigen_aligned_unordered_map
-DRAKE_DEPRECATED("Use drake::eigen_aligned_std_unordered_map")
-    = drake::eigen_aligned_std_unordered_map<Key, T>;
-
-template <typename Derived>
-inline void sizecheck(const Eigen::MatrixBase<Derived>& mat, size_t rows,
-                      size_t cols) {
-  if ((mat.rows() != rows) || (mat.cols() != cols))
-    throw std::runtime_error(
-        "Wrong-sized matrix:  Expected " + std::to_string(rows) + "-by-" +
-        std::to_string(cols) + " but got " + std::to_string(mat.rows()) +
-        "-by-" + std::to_string(mat.cols()));
-}
 
 // note for if/when we split off all Matlab related stuff into a different file:
 // this function is not Matlab related
@@ -188,22 +171,3 @@ void stdVectorOfStdVectorsToEigen(
     }
   }
 }
-
-template <typename T>
-void addOffset(std::vector<T>& v, const T& offset) {
-  std::transform(v.begin(), v.end(), v.begin(),
-                 std::bind2nd(std::plus<double>(), offset));
-}
-
-void baseZeroToBaseOne(std::vector<int>& vec);
-
-double angleAverage(double theta1, double theta2);
-
-template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,
-          typename DerivedPoint>
-std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
-    const Eigen::MatrixBase<DerivedTorque>& torque,
-    const Eigen::MatrixBase<DerivedForce>& force,
-    const Eigen::MatrixBase<DerivedNormal>& normal,
-    const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane);
-

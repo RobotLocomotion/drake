@@ -173,7 +173,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
-    EXPECT_NEAR(simulator.get_mutable_context()->get_time(), time, 1e-10);
+    EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
     // Note that the expected time is in milliseconds.
     const double expected_time =
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;

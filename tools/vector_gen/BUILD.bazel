@@ -1,0 +1,118 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+    "drake_cc_vector_gen_translator_library",
+    "drake_vector_gen_lcm_sources",
+)
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+)
+load(
+    "@drake//tools/skylark:drake_lcm.bzl",
+    "drake_lcm_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_py_proto_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_py_proto_library(
+    name = "named_vector",
+    srcs = ["named_vector.proto"],
+)
+
+drake_py_binary(
+    name = "lcm_vector_gen",
+    srcs = ["lcm_vector_gen.py"],
+    deps = [
+        ":named_vector",
+        "//tools/lint:clang_format",
+        "//tools/lint:find_data",
+    ],
+)
+
+# === test/ ===
+
+# From sample.named_vector, create gen/sample.{h,cc} (a BasicVector subclass).
+drake_cc_vector_gen_library(
+    name = "sample",
+    testonly = 1,
+    srcs = ["test/sample.named_vector"],
+)
+
+# From sample.named_vector, create lcmt_sample_t.lcm (message definition).
+drake_vector_gen_lcm_sources(
+    name = "sample_lcm_srcs",
+    testonly = 1,
+    srcs = ["test/sample.named_vector"],
+)
+
+# From lcmt_sample_t.lcm, create lcmt_sample_t.hpp (C++ bindings).
+drake_lcm_cc_library(
+    name = "sample_lcmtypes_cc",
+    testonly = 1,
+    includes = ["test"],
+    lcm_package = "drake",
+    lcm_srcs = ["test/lcmt_sample_t.lcm"],
+    strip_include_prefix = "/tools/vector_gen/test",
+)
+
+# From sample.named_vector, create gen/sample_translator.{h,cc}.
+drake_cc_vector_gen_translator_library(
+    name = "sample_translator",
+    testonly = 1,
+    srcs = ["test/sample.named_vector"],
+    deps = [
+        ":sample",
+        ":sample_lcmtypes_cc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sample_test",
+    deps = [
+        ":sample",
+        "//drake/common:autodiff",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sample_translator_test",
+    deps = [
+        ":sample_translator",
+        "//drake/common/test_utilities",
+    ],
+)
+
+sh_test(
+    name = "lcm_vector_gen_test",
+    srcs = ["test/lcm_vector_gen_test.sh"],
+    data = [
+        "test/gen/sample.cc",
+        "test/gen/sample.h",
+        "test/gen/sample_translator.cc",
+        "test/gen/sample_translator.h",
+        "test/goal/lcmt_sample_t.lcm",
+        "test/goal/sample.cc",
+        "test/goal/sample.h",
+        "test/goal/sample_translator.cc",
+        "test/goal/sample_translator.h",
+        "test/lcmt_sample_t.lcm",
+    ],
+)
+
+add_lint_tests()

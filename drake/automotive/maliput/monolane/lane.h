@@ -9,6 +9,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -231,7 +232,7 @@ class Lane : public api::Lane {
   const api::LaneEndSet* DoGetOngoingBranches(
       const api::LaneEnd::Which which_end) const override;
 
-  std::unique_ptr<api::LaneEnd> DoGetDefaultBranch(
+  optional<api::LaneEnd> DoGetDefaultBranch(
       const api::LaneEnd::Which which_end) const override;
 
   double do_length() const override;

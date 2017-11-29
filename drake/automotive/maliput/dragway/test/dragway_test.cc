@@ -258,15 +258,15 @@ class MaliputDragwayLaneTest : public ::testing::Test {
 
     // Verifies correctness of the default branches.
     {
-      std::unique_ptr<api::LaneEnd> default_start_lane_end =
+      optional<api::LaneEnd> default_start_lane_end =
           lane->GetDefaultBranch(api::LaneEnd::kStart);
-      EXPECT_NE(default_start_lane_end.get(), nullptr);
+      EXPECT_TRUE(default_start_lane_end);
       EXPECT_EQ(default_start_lane_end->end, api::LaneEnd::kFinish);
       EXPECT_EQ(default_start_lane_end->lane, lane);
 
-      std::unique_ptr<api::LaneEnd> default_finish_lane_end =
+      optional<api::LaneEnd> default_finish_lane_end =
           lane->GetDefaultBranch(api::LaneEnd::kFinish);
-      EXPECT_NE(default_finish_lane_end.get(), nullptr);
+      EXPECT_TRUE(default_finish_lane_end);
       EXPECT_EQ(default_finish_lane_end->end, api::LaneEnd::kStart);
       EXPECT_EQ(default_finish_lane_end->lane, lane);
     }
@@ -677,9 +677,12 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePositionAutoDiff) {
         api::GeoPositionT<AutoDiffXd> geo_position{
           x_autodiff, y_autodiff, z_autodiff};
 
+        // Compute LanePositionT with and without the I/O arguments.
         const api::LanePositionT<AutoDiffXd> lane_position =
             lane_->ToLanePositionT<AutoDiffXd>(geo_position,
                                                &nearest_position, &distance);
+        const api::LanePositionT<AutoDiffXd> lane_position_nullargs =
+            lane_->ToLanePositionT<AutoDiffXd>(geo_position, nullptr, nullptr);
 
         std::vector<Vector3<double>> positional_derivatives{
           Vector3<double>::Zero(),   // s
@@ -695,19 +698,16 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePositionAutoDiff) {
           // = 0 (Dragway's s-r-h axis has the same orientation as the x-y-z
           // axis).  Verify that the derivatives of nearest position are the
           // same as for geo_position.
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      lane_position.s().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      nearest_position.x().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[1],
-                                      lane_position.r().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[1],
-                                      nearest_position.y().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[2],
-                                      lane_position.h().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[2],
-                                      nearest_position.z().derivatives()));
-
+          for (int i{0}; i < 3; ++i) {
+            EXPECT_TRUE(CompareMatrices(positional_derivatives[i],
+                                        lane_position.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                lane_position_nullargs.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                nearest_position.xyz()(i).derivatives()));
+          }
           // Expect ∂/∂x(distance) = 0., as distance remains unchanged when
           // on the boundary or within the interior of the lane.
           EXPECT_TRUE(CompareMatrices(Vector3<double>::Zero(),
@@ -781,10 +781,16 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePositionAutoDiff) {
           EXPECT_TRUE(CompareMatrices(
               distance_derivatives, distance.derivatives(),
               1e-15 /* account for small numerical errors */));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      lane_position.s().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      nearest_position.x().derivatives()));
+          for (int i{0}; i < 3; ++i) {
+            EXPECT_TRUE(CompareMatrices(positional_derivatives[i],
+                                        lane_position.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                lane_position_nullargs.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                nearest_position.xyz()(i).derivatives()));
+          }
         }
       }
     }

@@ -59,6 +59,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "lcm_plan_interpolator",
+    srcs = ["lcm_plan_interpolator.cc"],
+    hdrs = [
+        "lcm_plan_interpolator.h",
+    ],
+    deps = [
+        ":iiwa_common",
+        ":iiwa_lcm",
+        "//drake/manipulation/planner:robot_plan_interpolator",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives:demultiplexer",
+    ],
+)
+
 drake_cc_binary(
     name = "iiwa_controller",
     srcs = ["iiwa_controller.cc"],
@@ -68,18 +83,12 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_common",
-        ":iiwa_lcm",
-        "//drake/common:find_resource",
+        ":lcm_plan_interpolator",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
-        "//drake/manipulation/planner:robot_plan_interpolator",
-        "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
-        "//drake/systems/primitives:demultiplexer",
         "@com_github_gflags_gflags//:gflags",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -99,6 +108,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
+        "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/lcm",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
@@ -205,15 +215,19 @@ sh_test(
     data = [
         "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
     ],
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
 )
 
 # This examples needs to be install for external projects such as Spartan.
 install(
     name = "install",
     targets = [
+        ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
+        ":kuka_simulation",
     ],
-    runtime_strip_prefix = ["install"],
+    runtime_dest = "share/drake/examples/kuka_iiwa_arm",
     visibility = ["//visibility:public"],
 )
 

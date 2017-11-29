@@ -1,0 +1,269 @@
+# -*- python -*-
+
+load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_test",
+)
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
+load(":pybind.bzl", "drake_pybind_cc_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_pybind_cc_binary(
+    name = "_pydrake_common.so",
+    srcs = [
+        "pydrake_common.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "_pydrake_autodiffutils.so",
+    srcs = [
+        "pydrake_autodiff_types.h",
+        "pydrake_autodiffutils.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "_pydrake_rbtree.so",
+    srcs = [
+        "pydrake_autodiff_types.h",
+        "pydrake_rbtree.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "parsers.so",
+    srcs = [
+        "pydrake_parsers.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "solvers/_pydrake_ik.so",
+    srcs = [
+        "pydrake_ik.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "solvers/_pydrake_mathematicalprogram.so",
+    srcs = [
+        "pydrake_mathematicalprogram.cc",
+        "pydrake_symbolic_types.h",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "solvers/gurobi.so",
+    srcs = [
+        "pydrake_gurobi.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "solvers/ipopt.so",
+    srcs = [
+        "pydrake_ipopt.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "solvers/mosek.so",
+    srcs = [
+        "pydrake_mosek.cc",
+    ],
+)
+
+drake_pybind_cc_binary(
+    name = "_pydrake_symbolic.so",
+    srcs = [
+        "pydrake_symbolic.cc",
+        "pydrake_symbolic_types.h",
+    ],
+)
+
+PYDRAKE_SO_DATA = [
+    ":_pydrake_autodiffutils.so",
+    ":_pydrake_common.so",
+    ":_pydrake_rbtree.so",
+    ":_pydrake_symbolic.so",
+    ":parsers.so",
+    ":solvers/_pydrake_ik.so",
+    ":solvers/_pydrake_mathematicalprogram.so",
+    ":solvers/gurobi.so",
+    ":solvers/ipopt.so",
+    ":solvers/mosek.so",
+]
+
+drake_py_library(
+    name = "pydrake",
+    srcs = [
+        "__init__.py",
+        "autodiffutils.py",
+        "common.py",
+        "forwarddiff.py",
+        "pydrake_path.py",
+        "rbtree.py",
+        "solvers/__init__.py",
+        "solvers/ik.py",
+        "solvers/mathematicalprogram.py",
+        "symbolic.py",
+    ],
+    data = PYDRAKE_SO_DATA,
+    imports = [".."],
+    visibility = ["//visibility:public"],
+)
+
+PY_DEST = "lib/python2.7/site-packages/pydrake"
+
+install(
+    name = "install",
+    targets = [
+        ":pydrake",
+    ] + PYDRAKE_SO_DATA,
+    library_dest = PY_DEST,
+    py_dest = PY_DEST,
+    visibility = ["//visibility:public"],
+)
+
+drake_py_test(
+    name = "pydrake_atlas_constructor_test",
+    size = "small",
+    srcs = ["test/testAtlasConstructor.py"],
+    data = ["//drake/examples/atlas:models"],
+    main = "test/testAtlasConstructor.py",
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_common_test",
+    size = "small",
+    srcs = ["test/testCommon.py"],
+    data = ["//drake/examples/atlas:models"],
+    main = "test/testCommon.py",
+    deps = [":pydrake"],
+)
+
+# `//:install` is run in this test to verify that once installed
+# pydrake still works. This test is implemented in a separate file from
+# pydrake_common_test to be able to remove files in the sandbox without
+# interfering with other tests. This test fails when bazel is run with
+# `no_everything` because `libgurobi70.so` is not found [Issue #7283].
+drake_py_test(
+    name = "pydrake_common_install_test",
+    size = "medium",
+    srcs = ["test/testCommonInstall.py"],
+    data = ["//:install"],
+    main = "test/testCommonInstall.py",
+    tags = ["no_everything"],
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_forward_diff_test",
+    size = "small",
+    srcs = ["test/testForwardDiff.py"],
+    main = "test/testForwardDiff.py",
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_mathematical_program_gurobi_solver_test",
+    size = "small",
+    srcs = ["test/testGurobiSolver.py"],
+    main = "test/testGurobiSolver.py",
+    tags = gurobi_test_tags(),
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_mathematical_program_ipopt_solver_test",
+    size = "small",
+    srcs = ["test/test_ipopt_solver.py"],
+    args = select({
+        "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    main = "test/test_ipopt_solver.py",
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_mathematical_program_mosek_solver_test",
+    size = "small",
+    srcs = ["test/testMosekSolver.py"],
+    main = "test/testMosekSolver.py",
+    tags = mosek_test_tags(),
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_mathematical_program_test",
+    size = "small",
+    srcs = ["test/testMathematicalProgram.py"],
+    main = "test/testMathematicalProgram.py",
+    tags = gurobi_test_tags(),
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_pr2ik_test",
+    size = "small",
+    srcs = ["test/testPR2IK.py"],
+    data = ["//drake/examples/pr2:models"],
+    main = "test/testPR2IK.py",
+    tags = ["snopt"],
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_rbm_forward_kin_test",
+    size = "small",
+    srcs = ["test/testRBTTransformPoints.py"],
+    data = ["//drake/examples/pendulum:models"],
+    main = "test/testRBTTransformPoints.py",
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_rbt_com_test",
+    size = "small",
+    srcs = ["test/testRBTCoM.py"],
+    data = ["//drake/examples/pendulum:models"],
+    main = "test/testRBTCoM.py",
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_rbtik_test",
+    size = "small",
+    srcs = ["test/testRBTIK.py"],
+    data = ["//drake/examples/pendulum:models"],
+    main = "test/testRBTIK.py",
+    tags = ["snopt"],
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_symbolic_variables_test",
+    size = "small",
+    srcs = ["test/testSymbolic.py"],
+    main = "test/testSymbolic.py",
+    deps = [":pydrake"],
+)
+
+drake_py_test(
+    name = "pydrake_urdf_parser_test",
+    size = "small",
+    srcs = ["test/test_urdf_parser.py"],
+    data = ["//drake/examples/pr2:models"],
+    main = "test/test_urdf_parser.py",
+    deps = [":pydrake"],
+)
+
+add_lint_tests()

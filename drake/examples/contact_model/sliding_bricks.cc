@@ -35,16 +35,19 @@ using std::make_unique;
 // will promptly begin infinitely looping playback in wall clock time.
 
 // Simulation parameters.
-DEFINE_double(v, 0.1, "The initial speed of the second brick");
-DEFINE_double(timestep, 1e-4, "The simulator time step");
-DEFINE_double(push, 260, "The magnitude of the force pushing on the bricks");
-DEFINE_double(stiffness, 100000, "The contact model's stiffness");
+DEFINE_double(v, 0.1, "The initial speed of the second brick (m/s)");
+DEFINE_double(timestep, 1e-4, "The simulator time step (s)");
+DEFINE_double(push, 260,
+              "The magnitude of the force pushing on the bricks (N)");
+DEFINE_double(youngs_modulus, 1e8, "The contact model's Young's modulus (Pa)");
 DEFINE_double(us, 0.9, "The static coefficient of friction");
 DEFINE_double(ud, 0.5, "The dynamic coefficient of friction");
 DEFINE_double(v_tol, 0.01,
-              "The maximum slipping speed allowed during stiction");
-DEFINE_double(dissipation, 1.0, "The contact model's dissipation");
-DEFINE_double(sim_duration, 3, "The simulation duration");
+              "The maximum slipping speed allowed during stiction (m/s)");
+DEFINE_double(dissipation, 1.0, "The contact model's dissipation (s/m)");
+DEFINE_double(contact_area, 1e-3,
+              "The characteristic scale of contact area (m^2)");
+DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
 
@@ -61,10 +64,11 @@ int main() {
   std::cout << "\tTime step:        " << FLAGS_timestep << "\n";
   std::cout << "\tPushing force:    " << FLAGS_push << "\n";
   std::cout << "\tẋ:                " << FLAGS_v << "\n";
-  std::cout << "\tStiffness:        " << FLAGS_stiffness << "\n";
+  std::cout << "\tYoung's modulus:  " << FLAGS_youngs_modulus << "\n";
   std::cout << "\tStatic friction:  " << FLAGS_us << "\n";
   std::cout << "\tDynamic friction: " << FLAGS_ud << "\n";
   std::cout << "\tSlip Threshold:   " << FLAGS_v_tol << "\n";
+  std::cout << "\tContact area:     " << FLAGS_contact_area << "\n";
   std::cout << "\tDissipation:      " << FLAGS_dissipation << "\n";
 
   DiagramBuilder<double> builder;
@@ -82,9 +86,18 @@ int main() {
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
   plant.set_name("plant");
+
   // Contact parameters set arbitrarily.
-  plant.set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  plant.set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
+  systems::CompliantMaterial default_material;
+  default_material.set_youngs_modulus(FLAGS_youngs_modulus)
+      .set_dissipation(FLAGS_dissipation)
+      .set_friction(FLAGS_us, FLAGS_ud);
+  plant.set_default_compliant_material(default_material);
+  systems::CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_tol;
+  plant.set_contact_model_parameters(model_parameters);
+
   const auto& tree = plant.get_rigid_body_tree();
 
   // RigidBodyActuators.
@@ -119,12 +132,13 @@ int main() {
 
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
-  auto context = simulator->get_mutable_context();
+  Context<double>& context = simulator->get_mutable_context();
   simulator->reset_integrator<RungeKutta2Integrator<double>>(*diagram,
                                                              FLAGS_timestep,
-                                                             context);
+                                                             &context);
   // Set initial state.
-  auto& plant_context = diagram->GetMutableSubsystemContext(plant, context);
+  Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, &context);
   // 6 1-dof joints * 2 = 6 * (x, ẋ) * 2
   const int kStateSize = 24;
   DRAKE_DEMAND(plant_context.get_continuous_state_vector().size() ==

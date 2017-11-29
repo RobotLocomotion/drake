@@ -2093,14 +2093,16 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
       binding.constraint()->A() * binding.variables() +
       binding.constraint()->b();
   const double tol{1E-10};
-  symbolic::test::ComparePolynomials(symbolic::Polynomial(linear_expression1),
-                                     symbolic::Polynomial(z(0)), tol);
-  symbolic::test::ComparePolynomials(symbolic::Polynomial(linear_expression2),
-                                     symbolic::Polynomial(z(1)), tol);
-  symbolic::test::ComparePolynomials(
+  EXPECT_TRUE(
+      symbolic::test::PolynomialEqual(symbolic::Polynomial(linear_expression1),
+                                      symbolic::Polynomial(z(0)), tol));
+  EXPECT_TRUE(
+      symbolic::test::PolynomialEqual(symbolic::Polynomial(linear_expression2),
+                                      symbolic::Polynomial(z(1)), tol));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(quadratic_expression),
       symbolic::Polynomial(z.tail(z.rows() - 2).squaredNorm()),
-      tol);
+      tol));
 }
 
 namespace {

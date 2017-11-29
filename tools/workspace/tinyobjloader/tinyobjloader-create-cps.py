@@ -11,7 +11,6 @@ content = """
   "Description": "Tiny but powerful single file wavefront obj loader",
   "License": "MIT",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
-  "Compat-Version": "%(VERSION_MAJOR)s.0.0",
   "Default-Components": [ ":tinyobjloader" ],
   "Components": {
     "tinyobjloader": {

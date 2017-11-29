@@ -74,7 +74,7 @@ class FramePoseTrackerTest : public ::testing::Test {
         dut.get_kinematics_input_port_index() /* input port ID*/,
         std::move(input));
 
-    dut.CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+    dut.CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut.CalcOutput(*context_, output_.get());
     auto output_value =
         output_->get_data(dut.get_pose_bundle_output_port_index());

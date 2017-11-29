@@ -212,7 +212,7 @@ GTEST_TEST(MonolaneBuilderTest, QuadRing) {
                 api::LaneId("l:left1"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
                 api::LaneEnd::kFinish);
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish).get(), nullptr);
+      EXPECT_FALSE(lane->GetDefaultBranch(api::LaneEnd::kFinish));
     } else {
       GTEST_FAIL();
     }

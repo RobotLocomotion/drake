@@ -30,14 +30,14 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
     if (event_info->HasDiscreteUpdateEvents()) {
       sub.CalcDiscreteVariableUpdates(
           *context, event_info->get_discrete_update_events(),
-          tmp_state->get_mutable_discrete_state());
+          &tmp_state->get_mutable_discrete_state());
     } else if (event_info->HasUnrestrictedUpdateEvents()) {
       sub.CalcUnrestrictedUpdate(*context,
           event_info->get_unrestricted_update_events(), tmp_state.get());
     } else {
       DRAKE_DEMAND(false);
     }
-    context->get_mutable_state()->CopyFrom(*tmp_state);
+    context->get_mutable_state().CopyFrom(*tmp_state);
   }
   sub.CalcOutput(*context, output);
 }

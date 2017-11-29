@@ -11,13 +11,16 @@ content = """
   "Description": "Lightweight C++ template library for vector and matrix math",
   "License": ["MPL-2.0", "LGPL-2.1+", "BSD-3-Clause"],
   "Version": "%(WORLD_VERSION)s.%(MAJOR_VERSION)s.%(MINOR_VERSION)s",
-  "Compat-Version": "%(WORLD_VERSION)s.0.0",
   "Default-Components": [ ":Eigen" ],
   "Components": {
     "Eigen": {
       "Type": "interface",
       "Includes": [ "@prefix@/include/eigen3" ]
     }
+  },
+  "X-CMake-Variables": {
+    "EIGEN_FOUND": "ON",
+    "EIGEN_INCLUDE_DIRS": "${CMAKE_CURRENT_LIST_DIR}/../../../include/eigen3"
   }
 }
 """ % defs

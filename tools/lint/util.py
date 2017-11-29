@@ -16,7 +16,7 @@ def find_all_sources():
     """
     # Our outermost `myprogram.runfiles` directory will contain a file named
     # MANIFEST.  Because this py_library declares a `data=[]` dependency on
-    # Drake's top-level sentinel file, the manifest will cite the original
+    # Drake's top-level .bazelproject file, the manifest will cite the original
     # location of that file, which we can abuse to find the absolute path to
     # the root of the source tree.
     workspace_root = None
@@ -29,13 +29,13 @@ def find_all_sources():
         with open(manifest, "r") as infile:
             lines = infile.readlines()
         for one_line in lines:
-            if not one_line.startswith("drake/.drake-resource-sentinel"):
+            if not one_line.startswith("drake/.bazelproject"):
                 continue
             _, source_sentinel = one_line.split(" ")
             workspace_root = os.path.dirname(source_sentinel)
             break
     if not workspace_root:
-        raise RuntimeError("Cannot find .drake-resource-sentinel in MANIFEST")
+        raise RuntimeError("Cannot find .bazelproject in MANIFEST")
     # Make sure we found the right place.
     workspace_file = os.path.join(workspace_root, "WORKSPACE")
     if not os.path.exists(workspace_file):

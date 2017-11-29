@@ -15,8 +15,8 @@ On Ubuntu, install the build dependencies::
 
   sudo apt install binutils-dev libdw-dev libelf-dev libiberty-dev
 
-OSX and Ubuntu Build Steps
-==========================
+macOS and Ubuntu Build Steps
+============================
 
 To build from source, follow these steps::
 
@@ -30,10 +30,10 @@ To build from source, follow these steps::
 The resulting binary will be in ``kcov/build/src/kcov``. Create a symbolic link
 to the binary from some directory on your ``$PATH``.
 
-OSX Run-time Requirements
-=========================
+macOS Run-time Requirements
+===========================
 
-On OSX, be sure that your account has developer mode enabled, which gives you
+On macOS, be sure that your account has developer mode enabled, which gives you
 the privileges necessary to run debuggers and similar tools. If you are an
 administrator, use this command::
 

@@ -155,7 +155,7 @@ class TestMpcWithCubicSystem : public ::testing::Test {
 
     // Set the nominal state.
     BasicVector<double>& x =
-        context->get_mutable_discrete_state()->get_mutable_vector();
+        context->get_mutable_discrete_state().get_mutable_vector();
     x.SetFromVector(Eigen::Vector2d::Zero());  // Fixed point is zero.
 
     dut_.reset(new LinearModelPredictiveController<double>(
@@ -196,10 +196,10 @@ class TestMpcWithCubicSystem : public ::testing::Test {
 
     const auto& cubic_system = GetSystemByName("cubic_system", *diagram_);
     Context<double>& cubic_system_context =
-        diagram_->GetMutableSubsystemContext(cubic_system,
-                                             simulator_->get_mutable_context());
+        diagram_->GetMutableSubsystemContext(
+            cubic_system, &simulator_->get_mutable_context());
     BasicVector<double>& x0 =
-        cubic_system_context.get_mutable_discrete_state()->get_mutable_vector();
+        cubic_system_context.get_mutable_discrete_state().get_mutable_vector();
 
     // Set an initial condition near the fixed point.
     x0.SetFromVector(10. * Eigen::Vector2d::Ones());
@@ -232,7 +232,7 @@ TEST_F(TestMpcWithCubicSystem, TimeInvariantMpc) {
   // Result should be deadbeat; expect convergence to within a tiny tolerance in
   // one step.
   Eigen::Vector2d result =
-      simulator_->get_mutable_context()->get_discrete_state(0).get_value();
+      simulator_->get_mutable_context().get_discrete_state(0).get_value();
   EXPECT_TRUE(CompareMatrices(result, Eigen::Vector2d::Zero(), kTolerance));
 }
 

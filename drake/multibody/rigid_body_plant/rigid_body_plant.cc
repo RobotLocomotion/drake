@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/solvers/mathematical_program.h"
 
 using std::make_unique;
@@ -163,27 +164,16 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() {}
 
-// TODO(liang.fok) Remove these methods once a more advanced contact modeling
-// framework is available.
 template <typename T>
-void RigidBodyPlant<T>::set_normal_contact_parameters(
-    double penetration_stiffness, double dissipation) {
-  DRAKE_DEMAND(penetration_stiffness >= 0);
-  DRAKE_DEMAND(dissipation >= 0);
-  compliant_contact_model_->set_normal_contact_parameters(
-      penetration_stiffness, dissipation);
+void RigidBodyPlant<T>::set_contact_model_parameters(
+    const CompliantContactModelParameters& parameters) {
+  compliant_contact_model_->set_model_parameters(parameters);
 }
 
 template <typename T>
-void RigidBodyPlant<T>::set_friction_contact_parameters(
-    double static_friction_coef, double dynamic_friction_coef,
-    double v_stiction_tolerance) {
-  DRAKE_DEMAND(dynamic_friction_coef >= 0);
-  DRAKE_DEMAND(static_friction_coef >= dynamic_friction_coef);
-  DRAKE_DEMAND(v_stiction_tolerance > 0);
-
-  compliant_contact_model_->set_friction_contact_parameters(
-      static_friction_coef, dynamic_friction_coef, v_stiction_tolerance);
+void RigidBodyPlant<T>::set_default_compliant_material(
+    const CompliantMaterial& material) {
+  compliant_contact_model_->set_default_material(material);
 }
 
 template <typename T>
@@ -269,8 +259,8 @@ void RigidBodyPlant<T>::set_position(Context<T>* context, int position_index,
                                                        position);
   } else {
     context->get_mutable_continuous_state()
-        ->get_mutable_generalized_position()
-        ->SetAtIndex(position_index, position);
+        .get_mutable_generalized_position()
+        .SetAtIndex(position_index, position);
   }
 }
 
@@ -283,8 +273,8 @@ void RigidBodyPlant<T>::set_velocity(Context<T>* context, int velocity_index,
         get_num_positions() + velocity_index, velocity);
   } else {
     context->get_mutable_continuous_state()
-        ->get_mutable_generalized_velocity()
-        ->SetAtIndex(velocity_index, velocity);
+        .get_mutable_generalized_velocity()
+        .SetAtIndex(velocity_index, velocity);
   }
 }
 
@@ -292,7 +282,7 @@ template <typename T>
 void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
-  set_state_vector(context->get_mutable_state(), x);
+  set_state_vector(&context->get_mutable_state(), x);
 }
 
 template <typename T>
@@ -301,10 +291,10 @@ void RigidBodyPlant<T>::set_state_vector(
   DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
   if (is_state_discrete()) {
-    auto* xd = state->get_mutable_discrete_state();
-    xd->get_mutable_vector(0).SetFromVector(x);
+    auto& xd = state->get_mutable_discrete_state();
+    xd.get_mutable_vector(0).SetFromVector(x);
   } else {
-    state->get_mutable_continuous_state()->SetFromVector(x);
+    state->get_mutable_continuous_state().SetFromVector(x);
   }
 }
 
@@ -396,7 +386,7 @@ void RigidBodyPlant<T>::CopyStateToOutput(const Context<T>& context,
   // mere pointers to state variables (or cache lines).
   const VectorX<T> state_vector =
       (is_state_discrete()) ? context.get_discrete_state(0).CopyToVector()
-                            : context.get_continuous_state()->CopyToVector();
+                            : context.get_continuous_state().CopyToVector();
 
   state_output_vector->get_mutable_value() = state_vector;
 }
@@ -409,7 +399,7 @@ void RigidBodyPlant<T>::CalcInstanceOutput(
   // TODO(sherm1) Should reference state rather than copy it here.
   const VectorX<T> state_vector =
       (is_state_discrete()) ? context.get_discrete_state(0).CopyToVector()
-                            : context.get_continuous_state()->CopyToVector();
+                            : context.get_continuous_state().CopyToVector();
 
   auto values = instance_output->get_mutable_value();
   const auto& instance_positions = position_map_[instance_id];

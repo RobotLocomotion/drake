@@ -30,11 +30,11 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_state_output_port() const;
 
   void set_z(MyContext* context, const T& z) const {
-    get_mutable_state(context)->set_z(z);
+    get_mutable_state(context).set_z(z);
   }
 
   void set_zdot(MyContext* context, const T& zdot) const {
-    get_mutable_state(context)->set_zdot(zdot);
+    get_mutable_state(context).set_zdot(zdot);
   }
 
   /** Mass in kg. */
@@ -62,9 +62,9 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
     return dynamic_cast<const BouncingBallVector<T>&>(cstate.get_vector());
   }
 
-  static BouncingBallVector<T>* get_mutable_state(
+  static BouncingBallVector<T>& get_mutable_state(
       MyContinuousState* cstate) {
-    return dynamic_cast<BouncingBallVector<T>*>(cstate->get_mutable_vector());
+    return dynamic_cast<BouncingBallVector<T>&>(cstate->get_mutable_vector());
   }
 
   BouncingBallVector<T>* get_mutable_state_output(MyOutput *output) const {
@@ -73,11 +73,11 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   }
 
   static const BouncingBallVector<T>& get_state(const MyContext& context) {
-    return get_state(*context.get_continuous_state());
+    return get_state(context.get_continuous_state());
   }
 
-  static BouncingBallVector<T>* get_mutable_state(MyContext* context) {
-    return get_mutable_state(context->get_mutable_continuous_state());
+  static BouncingBallVector<T>& get_mutable_state(MyContext* context) {
+    return get_mutable_state(&context->get_mutable_continuous_state());
   }
 
   const Vector2<T> init_position_;
@@ -92,7 +92,7 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   // force are in equilibrium.
   const double k_{m_* g_ / 0.001};
   // Hunt-Crossley's dissipation factor.
-  const double d_{0.0};  // [s/m]
+  const double d_{0.0};  // s/m
 };
 
 }  // namespace bouncing_ball

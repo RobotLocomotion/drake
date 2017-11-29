@@ -11,7 +11,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_handle.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/test/expect_error_message.h"
+#include "drake/geometry/test_utilities/expect_error_message.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -27,6 +27,7 @@ namespace drake {
 namespace geometry {
 
 using systems::Context;
+using systems::System;
 using std::make_unique;
 using std::unique_ptr;
 
@@ -34,11 +35,21 @@ using std::unique_ptr;
 class QueryHandleTester {
  public:
   QueryHandleTester() = delete;
-  static QueryHandle<double> MakeNullQueryHandle() {
-    return QueryHandle<double>(nullptr, 0);
+
+  template <typename T>
+  static QueryHandle<T> MakeNullQueryHandle() {
+    return QueryHandle<T>(nullptr, 0);
   }
-  static void set_context(QueryHandle<double>* handle,
-                          const GeometryContext<double>* context) {
+
+  template <typename T>
+  static QueryHandle<T> MakeQueryHandle(
+      const GeometryContext<T>* context) {
+    return QueryHandle<T>(context, 0);
+  }
+
+  template <typename T>
+  static void set_context(QueryHandle<T>* handle,
+                          const GeometryContext<T>* context) {
     handle->context_ = context;
     // NOTE: This does not set the hash because these tests do not depend on it
     // yet.
@@ -50,19 +61,31 @@ class QueryHandleTester {
 class GeometrySystemTester {
  public:
   GeometrySystemTester() = delete;
-  static QueryHandle<double> MakeHandle(
-      const GeometrySystem<double>& system,
-      const Context<double>* context) {
-    return system.MakeQueryHandle(*context);
-  }
-  static bool HasDirectFeedthrough(const GeometrySystem<double>& system,
+
+  template <typename T>
+  static bool HasDirectFeedthrough(const GeometrySystem<T>& system,
                                    int input_port, int output_port) {
     return system.DoHasDirectFeedthrough(
         input_port, output_port).value_or(true);
   }
-  static void FullPoseUpdate(const GeometrySystem<double>& system,
-                             const GeometryContext<double>& context) {
+
+  template <typename T>
+  static void FullPoseUpdate(const GeometrySystem<T>& system,
+                             const GeometryContext<T>& context) {
     system.FullPoseUpdate(context);
+  }
+
+  template <typename T>
+  static std::vector<PenetrationAsPointPair<T>> ComputePenetration(
+      const GeometrySystem<T>& system, const QueryHandle<T>& handle) {
+    return system.ComputePenetration(handle);
+  }
+
+  template <typename T>
+  static void GetQueryHandlePortValue(const GeometrySystem<T>& system,
+                                      const systems::Context<T>& context,
+                                      QueryHandle<T>* handle) {
+    system.CalcQueryHandle(context, handle);
   }
 };
 
@@ -76,7 +99,7 @@ class GeometrySystemTest : public ::testing::Test {
  public:
   GeometrySystemTest()
       : ::testing::Test(),
-        query_handle_(QueryHandleTester::MakeNullQueryHandle()) {}
+        query_handle_(QueryHandleTester::MakeNullQueryHandle<double>()) {}
 
  protected:
   void AllocateContext() {
@@ -285,8 +308,8 @@ TEST_F(GeometrySystemTest, DirectFeedThrough) {
 // should be, essentially a no op.
 TEST_F(GeometrySystemTest, FullPoseUpdateEmpty) {
   AllocateContext();
-  EXPECT_NO_THROW(GeometrySystemTester::FullPoseUpdate(system_,
-                                                       *geom_context_));
+  EXPECT_NO_THROW(
+      GeometrySystemTester::FullPoseUpdate(system_, *geom_context_));
 }
 
 // Test case where there are only anchored geometries -- same as the empty case;
@@ -295,8 +318,73 @@ TEST_F(GeometrySystemTest, FullPoseUpdateAnchoredOnly) {
   SourceId s_id = system_.RegisterSource();
   system_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
   AllocateContext();
-  EXPECT_NO_THROW(GeometrySystemTester::FullPoseUpdate(system_,
-                                                       *geom_context_));
+  EXPECT_NO_THROW(
+      GeometrySystemTester::FullPoseUpdate(system_, *geom_context_));
+}
+
+// Tests transmogrification of GeometrySystem in the case where a Context has
+// *not* been allocated yet. Registration should still be possible.
+TEST_F(GeometrySystemTest, TransmogrifyWithoutAllocation) {
+  SourceId s_id = system_.RegisterSource();
+  // This should allow additional geometry registration.
+  std::unique_ptr<systems::System<AutoDiffXd>> system_ad =
+      system_.ToAutoDiffXd();
+  GeometrySystem<AutoDiffXd>& geo_system_ad =
+      *dynamic_cast<GeometrySystem<AutoDiffXd>*>(system_ad.get());
+  EXPECT_NO_THROW(
+      geo_system_ad.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
+
+  // After allocation, registration should *not* be valid.
+  AllocateContext();
+  system_ad = system_.ToAutoDiffXd();
+  GeometrySystem<AutoDiffXd>& geo_system_ad2 =
+      *dynamic_cast<GeometrySystem<AutoDiffXd>*>(system_ad.get());
+  EXPECT_THROW(
+      geo_system_ad2.RegisterAnchoredGeometry(s_id, make_sphere_instance()),
+      std::logic_error);
+}
+
+// Tests that the ports are correctly mapped.
+TEST_F(GeometrySystemTest, TransmogrifyPorts) {
+  SourceId s_id = system_.RegisterSource();
+  AllocateContext();
+  std::unique_ptr<systems::System<AutoDiffXd>> system_ad
+      = system_.ToAutoDiffXd();
+  GeometrySystem<AutoDiffXd>& geo_system_ad =
+      *dynamic_cast<GeometrySystem<AutoDiffXd>*>(system_ad.get());
+  EXPECT_EQ(geo_system_ad.get_num_input_ports(), system_.get_num_input_ports());
+  EXPECT_EQ(geo_system_ad.get_source_frame_id_port(s_id).get_index(),
+            system_.get_source_frame_id_port(s_id).get_index());
+  EXPECT_EQ(geo_system_ad.get_source_pose_port(s_id).get_index(),
+            system_.get_source_pose_port(s_id).get_index());
+  std::unique_ptr<systems::Context<AutoDiffXd>> context_ad =
+      geo_system_ad.AllocateContext();
+}
+
+// Tests that the work to "set" the context values for the transmogrified system
+// behaves correctly.
+TEST_F(GeometrySystemTest, TransmogrifyContext) {
+  SourceId s_id = system_.RegisterSource();
+  // Register geometry that should be successfully transmogrified.
+  GeometryId g_id = system_.RegisterAnchoredGeometry(s_id,
+                                                     make_sphere_instance());
+  AllocateContext();
+  std::unique_ptr<System<AutoDiffXd>> system_ad = system_.ToAutoDiffXd();
+  GeometrySystem<AutoDiffXd>& geo_system_ad =
+      *dynamic_cast<GeometrySystem<AutoDiffXd>*>(system_ad.get());
+  std::unique_ptr<Context<AutoDiffXd>> context_ad =
+      geo_system_ad.AllocateContext();
+  context_ad->SetTimeStateAndParametersFrom(*geom_context_);
+  GeometryContext<AutoDiffXd>* geo_context_ad =
+      dynamic_cast<GeometryContext<AutoDiffXd>*>(context_ad.get());
+  ASSERT_NE(geo_context_ad, nullptr);
+  // If the anchored geometry were not ported over, this would throw an
+  // exception.
+  EXPECT_NO_THROW(
+      geo_context_ad->get_mutable_geometry_state().RemoveGeometry(s_id, g_id));
+  EXPECT_THROW(geo_context_ad->get_mutable_geometry_state().RemoveGeometry(
+                   s_id, GeometryId::get_new_id()),
+               std::logic_error);
 }
 
 // Dummy system to serve as geometry source.
@@ -416,7 +504,7 @@ GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoIdConnection) {
       GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide id values on "
-          "the input port.");
+      "the input port.");
 }
 
 // Adversarial test case: Missing pose port connection.
@@ -462,6 +550,22 @@ GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoConnections) {
       std::logic_error,
       "Source \\d+ has registered frames but does not provide id values on "
           "the input port.");
+}
+
+// Confirms that the GeometrySystem can be instantiated on AutoDiff type.
+GTEST_TEST(GeometrySystemAutoDiffTest, InstantiateAutoDiff) {
+  GeometrySystem<AutoDiffXd> geometry_system;
+  geometry_system.RegisterSource("dummy_source");
+  auto context = geometry_system.AllocateContext();
+  GeometryContext<AutoDiffXd>* geometry_context =
+      dynamic_cast<GeometryContext<AutoDiffXd>*>(context.get());
+
+  ASSERT_NE(geometry_context, nullptr);
+
+  QueryHandle<AutoDiffXd> handle =
+      QueryHandleTester::MakeNullQueryHandle<AutoDiffXd>();
+  GeometrySystemTester::GetQueryHandlePortValue(geometry_system, *context,
+                                                &handle);
 }
 
 }  // namespace

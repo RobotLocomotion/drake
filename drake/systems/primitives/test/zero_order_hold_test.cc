@@ -188,9 +188,9 @@ TEST_P(ZeroOrderHoldTest, Update) {
     const BasicVector<double>& xd = update->get_vector(0);
     value = xd.CopyToVector();
   } else {
-    State<double>* state = context_->get_mutable_state();
-    hold_->CalcUnrestrictedUpdate(*context_, state);
-    value = state->get_abstract_state<SimpleAbstractType>(0).value();
+    State<double>& state = context_->get_mutable_state();
+    hold_->CalcUnrestrictedUpdate(*context_, &state);
+    value = state.get_abstract_state<SimpleAbstractType>(0).value();
   }
   EXPECT_EQ(input_value_, value);
 }

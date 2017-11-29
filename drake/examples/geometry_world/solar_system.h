@@ -132,12 +132,12 @@ class SolarSystem : public systems::LeafSystem<T> {
     return dynamic_cast<const systems::BasicVector<T>&>(cstate.get_vector());
   }
 
-  static systems::BasicVector<T>* get_mutable_state(MyContinuousState* cstate) {
-    return dynamic_cast<systems::BasicVector<T>*>(cstate->get_mutable_vector());
+  static systems::BasicVector<T>& get_mutable_state(MyContinuousState* cstate) {
+    return dynamic_cast<systems::BasicVector<T>&>(cstate->get_mutable_vector());
   }
 
   static const systems::BasicVector<T>& get_state(const MyContext& context) {
-    return get_state(*context.get_continuous_state());
+    return get_state(context.get_continuous_state());
   }
 
   // Geometry source identifier for this system to interact with geometry system

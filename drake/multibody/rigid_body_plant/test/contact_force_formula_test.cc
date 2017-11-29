@@ -50,10 +50,10 @@ class ContactFormulaTest : public ::testing::Test {
     const int port_index = plant_->contact_results_output_port().get_index();
 
     // Set Sphere 2's velocity.
-    auto velocities = context_->get_mutable_state()
-                          ->get_mutable_continuous_state()
-                          ->get_mutable_generalized_velocity();
-    ASSERT_EQ(velocities->size(), 12);  // Two quaternion floating joints.
+    auto& velocities = context_->get_mutable_state()
+                           .get_mutable_continuous_state()
+                           .get_mutable_generalized_velocity();
+    ASSERT_EQ(velocities.size(), 12);  // Two quaternion floating joints.
     Vector6d v_WS2 = get_v_WS2();
     VectorXd target_velocities;
     target_velocities.resize(12);
@@ -61,27 +61,27 @@ class ContactFormulaTest : public ::testing::Test {
         0, 0, 0,                       // sphere 1 linear velocity
         v_WS2[0], v_WS2[1], v_WS2[2],  // sphere 2 angular velocity
         v_WS2[3], v_WS2[4], v_WS2[5];  // sphere 2 linear velocity
-    velocities->SetFromVector(target_velocities);
+    velocities.SetFromVector(target_velocities);
 
-    SetContactParameters();
-    plant_->set_normal_contact_parameters(stiffness_, dissipation_);
-    plant_->set_friction_contact_parameters(static_friction_, dynamic_friction_,
-                                            v_stiction_tolerance_);
+    // This sets default *material* properties. However, for *contact*
+    // properties for objects with identical material parameters, the resultant
+    // contact Young's modulus is half the material value. All other values are
+    // the same for homogeneous materials. See contact_model_doxygen.h
+    // @ref per_object_contact for details.
+    systems::CompliantMaterial default_material;
+    default_material.set_youngs_modulus(youngs_modulus_);
+    default_material.set_dissipation(dissipation_);
+    default_material.set_friction(static_friction_, dynamic_friction_);
+    plant_->set_default_compliant_material(default_material);
+
+    systems::CompliantContactModelParameters model_parameters;
+    model_parameters.characteristic_area = contact_area_;
+    model_parameters.v_stiction_tolerance = v_stiction_tolerance_;
+    plant_->set_contact_model_parameters(model_parameters);
 
     plant_->CalcOutput(*context_.get(), output_.get());
     contacts_ =
         output_->get_data(port_index)->GetValue<ContactResults<double>>();
-  }
-
-  // Specifies the values to use as the rigid body plant's global contact
-  // parameters.
-  // TODO(SeanCurtis-TRI): Modify this as materials come into play.
-  virtual void SetContactParameters() {
-    stiffness_ = 10000;
-    static_friction_ = 0.7;
-    dynamic_friction_ = 0.5;
-    v_stiction_tolerance_ = 0.01;
-    dissipation_ = 0.5;
   }
 
   // Interprets the velocity of sphere 2 as the rate of change of penetration.
@@ -137,13 +137,13 @@ class ContactFormulaTest : public ::testing::Test {
   const double kRadius = 1.0;
   const double kPenetrationDepth = 0.1;
 
-  // Contact parameter constants.  These should get set by
-  // SetContactParameters().
-  double stiffness_ = 10000;
-  double static_friction_ = 0.7;
-  double dynamic_friction_ = 0.5;
-  double v_stiction_tolerance_ = 0.01;
-  double dissipation_ = 0.5;
+  // Contact parameter constants.
+  const double youngs_modulus_ = 10000;  // Pa
+  const double static_friction_ = 0.7;
+  const double dynamic_friction_ = 0.5;
+  const double v_stiction_tolerance_ = 0.01;  // m/s
+  const double contact_area_ = 2;  // m^2
+  const double dissipation_ = 0.5;  // s/m
 
   // dummy_precision is a very tight threshold for these tests. It is well
   // suited to the static contact force (1000 N) but because the moving contact
@@ -162,7 +162,7 @@ TEST_F(ContactFormulaTest, ZeroVelocityCollision) {
   EXPECT_EQ(contacts_.get_num_contacts(), 1);
   // No relative velocity means that only the "spring" component affects the
   // force.
-  double expected_force_magnitude = kPenetrationDepth * stiffness_;
+  double expected_force_magnitude = kPenetrationDepth * youngs_modulus_;
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
@@ -196,7 +196,7 @@ TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
   // A non-zero relative velocity in the normal direction will change the force.
   // Still only a normal component, but we introduce the dissipation term.
   double expected_force_magnitude =
-      kPenetrationDepth * stiffness_ * (1 + dissipation_ * get_x_dot());
+      kPenetrationDepth * youngs_modulus_ * (1 + dissipation_ * get_x_dot());
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
@@ -233,7 +233,7 @@ TEST_F(DivergingContactFormulaTest, DivergingContactTest) {
   // A non-zero relative velocity in the normal direction will change the force.
   // Still only a normal component, but we introduce the dissipation term.
   double expected_force_magnitude =
-      kPenetrationDepth * stiffness_ * (1 + dissipation_ * get_x_dot());
+      kPenetrationDepth * youngs_modulus_ * (1 + dissipation_ * get_x_dot());
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
@@ -299,7 +299,7 @@ TEST_F(StictionContactFormulaTest, StictionContactTest) {
 
   // The normal component is simply the undamped case (zero relative velocity
   // in the normal direction).
-  double expected_normal_magnitude = kPenetrationDepth * stiffness_;
+  double expected_normal_magnitude = kPenetrationDepth * youngs_modulus_;
   // In the first interval (half the transition velocity) the coefficient of
   // friction is half the static coefficient.
   double expected_mu = static_friction_ * 0.5;
@@ -340,7 +340,7 @@ TEST_F(TransitionContactFormulaTest, TransitionContactTest) {
 
   // The normal component is simply the undamped case (zero relative velocity
   // in the normal direction).
-  double expected_normal_magnitude = kPenetrationDepth * stiffness_;
+  double expected_normal_magnitude = kPenetrationDepth * youngs_modulus_;
   // In the second interval (relative speed = 2 * transition speed) the
   // coefficient of friction is the average of dynamic and static coefficients.
   double expected_mu = (dynamic_friction_ + static_friction_) * 0.5;
@@ -379,7 +379,7 @@ TEST_F(SlidingContactFormulaTest, SlidingContactTest) {
 
   // The normal component is simply the undamped case (zero relative velocity
   // in the normal direction).
-  double expected_normal_magnitude = kPenetrationDepth * stiffness_;
+  double expected_normal_magnitude = kPenetrationDepth * youngs_modulus_;
   // In the final interval (relative speed > 3 * transition speed) the
   // coefficient of friction is the dynamic coefficient.
   double expected_mu = dynamic_friction_;
@@ -421,7 +421,7 @@ TEST_F(SlidingSpinContactFormulaTest, SlidingSpinContactTest) {
 
   // The normal component is simply the undamped case (zero relative velocity
   // in the normal direction).
-  double expected_normal_magnitude = kPenetrationDepth * stiffness_;
+  double expected_normal_magnitude = kPenetrationDepth * youngs_modulus_;
   // In the final interval (slip speed > 3 * transition speed) the coefficient
   // of friction is the dynamic coefficients.
   double expected_mu = 0.5 * static_friction_;

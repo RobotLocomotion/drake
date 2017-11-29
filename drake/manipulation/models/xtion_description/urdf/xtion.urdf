@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot name="xtion">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.00235212 0.00070908 0.02939430" rpy="0 0 0" />
+      <mass value="0.15912939"/>
+      <!-- Mass estimated from CAD assuming uniform mass distribution. -->
+      <inertia ixx="0.00038747" ixy="-0.00000044" ixz="0.00000124" iyy="0.00003727" iyz="0.00000037" izz="0.00038463"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="../meshes/xtion.obj" />
+      </geometry>
+      <material name="dark">
+        <color rgba="0.2 0.2 0.2 1" />
+      </material>
+    </visual>
+    <!-- TODO(eric.cousineau): Add collision. -->
+  </link>
+
+  <!--
+  Frame representing X_XB, pose of the RgbdCamera sensor frame (B) w.r.t.
+  base_link (X).
+  -->
+  <frame name="rgbd_camera_frame" link="base_link"
+      rpy="0 0 0" xyz="0.021 0 0.0325"/>
+  <!--
+  TODO(eric.cousineau): Once relative transforms between B, C, D can be
+  defined, add these frames in.
+  -->
+
+</robot>

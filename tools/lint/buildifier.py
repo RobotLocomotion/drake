@@ -127,7 +127,7 @@ def main():
     # In fix mode, disallow running from within the Bazel sandbox.
     if "-mode=diff" not in argv and "--mode=diff" not in argv:
         if os.getcwd().endswith(".runfiles/drake"):
-            print("ERROR: do not use 'bazel run' for buildifier")
+            print("ERROR: do not use 'bazel run' for buildifier in fix mode")
             print("ERROR: use bazel-bin/tools/lint/buildifier instead")
             return 1
 

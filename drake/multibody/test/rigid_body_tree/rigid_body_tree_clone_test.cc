@@ -121,12 +121,11 @@ class TestRbtCloneDiagram : public Diagram<double> {
   void SetInitialState(Context<double>* context, double q, double v) {
     Context<double>& plant_context =
         GetMutableSubsystemContext(*plant_, context);
-    ContinuousState<double>* plant_state =
+    ContinuousState<double>& plant_state =
         plant_context.get_mutable_continuous_state();
-    DRAKE_DEMAND(plant_state != nullptr);
-    DRAKE_DEMAND(plant_state->size() == 2);
-    (*plant_state)[0] = q;
-    (*plant_state)[1] = v;
+    DRAKE_DEMAND(plant_state.size() == 2);
+    plant_state[0] = q;
+    plant_state[1] = v;
   }
 
   const SignalLogger<double>& get_logger() const { return *logger_; }
@@ -154,13 +153,13 @@ TEST_F(RigidBodyTreeCloneTest, PendulumDynamicsTest) {
   unique_ptr<Context<double>> original_context =
       original_diagram.AllocateContext();
   original_diagram.SetDefaultState(
-      *original_context, original_context->get_mutable_state());
+      *original_context, &original_context->get_mutable_state());
   original_diagram.SetInitialState(original_context.get(), 1.57, 0);
 
   unique_ptr<Context<double>> cloned_context =
       cloned_diagram.AllocateContext();
   cloned_diagram.SetDefaultState(
-      *cloned_context, cloned_context->get_mutable_state());
+      *cloned_context, &cloned_context->get_mutable_state());
   cloned_diagram.SetInitialState(cloned_context.get(), 1.57, 0);
 
   // Instantiates the simulators.
@@ -187,10 +186,10 @@ TEST_F(RigidBodyTreeCloneTest, PendulumDynamicsTest) {
   const double integrator_step_size = swing_period / 100;
   original_simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
       original_diagram, integrator_step_size,
-      original_simulator.get_mutable_context());
+      &original_simulator.get_mutable_context());
   cloned_simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
       cloned_diagram, integrator_step_size,
-      cloned_simulator.get_mutable_context());
+      &cloned_simulator.get_mutable_context());
 
   original_simulator.Initialize();
   cloned_simulator.Initialize();

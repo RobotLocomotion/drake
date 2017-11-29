@@ -14,7 +14,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/systems/robotInterfaces/Side.h"
+#include "drake/systems/controllers/side.h"
 #include "drake/util/drakeUtil.h"
 
 struct QPControllerState {

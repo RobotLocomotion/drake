@@ -47,10 +47,10 @@ TEST_F(ContinuousStateTest, Access) {
 }
 
 TEST_F(ContinuousStateTest, Mutation) {
-  continuous_state_->get_mutable_generalized_position()->SetAtIndex(0, 5);
-  continuous_state_->get_mutable_generalized_position()->SetAtIndex(1, 6);
-  continuous_state_->get_mutable_generalized_velocity()->SetAtIndex(0, 7);
-  continuous_state_->get_mutable_misc_continuous_state()->SetAtIndex(0, 8);
+  continuous_state_->get_mutable_generalized_position().SetAtIndex(0, 5);
+  continuous_state_->get_mutable_generalized_position().SetAtIndex(1, 6);
+  continuous_state_->get_mutable_generalized_velocity().SetAtIndex(0, 7);
+  continuous_state_->get_mutable_misc_continuous_state().SetAtIndex(0, 8);
 
   EXPECT_EQ(5, continuous_state_->get_vector()[0]);
   EXPECT_EQ(6, continuous_state_->get_vector()[1]);
@@ -69,7 +69,7 @@ TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
   EXPECT_THROW(continuous_state_->get_generalized_position().GetAtIndex(2),
                std::runtime_error);
   EXPECT_THROW(
-      continuous_state_->get_mutable_generalized_velocity()->SetAtIndex(1, 42),
+      continuous_state_->get_mutable_generalized_velocity().SetAtIndex(1, 42),
       std::runtime_error);
 }
 

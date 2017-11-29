@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include <gtest/gtest.h>
+#include <spruce.hh>
 
 #include "drake/common/find_resource.h"
 
@@ -37,9 +38,11 @@ void VerifyMatch(const PackageMap& package_map,
 
 // Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
+  spruce::dir::mkdir(spruce::path("package_foo"));
+  spruce::dir::mkdir(spruce::path("package_bar"));
   map<string, string> expected_packages = {
-    {"package_foo", "drake/multibody/parsers"},
-    {"my_package", "drake/multibody"}
+    {"package_foo", "package_foo"},
+    {"my_package", "package_bar"}
   };
 
   PackageMap package_map;
@@ -118,9 +121,11 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
 
 // Tests that PackageMap's streaming to-string operator works.
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
+  spruce::dir::mkdir(spruce::path("package_foo"));
+  spruce::dir::mkdir(spruce::path("package_bar"));
   map<string, string> expected_packages = {
-    {"package_foo", "drake/multibody/parsers"},
-    {"my_package", "drake/multibody"}
+    {"package_foo", "package_foo"},
+    {"my_package", "package_bar"}
   };
 
   PackageMap package_map;

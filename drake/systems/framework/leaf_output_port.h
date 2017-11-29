@@ -9,8 +9,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/system_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
