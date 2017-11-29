@@ -73,7 +73,22 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
-  if (frame_id.is_valid()) {
+  DeclareGeometrySystemPorts();
+}
+
+template<typename T>
+MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
+    double mass, double length, double gravity,
+    geometry::GeometrySystem<double>* geometry_system) :
+    MultibodyPendulumPlant(mass, length, gravity) {
+  DRAKE_DEMAND(geometry_system != nullptr);
+  RegisterGeometry(geometry_system);
+  DeclareGeometrySystemPorts();
+}
+
+template<typename T>
+void MultibodyPendulumPlant<T>::DeclareGeometrySystemPorts() {
+  if (frame_id_.is_valid()) {
     geometry_id_port_ =
         this->DeclareAbstractOutputPort(
             &MultibodyPendulumPlant::AllocateFrameIdOutput,
@@ -83,25 +98,6 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
             &MultibodyPendulumPlant::AllocateFramePoseOutput,
             &MultibodyPendulumPlant::CalcFramePoseOutput).get_index();
   }
-}
-
-template<typename T>
-MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
-    double mass, double length, double gravity,
-    geometry::GeometrySystem<double>* geometry_system) :
-    MultibodyPendulumPlant(mass, length, gravity) {
-  DRAKE_DEMAND(geometry_system != nullptr);
-
-  RegisterGeometry(geometry_system);
-
-  geometry_id_port_ =
-      this->DeclareAbstractOutputPort(
-          &MultibodyPendulumPlant::AllocateFrameIdOutput,
-          &MultibodyPendulumPlant::CalcFrameIdOutput).get_index();
-  geometry_pose_port_ =
-      this->DeclareAbstractOutputPort(
-          &MultibodyPendulumPlant::AllocateFramePoseOutput,
-          &MultibodyPendulumPlant::CalcFramePoseOutput).get_index();
 }
 
 template <typename T>

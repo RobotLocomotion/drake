@@ -42,7 +42,6 @@ using systems::ImplicitEulerIntegrator;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
 using systems::rendering::PoseBundleToDrawMessage;
-using systems::RungeKutta2Integrator;
 using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
 
@@ -81,6 +80,8 @@ int do_main() {
       mass, length, gravity, geometry_system);
   pendulum->set_name("Pendulum");
 
+  // Boilerplate used to connect the plant to a GeometrySystem for
+  // visualization.
   DrakeLcm lcm;
   PoseBundleToDrawMessage* converter =
       builder.template AddSystem<PoseBundleToDrawMessage>();

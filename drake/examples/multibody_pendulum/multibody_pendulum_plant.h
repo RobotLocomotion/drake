@@ -41,15 +41,6 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   /// `-z` axis direction with the acceleration constant `gravity`.
   MultibodyPendulumPlant(double mass, double length, double gravity);
 
-  /// Constructs a plant given a SourceId to communicate with a GeometrySystem.
-  /// FrameId identifies the body frame of `this` pendulum in that
-  /// GeometrySystem.
-  /// See this class's documentation for a description of the physical
-  /// parameters.
-  MultibodyPendulumPlant(
-      double mass, double length, double gravity,
-      geometry::SourceId source_id, geometry::FrameId frame_id);
-
   /// This constructor registers `this` plant as a source for `geometry_system`.
   /// The constructor will registrate frames and geometry for visualization with
   /// GeometrySystem.
@@ -93,6 +84,15 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   // scalar conversion.
   template <typename U> friend class MultibodyPendulumPlant;
 
+  /// Constructs a plant given a SourceId to communicate with a GeometrySystem.
+  /// FrameId identifies the body frame of `this` pendulum in that
+  /// GeometrySystem.
+  /// See this class's documentation for a description of the physical
+  /// parameters.
+  MultibodyPendulumPlant(
+      double mass, double length, double gravity,
+      geometry::SourceId source_id, geometry::FrameId frame_id);
+
   // No inputs implies no feedthrough; this makes it explicit.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
     return false;
@@ -110,6 +110,10 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   void BuildMultibodyTreeModel();
 
   void RegisterGeometry(geometry::GeometrySystem<double>* geometry_system);
+
+  // Helper method to declare output ports used by this plant to communicate
+  // with a GeometrySystem.
+  void DeclareGeometrySystemPorts();
 
   // Allocate the id output.
   geometry::FrameIdVector AllocateFrameIdOutput(
@@ -130,7 +134,6 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
 
   double mass_{1.0};
   double length_{0.5};
-  double damping_{0.1};
   double gravity_{9.81};
 
   // The entire multibody model.
