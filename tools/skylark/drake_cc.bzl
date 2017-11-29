@@ -488,9 +488,10 @@ def drake_cc_googletest(
     be used only rarely, and the reason should always be documented.
     """
     if use_default_main:
-        deps += ["//drake/common/test_utilities:drake_cc_googletest_main"]
+        deps = deps + \
+            ["//drake/common/test_utilities:drake_cc_googletest_main"]
     else:
-        deps += ["@gtest//:without_main"]
+        deps = deps + ["@gtest//:without_main"]
     drake_cc_test(
         name = name,
         deps = deps,
