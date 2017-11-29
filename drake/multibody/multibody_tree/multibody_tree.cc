@@ -596,8 +596,6 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 
   // Body to which frame B is attached to:
   const Body<T>& body_B = frame_B.get_body();
-  const BodyNodeTopology& body_B_node =
-      topology_.get_body_node(body_B.get_node_index());
 
   // Compute kinematic path from body B to the world:
   std::vector<BodyNodeIndex> path_to_world;
