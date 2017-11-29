@@ -12,8 +12,8 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
-#include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace examples {
