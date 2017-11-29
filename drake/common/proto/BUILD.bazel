@@ -43,7 +43,7 @@ drake_cc_library(
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
     deps = [
-        "@protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
