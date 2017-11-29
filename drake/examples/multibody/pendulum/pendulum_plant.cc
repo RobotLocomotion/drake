@@ -17,7 +17,8 @@
 
 namespace drake {
 namespace examples {
-namespace multibody_pendulum {
+namespace multibody {
+namespace pendulum {
 
 using Eigen::Isometry3d;
 using Eigen::Translation3d;
@@ -32,17 +33,17 @@ using geometry::GeometryInstance;
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using geometry::Sphere;
-using multibody::BodyIndex;
-using multibody::MultibodyTree;
-using multibody::PositionKinematicsCache;
-using multibody::RevoluteJoint;
-using multibody::RigidBody;
-using multibody::SpatialAcceleration;
-using multibody::SpatialForce;
-using multibody::SpatialInertia;
-using multibody::UniformGravityFieldElement;
-using multibody::UnitInertia;
-using multibody::VelocityKinematicsCache;
+using drake::multibody::BodyIndex;
+using drake::multibody::MultibodyTree;
+using drake::multibody::PositionKinematicsCache;
+using drake::multibody::RevoluteJoint;
+using drake::multibody::RigidBody;
+using drake::multibody::SpatialAcceleration;
+using drake::multibody::SpatialForce;
+using drake::multibody::SpatialInertia;
+using drake::multibody::UniformGravityFieldElement;
+using drake::multibody::UnitInertia;
+using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
 using systems::OutputPort;
@@ -68,7 +69,7 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
     double mass, double length, double gravity,
     SourceId source_id, FrameId frame_id) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
-        drake::examples::multibody_pendulum::MultibodyPendulumPlant>()),
+        drake::examples::multibody::pendulum::MultibodyPendulumPlant>()),
     mass_(mass), length_(length), gravity_(gravity),
     source_id_(source_id), frame_id_(frame_id) {
   // Build the MultibodyTree model for this plant.
@@ -303,9 +304,10 @@ void MultibodyPendulumPlant<T>::SetAngle(
   joint_->set_angle(context, angle);
 }
 
-}  // namespace multibody_pendulum
+}  // namespace pendulum
+}  // namespace multibody
 }  // namespace examples
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::examples::multibody_pendulum::MultibodyPendulumPlant)
+    class drake::examples::multibody::pendulum::MultibodyPendulumPlant)

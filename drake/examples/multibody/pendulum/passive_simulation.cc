@@ -20,7 +20,8 @@
 
 namespace drake {
 namespace examples {
-namespace multibody_pendulum {
+namespace multibody {
+namespace pendulum {
 namespace {
 
 DEFINE_double(target_realtime_rate, 1.0,
@@ -169,11 +170,12 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace multibody_pendulum
+}  // namespace pendulum
+}  // namespace multibody
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::multibody_pendulum::do_main();
+  return drake::examples::multibody::pendulum::do_main();
 }

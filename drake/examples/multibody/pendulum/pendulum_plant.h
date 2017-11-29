@@ -11,7 +11,8 @@
 
 namespace drake {
 namespace examples {
-namespace multibody_pendulum {
+namespace multibody {
+namespace pendulum {
 
 /// A model of an idealized pendulum with a point mass on the end of a massless
 /// cord.
@@ -155,13 +156,13 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   double gravity_{9.81};
 
   // The entire multibody model.
-  std::unique_ptr<multibody::MultibodyTree<T>> model_;
+  std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
   // The one and only body in this model.
-  const multibody::RigidBody<T>* link_;
+  const drake::multibody::RigidBody<T>* link_;
 
   // The one and only joint in this model.
-  const multibody::RevoluteJoint<T>* joint_;
+  const drake::multibody::RevoluteJoint<T>* joint_;
 
   // Geometry source identifier for this system to interact with geometry
   // system.
@@ -175,7 +176,8 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   int geometry_pose_port_{-1};
 };
 
-}  // namespace multibody_pendulum
+}  // namespace pendulum
+}  // namespace multibody
 }  // namespace examples
 }  // namespace drake
 
@@ -185,7 +187,7 @@ namespace drake {
 namespace systems {
 namespace scalar_conversion {
 template <>
-struct Traits<drake::examples::multibody_pendulum::MultibodyPendulumPlant> :
+struct Traits<drake::examples::multibody::pendulum::MultibodyPendulumPlant> :
     public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 }  // namespace systems
