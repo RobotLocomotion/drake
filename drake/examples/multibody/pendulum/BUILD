@@ -10,9 +10,9 @@ load(
 load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "multibody_pendulum",
-    srcs = ["multibody_pendulum_plant.cc"],
-    hdrs = ["multibody_pendulum_plant.h"],
+    name = "pendulum_plant",
+    srcs = ["pendulum_plant.cc"],
+    hdrs = ["pendulum_plant.h"],
     deps = [
         "//drake/common:default_scalars",
         "//drake/geometry:geometry_ids",
@@ -25,12 +25,12 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "multibody_pendulum_run_dynamics",
-    srcs = ["multibody_pendulum_run_dynamics.cc"],
+    name = "passive_simulation",
+    srcs = ["passive_simulation.cc"],
     add_test_rule = 1,
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
-        ":multibody_pendulum",
+        ":pendulum_plant",
         "//drake/geometry:geometry_system",
         "//drake/geometry:geometry_visualization",
         "//drake/systems/analysis:implicit_euler_integrator",
