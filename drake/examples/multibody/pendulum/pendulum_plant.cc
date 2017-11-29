@@ -50,26 +50,26 @@ using systems::OutputPort;
 using systems::State;
 
 template<typename T>
-MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
+PendulumPlant<T>::PendulumPlant(
     double mass, double length, double gravity) :
-    MultibodyPendulumPlant(mass, length, gravity, SourceId{}, FrameId{}) {}
+    PendulumPlant(mass, length, gravity, SourceId{}, FrameId{}) {}
 
 template<typename T>
-MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
+PendulumPlant<T>::PendulumPlant(
     double mass, double length, double gravity,
     geometry::GeometrySystem<double>* geometry_system) :
-    MultibodyPendulumPlant(mass, length, gravity) {
+    PendulumPlant(mass, length, gravity) {
   DRAKE_DEMAND(geometry_system != nullptr);
   RegisterGeometry(geometry_system);
   DeclareGeometrySystemPorts();
 }
 
 template<typename T>
-MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
+PendulumPlant<T>::PendulumPlant(
     double mass, double length, double gravity,
     SourceId source_id, FrameId frame_id) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
-        drake::examples::multibody::pendulum::MultibodyPendulumPlant>()),
+        drake::examples::multibody::pendulum::PendulumPlant>()),
     mass_(mass), length_(length), gravity_(gravity),
     source_id_(source_id), frame_id_(frame_id) {
   // Build the MultibodyTree model for this plant.
@@ -88,21 +88,21 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
 }
 
 template<typename T>
-void MultibodyPendulumPlant<T>::DeclareGeometrySystemPorts() {
+void PendulumPlant<T>::DeclareGeometrySystemPorts() {
   if (frame_id_.is_valid()) {
     geometry_id_port_ =
         this->DeclareAbstractOutputPort(
-            &MultibodyPendulumPlant::AllocateFrameIdOutput,
-            &MultibodyPendulumPlant::CalcFrameIdOutput).get_index();
+            &PendulumPlant::AllocateFrameIdOutput,
+            &PendulumPlant::CalcFrameIdOutput).get_index();
     geometry_pose_port_ =
         this->DeclareAbstractOutputPort(
-            &MultibodyPendulumPlant::AllocateFramePoseOutput,
-            &MultibodyPendulumPlant::CalcFramePoseOutput).get_index();
+            &PendulumPlant::AllocateFramePoseOutput,
+            &PendulumPlant::CalcFramePoseOutput).get_index();
   }
 }
 
 template <typename T>
-FrameIdVector MultibodyPendulumPlant<T>::AllocateFrameIdOutput(
+FrameIdVector PendulumPlant<T>::AllocateFrameIdOutput(
     const Context<T>&) const {
   DRAKE_DEMAND(source_id_.is_valid());
   DRAKE_DEMAND(frame_id_.is_valid());
@@ -113,7 +113,7 @@ FrameIdVector MultibodyPendulumPlant<T>::AllocateFrameIdOutput(
 }
 
 template <typename T>
-void MultibodyPendulumPlant<T>::CalcFrameIdOutput(
+void PendulumPlant<T>::CalcFrameIdOutput(
     const Context<T>&, FrameIdVector*) const {
   // Just a sanity check.
   DRAKE_DEMAND(source_id_.is_valid());
@@ -123,13 +123,13 @@ void MultibodyPendulumPlant<T>::CalcFrameIdOutput(
 }
 
 template <typename T>
-FramePoseVector<T> MultibodyPendulumPlant<T>::AllocateFramePoseOutput(
+FramePoseVector<T> PendulumPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
   DRAKE_ABORT_MSG("There is no implementation for T != double.");
 }
 
 template <>
-FramePoseVector<double> MultibodyPendulumPlant<double>::AllocateFramePoseOutput(
+FramePoseVector<double> PendulumPlant<double>::AllocateFramePoseOutput(
     const Context<double>&) const {
   DRAKE_DEMAND(source_id_.is_valid());
   FramePoseVector<double> poses(source_id_);
@@ -139,13 +139,13 @@ FramePoseVector<double> MultibodyPendulumPlant<double>::AllocateFramePoseOutput(
 }
 
 template <typename T>
-void MultibodyPendulumPlant<T>::CalcFramePoseOutput(
+void PendulumPlant<T>::CalcFramePoseOutput(
     const Context<T>&, FramePoseVector<T>*) const {
   DRAKE_ABORT_MSG("There is no implementation for T != double.");
 }
 
 template <>
-void MultibodyPendulumPlant<double>::CalcFramePoseOutput(
+void PendulumPlant<double>::CalcFramePoseOutput(
     const Context<double>& context, FramePoseVector<double>* poses) const {
   DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == 1);
   DRAKE_ASSERT(model_->get_num_bodies() == 2);
@@ -158,29 +158,29 @@ void MultibodyPendulumPlant<double>::CalcFramePoseOutput(
 }
 
 template <typename T>
-const OutputPort<T>& MultibodyPendulumPlant<T>::get_geometry_id_output_port()
+const OutputPort<T>& PendulumPlant<T>::get_geometry_id_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
 template <typename T>
-const OutputPort<T>& MultibodyPendulumPlant<T>::get_geometry_pose_output_port()
+const OutputPort<T>& PendulumPlant<T>::get_geometry_pose_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
 template<typename T>
 template<typename U>
-MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
-    const MultibodyPendulumPlant<U>& other) :
-    MultibodyPendulumPlant<T>(
+PendulumPlant<T>::PendulumPlant(
+    const PendulumPlant<U>& other) :
+    PendulumPlant<T>(
         other.get_mass(),
         other.get_length(),
         other.get_gravity(),
         other.source_id_, other.frame_id_) {}
 
 template<typename T>
-void MultibodyPendulumPlant<T>::BuildMultibodyTreeModel() {
+void PendulumPlant<T>::BuildMultibodyTreeModel() {
   model_ = std::make_unique<MultibodyTree<T>>();
   DRAKE_DEMAND(model_ != nullptr);
 
@@ -211,7 +211,7 @@ void MultibodyPendulumPlant<T>::BuildMultibodyTreeModel() {
 }
 
 template<typename T>
-void MultibodyPendulumPlant<T>::RegisterGeometry(
+void PendulumPlant<T>::RegisterGeometry(
     geometry::GeometrySystem<double>* geometry_system) {
   DRAKE_DEMAND(geometry_system != nullptr);
 
@@ -254,12 +254,12 @@ void MultibodyPendulumPlant<T>::RegisterGeometry(
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-MultibodyPendulumPlant<T>::DoMakeContext() const {
+PendulumPlant<T>::DoMakeContext() const {
   return model_->CreateDefaultContext();
 }
 
 template<typename T>
-void MultibodyPendulumPlant<T>::DoCalcTimeDerivatives(
+void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   const auto x =
@@ -298,7 +298,7 @@ void MultibodyPendulumPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
-void MultibodyPendulumPlant<T>::SetAngle(
+void PendulumPlant<T>::SetAngle(
     Context<T>* context, const T& angle) const {
   DRAKE_DEMAND(context != nullptr);
   joint_->set_angle(context, angle);
@@ -310,4 +310,4 @@ void MultibodyPendulumPlant<T>::SetAngle(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::examples::multibody::pendulum::MultibodyPendulumPlant)
+    class drake::examples::multibody::pendulum::PendulumPlant)

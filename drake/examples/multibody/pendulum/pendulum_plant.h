@@ -33,15 +33,15 @@ namespace pendulum {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
+class PendulumPlant final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPendulumPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant)
 
   /// Constructs a model of an idealized pendulum of a given `mass` and
   /// suspended by a massless cord with a given `length`. Gravity points in the
   /// `-z` axis direction with the acceleration constant `gravity`.
   /// There will be no geometry associated to the model.
-  MultibodyPendulumPlant(double mass, double length, double gravity);
+  PendulumPlant(double mass, double length, double gravity);
 
   /// Constructs a model of an idealized pendulum wiht parameters as described
   /// in this class's documentation.
@@ -50,13 +50,13 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   ///
   /// See this class's documentation for a description of the physical
   /// parameters.
-  MultibodyPendulumPlant(
+  PendulumPlant(
       double mass, double length, double gravity,
       geometry::GeometrySystem<double>* geometry_system);
 
   /// Scalar-converting copy constructor.
   template <typename U>
-  explicit MultibodyPendulumPlant(const MultibodyPendulumPlant<U>&);
+  explicit PendulumPlant(const PendulumPlant<U>&);
 
   /// Returns the mass of this point pendulum.
   double get_mass() const { return mass_; }
@@ -99,7 +99,7 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
-  template <typename U> friend class MultibodyPendulumPlant;
+  template <typename U> friend class PendulumPlant;
 
   // Constructs a plant given a SourceId to communicate with a GeometrySystem.
   // FrameId identifies the frame of the one and only body in the pendulum's
@@ -107,7 +107,7 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   // frame W origin.
   // See this class's documentation for a description of the physical
   // parameters.
-  MultibodyPendulumPlant(
+  PendulumPlant(
       double mass, double length, double gravity,
       geometry::SourceId source_id, geometry::FrameId frame_id);
 
@@ -187,7 +187,7 @@ namespace drake {
 namespace systems {
 namespace scalar_conversion {
 template <>
-struct Traits<drake::examples::multibody::pendulum::MultibodyPendulumPlant> :
+struct Traits<drake::examples::multibody::pendulum::PendulumPlant> :
     public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 }  // namespace systems

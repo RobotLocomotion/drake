@@ -57,7 +57,7 @@ int do_main() {
   // Compute a reference time scale to set reasonable values for time step and
   // simulation time.
   const double reference_time_scale =
-      MultibodyPendulumPlant<double>::SimplePendulumPeriod(length, gravity);
+      PendulumPlant<double>::SimplePendulumPeriod(length, gravity);
 
   // Define a reasonable maximum time step based off the expected dynamics's
   // time scales.
@@ -70,7 +70,7 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  auto pendulum = builder.AddSystem<MultibodyPendulumPlant>(
+  auto pendulum = builder.AddSystem<PendulumPlant>(
       mass, length, gravity, geometry_system);
   pendulum->set_name("Pendulum");
 
