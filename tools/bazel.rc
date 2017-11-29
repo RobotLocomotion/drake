@@ -9,8 +9,6 @@ build -c opt
 # Default build options.
 build --force_pic
 build --strip=never
-# Only show warnings from Drake, not from externals.
-build --output_filter="^//"
 
 # Default test options.
 test --test_output=errors

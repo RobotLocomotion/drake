@@ -56,6 +56,7 @@ cc_library(
         exclude = ["src/*_TEST.cc"],
     ),
     hdrs = public_headers,
+    copts = ["-w"],
     includes = ["include"],
     visibility = ["//visibility:public"],
     deps = [
