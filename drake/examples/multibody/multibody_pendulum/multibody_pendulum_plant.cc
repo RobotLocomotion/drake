@@ -1,4 +1,4 @@
-#include "drake/examples/multibody_pendulum/multibody_pendulum_plant.h"
+#include "drake/examples/multibody/multibody_pendulum/multibody_pendulum_plant.h"
 
 #include <cmath>
 #include <vector>

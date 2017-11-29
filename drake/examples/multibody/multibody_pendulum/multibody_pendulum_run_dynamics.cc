@@ -3,7 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/multibody_pendulum/multibody_pendulum_plant.h"
+#include "drake/examples/multibody/multibody_pendulum/multibody_pendulum_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
