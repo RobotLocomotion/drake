@@ -29,7 +29,6 @@
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/vtk_util.h"
 
 // This macro declares vtkRenderingOpenGL2_AutoInit_{Construct(), Destruct()}
