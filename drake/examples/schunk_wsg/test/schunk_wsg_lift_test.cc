@@ -67,9 +67,11 @@ const double kBoxInitZ = 0.076;
 // amplitude (amp), and phase (offset).
 class Sinusoid : public systems::LeafSystem<double> {
  public:
-  Sinusoid(double tstart, double freq, double amp, double offset) : freq_(freq), amp_(amp), offset_(offset), tstart_(tstart) {
+  Sinusoid(double tstart, double freq, double amp, double offset) :
+      freq_(freq), amp_(amp), offset_(offset), tstart_(tstart) {
     const int num_outputs = 2;
-    this->DeclareVectorOutputPort(BasicVector<double>(num_outputs), &Sinusoid::Output);
+    this->DeclareVectorOutputPort(
+        BasicVector<double>(num_outputs), &Sinusoid::Output);
   }
 
  private:
@@ -238,7 +240,8 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   Demultiplexer<double>* demux[num_sinusoids];
   for (int i = 0; i < num_sinusoids; ++i) {
     demux[i] = builder.AddSystem<Demultiplexer<double>>(2, 1);
-    builder.Connect(sinusoids[i]->get_output_port(0), demux[i]->get_input_port(0));
+    builder.Connect(
+        sinusoids[i]->get_output_port(0), demux[i]->get_input_port(0));
   }
 
   // Create a trajectory with 3 seconds of main lift time from second
@@ -346,7 +349,6 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
       = tree.getZeroConfiguration();
 
   auto positions = tree.computePositionNameToIndexMap();
-//  ASSERT_EQ(positions["left_finger_sliding_joint"], 1);
 
   // The values below were extracted from the positions corresponding
   // to an open gripper.  Dumping them here is significantly more
