@@ -39,11 +39,14 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   /// Constructs a model of an idealized pendulum of a given `mass` and
   /// suspended by a massless cord with a given `length`. Gravity points in the
   /// `-z` axis direction with the acceleration constant `gravity`.
+  /// There will be no geometry associated to the model.
   MultibodyPendulumPlant(double mass, double length, double gravity);
 
-  /// This constructor registers `this` plant as a source for `geometry_system`.
-  /// The constructor will registrate frames and geometry for visualization with
-  /// GeometrySystem.
+  /// Constructs a model of an idealized pendulum wiht parameters as described
+  /// in this class's documentation.
+  /// This constructor registers `this` plant as a source for `geometry_system`
+  /// as well as the frames and geometry used for visualization.
+  ///
   /// See this class's documentation for a description of the physical
   /// parameters.
   MultibodyPendulumPlant(
@@ -54,16 +57,29 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   template <typename U>
   explicit MultibodyPendulumPlant(const MultibodyPendulumPlant<U>&);
 
+  /// Returns the mass of this point pendulum.
   double get_mass() const { return mass_; }
 
+  /// Returns the length of the cord from which the point mass is suspended.
   double get_length() const { return length_; }
 
+  /// Returns the value of the acceleration of gravity in the model.
   double get_gravity() const { return gravity_; }
 
+  /// Returns the unique id identifying this plant as a source for a
+  /// GeometrySystem.
+  /// The returned id will be invalid when the plant is not registered with any
+  /// GeometrySystem.
   geometry::SourceId get_source_id() const { return source_id_; }
 
+  /// Returns the output port of frame id's used to communicate poses to a
+  /// GeometrySystem. It throws a std::out_of_range exception is this system was
+  /// not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_id_output_port() const;
 
+  /// Returns the output port of frames's poses to communicate with a
+  /// GeometrySystem. It throws a std::out_of_range exception is this system was
+  /// not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
   /// Sets the state for this system in `context` to be that of `this` pendulum
@@ -84,11 +100,12 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   // scalar conversion.
   template <typename U> friend class MultibodyPendulumPlant;
 
-  /// Constructs a plant given a SourceId to communicate with a GeometrySystem.
-  /// FrameId identifies the body frame of `this` pendulum in that
-  /// GeometrySystem.
-  /// See this class's documentation for a description of the physical
-  /// parameters.
+  // Constructs a plant given a SourceId to communicate with a GeometrySystem.
+  // FrameId identifies the frame of the one and only body in the pendulum's
+  // model, which is defined to have its origin coincident with the world's
+  // frame W origin.
+  // See this class's documentation for a description of the physical
+  // parameters.
   MultibodyPendulumPlant(
       double mass, double length, double gravity,
       geometry::SourceId source_id, geometry::FrameId frame_id);
@@ -132,6 +149,7 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
+  // The physical parameters of the model:
   double mass_{1.0};
   double length_{0.5};
   double gravity_{9.81};
@@ -162,6 +180,7 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
 }  // namespace drake
 
 // Disable support for symbolic evaluation.
+// TODO(amcastro-tri): Allow symbolic evaluation once MultibodyTree supports it.
 namespace drake {
 namespace systems {
 namespace scalar_conversion {

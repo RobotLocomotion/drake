@@ -56,6 +56,16 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
 template<typename T>
 MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
     double mass, double length, double gravity,
+    geometry::GeometrySystem<double>* geometry_system) :
+    MultibodyPendulumPlant(mass, length, gravity) {
+  DRAKE_DEMAND(geometry_system != nullptr);
+  RegisterGeometry(geometry_system);
+  DeclareGeometrySystemPorts();
+}
+
+template<typename T>
+MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
+    double mass, double length, double gravity,
     SourceId source_id, FrameId frame_id) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::examples::multibody_pendulum::MultibodyPendulumPlant>()),
@@ -64,7 +74,7 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
   // Build the MultibodyTree model for this plant.
   BuildMultibodyTreeModel();
 
-  // Some very basic verification tha the model is what we expect it to be.
+  // Some very basic verification that the model is what we expect it to be.
   DRAKE_DEMAND(model_->get_num_positions() == 1);
   DRAKE_DEMAND(model_->get_num_velocities() == 1);
   DRAKE_DEMAND(model_->get_num_states() == 2);
@@ -73,16 +83,6 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
-  DeclareGeometrySystemPorts();
-}
-
-template<typename T>
-MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
-    double mass, double length, double gravity,
-    geometry::GeometrySystem<double>* geometry_system) :
-    MultibodyPendulumPlant(mass, length, gravity) {
-  DRAKE_DEMAND(geometry_system != nullptr);
-  RegisterGeometry(geometry_system);
   DeclareGeometrySystemPorts();
 }
 
@@ -185,13 +185,14 @@ void MultibodyPendulumPlant<T>::BuildMultibodyTreeModel() {
 
   // Pose of the com of the pendulum's body (in this case a point mass) in the
   // body's frame. The body's frame's origin Bo is defined to be at the world's
-  // origin, where the rotation axis is.
+  // origin Wo, where the rotation axis is.
+  // With the pendulum at rest pointing in the downwards -z direction, the body
+  // frame B and the world frame W are coincident.
   const Vector3<double> p_BoBcm_B = -get_length() * Vector3<double>::UnitZ();
 
   // Define each link's spatial inertia about the body's origin Bo.
   UnitInertia<double> G_Bo =
       UnitInertia<double>::PointMass(p_BoBcm_B);
-
   SpatialInertia<double> M_Bo(get_mass(), p_BoBcm_B, G_Bo);
 
   link_ = &model_->template AddBody<RigidBody>(M_Bo);
@@ -215,6 +216,10 @@ void MultibodyPendulumPlant<T>::RegisterGeometry(
 
   source_id_ = geometry_system->RegisterSource("multibody_pendulum");
 
+  // The pendulum's body frame B is defined to have its origin Bo coincident
+  // with the world's origin Wo. For the pendulum at rest pointing downwards in
+  // the -z direction, the pendulum's body frame B is coincident with the world
+  // frame W.
   frame_id_ = geometry_system->RegisterFrame(
       source_id_,
       GeometryFrame("PendulumFrame", Isometry3<double>::Identity()));
@@ -270,7 +275,7 @@ void MultibodyPendulumPlant<T>::DoCalcTimeDerivatives(
   model_->CalcPositionKinematicsCache(context, &pc);
   model_->CalcVelocityKinematicsCache(context, pc, &vc);
 
-  // Compute applied forces.
+  // Compute applied forces, which in this case will contain gravity.
   std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_->get_num_bodies());
   VectorX<T> tau_applied(model_->get_num_velocities());
   model_->CalcForceElementsContribution(
@@ -286,6 +291,7 @@ void MultibodyPendulumPlant<T>::DoCalcTimeDerivatives(
   auto v = x.bottomRows(nv);
 
   VectorX<T> xdot(model_->get_num_states());
+  // For this simple model v = qdot.
   xdot << v, M.llt().solve(-C);
   derivatives->SetFromVector(xdot);
 }
@@ -293,6 +299,7 @@ void MultibodyPendulumPlant<T>::DoCalcTimeDerivatives(
 template<typename T>
 void MultibodyPendulumPlant<T>::SetAngle(
     Context<T>* context, const T& angle) const {
+  DRAKE_DEMAND(context != nullptr);
   joint_->set_angle(context, angle);
 }
 
