@@ -31,9 +31,9 @@ install_cmake_config(
 # inside the build tree.
 cc_binary(
     name = "libdrake.so",
+    linkopts = ["-Wl,--exclude-libs,liboctomap.a"],
     linkshared = 1,
     linkstatic = 1,
-    linkopts = [ "-Wl,--exclude-libs,liboctomap.a" ], 
     deps = LIBDRAKE_COMPONENTS,
 )
 

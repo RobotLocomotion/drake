@@ -24,7 +24,7 @@ def _generate_export_header_impl(ctx):
         "#endif",
         "",
         "#ifndef %s" % ctx.attr.deprecated_macro_name,
-        "#  define %s __attribute__ ((__deprecated__))" % ctx.attr.deprecated_macro_name,
+        "#  define %s __attribute__ ((__deprecated__))" % ctx.attr.deprecated_macro_name,  # noqa
         "#endif",
         "",
         "#ifndef %s_EXPORT" % ctx.attr.deprecated_macro_name,
@@ -77,7 +77,7 @@ def generate_export_header(
     if export_macro_name == None:
         export_macro_name = "%s_EXPORT" % lib.upper()
     if deprecated_macro_name == None:
-        deprecated_macro_name = "%s_DEPRECATED"  % lib.upper()
+        deprecated_macro_name = "%s_DEPRECATED" % lib.upper()
 
     _generate_export_header_gen(
         name = name,
