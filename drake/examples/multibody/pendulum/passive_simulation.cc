@@ -16,6 +16,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/serializer.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
@@ -35,6 +36,7 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using systems::BasicVector;
 using systems::ImplicitEulerIntegrator;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
@@ -73,6 +75,13 @@ int do_main() {
   auto pendulum = builder.AddSystem<PendulumPlant>(
       mass, length, gravity, geometry_system);
   pendulum->set_name("Pendulum");
+
+  // A constant source for a zero applied torque at the pin joint.
+  BasicVector<double> applied_torque(Vector1d::Zero());
+  auto torque_source =
+      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
+  torque_source->set_name("Applied Torque");
+  builder.Connect(torque_source->get_output_port(), pendulum->get_input_port());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.

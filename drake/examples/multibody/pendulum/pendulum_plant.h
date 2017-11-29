@@ -83,6 +83,8 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /// not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
+  const systems::InputPortDescriptor<T>& get_input_port() const;
+
   /// Sets the state for this system in `context` to be that of `this` pendulum
   /// at a given `angle`. Mainly used to set initial conditions.
   void SetAngle(systems::Context<T>*, const T& angle) const;
@@ -174,6 +176,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   // Port handles
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
+  int applied_torque_input_{-1};
 };
 
 }  // namespace pendulum

@@ -46,6 +46,7 @@ using drake::multibody::UnitInertia;
 using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
+using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::State;
 
@@ -83,6 +84,11 @@ PendulumPlant<T>::PendulumPlant(
   this->DeclareContinuousState(
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
+
+  // Declare a vector input of size one for an applied torque about the revolute
+  // joint's axis.
+  applied_torque_input_ =
+      this->DeclareInputPort(systems::kVectorValued, 1).get_index();
 
   DeclareGeometrySystemPorts();
 }
@@ -167,6 +173,11 @@ template <typename T>
 const OutputPort<T>& PendulumPlant<T>::get_geometry_pose_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
+}
+
+template <typename T>
+const InputPortDescriptor<T>& PendulumPlant<T>::get_input_port() const {
+  return systems::System<T>::get_input_port(applied_torque_input_);
 }
 
 template<typename T>
