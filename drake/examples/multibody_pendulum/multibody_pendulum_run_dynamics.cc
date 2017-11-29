@@ -2,6 +2,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/examples/multibody_pendulum/multibody_pendulum_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
@@ -32,7 +33,7 @@ DEFINE_double(target_realtime_rate, 1.0,
 
 DEFINE_string(integration_scheme, "runge_kutta3",
               "Integration scheme to be used. Available options are:"
-              "'runge_kutta3','implicit_euler'");
+              "'runge_kutta3','implicit_euler','semi_explicit_euler'");
 
 using geometry::GeometrySystem;
 using geometry::SourceId;
@@ -46,6 +47,9 @@ using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
 
 int do_main() {
+
+  PRINT_VAR(FLAGS_integration_scheme);
+
   systems::DiagramBuilder<double> builder;
 
   auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
@@ -61,8 +65,16 @@ int do_main() {
   // simulation time.
   const double reference_time_scale =
       MultibodyPendulumPlant<double>::SimplePendulumPeriod(length, gravity);
-  const double time_step = reference_time_scale / 100;
+
+  // Define a reasonable maximum time step based off the expected dynamics's
+  // time scales.
+  const double max_time_step = reference_time_scale / 100;
+
+  // Simulate about five periods of oscillation.
   const double simulation_time = 5.0 * reference_time_scale;
+
+  // The target accuracy determines the size of the actual time steps taken
+  // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
   auto pendulum = builder.AddSystem<MultibodyPendulumPlant>(
@@ -107,32 +119,57 @@ int do_main() {
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
-            *diagram, simulator.get_mutable_context());
+            *diagram, &simulator.get_mutable_context());
   } else if (FLAGS_integration_scheme == "runge_kutta3") {
     integrator =
         simulator.reset_integrator<RungeKutta3Integrator<double>>(
-            *diagram, simulator.get_mutable_context());
+            *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
+    integrator =
+        simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
+            *diagram, max_time_step, &simulator.get_mutable_context());
   } else {
     throw std::logic_error(
         "Integration scheme not supported for this example.");
   }
+  integrator->set_maximum_step_size(max_time_step);
 
-  integrator->set_maximum_step_size(time_step);
-  integrator->set_target_accuracy(target_accuracy);
+  // Error control is only supported for variable time step integrators.
+  if (!integrator->get_fixed_step_mode())
+    integrator->set_target_accuracy(target_accuracy);
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
-  PRINT_VAR(integrator->get_num_steps_taken());
-  PRINT_VAR(integrator->get_num_derivative_evaluations());
-  PRINT_VAR(integrator->get_num_step_shrinkages_from_error_control());
-  PRINT_VAR(integrator->get_num_step_shrinkages_from_substep_failures());
-  PRINT_VAR(integrator->get_num_substep_failures());
-  PRINT_VAR(integrator->get_largest_step_size_taken());
-  PRINT_VAR(integrator->get_smallest_adapted_step_size_taken());
+  // Some sanity checks:
+  if (FLAGS_integration_scheme == "semi_explicit_euler") {
+    DRAKE_DEMAND(integrator->get_fixed_step_mode() == true);
+  }
 
+  // Checks for variable time step integrators.
+  if (!integrator->get_fixed_step_mode()) {
+    DRAKE_DEMAND(integrator->get_largest_step_size_taken() <= max_time_step);
+    DRAKE_DEMAND(integrator->get_smallest_adapted_step_size_taken() <=
+        integrator->get_largest_step_size_taken());
+    DRAKE_DEMAND(
+        integrator->get_num_steps_taken() >= simulation_time / max_time_step);
+  }
+
+  // Checks for fixed time step integrators.
+  if (integrator->get_fixed_step_mode()) {
+    DRAKE_DEMAND(integrator->get_num_derivative_evaluations() ==
+        integrator->get_num_steps_taken());
+    DRAKE_DEMAND(
+        integrator->get_num_step_shrinkages_from_error_control() == 0);
+  }
+
+  // We made a good guess for max_time_step and therefore we expect no
+  // failures when taking a time step.
+  DRAKE_DEMAND(integrator->get_num_substep_failures() == 0);
+  DRAKE_DEMAND(
+      integrator->get_num_step_shrinkages_from_substep_failures() == 0);
 
   return 0;
 }
