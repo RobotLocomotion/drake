@@ -23,10 +23,87 @@ if [[ ! -e /tmp/python_rpc ]]; then
     mkfifo /tmp/python_rpc
 fi
 
-# Start Python binary in the background.
-${py_client_cli} --no_loop &
-pid=$!
-# Execute C++.
-${cc_bin} ${cc_bin_flags}
-# When this is done, Python client should exit.
-wait $! || { echo "ERROR: Python client did not exit successfully."; exit 1; }
+py-error() {
+    echo "ERROR: Python client did not exit successfully."
+    exit 1
+}
+
+should-fail() {
+    echo "This should have failed!"
+    exit 2
+}
+
+sub-tests() {
+    # Execute sub-cases.
+    func=${1}
+    # Sub-case 1: Nominal
+    # @note This setup assumes other things succeeded.
+    echo -e "\n[ ${func}: nominal ]"
+    set-flags '' '' 0
+    ${func}
+    # Sub-case 2: With Error
+    echo -e "\n[ ${func}: with_error ]"
+    set-flags '' '--with_error' 1
+    ${func}
+    # Sub-case 3: With Error + Stop on Error
+    echo -e "\n[ ${func}: with_error + stop_on_error ]"
+    set-flags '--stop_on_error' '--with_error' 1
+    ${func}
+}
+
+py-check() {
+    # Check result of Python process.
+    if [[ ${py_fail} -eq 0 ]]; then
+        # Should succeed.
+        wait ${pid} || py-error
+    else
+        # Should fail.
+        # TODO(eric.cousineau): File / find bug in Bash for this; this behaves
+        # differently depending on how this is placed in a function.
+        { wait ${pid} && should-fail; } || :
+    fi
+}
+
+set-flags() {
+    py_flags=${1}
+    cc_flags=${2}
+    py_fail=${3}
+}
+
+# Execute tests.
+
+no_threading-no_loop() {
+    # Start Python binary in the background.
+    ${py_client_cli} --no_threading --no_loop ${py_flags} &
+    pid=$!
+    # Execute C++.
+    ${cc_bin} ${cc_bin_flags} ${cc_flags}
+    # When this is done, Python client should exit.
+    py-check
+}
+sub-tests no_threading-no_loop
+
+threading-no_loop() {
+    ${py_client_cli} --no_loop ${py_flags} &
+    pid=$!
+    ${cc_bin} ${cc_bin_flags} ${cc_flags}
+    py-check
+}
+sub-tests threading-no_loop
+
+threading-loop() {
+    # Use `exec` so that we inherit SIGINT handlers.
+    # @ref https://stackoverflow.com/a/44538799/7829525
+    exec ${py_client_cli} ${py_flags} &
+    pid=$!
+    # Execute client twice.
+    ${cc_bin} ${cc_bin_flags} ${cc_flags}
+    ${cc_bin} ${cc_bin_flags} ${cc_flags}
+    # Wait for a small bit, then kill the client with Ctrl+C.
+    sleep 0.2  # This is necessary to permit the client to finish processing.
+    # TODO(eric.cousineau): In script form, this works well (only one interrupt
+    # needed); however, interactively we need a few more.
+    kill -INT ${pid} || :
+    py-check
+}
+sub-tests threading-loop

@@ -2,7 +2,10 @@
 
 #include <cmath>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
+
+DEFINE_bool(with_error, false, "Inject an error towards the end.");
 
 // TODO(eric.cousineau): Instrument client to verify output (and make this a
 // unittest).
@@ -66,6 +69,12 @@ GTEST_TEST(TestCallPython, RemoteVarTest) {
   CallPython("print", "Third column should now be [1, 2, 3]: ");
   magic.slice(":", 2) = Eigen::Vector3d(1, 2, 3);
   CallPython("print", magic);
+
+  // Place error code at the end, so that the test fails if this is not
+  // processed.
+  if (FLAGS_with_error) {
+    CallPython("bad_function_name");
+  }
 }
 
 GTEST_TEST(TestCallPython, Plot2d) {
