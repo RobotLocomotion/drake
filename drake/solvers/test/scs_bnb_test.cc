@@ -197,144 +197,133 @@ void IsConeEqual(const SCS_CONE& cone1, const SCS_CONE& cone2) {
   }
 }
 
-class TestScsNode : public ::testing::Test {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestScsNode)
+void free_scs_pointer(void* scs_pointer) { scs_free(scs_pointer); }
 
-  TestScsNode() : A_(3, 4), scs_A_{nullptr, &freeAMatrix} {
-    // For a mixed-integer program
-    // min x(0) + 2x(1) -3x(3) + 1
-    // s.t x(0) + x(1) + 2x(3) = 2
-    //     x(1) - 3.1 x(2) >= 1
-    //     x(2) + 1.2x(3) - x(0) <= 5
-    //     x(0), x(2) are binary
-    // We can convert it to the SCS form
-    // min cᵀx
-    // s.t Ax + s = b
-    //     s in K
-    // where c = [1; 2; 0; -3]
-    // A = [ 1  1    0    2]
-    //     [ 0 -1  3.1    0]
-    //     [-1  0    1  1.2]
-    // b = [2; -1; 5]
-    std::vector<Eigen::Triplet<double>> A_triplets;
-    A_triplets.emplace_back(0, 0, 1);
-    A_triplets.emplace_back(0, 1, 1);
-    A_triplets.emplace_back(0, 3, 2);
-    A_triplets.emplace_back(1, 1, -1);
-    A_triplets.emplace_back(1, 2, 3.1);
-    A_triplets.emplace_back(2, 0, -1);
-    A_triplets.emplace_back(2, 2, 1);
-    A_triplets.emplace_back(2, 3, 1.2);
-    A_.setFromTriplets(A_triplets.begin(), A_triplets.end());
-    A_.makeCompressed();
-    scs_A_ = ConstructScsAmatrix(A_);
-    binary_var_indices_ = {0, 2};
-
-    cone_ = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
-    cone_->f = 1;
-    cone_->l = 2;
-    cone_->q = nullptr;
-    cone_->qsize = 0;
-    cone_->s = nullptr;
-    cone_->ssize = 0;
-    cone_->ep = 0;
-    cone_->ed = 0;
-    cone_->p = nullptr;
-    cone_->psize = 0;
-
-    settings_.alpha = ALPHA;
-    settings_.cg_rate = CG_RATE;
-    settings_.eps = EPS;
-    settings_.max_iters = MAX_ITERS;
-    settings_.normalize = NORMALIZE;
-    settings_.rho_x = RHO_X;
-    settings_.scale = SCALE;
-    settings_.verbose = VERBOSE;
-    settings_.warm_start = WARM_START;
+// Store the data for a mixed-inteter optimization problem
+// min cᵀx + d
+// s.t Ax + s = b
+//     s in cone
+//     x(binary_var_indices_) are binary variables
+struct MIPdata {
+  MIPdata(const Eigen::SparseMatrix<double>& A, const scs_float* const b,
+          const scs_float* const c, double d, const SCS_CONE& cone,
+          const std::list<int>& binary_var_indices)
+      : A_{ConstructScsAmatrix(A)},
+        b_{static_cast<scs_float*>(scs_calloc(A_->m, sizeof(scs_float))),
+           &free_scs_pointer},
+        c_{static_cast<scs_float*>(scs_calloc(A_->n, sizeof(scs_float))),
+           &free_scs_pointer},
+        d_{d},
+        cone_{DeepCopyScsCone(&cone)},
+        binary_var_indices_{binary_var_indices} {
+    for (int i = 0; i < A_->m; ++i) {
+      b_.get()[i] = b[i];
+    }
+    for (int i = 0; i < A_->n; ++i) {
+      c_.get()[i] = c[i];
+    }
   }
-
-  ~TestScsNode() {
-    if (cone_->q) {
-      scs_free(cone_->q);
-    }
-    if (cone_->s) {
-      scs_free(cone_->s);
-    }
-    if (cone_->p) {
-      scs_free(cone_->p);
-    }
-    scs_free(cone_);
-  }
-
-  void TestConstructRootNode(const std::list<int>& binary_var_indices) {
-    const auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
-                                                 binary_var_indices, 1);
-    EXPECT_EQ(root->y_index(), -1);
-    EXPECT_EQ(root->left_child(), nullptr);
-    EXPECT_EQ(root->right_child(), nullptr);
-    EXPECT_EQ(root->parent(), nullptr);
-    Eigen::SparseMatrix<double> root_A(
-        A_.rows() + 2 * binary_var_indices.size(), A_.cols());
-    std::vector<Eigen::Triplet<double>> root_A_triplets;
-    for (int i = 0; i < A_.rows(); ++i) {
-      for (int j = 0; j < A_.cols(); ++j) {
-        if (A_.coeff(i, j) != 0) {
-          root_A_triplets.emplace_back(
-              i + (i >= 1 ? 2 * binary_var_indices.size() : 0), j,
-              A_.coeff(i, j));
-        }
-      }
-    }
-    int binary_var_count = 0;
-    for (auto it = binary_var_indices.begin(); it != binary_var_indices.end();
-         ++it) {
-      root_A_triplets.emplace_back(1 + binary_var_count * 2, *it, -1);
-      root_A_triplets.emplace_back(1 + binary_var_count * 2 + 1, *it, 1);
-      ++binary_var_count;
-    }
-    root_A.setFromTriplets(root_A_triplets.begin(), root_A_triplets.end());
-    scs_float* root_b = new scs_float[3 + 2 * binary_var_indices.size()];
-    root_b[0] = b_[0];
-    for (int i = 0; i < static_cast<int>(binary_var_indices.size()); ++i) {
-      root_b[1 + 2 * i] = 0;
-      root_b[2 + 2 * i] = 1;
-    }
-    root_b[2 * binary_var_indices.size() + 1] = b_[1];
-    root_b[2 * binary_var_indices.size() + 2] = b_[2];
-    auto root_scs_A = ConstructScsAmatrix(root_A);
-
-    IsSameRelaxedConstraint(*root_scs_A, *(root->A()), root_b, root->b(), 0);
-
-    for (int i = 0;
-         i < scs_A_->m + 2 * static_cast<int>(binary_var_indices.size()); ++i) {
-      EXPECT_EQ(root_b[i], root->b()[i]);
-    }
-    delete[] root_b;
-    for (int i = 0; i < 4; ++i) {
-      EXPECT_EQ(c_[i], root->c()[i]);
-    }
-    EXPECT_EQ(root->cost_constant(), 1);
-    // Check the cones
-    auto root_cone_expected = DeepCopyScsCone(cone_);
-    root_cone_expected->l += 2 * binary_var_indices.size();
-    IsConeEqual(*(root->cone()), *root_cone_expected);
-
-    EXPECT_FALSE(root->found_integral_sol());
-    IsBinaryVarIndicesEqual(root->binary_var_indices(), binary_var_indices);
-  }
-
- protected:
-  Eigen::SparseMatrix<double> A_;
-  std::unique_ptr<AMatrix, void (*)(AMatrix*)> scs_A_;
-  scs_float b_[3] = {2, -1, 5};
-  scs_float c_[4] = {1, 2, 0, -3};
+  std::unique_ptr<AMatrix, void (*)(AMatrix*)> A_;
+  std::unique_ptr<scs_float, void (*)(void*)> b_;
+  std::unique_ptr<scs_float, void (*)(void*)> c_;
+  double d_;
+  std::unique_ptr<SCS_CONE, void (*)(SCS_CONE*)> cone_;
   std::list<int> binary_var_indices_;
-  SCS_CONE* cone_;
-  SCS_SETTINGS settings_;
 };
 
-TEST_F(TestScsNode, TestConstructor) {
+// Construct the problem data for the mixed-integer linear program
+// min x(0) + 2x(1) -3x(3) + 1
+// s.t x(0) + x(1) + 2x(3) = 2
+//     x(1) - 3.1 x(2) >= 1
+//     x(2) + 1.2x(3) - x(0) <= 5
+//     x(0), x(2) are binary
+MIPdata ConstructMILPExample1() {
+  Eigen::Matrix<double, 3, 4> A;
+  // clang-format off
+  A << 1, 1, 0, 2,
+       0, -1, 3.1, 0,
+       -1, 0, 1, 1.2;
+  // clang-format on
+  scs_float b[3] = {2, -1, 5};
+  scs_float c[4] = {1, 2, 0, -3};
+  SCS_CONE cone;
+  cone.f = 1;
+  cone.l = 2;
+  cone.q = nullptr;
+  cone.qsize = 0;
+  cone.s = nullptr;
+  cone.ssize = 0;
+  cone.ed = 0;
+  cone.ep = 0;
+  cone.p = nullptr;
+  cone.psize = 0;
+  return MIPdata(A.sparseView(), b, c, 1, cone, {0, 2});
+}
+
+// Construct the problem data for the mixed-integer linear program
+// min x₀ + 2x₁ - 3x₂ - 4x₃ + 4.5x₄ + 1
+// s.t 2x₀ + x₂ + 1.5x₃ + x₄ = 4.5
+//     1 ≤ 2x₀ + 4x₃ + x₄ ≤ 7
+//     -2 ≤ 3x₁ + 2x₂ - 5x₃ + x₄ ≤ 7
+//     -5 ≤ x₁ + x₂ + 2x₃ ≤ 10
+//     -10 ≤ x₁ ≤ 10
+//     x₀, x₂, x₄ are binary variables.
+MIPdata ConstructMILPExample2() {
+  Eigen::Matrix<double, 9, 5> A;
+  // clang-format off
+  A << 2, 0, 1, 1.5, 1,
+      2, 0, 0, 4, 1,
+      -2, 0, 0, -4, -1,
+      0, 3, 2, -5, 1,
+      0, -3, -2, 5, -1,
+      0, 1, 1, 2, 0,
+      0, -1, -1, -2, 0,
+      0, 1, 0, 0, 0,
+      0, -1, 0, 0, 0;
+  // clang-format on
+  scs_float b[9] = {4.5, 7, -1, 7, 2, 10, 5, 10, 10};
+  scs_float c[5] = {1, 2, -3, -4, 4.5};
+  SCS_CONE cone;
+  cone.f = 1;
+  cone.l = 8;
+  cone.q = nullptr;
+  cone.qsize = 0;
+  cone.s = nullptr;
+  cone.ssize = 0;
+  cone.ed = 0;
+  cone.ep = 0;
+  cone.p = nullptr;
+  cone.psize = 0;
+  return MIPdata(A.sparseView(), b, c, 1, cone, {0, 2, 4});
+}
+
+std::unique_ptr<ScsNode> ConstructMILPExample1RootNode() {
+  MIPdata mip_data = ConstructMILPExample1();
+  return ScsNode::ConstructRootNode(*(mip_data.A_), mip_data.b_.get(),
+                                    mip_data.c_.get(), *(mip_data.cone_),
+                                    mip_data.binary_var_indices_, mip_data.d_);
+}
+
+std::unique_ptr<ScsNode> ConstructMILPExample2RootNode() {
+  MIPdata mip_data = ConstructMILPExample2();
+  return ScsNode::ConstructRootNode(*(mip_data.A_), mip_data.b_.get(),
+                                    mip_data.c_.get(), *(mip_data.cone_),
+                                    mip_data.binary_var_indices_, mip_data.d_);
+}
+
+void SetScsSettingToDefault(SCS_SETTINGS* settings) {
+  settings->alpha = ALPHA;
+  settings->cg_rate = CG_RATE;
+  settings->eps = EPS;
+  settings->max_iters = MAX_ITERS;
+  settings->normalize = NORMALIZE;
+  settings->rho_x = RHO_X;
+  settings->scale = SCALE;
+  settings->verbose = VERBOSE;
+  settings->warm_start = WARM_START;
+}
+
+GTEST_TEST(TestScsNode, TestConstructor) {
   ScsNode node(2, 3);
   EXPECT_EQ(node.A()->m, 2);
   EXPECT_EQ(node.A()->n, 3);
@@ -349,60 +338,156 @@ TEST_F(TestScsNode, TestConstructor) {
   EXPECT_EQ(node.parent(), nullptr);
 }
 
-TEST_F(TestScsNode, TestConstructRoot1) {
-  TestConstructRootNode(binary_var_indices_);
+void TestConstructScsRootNode(const AMatrix& A, const scs_float* const b,
+                              const scs_float* const c, const SCS_CONE& cone,
+                              const std::list<int>& binary_var_indices,
+                              double cost_constant) {
+  const auto root = ScsNode::ConstructRootNode(
+      A, b, c, cone, binary_var_indices, cost_constant);
+  EXPECT_EQ(root->y_index(), -1);
+  EXPECT_EQ(root->left_child(), nullptr);
+  EXPECT_EQ(root->right_child(), nullptr);
+  EXPECT_EQ(root->parent(), nullptr);
+  const Eigen::SparseMatrix<double> A_sparse = ScsAmatrixToEigenSparseMatrix(A);
+  std::vector<Eigen::Triplet<double>> root_A_triplets;
+  for (int i = 0; i < A_sparse.rows(); ++i) {
+    for (int j = 0; j < A_sparse.cols(); ++j) {
+      if (A_sparse.coeff(i, j) != 0) {
+        root_A_triplets.emplace_back(
+            i + (i >= cone.f ? 2 * binary_var_indices.size() : 0), j,
+            A_sparse.coeff(i, j));
+      }
+    }
+  }
+  int binary_var_count = 0;
+  for (auto it = binary_var_indices.begin(); it != binary_var_indices.end();
+       ++it) {
+    root_A_triplets.emplace_back(cone.f + binary_var_count * 2, *it, -1);
+    root_A_triplets.emplace_back(cone.f + binary_var_count * 2 + 1, *it, 1);
+    ++binary_var_count;
+  }
+  Eigen::SparseMatrix<double> root_A(A.m + 2 * binary_var_indices.size(), A.n);
+  root_A.setFromTriplets(root_A_triplets.begin(), root_A_triplets.end());
+  scs_float* root_b = new scs_float[A.m + 2 * binary_var_indices.size()];
+  for (int i = 0; i < cone.f; ++i) {
+    root_b[i] = b[i];
+  }
+  for (int i = 0; i < static_cast<int>(binary_var_indices.size()); ++i) {
+    root_b[cone.f + 2 * i] = 0;
+    root_b[cone.f + 1 + 2 * i] = 1;
+  }
+  for (int i = cone.f; i < A.m; ++i) {
+    root_b[2 * binary_var_indices.size() + i] = b[i];
+  }
+  auto root_scs_A = ConstructScsAmatrix(root_A);
+
+  IsSameRelaxedConstraint(*root_scs_A, *(root->A()), root_b, root->b(), 0);
+
+  for (int i = 0; i < root_A.rows(); ++i) {
+    EXPECT_EQ(root_b[i], root->b()[i]);
+  }
+  delete[] root_b;
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_EQ(c[i], root->c()[i]);
+  }
+  EXPECT_EQ(root->cost_constant(), cost_constant);
+  // Check the cones
+  auto root_cone_expected = DeepCopyScsCone(&cone);
+  root_cone_expected->l += 2 * binary_var_indices.size();
+  IsConeEqual(*(root->cone()), *root_cone_expected);
+
+  EXPECT_FALSE(root->found_integral_sol());
+  IsBinaryVarIndicesEqual(root->binary_var_indices(), binary_var_indices);
 }
 
-TEST_F(TestScsNode, TestConstructRoot2) { TestConstructRootNode({0}); }
-
-TEST_F(TestScsNode, TestConstructRoot3) { TestConstructRootNode({1}); }
-
-TEST_F(TestScsNode, TestConstructRoot4) { TestConstructRootNode({3}); }
-
-TEST_F(TestScsNode, TestConstructRootError) {
-  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {0, 4}, 1),
-               std::runtime_error);
-  EXPECT_THROW(ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {-1, 0}, 1),
-               std::runtime_error);
-  EXPECT_THROW(
-      ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_, {1, 1, 2}, 1),
-      std::runtime_error);
+GTEST_TEST(TestScsNode, TestConstructRoot1) {
+  MIPdata mip_data = ConstructMILPExample1();
+  TestConstructScsRootNode(*(mip_data.A_), mip_data.b_.get(), mip_data.c_.get(),
+                           *(mip_data.cone_), mip_data.binary_var_indices_,
+                           mip_data.d_);
 }
 
-TEST_F(TestScsNode, TestBranch) {
-  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
-                                         binary_var_indices_, 1);
+GTEST_TEST(TestScsNode, TestConstructRoot2) {
+  MIPdata mip_data = ConstructMILPExample2();
+  TestConstructScsRootNode(*(mip_data.A_), mip_data.b_.get(), mip_data.c_.get(),
+                           *(mip_data.cone_), mip_data.binary_var_indices_,
+                           mip_data.d_);
+}
 
-  // Branch on x0
-  root->Branch(0);
+GTEST_TEST(TestScsNode, TestConstructRootError) {
+  MIPdata mip_data = ConstructMILPExample1();
+  EXPECT_THROW(ScsNode::ConstructRootNode(*(mip_data.A_), mip_data.b_.get(),
+                                          mip_data.c_.get(), *(mip_data.cone_),
+                                          {0, 4}, mip_data.d_),
+               std::runtime_error);
+  EXPECT_THROW(ScsNode::ConstructRootNode(*(mip_data.A_), mip_data.b_.get(),
+                                          mip_data.c_.get(), *(mip_data.cone_),
+                                          {-1, 0}, mip_data.d_),
+               std::runtime_error);
+  EXPECT_THROW(ScsNode::ConstructRootNode(*(mip_data.A_), mip_data.b_.get(),
+                                          mip_data.c_.get(), *(mip_data.cone_),
+                                          {1, 1, 4}, mip_data.d_),
+               std::runtime_error);
+}
+
+void TestBranching(ScsNode* root, int branch_var_index,
+                   const std::list<int>& binary_var_indices_child,
+                   const scs_float* const b_left,
+                   const scs_float* const b_right, const scs_float* c_child,
+                   double cost_constant_left, double cost_constant_right,
+                   const AMatrix& A_child) {
+  root->Branch(branch_var_index);
   EXPECT_NE(root->left_child(), nullptr);
   EXPECT_NE(root->right_child(), nullptr);
-  EXPECT_EQ(root->left_child()->parent(), root.get());
-  EXPECT_EQ(root->right_child()->parent(), root.get());
+  EXPECT_EQ(root->left_child()->parent(), root);
+  EXPECT_EQ(root->right_child()->parent(), root);
 
-  const std::list<int> binary_var_indices_child = {1};
   IsBinaryVarIndicesEqual(root->left_child()->binary_var_indices(),
                           binary_var_indices_child);
   IsBinaryVarIndicesEqual(root->right_child()->binary_var_indices(),
                           binary_var_indices_child);
 
-  // Check the cost vector c
-  const scs_float c_child[3] = {2, 0, -3};
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(root->left_child()->c()[i], c_child[i]);
-    EXPECT_EQ(root->right_child()->c()[i], c_child[i]);
-  }
-  EXPECT_EQ(root->left_child()->cost_constant(), 1);
-  EXPECT_EQ(root->right_child()->cost_constant(), 2);
+  EXPECT_EQ(root->left_child()->A()->m, root->A()->m - 2);
+  EXPECT_EQ(root->right_child()->A()->m, root->A()->m - 2);
+  EXPECT_EQ(root->left_child()->A()->n, root->A()->n - 1);
+  EXPECT_EQ(root->right_child()->A()->n, root->A()->n - 1);
 
-  // Check the right-hand side vector b
-  const scs_float b_left[5] = {2, 0, 1, -1, 5};
-  const scs_float b_right[5] = {1, 0, 1, -1, 6};
-  for (int i = 0; i < 5; ++i) {
+  const double tol{1E-10};
+  for (int i = 0; i < root->A()->n - 1; ++i) {
+    EXPECT_NEAR(root->left_child()->c()[i], c_child[i], tol);
+    EXPECT_NEAR(root->right_child()->c()[i], c_child[i], tol);
+  }
+
+  EXPECT_NEAR(root->left_child()->cost_constant(), cost_constant_left, tol);
+  EXPECT_NEAR(root->right_child()->cost_constant(), cost_constant_right, tol);
+
+  for (int i = 0; i < root->A()->m - 2; ++i) {
     EXPECT_EQ(root->left_child()->b()[i], b_left[i]);
     EXPECT_EQ(root->right_child()->b()[i], b_right[i]);
   }
 
+  IsAmatrixEqual(A_child, *(root->left_child()->A()), tol);
+  IsAmatrixEqual(A_child, *(root->right_child()->A()), tol);
+
+  // Check if the y_index and y_val are correct in the child nodes.
+  EXPECT_EQ(root->left_child()->y_index(), branch_var_index);
+  EXPECT_EQ(root->right_child()->y_index(), branch_var_index);
+  EXPECT_EQ(root->left_child()->y_val(), 0);
+  EXPECT_EQ(root->right_child()->y_val(), 1);
+
+  auto child_cone = DeepCopyScsCone(root->cone());
+  child_cone->l -= 2;
+  IsConeEqual(*child_cone, *(root->left_child()->cone()));
+  IsConeEqual(*child_cone, *(root->right_child()->cone()));
+}
+
+GTEST_TEST(TestScsNode, TestBranch1) {
+  const auto root = ConstructMILPExample1RootNode();
+
+  // Branch on x0
+  const scs_float b_left[5] = {2, 0, 1, -1, 5};
+  const scs_float b_right[5] = {1, 0, 1, -1, 6};
+  const scs_float c_child[3] = {2, 0, -3};
   // Check the left-hand side matrix A
   // A_child = [ 1    0    2]
   //           [ 0   -1    0]
@@ -421,34 +506,138 @@ TEST_F(TestScsNode, TestBranch) {
   Eigen::SparseMatrix<double> A_child(5, 3);
   A_child.setFromTriplets(A_child_triplets.begin(), A_child_triplets.end());
   const auto scs_A_child = ConstructScsAmatrix(A_child);
-  IsAmatrixEqual(*scs_A_child, *(root->left_child()->A()), 1E-10);
-  IsAmatrixEqual(*scs_A_child, *(root->right_child()->A()), 1E-10);
+  const std::list<int> binary_var_indices_child = {1};
 
-  // Check if the y_index and y_val are correct in the child nodes.
-  EXPECT_EQ(root->left_child()->y_index(), 0);
-  EXPECT_EQ(root->right_child()->y_index(), 0);
-  EXPECT_EQ(root->left_child()->y_val(), 0);
-  EXPECT_EQ(root->right_child()->y_val(), 1);
-
-  auto child_cone = DeepCopyScsCone(root->cone());
-  child_cone->l -= 2;
-  IsConeEqual(*child_cone, *(root->left_child()->cone()));
-  IsConeEqual(*child_cone, *(root->right_child()->cone()));
+  TestBranching(root.get(), 0, binary_var_indices_child, b_left, b_right,
+                c_child, 1, 2, *scs_A_child);
 }
 
-TEST_F(TestScsNode, TestBranchError) {
-  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
-                                         binary_var_indices_, 1);
+GTEST_TEST(TestScsNode, TestBranch2) {
+  const auto root = ConstructMILPExample1RootNode();
+
+  // Branch on x2
+  const scs_float b_left[5] = {2, 0, 1, -1, 5};
+  const scs_float b_right[5] = {2, 0, 1, -4.1, 4};
+  const scs_float c_child[3] = {1, 2, -3};
+  Eigen::Matrix<double, 5, 3> A;
+  // clang-format off
+  A << 1, 1, 2,
+      -1, 0, 0,
+      1, 0, 0,
+      0, -1, 0,
+      -1, 0, 1.2;
+  // clang-format on
+  const auto scs_A_child = ConstructScsAmatrix(A.sparseView());
+  const std::list<int> binary_var_indices_child = {0};
+
+  TestBranching(root.get(), 2, binary_var_indices_child, b_left, b_right,
+                c_child, 1, 1, *scs_A_child);
+}
+
+GTEST_TEST(TestScsNode, TestBranch3) {
+  const auto root = ConstructMILPExample2RootNode();
+
+  // Branch on x0
+  const scs_float b_left[13] = {4.5, 0, 1, 0, 1, 7, -1, 7, 2, 10, 5, 10, 10};
+  const scs_float b_right[13] = {2.5, 0, 1, 0, 1, 5, 1, 7, 2, 10, 5, 10, 10};
+  const scs_float c_child[4] = {2, -3, -4, 4.5};
+  Eigen::Matrix<double, 13, 4> A;
+  // clang-format off
+  A << 0, 1, 1.5, 1,
+      0, -1, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 0, -1,
+      0, 0, 0, 1,
+      0, 0, 4, 1,
+      0, 0, -4, -1,
+      3, 2, -5, 1,
+      -3, -2, 5, -1,
+      1, 1, 2, 0,
+      -1, -1, -2, 0,
+      1, 0, 0, 0,
+      -1, 0, 0, 0;
+  // clang-format on
+  const auto scs_A_child = ConstructScsAmatrix(A.sparseView());
+  const std::list<int> binary_var_indices_child = {1, 3};
+
+  TestBranching(root.get(), 0, binary_var_indices_child, b_left, b_right,
+                c_child, 1, 2, *scs_A_child);
+}
+
+GTEST_TEST(TestScsNode, TestBranch4) {
+  const auto root = ConstructMILPExample2RootNode();
+
+  // Branch on x2
+  const scs_float b_left[13] = {4.5, 0, 1, 0, 1, 7, -1, 7, 2, 10, 5, 10, 10};
+  const scs_float b_right[13] = {3.5, 0, 1, 0, 1, 7, -1, 5, 4, 9, 6, 10, 10};
+  const scs_float c_child[4] = {1, 2, -4, 4.5};
+  Eigen::Matrix<double, 13, 4> A;
+  // clang-format off
+  A << 2, 0, 1.5, 1,
+      -1, 0, 0, 0,
+      1, 0, 0, 0,
+      0, 0, 0, -1,
+      0, 0, 0, 1,
+      2, 0, 4, 1,
+      -2, 0, -4, -1,
+      0, 3, -5, 1,
+      0, -3, 5, -1,
+      0, 1, 2, 0,
+      0, -1, -2, 0,
+      0, 1, 0, 0,
+      0, -1, 0, 0;
+  // clang-format on
+  const auto scs_A_child = ConstructScsAmatrix(A.sparseView());
+  const std::list<int> binary_var_indices_child = {0, 3};
+
+  TestBranching(root.get(), 2, binary_var_indices_child, b_left, b_right,
+                c_child, 1, -2, *scs_A_child);
+}
+
+GTEST_TEST(TestScsNode, TestBranch5) {
+  const auto root = ConstructMILPExample2RootNode();
+
+  // Branch on x4
+  const scs_float b_left[13] = {4.5, 0, 1, 0, 1, 7, -1, 7, 2, 10, 5, 10, 10};
+  const scs_float b_right[13] = {3.5, 0, 1, 0, 1, 6, 0, 6, 3, 10, 5, 10, 10};
+  const scs_float c_child[4] = {1, 2, -3, -4};
+  Eigen::Matrix<double, 13, 4> A;
+  // clang-format off
+  A << 2, 0, 1, 1.5,
+      -1, 0, 0, 0,
+      1, 0, 0, 0,
+      0, 0, -1, 0,
+      0, 0, 1, 0,
+      2, 0, 0, 4,
+      -2, 0, 0, -4,
+      0, 3, 2, -5,
+      0, -3, -2, 5,
+      0, 1, 1, 2,
+      0, -1, -1, -2,
+      0, 1, 0, 0,
+      0, -1, 0, 0;
+  // clang-format on
+  const auto scs_A_child = ConstructScsAmatrix(A.sparseView());
+  const std::list<int> binary_var_indices_child = {0, 2};
+
+  TestBranching(root.get(), 4, binary_var_indices_child, b_left, b_right,
+                c_child, 1, 5.5, *scs_A_child);
+}
+
+GTEST_TEST(TestScsNode, TestBranchError) {
+  const auto root = ConstructMILPExample1RootNode();
+
   // Branch on a variable that is NOT binary.
   EXPECT_THROW(root->Branch(1), std::runtime_error);
 }
 
-TEST_F(TestScsNode, TestSolve1) {
-  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
-                                         binary_var_indices_, 1);
+GTEST_TEST(TestScsNode, TestSolve1) {
+  const auto root = ConstructMILPExample1RootNode();
 
+  SCS_SETTINGS settings;
+  SetScsSettingToDefault(&settings);
   const double tol = 1E-3;
-  const scs_int scs_status = root->Solve(settings_);
+  const scs_int scs_status = root->Solve(settings);
   EXPECT_EQ(scs_status, SCS_SOLVED);
   EXPECT_NEAR(root->cost(), 1.5, tol);
   const scs_float x_expected[4] = {0, 1, 0, 0.5};
@@ -458,14 +647,15 @@ TEST_F(TestScsNode, TestSolve1) {
   EXPECT_TRUE(root->found_integral_sol());
 }
 
-TEST_F(TestScsNode, TestSolve2) {
+GTEST_TEST(TestScsNode, TestSolveChildNodes1) {
   // Solve the left and right child nodes of the root.
-  auto root = ScsNode::ConstructRootNode(*scs_A_, b_, c_, *cone_,
-                                         binary_var_indices_, 1);
+  const auto root = ConstructMILPExample1RootNode();
 
   root->Branch(0);
 
-  const scs_int scs_status_l = root->left_child()->Solve(settings_);
+  SCS_SETTINGS settings;
+  SetScsSettingToDefault(&settings);
+  const scs_int scs_status_l = root->left_child()->Solve(settings);
   EXPECT_EQ(scs_status_l, SCS_SOLVED);
   const double tol{1E-3};
   EXPECT_NEAR(root->left_child()->cost(), 1.5, tol);
@@ -475,7 +665,7 @@ TEST_F(TestScsNode, TestSolve2) {
   }
   EXPECT_TRUE(root->left_child()->found_integral_sol());
 
-  const scs_int scs_status_r = root->right_child()->Solve(settings_);
+  const scs_int scs_status_r = root->right_child()->Solve(settings);
   EXPECT_EQ(scs_status_r, SCS_SOLVED);
   EXPECT_NEAR(root->right_child()->cost(), 4, 2 * tol);
   const scs_float x_expected_r[3] = {1, 0, 0};
