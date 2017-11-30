@@ -162,6 +162,22 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   const SpaceXYZMobilizer<T>& set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
+  /// Stores in `state` the angular velocity `w_FM` of the outboard frame
+  /// M in the inboard frame F corresponding to `this` mobilizer.
+  ///
+  /// @param[in] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[out] state
+  ///   On return, `state` will store the angular velocity `w_FM` of frame F in
+  ///   frame M.
+  /// @param[in] w_FM
+  ///   A vector in ℝ³ with the desired angular velocity of the outboard frame M
+  ///   in the inboard frame F, expressed in F.
+  /// @returns a constant reference to `this` mobilizer.
+  const SpaceXYZMobilizer<T>& set_angular_velocity(
+      const systems::Context<T>& context, systems::State<T>* state,
+      const Vector3<T>& w_FM) const;
+
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the space x-y-z angles
   /// θ₁, θ₂, θ₃ stored in `context`.
