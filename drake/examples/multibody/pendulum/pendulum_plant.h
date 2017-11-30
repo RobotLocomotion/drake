@@ -128,16 +128,6 @@ class PendulumPlant final : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override {
     DRAKE_DEMAND(state != nullptr);
     model_->SetDefaultState(context, state);
-#if 0
-    VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
-    x0.head(get_num_positions()) = tree_->getZeroConfiguration();
-
-      // Extract a reference to continuous state from the context.
-      ContinuousState<T>& xc = state->get_mutable_continuous_state();
-
-      // Write the zero configuration into the continuous state.
-      xc.SetFromVector(x0);
-#endif
   }
 
  private:
