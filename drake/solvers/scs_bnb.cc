@@ -251,18 +251,20 @@ void ScsNode::Branch(int binary_var_index) {
   }
   // We need to remove the column in A corresponding to binary variable z, i.e.,
   // the binary_var_index'th column.
-  for (int col = 1; col < left_child_->A_->n + 1; ++col) {
+  left_child_->A_->p[0] = 0;
+  for (int col = 0; col < left_child_->A_->n; ++col) {
     const int A_col = col < binary_var_index ? col : col + 1;
-    const int column_nnz{A_->p[A_col] - A_->p[A_col - 1]};
-    left_child_->A_->p[col] = left_child_->A_->p[col - 1] + column_nnz;
+    // number of non-zeros in the parent's A column.
+    const int column_nnz{A_->p[A_col + 1] - A_->p[A_col]};
+    left_child_->A_->p[col + 1] = left_child_->A_->p[col] + column_nnz;
     for (int i = 0; i < column_nnz; ++i) {
-      left_child_->A_->x[left_child_->A_->p[col - 1] + i] =
-          A_->x[A_->p[A_col - 1] + i];
+      left_child_->A_->x[left_child_->A_->p[col] + i] =
+          A_->x[A_->p[A_col] + i];
       // The indices of the rows above the row representing z ≥ 0 is unchanged.
       // The indices of the rows below the row representing z ≤ 1 is decremented
       // by 2, since we are going to remove the two rows representing 0 ≤ z ≤ 1.
-      const int A_row_index = A_->i[A_->p[A_col - 1] + i];
-      left_child_->A_->i[left_child_->A_->p[col - 1] + i] =
+      const int A_row_index = A_->i[A_->p[A_col] + i];
+      left_child_->A_->i[left_child_->A_->p[col] + i] =
           A_row_index < removed_row_index0 ? A_row_index : A_row_index - 2;
     }
   }
