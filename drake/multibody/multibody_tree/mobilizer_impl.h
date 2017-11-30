@@ -62,11 +62,13 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_positions(mbt_context).setZero();
   }
 
-  /// A variant of set_zero_configuration(systems::Context<T>*) taking a mutable
-  /// state object.
-  /// See set_zero_configuration(systems::Context<T>*) for details.
-  void set_zero_configuration(const systems::Context<T>& context,
-                              systems::State<T>* state) const override {
+  /// Default implementation to Mobilizer::set_zero_state() that sets all
+  /// generalized positions related to this mobilizer to zero.
+  /// Be aware however that this default does not apply in general to all
+  /// mobilizers and specific subclasses (for instance for quaternions) must
+  /// override this method for correctness.
+  void set_zero_state(const systems::Context<T>& context,
+                      systems::State<T>* state) const override {
     get_mutable_positions(state).setZero();
     get_mutable_velocities(state).setZero();
   }

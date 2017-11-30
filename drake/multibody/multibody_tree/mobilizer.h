@@ -314,10 +314,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// quaternion [1, 0, 0, 0].
   virtual void set_zero_configuration(systems::Context<T>* context) const = 0;
 
-  /// A variant of set_zero_configuration() taking a mutable State object.
-  /// See set_zero_configuration(systems::Context<T>*) for details.
-  virtual void set_zero_configuration(const systems::Context<T>& context,
-                                      systems::State<T>* state) const = 0;
+  /// Sets `state` to a _zero configuration_ defined by set_zero_configuration()
+  /// and with zero generalized velocities.
+  /// See set_zero_configuration() for details.
+  virtual void set_zero_state(const systems::Context<T>& context,
+                              systems::State<T>* state) const = 0;
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the vector of
