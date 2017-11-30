@@ -101,8 +101,9 @@ RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {
   auto base_indices = tree->FindBaseBodies();
   DRAKE_DEMAND(base_indices.size() == 1);
 
-  // Performs a depth first traversal from the base links, until all 
-  // end effectors are found. 
+  // Performs a depth first traversal of the multibody tree from the single
+  // base body. Verifies that there is only a single branch, and considers the
+  // terminal body in that branch to be the end effector.
   std::vector<int> end_effectors;
   std::queue<int> q;
   q.push(base_indices.front());
@@ -203,14 +204,14 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // velocity of the various "hand" DoF. Grasping force is determined using a
   // mapping from time to a piecewise polynomial; the output from the latter
   // is connected directly to the gripping actuator input on the Schunk plant.
-  
+ 
   // Kinematic desireds for the "hand" DoF are generated from two sources: a
   // piecewise polynomial trajectory for the lifting DoF and sinusoidal plants
   // for every other DoF (up to five, depending on the lift rig described in the
   // test_lifter.sdf file). These kinematic desireds are regulated using a
-  // PD controller. Kinematic desireds for each system (piecewise polynomial
-  // trajectory or sinusoid) consist of an output and the time derivative of that
-  // output. The PD controller requires the positional desireds to be
+  // PID controller. Kinematic desireds for each system (piecewise polynomial
+  // trajectory or sinusoid) consist of an output and the time derivative of
+  // that output. The PD controller requires the positional desireds to be
   // grouped together and the velocity desireds to also be grouped together;
   // the control diagram uses demultiplexers and multiplexers for this purpose. 
 
@@ -293,7 +294,8 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   builder.Connect(lift_source->get_output_port(),
       lift_traj_demux->get_input_port(0));
 
-  // Now, multiplex the ports back together for input to the PID controllers.
+  // Now, multiplex the ports back together for input to the PID controllers,
+  // as described in the overview of the diagram above.
   const int position_port = 0, velocity_port = 1;
   const int velocity_input_start = num_PID_controllers;
   const int lift_position_PID_start = 0;
