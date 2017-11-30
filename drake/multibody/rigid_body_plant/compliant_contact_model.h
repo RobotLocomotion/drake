@@ -62,6 +62,20 @@ class CompliantContactModel {
   /// aborts. (See CompliantContactParameters for details on valid ranges.)
   void set_model_parameters(const CompliantContactModelParameters& values);
 
+  /// Given two collision elements (with their own defined compliant material
+  /// properties, computes the _derived_ parameters for the _contact_. Returns
+  /// The portion of the squish attributable to Element `a` (sₐ). Element `b`'s
+  /// squish factor is simply 1 - sₐ. See contact_model_doxygen.h for details.
+  /// @param[in] a            The first element in the contact.
+  /// @param[in] b            The second element in the contact.
+  /// @param[out] parameters  The net _contact_ parameters.
+  /// @retval sₐ  The "squish" factor of Element `a` -- the fraction of the full
+  ///             penetration deformation that `a` experiences.
+  double CalcContactParameters(
+      const multibody::collision::Element& a,
+      const multibody::collision::Element& b,
+      CompliantMaterial* parameters) const;
+
  private:
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
@@ -74,20 +88,6 @@ class CompliantContactModel {
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
   static T step5(const T& x);
-
-  // Given two collision elements (with their own defined compliant material
-  // properties, computes the _derived_ parameters for the _contact_. Returns
-  // The portion of the squish attributable to Element `a` (sₐ). Element `b`'s
-  // squish factor is simply 1 - sₐ. See contact_model_doxygen.h for details.
-  // @param[in] a            The first element in the contact.
-  // @param[in] b            The second element in the contact.
-  // @param[out] parameters  The net _contact_ parameters.
-  // @retval sₐ  The "squish" factor of Element `a` -- the fraction of the full
-  //             penetration deformation that `a` experiences.
-  double CalcContactParameters(
-      const multibody::collision::Element& a,
-      const multibody::collision::Element& b,
-      CompliantMaterial* parameters) const;
 
   // Note: this is the *inverse* of the v_stiction_tolerance parameter to
   // optimize for the division.
