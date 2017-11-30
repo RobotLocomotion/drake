@@ -4,6 +4,10 @@ load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
+load(
+   "@drake//tools/install:install.bzl",
+   "install",
+)
 
 package(
     default_visibility = ["//visibility:public"],
@@ -52,4 +56,9 @@ cc_library(
     defines = ["CCD_STATIC_DEFINE"],
     includes = ["src"],
     linkstatic = 1,
+)
+
+install(
+    name = "install",
+    docs = ["BSD-LICENSE"],
 )

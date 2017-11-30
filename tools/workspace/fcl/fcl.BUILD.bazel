@@ -5,6 +5,10 @@ load(
     "cmake_configure_file",
 )
 load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
     "@drake//tools/workspace:generate_export_header.bzl",
     "generate_export_header",
 )
@@ -67,4 +71,9 @@ cc_library(
         "@eigen",
         "@octomap",
     ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
 )
