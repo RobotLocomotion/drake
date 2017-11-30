@@ -999,6 +999,18 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     return result;
   };
 
+  // Output the Jacobians.
+  MatrixX<T> N(contacts.size(), v.size()), L(limits.size(), v.size()), F(contacts.size() * 2, v.size());
+  for (int i = 0; i < v.size(); ++i) {
+    VectorX<T> unit = VectorX<T>::Unit(v.size(), i);
+    N.col(i) = data.N_mult(unit);
+    F.col(i) = data.F_mult(unit);
+    L.col(i) = data.L_mult(unit);
+  }
+  SPDLOG_DEBUG(drake::log(), "N: {}", N);
+  SPDLOG_DEBUG(drake::log(), "F: {}", F);
+  SPDLOG_DEBUG(drake::log(), "L: {}", L);
+
   // 1. Set the stabilization term for contact normal direction (kN). Also,
   // determine the friction coefficients and (half) the number of friction cone
   // edges.
@@ -1040,14 +1052,42 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     data.kL[i] = default_limit_erp * limits[i].error / dt;
   data.gammaL.setOnes(limits.size()) *= default_limit_cfm; 
 
-  // Integrate the forces into the velocity.
+ // 4. Bilateral constraint terms.
+  data.kG = tree.positionConstraints(kcache);
+  const auto G = tree.positionConstraintsJacobian(kcache, false);
+  data.G_mult = [this, &G](const VectorX<T>& w) -> VectorX<T> {
+    return G * w;
+  };
+  data.G_transpose_mult = [this, &G](const VectorX<T>& lambda) {
+    return G.transpose() * lambda;
+  };
+
+  // Integrate the forces into the momentum.
   data.Mv = H * v + right_hand_side * dt;
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
   constraint_solver_.SolveImpactProblem(data, &cf);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
+  SPDLOG_DEBUG(drake::log(), "Actuator forces: {} ", u.transpose());
+  SPDLOG_DEBUG(drake::log(), "Transformed actuator forces: {} ",
+      (tree.B * u).transpose());
+  SPDLOG_DEBUG(drake::log(), "force: {}", right_hand_side.transpose());
+  SPDLOG_DEBUG(drake::log(), "old velocity: {}", v.transpose());
+  SPDLOG_DEBUG(drake::log(), "integrated forward velocity: {}",
+      data.solve_inertia(data.Mv).transpose());
+  SPDLOG_DEBUG(drake::log(), "change in velocity: {}", vnew.transpose());
   vnew += data.solve_inertia(data.Mv);
+  SPDLOG_DEBUG(drake::log(), "new velocity: {}", vnew.transpose());
+  SPDLOG_DEBUG(drake::log(), "new configuration: {}",
+      (q + dt * tree.transformVelocityToQDot(kcache, vnew)).transpose());
+  SPDLOG_DEBUG(drake::log(), "N * vnew: {} ", data.N_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "F * vnew: {} ", data.F_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "L * vnew: {} ", data.L_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "G * vnew: {} ", data.G_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "G * v: {} ", data.G_mult(v).transpose());
+  SPDLOG_DEBUG(drake::log(), "g(): {}",
+      tree.positionConstraints(kcache).transpose());
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
