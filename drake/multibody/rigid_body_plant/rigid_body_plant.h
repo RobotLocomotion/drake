@@ -8,7 +8,6 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -396,47 +395,7 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
-  void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
-      const drake::multibody::collision::PointPair& contact,
-      double* stiffness,
-      double* damping,
-      double* mu,
-      int* num_cone_edges) const;
-
-  Vector3<T> CalcRelTranslationalVelocity(
-      const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
-      const Vector3<T>& p_W) const;
-
-  void UpdateGeneralizedForce(
-      const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
-      const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
-
-  VectorX<T> N_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v) const;
-
-  VectorX<T> N_transpose_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f) const;
-
-  VectorX<T> F_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v,
-      const std::vector<int>& half_num_cone_edges) const;
-
-  VectorX<T> F_transpose_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f,
-      const std::vector<int>& half_num_cone_edges) const;
-
   std::unique_ptr<const RigidBodyTree<T>> tree_;
-
-  // Object that performs all constraint computations.
-  multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
   OutputPortIndex kinematics_output_port_index_{};
@@ -470,21 +429,6 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // Pointer to the class that encapsulates all the contact computations.
   const std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_;
-
-  // Structure for storing joint limit data for time stepping.
-  struct JointLimit {
-    // The index for the joint limit.
-    int v_index{-1};
-
-    // Whether the limit is a lower limit or upper limit.
-    bool lower_limit{false};
-
-    // Gets the "error", meaning the amount over the limit (if the error is
-    // positive) or under the limit (if the error is negative). Negative error
-    // is not error per se, but rather a way to limit the movement of a joint
-    // by the step into the future.
-    T error{0};
-  };
 };
 
 }  // namespace systems
