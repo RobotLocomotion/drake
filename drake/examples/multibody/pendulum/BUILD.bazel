@@ -8,12 +8,25 @@ load(
     "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+
+drake_cc_vector_gen_library(
+    name = "pendulum_vector_types",
+    srcs = [
+        "pendulum_input.named_vector",
+        "pendulum_state.named_vector",
+    ],
+)
 
 drake_cc_library(
     name = "pendulum_plant",
     srcs = ["pendulum_plant.cc"],
     hdrs = ["pendulum_plant.h"],
     deps = [
+        ":pendulum_vector_types",
         "//drake/common:default_scalars",
         "//drake/geometry:geometry_ids",
         "//drake/geometry:geometry_system",

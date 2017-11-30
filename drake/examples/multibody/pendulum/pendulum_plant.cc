@@ -35,6 +35,7 @@ using geometry::SourceId;
 using geometry::Sphere;
 using drake::multibody::BodyIndex;
 using drake::multibody::MultibodyTree;
+using drake::multibody::MultibodyTreeContext;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
@@ -82,13 +83,14 @@ PendulumPlant<T>::PendulumPlant(
   DRAKE_DEMAND(model_->get_num_states() == 2);
 
   this->DeclareContinuousState(
+      BasicVector<T>(model_->get_num_states()),
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
   // Declare a vector input of size one for an applied torque about the revolute
   // joint's axis.
   applied_torque_input_ =
-      this->DeclareInputPort(systems::kVectorValued, 1).get_index();
+      this->DeclareVectorInputPort(PendulumInput<T>()).get_index();
 
   DeclareGeometrySystemPorts();
 }
@@ -266,7 +268,7 @@ void PendulumPlant<T>::RegisterGeometry(
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
 PendulumPlant<T>::DoMakeContext() const {
-  return model_->CreateDefaultContext();
+  return std::make_unique<MultibodyTreeContext<T>>(model_->get_topology());
 }
 
 template<typename T>
@@ -292,10 +294,15 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   VectorX<T> tau_applied(model_->get_num_velocities());
   model_->CalcForceElementsContribution(
       context, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+
+  // Add contribution of the applied input torque.
+  DRAKE_DEMAND(tau_applied.size() == 1);
+  // TODO(amcastro-tri): provide a higher level API to apply external forcing.
+  tau_applied(0) += get_tau(context);
 
   VectorX<T> vdot = VectorX<T>::Zero(nv);
   VectorX<T> C(nv);
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
   model_->CalcInverseDynamics(
       context, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
       &A_WB_array, &Fapplied_Bo_W_array, &C);

@@ -1,0 +1,6 @@
+namespace: "drake::examples::multibody::pendulum"
+
+element {
+    name: "tau"
+    doc: "Applied input torque"
+}

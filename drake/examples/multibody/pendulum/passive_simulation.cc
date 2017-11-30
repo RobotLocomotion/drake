@@ -37,6 +37,7 @@ using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using systems::BasicVector;
+using systems::Context;
 using systems::ImplicitEulerIntegrator;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
@@ -77,7 +78,8 @@ int do_main() {
   pendulum->set_name("Pendulum");
 
   // A constant source for a zero applied torque at the pin joint.
-  BasicVector<double> applied_torque(Vector1d::Zero());
+  PendulumInput<double> applied_torque;
+  applied_torque.set_tau(0.0);
   auto torque_source =
       builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
   torque_source->set_name("Applied Torque");
@@ -111,7 +113,9 @@ int do_main() {
 
   auto diagram = builder.Build();
 
-  auto diagram_context = diagram->CreateDefaultContext();
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(
           *pendulum, diagram_context.get());

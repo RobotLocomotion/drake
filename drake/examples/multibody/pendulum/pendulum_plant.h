@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "drake/examples/multibody/pendulum/gen/pendulum_input.h"
+#include "drake/examples/multibody/pendulum/gen/pendulum_state.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -67,6 +69,21 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /// Returns the value of the acceleration of gravity in the model.
   double get_gravity() const { return gravity_; }
 
+  /// Evaluates the input port and returns the scalar value
+  /// of the commanded torque.
+  /// It aborts if the connected output port to this input is not of type
+  /// PendulumInput.
+  const T& get_tau(const systems::Context<T>& context) const {
+    const PendulumInput<T>* input =
+        this->template EvalVectorInput<PendulumInput>(
+            context, applied_torque_input_);
+    if (input == nullptr) {
+      DRAKE_ABORT_MSG("Input port to this plant must be connected to an output"
+                          "of type PendulumInput<T>");
+    }
+    return input->tau();
+  }
+
   /// Returns the unique id identifying this plant as a source for a
   /// GeometrySystem.
   /// The returned id will be invalid when the plant is not registered with any
@@ -98,6 +115,25 @@ class PendulumPlant final : public systems::LeafSystem<T> {
     return 2.0 * M_PI * sqrt(length / gravity);
   }
 
+  /// Sets the state in `context` so that generalized positions and velocities
+  /// are zero. For quaternion based joints the quaternion is set to be the
+  /// identity (or equivalently a zero rotation).
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    model_->SetDefaultState(context, state);
+#if 0
+    VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
+    x0.head(get_num_positions()) = tree_->getZeroConfiguration();
+
+      // Extract a reference to continuous state from the context.
+      ContinuousState<T>& xc = state->get_mutable_continuous_state();
+
+      // Write the zero configuration into the continuous state.
+      xc.SetFromVector(x0);
+#endif
+  }
+
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -118,8 +154,9 @@ class PendulumPlant final : public systems::LeafSystem<T> {
     return false;
   }
 
-  // Override of context construction so that we can delegate it to
-  // MultibodyTree.
+  // It creates an empty context with no state or parameters.
+  // This override gives System::AllocateContext() the chance to create a more
+  // specialized context type, in this case, a MultibodyTreeContext.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
 
   void DoCalcTimeDerivatives(
