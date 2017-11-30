@@ -912,6 +912,30 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kcache, true);
 
+  // Set the stabilization term for contact normal direction (kN). Also,
+  // determine the friction coefficients and (half) the number of friction cone
+  // edges.
+  data.gammaN.resize(contacts.size());
+  data.kN.resize(contacts.size());
+  data.mu.resize(contacts.size());
+  data.r.resize(contacts.size());
+  for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
+    double stiffness, damping, mu;
+    int half_friction_cone_edges;
+    CalcContactStiffnessDampingMuAndNumHalfConeEdges(
+        contacts[i], &stiffness, &damping, &mu, &half_friction_cone_edges);
+    data.mu[i] = mu;
+    data.r[i] = half_friction_cone_edges;
+
+    // Set cfm and erp parameters for contacts.
+    const double denom = dt * stiffness + damping;
+    const double cfm = 1.0 / denom;
+    const double erp = (dt * stiffness) / denom;
+    data.gammaN[i] = cfm;
+    data.kN[i] = erp * contacts[i].distance / dt;
+  }
+
+
   // Set the joint range of motion limits.
   std::vector<JointLimit> limits;
   for (auto const& b : tree.bodies) {
@@ -1011,30 +1035,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   SPDLOG_DEBUG(drake::log(), "F: {}", F);
   SPDLOG_DEBUG(drake::log(), "L: {}", L);
 
-  // 1. Set the stabilization term for contact normal direction (kN). Also,
-  // determine the friction coefficients and (half) the number of friction cone
-  // edges.
-  data.gammaN.resize(contacts.size());
-  data.kN.resize(contacts.size());
-  data.mu.resize(contacts.size());
-  data.r.resize(contacts.size());
-  for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-    double stiffness, damping, mu;
-    int half_friction_cone_edges;
-    CalcContactStiffnessDampingMuAndNumHalfConeEdges(
-        contacts[i], &stiffness, &damping, &mu, &half_friction_cone_edges);
-    data.mu[i] = mu;
-    data.r[i] = half_friction_cone_edges;
-
-    // Set cfm and erp parameters for contacts.
-    const double denom = dt * stiffness + damping;
-    const double cfm = 1.0 / denom;
-    const double erp = (dt * stiffness) / denom;
-    data.gammaN[i] = cfm;
-    data.kN[i] = erp * contacts[i].distance / dt;
-  }
-
-  // 2. Set the regularization and stabilization terms for contact tangent
+  // Set the regularization and stabilization terms for contact tangent
   // directions (kF).
   const int total_friction_cone_edges = std::accumulate(
       data.r.begin(), data.r.end(), 0);
@@ -1042,7 +1043,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.gammaF.setZero(total_friction_cone_edges);
   data.gammaE.setZero(contacts.size());
 
-  // 3. Set the regularization and stabilization terms for joint limit
+  // Set the regularization and stabilization terms for joint limit
   // constraints (kL).  
   // TODO(edrumwri): Make cfm and erp individually settable.
   const double default_limit_cfm = 1e-8;
@@ -1052,7 +1053,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     data.kL[i] = default_limit_erp * limits[i].error / dt;
   data.gammaL.setOnes(limits.size()) *= default_limit_cfm; 
 
- // 4. Bilateral constraint terms.
+ // Bilateral constraint terms.
   data.kG = tree.positionConstraints(kcache);
   const auto G = tree.positionConstraintsJacobian(kcache, false);
   data.G_mult = [this, &G](const VectorX<T>& w) -> VectorX<T> {
