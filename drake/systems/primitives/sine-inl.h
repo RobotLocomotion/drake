@@ -58,7 +58,7 @@ double Sine<T>::get_frequency() const {
       << "drake::systems::Sine::get_frequency_vector() instead.";
     throw std::runtime_error(s.str().c_str());
   }
-  return amplitude_[0];
+  return frequency_[0];
 }
 
 template <typename T>
@@ -70,7 +70,7 @@ double Sine<T>::get_phase() const {
       << "drake::systems::Sine::get_phase_vector() instead.";
     throw std::runtime_error(s.str().c_str());
   }
-  return amplitude_[0];
+  return phase_[0];
 }
 
 template <typename T>
