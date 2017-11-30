@@ -582,6 +582,77 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const {
+  DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
+  const int num_points = p_BQi_set.cols();
+  DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
+  DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
+  DRAKE_THROW_UNLESS(J_WQi != nullptr);
+  DRAKE_THROW_UNLESS(J_WQi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(J_WQi->cols() == get_num_velocities());
+
+  // Body to which frame B is attached to:
+  const Body<T>& body_B = frame_B.get_body();
+
+  // Compute kinematic path from body B to the world:
+  std::vector<BodyNodeIndex> path_to_world;
+  topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
+
+  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
+  PositionKinematicsCache<T> pc(this->get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+
+  // TODO(amcastro-tri): Eval H_PB_W from the cache.
+  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  CalcPointsPositions(context,
+                      frame_B, p_BQi_set,            /* From frame B */
+                      get_world_frame(), p_WQi_set); /* To world frame W */
+
+  // Performs a scan of all bodies in the kinematic path from body_B to the
+  // world computing each node's contribution to J_WQi.
+  const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
+  // Skip the world (ilevel = 0).
+  for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
+    BodyNodeIndex body_node_index = path_to_world[ilevel];
+    const BodyNode<T>& node = *body_nodes_[body_node_index];
+    const BodyNodeTopology& node_topology = node.get_topology();
+    const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
+    const int num_velocities = node_topology.num_mobilizer_velocities;
+
+    // Across-node Jacobian.
+    Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+        node.GetJacobianFromArray(H_PB_W_cache);
+    auto J_PBq_W = J_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
+
+    // Position of this node's body Bi in the world W.
+    const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();
+
+    for (int ipoint = 0; ipoint < num_points; ++ipoint) {
+      const auto p_WQi = p_WQi_set->col(ipoint);
+      // Position of point Qi measured from Bi, expressed in the world W.
+      const Vector3<T> p_BiQi_W = p_WQi - p_WBi;
+
+      // Alias to Hv_PBqi_W for the ipoint-th point. Hv denotes the
+      // translational components of the entire geometric Jacobian H.
+      auto Hv_PBqi_W = J_PBq_W.block(3 * ipoint, 0, 3, num_velocities);
+
+      // Aliases to angular and translational components in H_PB_W:
+      const auto Hw_PB_W = H_PB_W.template topRows<3>();
+      const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
+
+      // Now "shift" H_PB_W to H_PBqi_W.
+      // We do it by shifting one column at a time:
+      Hv_PBqi_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BiQi_W);
+    }  // ipoint.
+  }  // body_node_index
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.

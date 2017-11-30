@@ -18,7 +18,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "mock",
-    testonly = 1,
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
     deps = [

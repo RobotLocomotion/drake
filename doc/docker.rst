@@ -139,7 +139,7 @@ required in order to pass Xorg drawing commands to your host system when the
 proprietary Nvidia GPU drivers are installed. To install Nvidia GPU drivers with
 apt on Ubuntu 16.04::
 
-  $ sudo apt-get nvidia-361 nvidia-modprobe
+  $ sudo apt install nvidia-361 nvidia-modprobe
 
 To install nvidia-docker on Ubuntu 16.04:
 

@@ -5,6 +5,11 @@ load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
+alias(
+    name = "yaml_to_obj",
+    actual = "//drake/automotive/maliput/utility:yaml_to_obj",
+)
+
 genrule(
     name = "speed_bump_genrule",
     srcs = ["speed_bump/speed_bump.yaml"],
@@ -13,12 +18,12 @@ genrule(
         "speed_bump/speed_bump.mtl",
     ],
     cmd = " ".join([
-        "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
+        "$(location :yaml_to_obj)",
         "--yaml_file '$<'",
         "--obj_dir $(@D)/speed_bump",
         "--obj_file speed_bump",
     ]),
-    tools = ["//drake/automotive/maliput/utility:yaml_to_obj"],
+    tools = [":yaml_to_obj"],
 )
 
 install_data(

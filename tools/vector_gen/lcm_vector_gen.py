@@ -513,6 +513,12 @@ def generate_code(
         lcm_filename=None):
 
     cxx_include_path = os.path.dirname(named_vector_filename) + "/gen"
+    if cxx_include_path.startswith("external/"):
+        # Drake is being used from within a different workspace, so we have to
+        # strip the "external/drake/" from the named_vector_filename.  (The
+        # name after "external" will vary depending on what name the workspace
+        # gave us, so we can't hard-code it to "drake".)
+        cxx_include_path = "/".join(cxx_include_path.split("/")[2:])
     # TODO(#6996) Do this unconditionally once #6996 shuffle is finished.
     if not cxx_include_path.startswith("drake/"):
         # TODO(jwnimmer-tri) For use outside of Drake, this include_prefix

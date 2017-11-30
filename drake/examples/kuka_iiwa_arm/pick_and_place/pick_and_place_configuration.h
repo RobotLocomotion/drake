@@ -4,7 +4,10 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 
 namespace drake {
 namespace examples {
@@ -27,7 +30,7 @@ struct OptitrackInfo {
 struct PlannerConfiguration {
   /// Path (relative to DRAKE_RESOURCE_ROOT) to the model file describing the
   /// robot arm.
-  std::string model_path;
+  std::string drake_relative_model_path;
   /// Name of the end-effector link on the robot arm.
   std::string end_effector_name;
   /// Type-safe index indicating for which robot arm in the scenario this
@@ -43,6 +46,11 @@ struct PlannerConfiguration {
   /// Number of tables for which the planner should expect to receive pose
   /// inputs.
   int num_tables{0};
+
+  /// Returns the absolute path for our @p drake_relative_model_path.
+  std::string absolute_model_path() const {
+    return FindResourceOrThrow(drake_relative_model_path);
+  }
 };
 
 /// Information required to set up a simulation of a pick-and-place scenario
@@ -63,14 +71,12 @@ struct SimulatedPlantConfiguration {
   std::vector<std::string> object_models;
   /// World poses of the model origin of each object in the scenario.
   std::vector<Isometry3<double>> object_poses;
-  /// @name Conact parameters
-  /// Global contact parameters for the simulation.
+  /// @name Contact parameters
+  /// Global contact parameters for the simulation. Configured to use the
+  /// default values.
   ///@{
-  double static_friction_coef{0.9};
-  double dynamic_friction_coef{0.5};
-  double v_stiction_tolerance{0.01};
-  double stiffness{10000};
-  double dissipation{2};
+  systems::CompliantContactModelParameters contact_model_parameters;
+  systems::CompliantMaterial default_contact_material;
   ///@}
 };
 

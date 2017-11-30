@@ -51,7 +51,18 @@ Isometry3<double> ParsePose(const proto::Pose& pose) {
 const proto::Model& GetModelOrThrow(
     const proto::PickAndPlaceConfiguration& configuration,
     const proto::ModelInstance& model_instance) {
-  return configuration.model().at(model_instance.name());
+  const auto& items = configuration.model().items();
+  for (int i = 0; i < items.size(); i++) {
+    const auto& current_item = items.Get(i);
+    if (!current_item.has_key() || !current_item.has_value()) {
+      continue;
+    }
+    if (current_item.key() == model_instance.name()) {
+      return current_item.value();
+    }
+  }
+
+  throw std::out_of_range("item not found");
 }
 
 const std::string& GetSimulationModelPathOrThrow(
@@ -72,7 +83,7 @@ void ExtractBasePosesForModels(
     const google::protobuf::RepeatedPtrField<proto::ModelInstance>& models,
     std::vector<Isometry3<double>>* poses) {
   DRAKE_DEMAND(poses != nullptr);
-  std::transform(models.cbegin(), models.cend(), std::back_inserter(*poses),
+  std::transform(models.begin(), models.end(), std::back_inserter(*poses),
                  [](const proto::ModelInstance& model) -> Isometry3<double> {
                    return ParsePose(model.pose());
                  });
@@ -83,7 +94,7 @@ void ExtractOptitrackInfoForModels(
     std::vector<pick_and_place::OptitrackInfo>* optitrack_info) {
   DRAKE_DEMAND(optitrack_info != nullptr);
   std::transform(
-      models.cbegin(), models.cend(), std::back_inserter(*optitrack_info),
+      models.begin(), models.end(), std::back_inserter(*optitrack_info),
       [](const proto::ModelInstance& model) -> pick_and_place::OptitrackInfo {
         return pick_and_place::OptitrackInfo(
             {model.optitrack_info().id(),
@@ -97,10 +108,53 @@ void ExtractModelPathsForModels(
     std::vector<std::string>* model_paths) {
   DRAKE_DEMAND(model_paths != nullptr);
   std::transform(
-      models.cbegin(), models.cend(), std::back_inserter(*model_paths),
+      models.begin(), models.end(), std::back_inserter(*model_paths),
       [&configuration](const proto::ModelInstance& table) -> std::string {
         return GetSimulationModelPathOrThrow(configuration, table);
       });
+}
+
+void ExtractCompliantParameters(
+    const proto::PickAndPlaceConfiguration& configuration,
+    pick_and_place::SimulatedPlantConfiguration* plant_configuration) {
+  if (configuration.has_compliant_model_parameters()) {
+    const auto& proto_parameters = configuration.compliant_model_parameters();
+    if (proto_parameters.characteristic_area() > 0) {
+      plant_configuration->contact_model_parameters.characteristic_area =
+          proto_parameters.characteristic_area();
+    } else if (proto_parameters.characteristic_area() < 0) {
+      throw std::runtime_error("'characteristic_area' must be positive");
+    }
+    if (proto_parameters.v_stiction_tolerance() > 0) {
+      plant_configuration->contact_model_parameters.v_stiction_tolerance =
+          proto_parameters.v_stiction_tolerance();
+    } else if (proto_parameters.v_stiction_tolerance() < 0) {
+      throw std::runtime_error("'v_stiction_tolerance' must be positive");
+    }
+  }
+  if (configuration.has_default_compliant_material()) {
+    const auto& material = configuration.default_compliant_material();
+    if (material.youngs_modulus() != 0) {
+      plant_configuration->default_contact_material.set_youngs_modulus(
+          material.youngs_modulus());
+    }
+    if (material.dissipation() != 0) {
+      plant_configuration->default_contact_material.set_dissipation(
+          material.dissipation());
+    }
+    double u_s = material.static_friction_coefficient();
+    double u_d = material.dynamic_friction_coefficient();
+    if (u_s != 0 && u_d != 0) {
+      // NOTE: Both values have *definitely* been set. They may be invalid
+      // (e.g., negative u_d > u_s); this will be tested in the call to
+      // set_friction().
+      plant_configuration->default_contact_material.set_friction(u_s, u_d);
+    } else if (!(u_s == 0 && u_d == 0)) {
+      throw std::runtime_error(
+          "Zero or both coefficients of friction must be defined; defining "
+              "one is an error");
+    }
+  }
 }
 
 pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
@@ -119,8 +173,10 @@ pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
   planner_configuration.target_index = target_index;
 
   // Store model path and end-effector name.
-  planner_configuration.model_path = GetPlanningModelPathOrThrow(
-      configuration, configuration.robot(planner_configuration.robot_index));
+  planner_configuration.drake_relative_model_path =
+      GetPlanningModelPathOrThrow(
+          configuration,
+          configuration.robot(planner_configuration.robot_index));
   planner_configuration.end_effector_name = end_effector_name;
 
   // Extract number of tables
@@ -196,7 +252,7 @@ ParsePlannerConfigurationsOrThrow(const std::string& filename) {
 
   // Build the planner configuration vector.
   std::vector<pick_and_place::PlannerConfiguration> planner_configurations;
-  std::transform(configuration.task().cbegin(), configuration.task().cend(),
+  std::transform(configuration.task().begin(), configuration.task().end(),
                  std::back_inserter(planner_configurations),
                  [&configuration](const proto::PickAndPlaceTask& task)
                      -> pick_and_place::PlannerConfiguration {
@@ -209,12 +265,9 @@ ParsePlannerConfigurationsOrThrow(const std::string& filename) {
 }
 
 pick_and_place::SimulatedPlantConfiguration
-ParseSimulatedPlantConfigurationOrThrow(const std::string& filename) {
+ParseSimulatedPlantConfigurationOrThrow(
+    const proto::PickAndPlaceConfiguration& configuration) {
   pick_and_place::SimulatedPlantConfiguration plant_configuration;
-
-  // Read configuration file
-  const proto::PickAndPlaceConfiguration configuration{
-      ReadProtobufFileOrThrow(filename)};
 
   // Extract robot model paths
   ExtractModelPathsForModels(configuration, configuration.robot(),
@@ -240,26 +293,26 @@ ParseSimulatedPlantConfigurationOrThrow(const std::string& filename) {
   ExtractBasePosesForModels(configuration.object(),
                             &plant_configuration.object_poses);
 
-  if (configuration.static_friction_coefficient() > 0) {
-    plant_configuration.static_friction_coef =
-        configuration.static_friction_coefficient();
-  }
-  if (configuration.dynamic_friction_coefficient() > 0) {
-    plant_configuration.dynamic_friction_coef =
-        configuration.dynamic_friction_coefficient();
-  }
-  if (configuration.v_stiction_tolerance() > 0) {
-    plant_configuration.v_stiction_tolerance =
-        configuration.v_stiction_tolerance();
-  }
-  if (configuration.stiffness() > 0) {
-    plant_configuration.stiffness = configuration.stiffness();
-  }
-  if (configuration.dissipation() > 0) {
-    plant_configuration.dissipation = configuration.dissipation();
-  }
+  ExtractCompliantParameters(configuration, &plant_configuration);
 
   return plant_configuration;
+}
+
+pick_and_place::SimulatedPlantConfiguration
+ParseSimulatedPlantConfigurationOrThrow(const std::string& filename) {
+  // Read configuration file
+  const proto::PickAndPlaceConfiguration configuration{
+      ReadProtobufFileOrThrow(filename)};
+
+  return ParseSimulatedPlantConfigurationOrThrow(configuration);
+}
+
+pick_and_place::SimulatedPlantConfiguration
+ParseSimulatedPlantConfigurationStringOrThrow(
+    const std::string& configuration) {
+  proto::PickAndPlaceConfiguration proto_config;
+  google::protobuf::TextFormat::ParseFromString(configuration, &proto_config);
+  return ParseSimulatedPlantConfigurationOrThrow(proto_config);
 }
 
 pick_and_place::OptitrackConfiguration ParseOptitrackConfigurationOrThrow(

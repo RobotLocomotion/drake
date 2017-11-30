@@ -9,12 +9,14 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
-WorldState::WorldState(const std::string& iiwa_model_path,
+WorldState::WorldState(const std::string& iiwa_model_absolute_path,
                        const std::string& end_effector_name, int num_tables,
                        const Vector3<double>& object_dimensions)
-    : iiwa_model_path_(iiwa_model_path),
+    : iiwa_model_absolute_path_(iiwa_model_absolute_path),
       end_effector_name_(end_effector_name),
       object_dimensions_(object_dimensions) {
+  DRAKE_THROW_UNLESS(iiwa_model_absolute_path.at(0) == '/');
+
   iiwa_time_ = -1;
   iiwa_base_ = Isometry3<double>::Identity();
   iiwa_end_effector_pose_ = Isometry3<double>::Identity();
@@ -45,7 +47,8 @@ void WorldState::HandleIiwaStatus(const lcmt_iiwa_status& iiwa_msg,
 
     auto mutable_iiwa = std::make_shared<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFile(
-        iiwa_model_path_, multibody::joints::kFixed, base_frame,
+        iiwa_model_absolute_path_,
+        multibody::joints::kFixed, base_frame,
         mutable_iiwa.get());
     iiwa_ = mutable_iiwa;
     end_effector_ = iiwa_->FindBody(end_effector_name_);

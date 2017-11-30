@@ -22,6 +22,7 @@ drake_cc_library(
         "//drake/common:autodiff",
         "//drake/common:essential",
         "//drake/common:sorted_vectors_have_intersection",
+        "//drake/multibody/rigid_body_plant:compliant_material",
         "//drake/multibody/shapes",
     ],
 )

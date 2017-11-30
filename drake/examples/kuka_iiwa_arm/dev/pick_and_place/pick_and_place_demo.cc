@@ -102,13 +102,13 @@ using manipulation::planner::ConstraintRelaxingIk;
 void RunPickAndPlaceDemo() {
   lcm::LCM lcm;
 
-  const std::string iiwa_path = FindResourceOrThrow(
+  const std::string iiwa_absolute_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_primitive_collision.urdf");
   const std::string iiwa_end_effector_name = "iiwa_link_ee";
 
   // Makes a WorldState, and sets up LCM subscriptions.
-  WorldState env_state(iiwa_path, iiwa_end_effector_name);
+  WorldState env_state(iiwa_absolute_path, iiwa_end_effector_name);
   WorldStateSubscriber env_state_subscriber(&lcm, &env_state);
 
   // Spins until at least one message is received from every LCM channel.
@@ -119,7 +119,7 @@ void RunPickAndPlaceDemo() {
   // Makes a planner.
   const Isometry3<double>& iiwa_base = env_state.get_iiwa_base();
   ConstraintRelaxingIk planner(
-      iiwa_path, iiwa_end_effector_name, iiwa_base);
+      iiwa_absolute_path, iiwa_end_effector_name, iiwa_base);
   PickAndPlaceStateMachine::IiwaPublishCallback iiwa_callback =
       ([&](const robotlocomotion::robot_plan_t* plan) {
         lcm.publish("COMMITTED_ROBOT_PLAN", plan);
@@ -131,7 +131,7 @@ void RunPickAndPlaceDemo() {
       });
 
   PlannerConfiguration planner_configuration;
-  planner_configuration.model_path =
+  planner_configuration.drake_relative_model_path =
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf";
   planner_configuration.end_effector_name = "iiwa_link_ee";
