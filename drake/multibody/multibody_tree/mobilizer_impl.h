@@ -62,7 +62,7 @@ class MobilizerImpl : public Mobilizer<T> {
   /// to zero. Be aware however that this default does not apply in general to
   /// all mobilizers and specific subclasses (for instance for quaternions) must
   /// override this method for correctness.
-  void set_zero_state(const systems::Context<T>& context,
+  void set_zero_state(const systems::Context<T>&,
                       systems::State<T>* state) const override {
     get_mutable_positions(state).setZero();
     get_mutable_velocities(state).setZero();
