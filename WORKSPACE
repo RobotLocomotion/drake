@@ -65,8 +65,8 @@ local_repository(
 )
 
 new_local_repository(
-    name = "protobuf_cmake",
-    build_file = "tools/workspace/protobuf/protobuf_cmake.BUILD.bazel",
+    name = "find_protobuf_cmake",
+    build_file = "tools/workspace/protobuf/find_protobuf_cmake.BUILD.bazel",
     path = __workspace_dir__ + "/third_party/com_kitware_gitlab_cmake_cmake",
 )
 
