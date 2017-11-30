@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -395,6 +396,13 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
+  void CalcContactStiffnessDampingMuAndNumConeEdges(
+      const drake::multibody::collision::PointPair& contact,
+      double* stiffness,
+      double* damping,
+      double* mu,
+      int* num_cone_edges) const;
+
   Vector3<T> CalcRelTranslationalVelocity(
       const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
       const Vector3<T>& p_W) const;
@@ -405,18 +413,18 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   VectorX<T> N_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& w) const;
+      const VectorX<T>& q,
+      const VectorX<T>& v) const;
 
   VectorX<T> N_transpose_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
+      const VectorX<T>& kcache,
       const VectorX<T>& f) const;
 
   VectorX<T> F_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& w) const;
+      const VectorX<T>& q,
+      const VectorX<T>& v) const;
 
   VectorX<T> F_transpose_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,

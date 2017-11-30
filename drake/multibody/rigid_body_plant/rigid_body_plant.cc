@@ -8,10 +8,10 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/orthonormal_basis.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
-#include "drake/multibody/constraint/.h"
 #include "drake/solvers/mathematical_program.h"
 
 using std::make_unique;
@@ -427,11 +427,12 @@ void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
 // Computes the stiffness, damping, and friction coefficient for a contact (if
 // it exists).
 template <typename T>
-bool RigidBodyPlant<T>::CalcContactStiffnessDampingAndMu(
+bool RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumConeEdges(
       const drake::multibody::collision::PointPair& contact,
       double* stiffness,
       double* damping,
-      double* mu) const {
+      double* mu,
+      int* num_cone_edges) const {
   DRAKE_DEMAND(stiffness);
   DRAKE_DEMAND(damping);
   DRAKE_DEMAND(mu);
@@ -852,7 +853,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const auto& tree = this->get_rigid_body_tree();
 
   // Get the system state.
-  auto x = context.get_discrete_state(0)->get_value();
+  auto x = context.get_discrete_state(0).get_value();
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = x.bottomRows(nv);
   auto kcache = tree.doKinematics(q, v);
@@ -934,18 +935,20 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.kL.resize(0);
 
   // Integrate the forces into the velocity.
-  data.v = v + data.solve_inertia(right_hand_side) * dt;
+  data.Mv = H * v + right_hand_side * dt;
+
+  // TODO: Set gamma
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
-  constraint_solver_.SolveImpactProblem(cfm_, data, &cf);
+  constraint_solver_.SolveImpactProblem(data, &cf);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
-  vnew += data.v;
+  vnew += data.solve_inertia(data.Mv);
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
   xn << q + dt * tree.transformVelocityToQDot(kcache, vnew), vnew;
-  updates->get_mutable_vector(0)->SetFromVector(xn);
+  updates->get_mutable_vector(0).SetFromVector(xn);
 }
 
 template <typename T>
