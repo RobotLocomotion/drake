@@ -98,6 +98,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/lcm:interface",
     "//drake/lcm:lcm",
     "//drake/lcm:lcm_log",
+    "//drake/lcm:mock",
     "//drake/lcm:translator_base",
     "//drake/manipulation/planner:constraint_relaxing_ik",
     "//drake/manipulation/planner:robot_plan_interpolator",
