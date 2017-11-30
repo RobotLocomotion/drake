@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -13,6 +14,8 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+
+DEFINE_bool(visualize, false, "Publish visuzliztion messages over LCM.");
 
 namespace drake {
 namespace examples {
@@ -130,6 +133,17 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
     auto plant = builder.AddSystem<MonolithicPickAndPlaceSystem>(
         plant_configuration_, optitrack_configuration_, planner_configurations,
         true /*single_move*/);
+
+    std::unique_ptr<lcm::DrakeLcm> lcm{nullptr};
+    if (FLAGS_visualize) {
+      lcm = std::make_unique<lcm::DrakeLcm>();
+      auto drake_visualizer = builder.AddSystem<systems::DrakeVisualizer>(
+          plant->get_tree(), lcm.get());
+      drake_visualizer->set_publish_period(kIiwaLcmStatusPeriod);
+      builder.Connect(plant->get_output_port_plant_state(),
+                      drake_visualizer->get_input_port(0));
+      lcm->StartReceiveThread();
+    }
 
     auto sys = builder.Build();
     Simulator<double> simulator(*sys);
