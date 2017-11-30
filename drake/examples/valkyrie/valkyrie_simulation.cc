@@ -23,7 +23,7 @@ namespace examples {
 namespace valkyrie {
 
 int main() {
- if (FLAGS_simulation_type != "timestepping")
+  if (FLAGS_simulation_type != "timestepping")
     FLAGS_dt = 0.0;
 
   // LCM communication.
