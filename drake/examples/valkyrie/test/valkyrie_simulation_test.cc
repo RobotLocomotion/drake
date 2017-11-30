@@ -22,7 +22,7 @@ namespace valkyrie {
 
 // Tests if the simulation runs at all. Nothing else.
 GTEST_TEST(ValkyrieSimulationTest, TestIfRuns) {
- if (FLAGS_simulation_type != "timestepping")
+  if (FLAGS_simulation_type != "timestepping")
     FLAGS_dt = 0.0;
 
   // LCM communication.
