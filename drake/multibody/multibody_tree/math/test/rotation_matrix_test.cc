@@ -107,28 +107,28 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   // Create a rotation matrix from a BodyXYZ rotation by angles q1, q2, q3.
   double q1 = 0.2, q2 = 0.3, q3 = 0.4;
   Matrix3d m_BA;
-  m_BA << cos(q2)*cos(q3),
-          sin(q3)*cos(q1) + sin(q1)*sin(q2)*cos(q3),
-          sin(q1)*sin(q3) - sin(q2)*cos(q1)*cos(q3),
-         -sin(q3)*cos(q2),
-          cos(q1)*cos(q3) - sin(q1)*sin(q2)*sin(q3),
-          sin(q1)*cos(q3) + sin(q2)*sin(q3)*cos(q1),
+  m_BA << cos(q2) * cos(q3),
+          sin(q3) * cos(q1) + sin(q1) * sin(q2) * cos(q3),
+          sin(q1) * sin(q3) - sin(q2) * cos(q1) * cos(q3),
+         -sin(q3) * cos(q2),
+          cos(q1) * cos(q3) - sin(q1) * sin(q2) * sin(q3),
+          sin(q1) * cos(q3) + sin(q2) * sin(q3) * cos(q1),
           sin(q2),
-         -sin(q1)*cos(q2),
-          cos(q1)*cos(q2);
+         -sin(q1) * cos(q2),
+          cos(q1) * cos(q2);
 
   // Create a rotation matrix from a BodyXYX rotation by angles r1, r2, r3.
   double r1 = 0.5, r2 = 0.5, r3 = 0.7;
   Matrix3d m_CB;
   m_CB << cos(r2),
-          sin(r1)*sin(r2),
-         -sin(r2)*cos(r1),
-          sin(r2)*sin(r3),
-          cos(r1)*cos(r3) - sin(r1)*sin(r3)*cos(r2),
-          sin(r1)*cos(r3) + sin(r3)*cos(r1)*cos(r2),
-          sin(r2)*cos(r3),
-         -sin(r3)*cos(r1) - sin(r1)*cos(r2)*cos(r3),
-          cos(r1)*cos(r2)*cos(r3) - sin(r1)*sin(r3);
+          sin(r1) * sin(r2),
+         -sin(r2) * cos(r1),
+          sin(r2) * sin(r3),
+          cos(r1) * cos(r3) - sin(r1) * sin(r3) * cos(r2),
+          sin(r1) * cos(r3) + sin(r3) * cos(r1) * cos(r2),
+          sin(r2) * cos(r3),
+         -sin(r3) * cos(r1) - sin(r1) * cos(r2) * cos(r3),
+          cos(r1) * cos(r2) * cos(r3) - sin(r1) * sin(r3);
 
   RotationMatrix<double> R_BA(m_BA);
   RotationMatrix<double> R_CB(m_CB);
@@ -150,7 +150,7 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   EXPECT_FALSE(R_CB.IsNearlyEqualTo(R_BA, 10000 * kEpsilon));
 }
 
-// Test IsValid.
+// Test IsRightHanded, IsOrthogonal, IsValid.
 GTEST_TEST(RotationMatrix, IsValid) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
@@ -158,12 +158,25 @@ GTEST_TEST(RotationMatrix, IsValid) {
   m << 1, 0, 0,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_TRUE(RotationMatrix<double>::IsValid(m, 5*kEpsilon));
+  EXPECT_TRUE(RotationMatrix<double>::IsRightHanded(m));
+  EXPECT_TRUE(RotationMatrix<double>::IsOrthogonal(m, 5 * kEpsilon));
+  EXPECT_TRUE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 
-  m << 1, 10*kEpsilon, 10*kEpsilon,
+  // Test matrix that should fail orthogonality check.
+  m << 1, 10 * kEpsilon, 10 * kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5*kEpsilon));
+  EXPECT_TRUE(RotationMatrix<double>::IsRightHanded(m));
+  EXPECT_FALSE(RotationMatrix<double>::IsOrthogonal(m, 5 * kEpsilon));
+  EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
+
+  // Test matrix that should fail right-handed check.
+  m << -1, 0, 0,
+        0, cos_theta, sin_theta,
+        0, -sin_theta, cos_theta;
+  EXPECT_FALSE(RotationMatrix<double>::IsRightHanded(m));
+  EXPECT_TRUE(RotationMatrix<double>::IsOrthogonal(m, 5 * kEpsilon));
+  EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 }
 
 

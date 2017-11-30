@@ -12,11 +12,12 @@ namespace multibody {
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
 /// A and B.  It relates right-handed orthogonal unit vectors Ax, Ay, Az
 /// fixed in frame A to right-handed orthogonal unit vectors Bx, By, Bz
-/// fixed in frame B.  In monogram notation, the rotation matrix relating A to B
-/// is denoted `R_AB`.  For monogram notation, see @ref multibody_spatial_pose.
-/// This class makes it very difficult to create an invalid rotation matrix.
+/// fixed in frame B.  The monogram notation for the rotation matrix relating A
+/// to B is `R_AB`.  See @ref multibody_notation_basics for monogram notation.
+/// @note This class helps ensure users create valid rotation matrices.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+// TODO(Mitiguy) Add link to orientation in multibody_doxygen.h
 template <typename T>
 class RotationMatrix {
  public:
@@ -84,10 +85,10 @@ class RotationMatrix {
   }
 
   /// Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
-  /// computing the infinity norm of R - I (i.e., the maximum absolute value of
-  /// the difference between the elements of R and the 3x3 identity matrix).
+  /// computing ‖R ⋅ R⁻¹ - I‖∞ R - I (i.e., the maximum absolute value of the
+  /// difference between the elements of R ⋅ R⁻¹ and the 3x3 identity matrix).
   /// @param[in] R matrix being checked for orthonormality.
-  /// @returns ‖R - I‖∞
+  /// @returns ‖R ⋅ R⁻¹ - I‖∞
   static T GetMeasureOfOrthonormality(const Matrix3<T>& R) {
     const Matrix3<T> m = R * R.transpose();
     return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
@@ -104,22 +105,31 @@ class RotationMatrix {
   /// Hence, check if the matrix is more right-handed than left-handed.
   static bool IsRightHanded(const Matrix3<T>& R) { return R.determinant() > 0; }
 
+  /// Tests if a generic Matrix3 has orthogonal unit vectors to within the
+  /// threshold specified by `tolerance`.
+  /// @param[in] R an allegedly orthonormal rotation matrix.
+  /// @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
+  /// and the identity matrix I, i.e., checks if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance.
+  /// @return `true` if R is an othogonal matrix, otherwise `false`.
+  static bool IsOrthogonal(const Matrix3<T>& R, double tolerance) {
+    return GetMeasureOfOrthonormality(R) <= tolerance;
+  }
+
   /// Tests if a generic Matrix3 seems to be a valid right-handed, orthonormal
   /// rotation matrix to within the threshold specified by `tolerance`.
   /// @param[in] R an allegedly valid right-handed orthonormal rotation matrix.
-  /// @param[in] tolerance maximum allowable absolute difference between
-  /// R * transpose(R) and the identity matrix I.
-  /// In other words, checks if ‖R ⋅ Rᵀ - I‖∞ <= tolerance.
+  /// @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
+  /// and the identity matrix I, i.e., checks if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance.
   /// @return `true` if R is a valid rotation matrix, otherwise `false`.
   static bool IsValid(const Matrix3<T>& R, double tolerance) {
-    return GetMeasureOfOrthonormality(R) < tolerance && IsRightHanded(R);
+    return IsOrthogonal(R, tolerance) && IsRightHanded(R);
   }
 
   /// Tests if `this` rotation matrix is a valid right-handed, orthonormal
   /// rotation matrix to within the threshold specified by `tolerance`.
   /// @param[in] tolerance maximum allowable absolute difference between
-  /// `this` * Transpose(`this`) and the identity matrix I.
-  /// In other words, checks if ‖R_AB_ ⋅ R_AB_ᵀ - I‖∞ <= tolerance.
+  /// `this` * Inverse(`this`) and the identity matrix I.
+  /// In other words, checks if ‖R_AB_ ⋅ R_AB_⁻¹ - I‖∞ <= tolerance.
   /// @return `true` if the rotation matrix is valid, otherwise `false`.
   /// @note It is unlikely for a rotation matrix (post-construction) to be
   /// invalid.  One possible way is accumulated error with operator*().
@@ -190,13 +200,13 @@ class RotationMatrix {
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid right-handed rotation matrix.
-  // @param[in] tolerance maximum allowable absolute difference between
-  // R * Transpose(R) and the identity matrix I.
-  // In other words, ‖R ⋅ Rᵀ - I‖∞ <= tolerance.
+  // @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
+  // and the identity matrix I, i.e., if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance.
   static void ThrowIfNotValid(const Matrix3<T>& R, double tolerance) {
-    if (!IsValid(R, tolerance)) {
-      throw std::logic_error("Error: Rotation matrix failed IsValid() test.");
-    }
+    if (!IsOrthogonal(R, tolerance))
+      throw std::logic_error("Error: Rotation matrix is not orthogonal.");
+    if (!IsRightHanded(R))
+      throw std::logic_error("Error: Rotation matrix is not right-handed.");
   }
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
