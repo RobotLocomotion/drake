@@ -197,31 +197,48 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   model_parameters.v_stiction_tolerance = kVStictionTolerance;
   plant->set_contact_model_parameters(model_parameters);
 
+  // The description of the control diagram follows:
+  // The control diagram can be categorized into two parts: grasping, which
+  // regulates gripping forces, and movement, which regulates position and
+  // velocity of the various "hand" DoF. Grasping force is determined using a
+  // mapping from time to a piecewise polynomial; the output from the latter
+  // is connected directly to the gripping actuator input on the Schunk plant.
+  
+  // Kinematic desireds for the "hand" DoF are generated from two sources: a
+  // piecewise polynomial trajectory for the lifting DoF and sinusoidal plants
+  // for every other DoF (up to five, depending on the lift rig described in the
+  // test_lifter.sdf file). These kinematic desireds are regulated using a
+  // PD controller. Kinematic desireds for each system (piecewise polynomial
+  // trajectory or sinusoid) consist of an output and the time derivative of that
+  // output. The PD controller requires the positional desireds to be
+  // grouped together and the velocity desireds to also be grouped together;
+  // the control diagram uses demultiplexers and multiplexers for this purpose. 
+
   // Build a trajectory and PID controller for the lifting joint.
-  const auto& lifting_input_port =
+  const auto& input_port =
       plant->model_instance_actuator_command_input_port(lifter_instance_id);
-  const auto& lifting_output_port =
+  const auto& output_port =
       plant->model_instance_state_output_port(lifter_instance_id);
 
   // Get the number of controllers. 
   const int num_PID_controllers = plant->get_num_actuators() - 1;
 
   // Constants chosen arbitrarily.
-  const auto lift_kp = VectorX<double>::Ones(num_PID_controllers) * 300.0;
-  const auto lift_ki = VectorX<double>::Ones(num_PID_controllers) * 0.0;
-  const auto lift_kd = VectorX<double>::Ones(num_PID_controllers) * 5.0;
+  const auto kp = VectorX<double>::Ones(num_PID_controllers) * 300.0;
+  const auto ki = VectorX<double>::Ones(num_PID_controllers) * 0.0;
+  const auto kd = VectorX<double>::Ones(num_PID_controllers) * 5.0;
 
-  auto lifting_pid_ports =
+  auto pid_ports =
       systems::controllers::PidControlledSystem<double>::ConnectController(
-          lifting_input_port, lifting_output_port,
-          lift_kp, lift_ki, lift_kd, &builder);
+          input_port, output_port,
+          kp, ki, kd, &builder);
 
   auto zero_source =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
           Eigen::VectorXd::Zero(num_PID_controllers));
   zero_source->set_name("zero");
   builder.Connect(zero_source->get_output_port(),
-                  lifting_pid_ports.control_input_port);
+                  pid_ports.control_input_port);
 
   // Create the sinusoids: number of sinusoids may vary to accommodate
   // modifications to the number of links in the test lifter SDF.
@@ -270,23 +287,32 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
       builder.AddSystem<systems::TrajectorySource>(lift_trajectory);
   lift_source->set_name("lift_source");
 
-  // Use one more demultiplexer for the lift trajectory outputs.
+  // Use one more demultiplexer for the lift trajectory outputs to separate the
+  // outputs into desired position and desired velocity.
   auto lift_traj_demux = builder.AddSystem<Demultiplexer<double>>(2, 1);
   builder.Connect(lift_source->get_output_port(),
       lift_traj_demux->get_input_port(0));
 
-  // Now, multiplex the ports back together to the PID controller.
+  // Now, multiplex the ports back together for input to the PID controllers.
+  const int position_port = 0, velocity_port = 1;
+  const int velocity_input_start = num_PID_controllers;
+  const int lift_position_PID_start = 0;
+  const int lift_velocity_PID_start = velocity_input_start;
   auto mux = builder.AddSystem<Multiplexer<double>>(num_PID_controllers * 2);
-  builder.Connect(lift_traj_demux->get_output_port(0), mux->get_input_port(0));
-  builder.Connect(lift_traj_demux->get_output_port(1),
-      mux->get_input_port(num_PID_controllers));
+  builder.Connect(lift_traj_demux->get_output_port(position_port),
+      mux->get_input_port(lift_position_PID_start));
+  builder.Connect(lift_traj_demux->get_output_port(velocity_port),
+      mux->get_input_port(lift_velocity_PID_start));
   for (int i = 0; i < num_sinusoids; ++i) {
-    builder.Connect(demux[i]->get_output_port(0), mux->get_input_port(i+1));
-    builder.Connect(demux[i]->get_output_port(1),
+    builder.Connect(demux[i]->get_output_port(position_port),
+        mux->get_input_port(i+1));
+    builder.Connect(demux[i]->get_output_port(velocity_port),
         mux->get_input_port(i + 1 + num_PID_controllers));
   }
 
-  builder.Connect(mux->get_output_port(0), lifting_pid_ports.state_input_port);
+  // Connect the only output from the muxer to the state input port on the
+  // PID controllers.
+  builder.Connect(mux->get_output_port(0), pid_ports.state_input_port);
 
   // Create a trajectory for grip force.
   // Settle the grip by the time the lift starts.
