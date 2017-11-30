@@ -495,7 +495,7 @@ Vector3<T> RigidBodyPlant<T>::CalcRelTranslationalVelocity(
 }
 
 // Updates a generalized force from a force of f (expressed in the world frame)
-// applied at point p (defined in the global frame).
+// applied at point p_W (defined in the global frame).
 template <class T>
 void RigidBodyPlant<T>::UpdateGeneralizedForce(
     const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
@@ -615,7 +615,7 @@ VectorX<T> RigidBodyPlant<T>::F_mult(
   const auto& tree = this->get_rigid_body_tree();
   auto kcache = tree.doKinematics(q, v);
 
-  // Get the total number of edges.
+  // Get the total (half) number of edges in the friction cones of all contacts.
   const int total_edges = std::accumulate(
       half_num_cone_edges.begin(), half_num_cone_edges.end(), 0);
 
@@ -861,8 +861,6 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // If plant state is continuous, no discrete state to update.
   if (!is_state_discrete()) return;
 
-  using std::abs;
-
   // Get the time step.
   double dt = this->get_time_step();
   DRAKE_DEMAND(dt > 0.0);
@@ -978,33 +976,30 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   }
 
   // Set up the N multiplication operator (projected velocity along the contact
-  // normals).
+  // normals) and the N' multiplication operator (effect of contact normal
+  // forces on generalized forces).
   data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
     return N_mult(contacts, q, w);
   };
-
-  // Set up the N' multiplication operator (effect of contact normal forces
-  // on generalized forces).
   data.N_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
       VectorX<T> {
     return N_transpose_mult(contacts, kcache, f);
   };
 
   // Set up the F multiplication operator (projected velocity along the contact
-  // tangent directions).
+  // tangent directions) and the F' multiplication operator (effect of contact
+  // frictional forces on generalized forces).
   data.F_mult = [this, &contacts, &q, &data](const VectorX<T>& w) ->
       VectorX<T> {
     return F_mult(contacts, q, w, data.r);
   };
-
-  // Set up the F' multiplication operator (effect of contact frictional forces
-  // on generalized forces).
   data.F_transpose_mult = [this, &contacts, &kcache, &data](const VectorX<T>& f)
       -> VectorX<T> {
     return F_transpose_mult(contacts, kcache, f, data.r);
   };
 
-  // Set the constraint Jacobian transpose operator.
+  // Set the range-of-motion (L) Jacobian multiplication operator and the
+  // transpose_mult() operation.
   data.L_mult = [this, &limits](const VectorX<T>& w) -> VectorX<T> {
     VectorX<T> result(limits.size());
     for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
@@ -1013,7 +1008,6 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
     return result;
   };
-
   data.L_transpose_mult = [this, &v, &limits](const VectorX<T>& lambda) {
     VectorX<T> result = VectorX<T>::Zero(v.size());
     for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
@@ -1024,7 +1018,9 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   };
 
   // Output the Jacobians.
-  MatrixX<T> N(contacts.size(), v.size()), L(limits.size(), v.size()), F(contacts.size() * 2, v.size());
+  #ifdef SPDLOG_DEBUG_ON
+  MatrixX<T> N(contacts.size(), v.size()), L(limits.size(), v.size()),
+      F(contacts.size() * 2, v.size());
   for (int i = 0; i < v.size(); ++i) {
     VectorX<T> unit = VectorX<T>::Unit(v.size(), i);
     N.col(i) = data.N_mult(unit);
@@ -1034,6 +1030,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   SPDLOG_DEBUG(drake::log(), "N: {}", N);
   SPDLOG_DEBUG(drake::log(), "F: {}", F);
   SPDLOG_DEBUG(drake::log(), "L: {}", L);
+  #endif
 
   // Set the regularization and stabilization terms for contact tangent
   // directions (kF).
@@ -1053,8 +1050,10 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     data.kL[i] = default_limit_erp * limits[i].error / dt;
   data.gammaL.setOnes(limits.size()) *= default_limit_cfm; 
 
- // Bilateral constraint terms.
-  data.kG = tree.positionConstraints(kcache);
+  // Set Jacobians for bilateral constraint terms. 
+  // TODO(edrumwri): Make erp individually settable.
+  const double default_bilateral_erp = 0.5;
+  data.kG = default_bilateral_erp * tree.positionConstraints(kcache) / dt;
   const auto G = tree.positionConstraintsJacobian(kcache, false);
   data.G_mult = [this, &G](const VectorX<T>& w) -> VectorX<T> {
     return G * w;
