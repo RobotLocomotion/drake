@@ -396,7 +396,7 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
-  bool CalcContactStiffnessDampingMuAndNumHalfConeEdges(
+  void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
       const drake::multibody::collision::PointPair& contact,
       double* stiffness,
       double* damping,

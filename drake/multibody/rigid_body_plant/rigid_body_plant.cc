@@ -427,7 +427,7 @@ void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
 // Computes the stiffness, damping, and friction coefficient for a contact (if
 // it exists).
 template <typename T>
-bool RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
+void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
       const drake::multibody::collision::PointPair& contact,
       double* stiffness,
       double* damping,
@@ -438,12 +438,27 @@ bool RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   DRAKE_DEMAND(mu);
   DRAKE_DEMAND(num_half_cone_edges);
 
+  // Get the compliant material parameters.
+  CompliantMaterial material;
+  compliant_contact_model_->CalcContactParameters(
+      *contact.elementA, *contact.elementB, &material);
+
+  // Get the stiffness.
+  *stiffness = material.youngs_modulus();
+
+  // Get the dissipation value.
+  *damping = material.dissipation();
+
+  // Get the coefficient of friction.
+  *mu = material.static_friction();
+
+  // TODO(edrumwri): The number of half-cone edges should be able to be set on
+  // a per-geometry pair basis. For now, just set the value to pyramidal
+  // friction.
+  *num_half_cone_edges = 2;
+
   // Verify the friction directions are set correctly.
   DRAKE_DEMAND(*num_half_cone_edges >= 2);
-
-  // TODO: implement this fully once PR #7016 lands. For now, `false` return
-  //       indicates no contacts have specialized values.
-  return false;
 }
 
 // Gets A's translational velocity relative to B's translational velocity at a
@@ -897,9 +912,6 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kcache, true);
 
-  // TODO(edrumwri): Relax this assumption to allow contact constraints.
-  DRAKE_DEMAND(contacts.empty());
-
   // Set up the N multiplication operator (projected velocity along the contact
   // normals).
   data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
@@ -930,6 +942,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // 1. Set the stabilization term for contact normal direction (kN). Also,
   // determine the friction coefficients and (half) the number of friction cone
   // edges.
+  data.gammaN.resize(contacts.size());
   data.kN.resize(contacts.size());
   data.mu.resize(contacts.size());
   data.r.resize(contacts.size());
@@ -941,13 +954,17 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     data.mu[i] = mu;
     data.r[i] = half_friction_cone_edges;
 
-    // TODO(edrumwri): Use this to set cfm and erp parameters for contacts.
+    // Set cfm and erp parameters for contacts.
+    const double denom = dt * stiffness + damping;
+    const double cfm = 1.0 / denom;
+    const double erp = (dt * stiffness) / denom;
+    data.gammaN[i] = cfm;
+    data.kN[i] = erp * contacts[i].distance / dt;
   }
 
   // 2. Set the stabilization term for contact tangent directions (kF).
-  // TODO(edrumwri): Update 'total_friction_cone_edges' once contact constraints
-  // supported.
-  const int total_friction_cone_edges = 0;
+  const int total_friction_cone_edges = std::accumulate(
+      data.r.begin(), data.r.end(), 0);
   data.kF.setZero(total_friction_cone_edges);
 
   // 3. Set the stabilization term for joint limit constraints (kL).
@@ -955,8 +972,6 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Integrate the forces into the velocity.
   data.Mv = H * v + right_hand_side * dt;
-
-  // TODO: Set gamma
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
