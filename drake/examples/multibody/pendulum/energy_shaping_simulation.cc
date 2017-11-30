@@ -134,12 +134,16 @@ int do_main() {
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
   publisher->set_publish_period(1 / 60.0);
 
+  // Sanity check on the availability of the optional source id before using it.
+  DRAKE_DEMAND(!!pendulum->get_source_id());
+
   builder.Connect(
       pendulum->get_geometry_id_output_port(),
-      geometry_system->get_source_frame_id_port(pendulum->get_source_id()));
+      geometry_system->get_source_frame_id_port(
+          pendulum->get_source_id().value()));
   builder.Connect(
       pendulum->get_geometry_pose_output_port(),
-      geometry_system->get_source_pose_port(pendulum->get_source_id()));
+      geometry_system->get_source_pose_port(pendulum->get_source_id().value()));
 
   builder.Connect(geometry_system->get_pose_bundle_output_port(),
                   converter->get_input_port(0));
