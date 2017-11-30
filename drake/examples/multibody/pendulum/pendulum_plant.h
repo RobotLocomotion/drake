@@ -4,6 +4,7 @@
 
 #include "drake/examples/multibody/pendulum/gen/pendulum_input.h"
 #include "drake/examples/multibody/pendulum/gen/pendulum_state.h"
+#include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -17,13 +18,13 @@ namespace multibody {
 namespace pendulum {
 
 /// A model of an idealized pendulum with a point mass on the end of a massless
-/// cord.
+/// rigid rod.
 /// The pendulum oscillates in the x-z plane with its revolute axis coincident
 /// with the y-axis. Gravity points downwards in the -z axis direction.
 ///
 /// The parameters of the plant are:
 /// - mass: the mass of the idealized point mass.
-/// - length: the length of the massless cord on which the mass is suspended.
+/// - length: the length of the massless rod on which the mass is suspended.
 /// - gravity: the acceleration of gravity.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -40,18 +41,16 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant)
 
   /// Constructs a model of an idealized pendulum of a given `mass` and
-  /// suspended by a massless cord with a given `length`. Gravity points in the
-  /// `-z` axis direction with the acceleration constant `gravity`.
-  /// There will be no geometry associated to the model.
+  /// suspended by a massless rigid rod with a given `length`. Gravity points in
+  /// the `-z` axis direction with the acceleration constant `gravity`.
+  /// This constructor doesn't register any geometry.
   PendulumPlant(double mass, double length, double gravity);
 
-  /// Constructs a model of an idealized pendulum wiht parameters as described
-  /// in this class's documentation.
+  /// Constructs a model of an idealized pendulum of a given `mass` and
+  /// suspended by a massless rigid rod with a given `length`. Gravity points in
+  /// the `-z` axis direction with the acceleration constant `gravity`.
   /// This constructor registers `this` plant as a source for `geometry_system`
   /// as well as the frames and geometry used for visualization.
-  ///
-  /// See this class's documentation for a description of the physical
-  /// parameters.
   PendulumPlant(
       double mass, double length, double gravity,
       geometry::GeometrySystem<double>* geometry_system);
@@ -63,7 +62,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /// Returns the mass of this point pendulum.
   double get_mass() const { return mass_; }
 
-  /// Returns the length of the cord from which the point mass is suspended.
+  /// Returns the length of the rod from which the point mass is suspended.
   double get_length() const { return length_; }
 
   /// Returns the value of the acceleration of gravity in the model.
@@ -86,17 +85,22 @@ class PendulumPlant final : public systems::LeafSystem<T> {
 
   /// Returns the unique id identifying this plant as a source for a
   /// GeometrySystem.
-  /// The returned id will be invalid when the plant is not registered with any
-  /// GeometrySystem.
-  geometry::SourceId get_source_id() const { return source_id_; }
+  /// Returns `nullopt` if `this` plant did not register any geometry.
+  optional<geometry::SourceId> get_source_id() const {
+    if (source_id_.is_valid()) {
+      return source_id_;
+    } else {
+      return nullopt;
+    }
+  }
 
   /// Returns the output port of frame id's used to communicate poses to a
-  /// GeometrySystem. It throws a std::out_of_range exception is this system was
+  /// GeometrySystem. It throws a std::out_of_range exception if this system was
   /// not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_id_output_port() const;
 
-  /// Returns the output port of frames's poses to communicate with a
-  /// GeometrySystem. It throws a std::out_of_range exception is this system was
+  /// Returns the output port of frames' poses to communicate with a
+  /// GeometrySystem. It throws a std::out_of_range exception if this system was
   /// not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
@@ -105,7 +109,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_state_output_port() const;
 
   /// Sets the state for this system in `context` to be that of `this` pendulum
-  /// at a given `angle`. Mainly used to set initial conditions.
+  /// at a given `angle`, in radians. Mainly used to set initial conditions.
   void SetAngle(systems::Context<T>*, const T& angle) const;
 
   /// Computes the period for the small oscillations of a simple pendulum.
@@ -140,16 +144,6 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U> friend class PendulumPlant;
-
-  // Constructs a plant given a SourceId to communicate with a GeometrySystem.
-  // FrameId identifies the frame of the one and only body in the pendulum's
-  // model, which is defined to have its origin coincident with the world's
-  // frame W origin.
-  // See this class's documentation for a description of the physical
-  // parameters.
-  PendulumPlant(
-      double mass, double length, double gravity,
-      geometry::SourceId source_id, geometry::FrameId frame_id);
 
   // No inputs implies no feedthrough; this makes it explicit.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
@@ -196,9 +190,9 @@ class PendulumPlant final : public systems::LeafSystem<T> {
                     PendulumState<T>* output) const;
 
   // The physical parameters of the model:
-  double mass_{1.0};
-  double length_{0.5};
-  double gravity_{9.81};
+  double mass_{1.0};      // In kilograms.
+  double length_{0.5};    // In meters.
+  double gravity_{9.81};  // In m/s².
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;

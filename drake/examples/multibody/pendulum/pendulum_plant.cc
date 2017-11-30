@@ -13,7 +13,6 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace examples {
@@ -54,27 +53,11 @@ using systems::State;
 template<typename T>
 PendulumPlant<T>::PendulumPlant(
     double mass, double length, double gravity) :
-    PendulumPlant(mass, length, gravity, SourceId{}, FrameId{}) {}
-
-template<typename T>
-PendulumPlant<T>::PendulumPlant(
-    double mass, double length, double gravity,
-    geometry::GeometrySystem<double>* geometry_system) :
-    PendulumPlant(mass, length, gravity) {
-  DRAKE_DEMAND(geometry_system != nullptr);
-  RegisterGeometry(geometry_system);
-  DeclareGeometrySystemPorts();
-}
-
-template<typename T>
-PendulumPlant<T>::PendulumPlant(
-    double mass, double length, double gravity,
-    SourceId source_id, FrameId frame_id) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::examples::multibody::pendulum::PendulumPlant>()),
-    mass_(mass), length_(length), gravity_(gravity),
-    source_id_(source_id), frame_id_(frame_id) {
-  // Build the MultibodyTree model for this plant.
+    mass_(mass),
+    length_(length),
+    gravity_(gravity) {
   BuildMultibodyTreeModel();
 
   // Some very basic verification that the model is what we expect it to be.
@@ -95,22 +78,40 @@ PendulumPlant<T>::PendulumPlant(
   // Declare a port that outputs the state.
   state_output_port_ = this->DeclareVectorOutputPort(
       PendulumState<T>(), &PendulumPlant::CopyStateOut).get_index();
+}
 
+template<typename T>
+PendulumPlant<T>::PendulumPlant(
+    double mass, double length, double gravity,
+    geometry::GeometrySystem<double>* geometry_system) :
+    PendulumPlant(mass, length, gravity) {
+  DRAKE_DEMAND(geometry_system != nullptr);
+  RegisterGeometry(geometry_system);
   DeclareGeometrySystemPorts();
 }
 
 template<typename T>
+template<typename U>
+PendulumPlant<T>::PendulumPlant(
+    const PendulumPlant<U> &other) :
+    PendulumPlant(other.get_mass(), other.get_length(), other.get_gravity()) {
+  source_id_ = other.source_id_;
+  frame_id_ = other.frame_id_;
+  // Only declare ports to communicate with a GeometrySystem if the plant is
+  // provided with a valid source id.
+  if (frame_id_.is_valid()) DeclareGeometrySystemPorts();
+}
+
+template<typename T>
 void PendulumPlant<T>::DeclareGeometrySystemPorts() {
-  if (frame_id_.is_valid()) {
-    geometry_id_port_ =
-        this->DeclareAbstractOutputPort(
-            &PendulumPlant::AllocateFrameIdOutput,
-            &PendulumPlant::CalcFrameIdOutput).get_index();
-    geometry_pose_port_ =
-        this->DeclareAbstractOutputPort(
-            &PendulumPlant::AllocateFramePoseOutput,
-            &PendulumPlant::CalcFramePoseOutput).get_index();
-  }
+  geometry_id_port_ =
+      this->DeclareAbstractOutputPort(
+          &PendulumPlant::AllocateFrameIdOutput,
+          &PendulumPlant::CalcFrameIdOutput).get_index();
+  geometry_pose_port_ =
+      this->DeclareAbstractOutputPort(
+          &PendulumPlant::AllocateFramePoseOutput,
+          &PendulumPlant::CalcFramePoseOutput).get_index();
 }
 
 template <typename T>
@@ -188,23 +189,13 @@ const OutputPort<T>& PendulumPlant<T>::get_state_output_port() const {
 }
 
 template<typename T>
-template<typename U>
-PendulumPlant<T>::PendulumPlant(
-    const PendulumPlant<U>& other) :
-    PendulumPlant<T>(
-        other.get_mass(),
-        other.get_length(),
-        other.get_gravity(),
-        other.source_id_, other.frame_id_) {}
-
-template<typename T>
 void PendulumPlant<T>::BuildMultibodyTreeModel() {
   model_ = std::make_unique<MultibodyTree<T>>();
   DRAKE_DEMAND(model_ != nullptr);
 
   // Pose of the com of the pendulum's body (in this case a point mass) in the
   // body's frame. The body's frame's origin Bo is defined to be at the world's
-  // origin Wo, where the rotation axis is.
+  // origin Wo, through which the rotation axis passes.
   // With the pendulum at rest pointing in the downwards -z direction, the body
   // frame B and the world frame W are coincident.
   const Vector3<double> p_BoBcm_B = -get_length() * Vector3<double>::UnitZ();
