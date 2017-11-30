@@ -658,7 +658,7 @@ VectorX<T> RigidBodyPlant<T>::F_mult(
       basis_vecs.back() = tan2_dir;
     } else {
       for (int j = 0; j < half_num_cone_edges[i]; ++j) {
-        double theta = M_PI * j / 
+        double theta = M_PI * j /
             (static_cast<double>(half_num_cone_edges[i]) - 1);
         basis_vecs[j] = tan1_dir * cos(theta) + tan2_dir * sin(theta);
       }
@@ -1041,16 +1041,16 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.gammaE.setZero(contacts.size());
 
   // Set the regularization and stabilization terms for joint limit
-  // constraints (kL).  
+  // constraints (kL).
   // TODO(edrumwri): Make cfm and erp individually settable.
   const double default_limit_cfm = 1e-8;
   const double default_limit_erp = 0.5;
   data.kL.resize(limits.size());
     for (int i = 0; i < static_cast<int>(limits.size()); ++i)
     data.kL[i] = default_limit_erp * limits[i].error / dt;
-  data.gammaL.setOnes(limits.size()) *= default_limit_cfm; 
+  data.gammaL.setOnes(limits.size()) *= default_limit_cfm;
 
-  // Set Jacobians for bilateral constraint terms. 
+  // Set Jacobians for bilateral constraint terms.
   // TODO(edrumwri): Make erp individually settable.
   const double default_bilateral_erp = 0.5;
   data.kG = default_bilateral_erp * tree.positionConstraints(kcache) / dt;
