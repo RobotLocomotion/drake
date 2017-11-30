@@ -96,9 +96,9 @@ class Sinusoid : public systems::LeafSystem<double> {
 
 // Finds the single end-effector from a RigidBodyTree and returns it. Aborts if
 // there is more than one end-effector or more than one base link.
-RigidBody<double>* FindEndEffector(const RigidBodyTree<double>& tree) {
+RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {
   // There should only be one base body.
-  auto base_indices = tree.FindBaseBodies();
+  auto base_indices = tree->FindBaseBodies();
   DRAKE_DEMAND(base_indices.size() == 1);
 
   // Performs a depth first traversal from the base links, until all 
@@ -109,7 +109,7 @@ RigidBody<double>* FindEndEffector(const RigidBodyTree<double>& tree) {
   while (!q.empty()) {
     int index = q.front();
     q.pop();
-    auto children = tree.FindChildrenOfBody(index);
+    auto children = tree->FindChildrenOfBody(index);
     if (children.empty()) {
       end_effectors.push_back(index);
     } else {
@@ -119,7 +119,7 @@ RigidBody<double>* FindEndEffector(const RigidBodyTree<double>& tree) {
   }
 
   DRAKE_DEMAND(end_effectors.size() == 1);
-  return const_cast<RigidBody<double>*>(&tree.get_body(end_effectors.front()));
+  return tree->get_mutable_body(end_effectors.front());
 }
 
 std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
@@ -137,7 +137,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   *lifter_instance_id = lifter_id_table.begin()->second;
 
   // Get the end-effector link.
-  RigidBody<double>* ee = FindEndEffector(*tree);
+  RigidBody<double>* ee = FindEndEffector(tree.get());
 
   // Add the gripper.  Offset it slightly back and up so that we can
   // locate the target at the origin.
