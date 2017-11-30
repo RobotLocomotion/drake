@@ -32,7 +32,7 @@ struct TestStep {
 // does not loop.  The choice of the pick/place location is arbitrary.
 GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
   PlannerConfiguration planner_configuration;
-  planner_configuration.model_path = kIiwaUrdf;
+  planner_configuration.drake_relative_model_path = kIiwaUrdf;
   planner_configuration.end_effector_name = "iiwa_link_ee";
   planner_configuration.target_dimensions = {0.06, 0.06, 0.06};
   planner_configuration.num_tables = 2;
