@@ -137,14 +137,8 @@ void PendulumPlant<T>::CalcFrameIdOutput(
 template <typename T>
 FramePoseVector<T> PendulumPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
-  DRAKE_ABORT_MSG("There is no implementation for T != double.");
-}
-
-template <>
-FramePoseVector<double> PendulumPlant<double>::AllocateFramePoseOutput(
-    const Context<double>&) const {
   DRAKE_DEMAND(source_id_.is_valid());
-  FramePoseVector<double> poses(source_id_);
+  FramePoseVector<T> poses(source_id_);
   // There is only one moveable frame.
   poses.mutable_vector().resize(1);
   return poses;
@@ -152,20 +146,14 @@ FramePoseVector<double> PendulumPlant<double>::AllocateFramePoseOutput(
 
 template <typename T>
 void PendulumPlant<T>::CalcFramePoseOutput(
-    const Context<T>&, FramePoseVector<T>*) const {
-  DRAKE_ABORT_MSG("There is no implementation for T != double.");
-}
-
-template <>
-void PendulumPlant<double>::CalcFramePoseOutput(
-    const Context<double>& context, FramePoseVector<double>* poses) const {
+    const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == 1);
   DRAKE_ASSERT(model_->get_num_bodies() == 2);
 
-  PositionKinematicsCache<double> pc(model_->get_topology());
+  PositionKinematicsCache<T> pc(model_->get_topology());
   model_->CalcPositionKinematicsCache(context, &pc);
 
-  std::vector<Isometry3<double>>& pose_data = poses->mutable_vector();
+  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
   pose_data[0] = pc.get_X_WB(link_->get_node_index());
 }
 
