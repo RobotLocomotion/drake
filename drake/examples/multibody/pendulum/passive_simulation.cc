@@ -9,7 +9,6 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -25,7 +24,7 @@ namespace pendulum {
 namespace {
 
 DEFINE_double(target_realtime_rate, 1.0,
-              "Playback speed.  See documentation for "
+              "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
 DEFINE_string(integration_scheme, "runge_kutta3",
@@ -45,8 +44,9 @@ using systems::SemiExplicitEulerIntegrator;
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
-  geometry_system->set_name("geometry_system");
+  GeometrySystem<double>& geometry_system =
+      *builder.AddSystem<GeometrySystem>();
+  geometry_system.set_name("geometry_system");
 
   // Define plant's parameters:
   const double mass = 0.5;      // [Kgr], about a pound.
@@ -70,9 +70,10 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  auto pendulum = builder.AddSystem<PendulumPlant>(
-      mass, length, gravity, geometry_system);
-  pendulum->set_name("Pendulum");
+  PendulumPlant<double>& pendulum =
+      *builder.AddSystem<PendulumPlant>(
+          mass, length, gravity, &geometry_system);
+  pendulum.set_name("Pendulum");
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
@@ -85,28 +86,31 @@ int do_main() {
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
   publisher->set_publish_period(1 / 60.0);
 
-  builder.Connect(
-      pendulum->get_geometry_id_output_port(),
-      geometry_system->get_source_frame_id_port(pendulum->get_source_id()));
-  builder.Connect(
-      pendulum->get_geometry_pose_output_port(),
-      geometry_system->get_source_pose_port(pendulum->get_source_id()));
+  // Sanity check on the availability of the optional source id before using it.
+  DRAKE_DEMAND(!!pendulum.get_source_id());
 
-  builder.Connect(geometry_system->get_pose_bundle_output_port(),
+  builder.Connect(
+      pendulum.get_geometry_id_output_port(),
+      geometry_system.get_source_frame_id_port(
+          pendulum.get_source_id().value()));
+  builder.Connect(
+      pendulum.get_geometry_pose_output_port(),
+      geometry_system.get_source_pose_port(pendulum.get_source_id().value()));
+
+  builder.Connect(geometry_system.get_pose_bundle_output_port(),
                   converter->get_input_port(0));
   builder.Connect(*converter, *publisher);
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
-  geometry::DispatchLoadMessage(*geometry_system);
+  geometry::DispatchLoadMessage(geometry_system);
 
   auto diagram = builder.Build();
 
   auto diagram_context = diagram->CreateDefaultContext();
   systems::Context<double>& pendulum_context =
-      diagram->GetMutableSubsystemContext(
-          *pendulum, diagram_context.get());
-  pendulum->SetAngle(&pendulum_context, M_PI / 3.0);
+      diagram->GetMutableSubsystemContext(pendulum, diagram_context.get());
+  pendulum.SetAngle(&pendulum_context, M_PI / 3.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -125,7 +129,8 @@ int do_main() {
             *diagram, max_time_step, &simulator.get_mutable_context());
   } else {
     throw std::logic_error(
-        "Integration scheme not supported for this example.");
+        "Integration scheme '" + FLAGS_integration_scheme +
+            "' not supported for this example.");
   }
   integrator->set_maximum_step_size(max_time_step);
 
