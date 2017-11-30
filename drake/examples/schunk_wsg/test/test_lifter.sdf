@@ -1,11 +1,18 @@
 <?xml version='1.0'?>
+<!-- 
+This model describes a mechanism to be attached to the "world" (at the base),
+with six degrees of freedom: three translational and three rotational. Each
+degree of freedom is realized through a single degree of freedom joint- revolute
+or prismatic- connecting two low-mass (1e-4 kg) links. 
+-->
+
 <sdf version='1.6'>
   <model name='Test lifter_and_shaker'>
     <link name='base'/>
     <link name='lifted_link'>
       <pose frame=''>0 0 0 0 -0 0</pose>
       <inertial>
-        <mass>0</mass>
+        <mass>0.0001</mass>
         <inertia>
           <ixx>0.0001</ixx>
           <ixy>0</ixy>
@@ -24,7 +31,7 @@
     <link name='x_translate_link'>
       <pose frame=''>0 0 0 0 -0 0</pose>
       <inertial>
-        <mass>0</mass>
+        <mass>0.0001</mass>
         <inertia>
           <ixx>0.0001</ixx>
           <ixy>0</ixy>

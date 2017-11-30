@@ -239,7 +239,8 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   if (num_sinusoids > 4)
     sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 17.0, 0.03125, 0.0);
 
-  // Demultiplex each of the sinusoid's outputs.
+  // Demultiplex each of the sinusoid's outputs to separate the sine function
+  // from its time derivative.
   Demultiplexer<double>* demux[num_sinusoids];
   for (int i = 0; i < num_sinusoids; ++i) {
     demux[i] = builder.AddSystem<Demultiplexer<double>>(2, 1);
@@ -368,6 +369,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   Context<double>& context = simulator.get_mutable_context();
 
+  // Note: the RK2 is used instead of the RK3 here because error control
+  // with our current models is yielding much slower running times without
+  // discernible improvements in accuracy. 
   const double dt = 1e-4;
   simulator.reset_integrator<RungeKutta2Integrator<double>>(
       *model, dt, &context);
