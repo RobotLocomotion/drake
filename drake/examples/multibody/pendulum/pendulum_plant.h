@@ -102,6 +102,8 @@ class PendulumPlant final : public systems::LeafSystem<T> {
 
   const systems::InputPortDescriptor<T>& get_input_port() const;
 
+  const systems::OutputPort<T>& get_state_output_port() const;
+
   /// Sets the state for this system in `context` to be that of `this` pendulum
   /// at a given `angle`. Mainly used to set initial conditions.
   void SetAngle(systems::Context<T>*, const T& angle) const;
@@ -189,6 +191,10 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
+  // Copies the state in `context` to `output`.
+  void CopyStateOut(const systems::Context<T>& context,
+                    PendulumState<T>* output) const;
+
   // The physical parameters of the model:
   double mass_{1.0};
   double length_{0.5};
@@ -214,6 +220,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
   int applied_torque_input_{-1};
+  int state_output_port_{-1};
 };
 
 }  // namespace pendulum

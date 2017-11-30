@@ -92,6 +92,10 @@ PendulumPlant<T>::PendulumPlant(
   applied_torque_input_ =
       this->DeclareVectorInputPort(PendulumInput<T>()).get_index();
 
+  // Declare a port that outputs the state.
+  state_output_port_ = this->DeclareVectorOutputPort(
+      PendulumState<T>(), &PendulumPlant::CopyStateOut).get_index();
+
   DeclareGeometrySystemPorts();
 }
 
@@ -166,6 +170,14 @@ void PendulumPlant<double>::CalcFramePoseOutput(
 }
 
 template <typename T>
+void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
+                                    PendulumState<T>* output) const {
+  const auto& xc = dynamic_cast<const PendulumState<T>&>(
+      context.get_continuous_state().get_vector());
+  output->set_value(xc.get_value());
+}
+
+template <typename T>
 const OutputPort<T>& PendulumPlant<T>::get_geometry_id_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_id_port_);
@@ -180,6 +192,11 @@ const {
 template <typename T>
 const InputPortDescriptor<T>& PendulumPlant<T>::get_input_port() const {
   return systems::System<T>::get_input_port(applied_torque_input_);
+}
+
+template <typename T>
+const OutputPort<T>& PendulumPlant<T>::get_state_output_port() const {
+  return systems::System<T>::get_output_port(state_output_port_);
 }
 
 template<typename T>
