@@ -52,20 +52,15 @@ class MobilizerImpl : public Mobilizer<T> {
   int get_num_velocities() const final { return kNv;}
 
   /// Default implementation to Mobilizer::set_zero_configuration() that sets
-  /// all generalized positions related to this mobilizer to zero.
-  /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclasses must override this method for
-  /// correctness.
+  /// the state in `context` according to set_zero_state().
   void set_zero_configuration(systems::Context<T>* context) const override {
-    auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
-    DRAKE_DEMAND(mbt_context != nullptr);
-    get_mutable_positions(mbt_context).setZero();
+    set_zero_state(*context, &context->get_mutable_state());
   }
 
   /// Default implementation to Mobilizer::set_zero_state() that sets all
-  /// generalized positions related to this mobilizer to zero.
-  /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclasses (for instance for quaternions) must
+  /// generalized positions and generalized velocities related to this mobilizer
+  /// to zero. Be aware however that this default does not apply in general to
+  /// all mobilizers and specific subclasses (for instance for quaternions) must
   /// override this method for correctness.
   void set_zero_state(const systems::Context<T>& context,
                       systems::State<T>* state) const override {
