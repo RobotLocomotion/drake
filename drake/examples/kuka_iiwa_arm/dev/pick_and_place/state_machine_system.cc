@@ -40,8 +40,11 @@ namespace pick_and_place {
 struct PickAndPlaceStateMachineSystem::InternalState {
   InternalState(const pick_and_place::PlannerConfiguration& configuration,
                 bool single_move)
-      : world_state(configuration.model_path, configuration.end_effector_name,
-                    configuration.num_tables, configuration.target_dimensions),
+      : world_state(
+            configuration.absolute_model_path(),
+            configuration.end_effector_name,
+            configuration.num_tables,
+            configuration.target_dimensions),
         state_machine(configuration, single_move),
         last_iiwa_plan(MakeDefaultIiwaPlan()),
         last_wsg_command(MakeDefaultWsgCommand()) {}
@@ -81,7 +84,8 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
   this->DeclarePeriodicUnrestrictedUpdate(configuration.period_sec, 0);
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      iiwa_model_path(), multibody::joints::kFixed, &iiwa_tree_);
+      configuration_.absolute_model_path(),
+      multibody::joints::kFixed, &iiwa_tree_);
 }
 
 std::unique_ptr<systems::AbstractValues>

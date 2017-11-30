@@ -129,10 +129,6 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
 
   int num_tables() const { return configuration_.num_tables; }
 
-  const std::string& iiwa_model_path() const {
-    return configuration_.model_path;
-  }
-
   const std::string& end_effector_name() const {
     return configuration_.end_effector_name;
   }
