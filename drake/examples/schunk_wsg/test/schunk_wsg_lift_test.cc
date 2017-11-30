@@ -60,11 +60,12 @@ using Eigen::Vector3d;
 // Initial height of the box's origin.
 const double kBoxInitZ = 0.076;
 
-// TODO(rcory): Remove and replace (like Obamacare) after the Sinusoid
+// TODO(rcory): Remove and replace after the Sinusoid
 // block PR goes through.
 // A block that outputs a sinusoid function of time and the time derivative
 // thereof with specified start time (tstart), frequency (freq),
-// amplitude (amp), and phase (offset).
+// amplitude (amp), and phase (offset). Outputs zeros for times before
+// `tstart`.
 class Sinusoid : public systems::LeafSystem<double> {
  public:
   Sinusoid(double tstart, double freq, double amp, double offset) :
@@ -100,6 +101,8 @@ RigidBody<double>* FindEndEffector(const RigidBodyTree<double>& tree) {
   auto base_indices = tree.FindBaseBodies();
   DRAKE_DEMAND(base_indices.size() == 1);
 
+  // Performs a depth first traversal from the base links, until all 
+  // end effectors are found. 
   std::vector<int> end_effectors;
   std::queue<int> q;
   q.push(base_indices.front());
