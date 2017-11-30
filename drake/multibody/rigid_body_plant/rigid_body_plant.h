@@ -396,7 +396,7 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
-  void CalcContactStiffnessDampingMuAndNumConeEdges(
+  bool CalcContactStiffnessDampingMuAndNumHalfConeEdges(
       const drake::multibody::collision::PointPair& contact,
       double* stiffness,
       double* damping,
@@ -418,18 +418,20 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   VectorX<T> N_transpose_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& kcache,
+      const KinematicsCache<T>& kcache,
       const VectorX<T>& f) const;
 
   VectorX<T> F_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
       const VectorX<T>& q,
-      const VectorX<T>& v) const;
+      const VectorX<T>& v,
+      const std::vector<int>& half_num_cone_edges) const;
 
   VectorX<T> F_transpose_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
       const KinematicsCache<T>& kcache,
-      const VectorX<T>& f) const;
+      const VectorX<T>& f,
+      const std::vector<int>& half_num_cone_edges) const;
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
 

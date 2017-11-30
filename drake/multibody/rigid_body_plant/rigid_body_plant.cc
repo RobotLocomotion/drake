@@ -427,15 +427,19 @@ void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
 // Computes the stiffness, damping, and friction coefficient for a contact (if
 // it exists).
 template <typename T>
-bool RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumConeEdges(
+bool RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
       const drake::multibody::collision::PointPair& contact,
       double* stiffness,
       double* damping,
       double* mu,
-      int* num_cone_edges) const {
+      int* num_half_cone_edges) const {
   DRAKE_DEMAND(stiffness);
   DRAKE_DEMAND(damping);
   DRAKE_DEMAND(mu);
+  DRAKE_DEMAND(num_half_cone_edges);
+
+  // Verify the friction directions are set correctly.
+  DRAKE_DEMAND(*num_half_cone_edges >= 2);
 
   // TODO: implement this fully once PR #7016 lands. For now, `false` return
   //       indicates no contacts have specialized values.
@@ -588,15 +592,20 @@ VectorX<T> RigidBodyPlant<T>::N_transpose_mult(
 template <class T>
 VectorX<T> RigidBodyPlant<T>::F_mult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const VectorX<T>& q, const VectorX<T>& v) const {
+    const VectorX<T>& q, const VectorX<T>& v,
+    const std::vector<int>& half_num_cone_edges) const {
   using std::cos;
   using std::sin;
   std::vector<Vector3<T>> basis_vecs;
   const auto& tree = this->get_rigid_body_tree();
   auto kcache = tree.doKinematics(q, v);
 
+  // Get the total number of edges.
+  const int total_edges = std::accumulate(
+      half_num_cone_edges.begin(), half_num_cone_edges.end(), 0);
+
   // Create a result vector.
-  VectorX<T> result(contacts.size() * half_cone_edges_);
+  VectorX<T> result(total_edges);
 
   // Loop through all contacts.
   for (int i = 0, k = 0; static_cast<size_t>(i) < contacts.size(); ++i) {
@@ -627,14 +636,15 @@ VectorX<T> RigidBodyPlant<T>::F_mult(
     const Vector3<T> tan2_dir = R_WC.col(kZAxisIndex);
 
     // Set spanning tangent directions.
-    basis_vecs.resize(half_cone_edges_);
-    if (half_cone_edges_ == 2) {
+    basis_vecs.resize(half_num_cone_edges[i]);
+    if (half_num_cone_edges[i] == 2) {
       // Special case: pyramid friction.
       basis_vecs.front() = tan1_dir;
       basis_vecs.back() = tan2_dir;
     } else {
-      for (int j = 0; j < half_cone_edges_; ++j) {
-        double theta = M_PI * j / (static_cast<double>(half_cone_edges_) - 1);
+      for (int j = 0; j < half_num_cone_edges[i]; ++j) {
+        double theta = M_PI * j / 
+            (static_cast<double>(half_num_cone_edges[i]) - 1);
         basis_vecs[j] = tan1_dir * cos(theta) + tan2_dir * sin(theta);
       }
     }
@@ -655,7 +665,8 @@ template <class T>
 VectorX<T> RigidBodyPlant<T>::F_transpose_mult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
     const KinematicsCache<T>& kcache,
-    const VectorX<T>& f) const {
+    const VectorX<T>& f,
+    const std::vector<int>& half_num_cone_edges) const {
   std::vector<Vector3<T>> basis_vecs;
 
   // Create a result vector.
@@ -685,14 +696,15 @@ VectorX<T> RigidBodyPlant<T>::F_transpose_mult(
     const Vector3<T> tan2_dir = R_WC.col(kZAxisIndex);
 
     // Set spanning tangent directions.
-    basis_vecs.resize(half_cone_edges_);
-    if (half_cone_edges_ == 2) {
+    basis_vecs.resize(half_num_cone_edges[i]);
+    if (half_num_cone_edges[i] == 2) {
       // Special case: pyramid friction.
       basis_vecs.front() = tan1_dir;
       basis_vecs.back() = tan2_dir;
     } else {
-      for (int j = 0; j < half_cone_edges_; ++j) {
-        double theta = M_PI * j / (static_cast<double>(half_cone_edges_) - 1);
+      for (int j = 0; j < half_num_cone_edges[i]; ++j) {
+        double theta = M_PI * j /
+            (static_cast<double>(half_num_cone_edges[i]) - 1);
         basis_vecs[j] = tan1_dir * cos(theta) + tan2_dir * sin(theta);
       }
     }
@@ -888,13 +900,10 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // TODO(edrumwri): Relax this assumption to allow contact constraints.
   DRAKE_DEMAND(contacts.empty());
 
-  // Verify the friction directions are set correctly.
-  DRAKE_DEMAND(half_cone_edges_ >= 2);
-
   // Set up the N multiplication operator (projected velocity along the contact
   // normals).
-  data.N_mult = [this, &contacts, &kcache](const VectorX<T>& w) -> VectorX<T> {
-    return N_mult(contacts, kcache, w);
+  data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
+    return N_mult(contacts, q, w);
   };
 
   // Set up the N' multiplication operator (effect of contact normal forces
@@ -906,22 +915,32 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Set up the F multiplication operator (projected velocity along the contact
   // tangent directions).
-  data.F_mult = [this, &contacts, &kcache](const VectorX<T>& w) -> VectorX<T> {
-    return F_mult(contacts, kcache, w);
+  data.F_mult = [this, &contacts, &q, &data](const VectorX<T>& w) ->
+      VectorX<T> {
+    return F_mult(contacts, q, w, data.r);
   };
 
   // Set up the F' multiplication operator (effect of contact frictional forces
   // on generalized forces).
-  data.F_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
-      VectorX<T> {
-    return F_transpose_mult(contacts, kcache, f);
+  data.F_transpose_mult = [this, &contacts, &kcache, &data](const VectorX<T>& f)
+      -> VectorX<T> {
+    return F_transpose_mult(contacts, kcache, f, data.r);
   };
 
-  // 1. Set the stabilization term for contact normal direction (kN)
+  // 1. Set the stabilization term for contact normal direction (kN). Also,
+  // determine the friction coefficients and (half) the number of friction cone
+  // edges.
   data.kN.resize(contacts.size());
+  data.mu.resize(contacts.size());
+  data.r.resize(contacts.size());
   for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-    double stiffness, damping;
-    CalcContactStiffnessAndDamping(contacts[i], &stiffness, &damping);
+    double stiffness, damping, mu;
+    int half_friction_cone_edges;
+    CalcContactStiffnessDampingMuAndNumHalfConeEdges(
+        contacts[i], &stiffness, &damping, &mu, &half_friction_cone_edges);
+    data.mu[i] = mu;
+    data.r[i] = half_friction_cone_edges;
+
     // TODO(edrumwri): Use this to set cfm and erp parameters for contacts.
   }
 
