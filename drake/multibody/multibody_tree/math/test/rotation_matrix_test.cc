@@ -1,12 +1,6 @@
 #include "drake/multibody/multibody_tree/math/rotation_matrix.h"
 
-#include <iomanip>
-#include <sstream>
-#include <string>
-
 #include <gtest/gtest.h>
-
-#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace multibody {
@@ -14,22 +8,6 @@ namespace math {
 namespace {
 
 using Eigen::Matrix3d;
-
-
-#ifdef DRAKE_ASSERT_IS_DISARMED
-// With assertion disarmed, expect no exception.
-#define EXPECT_THROW_IF_ARMED(expression, exception) \
-do {\
-  EXPECT_NO_THROW(expression); \
-} while (0)
-
-#else
-
-#define EXPECT_THROW_IF_ARMED(expression, exception) \
-do { \
-  EXPECT_THROW(expression, exception); \
-} while (0)
-#endif
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -40,8 +18,8 @@ GTEST_TEST(RotationMatrix, DefaultRotationMatrixIsIdentity) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
-// Test making a RotationMatrix from a Matrix3 (unchecked).
-GTEST_TEST(RotationMatrix, MakeMatrix3Unchecked) {
+// Test constructing a RotationMatrix from a Matrix3.
+GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
   Matrix3d m;
@@ -49,62 +27,58 @@ GTEST_TEST(RotationMatrix, MakeMatrix3Unchecked) {
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
 
-  RotationMatrix<double> R = RotationMatrix<double>::MakeUnchecked(m);
+  RotationMatrix<double> R1(m);
+  Matrix3d zero_matrix = m - R1.matrix();
+  EXPECT_TRUE((zero_matrix.array() == 0).all());
+
+  // Bad matrix should throw exception.
+  m << 1, 9000*kEpsilon, 9000*kEpsilon,
+       0, cos_theta, sin_theta,
+       0, -sin_theta, cos_theta;
+  EXPECT_THROW(RotationMatrix<double> R2(m), std::logic_error);
+}
+
+// Test setting a RotationMatrix from a Matrix3.
+GTEST_TEST(RotationMatrix, SetRotationMatrix) {
+  const double cos_theta = std::cos(0.5);
+  const double sin_theta = std::sin(0.5);
+  Matrix3d m;
+  m << 1, 0, 0,
+      0, cos_theta, sin_theta,
+      0, -sin_theta, cos_theta;
+
+  RotationMatrix<double> R;
+  R.SetOrThrowIfNotValid(m);
   Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
+
+  // Bad matrix should throw exception.
+  m << 1, 9000*kEpsilon, 9000*kEpsilon,
+      0, cos_theta, sin_theta,
+      0, -sin_theta, cos_theta;
+  EXPECT_THROW(R.SetOrThrowIfNotValid(m), std::logic_error);
 }
 
-// Test making a RotationMatrix from a Matrix3 (checked).
-GTEST_TEST(RotationMatrix, MakeMatrix3Checked) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m;
-  m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-
-  RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
-  Matrix3d zero_matrix = m - R.matrix();
-  EXPECT_TRUE((zero_matrix.array() == 0).all());
-
-  // TODO(Mitiguy) Implement test to check throwing assertion.
-  // m << 1, 10*kEpsilon, 10*kEpsilon,
-  //      0, cos_theta, sin_theta,
-  //      0, -sin_theta, cos_theta;
-  // EXPECT_THROW_IF_ARMED(RotationMatrix<double>::MakeChecked(m, 5*kEpsilon),
-  //                       std::logic_error);
-}
-
-
-// Test transpose.
-GTEST_TEST(RotationMatrix, Transpose) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m;
-  m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-
-  RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
-  RotationMatrix<double> R_transpose = R.transpose();
-  Matrix3d zero_matrix = m.transpose() - R_transpose.matrix();
+// Test setting a RotationMatrix to an identity matrix.
+GTEST_TEST(RotationMatrix, MakeIdentityMatrix) {
+  RotationMatrix<double> R = RotationMatrix<double>::MakeIdentity();
+  Matrix3d zero_matrix = Matrix3<double>::Identity() - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
-// Test inverse.
+// Test calculating the inverse of a RotationMatrix.
 GTEST_TEST(RotationMatrix, Inverse) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
   Matrix3d m;
   m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-
-  RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
-  RotationMatrix<double> R_inverse = R.inverse();
-  RotationMatrix<double> should_be_identity = R * R_inverse;
-  RotationMatrix<double> identity_matrix;
-  EXPECT_TRUE(should_be_identity.IsNearlyEqualTo(identity_matrix, 5*kEpsilon));
+      0, cos_theta, sin_theta,
+      0, -sin_theta, cos_theta;
+  RotationMatrix<double> R(m);
+  RotationMatrix<double> R_inverse = R.Inverse();
+  RotationMatrix<double> I = R * R_inverse;
+  Matrix3d zero_matrix = Matrix3<double>::Identity() - I.matrix();
+  EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
 // Test access by (i, j) indexes.
@@ -113,10 +87,10 @@ GTEST_TEST(RotationMatrix, AccessByIndexes) {
   const double sin_theta = std::sin(0.5);
   Matrix3d m;
   m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
+      0, cos_theta, sin_theta,
+      0, -sin_theta, cos_theta;
 
-  RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
+  RotationMatrix<double> R(m);
   EXPECT_EQ(R(0, 0), m(0, 0));
   EXPECT_EQ(R(0, 1), m(0, 1));
   EXPECT_EQ(R(0, 2), m(0, 2));
@@ -128,43 +102,68 @@ GTEST_TEST(RotationMatrix, AccessByIndexes) {
   EXPECT_EQ(R(2, 2), m(2, 2));
 }
 
-// Test matrix multiply.
-GTEST_TEST(RotationMatrix, MultiplyRotationMatrices) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m1, m2;
-  m1 << 1, 0, 0,
-        0, cos_theta, sin_theta,
-        0, -sin_theta, cos_theta;
-  m2 << cos_theta, sin_theta, 0,
-       -sin_theta, cos_theta, 0,
-        0, 0, 1;
-  Matrix3d m_mult = m1 * m2;
+// Test rotationa matrix multiplication and IsNearlyEqualTo.
+GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
+  // Create a rotation matrix from a BodyXYZ rotation by angles q1, q2, q3.
+  double q1 = 0.2, q2 = 0.3, q3 = 0.4;
+  Matrix3d m_BA;
+  m_BA << cos(q2)*cos(q3),
+          sin(q3)*cos(q1) + sin(q1)*sin(q2)*cos(q3),
+          sin(q1)*sin(q3) - sin(q2)*cos(q1)*cos(q3),
+         -sin(q3)*cos(q2),
+          cos(q1)*cos(q3) - sin(q1)*sin(q2)*sin(q3),
+          sin(q1)*cos(q3) + sin(q2)*sin(q3)*cos(q1),
+          sin(q2),
+         -sin(q1)*cos(q2),
+          cos(q1)*cos(q2);
 
-  RotationMatrix<double> R1, R2;
-  R1 = RotationMatrix<double>::MakeChecked(m1, 5*kEpsilon);
-  R2 = RotationMatrix<double>::MakeChecked(m2, 5*kEpsilon);
-  Matrix3d zero_matrix = m_mult - (R1 * R2).matrix();
-  EXPECT_TRUE((zero_matrix.array() == 0).all());
+  // Create a rotation matrix from a BodyXYX rotation by angles r1, r2, r3.
+  double r1 = 0.5, r2 = 0.5, r3 = 0.7;
+  Matrix3d m_CB;
+  m_CB << cos(r2),
+          sin(r1)*sin(r2),
+         -sin(r2)*cos(r1),
+          sin(r2)*sin(r3),
+          cos(r1)*cos(r3) - sin(r1)*sin(r3)*cos(r2),
+          sin(r1)*cos(r3) + sin(r3)*cos(r1)*cos(r2),
+          sin(r2)*cos(r3),
+         -sin(r3)*cos(r1) - sin(r1)*cos(r2)*cos(r3),
+          cos(r1)*cos(r2)*cos(r3) - sin(r1)*sin(r3);
+
+  RotationMatrix<double> R_BA(m_BA);
+  RotationMatrix<double> R_CB(m_CB);
+  RotationMatrix<double> R_CA = R_CB * R_BA;
+
+  // Expected results (from MotionGenesis).
+  Matrix3d m_CA;
+  m_CA << 0.5623597514496498, 0.6644746169581934, -0.4921635839512615,
+          0.3778794976730916, 0.3228981562377939, 0.8677233810014371,
+          0.7354988750418453, -0.6739512327435091, -0.06950640758724619;
+  RotationMatrix<double> R_CA_expected(m_CA);
+
+  // Also test IsNearlyEqualTo.
+  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 10 * kEpsilon));
+
+  // Also test operator*=().
+  R_CB *= R_BA;
+  EXPECT_TRUE(R_CB.IsNearlyEqualTo(R_CA, 10 * kEpsilon));
+  EXPECT_FALSE(R_CB.IsNearlyEqualTo(R_BA, 10000 * kEpsilon));
 }
 
 // Test IsValid.
-GTEST_TEST(RotationMatrix, IsValidRotationMatrix) {
+GTEST_TEST(RotationMatrix, IsValid) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
   Matrix3d m;
   m << 1, 0, 0,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-
-  RotationMatrix<double> R = RotationMatrix<double>::MakeChecked(m, 5*kEpsilon);
-  EXPECT_TRUE(R.IsValid(5*kEpsilon));
+  EXPECT_TRUE(RotationMatrix<double>::IsValid(m, 5*kEpsilon));
 
   m << 1, 10*kEpsilon, 10*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  R = RotationMatrix<double>::MakeUnchecked(m);
-  EXPECT_FALSE(R.IsValid(5*kEpsilon));
+  EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5*kEpsilon));
 }
 
 
