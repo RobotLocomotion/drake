@@ -258,7 +258,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
 
         // 2 seconds, no via points.
-        ConstraintRelaxingIk planner{configuration_.model_path,
+        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
                                      configuration_.end_effector_name,
                                      Isometry3<double>::Identity()};
         bool res = PlanStraightLineMotion(
@@ -291,7 +291,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
 
         // 2 seconds, 3 via points. More via points to ensure the end
         // effector moves in more or less a straight line.
-        ConstraintRelaxingIk planner{configuration_.model_path,
+        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
                                      configuration_.end_effector_name,
                                      Isometry3<double>::Identity()};
         bool res = PlanStraightLineMotion(
@@ -340,7 +340,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
 
         // 2 seconds, 3 via points.
-        ConstraintRelaxingIk planner{configuration_.model_path,
+        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
                                      configuration_.end_effector_name,
                                      Isometry3<double>::Identity()};
         bool res = PlanStraightLineMotion(
@@ -375,7 +375,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
 
         // 2 seconds, no via points.
-        ConstraintRelaxingIk planner{configuration_.model_path,
+        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
                                      configuration_.end_effector_name,
                                      Isometry3<double>::Identity()};
         bool res = PlanStraightLineMotion(
@@ -408,7 +408,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         X_Wend_effector_1_.translation()[2] -= kPreGraspHeightOffset;
 
         // 2 seconds, 3 via points.
-        ConstraintRelaxingIk planner{configuration_.model_path,
+        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
                                      configuration_.end_effector_name,
                                      Isometry3<double>::Identity()};
         bool res = PlanStraightLineMotion(
@@ -457,7 +457,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
 
         // 2 seconds, 5 via points.
-        ConstraintRelaxingIk planner{configuration_.model_path,
+        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
                                      configuration_.end_effector_name,
                                      Isometry3<double>::Identity()};
         bool res = PlanStraightLineMotion(

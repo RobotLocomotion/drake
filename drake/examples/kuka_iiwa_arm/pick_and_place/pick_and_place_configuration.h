@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
@@ -29,7 +30,7 @@ struct OptitrackInfo {
 struct PlannerConfiguration {
   /// Path (relative to DRAKE_RESOURCE_ROOT) to the model file describing the
   /// robot arm.
-  std::string model_path;
+  std::string drake_relative_model_path;
   /// Name of the end-effector link on the robot arm.
   std::string end_effector_name;
   /// Type-safe index indicating for which robot arm in the scenario this
@@ -45,6 +46,11 @@ struct PlannerConfiguration {
   /// Number of tables for which the planner should expect to receive pose
   /// inputs.
   int num_tables{0};
+
+  /// Returns the absolute path for our @p drake_relative_model_path.
+  std::string absolute_model_path() const {
+    return FindResourceOrThrow(drake_relative_model_path);
+  }
 };
 
 /// Information required to set up a simulation of a pick-and-place scenario

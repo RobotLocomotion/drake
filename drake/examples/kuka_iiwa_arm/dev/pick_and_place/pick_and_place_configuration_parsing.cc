@@ -173,8 +173,10 @@ pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
   planner_configuration.target_index = target_index;
 
   // Store model path and end-effector name.
-  planner_configuration.model_path = GetPlanningModelPathOrThrow(
-      configuration, configuration.robot(planner_configuration.robot_index));
+  planner_configuration.drake_relative_model_path =
+      GetPlanningModelPathOrThrow(
+          configuration,
+          configuration.robot(planner_configuration.robot_index));
   planner_configuration.end_effector_name = end_effector_name;
 
   // Extract number of tables

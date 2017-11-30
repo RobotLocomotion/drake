@@ -183,7 +183,8 @@ void ValidateOptitrackConfiguration(
 void ValidatePlannerConfiguration(
     const PlannerConfiguration& configuration,
     const PlannerConfiguration& expected_configuration) {
-  EXPECT_EQ(configuration.model_path, expected_configuration.model_path);
+  EXPECT_EQ(configuration.drake_relative_model_path,
+            expected_configuration.drake_relative_model_path);
   EXPECT_EQ(configuration.end_effector_name,
             expected_configuration.end_effector_name);
   EXPECT_EQ(configuration.robot_index, expected_configuration.robot_index);
@@ -238,7 +239,7 @@ class ConfigurationParsingTests : public ::testing::Test {
     plant_configuration_.default_contact_material.set_dissipation(5);
 
     // Set planner parameters
-    planner_configuration_.model_path = kIiwaPath;
+    planner_configuration_.drake_relative_model_path = kIiwaPath;
     planner_configuration_.end_effector_name = kEndEffectorName;
     planner_configuration_.target_dimensions = kTargetDimensions;
     planner_configuration_.num_tables = 6;
