@@ -1,4 +1,4 @@
-namespace: "drake::examples::pendulum"
+namespace: "drake::examples::multibody::pendulum"
 
 element {
     name: "theta"

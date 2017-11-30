@@ -83,7 +83,7 @@ PendulumPlant<T>::PendulumPlant(
   DRAKE_DEMAND(model_->get_num_states() == 2);
 
   this->DeclareContinuousState(
-      BasicVector<T>(model_->get_num_states()),
+      PendulumState<T>(),
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
