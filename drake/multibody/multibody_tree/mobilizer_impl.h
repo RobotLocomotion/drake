@@ -62,6 +62,12 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_positions(mbt_context).setZero();
   }
 
+  void set_zero_configuration(const systems::Context<T>& context,
+                              systems::State<T>* state) const override {
+    get_mutable_positions(state).setZero();
+    get_mutable_velocities(state).setZero();
+  }
+
   /// For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
@@ -89,6 +95,26 @@ class MobilizerImpl : public Mobilizer<T> {
       MultibodyTreeContext<T>* context) const {
     return context->template get_mutable_state_segment<kNq>(
         this->get_positions_start());
+  }
+
+  Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
+      systems::State<T>* state) const {
+    Eigen::VectorBlock<VectorX<T>> xc =
+        dynamic_cast<systems::BasicVector<T>&>(
+            state->get_mutable_continuous_state().get_mutable_vector()).
+            get_mutable_value();
+    return xc.nestedExpression().template segment<kNq>(
+        this->get_positions_start());
+  }
+
+  Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_velocities(
+      systems::State<T>* state) const {
+    Eigen::VectorBlock<VectorX<T>> xc =
+        dynamic_cast<systems::BasicVector<T>&>(
+            state->get_mutable_continuous_state().get_mutable_vector()).
+            get_mutable_value();
+    return xc.nestedExpression().template segment<kNv>(
+        this->get_velocities_start());
   }
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the

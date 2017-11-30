@@ -314,6 +314,9 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// quaternion [1, 0, 0, 0].
   virtual void set_zero_configuration(systems::Context<T>* context) const = 0;
 
+  virtual void set_zero_configuration(const systems::Context<T>& context,
+                                      systems::State<T>* state) const = 0;
+
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the vector of
   /// generalized postions `q`.
