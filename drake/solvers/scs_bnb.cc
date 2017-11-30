@@ -228,12 +228,13 @@ void ScsNode::Branch(int binary_var_index) {
   // in this row, and that entry is in the binary_var_index'th column. That
   // entry has value -1.
   for (int i = A_->p[binary_var_index]; i < A_->p[binary_var_index + 1]; ++i) {
+    const double precision = 2 * std::numeric_limits<double>::epsilon();
     if (A_->i[i] >= cone_->f &&
         A_->i[i] <
             cone_->f + 2 * static_cast<int>(binary_var_indices_.size()) &&
-        A_->x[i] == -1) {
+        std::abs(A_->x[i] + 1) < precision) {
       removed_row_index0 = A_->i[i];
-      if (A_->x[i + 1] != 1) {
+      if (std::abs(A_->x[i + 1] - 1) > precision) {
         // The row after 0 ≤ z should be the row representing z ≤ 1. In SCS,
         // 0 ≤ z is written as -z + s = 0, s ≥ 0.
         // z ≤ 1 is written as z + s = 1, s ≥ 0. So the non-zero entry in this
