@@ -159,11 +159,10 @@ void SimpleCar<T>::DoCalcTimeDerivatives(
 
   // Obtain the result structure.
   DRAKE_ASSERT(derivatives != nullptr);
-  systems::VectorBase<T>* const vector_derivatives =
+  systems::VectorBase<T>& vector_derivatives =
       derivatives->get_mutable_vector();
-  DRAKE_ASSERT(vector_derivatives);
   SimpleCarState<T>* const rates =
-      dynamic_cast<SimpleCarState<T>*>(vector_derivatives);
+      dynamic_cast<SimpleCarState<T>*>(&vector_derivatives);
   DRAKE_ASSERT(rates);
 
   ImplCalcTimeDerivatives(params, state, *input, rates);

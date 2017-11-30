@@ -5,9 +5,11 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include <utility>
-
+/* clang-format off to disable clang-format-includes */
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+/* clang-format on */
+
+#include <utility>
 
 namespace drake {
 namespace systems {
@@ -54,9 +56,9 @@ bool RungeKutta3Integrator<T>::DoStep(const T& dt) {
   using std::abs;
 
   // Find the continuous state xc within the Context, just once.
-  VectorBase<T>* xc = this->get_mutable_context()
+  VectorBase<T>& xc = this->get_mutable_context()
                           ->get_mutable_continuous_state_vector();
-  const VectorX<T> xt0 = xc->CopyToVector();
+  const VectorX<T> xt0 = xc.CopyToVector();
 
   // Setup ta and tb.
   T ta = this->get_context().get_time();
@@ -71,35 +73,35 @@ bool RungeKutta3Integrator<T>::DoStep(const T& dt) {
 
   // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
   this->get_mutable_context()->set_time(ta + dt * 0.5);
-  xc->PlusEqScaled(dt * 0.5, xcdot0);
+  xc.PlusEqScaled(dt * 0.5, xcdot0);
   this->CalcTimeDerivatives(context, derivs1_.get());
   const auto& xcdot1 = derivs1_->get_vector();
 
   // Compute the second intermediate state and derivative (at t=1, x(1)).
   this->get_mutable_context()->set_time(tb);
-  xc->SetFromVector(xt0);
-  xc->PlusEqScaled({{-dt, xcdot0}, {dt * 2, xcdot1}});
+  xc.SetFromVector(xt0);
+  xc.PlusEqScaled({{-dt, xcdot0}, {dt * 2, xcdot1}});
   this->CalcTimeDerivatives(context, derivs2_.get());
   const auto& xcdot2 = derivs2_->get_vector();
 
   // calculate the state at dt.
   const double kOneSixth = 1.0 / 6.0;
-  xc->SetFromVector(xt0);
-  xc->PlusEqScaled({{dt * kOneSixth, xcdot0},
+  xc.SetFromVector(xt0);
+  xc.PlusEqScaled({{dt * kOneSixth, xcdot0},
                     {4.0 * dt * kOneSixth, xcdot1},
                     {dt * kOneSixth, xcdot2}});
 
   // If the state of the system has changed, the error estimate will no
   // longer be sized correctly. Verify that the error estimate is the
   // correct size.
-  DRAKE_DEMAND(this->get_error_estimate()->size() == xc->size());
+  DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
 
   // Calculate the error estimate using an Eigen vector then copy it to the
   // continuous state vector, where the various state components can be
   // analyzed.
   err_est_vec_ = -xt0;
   xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
-  xc->ScaleAndAddToVector(1.0, err_est_vec_);
+  xc.ScaleAndAddToVector(1.0, err_est_vec_);
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 

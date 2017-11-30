@@ -65,15 +65,22 @@ int DoMain() {
                           visualizer_publisher.get_input_port(0));
 
   // Set contact parameters that support gripping.
+  const double kYoungsModulus = 1e7;  // Pa
+  const double kDissipation = 100;  // s/m
   const double kStaticFriction = 1;
   const double kDynamicFriction = 5e-1;
-  const double kStictionSlipTolerance = 1e-3;
-  plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                          kStictionSlipTolerance);
+  systems::CompliantMaterial default_material;
+  default_material.set_youngs_modulus(kYoungsModulus)
+      .set_dissipation(kDissipation)
+      .set_friction(kStaticFriction, kDynamicFriction);
+  plant_->set_default_compliant_material(default_material);
 
-  const double kStiffness = 1000;
-  const double kDissipation = 100;
-  plant_->set_normal_contact_parameters(kStiffness, kDissipation);
+  const double kStictionSlipTolerance = 1e-3;  // m/s
+  const double kContactArea = 2e-4;  // m^2
+  systems::CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = kContactArea;
+  model_parameters.v_stiction_tolerance = kStictionSlipTolerance;
+  plant_->set_contact_model_parameters(model_parameters);
 
   // Create the simulator.
   std::unique_ptr<systems::Diagram<double>> diagram = diagram_builder.Build();
@@ -81,10 +88,10 @@ int DoMain() {
 
   // Reset the integrator with parameters that support stable gripping, given
   // the contact parameters.
-  auto context = simulator.get_mutable_context();
+  systems::Context<double>& context = simulator.get_mutable_context();
   const double max_step_size = 1e-4;
   simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
-      *diagram, max_step_size, context);
+      *diagram, max_step_size, &context);
 
   // Set the initial joint positions to be something more interesting. Note that
   // the joint position order is the same as the order you get when you read the
@@ -95,7 +102,7 @@ int DoMain() {
       0.2, 0.2, 0.2, 0.2;
 
   for (int index = 0; index < num_actuators; index++) {
-    plant_->set_position(simulator.get_mutable_context(), index,
+    plant_->set_position(&simulator.get_mutable_context(), index,
                          initial_joint_positions[index]);
   }
 

@@ -17,7 +17,7 @@ template <typename ValueType>
 ValueType& get_mutable_value(systems::State<double>* state, int index) {
   DRAKE_DEMAND(state);
   return state->get_mutable_abstract_state()
-      ->get_mutable_value(index)
+      .get_mutable_value(index)
       .GetMutableValue<ValueType>();
 }
 
@@ -36,8 +36,6 @@ QpInverseDynamicsSystem::QpInverseDynamicsSystem(
       DeclareAbstractOutputPort(lcmt_inverse_dynamics_debug_info(),
                                 &QpInverseDynamicsSystem::CopyOutDebugInfo)
           .get_index();
-
-  set_name("QpInverseDynamicsSystem");
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
 
   abs_state_index_qp_output_ = DeclareAbstractState(

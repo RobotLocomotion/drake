@@ -258,15 +258,15 @@ class MaliputDragwayLaneTest : public ::testing::Test {
 
     // Verifies correctness of the default branches.
     {
-      std::unique_ptr<api::LaneEnd> default_start_lane_end =
+      optional<api::LaneEnd> default_start_lane_end =
           lane->GetDefaultBranch(api::LaneEnd::kStart);
-      EXPECT_NE(default_start_lane_end.get(), nullptr);
+      EXPECT_TRUE(default_start_lane_end);
       EXPECT_EQ(default_start_lane_end->end, api::LaneEnd::kFinish);
       EXPECT_EQ(default_start_lane_end->lane, lane);
 
-      std::unique_ptr<api::LaneEnd> default_finish_lane_end =
+      optional<api::LaneEnd> default_finish_lane_end =
           lane->GetDefaultBranch(api::LaneEnd::kFinish);
-      EXPECT_NE(default_finish_lane_end.get(), nullptr);
+      EXPECT_TRUE(default_finish_lane_end);
       EXPECT_EQ(default_finish_lane_end->end, api::LaneEnd::kStart);
       EXPECT_EQ(default_finish_lane_end->lane, lane);
     }

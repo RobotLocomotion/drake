@@ -36,14 +36,15 @@ def exec_using_which(repository_ctx, command):
     return struct(stdout = result.stdout, error = None)
 
 def _make_result(error = None,
-                 is_mac = False,
-                 ubuntu_release = None):
+                 ubuntu_release = None,
+                 macos_release = None):
     """Return a fully-populated struct result for determine_os, below."""
     return struct(
         error = error,
-        is_mac = is_mac,
+        is_macos = (macos_release != None),
         is_ubuntu = (ubuntu_release != None),
-        ubuntu_release = ubuntu_release)
+        ubuntu_release = ubuntu_release,
+        macos_release = macos_release)
 
 def _determine_linux(repository_ctx):
     """Handle determine_os on Linux."""
@@ -73,6 +74,30 @@ def _determine_linux(repository_ctx):
     return _make_result(
         error = error_prologue + "unsupported distribution '%s'" % distro)
 
+def _determine_macos(repository_ctx):
+    """Handle determine_os on macOS."""
+
+    # Shared error message text across different failure cases.
+    error_prologue = "could not determine macOS version: "
+
+    # Run sw_vers to determine macOS version.
+    sw_vers = exec_using_which(repository_ctx, [
+        "sw_vers",
+        "-productVersion"])
+    if sw_vers.error != None:
+        return _make_result(error = error_prologue + sw_vers.error)
+
+    major_minor_versions = sw_vers.stdout.strip().split(".")[:2]
+    macos_release = ".".join(major_minor_versions)
+
+    # Match supported macOS release(s).
+    if macos_release in ["10.11", "10.12", "10.13"]:
+        return _make_result(macos_release = macos_release)
+
+    # Nothing matched.
+    return _make_result(
+        error = error_prologue + "unsupported macOS '%s'" % macos_release)
+
 def determine_os(repository_ctx):
     """
     A repository_rule helper function that determines which of the supported OS
@@ -84,14 +109,15 @@ def determine_os(repository_ctx):
     Result:
         a struct, with attributes:
         - error: str iff any error occurred, else None
-        - is_mac: True iff on a supported macOS or Mac version, else False
+        - is_macos: True iff on a supported macOS release, else False
+        - macos_release: str like "10.13" iff on a supported macOS, else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
         - ubuntu_release: str like "16.04" iff on a supported ubuntu, else None
     """
 
     os_name = repository_ctx.os.name
     if os_name == "mac os x":
-        return _make_result(is_mac = True)
+        return _determine_macos(repository_ctx)
     elif os_name == "linux":
         return _determine_linux(repository_ctx)
     else:
@@ -108,8 +134,8 @@ def os_specific_alias(repository_ctx, mapping):
             of values are of the form name=actual as in alias(name, actual).
 
     The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 16.04"
-    - Any release, via "Ubuntu default" or "Mac default"
+    - Exact release, via e.g., "Ubuntu 16.04" or "macOS 10.12"
+    - Any release, via "Ubuntu default" or "macOS default"
     - Anything else, via "default"
     """
 
@@ -125,9 +151,10 @@ def os_specific_alias(repository_ctx, mapping):
             "Ubuntu default",
             "default",
         ]
-    elif os_result.is_mac:
+    elif os_result.macos_release:
         keys = [
-            "Mac default",
+            "macOS " + os_result.macos_release,
+            "macOS default",
             "default",
         ]
     found_items = None

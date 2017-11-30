@@ -42,7 +42,7 @@ class FindResourceResult {
   /// @param resource_path the value passed to FindResource
   /// @param base_path an absolute base path that precedes resource_path
   static FindResourceResult make_success(
-      std::string resource_path, std::string base_path);
+      std::string resource_path, std::string absolute_path);
 
   /// Returns an error result (the requested resource was NOT found).
   /// @pre neither string parameter is empty
@@ -60,8 +60,8 @@ class FindResourceResult {
   // The path as requested by the user.
   std::string resource_path_;
 
-  // The base path (directory where resource_path was found), if found.
-  optional<std::string> base_path_;
+  // The absolute path where resource_path was found, if success.
+  optional<std::string> absolute_path_;
 
   // An error message, permitted to be present only when base_path is empty.
   //
@@ -86,7 +86,8 @@ std::vector<std::string> GetResourceSearchPaths();
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake
-/// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.
+/// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.  Paths that do
+/// not start with "drake/" will return a failed result.
 ///
 /// The search scans for the resource in the following places and in
 /// the following order: 1) in the DRAKE_RESOURCE_ROOT environment variable

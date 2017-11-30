@@ -13,7 +13,6 @@ content = """
   "Description": "SDF is an XML file format that describes environments, objects, and robots in a manner suitable for robotic applications",
   "License": "Apache-2.0",
   "Version": "%(MAJOR_VERSION)s.%(MINOR_VERSION)s.%(PATCH_VERSION)s",
-  "Compat-Version": "%(MAJOR_VERSION)s.0.0",
   "Requires": {
     "ignition-math3": {
       "Version": "%(ignition-math3_VERSION)s",

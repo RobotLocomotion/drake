@@ -41,18 +41,23 @@ drake_cc_binary(
     ],
 )
 
+alias(
+    name = "t_intersection.rndf",
+    actual = "//drake/automotive/maliput/rndf:test/maps/t_intersection.rndf",
+)
+
 drake_cc_binary(
     name = "rndf_to_obj",
     srcs = ["rndf_to_obj.cc"],
     add_test_rule = 1,
-    data = [
-        "//drake/automotive/maliput/rndf:test_maps",
-    ],
     test_rule_args = [
         "-rndf_file",
-        "drake/automotive/maliput/rndf/test/maps/t_intersection.rndf",
+        "$(location :t_intersection.rndf)",
         "-obj_file",
         "t_intersection",
+    ],
+    test_rule_data = [
+        ":t_intersection.rndf",
     ],
     test_rule_size = "small",
     deps = [
@@ -78,6 +83,7 @@ drake_cc_googletest(
     deps = [
         ":utility",
         "//drake/automotive/maliput/monolane",
+        "//drake/common",
         "@spruce",
     ],
 )
@@ -95,7 +101,7 @@ drake_py_test(
     name = "yaml_to_obj_test",
     size = "medium",
     srcs = ["test/yaml_to_obj_test.py"],
-    args = ["drake/automotive/maliput/utility/yaml_to_obj"],
+    args = ["$(location :yaml_to_obj)"],
     data = [
         ":yaml_to_obj",
         "//drake/automotive/maliput/monolane:yamls",

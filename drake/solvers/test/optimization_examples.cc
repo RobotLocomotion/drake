@@ -88,6 +88,9 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     case SolverType::kNlopt : {
       return 1E-6;
     }
+    case SolverType::kScs : {
+      return 1E-1;  // Scs is not very accurate.
+    }
     default : {
       throw std::runtime_error("Unsupported solver type.");
     }

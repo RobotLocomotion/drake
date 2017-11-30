@@ -27,6 +27,7 @@ cc_toolchain_suite(
     toolchains = {
         "darwin|compiler": "cc_toolchain_apple",
         "k8|clang-3.9": "cc_toolchain_linux",
+        "k8|clang-4.0": "cc_toolchain_linux",
         "k8|gcc-5": "cc_toolchain_linux",
         "k8|gcc-6": "cc_toolchain_linux",
     },

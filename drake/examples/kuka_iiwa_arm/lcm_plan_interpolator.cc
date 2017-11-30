@@ -61,7 +61,7 @@ void LcmPlanInterpolator::Initialize(double plan_start_time,
                                      systems::Context<double>* context) const {
   robot_plan_interpolator_->Initialize(
       plan_start_time, q0,
-      this->GetMutableSubsystemContext(*robot_plan_interpolator_, context)
+      &this->GetMutableSubsystemContext(*robot_plan_interpolator_, context)
           .get_mutable_state());
 }
 

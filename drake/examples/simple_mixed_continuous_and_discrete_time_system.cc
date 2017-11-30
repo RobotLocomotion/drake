@@ -43,7 +43,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
       drake::systems::ContinuousState<double>* derivatives) const override {
     const double x = context.get_continuous_state_vector().GetAtIndex(0);
     const double xdot = -x + std::pow(x, 3.0);
-    derivatives->get_mutable_vector()->SetAtIndex(0, xdot);
+    derivatives->get_mutable_vector().SetAtIndex(0, xdot);
   }
 
   // y = x
@@ -67,10 +67,10 @@ int main() {
 
   // Set the initial conditions x(0).
   drake::systems::DiscreteValues<double>& xd =
-      *simulator.get_mutable_context()->get_mutable_discrete_state();
+      simulator.get_mutable_context().get_mutable_discrete_state();
   xd[0] = 0.99;
   drake::systems::ContinuousState<double>& xc =
-      *simulator.get_mutable_context()->get_mutable_continuous_state();
+      simulator.get_mutable_context().get_mutable_continuous_state();
   xc[0] = 0.9;
 
   // Simulate for 10 seconds.

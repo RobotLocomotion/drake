@@ -33,14 +33,15 @@ using multibody_tree::test_utilities::SpatialKinematicsPVA;
 /// F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
 /// F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
 /// F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
+template <typename T>
 struct KukaRobotJointReactionForces {
-  SpatialForce<double> F_Ao_W;
-  SpatialForce<double> F_Bo_W;
-  SpatialForce<double> F_Co_W;
-  SpatialForce<double> F_Do_W;
-  SpatialForce<double> F_Eo_W;
-  SpatialForce<double> F_Fo_W;
-  SpatialForce<double> F_Go_W;
+  SpatialForce<T> F_Ao_W;
+  SpatialForce<T> F_Bo_W;
+  SpatialForce<T> F_Co_W;
+  SpatialForce<T> F_Do_W;
+  SpatialForce<T> F_Eo_W;
+  SpatialForce<T> F_Fo_W;
+  SpatialForce<T> F_Go_W;
 };
 
 /// Utility method for creating a transform from frame A to frame B.
@@ -67,6 +68,7 @@ Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
 /// rotation matrix (relative to world), position (from world origin) angular
 /// velocity, velocity, angular acceleration, and acceleration.
 /// Geometrical and connectivity data is in file kuka_iiwa_robot.urdf.
+template <typename T>
 class DrakeKukaIIwaRobot {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeKukaIIwaRobot)
@@ -80,7 +82,7 @@ class DrakeKukaIIwaRobot {
   explicit DrakeKukaIIwaRobot(double gravity) {
     // Create a mostly empty MultibodyTree (it has a built-in "world" body).
     // Newtonian reference frame (linkN) is the world body.
-    model_ = std::make_unique<MultibodyTree<double>>();
+    model_ = std::make_unique<MultibodyTree<T>>();
     linkN_ = &(model_->get_world_body());
 
     // Create SpatialInertia for each link in this robot. M_Bo_B designates a
@@ -108,13 +110,13 @@ class DrakeKukaIIwaRobot {
                                                        I_GGcm_G_);
 
     // Add this robot's seven links.
-    linkA_ = &(model_->AddBody<RigidBody>(M_AAo_A));
-    linkB_ = &(model_->AddBody<RigidBody>(M_BBo_B));
-    linkC_ = &(model_->AddBody<RigidBody>(M_CCo_C));
-    linkD_ = &(model_->AddBody<RigidBody>(M_DDo_D));
-    linkE_ = &(model_->AddBody<RigidBody>(M_EEo_E));
-    linkF_ = &(model_->AddBody<RigidBody>(M_FFo_F));
-    linkG_ = &(model_->AddBody<RigidBody>(M_GGo_G));
+    linkA_ = &(model_->template AddBody<RigidBody>(M_AAo_A));
+    linkB_ = &(model_->template AddBody<RigidBody>(M_BBo_B));
+    linkC_ = &(model_->template AddBody<RigidBody>(M_CCo_C));
+    linkD_ = &(model_->template AddBody<RigidBody>(M_DDo_D));
+    linkE_ = &(model_->template AddBody<RigidBody>(M_EEo_E));
+    linkF_ = &(model_->template AddBody<RigidBody>(M_FFo_F));
+    linkG_ = &(model_->template AddBody<RigidBody>(M_GGo_G));
 
     // Create a revolute joint between linkN (Newtonian frame/world) and linkA
     // using two joint-frames, namely "Na" and "An".  The "inboard frame" Na is
@@ -160,7 +162,8 @@ class DrakeKukaIIwaRobot {
     // the negative z-axis direction.
     set_gravity(gravity);
     const Eigen::Vector3d gravity_vector = -gravity_ * Eigen::Vector3d::UnitZ();
-    model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
+    model_->template AddForceElement<UniformGravityFieldElement>(
+        gravity_vector);
 
     // Finalize() stage sets the topology (model is built).
     model_->Finalize();
@@ -185,36 +188,89 @@ class DrakeKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivative of q.
   ///
   /// @returns G's kinematics in N, expressed in N.
-  SpatialKinematicsPVA<double>
-  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
-                            const Eigen::Ref<const VectorX<double>>& qDt,
-                            const Eigen::Ref<const VectorX<double>>& qDDt) {
+  SpatialKinematicsPVA<T>
+  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
+                            const Eigen::Ref<const VectorX<T>>& qDt,
+                            const Eigen::Ref<const VectorX<T>>& qDDt) {
     SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
 
     // For each body, set the pose and spatial velocity in the position,
     // velocity, and acceleration caches with specified values for testing.
-    PositionKinematicsCache<double> pc(model_->get_topology());
-    VelocityKinematicsCache<double> vc(model_->get_topology());
-    AccelerationKinematicsCache<double> ac(model_->get_topology());
+    PositionKinematicsCache<T> pc(model_->get_topology());
+    VelocityKinematicsCache<T> vc(model_->get_topology());
+    AccelerationKinematicsCache<T> ac(model_->get_topology());
 
     // Retrieve end-effector pose from position kinematics cache.
     model_->CalcPositionKinematicsCache(*context_, &pc);
-    const Eigen::Isometry3d& X_NG = linkG_->get_pose_in_world(pc);
+    const Isometry3<T>& X_NG = linkG_->get_pose_in_world(pc);
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
-    const SpatialVelocity<double>& V_NG_N =
+    const SpatialVelocity<T>& V_NG_N =
         linkG_->get_spatial_velocity_in_world(vc);
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
-    const SpatialAcceleration<double>& A_NG_N =
+    const SpatialAcceleration<T>& A_NG_N =
         linkG_->get_spatial_acceleration_in_world(ac);
 
     // Create a class to return the results.
-    return SpatialKinematicsPVA<double>(X_NG, V_NG_N, A_NG_N);
+    return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
   }
 
+  /// Given a set of points `Pi` with position vectors `p_GPi` in the end
+  /// effector frame G, this method computes the geometric Jacobian `J_NGpi`,
+  /// in the Newtonian (world) frame N defined by:
+  /// <pre>
+  ///   J_NGpi(q) = d(v_NGpi(q, v))/dv
+  /// </pre>
+  /// where `v_NGpi` is the translational velocity of point `Pi` in the world
+  /// frame N as it moves with the end effector G and v is the vector of
+  /// generalized velocities. Since the velocity of each point `Pi` is linear
+  /// in the generalized velocities, the geometric Jacobian `J_NGpi` is a
+  /// function of the generalized coordinates q only.
+  ///
+  /// The position of each point `Pi` in the set is specified by its (fixed)
+  /// position `p_GPi` in the end effector frame G.
+  ///
+  /// @param[in] q
+  ///   The vector of generalized positions.
+  /// @param[in] p_GPi
+  ///   A matrix with the fixed position of a set of points `Pi` measured and
+  ///   expressed in the end effector frame G.
+  ///   Each column of this matrix contains the position vector `p_GPi` for a
+  ///   point `Pi` measured and expressed in frame G. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] p_NGpi
+  ///   The output positions of each point `Pi` now computed as measured and
+  ///   expressed in the world frame N.
+  ///   The output `p_NGpi` **must** have the same size as the input set
+  ///   `p_GPi` or otherwise this method throws a std::runtime_error exception.
+  ///   That is `p_NGpi` **must** be in `ℝ³ˣⁿᵖ`.
+  /// @param[out] J_NGpi
+  ///   The geometric Jacobian, function of the generalized positions
+  ///   q only. This Jacobian relates the translational velocity `v_NGpi` of
+  ///   each point `Qi` in the input set in solidary motion with frame G by:
+  ///   <pre>
+  ///     `v_NGpi(q, v) = J_NGpi(q)⋅v`
+  ///   </pre>
+  ///   so that `v_NGpi` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Pi` in the same order they were given in the
+  ///   input set. Therefore `J_NGpi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_NGpi` **must**
+  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
+  ///   exception.
+  void CalcPointsOnEndEffectorGeometricJacobian(
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const MatrixX<T>>& p_GPi,
+      EigenPtr<MatrixX<T>> p_NGpi, EigenPtr<MatrixX<T>> J_NGpi) {
+    // Both, p_NGpi and J_NGpi are functions of the generalized positions q,
+    // only. Therefore we arbitrarily set v = 0.
+    const VectorX<T> v = VectorX<T>::Zero(7);
+    SetJointAnglesAnd1stDerivatives(q.data(), v.data());
+    model_->CalcPointsGeometricJacobianExpressedInWorld(
+        *context_, linkG_->get_body_frame(), p_GPi, p_NGpi, J_NGpi);
+  }
 
   /// This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
   /// robot, from known joint angles and their 1st and 2nd time-derivatives.
@@ -232,16 +288,16 @@ class DrakeKukaIIwaRobot {
   /// F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
   /// F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
   /// F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
-  const KukaRobotJointReactionForces CalcJointReactionForces(
-      const Eigen::Ref<const VectorX<double>>& q,
-      const Eigen::Ref<const VectorX<double>>& qDt,
-      const Eigen::Ref<const VectorX<double>>& qDDt) {
+  KukaRobotJointReactionForces<T> CalcJointReactionForces(
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      const Eigen::Ref<const VectorX<T>>& qDDt) {
     SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
 
     // Get the position, velocity, and acceleration cache from the context.
-    PositionKinematicsCache<double> pc(model_->get_topology());
-    VelocityKinematicsCache<double> vc(model_->get_topology());
-    AccelerationKinematicsCache<double> ac(model_->get_topology());
+    PositionKinematicsCache<T> pc(model_->get_topology());
+    VelocityKinematicsCache<T> vc(model_->get_topology());
+    AccelerationKinematicsCache<T> ac(model_->get_topology());
     model_->CalcPositionKinematicsCache(*context_, &pc);
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
@@ -249,12 +305,12 @@ class DrakeKukaIIwaRobot {
     // Input vector of generalized forces for known applied force/torques,
     // e.g., gravity, known models of visous friction, etc.
     const int number_of_generalized_speeds = model_->get_num_velocities();
-    Eigen::VectorXd generalized_force_applied(number_of_generalized_speeds);
+    VectorX<T> generalized_force_applied(number_of_generalized_speeds);
 
     // Input vector of spatial forces for known applied force/torques,
     // e.g., gravity, known models of visous friction, etc.
     const int number_of_bodies = get_number_of_rigid_bodies();
-    std::vector<SpatialForce<double>> Fapplied_Bo_W_array(number_of_bodies);
+    std::vector<SpatialForce<T>> Fapplied_Bo_W_array(number_of_bodies);
 
     // Fill arrays generalized_force_applied and F_Bo_W_array using the fact
     // that gravity was included earlier in the model via:
@@ -264,15 +320,15 @@ class DrakeKukaIIwaRobot {
 
     // Output vector of generalized forces for calculated motor torques
     // required to drive the Kuka robot at its specified rate.
-    Eigen::VectorXd generalized_force_output(number_of_generalized_speeds);
+    VectorX<T> generalized_force_output(number_of_generalized_speeds);
 
     // Output vector of spatial forces for joint reaction force/torques for
     // each body B at their inboard frame Mo, expressed in the world W.
-    std::vector<SpatialForce<double>> F_BMo_W_array(number_of_bodies);
+    std::vector<SpatialForce<T>> F_BMo_W_array(number_of_bodies);
 
     // Output vector of generalized forces associated with the motor torques
     // required to drive the Kuka robot at its specified rate.
-    std::vector<SpatialAcceleration<double>> A_WB_array(number_of_bodies);
+    std::vector<SpatialAcceleration<T>> A_WB_array(number_of_bodies);
 
     // Calculate inverse dynamics on this robot.
     model_->CalcInverseDynamics(*context_, pc, vc, qDDt,
@@ -280,7 +336,7 @@ class DrakeKukaIIwaRobot {
                 &A_WB_array, &F_BMo_W_array, &generalized_force_output);
 
     // Put joint reaction forces into return struct.
-    KukaRobotJointReactionForces forces;
+    KukaRobotJointReactionForces<T> forces;
     forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
     forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
     forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
@@ -291,7 +347,6 @@ class DrakeKukaIIwaRobot {
     return forces;
   }
 
-
  private:
   // Method to add revolute joint (mobilizer) from Body A to Body B.
   // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
@@ -301,21 +356,21 @@ class DrakeKukaIIwaRobot {
   // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
   //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
   // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
-  const RevoluteMobilizer<double>& AddRevoluteMobilizer(
-      const Body<double>& A, const Eigen::Isometry3d& X_AAb,
-      const Body<double>& B, const Eigen::Isometry3d& X_BBa,
-      const Eigen::Vector3d& revolute_unit_vector) {
+  const RevoluteMobilizer<T>& AddRevoluteMobilizer(
+      const Body<T>& A, const Isometry3<double>& X_AAb,
+      const Body<T>& B, const Isometry3<double>& X_BBa,
+      const Vector3<double>& revolute_unit_vector) {
     // Add a FixedOffsetFrame Ab to Body A (Ab is mobilizer's inboard frame).
-    const FixedOffsetFrame<double>& Ab =
-        model_->AddFrame<FixedOffsetFrame>(A, X_AAb);
+    const FixedOffsetFrame<T>& Ab =
+        model_->template AddFrame<FixedOffsetFrame>(A, X_AAb);
 
     // Add a FixedOffsetFrame Ba to Body B (Ba is mobilizer's outboard frame).
-    const FixedOffsetFrame<double>& Ba =
-        model_->AddFrame<FixedOffsetFrame>(B, X_BBa);
+    const FixedOffsetFrame<T>& Ba =
+        model_->template AddFrame<FixedOffsetFrame>(B, X_BBa);
 
     // Return a new RevoluteMobilizer between inboard frame and outboard frame.
-    return model_->AddMobilizer<RevoluteMobilizer>(Ab, Ba,
-                                                   revolute_unit_vector);
+    return model_->template AddMobilizer<RevoluteMobilizer>(
+        Ab, Ba, revolute_unit_vector);
   }
 
   // Method to add revolute joint (mobilizer) from Body A to Body B.
@@ -330,9 +385,10 @@ class DrakeKukaIIwaRobot {
   // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
   //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
   // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
-  const RevoluteMobilizer<double>& AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
-      const Body<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
-      const Body<double>& B, const Vector3d& revolute_unit_vector) {
+  const RevoluteMobilizer<T>& AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+      const Body<T>& A,
+      const Vector3<double>& q123A, const Vector3<double>& xyzA,
+      const Body<T>& B, const Vector3<double>& revolute_unit_vector) {
     // Create transform from inboard body A to mobilizer inboard frame Ab.
     const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
                                                    xyzA);
@@ -347,9 +403,9 @@ class DrakeKukaIIwaRobot {
   // This method sets the Kuka joint angles and their 1st and 2nd derivatives.
   // @param[in] q robot's joint angles (generalized coordinates).
   // @param[in] qDt 1st-time-derivative of q (q̇).
-  void SetJointAnglesAnd1stDerivatives(const double q[7],
-                                       const double qDt[7]) {
-    systems::Context<double> *context = context_.get();
+  void SetJointAnglesAnd1stDerivatives(const T q[7],
+                                       const T qDt[7]) {
+    systems::Context<T>* context = context_.get();
 
     NA_mobilizer_->set_angle(context, q[0]);
     AB_mobilizer_->set_angle(context, q[1]);
@@ -377,26 +433,26 @@ class DrakeKukaIIwaRobot {
 
   // This model's MultibodyTree always has a built-in "world" body.
   // Newtonian reference frame (linkN) is the world body.
-  std::unique_ptr<MultibodyTree<double>> model_;
-  const Body<double>* linkN_;
+  std::unique_ptr<MultibodyTree<T>> model_;
+  const Body<T>* linkN_;
 
   // Rigid bodies (robot links).
-  const RigidBody<double>* linkA_;
-  const RigidBody<double>* linkB_;
-  const RigidBody<double>* linkC_;
-  const RigidBody<double>* linkD_;
-  const RigidBody<double>* linkE_;
-  const RigidBody<double>* linkF_;
-  const RigidBody<double>* linkG_;
+  const RigidBody<T>* linkA_;
+  const RigidBody<T>* linkB_;
+  const RigidBody<T>* linkC_;
+  const RigidBody<T>* linkD_;
+  const RigidBody<T>* linkE_;
+  const RigidBody<T>* linkF_;
+  const RigidBody<T>* linkG_;
 
   // Joints (mobilizers).
-  const RevoluteMobilizer<double>* NA_mobilizer_;
-  const RevoluteMobilizer<double>* AB_mobilizer_;
-  const RevoluteMobilizer<double>* BC_mobilizer_;
-  const RevoluteMobilizer<double>* CD_mobilizer_;
-  const RevoluteMobilizer<double>* DE_mobilizer_;
-  const RevoluteMobilizer<double>* EF_mobilizer_;
-  const RevoluteMobilizer<double>* FG_mobilizer_;
+  const RevoluteMobilizer<T>* NA_mobilizer_;
+  const RevoluteMobilizer<T>* AB_mobilizer_;
+  const RevoluteMobilizer<T>* BC_mobilizer_;
+  const RevoluteMobilizer<T>* CD_mobilizer_;
+  const RevoluteMobilizer<T>* DE_mobilizer_;
+  const RevoluteMobilizer<T>* EF_mobilizer_;
+  const RevoluteMobilizer<T>* FG_mobilizer_;
 
   // Mass of each link (in kg).
   const double massA_ = 5.76;
@@ -433,7 +489,7 @@ class DrakeKukaIIwaRobot {
   double gravity_ = 0.0;
 
   // After model is finalized, create default context.
-  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::Context<T>> context_;
 };
 
 }  // namespace kuka_iiwa_robot

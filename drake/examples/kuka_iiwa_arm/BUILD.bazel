@@ -108,6 +108,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
+        "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/lcm",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
@@ -199,6 +200,11 @@ drake_cc_googletest(
     ],
 )
 
+alias(
+    name = "dual_iiwa14_polytope_collision.urdf",
+    actual = "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
+)
+
 # Test that kuka_simulation can load the dual arm urdf
 sh_test(
     name = "dual_kuka_simulation_test",
@@ -207,22 +213,26 @@ sh_test(
     args = [
         "$(location :kuka_simulation)",
         "--urdf",
-        "$(location //drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf)",  # noqa
+        "$(location :dual_iiwa14_polytope_collision.urdf)",
         "--simulation_sec=0.01",
         "--novisualize_frames",
     ],
     data = [
-        "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
+        ":dual_iiwa14_polytope_collision.urdf",
     ],
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
 )
 
 # This examples needs to be install for external projects such as Spartan.
 install(
     name = "install",
     targets = [
+        ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
+        ":kuka_simulation",
     ],
-    runtime_strip_prefix = ["install"],
+    runtime_dest = "share/drake/examples/kuka_iiwa_arm",
     visibility = ["//visibility:public"],
 )
 

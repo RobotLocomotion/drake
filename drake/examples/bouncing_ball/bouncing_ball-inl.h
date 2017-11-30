@@ -5,7 +5,9 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
 #include "drake/examples/bouncing_ball/bouncing_ball.h"
+/* clang-format on */
 
 #include <algorithm>
 #include <limits>
@@ -41,12 +43,12 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(*context));
 
   // Define a pointer to the continuous state in the context.
-  const auto result = context->get_mutable_continuous_state_vector();
+  auto& result = context->get_mutable_continuous_state_vector();
 
   // Perform the reset: map the position to itself and negate the
   // velocity and attenuate by the coefficient of restitution.
-  auto state = context->get_mutable_continuous_state_vector();
-  result->SetAtIndex(1, -1.0 * this->restitution_coef_ * state->GetAtIndex(1));
+  auto& state = context->get_mutable_continuous_state_vector();
+  result.SetAtIndex(1, -1.0 * this->restitution_coef_ * state.GetAtIndex(1));
 }
 
 template <typename T>
@@ -107,12 +109,12 @@ void BouncingBall<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
     systems::State<T>* next_state) const {
-  systems::VectorBase<T>* next_cstate =
-      next_state->get_mutable_continuous_state()->get_mutable_vector();
+  systems::VectorBase<T>& next_cstate =
+      next_state->get_mutable_continuous_state().get_mutable_vector();
 
   // Get present state.
   const systems::VectorBase<T>& cstate =
-      context.get_continuous_state()->get_vector();
+      context.get_continuous_state().get_vector();
 
   // Copy the present state to the new one.
   next_state->CopyFrom(context.get_state());
@@ -121,8 +123,8 @@ void BouncingBall<T>::DoCalcUnrestrictedUpdate(
   DRAKE_DEMAND(cstate.GetAtIndex(1) <= 0.0);
 
   // Update the velocity.
-  next_cstate->SetAtIndex(1,
-                          cstate.GetAtIndex(1) * this->restitution_coef_ * -1.);
+  next_cstate.SetAtIndex(1,
+                         cstate.GetAtIndex(1) * this->restitution_coef_ * -1.);
 }
 
 }  // namespace bouncing_ball

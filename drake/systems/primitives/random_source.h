@@ -93,10 +93,10 @@ class RandomSource : public LeafSystem<double> {
       State<double>* state) const override {
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
-    auto* updates = state->get_mutable_discrete_state();
-    const int N = updates->size();
+    auto& updates = state->get_mutable_discrete_state();
+    const int N = updates.size();
     for (int i = 0; i < N; i++) {
-      (*updates)[i] = random_state.GetNextValue();
+      updates[i] = random_state.GetNextValue();
     }
   }
 

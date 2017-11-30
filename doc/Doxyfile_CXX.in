@@ -144,7 +144,7 @@ USE_MDFILE_AS_MAINPAGE =
 #---------------------------------------------------------------------------
 SOURCE_BROWSER         = NO
 INLINE_SOURCES         = NO
-STRIP_CODE_COMMENTS    = YES
+STRIP_CODE_COMMENTS    = NO
 REFERENCED_BY_RELATION = NO
 REFERENCES_RELATION    = NO
 REFERENCES_LINK_SOURCE = YES

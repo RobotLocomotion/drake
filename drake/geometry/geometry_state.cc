@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <utility>
 
+#include "drake/common/autodiff.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 
@@ -199,7 +199,13 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                         const GeometryFrame& frame) {
-  FrameId frame_id = FrameId::get_new_id();
+  FrameId frame_id = frame.id();
+
+  if (frames_.count(frame_id) > 0) {
+    throw std::logic_error(
+        "Registering frame with an id that has already been registered: " +
+            to_string(frame_id));
+  }
 
   FrameIdSet& f_set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
   if (parent_id != InternalFrame::get_world_frame_id()) {
@@ -213,14 +219,14 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
     source_root_frame_map_[source_id].insert(frame_id);
   }
   PoseIndex pose_index(X_PF_.size());
-  X_PF_.emplace_back(frame.get_pose());
+  X_PF_.emplace_back(frame.pose());
   X_WF_.emplace_back(Isometry3<double>::Identity());
   DRAKE_ASSERT(pose_index == static_cast<int>(pose_index_to_frame_map_.size()));
   pose_index_to_frame_map_.push_back(frame_id);
   f_set.insert(frame_id);
   frames_.emplace(
-      frame_id, InternalFrame(source_id, frame_id, frame.get_name(),
-                              frame.get_frame_group(), pose_index, parent_id));
+      frame_id, InternalFrame(source_id, frame_id, frame.name(),
+                              frame.frame_group(), pose_index, parent_id));
   return frame_id;
 }
 
@@ -233,14 +239,20 @@ GeometryId GeometryState<T>::RegisterGeometry(
         "Registering null geometry to frame " + to_string(frame_id) +
             ", on source " + to_string(source_id) + ".");
   }
+
+  GeometryId geometry_id = geometry->id();
+  if (geometries_.count(geometry_id) > 0) {
+    throw std::logic_error(
+        "Registering geometry with an id that has already been registered: " +
+            to_string(geometry_id));
+  }
+
   FrameIdSet& set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
 
   FindOrThrow(frame_id, set, [frame_id, source_id]() {
     return "Referenced frame " + to_string(frame_id) + " for source " +
         to_string(source_id) + ", but the frame doesn't belong to the source.";
   });
-
-  GeometryId geometry_id = GeometryId::get_new_id();
   geometry_index_id_map_.push_back(geometry_id);
 
   // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the
@@ -253,14 +265,14 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
-                       geometry->get_pose(), engine_index));
+                       geometry->pose(), engine_index));
   // TODO(SeanCurtis-TRI): Enforcing the invariant that the indexes are
   // compactly distributed. Is there a more robust way to do this?
   DRAKE_ASSERT(static_cast<int>(X_FG_.size()) == engine_index);
   DRAKE_ASSERT(static_cast<int>(geometry_index_id_map_.size()) - 1 ==
                engine_index);
   X_WG_.push_back(Isometry3<T>::Identity());
-  X_FG_.emplace_back(geometry->get_pose());
+  X_FG_.emplace_back(geometry->pose());
   return geometry_id;
 }
 
@@ -298,10 +310,11 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
 
   // Transform pose relative to geometry, to pose relative to frame.
   const InternalGeometry& new_geometry = geometries_[new_id];
-  Isometry3<T> X_PG = X_FG_[new_geometry.get_engine_index()];
-  Isometry3<T> X_FG =
-      X_FG_[parent_geometry.get_engine_index()] * X_PG;
-  X_FG_[new_geometry.get_engine_index()] = X_FG;
+  // The call to `RegisterGeometry()` above stashed the pose X_PG into the
+  // X_FG_ vector.
+  const Isometry3<double>& X_PG = X_FG_[new_geometry.get_engine_index()];
+  const Isometry3<double>& X_FP = X_FG_[parent_geometry.get_engine_index()];
+  X_FG_[new_geometry.get_engine_index()] = X_FP * X_PG;
 
   geometries_[new_id].set_parent_id(geometry_id);
   parent_geometry.add_child(new_id);
@@ -317,9 +330,17 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
         "Registering null anchored geometry on source "
         + to_string(source_id) + ".");
   }
+
+  GeometryId geometry_id = geometry->id();
+  if (anchored_geometries_.count(geometry_id) > 0) {
+    throw std::logic_error(
+        "Registering anchored geometry with an id that has already been "
+        "registered: " +
+        to_string(geometry_id));
+  }
+
   auto& set = GetMutableValueOrThrow(source_id, &source_anchored_geometry_map_);
 
-  GeometryId geometry_id = GeometryId::get_new_id();
   set.emplace(geometry_id);
 
   // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the
@@ -335,7 +356,7 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
   anchored_geometries_.emplace(
       geometry_id,
       InternalAnchoredGeometry(geometry->release_shape(), geometry_id,
-                               geometry->get_pose(), engine_index));
+                               geometry->pose(), engine_index));
   return geometry_id;
 }
 
@@ -413,6 +434,12 @@ const FrameIdSet& GeometryState<T>::GetFramesForSource(
   return GetValueOrThrow(source_id, source_frame_id_map_);
 }
 
+template <typename T>
+std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
+    const {
+  return std::unique_ptr<GeometryState<AutoDiffXd>>(
+      new GeometryState<AutoDiffXd>(*this));
+}
 template <typename T>
 void GeometryState<T>::SetFramePoses(const FrameIdVector& ids,
                                      const FramePoseVector<T>& poses) {
@@ -610,13 +637,24 @@ void GeometryState<T>::UpdatePosesRecursively(
   // Cache this transform for later use.
   X_PF_[frame.get_pose_index()] = X_PF;
   Isometry3<T> X_WF = X_WP * X_PF;
+  // TODO(SeanCurtis-TRI): Replace this when we have a transform object that
+  // allows proper multiplication between an AutoDiff type and a double type.
+  // For now, it allows me to perform the multiplication by multiplying the
+  // fully-defined transformation (with [0 0 0 1] on the bottom row).
+  X_WF.makeAffine();
   X_WF_[frame.get_pose_index()] = X_WF;
 
   // Update the geometry which belong to *this* frame.
   for (auto child_id : frame.get_child_geometries()) {
     auto& child_geometry = geometries_[child_id];
     auto child_index = child_geometry.get_engine_index();
-    X_WG_[child_index] = X_WF * X_FG_[child_index];
+    // TODO(SeanCurtis-TRI): See note above about replacing this when we have a
+    // transform that supports autodiff * double.
+    X_FG_[child_index].makeAffine();
+    // TODO(SeanCurtis-TRI): These matrix() shennigans are here because I can't
+    // assign a an Isometry3<double> to an Isometry3<AutoDiffXd>. Replace this
+    // when I can.
+    X_WG_[child_index].matrix() = X_WF.matrix() * X_FG_[child_index].matrix();
   }
 
   // Update each child frame.
@@ -628,6 +666,7 @@ void GeometryState<T>::UpdatePosesRecursively(
 
 // Explicitly instantiates on the most common scalar types.
 template class GeometryState<double>;
+template class GeometryState<AutoDiffXd>;
 
 }  // namespace geometry
 }  // namespace drake

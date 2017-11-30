@@ -18,9 +18,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
-#include "drake/lcmtypes/drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/manipulation/util/frame_pose_tracker.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -42,13 +42,14 @@
 
 DEFINE_string(urdf, "", "Name of urdf file to load");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
-              "Number of seconds to simulate.");
-
-DEFINE_double(stiffness, 3000, "Contact Stiffness");
-DEFINE_double(dissipation, 5, "Contact Dissipation");
+              "Number of seconds to simulate (s)");
+DEFINE_double(youngs_modulus, 3e7, "Default material's Young's modulus (Pa)");
+DEFINE_double(dissipation, 5, "Contact Dissipation (s/m)");
 DEFINE_double(static_friction, 0.5, "Static Friction");
 DEFINE_double(dynamic_friction, 0.2, "Dynamic Friction");
-DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol");
+DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol (m/s)");
+DEFINE_double(contact_area, 2e-4,
+              "The characteristic scale of contact area (m^2)");
 DEFINE_bool(use_visualizer, true, "Use Drake Visualizer?");
 
 namespace drake {
@@ -150,10 +151,15 @@ int DoMain() {
       BuildCombinedPlant<double>(&iiwa_instance, &box_instance);
   model_ptr->set_name("plant");
 
-  model_ptr->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  model_ptr->set_friction_contact_parameters(FLAGS_static_friction,
-                                             FLAGS_dynamic_friction,
-                                             FLAGS_v_stiction_tol);
+  systems::CompliantMaterial default_material;
+  default_material.set_youngs_modulus(FLAGS_youngs_modulus)
+      .set_dissipation(FLAGS_dissipation)
+      .set_friction(FLAGS_static_friction, FLAGS_dynamic_friction);
+  model_ptr->set_default_compliant_material(default_material);
+  systems::CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tol;
+  model_ptr->set_contact_model_parameters(model_parameters);
 
   auto model =
       builder.template AddSystem<IiwaAndBoxPlantWithStateEstimator<double>>(
@@ -296,7 +302,7 @@ int DoMain() {
   Simulator<double> simulator(*sys);
 
   simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-      *sys, 1e-3, simulator.get_mutable_context());
+      *sys, 1e-3, &simulator.get_mutable_context());
 
   // TODO(rcory): Explore other integration schemes here.
 //  simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(

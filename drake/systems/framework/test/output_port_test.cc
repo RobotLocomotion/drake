@@ -191,7 +191,7 @@ class SystemWithNStates : public LeafSystem<double> {
  private:
   void ReturnNumContinuous(const Context<double>& context, int* nc) const {
     ASSERT_NE(nc, nullptr);
-    *nc = context.get_state().get_continuous_state()->size();
+    *nc = context.get_state().get_continuous_state().size();
   }
 };
 

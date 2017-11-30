@@ -37,6 +37,30 @@ drake_cc_library(
 )
 
 drake_cc_binary(
+    name = "jaco_controller",
+    srcs = ["jaco_controller.cc"],
+    data = [
+        "//drake/manipulation/models/jaco_description:models",
+    ],
+    deps = [
+        ":jaco_lcm",
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/lcm",
+        "//drake/manipulation/planner:robot_plan_interpolator",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/lcm",
+        "//drake/systems/lcm:lcm_driven_loop",
+        "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:multiplexer",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_binary(
     name = "run_passive_jaco_demo",
     srcs = ["run_passive_jaco_demo.cc"],
     add_test_rule = 1,

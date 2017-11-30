@@ -5,7 +5,7 @@ Bazel build system
 ******************
 
 The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial and OS X.
+Ubuntu Xenial and macOS.
 For more information, see:
 
  * https://bazel.build/
@@ -20,8 +20,6 @@ to install Bazel.
 
 Drake clone and platform setup
 ==============================
-
-The one-time platform setup is the same as for a CMake build:
 
  - Start with a **git clone** of drake, per the :ref:`Getting Drake
    <getting_drake>` instructions.
@@ -103,10 +101,10 @@ Cheat sheet for operating on specific portions of the project::
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 - For the definitions of the "``--config``" options see ``drake-distro/tools/bazel.rc``.
 
-Debugging on OS X
------------------
+Debugging on macOS
+------------------
 
-On OS X, DWARF debug symbols are emitted to a ``.dSYM`` file. The Bazel
+On macOS, DWARF debug symbols are emitted to a ``.dSYM`` file. The Bazel
 ``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
 file, so we have implemented a workaround in Drake, ``--config=apple_debug``.
 This config turns off sandboxing, which allows a ``genrule`` to access the
@@ -155,8 +153,8 @@ Install on Ubuntu
 4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
 5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi702/linux64``
 
-Install on OSX
-~~~~~~~~~~~~~~
+Install on macOS
+~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. Download and install ``gurobi7.0.2_mac64.pkg``.
@@ -215,7 +213,7 @@ kcov
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
 debuggging symbols, and produce nicely formatted browse-able coverage
-reports. It is supported on Ubuntu and OSX only. Install ``kcov`` from source
+reports. It is supported on Ubuntu and macOS only. Install ``kcov`` from source
 following the instructions here: :ref:`Building kcov <building-kcov>`.
 
 To analyze test coverage, run the tests under ``kcov``::

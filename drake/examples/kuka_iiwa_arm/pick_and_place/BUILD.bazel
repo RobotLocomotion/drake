@@ -12,6 +12,17 @@ package(
 )
 
 drake_cc_library(
+    name = "pick_and_place_configuration",
+    hdrs = [
+        "pick_and_place_configuration.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/multibody/rigid_body_plant:compliant_contact_model",
+    ],
+)
+
+drake_cc_library(
     name = "pick_and_place",
     srcs = [
         "action.cc",
@@ -24,10 +35,12 @@ drake_cc_library(
         "world_state.h",
     ],
     deps = [
+        ":pick_and_place_configuration",
         "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories:piecewise_quaternion",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/lcmtypes:schunk",
         "//drake/manipulation/planner:constraint_relaxing_ik",
         "//drake/multibody:rigid_body_tree",

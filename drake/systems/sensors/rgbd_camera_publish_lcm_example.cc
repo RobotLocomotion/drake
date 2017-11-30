@@ -98,8 +98,17 @@ int main() {
 
   auto plant = builder.AddSystem<RigidBodyPlant<double>>(move(tree));
   plant->set_name("rigid_body_plant");
-  plant->set_normal_contact_parameters(10000, 1);
-  plant->set_friction_contact_parameters(0.9, 0.5, 0.01);
+
+  systems::CompliantMaterial default_material;
+  default_material.set_youngs_modulus(1e8)  // Pa
+      .set_dissipation(1)  // s/m
+      .set_friction(0.9, 0.5);
+  plant->set_default_compliant_material(default_material);
+
+  systems::CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = 2e-4;  // m^2
+  model_parameters.v_stiction_tolerance = 0.01;  // m/s
+  plant->set_contact_model_parameters(model_parameters);
 
   // Adds an RgbdCamera at a fixed pose.
   CameraConfig config;

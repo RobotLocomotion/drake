@@ -12,23 +12,23 @@ package(
 
 exports_files([
     "CPPLINT.cfg",
+    ".bazelproject",
     ".clang-format",
-    ".drake-resource-sentinel",
 ])
 
 alias(
     name = "protoc",
-    actual = "@protobuf//:protoc",
+    actual = "@com_google_protobuf//:protoc",
 )
 
 alias(
     name = "protobuf",
-    actual = "@protobuf//:protobuf",
+    actual = "@com_google_protobuf//:protobuf",
 )
 
 alias(
     name = "protobuf_python",
-    actual = "@protobuf//:protobuf_python",
+    actual = "@com_google_protobuf//:protobuf_python",
 )
 
 install(
@@ -36,7 +36,7 @@ install(
     docs = ["LICENSE.TXT"],
     deps = [
         "//drake/automotive/models:install_data",
-        "//drake/bindings:install",
+        "//drake/bindings/pydrake:install",
         "//drake/common:install",
         "//drake/examples:install",
         "//drake/lcmtypes:install",

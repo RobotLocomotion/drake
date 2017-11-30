@@ -7,15 +7,15 @@ load(
     "drake_cc_binary",
 )
 load("//tools/install:install_data.bzl", "install_data")
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-drake_cc_library(
+drake_cc_vector_gen_library(
     name = "acrobot_state_vector",
-    srcs = ["gen/acrobot_state_vector.cc"],
-    hdrs = ["gen/acrobot_state_vector.h"],
-    deps = [
-        "//drake/systems/framework:vector",
-    ],
+    srcs = ["acrobot_state_vector.named_vector"],
 )
 
 drake_cc_library(

@@ -107,9 +107,17 @@ drake_cc_library(
         "//drake/math:autodiff",
         "//drake/math:expmap",
         "//drake/math:geometric_transform",
+        "//drake/multibody:resolve_center_of_pressure",
         "//drake/multibody:rigid_body_tree",
         "//drake/util",
     ],
+)
+
+drake_cc_library(
+    name = "side",
+    srcs = ["side.cc"],
+    hdrs = ["side.h"],
+    deps = [],
 )
 
 drake_cc_library(
@@ -118,9 +126,9 @@ drake_cc_library(
     hdrs = ["QPCommon.h"],
     deps = [
         ":control_util",
+        ":side",
         "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
-        "//drake/systems/robotInterfaces:side",
         "//drake/util",
     ],
 )
@@ -130,9 +138,9 @@ drake_cc_library(
     srcs = ["zmp_planner.cc"],
     hdrs = ["zmp_planner.h"],
     deps = [
+        ":linear_quadratic_regulator",
         "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/systems/controllers:linear_quadratic_regulator",
     ],
 )
 
@@ -142,6 +150,34 @@ drake_cc_library(
     hdrs = ["zmpUtil.h"],
     deps = [
         "//drake/common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_util",
+    srcs = ["yaml_util.cc"],
+    hdrs = ["yaml_util.h"],
+    # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
+    # headers; yaml_util.h is only included internally within this package.
+    install_hdrs_exclude = ["yaml_util.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":qp_common",
+        "//drake/common:essential",
+        "@yaml_cpp",
+    ],
+)
+
+drake_cc_library(
+    name = "polynomial_encode_decode",
+    srcs = ["polynomial_encode_decode.cc"],
+    hdrs = ["polynomial_encode_decode.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/lcmtypes:piecewise_polynomial",
+        "//drake/lcmtypes:polynomial",
+        "//drake/lcmtypes:polynomial_matrix",
+        "//drake/util",
     ],
 )
 
@@ -158,7 +194,9 @@ drake_cc_library(
     }),
     deps = [
         ":control_util",
+        ":polynomial_encode_decode",
         ":qp_common",
+        ":yaml_util",
         "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
@@ -170,9 +208,10 @@ drake_cc_library(
         "//drake/solvers:gurobi_qp",
         "//drake/util",
         "//drake/util:lcm_util",
-        "//drake/util:yaml_util",
     ],
 )
+
+# === test/ ===
 
 drake_cc_library(
     name = "zmp_test_util",
@@ -184,7 +223,14 @@ drake_cc_library(
     ],
 )
 
-# === test/ ===
+drake_cc_googletest(
+    name = "polynomial_encode_decode_test",
+    deps = [
+        ":polynomial_encode_decode",
+        "//drake/common/test_utilities",
+        "//drake/common/trajectories:random_piecewise_polynomial",
+    ],
+)
 
 drake_cc_googletest(
     name = "inverse_dynamics_test",

@@ -55,8 +55,8 @@ class ManipulatorMoveJointPlanEvalSystem
    * Initializes the plan and gains. Must be called before execution.
    */
   void Initialize(systems::Context<double>* context) {
-    systems::State<double>* servo_state = context->get_mutable_state();
-    Initialize(servo_state);
+    systems::State<double>& servo_state = context->get_mutable_state();
+    Initialize(&servo_state);
   }
 
   /**

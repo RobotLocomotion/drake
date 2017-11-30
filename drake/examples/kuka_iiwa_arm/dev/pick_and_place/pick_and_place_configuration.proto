@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package drake.examples.kuka_iiwa_arm.pick_and_place.proto;
+
+ // Note: The default values listed below assume that the messages are parsed
+ // using the functions in pick_and_place_configuration_parsing.h. Fields
+ // without a default value are required.
+
+// Next ID: 3
+message Pose {
+    // Position.
+    // DEFAULT: (0, 0, 0)
+    repeated double xyz = 1;
+    // Orientation in SpaceXYZ Euler angles.
+    // DEFAULT: (0, 0, 0)
+    repeated double rpy = 2;
+}
+
+ // OptitrackInfo is a message that contains the information required to track a
+ // model from an Optitrack frame.
+ //
+ // Next ID: 3
+message OptitrackInfo {
+    // The unique identifier assigned to this object by the motion-capture
+    // system.
+    int32 id = 1;
+    // Pose of the Optitrack frame relative to the model frame.
+    // The transform from the Optitrack rigid-body frame (F) to the model base
+    // frame (M).
+    // DEFAULT: Identity
+    Pose X_MF = 2;
+}
+
+// Next ID: 3
+message Model{
+    // Path to the model file for simulation (relative to DRAKE_RESOURCE_ROOT).
+    string simulation_model_path = 1;
+    // Path to the model file for planning (relative to DRAKE_RESOURCE_ROOT).
+    // DEFAULT: simulation_model_path
+    string planning_model_path = 2;
+}
+
+// Next ID: 4
+message ModelInstance {
+    // The name of the model. This should correspond to a key in the model
+    // field of the PickAndPlaceConfiguration message.
+    string name = 1;
+    // The Optitrack information for the model base.
+    OptitrackInfo optitrack_info = 2;
+    // The [initial] world-pose of the model base.
+    // DEFAULT: Identity
+    Pose pose = 3;
+}
+
+// Next ID: 4
+message PickAndPlaceTask {
+    // The index of the robot arm to be used for this task.
+    // DEFAULT: 0
+    int32 robot_index = 1;
+    // The index of the object to be used as the target for this task.
+    // DEFAULT: 0
+    int32 target_index = 2;
+    // The name of the end-effector body in the robot.
+    string end_effector_name = 3;
+}
+
+// Next ID: 5
+message CompliantMaterial {
+    // Static friction coefficient (unitless)
+    // DEFAULT: 0.9
+    double static_friction_coefficient = 1;
+    // Dynamic friction coefficient (unitless)
+    // DEFAULT: 0.5
+    double dynamic_friction_coefficient = 2;
+    // Young's modulus (Pa)
+    // DEFAULT: 1e8
+    double youngs_modulus = 3;
+    // Dissipation (1/velocity -- s/m)
+    // DEFAULT: 0.32
+    double dissipation = 4;
+}
+
+// Next ID: 3
+message CompliantModelParameters {
+    // Stiction velocity tolerance (m/s)
+    // DEFAULT: 0.01
+    double v_stiction_tolerance = 1;
+    // Characteristic area (m^2)
+    // DEFAULT: 2e-4
+    double characteristic_area = 2;
+}
+
+// Next ID: 8
+message PickAndPlaceConfiguration {
+    // Map of model names to Model messages
+    map<string, Model> model = 1;
+
+    repeated PickAndPlaceTask task = 2;
+
+    // The tables from/on which the target can be picked/placed.
+    repeated ModelInstance table = 3;
+    // The objects that can be picked and placed
+    repeated ModelInstance object = 4;
+    // The robots that pick and place
+    repeated ModelInstance robot = 5;
+
+    // Parameters for the compliant contact model
+    // DEFAULT: as configured
+    CompliantModelParameters compliant_model_parameters = 6;
+
+    // Default compliant object contact material
+    // DEFAULT: as configured
+    CompliantMaterial default_compliant_material = 7;
+}

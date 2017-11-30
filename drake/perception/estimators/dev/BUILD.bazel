@@ -58,7 +58,7 @@ drake_cc_library(
     hdrs = ["test/test_util.h"],
     data = [":test_models"],
     deps = [
-        "//drake/common:essential",
+        "//drake/common",
         "//drake/common/test_utilities:eigen_geometry_compare",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/lcm",

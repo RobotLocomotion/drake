@@ -31,7 +31,7 @@ def _impl(repository_ctx):
 
     version = "0.6.0"
 
-    if os_result.is_mac:
+    if os_result.is_macos:
         filename = "buildifier.osx"
         sha256 = "631d81d2467a524f9469c923136e41b5b46261939c3a9cf4a84cfbf0a93e7cbb"  # noqa
     elif os_result.is_ubuntu:

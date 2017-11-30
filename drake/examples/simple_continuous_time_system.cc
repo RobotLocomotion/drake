@@ -51,7 +51,7 @@ int main() {
 
   // Set the initial conditions x(0).
   drake::systems::ContinuousState<double>& state =
-      *simulator.get_mutable_context()->get_mutable_continuous_state();
+      simulator.get_mutable_context().get_mutable_continuous_state();
   state[0] = 0.9;
 
   // Simulate for 10 seconds.

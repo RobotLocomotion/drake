@@ -6,6 +6,7 @@
 
 #include "drake/math/orthonormal_basis.h"
 #include "drake/multibody/collision/element.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -14,19 +15,18 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-void CompliantContactModel<T>::set_normal_contact_parameters(
-    double penetration_stiffness, double dissipation) {
-  penetration_stiffness_ = penetration_stiffness;
-  dissipation_ = dissipation;
+void CompliantContactModel<T>::set_default_material(
+    const CompliantMaterial& material) {
+  default_material_ = material;
 }
 
 template <typename T>
-void CompliantContactModel<T>::set_friction_contact_parameters(
-    double static_friction_coef, double dynamic_friction_coef,
-    double v_stiction_tolerance) {
-  static_friction_coef_ = static_friction_coef;
-  dynamic_friction_coef_ = dynamic_friction_coef;
-  inv_v_stiction_tolerance_ = 1.0 / v_stiction_tolerance;
+void CompliantContactModel<T>::set_model_parameters(
+    const CompliantContactModelParameters& values) {
+  DRAKE_DEMAND(values.v_stiction_tolerance > 0 &&
+      values.characteristic_area > 0);
+  inv_v_stiction_tolerance_ = 1.0 / values.v_stiction_tolerance;
+  characteristic_area_ = values.characteristic_area;
 }
 
 template <typename T>
@@ -50,6 +50,10 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
+      CompliantMaterial parameters;
+      const double s_a =
+          CalcContactParameters(*pair.elementA, *pair.elementB, &parameters);
+
       // Define the contact point: the pair contains points on the *surfaces* of
       // bodies A and B, given as location vectors measured and expressed in the
       // respective body frames.  For penetration, these points will *not* be
@@ -64,10 +68,17 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       // The reported point on B's surface (Bs) in the world frame (W).
       const Vector3<T> p_WBs =
           kinsol.get_element(body_b_index).transform_to_world * pair.ptB;
-      // The point of contact in the world frame.  Without better information,
-      // the point is arbitrarily selected to be halfway between the two
-      // surface points.
-      const Vector3<T> p_WC = (p_WAs + p_WBs) / 2;
+      // The point of contact in the world frame.  Interpolate between the two
+      // surface points based on relative "squish" (see doxygen for
+      // CalcContactParameters() for details). For equal squish
+      // this becomes the mean point. But as one element gets all of the squish,
+      // the contact point converges to the point on the surface of the _other_
+      // object. The use of s_a *may* seem counter-intuitive. I.e., if *all*
+      // compression is on element A, we are fully taking the position on
+      // element B. The point *on* B is in fact the deepest penetrating point on
+      // A, which represents the desired contact point. So, the apparent
+      // backwardness is, in fact, correct.
+      const Vector3<T> p_WC = (1.0 - s_a) * p_WAs + s_a * p_WBs;
 
       // The contact point in A's frame.
       const auto X_AW = kinsol.get_element(body_a_index)
@@ -101,11 +112,11 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       // discussion and simply reference it here.
 
       // See contact_model_doxygen.h for the details of this contact model.
-      // Normal force fN = kx(1 + dẋ).  We map the equation to the
-      // local variables as follows:
+      // Normal force fN = kx(1 + dẋ). We map the equation to the local
+      // variables as follows:
       //  x = -pair.distance -- penetration depth.
       //  ̇ẋ = -v_CBcAc_C(2)  -- change of penetration (in normal direction).
-      //  fK = kx -- force due to stiffness.
+      //  fK = kx -- force due to stiffness (aka elasticity).
       //  fD = fk dẋ -- force due to dissipation.
       //  fN = max(0, fK + fD ) -- total normal force; (skipped if fN < 0).
       //  fF = mu(v) * fN  - friction force magnitude.
@@ -113,8 +124,8 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       const T x = T(-pair.distance);
       const T x_dot = -v_CBcAc_C(2);
 
-      const T fK = penetration_stiffness_ * x;
-      const T fD = fK * dissipation_ * x_dot;
+      const T fK = parameters.youngs_modulus() * x * characteristic_area_;
+      const T fD = fK * parameters.dissipation() * x_dot;
       const T fN = fK + fD;
       if (fN <= 0) continue;
 
@@ -128,7 +139,8 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       const T kNonZeroSqd = T(1e-14 * 1e-14);
       if (slip_speed_squared > kNonZeroSqd) {
         const T slip_speed = sqrt(slip_speed_squared);
-        const T friction_coefficient = ComputeFrictionCoefficient(slip_speed);
+        const T friction_coefficient =
+            ComputeFrictionCoefficient(slip_speed, parameters);
         const T fF = friction_coefficient * fN;
         fA.template head<2>() = -(fF / slip_speed) * slip_vector;
       } else {
@@ -175,17 +187,18 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
 
 template <typename T>
 T CompliantContactModel<T>::ComputeFrictionCoefficient(
-    const T& v_tangent_BAc) const {
+    const T& v_tangent_BAc,
+    const CompliantMaterial& parameters) const {
   DRAKE_ASSERT(v_tangent_BAc >= 0);
+  const double mu_s = parameters.static_friction();
+  const double mu_d = parameters.dynamic_friction();
   const T v = v_tangent_BAc * inv_v_stiction_tolerance_;
   if (v >= 3) {
-    return dynamic_friction_coef_;
+    return mu_d;
   } else if (v >= 1) {
-    return static_friction_coef_ -
-           (static_friction_coef_ - dynamic_friction_coef_) *
-               step5((v - 1) / 2);
+    return mu_s - (mu_s - mu_d) * step5((v - 1) / 2);
   } else {
-    return static_friction_coef_ * step5(v);
+    return mu_s * step5(v);
   }
 }
 
@@ -194,6 +207,48 @@ T CompliantContactModel<T>::step5(const T& x) {
   DRAKE_ASSERT(0 <= x && x <= 1);
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
+}
+
+template <typename T>
+double CompliantContactModel<T>::CalcContactParameters(
+    const multibody::collision::Element& a,
+    const multibody::collision::Element& b,
+    CompliantMaterial* parameters) const {
+  DRAKE_DEMAND(parameters);
+
+  const double kE = default_material_.youngs_modulus();
+  const double kD = default_material_.dissipation();
+  const double kMuS = default_material_.static_friction();
+  const double kMuD = default_material_.dynamic_friction();
+
+  // For the details on these relationships, see contact_model_doxygen.h at
+  // @ref per_object_contact.
+
+  const auto& paramA = a.compliant_material();
+  const auto& paramB = b.compliant_material();
+  const double k_a = paramA.youngs_modulus(kE);
+  const double k_b = paramB.youngs_modulus(kE);
+  // No divide-by-zero danger; the CompliantMaterial class prevents
+  // setting a Young's modulus value that is not strictly positive.
+  const double s_a = k_b / (k_a + k_b);
+  const double s_b = 1.0 - s_a;
+  parameters->set_youngs_modulus(s_a * k_a);
+  parameters->set_dissipation(s_a * paramA.dissipation(kD) +
+                              s_b * paramB.dissipation(kD));
+
+  // Simple utility to detect 0 / 0. As it is used in this function, denom
+  // can only be zero if num is also zero, so we'll simply return zero.
+  auto safe_divide = [](double num, double denom) {
+    return denom == 0.0 ? 0.0 : num / denom;
+  };
+  parameters->set_friction(
+      safe_divide(
+          2 * paramA.static_friction(kMuS) * paramB.static_friction(kMuS),
+          paramA.static_friction(kMuS) + paramB.static_friction(kMuS)),
+      safe_divide(
+          2 * paramA.dynamic_friction(kMuD) * paramB.dynamic_friction(kMuD),
+          paramA.dynamic_friction(kMuD) + paramB.dynamic_friction(kMuD)));
+  return s_a;
 }
 
 // Explicit instantiates on the most common scalar types

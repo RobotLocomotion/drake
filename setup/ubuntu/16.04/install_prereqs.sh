@@ -33,7 +33,7 @@ while true; do
       # added, since it otherwise duplicates the commented deb-src line.
       add-apt-repository -s -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
       apt update
-      apt install --no-install-recommends clang-3.9 clang-format-3.9 lldb-3.9
+      apt install --no-install-recommends clang-3.9 lldb-3.9
       break
       ;;
     [Nn]*) break ;;
@@ -48,6 +48,8 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 bash-completion
 binutils
 chrpath
+clang-4.0
+clang-format-4.0
 cmake
 cmake-curses-gui
 coinor-libclp-dev
@@ -65,6 +67,7 @@ git
 graphviz
 libblas-dev
 libboost-all-dev
+libbz2-dev
 libexpat1-dev
 libfreetype6-dev
 libglib2.0-dev
@@ -76,6 +79,7 @@ liblapack-dev
 liblz4-dev
 libnetcdf-cxx-legacy-dev
 libnetcdf-dev
+libnlopt-dev
 libogg-dev
 libpng-dev
 libprotobuf-dev
@@ -89,6 +93,7 @@ libtool
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
+lldb-4.0
 make
 mesa-common-dev
 openjdk-8-jdk
@@ -98,11 +103,13 @@ protobuf-compiler
 python-dev
 python-gtk2
 python-lxml
+python-matplotlib
 python-numpy
 python-protobuf
 python-pygame
 python-scipy
 python-sphinx
+python-tk
 python-yaml
 valgrind
 zip

@@ -148,7 +148,7 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
 
   // Prepares to integrate.
   unique_ptr<Context<double>> context = diagram.AllocateContext();
-  diagram.SetDefaultState(*context, context->get_mutable_state());
+  diagram.SetDefaultState(*context, &context->get_mutable_state());
   diagram.SetInitialState(context.get(), 1.57, 0);
 
   Simulator<double> simulator(diagram, std::move(context));
