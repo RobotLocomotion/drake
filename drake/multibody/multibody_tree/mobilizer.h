@@ -314,6 +314,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// quaternion [1, 0, 0, 0].
   virtual void set_zero_configuration(systems::Context<T>* context) const = 0;
 
+  /// A variant of set_zero_configuration() taking a mutable State object.
+  /// See set_zero_configuration(systems::Context<T>*) for details.
   virtual void set_zero_configuration(const systems::Context<T>& context,
                                       systems::State<T>* state) const = 0;
 

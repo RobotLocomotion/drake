@@ -62,6 +62,9 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_positions(mbt_context).setZero();
   }
 
+  /// A variant of set_zero_configuration(systems::Context<T>*) taking a mutable
+  /// state object.
+  /// See set_zero_configuration(systems::Context<T>*) for details.
   void set_zero_configuration(const systems::Context<T>& context,
                               systems::State<T>* state) const override {
     get_mutable_positions(state).setZero();
@@ -97,22 +100,36 @@ class MobilizerImpl : public Mobilizer<T> {
         this->get_positions_start());
   }
 
+  /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
+  /// the segment in the `state` corresponding to `this` mobilizer's generalized
+  /// positions.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::State<T>* state) const {
     Eigen::VectorBlock<VectorX<T>> xc =
         dynamic_cast<systems::BasicVector<T>&>(
             state->get_mutable_continuous_state().get_mutable_vector()).
             get_mutable_value();
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
     return xc.nestedExpression().template segment<kNq>(
         this->get_positions_start());
   }
 
+  /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
+  /// the segment in the `state` corresponding to `this` mobilizer's generalized
+  /// velocities.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_velocities(
       systems::State<T>* state) const {
     Eigen::VectorBlock<VectorX<T>> xc =
         dynamic_cast<systems::BasicVector<T>&>(
             state->get_mutable_continuous_state().get_mutable_vector()).
             get_mutable_value();
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
     return xc.nestedExpression().template segment<kNv>(
         this->get_velocities_start());
   }
