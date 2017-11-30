@@ -395,7 +395,38 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
+  Vector3<T> CalcRelTranslationalVelocity(
+      const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
+      const Vector3<T>& p_W) const;
+
+  void UpdateGeneralizedForce(
+      const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
+      const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
+
+  VectorX<T> N_mult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& w) const;
+
+  VectorX<T> N_transpose_mult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& f) const;
+
+  VectorX<T> F_mult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& w) const;
+
+  VectorX<T> F_transpose_mult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& f) const;
+
   std::unique_ptr<const RigidBodyTree<T>> tree_;
+
+  // Object that performs all constraint computations.
+  multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
   OutputPortIndex kinematics_output_port_index_{};

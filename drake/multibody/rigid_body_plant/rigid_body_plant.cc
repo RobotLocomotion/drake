@@ -50,6 +50,10 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
 
   // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = DeclareContactResultsOutputPort();
+
+  // Schedule time stepping update.
+  if (timestep > 0.0)
+    this->DeclarePeriodicDiscreteUpdate(timestep);
 }
 
 template <class T>
@@ -537,29 +541,49 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
     const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
+  using std::abs;
+
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");
 
   // If plant state is continuous, no discrete state to update.
   if (!is_state_discrete()) return;
 
-  VectorX<T> u = EvaluateActuatorInputs(context);
+  using std::abs;
 
-  auto x = context.get_discrete_state(0).get_value();
+  // Get the time step.
+  double dt = this->get_time_step();
+  DRAKE_DEMAND(dt > 0.0);
 
-  const int nq = get_num_positions();
-  const int nv = get_num_velocities();
-  const int num_actuators = get_num_actuators();
+  VectorX<T> u = this->EvaluateActuatorInputs(context);
 
+  const int nq = this->get_num_positions();
+  const int nv = this->get_num_velocities();
+  const int num_actuators = this->get_num_actuators();
+
+  // Initialize the velocity problem data.
+  drake::multibody::constraint::ConstraintVelProblemData<T> data(nv);
+
+  // Get the rigid body tree.
+  const auto& tree = this->get_rigid_body_tree();
+
+  // Get the system state.
+  auto x = context.get_discrete_state(0)->get_value();
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = x.bottomRows(nv);
-  auto kinsol = tree_->doKinematics(q, v);
+  auto kcache = tree.doKinematics(q, v);
 
-  drake::solvers::MathematicalProgram prog;
-  drake::solvers::VectorXDecisionVariable vn =
-      prog.NewContinuousVariables(nv, "vn");
+  // Get the generalized inertia matrix and set up the inertia solve function.
+  auto H = tree.massMatrix(kcache);
 
-  auto H = tree_->massMatrix(kinsol);
+  // Compute the LDLT factorizations, which will be used by the solver.
+  Eigen::LDLT<MatrixX<T>> ldlt(H);
+  DRAKE_DEMAND(ldlt.info() == Eigen::Success);
+
+  // Set the inertia matrix solver.
+  data.solve_inertia = [&ldlt](const MatrixX<T>& m) {
+    return ldlt.solve(m);
+  };
 
   // There are no external wrenches, but it is a required argument in
   // dynamicsBiasTerm().
@@ -568,24 +592,76 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // right_hand_side is the right hand side of the system's equations:
   //   right_hand_side = B*u - C(q,v)
   VectorX<T> right_hand_side =
-      -tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
-  if (num_actuators > 0) right_hand_side += tree_->B * u;
+      -tree.dynamicsBiasTerm(kcache, no_external_wrenches);
+  if (num_actuators > 0) right_hand_side += tree.B * u;
 
-  // TODO(russt): Handle joint limits.
-  // TODO(russt): Handle contact constraints.
+  // Determine the set of contact points corresponding to the current q.
+  std::vector<drake::multibody::collision::PointPair> contacts =
+      const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
+          kcache, true);
 
-  // Add H*(vn - v)/h = right_hand_side
-  prog.AddLinearEqualityConstraint(H / timestep_,
-                                   H * v / timestep_ + right_hand_side, vn);
+  // TODO(edrumwri): Relax this assumption to allow contact constraints.
+  DRAKE_DEMAND(contacts.empty());
 
-  prog.Solve();
+  // Verify the friction directions are set correctly.
+  DRAKE_DEMAND(half_cone_edges_ >= 2);
 
-  VectorX<T> xn(get_num_states());
-  const auto& vn_sol = prog.GetSolution(vn);
+  // Set up the N multiplication operator (projected velocity along the contact
+  // normals).
+  data.N_mult = [this, &contacts, &kcache](const VectorX<T>& w) -> VectorX<T> {
+    return N_mult(contacts, kcache, w);
+  };
 
-  // qn = q + h*qdn.
-  xn << q + timestep_ * tree_->transformVelocityToQDot(kinsol, vn_sol), vn_sol;
-  updates->get_mutable_vector(0).SetFromVector(xn);
+  // Set up the N' multiplication operator (effect of contact normal forces
+  // on generalized forces).
+  data.N_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
+      VectorX<T> {
+    return N_transpose_mult(contacts, kcache, f);
+  };
+
+  // Set up the F multiplication operator (projected velocity along the contact
+  // tangent directions).
+  data.F_mult = [this, &contacts, &kcache](const VectorX<T>& w) -> VectorX<T> {
+    return F_mult(contacts, kcache, w);
+  };
+
+  // Set up the F' multiplication operator (effect of contact frictional forces
+  // on generalized forces).
+  data.F_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
+      VectorX<T> {
+    return F_transpose_mult(contacts, kcache, f);
+  };
+
+  // 1. Set the stabilization term for contact normal direction (kN)
+  data.kN.resize(contacts.size());
+  for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
+    double stiffness, damping;
+    CalcContactStiffnessAndDamping(contacts[i], &stiffness, &damping);
+    // TODO(edrumwri): Use this to set cfm and erp parameters for contacts.
+  }
+
+  // 2. Set the stabilization term for contact tangent directions (kF).
+  // TODO(edrumwri): Update 'total_friction_cone_edges' once contact constraints
+  // supported.
+  const int total_friction_cone_edges = 0;
+  data.kF.setZero(total_friction_cone_edges);
+
+  // 3. Set the stabilization term for joint limit constraints (kL).
+  data.kL.resize(0);
+
+  // Integrate the forces into the velocity.
+  data.v = v + data.solve_inertia(right_hand_side) * dt;
+
+  // Solve the rigid impact problem.
+  VectorX<T> vnew, cf;
+  constraint_solver_.SolveImpactProblem(cfm_, data, &cf);
+  constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
+  vnew += data.v;
+
+  // qn = q + dt*qdot.
+  VectorX<T> xn(this->get_num_states());
+  xn << q + dt * tree.transformVelocityToQDot(kcache, vnew), vnew;
+  updates->get_mutable_vector(0)->SetFromVector(xn);
 }
 
 template <typename T>
