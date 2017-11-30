@@ -149,8 +149,6 @@ int main() {
       diagram->GetMutableSubsystemContext(plant, &context);
   // 6 1-dof joints * 2 = 6 * (x, ẋ) * 2
   const int kStateSize = 24;
-  DRAKE_DEMAND(plant_context.get_continuous_state_vector().size() ==
-               kStateSize);
   VectorX<double> initial_state(kStateSize);
   initial_state << 0, -0.5, 0, 0, 0, 0,  // brick 1 position
                    0, 0.5, 0, 0, 0, 0,   // brick 2 position

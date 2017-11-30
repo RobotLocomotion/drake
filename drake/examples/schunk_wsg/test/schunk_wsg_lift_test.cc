@@ -15,6 +15,7 @@
 
 #include <memory>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -38,6 +39,12 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/trajectory_source.h"
+
+DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
+              "'compliant' (default) or 'timestepping'");
+DEFINE_double(dt, 1e-3, "The step size to use for "
+              "'simulation_type=timestepping' (ignored for "
+              "'simulation_type=compliant'");
 
 namespace drake {
 namespace examples {
@@ -98,9 +105,12 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   int lifter_instance_id{};
   int gripper_instance_id{};
+  if (FLAGS_simulation_type != "timestepping")
+    FLAGS_dt = 0.0;
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
-          BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id));
+          BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id),
+          FLAGS_dt);
   plant->set_name("plant");
 
   ASSERT_EQ(plant->get_num_actuators(), 2);
