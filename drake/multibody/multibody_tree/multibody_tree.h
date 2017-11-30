@@ -633,10 +633,6 @@ class MultibodyTree {
 
   /// Allocates a new context for this %MultibodyTree uniquely identifying the
   /// state of the multibody system.
-  /// This convinience method allows for a stand-alone testing of the
-  /// %MultibodyTree functionality without the need of an external System
-  /// wrapper around it. Therefore the created context is very simple in that it
-  /// only declares state but no other system specifics such as inputs.
   ///
   /// @pre The method Finalize() must be called before attempting to create a
   /// context in order for the %MultibodyTree topology to be valid at the moment
