@@ -631,48 +631,117 @@ GTEST_TEST(TestScsNode, TestBranchError) {
   EXPECT_THROW(root->Branch(1), std::runtime_error);
 }
 
-GTEST_TEST(TestScsNode, TestSolve1) {
-  const auto root = ConstructMILPExample1RootNode();
-
+void TestNodeSolve(ScsNode *node, scs_int scs_status_expected, scs_float cost,
+                   const scs_float *const x, bool found_integral_sol,
+                   double tol) {
   SCS_SETTINGS settings;
   SetScsSettingToDefault(&settings);
-  const double tol = 1E-3;
-  const scs_int scs_status = root->Solve(settings);
-  EXPECT_EQ(scs_status, SCS_SOLVED);
-  EXPECT_NEAR(root->cost(), 1.5, tol);
-  const scs_float x_expected[4] = {0, 1, 0, 0.5};
-  for (int i = 0; i < 4; ++i) {
-    EXPECT_NEAR(x_expected[i], root->scs_sol()->x[i], tol);
+
+  const scs_int scs_status = node->Solve(settings);
+  EXPECT_EQ(scs_status, scs_status_expected);
+
+  if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
+    EXPECT_NEAR(node->cost(), cost, tol);
+    for (int i = 0; i < node->A()->n; ++i) {
+      EXPECT_NEAR(x[i], node->scs_sol()->x[i], tol);
+    }
+    EXPECT_EQ(node->found_integral_sol(), found_integral_sol);
+  } else if (scs_status == SCS_INFEASIBLE ||
+             scs_status == SCS_INFEASIBLE_INACCURATE) {
+    EXPECT_TRUE(std::isinf(node->cost()));
+    EXPECT_EQ(node->cost(), std::numeric_limits<double>::infinity());
+    EXPECT_FALSE(node->found_integral_sol());
+  } else if (scs_status == SCS_UNBOUNDED ||
+             scs_status == SCS_UNBOUNDED_INACCURATE) {
+    EXPECT_TRUE(std::isinf(node->cost()));
+    EXPECT_EQ(node->cost(), -std::numeric_limits<double>::infinity());
+  } else {
+    throw std::runtime_error("SCS does not give a meaningful answer.");
   }
-  EXPECT_TRUE(root->found_integral_sol());
+}
+
+GTEST_TEST(TestScsNode, TestSolve1) {
+  // Solve the root node
+  const auto root = ConstructMILPExample1RootNode();
+
+  const scs_float x_expected[4] = {0, 1, 0, 0.5};
+  TestNodeSolve(root.get(), SCS_SOLVED, 1.5, x_expected, true, 1E-3);
+}
+
+GTEST_TEST(TestScsNode, TestSolve2) {
+  // Solve the root node
+  const auto root = ConstructMILPExample2RootNode();
+
+  const scs_float x_expected[5] = {0.7, 1, 1, 1.4, 0};
+  TestNodeSolve(root.get(), SCS_SOLVED, -4.9, x_expected, false, 2E-2);
 }
 
 GTEST_TEST(TestScsNode, TestSolveChildNodes1) {
-  // Solve the left and right child nodes of the root.
+  // Solve the left and right child nodes of the root, by branching on x0.
   const auto root = ConstructMILPExample1RootNode();
 
   root->Branch(0);
 
-  SCS_SETTINGS settings;
-  SetScsSettingToDefault(&settings);
-  const scs_int scs_status_l = root->left_child()->Solve(settings);
-  EXPECT_EQ(scs_status_l, SCS_SOLVED);
-  const double tol{1E-3};
-  EXPECT_NEAR(root->left_child()->cost(), 1.5, tol);
   const scs_float x_expected_l[3] = {1, 0, 0.5};
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_NEAR(x_expected_l[i], root->left_child()->scs_sol()->x[i], tol);
-  }
-  EXPECT_TRUE(root->left_child()->found_integral_sol());
+  TestNodeSolve(root->left_child(), SCS_SOLVED, 1.5, x_expected_l, true, 1E-3);
 
-  const scs_int scs_status_r = root->right_child()->Solve(settings);
-  EXPECT_EQ(scs_status_r, SCS_SOLVED);
-  EXPECT_NEAR(root->right_child()->cost(), 4, 2 * tol);
   const scs_float x_expected_r[3] = {1, 0, 0};
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_NEAR(x_expected_r[i], root->right_child()->scs_sol()->x[i], tol);
-  }
-  EXPECT_TRUE(root->right_child()->found_integral_sol());
+  TestNodeSolve(root->right_child(), SCS_SOLVED, 4, x_expected_r, true, 2E-3);
+}
+
+GTEST_TEST(TestScsNode, TestSolveChildNodes2) {
+  // Solve the left and right child nodes of the root, by branching on x2
+  const auto root = ConstructMILPExample1RootNode();
+
+  root->Branch(2);
+
+  const scs_float x_expected_l[3] = {0, 1, 0.5};
+  TestNodeSolve(root->left_child(), SCS_SOLVED, 1.5, x_expected_l, true, 1E-3);
+
+  const scs_float x_expected_r[3] = {0, 4.1, -1.05};
+  TestNodeSolve(root->right_child(), SCS_SOLVED, 12.35, x_expected_r, true,
+                4E-3);
+}
+
+GTEST_TEST(TestScsNode, TestSolveChildNodes3) {
+  // Solve the left and right child nodes of the root, by branching on x0
+  const auto root = ConstructMILPExample2RootNode();
+  root->Branch(0);
+
+  // The left node is infeasible.
+  TestNodeSolve(root->left_child(), SCS_INFEASIBLE, NAN, nullptr, NAN, 1E-3);
+
+  const scs_float x_expected_r[4] = {1.0 / 3.0, 1, 1, 0};
+  TestNodeSolve(root->right_child(), SCS_SOLVED, -13.0 / 3.0, x_expected_r,
+                true, 2E-2);
+}
+
+GTEST_TEST(TestScsNode, TestSolveChildNode4) {
+  // Solve the left and right child nodes of the root, by branching on x2
+  const auto root = ConstructMILPExample2RootNode();
+  root->Branch(2);
+
+  const scs_float x_expected_l[4] = {1, 2.0 / 3.0, 1, 1};
+  TestNodeSolve(root->left_child(), SCS_SOLVED, 23.0 / 6.0, x_expected_l, true,
+                1E-2);
+
+  const scs_float x_expected_r[4] = {0.7, 1, 1.4, 0};
+  TestNodeSolve(root->right_child(), SCS_SOLVED, -4.9, x_expected_r, false,
+                2E-2);
+}
+
+GTEST_TEST(TestScsNode, TestSolveChildNode5) {
+  // Solve the left and right child nodes of the root, by branching on x4
+  const auto root = ConstructMILPExample2RootNode();
+  root->Branch(4);
+
+  const scs_float x_expected_l[4] = {0.7, 1, 1, 1.4};
+  TestNodeSolve(root->left_child(), SCS_SOLVED, -4.9, x_expected_l, false,
+                2E-2);
+
+  const scs_float x_expected_r[4] = {0.2, 2.0 / 3.0, 1, 1.4};
+  TestNodeSolve(root->right_child(), SCS_SOLVED, -47.0 / 30, x_expected_r,
+                false, 2E-2);
 }
 }  // namespace
 }  // namespace solvers
