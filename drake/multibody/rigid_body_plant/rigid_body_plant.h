@@ -470,6 +470,21 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // Pointer to the class that encapsulates all the contact computations.
   const std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_;
+
+  // Structure for storing joint limit data for time stepping.
+  struct JointLimit {
+    // The index for the joint limit.
+    int v_index{-1};
+
+    // Whether the limit is a lower limit or upper limit.
+    bool lower_limit{false};
+
+    // Gets the "error", meaning the amount over the limit (if the error is
+    // positive) or under the limit (if the error is negative). Negative error
+    // is not error per se, but rather a way to limit the movement of a joint
+    // by the step into the future.
+    T error{0};
+  };
 };
 
 }  // namespace systems

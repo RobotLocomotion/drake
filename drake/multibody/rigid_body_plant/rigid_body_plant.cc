@@ -912,6 +912,47 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kcache, true);
 
+  // Set the joint range of motion limits.
+  std::vector<JointLimit> limits;
+  for (auto const& b : tree.bodies) {
+    if (!b->has_parent_body()) continue;
+    auto const& joint = b->getJoint();
+
+    // Joint limit forces are only implemented for single-axis joints.
+    if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
+      const T qmin = joint.getJointLimitMin()(0);
+      const T qmax = joint.getJointLimitMax()(0);
+      DRAKE_DEMAND(qmin < qmax);
+
+      // Get the current joint position and velocity.
+      const T& qjoint = q(b->get_position_start_index());
+      const T& vjoint = v(b->get_velocity_start_index());
+
+      // See whether the *current* joint velocity might lead to a limit
+      // violation.
+      if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
+        // Institute a lower limit.
+        limits.push_back(JointLimit());
+        limits.back().v_index = b->get_velocity_start_index();
+        limits.back().error = (qjoint - qmin);
+        SPDLOG_DEBUG(drake::log(), "body name: {} ", b->get_name());
+        SPDLOG_DEBUG(drake::log(), "joint name: {} ", joint.get_name());
+        SPDLOG_DEBUG(drake::log(), "joint error: {} ", limits.back().error);
+        limits.back().lower_limit = true;
+      }
+      if (qjoint > qmax || qjoint + vjoint * dt > qmax) {
+        // Institute an upper limit.
+        limits.push_back(JointLimit());
+        limits.back().v_index = b->get_velocity_start_index();
+        limits.back().error = (qmax - qjoint);
+        SPDLOG_DEBUG(drake::log(), "body name: {} ", b->get_name());
+        SPDLOG_DEBUG(drake::log(), "joint name: {} ", joint.get_name());
+        SPDLOG_DEBUG(drake::log(), "joint error: {} ", limits.back().error);
+        limits.back().lower_limit = false;
+      }
+    }
+  }
+
   // Set up the N multiplication operator (projected velocity along the contact
   // normals).
   data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
@@ -939,6 +980,37 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     return F_transpose_mult(contacts, kcache, f, data.r);
   };
 
+  // Set the constraint Jacobian transpose operator.
+  data.L_mult = [this, &limits](const VectorX<T>& w) -> VectorX<T> {
+    VectorX<T> result(limits.size());
+    for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
+      const int index = limits[i].v_index;
+      result[i] = (limits[i].lower_limit) ? w[index] : -w[index];
+    }
+    return result;
+  };
+
+  data.L_transpose_mult = [this, &v, &limits](const VectorX<T>& lambda) {
+    VectorX<T> result = VectorX<T>::Zero(v.size());
+    for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
+      const int index = limits[i].v_index;
+      result[index] = (limits[i].lower_limit) ? lambda[i] : -lambda[i];
+    }
+    return result;
+  };
+
+  // Output the Jacobians.
+  MatrixX<T> N(contacts.size(), v.size()), L(limits.size(), v.size()), F(contacts.size() * 2, v.size());
+  for (int i = 0; i < v.size(); ++i) {
+    VectorX<T> unit = VectorX<T>::Unit(v.size(), i);
+    N.col(i) = data.N_mult(unit);
+    F.col(i) = data.F_mult(unit);
+    L.col(i) = data.L_mult(unit);
+  }
+  SPDLOG_DEBUG(drake::log(), "N: {}", N);
+  SPDLOG_DEBUG(drake::log(), "F: {}", F);
+  SPDLOG_DEBUG(drake::log(), "L: {}", L);
+
   // 1. Set the stabilization term for contact normal direction (kN). Also,
   // determine the friction coefficients and (half) the number of friction cone
   // edges.
@@ -962,22 +1034,60 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     data.kN[i] = erp * contacts[i].distance / dt;
   }
 
-  // 2. Set the stabilization term for contact tangent directions (kF).
+  // 2. Set the regularization and stabilization terms for contact tangent
+  // directions (kF).
   const int total_friction_cone_edges = std::accumulate(
       data.r.begin(), data.r.end(), 0);
   data.kF.setZero(total_friction_cone_edges);
+  data.gammaF.setZero(total_friction_cone_edges);
+  data.gammaE.setZero(contacts.size());
 
-  // 3. Set the stabilization term for joint limit constraints (kL).
-  data.kL.resize(0);
+  // 3. Set the regularization and stabilization terms for joint limit
+  // constraints (kL).  
+  // TODO(edrumwri): Make cfm and erp individually settable.
+  const double default_limit_cfm = 1e-8;
+  const double default_limit_erp = 0.5;
+  data.kL.resize(limits.size());
+    for (int i = 0; i < static_cast<int>(limits.size()); ++i)
+    data.kL[i] = default_limit_erp * limits[i].error / dt;
+  data.gammaL.setOnes(limits.size()) *= default_limit_cfm; 
 
-  // Integrate the forces into the velocity.
+ // 4. Bilateral constraint terms.
+  data.kG = tree.positionConstraints(kcache);
+  const auto G = tree.positionConstraintsJacobian(kcache, false);
+  data.G_mult = [this, &G](const VectorX<T>& w) -> VectorX<T> {
+    return G * w;
+  };
+  data.G_transpose_mult = [this, &G](const VectorX<T>& lambda) {
+    return G.transpose() * lambda;
+  };
+
+  // Integrate the forces into the momentum.
   data.Mv = H * v + right_hand_side * dt;
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
   constraint_solver_.SolveImpactProblem(data, &cf);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
+  SPDLOG_DEBUG(drake::log(), "Actuator forces: {} ", u.transpose());
+  SPDLOG_DEBUG(drake::log(), "Transformed actuator forces: {} ",
+      (tree.B * u).transpose());
+  SPDLOG_DEBUG(drake::log(), "force: {}", right_hand_side.transpose());
+  SPDLOG_DEBUG(drake::log(), "old velocity: {}", v.transpose());
+  SPDLOG_DEBUG(drake::log(), "integrated forward velocity: {}",
+      data.solve_inertia(data.Mv).transpose());
+  SPDLOG_DEBUG(drake::log(), "change in velocity: {}", vnew.transpose());
   vnew += data.solve_inertia(data.Mv);
+  SPDLOG_DEBUG(drake::log(), "new velocity: {}", vnew.transpose());
+  SPDLOG_DEBUG(drake::log(), "new configuration: {}",
+      (q + dt * tree.transformVelocityToQDot(kcache, vnew)).transpose());
+  SPDLOG_DEBUG(drake::log(), "N * vnew: {} ", data.N_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "F * vnew: {} ", data.F_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "L * vnew: {} ", data.L_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "G * vnew: {} ", data.G_mult(vnew).transpose());
+  SPDLOG_DEBUG(drake::log(), "G * v: {} ", data.G_mult(v).transpose());
+  SPDLOG_DEBUG(drake::log(), "g(): {}",
+      tree.positionConstraints(kcache).transpose());
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
