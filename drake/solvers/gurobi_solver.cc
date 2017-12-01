@@ -194,7 +194,7 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
  * A*x == lb, false otherwise.
  * @return error as an integer. The full set of error values are
  * described here :
- * http://www.gurobi.com/documentation/6.5/refman/error_codes.html#sec:ErrorCodes
+ * https://www.gurobi.com/documentation/7.5/refman/error_codes.html
  *
  * TODO(hongkai.dai): Use a sparse matrix A.
  */
@@ -315,7 +315,7 @@ int AddSecondOrderConeConstraints(
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
-    // https://www.gurobi.com/documentation/7.0/refman/c_grbaddqconstr.html
+    // https://www.gurobi.com/documentation/7.5/refman/c_grbaddqconstr.html
     // For Lorentz cone constraint,
     // Q = [-1 0 0 ... 0]
     //     [ 0 1 0 ... 0]
@@ -710,8 +710,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   // The new model gets a copy of the Gurobi environment, so when we set
   // parameters, we have to be sure to set them on the model's environment,
-  // not the global gurobi environment.
-  // See: FAQ #11: http://www.gurobi.com/support/faqs
+  // not the global Gurobi environment.
+  // See: FAQ #11: https://www.gurobi.com/support/faqs
   // Note that it is not necessary to free this environment; rather,
   // we just have to call GRBfreemodel(model).
   GRBenv* model_env = GRBgetenv(model);
@@ -762,7 +762,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   SolutionResult result = SolutionResult::kUnknownError;
 
   // If any error exists so far, it's from calling GRBoptimize.
-  // TODO(naveenoid) : Properly handle gurobi specific error.
+  // TODO(naveenoid) : Properly handle Gurobi specific error.
   // message.
   if (error) {
     result = SolutionResult::kInvalidInput;

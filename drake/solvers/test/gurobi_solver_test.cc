@@ -26,7 +26,7 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
   GurobiSolver solver;
   if (solver.available()) {
-    // With dual reductions, gurobi may not be able to differentiate between
+    // With dual reductions, Gurobi may not be able to differentiate between
     // infeasible and unbounded.
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
     SolutionResult result = solver.Solve(*prog_);
@@ -42,7 +42,7 @@ TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
 TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
   GurobiSolver solver;
   if (solver.available()) {
-    // With dual reductions, gurobi may not be able to differentiate between
+    // With dual reductions, Gurobi may not be able to differentiate between
     // infeasible and unbounded.
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
     SolutionResult result = solver.Solve(*prog_);
