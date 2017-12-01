@@ -105,8 +105,8 @@ void PendulumPlant<T>::DeclareGeometrySystemPorts() {
 template <typename T>
 FrameIdVector PendulumPlant<T>::AllocateFrameIdOutput(
     const Context<T>&) const {
-  DRAKE_DEMAND(!!source_id_);
-  DRAKE_DEMAND(!!frame_id_);
+  DRAKE_DEMAND(source_id_ != nullopt);
+  DRAKE_DEMAND(frame_id_ != nullopt);
   FrameIdVector ids(source_id_.value());
   // Add a frame for the one single body in this model.
   ids.AddFrameId(frame_id_.value());
@@ -117,8 +117,8 @@ template <typename T>
 void PendulumPlant<T>::CalcFrameIdOutput(
     const Context<T>&, FrameIdVector*) const {
   // Just a sanity check.
-  DRAKE_DEMAND(!!source_id_);
-  DRAKE_DEMAND(!!frame_id_);
+  DRAKE_DEMAND(source_id_ != nullopt);
+  DRAKE_DEMAND(frame_id_ != nullopt);
   // NOTE: This only needs to do work if the topology changes. This system makes
   // no topology changes.
 }
@@ -126,7 +126,7 @@ void PendulumPlant<T>::CalcFrameIdOutput(
 template <typename T>
 FramePoseVector<T> PendulumPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
-  DRAKE_DEMAND(!!source_id_);
+  DRAKE_DEMAND(source_id_ != nullopt);
   FramePoseVector<T> poses(source_id_.value());
   // There is only one moveable frame.
   poses.mutable_vector().resize(1);
