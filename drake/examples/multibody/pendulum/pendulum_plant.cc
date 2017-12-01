@@ -94,12 +94,12 @@ template<typename T>
 template<typename U>
 PendulumPlant<T>::PendulumPlant(
     const PendulumPlant<U> &other) :
-    PendulumPlant(other.get_mass(), other.get_length(), other.get_gravity()) {
+    PendulumPlant(other.mass(), other.length(), other.gravity()) {
   source_id_ = other.source_id_;
   frame_id_ = other.frame_id_;
   // Only declare ports to communicate with a GeometrySystem if the plant is
   // provided with a valid source id.
-  if (frame_id_.is_valid()) DeclareGeometrySystemPorts();
+  if (frame_id_) DeclareGeometrySystemPorts();
 }
 
 template<typename T>
@@ -117,11 +117,11 @@ void PendulumPlant<T>::DeclareGeometrySystemPorts() {
 template <typename T>
 FrameIdVector PendulumPlant<T>::AllocateFrameIdOutput(
     const Context<T>&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  DRAKE_DEMAND(frame_id_.is_valid());
-  FrameIdVector ids(source_id_);
+  DRAKE_DEMAND(!!source_id_);
+  DRAKE_DEMAND(!!frame_id_);
+  FrameIdVector ids(source_id_.value());
   // Add a frame for the one single body in this model.
-  ids.AddFrameId(frame_id_);
+  ids.AddFrameId(frame_id_.value());
   return ids;
 }
 
@@ -129,8 +129,8 @@ template <typename T>
 void PendulumPlant<T>::CalcFrameIdOutput(
     const Context<T>&, FrameIdVector*) const {
   // Just a sanity check.
-  DRAKE_DEMAND(source_id_.is_valid());
-  DRAKE_DEMAND(frame_id_.is_valid());
+  DRAKE_DEMAND(!!source_id_);
+  DRAKE_DEMAND(!!frame_id_);
   // NOTE: This only needs to do work if the topology changes. This system makes
   // no topology changes.
 }
@@ -138,8 +138,8 @@ void PendulumPlant<T>::CalcFrameIdOutput(
 template <typename T>
 FramePoseVector<T> PendulumPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  FramePoseVector<T> poses(source_id_);
+  DRAKE_DEMAND(!!source_id_);
+  FramePoseVector<T> poses(source_id_.value());
   // There is only one moveable frame.
   poses.mutable_vector().resize(1);
   return poses;
@@ -193,17 +193,17 @@ void PendulumPlant<T>::BuildMultibodyTreeModel() {
   model_ = std::make_unique<MultibodyTree<T>>();
   DRAKE_DEMAND(model_ != nullptr);
 
-  // Pose of the com of the pendulum's body (in this case a point mass) in the
-  // body's frame. The body's frame's origin Bo is defined to be at the world's
-  // origin Wo, through which the rotation axis passes.
+  // Position of the com of the pendulum's body (in this case a point mass) in
+  // the body's frame. The body's frame's origin Bo is defined to be at the
+  // world's origin Wo, through which the rotation axis passes.
   // With the pendulum at rest pointing in the downwards -z direction, the body
   // frame B and the world frame W are coincident.
-  const Vector3<double> p_BoBcm_B = -get_length() * Vector3<double>::UnitZ();
+  const Vector3<double> p_BoBcm_B = -length() * Vector3<double>::UnitZ();
 
   // Define each link's spatial inertia about the body's origin Bo.
   UnitInertia<double> G_Bo =
       UnitInertia<double>::PointMass(p_BoBcm_B);
-  SpatialInertia<double> M_Bo(get_mass(), p_BoBcm_B, G_Bo);
+  SpatialInertia<double> M_Bo(mass(), p_BoBcm_B, G_Bo);
 
   link_ = &model_->template AddBody<RigidBody>(M_Bo);
 
@@ -214,7 +214,7 @@ void PendulumPlant<T>::BuildMultibodyTreeModel() {
       Vector3d::UnitY()); /* pendulum oscillates in the x-z plane. */
 
   model_->template AddForceElement<UniformGravityFieldElement>(
-      -get_gravity() * Vector3d::UnitZ());
+      -gravity() * Vector3d::UnitZ());
 
   model_->Finalize();
 }
@@ -231,34 +231,36 @@ void PendulumPlant<T>::RegisterGeometry(
   // the -z direction, the pendulum's body frame B is coincident with the world
   // frame W.
   frame_id_ = geometry_system->RegisterFrame(
-      source_id_,
+      source_id_.value(),
       GeometryFrame("PendulumFrame", Isometry3<double>::Identity()));
 
   // Pose of the pendulum's point mass in the body's frame.
-  const Vector3<double> p_BoBcm_B = -get_length() * Vector3<double>::UnitZ();
+  const Vector3<double> p_BoBcm_B = -length() * Vector3<double>::UnitZ();
+
+  // Pose of the geometry frame G in the body frame B.
   const Isometry3<double> X_BG{Translation3<double>(p_BoBcm_B)};
 
   // A sphere at the world's origin.
   geometry_system->RegisterGeometry(
-      source_id_, frame_id_,
+      source_id_.value(), frame_id_.value(),
       std::make_unique<GeometryInstance>(
           Isometry3d::Identity(), /* Geometry pose in link's frame */
-          std::make_unique<Sphere>(get_length() / 8)));
+          std::make_unique<Sphere>(length() / 8)));
 
   // A rod (massless in the multibody model) between the revolute pin and the
   // point mass.
   geometry_system->RegisterGeometry(
-      source_id_, frame_id_,
+      source_id_.value(), frame_id_.value(),
       std::make_unique<GeometryInstance>(
           Isometry3d{Translation3d(p_BoBcm_B / 2.0)},
-          std::make_unique<Cylinder>(get_length() / 15, get_length())));
+          std::make_unique<Cylinder>(length() / 15, length())));
 
   // A sphere at the point mass:
   geometry_system->RegisterGeometry(
-      source_id_, frame_id_,
+      source_id_.value(), frame_id_.value(),
       std::make_unique<GeometryInstance>(
           X_BG, /* Geometry pose in link's frame */
-          std::make_unique<Sphere>(get_length() / 5)));
+          std::make_unique<Sphere>(length() / 5)));
 }
 
 template<typename T>
@@ -299,6 +301,11 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   VectorX<T> vdot = VectorX<T>::Zero(nv);
   VectorX<T> C(nv);
   std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  // WARNING: to reduce memory foot-print, we use the input applied arrays also
+  // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied
+  // get overwritten on output. This is not important in this case since we
+  // don't need their values anymore. Please see the documentation for
+  // CalcInverseDynamics() for details.
   model_->CalcInverseDynamics(
       context, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
       &A_WB_array, &Fapplied_Bo_W_array, &C);
