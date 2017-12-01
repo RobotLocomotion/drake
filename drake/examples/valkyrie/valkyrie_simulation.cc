@@ -59,6 +59,7 @@ int main() {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  gflags::SetUsageMessage(" ");  // Nerf a silly warning emitted by gflags.
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::valkyrie::main();
 }
