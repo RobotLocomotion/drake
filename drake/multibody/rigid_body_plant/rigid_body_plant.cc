@@ -446,7 +446,7 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   // force per length. That means that we must multiply by a characteristic
   // area (for now); eventually, we'll want to multiply by the true contact
   // patch area.
-  // TODO: Make characteristic area user settable.
+  // TODO(edrumwri): Make characteristic area user settable.
   const double characteristic_area = 1e-3;  // 1 cm^2
   *stiffness = material.youngs_modulus() * characteristic_area;
 
@@ -457,7 +457,7 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   // oscillator from linearizing the dissipation factor about the characteristic
   // deformation; the system will behave like a harmonic oscillator oscillating
   // about x = characteristic_deformation m.
-  // TODO: Make characteristic deformation user settable.
+  // TODO(edrumwri): Make characteristic deformation user settable.
   const double characteristic_deformation = 1e-4;  // 1 mm^2
   *damping = material.dissipation() * 1.5 * (*stiffness) *
       characteristic_deformation;
