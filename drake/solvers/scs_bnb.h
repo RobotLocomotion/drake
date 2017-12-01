@@ -89,24 +89,26 @@ class ScsNode {
    */
   void Branch(int binary_var_index);
 
-  // Solve the optimization problem in this node.
-  // <pre>
-  //  min c_ᵀx + d
-  //  s.t A_*x + s = b_
-  //      s_ in cones_
-  // </pre>
-  // There are several possible outcomes by solving the optimization program
-  // in this node.
-  // 1. The problem is infeasible. Then we do not need to branch on this node.
-  // 2. The problem is feasible, we can then update the lower bound, as the
-  //    minimal among all the costs in the leaf nodes.
-  // 3. When the problem is feasible, and we find a solution that satisfies the
-  //    integral constraints. If the cost of this solution is an upper bound of
-  //    the original mixed-integer problem. If the cost is smaller than the best
-  //    upper bound, then we update the best upper bound to this cost.
-  // 3. when the problem is feasible, and the optimal cost is larger than the
-  //    best upper bound, then there is no need to branch on the tree.
-
+  /**
+   * Solve the optimization problem in this node.
+   * <pre>
+   *  min c_ᵀx + d
+   *  s.t A_*x + s = b_
+   *      s_ in cones_
+   * </pre>
+   * There are several possible outcomes by solving the optimization program
+   * in this node.
+   * 1. The problem is infeasible. Then we do not need to branch on this node.
+   * 2. The problem is feasible, we can then update the lower bound, as the
+   *    minimal among all the costs in the leaf nodes.
+   * 3. When the problem is feasible, and we find a solution that satisfies the
+   *    integral constraints. If the cost of this solution is an upper bound of
+   *    the original mixed-integer problem. If the cost is smaller than the best
+   *    upper bound, then we update the best upper bound to this cost.
+   * 4. when the problem is feasible, and the optimal cost is larger than the
+   *    best upper bound, then there is no need to branch on the tree.
+   * @param scs_settings. The settings (parameters) for solving the SCS problem.
+   */
   scs_int Solve(const SCS_SETTINGS& scs_settings);
 
   // Getter for A matrix.

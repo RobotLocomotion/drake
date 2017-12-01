@@ -287,7 +287,7 @@ void ScsNode::Branch(int binary_var_index) {
 
   // In the right node, the binary variable z is fixed to 1. So bᵣ is obtained
   // by first removing the two rows from b, and then subtract the column in A
-  // corresponding to variable z from A.
+  // corresponding to variable z from b.
   for (int i = 0; i < right_child_->A_->m; ++i) {
     right_child_->b_.get()[i] =
         i < removed_row_index0 ? b_.get()[i] : b_.get()[i + 2];
@@ -301,6 +301,10 @@ void ScsNode::Branch(int binary_var_index) {
     }
   }
 
+  // Update the cost coefficients. The entry for the binary variable z is
+  // removed. In the left node, since z is fixed to 0, the constant term is
+  // unchanged. In the right node, since z is fixed to 1, the constant term
+  // needs to be increased by the cost coefficient of z.
   for (int i = 0; i < left_child_->A_->n; ++i) {
     // Remove the coefficient for the fixed binary variable.
     left_child_->c_.get()[i] =
@@ -311,6 +315,9 @@ void ScsNode::Branch(int binary_var_index) {
   right_child_->cost_constant_ =
       this->cost_constant_ + this->c()[binary_var_index];
 
+  // The cones of the child nodes are the same as the parent nodes, except that
+  // the number of linear inequality constraints are decremented by 2, to remove
+  // the constraint 0 ≤ z ≤ 1.
   left_child_->cone_->f = this->cone_->f;
   left_child_->cone_->l = this->cone_->l - 2;
   left_child_->cone_->qsize = this->cone_->qsize;
