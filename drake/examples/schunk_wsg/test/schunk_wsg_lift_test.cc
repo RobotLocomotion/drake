@@ -204,7 +204,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // velocity of the various "hand" DoF. Grasping force is determined using a
   // mapping from time to a piecewise polynomial; the output from the latter
   // is connected directly to the gripping actuator input on the Schunk plant.
- 
+
   // Kinematic desireds for the "hand" DoF are generated from two sources: a
   // piecewise polynomial trajectory for the lifting DoF and sinusoidal plants
   // for every other DoF (up to five, depending on the lift rig described in the
