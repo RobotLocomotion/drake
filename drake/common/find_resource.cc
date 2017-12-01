@@ -231,9 +231,8 @@ Result FindResource(string resource_path) {
   }
 
   // Nothing found.
-  return Result::make_error(
-      std::move(resource_path),
-      "could not find resource");
+  string error_message = "could not find resource: " + resource_path;
+  return Result::make_error(std::move(resource_path), error_message);
 }
 
 std::string FindResourceOrThrow(std::string resource_path) {
