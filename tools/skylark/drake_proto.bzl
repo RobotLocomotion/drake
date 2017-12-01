@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@protobuf//:protobuf.bzl",
+    "@com_google_protobuf//:protobuf.bzl",
     "cc_proto_library",
     "py_proto_library",
 )

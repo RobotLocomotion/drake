@@ -92,7 +92,7 @@ RgbdCamera::RgbdCamera(const std::string& name,
       camera_fixed_(false),
       color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y),
-      renderer_(new RgbdRenderer(Eigen::Isometry3d(),
+      renderer_(new RgbdRenderer(Eigen::Isometry3d::Identity(),
                                  kImageWidth, kImageHeight,
                                  z_near, z_far,
                                  fov_y, show_window)) {

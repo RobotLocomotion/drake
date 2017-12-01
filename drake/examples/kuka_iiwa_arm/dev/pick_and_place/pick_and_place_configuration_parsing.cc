@@ -51,7 +51,18 @@ Isometry3<double> ParsePose(const proto::Pose& pose) {
 const proto::Model& GetModelOrThrow(
     const proto::PickAndPlaceConfiguration& configuration,
     const proto::ModelInstance& model_instance) {
-  return configuration.model().at(model_instance.name());
+  const auto& items = configuration.model().items();
+  for (int i = 0; i < items.size(); i++) {
+    const auto& current_item = items.Get(i);
+    if (!current_item.has_key() || !current_item.has_value()) {
+      continue;
+    }
+    if (current_item.key() == model_instance.name()) {
+      return current_item.value();
+    }
+  }
+
+  throw std::out_of_range("item not found");
 }
 
 const std::string& GetSimulationModelPathOrThrow(
@@ -72,7 +83,7 @@ void ExtractBasePosesForModels(
     const google::protobuf::RepeatedPtrField<proto::ModelInstance>& models,
     std::vector<Isometry3<double>>* poses) {
   DRAKE_DEMAND(poses != nullptr);
-  std::transform(models.cbegin(), models.cend(), std::back_inserter(*poses),
+  std::transform(models.begin(), models.end(), std::back_inserter(*poses),
                  [](const proto::ModelInstance& model) -> Isometry3<double> {
                    return ParsePose(model.pose());
                  });
@@ -83,7 +94,7 @@ void ExtractOptitrackInfoForModels(
     std::vector<pick_and_place::OptitrackInfo>* optitrack_info) {
   DRAKE_DEMAND(optitrack_info != nullptr);
   std::transform(
-      models.cbegin(), models.cend(), std::back_inserter(*optitrack_info),
+      models.begin(), models.end(), std::back_inserter(*optitrack_info),
       [](const proto::ModelInstance& model) -> pick_and_place::OptitrackInfo {
         return pick_and_place::OptitrackInfo(
             {model.optitrack_info().id(),
@@ -97,7 +108,7 @@ void ExtractModelPathsForModels(
     std::vector<std::string>* model_paths) {
   DRAKE_DEMAND(model_paths != nullptr);
   std::transform(
-      models.cbegin(), models.cend(), std::back_inserter(*model_paths),
+      models.begin(), models.end(), std::back_inserter(*model_paths),
       [&configuration](const proto::ModelInstance& table) -> std::string {
         return GetSimulationModelPathOrThrow(configuration, table);
       });
@@ -162,8 +173,10 @@ pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
   planner_configuration.target_index = target_index;
 
   // Store model path and end-effector name.
-  planner_configuration.model_path = GetPlanningModelPathOrThrow(
-      configuration, configuration.robot(planner_configuration.robot_index));
+  planner_configuration.drake_relative_model_path =
+      GetPlanningModelPathOrThrow(
+          configuration,
+          configuration.robot(planner_configuration.robot_index));
   planner_configuration.end_effector_name = end_effector_name;
 
   // Extract number of tables
@@ -239,7 +252,7 @@ ParsePlannerConfigurationsOrThrow(const std::string& filename) {
 
   // Build the planner configuration vector.
   std::vector<pick_and_place::PlannerConfiguration> planner_configurations;
-  std::transform(configuration.task().cbegin(), configuration.task().cend(),
+  std::transform(configuration.task().begin(), configuration.task().end(),
                  std::back_inserter(planner_configurations),
                  [&configuration](const proto::PickAndPlaceTask& task)
                      -> pick_and_place::PlannerConfiguration {

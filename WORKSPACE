@@ -336,10 +336,10 @@ bind(
 # When updating the version of protobuf,
 # update tools/install/protobuf/protobuf.cps
 github_archive(
-    name = "protobuf",
+    name = "com_google_protobuf",
     repository = "google/protobuf",
-    commit = "v3.1.0",
-    sha256 = "fb2a314f4be897491bb2446697be693d489af645cb0e165a85e7e64e07eb134d",  # noqa
+    commit = "v3.5.0",
+    sha256 = "0cc6607e2daa675101e9b7398a436f09167dffb8ca0489b0307ff7260498c13c",  # noqa
 )
 
 pypi_archive(

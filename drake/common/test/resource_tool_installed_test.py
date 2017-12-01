@@ -1,9 +1,15 @@
 """Performs tests for resource_tool as used _after_ installation.
 """
 
-import subprocess
 import os
+import shutil
+import subprocess
+import sys
 import unittest
+
+
+# Set on command-line to the location of common/install.
+_install_exe = None
 
 
 class TestResourceTool(unittest.TestCase):
@@ -11,7 +17,7 @@ class TestResourceTool(unittest.TestCase):
         # Install into a temporary directory.
         os.mkdir("tmp")
         subprocess.check_call(
-            ["drake/common/install",
+            [_install_exe,
              os.path.abspath("tmp"),
              ])
 
@@ -21,18 +27,14 @@ class TestResourceTool(unittest.TestCase):
             f.write("tmp_resource")
 
         # Remove the un-installed copy, so we _know_ it won't be used.
-        os.remove("drake/.drake-find_resource-sentinel")
-        os.remove("drake/__init__.py")
-        os.remove("drake/common/__init__.py")
-        os.remove("drake/common/install")
-        os.remove("drake/common/resource_tool")
-        os.remove("drake/common/resource_tool_installed_test")
-        os.remove("drake/common/test/__init__.py")
-        os.remove("drake/common/test/resource_tool_installed_test.py")
-        os.rmdir("drake/common/test")
-        os.rmdir("drake/common")
-        os.rmdir("drake")
-        self.assertEqual(os.listdir("."), ["tmp"])
+        content_test_folder = os.listdir(os.getcwd())
+        content_test_folder.remove("tmp")
+        for element in content_test_folder:
+            if os.path.isdir(element):
+                shutil.rmtree(element)
+            else:
+                os.remove(element)
+        self.assertEqual(os.listdir(os.getcwd()), ["tmp"])
 
         # Cross-check the resource root environment variable name.
         env_name = "DRAKE_RESOURCE_ROOT"
@@ -71,4 +73,5 @@ class TestResourceTool(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    _install_exe = sys.argv.pop(1)
     unittest.main()

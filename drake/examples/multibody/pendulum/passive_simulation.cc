@@ -35,8 +35,6 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
-using systems::BasicVector;
-using systems::Context;
 using systems::ImplicitEulerIntegrator;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;

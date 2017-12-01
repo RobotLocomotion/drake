@@ -3,7 +3,7 @@
   "Name": "protobuf",
   "Description": "Language-neutral, platform-neutral, extensible mechanism for serializing structured data",
   "License": "BSD-3-Clause",
-  "Version": "3.1.0",
+  "Version": "3.5.0",
   "Default-Components": [":protobuf"],
   "Components": {
     "protobuf": {
