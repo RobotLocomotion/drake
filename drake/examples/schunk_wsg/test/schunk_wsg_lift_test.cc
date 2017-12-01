@@ -41,7 +41,7 @@
 #include "drake/systems/primitives/trajectory_source.h"
 
 DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
-              "'compliant' (default) or 'timestepping'");
+              "'compliant' or 'timestepping'");
 DEFINE_double(dt, 1e-3, "The step size to use for "
               "'simulation_type=timestepping' (ignored for "
               "'simulation_type=compliant'");

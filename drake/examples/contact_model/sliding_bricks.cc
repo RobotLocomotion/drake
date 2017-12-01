@@ -51,7 +51,7 @@ DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
 DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
-              "'compliant' (default) or 'timestepping'");
+              "'compliant' or 'timestepping'");
 DEFINE_double(dt, 1e-3, "The step size to use for "
               "'simulation_type=timestepping' (ignored for "
               "'simulation_type=compliant'");
