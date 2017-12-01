@@ -211,7 +211,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // test_lifter.sdf file). These kinematic desireds are regulated using a
   // PID controller. Kinematic desireds for each system (piecewise polynomial
   // trajectory or sinusoid) consist of an output and the time derivative of
-  // that output. The PD controller requires the positional desireds to be
+  // that output. The PID controller requires the positional desireds to be
   // grouped together and the velocity desireds to also be grouped together;
   // the control diagram uses demultiplexers and multiplexers for this purpose. 
 
