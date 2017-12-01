@@ -424,8 +424,7 @@ void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
   kinematics_results->UpdateFromContext(context);
 }
 
-// Computes the stiffness, damping, and friction coefficient for a contact (if
-// it exists).
+// Computes the stiffness, damping, and friction coefficient for a contact.
 template <typename T>
 void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
       const drake::multibody::collision::PointPair& contact,
@@ -443,11 +442,25 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   compliant_contact_model_->CalcContactParameters(
       *contact.elementA, *contact.elementB, &material);
 
-  // Get the stiffness.
-  *stiffness = material.youngs_modulus();
+  // Get the stiffness. Young's modulus is force per area, while stiffness is
+  // force per length. That means that we must multiply by a characteristic
+  // area (for now); eventually, we'll want to multiply by the true contact
+  // patch area.
+  // TODO: Make characteristic area user settable.
+  const double characteristic_area = 1e-3;  // 1 cm^2
+  *stiffness = material.youngs_modulus() * characteristic_area;
 
-  // Get the dissipation value.
-  *damping = material.dissipation();
+  // Get the damping value (b) from the compliant model dissipation (α).
+  // Equation (16) from [Hunt 1975] yields b = 3/2 * α * k * x. We can assume
+  // that the stiffness and dissipation are predicated upon small deformation
+  // (x). Put another way, we determine the damping coefficient for a harmonic
+  // oscillator from linearizing the dissipation factor about the characteristic
+  // deformation; the system will behave like a harmonic oscillator oscillating
+  // about x = characteristic_deformation m.
+  // TODO: Make characteristic deformation user settable.
+  const double characteristic_deformation = 1e-4;  // 1 mm^2
+  *damping = material.dissipation() * 1.5 * (*stiffness) *
+      characteristic_deformation;
 
   // Get the coefficient of friction.
   *mu = material.static_friction();
