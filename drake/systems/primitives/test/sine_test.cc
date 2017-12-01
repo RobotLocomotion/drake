@@ -44,8 +44,8 @@ void TestSineSystem(const Sine<T>& sine_system,
 
       // Checks that the number of output ports in the Sine system and the
       // system output are consistent.
-      ASSERT_EQ(1, output->get_num_ports());
-      ASSERT_EQ(1, sine_system.get_num_output_ports());
+      ASSERT_EQ(3, output->get_num_ports());
+      ASSERT_EQ(3, sine_system.get_num_output_ports());
       const BasicVector<double> *output_vector = output->get_vector_data(0);
       ASSERT_NE(nullptr, output_vector);
 
@@ -77,8 +77,8 @@ void TestSineSystem(const Sine<T>& sine_system,
 
       // Checks that the number of output ports in the Sine system and the
       // system output are consistent.
-      ASSERT_EQ(1, output->get_num_ports());
-      ASSERT_EQ(1, sine_system.get_num_output_ports());
+      ASSERT_EQ(3, output->get_num_ports());
+      ASSERT_EQ(3, sine_system.get_num_output_ports());
       const BasicVector<double>* output_vector = output->get_vector_data(0);
       ASSERT_NE(nullptr, output_vector);
 
@@ -185,7 +185,7 @@ GTEST_TEST(SineTest, SineAccessorTest) {
   Eigen::Vector4d kFreq(1.5, 1.6, 1.7, 1.8);
   Eigen::Vector4d kPhase(1.9, 2.0, 2.1, 2.2);
   const auto sine_system = make_unique<Sine<double>>(kAmp, kFreq, kPhase, true);
-  // Verifies the gain accessors are OK.
+  // Verifies the Sine accessors are OK.
   EXPECT_THROW(sine_system->get_amplitude(), std::runtime_error);
   EXPECT_THROW(sine_system->get_frequency(), std::runtime_error);
   EXPECT_THROW(sine_system->get_phase(), std::runtime_error);
@@ -199,7 +199,7 @@ GTEST_TEST(SineTest, ToAutoDiff) {
   EXPECT_TRUE(
       is_autodiffxd_convertible(sine_system, [&](const auto& converted) {
     EXPECT_EQ(0, converted.get_num_input_ports());
-    EXPECT_EQ(1, converted.get_num_output_ports());
+    EXPECT_EQ(3, converted.get_num_output_ports());
     EXPECT_EQ(kAmp, converted.get_amplitude_vector());
   }));
 }

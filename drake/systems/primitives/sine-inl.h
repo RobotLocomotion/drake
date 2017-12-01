@@ -7,7 +7,6 @@
 
 #include <sstream>
 
-#include "drake/common/unused.h"
 #include "drake/systems/primitives/sine.h"
 
 namespace drake {
@@ -25,11 +24,29 @@ Sine<T>::Sine(const Eigen::VectorXd& amplitudes,
               const Eigen::VectorXd& frequencies,
               const Eigen::VectorXd& phases,
               bool is_time_based)
-    : VectorSystem<T>(SystemTypeTag<systems::Sine>{},
-                      amplitudes.size() * !is_time_based,
-                      amplitudes.size()),
+      : LeafSystem<T>(SystemTypeTag<systems::Sine>{}),
       amplitude_(amplitudes), frequency_(frequencies), phase_(phases),
-      is_time_based_(is_time_based) {}
+      is_time_based_(is_time_based) {
+  // If the Sine system is system time based, do not create an input port.
+  // System time is used as the time variable in this case. If the Sine system
+  // is not system time based, create an input port that contains the signal to
+  // be used as the time variable.
+  if (!is_time_based) {
+    this->DeclareInputPort(kVectorValued, amplitudes.size());
+  }
+  value_output_port_index_ =
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(amplitudes.size()),
+          &Sine::CalcValueOutput).get_index();
+  first_derivative_output_port_index_ =
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(amplitudes.size()),
+          &Sine::CalcFirstDerivativeOutput).get_index();
+  second_derivative_output_port_index_ =
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(amplitudes.size()),
+          &Sine::CalcSecondDerivativeOutput).get_index();
+}
 
 template <typename T>
 template <typename U>
@@ -94,23 +111,61 @@ const Eigen::VectorXd& Sine<T>::get_phase_vector() const {
 }
 
 template <typename T>
-void Sine<T>::DoCalcVectorOutput(
-    const Context<T>& context,
-    const Eigen::VectorBlock<const VectorX<T>>& input,
-    const Eigen::VectorBlock<const VectorX<T>>& state,
-    Eigen::VectorBlock<VectorX<T>>* output) const {
-  unused(state);
+void Sine<T>::CalcValueOutput(const Context<T>& context,
+                              BasicVector<T>* output) const {
+  VectorX<T> sine_arg;
+  if (is_time_based_) {
+    VectorX<T> time_vec(amplitude_.size());
+    time_vec.fill(context.get_time());
+    sine_arg = frequency_.array() * time_vec.array() + phase_.array();
+  } else {
+    Eigen::VectorBlock<const VectorX<T>> input =
+        this->EvalEigenVectorInput(context, 0);
+    sine_arg = frequency_.array() * input.array() + phase_.array();
+  }
+
+  Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();
+  output_block = amplitude_.array() * sine_arg.array().sin();
+}
+
+template <typename T>
+void Sine<T>::CalcFirstDerivativeOutput(
+    const Context<T>& context, BasicVector<T>* output) const {
+
+  VectorX<T> cos_arg;
+  if (is_time_based_) {
+    VectorX<T> time_vec(amplitude_.size());
+    time_vec.fill(context.get_time());
+    cos_arg = frequency_.array() * time_vec.array() + phase_.array();
+  } else {
+    Eigen::VectorBlock<const VectorX<T>> input =
+        this->EvalEigenVectorInput(context, 0);
+    cos_arg = frequency_.array() * input.array() + phase_.array();
+  }
+
+  Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();
+  output_block =
+      amplitude_.array() * frequency_.array() * cos_arg.array().cos();
+}
+
+template <typename T>
+void Sine<T>::CalcSecondDerivativeOutput(
+    const Context<T>& context, BasicVector<T>* output) const {
 
   VectorX<T> sine_arg;
   if (is_time_based_) {
-      VectorX<T> time_vec(amplitude_.size());
-      time_vec.fill(context.get_time());
-      sine_arg = frequency_.array() * time_vec.array() + phase_.array();
+    VectorX<T> time_vec(amplitude_.size());
+    time_vec.fill(context.get_time());
+    sine_arg = frequency_.array() * time_vec.array() + phase_.array();
   } else {
-      sine_arg = frequency_.array() * input.array() + phase_.array();
+    Eigen::VectorBlock<const VectorX<T>> input =
+        this->EvalEigenVectorInput(context, 0);
+    sine_arg = frequency_.array() * input.array() + phase_.array();
   }
 
-  *output = amplitude_.array() * sine_arg.array().sin();
+  Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();
+  output_block =
+      - amplitude_.array() * frequency_.array().pow(2) * sine_arg.array().sin();
 }
 
 }  // namespace systems

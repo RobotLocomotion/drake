@@ -32,7 +32,7 @@ namespace systems {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// @ingroup primitive_systems
 template <typename T>
-class Sine final : public VectorSystem<T> {
+class Sine final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Sine)
 
@@ -100,16 +100,22 @@ class Sine final : public VectorSystem<T> {
   const Eigen::VectorXd& get_phase_vector() const;
 
  protected:
-  void DoCalcVectorOutput(
-      const Context<T>& context,
-      const Eigen::VectorBlock<const VectorX<T>>& input,
-      const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+  void CalcValueOutput(const Context<T>& context,
+                       BasicVector<T>* output) const;
+  void CalcFirstDerivativeOutput(const Context<T>& context,
+                                 BasicVector<T>* output) const;
+  void CalcSecondDerivativeOutput(const Context<T>& context,
+                                  BasicVector<T>* output) const;
+
 
   const Eigen::VectorXd amplitude_;
   const Eigen::VectorXd frequency_;
   const Eigen::VectorXd phase_;
   const bool is_time_based_;
+
+  int value_output_port_index_{-1};
+  int first_derivative_output_port_index_{-1};
+  int second_derivative_output_port_index_{-1};
 };
 
 }  // namespace systems
