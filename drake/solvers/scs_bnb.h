@@ -106,33 +106,47 @@ class ScsNode {
    *    the original mixed-integer problem. If the cost is smaller than the best
    *    upper bound, then we update the best upper bound to this cost.
    * 4. when the problem is feasible, and the optimal cost is larger than the
-   *    best upper bound, then there is no need to branch on the tree.
+   *    best upper bound, then there is no need to branch on the node.
    * @param scs_settings. The settings (parameters) for solving the SCS problem.
    */
   scs_int Solve(const SCS_SETTINGS& scs_settings);
 
-  // Getter for A matrix.
+  /// Getter for A matrix.
   const AMatrix* A() const { return A_.get(); }
 
-  // Getter for b vector.
+  /// Getter for b vector.
   const scs_float* b() const { return b_.get(); }
 
-  // Getter for c vector, the linear coefficient of the cost.
+  /// Getter for c vector, the linear coefficient of the cost.
   const scs_float* c() const { return c_.get(); }
 
-  // Getter for the cones.
+  /// Getter for the cones.
   const SCS_CONE* cone() const { return cone_.get(); }
 
+  /**
+   * True if the optimal solution in this node satisfies all integral
+   * constraints.
+   */
   bool found_integral_sol() const { return found_integral_sol_; }
 
+  /// Getter for the indices of all binary variables in this node.
   const std::list<int>& binary_var_indices() const {
     return binary_var_indices_;
   }
 
+  /**
+   * This node is created from its parent node, by branching on a binary
+   * variable. Return the index of the branching variable in the parent node.
+   */
   int y_index() const { return y_index_; }
 
+  /**
+   * This node is created from its parent node, by fixing a binary variable to
+   * either 0 or 1. Returns the value of the branching binary variable.
+   */
   int y_val() const { return y_val_; }
 
+  /// Getter for the constant term in the cost.
   double cost_constant() const { return cost_constant_; }
 
   ScsNode* left_child() const { return left_child_; }
@@ -141,6 +155,7 @@ class ScsNode {
 
   ScsNode* parent() const { return parent_; }
 
+  /// Getter for the optimal cost of the optimization program in this node.
   double cost() const { return cost_; }
 
   const SCS_SOL_VARS* scs_sol() const { return scs_sol_.get(); }
