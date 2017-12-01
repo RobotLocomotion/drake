@@ -18,6 +18,7 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:which.bzl", "which")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
@@ -56,7 +57,7 @@ new_local_repository(
 # the upstream protobuf.bzl build rules).  The protobuf runtime is loaded
 # into "libprotobuf" via pkg-config below.
 local_repository(
-    name = "protobuf",
+    name = "com_google_protobuf",
     # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
     # this should use an absolute path (so this should be prepended by
     # __workspace_dir__).  However, in a clean build, this did not work.  We
@@ -87,6 +88,12 @@ pkg_config_package(
 pkg_config_package(
     name = "libprotobuf",
     modname = "protobuf",
+)
+
+# Find the protoc binary on $PATH.
+which(
+    name = "protoc",
+    command = "protoc",
 )
 
 load("//tools/workspace/python:python.bzl", "python_repository")

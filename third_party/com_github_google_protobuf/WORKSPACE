@@ -3,4 +3,4 @@
 # This file marks a workspace root for the Bazel build system. see
 # http://bazel.io/ .
 
-workspace(name = "protobuf")
+workspace(name = "com_google_protobuf")

@@ -101,7 +101,7 @@ proto_gen = rule(
         "protoc": attr.label(
             cfg = "host",
             executable = True,
-            allow_files = True,
+            single_file = True,
             mandatory = True,
         ),
         "plugin": attr.label(
