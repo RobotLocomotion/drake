@@ -153,6 +153,7 @@ INSTANTIATE_TEST_CASE_P(
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
+    // SCS is inaccurate, choose a large tolerance.
     SolveAndCheckSolution(scs_solver, 1.3e-3);
   }
 }
@@ -163,6 +164,7 @@ INSTANTIATE_TEST_CASE_P(SCSTest, TestEllipsoidsSeparation,
 TEST_P(TestQPasSOCP, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
+    // SCS is inaccurate, choose a large tolerance.
     SolveAndCheckSolution(scs_solver, 2E-4);
   }
 }
@@ -173,6 +175,7 @@ INSTANTIATE_TEST_CASE_P(SCSTest, TestQPasSOCP,
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
+    // SCS is inaccurate, choose a large tolerance.
     SolveAndCheckSolution(scs_solver, 2E-3);
   }
 }
