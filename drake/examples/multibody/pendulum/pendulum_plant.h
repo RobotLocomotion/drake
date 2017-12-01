@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 
 #include "drake/common/drake_optional.h"
@@ -58,23 +59,19 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   explicit PendulumPlant(const PendulumPlant<U>&);
 
   /// Returns the mass of this point pendulum.
-  double get_mass() const { return mass_; }
+  double mass() const { return mass_; }
 
   /// Returns the length of the rod from which the point mass is suspended.
-  double get_length() const { return length_; }
+  double length() const { return length_; }
 
   /// Returns the value of the acceleration of gravity in the model.
-  double get_gravity() const { return gravity_; }
+  double gravity() const { return gravity_; }
 
   /// Returns the unique id identifying this plant as a source for a
   /// GeometrySystem.
   /// Returns `nullopt` if `this` plant did not register any geometry.
   optional<geometry::SourceId> get_source_id() const {
-    if (source_id_.is_valid()) {
-      return source_id_;
-    } else {
-      return nullopt;
-    }
+    return source_id_;
   }
 
   /// Returns the output port of frame id's used to communicate poses to a
@@ -93,7 +90,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
 
   /// Computes the period for the small oscillations of a simple pendulum.
   /// The solution assumes no damping. Useful to compute a reference time scale.
-  static T SimplePendulumPeriod(const T& length, const T& gravity) {
+  static T CalcSimplePendulumPeriod(const T& length, const T& gravity) {
     DRAKE_DEMAND(length > 0);
     DRAKE_DEMAND(gravity > 0);
     using std::sqrt;
@@ -104,6 +101,12 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U> friend class PendulumPlant;
+
+  // Helper method for NaN initialization.
+  static constexpr T nan() {
+    return std::numeric_limits<
+        typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
+  }
 
   // No inputs implies no feedthrough; this makes it explicit.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
@@ -144,10 +147,11 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
-  // The physical parameters of the model:
-  double mass_{1.0};      // In kilograms.
-  double length_{0.5};    // In meters.
-  double gravity_{9.81};  // In m/s².
+  // The physical parameters of the model. They are initialized with NaN for a
+  // quick detection of uninitialized values.
+  double mass_{nan()};      // In kilograms.
+  double length_{nan()};    // In meters.
+  double gravity_{nan()};   // In m/s².
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
@@ -159,11 +163,12 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   const drake::multibody::RevoluteJoint<T>* joint_;
 
   // Geometry source identifier for this system to interact with geometry
-  // system.
-  geometry::SourceId source_id_{};
+  // system. It is made optional for plants that do not register geometry
+  // (dynamics only).
+  optional<geometry::SourceId> source_id_{nullopt};
 
   // The frame Id associated with the only Body in the model.
-  geometry::FrameId frame_id_;
+  optional<geometry::FrameId> frame_id_{nullopt};
 
   // Port handles
   int geometry_id_port_{-1};

@@ -57,7 +57,7 @@ int do_main() {
   // Compute a reference time scale to set reasonable values for time step and
   // simulation time.
   const double reference_time_scale =
-      PendulumPlant<double>::SimplePendulumPeriod(length, gravity);
+      PendulumPlant<double>::CalcSimplePendulumPeriod(length, gravity);
 
   // Define a reasonable maximum time step based off the expected dynamics's
   // time scales.
@@ -78,13 +78,13 @@ int do_main() {
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
   DrakeLcm lcm;
-  PoseBundleToDrawMessage* converter =
-      builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem* publisher =
-      builder.template AddSystem<LcmPublisherSystem>(
+  const PoseBundleToDrawMessage& converter =
+      *builder.template AddSystem<PoseBundleToDrawMessage>();
+  LcmPublisherSystem& publisher =
+      *builder.template AddSystem<LcmPublisherSystem>(
           "DRAKE_VIEWER_DRAW",
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher->set_publish_period(1 / 60.0);
+  publisher.set_publish_period(1 / 60.0);
 
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!pendulum.get_source_id());
@@ -98,14 +98,14 @@ int do_main() {
       geometry_system.get_source_pose_port(pendulum.get_source_id().value()));
 
   builder.Connect(geometry_system.get_pose_bundle_output_port(),
-                  converter->get_input_port(0));
-  builder.Connect(*converter, *publisher);
+                  converter.get_input_port(0));
+  builder.Connect(converter, publisher);
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
   geometry::DispatchLoadMessage(geometry_system);
 
-  auto diagram = builder.Build();
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   auto diagram_context = diagram->CreateDefaultContext();
   systems::Context<double>& pendulum_context =
@@ -114,7 +114,7 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
-  systems::IntegratorBase<double>* integrator;
+  systems::IntegratorBase<double>* integrator{nullptr};
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
@@ -128,9 +128,9 @@ int do_main() {
         simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
             *diagram, max_time_step, &simulator.get_mutable_context());
   } else {
-    throw std::logic_error(
+    throw std::runtime_error(
         "Integration scheme '" + FLAGS_integration_scheme +
-            "' not supported for this example.");
+        "' not supported for this example.");
   }
   integrator->set_maximum_step_size(max_time_step);
 
@@ -181,6 +181,9 @@ int do_main() {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  gflags::SetUsageMessage(
+      "A simple pendulum demo using Drake's MultibodyTree. "
+      "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::pendulum::do_main();
 }
