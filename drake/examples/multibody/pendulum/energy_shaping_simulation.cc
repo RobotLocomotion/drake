@@ -49,9 +49,9 @@ template <typename T>
 class PendulumEnergyShapingController : public systems::LeafSystem<T> {
  public:
   explicit PendulumEnergyShapingController(const PendulumPlant<T>& pendulum) :
-      mass_(pendulum.get_mass()),
-      length_(pendulum.get_length()),
-      gravity_(pendulum.get_gravity()) {
+      mass_(pendulum.mass()),
+      length_(pendulum.length()),
+      gravity_(pendulum.gravity()) {
     this->DeclareVectorInputPort(PendulumState<T>());
     this->DeclareVectorOutputPort(PendulumInput<T>(),
                                   &PendulumEnergyShapingController::CalcTau);
@@ -98,7 +98,7 @@ int do_main() {
   // Compute a reference time scale to set reasonable values for time step and
   // simulation time.
   const double reference_time_scale =
-      PendulumPlant<double>::SimplePendulumPeriod(length, gravity);
+      PendulumPlant<double>::CalcSimplePendulumPeriod(length, gravity);
 
   // Define a reasonable maximum time step based off the expected dynamics's
   // time scales.
@@ -231,6 +231,11 @@ int do_main() {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  gflags::SetUsageMessage(
+      "A simple pendulum demo using Drake's MultibodyTree. "
+      "An energy shaping controller regulates the energy of the pendulum to "
+      "place it in the homoclinic orbit that passes through its unstable fixed "
+      "point. Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::pendulum::do_main();
 }
