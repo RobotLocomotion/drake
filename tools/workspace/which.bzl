@@ -11,7 +11,8 @@ def _impl(repository_ctx):
 # A symlink to {}.
 exports_files(["{}"])
 """.format(found_command, command)
-    repository_ctx.file("BUILD", content = build_file_content, executable = False)
+    repository_ctx.file(
+        "BUILD", content = build_file_content, executable = False)
 
 which = repository_rule(
     attrs = {
@@ -21,6 +22,7 @@ which = repository_rule(
     local = True,
     implementation = _impl,
 )
+
 """Alias the result of $(which $command) into a BUILD label //:$command.
 
 Changes to $PATH will cause this rule to be re-evaluated (because it sets its
