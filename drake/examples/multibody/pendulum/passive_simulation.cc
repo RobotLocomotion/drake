@@ -82,7 +82,7 @@ int do_main() {
   auto torque_source =
       builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
   torque_source->set_name("Applied Torque");
-  builder.Connect(torque_source->get_output_port(), pendulum->get_input_port());
+  builder.Connect(torque_source->get_output_port(), pendulum.get_input_port());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.

@@ -3,9 +3,9 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/drake_optional.h"
 #include "drake/examples/multibody/pendulum/gen/pendulum_input.h"
 #include "drake/examples/multibody/pendulum/gen/pendulum_state.h"
-#include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
