@@ -30,7 +30,7 @@ const double REG = 1e-8;
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
-// TODO(jwnimmer-tri) Someone with gurobi has to fix this.
+// TODO(jwnimmer-tri) Someone with Gurobi has to fix this.
 // NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
 
@@ -59,7 +59,7 @@ void InstantaneousQPController::initialize() {
   int error = GRBloadenv(&(env), NULL);
   if (error) {
     std::cerr << "Gurobi error code: " << error << std::endl;
-    throw std::runtime_error("Cannot load gurobi environment");
+    throw std::runtime_error("Cannot load Gurobi environment");
   }
 
   CGE(GRBsetintparam(env, "outputflag", INSTQP_GUROBI_OUTPUTFLAG), env);
@@ -1063,7 +1063,7 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   for (int i = 0; i < n_ineq; ++i) {
-    // remove inf constraints---needed by gurobi
+    // remove inf constraints---needed by Gurobi
     if (std::isinf(bin(i))) {
       Ain.row(i) = 0 * Ain.row(i);
       bin(i) = 0;
@@ -1248,7 +1248,7 @@ int InstantaneousQPController::setupAndSolveQP(
                     controller_state.active, alpha);
       // if (info<0)    mexPrintf("fastQP info=%d... calling Gurobi.\n", info);
     } else {
-      // use gurobi active set
+      // use Gurobi active set
       model = gurobiActiveSetQP(
           env, QBlkDiag, f, Aeq, beq, Ain, bin, lb, ub, controller_state.vbasis,
           controller_state.vbasis_len, controller_state.cbasis,
