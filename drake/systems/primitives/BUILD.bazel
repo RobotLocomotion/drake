@@ -272,7 +272,6 @@ drake_cc_library(
         "sine-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
