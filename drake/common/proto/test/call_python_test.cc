@@ -2,13 +2,20 @@
 
 #include <cmath>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
+
+DEFINE_bool(with_error, false, "Inject an error towards the end.");
 
 // TODO(eric.cousineau): Instrument client to verify output (and make this a
 // unittest).
 
 namespace drake {
 namespace common {
+
+GTEST_TEST(TestCallPython, Start) {
+  CallPython("push_exec_check");
+}
 
 GTEST_TEST(TestCallPython, DispStr) {
   CallPython("print", "Hello");
@@ -66,6 +73,12 @@ GTEST_TEST(TestCallPython, RemoteVarTest) {
   CallPython("print", "Third column should now be [1, 2, 3]: ");
   magic.slice(":", 2) = Eigen::Vector3d(1, 2, 3);
   CallPython("print", magic);
+
+  // Place error code at the end, so that the test fails if this is not
+  // processed.
+  if (FLAGS_with_error) {
+    CallPython("bad_function_name");
+  }
 }
 
 GTEST_TEST(TestCallPython, Plot2d) {
@@ -111,6 +124,10 @@ GTEST_TEST(TestCallPython, Plot3d) {
   // Send variables.
   CallPython("setvars", "x", x, "y", y, "Z", Z);
   CallPython("eval", "print(len(x) + len(y) + len(Z))");
+}
+
+GTEST_TEST(TestCallPython, Finish) {
+  CallPython("pop_exec_check");
 }
 
 }  // namespace common
