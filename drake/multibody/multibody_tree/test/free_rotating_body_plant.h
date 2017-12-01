@@ -67,7 +67,7 @@ class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
   /// Returns the default value of the angular velocity set by default by
-  /// SetDefaultState().
+  /// SetDefaultState(). Currently a non-zero value.
   Vector3<double> get_default_initial_angular_velocity() const;
 
  private:

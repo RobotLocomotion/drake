@@ -59,13 +59,13 @@ Vector3<T> SpaceXYZMobilizer<T>::get_angular_velocity(
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
-  return set_angular_velocity(*context, &context->get_mutable_state(), w_FM);
+  return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
 }
 
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
-    const systems::Context<T>&, systems::State<T>* state,
-    const Vector3<T>& w_FM) const {
+    const systems::Context<T>&, const Vector3<T>& w_FM,
+    systems::State<T>* state) const {
   auto v = this->get_mutable_velocities(state);
   DRAKE_ASSERT(v.size() == kNv);
   v = w_FM;

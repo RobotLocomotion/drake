@@ -51,12 +51,6 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int get_num_velocities() const final { return kNv;}
 
-  /// Default implementation to Mobilizer::set_zero_configuration() that sets
-  /// the state in `context` according to set_zero_state().
-  void set_zero_configuration(systems::Context<T>* context) const override {
-    set_zero_state(*context, &context->get_mutable_state());
-  }
-
   /// Default implementation to Mobilizer::set_zero_state() that sets all
   /// generalized positions and generalized velocities related to this mobilizer
   /// to zero. Be aware however that this default does not apply in general to

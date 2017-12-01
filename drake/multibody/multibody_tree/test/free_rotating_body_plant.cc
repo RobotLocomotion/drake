@@ -130,7 +130,7 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
   DRAKE_DEMAND(state != nullptr);
   model_.SetDefaultState(context, state);
   mobilizer_->set_angular_velocity(
-      context, state, get_default_initial_angular_velocity());
+      context, get_default_initial_angular_velocity(), state);
 }
 
 template<typename T>
