@@ -48,3 +48,8 @@ cc_library(
     linkstatic = 1,
     deps = [":octomath"],
 )
+
+install(
+    name = "install",
+    docs = ["octomap/LICENSE.txt"],
+)
