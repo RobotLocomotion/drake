@@ -1,8 +1,8 @@
 # -*- python -*-
 
 load(
-   "@drake//tools/install:install.bzl",
-   "install",
+    "@drake//tools/install:install.bzl",
+    "install",
 )
 
 package(default_visibility = ["//visibility:public"])
