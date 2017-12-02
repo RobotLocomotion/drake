@@ -16,8 +16,10 @@ drake_py_binary(
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
+    "ccd",
     "drake_visualizer",
     "eigen",
+    "fcl",
     "fmt",
     "ignition_math",
     "ignition_rndf",
@@ -25,6 +27,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcmtypes_bot2_core",
     "lcmtypes_robotlocomotion",
     "libbot",
+    "octomap",
     "pybind11",
     "scs",
     "sdformat",
