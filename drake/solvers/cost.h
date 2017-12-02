@@ -111,7 +111,7 @@ class QuadraticCost : public Cost {
 
   ~QuadraticCost() override {}
 
-  // Returns the symmetric matrix Q, as the Hessian of the cost.
+  /// Returns the symmetric matrix Q, as the Hessian of the cost.
   const Eigen::MatrixXd& Q() const { return Q_; }
 
   const Eigen::VectorXd& b() const { return b_; }
@@ -138,7 +138,7 @@ class QuadraticCost : public Cost {
       throw std::runtime_error("Can't change the number of decision variables");
     }
 
-    Q_ = new_Q;
+    Q_ = (new_Q + new_Q.transpose()) / 2;
     b_ = new_b;
     c_ = new_c;
   }
