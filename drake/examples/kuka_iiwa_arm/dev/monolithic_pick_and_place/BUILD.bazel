@@ -79,7 +79,6 @@ drake_cc_googletest(
     # times out in those configurations. We should try to split this test up
     # such that the exclusions are no longer necessary.
     tags = [
-        "no_asan",
         "no_lsan",
         "no_memcheck",
         "no_tsan",
