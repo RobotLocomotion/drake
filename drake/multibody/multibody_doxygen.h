@@ -437,6 +437,7 @@ pose, we are
 interested in the location of frame B's origin Bo in A, @f$^Ap^{B_O}@f$
 (`p_ABo`), or more explicitly @f$[^{A_O}p^{B_O}]_A@f$ (`p_AoBo_A`).
 
+@anchor orientation_discussion
 <h3>Orientation</h3>
 
 A rotation matrix R, also known as a direction cosine matrix, is an orthogonal

@@ -69,7 +69,7 @@ drake_cc_library(
     srcs = ["rotation_matrix.cc"],
     hdrs = ["rotation_matrix.h"],
     deps = [
-        "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )

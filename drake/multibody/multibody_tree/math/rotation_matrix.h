@@ -10,14 +10,15 @@ namespace drake {
 namespace multibody {
 
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
-/// A and B.  It relates right-handed orthogonal unit vectors Ax, Ay, Az
-/// fixed in frame A to right-handed orthogonal unit vectors Bx, By, Bz
-/// fixed in frame B.  The monogram notation for the rotation matrix relating A
-/// to B is `R_AB`.  See @ref multibody_notation_basics for monogram notation.
-/// @note This class helps ensure users create valid rotation matrices.
+/// A and B and helps ensure users create valid rotation matrices.  This class
+/// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
+/// to right-handed orthogonal unit vectors Bx, By, Bz fixed in frame B.  The
+/// monogram notation for the rotation matrix relating A to B is `R_AB`.
+/// See @ref multibody_quantities for monogram notation for dynamics.
+/// See @ref orientation_discussion "for a discussion on rotation matrices".
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-// TODO(Mitiguy) Add link to orientation in multibody_doxygen.h
+// TODO(Mitiguy) Ensure this class handles RotationMatrix<symbolic::Expression>.
 template <typename T>
 class RotationMatrix {
  public:
@@ -28,19 +29,24 @@ class RotationMatrix {
   RotationMatrix() {}
 
   /// Construct a %RotationMatrix from a Matrix3.
-  /// @param[in] R an allegedly valid right-handed rotation matrix.
-  /// @throws exception std::logic_error if R violates IsValid(R, tolerance),
-  /// where tolerance is a small multiplier of double-precision epsilon.
+  /// @param[in] R an allegedly valid %RotationMatrix.
+  /// @throws exception std::logic_error in debug builds if R violates
+  /// IsValid(R, tolerance), where tolerance is a small multiplier of
+  /// double-precision epsilon.
   explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() {
-    SetOrThrowIfNotValid(R, internal_tolerance_);
+#ifdef DRAKE_ASSERT_IS_ARMED
+    SetOrThrowIfNotValid(R, kInternalTolerance_);
+#else
+    SetUnchecked(R);
+#endif
   }
 
   /// Sets the underlying Matrix3 in a %RotationMatrix.
-  /// @param[in] R an allegedly valid right-handed rotation matrix.
+  /// @param[in] R an allegedly valid %RotationMatrix.
   /// @throws exception std::logic_error if R violates IsValid(R, tolerance),
   /// where tolerance is a small multiplier of double-precision epsilon.
   void SetOrThrowIfNotValid(const Matrix3<T>& R) {
-    ThrowIfNotValid(R, internal_tolerance_);
+    ThrowIfNotValid(R, kInternalTolerance_);
     SetUnchecked(R);
   }
 
@@ -49,7 +55,7 @@ class RotationMatrix {
 
   /// @retval R_BA = R_AB⁻¹, the inverse (transpose) of this %RotationMatrix.
   /// @note For a valid rotation matrix R_BA = R_AB⁻¹ = R_ABᵀ.
-  RotationMatrix<T> Inverse() const {
+  RotationMatrix<T> inverse() const {
     return RotationMatrix<T>(R_AB_.transpose());
   }
 
@@ -85,7 +91,7 @@ class RotationMatrix {
   }
 
   /// Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
-  /// computing ‖R ⋅ R⁻¹ - I‖∞ R - I (i.e., the maximum absolute value of the
+  /// computing ‖R ⋅ R⁻¹ - I‖∞ (i.e., the maximum absolute value of the
   /// difference between the elements of R ⋅ R⁻¹ and the 3x3 identity matrix).
   /// @param[in] R matrix being checked for orthonormality.
   /// @returns ‖R ⋅ R⁻¹ - I‖∞
@@ -94,45 +100,45 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
   }
 
-  /// Tests if a generic Matrix3 has vectors that form right-handed bases.
-  /// @param[in] R a matrix allegedly associated with right-handed bases.
-  /// @return `true` if R has right-handed bases, otherwise `false`.
-  /// @internal The determinant of an orthogonal rotation matrix that has right-
-  /// handed bases is +1, whereas for left-handed bases the determinant is -1.
-  /// For non-orthogonal non-unitary bases, the determinant is positive if
-  /// the bases are right-handed, whereas the determinant is negative if
-  /// the bases are left-handed (if determinant = 0, bases do not span 3D).
-  /// Hence, check if the matrix is more right-handed than left-handed.
-  static bool IsRightHanded(const Matrix3<T>& R) { return R.determinant() > 0; }
+  /// Tests if the determinant of a generic Matrix3 is positive or negative.
+  /// @param[in] R an allegedly valid %RotationMatrix.
+  /// @return `true` if the determinant of R is positive, otherwise `false`.
+  /// @internal The determinant of an proper rotation matrix is +1, whereas for
+  /// an improper rotation matrix it is -1.  To avoid testing near +1 (which
+  /// can return a false negative if the matrix is slightly non-orthonormal),
+  /// all that is needed is to ensure the matrix is reasonably "proper" is to
+  /// ensure the determinant is positive.  If the determinant is 0, it means
+  /// the basis vectors are not linearly independent (do not span 3D space).
+  static bool IsDeterminantPositive(const Matrix3<T>& R) {
+    return R.determinant() > 0;
+  }
 
-  /// Tests if a generic Matrix3 has orthogonal unit vectors to within the
-  /// threshold specified by `tolerance`.
+  /// Tests if a generic Matrix3 has orthonormal vectors to within the threshold
+  /// specified by `tolerance`.
   /// @param[in] R an allegedly orthonormal rotation matrix.
   /// @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
   /// and the identity matrix I, i.e., checks if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance.
-  /// @return `true` if R is an othogonal matrix, otherwise `false`.
-  static bool IsOrthogonal(const Matrix3<T>& R, double tolerance) {
+  /// @return `true` if R is an orthonormal matrix, otherwise `false`.
+  static bool IsOrthonormal(const Matrix3<T>& R, double tolerance) {
     return GetMeasureOfOrthonormality(R) <= tolerance;
   }
 
-  /// Tests if a generic Matrix3 seems to be a valid right-handed, orthonormal
-  /// rotation matrix to within the threshold specified by `tolerance`.
-  /// @param[in] R an allegedly valid right-handed orthonormal rotation matrix.
-  /// @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
-  /// and the identity matrix I, i.e., checks if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance.
+  /// Tests if a generic Matrix3 seems to be a proper orthonormal rotation
+  /// matrix to within the threshold specified by `tolerance`.
+  /// @param[in] R an allegedly valid %RotationMatrix.
+  /// @param[in] tolerance maximum allowable absolute difference of `R * R⁻¹`
+  /// and the identity matrix I (i.e., checks if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance).
   /// @return `true` if R is a valid rotation matrix, otherwise `false`.
   static bool IsValid(const Matrix3<T>& R, double tolerance) {
-    return IsOrthogonal(R, tolerance) && IsRightHanded(R);
+    return IsOrthonormal(R, tolerance) && IsDeterminantPositive(R);
   }
 
-  /// Tests if `this` rotation matrix is a valid right-handed, orthonormal
-  /// rotation matrix to within the threshold specified by `tolerance`.
+  /// Tests if `this` rotation matrix seems to be a proper orthonormal rotation
+  /// matrix to within the threshold specified by `tolerance`.
   /// @param[in] tolerance maximum allowable absolute difference between
-  /// `this` * Inverse(`this`) and the identity matrix I.
-  /// In other words, checks if ‖R_AB_ ⋅ R_AB_⁻¹ - I‖∞ <= tolerance.
-  /// @return `true` if the rotation matrix is valid, otherwise `false`.
-  /// @note It is unlikely for a rotation matrix (post-construction) to be
-  /// invalid.  One possible way is accumulated error with operator*().
+  /// `this * this⁻¹` and the identity matrix I (i.e., checks if
+  /// ‖this ⋅ this⁻¹ - I‖∞ <= tolerance).
+  /// @return `true` if `this` is a valid rotation matrix, otherwise `false`.
   bool IsValid(double tolerance) const { return IsValid(matrix(), tolerance); }
 
   /// Compares each element of `this` to the corresponding element of `other`
@@ -156,16 +162,16 @@ class RotationMatrix {
  private:
   // Construct a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
-  // @param[in] R an allegedly valid right-handed rotation matrix.
+  // @param[in] R an allegedly valid %RotationMatrix.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
 
   // Sets the underlying Matrix3 in a %RotationMatrix.  No check is performed
   // to test whether or not the parameter R is a valid rotation matrix.
-  // @param[in] R an allegedly valid 3x3 right-handed rotation matrix.
+  // @param[in] R an allegedly valid %RotationMatrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
 
   // Sets the underlying Matrix3 in a %RotationMatrix.
-  // @param[in] R an allegedly valid right-handed rotation matrix.
+  // @param[in] R an allegedly valid %RotationMatrix.
   // @param[in] tolerance parameter used in call to IsValid(R, `tolerance`),
   // which is usually a small multiplier of double-precision epsilon.
   // @throws exception std::logic_error if R violates IsValid(R, `tolerance`).
@@ -199,14 +205,14 @@ class RotationMatrix {
   }
 
   // Throws an exception if R is not a valid %RotationMatrix.
-  // @param[in] R an allegedly valid right-handed rotation matrix.
+  // @param[in] R an allegedly valid %RotationMatrix.
   // @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
   // and the identity matrix I, i.e., if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance.
   static void ThrowIfNotValid(const Matrix3<T>& R, double tolerance) {
-    if (!IsOrthogonal(R, tolerance))
-      throw std::logic_error("Error: Rotation matrix is not orthogonal.");
-    if (!IsRightHanded(R))
-      throw std::logic_error("Error: Rotation matrix is not right-handed.");
+    if (!IsOrthonormal(R, tolerance))
+      throw std::logic_error("Error: Rotation matrix is not orthonormal.");
+    if (!IsDeterminantPositive(R))
+      throw std::logic_error("Error: Rotation matrix determinant is negative.");
   }
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
@@ -214,8 +220,8 @@ class RotationMatrix {
   Matrix3<T> R_AB_{Matrix3<T>::Identity()};
 
   // Declare the allowable internal tolerance for a valid rotation matrix.
-  static constexpr double internal_tolerance_{
-      100 * std::numeric_limits<double>::epsilon() };
+  static constexpr double kInternalTolerance_{
+      128 * std::numeric_limits<double>::epsilon() };
 };
 
 }  // namespace multibody
