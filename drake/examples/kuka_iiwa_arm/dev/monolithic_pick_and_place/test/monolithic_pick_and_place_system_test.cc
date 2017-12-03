@@ -116,7 +116,7 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
     plant_configuration_.default_contact_material.set_dissipation(5);
 
     // Set planner parameters
-    planner_configuration_.model_path = kIiwaPath;
+    planner_configuration_.drake_relative_model_path = kIiwaPath;
     planner_configuration_.end_effector_name = kEndEffectorName;
     planner_configuration_.target_dimensions = kTargetDimensions;
     planner_configuration_.num_tables = 2;

@@ -363,7 +363,8 @@ void RigidBodyTree<T>::compile() {
         }
       }
       if (!hasChild) {
-        cout << "Welding joint " << bodies[i]->getJoint().get_name() << endl;
+        drake::log()->info("Welding joint {}",
+                           bodies[i]->getJoint().get_name());
         std::unique_ptr<DrakeJoint> joint_unique_ptr(new FixedJoint(
             bodies[i]->getJoint().get_name(),
             bodies[i]->getJoint().get_transform_to_parent_body()));
