@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+import argparse
 import copy
 import numpy as np
 import sys
+from Queue import Queue
 from threading import Thread, Lock
 
 # Hacky, but this is the simplest route right now.
@@ -13,15 +15,27 @@ from google.protobuf.internal.decoder import _DecodeVarint32
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
 
 
+class _ExecutionInProgress(object):
+    def __init__(self):
+        self.count = 0
+
+    def push(self):
+        self.count += 1
+
+    def pop(self):
+        assert self.count > 0
+        self.count -= 1
+
+
 def _get_required_helpers(scope_locals):
     # Provides helpers to keep C++ interface as simple as possible.
     # @returns Dictionary containing the helpers needed.
     def getitem(obj, index):
-        """ Global function for `obj[index]`. """
+        """Global function for `obj[index]`. """
         return obj[index]
 
     def setitem(obj, index, value):
-        """ Global function for `obj[index] = value`. """
+        """Global function for `obj[index] = value`. """
         obj[index] = value
         return obj[index]
 
@@ -29,19 +43,19 @@ def _get_required_helpers(scope_locals):
         return obj(*args, **kwargs)
 
     def pass_through(value):
-        """ Pass-through for direct variable access. """
+        """Pass-through for direct variable access. """
         return value
 
     def make_tuple(*args):
-        """ Create a tuple from an argument list. """
+        """Create a tuple from an argument list. """
         return tuple(args)
 
     def make_list(*args):
-        """ Create a list from an argument list. """
+        """Create a list from an argument list. """
         return list(args)
 
     def make_kwargs(*args):
-        """ Create a keyword argument object from an argument list. """
+        """Create a keyword argument object from an argument list. """
         assert len(args) % 2 == 0
         keys = args[0::2]
         values = args[1::2]
@@ -49,7 +63,7 @@ def _get_required_helpers(scope_locals):
         return _KwArgs(**kwargs)
 
     def _make_slice(expr):
-        """ Parse a slice object from a string. """
+        """Parse a slice object from a string. """
         def to_piece(s):
             return s and int(s) or None
         pieces = map(to_piece, expr.split(':'))
@@ -59,7 +73,7 @@ def _get_required_helpers(scope_locals):
             return slice(*pieces)
 
     def make_slice_arg(*args):
-        """ Create a scalar or tuple for acessing objects via slices. """
+        """Create a scalar or tuple for acessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
             if isinstance(arg, str):
@@ -73,12 +87,16 @@ def _get_required_helpers(scope_locals):
             return tuple(out)
 
     def setvar(var, value):
-        """ Sets a variable in the client's locals. """
+        """Sets a variable in the client's locals. """
         scope_locals[var] = value
 
     def setvars(*args):
-        """ Sets multiple variables in the client's locals. """
+        """Sets multiple variables in the client's locals. """
         scope_locals.update(make_kwargs(*args))
+
+    _execution_in_progress = _ExecutionInProgress()
+    start_execution = _execution_in_progress.push
+    finish_execution = _execution_in_progress.pop
 
     out = locals().copy()
     # Scrub extra stuff.
@@ -100,40 +118,59 @@ def _merge_dicts(*args):
 
 
 def default_globals():
-    """ Creates default globals for code that the client side can execute.
+    """Creates default globals for code that the client side can execute.
+
     This is geared for convenient (not necessarily efficient) plotting
-    with `matplotlib`. """
+    with `matplotlib`.
+    """
+    # @note This imports modules at a function-scope rather than at a
+    # module-scope, which does not satisfy PEP8. This is intentional, as it
+    # allows for a cleaner scope separation between the client core code (e.g.
+    # `CallPythonClient`) and the client user code (e.g. `plot(x, y)`).
+    # TODO(eric.cousineau): Consider relegating this to a different module,
+    # possibly when this falls under `pydrake`.
     import numpy as np
     from mpl_toolkits.mplot3d import Axes3D
     import matplotlib
     import matplotlib.pyplot as plt
     import pylab  # See `%pylab?` in IPython.
 
-    # Where better to put this?
+    # TODO(eric.cousineau): Where better to put this?
     matplotlib.interactive(True)
 
     def disp(value):
-        """ Alias for print. """
+        """Alias for print."""
         print(value)
 
     def wait():
-        """ Wait to allow user interaction with plots. """
+        """Waits to allow user interaction with plots."""
         plt.show(block=True)
 
+    def pause(interval):
+        """Pause for `interval` seconds, letting the GUI flush its event queue.
+
+        @note This is a *necessary* function to be defined if these globals are
+        not used!
+        """
+        plt.pause(interval)
+
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
-        """ Plot a 3d surface. """
+        """Plots a 3d surface."""
         fig = plt.gcf()
         ax = fig.gca(projection='3d')
         X, Y = np.meshgrid(x, y)
         ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
 
     def show():
-        """ Show `matplotlib` images without blocking.
-        Generally not needed if `matplotlib.is_interactive()` is true. """
+        """Shows `matplotlib` images without blocking.
+
+        Generally not needed if `matplotlib.is_interactive()` is true.
+        """
         plt.show(block=False)
 
     def magic(N):
-        """ Simple odd-only case for magic squares.
+        """Provides simple odd-only case for magic squares.
+
         @ref https://scipython.com/book/chapter-6-numpy/examples/creating-a-magic-square  # noqa
         """
         assert N % 2 == 1
@@ -163,10 +200,14 @@ _FILENAME_DEFAULT = "/tmp/python_rpc"
 
 
 class CallPythonClient(object):
-    """ Provides a client to receive Python commands (e.g. printing or
-    plotting) from a C++ server for debugging purposes. """
+    """Provides a client to receive Python commands.
+
+    Enables printing or plotting from a C++ application for debugging
+    purposes.
+    """
     def __init__(self, filename=None, stop_on_error=True,
-                 scope_globals=None, scope_locals=None):
+                 scope_globals=None, scope_locals=None,
+                 threaded=True, loop=False):
         if filename is None:
             self.filename = _FILENAME_DEFAULT
         else:
@@ -187,14 +228,18 @@ class CallPythonClient(object):
         self.scope_globals = _merge_dicts(required_helpers, scope_globals)
 
         self._stop_on_error = stop_on_error
+        self._threaded = threaded
+        self._loop = loop
 
         # Variables indexed by GUID.
         self._client_vars = {}
 
         self._had_error = False
+        self._done = False
+        self._file = None
 
     def _to_array(self, arg, dtype):
-        # Convert a protobuf argument to the appropriate NumPy array (or
+        # Converts a protobuf argument to the appropriate NumPy array (or
         # scalar).
         np_raw = np.frombuffer(arg.data, dtype=dtype)
         if arg.shape_type == MatlabArray.SCALAR:
@@ -209,6 +254,7 @@ class CallPythonClient(object):
             return np_raw.reshape(arg.cols, arg.rows).T
 
     def _execute_message(self, msg):
+        # Executes a message, handling / recording that an error occurred.
         if self._stop_on_error:
             # Do not wrap in a `try` / `catch` to simplify debugging.
             self._execute_message_impl(msg)
@@ -269,13 +315,77 @@ class CallPythonClient(object):
         self._client_vars[out_id] = out
 
     def run(self):
-        """ Runs the client code.
-        @return True if no error encountered. """
-        self.handle_messages(record=False)
+        """Runs the client code.
+
+        @return True if no error encountered.
+        """
+        if self._threaded:
+            self._handle_messages_threaded()
+        else:
+            self.handle_messages(record=False)
+        # Check any execution in progress.
+        exec_count = self.scope_globals['_execution_in_progress'].count
+        if not self._had_error and exec_count != 0:
+            self._had_error = True
+            sys.stderr.write(
+                "ERROR: Invalid termination. " +
+                "'finish_execution' called insufficient number of " +
+                "times: {}\n".format(exec_count))
         return not self._had_error
 
+    def _handle_messages_threaded(self):
+        # Handles messages in a threaded fashion.
+        # Start producer thread (reading messages from file).
+        queue = Queue()
+
+        def producer_loop():
+            for msg in self._read_next_message():
+                msg_copy = copy.deepcopy(msg)
+                queue.put(msg_copy)
+                # Check if an error occurred.
+                if self._done:
+                    break
+            self._done = True
+
+        producer = Thread(target=producer_loop)
+        producer.start()
+
+        # Consume.
+        # TODO(eric.cousineau): Trying to quit via Ctrl+C is awkward (but kinda
+        # works). Is there a way to have `plt.pause` handle Ctrl+C differently?
+        try:
+            pause = self.scope_globals['pause']
+            while not self._done:
+                # Process messages.
+                while not queue.empty():
+                    msg = queue.get()
+                    self._execute_message(msg)
+                    queue.task_done()
+                # Spin busy for a bit, let matplotlib (or whatever) flush its
+                # event queue.
+                pause(0.001)
+        except KeyboardInterrupt:
+            # User pressed Ctrl+C.
+            self._done = True
+            print("Quitting")
+        except Exception as e:
+            # We encountered an error, and must stop.
+            self._done = True
+            self._had_error = True
+            sys.stderr.write("ERROR: {}\n".format(e))
+        # Do not sleep, as another Ctrl+C may interrupt trying to kill off
+        # the thread.
+        if producer.is_alive():
+            # If this thread is still alive, then we are in '_read_next'.
+            # Even though `self._file` is None, the blocking `read()`
+            # operation is keeps the file alive, so we must flush some
+            # bits to unclog the drain.
+            with open(self.filename, 'wb') as f:
+                _read_abort(f)
+            producer.join()
+
     def handle_messages(self, max_count=None, record=True, execute=True):
-        """ Handle all messages sent (e.g., through IPython).
+        """Handle all messages sent (e.g., through IPython).
         @param max_count Maximum number of messages to handle.
         @param record Record all messages and return them.
         @param execute Execute the given message upon receiving it.
@@ -283,7 +393,8 @@ class CallPythonClient(object):
         (e.g. 0 if no more messages left).
         and `msgs` are either the messages themselves for playback.
         and (b) the messages themselves for playback (if record==True),
-        otherwise an empty list. """
+        otherwise an empty list.
+        """
         assert record or execute, "Not doing anything useful?"
         count = 0
         msgs = []
@@ -298,17 +409,37 @@ class CallPythonClient(object):
         return (count, msgs)
 
     def execute_messages(self, msgs):
-        """ Execute a set of recorded messages. """
+        """Executes a set of recorded messages."""
         for msg in msgs:
             self._execute_message(msg)
 
     def _read_next_message(self):
-        # Return a new incoming message using a generator.
+        # Returns a new incoming message using a generator.
         # Not guaranteed to be a unique instance. Should copy if needed.
         msg = MatlabRPC()
-        with open(self.filename, 'rb') as f:
-            while _read_next(f, msg):
+        while not self._done:
+            f = self._get_file()
+            while _read_next(f, msg) and not self._done:
                 yield msg
+            # Close the file if we reach the end, NOT when exiting the scope
+            # (which is why `with` is not used here).
+            # This way the user can read a few messages at a time, with the
+            # same file handle.
+            self._close_file()
+            if not self._loop:
+                break
+
+    def _get_file(self):
+        # Gets file handle, opening if needed.
+        if self._file is None:
+            self._file = open(self.filename, 'rb')
+        return self._file
+
+    def _close_file(self):
+        # Closes file if open.
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
 
 # Number of bytes we need to consume so that we may still use
@@ -317,12 +448,15 @@ _PEEK_SIZE = 4
 
 
 def _read_next(f, msg):
-    # Read next message from the given file, following suite with C++.
+    # Reads next message from the given file, following suite with C++.
     peek = f.read(_PEEK_SIZE)
     if len(peek) == 0:
         # We have reached the end.
         return 0
     msg_size, peek_end = _DecodeVarint32(peek, 0)
+    if msg_size == 0:
+        # We have signalled a stop from another thread.
+        return 0
     peek_left = _PEEK_SIZE - peek_end
     # Read remaining and concatenate.
     remaining = f.read(msg_size - peek_left)
@@ -333,26 +467,35 @@ def _read_next(f, msg):
     return msg_size
 
 
-if __name__ == "__main__":
-    import argparse
+def _read_abort(f):
+    # Aborts reading in a separate thread.
+    # This will cause `_read_next` to unblock and exit.
+    f.write(chr(0) * _PEEK_SIZE)
 
+
+def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--no_loop", action='store_true',
         help="Do not loop the end for user interaction. With a FIFO pipe, " +
              "this will end session after C++ program closes.")
+    parser.add_argument(
+        "--no_threading", action='store_true',
+        help="Disable threaded dispatch.")
     parser.add_argument("--stop_on_error", action='store_true',
                         help="Stop client if there is an error when " +
                              "executing a call.")
     parser.add_argument("-f", "--file", type=str, default=None)
-    args = parser.parse_args(sys.argv[1:])
+    args = parser.parse_args(argv)
 
-    client = CallPythonClient(args.file, stop_on_error=args.stop_on_error)
+    client = CallPythonClient(
+        args.file, stop_on_error=args.stop_on_error,
+        threaded=not args.no_threading, loop=not args.no_loop)
     good = client.run()
-    if not args.no_loop:
-        wait = client.scope_globals["wait"]
-        print("Waiting... Ctrl+C may not work.")
-        print("  Use Ctrl+\\ to forcefully abort.")
-        wait()
+    return good
+
+
+if __name__ == "__main__":
+    good = main(sys.argv[1:])
     if not good:
         exit(1)
