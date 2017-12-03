@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,13 +15,13 @@ sh_binary(
             "//tools/workspace/drake_visualizer:drake_visualizer_linux.sh",
         ],
     }),
-    data = [
+    data = adjust_labels_for_drake_hoist([
         "//drake/bindings/pydrake",
         "//drake/examples:prod_models",
         "//drake/lcmtypes:lcmtypes_py",
         "@drake_visualizer",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
-    ],
+    ]),
 )
 
 # === config_setting rules ===

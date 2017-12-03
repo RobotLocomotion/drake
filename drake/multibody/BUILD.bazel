@@ -13,6 +13,7 @@ load(
 )
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,12 +39,14 @@ drake_cc_library(
     name = "approximate_ik",
     srcs = select({
         "//tools:with_gurobi": [
-            "ik_options.h",
-            "rigid_body_ik.h",
             "approximate_ik.cc",
         ],
         "//conditions:default": [],
     }),
+    hdrs = [
+        "ik_options.h",
+        "rigid_body_ik.h",
+    ],
     deps = select({
         "//tools:with_gurobi": [
             ":rigid_body_constraint",
@@ -608,11 +611,11 @@ drake_cc_googletest(
     data = ["//drake/examples/atlas:models"],
     tags = gurobi_test_tags(),
     deps = select({
-        "//tools:with_gurobi": [
+        "//tools:with_gurobi": adjust_labels_for_drake_hoist([
             ":inverse_kinematics",
             "//drake/common:find_resource",
             "//drake/multibody/parsers",
-        ],
+        ]),
         "//conditions:default": [],
     }),
 )

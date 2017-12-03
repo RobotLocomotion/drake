@@ -11,6 +11,7 @@ load(
     "drake_py_proto_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "HAS_MOVED_6996")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -71,7 +72,11 @@ py_binary(
     srcs = ["call_python_client.py"],
     main = "call_python_client.py",
     deps = [
-        ":call_python_client",
+        # Use @drake// not just // so that "import drake.common..." works.
+        # TODO(jwnimmer-tri) We should use a project-wide solution so that
+        # Drake's import paths are consistent without having to use weird
+        # spellings such as this one.
+        "@drake//common/proto:call_python_client" if HAS_MOVED_6996 else ":call_python_client",  # noqa
     ],
 )
 
