@@ -1,0 +1,46 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "pendulum_plant",
+    srcs = ["pendulum_plant.cc"],
+    hdrs = ["pendulum_plant.h"],
+    deps = [
+        "//drake/common:default_scalars",
+        "//drake/geometry:geometry_ids",
+        "//drake/geometry:geometry_system",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree",
+        "//drake/systems/framework",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "passive_simulation",
+    srcs = ["passive_simulation.cc"],
+    add_test_rule = 1,
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":pendulum_plant",
+        "//drake/geometry:geometry_visualization",
+        "//drake/systems/analysis:implicit_euler_integrator",
+        "//drake/systems/analysis:runge_kutta3_integrator",
+        "//drake/systems/analysis:semi_explicit_euler_integrator",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/lcm",
+        "//drake/systems/rendering:pose_bundle_to_draw_message",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+add_lint_tests()

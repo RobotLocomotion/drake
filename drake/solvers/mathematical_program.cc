@@ -86,7 +86,8 @@ AttributesSet kMosekCapabilities =
 
 // Scs solver capatilities.
 AttributesSet kScsCapabilities =
-    (kLinearEqualityConstraint | kLinearConstraint | kLinearCost);
+    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
+        kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =

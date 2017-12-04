@@ -974,6 +974,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
     ],
 )
 
@@ -1067,6 +1068,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "no_nlopt.cc",
     "no_snopt.cc",
     "qp.cc",
+    "scs_solver.cc",
     "snopt_solver.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",

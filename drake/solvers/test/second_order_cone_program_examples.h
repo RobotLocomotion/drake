@@ -42,7 +42,8 @@ class TestEllipsoidsSeparation
  public:
   TestEllipsoidsSeparation();
 
-  void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver);
+  void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver,
+                             double tol = 1E-8);
 
  private:
   Eigen::VectorXd x1_;
@@ -79,7 +80,8 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
  public:
   TestQPasSOCP();
 
-  void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver);
+  void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver,
+                             double tol = 1E-6);
 
  private:
   Eigen::MatrixXd Q_;

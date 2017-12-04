@@ -138,26 +138,26 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi
- * MOSEK
- * SNOPT
+ * Gurobi 7.5.2
+ * MOSEK 7.1
+ * SNOPT 7.2
 
-Gurobi
-------
+Gurobi 7.5.2
+------------
 
 Install on Ubuntu
 ~~~~~~~~~~~~~~~~~
-1. Register for an account on http://www.gurobi.com.
+1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. Download ``gurobi7.0.2_linux64.tar.gz``.
+3. Download ``gurobi7.5.2_linux64.tar.gz``.
 4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
-5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi702/linux64``
+5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi752/linux64``
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. Download and install ``gurobi7.0.2_mac64.pkg``.
+3. Download and install ``gurobi7.5.2_mac64.pkg``.
 
 
 To confirm that your setup was successful, run the tests that require Gurobi.
@@ -169,8 +169,8 @@ these tests. If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
-MOSEK
-------
+MOSEK 7.1
+---------
 
 The Drake Bazel build system downloads MOSEK 7.1 automatically. No manual
 installation is required. Please obtain and save a license file at
@@ -185,8 +185,8 @@ these tests. If you will be developing with MOSEK regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
-SNOPT
------
+SNOPT 7.2
+---------
 
 1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
 2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.

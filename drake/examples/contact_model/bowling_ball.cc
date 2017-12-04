@@ -63,6 +63,11 @@ DEFINE_double(contact_area, 1e-3,
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_int32(pin_count, 10, "The number of pins -- in the range [0, 10]");
 DEFINE_bool(playback, true, "If true, loops playback of simulation");
+DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
+              "'compliant' or 'timestepping'");
+DEFINE_double(dt, 1e-3, "The step size to use for "
+              "'simulation_type=timestepping' (ignored for "
+              "'simulation_type=compliant'");
 
 // Bowling ball rolled down a conceptual lane to strike pins.
 int main() {
@@ -102,7 +107,10 @@ int main() {
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
-  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  if (FLAGS_simulation_type != "timestepping")
+    FLAGS_dt = 0.0;
+  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(
+      move(tree_ptr), FLAGS_dt);
   plant.set_name("plant");
 
   // Note: this sets identical contact parameters across all object pairs:

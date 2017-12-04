@@ -36,7 +36,7 @@ namespace valkyrie {
 
 class ValkyrieSimulationDiagram : public systems::Diagram<double> {
  public:
-  explicit ValkyrieSimulationDiagram(lcm::DrakeLcm* lcm) {
+  ValkyrieSimulationDiagram(lcm::DrakeLcm* lcm, double dt) {
     systems::DiagramBuilder<double> builder;
 
     // Create RigidBodyTree.
@@ -50,8 +50,8 @@ class ValkyrieSimulationDiagram : public systems::Diagram<double> {
     multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
     // Instantiate a RigidBodyPlant from the RigidBodyTree.
-    plant_ =
-        builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_ptr));
+    plant_ = builder.AddSystem<systems::RigidBodyPlant<double>>(
+        std::move(tree_ptr), dt);
     plant_->set_name("plant");
 
     // Contact parameters

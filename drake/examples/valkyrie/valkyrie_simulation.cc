@@ -4,19 +4,31 @@
 /// sends measured robot state through LCM traffic. See valkyrie_simulator.h
 /// for more details.
 
+#include <gflags/gflags.h>
+
 #include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/examples/valkyrie/valkyrie_simulator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+
+DEFINE_string(simulation_type, "compliant",
+              "Type of simulation, valid values are "
+              "'timestepping','compliant'");
+DEFINE_double(dt, 1e-3, "The step size to use for "
+              "'simulation_type=timestepping' (ignored for "
+              "'simulation_type=compliant'");
 
 namespace drake {
 namespace examples {
 namespace valkyrie {
 
 int main() {
+  if (FLAGS_simulation_type != "timestepping")
+    FLAGS_dt = 0.0;
+
   // LCM communication.
   lcm::DrakeLcm lcm;
-  ValkyrieSimulationDiagram diagram(&lcm);
+  ValkyrieSimulationDiagram diagram(&lcm, FLAGS_dt);
 
   // Create simulator.
   systems::Simulator<double> simulator(diagram);
@@ -46,6 +58,8 @@ int main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::SetUsageMessage(" ");  // Nerf a silly warning emitted by gflags.
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::valkyrie::main();
 }

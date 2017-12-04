@@ -132,7 +132,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
       if (*iter < 0 || *iter >= Ain.rows()) {
         return -3;  // active set is invalid.  exit quietly, because this is
                     // expected behavior in normal operation (e.g. it means I
-                    // should immediately kick out to gurobi)
+                    // should immediately kick out to Gurobi)
       }
       Aact.row(i) = Ain.row(*iter);
       bact(i++) = bin(*iter);
@@ -423,7 +423,7 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
        iterQ != QblkDiag.end(); iterQ++) {
     MatrixXd* Q = *iterQ;
 
-    // WARNING:  If there are no constraints, then gurobi clearly solves a
+    // WARNING:  If there are no constraints, then Gurobi clearly solves a
     // different problem: min 1/2 x'Qx + f'x
     // This is very strange; see the solveWGUROBI method in QuadraticProgram
     if (method == 2)  //&& (Aeq.rows()+Ain.rows()>0))

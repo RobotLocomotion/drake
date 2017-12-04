@@ -50,6 +50,11 @@ DEFINE_double(contact_area, 1e-3,
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
+DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
+              "'compliant' or 'timestepping'");
+DEFINE_double(dt, 1e-3, "The step size to use for "
+              "'simulation_type=timestepping' (ignored for "
+              "'simulation_type=compliant'");
 
 namespace {
 const char* kSlidingBrickUrdf =
@@ -84,7 +89,10 @@ int main() {
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
-  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  if (FLAGS_simulation_type != "timestepping")
+    FLAGS_dt = 0.0;
+  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(
+      move(tree_ptr), FLAGS_dt);
   plant.set_name("plant");
 
   // Contact parameters set arbitrarily.
@@ -141,8 +149,6 @@ int main() {
       diagram->GetMutableSubsystemContext(plant, &context);
   // 6 1-dof joints * 2 = 6 * (x, ẋ) * 2
   const int kStateSize = 24;
-  DRAKE_DEMAND(plant_context.get_continuous_state_vector().size() ==
-               kStateSize);
   VectorX<double> initial_state(kStateSize);
   initial_state << 0, -0.5, 0, 0, 0, 0,  // brick 1 position
                    0, 0.5, 0, 0, 0, 0,   // brick 2 position

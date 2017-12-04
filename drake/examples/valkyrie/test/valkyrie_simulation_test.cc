@@ -2,11 +2,19 @@
 #include "drake/examples/valkyrie/valkyrie_simulator.h"
 /* clang-format on */
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+
+DEFINE_string(simulation_type, "compliant",
+              "Type of simulation, valid values are "
+              "'timestepping','compliant'");
+DEFINE_double(dt, 1e-3, "The step size to use for "
+              "'simulation_type=timestepping' (ignored for "
+              "'simulation_type=compliant'");
 
 namespace drake {
 namespace examples {
@@ -14,9 +22,12 @@ namespace valkyrie {
 
 // Tests if the simulation runs at all. Nothing else.
 GTEST_TEST(ValkyrieSimulationTest, TestIfRuns) {
+  if (FLAGS_simulation_type != "timestepping")
+    FLAGS_dt = 0.0;
+
   // LCM communication.
   lcm::DrakeLcm lcm;
-  ValkyrieSimulationDiagram diagram(&lcm);
+  ValkyrieSimulationDiagram diagram(&lcm, FLAGS_dt);
 
   // Create simulator.
   systems::Simulator<double> simulator(diagram);

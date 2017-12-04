@@ -74,7 +74,7 @@ namespace solvers {
  *   <td><a href="https://en.wikipedia.org/wiki/Sum-of-squares_optimization">
  *     SOS</a></td>
  * </tr>
- * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">
+ * <tr><td>&dagger; <a href="https://www.gurobi.com/products/gurobi-optimizer">
  *    Gurobi</a></td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
@@ -90,11 +90,11 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </tr>
- * <tr><td>&dagger; <a href="https://github.com/cvxgrp/scs">
+ * <tr><td> <a href="https://github.com/cvxgrp/scs">
  *    SCS</a></td>
  *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
  * </tr>
@@ -110,7 +110,7 @@ namespace solvers {
  *   <td>MISOCP</a></td>
  *   <td>MISDP</a></td>
  * </tr>
- * <tr><td>&dagger; <a href="http://www.gurobi.com/products/gurobi-optimizer">
+ * <tr><td>&dagger; <a href="https://www.gurobi.com/products/gurobi-optimizer">
  *    Gurobi</a></td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
@@ -1946,9 +1946,9 @@ class MathematicalProgram {
    * guide section "Options Reference"
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
-   * "GUROBI" -- Parameter name and values as specified in GUROBI Reference
+   * "GUROBI" -- Parameter name and values as specified in Gurobi Reference
    * Manual, section 10.2 "Parameter Descriptions"
-   * https://www.gurobi.com/documentation/6.5/refman/parameters.html
+   * https://www.gurobi.com/documentation/7.5/refman/parameters.html
    */
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, double option_value) {

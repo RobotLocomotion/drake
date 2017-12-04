@@ -24,7 +24,7 @@ class QpInverseDynamics {
 
   /**
    * Constructor for QpInverseDynamics.
-   * @throws std::runtime_error if gurobi solver is not available.
+   * @throws std::runtime_error if Gurobi solver is not available.
    */
   QpInverseDynamics();
 
