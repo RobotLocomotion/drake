@@ -314,7 +314,7 @@ mosek_repository(
 git_repository(
     name = "snopt",
     remote = "git@github.com:RobotLocomotion/snopt.git",
-    commit = "2ec980370eeb72897135b11570033a19bda885a7",
+    commit = "0f475624131c9ca4d5624e74c3f8273ccc926f9b",
 )
 
 # Python Libraries
