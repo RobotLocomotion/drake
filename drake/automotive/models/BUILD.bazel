@@ -19,6 +19,7 @@ genrule(
     ],
     cmd = " ".join([
         "$(location :yaml_to_obj)",
+        "--spdlog_level warn",
         "--yaml_file '$<'",
         "--obj_dir $(@D)/speed_bump",
         "--obj_file speed_bump",
