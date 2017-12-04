@@ -93,6 +93,11 @@ drake_cc_googletest(
     ],
 )
 
+py_test(
+    name = "fifo_test",
+    srcs = ["test/fifo_test.py"],
+)
+
 # TODO(eric.cousineau): Remove --no_plotting once we can open `$DISPLAY` on CI.
 sh_test(
     name = "call_python_full_test",
