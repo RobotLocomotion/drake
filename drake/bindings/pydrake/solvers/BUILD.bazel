@@ -36,7 +36,7 @@ drake_pybind_library(
 )
 
 # TODO(eric.cousineau): Rename `mathematicalprogram` to
-# `mathematical_program`.
+# `mathematical_program` when `pydrake` is renamed to `drake`.
 drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [

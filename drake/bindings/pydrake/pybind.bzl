@@ -15,7 +15,7 @@ PY_VERSION = "2.7"
 
 # This is the base package to determine which paths should be imported, and
 # where the Python components should be installed.
-BASE_PKG = "drake/bindings"
+BASE_PACKAGE = "drake/bindings"
 
 # TODO(eric.cousineau): Consider making a `PybindProvider`, to sort
 # out dependencies, sources, etc, and simplify installation
@@ -79,8 +79,8 @@ def drake_pybind_library(
         C++ source files.
     @param cc_deps (optional)
         C++ dependencies.
-        At present, these should be header only, as they will violate ODR with
-        statically-linked libraries.
+        At present, these should be header only, as they will violate ODR
+        with statically-linked libraries.
     @param cc_so_name (optional)
         Shared object name. By default, this is `_${name}`, so that the C++
         code can be then imported in a more controlled fashion in Python.
@@ -107,7 +107,9 @@ def drake_pybind_library(
         visibility = visibility,
     )
     # Get current package's information.
-    py_base_rel_path, py_module_install = _get_child_module_info()
+    module_info = _get_child_module_info()
+    py_base_rel_path, py_module_install = (
+        module_info.rel_path, module_info.sub_package)
     # Add Python library.
     drake_py_library(
         name = py_name,
@@ -150,22 +152,23 @@ def _get_install(target):
 def get_pybind_module_dest(py_module_install = None):
     """Gets Python installation destination for a given package."""
     if py_module_install == None:
-        py_module_install = _get_child_module_info()[1]
-    return "lib/python{}/site-packages/{}".format(PY_VERSION, py_module_install)
+        py_module_install = _get_child_module_info().sub_package
+    return "lib/python{}/site-packages/{}".format(PY_VERSION,
+                                                  py_module_install)
 
-def _get_child_module_info(pkg = None, base_pkg = BASE_PKG):
+def _get_child_module_info(package = None, base_package = BASE_PACKAGE):
     # Gets a package's path relative to a base package, and the sub-package
     # name (for installation).
-    # @return (rel_path, sub_pkg)
-    if pkg == None:
-        pkg = native.package_name()
-    base_module_fin = base_pkg + "/"
-    if not pkg.startswith(base_module_fin):
+    # @return struct(rel_path, sub_package)
+    if package == None:
+        package = native.package_name()
+    base_module_fin = base_package + "/"
+    if not package.startswith(base_module_fin):
         fail("Invalid package '{}' (not a child of '{}')"
-             .format(pkg, base_pkg))
-    sub_pkg = pkg[len(base_module_fin):]
+             .format(package, base_package))
+    sub_package = package[len(base_module_fin):]
     # Count the number of pieces.
-    num_pieces = len(sub_pkg.split("/"))
+    num_pieces = len(sub_package.split("/"))
     # Make the number of parent directories.
     rel_path = "/".join([".."] * num_pieces)
-    return (rel_path, sub_pkg)
+    return struct(rel_path = rel_path, sub_package = sub_package)

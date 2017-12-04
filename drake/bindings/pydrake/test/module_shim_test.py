@@ -4,10 +4,9 @@ import unittest
 import sys
 from types import ModuleType
 
-# Test module shim functionality.
-
 
 class TestModuleShim(unittest.TestCase):
+    """Tests module shim functionality. """
     def tearDown(self):
         # Remove the module.
         import module_shim_example as mod
@@ -55,6 +54,7 @@ if __name__ == '__main__':
     assert result.wasSuccessful()
 
     # testImportFromAll:
-    # Test `from x import *` since we cannot call it inside a function.
+    # This is not a function in the unittest class because `from x import *`
+    # is invalid syntax inside functions.
     from module_shim_example import *
     assert import_type == "from_all"

@@ -2,8 +2,6 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
-load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
 load(
     "//tools:drake.bzl",
     "drake_cc_library",
