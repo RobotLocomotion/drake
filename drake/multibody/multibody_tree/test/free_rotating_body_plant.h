@@ -45,7 +45,9 @@ class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
   explicit FreeRotatingBodyPlant(const FreeRotatingBodyPlant<U>&);
 
   /// Sets `state` to a default value corresponding to a configuration in which
-  /// the free body frame B is coincident with the world frame W.
+  /// the free body frame B is coincident with the world frame W and the angular
+  /// velocity has a value as returned by
+  /// get_default_initial_angular_velocity().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
