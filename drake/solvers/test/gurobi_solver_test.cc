@@ -204,7 +204,7 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
-    SolveAndCheckSolution(gurobi_solver);
+    SolveAndCheckSolution(gurobi_solver, 1.1E-8);
   }
 }
 
