@@ -51,17 +51,6 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int get_num_velocities() const final { return kNv;}
 
-  /// Default implementation to Mobilizer::set_zero_state() that sets all
-  /// generalized positions and generalized velocities related to this mobilizer
-  /// to zero. Be aware however that this default does not apply in general to
-  /// all mobilizers and specific subclasses (for instance for quaternions) must
-  /// override this method for correctness.
-  void set_zero_state(const systems::Context<T>&,
-                      systems::State<T>* state) const override {
-    get_mutable_positions(state).setZero();
-    get_mutable_velocities(state).setZero();
-  }
-
   /// For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
@@ -176,6 +165,17 @@ class MobilizerImpl : public Mobilizer<T> {
                                "drake::multibody::MultibodyTreeContext.");
     }
     return *mbt_context;
+  }
+
+  /// Helper to set `state` to a default zero state with all generalized
+  /// positions and generalized velocities related to this mobilizer to zero.
+  /// Be aware however that this default does not apply in general to all
+  /// mobilizers and specific subclasses (for instance for unit quaternions)
+  /// must override this method for correctness.
+  void set_default_zero_state(const systems::Context<T>&,
+                              systems::State<T>* state) const {
+    get_mutable_positions(state).setZero();
+    get_mutable_velocities(state).setZero();
   }
 
  private:

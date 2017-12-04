@@ -73,6 +73,12 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
 }
 
 template <typename T>
+void SpaceXYZMobilizer<T>::set_zero_state(const systems::Context<T>& context,
+                                          systems::State<T>* state) const {
+  this->set_default_zero_state(context, state);
+}
+
+template <typename T>
 Isometry3<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& angles = this->get_positions(context);
