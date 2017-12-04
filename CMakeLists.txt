@@ -92,7 +92,7 @@ endif()
 include(ExternalProject)
 
 ExternalProject_Add(drake_cxx_python
-  SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
+  SOURCE_DIR "${PROJECT_SOURCE_DIR}"
   CONFIGURE_COMMAND :
   BUILD_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" build ${BAZEL_ARGS} ${BAZEL_TARGETS}
   BUILD_IN_SOURCE 1
