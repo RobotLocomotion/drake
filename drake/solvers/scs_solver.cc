@@ -43,7 +43,16 @@ void ParseLinearCost(const MathematicalProgram& prog, std::vector<double>* c,
 // Add a rotated Lorentz cone constraint that A_cone * x + b_cone is in the
 // rotated Lorentz cone.
 // @param A_cone_triplets The triplets of non-zero entries in A_cone.
+// @param b_cone A_cone * x + b_cone is in the rotated Lorentz cone.
 // @param x_indices The index of the variable in SCS.
+// @param A_triplets[in/out] The non-zero entry triplet in A before and after
+// adding the Lorentz cone.
+// @param b[in/out] The right-hand side vector b before and after adding the
+// Lorentz cone.
+// @param A_row_count[in/out] The number of rows in A before and after adding
+// the Lorentz cone.
+// @param lorentz_cone_length[in/out] The length of each Lorentz cone before
+// and after adding the Lorentz cone constraint.
 void ParseRotatedLorentzConeConstraint(
     const std::vector<Eigen::Triplet<double>>& A_cone_triplets,
     const Eigen::Ref<const Eigen::VectorXd>& b_cone,
@@ -477,10 +486,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> b;
 
   // `c` is the coefficient in the linear cost cᵀx
-  std::vector<double> c(num_x);
-  for (int i = 0; i < num_x; ++i) {
-    c[i] = 0;
-  }
+  std::vector<double> c(num_x, 0.0);
+
   // Our cost (LinearCost, QuadraticCost, etc) also allows a constant term, we
   // add these constant terms to `cost_constant`.
   double cost_constant{0};
