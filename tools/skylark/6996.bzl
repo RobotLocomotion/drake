@@ -7,7 +7,7 @@
 # it was wrapping in its place.
 
 # Whether or not the project-wide `git mv` for #6996 has happened yet.
-HAS_MOVED_6996 = False
+HAS_MOVED_6996 = True
 
 def adjust_labels_for_drake_hoist(labels):
     """Change //drake/foo/bar into //foo/bar, returning a new labels list."""
