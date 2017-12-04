@@ -404,7 +404,7 @@ void ParsePositiveSemidefiniteConstraint(
     const std::vector<Eigen::MatrixXd>& F = lmi_constraint.constraint()->F();
     const VectorXDecisionVariable& x = lmi_constraint.variables();
     const int F_rows = lmi_constraint.constraint()->matrix_rows();
-    const std::vector<int> x_indices = FindAllDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
     int A_cone_row_count = 0;
     b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
     for (int j = 0; j < F_rows; ++j) {
