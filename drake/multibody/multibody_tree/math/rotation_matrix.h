@@ -62,16 +62,10 @@ class RotationMatrix {
   /// Const access to the Matrix3 underlying a %RotationMatrix.
   const Matrix3<T>& matrix() const { return R_AB_; }
 
-  /// Const access to the i, j component of this %RotationMatrix.
-  /// The bounds on i, j are only checked in Debug builds.
-  /// @remark A mutable version of operator() is intentionally absent to prevent
-  /// users from directly setting elements or making invalid rotation matrices.
-  const T& operator()(int i, int j) const {
-    DRAKE_ASSERT(0 <= i && i < 3 && 0 <= j && j < 3);
-    return R_AB_(i, j);
-  }
-
   /// Operator to multiply `this` rotation matrix by `other` rotation matrix.
+  /// `this` is set equal to the result as `this` = `this` * `other`.
+  /// In monogram notation, if `this` is the R_AB rotation matrix and `other` is
+  /// R_BC, `this` is set equal to the result as (`this' =  R_AC) = R_AB * R_BC.
   /// @param[in] other %RotationMatrix that post-multiplies `this`.
   /// @returns `this` rotation matrix which has been multiplied by `other`.
   /// @note It is possible (albeit improbable) to create an invalid rotation
@@ -82,6 +76,8 @@ class RotationMatrix {
   }
 
   /// Operator to multiply `this` rotation matrix by `other` rotation matrix.
+  /// In monogram notation, if `this` is the R_AB rotation matrix and `other` is
+  /// R_BC, this method returns the composition R_AB * R_BC.
   /// @param[in] other %RotationMatrix that post-multiplies `this`.
   /// @returns rotation matrix that results from `this` multiplied by `other`.
   /// @note It is possible (albeit improbable) to create an invalid rotation
@@ -163,6 +159,8 @@ class RotationMatrix {
   // Construct a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid %RotationMatrix.
+  // @note The second parameter is just a dummy to distinguish this constructor
+  // from one of the public constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
 
   // Sets the underlying Matrix3 in a %RotationMatrix.  No check is performed

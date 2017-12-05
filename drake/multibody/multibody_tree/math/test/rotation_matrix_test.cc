@@ -82,28 +82,8 @@ GTEST_TEST(RotationMatrix, Inverse) {
   EXPECT_TRUE(I.IsNearlyEqualTo(identity_matrix, 8 * kEpsilon));
 }
 
-// Test access by (i, j) indexes.
-GTEST_TEST(RotationMatrix, AccessByIndexes) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m;
-  m << 1, 0, 0,
-      0, cos_theta, sin_theta,
-      0, -sin_theta, cos_theta;
 
-  RotationMatrix<double> R(m);
-  EXPECT_EQ(R(0, 0), m(0, 0));
-  EXPECT_EQ(R(0, 1), m(0, 1));
-  EXPECT_EQ(R(0, 2), m(0, 2));
-  EXPECT_EQ(R(1, 0), m(1, 0));
-  EXPECT_EQ(R(1, 1), m(1, 1));
-  EXPECT_EQ(R(1, 2), m(1, 2));
-  EXPECT_EQ(R(2, 0), m(2, 0));
-  EXPECT_EQ(R(2, 1), m(2, 1));
-  EXPECT_EQ(R(2, 2), m(2, 2));
-}
-
-// Test rotationa matrix multiplication and IsNearlyEqualTo.
+// Test rotation matrix multiplication and IsNearlyEqualTo.
 GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   // Create a rotation matrix from a BodyXYZ rotation by angles q1, q2, q3.
   double q1 = 0.2, q2 = 0.3, q3 = 0.4;
