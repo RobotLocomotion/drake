@@ -46,7 +46,7 @@ void Xtion::AddToTree(WorldSimTreeBuilder<double>* tree_builder,
   fixture_frame_ = fixture_frame;
   const std::string urdf_path =
       "drake/manipulation/models/xtion_description/urdf/xtion.urdf";
-  tree_builder->StoreModel(name_, urdf_path);
+  tree_builder->StoreDrakeModel(name_, urdf_path);
   int xtion_id = tree_builder->AddModelInstanceToFrame(
       name_, fixture_frame_, drake::multibody::joints::kFixed);
   sensor_frame_ =

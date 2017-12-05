@@ -184,7 +184,7 @@ pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
 
   // Extract target dimensions
   WorldSimTreeBuilder<double> tree_builder;
-  tree_builder.StoreModel(
+  tree_builder.StoreDrakeModel(
       "target", GetPlanningModelPathOrThrow(
                     configuration,
                     configuration.object(planner_configuration.target_index)));

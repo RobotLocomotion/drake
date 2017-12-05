@@ -94,18 +94,18 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
   DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
   if (extension == ".urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        FindResourceOrThrow(model_map_[model_name]), floating_base_type,
+        model_map_[model_name], floating_base_type,
         weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension == ".sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        FindResourceOrThrow(model_map_[model_name]), floating_base_type,
+        model_map_[model_name], floating_base_type,
         weld_to_frame, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
 
   ModelInstanceInfo<T> info;
-  info.model_path = FindResourceOrThrow(model_map_[model_name]);
+  info.absolute_model_path = model_map_[model_name];
   info.instance_id = model_instance_id;
   info.world_offset = weld_to_frame;
   instance_id_to_model_info_[model_instance_id] = info;
@@ -119,11 +119,19 @@ void WorldSimTreeBuilder<T>::AddGround() {
 }
 
 template <typename T>
-void WorldSimTreeBuilder<T>::StoreModel(const std::string& model_name,
-                                        const std::string& model_path) {
+void WorldSimTreeBuilder<T>::StoreModel(
+    const std::string& model_name,
+    const std::string& absolute_model_path) {
   DRAKE_DEMAND(model_map_.find(model_name) == model_map_.end());
   model_map_.insert(
-      std::pair<std::string, std::string>(model_name, model_path));
+      std::pair<std::string, std::string>(model_name, absolute_model_path));
+}
+
+template <typename T>
+void WorldSimTreeBuilder<T>::StoreDrakeModel(
+    const std::string& model_name,
+    const std::string& model_path) {
+  StoreModel(model_name, FindResourceOrThrow(model_path));
 }
 
 template class WorldSimTreeBuilder<double>;
