@@ -116,7 +116,7 @@ cc_library(
     include_prefix = "drake" if HAS_MOVED_6996 else None,
     strip_include_prefix = "/" if HAS_MOVED_6996 else None,
     visibility = adjust_labels_for_drake_hoist([
-        "//drake/bindings/pydrake:__pkg__",
+        "//drake/bindings/pydrake:__subpackages__",
     ]),
     deps = [
         ":gurobi_deps",

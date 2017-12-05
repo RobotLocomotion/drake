@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import unittest
 import numpy as np
 import pydrake
+import pydrake.rbtree
 from pydrake.solvers import ik
 import os.path
 
