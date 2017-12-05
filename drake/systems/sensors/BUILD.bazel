@@ -416,7 +416,6 @@ filegroup(
     visibility = ["//visibility:private"],
 )
 
-# TODO(jamiesnape): Remove the "manual" tag when Xvfb is available on CI.
 drake_cc_googletest(
     name = "rgbd_camera_test",
     data = [
@@ -425,7 +424,6 @@ drake_cc_googletest(
     # Mitigates driver-related issues when running under `bazel test`. For more
     # information, see #7004.
     local = 1,
-    tags = ["manual"],
     deps = [
         ":rgbd_camera",
         "//drake/common:find_resource",
@@ -444,7 +442,6 @@ drake_cc_googletest(
     # Mitigates driver-related issues when running under `bazel test`. For more
     # information, see #7004.
     local = 1,
-    tags = ["manual"],
     deps = [
         ":rgbd_renderer",
         "//drake/common:find_resource",
@@ -465,7 +462,6 @@ sh_test(
     data = [
         ":test_models",
     ],
-    tags = ["manual"],
 )
 
 drake_cc_googletest(
