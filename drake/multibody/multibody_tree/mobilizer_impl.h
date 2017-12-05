@@ -51,17 +51,6 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int get_num_velocities() const final { return kNv;}
 
-  /// Default implementation to Mobilizer::set_zero_configuration() that sets
-  /// all generalized positions related to this mobilizer to zero.
-  /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclasses must override this method for
-  /// correctness.
-  void set_zero_configuration(systems::Context<T>* context) const override {
-    auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
-    DRAKE_DEMAND(mbt_context != nullptr);
-    get_mutable_positions(mbt_context).setZero();
-  }
-
   /// For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
@@ -89,6 +78,40 @@ class MobilizerImpl : public Mobilizer<T> {
       MultibodyTreeContext<T>* context) const {
     return context->template get_mutable_state_segment<kNq>(
         this->get_positions_start());
+  }
+
+  /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
+  /// the segment in the `state` corresponding to `this` mobilizer's generalized
+  /// positions.
+  Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
+      systems::State<T>* state) const {
+    Eigen::VectorBlock<VectorX<T>> xc =
+        dynamic_cast<systems::BasicVector<T>&>(
+            state->get_mutable_continuous_state().get_mutable_vector()).
+            get_mutable_value();
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
+    return xc.nestedExpression().template segment<kNq>(
+        this->get_positions_start());
+  }
+
+  /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
+  /// the segment in the `state` corresponding to `this` mobilizer's generalized
+  /// velocities.
+  Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_velocities(
+      systems::State<T>* state) const {
+    Eigen::VectorBlock<VectorX<T>> xc =
+        dynamic_cast<systems::BasicVector<T>&>(
+            state->get_mutable_continuous_state().get_mutable_vector()).
+            get_mutable_value();
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
+    return xc.nestedExpression().template segment<kNv>(
+        this->get_velocities_start());
   }
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
@@ -142,6 +165,17 @@ class MobilizerImpl : public Mobilizer<T> {
                                "drake::multibody::MultibodyTreeContext.");
     }
     return *mbt_context;
+  }
+
+  /// Helper to set `state` to a default zero state with all generalized
+  /// positions and generalized velocities related to this mobilizer to zero.
+  /// Be aware however that this default does not apply in general to all
+  /// mobilizers and specific subclasses (for instance for unit quaternions)
+  /// must override this method for correctness.
+  void set_default_zero_state(const systems::Context<T>&,
+                              systems::State<T>* state) const {
+    get_mutable_positions(state).setZero();
+    get_mutable_velocities(state).setZero();
   }
 
  private:

@@ -59,12 +59,23 @@ Vector3<T> SpaceXYZMobilizer<T>::get_angular_velocity(
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto v = this->get_mutable_velocities(&mbt_context);
+  return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
+}
+
+template <typename T>
+const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
+    const systems::Context<T>&, const Vector3<T>& w_FM,
+    systems::State<T>* state) const {
+  auto v = this->get_mutable_velocities(state);
   DRAKE_ASSERT(v.size() == kNv);
   v = w_FM;
   return *this;
+}
+
+template <typename T>
+void SpaceXYZMobilizer<T>::set_zero_state(const systems::Context<T>& context,
+                                          systems::State<T>* state) const {
+  this->set_default_zero_state(context, state);
 }
 
 template <typename T>
