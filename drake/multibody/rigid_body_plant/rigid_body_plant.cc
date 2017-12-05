@@ -541,7 +541,7 @@ void RigidBodyPlant<T>::UpdateGeneralizedForce(
 // Evaluates the relative velocities between two bodies projected along the
 // contact normals.
 template <class T>
-VectorX<T> RigidBodyPlant<T>::N_mult(
+VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
     const VectorX<T>& q, const VectorX<T>& v) const {
   const auto& tree = this->get_rigid_body_tree();
@@ -582,7 +582,7 @@ VectorX<T> RigidBodyPlant<T>::N_mult(
 // Applies forces along the contact normals at the contact points and gets the
 // effect out on the generalized forces.
 template <class T>
-VectorX<T> RigidBodyPlant<T>::N_transpose_mult(
+VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
     const KinematicsCache<T>& kcache,
     const VectorX<T>& f) const {
@@ -618,7 +618,7 @@ VectorX<T> RigidBodyPlant<T>::N_transpose_mult(
 // Evaluates the relative velocities between two bodies projected along the
 // contact tangent directions.
 template <class T>
-VectorX<T> RigidBodyPlant<T>::F_mult(
+VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
     const VectorX<T>& q, const VectorX<T>& v,
     const std::vector<int>& half_num_cone_edges) const {
@@ -690,7 +690,7 @@ VectorX<T> RigidBodyPlant<T>::F_mult(
 // Applies a force at the contact spanning directions at all contacts and gets
 // the effect out on the generalized forces.
 template <class T>
-VectorX<T> RigidBodyPlant<T>::F_transpose_mult(
+VectorX<T> RigidBodyPlant<T>::TransposedContactTangentJacobianMult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
     const KinematicsCache<T>& kcache,
     const VectorX<T>& f,
@@ -966,25 +966,27 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
       // See whether the joint is currently violated or the *current* joint
       // velocity might lead to a limit violation. The latter is a heuristic to
       // incorporate the joint limit into the time stepping calculations before
-      // it is violated. 
+      // it is violated.
       if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
         // Institute a lower limit.
         limits.push_back(JointLimit());
         limits.back().v_index = b->get_velocity_start_index();
-        limits.back().error = (qjoint - qmin);
+        limits.back().signed_distance = (qjoint - qmin);
         SPDLOG_DEBUG(drake::log(), "body name: {} ", b->get_name());
         SPDLOG_DEBUG(drake::log(), "joint name: {} ", joint.get_name());
-        SPDLOG_DEBUG(drake::log(), "joint error: {} ", limits.back().error);
+        SPDLOG_DEBUG(drake::log(), "joint signed distance: {} ",
+            limits.back().signed_distance);
         limits.back().lower_limit = true;
       }
       if (qjoint > qmax || qjoint + vjoint * dt > qmax) {
         // Institute an upper limit.
         limits.push_back(JointLimit());
         limits.back().v_index = b->get_velocity_start_index();
-        limits.back().error = (qmax - qjoint);
+        limits.back().signed_distance = (qmax - qjoint);
         SPDLOG_DEBUG(drake::log(), "body name: {} ", b->get_name());
         SPDLOG_DEBUG(drake::log(), "joint name: {} ", joint.get_name());
-        SPDLOG_DEBUG(drake::log(), "joint error: {} ", limits.back().error);
+        SPDLOG_DEBUG(drake::log(), "joint signed distance: {} ",
+            limits.back().signed_distance);
         limits.back().lower_limit = false;
       }
     }
@@ -994,11 +996,11 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // normals) and the N' multiplication operator (effect of contact normal
   // forces on generalized forces).
   data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
-    return N_mult(contacts, q, w);
+    return ContactNormalJacobianMult(contacts, q, w);
   };
   data.N_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
       VectorX<T> {
-    return N_transpose_mult(contacts, kcache, f);
+    return TransposedContactNormalJacobianMult(contacts, kcache, f);
   };
 
   // Set up the F multiplication operator (projected velocity along the contact
@@ -1006,11 +1008,11 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // frictional forces on generalized forces).
   data.F_mult = [this, &contacts, &q, &data](const VectorX<T>& w) ->
       VectorX<T> {
-    return F_mult(contacts, q, w, data.r);
+    return ContactTangentJacobianMult(contacts, q, w, data.r);
   };
   data.F_transpose_mult = [this, &contacts, &kcache, &data](const VectorX<T>& f)
       -> VectorX<T> {
-    return F_transpose_mult(contacts, kcache, f, data.r);
+    return TransposedContactTangentJacobianMult(contacts, kcache, f, data.r);
   };
 
   // Set the range-of-motion (L) Jacobian multiplication operator and the
@@ -1061,8 +1063,8 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const double default_limit_cfm = 1e-8;
   const double default_limit_erp = 0.5;
   data.kL.resize(limits.size());
-    for (int i = 0; i < static_cast<int>(limits.size()); ++i)
-    data.kL[i] = default_limit_erp * limits[i].error / dt;
+  for (int i = 0; i < static_cast<int>(limits.size()); ++i)
+    data.kL[i] = default_limit_erp * limits[i].signed_distance / dt;
   data.gammaL.setOnes(limits.size()) *= default_limit_cfm;
 
   // Set Jacobians for bilateral constraint terms.

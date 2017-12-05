@@ -411,23 +411,23 @@ class RigidBodyPlant : public LeafSystem<T> {
       const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
       const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
 
-  VectorX<T> N_mult(
+  VectorX<T> ContactNormalJacobianMult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
       const VectorX<T>& q,
       const VectorX<T>& v) const;
 
-  VectorX<T> N_transpose_mult(
+  VectorX<T> TransposedContactNormalJacobianMult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
       const KinematicsCache<T>& kcache,
       const VectorX<T>& f) const;
 
-  VectorX<T> F_mult(
+  VectorX<T> ContactTangentJacobianMult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
       const VectorX<T>& q,
       const VectorX<T>& v,
       const std::vector<int>& half_num_cone_edges) const;
 
-  VectorX<T> F_transpose_mult(
+  VectorX<T> TransposedContactTangentJacobianMult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
       const KinematicsCache<T>& kcache,
       const VectorX<T>& f,
@@ -479,11 +479,9 @@ class RigidBodyPlant : public LeafSystem<T> {
     // Whether the limit is a lower limit or upper limit.
     bool lower_limit{false};
 
-    // The "error", meaning the amount over the limit (if the error is
-    // positive) or under the limit (if the error is negative). Negative error
-    // is not error per se, but rather a way to limit the movement of a joint
-    // as the state is integrated forward.
-    T error{0};
+    // The signed distance from the limit. Negative signed distances correspond
+    // to joint limit violations.
+    T signed_distance{0};
   };
 };
 
