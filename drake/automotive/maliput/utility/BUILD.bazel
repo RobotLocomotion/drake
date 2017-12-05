@@ -11,6 +11,7 @@ load(
     "drake_py_test",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,7 +44,9 @@ drake_cc_binary(
 
 alias(
     name = "t_intersection.rndf",
-    actual = "//drake/automotive/maliput/rndf:test/maps/t_intersection.rndf",
+    actual = adjust_label_for_drake_hoist(
+        "//drake/automotive/maliput/rndf:test/maps/t_intersection.rndf",
+    ),
 )
 
 drake_cc_binary(

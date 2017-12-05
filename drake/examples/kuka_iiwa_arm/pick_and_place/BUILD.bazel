@@ -6,9 +6,12 @@ load(
     "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(
-    default_visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    default_visibility = adjust_labels_for_drake_hoist([
+        "//drake/examples/kuka_iiwa_arm:__subpackages__",
+    ]),
 )
 
 drake_cc_library(
