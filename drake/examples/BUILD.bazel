@@ -2,6 +2,7 @@
 
 load("//tools:drake.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 load("@drake//tools/install:install.bzl", "install")
 
 drake_cc_binary(
@@ -36,7 +37,7 @@ drake_cc_binary(
 
 # The :prod_models in these packages are installed as part of the Drake release
 # process, and loaded into drake_visualizer's model database by default.
-INSTALLED_MODEL_PACKAGES = [
+INSTALLED_MODEL_PACKAGES = adjust_labels_for_drake_hoist([
     "//drake/examples/acrobot",
     "//drake/examples/atlas",
     "//drake/examples/contact_model",
@@ -50,7 +51,7 @@ INSTALLED_MODEL_PACKAGES = [
     "//drake/examples/simple_four_bar",
     "//drake/examples/valkyrie",
     "//drake/examples/zmp",
-]
+])
 
 filegroup(
     name = "prod_models",
@@ -60,9 +61,9 @@ filegroup(
 
 # TODO(jwnimmer-tri): Figure out which examples needs to be installed (see
 # issues #4224 and #1766).
-INSTALLED_EXAMPLES = [
+INSTALLED_EXAMPLES = adjust_labels_for_drake_hoist([
     "//drake/examples/kuka_iiwa_arm",
-]
+])
 
 install(
     name = "install",

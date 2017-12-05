@@ -13,6 +13,7 @@ load(
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -226,7 +227,9 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 
-DRAKE_RESOURCE_SENTINEL = "//drake:.drake-find_resource-sentinel"
+DRAKE_RESOURCE_SENTINEL = adjust_label_for_drake_hoist(
+    "//drake:.drake-find_resource-sentinel",
+)
 
 drake_cc_library(
     name = "find_resource",
