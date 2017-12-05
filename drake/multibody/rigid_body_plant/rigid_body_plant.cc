@@ -445,9 +445,9 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   // Get the stiffness. Young's modulus is force per area, while stiffness is
   // force per length. That means that we must multiply by a characteristic
   // area (for now); eventually, we'll want to multiply by the true contact
-  // patch area.
+  // patch area. The "length" will be incorporated using the contact depth.
   // TODO(edrumwri): Make characteristic area user settable.
-  const double characteristic_area = 1e-3;  // 1 cm^2
+  const double characteristic_area = 1e-2;  // 1 cm^2
   *stiffness = material.youngs_modulus() * characteristic_area;
 
   // Get the damping value (b) from the compliant model dissipation (α).
@@ -456,9 +456,9 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   // (x). Put another way, we determine the damping coefficient for a harmonic
   // oscillator from linearizing the dissipation factor about the characteristic
   // deformation; the system will behave like a harmonic oscillator oscillating
-  // about x = characteristic_deformation m.
+  // about x = characteristic_deformation (in meters).
   // TODO(edrumwri): Make characteristic deformation user settable.
-  const double characteristic_deformation = 1e-4;  // 1 mm^2
+  const double characteristic_deformation = 1e-4;  // 1 mm
   *damping = material.dissipation() * 1.5 * (*stiffness) *
       characteristic_deformation;
 
@@ -963,8 +963,10 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
       const T& qjoint = q(b->get_position_start_index());
       const T& vjoint = v(b->get_velocity_start_index());
 
-      // See whether the *current* joint velocity might lead to a limit
-      // violation.
+      // See whether the joint is currently violated or the *current* joint
+      // velocity might lead to a limit violation. The latter is a heuristic to
+      // incorporate the joint limit into the time stepping calculations before
+      // it is violated. 
       if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
         // Institute a lower limit.
         limits.push_back(JointLimit());
