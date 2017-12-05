@@ -1,134 +1,134 @@
 # -*- python -*-
 
-load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools:drake.bzl",
+    "drake_cc_library",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
 )
-load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
-load(":pybind.bzl", "drake_pybind_cc_binary")
-
-package(default_visibility = ["//visibility:private"])
-
-drake_pybind_cc_binary(
-    name = "_common_py.so",
-    srcs = [
-        "common_py.cc",
-    ],
+load(
+    "//drake/bindings/pydrake:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_pybind_installs",
+    "get_pybind_library_dest",
 )
 
-drake_pybind_cc_binary(
-    name = "_autodiffutils_py.so",
-    srcs = [
-        "autodiff_types_py.h",
-        "autodiffutils_py.cc",
-    ],
-)
+package(default_visibility = ["//drake/bindings/pydrake:__subpackages__"])
 
-drake_pybind_cc_binary(
-    name = "_rbtree_py.so",
-    srcs = [
-        "autodiff_types_py.h",
-        "rbtree_py.cc",
-    ],
-)
+# N.B. Any common headers should be shared via a HEADER ONLY library.
 
-drake_pybind_cc_binary(
-    name = "parsers.so",
-    srcs = [
-        "parsers_py.cc",
-    ],
-)
-
-drake_pybind_cc_binary(
-    name = "solvers/_ik_py.so",
-    srcs = [
-        "ik_py.cc",
-    ],
-)
-
-drake_pybind_cc_binary(
-    name = "solvers/_mathematicalprogram_py.so",
-    srcs = [
-        "mathematicalprogram_py.cc",
-        "symbolic_types_py.h",
-    ],
-)
-
-drake_pybind_cc_binary(
-    name = "solvers/gurobi.so",
-    srcs = [
-        "gurobi_py.cc",
-    ],
-)
-
-drake_pybind_cc_binary(
-    name = "solvers/ipopt.so",
-    srcs = [
-        "ipopt_py.cc",
-    ],
-)
-
-drake_pybind_cc_binary(
-    name = "solvers/mosek.so",
-    srcs = [
-        "mosek_py.cc",
-    ],
-)
-
-drake_pybind_cc_binary(
-    name = "_symbolic_py.so",
-    srcs = [
-        "symbolic_py.cc",
-        "symbolic_types_py.h",
-    ],
-)
-
-PYDRAKE_SO_DATA = [
-    ":_autodiffutils_py.so",
-    ":_common_py.so",
-    ":_rbtree_py.so",
-    ":_symbolic_py.so",
-    ":parsers.so",
-    ":solvers/_ik_py.so",
-    ":solvers/_mathematicalprogram_py.so",
-    ":solvers/gurobi.so",
-    ":solvers/ipopt.so",
-    ":solvers/mosek.so",
-]
-
+# This is a pure-python, standalone library.
+# Keep this away from `common_py` to simplify test dependencies.
 drake_py_library(
-    name = "pydrake",
-    srcs = [
-        "__init__.py",
-        "autodiffutils.py",
-        "common.py",
-        "forwarddiff.py",
-        "path.py",
-        "rbtree.py",
-        "solvers/__init__.py",
-        "solvers/ik.py",
-        "solvers/mathematicalprogram.py",
-        "symbolic.py",
-    ],
-    data = PYDRAKE_SO_DATA,
+    name = "util_py",
+    srcs = ["util.py"],
     imports = [".."],
-    visibility = ["//visibility:public"],
 )
 
-PY_DEST = "lib/python2.7/site-packages/pydrake"
+drake_pybind_library(
+    name = "common_py",
+    cc_srcs = ["common_py.cc"],
+    py_deps = [
+        ":util_py",
+    ],
+    py_srcs = [
+        "__init__.py",
+        "common.py",
+    ],
+)
+
+# TODO(eric.cousineau): Ensure that this is not installed.
+drake_cc_library(
+    name = "autodiff_types",
+    hdrs = ["autodiff_types_py.h"],
+    # NOTE: We must violate IWYU and not list "autodiff" in "deps" here because
+    # we do not want these dependencies leaking in at install time.
+)
+
+drake_pybind_library(
+    name = "autodiffutils_py",
+    cc_deps = [
+        ":autodiff_types",
+    ],
+    cc_srcs = ["autodiffutils_py.cc"],
+    py_deps = [
+        ":common_py",
+    ],
+    py_srcs = [
+        "autodiffutils.py",
+        "forwarddiff.py",
+    ],
+)
+
+drake_pybind_library(
+    name = "rbtree_py",
+    cc_deps = [
+        ":autodiff_types",
+    ],
+    cc_srcs = ["rbtree_py.cc"],
+    py_deps = [
+        ":autodiffutils_py",
+        ":common_py",
+        ":parsers_py",
+    ],
+    py_srcs = ["rbtree.py"],
+)
+
+drake_pybind_library(
+    name = "parsers_py",
+    cc_so_name = "parsers",
+    cc_srcs = ["parsers_py.cc"],
+    py_deps = [
+        ":common_py",
+    ],
+)
+
+# TODO(eric.cousineau): Make private.
+drake_cc_library(
+    name = "symbolic_types_py",
+    hdrs = ["symbolic_types_py.h"],
+)
+
+drake_pybind_library(
+    name = "symbolic_py",
+    cc_deps = [
+        ":symbolic_types_py",
+    ],
+    cc_srcs = ["symbolic_py.cc"],
+    py_deps = [
+        ":common_py",
+    ],
+    py_srcs = ["symbolic.py"],
+)
+
+PYBIND_LIBRARIES = [
+    ":autodiffutils_py",
+    ":common_py",
+    ":parsers_py",
+    ":rbtree_py",
+    ":symbolic_py",
+    "//drake/bindings/pydrake/solvers",
+]
 
 install(
     name = "install",
     targets = [
-        ":pydrake",
-    ] + PYDRAKE_SO_DATA,
-    library_dest = PY_DEST,
-    py_dest = PY_DEST,
+        ":util_py",
+    ],
+    py_dest = get_pybind_library_dest(),
     visibility = ["//visibility:public"],
+    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+)
+
+drake_py_library(
+    name = "pydrake",
+    visibility = ["//visibility:public"],
+    deps = PYBIND_LIBRARIES,
 )
 
 drake_py_test(
@@ -137,7 +137,7 @@ drake_py_test(
     srcs = ["test/atlas_constructor_test.py"],
     data = ["//drake/examples/atlas:models"],
     main = "test/atlas_constructor_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -146,7 +146,7 @@ drake_py_test(
     srcs = ["test/common_test.py"],
     data = ["//drake/examples/atlas:models"],
     main = "test/common_test.py",
-    deps = [":pydrake"],
+    deps = [":common_py"],
 )
 
 # `//:install` is run in this test to verify that once installed
@@ -169,56 +169,7 @@ drake_py_test(
     size = "small",
     srcs = ["test/forward_diff_test.py"],
     main = "test/forward_diff_test.py",
-    deps = [":pydrake"],
-)
-
-drake_py_test(
-    name = "mathematical_program_gurobi_solver_test",
-    size = "small",
-    srcs = ["test/gurobi_solver_test.py"],
-    main = "test/gurobi_solver_test.py",
-    tags = gurobi_test_tags(),
-    deps = [":pydrake"],
-)
-
-drake_py_test(
-    name = "mathematical_program_ipopt_solver_test",
-    size = "small",
-    srcs = ["test/ipopt_solver_test.py"],
-    args = select({
-        "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
-        "//conditions:default": [],
-    }),
-    main = "test/ipopt_solver_test.py",
-    deps = [":pydrake"],
-)
-
-drake_py_test(
-    name = "mathematical_program_mosek_solver_test",
-    size = "small",
-    srcs = ["test/mosek_solver_test.py"],
-    main = "test/mosek_solver_test.py",
-    tags = mosek_test_tags(),
-    deps = [":pydrake"],
-)
-
-drake_py_test(
-    name = "mathematical_program_test",
-    size = "small",
-    srcs = ["test/mathematicalprogram_test.py"],
-    main = "test/mathematicalprogram_test.py",
-    tags = gurobi_test_tags(),
-    deps = [":pydrake"],
-)
-
-drake_py_test(
-    name = "pr2ik_test",
-    size = "small",
-    srcs = ["test/pr2_ik_test.py"],
-    data = ["//drake/examples/pr2:models"],
-    main = "test/pr2_ik_test.py",
-    tags = ["snopt"],
-    deps = [":pydrake"],
+    deps = [":autodiffutils_py"],
 )
 
 drake_py_test(
@@ -227,7 +178,7 @@ drake_py_test(
     srcs = ["test/rbt_transform_points_test.py"],
     data = ["//drake/examples/pendulum:models"],
     main = "test/rbt_transform_points_test.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -236,17 +187,7 @@ drake_py_test(
     srcs = ["test/rbt_com_test.py"],
     data = ["//drake/examples/pendulum:models"],
     main = "test/rbt_com_test.py",
-    deps = [":pydrake"],
-)
-
-drake_py_test(
-    name = "rbtik_test",
-    size = "small",
-    srcs = ["test/rbt_ik_test.py"],
-    data = ["//drake/examples/pendulum:models"],
-    main = "test/rbt_ik_test.py",
-    tags = ["snopt"],
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
 )
 
 drake_py_test(
@@ -254,7 +195,7 @@ drake_py_test(
     size = "small",
     srcs = ["test/symbolic_test.py"],
     main = "test/symbolic_test.py",
-    deps = [":pydrake"],
+    deps = [":symbolic_py"],
 )
 
 drake_py_test(
@@ -263,7 +204,35 @@ drake_py_test(
     srcs = ["test/test_urdf_parser.py"],
     data = ["//drake/examples/pr2:models"],
     main = "test/test_urdf_parser.py",
-    deps = [":pydrake"],
+    deps = [":rbtree_py"],
+)
+
+drake_py_library(
+    name = "module_shim_example",
+    testonly = 1,
+    srcs = [
+        "test/module_shim_example/__init__.py",
+        "test/module_shim_example/sub_module.py",
+    ],
+    imports = ["test"],
+    deps = [":util_py"],
+)
+
+drake_py_test(
+    name = "module_shim_test",
+    srcs = ["test/module_shim_test.py"],
+    deps = [
+        ":module_shim_example",
+    ],
+)
+
+drake_py_test(
+    name = "rbtree_shim_test",
+    srcs = ["test/rbtree_shim_test.py"],
+    deps = [
+        ":common_py",
+        ":rbtree_py",
+    ],
 )
 
 add_lint_tests()

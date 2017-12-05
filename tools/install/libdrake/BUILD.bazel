@@ -105,7 +105,7 @@ cc_library(
 cc_library(
     name = "drake_shared_library",
     hdrs = [":libdrake_headers"],
-    visibility = ["//drake/bindings/pydrake:__pkg__"],
+    visibility = ["//drake/bindings/pydrake:__subpackages__"],
     deps = [
         ":gurobi_deps",
         ":mosek_deps",
