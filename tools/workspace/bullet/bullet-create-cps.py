@@ -12,12 +12,12 @@ content = """
   "Cps-Version": "0.8.0",
   "Name": "Bullet",
   "Description": "Real-time collision detection and multi-physics simulation",
-  "License": "Zlib",
-  "Version": "%s",
-  "Default-Components": [
-    ":BulletCollision",
-    ":BulletDynamics"
+  "License": [
+    "LGPL-2.1+",
+    "Zlib"
   ],
+  "Version": "%s",
+  "Default-Components": [":BulletCollision"],
   "Components": {
     "BulletCollision": {
       "Type": "dylib",
@@ -25,30 +25,11 @@ content = """
       "Includes": ["@prefix@/include/bullet"],
       "Requires": [":LinearMath"]
     },
-    "BulletDynamics": {
-      "Type": "dylib",
-      "Location": "@prefix@/lib/libBulletDynamics.so",
-      "Includes": ["@prefix@/include/bullet"],
-      "Requires": [
-        ":BulletCollision",
-        ":LinearMath"
-      ]
-    },
     "LinearMath": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libLinearMath.so",
       "Definitions": ["BT_USE_DOUBLE_PRECISION"],
       "Includes": ["@prefix@/include/bullet"]
-    },
-    "BulletSoftBody": {
-      "Type": "dylib",
-      "Location": "@prefix@/lib/libBulletSoftBody.so",
-      "Includes": ["@prefix@/include/bullet"],
-      "Requires": [
-        ":BulletCollision",
-        ":BulletDynamics",
-        ":LinearMath"
-      ]
     }
   }
 }
