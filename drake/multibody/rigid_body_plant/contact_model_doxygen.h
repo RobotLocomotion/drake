@@ -192,9 +192,10 @@
    should be in stiction, the model allows the contacting points a relative
    slip velocity _up to_ this value. See @ref tangent_force for details.
      - The default value is 0.01 m/s.
- - characteristic area, `A`, (with units of m²) defines a characteristic contact
-   patch scale. See @ref drake_contact_implementation for details.
-     - The default value is 2 cm² (e.g., 2×10⁻⁴ m²).
+ - characteristic radius, `R`, (with units of m) defines a characteristic
+   contact patch scale. See @ref drake_contact_implementation for details. This
+   defines a circular contact patch with area `πR²`.
+     - The default value is 0.2 mm (e.g., 2×10⁻⁴ m).
 
  @anchor contact_parameter_choices
  <h3>Issues with Parameter Values</h3>
@@ -224,7 +225,7 @@
     box might require limiting residual slip to 1×10⁻³ m/s or less. Ultimately,
     picking the largest viable value will allow your simulation to run faster.
 
-  - **Picking a good value for `A`**
+  - **Picking a good value for `R`**
 
     One of the quirks of the implemented contact model, is that is largely
     unaware of the size of the contact surface between bodies. However, the
@@ -235,8 +236,17 @@
     road. Even if we assume the ball and tires are made of the same rubber, the
     forces in play are quite different.
     Rather than increasing the Young's modulus for the car's tires (as compared
-    to the rubber ball), we recommend increasing the characteristic area in the
-    contact model.
+    to the rubber ball), we recommend increasing the characteristic radius in
+    the contact model.
+    As a word of warning, don't think of this characteristic radius as
+    corresponding to a literal measure of the real world. The
+    default size corresponds closely with a point contact (where the contact is
+    roughly the area of the head of a pin). This small contact area is
+    sufficient for manipulation even though it does not reasonably represent
+    the physical world. If the forces seem weak, increase the characteristic
+    size, but only increase it to the smallest value that gives sufficient
+    forces; making it larger will make the forces stiffer which will lead to a
+    more computationally expensive simulation.
 
  @anchor integrator_choice
  <h2>Choice of Integrator</h2>
@@ -274,7 +284,7 @@
    characteristic area.
 
    This would have particular value if your simulation scenario has contacts of
-   disparate scales. A single, global characteristic area may be insufficient.
+   disparate scales. A single, global characteristic radius may be insufficient.
    By increasing the samples on large contact patches, those contact points will
    be compatible with the smaller characteristic area which works for the small
    contact patches.
@@ -585,7 +595,8 @@
  @anchor drake_contact_model_impl
  <h2>Contact Force Computation</h2>
 
- Given the characterization of penetration outlined above, a full implementation
+ Given the characterization of penetration outlined above (i.e., a single
+ point), a full implementation
  of the contact normal force would be impossible. Instead, Drake employs a
  corruption of the Hertz model. The best analogy would be to think of
  the contact as between a vertical cylinder and a plane: `fₙ = 2⋅E⋅R⋅x`. In

@@ -119,11 +119,11 @@ void ExtractCompliantParameters(
     pick_and_place::SimulatedPlantConfiguration* plant_configuration) {
   if (configuration.has_compliant_model_parameters()) {
     const auto& proto_parameters = configuration.compliant_model_parameters();
-    if (proto_parameters.characteristic_area() > 0) {
-      plant_configuration->contact_model_parameters.characteristic_area =
-          proto_parameters.characteristic_area();
-    } else if (proto_parameters.characteristic_area() < 0) {
-      throw std::runtime_error("'characteristic_area' must be positive");
+    if (proto_parameters.characteristic_radius() > 0) {
+      plant_configuration->contact_model_parameters.characteristic_radius =
+          proto_parameters.characteristic_radius();
+    } else if (proto_parameters.characteristic_radius() < 0) {
+      throw std::runtime_error("'characteristic_radius' must be positive");
     }
     if (proto_parameters.v_stiction_tolerance() > 0) {
       plant_configuration->contact_model_parameters.v_stiction_tolerance =

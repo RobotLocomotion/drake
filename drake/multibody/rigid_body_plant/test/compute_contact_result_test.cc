@@ -51,7 +51,7 @@ class ContactResultTest : public ContactResultTestCommon {
     plant_->set_default_compliant_material(MakeDefaultMaterial());
 
     systems::CompliantContactModelParameters model_parameters;
-    model_parameters.characteristic_area = kContactArea;
+    model_parameters.characteristic_radius = kContactRadius;
     model_parameters.v_stiction_tolerance = kVStictionTolerance;
     plant_->set_contact_model_parameters(model_parameters);
 

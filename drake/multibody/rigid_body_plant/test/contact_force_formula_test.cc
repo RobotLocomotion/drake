@@ -75,7 +75,7 @@ class ContactFormulaTest : public ::testing::Test {
     plant_->set_default_compliant_material(default_material);
 
     systems::CompliantContactModelParameters model_parameters;
-    model_parameters.characteristic_area = contact_area_;
+    model_parameters.characteristic_radius = contact_radius_;
     model_parameters.v_stiction_tolerance = v_stiction_tolerance_;
     plant_->set_contact_model_parameters(model_parameters);
 
@@ -142,7 +142,7 @@ class ContactFormulaTest : public ::testing::Test {
   const double static_friction_ = 0.7;
   const double dynamic_friction_ = 0.5;
   const double v_stiction_tolerance_ = 0.01;  // m/s
-  const double contact_area_ = 2;  // m^2
+  const double contact_radius_ = 2;  // m
   const double dissipation_ = 0.5;  // s/m
 
   // dummy_precision is a very tight threshold for these tests. It is well

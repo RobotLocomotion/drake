@@ -55,7 +55,7 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     compliant_contact_model_->set_default_material(material);
     CompliantContactModelParameters contact_parameters;
     contact_parameters.v_stiction_tolerance = kVStictionTolerance;
-    contact_parameters.characteristic_area = kContactArea;
+    contact_parameters.characteristic_radius = kContactRadius;
     compliant_contact_model_->set_model_parameters(contact_parameters);
 
     // The state to test is the default state of the tree (0 velocities

@@ -85,9 +85,9 @@ message CompliantModelParameters {
     // Stiction velocity tolerance (m/s)
     // DEFAULT: 0.01
     optional double v_stiction_tolerance = 1;
-    // Characteristic area (m^2)
+    // Characteristic radius (m)
     // DEFAULT: 2e-4
-    optional double characteristic_area = 2;
+    optional double characteristic_radius = 2;
 }
 
 // Next ID: 3

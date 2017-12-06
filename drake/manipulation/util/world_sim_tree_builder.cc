@@ -41,7 +41,7 @@ WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {
   //     Young's modulus values produces an effective Young's modulus half as
   //     large.
   contact_model_parameters_.v_stiction_tolerance = 0.01;  // m/s
-  contact_model_parameters_.characteristic_area = 1.0;  // m^2
+  contact_model_parameters_.characteristic_radius = 1.0;  // m^2
   default_contact_material_.set_youngs_modulus(20000);  // Pa
   default_contact_material_.set_dissipation(2);  // s/m
   default_contact_material_.set_friction(0.9, 0.5);
