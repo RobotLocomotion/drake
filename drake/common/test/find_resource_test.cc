@@ -50,7 +50,7 @@ GTEST_TEST(FindResourceTest, NotFound) {
   // We get an error back.
   const optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
-  EXPECT_EQ(*error_message, "could not find resource");
+  EXPECT_EQ(*error_message, "could not find resource: " + relpath);
 
   // Sugar works the same way.
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
