@@ -162,6 +162,7 @@ drake_cc_googletest(
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":sim_diagram_builder",

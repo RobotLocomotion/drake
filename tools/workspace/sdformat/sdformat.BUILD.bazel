@@ -114,13 +114,14 @@ cc_library(
         "src/urdf/urdf_world/world.h",
     ],
     hdrs = public_headers,
-    # TODO: We are currently using the vendored version of urdfdom embedded
-    # in sdformat, so we need this include path to find it.  We can get
-    # rid of this by either building the vendored version as a separate
-    # cc_library rule, or by using a true external version of URDF.
-    copts = ["-I external/sdformat/src/urdf"],
+    copts = ["-w"],
     data = glob(["sdf/1.6/*.sdf"]),
-    includes = ["include"],
+    includes = [
+        "include",
+        # We use the vendored version of urdfdom embedded in sdformat; we need
+        # this include path to find it.
+        "src/urdf",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "@boost//:boost_headers",

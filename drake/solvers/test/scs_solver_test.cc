@@ -7,6 +7,7 @@
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -148,6 +149,60 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
+
+TEST_P(TestEllipsoidsSeparation, TestSOCP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    // SCS is inaccurate, choose a large tolerance.
+    SolveAndCheckSolution(scs_solver, 1.3e-3);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(SCSTest, TestEllipsoidsSeparation,
+                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+
+TEST_P(TestQPasSOCP, TestSOCP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    // SCS is inaccurate, choose a large tolerance.
+    SolveAndCheckSolution(scs_solver, 2E-4);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(SCSTest, TestQPasSOCP,
+                        ::testing::ValuesIn(GetQPasSOCPProblems()));
+
+TEST_P(TestFindSpringEquilibrium, TestSOCP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    // SCS is inaccurate, choose a large tolerance.
+    SolveAndCheckSolution(scs_solver, 2E-3);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    SCSTest, TestFindSpringEquilibrium,
+    ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+
+TEST_P(QuadraticProgramTest, TestQP) {
+  ScsSolver solver;
+  if (solver.available()) {
+    prob()->RunProblem(&solver);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ScsTest, QuadraticProgramTest,
+    ::testing::Combine(::testing::ValuesIn(quadratic_cost_form()),
+                       ::testing::ValuesIn(linear_constraint_form()),
+                       ::testing::ValuesIn(quadratic_problems())));
+
+GTEST_TEST(QPtest, TestUnitBallExample) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestQPonUnitBallExample(solver);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

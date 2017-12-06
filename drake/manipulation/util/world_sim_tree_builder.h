@@ -13,7 +13,7 @@ namespace manipulation {
 namespace util {
 
 template<typename T> struct ModelInstanceInfo {
-  std::string model_path;
+  std::string absolute_model_path;
   int instance_id;
   std::shared_ptr<RigidBodyFrame<T>> world_offset;
 };
@@ -74,17 +74,23 @@ class WorldSimTreeBuilder {
   WorldSimTreeBuilder(const WorldSimTreeBuilder<T>& other) = delete;
   WorldSimTreeBuilder& operator=(const WorldSimTreeBuilder<T>& other) = delete;
 
-  /// Adds a model to the internal model database. Models are described by
-  /// @p model_name coupled with URDF/SDF paths in @p model_path. Instances
-  /// of these models can then be added to the world via the various
-  /// `AddFoo()` methods provided by this class. Note that @p model_name is
-  /// user-selectable but must be unique among all of the models that are
-  /// stored.
+  /// Adds a model to the internal model database. Models are
+  /// described by @p model_name coupled with URDF/SDF paths in @p
+  /// absolute_model_path. Instances of these models can then be added
+  /// to the world via the various `AddFoo()` methods provided by this
+  /// class. Note that @p model_name is user-selectable but must be
+  /// unique among all of the models that are stored.
   ///
   /// @see AddObjectToFrame
   /// @see AddFloatingObject
   /// @see AddFixedObject
-  void StoreModel(const std::string& model_name, const std::string& model_path);
+  void StoreModel(const std::string& model_name,
+                  const std::string& absolute_model_path);
+
+  /// Like StoreModel, but uses FindResourceOrThrow to search inside
+  /// the drake resource search path.
+  void StoreDrakeModel(const std::string& model_name,
+                       const std::string& model_path);
 
   /// Gets a unique pointer to the `RigidBodyTree` that was built.
   /// This method can only be called if it was not previously called.

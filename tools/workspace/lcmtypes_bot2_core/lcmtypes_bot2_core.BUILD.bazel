@@ -88,5 +88,6 @@ install(
     rename = {
         "share/java/liblcmtypes_bot2_core_java.jar": "lcmtypes_bot2_core.jar",
     },
+    allowed_externals = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
     deps = [":install_cmake_config"],
 )
