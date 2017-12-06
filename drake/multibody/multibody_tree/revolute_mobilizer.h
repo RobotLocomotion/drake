@@ -110,6 +110,10 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angular_rate(
       systems::Context<T> *context, const T& theta_dot) const;
 
+  /// Sets `state` to store a zero angle and angular rate.
+  void set_zero_state(const systems::Context<T>& context,
+                      systems::State<T>* state) const override;
+
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
   /// about this mobilizer's axis (@see get_revolute_axis().)

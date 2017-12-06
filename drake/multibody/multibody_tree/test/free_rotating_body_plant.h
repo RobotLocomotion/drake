@@ -44,6 +44,17 @@ class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
   template <typename U>
   explicit FreeRotatingBodyPlant(const FreeRotatingBodyPlant<U>&);
 
+  /// Sets `state` to a default value corresponding to a configuration in which
+  /// the free body frame B is coincident with the world frame W and the angular
+  /// velocity has a value as returned by
+  /// get_default_initial_angular_velocity().
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
+
+  /// Returns the angular velocity `w_WB` stored in `context` of the free body B
+  /// in the world frame W.
+  Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
+
   /// Stores in `context` the value of the angular velocity `w_WB` of the body
   /// in the world frame W.
   void set_angular_velocity(
@@ -56,6 +67,10 @@ class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
   /// Computes the spatial velocity `V_WB` of the body in the world frame.
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;
+
+  /// Returns the default value of the angular velocity set by default by
+  /// SetDefaultState(). Currently a non-zero value.
+  Vector3<double> get_default_initial_angular_velocity() const;
 
  private:
   // Override of context construction so that we can delegate it to

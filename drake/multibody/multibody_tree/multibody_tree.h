@@ -651,6 +651,9 @@ class MultibodyTree {
   /// Mobilizer::set_zero_configuration().
   void SetDefaultContext(systems::Context<T>* context) const;
 
+  /// Sets default values in the `state`. For mobilizers, this method sets them
+  /// to their _zero_ configuration according to
+  /// Mobilizer::set_zero_configuration().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
 

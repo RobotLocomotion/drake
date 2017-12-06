@@ -79,7 +79,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
     manipulation::util::ModelInstanceInfo<T> *box_instance) {
 
   const std::string iiwa_path =
-      (!FLAGS_urdf.empty() ? FLAGS_urdf : kIiwaUrdf);
+      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
 
   auto tree_builder =
       std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
@@ -87,15 +87,16 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
   tree_builder->StoreModel("iiwa", iiwa_path);
-  tree_builder->StoreModel("table",
-                           "drake/examples/kuka_iiwa_arm/models/table/"
-                           "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel(
+  tree_builder->StoreDrakeModel(
+      "table",
+      "drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf");
+  tree_builder->StoreDrakeModel(
       "large_table", "drake/examples/kuka_iiwa_arm/dev/box_rotation/models/"
       "large_extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel("box",
-                           "drake/examples/kuka_iiwa_arm/dev/box_rotation/"""
-                           "models/box.urdf");
+  tree_builder->StoreDrakeModel(
+      "box",
+      "drake/examples/kuka_iiwa_arm/dev/box_rotation/models/box.urdf");
 
   // Build a world with three fixed tables.  A box is placed one on
   // table, and the iiwa arms are fixed to the other two tables.

@@ -22,13 +22,15 @@ constexpr int kNumObjectVelocities = 6;
 class IiwaAndWsgPlantWithStateEstimatorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    tree_builder_.StoreModel("iiwa",
-                             "drake/manipulation/models/iiwa_description/urdf/"
-                             "iiwa14_polytope_collision.urdf");
-    tree_builder_.StoreModel("wsg",
-                             "drake/manipulation/models/wsg_50_description"
-                             "/sdf/schunk_wsg_50_ball_contact.sdf");
-    tree_builder_.StoreModel(
+    tree_builder_.StoreDrakeModel(
+        "iiwa",
+        "drake/manipulation/models/iiwa_description/urdf/"
+        "iiwa14_polytope_collision.urdf");
+    tree_builder_.StoreDrakeModel(
+        "wsg",
+        "drake/manipulation/models/wsg_50_description"
+        "/sdf/schunk_wsg_50_ball_contact.sdf");
+    tree_builder_.StoreDrakeModel(
         "object",
         "drake/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf");
   }

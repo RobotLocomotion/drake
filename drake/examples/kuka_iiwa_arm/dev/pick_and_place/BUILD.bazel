@@ -11,9 +11,15 @@ load(
     "@drake//tools/skylark:drake_proto.bzl",
     "drake_cc_proto_library",
 )
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_labels_for_drake_hoist",
+)
 
 package(
-    default_visibility = ["//drake/examples/kuka_iiwa_arm/dev:__subpackages__"],  # noqa
+    default_visibility = adjust_labels_for_drake_hoist([
+        "//drake/examples/kuka_iiwa_arm/dev:__subpackages__",
+    ]),
 )
 
 drake_cc_proto_library(

@@ -19,6 +19,11 @@ content = """
       "Location": "@prefix@/lib/libignition_math.so",
       "Includes": [ "@prefix@/include" ]
     }
+  },
+  "X-CMake-Variables": {
+    "IGNITION-MATH_INCLUDE_DIRS": "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include",
+    "IGNITION-MATH_LINK_DIRS": "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib",
+    "IGNITION-MATH_LIBRARIES": "ignition_math"
   }
 }
 """ % defs
