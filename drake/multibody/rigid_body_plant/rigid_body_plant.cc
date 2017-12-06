@@ -444,11 +444,12 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
 
   // Get the stiffness. Young's modulus is force per area, while stiffness is
   // force per length. That means that we must multiply by a characteristic
-  // area (for now); eventually, we'll want to multiply by the true contact
-  // patch area. The "length" will be incorporated using the contact depth.
-  // TODO(edrumwri): Make characteristic area user settable.
-  const double characteristic_area = 1e-2;  // 1 cm^2
-  *stiffness = material.youngs_modulus() * characteristic_area;
+  // radius. See @ref hunt_crossley (in contact_model_doxygen.h) for a lengthy
+  // discussion on converting Young's Modulus to a stiffness.
+  // The "length" will be incorporated using the contact depth.
+  // TODO(edrumwri): Make characteristic radius user settable.
+  const double characteristic_radius = 1e-2;  // 1 cm.
+  *stiffness = material.youngs_modulus() * characteristic_radius;
 
   // Get the damping value (b) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975] yields b = 3/2 * α * k * x. We can assume
