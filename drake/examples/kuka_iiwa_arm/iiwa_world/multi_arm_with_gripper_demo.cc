@@ -24,10 +24,11 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel("iiwa",
-                           "drake/manipulation/models/iiwa_description/urdf/"
-                           "iiwa14_polytope_collision.urdf");
-  tree_builder->StoreModel(
+  tree_builder->StoreDrakeModel(
+      "iiwa",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
+  tree_builder->StoreDrakeModel(
       "wsg",
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
@@ -102,7 +103,7 @@ void main() {
   for (const auto& info : iiwa_info) {
     auto single_arm = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFile(
-        info.model_path, multibody::joints::kFixed, info.world_offset,
+        info.absolute_model_path, multibody::joints::kFixed, info.world_offset,
         single_arm.get());
 
     auto controller = builder.AddController<

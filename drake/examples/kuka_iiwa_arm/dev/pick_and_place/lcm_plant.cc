@@ -50,12 +50,14 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
 
   // Add models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel("table",
-                           "drake/examples/kuka_iiwa_arm/models/table/"
-                           "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel("wsg",
-                           "drake/manipulation/models/wsg_50_description"
-                           "/sdf/schunk_wsg_50_ball_contact.sdf");
+  tree_builder->StoreDrakeModel(
+      "table",
+      "drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf");
+  tree_builder->StoreDrakeModel(
+      "wsg",
+      "drake/manipulation/models/wsg_50_description"
+      "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   tree_builder->AddGround();
 
@@ -65,7 +67,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
                      static_cast<int>(configuration.robot_poses.size()));
   for (int i = 0; i < num_robots; ++i) {
     const std::string robot_tag{"robot_" + std::to_string(i)};
-    tree_builder->StoreModel(robot_tag, configuration.robot_models[i]);
+    tree_builder->StoreDrakeModel(robot_tag, configuration.robot_models[i]);
     // Add the arm.
     const Isometry3<double>& robot_base_pose{configuration.robot_poses[i]};
     int robot_base_id = tree_builder->AddFixedModelInstance(
@@ -98,7 +100,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
                      static_cast<int>(configuration.object_poses.size()));
   for (int i = 0; i < num_objects; ++i) {
     const std::string object_tag{"object_" + std::to_string(i)};
-    tree_builder->StoreModel(object_tag, configuration.object_models[i]);
+    tree_builder->StoreDrakeModel(object_tag, configuration.object_models[i]);
     int object_id = tree_builder->AddFloatingModelInstance(
         object_tag, configuration.object_poses[i].translation(),
         drake::math::rotmat2rpy(configuration.object_poses[i].linear()));
@@ -112,7 +114,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
                      static_cast<int>(configuration.table_poses.size()));
   for (int i = 0; i < num_tables; ++i) {
     const std::string table_tag{"table_" + std::to_string(i)};
-    tree_builder->StoreModel(table_tag, configuration.table_models[i]);
+    tree_builder->StoreDrakeModel(table_tag, configuration.table_models[i]);
     int table_id = tree_builder->AddFixedModelInstance(
         table_tag, configuration.table_poses[i].translation(),
         drake::math::rotmat2rpy(configuration.table_poses[i].linear()));

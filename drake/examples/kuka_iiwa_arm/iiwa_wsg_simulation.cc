@@ -76,14 +76,16 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel("iiwa", kIiwaUrdf);
-  tree_builder->StoreModel("table",
-                           "drake/examples/kuka_iiwa_arm/models/table/"
-                           "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel("box",
-                           "drake/examples/kuka_iiwa_arm/models/objects/"
-                           "block_for_pick_and_place.urdf");
-  tree_builder->StoreModel(
+  tree_builder->StoreDrakeModel("iiwa", kIiwaUrdf);
+  tree_builder->StoreDrakeModel(
+      "table",
+      "drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf");
+  tree_builder->StoreDrakeModel(
+      "box",
+      "drake/examples/kuka_iiwa_arm/models/objects/"
+      "block_for_pick_and_place.urdf");
+  tree_builder->StoreDrakeModel(
       "wsg",
       "drake/manipulation/models/wsg_50_description"
       "/sdf/schunk_wsg_50_ball_contact.sdf");

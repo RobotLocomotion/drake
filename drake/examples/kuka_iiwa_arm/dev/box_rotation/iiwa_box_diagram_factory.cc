@@ -48,8 +48,8 @@ IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
 
   auto single_arm = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      iiwa_info.model_path, multibody::joints::kFixed, iiwa_info.world_offset,
-      single_arm.get());
+      iiwa_info.absolute_model_path, multibody::joints::kFixed,
+      iiwa_info.world_offset, single_arm.get());
 
   DRAKE_DEMAND(single_arm->get_num_positions() % kIiwaArmNumJoints == 0);
   for (int offset = kIiwaArmNumJoints; offset < single_arm->get_num_positions();
@@ -98,7 +98,7 @@ IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
   // Make a box RBT for the fake state estimator.
   object_ = std::make_unique<RigidBodyTree<T>>();
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      box_info.model_path, multibody::joints::kQuaternion,
+      box_info.absolute_model_path, multibody::joints::kQuaternion,
       box_info.world_offset, object_.get());
   box_state_est_ =
       base_builder->template AddSystem<OracularStateEstimation<T>>(*object_);
