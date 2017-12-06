@@ -31,7 +31,6 @@ const VectorX<double> kIiwaMaxJointVelocities =
         .finished();
 // clang-format on
 
-
 /// Computes the lumped inertia parameters of the gripper and the end effector
 /// link expressed in the end effector frame.
 /// @param world_tree The RigidBodyTree that contains the arm and the gripper
@@ -69,7 +68,6 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
 /// size of @p time.  Times must be in strictly increasing order.
 void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
                               std::vector<double>* time);
-
 
 /// Makes a robotlocomotion::robot_plan_t message.  The number of
 /// columns in @p keyframes must match the size of @p time.  Times

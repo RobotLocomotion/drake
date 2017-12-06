@@ -12,9 +12,9 @@
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
-#include "drake/multibody/joints/fixed_joint.h"
 
 namespace drake {
 namespace examples {
@@ -459,7 +459,8 @@ ComputeNominalConfigurations(const WorldState& env_state,
 
   for (double pitch_offset : pitch_offsets) {
     for (double yaw_offset : yaw_offsets) {
-      if (auto X_WG_desired = ComputeDesiredPoses(env_state, yaw_offset, pitch_offset)) {
+      if (auto X_WG_desired =
+              ComputeDesiredPoses(env_state, yaw_offset, pitch_offset)) {
         constraint_arrays.emplace_back();
 
         for (int i = 1; i < kNumKnots; ++i) {
@@ -476,7 +477,8 @@ ComputeNominalConfigurations(const WorldState& env_state,
           // Constrain the end-effector position for all knots.
           position_constraints.emplace_back(new WorldPositionConstraint(
               robot, grasp_frame_index, end_effector_points,
-              r_WG - position_tolerance, r_WG + position_tolerance, knot_tspan));
+              r_WG - position_tolerance, r_WG + position_tolerance,
+              knot_tspan));
           constraint_arrays.back().push_back(position_constraints.back().get());
 
           // Constrain the end-effector orientation for all knots
@@ -741,7 +743,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
     case PickAndPlaceState::kApproachPickPregrasp:
     case PickAndPlaceState::kApproachPlacePregrasp: {
       if (!iiwa_move_.ActionStarted()) {
-        DRAKE_THROW_UNLESS(bool(interpolation_result_map_));
+        DRAKE_THROW_UNLESS(static_cast<bool>(interpolation_result_map_));
         robotlocomotion::robot_plan_t plan{};
         std::vector<VectorX<double>> q;
         PiecewisePolynomial<double>& q_traj =
