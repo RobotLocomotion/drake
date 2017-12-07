@@ -1,4 +1,4 @@
-#include "drake/solvers/scs_bnb.h"
+#include "drake/solvers/scs_branch_and_bound.h"
 
 #include <Eigen/SparseCore>
 #include <gtest/gtest.h>

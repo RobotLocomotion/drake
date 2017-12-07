@@ -4,6 +4,8 @@
 #include <memory>
 
 // clang-format off
+// scs.h should be included before amatrix.h, since amatrix.h uses deta types
+// defined in scs.h
 #include <scs.h>
 #include "linsys/amatrix.h"
 // clang-format on
@@ -62,9 +64,12 @@ class ScsNode {
    * @param A The left-hand side of the constraint.
    * @param b The right-hand side of the constraint.
    * @param c The coefficients of the linear cost.
-   * @param cone The life of the cone must outlive the life of the node and the
+   * @param cone The cone K in the documentation above. Note that cone does not
+   * include the relaxation on the binary variables 0 ≤ y ≤ 1. Also note that
+   * this is aliased for the lifetime of the ScsNode object.
    * tree for the branch and bound.
-   * @param binary_var_indices The indices of the binary variables.
+   * @param binary_var_indices The indices of the binary variables, y, in the
+   * vector of decision variables, x.
    * @param cost_constant The constant term in the cost.
    * @pre 1. binary_var_indices is within the range of [0, A.n).
    * @pre 2. binary_var_indices does not contain duplicate entries.
@@ -101,12 +106,12 @@ class ScsNode {
    * 1. The problem is infeasible. Then we do not need to branch on this node.
    * 2. The problem is feasible, we can then update the lower bound, as the
    *    minimal among all the costs in the leaf nodes.
-   * 3. When the problem is feasible, and we find a solution that satisfies the
-   *    integral constraints. If the cost of this solution is an upper bound of
+   * 3. The problem is feasible, and we find a solution that satisfies the
+   *    integral constraints. The cost of this solution is an upper bound of
    *    the original mixed-integer problem. If the cost is smaller than the best
    *    upper bound, then we update the best upper bound to this cost.
-   * 4. when the problem is feasible, and the optimal cost is larger than the
-   *    best upper bound, then there is no need to branch on the node.
+   * 4. The problem is feasible, but the optimal cost is larger than the
+   *    best upper bound. Then there is no need to branch on the node.
    * @param scs_settings. The settings (parameters) for solving the SCS problem.
    */
   scs_int Solve(const SCS_SETTINGS& scs_settings);
@@ -135,13 +140,13 @@ class ScsNode {
   }
 
   /**
-   * This node is created from its parent node, by branching on a binary
+   * This node was created from its parent node, by branching on a binary
    * variable. Return the index of the branching variable in the parent node.
    */
   int y_index() const { return y_index_; }
 
   /**
-   * This node is created from its parent node, by fixing a binary variable to
+   * This node was created from its parent node, by fixing a binary variable to
    * either 0 or 1. Returns the value of the branching binary variable.
    */
   int y_val() const { return y_val_; }
@@ -191,12 +196,8 @@ class ScsNode {
   std::unique_ptr<SCS_SOL_VARS, void (*)(SCS_SOL_VARS*)> scs_sol_;
   SCS_INFO scs_info_;
   double cost_;
-  // If a node is fathomed, then there is no need to branch on this node.
-  // There are two possible cases to make a node fathomed_
-  // 1. The optimal solution to the relaxed problem satisfy all the integral
-  //    constraints.
-  // 2. The optimal solution to the relaxed problem is larger than the current
-  //    best upper bound.
+  // Whether the solution of the optimization problem in this node satisfies all
+  // integral constraints.
   bool found_integral_sol_;
   // binary_var_indices_ are the indices of the remaining binary variables, in
   // the vector x.

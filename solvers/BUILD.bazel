@@ -601,7 +601,7 @@ drake_cc_library(
     name = "scs_solver",
     srcs = select({
         "//conditions:default": [
-            "scs_bnb.cc",
+            "scs_branch_and_bound.cc",
             "scs_solver.cc",
             "scs_solver_common.cc",
         ],
@@ -613,7 +613,7 @@ drake_cc_library(
     hdrs = select({
         "//conditions:default": [
             "scs_solver.h",
-            "scs_bnb.h",
+            "scs_branch_and_bound.h",
         ],
         "//tools:no_scs": [
             "scs_solver.h",
@@ -989,9 +989,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "scs_bnb_test",
+    name = "scs_branch_and_bound_test",
     srcs = [
-        "test/scs_bnb_test.cc",
+        "test/scs_branch_and_bound_test.cc",
     ],
     deps = [
         "scs_solver",
@@ -1088,8 +1088,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "no_nlopt.cc",
     "no_snopt.cc",
     "qp.cc",
-    "scs_bnb.cc",
-    "scs_bnb.h",
+    "scs_branch_and_bound.cc",
+    "scs_branch_and_bound.h",
     "scs_solver.cc",
     "snopt_solver.cc",
     "snopt_solver.h",

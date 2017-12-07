@@ -1,10 +1,11 @@
-#include "drake/solvers/scs_bnb.h"
+#include "drake/solvers/scs_branch_and_bound.h"
 
 #include <algorithm>
 #include <limits>
 #include <unordered_set>
 
-// This code is in C style, to be compatible with the SCS source code.
+// This code is in C style, that it manipulates raw pointers. This originates
+// from SCS code.
 namespace drake {
 namespace solvers {
 namespace {
