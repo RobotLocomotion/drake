@@ -575,6 +575,8 @@ std::ostream& operator<<(std::ostream& os, const PickAndPlaceState value) {
       return os << "kReset";
     case (PickAndPlaceState::kDone):
       return os << "kDone";
+    default:
+      DRAKE_ABORT();
   }
 }
 
