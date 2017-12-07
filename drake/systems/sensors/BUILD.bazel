@@ -468,7 +468,7 @@ sh_test(
     args = [
         # TODO(eric.cousineau): Find skylark rule that can resolve
         # "test/models/sphere.sdf" to the path below.
-        "--sdf_dir=drake/systems/sensors/test/models",
+        "--sdf_dir=" + native.package_name() + "/test/models",
         "--duration=0.1",
     ],
     data = [
