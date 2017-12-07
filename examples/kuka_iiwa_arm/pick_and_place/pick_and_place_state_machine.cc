@@ -267,11 +267,53 @@ void CloseGripper(const WorldState& env_state, WsgAction* wsg_act,
 }
 
 std::unique_ptr<RigidBodyTree<double>> BuildTree(
-    const std::string& model_path) {
+    const pick_and_place::PlannerConfiguration& configuration,
+    bool add_grasp_frame = false, int num_arms = 1) {
   WorldSimTreeBuilder<double> tree_builder;
-  tree_builder.StoreModel("iiwa", model_path);
-  tree_builder.AddFixedModelInstance("iiwa", Vector3<double>::Zero());
-  return tree_builder.Build();
+  tree_builder.StoreModel("iiwa", configuration.drake_relative_model_path);
+  std::vector<int> arm_instance_ids(num_arms, 0);
+  auto previous_log_level = drake::log()->level();
+  drake::log()->set_level(spdlog::level::warn);
+  for (int i = 0; i < num_arms; ++i) {
+    arm_instance_ids[i] =
+        tree_builder.AddFixedModelInstance("iiwa", Vector3<double>::Zero());
+  }
+
+  if (add_grasp_frame) {
+    std::unique_ptr<RigidBodyTree<double>> robot{tree_builder.Build()};
+    // Add the grasp frame as a RigidBody. This allows it to be used in IK
+    // constraints.
+    // TODO(avalenzu): Add a planning model for the gripper that includes the
+    // grasp frame as a named frame.
+    auto grasp_frame = std::make_unique<RigidBody<double>>();
+    grasp_frame->set_name(kGraspFrameName);
+    // The gripper (and therfore the grasp frame) is rotated relative to the end
+    // effector link.
+    const double grasp_frame_angular_offset{-M_PI / 8};
+    // The grasp frame is located between the fingertips of the gripper, which
+    // puts it grasp_frame_translational_offset from the origin of the
+    // end-effector link.
+    const double grasp_frame_translational_offset{0.19};
+    // Define the pose of the grasp frame (G) relative to the end effector (E).
+    Isometry3<double> X_EG{Isometry3<double>::Identity()};
+    X_EG.rotate(Eigen::AngleAxisd(grasp_frame_angular_offset,
+                                  Eigen::Vector3d::UnitX()));
+    X_EG.translation().x() = grasp_frame_translational_offset;
+    // Rigidly affix the grasp frame RigidBody to the end effector RigidBody.
+    std::string grasp_frame_joint_name = kGraspFrameName;
+    grasp_frame_joint_name += "_joint";
+    auto grasp_frame_fixed_joint =
+        std::make_unique<FixedJoint>(grasp_frame_joint_name, X_EG);
+    grasp_frame->add_joint(robot->FindBody(configuration.end_effector_name),
+                           std::move(grasp_frame_fixed_joint));
+    robot->add_rigid_body(std::move(grasp_frame));
+    robot->compile();
+    drake::log()->set_level(previous_log_level);
+    return robot;
+  } else {
+    drake::log()->set_level(previous_log_level);
+    return tree_builder.Build();
+  }
 }
 
 optional<std::pair<Isometry3<double>, Isometry3<double>>>
@@ -756,7 +798,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
           q.push_back(q_traj.value(t));
         }
         std::unique_ptr<RigidBodyTree<double>> robot{
-            BuildTree(configuration_.drake_relative_model_path)};
+            BuildTree(configuration_)};
 
         iiwa_move_.MoveJoints(env_state, *robot, times, q, &plan);
         iiwa_callback(&plan);
@@ -813,34 +855,8 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
       drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
       // Compute all the desired configurations
       expected_object_pose_ = env_state.get_object_pose();
-      std::unique_ptr<RigidBodyTree<double>> robot{
-          BuildTree(configuration_.drake_relative_model_path)};
-
-      // Add the grasp frame as a RigidBody. This allows it to be used in IK
-      // constraints.
-      // TODO(avalenzu): Add a planning model for the gripper that includes
-      // the grasp frame as a named frame.
-      auto grasp_frame = std::make_unique<RigidBody<double>>();
-      grasp_frame->set_name(kGraspFrameName);
-      // The gripper (and therfore the grasp frame) is rotated relative to the
-      // end effector link.
-      const double grasp_frame_angular_offset{-M_PI / 8};
-      // The grasp frame is located between the fingertips of the gripper
-      // which is grasp_frame_translational_offset from the origin of the
-      // end-effector link.
-      const double grasp_frame_translational_offset{0.19};
-      Isometry3<double> X_EG{Isometry3<double>::Identity()};
-      X_EG.rotate(Eigen::AngleAxisd(grasp_frame_angular_offset,
-                                    Eigen::Vector3d::UnitX()));
-      X_EG.translation().x() = grasp_frame_translational_offset;
-      std::string grasp_frame_joint_name = kGraspFrameName;
-      grasp_frame_joint_name += "_joint";
-      auto grasp_frame_fixed_joint =
-          std::make_unique<FixedJoint>(grasp_frame_joint_name, X_EG);
-      grasp_frame->add_joint(robot->FindBody(configuration_.end_effector_name),
-                             std::move(grasp_frame_fixed_joint));
-      robot->add_rigid_body(std::move(grasp_frame));
-      robot->compile();
+      std::unique_ptr<RigidBodyTree<double>> robot{BuildTree(
+          configuration_, true /*add_grasp_frame*/)};
 
       VectorX<double> q_initial{env_state.get_iiwa_q()};
       interpolation_result_map_ = ComputeTrajectories(
