@@ -1,11 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import install_test_helper
 import os
-import shutil
 import subprocess
 import unittest
-import sys
-import install_test_helper
 
 
 class TestCommonInstall(unittest.TestCase):
