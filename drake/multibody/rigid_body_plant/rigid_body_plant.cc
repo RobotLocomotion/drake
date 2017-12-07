@@ -481,59 +481,64 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
 // @returns the relative velocity at p_W expressed in the world frame.
 template <class T>
 Vector3<T> RigidBodyPlant<T>::CalcRelTranslationalVelocity(
-    const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
-    const Vector3<T>& p_W) const {
+    const KinematicsCache<T>& kinematics_cache, int body_a_index,
+    int body_b_index, const Vector3<T>& p_W) const {
   const auto& tree = this->get_rigid_body_tree();
 
   // TODO(edrumwri): Convert this method to avoid Jacobian computation using
   // RigidBodyTree::CalcBodySpatialVelocityInWorldFrame().
 
   // The contact point in A's frame.
-  const auto X_AW = kcache.get_element(body_a_index)
+  const auto X_AW = kinematics_cache.get_element(body_a_index)
       .transform_to_world.inverse(Eigen::Isometry);
   const Vector3<T> p_A = X_AW * p_W;
 
   // The contact point in B's frame.
-  const auto X_BW = kcache.get_element(body_b_index)
+  const auto X_BW = kinematics_cache.get_element(body_b_index)
       .transform_to_world.inverse(Eigen::Isometry);
   const Vector3<T> p_B = X_BW * p_W;
 
   // Get the Jacobian matrices.
   const auto JA =
-      tree.transformPointsJacobian(kcache, p_A, body_a_index, 0, false);
+      tree.transformPointsJacobian(kinematics_cache, p_A, body_a_index, 0,
+      false);
   const auto JB =
-      tree.transformPointsJacobian(kcache, p_B, body_b_index, 0, false);
+      tree.transformPointsJacobian(kinematics_cache, p_B, body_b_index, 0,
+      false);
 
   // Compute the relative velocity in the world frame.
-  return (JA - JB) * kcache.getV();
+  return (JA - JB) * kinematics_cache.getV();
 }
 
 // Updates a generalized force from a force of f (expressed in the world frame)
 // applied at point p_W (defined in the global frame).
 template <class T>
 void RigidBodyPlant<T>::UpdateGeneralizedForce(
-    const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
-    const Vector3<T>& p_W, const Vector3<T>& f, VectorX<T>* gf) const {
+    const KinematicsCache<T>& kinematics_cache, int body_a_index,
+    int body_b_index, const Vector3<T>& p_W, const Vector3<T>& f,
+    VectorX<T>* gf) const {
   const auto& tree = this->get_rigid_body_tree();
 
   // TODO(edrumwri): Convert this method to avoid Jacobian computation using
   // RigidBodyTree::dynamicsBiasTerm().
 
   // The contact point in A's frame.
-  const auto X_AW = kcache.get_element(body_a_index)
+  const auto X_AW = kinematics_cache.get_element(body_a_index)
       .transform_to_world.inverse(Eigen::Isometry);
   const Vector3<T> p_A = X_AW * p_W;
 
   // The contact point in B's frame.
-  const auto X_BW = kcache.get_element(body_b_index)
+  const auto X_BW = kinematics_cache.get_element(body_b_index)
       .transform_to_world.inverse(Eigen::Isometry);
   const Vector3<T> p_B = X_BW * p_W;
 
   // Get the Jacobian matrices.
   const auto JA =
-      tree.transformPointsJacobian(kcache, p_A, body_a_index, 0, false);
+      tree.transformPointsJacobian(kinematics_cache, p_A, body_a_index, 0,
+      false);
   const auto JB =
-      tree.transformPointsJacobian(kcache, p_B, body_b_index, 0, false);
+      tree.transformPointsJacobian(kinematics_cache, p_B, body_b_index, 0,
+      false);
 
   // Compute the Jacobian transpose times the force, and use it to update gf.
   (*gf) += (JA - JB).transpose() * f;
@@ -546,7 +551,7 @@ VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
     const VectorX<T>& q, const VectorX<T>& v) const {
   const auto& tree = this->get_rigid_body_tree();
-  auto kcache = tree.doKinematics(q, v);
+  auto kinematics_cache = tree.doKinematics(q, v);
 
   // Create a result vector.
   VectorX<T> result(contacts.size());
@@ -559,21 +564,23 @@ VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
 
     // The reported point on A's surface (As) in the world frame (W).
     const Vector3<T> p_WAs =
-        kcache.get_element(body_a_index).transform_to_world * contacts[i].ptA;
+        kinematics_cache.get_element(body_a_index).transform_to_world *
+        contacts[i].ptA;
 
     // The reported point on B's surface (Bs) in the world frame (W).
     const Vector3<T> p_WBs =
-        kcache.get_element(body_b_index).transform_to_world * contacts[i].ptB;
+        kinematics_cache.get_element(body_b_index).transform_to_world *
+        contacts[i].ptB;
 
     // Get the point of contact in the world frame.
     const Vector3<T> p_W = (p_WAs + p_WBs) * 0.5;
 
     // The *relative* velocity of the contact point in A relative to that in
     // B.
-    const auto v_W = CalcRelTranslationalVelocity(kcache, body_a_index,
-                                                  body_b_index, p_W);
+    const auto v_W = CalcRelTranslationalVelocity(kinematics_cache,
+       body_a_index, body_b_index, p_W);
 
-    // Get the projected normal velocity
+    // Get the projected normal velocity.
     result[i] = v_W.dot(contacts[i].normal);
   }
 
@@ -585,10 +592,10 @@ VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const KinematicsCache<T>& kcache,
+    const KinematicsCache<T>& kinematics_cache,
     const VectorX<T>& f) const {
   // Create a result vector.
-  VectorX<T> result = VectorX<T>::Zero(kcache.getV().size());
+  VectorX<T> result = VectorX<T>::Zero(kinematics_cache.getV().size());
 
   // Loop through all contacts.
   for (int i = 0; static_cast<size_t>(i) < contacts.size(); ++i) {
@@ -598,18 +605,20 @@ VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
 
     // The reported point on A's surface (As) in the world frame (W).
     const Vector3<T> p_WAs =
-        kcache.get_element(body_a_index).transform_to_world * contacts[i].ptA;
+        kinematics_cache.get_element(body_a_index).transform_to_world *
+        contacts[i].ptA;
 
     // The reported point on B's surface (Bs) in the world frame (W).
     const Vector3<T> p_WBs =
-        kcache.get_element(body_b_index).transform_to_world * contacts[i].ptB;
+        kinematics_cache.get_element(body_b_index).transform_to_world *
+        contacts[i].ptB;
 
     // Get the point of contact in the world frame.
     const Vector3<T> p_W = (p_WAs + p_WBs) * 0.5;
 
     // Get the contribution to the generalized force from a force of the
     // specified normal applied at this point.
-    UpdateGeneralizedForce(kcache, body_a_index, body_b_index, p_W,
+    UpdateGeneralizedForce(kinematics_cache, body_a_index, body_b_index, p_W,
                            contacts[i].normal * f[i], &result);
   }
 
@@ -627,7 +636,7 @@ VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
   using std::sin;
   std::vector<Vector3<T>> basis_vecs;
   const auto& tree = this->get_rigid_body_tree();
-  auto kcache = tree.doKinematics(q, v);
+  auto kinematics_cache = tree.doKinematics(q, v);
 
   // Get the total (half) number of edges in the friction cones of all contacts.
   const int total_edges = std::accumulate(
@@ -637,26 +646,29 @@ VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
   VectorX<T> result(total_edges);
 
   // Loop through all contacts.
-  for (int i = 0, k = 0; static_cast<size_t>(i) < contacts.size(); ++i) {
+  for (int i = 0, result_index = 0; static_cast<size_t>(i) < contacts.size();
+      ++i) {
     // Get the two body indices.
     const int body_a_index = contacts[i].elementA->get_body()->get_body_index();
     const int body_b_index = contacts[i].elementB->get_body()->get_body_index();
 
     // The reported point on A's surface (As) in the world frame (W).
     const Vector3<T> p_WAs =
-        kcache.get_element(body_a_index).transform_to_world * contacts[i].ptA;
+        kinematics_cache.get_element(body_a_index).transform_to_world *
+        contacts[i].ptA;
 
     // The reported point on B's surface (Bs) in the world frame (W).
     const Vector3<T> p_WBs =
-        kcache.get_element(body_b_index).transform_to_world * contacts[i].ptB;
+        kinematics_cache.get_element(body_b_index).transform_to_world *
+        contacts[i].ptB;
 
     // Get the point of contact in the world frame.
     const Vector3<T> p_W = (p_WAs + p_WBs) * 0.5;
 
     // The *relative* velocity of the contact point in A relative to that in
     // B.
-    const auto v_W = CalcRelTranslationalVelocity(kcache, body_a_index,
-                                                  body_b_index, p_W);
+    const auto v_W = CalcRelTranslationalVelocity(kinematics_cache,
+        body_a_index, body_b_index, p_W);
 
     // Compute an orthonormal basis.
     const int kXAxisIndex = 0, kYAxisIndex = 1, kZAxisIndex = 2;
@@ -681,7 +693,7 @@ VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
     // Loop over the spanning tangent directions.
     for (int j = 0; j < static_cast<int>(basis_vecs.size()); ++j) {
       // Get the projected tangent velocity.
-      result[k++] = v_W.dot(basis_vecs[j]);
+      result[result_index++] = v_W.dot(basis_vecs[j]);
     }
   }
 
@@ -693,30 +705,33 @@ VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactTangentJacobianMult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const KinematicsCache<T>& kcache,
+    const KinematicsCache<T>& kinematics_cache,
     const VectorX<T>& f,
     const std::vector<int>& half_num_cone_edges) const {
   std::vector<Vector3<T>> basis_vecs;
 
   // Create a result vector.
-  VectorX<T> result = VectorX<T>::Zero(kcache.getV().size());
+  VectorX<T> result = VectorX<T>::Zero(kinematics_cache.getV().size());
 
   // Loop through all contacts.
-  for (int i = 0, k = 0; static_cast<size_t>(i) < contacts.size(); ++i) {
+  for (int i = 0, result_index = 0; static_cast<size_t>(i) < contacts.size();
+      ++i) {
     // Get the two body indices.
     const int body_a_index = contacts[i].elementA->get_body()->get_body_index();
     const int body_b_index = contacts[i].elementB->get_body()->get_body_index();
 
     // The reported point on A's surface (As) in the world frame (W).
-    const Vector3 <T> p_WAs =
-        kcache.get_element(body_a_index).transform_to_world * contacts[i].ptA;
+    const Vector3<T> p_WAs =
+        kinematics_cache.get_element(body_a_index).transform_to_world *
+        contacts[i].ptA;
 
     // The reported point on B's surface (Bs) in the world frame (W).
-    const Vector3 <T> p_WBs =
-        kcache.get_element(body_b_index).transform_to_world * contacts[i].ptB;
+    const Vector3<T> p_WBs =
+        kinematics_cache.get_element(body_b_index).transform_to_world *
+        contacts[i].ptB;
 
     // Get the point of contact in the world frame.
-    const Vector3 <T> p_W = (p_WAs + p_WBs) * 0.5;
+    const Vector3<T> p_W = (p_WAs + p_WBs) * 0.5;
 
     // Compute an orthonormal basis.
     const int kXAxisIndex = 0, kYAxisIndex = 1, kZAxisIndex = 2;
@@ -741,8 +756,8 @@ VectorX<T> RigidBodyPlant<T>::TransposedContactTangentJacobianMult(
     // Get the contribution to the generalized force from a force of the
     // specified normal applied at this point.
     for (int j = 0; j < static_cast<int>(basis_vecs.size()); ++j) {
-      UpdateGeneralizedForce(kcache, body_a_index, body_b_index, p_W,
-                             basis_vecs[j] * f[k++], &result);
+      UpdateGeneralizedForce(kinematics_cache, body_a_index, body_b_index, p_W,
+                             basis_vecs[j] * f[result_index++], &result);
     }
   }
 
@@ -895,10 +910,10 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   auto x = context.get_discrete_state(0).get_value();
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = x.bottomRows(nv);
-  auto kcache = tree.doKinematics(q, v);
+  auto kinematics_cache = tree.doKinematics(q, v);
 
   // Get the generalized inertia matrix and set up the inertia solve function.
-  auto H = tree.massMatrix(kcache);
+  auto H = tree.massMatrix(kinematics_cache);
 
   // Compute the LDLT factorizations, which will be used by the solver.
   Eigen::LDLT<MatrixX<T>> ldlt(H);
@@ -916,13 +931,13 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // right_hand_side is the right hand side of the system's equations:
   //   right_hand_side = B*u - C(q,v)
   VectorX<T> right_hand_side =
-      -tree.dynamicsBiasTerm(kcache, no_external_wrenches);
+      -tree.dynamicsBiasTerm(kinematics_cache, no_external_wrenches);
   if (num_actuators > 0) right_hand_side += tree.B * u;
 
   // Determine the set of contact points corresponding to the current q.
   std::vector<drake::multibody::collision::PointPair> contacts =
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
-          kcache, true);
+          kinematics_cache, true);
 
   // Set the stabilization term for contact normal direction (kN). Also,
   // determine the friction coefficients and (half) the number of friction cone
@@ -999,9 +1014,9 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
     return ContactNormalJacobianMult(contacts, q, w);
   };
-  data.N_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
-      VectorX<T> {
-    return TransposedContactNormalJacobianMult(contacts, kcache, f);
+  data.N_transpose_mult = [this, &contacts, &kinematics_cache]
+      (const VectorX<T>& f) -> VectorX<T> {
+    return TransposedContactNormalJacobianMult(contacts, kinematics_cache, f);
   };
 
   // Set up the F multiplication operator (projected velocity along the contact
@@ -1011,9 +1026,10 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
       VectorX<T> {
     return ContactTangentJacobianMult(contacts, q, w, data.r);
   };
-  data.F_transpose_mult = [this, &contacts, &kcache, &data](const VectorX<T>& f)
-      -> VectorX<T> {
-    return TransposedContactTangentJacobianMult(contacts, kcache, f, data.r);
+  data.F_transpose_mult = [this, &contacts, &kinematics_cache, &data]
+      (const VectorX<T>& f) -> VectorX<T> {
+    return TransposedContactTangentJacobianMult(contacts,
+        kinematics_cache, f, data.r);
   };
 
   // Set the range-of-motion (L) Jacobian multiplication operator and the
@@ -1071,8 +1087,9 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Set Jacobians for bilateral constraint terms.
   // TODO(edrumwri): Make erp individually settable.
   const double default_bilateral_erp = 0.5;
-  data.kG = default_bilateral_erp * tree.positionConstraints(kcache) / dt;
-  const auto G = tree.positionConstraintsJacobian(kcache, false);
+  data.kG = default_bilateral_erp *
+      tree.positionConstraints(kinematics_cache) / dt;
+  const auto G = tree.positionConstraintsJacobian(kinematics_cache, false);
   data.G_mult = [this, &G](const VectorX<T>& w) -> VectorX<T> {
     return G * w;
   };
@@ -1084,9 +1101,10 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.Mv = H * v + right_hand_side * dt;
 
   // Solve the rigid impact problem.
-  VectorX<T> vnew, cf;
-  constraint_solver_.SolveImpactProblem(data, &cf);
-  constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
+  VectorX<T> new_velocity, contact_force;
+  constraint_solver_.SolveImpactProblem(data, &contact_force);
+  constraint_solver_.ComputeGeneralizedVelocityChange(data, contact_force,
+      &new_velocity);
   SPDLOG_DEBUG(drake::log(), "Actuator forces: {} ", u.transpose());
   SPDLOG_DEBUG(drake::log(), "Transformed actuator forces: {} ",
       (tree.B * u).transpose());
@@ -1094,22 +1112,29 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   SPDLOG_DEBUG(drake::log(), "old velocity: {}", v.transpose());
   SPDLOG_DEBUG(drake::log(), "integrated forward velocity: {}",
       data.solve_inertia(data.Mv).transpose());
-  SPDLOG_DEBUG(drake::log(), "change in velocity: {}", vnew.transpose());
-  vnew += data.solve_inertia(data.Mv);
-  SPDLOG_DEBUG(drake::log(), "new velocity: {}", vnew.transpose());
+  SPDLOG_DEBUG(drake::log(), "change in velocity: {}",
+      new_velocity.transpose());
+  new_velocity += data.solve_inertia(data.Mv);
+  SPDLOG_DEBUG(drake::log(), "new velocity: {}", new_velocity.transpose());
   SPDLOG_DEBUG(drake::log(), "new configuration: {}",
-      (q + dt * tree.transformVelocityToQDot(kcache, vnew)).transpose());
-  SPDLOG_DEBUG(drake::log(), "N * vnew: {} ", data.N_mult(vnew).transpose());
-  SPDLOG_DEBUG(drake::log(), "F * vnew: {} ", data.F_mult(vnew).transpose());
-  SPDLOG_DEBUG(drake::log(), "L * vnew: {} ", data.L_mult(vnew).transpose());
-  SPDLOG_DEBUG(drake::log(), "G * vnew: {} ", data.G_mult(vnew).transpose());
+      (q + dt * tree.transformVelocityToQDot(kinematics_cache, new_velocity)).
+      transpose());
+  SPDLOG_DEBUG(drake::log(), "N * new velocity: {} ", data.N_mult(new_velocity).
+      transpose());
+  SPDLOG_DEBUG(drake::log(), "F * new velocity: {} ", data.F_mult(new_velocity).
+      transpose());
+  SPDLOG_DEBUG(drake::log(), "L * new velocity: {} ", data.L_mult(new_velocity).
+      transpose());
+  SPDLOG_DEBUG(drake::log(), "G * new velocity: {} ", data.G_mult(new_velocity).
+      transpose());
   SPDLOG_DEBUG(drake::log(), "G * v: {} ", data.G_mult(v).transpose());
   SPDLOG_DEBUG(drake::log(), "g(): {}",
-      tree.positionConstraints(kcache).transpose());
+      tree.positionConstraints(kinematics_cache).transpose());
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
-  xn << q + dt * tree.transformVelocityToQDot(kcache, vnew), vnew;
+  xn << q + dt * tree.transformVelocityToQDot(kinematics_cache, new_velocity),
+      new_velocity;
   updates->get_mutable_vector(0).SetFromVector(xn);
 }
 

@@ -64,7 +64,7 @@ class CompliantContactModel {
 
   /// Given two collision elements (with their own defined compliant material
   /// properties, computes the _derived_ parameters for the _contact_. Returns
-  /// The portion of the squish attributable to Element `a` (sₐ). Element `b`'s
+  /// the portion of the squish attributable to Element `a` (sₐ). Element `b`'s
   /// squish factor is simply 1 - sₐ. See contact_model_doxygen.h for details.
   /// @param[in] a            The first element in the contact.
   /// @param[in] b            The second element in the contact.
