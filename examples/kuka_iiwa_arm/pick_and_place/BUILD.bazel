@@ -61,12 +61,11 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    # TODO(eric.cousineau): Remove these tags once #3128 or the IK redux lands.
-    # On some CI machines without SNOPT, system IPOPT is used, and exceeds time
-    # limits under memcheck with -c dbg as well as under tsan.
+    # TODO(avalenzu) The "snopt" tag is required because IPOPT doesn't find
+    # a reasonable solution for one of the steps in this test.  We should see
+    # if this improves when #3128 is fixed.
     tags = [
-        "no_memcheck",
-        "no_tsan",
+        "snopt",
     ],
     deps = [
         ":pick_and_place",
