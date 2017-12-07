@@ -6,8 +6,15 @@ import subprocess
 
 
 def install(installation_folder="tmp", installed_subfolders=[]):
-    # Install into a temporary directory. The temporary directory does not
-    # need to be removed as bazel tests are run in a scratch space.
+    """Install into a temporary directory.
+
+    Runs install script to install target in the specified temporary
+    directory. The directory does not need to be removed as bazel tests are run
+    in a scratch space. All build artifacts are removed from the scratch space,
+    leaving only the install directory. If `installed_subfolders` are not found
+    in installation directory, a string containing an error message is
+    returned.
+    """
     os.mkdir(installation_folder)
     # Install target and its dependencies in scratch space.
     subprocess.check_call(
@@ -30,5 +37,6 @@ def install(installation_folder="tmp", installed_subfolders=[]):
             os.remove(element)
     content_install_folder = os.listdir(".")
     if content_install_folder != [installation_folder]:
-        return "Bazel build artifact not removed in test folder: "\
-            + str(content_install_folder)
+        return ("Bazel build artifact not removed in test folder: "
+                + str(content_install_folder))
+    return None
