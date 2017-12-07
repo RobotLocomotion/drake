@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -211,29 +213,29 @@ class DiagramBuilder {
   }
 
   // Helper method to do the algebraic loop test. It recursively performs the
-  // depth-first search on the graph to find cycles. The "stack" is really just
-  // a set because we need to do relatively "cheap" lookups for membership in
-  // the stack. The stack-like property of the set is maintained by this method.
+  // depth-first search on the graph to find cycles.
   static bool HasCycleRecurse(
       const PortIdentifier& n,
       const std::map<PortIdentifier, std::set<PortIdentifier>>& edges,
-      std::set<PortIdentifier>* visited, std::set<PortIdentifier>* stack) {
+      std::set<PortIdentifier>* visited,
+      std::vector<PortIdentifier>* stack) {
     DRAKE_ASSERT(visited->count(n) == 0);
     visited->insert(n);
 
     auto edge_iter = edges.find(n);
     if (edge_iter != edges.end()) {
-      DRAKE_ASSERT(stack->count(n) == 0);
-      stack->insert(n);  // Push onto the stack.
+      DRAKE_ASSERT(std::find(stack->begin(), stack->end(), n) == stack->end());
+      stack->push_back(n);
       for (const auto& target : edge_iter->second) {
         if (visited->count(target) == 0 &&
             HasCycleRecurse(target, edges, visited, stack)) {
           return true;
-        } else if (stack->count(target) > 0) {
+        } else if (std::find(stack->begin(), stack->end(), target) !=
+                   stack->end()) {
           return true;
         }
       }
-      stack->erase(n);  // Pop from the stack.
+      stack->pop_back();
     }
     return false;
   }
@@ -302,11 +304,29 @@ class DiagramBuilder {
 
     // Evaluate the graph for cycles.
     std::set<PortIdentifier> visited;
-    std::set<PortIdentifier> stack;
+    std::vector<PortIdentifier> stack;
     for (const auto& node : nodes) {
       if (visited.count(node) == 0) {
         if (HasCycleRecurse(node, edges, &visited, &stack)) {
-          throw std::logic_error("Algebraic loop detected in DiagramBuilder.");
+          std::stringstream ss;
+
+          auto port_to_stream = [&ss](const auto& id) {
+            ss << "  " << id.first->get_name() << ":";
+            if (id.second < 0)
+              ss << "Out(";
+            else
+              ss << "In(";
+            ss << (id.second >= 0 ? id.second : -id.second - 1) << ")";
+          };
+
+          ss << "Algebraic loop detected in DiagramBuilder:\n";
+          for (size_t i = 0; i < stack.size() - 1; ++i) {
+            port_to_stream(stack[i]);
+            ss << " depends on\n";
+          }
+          port_to_stream(stack.back());
+
+          throw std::runtime_error(ss.str());
         }
       }
     }
