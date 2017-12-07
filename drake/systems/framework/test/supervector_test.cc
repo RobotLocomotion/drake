@@ -7,6 +7,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/vector_base.h"
+#include "drake/systems/framework/subvector.h"
 
 namespace drake {
 namespace systems {
@@ -73,6 +74,15 @@ TEST_F(SupervectorTest, OutOfRange) {
 TEST_F(SupervectorTest, Empty) {
   Supervector<double> supervector(std::vector<VectorBase<double>*>{});
   EXPECT_EQ(0, supervector.size());
+}
+
+// A Supervector is always considered non-contiguous in memory.
+TEST_F(SupervectorTest, IsAlwaysNotContiguous) {
+  EXPECT_FALSE(supervector_->is_contiguous());
+  // These methods abort when called on a supervector.
+  EXPECT_THROW(supervector_->get_contiguous_vector(), std::runtime_error);
+  EXPECT_THROW(supervector_->get_mutable_contiguous_vector(),
+               std::runtime_error);
 }
 
 }  // namespace

@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
@@ -22,14 +23,19 @@ class Subvector : public VectorBase<T> {
   // Subvector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subvector)
 
-  /// Constructs a subvector of vector that consists of num_elements starting
-  /// at first_element.
+  /// Constructs a subvector of `vector` that consists of `num_elements`
+  /// starting at `first_element`.
+  /// @param first_element Index into `vector` for the first element of this
+  ///                      slice.
+  /// @param num_elements The size of this slice. Zero-sized slices are allowed.
   /// @param vector The vector to slice.  Must not be nullptr. Must remain
   ///               valid for the lifetime of this object.
   Subvector(VectorBase<T>* vector, int first_element, int num_elements)
       : vector_(vector),
         first_element_(first_element),
         num_elements_(num_elements) {
+    DRAKE_ASSERT(first_element >= 0);
+    DRAKE_ASSERT(num_elements >= 0);
     if (vector_ == nullptr) {
       throw std::logic_error("Cannot create Subvector of a nullptr vector.");
     }
@@ -53,6 +59,18 @@ class Subvector : public VectorBase<T> {
   T& GetAtIndex(int index) override {
     DRAKE_THROW_UNLESS(index < size());
     return vector_->GetAtIndex(first_element_ + index);
+  }
+
+ protected:
+  optional<Eigen::VectorBlock<const VectorX<T>>>
+  try_getting_contiguous_segment(int start, int size) const final {
+    return vector_->get_contiguous_segment(start + first_element_, size);
+  }
+
+  optional<Eigen::VectorBlock<VectorX<T>>>
+  try_getting_mutable_contiguous_segment(int start, int size) final {
+    return vector_->get_mutable_contiguous_segment(start + first_element_,
+                                                   size);
   }
 
  private:

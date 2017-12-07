@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
@@ -19,7 +20,7 @@ namespace systems {
 /// for the elements of the vector, and may also provide other
 /// computations for the convenience of Systems handling the
 /// signal. The vector is always a column vector. It may or may not
-/// be contiguous in memory. Contiguous subclasses should typically
+/// be contiguous-in-memory. Contiguous subclasses should typically
 /// inherit from BasicVector, not from VectorBase directly.
 ///
 /// @tparam T Must be a Scalar compatible with Eigen.
@@ -60,6 +61,68 @@ class VectorBase {
     GetAtIndex(index) = value;
   }
 
+  /// @returns `true` if and only if this vector can be expressed as an
+  /// Eigen::VectorBlock in constant time.
+  /// @see get_contiguous_vector(), get_mutable_contiguous_vector()
+  bool is_contiguous() const {
+    return is_segment_contiguous(0, size());
+  }
+
+  /// Returns `true` if the segment of `count` elements with first element at
+  /// `start` in `this` vector has a contiguous-in-memory layout.
+  /// This method throws a std::runtime_error if:
+  ///  - `start` is out-of-bounds,
+  ///  - `count` is either negative or larger than size()
+  /// @see is_contiguous()
+  bool is_segment_contiguous(int start, int count) const {
+    VerifySegmentSizesOrThrow(start, count);
+    return !!try_getting_contiguous_segment(start, count);
+  }
+
+  /// Returns the entire vector as an Eigen::VectorBlock referencing a
+  /// contiguous block of memory, if possible.
+  /// @throws std::runtime_error if is_contiguous() is `false`.
+  /// @pre is_contiguous()
+  Eigen::VectorBlock<const VectorX<T>> get_contiguous_vector() const {
+    return get_contiguous_segment(0, size());
+  }
+
+  /// Returns the entire vector as a mutable Eigen::VectorBlock referencing a
+  /// contiguous block of memory, if possible.
+  /// @throws std::runtime_error if is_contiguous() is `false`.
+  /// @pre is_contiguous()
+  Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_vector() {
+    return get_mutable_contiguous_segment(0, size());
+  }
+
+  /// Returns a segment of `count` elements with first element at `start` in
+  /// `this` vector as an Eigen::VectorBlock referencing a contiguous block of
+  /// memory, if possible.
+  /// @throws std::runtime_error if is_segment_contiguous(start, count) is
+  /// `false`.
+  /// @pre is_segment_contiguous()
+  Eigen::VectorBlock<const VectorX<T>> get_contiguous_segment(
+      int start, int count) const {
+    VerifySegmentSizesOrThrow(start, count);
+    auto result = try_getting_contiguous_segment(start, count);
+    DRAKE_THROW_UNLESS(is_segment_contiguous(start, count));
+    return *result;
+  }
+
+  /// Returns a mutable segment of `count` elements with first element at
+  /// `start` in `this` vector as a mutable Eigen::VectorBlock referencing a
+  /// contiguous block of memory, if possible.
+  /// @throws std::runtime_error if is_segment_contiguous(start, count) is
+  /// `false`.
+  /// @pre is_segment_contiguous()
+  virtual Eigen::VectorBlock<VectorX<T>> get_mutable_contiguous_segment(
+      int start, int count) {
+    VerifySegmentSizesOrThrow(start, count);
+    auto result = try_getting_mutable_contiguous_segment(start, count);
+    DRAKE_THROW_UNLESS(is_segment_contiguous(start, count));
+    return *result;
+  }
+
   /// Replaces the entire vector with the contents of @p value. Throws
   /// std::runtime_error if @p value is not a column vector with size() rows.
   ///
@@ -95,6 +158,11 @@ class VectorBase {
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates only the O(N) memory that it returns.
+  ///
+  /// @warning For cases when it is known that a contiguous segment can be
+  /// retrieved, prefer using the faster variant get_contiguous_vector().
+  ///
+  /// @see get_contiguous_vector()
   virtual VectorX<T> CopyToVector() const {
     VectorX<T> vec(size());
     for (int i = 0; i < size(); ++i) {
@@ -202,6 +270,44 @@ class VectorBase {
         value += operand.second.GetAtIndex(i) * operand.first;
       SetAtIndex(i, GetAtIndex(i) + value);
     }
+  }
+
+  /// Returns a drake::optional to a const Eigen::VectorBlock of `count`
+  /// elements, with first element at `start` in `this` vector, if and only if:
+  /// - the vector's values already lie in contiguous memory,
+  /// - no memory allocation is required,
+  /// - the block can be retrieved in O(1) time.
+  /// Otherwise a drake::optional with no value should be returned.
+  /// This is the NVI implementation to get_contiguous_segment() and therefore
+  /// implementations are guaranteed to be called with valid `start` and `count`
+  /// arguments.
+  virtual optional<Eigen::VectorBlock<const VectorX<T>>>
+  try_getting_contiguous_segment(int start, int count) const = 0;
+
+  /// Returns a drake::optional to a mutable Eigen::VectorBlock of `count`
+  /// elements, with first element at `start` in `this` vector, if and only if:
+  /// - the vector's values already lie in contiguous memory,
+  /// - no memory allocation is required,
+  /// - the block can be retrieved in O(1) time.
+  /// Otherwise a drake::optional with no value should be returned.
+  /// This is the NVI implementation to get_mutable_contiguous_segment() and
+  /// therefore implementations are guaranteed to be called with valid `start`
+  /// and `count` arguments.
+  virtual optional<Eigen::VectorBlock<VectorX<T>>>
+  try_getting_mutable_contiguous_segment(int start, int count) = 0;
+
+ private:
+  // Helper method for the get_contiguous_segment() family of methods to verify
+  // that:
+  // - 0 <= start && start < this->size()
+  // - 0 <= count && count <= this->size()
+  // - (start + count) <= this->size()
+  // Or a std::runtime_error is thrown if the above conditions are not met.
+  void VerifySegmentSizesOrThrow(int start, int count) const {
+    const int sz = size();
+    DRAKE_THROW_UNLESS(0 <= start && start < sz);
+    DRAKE_THROW_UNLESS(0 <= count && count <= sz);
+    DRAKE_THROW_UNLESS((start + count) <= sz);
   }
 };
 

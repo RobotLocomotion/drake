@@ -50,6 +50,27 @@ class Supervector : public VectorBase<T> {
     return target.first->GetAtIndex(target.second);
   }
 
+ protected:
+  /// VectorBase::try_getting_contiguous_segment()'s contract is to
+  /// provide a cheap O(1) complexity implementation. Since we currently do not
+  /// support an O(1) implementation, %Supervector's implementation of
+  /// try_getting_contiguous_segment() returns a drake::optional with no
+  /// value.
+  optional<Eigen::VectorBlock<const VectorX<T>>>
+  try_getting_contiguous_segment(int, int) const final {
+    return {};
+  }
+
+  /// VectorBase::try_getting_mutable_contiguous_segment()'s contract is
+  /// to provide a cheap O(1) complexity implementation. Since we currently do
+  /// not support an O(1) implementation, %Supervector's implementation of
+  /// try_getting_mutable_contiguous_segment() returns a drake::optional
+  /// with no value.
+  optional<Eigen::VectorBlock<VectorX<T>>>
+  try_getting_mutable_contiguous_segment(int, int) final {
+    return {};
+  }
+
  private:
   // Given an index into the supervector, returns the subvector that
   // contains that index, and its offset within the subvector. This operation

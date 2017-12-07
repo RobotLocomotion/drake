@@ -155,6 +155,16 @@ class BasicVector : public VectorBase<T> {
     data->SetAtIndex(index++, T(constructor_arg));
   }
 
+  optional<Eigen::VectorBlock<const VectorX<T>>>
+  try_getting_contiguous_segment(int start, int size) const final {
+    return values_.segment(start, size);
+  }
+
+  optional<Eigen::VectorBlock<VectorX<T>>>
+  try_getting_mutable_contiguous_segment(int start, int size) final {
+    return values_.segment(start, size);
+  }
+
  private:
   // Add in multiple scaled vectors to this vector. All vectors
   // must be the same size. This function overrides the default DoPlusEqScaled()

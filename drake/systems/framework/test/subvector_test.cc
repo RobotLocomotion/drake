@@ -8,6 +8,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/supervector.h"
 
 namespace drake {
 namespace systems {
@@ -208,6 +209,31 @@ TEST_F(SubvectorTest, PlusEqScaled) {
   orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
   EXPECT_EQ(orig_vec.GetAtIndex(0), 346);
   EXPECT_EQ(orig_vec.GetAtIndex(1), 446);
+}
+
+// Verifies we can request a contiguous-in-memory Eigen vector from Subvector
+// when the original vector being sliced is a contiguous BasicVector.
+GTEST_TEST(SubvectorIsContiguous, WithinBasicVector) {
+  auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
+  Subvector<double> subvec(vector.get(), 1 /* first element */, 2 /* size */);
+  EXPECT_TRUE(subvec.is_contiguous());
+  EXPECT_EQ(Eigen::Vector2d(2.0, 3.0), subvec.get_contiguous_vector());
+  subvec.get_mutable_contiguous_vector().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector2d(2.0, -1.0), subvec.get_contiguous_vector());
+}
+
+// Verifies we can request a contiguous-in-memory Eigen vector from Subvector
+// when the original vector being sliced is a contiguous Subvector.
+GTEST_TEST(SubvectorIsContiguous, WithinContiguousSubvector) {
+  auto vector = BasicVector<double>::Make({1, 2, 3, 4, 5, 6});
+  Subvector<double> subvec(vector.get(), 1 /* first element */, 3 /* size */);
+  Subvector<double> subsubvec(&subvec, 1 /* first element */, 2 /* size */);
+  EXPECT_TRUE(subvec.is_contiguous());
+  EXPECT_TRUE(subsubvec.is_contiguous());
+  EXPECT_EQ(Eigen::Vector3d(2.0, 3.0, 4.0), subvec.get_contiguous_vector());
+  EXPECT_EQ(Eigen::Vector2d(3.0, 4.0), subsubvec.get_contiguous_vector());
+  subsubvec.get_mutable_contiguous_vector().coeffRef(1) = -1.0;
+  EXPECT_EQ(Eigen::Vector2d(3.0, -1.0), subsubvec.get_contiguous_vector());
 }
 
 }  // namespace
