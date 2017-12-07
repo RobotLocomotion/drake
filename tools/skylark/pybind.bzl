@@ -10,12 +10,16 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
 )
+load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
 
 _PY_VERSION = "2.7"
 
 # This is the base package to determine which paths should be imported, and
 # where the Python components should be installed.
-_BASE_PACKAGE = "drake/bindings"
+#
+# TODO(jwnimmer-tri) Either make this path configurable, or else move this file
+# (pybind.bzl) back into the bindings folder directly.
+_BASE_PACKAGE = adjust_label_for_drake_hoist("//drake/bindings")[2:]
 
 # TODO(eric.cousineau): Consider making a `PybindProvider`, to sort
 # out dependencies, sources, etc, and simplify installation

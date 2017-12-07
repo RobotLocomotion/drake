@@ -12,13 +12,16 @@ load(
     "drake_py_test",
 )
 load(
-    "//drake/bindings/pydrake:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_pybind_installs",
     "get_pybind_library_dest",
 )
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
-package(default_visibility = ["//drake/bindings/pydrake:__subpackages__"])
+package(default_visibility = adjust_labels_for_drake_hoist([
+    "//drake/bindings/pydrake:__subpackages__",
+]))
 
 # N.B. Any common headers should be shared via a HEADER ONLY library.
 
@@ -106,14 +109,14 @@ drake_pybind_library(
     py_srcs = ["symbolic.py"],
 )
 
-PYBIND_LIBRARIES = [
+PYBIND_LIBRARIES = adjust_labels_for_drake_hoist([
     ":autodiffutils_py",
     ":common_py",
     ":parsers_py",
     ":rbtree_py",
     ":symbolic_py",
     "//drake/bindings/pydrake/solvers",
-]
+])
 
 install(
     name = "install",

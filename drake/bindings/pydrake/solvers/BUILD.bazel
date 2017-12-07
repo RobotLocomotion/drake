@@ -5,7 +5,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
 load(
-    "//drake/bindings/pydrake:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_pybind_installs",
     "get_pybind_library_dest",
@@ -15,8 +15,11 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
-package(default_visibility = ["//drake/bindings/pydrake:__subpackages__"])
+package(default_visibility = adjust_labels_for_drake_hoist([
+    "//drake/bindings/pydrake:__subpackages__",
+]))
 
 drake_py_library(
     name = "module_py",
