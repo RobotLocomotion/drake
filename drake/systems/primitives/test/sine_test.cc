@@ -20,7 +20,9 @@ namespace {
 template <typename T>
 void TestSineSystem(const Sine<T>& sine_system,
                     const Eigen::MatrixXd& input_vectors,
-                    const Eigen::MatrixXd& expected_outputs) {
+                    const Eigen::MatrixXd& expected_outputs,
+                    const Eigen::MatrixXd& expected_first_derivs,
+                    const Eigen::MatrixXd& expected_second_derivs) {
   auto context = sine_system.CreateDefaultContext();
 
   // Verifies that Sine allocates no state variables in the context.
@@ -46,11 +48,25 @@ void TestSineSystem(const Sine<T>& sine_system,
       // system output are consistent.
       ASSERT_EQ(3, output->get_num_ports());
       ASSERT_EQ(3, sine_system.get_num_output_ports());
-      const BasicVector<double> *output_vector = output->get_vector_data(0);
+
+      const BasicVector<double>* output_vector = output->get_vector_data(0);
+      const BasicVector<double>* first_deriv_vector =
+          output->get_vector_data(1);
+      const BasicVector<double>* second_deriv_vector =
+          output->get_vector_data(2);
       ASSERT_NE(nullptr, output_vector);
+      ASSERT_NE(nullptr, first_deriv_vector);
+      ASSERT_NE(nullptr, second_deriv_vector);
+
 
       Eigen::VectorXd expected_vector = expected_outputs.col(i);
+      Eigen::VectorXd expected_first_deriv = expected_first_derivs.col(i);
+      Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
       EXPECT_TRUE(expected_vector.isApprox(output_vector->get_value(), 1e-3));
+      EXPECT_TRUE(expected_first_deriv.isApprox(
+          first_deriv_vector->get_value(), 1e-3));
+      EXPECT_TRUE(expected_second_deriv.isApprox(
+          second_deriv_vector->get_value(), 1e-3));
     }
   } else {
     // Loop over the input vectors and check that the Sine system outputs match
@@ -79,11 +95,24 @@ void TestSineSystem(const Sine<T>& sine_system,
       // system output are consistent.
       ASSERT_EQ(3, output->get_num_ports());
       ASSERT_EQ(3, sine_system.get_num_output_ports());
-      const BasicVector<double>* output_vector = output->get_vector_data(0);
-      ASSERT_NE(nullptr, output_vector);
 
-      Eigen::VectorXd expected_vector = expected_outputs.col(i);
-      EXPECT_TRUE(expected_vector.isApprox(output_vector->get_value(), 1e-3));
+      const BasicVector<double>* output_vector = output->get_vector_data(0);
+      const BasicVector<double>* first_deriv_vector =
+          output->get_vector_data(1);
+      const BasicVector<double>* second_deriv_vector =
+          output->get_vector_data(2);
+      ASSERT_NE(nullptr, output_vector);
+      ASSERT_NE(nullptr, first_deriv_vector);
+      ASSERT_NE(nullptr, second_deriv_vector);
+
+      Eigen::VectorXd expected_output = expected_outputs.col(i);
+      Eigen::VectorXd expected_first_deriv = expected_first_derivs.col(i);
+      Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
+      EXPECT_TRUE(expected_output.isApprox(output_vector->get_value(), 1e-3));
+      EXPECT_TRUE(expected_first_deriv.isApprox(
+          first_deriv_vector->get_value(), 1e-3));
+      EXPECT_TRUE(expected_second_deriv.isApprox(
+          second_deriv_vector->get_value(), 1e-3));
     }
   }
 }
@@ -98,9 +127,12 @@ GTEST_TEST(SineTest, SineScalarTest) {
 
   const Eigen::Vector4d input_vector(M_PI / 6.0, M_PI / 4.0, M_PI / 2.0, M_PI);
   const Eigen::Vector4d expected_output(-0.4161, -0.9372, 0.4161, -0.9093);
+  const Eigen::Vector4d expected_first_deriv(-2.7279, -1.0461, 2.7279, 1.2484);
+  const Eigen::Vector4d expected_second_deriv(3.7453, 8.4351, -3.7453, 8.1837);
 
   TestSineSystem(
-      *sine_system, input_vector.transpose(), expected_output.transpose());
+      *sine_system, input_vector.transpose(), expected_output.transpose(),
+      expected_first_deriv.transpose(), expected_second_deriv.transpose());
 }
 
 // Test with time based instances and scalar Sine parameters.
@@ -113,9 +145,12 @@ GTEST_TEST(SineTest, SineScalarTimeTest) {
 
   const Eigen::Vector4d input_vector(M_PI / 6.0, M_PI / 4.0, M_PI / 2.0, M_PI);
   const Eigen::Vector4d expected_output(-0.4161, -0.9372, 0.4161, -0.9093);
+  const Eigen::Vector4d expected_first_deriv(-2.7279, -1.0461, 2.7279, 1.2484);
+  const Eigen::Vector4d expected_second_deriv(3.7453, 8.4351, -3.7453, 8.1837);
 
   TestSineSystem(
-      *sine_system, input_vector.transpose(), expected_output.transpose());
+      *sine_system, input_vector.transpose(), expected_output.transpose(),
+      expected_first_deriv.transpose(), expected_second_deriv.transpose());
 }
 
 // Test with vector input instances and scalar Sine parameters.
@@ -131,13 +166,27 @@ GTEST_TEST(SineTest, SineVectorTest) {
                    0.5, 0.6, 0.7, 0.8,
                    0.9, 1.0, 1.1, 1.2,
                    1.3, 1.4, 1.5, 1.6;
+
   Eigen::Matrix4d expected_output;
   expected_output << 0.7457, 0.5155, 0.2392, -0.0584,
                      -0.3508, -0.6119, -0.8183, -0.9516,
                      -0.9999, -0.9589, -0.8323, -0.6313,
                      -0.3739, -0.0831, 0.2151, 0.4941;
 
-  TestSineSystem(*sine_system, input_vectors, expected_output);
+  Eigen::Matrix4d expected_first_deriv;
+  expected_first_deriv << -1.9988, -2.5707, -2.9129, -2.9949,
+                          -2.8094, -2.3729, -1.7245, -0.9220,
+                          -0.0372, 0.8510, 1.6631, 2.3267,
+                          2.7824, 2.9896, 2.9298, 2.6082;
+
+  Eigen::Matrix4d expected_second_deriv;
+  expected_second_deriv << -6.7113, -4.6395, -2.1532, 0.5254,
+                           3.1570, 5.5067, 7.3645, 8.5644,
+                           8.9993, 8.6303, 7.4904, 5.6814,
+                           3.3649, 0.7478, -1.9361, -4.4470;
+
+  TestSineSystem(*sine_system, input_vectors, expected_output,
+                 expected_first_deriv, expected_second_deriv);
 }
 
 // Test with vector input instances and vector Sine parameters.
@@ -159,7 +208,20 @@ GTEST_TEST(SineTest, SineParameterTest) {
                      -0.6100, -0.7954, -0.9579, -1.0928,
                      -1.3792, -1.4000, -1.3754, -1.3065;
 
-  TestSineSystem(*sine_system, input_vectors, expected_output);
+  Eigen::Matrix4d expected_first_deriv;
+  expected_first_deriv << -0.7608, -0.9710, -1.1595, -1.3219,
+                          -1.8091, -1.8884, -1.9196, -1.9016,
+                          -1.9516, -1.7480, -1.4941, -1.1970,
+                          -0.4323, 0.0192, 0.4700, 0.9057;
+
+  Eigen::Matrix4d expected_second_deriv;
+  expected_second_deriv << -2.1962, -2.0010, -1.7609, -1.4812,
+                           -1.0291, -0.5548, -0.0663, 0.4238,
+                           1.7629, 2.2988, 2.7684, 3.1582,
+                           4.4688, 4.5359, 4.4564, 4.2329;
+
+  TestSineSystem(*sine_system, input_vectors, expected_output,
+                 expected_first_deriv, expected_second_deriv);
 }
 
 // Test with time instances, and vector Sine parameters.
@@ -177,7 +239,20 @@ GTEST_TEST(SineTest, SineParameterTimeTest) {
                      0.9950, 0.0281, -0.9579, -1.2975,
                      0.9661, -0.1932, -1.2062, -1.3754;
 
-  TestSineSystem(*sine_system, input_vectors.transpose(), expected_output);
+  Eigen::Matrix4d expected_first_deriv;
+  expected_first_deriv << -0.7608, -1.5547, -1.5143, -0.8798,
+                          -1.0669, -1.8884, -1.5644, -0.5901,
+                          -1.4224, -2.2095, -1.4941, -0.1378,
+                          -1.8238, -2.4959, -1.2791, 0.4700;
+
+  Eigen::Matrix4d expected_second_deriv;
+  expected_second_deriv << -2.1962, -0.8291, 0.9829, 2.0938,
+                           -2.5540, -0.5548, 1.7810, 2.9233,
+                           -2.8754, -0.0811, 2.7684, 3.7497,
+                           -3.1302, 0.6258, 3.9082, 4.4564;
+
+  TestSineSystem(*sine_system, input_vectors.transpose(), expected_output,
+                 expected_first_deriv, expected_second_deriv);
 }
 
 GTEST_TEST(SineTest, SineAccessorTest) {
