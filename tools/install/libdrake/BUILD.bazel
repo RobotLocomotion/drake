@@ -38,6 +38,15 @@ install_cmake_config(
 # inside the build tree.
 cc_binary(
     name = "libdrake.so",
+    # On Linux, we need to disable "new" dtags in the linker so that we use
+    # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is checked
+    # *before* LD_LIBRARY_PATH, which is important to avoid using the MATLAB
+    # versions of certain libraries (protobuf).  macOS doesn't understand
+    # this flag, so it is conditional on Linux only.
+    linkopts = select({
+        "//tools/cc_toolchain:linux": ["-Wl,--disable-new-dtags"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     linkstatic = 1,
     deps = LIBDRAKE_COMPONENTS,
