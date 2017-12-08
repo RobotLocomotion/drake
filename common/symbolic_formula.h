@@ -125,7 +125,6 @@ class Formula {
   explicit Formula(const Variable& var);
 
   FormulaKind get_kind() const;
-  size_t get_hash() const;
   /** Gets free variables (unquantified variables). */
   Variables GetFreeVariables() const;
   /** Checks structural equality*/
@@ -189,6 +188,17 @@ class Formula {
   /** Conversion to bool. */
   explicit operator bool() const { return Evaluate(); }
 
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const Formula& item) noexcept {
+    DelegatingHasher delegating_hasher(
+        [&hasher](const void* data, const size_t length) {
+          return hasher(data, length);
+        });
+    item.HashAppend(&delegating_hasher);
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const Formula& f);
   friend void swap(Formula& a, Formula& b) { std::swap(a.ptr_, b.ptr_); }
 
@@ -233,6 +243,8 @@ class Formula {
       const Formula& f);
 
  private:
+  void HashAppend(DelegatingHasher* hasher) const;
+
   std::shared_ptr<FormulaCell> ptr_;
 };
 
@@ -1046,12 +1058,6 @@ operator>=(const DerivedA& m1, const DerivedB& m2) {
 
 }  // namespace symbolic
 
-/** Computes the hash value of a symbolic formula. */
-template <>
-struct hash_value<symbolic::Formula> {
-  size_t operator()(const symbolic::Formula& f) const { return f.get_hash(); }
-};
-
 namespace assert {
 /* We allow assertion-like statements to receive a Formula.  Given the typical
  * uses of assertions and Formulas, rather than trying to be clever and, e.g.,
@@ -1068,6 +1074,16 @@ struct ConditionTraits<symbolic::Formula> {
 }  // namespace drake
 
 namespace std {
+/* Provides std::hash<drake::symbolic::Formula>. */
+template <>
+struct hash<drake::symbolic::Formula>
+    : public drake::DefaultHash {};
+#if defined(__GLIBCXX__)
+// https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
+template<>
+struct __is_fast_hash<hash<drake::symbolic::Formula>> : std::false_type {};
+#endif
+
 /* Provides std::less<drake::symbolic::Formula>. */
 template <>
 struct less<drake::symbolic::Formula> {

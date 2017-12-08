@@ -32,10 +32,6 @@ Variables::Variables(initializer_list<Variable> init) : vars_(init) {}
 Variables::Variables(const Eigen::Ref<const VectorX<Variable>>& init)
     : vars_{init.data(), init.data() + init.size()} {}
 
-size_t Variables::get_hash() const {
-  return hash_value<set<Variable>>{}(vars_);
-}
-
 string Variables::to_string() const {
   ostringstream oss;
   oss << *this;

@@ -34,8 +34,11 @@ class FormulaCell {
  public:
   /** Returns kind of formula. */
   FormulaKind get_kind() const { return kind_; }
-  /** Returns hash of formula. */
-  size_t get_hash() const { return hash_; }
+  /** Sends all hash-relevant bytes for this FormulaCell type into the given
+   * hasher, per the @ref hash_append concept -- except for get_kind(), because
+   * Formula already sends that.
+   */
+  virtual void HashAppendDetail(DelegatingHasher*) const = 0;
   /** Returns set of free variables in formula. */
   virtual Variables GetFreeVariables() const = 0;
   /** Checks structural equality. */
@@ -63,14 +66,13 @@ class FormulaCell {
   FormulaCell& operator=(FormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   FormulaCell& operator=(const FormulaCell& f) = delete;
-  /** Construct FormulaCell of kind @p k with @p hash. */
-  FormulaCell(FormulaKind k, size_t hash);
+  /** Construct FormulaCell of kind @p k. */
+  explicit FormulaCell(FormulaKind k);
   /** Default destructor. */
   virtual ~FormulaCell() = default;
 
  private:
   const FormulaKind kind_{};
-  const size_t hash_{};
 };
 
 /** Represents the base class for relational operators (==, !=, <, <=, >, >=).
@@ -90,6 +92,7 @@ class RelationalFormulaCell : public FormulaCell {
   /** Construct RelationalFormulaCell of kind @p k with @p lhs and @p rhs. */
   RelationalFormulaCell(FormulaKind k, const Expression& lhs,
                         const Expression& rhs);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -123,6 +126,7 @@ class NaryFormulaCell : public FormulaCell {
   NaryFormulaCell& operator=(const NaryFormulaCell& f) = delete;
   /** Construct NaryFormulaCell of kind @p k with @p formulas. */
   NaryFormulaCell(FormulaKind k, const std::set<Formula>& formulas);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -141,6 +145,7 @@ class FormulaTrue : public FormulaCell {
  public:
   /** Default Constructor. */
   FormulaTrue();
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -154,6 +159,7 @@ class FormulaFalse : public FormulaCell {
  public:
   /** Default Constructor. */
   FormulaFalse();
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -169,6 +175,7 @@ class FormulaVar : public FormulaCell {
    * @pre @p var is of BOOLEAN type and not a dummy variable.
    */
   explicit FormulaVar(const Variable& v);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -270,6 +277,7 @@ class FormulaNot : public FormulaCell {
  public:
   /** Constructs from @p f. */
   explicit FormulaNot(const Formula& f);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -290,6 +298,7 @@ class FormulaForall : public FormulaCell {
  public:
   /** Constructs from @p vars and @p f. */
   FormulaForall(const Variables& vars, const Formula& f);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -310,6 +319,7 @@ class FormulaForall : public FormulaCell {
 class FormulaIsnan : public FormulaCell {
  public:
   explicit FormulaIsnan(const Expression& e);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   bool Less(const FormulaCell& f) const override;
@@ -340,8 +350,7 @@ class FormulaPositiveSemidefinite : public FormulaCell {
   template <typename Derived>
   explicit FormulaPositiveSemidefinite(
       const Eigen::TriangularView<Derived, Eigen::Lower>& l)
-      : FormulaCell{FormulaKind::PositiveSemidefinite,
-                    ComputeHashOfLowerTriangular(l)},
+      : FormulaCell{FormulaKind::PositiveSemidefinite},
         m_{BuildSymmetricMatrixFromLowerTringularView(l)} {}
 
   /** Constructs a symbolic positive-semidefinite formula from an
@@ -350,10 +359,10 @@ class FormulaPositiveSemidefinite : public FormulaCell {
   template <typename Derived>
   explicit FormulaPositiveSemidefinite(
       const Eigen::TriangularView<Derived, Eigen::Upper>& u)
-      : FormulaCell{FormulaKind::PositiveSemidefinite,
-                    ComputeHashOfLowerTriangular(u.transpose())},
+      : FormulaCell{FormulaKind::PositiveSemidefinite},
         m_{BuildSymmetricMatrixFromUpperTriangularView(u)} {}
 
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   /** Checks ordering between this PSD formula and @p f. The ordering between
@@ -410,17 +419,6 @@ class FormulaPositiveSemidefinite : public FormulaCell {
     m.triangularView<Eigen::StrictlyLower>() =
         m.transpose().triangularView<Eigen::StrictlyLower>();
     return m;
-  }
-
-  // Computes a hash of a matrix only using its lower-triangular part.
-  static size_t ComputeHashOfLowerTriangular(const MatrixX<Expression>& m) {
-    size_t seed{};
-    for (int i = 0; i < m.rows(); ++i) {
-      for (int j = 0; j <= i; ++j) {
-        seed = hash_combine(seed, m(i, j));
-      }
-    }
-    return seed;
   }
 
   const MatrixX<Expression> m_;
