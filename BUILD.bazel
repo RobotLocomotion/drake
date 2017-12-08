@@ -5,6 +5,7 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -14,6 +15,8 @@ exports_files([
     "CPPLINT.cfg",
     ".bazelproject",
     ".clang-format",
+    # TODO(jwnimmer-tri) This won't appear until #6996 merges.
+    ".drake-find_resource-sentinel",
 ])
 
 alias(
@@ -34,7 +37,7 @@ alias(
 install(
     name = "install",
     docs = ["LICENSE.TXT"],
-    deps = [
+    deps = adjust_labels_for_drake_hoist([
         "//drake/automotive/models:install_data",
         "//drake/bindings/pydrake:install",
         "//drake/common:install",
@@ -43,7 +46,7 @@ install(
         "//drake/manipulation/models:install_data",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
-    ],
+    ]),
 )
 
 add_lint_tests()

@@ -26,6 +26,7 @@ load(
     "drake_vector_gen_lcm_sources",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 drake_lcm_cc_library(
     name = "acrobot",
@@ -235,12 +236,12 @@ _AUTOMOTIVE_LCM_SRCS = [
 # Generate *.lcm sources from *.named_vector files.
 drake_vector_gen_lcm_sources(
     name = "automotive_sources",
-    srcs = [
+    srcs = adjust_labels_for_drake_hoist([
         "//drake/automotive:{}.named_vector".format(
             x[len("lcmt_"):-len("_t.lcm")],
         )
         for x in _AUTOMOTIVE_LCM_SRCS
-    ],
+    ]),
 )
 
 # Generate C++ sources and a library from *.lcm sources.

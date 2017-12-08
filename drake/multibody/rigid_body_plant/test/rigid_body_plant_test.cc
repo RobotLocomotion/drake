@@ -583,6 +583,42 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   EXPECT_TRUE(CompareMatrices(updates->get_vector(0).CopyToVector(), xn));
 }
 
+class RigidBodyPlantTimeSteppingDataTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // Step size is arbitrarily chosen.
+    const double step_size = 1e-3;
+
+    // Load the box SDF. 
+    auto tree = std::make_unique<RigidBodyTree<double>>();
+    AddModelInstancesFromSdfFile(
+        FindResourceOrThrow(
+            "drake/systems/sensors/models/box.sdf"),
+        kFixed, nullptr /* weld to frame */, tree.get());
+    RigidBodyPlant<double> plant(move(tree), step_size);
+
+    // Create the context.
+    context_ = plant.CreateDefaultContext();
+  }
+
+ private:
+  std::unique_ptr<RigidBodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// Checks that the normal contact Jacobian is correct.
+TEST_F( ) {
+
+  // Check whether the transpose Jacobian is correct.
+}
+
+// Checks that the tangent contact Jacobian is correct.
+TEST_F( ) {
+  // Check whether the transpose Jacobian is correct.
+}
+
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace rigid_body_plant

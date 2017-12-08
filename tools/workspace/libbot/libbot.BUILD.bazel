@@ -28,7 +28,10 @@ cc_library(
     name = "bot2_core",
     srcs = glob(["bot2-core/src/bot_core/*.c"]),
     hdrs = BOT2_CORE_PUBLIC_HDRS,
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     includes = ["bot2-core/src"],
     deps = [
         "@glib",
@@ -59,7 +62,10 @@ drake_java_binary(
 cc_binary(
     name = "bot-lcm-logfilter",
     srcs = ["bot2-lcm-utils/src/logfilter/lcm-logfilter.c"],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     deps = [
         "@glib",
         "@lcm",
@@ -69,7 +75,10 @@ cc_binary(
 cc_binary(
     name = "bot-lcm-logsplice",
     srcs = ["bot2-lcm-utils/src/logsplice/lcm-logsplice.c"],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     deps = [
         "@glib",
         "@lcm",
@@ -106,7 +115,10 @@ cc_library(
         "bot2-lcm-utils/src/tunnel/ssocket.c",
         "bot2-lcm-utils/src/tunnel/ssocket.h",
     ],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     visibility = ["//visibility:private"],
     deps = [
         "@glib",
@@ -123,6 +135,7 @@ cc_binary(
         "bot2-lcm-utils/src/tunnel/lcm_tunnel_server.cpp",
         "bot2-lcm-utils/src/tunnel/lcm_tunnel_server.h",
     ],
+    copts = ["-w"],
     deps = [
         ":ldpc",
         ":tunnel_c99",
@@ -136,7 +149,10 @@ cc_binary(
         "bot2-lcm-utils/src/who/*.c",
         "bot2-lcm-utils/src/who/*.h",
     ]),
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     deps = [
         "@glib",
         "@lcm",
@@ -217,7 +233,10 @@ cc_library(
         "bot2-param/src/param_client/param_util.c",
     ],
     hdrs = BOT2_PARAM_PUBLIC_HDRS,
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     include_prefix = BOT2_PARAM_INCLUDE_PREFIX,
     strip_include_prefix = "bot2-param/src/param_client",
     deps = [
@@ -251,7 +270,10 @@ cc_binary(
         "bot2-param/src/param_server/lcm_util.h",
         "bot2-param/src/param_server/param_server.c",
     ],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     deps = [
         ":bot2_param_client",
         "@glib",
@@ -266,7 +288,10 @@ cc_binary(
         "bot2-param/src/param_client/param_internal.h",
         "bot2-param/src/param_server/param_tool.c",
     ],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     deps = [
         ":bot2_param_client",
         "@lcm",
@@ -326,7 +351,10 @@ cc_library(
     name = "bot2_frames",
     srcs = BOT2_FRAMES_PUBLIC_HDRS + ["bot2-frames/src/bot_frames.c"],
     hdrs = BOT2_FRAMES_PUBLIC_HDRS,
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     include_prefix = BOT2_FRAMES_INCLUDE_PREFIX,
     strip_include_prefix = "bot2-frames/src",
     deps = [
@@ -390,7 +418,10 @@ cc_library(
     name = "bot2_lcmgl_client",
     srcs = ["bot2-lcmgl/src/bot_lcmgl_client/lcmgl.c"],
     hdrs = ["bot2-lcmgl/src/bot_lcmgl_client/lcmgl.h"],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     includes = ["bot2-lcmgl/src"],
     deps = [
         ":lcmtypes_bot2_lcmgl_c",
@@ -407,7 +438,10 @@ cc_library(
         "bot2-lcmgl/src/bot_lcmgl_render/lcmgl_decode.c",
     ],
     hdrs = ["bot2-lcmgl/src/bot_lcmgl_render/lcmgl_decode.h"],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     includes = ["bot2-lcmgl/src"],
     deps = [
         ":bot2_lcmgl_client",
@@ -442,6 +476,7 @@ lcm_c_library(
     name = "lcmtypes_bot2_procman_c",
     aggregate_hdr = "bot2-procman/lcmtypes/bot2_procman.h",
     aggregate_hdr_strip_prefix = ["bot2-procman"],
+    copts = ["-w"],
     includes = ["bot2-procman"],
     lcm_package = "bot_procman",
     lcm_srcs = BOT2_PROCMAN_LCM_SRCS,
@@ -485,7 +520,10 @@ cc_binary(
         "bot2-procman/src/deputy/signal_pipe.c",
         "bot2-procman/src/deputy/signal_pipe.h",
     ],
-    copts = ["-std=gnu99"],
+    copts = [
+        "-std=gnu99",
+        "-w",
+    ],
     linkopts = ["-lutil"],
     deps = [
         ":lcmtypes_bot2_procman_c",
@@ -652,6 +690,7 @@ install(
         ":build_prefix",
     ],
     runtime_dest = "lib/python2.7/site-packages/bot_procman",
+    allowed_externals = ["@drake//tools/workspace/libbot:build_prefix.py"],
 )
 
 install(
@@ -667,6 +706,7 @@ install(
     py_strip_prefix = ["bot2-procman/python/src"],
     data = BOT2_PROCMAN_DATA,
     data_dest = "share/bot_procman",
+    allowed_externals = ["@drake//tools/workspace/libbot:bot-procman-sheriff"],
     deps = [":install_build_prefix"],
 )
 
@@ -674,6 +714,9 @@ install(
     name = "install",
     docs = [
         "LICENSE",
+        "@drake//third_party:com_github_robotlocomotion_libbot2/LICENSE.ldpc",
+    ],
+    allowed_externals = [
         "@drake//third_party:com_github_robotlocomotion_libbot2/LICENSE.ldpc",
     ],
     deps = [

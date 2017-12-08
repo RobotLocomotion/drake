@@ -15,7 +15,9 @@ const int SampleIndices::kAbsone;
 const std::vector<std::string>& SampleIndices::GetCoordinateNames() {
   static const never_destroyed<std::vector<std::string>> coordinates(
       std::vector<std::string>{
-          "x", "two_word", "absone",
+          "x",         // BR
+          "two_word",  // BR
+          "absone",    // BR
       });
   return coordinates.access();
 }

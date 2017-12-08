@@ -24,7 +24,7 @@ const bool kShowWindow = true;
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Mac OSX.
 const double kColorPixelTolerance = 1.001;
-const double kDepthTolerance = 1e-4;
+const double kDepthTolerance = 1.1e-4;
 
 // Holds `(x, y)` indices of the screen coordinate system where the ranges of
 // `x` and `y` are [0, kWidth) and [0, kHeight) respectively.

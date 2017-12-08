@@ -4,14 +4,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/bindings/pydrake/pydrake_autodiff_types.h"
+#include "drake/bindings/pydrake/autodiff_types_py.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(_pydrake_rbtree, m) {
+PYBIND11_MODULE(_rbtree_py, m) {
   m.doc() = "Bindings for the RigidBodyTree class";
 
   using drake::AutoDiffXd;

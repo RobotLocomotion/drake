@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import unittest
 import pydrake
+import pydrake.rbtree
 import os.path
 
 
@@ -17,6 +18,7 @@ class TestUrdfParser(unittest.TestCase):
             "examples/pr2/models/pr2_description/urdf/pr2_simplified.urdf")
         urdf_string = open(urdf_file).read()
         base_dir = os.path.dirname(urdf_file)
+        # TODO(eric.cousineau): Should this be imported from `pydrake.parsers`?
         package_map = pydrake.rbtree.PackageMap()
         weld_frame = None
         floating_base_type = pydrake.rbtree.kRollPitchYaw

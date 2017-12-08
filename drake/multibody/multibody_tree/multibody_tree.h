@@ -640,18 +640,18 @@ class MultibodyTree {
   ///
   /// @throws std::logic_error If users attempt to call this method on a
   ///         %MultibodyTree with an invalid topology.
-  // TODO(amcastro-tri): Split this method into implementations to be used by
-  // System::AllocateContext() so that MultibodyPlant() can make use of it
-  // within the system's infrastructure. This will require at least the
-  // introduction of system's methods to:
-  //  - Create a context different from LeafContext, in this case MBTContext.
-  //  - Create or request cache entries.
   std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const;
 
   /// Sets default values in the context. For mobilizers, this method sets them
   /// to their _zero_ configuration according to
   /// Mobilizer::set_zero_configuration().
   void SetDefaultContext(systems::Context<T>* context) const;
+
+  /// Sets default values in the `state`. For mobilizers, this method sets them
+  /// to their _zero_ configuration according to
+  /// Mobilizer::set_zero_configuration().
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const;
 
   /// @name Computational methods
   /// These methods expose the computational capabilities of MultibodyTree to

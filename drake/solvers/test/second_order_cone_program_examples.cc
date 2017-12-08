@@ -81,7 +81,7 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
 }
 
 void TestEllipsoidsSeparation::SolveAndCheckSolution(
-    const MathematicalProgramSolverInterface& solver) {
+    const MathematicalProgramSolverInterface& solver, double tol) {
   RunSolver(&prog_, solver);
 
   // Check the solution.
@@ -89,9 +89,9 @@ void TestEllipsoidsSeparation::SolveAndCheckSolution(
   const auto& a_value = prog_.GetSolution(a_);
   const auto& R1a_value = R1_.transpose() * a_value;
   const auto& R2a_value = R2_.transpose() * a_value;
-  EXPECT_NEAR(prog_.GetSolution((t_(0))), R1a_value.norm(), 1.1e-6);
-  EXPECT_NEAR(prog_.GetSolution((t_(1))), R2a_value.norm(), 1.1e-6);
-  EXPECT_NEAR((x2_ - x1_).dot(a_value), 1.0, 1e-8);
+  EXPECT_NEAR(prog_.GetSolution((t_(0))), R1a_value.norm(), 100 * tol);
+  EXPECT_NEAR(prog_.GetSolution((t_(1))), R2a_value.norm(), 100 * tol);
+  EXPECT_NEAR((x2_ - x1_).dot(a_value), 1.0, tol);
 
   // Now check if the solution is meaningful, that it really finds a separating
   // hyperplane.
@@ -157,9 +157,9 @@ void TestEllipsoidsSeparation::SolveAndCheckSolution(
     EXPECT_LE(u1_value.norm(), 1);
     EXPECT_LE(u2_value.norm(), 1);
     const auto& y_value = prog_intersect.GetSolution(y);
-    EXPECT_TRUE(CompareMatrices(y_value, x1_ + R1_ * u1_value, 1e-8,
+    EXPECT_TRUE(CompareMatrices(y_value, x1_ + R1_ * u1_value, tol,
                                 MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(y_value, x2_ + R2_ * u2_value, 1e-8,
+    EXPECT_TRUE(CompareMatrices(y_value, x2_ + R2_ * u2_value, tol,
                                 MatrixCompareType::absolute));
   }
 }
@@ -218,7 +218,7 @@ TestQPasSOCP::TestQPasSOCP() {
 }
 
 void TestQPasSOCP::SolveAndCheckSolution(
-    const MathematicalProgramSolverInterface& solver) {
+    const MathematicalProgramSolverInterface& solver, double tol) {
   RunSolver(&prog_socp_, solver);
   const auto& x_socp_value = prog_socp_.GetSolution(x_socp_);
   const double objective_value_socp =
@@ -230,7 +230,7 @@ void TestQPasSOCP::SolveAndCheckSolution(
   const Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   const Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
   EXPECT_NEAR(2 * prog_socp_.GetSolution(y_),
-              (Q_sqrt * x_socp_value).squaredNorm(), 1E-6);
+              (Q_sqrt * x_socp_value).squaredNorm(), tol);
   EXPECT_GE(prog_socp_.GetSolution(y_), 0);
 
   RunSolver(&prog_qp_, solver);
@@ -244,9 +244,9 @@ void TestQPasSOCP::SolveAndCheckSolution(
 
   // TODO(hongkai.dai@tri.global): tighten the tolerance. socp does not really
   // converge to true optimal yet.
-  EXPECT_TRUE(CompareMatrices(x_qp_value, x_socp_value, 2e-4,
+  EXPECT_TRUE(CompareMatrices(x_qp_value, x_socp_value, 200 * tol,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(objective_value_qp, objective_value_socp, 1E-6);
+  EXPECT_NEAR(objective_value_qp, objective_value_socp, tol);
 }
 
 std::vector<FindSpringEquilibriumProblem> GetFindSpringEquilibriumProblems() {
@@ -281,25 +281,17 @@ TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
 
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
-    // A_lorentz1 * [x(i); x(i+1); y(i); y(i+1); t(i)] + b_lorentz1
-    //     = [ti + spring_rest_length; x(i) - x(i+1); y(i) - y(i+1)]
-    Eigen::Matrix<double, 3, 5> A_lorentz1;
-    A_lorentz1.setZero();
-    A_lorentz1(0, 4) = 1;
-    A_lorentz1(1, 0) = 1;
-    A_lorentz1(1, 1) = -1;
-    A_lorentz1(2, 2) = 1;
-    A_lorentz1(2, 3) = -1;
-    Eigen::Vector3d b_lorentz1(spring_rest_length_, 0, 0);
-    prog_.AddLorentzConeConstraint(
-        A_lorentz1, b_lorentz1,
-        {x_.segment<2>(i), y_.segment<2>(i), t_.segment<1>(i)});
+    Vector3<symbolic::Expression> lorentz_cone_expr;
+    lorentz_cone_expr << t_(i) + spring_rest_length_, x_(i) - x_(i + 1),
+        y_(i) - y_(i + 1);
+    prog_.AddLorentzConeConstraint(lorentz_cone_expr);
   }
 
   // Add constraint z >= t_1^2 + .. + t_(N-1)^2
   z_ = prog_.NewContinuousVariables<1>("z")(0);
-  prog_.AddRotatedLorentzConeConstraint(
-      +z_, 1, t_.cast<symbolic::Expression>().squaredNorm());
+  VectorX<symbolic::Expression> rotated_lorentz_cone_expr(1 + num_nodes);
+  rotated_lorentz_cone_expr << z_, 1, t_;
+  prog_.AddRotatedLorentzConeConstraint(rotated_lorentz_cone_expr);
 
   prog_.AddLinearCost(spring_stiffness_ / 2 * z_);
   prog_.AddLinearCost(weight_.dot(y_));
