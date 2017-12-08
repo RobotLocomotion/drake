@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/hash.h"
 
 namespace drake {
 namespace systems {
@@ -23,7 +24,30 @@ struct Color {
   bool operator==(const Color<T>& other) const {
     return this->r == other.r && this->g == other.g && this->b == other.b;
   }
+
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher, const Color& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, item.r);
+    hash_append(hasher, item.g);
+    hash_append(hasher, item.b);
+  }
 };
+
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
+
+namespace std {
+template <typename T>
+struct hash<drake::systems::sensors::Color<T>>
+    : public drake::DefaultHash {};
+}  // namespace std
+
+namespace drake {
+namespace systems {
+namespace sensors {
 
 /// Defines a color based on its three primary additive colors: red, green, and
 /// blue. Each of these primary additive colors are in the range of [0, 255].
@@ -32,13 +56,6 @@ using ColorI = Color<int>;
 /// Defines a color based on its three primary additive colors: red, green, and
 /// blue. Each of these primary additive colors are in the range of [0, 1].
 using ColorD = Color<double>;
-
-// Defines a hash function for unordered_map that takes Color as the key.
-struct ColorHash {
-  std::size_t operator()(const ColorI& key) const {
-    return std::hash<int>{}((key.r * 256 + key.g) * 256 + key.b);
-  }
-};
 
 /// Creates and holds a palette of colors for visualizing different objects in a
 /// scene (the intent is for a different color to be applied to each identified
@@ -153,7 +170,7 @@ class ColorPalette {
   const ColorI kTerrainColor{255, 229, 204};
   const ColorI kSkyColor{204, 229, 255};
   std::vector<ColorI> colors_;
-  std::unordered_map<ColorI, int, ColorHash> color_id_map_;
+  std::unordered_map<ColorI, int> color_id_map_;
 };
 
 }  // namespace sensors

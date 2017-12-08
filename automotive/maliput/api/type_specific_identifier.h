@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/hash.h"
 
 namespace drake {
 namespace maliput {
@@ -64,6 +65,14 @@ class TypeSpecificIdentifier {
     return !(*this == rhs);
   }
 
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const TypeSpecificIdentifier& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, item.string_);
+  }
+
  private:
   std::string string_;
 };
@@ -77,24 +86,8 @@ namespace std {
 
 /// Specialization of std::hash for TypeSpecificIdentifier<T>
 template <typename T>
-struct hash<drake::maliput::api::TypeSpecificIdentifier<T>> {
-  typedef std::size_t result_type;
-  typedef drake::maliput::api::TypeSpecificIdentifier<T> argument_type;
-
-  result_type operator()(const argument_type& id) const {
-    // NB: Per the GSG, our current style guide strictly prohibits
-    // creating new specializations of std::hash on the grounds that
-    // it is in general difficult to do that correctly.  However,
-    // since this implementation is merely a wrapper around
-    // std::string with stricter type checking and since it merely
-    // invokes a C++ standard hash approved by the style guide, it has
-    // been granted an exception.  If this implementation changes, the
-    // exception must be reevaluated.  Conversely, if the (arguably
-    // maladaptive) prohibition is removed from our style guide, this
-    // notice can go away.
-    return hash<string>{}(id.string());
-  }
-};
+struct hash<drake::maliput::api::TypeSpecificIdentifier<T>>
+    : public drake::DefaultHash {};
 
 /// Specialization of std::less for TypeSpecificIdentifier<T> providing a
 /// strict weak ordering over TypeSpecificIdentifier<T> suitable for use with
