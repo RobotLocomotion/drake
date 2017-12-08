@@ -107,6 +107,8 @@ class Sine final : public LeafSystem<T> {
   void CalcSecondDerivativeOutput(const Context<T>& context,
                                   BasicVector<T>* output) const;
 
+  void CalcSineArg(const Context<T>& context, VectorX<T>* sine_arg) const;
+
 
   const Eigen::VectorXd amplitude_;
   const Eigen::VectorXd frequency_;
