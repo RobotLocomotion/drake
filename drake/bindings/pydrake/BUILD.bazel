@@ -161,7 +161,10 @@ drake_py_test(
     data = ["//:install"],
     main = "test/testCommonInstall.py",
     tags = ["no_everything"],
-    deps = [":pydrake"],
+    deps = [
+        ":pydrake",
+        "//tools/install:install_test_helper",
+    ],
 )
 
 drake_py_test(
