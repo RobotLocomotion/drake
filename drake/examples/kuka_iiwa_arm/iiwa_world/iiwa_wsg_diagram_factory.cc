@@ -51,7 +51,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
     // motions.
     auto single_arm = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFile(
-        iiwa_instances[i].model_path, multibody::joints::kFixed,
+        iiwa_instances[i].absolute_model_path, multibody::joints::kFixed,
         iiwa_instances[i].world_offset, single_arm.get());
 
     auto iiwa_controller = builder.template AddController<
@@ -113,7 +113,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
     const std::string suffix{"_" + std::to_string(i)};
     objects_.emplace_back(new RigidBodyTree<T>);
     parsers::urdf::AddModelInstanceFromUrdfFile(
-        object_instances[i].model_path, multibody::joints::kQuaternion,
+        object_instances[i].absolute_model_path, multibody::joints::kQuaternion,
         object_instances[i].world_offset, objects_.back().get());
     auto object_state_est =
         base_builder->template AddSystem<OracularStateEstimation<T>>(
@@ -128,6 +128,9 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
 
   output_port_contact_results_ =
       base_builder->ExportOutput(plant_->contact_results_output_port());
+
+  output_port_kinematics_results_ =
+      base_builder->ExportOutput(plant_->kinematics_results_output_port());
 
   builder.BuildInto(this);
 }

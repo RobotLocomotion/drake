@@ -422,34 +422,34 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
         next_state->template get_mutable_abstract_state<LaneDirection>(0);
     // TODO(liang.fok) Generalize the following to support the selection of
     // non-default branches or non-zero ongoing branches. See #5702.
-    std::unique_ptr<LaneEnd> next_branch;
+    optional<LaneEnd> next_branch;
     if (current_with_s) {
       next_branch = current_lane_direction.lane->GetDefaultBranch(
           LaneEnd::kFinish);
-      if (next_branch == nullptr) {
+      if (!next_branch) {
         const maliput::api::LaneEndSet* ongoing_lanes =
             current_lane_direction.lane->GetOngoingBranches(LaneEnd::kFinish);
         if (ongoing_lanes != nullptr) {
           if (ongoing_lanes->size() > 0) {
-            next_branch = std::make_unique<LaneEnd>(ongoing_lanes->get(0));
+            next_branch = ongoing_lanes->get(0);
           }
         }
       }
     } else {
       next_branch = current_lane_direction.lane->GetDefaultBranch(
           LaneEnd::kStart);
-      if (next_branch == nullptr) {
+      if (!next_branch) {
         const maliput::api::LaneEndSet* ongoing_lanes =
             current_lane_direction.lane->GetOngoingBranches(LaneEnd::kStart);
         if (ongoing_lanes != nullptr) {
           if (ongoing_lanes->size() > 0) {
-            next_branch = std::make_unique<LaneEnd>(ongoing_lanes->get(0));
+            next_branch = ongoing_lanes->get(0);
           }
         }
       }
     }
 
-    if (next_branch == nullptr) {
+    if (!next_branch) {
       DRAKE_ABORT_MSG("MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
           "Vehicle should switch lanes but no default or ongoing branch "
           "exists.");

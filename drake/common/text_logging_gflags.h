@@ -11,7 +11,7 @@
 // Declare the --spdlog_level gflags option.
 DEFINE_string(spdlog_level, "unchanged",
               "sets the spdlog output threshold; "
-              "possible values are 'unchanged', 'trace', 'debug'");
+              "possible values are 'unchanged', 'trace', 'debug', 'warn'");
 
 namespace drake {
 namespace logging {

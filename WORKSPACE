@@ -136,29 +136,35 @@ github_archive(
     build_file = "tools/workspace/fmt/fmt.BUILD.bazel",
 )
 
+MAVEN_REPOSITORY = "https://jcenter.bintray.com"
+
 # In the unlikely event that you update the version here, verify that the
 # licenses in tools/third_party/jchart2d/LICENSE are still applicable.
 maven_jar(
     name = "net_sf_jchart2d_jchart2d",
     artifact = "net.sf.jchart2d:jchart2d:3.3.2",
+    repository = MAVEN_REPOSITORY,
     sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
 )
 
 maven_jar(
     name = "com_jidesoft_jide_oss",
     artifact = "com.jidesoft:jide-oss:2.9.7",
+    repository = MAVEN_REPOSITORY,
     sha1 = "a9bb0d8384012c25c1519f6dd9adc80dd720a050",
 )
 
 maven_jar(
     name = "commons_io_commons_io",
     artifact = "commons-io:commons-io:1.3.1",
+    repository = MAVEN_REPOSITORY,
     sha1 = "b90b6ac57cf27a2858eaa490d02ba7945d18ca7b",
 )
 
 maven_jar(
     name = "org_apache_xmlgraphics_xmlgraphics_commons",
     artifact = "org.apache.xmlgraphics:xmlgraphics-commons:1.3.1",
+    repository = MAVEN_REPOSITORY,
     sha1 = "f7d0fa54e2750acd82b1a241c043be6fce1bf0dc",
 )
 
@@ -232,8 +238,8 @@ github_archive(
 github_archive(
     name = "pybind11",
     repository = "RobotLocomotion/pybind11",
-    commit = "6d72785766558047ee2e2075198c07d8c25eb631",
-    sha256 = "08b4813b3b17f607efc4e8ba8b73bf55759ba744cab125e9fc666b5161cb1d0a",  # noqa
+    commit = "ffcf754ae9e766632610975d22372a86a7b63014",
+    sha256 = "7cd6f4efb02bf9ae17eeb2afba68023af913e61ae76e8b4254203d0eec019525",  # noqa
     build_file = "tools/workspace/pybind11/pybind11.BUILD.bazel",
 )
 
@@ -251,6 +257,24 @@ github_archive(
     commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
     sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",  # noqa
     build_file = "tools/workspace/lcmtypes_robotlocomotion/lcmtypes_robotlocomotion.BUILD.bazel",  # noqa
+)
+
+pkg_config_package(
+    name = "blas",
+    modname = "blas",
+)
+
+pkg_config_package(
+    name = "lapack",
+    modname = "lapack",
+)
+
+github_archive(
+    name = "scs",
+    repository = "cvxgrp/scs",
+    commit = "v1.2.6",
+    sha256 = "b4bebb43a1257b6e88a5f97c855c0559d6c8a8c0548d3156fc5a28d82bb9533f",  # noqa
+    build_file = "tools/workspace/scs/scs.BUILD.bazel",
 )
 
 github_archive(
@@ -287,10 +311,12 @@ mosek_repository(
     name = "mosek",
 )
 
+# We directly declare a git_repository because the snopt source code requires
+# authentication, and our github_archive does not (yet, easily) support that.
 git_repository(
     name = "snopt",
     remote = "git@github.com:RobotLocomotion/snopt.git",
-    commit = "2ec980370eeb72897135b11570033a19bda885a7",
+    commit = "0f475624131c9ca4d5624e74c3f8273ccc926f9b",
 )
 
 # Python Libraries
@@ -312,10 +338,10 @@ bind(
 # When updating the version of protobuf,
 # update tools/install/protobuf/protobuf.cps
 github_archive(
-    name = "protobuf",
+    name = "com_google_protobuf",
     repository = "google/protobuf",
-    commit = "v3.1.0",
-    sha256 = "fb2a314f4be897491bb2446697be693d489af645cb0e165a85e7e64e07eb134d",  # noqa
+    commit = "v3.5.0",
+    sha256 = "0cc6607e2daa675101e9b7398a436f09167dffb8ca0489b0307ff7260498c13c",  # noqa
 )
 
 pypi_archive(

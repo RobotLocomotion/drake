@@ -24,7 +24,7 @@ with the environment you actually want!
 installs binaries in reasonable, standard paths, and because most CLion launch
 mechanisms will have already sourced the ``.bashrc``.
 
-**Mac users** will get broken behavior by default.  When you run an Mac app
+**macOS users** will get broken behavior by default.  When you run an macOS app
 graphically, the parent process is `launchd` (PID 1), which provides its own
 standard environment variables to the child process.  In particular, it provides
 a minimal ``PATH`` that does not include ``/usr/local/bin``, where most Homebrew
@@ -182,7 +182,7 @@ CLion such that the modification may not be immediately apparent. When in doubt,
 select away from the target file and back; this will cause the file to refresh
 and you can confirm that the file has been modified as expected.
 
-First, make sure you have installed ``clang-format``
+First, make sure you have installed ``clang-format-4.0``
 (see :doc:`code_style_tools`).
 
 Clang format selected file
@@ -193,7 +193,7 @@ following values for the fields:
 
   :Name: ``Clang Format Full File``
   :Description: ``Apply clang-format to the active file``
-  :Program: ``clang-format``
+  :Program: ``clang-format-4.0``
   :Parameters: ``-i $FileName$``
   :Working directory: ``$FileDir$``
 
@@ -207,7 +207,7 @@ following values for the fields:
 
   :Name: ``Clang Format Selected Lines``
   :Description: ``Apply clang-format to the selected lines``
-  :Program: ``clang-format``
+  :Program: ``clang-format-4.0``
   :Parameters: ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
   :Working directory: ``$FileDir$``
 

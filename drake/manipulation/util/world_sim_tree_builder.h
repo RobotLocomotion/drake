@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
@@ -12,7 +13,7 @@ namespace manipulation {
 namespace util {
 
 template<typename T> struct ModelInstanceInfo {
-  std::string model_path;
+  std::string absolute_model_path;
   int instance_id;
   std::shared_ptr<RigidBodyFrame<T>> world_offset;
 };
@@ -73,17 +74,23 @@ class WorldSimTreeBuilder {
   WorldSimTreeBuilder(const WorldSimTreeBuilder<T>& other) = delete;
   WorldSimTreeBuilder& operator=(const WorldSimTreeBuilder<T>& other) = delete;
 
-  /// Adds a model to the internal model database. Models are described by
-  /// @p model_name coupled with URDF/SDF paths in @p model_path. Instances
-  /// of these models can then be added to the world via the various
-  /// `AddFoo()` methods provided by this class. Note that @p model_name is
-  /// user-selectable but must be unique among all of the models that are
-  /// stored.
+  /// Adds a model to the internal model database. Models are
+  /// described by @p model_name coupled with URDF/SDF paths in @p
+  /// absolute_model_path. Instances of these models can then be added
+  /// to the world via the various `AddFoo()` methods provided by this
+  /// class. Note that @p model_name is user-selectable but must be
+  /// unique among all of the models that are stored.
   ///
   /// @see AddObjectToFrame
   /// @see AddFloatingObject
   /// @see AddFixedObject
-  void StoreModel(const std::string& model_name, const std::string& model_path);
+  void StoreModel(const std::string& model_name,
+                  const std::string& absolute_model_path);
+
+  /// Like StoreModel, but uses FindResourceOrThrow to search inside
+  /// the drake resource search path.
+  void StoreDrakeModel(const std::string& model_name,
+                       const std::string& model_path);
 
   /// Gets a unique pointer to the `RigidBodyTree` that was built.
   /// This method can only be called if it was not previously called.
@@ -96,8 +103,8 @@ class WorldSimTreeBuilder {
     return std::move(rigid_body_tree_);
   }
 
-  /// Return the (not yet built) tree.  Build() must not have been
-  /// called yet.
+  /// Returns the (not yet built) tree.
+  /// @pre Build() must not have been called yet.
   const RigidBodyTree<T>& tree() const {
     DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
     return *rigid_body_tree_;
@@ -106,6 +113,17 @@ class WorldSimTreeBuilder {
   ModelInstanceInfo<T> get_model_info_for_instance(int id) {
     return instance_id_to_model_info_.at(id);
   }
+
+  /// The compliant contact model parameters to use with the default material
+  /// parameters; these values should be passed to the plant.
+  systems::CompliantContactModelParameters contact_model_parameters() const {
+    return contact_model_parameters_;
+  }
+
+  systems::CompliantMaterial default_contact_material() const {
+    return default_contact_material_;
+  }
+
 
  private:
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
@@ -119,6 +137,11 @@ class WorldSimTreeBuilder {
   std::map<std::string, std::string> model_map_;
 
   std::map<int, ModelInstanceInfo<T>> instance_id_to_model_info_;
+
+  // The default parameters for evaluating contact: the parameters for the
+  // model as well as the contact materials of the collision elements.
+  systems::CompliantContactModelParameters contact_model_parameters_;
+  systems::CompliantMaterial default_contact_material_;
 };
 
 }  // namespace util

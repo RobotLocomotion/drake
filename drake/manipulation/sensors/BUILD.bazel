@@ -1,0 +1,31 @@
+load("//tools:drake.bzl", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+# This is tested by usage in:
+# //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place
+#   :monolithic_pick_and_place_demo.
+# TODO(eric.cousineau): Add a test here once #5227 is resolved.
+drake_cc_library(
+    name = "xtion",
+    srcs = ["xtion.cc"],
+    hdrs = ["xtion.h"],
+    data = [
+        "//drake/manipulation/models/xtion_description:models",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/lcm",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:frame_visualizer",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives:pass_through",
+        "//drake/systems/primitives:zero_order_hold",
+        "//drake/systems/sensors:image_to_lcm_image_array_t",
+        "//drake/systems/sensors:rgbd_camera",
+    ],
+)
+
+add_lint_tests()

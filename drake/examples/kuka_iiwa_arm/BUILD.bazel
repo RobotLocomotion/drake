@@ -8,6 +8,11 @@ load(
 )
 load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_label_for_drake_hoist",
+    "adjust_labels_for_drake_hoist",
+)
 
 package(
     default_visibility = [":__subpackages__"],
@@ -172,13 +177,17 @@ drake_cc_binary(
 
 alias(
     name = "models",
-    actual = "//drake/examples/kuka_iiwa_arm/models:models",
+    actual = adjust_label_for_drake_hoist(
+        "//drake/examples/kuka_iiwa_arm/models:models",
+    ),
     visibility = ["//visibility:public"],
 )
 
 alias(
     name = "prod_models",
-    actual = "//drake/examples/kuka_iiwa_arm/models:prod_models",
+    actual = adjust_label_for_drake_hoist(
+        "//drake/examples/kuka_iiwa_arm/models:prod_models",
+    ),
     visibility = ["//visibility:public"],
 )
 
@@ -200,6 +209,13 @@ drake_cc_googletest(
     ],
 )
 
+alias(
+    name = "dual_iiwa14_polytope_collision.urdf",
+    actual = adjust_label_for_drake_hoist(
+        "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
+    ),
+)
+
 # Test that kuka_simulation can load the dual arm urdf
 sh_test(
     name = "dual_kuka_simulation_test",
@@ -208,12 +224,12 @@ sh_test(
     args = [
         "$(location :kuka_simulation)",
         "--urdf",
-        "$(location //drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf)",  # noqa
+        "$(location :dual_iiwa14_polytope_collision.urdf)",
         "--simulation_sec=0.01",
         "--novisualize_frames",
     ],
     data = [
-        "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
+        ":dual_iiwa14_polytope_collision.urdf",
     ],
     # Flaky because LCM self-test can fail (PR #7311)
     flaky = 1,
@@ -223,9 +239,11 @@ sh_test(
 install(
     name = "install",
     targets = [
+        ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
+        ":kuka_simulation",
     ],
-    runtime_strip_prefix = ["install"],
+    runtime_dest = "share/drake/examples/kuka_iiwa_arm",
     visibility = ["//visibility:public"],
 )
 
@@ -244,9 +262,9 @@ install(
     ],
     data_dest = "share/drake/" + package_name(),
     visibility = ["//visibility:public"],
-    deps = [
+    deps = adjust_labels_for_drake_hoist([
         "//drake/examples/kuka_iiwa_arm/models:install_data",
-    ],
+    ]),
 )
 
 add_lint_tests()

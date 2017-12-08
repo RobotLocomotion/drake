@@ -195,6 +195,10 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
+    // Checks that triggered witnesses are cleared appropriately between
+    // zero isolations.
+    if (witness1_->get_trigger_time() != witness2_->get_trigger_time())
+      EXPECT_EQ(events.size(), 1);
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 

@@ -46,6 +46,10 @@
       "Hints": ["@prefix@/lib/cmake/lcm"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "optitrack": {
+      "Hints": ["@prefix@/lib/cmake/optitrack"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "protobuf": {
       "Version": "3.1.0",
       "Hints": ["@prefix@/lib/cmake/protobuf"],
@@ -53,6 +57,11 @@
     },
     "robotlocomotion-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "scs": {
+      "Version": "1.2.6",
+      "Hints": ["@prefix@/lib/cmake/scs"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "SDFormat": {
@@ -74,22 +83,10 @@
       "Hints": ["@prefix@/lib/cmake/tinyobjloader"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "VTK": {
-      "Version": "8.0.1",
-      "Hints": [
-        "@prefix@/lib/cmake/vtk-8.0",
-        "/usr/local/opt/vtk@8.0/lib/cmake/vtk-8.0"
-      ],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "yaml-cpp": {
       "Version": "0.5.5",
       "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
       "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "ZLIB": {
-      "Version": "1.2.5",
-      "X-CMake-Find-Args": ["MODULE"]
     }
   },
   "Default-Components": [":drake"],
@@ -101,20 +98,12 @@
         "@prefix@/include"
       ],
       "Compile-Features": ["c++14"],
-      "Link-Flags": ["-lnlopt", "-ltinyxml2"],
+      "Link-Flags": ["-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
+        "scs:scsdir",
         "SDFormat:sdformat",
-        "vtkCommonCore",
-        "vtkCommonDataModel",
-        "vtkCommonTransforms",
-        "vtkFiltersGeneral",
-        "vtkFiltersSources",
-        "vtkIOGeometry",
-        "vtkIOImage",
-        "vtkRenderingCore",
-        "vtkRenderingOpenGL2",
-        "ZLIB:ZLIB"
+        "tinyobjloader:tinyobjloader"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
@@ -125,6 +114,7 @@
         "ignition-math3:ignition-math3",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
+        "optitrack:lcmtypes_optitrack-cpp",
         "protobuf:protobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
@@ -134,7 +124,7 @@
     },
     "drake-lcmtypes-cpp": {
       "Type": "interface",
-      "Includes": ["@prefix@/include/drake/lcmtypes"],
+      "Includes": ["@prefix@/include/drake_lcmtypes"],
       "Requires": ["lcm:lcm-coretypes"]
     },
     "drake-lcmtypes-java": {

@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -130,18 +131,14 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   ~RigidBodyPlant() override;
 
-  // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
-  // in detail.  To come in a subsequent PR.
-  /// Sets only the parameters for *normal* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
-  void set_normal_contact_parameters(double penetration_stiffness,
-                                     double dissipation);
+  /// Sets the parameters of the compliance _model_. To set material parameters,
+  /// use the CompliantMaterial instance associated with the collision element.
+  void set_contact_model_parameters(
+      const CompliantContactModelParameters& parameters);
 
-  /// Sets only the parameters for *friction* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
-  void set_friction_contact_parameters(double static_friction_coef,
-                                       double dynamic_friction_coef,
-                                       double v_stiction_tolerance);
+  /// Sets the compliant material values to use for default-configured material
+  /// properties on collision elements (see CompliantMaterial for details).
+  void set_default_compliant_material(const CompliantMaterial& material);
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
@@ -399,7 +396,47 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
+  void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
+      const drake::multibody::collision::PointPair& contact,
+      double* stiffness,
+      double* damping,
+      double* mu,
+      int* num_cone_edges) const;
+
+  Vector3<T> CalcRelTranslationalVelocity(
+      const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
+      const Vector3<T>& p_W) const;
+
+  void UpdateGeneralizedForce(
+      const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
+      const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
+
+  VectorX<T> ContactNormalJacobianMult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const VectorX<T>& q,
+      const VectorX<T>& v) const;
+
+  VectorX<T> TransposedContactNormalJacobianMult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& f) const;
+
+  VectorX<T> ContactTangentJacobianMult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const VectorX<T>& q,
+      const VectorX<T>& v,
+      const std::vector<int>& half_num_cone_edges) const;
+
+  VectorX<T> TransposedContactTangentJacobianMult(
+      const std::vector<drake::multibody::collision::PointPair>& contacts,
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& f,
+      const std::vector<int>& half_num_cone_edges) const;
+
   std::unique_ptr<const RigidBodyTree<T>> tree_;
+
+  // Object that performs all constraint computations.
+  multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
   OutputPortIndex kinematics_output_port_index_{};
@@ -433,6 +470,19 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // Pointer to the class that encapsulates all the contact computations.
   const std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_;
+
+  // Structure for storing joint limit data for time stepping.
+  struct JointLimit {
+    // The index for the joint limit.
+    int v_index{-1};
+
+    // Whether the limit is a lower limit or upper limit.
+    bool lower_limit{false};
+
+    // The signed distance from the limit. Negative signed distances correspond
+    // to joint limit violations.
+    T signed_distance{0};
+  };
 };
 
 }  // namespace systems

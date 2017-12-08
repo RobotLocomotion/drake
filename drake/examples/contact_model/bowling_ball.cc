@@ -48,19 +48,26 @@ using Eigen::VectorXd;
 using std::make_unique;
 
 // Simulation parameters.
-DEFINE_double(v, 12, "The ball's initial linear speed down the lane");
-DEFINE_double(timestep, 2e-4, "The simulator time step");
-DEFINE_double(w, 25, "The ball's initial angular speed (around [-1, 0 ,0].");
-DEFINE_double(stiffness, 100000, "The contact model's stiffness");
+DEFINE_double(v, 12, "The ball's initial linear speed down the lane (m/s)");
+DEFINE_double(timestep, 2e-4, "The simulator time step (s)");
+DEFINE_double(w, 25,
+              "The ball's initial angular speed (around [-1, 0 ,0] (rad/s).");
+DEFINE_double(youngs_modulus, 1e8, "The contact model's Young's modulus (Pa)");
 DEFINE_double(us, 0.4, "The static coefficient of friction");
 DEFINE_double(ud, 0.2, "The dynamic coefficient of friction");
 DEFINE_double(v_tol, 0.01,
-              "The maximum slipping speed allowed during stiction");
-DEFINE_double(dissipation, 2, "The contact model's dissipation");
-DEFINE_double(sim_duration, 3, "The simulation duration");
+              "The maximum slipping speed allowed during stiction (m/s)");
+DEFINE_double(dissipation, 2, "The contact model's dissipation (s/m)");
+DEFINE_double(contact_area, 1e-3,
+              "The characteristic scale of contact area (m^2)");
+DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_int32(pin_count, 10, "The number of pins -- in the range [0, 10]");
 DEFINE_bool(playback, true, "If true, loops playback of simulation");
-
+DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
+              "'compliant' or 'timestepping'");
+DEFINE_double(dt, 1e-3, "The step size to use for "
+              "'simulation_type=timestepping' (ignored for "
+              "'simulation_type=compliant'");
 
 // Bowling ball rolled down a conceptual lane to strike pins.
 int main() {
@@ -71,10 +78,11 @@ int main() {
   cout << "\ttimestep:         " << FLAGS_timestep << "\n";
   cout << "\tv:                " << FLAGS_v << "\n";
   cout << "\tω:                " << FLAGS_w << "\n";
-  cout << "\tstiffness:        " << FLAGS_stiffness << "\n";
+  cout << "\tyoung's modulus:  " << FLAGS_youngs_modulus << "\n";
   cout << "\tstatic friction:  " << FLAGS_us << "\n";
   cout << "\tdynamic friction: " << FLAGS_ud << "\n";
   cout << "\tslip threshold:   " << FLAGS_v_tol << "\n";
+  cout << "\tContact area:     " << FLAGS_contact_area << "\n";
   cout << "\tdissipation:      " << FLAGS_dissipation << "\n";
   cout << "\tpin count:        " << FLAGS_pin_count << "\n";
 
@@ -99,13 +107,24 @@ int main() {
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
-  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  if (FLAGS_simulation_type != "timestepping")
+    FLAGS_dt = 0.0;
+  auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(
+      move(tree_ptr), FLAGS_dt);
   plant.set_name("plant");
 
   // Note: this sets identical contact parameters across all object pairs:
-  // ball-lane, ball-pin, and pin-pin.  :(
-  plant.set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  plant.set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
+  // ball-lane, ball-pin, and pin-pin.
+  CompliantMaterial default_material;
+  default_material.set_youngs_modulus(FLAGS_youngs_modulus)
+      .set_dissipation(FLAGS_dissipation)
+      .set_friction(FLAGS_us, FLAGS_ud);
+  plant.set_default_compliant_material(default_material);
+  CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_tol;
+  plant.set_contact_model_parameters(model_parameters);
+
   const auto& tree = plant.get_rigid_body_tree();
 
   // LCM communication.

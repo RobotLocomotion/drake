@@ -6,9 +6,23 @@ load(
     "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(
-    default_visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    default_visibility = adjust_labels_for_drake_hoist([
+        "//drake/examples/kuka_iiwa_arm:__subpackages__",
+    ]),
+)
+
+drake_cc_library(
+    name = "pick_and_place_configuration",
+    hdrs = [
+        "pick_and_place_configuration.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/multibody/rigid_body_plant:compliant_contact_model",
+    ],
 )
 
 drake_cc_library(
@@ -24,10 +38,12 @@ drake_cc_library(
         "world_state.h",
     ],
     deps = [
+        ":pick_and_place_configuration",
         "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories:piecewise_quaternion",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/lcmtypes:schunk",
         "//drake/manipulation/planner:constraint_relaxing_ik",
         "//drake/multibody:rigid_body_tree",
@@ -43,10 +59,13 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    # TODO(eric.cousineau): Remove this tag once #3128 or the IK redux lands.
+    # TODO(eric.cousineau): Remove these tags once #3128 or the IK redux lands.
     # On some CI machines without SNOPT, system IPOPT is used, and exceeds time
-    # limits under memcheck with -c dbg.
-    tags = ["no_memcheck"],
+    # limits under memcheck with -c dbg as well as under tsan.
+    tags = [
+        "no_memcheck",
+        "no_tsan",
+    ],
     deps = [
         ":pick_and_place",
         "//drake/common:find_resource",

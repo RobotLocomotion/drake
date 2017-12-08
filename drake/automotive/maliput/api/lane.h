@@ -7,6 +7,7 @@
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -224,13 +225,9 @@ class Lane {
     return DoGetOngoingBranches(which_end);
   }
 
-  /// Returns the default ongoing LaneEnd connected at @p which_end.
-  ///
-  /// @returns nullptr if no default branch has been established
-  ///          at @p which_end.
-  // TODO(maddog@tri.global)  The return type yearns to be
-  //                          const boost::optional<LaneEnd>&.
-  std::unique_ptr<LaneEnd> GetDefaultBranch(
+  /// Returns the default ongoing LaneEnd connected at @p which_end,
+  /// or nullopt if no default branch has been established at @p which_end.
+  optional<LaneEnd> GetDefaultBranch(
       const LaneEnd::Which which_end) const {
     return DoGetDefaultBranch(which_end);
   }
@@ -282,7 +279,7 @@ class Lane {
   virtual const LaneEndSet* DoGetOngoingBranches(
       const LaneEnd::Which which_end) const = 0;
 
-  virtual std::unique_ptr<LaneEnd> DoGetDefaultBranch(
+  virtual optional<LaneEnd> DoGetDefaultBranch(
       const LaneEnd::Which which_end) const = 0;
 
   // AutoDiffXd overload of DoToGeoPosition().

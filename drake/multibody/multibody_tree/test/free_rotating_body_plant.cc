@@ -47,6 +47,12 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
 }
 
 template<typename T>
+Vector3<double>
+FreeRotatingBodyPlant<T>::get_default_initial_angular_velocity() const {
+  return Vector3d::UnitX() + Vector3d::UnitY() + Vector3d::UnitZ();
+}
+
+template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
 FreeRotatingBodyPlant<T>::DoMakeContext() const {
   return model_.CreateDefaultContext();
@@ -116,6 +122,21 @@ void FreeRotatingBodyPlant<T>::DoMapVelocityToQDot(
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, generalized_velocity, &qdot);
   positions_derivative->SetFromVector(qdot);
+}
+
+template<typename T>
+void FreeRotatingBodyPlant<T>::SetDefaultState(
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
+  model_.SetDefaultState(context, state);
+  mobilizer_->set_angular_velocity(
+      context, get_default_initial_angular_velocity(), state);
+}
+
+template<typename T>
+Vector3<T> FreeRotatingBodyPlant<T>::get_angular_velocity(
+    const systems::Context<T>& context) const {
+  return mobilizer_->get_angular_velocity(context);
 }
 
 template<typename T>

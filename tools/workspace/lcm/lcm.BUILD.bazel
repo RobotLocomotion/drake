@@ -44,8 +44,24 @@ LCM_PUBLIC_HEADERS = [
     "lcm/lcm_version.h",
 ]
 
-cc_library(
-    name = "lcm",
+# The paths within the LCM source archive that make #include statements work.
+LCM_PUBLIC_HEADER_INCLUDES = [
+    ".",
+    # TODO(jwnimmer-tri): The 'lcm' is needed so we can generate lcm_export.h
+    # with the correct path and still include it like '#include "lcm_export.h"'
+    # from other LCM headers. However, this "pollutes" the include paths of
+    # everyone using LCM. Can we do better?
+    "lcm",
+]
+
+# We only build a shared-library flavor of liblcm.so, because its LGPL-licensed
+# and thus should never be linked statically.  Building C++ shared libraries
+# in Bazel is not well-supported, but for C code is relatively trivial.  This
+# rule creates the runtime artifact -- a loadable shared library with its deps
+# linked dynamically.  The `name = "lcm"` rule below provides the compile-time
+# artifact that combines the shared library with its headers.
+cc_binary(
+    name = "liblcm.so",
     srcs = [
         # Sources
         "lcm/eventlog.c",
@@ -67,18 +83,20 @@ cc_library(
         "lcm/lcmtypes/channel_to_port_t.h",
         "lcm/ringbuffer.h",
         "lcm/udpm_util.h",
-    ],
-    hdrs = LCM_PUBLIC_HEADERS,
+    ] + LCM_PUBLIC_HEADERS,
     copts = LCM_COPTS,
-    # TODO(jwnimmer-tri): The 'lcm' is needed so we can generate lcm_export.h
-    # with the correct path and still include it like '#include "lcm_export.h"'
-    # from other LCM headers. However, this "pollutes" the include paths of
-    # everyone using LCM. Can we do better?
-    includes = [
-        ".",
-        "lcm",
-    ],
-    linkstatic = 0,
+    includes = LCM_PUBLIC_HEADER_INCLUDES,
+    linkshared = 1,
+    visibility = [],
+    deps = ["@glib"],
+)
+
+# This is the compile-time target for liblcm.  See above for details.
+cc_library(
+    name = "lcm",
+    srcs = ["liblcm.so"],
+    hdrs = LCM_PUBLIC_HEADERS,
+    includes = LCM_PUBLIC_HEADER_INCLUDES,
     deps = ["@glib"],
 )
 
@@ -133,6 +151,7 @@ cc_binary(
         "lcm-python/pylcm.h",
         "lcm-python/pylcm_subscription.c",
         "lcm-python/pylcm_subscription.h",
+        "lcm/dbg.h",
     ],
     copts = LCM_COPTS,
     linkshared = 1,
@@ -234,12 +253,12 @@ install(
 install(
     name = "install",
     targets = [
-        ":lcm",
         ":lcm-gen",
         ":lcm-java",
         ":lcm-logger",
         ":lcm-logplayer",
         ":lcm-spy",
+        ":liblcm.so",
     ],
     py_strip_prefix = ["lcm-python"],
     hdrs = LCM_PUBLIC_HEADERS,

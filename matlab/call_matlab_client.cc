@@ -1,3 +1,7 @@
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <cerrno>
 #include <cstring>
 #include <map>
@@ -7,27 +11,24 @@
 #include <thread>
 #include <vector>
 
-#include <mex.h>
-
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <mex.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
 #include "drake/common/unused.h"
 
+// clang-format off to disable clang-format-includes
 #include "mex_util.h"
+// clang-format on
 
-// Mex client for matlab remote procedure calls (RPCs).
+// Mex client for MATLAB remote procedure calls (RPCs).
 
-// Known issues: Some functions in matlab do not like to get called from mex.
+// Known issues: Some functions in MATLAB do not like to get called from MEX.
 // For instance, calling "histogram" fails with "Error using inputname...
 // Argument number is not valid." because it is trying to extract a variable
-// name from the matlab calling stack (and there are none).  Bad matlab.
+// name from the MATLAB calling stack (and there are none).  Bad MATLAB.
 
 // TODO(russt): Implement an interface that allows the remote publisher to
 // manually delete a client variable.
@@ -82,7 +83,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     int i;
     std::vector<mxArray *> lhs(message.lhs_size()), rhs(message.rhs_size());
 
-    // Create the input arguments
+    // Create the input arguments.
     for (i = 0; i < message.rhs_size(); i++) {
       int num_bytes = message.rhs(i).data().size();
       switch (message.rhs(i).type()) {
@@ -108,6 +109,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                            message.rhs(i).rows() * message.rhs(i).cols() ==
                        num_bytes);
           memcpy(mxGetPr(rhs[i]), message.rhs(i).data().data(), num_bytes);
+          break;
+        }
+        case drake::common::MatlabArray::INT: {
+          rhs[i] = mxCreateDoubleMatrix(message.rhs(i).rows(),
+                                        message.rhs(i).cols(), mxREAL);
+          // MATLAB is pretty picky about "figure()" and other HG arguments.
+          // Just convert the integers to doubles and call it done.
+          const int isize = message.rhs(i).rows() * message.rhs(i).cols();
+          DRAKE_DEMAND(static_cast<int>(sizeof(int)) * isize == num_bytes);
+          auto array_in =
+              reinterpret_cast<const int*>(message.rhs(i).data().data());
+          double* array_out = mxGetPr(rhs[i]);
+          for (int j = 0; j < isize; j++)
+            array_out[j] = static_cast<double>(array_in[j]);
           break;
         }
         case drake::common::MatlabArray::CHAR: {

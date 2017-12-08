@@ -19,6 +19,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:compliant_contact_model",
     ],
 )
 
@@ -161,6 +162,7 @@ drake_cc_googletest(
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":sim_diagram_builder",

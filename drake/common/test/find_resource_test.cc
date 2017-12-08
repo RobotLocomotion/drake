@@ -39,7 +39,7 @@ GTEST_TEST(FindResourceTest, NonRelativeRequest) {
 }
 
 GTEST_TEST(FindResourceTest, NotFound) {
-  const string relpath = "this file does not exist";
+  const string relpath = "drake/this_file_does_not_exist";
   const auto& result = FindResource(relpath);
   EXPECT_EQ(result.get_resource_path(), relpath);
 
@@ -50,10 +50,15 @@ GTEST_TEST(FindResourceTest, NotFound) {
   // We get an error back.
   const optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
-  EXPECT_EQ(*error_message, "could not find resource");
+  EXPECT_EQ(*error_message, "could not find resource: " + relpath);
 
   // Sugar works the same way.
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
+}
+
+// Create an empty file with the given filename.
+void Touch(const std::string& filename) {
+  std::ofstream(filename.c_str(), std::ios::out).close();
 }
 
 GTEST_TEST(FindResourceTest, AlternativeDirectory) {
@@ -61,13 +66,11 @@ GTEST_TEST(FindResourceTest, AlternativeDirectory) {
   // an empty file in a scratch directory with a sentinel file. Bazel tests are
   // run in a scratch directory, so we don't need to remove anything manually.
   const std::string test_directory = "find_resource_test_scratch";
+  const std::string candidate_filename = "drake/candidate.ext";
   spruce::dir::mkdir(test_directory);
-  const std::string sentinel_filename = ".drake-resource-sentinel";
-  const std::string sentinel_path = test_directory + "/" + sentinel_filename;
-  std::ofstream(sentinel_path.c_str(), std::ios::out).close();
-  const std::string candidate_filename = "candidate.ext";
-  const std::string absolute_path = test_directory + "/" + candidate_filename;
-  std::ofstream(absolute_path.c_str(), std::ios::out).close();
+  spruce::dir::mkdir(test_directory + "/drake");
+  Touch(test_directory + "/drake/.drake-find_resource-sentinel");
+  Touch(test_directory + "/" + candidate_filename);
   AddResourceSearchPath(test_directory);
   EXPECT_TRUE(!GetResourceSearchPaths().empty());
   EXPECT_EQ(GetResourceSearchPaths()[0], test_directory);

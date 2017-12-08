@@ -5,7 +5,9 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+/* clang-format off to disable clang-format-includes */
 #include "drake/examples/bouncing_ball/ball.h"
+/* clang-format on */
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"

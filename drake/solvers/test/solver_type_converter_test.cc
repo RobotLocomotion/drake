@@ -30,6 +30,8 @@ optional<SolverType> successor(optional<SolverType> solver_type) {
     case SolverType::kMosek:
       return SolverType::kNlopt;
     case SolverType::kNlopt:
+      return SolverType::kScs;
+    case SolverType::kScs:
       return SolverType::kSnopt;
     case SolverType::kSnopt:
       return nullopt;
@@ -56,7 +58,7 @@ GTEST_TEST(SolverId, RoundTrip) {
   }
 
   // This should track the number of SolverType values, if we add any.
-  EXPECT_EQ(iterations, 9);
+  EXPECT_EQ(iterations, 10);
 }
 
 }  // namespace

@@ -42,13 +42,14 @@
 
 DEFINE_string(urdf, "", "Name of urdf file to load");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
-              "Number of seconds to simulate.");
-
-DEFINE_double(stiffness, 3000, "Contact Stiffness");
-DEFINE_double(dissipation, 5, "Contact Dissipation");
+              "Number of seconds to simulate (s)");
+DEFINE_double(youngs_modulus, 3e7, "Default material's Young's modulus (Pa)");
+DEFINE_double(dissipation, 5, "Contact Dissipation (s/m)");
 DEFINE_double(static_friction, 0.5, "Static Friction");
 DEFINE_double(dynamic_friction, 0.2, "Dynamic Friction");
-DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol");
+DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol (m/s)");
+DEFINE_double(contact_area, 2e-4,
+              "The characteristic scale of contact area (m^2)");
 DEFINE_bool(use_visualizer, true, "Use Drake Visualizer?");
 
 namespace drake {
@@ -78,7 +79,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
     manipulation::util::ModelInstanceInfo<T> *box_instance) {
 
   const std::string iiwa_path =
-      (!FLAGS_urdf.empty() ? FLAGS_urdf : kIiwaUrdf);
+      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
 
   auto tree_builder =
       std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
@@ -86,15 +87,16 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
   tree_builder->StoreModel("iiwa", iiwa_path);
-  tree_builder->StoreModel("table",
-                           "drake/examples/kuka_iiwa_arm/models/table/"
-                           "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel(
+  tree_builder->StoreDrakeModel(
+      "table",
+      "drake/examples/kuka_iiwa_arm/models/table/"
+      "extra_heavy_duty_table_surface_only_collision.sdf");
+  tree_builder->StoreDrakeModel(
       "large_table", "drake/examples/kuka_iiwa_arm/dev/box_rotation/models/"
       "large_extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel("box",
-                           "drake/examples/kuka_iiwa_arm/dev/box_rotation/"""
-                           "models/box.urdf");
+  tree_builder->StoreDrakeModel(
+      "box",
+      "drake/examples/kuka_iiwa_arm/dev/box_rotation/models/box.urdf");
 
   // Build a world with three fixed tables.  A box is placed one on
   // table, and the iiwa arms are fixed to the other two tables.
@@ -150,10 +152,15 @@ int DoMain() {
       BuildCombinedPlant<double>(&iiwa_instance, &box_instance);
   model_ptr->set_name("plant");
 
-  model_ptr->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
-  model_ptr->set_friction_contact_parameters(FLAGS_static_friction,
-                                             FLAGS_dynamic_friction,
-                                             FLAGS_v_stiction_tol);
+  systems::CompliantMaterial default_material;
+  default_material.set_youngs_modulus(FLAGS_youngs_modulus)
+      .set_dissipation(FLAGS_dissipation)
+      .set_friction(FLAGS_static_friction, FLAGS_dynamic_friction);
+  model_ptr->set_default_compliant_material(default_material);
+  systems::CompliantContactModelParameters model_parameters;
+  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tol;
+  model_ptr->set_contact_model_parameters(model_parameters);
 
   auto model =
       builder.template AddSystem<IiwaAndBoxPlantWithStateEstimator<double>>(

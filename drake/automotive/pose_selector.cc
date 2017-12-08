@@ -4,26 +4,13 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/autodiffxd_make_coherent.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/extract_double.h"
 
 namespace drake {
 namespace automotive {
-
-namespace internal {
-
-// Makes the derviatives of the recipient coherent with respect to those of the
-// donor variable.  See drake/common/autodiffxd.h for further information.
-
-// TODO(jadecastro) Move to a commonly-accessible location.
-static void make_coherent(const AutoDiffXd& donor, AutoDiffXd* recipient) {
-  Eigen::internal::make_coherent(recipient->derivatives(), donor.derivatives());
-}
-
-static void make_coherent(const double&, double*) {}
-
-}  // namespace internal
 
 using maliput::api::GeoPositionT;
 using maliput::api::Lane;
@@ -199,14 +186,14 @@ bool PoseSelector<T>::IsWithinLane(const LanePositionT<T>& lane_position,
 }
 
 template <typename T>
-std::unique_ptr<LaneEnd> PoseSelector<T>::GetDefaultOngoingLane(
+optional<LaneEnd> PoseSelector<T>::GetDefaultOngoingLane(
     LaneDirection* lane_direction) {
   const Lane* const lane{lane_direction->lane};
   const bool with_s{lane_direction->with_s};
-  std::unique_ptr<LaneEnd> branch =
+  optional<LaneEnd> branch =
       (with_s) ? lane->GetDefaultBranch(LaneEnd::kFinish)
                : lane->GetDefaultBranch(LaneEnd::kStart);
-  if (branch == nullptr) {
+  if (!branch) {
     lane_direction->lane = nullptr;
     lane_direction->with_s = true;
     return branch;
@@ -223,26 +210,26 @@ RoadOdometry<T> PoseSelector<T>::MakeInfiniteOdometry(
                             ? std::numeric_limits<T>::infinity()
                             : -std::numeric_limits<T>::infinity();
   T zero(0.);
-  internal::make_coherent(ego_pose.get_isometry().translation().x(), &zero);
-  internal::make_coherent(ego_pose.get_isometry().translation().x(),
-                          &infinite_position);
+  autodiffxd_make_coherent(ego_pose.get_isometry().translation().x(), &zero);
+  autodiffxd_make_coherent(ego_pose.get_isometry().translation().x(),
+                           &infinite_position);
   const LanePositionT<T> lane_position(infinite_position, zero, zero);
   FrameVelocity<T> frame_velocity;
   auto velocity = frame_velocity.get_mutable_value();
   for (int i{0}; i < frame_velocity.kSize; ++i) {
-    internal::make_coherent(ego_pose.get_isometry().translation().x(),
-                            &velocity(i));
+    autodiffxd_make_coherent(ego_pose.get_isometry().translation().x(),
+                             &velocity(i));
   }
-  // TODO(jadecastro) Consider moving the above make_coherent() step to
-  // BasicVector().
+  // TODO(jadecastro) Consider moving the above autodiffxd_make_coherent() step
+  // to BasicVector().
   return {lane_direction.lane, lane_position, frame_velocity};
 }
 
 template <typename T>
 T PoseSelector<T>::MakeInfiniteDistance(const PoseVector<T>& ego_pose) {
   T infinite_distance = std::numeric_limits<T>::infinity();
-  internal::make_coherent(ego_pose.get_isometry().translation().x(),
-                          &infinite_distance);
+  autodiffxd_make_coherent(ego_pose.get_isometry().translation().x(),
+                           &infinite_distance);
   return infinite_distance;
 }
 

@@ -9,6 +9,7 @@ load(
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -160,6 +161,7 @@ drake_cc_library(
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
+        ":scs_solver",
         ":snopt_solver",
         ":solver_id",
         ":solver_type",
@@ -188,6 +190,7 @@ drake_cc_library(
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
+        ":scs_solver",
         ":snopt_solver",
         ":solver_id",
         ":symbolic_extraction",
@@ -347,6 +350,28 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "second_order_cone_program_examples",
+    testonly = 1,
+    srcs = ["test/second_order_cone_program_examples.cc"],
+    hdrs = ["test/second_order_cone_program_examples.h"],
+    deps = [
+        ":mathematical_program_test_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "semidefinite_program_examples",
+    testonly = 1,
+    srcs = ["test/semidefinite_program_examples.cc"],
+    hdrs = ["test/semidefinite_program_examples.h"],
+    deps = [
+        ":mathematical_program_test_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 # The mathematical_program_api target exists so that solver targets can access
 # the mathematical_program.h header, and the :mathematical_program target can
 # depend on solver targets, without creating a circular dependency.
@@ -443,11 +468,11 @@ drake_cc_library(
     }),
     hdrs = ["gurobi_solver.h"],
     deps = select({
-        "//tools:with_gurobi": [
+        "//tools:with_gurobi": adjust_labels_for_drake_hoist([
             ":mathematical_program_api",
             "//drake/math:eigen_sparse_triplet",
             "@gurobi",
-        ],
+        ]),
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -471,11 +496,11 @@ drake_cc_library(
     }),
     hdrs = ["mosek_solver.h"],
     deps = select({
-        "//tools:with_mosek": [
+        "//tools:with_mosek": adjust_labels_for_drake_hoist([
             ":mathematical_program_api",
             "//drake/common:scoped_singleton",
             "@mosek",
-        ],
+        ]),
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -510,11 +535,11 @@ drake_cc_library(
     # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
     copts = ["-fpermissive"],
     deps = select({
-        "//tools:with_snopt": [
+        "//tools:with_snopt": adjust_labels_for_drake_hoist([
             ":mathematical_program_api",
             "//drake/math:autodiff",
             "@snopt//:snopt_c",
-        ],
+        ]),
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -535,12 +560,12 @@ drake_cc_library(
     }),
     hdrs = ["ipopt_solver.h"],
     deps = select({
-        "//conditions:default": [
+        "//conditions:default": adjust_labels_for_drake_hoist([
             "@ipopt",
             ":mathematical_program_api",
             "//drake/common:unused",
             "//drake/math:autodiff",
-        ],
+        ]),
         "//tools:no_ipopt": [
             ":mathematical_program_api",
         ],
@@ -561,12 +586,38 @@ drake_cc_library(
     }),
     hdrs = ["nlopt_solver.h"],
     deps = select({
-        "//conditions:default": [
+        "//conditions:default": adjust_labels_for_drake_hoist([
             ":mathematical_program_api",
             "//drake/math:autodiff",
             "@nlopt",
-        ],
+        ]),
         "//tools:no_nlopt": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
+drake_cc_library(
+    name = "scs_solver",
+    srcs = select({
+        "//conditions:default": [
+            "scs_solver.cc",
+            "scs_solver_common.cc",
+        ],
+        "//tools:no_scs": [
+            "no_scs.cc",
+            "scs_solver_common.cc",
+        ],
+    }),
+    hdrs = ["scs_solver.h"],
+    deps = select({
+        "//conditions:default": adjust_labels_for_drake_hoist([
+            ":mathematical_program_api",
+            "//drake/common:essential",
+            "//drake/math:eigen_sparse_triplet",
+            "@scs//:scsdir",
+        ]),
+        "//tools:no_scs": [
             ":mathematical_program_api",
         ],
     }),
@@ -677,23 +728,6 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
-# test that doesn't.
-drake_cc_googletest(
-    name = "convex_optimization_test",
-    srcs = [
-        "test/convex_optimization_test.cc",
-    ],
-    # This test uses Gurobi if present, but does not require it.
-    tags = gurobi_test_tags(gurobi_required = False),
-    deps = [
-        ":add_solver_util",
-        ":mathematical_program",
-        ":mathematical_program_test_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
 drake_cc_googletest(
     name = "create_constraint_test",
     deps = [
@@ -734,6 +768,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -838,6 +873,8 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
+        ":semidefinite_program_examples",
     ],
 )
 
@@ -925,6 +962,20 @@ drake_cc_googletest(
         ":mathematical_program",
         ":rotation_constraint",
         "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scs_solver_test",
+    srcs = [
+        "test/scs_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
     ],
 )
 
@@ -1018,6 +1069,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "no_nlopt.cc",
     "no_snopt.cc",
     "qp.cc",
+    "scs_solver.cc",
     "snopt_solver.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",

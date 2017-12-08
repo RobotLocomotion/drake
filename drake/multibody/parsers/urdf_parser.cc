@@ -15,6 +15,7 @@
 #include "drake/multibody/material_map.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/xml_util.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 
 namespace drake {
 namespace parsers {
@@ -472,6 +473,8 @@ void ParseCollision(RigidBody<double>* body, XMLElement* node,
     throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: Failed "
         "to parse collision element in link " + body->get_name() + ".");
   }
+
+  element.set_compliant_material(ParseCollisionCompliance(node));
 
   if (element.hasGeometry()) {
     tree->addCollisionElement(element, *body, group_name);

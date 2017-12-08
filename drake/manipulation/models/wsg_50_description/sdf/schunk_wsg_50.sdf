@@ -97,6 +97,10 @@
         </surface>
       </collision>
     </link>
+    <frame name='body_frame'>
+      <link>body</link>
+      <pose frame=''>0 0 0 0 0 0</pose>
+    </frame>
     <link name='left_finger'>
       <pose frame=''>-0.008 0.025 0 0 -0 0</pose>
       <inertial>

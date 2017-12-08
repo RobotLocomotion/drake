@@ -34,7 +34,7 @@ While there are an increasing number of simulation tools available for robotics,
 
 Here is a quick summary of capabilities:
 
-* Modeling Dynamical Systems
+* `Modeling Dynamical Systems <http://drake.mit.edu/doxygen_cxx/group__systems.html>`_
 	* C++ `block-diagram <http://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_diagram_builder.html#details>`_  modeling environment with support for:
 		* Continuous, discrete, hybrid, event-triggered, and multi-rate systems
 		* `Stochastic systems <http://drake.mit.edu/doxygen_cxx/stochastic_systems.html>`_

@@ -293,17 +293,19 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @name Methods that define a %Mobilizer
   /// @{
 
-  /// Sets what will be considered to be the _zero_ configuration for `this`
-  /// mobilizer. For most mobilizers the _zero_ configuration corresponds to the
-  /// value of generalized positions at which the inboard frame F and the
-  /// outboard frame coincide or, in other words, when `X_FM = Id` is the
-  /// identity pose. In the general case however, the zero configuration will
-  /// correspond to a value of the generalized positions for which
-  /// `X_FM = X_FM_ref` where `X_FM_ref` will generally be different from the
-  /// identity transformation.
+  /// Sets the `state` to what will be considered to be the _zero_ configuration
+  /// for `this` mobilizer. For most mobilizers the _zero_ configuration
+  /// corresponds to the value of generalized positions at which the inboard
+  /// frame F and the outboard frame coincide or, in other words, when
+  /// `X_FM = Id` is the identity pose. In the general case however, the zero
+  /// configuration will correspond to a value of the generalized positions for
+  /// which `X_FM = X_FM_ref` where `X_FM_ref` may generally be different from
+  /// the identity transformation.
   /// In other words, `X_FM_ref = CalcAcrossMobilizerTransform(ref_context)`
-  /// where `ref_context` is a Context set to the zero configuration with
-  /// `set_zero_configuration(&ref_context)`.
+  /// where `ref_context` is a Context storing a State set to the zero
+  /// configuration with set_zero_state().
+  /// In addition, all generalized velocities are set to zero in the _zero_
+  /// configuration.
   ///
   /// Most often the _zero_ configuration will correspond to setting
   /// the vector of generalized positions related to this mobilizer to zero.
@@ -312,7 +314,15 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// represent a mathematicaly valid one. Consider for instance a quaternion
   /// mobilizer, for which its _zero_ configuration corresponds to the
   /// quaternion [1, 0, 0, 0].
-  virtual void set_zero_configuration(systems::Context<T>* context) const = 0;
+  virtual void set_zero_state(const systems::Context<T>& context,
+                              systems::State<T>* state) const = 0;
+
+  /// Sets the state stored in `context` to a _zero configuration_ as defined by
+  /// set_zero_state().
+  /// See set_zero_state() for details.
+  void set_zero_configuration(systems::Context<T>* context) const {
+    set_zero_state(*context, &context->get_mutable_state());
+  }
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the vector of
