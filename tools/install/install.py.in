@@ -18,6 +18,11 @@ list_only = False
 dylib_match = r"(.*\.so)(\.\d+)*$|(.*\.dylib)$"
 
 def is_executable(dst):
+    """Checks if given executable is an ELF or Mach-O executable
+
+    Returns True iff given executable `dst` is an ELF or Mach-O executable, or
+    an ELF shared object.
+    """
     # Checking file type with command `file` is the safest way to find
     # executables. Files without an extension are likely to be executables, but
     # it is not always the case.

@@ -12,7 +12,9 @@ py_library(
 
 py_library(
     name = "install_test_helper",
+    testonly = 1,
     srcs = ["install_test_helper.py"],
+    data = ["//:install"],
     imports = ["."],
     visibility = ["//visibility:public"],
 )
