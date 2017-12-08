@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import collections
 import filecmp
 import os
 import re
@@ -159,25 +160,12 @@ def macos_fix_rpaths(basename, dst_full):
 
 
 def linux_fix_rpaths(dst_full):
-    # Check that file has an rpath or a runpath tag
-    try:
-        check_output(["chrpath", "-l", dst_full])
-    except OSError as ex:
-        if ex.errno == 2 and ex.strerror == "No such file or directory":
-            print("`chrpath` not found. Please run install_prereqs.sh.")
-        raise ex
-    except CalledProcessError as ex:
-        if ex.returncode == 2 and \
-                ex.output.strip().endswith('no rpath or runpath tag found.'):
-            # Cannot be modified with `chrpath`, so we skip it.
-            return
-        raise ex
     # Check if file dependencies are found and not in install prefix.
     # The found libraries outside of the install prefix are system
     # libraries and we do not worry about these. We only make sure that
     # drake libraries will be found.
     file_output = check_output(["ldd", dst_full])
-    rpath = set()
+    rpath = []
     for line in file_output.splitlines():
         ldd_result = line.strip().split(' => ')
         # If library found and not in install prefix, then skip.
@@ -195,18 +183,28 @@ def linux_fix_rpaths(dst_full):
         diff_path = os.path.dirname(
             os.path.relpath(libs[soname][0], lib_dirname)
         )
-        rpath.add('$ORIGIN' + '/' + diff_path)
+        rpath.append('$ORIGIN' + '/' + diff_path)
+
+    # Ensure that system libraries get loaded instead of those bundled with
+    # MATLAB that are added to the LD_LIBRARY_PATH.
+    rpath.append('/usr/lib/x86_64-linux-gnu/')
+
+    # The above may have duplicated some items into the list.  Uniquify it
+    # here, preserving order.  Note that we do not just use a set() above,
+    # since order matters.
+    rpath = collections.OrderedDict.fromkeys(rpath).keys()
+
     # Replace build tree RPATH with computed install tree RPATH. Build tree
     # RPATH are automatically removed by this call. RPATH will contain the
     # necessary relative paths to find the libraries that are needed. RPATH
     # will typically be set to `$ORIGIN` or `$ORIGIN/../../..` .
-    if rpath:
-        str_rpath = ":".join(x for x in rpath)
-        check_output(
-            ['chrpath',
-             "-r", str_rpath,
-             dst_full]
-        )
+    str_rpath = ":".join(x for x in rpath)
+    check_output(
+        ["patchelf",
+         "--force-rpath",  # We need to override LD_LIBRARY_PATH.
+         "--set-rpath", str_rpath,
+         dst_full]
+    )
 
 
 def create_java_launcher(filename, classpath, main_class):

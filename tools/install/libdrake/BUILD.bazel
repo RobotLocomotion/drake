@@ -19,6 +19,7 @@ load(
     "HAS_MOVED_6996",
 )
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
+load("//tools:drake.bzl", "drake_cc_binary")
 
 LIBDRAKE_COMPONENTS = adjust_labels_for_drake_hoist(LIBDRAKE_COMPONENTS)
 
@@ -36,7 +37,7 @@ install_cmake_config(
 # LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
 # that the binary package will not contain any references to shared libraries
 # inside the build tree.
-cc_binary(
+drake_cc_binary(
     name = "libdrake.so",
     linkshared = 1,
     linkstatic = 1,

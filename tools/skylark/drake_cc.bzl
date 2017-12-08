@@ -355,7 +355,9 @@ def drake_cc_binary(
         data = [],
         deps = [],
         copts = [],
+        linkopts = [],
         gcc_copts = [],
+        linkshared = 0,
         linkstatic = 1,
         testonly = 0,
         add_test_rule = 0,
@@ -385,6 +387,21 @@ def drake_cc_binary(
         copts = new_copts,
         testonly = testonly,
         **kwargs)
+    if linkshared == 1:
+        # On Linux, we need to disable "new" dtags in the linker so that we use
+        # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is
+        # checked *before* LD_LIBRARY_PATH, which is important to avoid using
+        # the MATLAB versions of certain libraries (protobuf).  macOS doesn't
+        # understand this flag, so it is conditional on Linux only.  Note that
+        # the string we use for rpath here doesn't actually matter; it will be
+        # replaced during installation later.
+        linkopts = select({
+            "//tools/cc_toolchain:apple": linkopts,
+            "//conditions:default": linkopts + [
+                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
+            ],
+        })
+
     native.cc_binary(
         name = name,
         srcs = new_srcs,
@@ -392,7 +409,9 @@ def drake_cc_binary(
         deps = new_deps,
         copts = new_copts,
         testonly = testonly,
+        linkshared = linkshared,
         linkstatic = linkstatic,
+        linkopts = linkopts,
         **kwargs)
 
     # Also generate the OS X debug symbol file for this binary.
