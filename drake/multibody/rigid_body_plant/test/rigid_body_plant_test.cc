@@ -589,11 +589,11 @@ class RigidBodyPlantTimeSteppingDataTest : public ::testing::Test {
     // Step size is arbitrarily chosen.
     const double step_size = 1e-3;
 
-    // Load the box SDF. 
+    // Load the ball SDF. 
     auto tree = std::make_unique<RigidBodyTree<double>>();
     AddModelInstancesFromSdfFile(
         FindResourceOrThrow(
-            "drake/systems/sensors/models/box.sdf"),
+            "multibody/rigid_body_plant/test/ball.sdf"),
         kFixed, nullptr /* weld to frame */, tree.get());
     RigidBodyPlant<double> plant(move(tree), step_size);
 
@@ -607,9 +607,26 @@ class RigidBodyPlantTimeSteppingDataTest : public ::testing::Test {
 };
 
 // Checks that the normal contact Jacobian is correct.
-TEST_F( ) {
+TEST_F(RigidBodyPlantTimeSteppingDataTest, NormalJacobian) {
+  // Construct the contact.
+
+  // Create the single contact.
+  const int num_contacts = static_cast<int>(contacts.size());
+
+  // TODO: Set the coordinates.
+  const int num_gc_coords = 7;
+  VectorX<double> q(num_gc_coords);
+
+  // Construct the Jacobian.
+  const int num_gv_coords = 6;
+  MatrixX<double> N(num_gv_coords, num_contacts);
+  for (int i = 0; i < num_gv_coords; ++i) {
+    N.row(i) = plant_->ContactNormalJacobianMult(
+        contacts, q, VectorX<double>::Unit(num_gv_coords, i));
+  }
 
   // Check whether the transpose Jacobian is correct.
+  MatrixX<double> NT(num_contacts, num_gv_coords);
 }
 
 // Checks that the tangent contact Jacobian is correct.
