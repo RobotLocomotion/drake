@@ -7,15 +7,16 @@
 namespace drake {
 namespace systems {
 
-/// A sine block which outputs `y = a * sin(f * t + p)` with the block
-/// parameters being `a` the amplitude, `f` the frequency (radians/second), and
-/// `p` the phase (radians), all of which are constant vectors provided at
-/// construction time. This system has one or zero input ports and a single
-/// vector valued output port. The user can specify whether to use simulation
-/// time as the source of values for the time variable or an external source. If
-/// an external time source is specified, the system is created with an input
-/// port for the time source. Otherwise, the system is created with zero input
-/// ports.
+/// A sine system which outputs `y = a * sin(f * t + p)` and first and second
+/// derivatives w.r.t. the time parameter `t`. The block parameters are:
+/// `a` the amplitude, `f` the frequency (radians/second), and `p` the phase
+/// (radians), all of which are constant vectors provided at construction time.
+/// This system has one or zero input ports and three vector valued output ports
+/// (`y` and its first two derivatives). The user can specify whether to use
+/// simulation time as the source of values for the time variable or an external
+/// source. If an external time source is specified, the system is created with
+/// an input port for the time source. Otherwise, the system is created with
+/// zero input ports.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
