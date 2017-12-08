@@ -24,9 +24,9 @@ template <typename T>
 void CompliantContactModel<T>::set_model_parameters(
     const CompliantContactModelParameters& values) {
   DRAKE_DEMAND(values.v_stiction_tolerance > 0 &&
-      values.characteristic_area > 0);
+      values.characteristic_radius > 0);
   inv_v_stiction_tolerance_ = 1.0 / values.v_stiction_tolerance;
-  characteristic_area_ = values.characteristic_area;
+  characteristic_radius_ = values.characteristic_radius;
 }
 
 template <typename T>
@@ -124,7 +124,7 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       const T x = T(-pair.distance);
       const T x_dot = -v_CBcAc_C(2);
 
-      const T fK = parameters.youngs_modulus() * x * characteristic_area_;
+      const T fK = parameters.youngs_modulus() * x * characteristic_radius_;
       const T fD = fK * parameters.dissipation() * x_dot;
       const T fN = fK + fD;
       if (fN <= 0) continue;

@@ -48,8 +48,8 @@ DEFINE_double(dissipation, 5, "Contact Dissipation (s/m)");
 DEFINE_double(static_friction, 0.5, "Static Friction");
 DEFINE_double(dynamic_friction, 0.2, "Dynamic Friction");
 DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol (m/s)");
-DEFINE_double(contact_area, 2e-4,
-              "The characteristic scale of contact area (m^2)");
+DEFINE_double(contact_radius, 2e-4,
+              "The characteristic scale of radius (m) of the contact area");
 DEFINE_bool(use_visualizer, true, "Use Drake Visualizer?");
 
 namespace drake {
@@ -158,7 +158,7 @@ int DoMain() {
       .set_friction(FLAGS_static_friction, FLAGS_dynamic_friction);
   model_ptr->set_default_compliant_material(default_material);
   systems::CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.characteristic_radius = FLAGS_contact_radius;
   model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tol;
   model_ptr->set_contact_model_parameters(model_parameters);
 

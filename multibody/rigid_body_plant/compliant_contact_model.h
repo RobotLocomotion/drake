@@ -13,7 +13,7 @@ namespace systems {
 /// See @ref drake_contacts for details.
 struct CompliantContactModelParameters {
   double v_stiction_tolerance{1e-2};      // 1 cm/s (in m/s).
-  double characteristic_area{2e-4};       // Two square-cm (in m²).
+  double characteristic_radius{2e-4};     // 0.2 mm (in m).
 };
 
 /// This class encapsulates the compliant contact model force computations as
@@ -93,8 +93,8 @@ class CompliantContactModel {
   // optimize for the division.
   double inv_v_stiction_tolerance_{
       1.0 / CompliantContactModelParameters().v_stiction_tolerance};
-  double characteristic_area_{
-      CompliantContactModelParameters().characteristic_area};
+  double characteristic_radius_{
+      CompliantContactModelParameters().characteristic_radius};
 
   // The default compliant material properties for *this* model instance.
   // By default, it uses all hard-coded values.

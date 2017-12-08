@@ -76,9 +76,9 @@ int DoMain() {
   plant_->set_default_compliant_material(default_material);
 
   const double kStictionSlipTolerance = 1e-3;  // m/s
-  const double kContactArea = 2e-4;  // m^2
+  const double kContactRadius = 2e-4;  // m
   systems::CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = kContactArea;
+  model_parameters.characteristic_radius = kContactRadius;
   model_parameters.v_stiction_tolerance = kStictionSlipTolerance;
   plant_->set_contact_model_parameters(model_parameters);
 

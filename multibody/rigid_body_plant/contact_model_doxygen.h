@@ -35,7 +35,7 @@
  contact.
 
  This document discusses a _compliant_ contact model. In compliant models, the
- bodies are considered deformable. The
+ bodies are considered rigid with a thin, deformable shell. The
  collision geometry represents an object in its undeformed state. As two objects
  collide, the contact forces cause them to deform. Compliant models compute
  the forces that would cause the deformation. The deformed geometry is _not_
@@ -192,9 +192,10 @@
    should be in stiction, the model allows the contacting points a relative
    slip velocity _up to_ this value. See @ref tangent_force for details.
      - The default value is 0.01 m/s.
- - characteristic area, `A`, (with units of m²) defines a characteristic contact
-   patch scale. See @ref drake_contact_implementation for details.
-     - The default value is 2 cm² (e.g., 2×10⁻⁴ m²).
+ - characteristic radius, `R`, (with units of m) defines a characteristic
+   contact patch scale. See @ref drake_contact_implementation for details. This
+   defines a circular contact patch with area `πR²`.
+     - The default value is 0.2 mm (e.g., 2×10⁻⁴ m).
 
  @anchor contact_parameter_choices
  <h3>Issues with Parameter Values</h3>
@@ -224,19 +225,28 @@
     box might require limiting residual slip to 1×10⁻³ m/s or less. Ultimately,
     picking the largest viable value will allow your simulation to run faster.
 
-  - **Picking a good value for `A`**
+  - **Picking a good value for `R`**
 
     One of the quirks of the implemented contact model, is that is largely
     unaware of the size of the contact surface between bodies. However, the
     contact force _depends_ on that area. This _global_ setting allows you to
     hint to the model the size of the contact patches; larger contact patches
-    produce larger contact forces. For example, a 1 cm rubber ball on a table
-    has a much smaller contact patch than the tires of a car would have on the
-    road. Even if we assume the ball and tires are made of the same rubber, the
-    forces in play are quite different.
+    produce larger contact forces. For example, a small toy tire on a table has
+    a much smaller contact patch than full-size tires on a road. Even if we
+    assume the same rubber, the full-size tires would experience a larger
+    contact force (all other factors being equal).
     Rather than increasing the Young's modulus for the car's tires (as compared
-    to the rubber ball), we recommend increasing the characteristic area in the
-    contact model.
+    to the rubber ball), we recommend increasing the characteristic radius in
+    the contact model.
+    As a word of warning, don't think of this characteristic radius as
+    corresponding to a literal measure of the real world. The
+    default size corresponds closely with a point contact (where the contact is
+    roughly the area of the head of a pin). This small contact area is
+    sufficient for manipulation even though it does not reasonably represent
+    the physical world. If the forces seem weak, increase the characteristic
+    size, but only increase it to the smallest value that gives sufficient
+    forces; making it larger will make the forces stiffer which will lead to a
+    more computationally expensive simulation.
 
  @anchor integrator_choice
  <h2>Choice of Integrator</h2>
@@ -274,7 +284,7 @@
    characteristic area.
 
    This would have particular value if your simulation scenario has contacts of
-   disparate scales. A single, global characteristic area may be insufficient.
+   disparate scales. A single, global characteristic radius may be insufficient.
    By increasing the samples on large contact patches, those contact points will
    be compatible with the smaller characteristic area which works for the small
    contact patches.
@@ -346,9 +356,9 @@
  depend on how the contact is characterized (e.g., penetration depth and
  approaching speed), and the geometry and material parameters of the contacting
  bodies. Notice there is no approximation in this equation; it is always true
- since this equation _is_ the definition of the average contact pressure `p(q)`.
- Thus, determining the contact normal force consists of determining the geometry
- of the contact patch, and the average pressure on that patch.
+ since this equation _is_ the definition of the average contact pressure
+ `p(q, v)`. Thus, determining the contact normal force consists of determining
+ the geometry of the contact patch, and the average pressure on that patch.
 
  @anchor hunt_crossley
  <h3>Hunt-Crossley Model</h3>
@@ -370,7 +380,7 @@
 
  Consider two spheres made of the same material and of the same size (with
  Young's modulus E and radius R). If the amount that the two spheres are
- penetrating are x, then the resultant normal force (according to the Hertz
+ penetrating is x, then the resultant normal force (according to the Hertz
  contact model) would be:
 
    `fₙ = ⁴/₃⋅E⋅√R⋅√x³`.
@@ -378,8 +388,8 @@
  The two spheres compress such that they are touching along a disk with radius
  `√(R⋅x)`.  Based on this, we can equate it to the earlier function:
 
-   - `fₙ = p(q)·A(q) = ⁴/₃⋅E⋅√R⋅√x³`
-   - `p(q) = 4/(3π)·E·√(x/R)`
+   - `fₙ = p(q, v)·A(q) = ⁴/₃⋅E⋅√R⋅√x³`
+   - `p(q, v) = 4/(3π)·E·√(x/R)`
    - `A(q) = π⋅R⋅x`
 
  This can be generalized to spheres of different sizes and different materials
@@ -585,7 +595,8 @@
  @anchor drake_contact_model_impl
  <h2>Contact Force Computation</h2>
 
- Given the characterization of penetration outlined above, a full implementation
+ Given the characterization of penetration outlined above (i.e., a single
+ point), a full implementation
  of the contact normal force would be impossible. Instead, Drake employs a
  corruption of the Hertz model. The best analogy would be to think of
  the contact as between a vertical cylinder and a plane: `fₙ = 2⋅E⋅R⋅x`. In
