@@ -96,9 +96,10 @@ github_archive(
 
 github_archive(
     name = "styleguide",
-    repository = "RobotLocomotion/styleguide",
-    commit = "8d38c5909a5ab38824d7f4566b3f3c6ae4557826",
-    sha256 = "09baa2280a63b9d2efe5c07d08f4674339b5b2a0424f71c429c33ac1783a4cd8",  # noqa
+    # TODO(jwnimmer-tri) Put this back to RobotLocomotion after it merges.
+    repository = "jwnimmer-tri/styleguide",
+    commit = "f9ee3f921ecda09dfdac6d886f4eda8d82dde0ee",
+    sha256 = "6e1a48fdf6f046daa92a79f8a5db41226ebb01c376008212bb32097b5373bcf8",  # noqa
     build_file = "tools/workspace/styleguide/styleguide.BUILD.bazel",  # noqa
 )
 
