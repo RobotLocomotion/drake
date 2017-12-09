@@ -149,7 +149,7 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if ‖`this` - `other`‖∞ <= tolerance.
-  bool IsNearlyEqualTo(const RotationMatrix& other, double tolerance) const {
+  bool IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
   }
 
@@ -157,7 +157,7 @@ class RotationMatrix {
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RotationMatrix to subtract from `this`.
   /// @returns ‖`this` - `other`‖∞
-  T GetMaximumAbsoluteDifference(const RotationMatrix& other) const {
+  T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
 
