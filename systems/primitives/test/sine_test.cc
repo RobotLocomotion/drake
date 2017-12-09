@@ -25,6 +25,11 @@ void TestSineSystem(const Sine<T>& sine_system,
                     const Eigen::MatrixXd& expected_second_derivs) {
   auto context = sine_system.CreateDefaultContext();
 
+  // The tolerance used for testing the system outputs. System inputs are
+  // specified to four significant digits, and the tolerance here is chosen to
+  // match this precision.
+  T ktest_tolerance = 1e-4;
+
   // Verifies that Sine allocates no state variables in the context.
   EXPECT_EQ(0, context->get_continuous_state().size());
   auto output = sine_system.AllocateOutput(*context);
@@ -58,15 +63,22 @@ void TestSineSystem(const Sine<T>& sine_system,
       ASSERT_NE(nullptr, first_deriv_vector);
       ASSERT_NE(nullptr, second_deriv_vector);
 
-
-      Eigen::VectorXd expected_vector = expected_outputs.col(i);
+      Eigen::VectorXd expected_output = expected_outputs.col(i);
       Eigen::VectorXd expected_first_deriv = expected_first_derivs.col(i);
       Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
-      EXPECT_TRUE(expected_vector.isApprox(output_vector->get_value(), 1e-3));
-      EXPECT_TRUE(expected_first_deriv.isApprox(
-          first_deriv_vector->get_value(), 1e-3));
-      EXPECT_TRUE(expected_second_deriv.isApprox(
-          second_deriv_vector->get_value(), 1e-3));
+
+      Eigen::VectorXd out_diff = expected_output - output_vector->get_value();
+      EXPECT_TRUE(out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+
+      Eigen::VectorXd deriv1_diff =
+          expected_first_deriv - first_deriv_vector->get_value();
+      EXPECT_TRUE(
+          deriv1_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+
+      Eigen::VectorXd deriv2_diff =
+          expected_second_deriv - second_deriv_vector->get_value();
+      EXPECT_TRUE(
+          deriv2_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
     }
   } else {
     // Loop over the input vectors and check that the Sine system outputs match
@@ -108,11 +120,19 @@ void TestSineSystem(const Sine<T>& sine_system,
       Eigen::VectorXd expected_output = expected_outputs.col(i);
       Eigen::VectorXd expected_first_deriv = expected_first_derivs.col(i);
       Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
-      EXPECT_TRUE(expected_output.isApprox(output_vector->get_value(), 1e-3));
-      EXPECT_TRUE(expected_first_deriv.isApprox(
-          first_deriv_vector->get_value(), 1e-3));
-      EXPECT_TRUE(expected_second_deriv.isApprox(
-          second_deriv_vector->get_value(), 1e-3));
+
+      Eigen::VectorXd out_diff = expected_output - output_vector->get_value();
+      EXPECT_TRUE(out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+
+      Eigen::VectorXd deriv1_diff =
+          expected_first_deriv - first_deriv_vector->get_value();
+      EXPECT_TRUE(
+          deriv1_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+
+      Eigen::VectorXd deriv2_diff =
+          expected_second_deriv - second_deriv_vector->get_value();
+      EXPECT_TRUE(
+          deriv2_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
     }
   }
 }
