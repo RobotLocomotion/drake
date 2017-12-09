@@ -43,8 +43,8 @@ DEFINE_double(youngs_modulus, 1e8, "The contact material Young's modulus (Pa)");
 DEFINE_double(dissipation, 2.0, "The contact material dissipation (s/m)");
 DEFINE_double(v_stiction_tolerance, 0.01,
               "The maximum slipping speed allowed during stiction (m/s)");
-DEFINE_double(contact_area, 1e-4,
-              "The characteristic scale of contact area (m^2)");
+DEFINE_double(contact_radius, 1e-4,
+              "The characteristic scale of radius (m) of the contact area");
 DEFINE_double(sim_duration, 5, "Amount of time to simulate (s)");
 DEFINE_bool(playback, true,
             "If true, simulation begins looping playback when complete");
@@ -113,7 +113,7 @@ int main() {
       .set_friction(FLAGS_us, FLAGS_ud);
   plant->set_default_compliant_material(default_material);
   systems::CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.characteristic_radius = FLAGS_contact_radius;
   model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tolerance;
   plant->set_contact_model_parameters(model_parameters);
 

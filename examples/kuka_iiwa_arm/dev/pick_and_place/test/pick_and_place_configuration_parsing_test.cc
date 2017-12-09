@@ -148,8 +148,8 @@ void ValidateSimulatedPlantConfiguration(
       plant_configuration.contact_model_parameters;
   const systems::CompliantContactModelParameters expected_parameters =
       expected_plant_configuration.contact_model_parameters;
-  EXPECT_EQ(test_parameters.characteristic_area,
-            expected_parameters.characteristic_area);
+  EXPECT_EQ(test_parameters.characteristic_radius,
+            expected_parameters.characteristic_radius);
   EXPECT_EQ(test_parameters.v_stiction_tolerance,
             expected_parameters.v_stiction_tolerance);
 
@@ -290,8 +290,8 @@ GTEST_TEST(ConfigurationParsingCompliantParameterTests, AllDefaults) {
   const auto& parsed_parameters = parsed_configuration.contact_model_parameters;
   EXPECT_EQ(parsed_parameters.v_stiction_tolerance,
             default_parameters.v_stiction_tolerance);
-  EXPECT_EQ(parsed_parameters.characteristic_area,
-            default_parameters.characteristic_area);
+  EXPECT_EQ(parsed_parameters.characteristic_radius,
+            default_parameters.characteristic_radius);
 
   const auto& parsed_material = parsed_configuration.default_contact_material;
   EXPECT_TRUE(parsed_material.youngs_modulus_is_default());
@@ -316,7 +316,7 @@ GTEST_TEST(ConfigurationParsingCompliantParameterTests, BadValues) {
       "compliant_model_parameters { v_stiction_tolerance: -1 }"),
                std::runtime_error);
   EXPECT_THROW(ParseSimulatedPlantConfigurationStringOrThrow(
-      "compliant_model_parameters { characteristic_area: -1 }"),
+      "compliant_model_parameters { characteristic_radius: -1 }"),
                std::runtime_error);
 
   // Special friction logic -- only one defined and u_d > u_s.
@@ -338,7 +338,7 @@ GTEST_TEST(ConfigurationParsingCompliantParameterTests, ConfiguredValues) {
       R"_(
 compliant_model_parameters {
   v_stiction_tolerance: 1e-3
-  characteristic_area: 1e-1
+  characteristic_radius: 1e-1
 }
 
 default_compliant_material {
@@ -353,7 +353,7 @@ default_compliant_material {
 
   const auto& parsed_parameters = parsed_configuration.contact_model_parameters;
   EXPECT_EQ(parsed_parameters.v_stiction_tolerance, 1e-3);
-  EXPECT_EQ(parsed_parameters.characteristic_area, 1e-1);
+  EXPECT_EQ(parsed_parameters.characteristic_radius, 1e-1);
 
   const auto& parsed_material = parsed_configuration.default_contact_material;
   EXPECT_FALSE(parsed_material.youngs_modulus_is_default());
