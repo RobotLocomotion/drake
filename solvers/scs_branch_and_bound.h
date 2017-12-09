@@ -154,11 +154,11 @@ class ScsNode {
   /// Getter for the constant term in the cost.
   double cost_constant() const { return cost_constant_; }
 
-  ScsNode* left_child() const { return left_child_; }
+  std::shared_ptr<ScsNode> left_child() const { return left_child_; }
 
-  ScsNode* right_child() const { return right_child_; }
+  std::shared_ptr<ScsNode> right_child() const { return right_child_; }
 
-  ScsNode* parent() const { return parent_; }
+  std::weak_ptr<ScsNode> parent() const { return parent_; }
 
   /// Getter for the optimal cost of the optimization program in this node.
   double cost() const { return cost_; }
@@ -203,9 +203,9 @@ class ScsNode {
   // the vector x.
   std::list<int> binary_var_indices_;
 
-  ScsNode* left_child_ = nullptr;
-  ScsNode* right_child_ = nullptr;
-  ScsNode* parent_ = nullptr;
+  std::shared_ptr<ScsNode> left_child_;
+  std::shared_ptr<ScsNode> right_child_;
+  std::weak_ptr<ScsNode> parent_; // Use weak_ptr to avoid cyclic references.
 
   // If the solution is within integer_tol to an integer value, then we regard
   // the solution as taking the integer value.

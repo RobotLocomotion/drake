@@ -335,7 +335,7 @@ GTEST_TEST(TestScsNode, TestConstructor) {
   EXPECT_TRUE(node.binary_var_indices().empty());
   EXPECT_EQ(node.left_child(), nullptr);
   EXPECT_EQ(node.right_child(), nullptr);
-  EXPECT_EQ(node.parent(), nullptr);
+  EXPECT_EQ(node.parent().lock(), nullptr);
 }
 
 void TestConstructScsRootNode(const AMatrix& A, const scs_float* const b,
@@ -347,7 +347,7 @@ void TestConstructScsRootNode(const AMatrix& A, const scs_float* const b,
   EXPECT_EQ(root->y_index(), -1);
   EXPECT_EQ(root->left_child(), nullptr);
   EXPECT_EQ(root->right_child(), nullptr);
-  EXPECT_EQ(root->parent(), nullptr);
+  EXPECT_EQ(root->parent().lock(), nullptr);
   const Eigen::SparseMatrix<double> A_sparse = ScsAmatrixToEigenSparseMatrix(A);
   std::vector<Eigen::Triplet<double>> root_A_triplets;
   for (int i = 0; i < A_sparse.rows(); ++i) {
@@ -439,8 +439,8 @@ void TestBranching(ScsNode* root, int branch_var_index,
   root->Branch(branch_var_index);
   EXPECT_NE(root->left_child(), nullptr);
   EXPECT_NE(root->right_child(), nullptr);
-  EXPECT_EQ(root->left_child()->parent(), root);
-  EXPECT_EQ(root->right_child()->parent(), root);
+  EXPECT_EQ(root->left_child()->parent().lock().get(), root);
+  EXPECT_EQ(root->right_child()->parent().lock().get(), root);
 
   IsBinaryVarIndicesEqual(root->left_child()->binary_var_indices(),
                           binary_var_indices_child);
@@ -631,8 +631,8 @@ GTEST_TEST(TestScsNode, TestBranchError) {
   EXPECT_THROW(root->Branch(1), std::runtime_error);
 }
 
-void TestNodeSolve(ScsNode *node, scs_int scs_status_expected, scs_float cost,
-                   const scs_float *const x, bool found_integral_sol,
+void TestNodeSolve(ScsNode* node, scs_int scs_status_expected, scs_float cost,
+                   const scs_float* const x, bool found_integral_sol,
                    double tol) {
   SCS_SETTINGS settings;
   SetScsSettingToDefault(&settings);
@@ -683,10 +683,10 @@ GTEST_TEST(TestScsNode, TestSolveChildNodes1) {
   root->Branch(0);
 
   const scs_float x_expected_l[3] = {1, 0, 0.5};
-  TestNodeSolve(root->left_child(), SCS_SOLVED, 1.5, x_expected_l, true, 1E-3);
+  TestNodeSolve(root->left_child().get(), SCS_SOLVED, 1.5, x_expected_l, true, 1E-3);
 
   const scs_float x_expected_r[3] = {1, 0, 0};
-  TestNodeSolve(root->right_child(), SCS_SOLVED, 4, x_expected_r, true, 2E-3);
+  TestNodeSolve(root->right_child().get(), SCS_SOLVED, 4, x_expected_r, true, 2E-3);
 }
 
 GTEST_TEST(TestScsNode, TestSolveChildNodes2) {
@@ -696,10 +696,10 @@ GTEST_TEST(TestScsNode, TestSolveChildNodes2) {
   root->Branch(2);
 
   const scs_float x_expected_l[3] = {0, 1, 0.5};
-  TestNodeSolve(root->left_child(), SCS_SOLVED, 1.5, x_expected_l, true, 1E-3);
+  TestNodeSolve(root->left_child().get(), SCS_SOLVED, 1.5, x_expected_l, true, 1E-3);
 
   const scs_float x_expected_r[3] = {0, 4.1, -1.05};
-  TestNodeSolve(root->right_child(), SCS_SOLVED, 12.35, x_expected_r, true,
+  TestNodeSolve(root->right_child().get(), SCS_SOLVED, 12.35, x_expected_r, true,
                 4E-3);
 }
 
@@ -709,10 +709,10 @@ GTEST_TEST(TestScsNode, TestSolveChildNodes3) {
   root->Branch(0);
 
   // The left node is infeasible.
-  TestNodeSolve(root->left_child(), SCS_INFEASIBLE, NAN, nullptr, NAN, 1E-3);
+  TestNodeSolve(root->left_child().get(), SCS_INFEASIBLE, NAN, nullptr, NAN, 1E-3);
 
   const scs_float x_expected_r[4] = {1.0 / 3.0, 1, 1, 0};
-  TestNodeSolve(root->right_child(), SCS_SOLVED, -13.0 / 3.0, x_expected_r,
+  TestNodeSolve(root->right_child().get(), SCS_SOLVED, -13.0 / 3.0, x_expected_r,
                 true, 2E-2);
 }
 
@@ -722,11 +722,11 @@ GTEST_TEST(TestScsNode, TestSolveChildNode4) {
   root->Branch(2);
 
   const scs_float x_expected_l[4] = {1, 2.0 / 3.0, 1, 1};
-  TestNodeSolve(root->left_child(), SCS_SOLVED, 23.0 / 6.0, x_expected_l, true,
+  TestNodeSolve(root->left_child().get(), SCS_SOLVED, 23.0 / 6.0, x_expected_l, true,
                 1E-2);
 
   const scs_float x_expected_r[4] = {0.7, 1, 1.4, 0};
-  TestNodeSolve(root->right_child(), SCS_SOLVED, -4.9, x_expected_r, false,
+  TestNodeSolve(root->right_child().get(), SCS_SOLVED, -4.9, x_expected_r, false,
                 2E-2);
 }
 
@@ -736,12 +736,21 @@ GTEST_TEST(TestScsNode, TestSolveChildNode5) {
   root->Branch(4);
 
   const scs_float x_expected_l[4] = {0.7, 1, 1, 1.4};
-  TestNodeSolve(root->left_child(), SCS_SOLVED, -4.9, x_expected_l, false,
+  TestNodeSolve(root->left_child().get(), SCS_SOLVED, -4.9, x_expected_l, false,
                 2E-2);
 
   const scs_float x_expected_r[4] = {0.2, 2.0 / 3.0, 1, 1.4};
-  TestNodeSolve(root->right_child(), SCS_SOLVED, -47.0 / 30, x_expected_r,
+  TestNodeSolve(root->right_child().get(), SCS_SOLVED, -47.0 / 30, x_expected_r,
                 false, 2E-2);
+}
+
+GTEST_TEST(TestScsNode, TestRepeatedBranching) {
+  // Tests if there is any issue (memory leak for example) if we branch
+  // a node again.
+  const auto root = ConstructMILPExample2RootNode();
+  root->Branch(4);
+  auto left_node = root->left_child();
+  root->Branch(2);
 }
 }  // namespace
 }  // namespace solvers

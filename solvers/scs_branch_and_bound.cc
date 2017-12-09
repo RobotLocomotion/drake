@@ -32,7 +32,7 @@ ScsNode::ScsNode(int num_A_rows, int num_A_cols)
       binary_var_indices_{},
       left_child_{nullptr},
       right_child_{nullptr},
-      parent_{nullptr} {
+      parent_{} {
   A_->m = num_A_rows;
   A_->n = num_A_cols;
   A_->i = nullptr;
@@ -155,14 +155,7 @@ std::unique_ptr<ScsNode> ScsNode::ConstructRootNode(
   return root;
 }
 
-ScsNode::~ScsNode() {
-  if (left_child_) {
-    delete left_child_;
-  }
-  if (right_child_) {
-    delete right_child_;
-  }
-}
+ScsNode::~ScsNode() {}
 
 void ScsNode::Branch(int binary_var_index) {
   // The left child is created by fixing a binary variable z to 0, and the right
@@ -203,8 +196,8 @@ void ScsNode::Branch(int binary_var_index) {
   }
   // We will first compute the left node, the right node will be copied and
   // changed from the left node.
-  left_child_ = new ScsNode(A_->m - 2, A_->n - 1);
-  right_child_ = new ScsNode(A_->m - 2, A_->n - 1);
+  left_child_.reset(new ScsNode(A_->m - 2, A_->n - 1));
+  right_child_.reset(new ScsNode(A_->m - 2, A_->n - 1));
   left_child_->A_->p = static_cast<scs_int*>(
       scs_calloc(left_child_->A_->n + 1, sizeof(scs_int)));
   right_child_->A_->p = static_cast<scs_int*>(
@@ -356,8 +349,8 @@ void ScsNode::Branch(int binary_var_index) {
   right_child_->binary_var_indices_ = left_child_->binary_var_indices_;
 
   // Set the parent node for the left and right child nodes.
-  left_child_->parent_ = this;
-  right_child_->parent_ = this;
+  left_child_->parent_ = std::shared_ptr<ScsNode>(this);
+  right_child_->parent_ = std::shared_ptr<ScsNode>(this);
 }
 
 scs_int ScsNode::Solve(const SCS_SETTINGS& scs_settings) {
