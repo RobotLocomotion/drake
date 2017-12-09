@@ -17,19 +17,29 @@ namespace multibody {
 /// See @ref multibody_quantities for monogram notation for dynamics.
 /// See @ref orientation_discussion "for a discussion on rotation matrices".
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @note This class does not store the about-point nor the expressed-in frame,
+/// nor does this class help enforce consistency of the about-point or
+/// expressed-in frame. To help users of this class track the about-point and
+/// expressed-in frame. We strongly recommend the following notation.
+///
+/// @tparam T The unerlying scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
 // TODO(Mitiguy) Ensure this class handles RotationMatrix<symbolic::Expression>.
 template <typename T>
 class RotationMatrix {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix)
 
-  /// Constructs a 3x3 identity %RotationMatrix -- which corresponds to
-  /// aligning the two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).
+  /// Construct a 3x3 identity %RotationMatrix -- which corresponds to
+  /// aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).
   RotationMatrix() {}
 
   /// Construct a %RotationMatrix from a Matrix3.
-  /// @param[in] R an allegedly valid %RotationMatrix.
+  /// @param[in] R an allegedly valid rotation matrix.
   /// @throws exception std::logic_error in debug builds if R violates
   /// IsValid(R, tolerance), where tolerance is a small multiplier of
   /// double-precision epsilon.
@@ -41,8 +51,8 @@ class RotationMatrix {
 #endif
   }
 
-  /// Sets the underlying Matrix3 in a %RotationMatrix.
-  /// @param[in] R an allegedly valid %RotationMatrix.
+  /// Set `this` %RotationMatrix from a Matrix3.
+  /// @param[in] R an allegedly valid rotation matrix.
   /// @throws exception std::logic_error if R violates IsValid(R, tolerance),
   /// where tolerance is a small multiplier of double-precision epsilon.
   void SetOrThrowIfNotValid(const Matrix3<T>& R) {
@@ -62,10 +72,8 @@ class RotationMatrix {
   /// Const access to the Matrix3 underlying a %RotationMatrix.
   const Matrix3<T>& matrix() const { return R_AB_; }
 
-  /// Operator to multiply `this` rotation matrix by `other` rotation matrix.
-  /// `this` is set equal to the result as `this` = `this` * `other`.
-  /// In monogram notation, if `this` is the R_AB rotation matrix and `other` is
-  /// R_BC, `this` is set equal to the result as (`this' =  R_AC) = R_AB * R_BC.
+  /// Operator to multiply `this` rotation matrix `R_AB` by `other` rotation
+  /// matrix `R_BC`.  On return, `this` is set to equal `R_AB * R_BC`.
   /// @param[in] other %RotationMatrix that post-multiplies `this`.
   /// @returns `this` rotation matrix which has been multiplied by `other`.
   /// @note It is possible (albeit improbable) to create an invalid rotation
@@ -75,9 +83,8 @@ class RotationMatrix {
     return *this;
   }
 
-  /// Operator to multiply `this` rotation matrix by `other` rotation matrix.
-  /// In monogram notation, if `this` is the R_AB rotation matrix and `other` is
-  /// R_BC, this method returns the composition R_AB * R_BC.
+  /// Operator to multiply `this` rotation matrix `R_AB` by `other` rotation
+  /// matrix `R_BC`, returning the composition `R_AB * R_BC`.
   /// @param[in] other %RotationMatrix that post-multiplies `this`.
   /// @returns rotation matrix that results from `this` multiplied by `other`.
   /// @note It is possible (albeit improbable) to create an invalid rotation
@@ -97,7 +104,7 @@ class RotationMatrix {
   }
 
   /// Tests if the determinant of a generic Matrix3 is positive or negative.
-  /// @param[in] R an allegedly valid %RotationMatrix.
+  /// @param[in] R an allegedly valid rotation matrix.
   /// @return `true` if the determinant of R is positive, otherwise `false`.
   /// @internal The determinant of an proper rotation matrix is +1, whereas for
   /// an improper rotation matrix it is -1.  To avoid testing near +1 (which
@@ -121,7 +128,7 @@ class RotationMatrix {
 
   /// Tests if a generic Matrix3 seems to be a proper orthonormal rotation
   /// matrix to within the threshold specified by `tolerance`.
-  /// @param[in] R an allegedly valid %RotationMatrix.
+  /// @param[in] R an allegedly valid rotation matrix.
   /// @param[in] tolerance maximum allowable absolute difference of `R * R⁻¹`
   /// and the identity matrix I (i.e., checks if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance).
   /// @return `true` if R is a valid rotation matrix, otherwise `false`.
@@ -129,11 +136,10 @@ class RotationMatrix {
     return IsOrthonormal(R, tolerance) && IsDeterminantPositive(R);
   }
 
-  /// Tests if `this` rotation matrix seems to be a proper orthonormal rotation
-  /// matrix to within the threshold specified by `tolerance`.
-  /// @param[in] tolerance maximum allowable absolute difference between
-  /// `this * this⁻¹` and the identity matrix I (i.e., checks if
-  /// ‖this ⋅ this⁻¹ - I‖∞ <= tolerance).
+  /// Tests if `this` rotation matrix R seems to be a proper orthonormal
+  /// rotational matrix to within the threshold specified by `tolerance`.
+  /// @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
+  /// and the identity matrix I (i.e., checks if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance).
   /// @return `true` if `this` is a valid rotation matrix, otherwise `false`.
   bool IsValid(double tolerance) const { return IsValid(matrix(), tolerance); }
 
@@ -156,20 +162,24 @@ class RotationMatrix {
   }
 
  private:
+  // Declare the allowable internal tolerance for a valid rotation matrix.
+  static constexpr double kInternalTolerance_{
+      128 * std::numeric_limits<double>::epsilon() };
+
   // Construct a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
-  // @param[in] R an allegedly valid %RotationMatrix.
+  // @param[in] R an allegedly valid rotation matrix.
   // @note The second parameter is just a dummy to distinguish this constructor
   // from one of the public constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
 
-  // Sets the underlying Matrix3 in a %RotationMatrix.  No check is performed
-  // to test whether or not the parameter R is a valid rotation matrix.
-  // @param[in] R an allegedly valid %RotationMatrix.
+  // Set `this` %RotationMatrix from a Matrix3.  No check is performed to
+  // test whether or not the parameter R is a valid rotation matrix.
+  // @param[in] R an allegedly valid rotation matrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
 
-  // Sets the underlying Matrix3 in a %RotationMatrix.
-  // @param[in] R an allegedly valid %RotationMatrix.
+  // Set `this` %RotationMatrix from a Matrix3.
+  // @param[in] R an allegedly valid rotation matrix.
   // @param[in] tolerance parameter used in call to IsValid(R, `tolerance`),
   // which is usually a small multiplier of double-precision epsilon.
   // @throws exception std::logic_error if R violates IsValid(R, `tolerance`).
@@ -203,7 +213,7 @@ class RotationMatrix {
   }
 
   // Throws an exception if R is not a valid %RotationMatrix.
-  // @param[in] R an allegedly valid %RotationMatrix.
+  // @param[in] R an allegedly valid rotation matrix.
   // @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
   // and the identity matrix I, i.e., if ‖R ⋅ R⁻¹ - I‖∞ <= tolerance.
   static void ThrowIfNotValid(const Matrix3<T>& R, double tolerance) {
@@ -216,10 +226,6 @@ class RotationMatrix {
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   // The default initialization is the identity matrix.
   Matrix3<T> R_AB_{Matrix3<T>::Identity()};
-
-  // Declare the allowable internal tolerance for a valid rotation matrix.
-  static constexpr double kInternalTolerance_{
-      128 * std::numeric_limits<double>::epsilon() };
 };
 
 }  // namespace multibody
