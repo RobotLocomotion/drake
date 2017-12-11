@@ -17,19 +17,9 @@ namespace kuka_iiwa_arm {
 
 constexpr int kIiwaArmNumJoints = 7;
 
-// Kuka publishes these in degrees, they've been converted to radians here.
-// clang-format off
-const VectorX<double> kIiwaMaxJointVelocities =
-    (VectorX<double>(7) <<
-     1.483529,
-     1.483529,
-     1.745329,
-     1.308996,
-     2.268928,
-     2.268928,
-     2.356194)
-        .finished();
-// clang-format on
+/// Returns the maximum joint velocities provided by Kuka.
+/// @return Maximum joint velocities (rad/s).
+VectorX<double> get_iiwa_max_joint_velocities();
 
 /// Computes the lumped inertia parameters of the gripper and the end effector
 /// link expressed in the end effector frame.

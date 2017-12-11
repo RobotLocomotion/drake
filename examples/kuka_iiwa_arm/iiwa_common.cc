@@ -32,6 +32,20 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+VectorX<double> get_iiwa_max_joint_velocities() {
+  // clang-format off
+  return (VectorX<double>(7) <<
+          1.483529,
+          1.483529,
+          1.745329,
+          1.308996,
+          2.268928,
+          2.268928,
+          2.356194)
+      .finished();
+  // clang-format on
+}
+
 template <typename T>
 Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
     const RigidBodyTree<T>& world_tree,
@@ -144,10 +158,13 @@ void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
 
   Eigen::VectorXd velocity_ratios(velocities.rows());
 
+  const VectorX<double> iiwa_max_joint_velocities =
+      get_iiwa_max_joint_velocities();
   for (int i = 0; i < velocities.rows(); i++) {
     const double max_plan_velocity = velocities.row(i).maxCoeff();
     // Maybe don't try max velocity at first...
-    velocity_ratios(i) = max_plan_velocity / (kIiwaMaxJointVelocities[i] * 0.9);
+    velocity_ratios(i) =
+        max_plan_velocity / (iiwa_max_joint_velocities[i] * 0.9);
   }
 
   const double max_velocity_ratio = velocity_ratios.maxCoeff();
