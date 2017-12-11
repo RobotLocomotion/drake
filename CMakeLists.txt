@@ -6,6 +6,12 @@ project(drake)
 
 list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
 
+if(CMAKE_VERSION VERSION_LESS 3.10)
+  list(INSERT CMAKE_MODULE_PATH 0
+    "${PROJECT_SOURCE_DIR}/third_party/com_kitware_gitlab_cmake_cmake/3.10/Modules"
+  )
+endif()
+
 include(CTest)
 
 configure_file(CTestCustom.cmake.in CTestCustom.cmake @ONLY)
@@ -51,9 +57,26 @@ set(BAZEL_ARGS
   --config=unsupported_crosstool
   --cxxopt=${CMAKE_CXX14_STANDARD_COMPILE_OPTION}
   --host_cxxopt=${CMAKE_CXX14_STANDARD_COMPILE_OPTION}
-  --linkopt=-Wl,--disable-new-dtags
-  --linkopt=-Wl,-rpath=/usr/lib/x86_64-linux-gnu
 )
+
+if(UNIX AND NOT APPLE)
+  find_package(Protobuf 2.6.1 MODULE REQUIRED)
+  get_filename_component(PROTOBUF_LIBRARY_DIR
+    "${Protobuf_LIBRARY_RELEASE}" DIRECTORY
+  )
+
+  # On Linux, we need to disable "new" dtags in the linker so that we use
+  # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is checked
+  # *before* LD_LIBRARY_PATH, which is important to avoid using the MATLAB
+  # versions of certain libraries (protobuf).  macOS doesn't understand
+  # this flag, so it is conditional on Linux only.  Note that the string
+  # we use for rpath here doesn't actually matter; it will be replaced
+  # during installation later.  Also note that if these flags are updated,
+  # the corresponding linkopts flags in
+  # tools/install/libdrake/BUILD.bazel:libdrake.so also have to be
+  # updated.
+  list(APPEND BAZEL_ARGS --linkopt=-Wl,--disable-new-dtags --linkopt=-Wl,-rpath=${PROTOBUF_LIBRARY_DIR})
+endif()
 
 if(CMAKE_VERBOSE_MAKEFILE)
   list(APPEND BAZEL_ARGS --subcommands)
