@@ -17,10 +17,10 @@ bazel build //tools:drake_visualizer
 Ensure that you have set your
 [PYTHONPATH](http://drake.mit.edu/python_bindings.html?highlight=python).
 
-All instructions assume that you are launching from the `drake-distro`
-directory.
+All instructions assume that you are launching from the `drake`
+workspace directory.
 ```
-cd drake-distro
+cd drake
 ```
 
 
@@ -34,13 +34,13 @@ bazel-bin/tools/drake_visualizer
 
 Launch the kuka simulation
 ```
-bazel-bin/drake/examples/kuka_iiwa_arm/kuka_simulation
+bazel-bin/examples/kuka_iiwa_arm/kuka_simulation
 ```
 
 Launch the "plan runner" (which produces position commands over time
 upon receiving a single plan message)
 ```
-bazel-bin/drake/examples/kuka_iiwa_arm/kuka_plan_runner
+bazel-bin/examples/kuka_iiwa_arm/kuka_plan_runner
 ```
 
 Coming back soon - generate plans using the graphical IK interface.

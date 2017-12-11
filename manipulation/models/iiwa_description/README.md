@@ -4,7 +4,7 @@ expressive conditional statements [1].
 
 ```
 source /opt/ros/kinetic/setup.bash
-cd drake-distro/drake/manipulation/models
+cd drake/manipulation/models
 export ROS_PACKAGE_PATH=`pwd`:$ROS_PACKAGE_PATH
 cd iiwa_description
 rosrun xacro xacro -o urdf/iiwa14_primitive_collision.urdf urdf/iiwa14_primitive_collision.urdf.xacro

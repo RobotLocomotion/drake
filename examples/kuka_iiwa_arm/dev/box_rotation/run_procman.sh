@@ -3,10 +3,10 @@
 # This helper script runs the box rotation demo using the program 
 # `bot-procman-sherriff`. We assume the following environment 
 # variables are defined, e.g., by running the following commands: 
-# export DRAKE_DISTRO=/home/<user>/<path-to-drake-distro>
+# export DRAKE_WORKSPACE=/home/<user>/<path-to-drake>
 # export PROCMAN_PATH=/home/<user>/<path-to-bot-procman-sheriff>
 #
-# The environment variables `DRAKE_DISTRO` and `URDF` are used in
+# The environment variables `DRAKE_WORKSPACE` and `URDF` are used in
 # the procman-sheriff configuration file `iiwa_dual_box_rot.pmd`.
 
 # === UNCOMMENT THE URDF MODEL TO USE IN THIS SIMULATION ==

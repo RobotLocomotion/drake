@@ -15,6 +15,6 @@ The individual demos are:
 Open the terminal. First launch the Drake Visualizer and then start the demo
 of choice:
 
-    $ cd drake-distro
-    $ ./build/install/bin/drake-visualizer &
-    $ ./build/drake/bin/[demo name]
+    $ cd drake
+    $ bazel-bin/tools/drake-visualizer &
+    $ bazel-bin/examples/kuka_iiwa_arm/controlled_kuka/[demo name]
