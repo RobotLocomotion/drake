@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/examples/multibody/pendulum/actuator_force_element.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -185,6 +186,8 @@ void PendulumPlant<T>::BuildMultibodyTreeModel() {
 
   model_->template AddForceElement<UniformGravityFieldElement>(
       -gravity() * Vector3d::UnitZ());
+
+  model_->template AddForceElement<ActuatorForceElement>(this, joint_);
 
   model_->Finalize();
 }

@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_system.h"
+#include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
