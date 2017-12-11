@@ -51,6 +51,8 @@ set(BAZEL_ARGS
   --config=unsupported_crosstool
   --cxxopt=${CMAKE_CXX14_STANDARD_COMPILE_OPTION}
   --host_cxxopt=${CMAKE_CXX14_STANDARD_COMPILE_OPTION}
+  --linkopt=-Wl,--disable-new-dtags
+  --linkopt=-Wl,-rpath=/usr/lib/x86_64-linux-gnu
 )
 
 if(CMAKE_VERBOSE_MAKEFILE)
