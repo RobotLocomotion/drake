@@ -117,6 +117,8 @@ class PickAndPlaceStateMachine {
   int planning_failure_count_{0};
 
   std::default_random_engine rand_generator_{1234};
+
+  std::vector<std::string> joint_names_;
 };
 
 }  // namespace pick_and_place

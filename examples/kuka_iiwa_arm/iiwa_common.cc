@@ -185,10 +185,25 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
     const std::vector<double>& time,
     const std::vector<int>& info,
     const MatrixX<double>& keyframes) {
+  const int num_positions = robot.get_num_positions();
+  DRAKE_DEMAND(keyframes.rows() == num_positions);
+  std::vector<std::string> joint_names(num_positions);
+  for (int i = 0; i < num_positions; ++i) {
+    joint_names[i] = robot.get_position_name(i);
+  }
+
+  return EncodeKeyFrames(joint_names, time, info, keyframes);
+}
+
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const std::vector<std::string>& joint_names,
+    const std::vector<double>& time,
+    const std::vector<int>& info,
+    const MatrixX<double>& keyframes) {
 
   DRAKE_DEMAND(info.size() == time.size());
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
-  DRAKE_DEMAND(keyframes.rows() == robot.get_num_positions());
+  DRAKE_DEMAND(keyframes.rows() == static_cast<int>(joint_names.size()));
 
   const int num_time_steps = keyframes.cols();
 
@@ -206,7 +221,7 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
     step.utime = time[i] * 1e6;
     step.num_joints = keyframes.rows();
     for (int j = 0; j < step.num_joints; j++) {
-      step.joint_name.push_back(robot.get_position_name(j));
+      step.joint_name.push_back(joint_names[j]);
       step.joint_position.push_back(keyframes(j, i));
       step.joint_velocity.push_back(0);
       step.joint_effort.push_back(0);

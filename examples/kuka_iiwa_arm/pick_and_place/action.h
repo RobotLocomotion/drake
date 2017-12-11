@@ -90,7 +90,7 @@ class IiwaMove : public Action {
    * length).
    */
   void MoveJoints(const WorldState& est_state,
-                  const RigidBodyTree<double>& iiwa,
+                  const std::vector<std::string>& joint_names,
                   const std::vector<double>& time,
                   const std::vector<VectorX<double>>& q,
                   robotlocomotion::robot_plan_t* plan);

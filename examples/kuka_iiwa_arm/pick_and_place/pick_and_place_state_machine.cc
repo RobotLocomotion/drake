@@ -633,7 +633,14 @@ PickAndPlaceStateMachine::PickAndPlaceStateMachine(
       tight_rot_tol_(0.05),
       loose_pos_tol_(0.1, 0.1, 0.1),
       loose_rot_tol_(30 * M_PI / 180),
-      configuration_(configuration) {}
+      configuration_(configuration) {
+  std::unique_ptr<RigidBodyTree<double>> robot{BuildTree(configuration_)};
+  const int num_positions = robot->get_num_positions();
+  joint_names_.resize(num_positions);
+  for (int i = 0; i < num_positions; ++i) {
+    joint_names_[i] = robot->get_position_name(i);
+  }
+}
 
 PickAndPlaceStateMachine::~PickAndPlaceStateMachine() {}
 
@@ -797,10 +804,8 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         for (double t : times) {
           q.push_back(q_traj.value(t));
         }
-        std::unique_ptr<RigidBodyTree<double>> robot{
-            BuildTree(configuration_)};
 
-        iiwa_move_.MoveJoints(env_state, *robot, times, q, &plan);
+        iiwa_move_.MoveJoints(env_state, joint_names_, times, q, &plan);
         iiwa_callback(&plan);
 
         drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
