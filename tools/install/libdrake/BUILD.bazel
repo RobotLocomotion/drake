@@ -44,7 +44,9 @@ cc_binary(
     # versions of certain libraries (protobuf).  macOS doesn't understand
     # this flag, so it is conditional on Linux only.
     linkopts = select({
-        "//tools/cc_toolchain:linux": ["-Wl,--disable-new-dtags"],
+        "//tools/cc_toolchain:linux": [
+            "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
+        ],
         "//conditions:default": [],
     }),
     linkshared = 1,
