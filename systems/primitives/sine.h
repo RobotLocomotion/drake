@@ -72,19 +72,19 @@ class Sine final : public LeafSystem<T> {
   /// amplitude can be represented as a scalar value, i.e., every element in the
   /// amplitude vector is the same. It will abort if the amplitude cannot be
   /// represented as a single scalar value.
-  double get_amplitude() const;
+  double amplitude() const;
 
   /// Returns the frequency constant. This method should only be called if the
   /// frequency can be represented as a scalar value, i.e., every element in the
   /// frequency vector is the same. It will abort if the frequency cannot be
   /// represented as a single scalar value.
-  double get_frequency() const;
+  double frequency() const;
 
   /// Returns the phase constant. This method should only be called if the phase
   /// can be represented as a scalar value, i.e., every element in the phase
   /// vector is the same. It will abort if the phase cannot be represented as a
   /// single scalar value.
-  double get_phase() const;
+  double phase() const;
 
   /// Returns a boolean indicting whether to use simulation time as the source
   /// of values for the time variable or an external source. Returns true if the
@@ -92,13 +92,13 @@ class Sine final : public LeafSystem<T> {
   bool is_time_based() const;
 
   /// Returns the amplitude vector constant.
-  const Eigen::VectorXd& get_amplitude_vector() const;
+  const Eigen::VectorXd& amplitude_vector() const;
 
   /// Returns the frequency vector constant.
-  const Eigen::VectorXd& get_frequency_vector() const;
+  const Eigen::VectorXd& frequency_vector() const;
 
   /// Returns the phase vector constant.
-  const Eigen::VectorXd& get_phase_vector() const;
+  const Eigen::VectorXd& phase_vector() const;
 
  protected:
   void CalcValueOutput(const Context<T>& context,
@@ -108,13 +108,16 @@ class Sine final : public LeafSystem<T> {
   void CalcSecondDerivativeOutput(const Context<T>& context,
                                   BasicVector<T>* output) const;
 
-  void CalcSineArg(const Context<T>& context, VectorX<T>* sine_arg) const;
+  void CalcArg(const Context<T>& context, VectorX<T>* arg) const;
 
 
   const Eigen::VectorXd amplitude_;
   const Eigen::VectorXd frequency_;
   const Eigen::VectorXd phase_;
   const bool is_time_based_;
+  bool is_const_amplitude_;
+  bool is_const_frequency_;
+  bool is_const_phase_;
 
   int value_output_port_index_{-1};
   int first_derivative_output_port_index_{-1};

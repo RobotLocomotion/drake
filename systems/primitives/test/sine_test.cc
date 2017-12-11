@@ -68,7 +68,8 @@ void TestSineSystem(const Sine<T>& sine_system,
       Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
 
       Eigen::VectorXd out_diff = expected_output - output_vector->get_value();
-      EXPECT_TRUE(out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+      EXPECT_TRUE(
+          out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
 
       Eigen::VectorXd deriv1_diff =
           expected_first_deriv - first_deriv_vector->get_value();
@@ -86,7 +87,7 @@ void TestSineSystem(const Sine<T>& sine_system,
     for (int i = 0; i < input_vectors.cols(); i++) {
       auto input =
           make_unique<BasicVector<double>>(
-              sine_system.get_amplitude_vector().size());
+              sine_system.amplitude_vector().size());
       ASSERT_EQ(1, sine_system.get_num_input_ports());
       ASSERT_EQ(1, context->get_num_input_ports());
 
@@ -122,7 +123,8 @@ void TestSineSystem(const Sine<T>& sine_system,
       Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
 
       Eigen::VectorXd out_diff = expected_output - output_vector->get_value();
-      EXPECT_TRUE(out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+      EXPECT_TRUE(
+          out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
 
       Eigen::VectorXd deriv1_diff =
           expected_first_deriv - first_deriv_vector->get_value();
@@ -275,15 +277,22 @@ GTEST_TEST(SineTest, SineParameterTimeTest) {
                  expected_first_deriv, expected_second_deriv);
 }
 
+GTEST_TEST(SineTest, SineVectorDeathTest) {
+  Eigen::Vector4d kAmp(1.1, 1.2, 1.3, 1.4);
+  Eigen::Vector4d kFreq(1.5, 1.6, 1.7, 1.8);
+  Eigen::Vector3d kPhase(1.9, 2.0, 2.1);
+  ASSERT_DEATH(Sine<double>(kAmp, kFreq, kPhase, true), "abort: Failure");
+}
+
 GTEST_TEST(SineTest, SineAccessorTest) {
   Eigen::Vector4d kAmp(1.1, 1.2, 1.3, 1.4);
   Eigen::Vector4d kFreq(1.5, 1.6, 1.7, 1.8);
   Eigen::Vector4d kPhase(1.9, 2.0, 2.1, 2.2);
   const auto sine_system = make_unique<Sine<double>>(kAmp, kFreq, kPhase, true);
   // Verifies the Sine accessors are OK.
-  EXPECT_THROW(sine_system->get_amplitude(), std::runtime_error);
-  EXPECT_THROW(sine_system->get_frequency(), std::runtime_error);
-  EXPECT_THROW(sine_system->get_phase(), std::runtime_error);
+  EXPECT_THROW(sine_system->amplitude(), std::logic_error);
+  EXPECT_THROW(sine_system->frequency(), std::logic_error);
+  EXPECT_THROW(sine_system->phase(), std::logic_error);
 }
 
 GTEST_TEST(SineTest, ToAutoDiff) {
@@ -295,7 +304,7 @@ GTEST_TEST(SineTest, ToAutoDiff) {
       is_autodiffxd_convertible(sine_system, [&](const auto& converted) {
     EXPECT_EQ(0, converted.get_num_input_ports());
     EXPECT_EQ(3, converted.get_num_output_ports());
-    EXPECT_EQ(kAmp, converted.get_amplitude_vector());
+    EXPECT_EQ(kAmp, converted.amplitude_vector());
   }));
 }
 
