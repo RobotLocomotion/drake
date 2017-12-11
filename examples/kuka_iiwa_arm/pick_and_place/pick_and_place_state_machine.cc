@@ -673,20 +673,20 @@ PickAndPlaceStateMachine::ComputeTrajectories(
             {0, extra_short_duration}, {q_0, q_f}, q_dot0, q_dotf);
       } else {
         double duration{short_duration};
-        double position_tolerance{tight_pos_tol_(0)};
+        double position_tolerance{tight_pos_tol_.minCoeff()};
         double orientation_tolerance{tight_rot_tol_};
         bool fall_back_to_joint_space_interpolation{false};
         switch (state) {
           case PickAndPlaceState::kApproachPickPregrasp:
           case PickAndPlaceState::kApproachPlacePregrasp: {
-            position_tolerance = loose_pos_tol_(0);
+            position_tolerance = loose_pos_tol_.minCoeff();
             orientation_tolerance = loose_rot_tol_;
             fall_back_to_joint_space_interpolation = true;
             duration = long_duration;
           } break;
 
           case PickAndPlaceState::kLiftFromPlace: {
-            position_tolerance = loose_pos_tol_(0);
+            position_tolerance = loose_pos_tol_.minCoeff();
             orientation_tolerance = loose_rot_tol_;
             fall_back_to_joint_space_interpolation = true;
             duration = extra_long_duration;
