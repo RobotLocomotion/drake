@@ -68,11 +68,11 @@ PostureInterpolationResult PlanInterpolatingMotion(
       request.fall_back_to_joint_space_interpolation};
   const double max_joint_position_change{request.max_joint_position_change};
 
-  const int kNumKnots = times.size();
+  const int num_knots = times.size();
 
-  int kNumJoints{robot->get_num_positions()};
+  int num_joints{robot->get_num_positions()};
   const VectorX<int> joint_indices =
-      VectorX<int>::LinSpaced(kNumJoints, 0, kNumJoints - 1);
+      VectorX<int>::LinSpaced(num_joints, 0, num_joints - 1);
   int grasp_frame_index = robot->FindBodyIndex(kGraspFrameName);
   int world_idx = robot->FindBodyIndex("world");
   Vector3<double> end_effector_points{0, 0, 0};
@@ -160,9 +160,9 @@ PostureInterpolationResult PlanInterpolatingMotion(
 
     // Place limits on the change in joint angles between knots
     const VectorX<double> ub_change =
-        max_joint_position_change * VectorX<double>::Ones(kNumJoints);
+        max_joint_position_change * VectorX<double>::Ones(num_joints);
     const VectorX<double> lb_change = -ub_change;
-    for (int i = 1; i < kNumKnots; ++i) {
+    for (int i = 1; i < num_knots; ++i) {
       const Vector2<double> segment_tspan{times[i - 1], times[i]};
       posture_change_constraints.emplace_back(new PostureChangeConstraint(
           robot, joint_indices, lb_change, ub_change, segment_tspan));
@@ -192,19 +192,19 @@ PostureInterpolationResult PlanInterpolatingMotion(
   // Set the seed for the first attempt (and the nominal value for all attempts)
   // to be the cubic interpolation between the initial and final
   // configurations.
-  VectorX<double> q_dot_zero{VectorX<double>::Zero(kNumJoints)};
-  MatrixX<double> q_knots_seed{kNumJoints, kNumKnots};
+  VectorX<double> q_dot_zero{VectorX<double>::Zero(num_joints)};
+  MatrixX<double> q_knots_seed{num_joints, num_knots};
   PiecewisePolynomial<double> q_seed_traj{PiecewisePolynomial<double>::Cubic(
       {times.front(), times.back()}, {q_initial, q_final}, q_dot_zero,
       q_dot_zero)};
-  for (int i = 0; i < kNumKnots; ++i) {
+  for (int i = 0; i < num_knots; ++i) {
     q_knots_seed.col(i) = q_seed_traj.value(times[i]);
   }
   MatrixX<double> q_knots_nom{q_knots_seed};
 
   // Get the time values into the format required by inverseKinTrajSimple
-  VectorX<double> t{kNumKnots};
-  for (int i = 0; i < kNumKnots; ++i) t(i) = times[i];
+  VectorX<double> t{num_knots};
+  for (int i = 0; i < num_knots; ++i) t(i) = times[i];
 
   // Configure ik input and output structs.
   IKoptions ikoptions(robot);
@@ -218,10 +218,10 @@ PostureInterpolationResult PlanInterpolatingMotion(
 
   // Attempt to solve the ik traj problem multiple times. If falling back to
   // joint-space interpolation is allowed, don't try as hard.
-  const int kNumRestarts =
+  const int num_restarts =
       (straight_line_motion && fall_back_to_joint_space_interpolation) ? 5 : 50;
   std::default_random_engine rand_generator{1234};
-  for (int i = 0; i < kNumRestarts; ++i) {
+  for (int i = 0; i < num_restarts; ++i) {
     ik_res = inverseKinTrajSimple(robot, t, q_knots_seed, q_knots_nom,
                                   constraint_array, ikoptions);
     if (ik_res.info[0] == 1) {
@@ -231,16 +231,16 @@ PostureInterpolationResult PlanInterpolatingMotion(
       q_seed_traj = PiecewisePolynomial<double>::Cubic(
           {times.front(), 0.5 * (times.front() + times.back()), times.back()},
           {q_initial, q_mid, q_final}, q_dot_zero, q_dot_zero);
-      for (int j = 0; j < kNumKnots; ++j) {
+      for (int j = 0; j < num_knots; ++j) {
         q_knots_seed.col(j) = q_seed_traj.value(times[j]);
       }
     }
   }
   PostureInterpolationResult result;
   result.success = (ik_res.info[0] == 1);
-  std::vector<MatrixX<double>> q_sol(kNumKnots);
+  std::vector<MatrixX<double>> q_sol(num_knots);
   if (result.success) {
-    for (int i = 0; i < kNumKnots; ++i) {
+    for (int i = 0; i < num_knots; ++i) {
       q_sol[i] = ik_res.q_sol[i];
     }
     result.q_traj = PiecewisePolynomial<double>::Cubic(times, q_sol, q_dot_zero,
@@ -342,13 +342,13 @@ ComputeInitialAndFinalObjectPoses(const WorldState& env_state) {
   const std::vector<Isometry3<double>>& table_poses =
       env_state.get_table_poses();
   int destination_table_index = -1;
-  const double kMaxReach = 1.1;
+  const double max_reach = 1.1;
   double min_angle = std::numeric_limits<double>::infinity();
   for (int i = 0; i < static_cast<int>(table_poses.size()); ++i) {
     const Isometry3<double> X_WT = X_WS * table_poses[i];
     Vector3<double> r_WT_in_xy_plane{X_WT.translation()};
     r_WT_in_xy_plane.z() = 0;
-    if (r_WT_in_xy_plane.norm() < kMaxReach) {
+    if (r_WT_in_xy_plane.norm() < max_reach) {
       Vector3<double> r_WO_in_xy_plane{X_WO_initial.translation()};
       r_WO_in_xy_plane.z() = 0;
       const Vector3<double> dir_WO_in_xy_plane{r_WO_in_xy_plane.normalized()};
@@ -479,7 +479,7 @@ ComputeNominalConfigurations(const WorldState& env_state,
   std::vector<std::vector<RigidBodyConstraint*>> constraint_arrays;
   std::vector<double> yaw_offsets{M_PI, 0.0};
   std::vector<double> pitch_offsets{M_PI / 8};
-  int kNumJoints = robot->get_num_positions();
+  int num_joints = robot->get_num_positions();
 
   int grasp_frame_index = robot->FindBodyIndex(kGraspFrameName);
   Vector3<double> end_effector_points{0, 0, 0};
@@ -491,13 +491,13 @@ ComputeNominalConfigurations(const WorldState& env_state,
       PickAndPlaceState::kApproachPlacePregrasp,
       PickAndPlaceState::kApproachPlace,
       PickAndPlaceState::kLiftFromPlace};
-  int kNumKnots = states.size() + 1;
+  int num_knots = states.size() + 1;
 
-  VectorX<double> t{VectorX<double>::LinSpaced(kNumKnots, 0, kNumKnots - 1)};
+  VectorX<double> t{VectorX<double>::LinSpaced(num_knots, 0, num_knots - 1)};
   // Set up an inverse kinematics trajectory problem with one knot for each
   // state
   MatrixX<double> q_nom =
-      MatrixX<double>::Zero(robot->get_num_positions(), kNumKnots);
+      MatrixX<double>::Zero(robot->get_num_positions(), num_knots);
 
   for (double pitch_offset : pitch_offsets) {
     for (double yaw_offset : yaw_offsets) {
@@ -505,7 +505,7 @@ ComputeNominalConfigurations(const WorldState& env_state,
               ComputeDesiredPoses(env_state, yaw_offset, pitch_offset)) {
         constraint_arrays.emplace_back();
 
-        for (int i = 1; i < kNumKnots; ++i) {
+        for (int i = 1; i < num_knots; ++i) {
           const PickAndPlaceState state{states[i - 1]};
           const Vector2<double> knot_tspan{t(i), t(i)};
 
@@ -536,7 +536,7 @@ ComputeNominalConfigurations(const WorldState& env_state,
           // joint positions.
           if (i > 1) {
             const VectorX<int> joint_indices =
-                VectorX<int>::LinSpaced(kNumJoints, 0, kNumJoints - 1);
+                VectorX<int>::LinSpaced(num_joints, 0, num_joints - 1);
             const Vector2<double> segment_tspan{t(i - 1), t(i)};
             // The move to ApproachPlacePregrasp can require large joint
             // motions.
@@ -545,7 +545,7 @@ ComputeNominalConfigurations(const WorldState& env_state,
                     ? 0.75 * M_PI
                     : M_PI_4;
             const VectorX<double> ub_change{max_joint_position_change *
-                                            VectorX<double>::Ones(kNumJoints)};
+                                            VectorX<double>::Ones(num_joints)};
             const VectorX<double> lb_change{-ub_change};
             posture_change_constraints.emplace_back(new PostureChangeConstraint(
                 robot, joint_indices, lb_change, ub_change, segment_tspan));
@@ -567,9 +567,9 @@ ComputeNominalConfigurations(const WorldState& env_state,
   bool success = false;
   VectorX<double> q_initial{env_state.get_iiwa_q()};
   for (const auto& constraint_array : constraint_arrays) {
-    MatrixX<double> q_knots_seed{robot->get_num_positions(), kNumKnots};
-    for (int j = 0; j < kNumKnots; ++j) {
-      double s = static_cast<double>(j) / static_cast<double>(kNumKnots - 1);
+    MatrixX<double> q_knots_seed{robot->get_num_positions(), num_knots};
+    for (int j = 0; j < num_knots; ++j) {
+      double s = static_cast<double>(j) / static_cast<double>(num_knots - 1);
       q_knots_seed.col(j) = q_traj_seed.value(s);
     }
     ik_res = inverseKinTrajSimple(robot, t, q_knots_seed, q_nom,
@@ -583,7 +583,7 @@ ComputeNominalConfigurations(const WorldState& env_state,
     return nullopt;
   }
   std::map<PickAndPlaceState, VectorX<double>> nominal_q_map;
-  for (int i = 1; i < kNumKnots; ++i) {
+  for (int i = 1; i < num_knots; ++i) {
     nominal_q_map.emplace(states[i - 1], ik_res.q_sol[i]);
   }
   return nominal_q_map;
@@ -654,25 +654,25 @@ PickAndPlaceStateMachine::ComputeTrajectories(
     q_0 << env_state.get_iiwa_q();
     std::map<PickAndPlaceState, PiecewisePolynomial<double>>
         interpolation_result_map;
-    const double kExtraShortDuration = 0.5;
-    const double kShortDuration = 1;
-    const double kLongDuration = 1.5;
-    const double kExtraLongDuration = 1.5;
-    int kNumJoints = robot->get_num_positions();
+    const double extra_short_duration = 0.5;
+    const double short_duration = 1;
+    const double long_duration = 1.5;
+    const double extra_long_duration = 1.5;
+    int num_joints = robot->get_num_positions();
     for (PickAndPlaceState state : states) {
       drake::log()->info("Planning trajectory for {}.", state);
       const VectorX<double> q_f = nominal_q_map->at(state);
       PostureInterpolationResult result;
       if ((q_f - q_0).array().abs().maxCoeff() < 10 * M_PI / 180) {
         // If very close, just interpolate in joint space.
-        VectorX<double> q_dot0{VectorX<double>::Zero(kNumJoints)};
-        VectorX<double> q_dotf{VectorX<double>::Zero(kNumJoints)};
+        VectorX<double> q_dot0{VectorX<double>::Zero(num_joints)};
+        VectorX<double> q_dotf{VectorX<double>::Zero(num_joints)};
 
         result.success = true;
         result.q_traj = PiecewisePolynomial<double>::Cubic(
-            {0, kExtraShortDuration}, {q_0, q_f}, q_dot0, q_dotf);
+            {0, extra_short_duration}, {q_0, q_f}, q_dot0, q_dotf);
       } else {
-        double duration{kShortDuration};
+        double duration{short_duration};
         double position_tolerance{tight_pos_tol_(0)};
         double orientation_tolerance{tight_rot_tol_};
         bool fall_back_to_joint_space_interpolation{false};
@@ -682,14 +682,14 @@ PickAndPlaceStateMachine::ComputeTrajectories(
             position_tolerance = loose_pos_tol_(0);
             orientation_tolerance = loose_rot_tol_;
             fall_back_to_joint_space_interpolation = true;
-            duration = kLongDuration;
+            duration = long_duration;
           } break;
 
           case PickAndPlaceState::kLiftFromPlace: {
             position_tolerance = loose_pos_tol_(0);
             orientation_tolerance = loose_rot_tol_;
             fall_back_to_joint_space_interpolation = true;
-            duration = kExtraLongDuration;
+            duration = extra_long_duration;
           } break;
 
           default:  // No action needed for other cases
