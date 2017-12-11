@@ -378,6 +378,9 @@ class RigidBodyPlant : public LeafSystem<T> {
       VectorBase<T>* generalized_velocity) const override;
 
  private:
+  friend class RigidBodyPlantTimeSteppingDataTest;
+  friend class RigidBodyPlantTimeSteppingDataTest_NormalJacobian_Test;
+  friend class RigidBodyPlantTimeSteppingDataTest_TangentJacobian_Test;
   OutputPortIndex DeclareContactResultsOutputPort();
 
   // These four are the output port calculator methods.

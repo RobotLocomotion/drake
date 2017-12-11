@@ -62,23 +62,6 @@ class CompliantContactModel {
   /// aborts. (See CompliantContactParameters for details on valid ranges.)
   void set_model_parameters(const CompliantContactModelParameters& values);
 
-<<<<<<< HEAD
-  /// Given two collision elements (with their own defined compliant material
-  /// properties, computes the _derived_ parameters for the _contact_. Returns
-  /// The portion of the squish attributable to Element `a` (sₐ). Element `b`'s
-  /// squish factor is simply 1 - sₐ. See contact_model_doxygen.h for details.
-  /// @param[in] a            The first element in the contact.
-  /// @param[in] b            The second element in the contact.
-  /// @param[out] parameters  The net _contact_ parameters.
-  /// @retval sₐ  The "squish" factor of Element `a` -- the fraction of the full
-  ///             penetration deformation that `a` experiences.
-  double CalcContactParameters(
-      const multibody::collision::Element& a,
-      const multibody::collision::Element& b,
-      CompliantMaterial* parameters) const;
-
-||||||| merged common ancestors
-=======
   /// Given two collision elements (with their own defined compliant material
   /// properties, computes the _derived_ parameters for the _contact_. Returns
   /// the portion of the squish attributable to Element `a` (sₐ). Element `b`'s
@@ -93,7 +76,6 @@ class CompliantContactModel {
       const multibody::collision::Element& b,
       CompliantMaterial* parameters) const;
 
->>>>>>> 7f230769b237c4c1ccb797b83f2b1433f854ae65
  private:
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
