@@ -106,7 +106,7 @@ int main() {
   plant->set_default_compliant_material(default_material);
 
   systems::CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = 2e-4;  // m^2
+  model_parameters.characteristic_radius = 2e-4;  // m
   model_parameters.v_stiction_tolerance = 0.01;  // m/s
   plant->set_contact_model_parameters(model_parameters);
 
