@@ -270,7 +270,7 @@ std::unique_ptr<RigidBodyTree<double>> BuildTree(
     const pick_and_place::PlannerConfiguration& configuration,
     bool add_grasp_frame = false, int num_arms = 1) {
   WorldSimTreeBuilder<double> tree_builder;
-  tree_builder.StoreModel("iiwa", configuration.drake_relative_model_path);
+  tree_builder.StoreModel("iiwa", configuration.absolute_model_path());
   std::vector<int> arm_instance_ids(num_arms, 0);
   auto previous_log_level = drake::log()->level();
   drake::log()->set_level(spdlog::level::warn);
