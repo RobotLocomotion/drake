@@ -95,6 +95,9 @@ class Sinusoid : public systems::LeafSystem<double> {
   double freq_{0.0}, amp_{0.0}, offset_{0.0}, tstart_{0.0};
 };
 
+// A parameterized test fixture. When instantiated with `false`, uses the
+// compliant contact model. When instantiated with `true`, uses the time
+// stepping approach.
 class SchunkWsgLiftTest : public ::testing::TestWithParam<bool> {
  protected:
 
