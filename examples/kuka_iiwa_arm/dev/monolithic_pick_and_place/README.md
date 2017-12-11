@@ -15,8 +15,8 @@ Build the ``drake_visualizer`` and the demo
 -------------------------------------------
 
 ```
-$ cd drake-distro
-$ bazel build //tools:drake_visualizer //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
+$ cd drake
+$ bazel build //tools:drake_visualizer //examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
 ```
 
 
@@ -35,7 +35,7 @@ Launching the demo
 ------------------
 The demo can be built and launched by using ``bazel run`` with the appropriate
 full path/target specifier. For instance, from the
-``drake-distro/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place``
+``drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place``
 directory, you can execute the demo using :
 
 ```
@@ -47,7 +47,7 @@ Alternately, if the ``monolithic_pick_and_place_demo`` has been built using
 ``bazel build``, the demo itself can then be launched by :
 
 ```
-$ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
+$ ./bazel-bin/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/
 monolithic_pick_and_place_demo --target=1
  --orientation=-0.0
 ```
