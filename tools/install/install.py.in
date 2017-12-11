@@ -181,15 +181,6 @@ def linux_fix_rpaths(dst_full):
     # MATLAB that are added to the LD_LIBRARY_PATH.
     rpath.add('/usr/lib/x86_64-linux-gnu/')
 
-    # Work around https://github.com/NixOS/patchelf/issues/94. The version
-    # of patchelf distributed with Ubuntu 16.04 also does not have the
-    # --remove-rpath option, so use chrpath instead.
-    check_output(
-        ["chrpath",
-         "--delete",
-         dst_full]
-    )
-
     # Replace build tree RPATH with computed install tree RPATH. Build tree
     # RPATH are automatically removed by this call. RPATH will contain the
     # necessary relative paths to find the libraries that are needed. RPATH

@@ -214,6 +214,12 @@ toolchain {
   linker_flag: "-fuse-ld=gold"
   linker_flag: "-B/usr/bin"
   linker_flag: "-B/usr/bin"
+  # On Linux, we need to disable "new" dtags in the linker so that we use
+  # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is checked
+  # *before* LD_LIBRARY_PATH, which is important to avoid using the MATLAB
+  # versions of certain libraries (protobuf).
+  linker_flag: "-Wl,--disable-new-dtags"
+  linker_flag: "-Wl,-rpath=XXXXXXXXXXXXXXXXXXXXXXXXX"
   needsPic: true
   objcopy_embed_flag: "-I"
   objcopy_embed_flag: "binary"
