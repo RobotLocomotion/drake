@@ -23,8 +23,14 @@ drake_cc_vector_gen_library(
 
 drake_cc_library(
     name = "pendulum_plant",
-    srcs = ["pendulum_plant.cc"],
-    hdrs = ["pendulum_plant.h"],
+    srcs = [
+        "actuator_force_element.cc",
+        "pendulum_plant.cc",
+    ],
+    hdrs = [
+        "actuator_force_element.h",
+        "pendulum_plant.h",
+    ],
     deps = [
         ":pendulum_vector_types",
         "//drake/common:default_scalars",
