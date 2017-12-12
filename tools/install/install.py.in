@@ -17,18 +17,25 @@ list_only = False
 # as a suffix (e.g. my_lib.so.x.y.z).
 dylib_match = r"(.*\.so)(\.\d+)*$|(.*\.dylib)$"
 
-def is_executable(dst):
+def is_binary_executable(dst):
     """Checks if given executable is an ELF or Mach-O executable
 
     Returns True iff given executable `dst` is an ELF or Mach-O executable, or
     an ELF shared object.
     """
+    # To speed up the process of identifying executables, we skip
+    # header files which should never be executables.
+    if dst.endswith(".h"):
+        return False
     # Checking file type with command `file` is the safest way to find
     # executables. Files without an extension are likely to be executables, but
     # it is not always the case.
+    # TODO(fbudin69500) Explore ways to speed up this process. This could be
+    # achieved by calling the `file` command with multiple input files at once,
+    # if the overhead is in `subprocess.check_output()`.
     file_output = check_output(["file", dst])
     # On Linux, executables can be ELF shared objects.
-    executable_match = r"(.*ELF.*(executable|shared object).*)|(Mach-O.*executable.*)"
+    executable_match = r"(.*ELF.*(executable|shared object).*)|(.*Mach-O.*executable.*)"
     re_result = re.match(executable_match, file_output)
     if re_result is not None:
         return True
@@ -92,7 +99,7 @@ def install(src, dst):
             sys.exit(1)
         libs[basename] = (dst_full, installed)
     else:  # It is not a library, it may be an executable.
-        if is_executable(dst_full):  # It is an executable.
+        if is_binary_executable(dst_full):  # It is an executable.
             libs[dst_full] = (dst_full, installed)
         else:  # Neither a library nor an executable.
             pass
