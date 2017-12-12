@@ -52,9 +52,11 @@ struct PostureInterpolationResult {
   bool success;
 };
 
-// Generates a sequence (@p num_via_points + 1) of key frames s.t. the end
-// effector moves in a straight line between @pX_WEndEffector0 and
-// @p X_WEndEffector1.
+// Generates a joint-space trajectory for @p robot that interpolates between the
+// inital and final configurations specified in @p request. If @p
+// straight_line_motion is true, the end-effector position at all knot points of
+// the returned trajectory will lie on the line between the end-effector
+// positions at the initial and final configurations.
 PostureInterpolationResult PlanInterpolatingMotion(
     const PostureInterpolationRequest& request, RigidBodyTree<double>* robot,
     bool straight_line_motion = true) {
