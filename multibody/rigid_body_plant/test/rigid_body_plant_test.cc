@@ -34,6 +34,7 @@ using parsers::ModelInstanceIdTable;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
 namespace systems {
+namespace {
 
 // Tests the ability to load an instance of a URDF model into a RigidBodyPlant.
 GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
@@ -580,7 +581,15 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   EXPECT_TRUE(CompareMatrices(updates->get_vector(0).CopyToVector(), xn));
 }
 
-// Test fixture class for checking data used for time stepping.
+} // namespace (anonymous)
+
+// Note that the typical anonymous namespace cannot be used here, because the
+// testing namespace must be the same as the class namespace.
+
+// Test fixture class for checking data used for time stepping. This test
+// uses a sphere resting on a fixed ground plane to determine contact Jacobians;
+// the sphere, with contact point located directly under the center-of-mass,
+// simplifies the resulting Jacobian matrices.
 class RigidBodyPlantTimeSteppingDataTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -721,13 +730,15 @@ TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
   // Check whether the Jacobian is correct. Two vectors will be constructed in
   // the plane defined by the normal +z. The vectors can be constructed
   // arbitrarily, but should be orthogonal to each other and to the contact
-  // normal. Additionally, the 'z' torque component (the third row of each
-  // column), and the 'x' and 'y' torque components should be orthogonal.
+  // normal. Additionally, the 'z' torque component (the third entry of each
+  // row), and the 'x' and 'y' torque components should be orthogonal.
   for (int i = 0; i < num_contacts * half_num_cone_edges.front(); ++i) {
     EXPECT_NEAR(F(i, 2), 0.0, tol);
     EXPECT_NEAR(F.row(i).segment(3, 3).dot(Vector3<double>(0, 0, 1)), 0.0, tol);
   }
+  // Torque components must be perpendicular (since this is a friction pyramid).
   EXPECT_NEAR(F.row(0).segment(0, 2).dot(F.row(1).segment(0, 2)), 0.0, tol);
+  // Force components must be perpendicular (since this is a friction pyramid). 
   EXPECT_NEAR(F.row(0).segment(3, 3).dot(F.row(1).segment(3, 3)), 0.0, tol);
 
   // Compute the kinematics cache.
@@ -746,7 +757,6 @@ TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
       half_num_cone_edges);
   EXPECT_LT((FT.transpose() - F).norm(), tol);
 }
-
 
 }  // namespace systems
 }  // namespace drake
