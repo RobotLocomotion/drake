@@ -115,9 +115,9 @@ class Sine final : public LeafSystem<T> {
   const Eigen::VectorXd frequency_;
   const Eigen::VectorXd phase_;
   const bool is_time_based_;
-  bool is_const_amplitude_;
-  bool is_const_frequency_;
-  bool is_const_phase_;
+  bool is_const_amplitude_{false};
+  bool is_const_frequency_{false};
+  bool is_const_phase_{false};
 
   int value_output_port_index_{-1};
   int first_derivative_output_port_index_{-1};

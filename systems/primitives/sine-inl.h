@@ -71,7 +71,7 @@ double Sine<T>::amplitude() const {
     s << "The amplitude vector, [" << amplitude_ << "], cannot be represented "
       << "as a scalar value. Please use "
       << "drake::systems::Sine::amplitude_vector() instead.";
-    throw std::logic_error(s.str().c_str());
+    throw std::logic_error(s.str());
   }
   return amplitude_[0];
 }
@@ -83,7 +83,7 @@ double Sine<T>::frequency() const {
     s << "The frequency vector, [" << frequency_ << "], cannot be represented "
       << "as a scalar value. Please use "
       << "drake::systems::Sine::frequency_vector() instead.";
-    throw std::logic_error(s.str().c_str());
+    throw std::logic_error(s.str());
   }
   return frequency_[0];
 }
