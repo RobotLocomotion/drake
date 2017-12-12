@@ -634,7 +634,11 @@ TEST_F(RigidBodyPlantTimeSteppingDataTest, NormalJacobian) {
   const double radius = 0.05;
   std::vector<multibody::collision::PointPair> contacts;
   contacts.push_back(multibody::collision::PointPair());
+
+  // Contact point expressed in A's frame (p_AoC_A).
   contacts.back().ptA = Vector3<double>(0, 0, -radius);
+
+  // Contact point expressed in B's frame (p_BoC_B).
   contacts.back().ptB = Vector3<double>(0, 0, 0);
   contacts.back().normal = Vector3<double>(0, 0, 1);
   contacts.back().elementA = ball_element_;
@@ -692,7 +696,11 @@ TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
   const double radius = 0.05;
   std::vector<multibody::collision::PointPair> contacts;
   contacts.push_back(multibody::collision::PointPair());
+
+  // Contact point expressed in A's frame (p_AoC_A).
   contacts.back().ptA = Vector3<double>(0, 0, -radius);
+
+  // Contact point expressed in B's frame (p_BoC_B).
   contacts.back().ptB = Vector3<double>(0, 0, 0);
   contacts.back().normal = Vector3<double>(0, 0, 1);
   contacts.back().elementA = ball_element_;
