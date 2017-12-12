@@ -16,9 +16,10 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// An RGB-D renderer that renders RGB, depth and label images using
-/// VisualElement. The coordinate system of RgbdRenderer's viewpoint `R` is
-/// `X-right`, `Y-down` and `Z-forward` with respect to the rendered images.
+/// Abstract interface of RGB-D renderers that renders RGB, depth and label
+/// images using VisualElement. The coordinate system of RgbdRenderer's
+/// viewpoint `R` is `X-right`, `Y-down` and `Z-forward` with respect to the
+/// rendered images.
 ///
 /// Output image format:
 ///   - RGB (ImageRgba8U) : the RGB image has four channels in the following
@@ -38,7 +39,7 @@ namespace sensors {
 ///     corresponds to an object in the scene. For the pixels corresponding to
 ///     no body, namely the sky and the flat terrain, we assign Label::kNoBody
 ///     and Label::kFlatTerrain, respectively.
-class RgbdRenderer final {
+class RgbdRenderer {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRenderer)
 
@@ -156,8 +157,30 @@ class RgbdRenderer final {
   const ColorI& get_flat_terrain_color() const;
 
  private:
-  class Impl;
-  std::unique_ptr<Impl> impl_;
+  virtual void DoAddFlatTerrain() = 0;
+
+  virtual optional<VisualIndex> DoRegisterVisual(
+      const DrakeShapes::VisualElement& visual, int body_id) = 0;
+
+  virtual void DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
+                        int body_id, VisualIndex visual_id) const = 0;
+
+  virtual void DoUpdateViewpoint(const Eigen::Isometry3d& X_WR) const = 0;
+
+  virtual void DoRenderColorImage(ImageRgba8U* color_image_out) const = 0;
+
+  virtual void DoRenderDepthImage(ImageDepth32F* depth_image_out) const = 0;
+
+  virtual void DoRenderLabelImage(ImageLabel16I* label_image_out) const = 0;
+
+ protected:
+  const int width_;
+  const int height_;
+  const double fov_y_;
+  const double z_near_;
+  const double z_far_;
+  const bool show_window_;
+  const ColorPalette color_palette_;
 };
 
 }  // namespace sensors

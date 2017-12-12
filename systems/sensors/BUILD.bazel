@@ -176,10 +176,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "rgbd_renderer",
-    srcs = ["rgbd_renderer.cc"],
+    srcs = [
+        "rgbd_renderer.cc",
+        "rgbd_renderer_vtk.cc"
+    ],
     hdrs = [
         "color_palette.h",
         "rgbd_renderer.h",
+        "rgbd_renderer_vtk.h",
     ],
     deps = [
         ":image",
@@ -444,7 +448,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rgbd_renderer_test",
+    name = "rgbd_renderer_vtk_test",
     data = [
         ":test_models",
     ],

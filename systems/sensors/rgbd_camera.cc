@@ -11,7 +11,7 @@
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
-#include "drake/systems/sensors/rgbd_renderer.h"
+#include "drake/systems/sensors/rgbd_renderer_vtk.h"
 
 namespace drake {
 namespace systems {
@@ -72,7 +72,7 @@ RgbdCamera::RgbdCamera(const std::string& name,
       X_WB_initial_(
           Eigen::Translation3d(position[0], position[1], position[2]) *
           Eigen::Isometry3d(math::rpy2rotmat(orientation))),
-      renderer_(new RgbdRenderer(
+      renderer_(new RgbdRendererVTK(
           (Eigen::Translation3d(position[0], position[1], position[2]) *
            Eigen::Isometry3d(math::rpy2rotmat(orientation))) * X_BC_,
            kImageWidth, kImageHeight,
@@ -92,7 +92,7 @@ RgbdCamera::RgbdCamera(const std::string& name,
       camera_fixed_(false),
       color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y),
-      renderer_(new RgbdRenderer(Eigen::Isometry3d::Identity(),
+      renderer_(new RgbdRendererVTK(Eigen::Isometry3d::Identity(),
                                  kImageWidth, kImageHeight,
                                  z_near, z_far,
                                  fov_y, show_window)) {
