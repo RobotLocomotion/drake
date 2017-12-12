@@ -1,4 +1,4 @@
-#include "drake/systems/sensors/rgbd_renderer.h"
+#include "drake/systems/sensors/rgbd_renderer_vtk.h"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -102,7 +102,7 @@ class RgbdRendererTest : public ::testing::Test {
 
   // All tests on this class must invoke this first.
   void SetUp(const Eigen::Isometry3d& X_WR, bool add_terrain = false) {
-    renderer_ = std::make_unique<RgbdRenderer>(
+    renderer_ = std::make_unique<RgbdRendererVTK>(
         X_WR, kWidth, kHeight, kZNear, kZFar, kFovY, kShowWindow);
 
     if (add_terrain)
