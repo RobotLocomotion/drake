@@ -174,11 +174,23 @@ GTEST_TEST(RotationMatrix, IsValid) {
 }
 
 // Test ProjectMatrixToRotationMatrix.
-GTEST_TEST(RotationMatrix, ProjectMatrixToRotationMatrix) {
+GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   Matrix3d m;
   m << 1, 0.1, 0.1, -0.2, 1.0, 0.1, 0.5, 0.6, 0.8;
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
   RotationMatrix<double> R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  EXPECT_TRUE(R.IsValid());
+
+  m << 1, 2, 3, 4, 5, 6, 7, 8, -10;
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  EXPECT_TRUE(R.IsValid());
+
+  m << 1E-7, 2, 3, 4, 5, 6, 7, 8, -1E6;
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  EXPECT_TRUE(R.IsValid());
+
+  m << 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
   EXPECT_TRUE(R.IsValid());
 }
 
