@@ -19,7 +19,6 @@ double LineRoadCurve::p_from_s(double s, double r) const {
   // When superelevation() has no influence on the curve's
   // geometry and elevation() is at most linear along the curve,
   // use the known analytical expression.
-  unused(r);
   return elevation().p_s(s / p_scale());
 }
 
@@ -34,7 +33,6 @@ double LineRoadCurve::s_from_p(double p, double r) const {
   // When superelevation() has no influence on the curve's
   // geometry and elevation() is at most linear along the curve,
   // use the known analytical expression.
-  unused(r);
   return p_scale() * elevation().s_p(p);
 }
 

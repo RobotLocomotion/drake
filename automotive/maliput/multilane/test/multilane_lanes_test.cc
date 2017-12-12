@@ -248,20 +248,20 @@ class CorkScrew {
  public:
   // Constructs a corkscrew with the given @p radius,
   // @p axial_length and @p number_of_turns.
-  CorkScrew(T radius, T axial_length, T number_of_turns);
+  CorkScrew(const T& radius, const T& axial_length, const T& number_of_turns);
 
   // Returns the (x, y, z) position in the global frame at the
   // provided (@p s, @p r, @p h) location on the corkscrew.
-  Vector3<T> position_at_srh(T s, T r, T h) const;
+  Vector3<T> position_at_srh(const T& s, const T& r, const T& h) const;
 
   // Returns the (ẋ, ẏ, ż) velocity in the global frame at the
   // provided (@p s, @p r, @p h) location on the corkscrew (that
   // varies with path length scaling as @p r and/or @p h differ from 0.).
-  Vector3<T> velocity_at_srh(T s, T r, T h) const;
+  Vector3<T> velocity_at_srh(const T& s, const T& r, const T& h) const;
 
   // Returns the RPY orientation triplet at the provided
   // (@p s, @p r, @p h) location on the corkscrew.
-  Vector3<T> orientation_at_srh(T s, T r, T h) const;
+  Vector3<T> orientation_at_srh(const T& s, const T& r, const T& h) const;
 
   // Returns the path length of the corkscrew.
   inline T length() const { return length_; }
@@ -281,14 +281,16 @@ class CorkScrew {
 };
 
 template <typename T>
-CorkScrew<T>::CorkScrew(T radius, T axial_length, T number_of_turns)
+CorkScrew<T>::CorkScrew(const T& radius, const T& axial_length,
+                        const T& number_of_turns)
     : radius_(radius), axial_length_(axial_length),
       angular_length_(2 * M_PI * number_of_turns),
       length_(std::sqrt(std::pow(axial_length_, 2) +
                         std::pow(angular_length_ * radius_, 2))) {}
 
 template <typename T>
-Vector3<T> CorkScrew<T>::position_at_srh(T s, T r, T h) const {
+Vector3<T> CorkScrew<T>::position_at_srh(const T& s, const T& r,
+                                         const T& h) const {
   const T p = s / length();
   const T eff_r_offset = r + radius_;
   const T sgamma = std::sin(angular_length_ * p);
@@ -300,7 +302,8 @@ Vector3<T> CorkScrew<T>::position_at_srh(T s, T r, T h) const {
 
 
 template <typename T>
-Vector3<T> CorkScrew<T>::velocity_at_srh(T s, T r, T h) const {
+Vector3<T> CorkScrew<T>::velocity_at_srh(const T& s, const T& r,
+                                         const T& h) const {
   const T p = s / length();
   const T sgamma = std::sin(angular_length_ * p);
   const T cgamma = std::cos(angular_length_ * p);
@@ -312,7 +315,8 @@ Vector3<T> CorkScrew<T>::velocity_at_srh(T s, T r, T h) const {
 }
 
 template <typename T>
-Vector3<T> CorkScrew<T>::orientation_at_srh(T s, T r, T h) const {
+Vector3<T> CorkScrew<T>::orientation_at_srh(const T& s, const T& r,
+                                            const T& h) const {
   const T p = s / length();
   const T eff_r_offset = r + radius_;
   const T sgamma = std::sin(angular_length_ * p);
@@ -342,7 +346,6 @@ TEST_P(MultilaneLanesParamTest, CorkScrewLane) {
   const int kTurns = 10;
   const double kLength = 20.;
   const CorkScrew<double> corkscrew(r0, kLength, kTurns);
-
   const CubicPolynomial kCorkScrewPolynomial(
       0., 2. * M_PI * kTurns / kLength, 0., 0.);
   std::unique_ptr<RoadCurve> road_curve = std::make_unique<LineRoadCurve>(

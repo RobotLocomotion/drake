@@ -33,7 +33,7 @@ GTEST_TEST(IntegralFunctionTest, NthPowerMonomialTestCase) {
     VectorX<double> p(1); p(0) = nth;
     for (double x = kArgIntervalLBound;
          x <= kArgIntervalUBound; x += kArgStep) {
-      const double exact_solution = std::pow(x, nth + 1) / (nth + 1);
+      const double exact_solution = std::pow(x, nth + 1.) / (nth + 1.);
       EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy);
     }
   }
@@ -59,7 +59,7 @@ GTEST_TEST(IntegralFunctionTest, HyperbolicTangentTestCase) {
        a <= kParamIntervalUBound ; a += kParamStep) {
     VectorX<double> p(1); p(0) = a;
     for (double x = kArgIntervalLBound; x < kArgIntervalUBound; x+=kArgStep) {
-      const double exact_solution = 1./a * std::log(std::cosh(a * x));
+      const double exact_solution = std::log(std::cosh(a * x)) / a;
       EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy) <<
           "Failure integrating ∫ tanh(a⋅x) dx for a = " << a;
     }
@@ -94,7 +94,7 @@ GTEST_TEST(IntegralFunctionTest, SecondOrderRationalFunctionTestCase) {
       for (double x = kArgIntervalLBound;
            x <= kArgIntervalUBound; x += kArgStep) {
         const double exact_solution =
-            (1./(b - a)) * std::log(b/a * (x + a) / (x + b));
+            std::log((b / a) * ((x + a) / (x + b))) / (b - a);
         EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy);
       }
     }
@@ -121,7 +121,7 @@ GTEST_TEST(IntegralFunctionTest, ExponentialFunctionTestCase) {
     for (double x = kArgIntervalLBound;
          x <= kArgIntervalUBound; x += kArgStep) {
       const double exact_solution =
-          (x/a - 1./(a * a)) * std::exp(a * x) + 1./(a * a);
+          (x / a - 1. / (a * a)) * std::exp(a * x) + 1. / (a * a);
       EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy)
           << "Failure integrating ∫ i eⁿⁱ di for n = " << a;
     }

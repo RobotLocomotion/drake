@@ -28,7 +28,7 @@ class IntegralFunction {
   /// @param y The integral result up to @p x.
   /// @param p The vector of parameters.
   /// @return The integrand at @p x, @p y, parameterized with @p p.
-  typedef std::function<T(const T x, const T y, const VectorX<T>& p)>
+  typedef std::function<T(const T& x, const T& y, const VectorX<T>& p)>
       IntegrandFunction;
 
   /// Constructs a parameterizable scalar integral function.
@@ -37,7 +37,7 @@ class IntegralFunction {
   /// @param constant_of_integration An additive constant C.
   /// @param parameters The default parameters for the integrand.
   IntegralFunction(const IntegrandFunction& integrand_function,
-                   const T constant_of_integration,
+                   const T& constant_of_integration,
                    const VectorX<T>& parameters);
 
   /// Evaluates the function, integrating from 0 to @p b and
@@ -49,7 +49,7 @@ class IntegralFunction {
   /// @pre The size of the given @p params vector must match that of vector
   /// given on construction.
   /// @warning This method will abort if preconditions are not met.
-  T operator()(T b, const VectorX<T>& p) const;
+  T operator()(const T& b, const VectorX<T>& p) const;
 
   /// Evaluates the function, integrating from @p a to @p b and
   /// parameterizing with @p p.
@@ -61,7 +61,7 @@ class IntegralFunction {
   /// @pre The size of the given @p params vector must match that of vector
   /// given on construction.
   /// @warning This method will abort if preconditions are not met.
-  inline T operator()(T a, T b, const VectorX<T>& p) const {
+  inline T operator()(const T& a, const T& b, const VectorX<T>& p) const {
     return -(this->operator()(a, p) - this->operator()(b, p));
   }
 
@@ -71,24 +71,34 @@ class IntegralFunction {
   template <typename I>
   systems::IntegratorBase<T>* reset_integrator();
 
-  const systems::IntegratorBase<T>* get_integrator() const {
+  inline const systems::IntegratorBase<T>* get_integrator() const {
     return integrator_.get();
   }
 
-  systems::IntegratorBase<T>* get_mutable_integrator() {
+  inline systems::IntegratorBase<T>* get_mutable_integrator() {
     return integrator_.get();
   }
 
  private:
+  // Checks wheter a given systems::Context can be used to integrate up to the
+  // given @p upper_integration_bound and given @p parameters, allowing to
+  // optimize away integration context setups for successive, incremental
+  // evaluations of the function with the same parameterization.
+  //
+  // @param context Current integration context to be checked.
+  // @param upper_integration_bound The new upper integration bound.
+  // @param parameters The new vector of parameters.
+  // @return True if the same context can be used to perform the
+  // integration, False otherwise.
   bool IsContextValid(const systems::Context<T>& context,
-                      T upper_integration_bound,
+                      const T& upper_integration_bound,
                       const VectorX<T>& parameters) const;
 
-  /// ODE system integration context cache.
+  // ODE system integration context cache.
   mutable std::unique_ptr<systems::Context<T>> context_;
-  /// ODE system representation used for function evaluation.
+  // ODE system representation used for function evaluation.
   std::unique_ptr<systems::System<T>> system_;
-  /// Numerical integrator used for function evaluation.
+  // Numerical integrator used for function evaluation.
   std::unique_ptr<systems::IntegratorBase<T>> integrator_;
 };
 

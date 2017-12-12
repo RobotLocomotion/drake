@@ -12,9 +12,9 @@ namespace maliput {
 namespace multilane {
 
 /// A helper class used to describe general ODE systems i.e. ∂𝘆/∂x = F(x, 𝘆, 𝐩)
-/// with F : 𝕊ⁿ⁺¹ → 𝕊ⁿ , x ∈  𝕊 , 𝘆 ∈  𝕊ⁿ, 𝐩 ∈ 𝕊ⁱ.
+/// with F : 𝕊ⁿ⁺¹→ 𝕊ⁿ , x ∈ 𝕊 , 𝘆 ∈ 𝕊ⁿ, 𝐩 ∈ 𝕊ⁱ.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam T The 𝕊 domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
 class AnySystem : public systems::LeafSystem<T> {
  public:
@@ -22,13 +22,13 @@ class AnySystem : public systems::LeafSystem<T> {
 
   /// Transition function type in a general ODE system.
   ///
-  /// @param x The independent variable scalar x ∈  𝕊.
-  /// @param y The dependent variable vector 𝘆 ∈  𝕊ⁿ.
+  /// @param x The independent variable scalar x ∈ 𝕊.
+  /// @param y The dependent variable vector 𝘆 ∈ 𝕊ⁿ.
   /// @param p The parameter vector 𝐩 ∈ 𝕊ⁱ.
-  /// @param dydx The derivative vector ∂𝘆/∂x.
-  typedef std::function<void(const T x, const systems::VectorBase<T>& y,
+  /// @param dy_dx The derivative vector ∂𝘆/∂x.
+  typedef std::function<void(const T& x, const systems::VectorBase<T>& y,
                              const systems::BasicVector<T>& p,
-                             systems::VectorBase<T>* dydx)> TransitionFunction;
+                             systems::VectorBase<T>* dy_dx)> TransitionFunction;
 
   /// Constructs a system that will use the @p transition_function,
   /// parameterized as described by the @p param_vector_model, to compute the
@@ -73,27 +73,18 @@ template <typename T>
 void AnySystem<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  // Obtains the derivatives vector we need to write into.
-  systems::VectorBase<T>& derivatives_vector =
-      derivatives->get_mutable_vector();
-  // Obtains the state vector we need to read from.
-  const systems::VectorBase<T>& continuous_state_vector =
-      context.get_continuous_state_vector();
-  // Obtains the param vector we need to read from.
-  const systems::BasicVector<T>& numeric_parameter_vector =
-      context.get_numeric_parameter(0);
-  // Computes the derivatives at the current time and state,
-  // param
-  transition_function_(context.get_time(), continuous_state_vector,
-                       numeric_parameter_vector, &derivatives_vector);
+  // Computes the derivatives at the current time and state, and for the
+  // current paramaterization.
+  transition_function_(context.get_time(),
+                       context.get_continuous_state_vector(),
+                       context.get_numeric_parameter(0),
+                       &derivatives->get_mutable_vector());
 }
-
-
 
 template <typename T>
 IntegralFunction<T>::IntegralFunction(
     const typename IntegralFunction<T>::IntegrandFunction& integrand_function,
-    const T constant_of_integration, const VectorX<T>& parameters) {
+    const T& constant_of_integration, const VectorX<T>& parameters) {
   // Instantiates a single element state vector model using the given constant.
   systems::BasicVector<T> state_vector_model(
       VectorX<T>::Constant(1, constant_of_integration));
@@ -101,13 +92,13 @@ IntegralFunction<T>::IntegralFunction(
   systems::BasicVector<T> param_vector_model(parameters);
   // Generalizes the given scalar integrand function to build a system.
   typename AnySystem<T>::TransitionFunction scalar_transition_function =
-      [integrand_function](const T var, const systems::VectorBase<T>& state,
-                           const systems::BasicVector<T>& params,
-                           systems::VectorBase<T>* derivatives) {
+      [integrand_function](const T& x, const systems::VectorBase<T>& y,
+                           const systems::BasicVector<T>& p,
+                           systems::VectorBase<T>* dy_dx) {
     // TODO(hidmic): Find a better way to pass the parameters' vector, with
     // less copy overhead.
-    derivatives->SetAtIndex(0, integrand_function(var, state.GetAtIndex(0),
-                                                  params.CopyToVector()));
+    dy_dx->SetAtIndex(0, integrand_function(x, y.GetAtIndex(0),
+                                            p.CopyToVector()));
   };
   // Instantiates the generic system.
   system_ = std::make_unique<AnySystem<T>>(
@@ -115,11 +106,20 @@ IntegralFunction<T>::IntegralFunction(
 
   // Instantiates an explicit RK3 integrator by default.
   integrator_ = std::make_unique<systems::RungeKutta3Integrator<T>>(*system_);
+
+  // Sets step size and accuracy defaults that should in general be reasonable.
+  const double kDefaultAccuracy = 1e-4;
+  const double kMaxStepSize = 1.;
+  const double kInitialStepSize = 1e-4;
+
+  integrator_->request_initial_step_size_target(kInitialStepSize);
+  integrator_->set_maximum_step_size(kMaxStepSize);
+  integrator_->set_target_accuracy(kDefaultAccuracy);
 }
 
 template <typename T>
 bool IntegralFunction<T>::IsContextValid(const systems::Context<T>& context,
-                                         T upper_integration_bound,
+                                         const T& upper_integration_bound,
                                          const VectorX<T>& parameters) const {
   const systems::BasicVector<T>& numeric_parameters_vector =
       context.get_numeric_parameter(0);
@@ -128,16 +128,10 @@ bool IntegralFunction<T>::IsContextValid(const systems::Context<T>& context,
 }
 
 template <typename T>
-T IntegralFunction<T>::operator()(T b, const VectorX<T>& p) const {
+T IntegralFunction<T>::operator()(const T& b, const VectorX<T>& p) const {
   DRAKE_DEMAND(b >= 0.0);
 
   if (!context_ || !IsContextValid(*context_, b, p)) {
-    // Step size and accuracy defaults that should
-    // in general be reasonable.
-    const double kDefaultAccuracy = 1e-4;
-    const double kMaxStepSize = 1.;
-    const double kInitialStepSize = 1e-4;
-
     // Allocates system's default context.
     std::unique_ptr<systems::Context<T>> context =
         system_->CreateDefaultContext();
@@ -150,14 +144,19 @@ T IntegralFunction<T>::operator()(T b, const VectorX<T>& p) const {
         context->get_mutable_numeric_parameter(0);
     numeric_parameters_vector.SetFromVector(p);
 
+    // Keeps track of current step size and accuracy settings.
+    const T initial_step_size = integrator_->get_initial_step_size_target();
+    const T max_step_size = integrator_->get_maximum_step_size();
+    const T target_accuracy = integrator_->get_target_accuracy();
+
     // Resets the integrator internal state and context.
     integrator_->Reset();
     integrator_->reset_context(context.get());
 
-    // Reinitializes the integrator internal state and configuration.
-    integrator_->request_initial_step_size_target(kInitialStepSize);
-    integrator_->set_maximum_step_size(kMaxStepSize);
-    integrator_->set_target_accuracy(kDefaultAccuracy);
+    // Reinitializes the integrator internal state and settings.
+    integrator_->request_initial_step_size_target(initial_step_size);
+    integrator_->set_maximum_step_size(max_step_size);
+    integrator_->set_target_accuracy(target_accuracy);
     integrator_->Initialize();
 
     // Keep context for future reuse.
