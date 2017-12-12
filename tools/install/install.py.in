@@ -28,7 +28,7 @@ def is_executable(dst):
     # it is not always the case.
     file_output = check_output(["file", dst])
     # On Linux, executables can be ELF shared objects.
-    executable_match = r"(.*ELF.*(executable|shared object).*)|(Mach-O.*executable.*)"
+    executable_match = r"(.*ELF.*(executable|shared object).*)|(.*Mach-O.*executable.*)"
     re_result = re.match(executable_match, file_output)
     if re_result is not None:
         return True
