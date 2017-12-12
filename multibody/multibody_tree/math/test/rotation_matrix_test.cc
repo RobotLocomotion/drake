@@ -8,6 +8,7 @@ namespace math {
 namespace {
 
 using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -133,6 +134,14 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   R_CB *= R_BA;
   EXPECT_TRUE(R_CB.IsNearlyEqualTo(R_CA, 10 * kEpsilon));
   EXPECT_FALSE(R_CB.IsNearlyEqualTo(R_BA, 10000 * kEpsilon));
+
+  // Also test operator*() with vectors.
+  Vector3d vA(1, 2, 3);     // Vector v expressed in frame A.
+  Vector3d vC = R_CA * vA;  // Vector v expressed in frame C.
+  double vx = m_CA(0, 0) * vA(0) + m_CA(0, 1) * vA(1) + m_CA(0, 2) * vA(2);
+  double vy = m_CA(1, 0) * vA(0) + m_CA(1, 1) * vA(1) + m_CA(1, 2) * vA(2);
+  double vz = m_CA(2, 0) * vA(0) + m_CA(2, 1) * vA(1) + m_CA(2, 2) * vA(2);
+  EXPECT_TRUE(vC.isApprox(Vector3d(vx, vy, vz)));
 }
 
 // Test IsDeterminantPositive, IsOrthonormal, IsValid.
@@ -168,9 +177,9 @@ GTEST_TEST(RotationMatrix, IsValid) {
 GTEST_TEST(RotationMatrix, ProjectMatrixToRotationMatrix) {
   Matrix3d m;
   m << 1, 0.1, 0.1, -0.2, 1.0, 0.1, 0.5, 0.6, 0.8;
-  Matrix3d R = RotationMatrix<double>::ProjectMatrixToRotationMatrix(m);
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
-  EXPECT_TRUE(RotationMatrix<double>::IsValid(R, 128 * kEpsilon));
+  RotationMatrix<double> R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  EXPECT_TRUE(R.IsValid());
 }
 
 }  // namespace
