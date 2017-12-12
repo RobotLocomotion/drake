@@ -49,6 +49,9 @@ bool ValidateDir(const char* flagname, const std::string& dir) {
 DEFINE_bool(lookup, true,
             "If true, RgbdCamera faces a direction normal to the "
             "terrain plane.");
+DEFINE_bool(show_window, true,
+            "If true, RgbdCamera opens windows for displaying rendering "
+            "context.");
 DEFINE_double(duration, 5., "Total duration of the simulation in secondes.");
 DEFINE_string(sdf_dir, "",
               "The full path of directory where SDFs are located.");
@@ -132,7 +135,7 @@ int main() {
               "rgbd_camera", plant->get_rigid_body_tree(),
               config.pos, config.rpy,
               config.depth_range_near, config.depth_range_far,
-              config.fov_y),
+              config.fov_y, FLAGS_show_window),
       kCameraUpdatePeriod);
 
   auto image_to_lcm_image_array =
