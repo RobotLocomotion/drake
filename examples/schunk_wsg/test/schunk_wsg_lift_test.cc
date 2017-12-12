@@ -521,7 +521,8 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
 }
 
 // Instantiate the tests.
-INSTANTIATE_TEST_CASE_P(BothTests, SchunkWsgLiftTest, ::testing::Bool());
+INSTANTIATE_TEST_CASE_P(CompliantAndTimeSteppingTest, SchunkWsgLiftTest,
+                        ::testing::Bool());
 
 }  // namespace
 }  // namespace schunk_wsg

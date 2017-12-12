@@ -6,6 +6,16 @@
       <pose>0 0 0 0 0 0</pose>
         <inertial>
           <mass>5.</mass>
+          <!-- These values are set using inertia matrix values for a sphere
+               with radius 0.05 and mass 5.0 -->
+          <inertia>
+            <ixx>.005</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>.005</iyy>
+            <iyz>0</iyz>
+            <izz>.005</izz>
+        </inertia>
         </inertial>
       <visual name="ball">
         <pose>0 0 0 0 0 0</pose>

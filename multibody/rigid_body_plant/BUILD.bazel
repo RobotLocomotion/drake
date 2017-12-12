@@ -266,8 +266,8 @@ drake_cc_googletest(
         ":rigid_body_plant",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
         "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
     ],
 )
 
