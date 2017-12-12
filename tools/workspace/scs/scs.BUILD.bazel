@@ -1,11 +1,6 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "cmake_config",
-    "install",
-    "install_cmake_config",
-)
+load("@drake//tools/install:install.bzl", "install")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -20,10 +15,6 @@ config_setting(
     values = {"cpu": "k8"},
     visibility = ["//visibility:private"],
 )
-
-# TODO(jamiesnape, hongkai-dai): We probably do not need both :scsdir and
-# :scsindir. They are unlikely to happily coexist in libdrake.so and currently
-# libdrake.so links only to :scsdir.
 
 SCS_HDRS = glob(["include/*.h"]) + ["linsys/amatrix.h"]
 
@@ -66,46 +57,9 @@ cc_library(
     includes = ["include"],
 )
 
-cc_library(
-    name = "scsindir",
-    srcs = glob([
-        "linsys/*.c",
-        "linsys/common.h",
-        "linsys/indirect/*.c",
-        "linsys/indirect/*.h",
-        "src/*.c",
-    ]),
-    hdrs = SCS_HDRS,
-    defines = ["LAPACK_LIB_FOUND=1"],
-    includes = ["include"],
-    linkopts = select({
-        ":darwin": ["-framework Accelerate"],
-        ":linux": ["-lrt"],
-        "@//conditions:default": [],
-    }),
-    deps = select({
-        ":linux": [
-            "@blas",
-            "@lapack",
-        ],
-        "@//conditions:default": [],
-    }),
-)
-
-cmake_config(
-    package = "scs",
-    script = "@drake//tools/workspace/scs:scs-create-cps.py",
-    version_file = "include/constants.h",
-)
-
-install_cmake_config(package = "scs")
-
 install(
     name = "install",
-    targets = [
-        ":libscsdir.so",
-        ":scsindir",
-    ],
+    targets = [":libscsdir.so"],
     hdrs = SCS_HDRS,
     hdr_dest = "include/scs",
     hdr_strip_prefix = ["include"],
@@ -115,5 +69,4 @@ install(
         "linsys/direct/external/LDL_README.txt",
     ],
     doc_strip_prefix = ["linsys/direct/external"],
-    deps = [":install_cmake_config"],
 )
