@@ -1,10 +1,13 @@
 #pragma once
 
 #include <limits>
+#include <type_traits>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -17,10 +20,8 @@ namespace multibody {
 /// See @ref multibody_quantities for monogram notation for dynamics.
 /// See @ref orientation_discussion "for a discussion on rotation matrices".
 ///
-/// @note This class does not store the about-point nor the expressed-in frame,
-/// nor does this class help enforce consistency of the about-point or
-/// expressed-in frame. To help users of this class track the about-point and
-/// expressed-in frame. We strongly recommend the following notation.
+/// @note This class does not store the frames associated with a rotation matrix
+/// nor does it enforce strict proper usage of this class with vectors.
 ///
 /// @tparam T The unerlying scalar type. Must be a valid Eigen scalar.
 ///
@@ -41,11 +42,10 @@ class RotationMatrix {
   /// Construct a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws exception std::logic_error in debug builds if R violates
-  /// IsValid(R, tolerance), where tolerance is a small multiplier of
-  /// double-precision epsilon.
+  /// IsValid(R, get_internal_tolerance_for_orthonormality()).
   explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() {
 #ifdef DRAKE_ASSERT_IS_ARMED
-    SetOrThrowIfNotValid(R, kInternalTolerance_);
+    SetOrThrowIfNotValid(R, kInternalToleranceForOrthonormality_);
 #else
     SetUnchecked(R);
 #endif
@@ -53,10 +53,10 @@ class RotationMatrix {
 
   /// Set `this` %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @throws exception std::logic_error if R violates IsValid(R, tolerance),
-  /// where tolerance is a small multiplier of double-precision epsilon.
+  /// @throws exception std::logic_error in debug builds if R violates
+  /// IsValid(R, get_internal_tolerance_for_orthonormality())..
   void SetOrThrowIfNotValid(const Matrix3<T>& R) {
-    ThrowIfNotValid(R, kInternalTolerance_);
+    ThrowIfNotValid(R, kInternalToleranceForOrthonormality_);
     SetUnchecked(R);
   }
 
@@ -161,9 +161,31 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
 
+  /// Create a proper orthonormal matrix 'R" from a full-rank 3x3 matrix `M` by
+  /// minimizing ‖`R` - `M`‖²,  subject to  R * Rᵀ = I, det(R) = 1.
+  /// @param[in] M a full-rank 3x3 matrix.
+  /// @returns proper orthonormal matrix `R` that is close to `M`.
+  // @internal This function is not generated for symbolic Expression.
+  template <typename T1 = T>
+  static typename std::enable_if<!std::is_same<T1, symbolic::Expression>::value,
+                                 Matrix3<T1>>::type
+  ProjectMatrixToRotationMatrix(const Matrix3<T1>& M) {
+    return math::ProjectMatToRotMat(M);
+  }
+
+  /// @return allowable internal tolerance (small multiplier of double-precision
+  /// epsilon) used to check whether or not a rotation matrix is orthonormal.
+  /// @note The tolerance is chosen by developers to ensure a reasonably
+  /// valid (orthonormal) rotation matrix.
+  /// @note To orthonormalize a 3x3 matrix, use ProjectMatrixToRotationMatrix().
+  static double get_internal_tolerance_for_orthonormality() {
+    return kInternalToleranceForOrthonormality_;
+  }
+
  private:
-  // Declare the allowable internal tolerance for a valid rotation matrix.
-  static constexpr double kInternalTolerance_{
+  // Declare the allowable tolerance (small multiplier of double-precision
+  // epsilon) used to check whether or not a rotation matrix is orthonormal.
+  static constexpr double kInternalToleranceForOrthonormality_{
       128 * std::numeric_limits<double>::epsilon() };
 
   // Construct a %RotationMatrix from a Matrix3.  No check is performed to test
@@ -180,9 +202,9 @@ class RotationMatrix {
 
   // Set `this` %RotationMatrix from a Matrix3.
   // @param[in] R an allegedly valid rotation matrix.
-  // @param[in] tolerance parameter used in call to IsValid(R, `tolerance`),
+  // @param[in] tolerance parameter used in ThrowIfNotValid(`R`, `tolerance`),
   // which is usually a small multiplier of double-precision epsilon.
-  // @throws exception std::logic_error if R violates IsValid(R, `tolerance`).
+  // @throws exception std::logic_error if R violates ThrowIfNotValid().
   void SetOrThrowIfNotValid(const Matrix3<T>& R, const double tolerance) {
     ThrowIfNotValid(R, tolerance);
     SetUnchecked(R);

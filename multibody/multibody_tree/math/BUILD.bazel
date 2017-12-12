@@ -71,6 +71,7 @@ drake_cc_library(
     deps = [
         "//drake/common:default_scalars",
         "//drake/common:essential",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -86,7 +87,6 @@ drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":rotation_matrix",
-        "//drake/common:autodiff",
     ],
 )
 

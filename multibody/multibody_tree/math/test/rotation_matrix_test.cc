@@ -164,6 +164,14 @@ GTEST_TEST(RotationMatrix, IsValid) {
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 }
 
+// Test ProjectMatrixToRotationMatrix.
+GTEST_TEST(RotationMatrix, ProjectMatrixToRotationMatrix) {
+  Matrix3d m;
+  m << 1, 0.1, 0.1, -0.2, 1.0, 0.1, 0.5, 0.6, 0.8;
+  Matrix3d R = RotationMatrix<double>::ProjectMatrixToRotationMatrix(m);
+  EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
+  EXPECT_TRUE(RotationMatrix<double>::IsValid(R, 128 * kEpsilon));
+}
 
 }  // namespace
 }  // namespace math
