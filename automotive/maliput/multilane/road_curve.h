@@ -6,6 +6,7 @@
 
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/multilane/cubic_polynomial.h"
+#include "drake/automotive/maliput/multilane/integral_function.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
@@ -103,14 +104,14 @@ class RoadCurve {
   /// to longitudinal position (in path-length) `s` along a parallel curve
   /// laterally offset by `r` from the reference curve.
   /// @return The parametric position p along an offset of the reference curve.
-  virtual double p_from_s(double s, double r) const = 0;
+  virtual double p_from_s(double s, double r) const;
 
   /// Computes the path length integral in the interval of the parameter [0; p]
   /// and along a parallel curve laterally offset by `r` the planar reference
   /// curve.
   /// @return The path length integral of the curve composed with the elevation
   /// polynomial.
-  virtual double s_from_p(double p, double r) const = 0;
+  virtual double s_from_p(double p, double r) const;
 
   /// Computes the reference curve.
   /// @param p The reference curve parameter.
@@ -251,8 +252,7 @@ class RoadCurve {
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
   RoadCurve(const CubicPolynomial& elevation,
-            const CubicPolynomial& superelevation)
-      : elevation_(elevation), superelevation_(superelevation) {}
+            const CubicPolynomial& superelevation);
 
  private:
   // A polynomial that represents the elevation change as a function of p.
@@ -260,6 +260,12 @@ class RoadCurve {
   // A polynomial that represents the superelevation angle change as a function
   // of p.
   CubicPolynomial superelevation_;
+  // The inverse arc length integral function, or the arc length s as function
+  // of the parameter p.
+  IntegralFunction<double> p_from_s_;
+  // The arc length integral function, or the arc length s as function of the
+  // parameter p.
+  IntegralFunction<double> s_from_p_;
 };
 
 }  // namespace multilane
