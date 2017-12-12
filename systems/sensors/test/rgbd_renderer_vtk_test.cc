@@ -1,133 +1,14 @@
 #include "drake/systems/sensors/rgbd_renderer_vtk.h"
-
-#include <Eigen/Dense>
-#include <gtest/gtest.h>
-
-#include "drake/common/find_resource.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/test/rgbd_renderer_test.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 namespace {
 
-using Eigen::Isometry3d;
+using RgbdRendererVTKTest = RgbdRendererTest<RgbdRendererVTK>;
 
-const int kWidth = 640;
-const int kHeight = 480;
-const double kZNear = 0.5;
-const double kZFar = 5.;
-const double kFovY = M_PI_4;
-const bool kShowWindow = true;
-
-// The following tolerance is used due to a precision difference between Ubuntu
-// Linux and Mac OSX.
-const double kColorPixelTolerance = 1.001;
-const double kDepthTolerance = 1.1e-4;
-
-// Holds `(x, y)` indices of the screen coordinate system where the ranges of
-// `x` and `y` are [0, kWidth) and [0, kHeight) respectively.
-struct ScreenCoord {
-  int x{};
-  int y{};
-};
-
-void CompareColor(const uint8_t* pixel,
-                  const sensors::ColorI& color,
-                  int alpha) {
-  ASSERT_NEAR(pixel[0], color.r, kColorPixelTolerance);
-  ASSERT_NEAR(pixel[1], color.g, kColorPixelTolerance);
-  ASSERT_NEAR(pixel[2], color.b, kColorPixelTolerance);
-  ASSERT_EQ(pixel[3], alpha);
-}
-
-// This suite tests RgbdRenderer.
-class RgbdRendererTest : public ::testing::Test {
- public:
-  RgbdRendererTest() :
-      color_(kWidth, kHeight), depth_(kWidth, kHeight), label_(kWidth, kHeight),
-      // Looking strait down from 3m above the ground.
-      X_WR_(Eigen::Translation3d(0, 0, kDefaultDistance) *
-            Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) *
-            Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ())) {}
-
- protected:
-  void Render() {
-    renderer_->RenderColorImage(&color_);
-    renderer_->RenderDepthImage(&depth_);
-    renderer_->RenderLabelImage(&label_);
-  }
-
-  void VerifyUniformColor(const sensors::ColorI& pixel, int alpha) {
-    for (int y = 0; y < kHeight; ++y) {
-      for (int x = 0; x < kWidth; ++x) {
-        CompareColor(color_.at(x, y), pixel, alpha);
-      }
-    }
-  }
-
-  void VerifyUniformLabel(int16_t label) {
-    for (int y = 0; y < kHeight; ++y) {
-      for (int x = 0; x < kWidth; ++x) {
-        ASSERT_EQ(label_.at(x, y)[0], label);
-      }
-    }
-  }
-
-  void VerifyUniformDepth(float depth) {
-    for (int y = 0; y < kHeight; ++y) {
-      for (int x = 0; x < kWidth; ++x) {
-        ASSERT_NEAR(depth_.at(x, y)[0], depth, kDepthTolerance);
-      }
-    }
-  }
-
-  // Verifies the chosen pixels, i.e. `kOutliers`, belong to the ground.
-  void VerifyOutliers() {
-    const auto& kTerrain = renderer_->get_flat_terrain_color();
-    for (const auto& screen_coord : kOutliers) {
-      const int x = screen_coord.x;
-      const int y = screen_coord.y;
-      // Color
-      CompareColor(color_.at(x, y), kTerrain, 255u);
-      // Depth
-      ASSERT_NEAR(depth_.at(x, y)[0], kDefaultDistance, kDepthTolerance);
-      // Label
-      ASSERT_EQ(label_.at(x, y)[0], Label::kFlatTerrain);
-    }
-  }
-
-  void SetUp() override {}
-
-  // All tests on this class must invoke this first.
-  void SetUp(const Eigen::Isometry3d& X_WR, bool add_terrain = false) {
-    renderer_ = std::make_unique<RgbdRendererVTK>(
-        X_WR, kWidth, kHeight, kZNear, kZFar, kFovY, kShowWindow);
-
-    if (add_terrain)
-      renderer_->AddFlatTerrain();
-  }
-
-  const sensors::ColorI kDefaultVisualColor = {179u, 179u, 179u};
-  const float kDefaultDistance{3.f};
-  // `kInlier` is chosen to point to a pixel representing an object in the
-  // test scene.
-  const ScreenCoord kInlier = {320, 240};
-  // The outliers are chosen to point to pixels representing the ground,
-  // not objects in the test scene.
-  const std::array<ScreenCoord, 4> kOutliers{{
-      {10, 10}, {10, 470}, {630, 10}, {630, 470}}};
-
-  ImageRgba8U color_;
-  ImageDepth32F depth_;
-  ImageLabel16I label_;
-  Isometry3d X_WR_;
-
-  std::unique_ptr<RgbdRenderer> renderer_;
-};
-
-TEST_F(RgbdRendererTest, InstantiationTest) {
+TEST_F(RgbdRendererVTKTest, InstantiationTest) {
   SetUp(Isometry3d::Identity());
 
   EXPECT_EQ(renderer_->width(), kWidth);
@@ -135,7 +16,7 @@ TEST_F(RgbdRendererTest, InstantiationTest) {
   EXPECT_EQ(renderer_->fov_y(), kFovY);
 }
 
-TEST_F(RgbdRendererTest, NoBodyTest) {
+TEST_F(RgbdRendererVTKTest, NoBodyTest) {
   SetUp(Isometry3d::Identity());
   Render();
 
@@ -149,7 +30,7 @@ TEST_F(RgbdRendererTest, NoBodyTest) {
   }
 }
 
-TEST_F(RgbdRendererTest, TerrainTest) {
+TEST_F(RgbdRendererVTKTest, TerrainTest) {
   SetUp(X_WR_, true);
 
   const auto& kTerrain = renderer_->get_flat_terrain_color();
@@ -185,7 +66,7 @@ TEST_F(RgbdRendererTest, TerrainTest) {
   }
 }
 
-TEST_F(RgbdRendererTest, HorizonTest) {
+TEST_F(RgbdRendererVTKTest, HorizonTest) {
   // Camera at the origin, pointing in a direction parallel to the ground.
   Isometry3d X_WR =
       Eigen::Translation3d(0, 0, 0) *
@@ -226,7 +107,7 @@ TEST_F(RgbdRendererTest, HorizonTest) {
   }
 }
 
-TEST_F(RgbdRendererTest, BoxTest) {
+TEST_F(RgbdRendererVTKTest, BoxTest) {
   SetUp(X_WR_, true);
 
   // Sets up a box.
@@ -254,7 +135,7 @@ TEST_F(RgbdRendererTest, BoxTest) {
   ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
-TEST_F(RgbdRendererTest, SphereTest) {
+TEST_F(RgbdRendererVTKTest, SphereTest) {
   SetUp(X_WR_, true);
 
   // Sets up a sphere.
@@ -281,7 +162,7 @@ TEST_F(RgbdRendererTest, SphereTest) {
   ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
-TEST_F(RgbdRendererTest, CylinderTest) {
+TEST_F(RgbdRendererVTKTest, CylinderTest) {
   SetUp(X_WR_, true);
 
   // Sets up a sphere.
@@ -308,7 +189,7 @@ TEST_F(RgbdRendererTest, CylinderTest) {
   ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
-TEST_F(RgbdRendererTest, MeshTest) {
+TEST_F(RgbdRendererVTKTest, MeshTest) {
   SetUp(X_WR_, true);
 
   Isometry3d X_WV = Isometry3d::Identity();
