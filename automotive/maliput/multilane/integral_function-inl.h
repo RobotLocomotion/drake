@@ -75,10 +75,9 @@ void AnySystem<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   // Computes the derivatives at the current time and state, and for the
   // current paramaterization.
-  transition_function_(context.get_time(),
-                       context.get_continuous_state_vector(),
-                       context.get_numeric_parameter(0),
-                       &derivatives->get_mutable_vector());
+  transition_function_(
+      context.get_time(), context.get_continuous_state_vector(),
+      context.get_numeric_parameter(0), &derivatives->get_mutable_vector());
 }
 
 template <typename T>
@@ -95,11 +94,11 @@ IntegralFunction<T>::IntegralFunction(
       [integrand_function](const T& x, const systems::VectorBase<T>& y,
                            const systems::BasicVector<T>& p,
                            systems::VectorBase<T>* dy_dx) {
-    // TODO(hidmic): Find a better way to pass the parameters' vector, with
-    // less copy overhead.
-    dy_dx->SetAtIndex(0, integrand_function(x, y.GetAtIndex(0),
-                                            p.CopyToVector()));
-  };
+        // TODO(hidmic): Find a better way to pass the parameters' vector, with
+        // less copy overhead.
+        dy_dx->SetAtIndex(
+            0, integrand_function(x, y.GetAtIndex(0), p.CopyToVector()));
+      };
   // Instantiates the generic system.
   system_ = std::make_unique<AnySystem<T>>(
       scalar_transition_function, state_vector_model, param_vector_model);

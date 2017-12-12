@@ -27,18 +27,19 @@ GTEST_TEST(IntegralFunctionTest, NthPowerMonomialTestCase) {
       [](double x, double x_n, const VectorX<double> p) {
         unused(x_n);
         return std::pow(x, p(0));
-      }, 0.0, VectorX<double>::Zero(1));
+      },
+      0.0, VectorX<double>::Zero(1));
 
-  for (int nth = kLowestOrder ; nth <= kHighestOrder ; ++nth) {
-    VectorX<double> p(1); p(0) = nth;
-    for (double x = kArgIntervalLBound;
-         x <= kArgIntervalUBound; x += kArgStep) {
+  for (int nth = kLowestOrder; nth <= kHighestOrder; ++nth) {
+    VectorX<double> p(1);
+    p(0) = nth;
+    for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
+         x += kArgStep) {
       const double exact_solution = std::pow(x, nth + 1.) / (nth + 1.);
       EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy);
     }
   }
 }
-
 
 // Numerical integration test for ∫ tanh(a⋅x) dx = a⁻¹ ln(cosh(a⋅x))
 GTEST_TEST(IntegralFunctionTest, HyperbolicTangentTestCase) {
@@ -53,15 +54,17 @@ GTEST_TEST(IntegralFunctionTest, HyperbolicTangentTestCase) {
       [](double x, double x_n, const VectorX<double> p) {
         unused(x_n);
         return std::tanh(p(0) * x);
-      }, 0.0, VectorX<double>::Zero(1));
+      },
+      0.0, VectorX<double>::Zero(1));
 
-  for (double a = kParamIntervalLBound ;
-       a <= kParamIntervalUBound ; a += kParamStep) {
-    VectorX<double> p(1); p(0) = a;
-    for (double x = kArgIntervalLBound; x < kArgIntervalUBound; x+=kArgStep) {
+  for (double a = kParamIntervalLBound; a <= kParamIntervalUBound;
+       a += kParamStep) {
+    VectorX<double> p(1);
+    p(0) = a;
+    for (double x = kArgIntervalLBound; x < kArgIntervalUBound; x += kArgStep) {
       const double exact_solution = std::log(std::cosh(a * x)) / a;
-      EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy) <<
-          "Failure integrating ∫ tanh(a⋅x) dx for a = " << a;
+      EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy)
+          << "Failure integrating ∫ tanh(a⋅x) dx for a = " << a;
     }
   }
 }
@@ -84,15 +87,17 @@ GTEST_TEST(IntegralFunctionTest, SecondOrderRationalFunctionTestCase) {
   const IntegralFunction<double> integral_function(
       [](double x, double x_n, const VectorX<double> p) {
         unused(x_n);
-        return 1./((x + p(0)) * (x + p(1)));
-      }, 0.0, VectorX<double>::Zero(2));
-  for (double a = k1stPoleIntervalLBound;
-       a <= k1stPoleIntervalUBound; a += k1stPoleStep) {
-    for (double b = k2ndPoleIntervalLBound;
-         b <= k2ndPoleIntervalUBound; b += k2ndPoleStep) {
-      VectorX<double> p(2); p << a, b;
-      for (double x = kArgIntervalLBound;
-           x <= kArgIntervalUBound; x += kArgStep) {
+        return 1. / ((x + p(0)) * (x + p(1)));
+      },
+      0.0, VectorX<double>::Zero(2));
+  for (double a = k1stPoleIntervalLBound; a <= k1stPoleIntervalUBound;
+       a += k1stPoleStep) {
+    for (double b = k2ndPoleIntervalLBound; b <= k2ndPoleIntervalUBound;
+         b += k2ndPoleStep) {
+      VectorX<double> p(2);
+      p << a, b;
+      for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
+           x += kArgStep) {
         const double exact_solution =
             std::log((b / a) * ((x + a) / (x + b))) / (b - a);
         EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy);
@@ -114,12 +119,14 @@ GTEST_TEST(IntegralFunctionTest, ExponentialFunctionTestCase) {
       [](double x, double x_n, const VectorX<double> p) {
         unused(x_n);
         return x * std::exp(p(0) * x);
-      }, 0.0, VectorX<double>::Zero(1));
-  for (double a = kParamIntervalLBound;
-       a <= kParamIntervalUBound ; a += kParamStep) {
-    VectorX<double> p(1); p(0) = a;
-    for (double x = kArgIntervalLBound;
-         x <= kArgIntervalUBound; x += kArgStep) {
+      },
+      0.0, VectorX<double>::Zero(1));
+  for (double a = kParamIntervalLBound; a <= kParamIntervalUBound;
+       a += kParamStep) {
+    VectorX<double> p(1);
+    p(0) = a;
+    for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
+         x += kArgStep) {
       const double exact_solution =
           (x / a - 1. / (a * a)) * std::exp(a * x) + 1. / (a * a);
       EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy)
@@ -142,13 +149,15 @@ GTEST_TEST(IntegralFunctionTest, TrigonometricFunctionTestCase) {
       [](double x, double x_n, const VectorX<double> p) {
         unused(x_n);
         return x * std::sin(p(0) * x);
-      }, 0.0, VectorX<double>::Zero(1));
+      },
+      0.0, VectorX<double>::Zero(1));
 
-  for (double a = kParamIntervalLBound;
-       a <= kParamIntervalUBound ; a += kParamStep) {
-    VectorX<double> p(1); p(0) = a;
-    for (double x = kArgIntervalLBound;
-         x <= kArgIntervalUBound; x += kArgStep) {
+  for (double a = kParamIntervalLBound; a <= kParamIntervalUBound;
+       a += kParamStep) {
+    VectorX<double> p(1);
+    p(0) = a;
+    for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
+         x += kArgStep) {
       const double exact_solution =
           -x * std::cos(a * x) / a + std::sin(a * x) / (a * a);
       EXPECT_NEAR(integral_function(x, p), exact_solution, kAccuracy);
