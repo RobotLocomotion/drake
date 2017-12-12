@@ -513,3 +513,25 @@ def drake_cc_googletest(
         name = name,
         deps = deps,
         **kwargs)
+
+def drake_example_cc_binary(
+        srcs = [],
+        deps = [],
+        **kwargs):
+    """Creates a rule to declare a C++ binary using `libdrake.so`.
+
+    This rule is a wrapper around `drake_cc_binary()`. It adds `libdrake.so`
+    and `drake_lcmtypes_headers` as dependencies to the target.
+
+    This allows the creation of examples for drake that depend on `libdrake.so`
+    which let the process discover the location of drake resources at runtime
+    based on the location of `libdrake.so` which is loaded by the process.
+    """
+    if not native.package_name().startswith("examples"):
+      fail("`drake_example_cc_binary()` macro should only be used in examples subdirectory.")
+    drake_cc_binary(
+        srcs = srcs +
+        ["//tools/install/libdrake:libdrake.so",
+         "//lcmtypes:drake_lcmtypes_headers"],
+        deps = deps + ["//tools/install/libdrake:drake_shared_library"],
+        **kwargs)

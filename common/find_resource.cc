@@ -7,6 +7,7 @@
 #include <spruce.hh>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/find_loaded_library.h"
 #include "drake/common/never_destroyed.h"
 
 using std::string;
@@ -104,6 +105,14 @@ optional<std::string> getenv_optional(const char* const name) {
     return string(value);
   }
   return nullopt;
+}
+
+optional<std::string>  resource_path_from_libdrake() {
+  optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake.so");
+  if (libdrake_dir) {
+    libdrake_dir = libdrake_dir.value() + "/../share/drake";
+  }
+  return libdrake_dir;
 }
 
 bool is_relative_path(const string& path) {
@@ -217,8 +226,12 @@ Result FindResource(string resource_path) {
       spruce::path candidate_dir(search_path);
       candidate_dirs.emplace_back(check_candidate_dir(candidate_dir));
   }
+  // (3) Find where `librake.so` is, and add search path that corresponds to
+  // resource folder in install tree based on `libdrake.so` location.
+  optional<string> from_libdrake = resource_path_from_libdrake();
+  candidate_dirs.emplace_back(from_libdrake);
 
-  // (3) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // (4) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(find_sentinel_dir());
 
