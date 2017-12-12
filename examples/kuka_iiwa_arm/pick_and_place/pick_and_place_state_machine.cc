@@ -512,8 +512,7 @@ ComputeNominalConfigurations(const WorldState& env_state,
           const Vector2<double> knot_tspan{t(i), t(i)};
 
           // Extract desired position and orientation of end effector at the
-          // given
-          // state.
+          // given state.
           const Isometry3<double>& X_WG = X_WG_desired->at(state);
           const Vector3<double>& r_WG = X_WG.translation();
           const Quaternion<double>& quat_WG{X_WG.rotation()};
@@ -692,16 +691,16 @@ PickAndPlaceStateMachine::ComputeTrajectories(
             orientation_tolerance = loose_rot_tol_;
             fall_back_to_joint_space_interpolation = true;
             duration = long_duration;
-          } break;
-
+            break;
+          }
           case PickAndPlaceState::kLiftFromPlace: {
             position_tolerance = loose_pos_tol_.minCoeff();
             orientation_tolerance = loose_rot_tol_;
             fall_back_to_joint_space_interpolation = true;
             duration = extra_long_duration;
-          } break;
-
-          default:  // No action needed for other cases
+            break;
+          }
+          default:  // No action needed for other cases.
             break;
         }
         PostureInterpolationRequest request;
@@ -757,33 +756,42 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
   switch (state_) {
     case PickAndPlaceState::kOpenGripper: {
       next_state = PickAndPlaceState::kPlan;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kApproachPickPregrasp: {
       next_state = PickAndPlaceState::kApproachPick;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kApproachPick: {
       next_state = PickAndPlaceState::kGrasp;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kGrasp: {
       schunk_action = CloseGripper;
       next_state = PickAndPlaceState::kLiftFromPick;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kLiftFromPick: {
       next_state = PickAndPlaceState::kApproachPlacePregrasp;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kApproachPlacePregrasp: {
       next_state = PickAndPlaceState::kApproachPlace;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kApproachPlace: {
       next_state = PickAndPlaceState::kPlace;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kPlace: {
       next_state = PickAndPlaceState::kLiftFromPlace;
-    } break;
+      break;
+    }
     case PickAndPlaceState::kLiftFromPlace: {
       next_state = PickAndPlaceState::kReset;
-    } break;
-    default:  // No action needed for other cases
+      break;
+    }
+    default:  // No action needed for other cases.
       break;
   }
 
@@ -824,13 +832,15 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
               interpolation_result_map_->clear();
               state_ = PickAndPlaceState::kPlan;
             }
-          } break;
+            break;
+          }
           default:  // No action needed for other cases
             break;
         }
         iiwa_move_.Reset();
       }
-    } break;
+      break;
+    }
     // Schunk gripper actions
     case PickAndPlaceState::kOpenGripper: {
       if (!wsg_act_.ActionStarted()) {
@@ -857,7 +867,8 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         state_ = next_state;
         wsg_act_.Reset();
       }
-    } break;
+      break;
+    }
     case PickAndPlaceState::kPlan: {
       drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
       // Compute all the desired configurations.
@@ -883,7 +894,8 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
             {0.0, 1.0}, {q_initial, q_seed}));
         ++planning_failure_count_;
       }
-    } break;
+      break;
+    }
     case PickAndPlaceState::kReset: {
       if (single_move_) {
         state_ = PickAndPlaceState::kDone;
@@ -892,9 +904,11 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
       } else {
         state_ = PickAndPlaceState::kOpenGripper;
       }
-    } break;
+      break;
+    }
     case PickAndPlaceState::kDone: {
-    } break;
+      break;
+    }
   }
 }
 
