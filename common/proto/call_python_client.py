@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 import os
 from Queue import Queue
+import signal
 import stat
 import sys
 from threading import Thread
@@ -15,6 +16,13 @@ import numpy as np
 from google.protobuf.internal.decoder import _DecodeVarint32
 
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
+
+
+def _ensure_sigint_handler():
+    # On Mac, even using `exec <cmd>` in `bash` still yields an ignored SIGINT.
+    sig = signal.getsignal(signal.SIGINT)
+    if signal.getsignal(signal.SIGINT) == signal.SIG_IGN:
+        signal.signal(signal.SIGINT, signal.default_int_handler)
 
 
 def _get_required_helpers(scope_locals):
@@ -522,6 +530,7 @@ def _read_next(f, msg):
 
 
 def main(argv):
+    _ensure_sigint_handler()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--no_loop", action='store_true',
