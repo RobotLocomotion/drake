@@ -138,10 +138,8 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   // Also test operator*() with vectors.
   Vector3d vA(1, 2, 3);     // Vector v expressed in frame A.
   Vector3d vC = R_CA * vA;  // Vector v expressed in frame C.
-  double vx = m_CA(0, 0) * vA(0) + m_CA(0, 1) * vA(1) + m_CA(0, 2) * vA(2);
-  double vy = m_CA(1, 0) * vA(0) + m_CA(1, 1) * vA(1) + m_CA(1, 2) * vA(2);
-  double vz = m_CA(2, 0) * vA(0) + m_CA(2, 1) * vA(1) + m_CA(2, 2) * vA(2);
-  EXPECT_TRUE(vC.isApprox(Vector3d(vx, vy, vz)));
+  Vector3d vC_expected = m_CA * vA;
+  EXPECT_TRUE(vC.isApprox(vC_expected));
 }
 
 // Test IsDeterminantPositive, IsOrthonormal, IsValid.
@@ -192,6 +190,11 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   m << 0, 0, 0, 0, 0, 0, 0, 0, 0;
   R = RotationMatrix<double>::ProjectToRotationMatrix(m);
   EXPECT_TRUE(R.IsValid());
+
+  m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
+  EXPECT_THROW(R = RotationMatrix<double>::ProjectToRotationMatrix(m),
+               std::logic_error);
 }
 
 }  // namespace
