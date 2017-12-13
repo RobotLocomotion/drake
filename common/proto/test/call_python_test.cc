@@ -1,6 +1,7 @@
 #include "drake/common/proto/call_python.h"
 
 #include <cmath>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -9,6 +10,12 @@
 
 namespace drake {
 namespace common {
+
+
+GTEST_TEST(TestCallPython, Start) {
+  // Tell client to expect a finishing signal.
+  CallPython("execution_check.start");
+}
 
 GTEST_TEST(TestCallPython, DispStr) {
   CallPython("print", "Hello");
@@ -66,6 +73,26 @@ GTEST_TEST(TestCallPython, RemoteVarTest) {
   CallPython("print", "Third column should now be [1, 2, 3]: ");
   magic.slice(":", 2) = Eigen::Vector3d(1, 2, 3);
   CallPython("print", magic);
+
+  // Send variables in different ways.
+  CallPython("print", "Variable setting:");
+  CallPython("setvar", "a1", "abc");
+  CallPython("setvars", "a2", "def", "a3", "ghi");
+  CallPython("exec", "a4 = 'jkl'");
+  CallPython("locals")["a5"] = "mno";
+  CallPython("locals").attr("update")(ToPythonKwargs("a6", "pqr"));
+  CallPython("eval", "print(a1 + a2 + a3 + a4 + a5 + a6)");
+
+  // Test deleting variables.
+  CallPython("exec", "assert 'a6' in locals()");
+  CallPython("exec", "del a6");
+  CallPython("exec", "assert 'a6' not in locals()");
+  CallPython("print", "Deleted variable");
+
+  // Test primitive assignment.
+  CallPython("setvar", "b1", 10);
+  CallPython("exec", "b1 += 20");
+  CallPython("exec", "assert b1 == 30");
 }
 
 GTEST_TEST(TestCallPython, Plot2d) {
@@ -79,12 +106,11 @@ GTEST_TEST(TestCallPython, Plot2d) {
 
   CallPython("print", "Plotting a sine wave.");
   CallPython("figure", 1);
+  CallPython("clf");
   CallPython("plot", time, val);
-  // Send variables in different ways.
-  CallPython("locals")["val"] = val;
-  CallPython("locals").attr("update")(ToPythonKwargs("time", time));
-  // Check usage.
-  CallPython("eval", "print(len(val) + len(time))");
+  // Send variables.
+  CallPython("setvars", "time", time, "val", val);
+  CallPython("eval", "print(len(time) + len(val))");
 }
 
 GTEST_TEST(TestCallPython, Plot3d) {
@@ -107,10 +133,16 @@ GTEST_TEST(TestCallPython, Plot3d) {
   }
   CallPython("print", "Plotting a simple 3D surface");
   CallPython("figure", 2);
+  CallPython("clf");
   CallPython("surf", x, y, Z);
   // Send variables.
   CallPython("setvars", "x", x, "y", y, "Z", Z);
   CallPython("eval", "print(len(x) + len(y) + len(Z))");
+}
+
+GTEST_TEST(TestCallPython, Finish) {
+  // Signal finishing to client.
+  CallPython("execution_check.finish");
 }
 
 }  // namespace common

@@ -85,6 +85,8 @@ def _get_required_helpers(scope_locals):
         """Sets multiple variables in the client's locals. """
         scope_locals.update(make_kwargs(*args))
 
+    execution_check = _ExecutionCheck()
+
     out = locals().copy()
     # Scrub extra stuff.
     del out["scope_locals"]
@@ -94,6 +96,49 @@ def _get_required_helpers(scope_locals):
 class _KwArgs(dict):
     # Indicates values meant solely for `**kwargs`.
     pass
+
+
+def _cexec(stmt, globals_, locals_):
+    # Enable executing a statement via evaluation so that we may control
+    # "locals" and "globals" explicitly.
+    eval_locals = dict(stmt=stmt, locals_=locals_, _cexec_impl=_cexec_impl)
+    # Dispatch to function that calls "exec" so that we can control locals
+    # and globals.
+    eval("_cexec_impl(stmt, locals_)", eval_locals, globals_)
+
+
+def _cexec_impl(_stmt, _locals):
+    # Implementation for `_cexec` to capture locals and globals.
+    locals().update(_locals)
+    _old_vars = None
+    _new_vars = None
+    _old_vars = locals().keys()
+    # Execute with context.
+    exec _stmt
+    # Figure out new things.
+    locals_new = locals()
+    _new_vars = set(locals_new.keys()) - set(_old_vars)
+    for var in _locals.keys():
+        if var not in locals_new:
+            del _locals[var]
+        else:
+            _locals[var] = locals()[var]
+    for var in _new_vars:
+        _locals[var] = locals()[var]
+
+
+class _ExecutionCheck(object):
+    # Allows checking that we received and executed a complete set of
+    # instructions.
+    def __init__(self):
+        self.count = 0
+
+    def start(self):
+        self.count += 1
+
+    def finish(self):
+        assert self.count > 0
+        self.count -= 1
 
 
 def _merge_dicts(*args):
@@ -283,8 +328,14 @@ class CallPythonClient(object):
 
         self.scope_locals.update(_tmp_args=inputs, _tmp_kwargs=kwargs or {})
         # N.B. No try-catch block here. Can change this if needed.
-        out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",
-                   self.scope_globals, self.scope_locals)
+        if function_name == "exec":
+            assert len(inputs) == 1
+            assert kwargs is None or len(kwargs) == 0
+            _cexec(inputs[0], self.scope_globals, self.scope_locals)
+            out = None
+        else:
+            out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",
+                       self.scope_globals, self.scope_locals)
         self.scope_locals.update(_tmp_out=out)
         # Update outputs.
         self._client_vars[out_id] = out
@@ -293,6 +344,13 @@ class CallPythonClient(object):
         """ Runs the client code.
         @return True if no error encountered. """
         self.handle_messages(record=False)
+        execution_check = self.scope_globals['execution_check']
+        if not self._had_error and execution_check.count != 0:
+            self._had_error = True
+            sys.stderr.write(
+                "ERROR: Invalid termination. " +
+                "'execution_check.finish' called insufficient number of " +
+                "times: {}\n".format(execution_check.count))
         return not self._had_error
 
     def handle_messages(self, max_count=None, record=True, execute=True):
