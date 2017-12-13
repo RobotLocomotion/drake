@@ -3,7 +3,10 @@
 #include <cmath>
 #include <string>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
+
+DEFINE_bool(with_error, false, "Inject an error towards the end.");
 
 // TODO(eric.cousineau): Instrument client to verify output (and make this a
 // unittest).
@@ -11,10 +14,18 @@
 namespace drake {
 namespace common {
 
+// This file signals to `call_python_full_test.sh` that a full execution has
+// been completed. This is useful for the `threading-loop` case, where we want
+// send a Ctrl+C interrupt only when finished.
+constexpr char kDoneFile[] = "/tmp/python_rpc_done";
 
 GTEST_TEST(TestCallPython, Start) {
   // Tell client to expect a finishing signal.
   CallPython("execution_check.start");
+  // Ensure that we remove `kDoneFile` so that we are not stopped in the middle
+  // of execution.
+  CallPython("setvar", "done_file", kDoneFile);
+  CallPython("exec", "if os.path.exists(done_file): os.remove(done_file)");
 }
 
 GTEST_TEST(TestCallPython, DispStr) {
@@ -69,6 +80,12 @@ GTEST_TEST(TestCallPython, RemoteVarTest) {
 
   CallPython("print", "row 1 (accessed via logicals) is");
   CallPython("print", magic.slice(Vector3<bool>(false, true, false), ":"));
+
+  // Place error code toward the end, so that the test fails if this is not
+  // processed.
+  if (FLAGS_with_error) {
+    CallPython("bad_function_name");
+  }
 
   CallPython("print", "Third column should now be [1, 2, 3]: ");
   magic.slice(":", 2) = Eigen::Vector3d(1, 2, 3);
@@ -143,6 +160,8 @@ GTEST_TEST(TestCallPython, Plot3d) {
 GTEST_TEST(TestCallPython, Finish) {
   // Signal finishing to client.
   CallPython("execution_check.finish");
+  // Signal finishing to `call_python_full_test.sh`.
+  CallPython("exec", "with open(done_file, 'a'): os.utime(done_file, None)");
 }
 
 }  // namespace common
