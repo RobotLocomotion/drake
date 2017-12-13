@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import copy
 import argparse
 import os
 from Queue import Queue
 import stat
 import sys
-from threading import Thread, Lock
+from threading import Thread
 import time
 
 import numpy as np
@@ -178,6 +177,14 @@ def default_globals():
         """Waits to allow user interaction with plots."""
         plt.show(block=True)
 
+    def pause(interval):
+        """Pause for `interval` seconds, letting the GUI flush its event queue.
+
+        @note This is a *necessary* function to be defined if these globals are
+        not used!
+        """
+        plt.pause(interval)
+
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
         """Plots a 3d surface."""
         fig = plt.gcf()
@@ -230,7 +237,8 @@ class CallPythonClient(object):
     purposes.
     """
     def __init__(self, filename=None, stop_on_error=True,
-                 scope_globals=None, scope_locals=None):
+                 scope_globals=None, scope_locals=None,
+                 threaded=True, loop=False):
         if filename is None:
             self.filename = _FILENAME_DEFAULT
         else:
@@ -251,11 +259,19 @@ class CallPythonClient(object):
         self.scope_globals = _merge_dicts(required_helpers, scope_globals)
 
         self._stop_on_error = stop_on_error
+        self._threaded = threaded
+        if not _is_fifo(self.filename):
+            if loop:
+                sys.stderr.write("Disabling looping for non-FIFO files.\n")
+                loop = False
+        self._loop = loop
 
         # Variables indexed by GUID.
         self._client_vars = {}
 
         self._had_error = False
+        self._done = False
+        self._file = None
 
     def _to_array(self, arg, dtype):
         # Converts a protobuf argument to the appropriate NumPy array (or
@@ -341,9 +357,15 @@ class CallPythonClient(object):
         self._client_vars[out_id] = out
 
     def run(self):
-        """ Runs the client code.
-        @return True if no error encountered. """
-        self.handle_messages(record=False)
+        """Runs the client code.
+
+        @return True if no error encountered.
+        """
+        if self._threaded:
+            self._handle_messages_threaded()
+        else:
+            self.handle_messages(record=False)
+        # Check any execution in progress.
         execution_check = self.scope_globals['execution_check']
         if not self._had_error and execution_check.count != 0:
             self._had_error = True
@@ -352,6 +374,58 @@ class CallPythonClient(object):
                 "'execution_check.finish' called insufficient number of " +
                 "times: {}\n".format(execution_check.count))
         return not self._had_error
+
+    def _handle_messages_threaded(self):
+        # Handles messages in a threaded fashion.
+        queue = Queue()
+
+        def producer_loop():
+            # Read messages from file, and queue them for execution.
+            for msg in self._read_next_message():
+                queue.put(msg)
+                # Check if an error occurred.
+                if self._done:
+                    break
+            # Wait until the queue empties out to signal completion from the
+            # producer's side.
+            if not self._done:
+                queue.join()
+                self._done = True
+
+        producer = Thread(name="Producer", target=producer_loop)
+        # @note Previously, when trying to do `queue.clear()` in the consumer,
+        # and `queue.join()` in the producer, there would be intermittent
+        # deadlocks. By demoting the producer to a daemon, I (eric.c) have not
+        # yet encountered a deadlock.
+        producer.daemon = True
+        producer.start()
+
+        # Consume.
+        # TODO(eric.cousineau): Trying to quit via Ctrl+C is awkward (but kinda
+        # works). Is there a way to have `plt.pause` handle Ctrl+C differently?
+        try:
+            pause = self.scope_globals['pause']
+            while not self._done:
+                # Process messages.
+                while not queue.empty():
+                    msg = queue.get()
+                    queue.task_done()
+                    self._execute_message(msg)
+                # Spin busy for a bit, let matplotlib (or whatever) flush its
+                # event queue.
+                pause(0.001)
+        except KeyboardInterrupt:
+            # User pressed Ctrl+C.
+            self._done = True
+            print("Quitting")
+        except Exception as e:
+            # We encountered an error, and must stop.
+            self._done = True
+            self._had_error = True
+            sys.stderr.write("ERROR: {}\n".format(e))
+            sys.stderr.write("  Stopping (--stop_on_error)\n")
+        # No need to worry about waiting for the producer, as it is a daemon
+        # thread.
 
     def handle_messages(self, max_count=None, record=True, execute=True):
         """Handle all messages sent (e.g., through IPython).
@@ -372,7 +446,7 @@ class CallPythonClient(object):
                 self._execute_message(msg)
             count += 1
             if record:
-                msgs.append(copy.deepcopy(msg))
+                msgs.append(msg)
             if max_count is not None and count >= max_count:
                 break
         return (count, msgs)
@@ -383,54 +457,94 @@ class CallPythonClient(object):
             self._execute_message(msg)
 
     def _read_next_message(self):
-        # Return a new incoming message using a generator.
-        # Not guaranteed to be a unique instance. Should copy if needed.
-        msg = MatlabRPC()
-        with open(self.filename, 'rb') as f:
-            while _read_next(f, msg):
-                yield msg
+        # Returns a new incoming message using a generator.
+        while not self._done:
+            f = self._get_file()
+            while not self._done:
+                msg = MatlabRPC()
+                status = _read_next(f, msg)
+                if status == _READ_GOOD:
+                    yield msg
+                elif status == _READ_END:
+                    break
+            # Close the file if we reach the end, NOT when exiting the scope
+            # (which is why `with` is not used here).
+            # This way the user can read a few messages at a time, with the
+            # same file handle.
+            # @note We must close / reopen the file when looping because the
+            # C++ program will effectively send a EOF signal when it closes
+            # the pipe.
+            self._close_file()
+            if not self._loop:
+                break
+
+    def _get_file(self):
+        # Gets file handle, opening if needed.
+        if self._file is None:
+            self._file = open(self.filename, 'rb')
+        return self._file
+
+    def _close_file(self):
+        # Closes file if open.
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
 
-# Number of bytes we need to consume so that we may still use
-# `_DecodeVarint32`.
-_PEEK_SIZE = 4
+def _is_fifo(filepath):
+    # Determine if a file is a FIFO named pipe or not.
+    # @ref https://stackoverflow.com/a/8558940/7829525
+    return stat.S_ISFIFO(os.stat(filepath).st_mode)
+
+
+_READ_GOOD = 1
+_READ_END = 2
 
 
 def _read_next(f, msg):
-    # Read next message from the given file, following suite with C++.
-    peek = f.read(_PEEK_SIZE)
+    # Reads next message from the given file, following suite with C++.
+    # Number of bytes we need to consume so that we may still use
+    # `_DecodeVarint32`.
+    peek_size = 4
+    peek = f.read(peek_size)
     if len(peek) == 0:
         # We have reached the end.
-        return 0
+        return _READ_END
     msg_size, peek_end = _DecodeVarint32(peek, 0)
-    peek_left = _PEEK_SIZE - peek_end
+    peek_left = peek_size - peek_end
     # Read remaining and concatenate.
     remaining = f.read(msg_size - peek_left)
     msg_raw = peek[peek_end:] + remaining
     assert len(msg_raw) == msg_size
     # Now read the message.
     msg.ParseFromString(msg_raw)
-    return msg_size
+    return _READ_GOOD
 
 
-if __name__ == "__main__":
+def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--no_loop", action='store_true',
         help="Do not loop the end for user interaction. With a FIFO pipe, " +
-             "this will end session after C++ program closes.")
+             "this will end session after C++ program closes. " +
+             "Looping cannot be done with non-FIFO files.")
+    parser.add_argument(
+        "--no_threading", action='store_true',
+        help="Disable threaded dispatch.")
     parser.add_argument("--stop_on_error", action='store_true',
                         help="Stop client if there is an error when " +
                              "executing a call.")
     parser.add_argument("-f", "--file", type=str, default=None)
-    args = parser.parse_args(sys.argv[1:])
+    args = parser.parse_args(argv)
 
-    client = CallPythonClient(args.file, stop_on_error=args.stop_on_error)
+    client = CallPythonClient(
+        args.file, stop_on_error=args.stop_on_error,
+        threaded=not args.no_threading, loop=not args.no_loop)
     good = client.run()
-    if not args.no_loop:
-        wait = client.scope_globals["wait"]
-        print("Waiting... Ctrl+C may not work.")
-        print("  Use Ctrl+\\ to forcefully abort.")
-        wait()
+    return good
+
+
+if __name__ == "__main__":
+    good = main(sys.argv[1:])
     if not good:
         exit(1)
