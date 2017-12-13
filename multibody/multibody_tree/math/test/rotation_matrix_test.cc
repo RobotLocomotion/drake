@@ -193,7 +193,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
 
   m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
-  EXPECT_THROW(R = RotationMatrix<double>::ProjectToRotationMatrix(m),
+  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m),
                std::logic_error);
 }
 
