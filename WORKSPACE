@@ -406,9 +406,9 @@ new_local_repository(
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
-    commit = "ignition-math3_3.2.0",
-    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",  # noqa
-    strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4",
+    commit = "392237e10ba4",
+    sha256 = "44068bb91c07c9305213057cad801ae5b689ac1a5f37cd8330dd6e729df8f5b0",  # noqa
+    strip_prefix = "ignitionrobotics-ign-math-392237e10ba4",
     build_file = "tools/workspace/ignition_math/ignition_math.BUILD.bazel",
 )
 
