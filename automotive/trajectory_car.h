@@ -104,7 +104,7 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
   }
   /// @}
 
- protected:
+ private:
   /// Data structure returned by CalcRawPose containing raw pose information.
   struct PositionHeading {
     Point2 position = Point2::Zero();
@@ -168,7 +168,6 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
     ImplCalcTimeDerivatives(params, *state, *input, rates);
   }
 
- private:
   // Allow different specializations to access each other's private data.
   template <typename> friend class TrajectoryCar;
 
