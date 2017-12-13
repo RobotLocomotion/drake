@@ -164,7 +164,7 @@ def linux_fix_rpaths(dst_full):
     # libraries and we do not worry about these. We only make sure that
     # drake libraries will be found.
     file_output = check_output(["ldd", dst_full])
-    rpath = set()
+    rpath = []
     for line in file_output.splitlines():
         ldd_result = line.strip().split(' => ')
         # If library found and not in install prefix, then skip.
@@ -182,11 +182,24 @@ def linux_fix_rpaths(dst_full):
         diff_path = os.path.dirname(
             os.path.relpath(libs[soname][0], lib_dirname)
         )
-        rpath.add('$ORIGIN' + '/' + diff_path)
+        rpath.append('$ORIGIN' + '/' + diff_path)
 
     # Ensure that system libraries get loaded instead of those bundled with
     # MATLAB that are added to the LD_LIBRARY_PATH.
-    rpath.add('/usr/lib/x86_64-linux-gnu/')
+    rpath.append('/usr/lib/x86_64-linux-gnu/')
+
+    # The above may have duplicated some items into the list.  Uniquify it
+    # here, preserving order.  Note that we do not just use a set() above,
+    # since order matters.
+    seen = {}
+    newrpath = []
+    for item in rpath:
+        if item in seen:
+            continue
+        seen[item] = 1
+        newrpath.append(item)
+
+    rpath = newrpath
 
     # Replace build tree RPATH with computed install tree RPATH. Build tree
     # RPATH are automatically removed by this call. RPATH will contain the
