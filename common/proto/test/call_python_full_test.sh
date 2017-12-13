@@ -112,9 +112,7 @@ threading-no_loop() {
 sub-tests threading-no_loop
 
 threading-loop() {
-    # Use `exec` so that we inherit SIGINT (Ctrl+C) handlers.
-    # @ref https://stackoverflow.com/a/44538799/7829525
-    exec ${py_client_cli} ${py_flags} &
+    ${py_client_cli} ${py_flags} &
     pid=$!
     rm -f ${done_file}
     ${cc_bin} ${cc_bin_flags} ${cc_flags}
