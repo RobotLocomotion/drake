@@ -233,11 +233,22 @@ DRAKE_RESOURCE_SENTINEL = adjust_label_for_drake_hoist(
 
 drake_cc_library(
     name = "find_resource",
-    srcs = ["find_resource.cc"],
-    hdrs = ["find_resource.h"],
+    srcs = [
+        "find_loaded_library.cc",
+        "find_resource.cc",
+    ],
+    hdrs = [
+        "find_loaded_library.h",
+        "find_resource.h",
+    ],
     data = [
         DRAKE_RESOURCE_SENTINEL,
     ],
+    # for libdrake.so path on linux
+    linkopts = select({
+        "//tools/cc_toolchain:linux": ["-ldl"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":essential",
         "@spruce",
@@ -589,6 +600,13 @@ drake_cc_googletest(
     data = [
         "test/find_resource_test_data.txt",
     ],
+    deps = [
+        ":find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_loaded_library_test",
     deps = [
         ":find_resource",
     ],
