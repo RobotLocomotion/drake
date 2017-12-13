@@ -47,6 +47,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+bison
 chrpath
 clang-4.0
 clang-format-4.0
@@ -56,6 +57,7 @@ coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
+flex
 g++
 g++-5
 g++-5-multilib
@@ -127,6 +129,26 @@ else
 fi
 
 rm /tmp/bazel_0.6.1-linux-x86_64.deb
+
+# Install IBEX, a dReal dependency.
+wget -O /tmp/libibex-dev_2.6.3_amd64.deb \
+     https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files/libibex-dev_2.6.3.20171211141723.gitda10a84afd381535ba4b682c8eb80321a6d2a914~16.04_amd64.deb
+if echo "f1f943d26c7c04bc024563d4cf7c0e610b4fd98822d2e03b9cb89b79c8fb63ae /tmp/libibex-dev_2.6.3_amd64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/libibex-dev_2.6.3_amd64.deb
+else
+  die "The IBEX deb does not have the expected SHA256.  Not installing IBEX."
+fi
+rm /tmp/libibex-dev_2.6.3_amd64.deb
+
+# Install dReal.
+wget -O /tmp/dreal_4.17.12.2_amd64.deb \
+     https://dl.bintray.com/dreal/dreal/dreal_4.17.12.2_amd64.deb
+if echo "9347492e47a518ff78991e15fe9de0cff0200573091385e42940cdbf1fcf77a5 /tmp/dreal_4.17.12.2_amd64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/dreal_4.17.12.2_amd64.deb
+else
+  die "The dReal deb does not have the expected SHA256.  Not installing dReal."
+fi
+rm /tmp/dreal_4.17.12.2_amd64.deb
 
 # Remove deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then

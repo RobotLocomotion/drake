@@ -41,7 +41,7 @@ clang-format
 cmake
 diffstat
 doxygen
-dreal-deps/coinor/clp
+dreal/dreal/dreal
 glew
 glib
 graphviz
