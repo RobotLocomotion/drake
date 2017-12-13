@@ -2,10 +2,15 @@
 
 from __future__ import print_function
 import copy
-import numpy as np
+import argparse
+import os
+from Queue import Queue
+import stat
 import sys
 from threading import Thread, Lock
+import time
 
+import numpy as np
 # Hacky, but this is the simplest route right now.
 # @ref https://www.datadoghq.com/blog/engineering/protobuf-parsing-in-python/
 from google.protobuf.internal.decoder import _DecodeVarint32
@@ -17,11 +22,11 @@ def _get_required_helpers(scope_locals):
     # Provides helpers to keep C++ interface as simple as possible.
     # @returns Dictionary containing the helpers needed.
     def getitem(obj, index):
-        """ Global function for `obj[index]`. """
+        """Global function for `obj[index]`. """
         return obj[index]
 
     def setitem(obj, index, value):
-        """ Global function for `obj[index] = value`. """
+        """Global function for `obj[index] = value`. """
         obj[index] = value
         return obj[index]
 
@@ -29,19 +34,19 @@ def _get_required_helpers(scope_locals):
         return obj(*args, **kwargs)
 
     def pass_through(value):
-        """ Pass-through for direct variable access. """
+        """Pass-through for direct variable access. """
         return value
 
     def make_tuple(*args):
-        """ Create a tuple from an argument list. """
+        """Create a tuple from an argument list. """
         return tuple(args)
 
     def make_list(*args):
-        """ Create a list from an argument list. """
+        """Create a list from an argument list. """
         return list(args)
 
     def make_kwargs(*args):
-        """ Create a keyword argument object from an argument list. """
+        """Create a keyword argument object from an argument list. """
         assert len(args) % 2 == 0
         keys = args[0::2]
         values = args[1::2]
@@ -49,7 +54,7 @@ def _get_required_helpers(scope_locals):
         return _KwArgs(**kwargs)
 
     def _make_slice(expr):
-        """ Parse a slice object from a string. """
+        """Parse a slice object from a string. """
         def to_piece(s):
             return s and int(s) or None
         pieces = map(to_piece, expr.split(':'))
@@ -59,7 +64,7 @@ def _get_required_helpers(scope_locals):
             return slice(*pieces)
 
     def make_slice_arg(*args):
-        """ Create a scalar or tuple for acessing objects via slices. """
+        """Create a scalar or tuple for acessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
             if isinstance(arg, str):
@@ -73,11 +78,11 @@ def _get_required_helpers(scope_locals):
             return tuple(out)
 
     def setvar(var, value):
-        """ Sets a variable in the client's locals. """
+        """Sets a variable in the client's locals. """
         scope_locals[var] = value
 
     def setvars(*args):
-        """ Sets multiple variables in the client's locals. """
+        """Sets multiple variables in the client's locals. """
         scope_locals.update(make_kwargs(*args))
 
     out = locals().copy()
@@ -100,40 +105,51 @@ def _merge_dicts(*args):
 
 
 def default_globals():
-    """ Creates default globals for code that the client side can execute.
+    """Creates default globals for code that the client side can execute.
+
     This is geared for convenient (not necessarily efficient) plotting
-    with `matplotlib`. """
+    with `matplotlib`.
+    """
+    # @note This imports modules at a function-scope rather than at a
+    # module-scope, which does not satisfy PEP8. This is intentional, as it
+    # allows for a cleaner scope separation between the client core code (e.g.
+    # `CallPythonClient`) and the client user code (e.g. `plot(x, y)`).
+    # TODO(eric.cousineau): Consider relegating this to a different module,
+    # possibly when this falls under `pydrake`.
     import numpy as np
     from mpl_toolkits.mplot3d import Axes3D
     import matplotlib
     import matplotlib.pyplot as plt
     import pylab  # See `%pylab?` in IPython.
 
-    # Where better to put this?
+    # TODO(eric.cousineau): Where better to put this?
     matplotlib.interactive(True)
 
     def disp(value):
-        """ Alias for print. """
+        """Alias for print."""
         print(value)
 
     def wait():
-        """ Wait to allow user interaction with plots. """
+        """Waits to allow user interaction with plots."""
         plt.show(block=True)
 
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
-        """ Plot a 3d surface. """
+        """Plots a 3d surface."""
         fig = plt.gcf()
         ax = fig.gca(projection='3d')
         X, Y = np.meshgrid(x, y)
         ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
 
     def show():
-        """ Show `matplotlib` images without blocking.
-        Generally not needed if `matplotlib.is_interactive()` is true. """
+        """Shows `matplotlib` images without blocking.
+
+        Generally not needed if `matplotlib.is_interactive()` is true.
+        """
         plt.show(block=False)
 
     def magic(N):
-        """ Simple odd-only case for magic squares.
+        """Provides simple odd-only case for magic squares.
+
         @ref https://scipython.com/book/chapter-6-numpy/examples/creating-a-magic-square  # noqa
         """
         assert N % 2 == 1
@@ -163,8 +179,11 @@ _FILENAME_DEFAULT = "/tmp/python_rpc"
 
 
 class CallPythonClient(object):
-    """ Provides a client to receive Python commands (e.g. printing or
-    plotting) from a C++ server for debugging purposes. """
+    """Provides a client to receive Python commands.
+
+    Enables printing or plotting from a C++ application for debugging
+    purposes.
+    """
     def __init__(self, filename=None, stop_on_error=True,
                  scope_globals=None, scope_locals=None):
         if filename is None:
@@ -194,7 +213,7 @@ class CallPythonClient(object):
         self._had_error = False
 
     def _to_array(self, arg, dtype):
-        # Convert a protobuf argument to the appropriate NumPy array (or
+        # Converts a protobuf argument to the appropriate NumPy array (or
         # scalar).
         np_raw = np.frombuffer(arg.data, dtype=dtype)
         if arg.shape_type == MatlabArray.SCALAR:
@@ -209,6 +228,7 @@ class CallPythonClient(object):
             return np_raw.reshape(arg.cols, arg.rows).T
 
     def _execute_message(self, msg):
+        # Executes a message, handling / recording that an error occurred.
         if self._stop_on_error:
             # Do not wrap in a `try` / `catch` to simplify debugging.
             self._execute_message_impl(msg)
@@ -217,6 +237,7 @@ class CallPythonClient(object):
                 self._execute_message_impl(msg)
             except Exception as e:
                 sys.stderr.write("ERROR: {}\n".format(e))
+                sys.stderr.write("  Continuing (no --stop_on_error)\n")
                 self._had_error = True
 
     def _execute_message_impl(self, msg):
@@ -275,7 +296,7 @@ class CallPythonClient(object):
         return not self._had_error
 
     def handle_messages(self, max_count=None, record=True, execute=True):
-        """ Handle all messages sent (e.g., through IPython).
+        """Handle all messages sent (e.g., through IPython).
         @param max_count Maximum number of messages to handle.
         @param record Record all messages and return them.
         @param execute Execute the given message upon receiving it.
@@ -283,7 +304,8 @@ class CallPythonClient(object):
         (e.g. 0 if no more messages left).
         and `msgs` are either the messages themselves for playback.
         and (b) the messages themselves for playback (if record==True),
-        otherwise an empty list. """
+        otherwise an empty list.
+        """
         assert record or execute, "Not doing anything useful?"
         count = 0
         msgs = []
@@ -298,7 +320,7 @@ class CallPythonClient(object):
         return (count, msgs)
 
     def execute_messages(self, msgs):
-        """ Execute a set of recorded messages. """
+        """Executes a set of recorded messages."""
         for msg in msgs:
             self._execute_message(msg)
 
@@ -334,8 +356,6 @@ def _read_next(f, msg):
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--no_loop", action='store_true',
