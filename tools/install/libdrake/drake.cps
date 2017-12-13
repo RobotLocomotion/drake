@@ -40,9 +40,9 @@
       "Hints": ["@prefix@/lib/cmake/gflags"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "ignition-math3": {
-      "Version": "3.2.0",
-      "Hints": ["@prefix@/lib/cmake/ignition-math3"],
+    "ignition-math4": {
+      "Version": "4.0.0",
+      "Hints": ["@prefix@/lib/cmake/ignition-math4"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "ignition-rndf0": {
@@ -112,7 +112,7 @@
         "Bullet:BulletCollision",
         "Eigen3:Eigen",
         "fcl:fcl",
-        "ignition-math3:ignition-math3",
+        "ignition-math4:ignition-math4",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
         "optitrack:lcmtypes_optitrack-cpp",

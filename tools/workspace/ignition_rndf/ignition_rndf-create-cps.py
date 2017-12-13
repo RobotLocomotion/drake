@@ -14,9 +14,9 @@ content = """
   "License": "Apache-2.0",
   "Version": "%(MAJOR_VERSION)s.%(MINOR_VERSION)s.%(PATCH_VERSION)s",
   "Requires": {
-    "ignition-math3": {
-      "Version": "%(ignition-math3_VERSION)s",
-      "Hints": ["@prefix@/lib/cmake/ignition-math3"],
+    "ignition-math4": {
+      "Version": "%(ignition-math4_VERSION)s",
+      "Hints": ["@prefix@/lib/cmake/ignition-math4"],
       "X-CMake-Find-Args": [ "CONFIG" ]
     }
   },
@@ -26,7 +26,7 @@ content = """
       "Type": "dylib",
       "Location": "@prefix@/lib/libignition_rndf.so",
       "Includes": [ "@prefix@/include" ],
-      "Requires": [ "ignition-math3:ignition-math3" ]
+      "Requires": [ "ignition-math4:ignition-math4" ]
     }
   }
 }

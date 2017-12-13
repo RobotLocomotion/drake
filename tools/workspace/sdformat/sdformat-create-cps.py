@@ -18,10 +18,10 @@ content = """
       "Version": "1.58",
       "X-CMake-Find-Args": ["MODULE"]
     },
-    "ignition-math3": {
-      "Version": "%(ignition-math3_VERSION)s",
-      "Hints": ["@prefix@/lib/cmake/ignition-math3"],
-      "X-CMake-Find-Args": ["CONFIG"]
+    "ignition-math4": {
+      "Version": "%(ignition-math4_VERSION)s",
+      "Hints": ["@prefix@/lib/cmake/ignition-math4"],
+      "X-CMake-Find-Args": [ "CONFIG" ]
     }
   },
   "Default-Components": [ ":sdformat" ],
@@ -33,7 +33,7 @@ content = """
       "Link-Flags": ["-ltinyxml"],
       "Requires": [
         "Boost:boost",
-        "ignition-math3:ignition-math3"
+        "ignition-math4:ignition-math4"
       ]
     }
   }
