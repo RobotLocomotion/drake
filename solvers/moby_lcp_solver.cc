@@ -45,7 +45,7 @@ VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
 template <>
 VectorX<double> LinearSolve(
     const MatrixX<double>& M, const VectorX<double>& b) {
- return M.partialPivLu().solve(b);
+  return M.partialPivLu().solve(b);
 }
 
 // Utility function for copying part of a matrix (designated by the indices
