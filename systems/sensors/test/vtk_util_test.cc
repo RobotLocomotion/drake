@@ -16,7 +16,7 @@ namespace sensors {
 namespace vtk_util {
 namespace {
 
-const double kTolerance = std::numeric_limits<double>::epsilon();
+const double kTolerance = 1e-15;
 const double kSize = 10.;
 const double kHalfSize = kSize * 0.5;
 const int kNumPoints = 4;
@@ -28,10 +28,10 @@ struct Point {
 };
 
 const Point kExpectedPointSet[kNumPoints] = {
-  Point{-kHalfSize, -kHalfSize, 0.},
-  Point{-kHalfSize,  kHalfSize, 0.},
   Point{ kHalfSize, -kHalfSize, 0.},
-  Point{ kHalfSize,  kHalfSize, 0.}
+  Point{ kHalfSize,  kHalfSize, 0.},
+  Point{-kHalfSize, -kHalfSize, 0.},
+  Point{-kHalfSize,  kHalfSize, 0.}
 };
 
 GTEST_TEST(PointsCorrespondenceTest, PlaneCreationTest) {
@@ -43,9 +43,9 @@ GTEST_TEST(PointsCorrespondenceTest, PlaneCreationTest) {
     double dut_point[3];
     dut->GetOutput()->GetPoints()->GetPoint(i, dut_point);
 
-    EXPECT_EQ(kExpectedPointSet[i].x, dut_point[0]);
-    EXPECT_EQ(kExpectedPointSet[i].y, dut_point[1]);
-    EXPECT_EQ(kExpectedPointSet[i].z, dut_point[2]);
+    EXPECT_NEAR(kExpectedPointSet[i].x, dut_point[0], kTolerance);
+    EXPECT_NEAR(kExpectedPointSet[i].y, dut_point[1], kTolerance);
+    EXPECT_NEAR(kExpectedPointSet[i].z, dut_point[2], kTolerance);
   }
 }
 
