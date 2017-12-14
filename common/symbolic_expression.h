@@ -24,6 +24,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/polynomial.h"
@@ -768,6 +769,13 @@ template <>
 struct is_numeric<symbolic::Expression> {
   static constexpr bool value = false;
 };
+
+/// Returns the symbolic expression's value() as a double.
+///
+/// @throws If it is not possible to evaluate the symbolic expression with an
+/// empty environment.
+double ExtractDoubleOrThrow(const symbolic::Expression& e);
+
 }  // namespace drake
 
 namespace std {

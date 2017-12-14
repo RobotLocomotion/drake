@@ -1849,6 +1849,20 @@ TEST_F(SymbolicExpressionTest, MemcpyKeepsExpressionIntact) {
     EXPECT_TRUE(IsMemcpyMovable(expr));
   }
 }
+
+TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
+  const Expression e1{10.0};
+  EXPECT_EQ(ExtractDoubleOrThrow(e1), 10.0);
+
+  // 'x_' can't be converted to a double value.
+  const Expression e2{x_};
+  EXPECT_THROW(ExtractDoubleOrThrow(e2), std::exception);
+
+  // 2x - 7 -2x + 2 => -5
+  const Expression e3{2 * x_ - 7 - 2 * x_ + 2};
+  EXPECT_EQ(ExtractDoubleOrThrow(e3), -5);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
