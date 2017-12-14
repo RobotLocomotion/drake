@@ -70,7 +70,7 @@ class ContactResultTestCommon : public ::testing::Test {
   const double kContactStaticFriction = kStaticFriction;
   const double kConstantDynamicFriction = kDynamicFriction;
   const double kVStictionTolerance = 0.01;  // m/s
-  const double kContactArea = 1.0;  // m^2
+  const double kContactRadius = 1.0;  // m
 
   // Places two spheres on the x-y plane mirrored across the x_anchor_ from
   // each other such there is 2 * `distance` units gap between them.  Negative

@@ -17,6 +17,10 @@ namespace kuka_iiwa_arm {
 
 constexpr int kIiwaArmNumJoints = 7;
 
+/// Returns the maximum joint velocities provided by Kuka.
+/// @return Maximum joint velocities (rad/s).
+VectorX<double> get_iiwa_max_joint_velocities();
+
 /// Computes the lumped inertia parameters of the gripper and the end effector
 /// link expressed in the end effector frame.
 /// @param world_tree The RigidBodyTree that contains the arm and the gripper
@@ -49,13 +53,12 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
 
-/// Scales a plan so that no step exceeds the maximum joint velocity
-/// specified.  The number of columns in @p keyframes must match the
-/// size of @p time.  Times must be in strictly increasing order.
-void ApplyJointVelocityLimits(double max_joint_velocity,
-                              const MatrixX<double>& keyframes,
+/// Scales a plan so that no step exceeds the robot's maximum joint velocities.
+/// The number of columns in @p keyframes must match the size of @p time.  Times
+/// must be in strictly increasing order.
+/// @see get_iiwa_max_joint_velocities
+void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
                               std::vector<double>* time);
-
 
 /// Makes a robotlocomotion::robot_plan_t message.  The number of
 /// columns in @p keyframes must match the size of @p time.  Times
@@ -63,6 +66,15 @@ void ApplyJointVelocityLimits(double max_joint_velocity,
 robotlocomotion::robot_plan_t EncodeKeyFrames(
     const RigidBodyTree<double>& robot, const std::vector<double>& time,
     const std::vector<int>& info, const MatrixX<double>& keyframes);
+
+/// Makes a robotlocomotion::robot_plan_t message.  The number of rows in @p
+/// keyframes must match the size of @p joint_names.  The number of columns in
+/// @p keyframes must match the size of @p time.  Times must be in strictly
+/// increasing order.
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const std::vector<std::string>& joint_names,
+    const std::vector<double>& time, const std::vector<int>& info,
+    const MatrixX<double>& keyframes);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

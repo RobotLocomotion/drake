@@ -58,8 +58,8 @@ DEFINE_double(ud, 0.2, "The dynamic coefficient of friction");
 DEFINE_double(v_tol, 0.01,
               "The maximum slipping speed allowed during stiction (m/s)");
 DEFINE_double(dissipation, 2, "The contact model's dissipation (s/m)");
-DEFINE_double(contact_area, 1e-3,
-              "The characteristic scale of contact area (m^2)");
+DEFINE_double(contact_radius, 1e-3,
+              "The characteristic scale of radius (m) of the contact area");
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_int32(pin_count, 10, "The number of pins -- in the range [0, 10]");
 DEFINE_bool(playback, true, "If true, loops playback of simulation");
@@ -82,7 +82,7 @@ int main() {
   cout << "\tstatic friction:  " << FLAGS_us << "\n";
   cout << "\tdynamic friction: " << FLAGS_ud << "\n";
   cout << "\tslip threshold:   " << FLAGS_v_tol << "\n";
-  cout << "\tContact area:     " << FLAGS_contact_area << "\n";
+  cout << "\tContact radius:   " << FLAGS_contact_radius << "\n";
   cout << "\tdissipation:      " << FLAGS_dissipation << "\n";
   cout << "\tpin count:        " << FLAGS_pin_count << "\n";
 
@@ -121,7 +121,7 @@ int main() {
       .set_friction(FLAGS_us, FLAGS_ud);
   plant.set_default_compliant_material(default_material);
   CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.characteristic_radius = FLAGS_contact_radius;
   model_parameters.v_stiction_tolerance = FLAGS_v_tol;
   plant.set_contact_model_parameters(model_parameters);
 

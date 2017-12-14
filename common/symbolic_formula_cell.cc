@@ -18,7 +18,6 @@ namespace drake {
 namespace symbolic {
 
 using std::equal;
-using std::hash;
 using std::lexicographical_compare;
 using std::ostream;
 using std::ostringstream;
@@ -28,15 +27,22 @@ using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
 
-FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
-    : kind_{k}, hash_{hash_combine(hash, static_cast<size_t>(kind_))} {}
+FormulaCell::FormulaCell(const FormulaKind k)
+    : kind_{k} {}
 
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
                                              const Expression& lhs,
                                              const Expression& rhs)
-    : FormulaCell{k, hash_combine(lhs.get_hash(), rhs)},
+    : FormulaCell{k},
       e_lhs_{lhs},
       e_rhs_{rhs} {}
+
+void RelationalFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, e_lhs_);
+  hash_append(*hasher, e_rhs_);
+}
 
 Variables RelationalFormulaCell::GetFreeVariables() const {
   Variables ret{e_lhs_.GetVariables()};
@@ -66,8 +72,14 @@ bool RelationalFormulaCell::Less(const FormulaCell& f) const {
 
 NaryFormulaCell::NaryFormulaCell(const FormulaKind k,
                                  const set<Formula>& formulas)
-    : FormulaCell{k, hash_value<set<Formula>>{}(formulas)},
+    : FormulaCell{k},
       formulas_{formulas} {}
+
+void NaryFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, formulas_);
+}
 
 Variables NaryFormulaCell::GetFreeVariables() const {
   Variables ret{};
@@ -113,7 +125,9 @@ ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
 }
 
 FormulaTrue::FormulaTrue()
-    : FormulaCell{FormulaKind::True, hash<string>{}("True")} {}
+    : FormulaCell{FormulaKind::True} {}
+
+void FormulaTrue::HashAppendDetail(DelegatingHasher*) const {}
 
 Variables FormulaTrue::GetFreeVariables() const { return Variables{}; }
 
@@ -139,7 +153,9 @@ Formula FormulaTrue::Substitute(const Substitution&) const {
 ostream& FormulaTrue::Display(ostream& os) const { return os << "True"; }
 
 FormulaFalse::FormulaFalse()
-    : FormulaCell{FormulaKind::False, hash<string>{}("False")} {}
+    : FormulaCell{FormulaKind::False} {}
+
+void FormulaFalse::HashAppendDetail(DelegatingHasher*) const {}
 
 Variables FormulaFalse::GetFreeVariables() const { return Variables{}; }
 
@@ -165,11 +181,17 @@ Formula FormulaFalse::Substitute(const Substitution&) const {
 ostream& FormulaFalse::Display(ostream& os) const { return os << "False"; }
 
 FormulaVar::FormulaVar(const Variable& v)
-    : FormulaCell{FormulaKind::Var, hash_value<Variable>{}(v)}, var_{v} {
+    : FormulaCell{FormulaKind::Var}, var_{v} {
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic formulas.
   DRAKE_DEMAND(!var_.is_dummy());
   DRAKE_DEMAND(var_.get_type() == Variable::Type::BOOLEAN);
+}
+
+void FormulaVar::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, var_);
 }
 
 Variables FormulaVar::GetFreeVariables() const { return Variables{var_}; }
@@ -412,7 +434,13 @@ ostream& FormulaOr::Display(ostream& os) const {
 }
 
 FormulaNot::FormulaNot(const Formula& f)
-    : FormulaCell{FormulaKind::Not, f.get_hash()}, f_{f} {}
+    : FormulaCell{FormulaKind::Not}, f_{f} {}
+
+void FormulaNot::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, f_);
+}
 
 Variables FormulaNot::GetFreeVariables() const { return f_.GetFreeVariables(); }
 
@@ -443,9 +471,16 @@ ostream& FormulaNot::Display(ostream& os) const {
 }
 
 FormulaForall::FormulaForall(const Variables& vars, const Formula& f)
-    : FormulaCell{FormulaKind::Forall, hash_combine(vars.get_hash(), f)},
+    : FormulaCell{FormulaKind::Forall},
       vars_{vars},
       f_{f} {}
+
+void FormulaForall::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, vars_);
+  hash_append(*hasher, f_);
+}
 
 Variables FormulaForall::GetFreeVariables() const {
   return f_.GetFreeVariables() - vars_;
@@ -495,7 +530,13 @@ ostream& FormulaForall::Display(ostream& os) const {
 }
 
 FormulaIsnan::FormulaIsnan(const Expression& e)
-    : FormulaCell{FormulaKind::Isnan, e.get_hash()}, e_{e} {}
+    : FormulaCell{FormulaKind::Isnan}, e_{e} {}
+
+void FormulaIsnan::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, e_);
+}
 
 Variables FormulaIsnan::GetFreeVariables() const { return e_.GetVariables(); }
 
@@ -528,8 +569,7 @@ ostream& FormulaIsnan::Display(ostream& os) const {
 
 FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
     const Eigen::Ref<const MatrixX<Expression>>& m)
-    : FormulaCell{FormulaKind::PositiveSemidefinite,
-                  ComputeHashOfLowerTriangular(m)},
+    : FormulaCell{FormulaKind::PositiveSemidefinite},
       m_{m} {
   if (!math::IsSymmetric(m)) {
     ostringstream oss;
@@ -559,6 +599,19 @@ struct VariablesCollector {
   Variables vars_;
 };
 }  // namespace
+
+void FormulaPositiveSemidefinite::HashAppendDetail(DelegatingHasher* hasher)
+    const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  // Computes a hash of a matrix only using its lower-triangular part.
+  for (int i = 0; i < m_.rows(); ++i) {
+    for (int j = 0; j <= i; ++j) {
+      hash_append(*hasher, m_(i, j));
+    }
+  }
+  hash_append(*hasher, m_.size());
+}
 
 Variables FormulaPositiveSemidefinite::GetFreeVariables() const {
   VariablesCollector vc;

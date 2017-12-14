@@ -44,6 +44,11 @@ using test::ExprLess;
 using test::ExprNotEqual;
 using test::ExprNotLess;
 
+template <typename T>
+size_t get_std_hash(const T& item) {
+  return std::hash<T>{}(item);
+}
+
 // Checks if a given 'expressions' is ordered by Expression::Less.
 void CheckOrdering(const vector<Expression>& expressions) {
   for (size_t i{0}; i < expressions.size(); ++i) {
@@ -832,9 +837,9 @@ TEST_F(SymbolicExpressionTest, StaticConstant) {
 TEST_F(SymbolicExpressionTest, Hash) {
   Expression x{var_x_};
   const Expression x_prime(x);
-  EXPECT_EQ(x.get_hash(), x_prime.get_hash());
+  EXPECT_EQ(get_std_hash(x), get_std_hash(x_prime));
   x++;
-  EXPECT_NE(x.get_hash(), x_prime.get_hash());
+  EXPECT_NE(get_std_hash(x), get_std_hash(x_prime));
 }
 
 TEST_F(SymbolicExpressionTest, HashBinary) {
@@ -852,7 +857,7 @@ TEST_F(SymbolicExpressionTest, HashBinary) {
   unordered_set<size_t> hash_set;
   const vector<Expression> exprs{e1, e2, e3, e4, e5, e6, e7, e8};
   for (auto const& e : exprs) {
-    hash_set.insert(e.get_hash());
+    hash_set.insert(get_std_hash(e));
   }
   EXPECT_EQ(hash_set.size(), exprs.size());
 }
@@ -880,7 +885,7 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
   const vector<Expression> exprs{e0, e1, e2,  e3,  e4,  e5,  e6, e7,
                                  e8, e9, e10, e11, e12, e13, e14};
   for (auto const& e : exprs) {
-    hash_set.insert(e.get_hash());
+    hash_set.insert(get_std_hash(e));
   }
   EXPECT_EQ(hash_set.size(), exprs.size());
 }
@@ -1198,7 +1203,7 @@ TEST_F(SymbolicExpressionTest, Div4) {
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_set.
 GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
-  unordered_set<Expression, hash_value<Expression>> uset;
+  unordered_set<Expression> uset;
   uset.emplace(Expression{Variable{"a"}});
   uset.emplace(Expression{Variable{"b"}});
 }
@@ -1206,7 +1211,7 @@ GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_map.
 GTEST_TEST(ExpressionTest, CompatibleWithUnorderedMap) {
-  unordered_map<Expression, Expression, hash_value<Expression>> umap;
+  unordered_map<Expression, Expression> umap;
   umap.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
 }
 
@@ -1844,6 +1849,20 @@ TEST_F(SymbolicExpressionTest, MemcpyKeepsExpressionIntact) {
     EXPECT_TRUE(IsMemcpyMovable(expr));
   }
 }
+
+TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
+  const Expression e1{10.0};
+  EXPECT_EQ(ExtractDoubleOrThrow(e1), 10.0);
+
+  // 'x_' can't be converted to a double value.
+  const Expression e2{x_};
+  EXPECT_THROW(ExtractDoubleOrThrow(e2), std::exception);
+
+  // 2x - 7 -2x + 2 => -5
+  const Expression e3{2 * x_ - 7 - 2 * x_ + 2};
+  EXPECT_EQ(ExtractDoubleOrThrow(e3), -5);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

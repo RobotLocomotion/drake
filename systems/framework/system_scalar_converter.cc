@@ -14,7 +14,11 @@ SystemScalarConverter::Key::Key(
     : pair<type_index, type_index>(t_info, u_info) {}
 
 size_t SystemScalarConverter::KeyHasher::operator()(const Key& key) const {
-  return hash_combine(size_t{}, key.first, key.second);
+  drake::DefaultHasher hasher;
+  using drake::hash_append;
+  hash_append(hasher, std::hash<std::type_index>{}(key.first));
+  hash_append(hasher, std::hash<std::type_index>{}(key.second));
+  return static_cast<size_t>(hasher);
 }
 
 SystemScalarConverter::SystemScalarConverter() = default;

@@ -426,10 +426,7 @@ drake_cc_googletest(
     local = 1,
     # Disable under LeakSanitizer and Valgrind Memcheck due to driver-related
     # leaks. For more information, see #7520.
-    # TODO(jwnimmer-tri) Marked manual because it opens windows on the
-    # developer's desktop.
     tags = [
-        "manual",
         "no_lsan",
         "no_memcheck",
     ],
@@ -453,10 +450,7 @@ drake_cc_googletest(
     local = 1,
     # Disable under LeakSanitizer and Valgrind Memcheck due to driver-related
     # leaks. For more information, see #7520.
-    # TODO(jwnimmer-tri) Marked manual because it opens windows on the
-    # developer's desktop.
     tags = [
-        "manual",
         "no_lsan",
         "no_memcheck",
     ],
@@ -476,16 +470,14 @@ sh_test(
         # "test/models/sphere.sdf" to the path below.
         "--sdf_dir=" + native.package_name() + "/test/models",
         "--duration=0.1",
+        "--show_window=false",
     ],
     data = [
         ":test_models",
     ],
     # Disable under LeakSanitizer and Valgrind Memcheck due to driver-related
     # leaks. For more information, see #7520.
-    # TODO(jwnimmer-tri) Marked manual because it opens windows on the
-    # developer's desktop.
     tags = [
-        "manual",
         "no_lsan",
         "no_memcheck",
     ],

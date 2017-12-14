@@ -11,7 +11,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -29,8 +28,7 @@ namespace symbolic {
 /// we need this information to perform arithmetic operations over Polynomials.
 class Polynomial {
  public:
-  using MapType =
-      std::unordered_map<Monomial, Expression, hash_value<Monomial>>;
+  using MapType = std::unordered_map<Monomial, Expression>;
 
   /// Constructs a zero polynomial.
   Polynomial() = default;

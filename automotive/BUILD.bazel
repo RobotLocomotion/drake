@@ -104,6 +104,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "create_trajectory_params",
+    srcs = ["create_trajectory_params.cc"],
+    hdrs = ["create_trajectory_params.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":curve2",
+        ":trajectory_car",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/dragway",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
@@ -364,6 +378,7 @@ drake_cc_library(
         "//drake/systems/analysis",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcmt_drake_signal_translator",
+        "//drake/systems/primitives:constant_value_source",
         "//drake/systems/primitives:multiplexer",
         "//drake/systems/rendering:pose_aggregator",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
@@ -374,17 +389,17 @@ drake_cc_binary(
     name = "automotive_demo",
     srcs = [
         "automotive_demo.cc",
-        "create_trajectory_params.cc",
-        "create_trajectory_params.h",
     ],
     data = [
         "//drake/automotive/models:prod_models",
     ],
     deps = [
         ":automotive_simulator",
+        ":create_trajectory_params",
         ":monolane_onramp_merge",
         "//drake/automotive/maliput/dragway",
         "//drake/common:text_logging_gflags",
+        "//drake/lcm",
     ],
 )
 
@@ -466,6 +481,7 @@ drake_cc_googletest(
     local = 1,
     deps = [
         "//drake/automotive:automotive_simulator",
+        "//drake/automotive:create_trajectory_params",
         "//drake/automotive/maliput/dragway",
         "//drake/lcm:mock",
     ],

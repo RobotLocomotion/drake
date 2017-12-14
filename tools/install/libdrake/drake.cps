@@ -59,11 +59,6 @@
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "scs": {
-      "Version": "1.2.6",
-      "Hints": ["@prefix@/lib/cmake/scs"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "SDFormat": {
       "Version": "6.0.0",
       "Hints": ["@prefix@/lib/cmake/sdformat"],
@@ -101,7 +96,6 @@
       "Link-Flags": ["-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
-        "scs:scsdir",
         "SDFormat:sdformat",
         "tinyobjloader:tinyobjloader"
       ],

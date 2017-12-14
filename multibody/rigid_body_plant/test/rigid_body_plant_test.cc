@@ -581,7 +581,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   EXPECT_TRUE(CompareMatrices(updates->get_vector(0).CopyToVector(), xn));
 }
 
-} // namespace (anonymous)
+}  // namespace
 
 // Note that the typical anonymous namespace cannot be used here, because the
 // testing namespace must be the same as the class namespace.
@@ -746,7 +746,7 @@ TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
   }
   // Torque components must be perpendicular (since this is a friction pyramid).
   EXPECT_NEAR(F.row(0).segment(0, 2).dot(F.row(1).segment(0, 2)), 0.0, tol);
-  // Force components must be perpendicular (since this is a friction pyramid). 
+  // Force components must be perpendicular (since this is a friction pyramid).
   EXPECT_NEAR(F.row(0).segment(3, 3).dot(F.row(1).segment(3, 3)), 0.0, tol);
 
   // Compute the kinematics cache.

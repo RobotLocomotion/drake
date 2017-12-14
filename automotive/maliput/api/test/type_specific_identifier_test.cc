@@ -59,16 +59,6 @@ GTEST_TEST(TypeSpecificIdentifierTest, CopyingAndAssignment) {
 }
 
 
-GTEST_TEST(TypeSpecificIdentifierTest, HashProhibitionExceptionCanary) {
-  // Since our specialization of std::hash is only allowed because we promised
-  // to call only std::hash<std::string>, attempt to catch a violation of
-  // that promise.
-  const std::string kSomeString("some string");
-  const CId dut(kSomeString);
-  EXPECT_EQ(std::hash<CId>()(dut), std::hash<std::string>()(kSomeString));
-}
-
-
 // Test usage with ordered/unordered sets.
 template <typename T>
 class TypeSpecificIdentifierSetTest : public ::testing::Test {};

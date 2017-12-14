@@ -16,53 +16,53 @@ BULLET_COPTS = ["-Wno-all"]
 
 BULLET_INCLUDES = ["src"]
 
+LINEAR_MATH_HDRS = glob(["src/LinearMath/**/*.h"])
+
 # Keep defines in sync with Components.LinearMath.Definitions in
 # bullet-create-cps.py.
-cc_library(
-    name = "LinearMath",
-    srcs = glob(["src/LinearMath/**/*.cpp"]),
-    hdrs = glob(["src/LinearMath/**/*.h"]),
+LINEAR_MATH_DEFINES = ["BT_USE_DOUBLE_PRECISION"]
+
+cc_binary(
+    name = "libLinearMath.so",
+    srcs = glob(["src/LinearMath/**/*.cpp"]) + LINEAR_MATH_HDRS,
     copts = BULLET_COPTS,
-    defines = ["BT_USE_DOUBLE_PRECISION"],
+    defines = LINEAR_MATH_DEFINES,
     includes = BULLET_INCLUDES,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
-    name = "BulletCollision",
-    srcs = glob(["src/BulletCollision/**/*.cpp"]),
-    hdrs = glob(["src/BulletCollision/**/*.h"]) + [
-        "src/btBulletCollisionCommon.h",
-    ],
+    name = "LinearMath",
+    srcs = ["libLinearMath.so"],
+    hdrs = LINEAR_MATH_HDRS,
+    copts = BULLET_COPTS,
+    defines = LINEAR_MATH_DEFINES,
+    includes = BULLET_INCLUDES,
+)
+
+BULLET_COLLISION_HDRS = glob(["src/BulletCollision/**/*.h"]) + [
+    "src/btBulletCollisionCommon.h",
+]
+
+# BulletCollision contains LGPL code so only build shared library.
+cc_binary(
+    name = "libBulletCollision.so",
+    srcs = glob(["src/BulletCollision/**/*.cpp"]) + BULLET_COLLISION_HDRS,
     copts = BULLET_COPTS,
     includes = BULLET_INCLUDES,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
     deps = [":LinearMath"],
 )
 
 cc_library(
-    name = "BulletDynamics",
-    srcs = glob(["src/BulletDynamics/**/*.cpp"]),
-    hdrs = glob(["src/BulletDynamics/**/*.h"]) + [
-        "src/btBulletDynamicsCommon.h",
-    ],
+    name = "BulletCollision",
+    srcs = ["libBulletCollision.so"],
+    hdrs = BULLET_COLLISION_HDRS,
     copts = BULLET_COPTS,
     includes = BULLET_INCLUDES,
-    deps = [
-        ":BulletCollision",
-        ":LinearMath",
-    ],
-)
-
-cc_library(
-    name = "BulletSoftBody",
-    srcs = glob(["src/BulletSoftBody/**/*.cpp"]),
-    hdrs = glob(["src/BulletSoftBody/**/*.h"]),
-    copts = BULLET_COPTS,
-    includes = BULLET_INCLUDES,
-    deps = [
-        ":BulletCollision",
-        ":BulletDynamics",
-        ":LinearMath",
-    ],
+    deps = [":LinearMath"],
 )
 
 cmake_config(
@@ -76,10 +76,8 @@ install_cmake_config(package = "Bullet")
 install(
     name = "install",
     targets = [
-        ":BulletCollision",
-        ":BulletDynamics",
-        ":BulletSoftBody",
-        ":LinearMath",
+        ":libBulletCollision.so",
+        ":libLinearMath.so",
     ],
     hdr_dest = "include/bullet",
     hdr_strip_prefix = BULLET_INCLUDES,

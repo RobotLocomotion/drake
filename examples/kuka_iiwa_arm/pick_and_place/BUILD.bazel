@@ -45,7 +45,9 @@ drake_cc_library(
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/lcmtypes:schunk",
-        "//drake/manipulation/planner:constraint_relaxing_ik",
+        "//drake/lcmtypes:viewer",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/util:lcm_util",
@@ -59,12 +61,11 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    # TODO(eric.cousineau): Remove these tags once #3128 or the IK redux lands.
-    # On some CI machines without SNOPT, system IPOPT is used, and exceeds time
-    # limits under memcheck with -c dbg as well as under tsan.
+    # TODO(avalenzu) The "snopt" tag is required because IPOPT doesn't find
+    # a reasonable solution for one of the steps in this test.  We should see
+    # if this improves when #3128 is fixed.
     tags = [
-        "no_memcheck",
-        "no_tsan",
+        "snopt",
     ],
     deps = [
         ":pick_and_place",

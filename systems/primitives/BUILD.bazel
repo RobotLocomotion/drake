@@ -264,6 +264,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sine",
+    srcs = ["sine.cc"],
+    hdrs = [
+        "sine.h",
+        "sine-inl.h",
+    ],
+    deps = [
+        "//drake/systems/framework",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -300,6 +312,7 @@ drake_cc_googletest(
         ":constant_value_source",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
@@ -391,7 +404,7 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities:my_vector",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -465,6 +478,20 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sine_test",
+    srcs = [
+        "test/sine_test.cc",
+    ],
+    deps = [
+        ":sine",
+        "//drake/common:symbolic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
