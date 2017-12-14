@@ -38,6 +38,12 @@ bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
 // Linear system solver, generic (and slower).
 template <class T>
 VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
+  // Special case necessary because Eigen doesn't always handle empty matrices
+  // properly.
+  if (M.rows() == 0) {
+    DRAKE_ASSERT(b.size() == 0);
+    return VectorX<T>(0);
+  }
   return M.householderQr().solve(b);
 }
 
@@ -45,6 +51,12 @@ VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
 template <>
 VectorX<double> LinearSolve(
     const MatrixX<double>& M, const VectorX<double>& b) {
+  // Special case necessary because Eigen doesn't always handle empty matrices
+  // properly.
+  if (M.rows() == 0) {
+    DRAKE_ASSERT(b.size() == 0);
+    return VectorX<double>(0);
+  }
   return M.partialPivLu().solve(b);
 }
 
