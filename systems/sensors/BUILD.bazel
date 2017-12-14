@@ -483,6 +483,9 @@ sh_test(
         "--duration=0.1",
         "--show_window=false",
     ],
+    # Mitigates driver-related issues when running under `bazel test`. For more
+    # information, see #7004.
+    local = 1,
     data = [
         ":test_models",
     ],
