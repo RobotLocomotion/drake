@@ -488,6 +488,8 @@ Expression cosh(const Expression& e);
 Expression tanh(const Expression& e);
 Expression min(const Expression& e1, const Expression& e2);
 Expression max(const Expression& e1, const Expression& e2);
+Expression ceil(const Expression& e);
+Expression floor(const Expression& e);
 Expression if_then_else(const Formula& f_cond, const Expression& e_then,
                         const Expression& e_else);
 
