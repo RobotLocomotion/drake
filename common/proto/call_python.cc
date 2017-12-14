@@ -1,6 +1,11 @@
 #include "drake/common/proto/call_python.h"
 
+#include <gflags/gflags.h>
+
 #include "drake/common/proto/matlab_rpc.pb.h"
+
+DEFINE_string(call_python_file, "/tmp/python_rpc",
+              "File written to by this binary, read by client.");
 
 namespace drake {
 namespace common {
@@ -25,7 +30,7 @@ void ToMatlabArray(const PythonRemoteVariable& var, MatlabArray* matlab_array) {
 
 void internal::PublishCallPython(const MatlabRPC& message) {
   // TODO(eric.cousineau): Provide option for setting the filename.
-  static auto raw_output = CreateOutputStream("/tmp/python_rpc");
+  static auto raw_output = CreateOutputStream(FLAGS_call_python_file);
   PublishCall(raw_output.get(), message);
 }
 
