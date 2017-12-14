@@ -4,10 +4,12 @@ from __future__ import print_function
 import argparse
 import os
 from Queue import Queue
+import signal
 import stat
 import sys
 from threading import Thread
 import time
+import traceback
 
 import numpy as np
 # Hacky, but this is the simplest route right now.
@@ -15,6 +17,12 @@ import numpy as np
 from google.protobuf.internal.decoder import _DecodeVarint32
 
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
+
+
+def _ensure_sigint_handler():
+    # @ref https://stackoverflow.com/a/47801921/2654527
+    if signal.getsignal(signal.SIGINT) == signal.SIG_IGN:
+        signal.signal(signal.SIGINT, signal.default_int_handler)
 
 
 def _get_required_helpers(scope_locals):
@@ -148,6 +156,14 @@ def _merge_dicts(*args):
     return out
 
 
+def _fix_pyplot(plt):
+    # This patches matplotlib/matplotlib#9412 by injecting `time` into the
+    # module (#7597).
+    cur = plt.__dict__
+    if 'time' not in cur:
+        cur['time'] = time
+
+
 def default_globals():
     """Creates default globals for code that the client side can execute.
 
@@ -168,6 +184,7 @@ def default_globals():
 
     # TODO(eric.cousineau): Where better to put this?
     matplotlib.interactive(True)
+    _fix_pyplot(plt)
 
     def disp(value):
         """Alias for print."""
@@ -297,7 +314,7 @@ class CallPythonClient(object):
             try:
                 self._execute_message_impl(msg)
             except Exception as e:
-                sys.stderr.write("ERROR: {}\n".format(e))
+                traceback.print_exc(file=sys.stderr)
                 sys.stderr.write("  Continuing (no --stop_on_error)\n")
                 self._had_error = True
 
@@ -422,7 +439,7 @@ class CallPythonClient(object):
             # We encountered an error, and must stop.
             self._done = True
             self._had_error = True
-            sys.stderr.write("ERROR: {}\n".format(e))
+            traceback.print_exc(file=sys.stderr)
             sys.stderr.write("  Stopping (--stop_on_error)\n")
         # No need to worry about waiting for the producer, as it is a daemon
         # thread.
@@ -522,6 +539,7 @@ def _read_next(f, msg):
 
 
 def main(argv):
+    _ensure_sigint_handler()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--no_loop", action='store_true',
