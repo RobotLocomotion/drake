@@ -17,6 +17,8 @@ exports_files(
 drake_py_test(
     name = "install_test",
     size = "medium",
+    # Increase the timeout so that debug builds are successful.
+    timeout = "long",
     srcs = ["test/install_test.py"],
     main = "test/install_test.py",
     deps = ["//tools/install:install_test_helper"],
