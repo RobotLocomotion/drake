@@ -8,6 +8,7 @@ import signal
 import stat
 import sys
 from threading import Thread
+import time
 import traceback
 
 import numpy as np
@@ -155,6 +156,14 @@ def _merge_dicts(*args):
     return out
 
 
+def _fix_pyplot(plt):
+    # This patches matplotlib/matplotlib#9412 by injecting `time` into the
+    # module (#7597).
+    cur = plt.__dict__
+    if 'time' not in cur:
+        cur['time'] = time
+
+
 def default_globals():
     """Creates default globals for code that the client side can execute.
 
@@ -175,6 +184,7 @@ def default_globals():
 
     # TODO(eric.cousineau): Where better to put this?
     matplotlib.interactive(True)
+    _fix_pyplot(plt)
 
     def disp(value):
         """Alias for print."""
