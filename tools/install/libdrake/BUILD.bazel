@@ -45,8 +45,7 @@ cc_binary(
     # this flag, so it is conditional on Linux only.  Note that the string
     # we use for rpath here doesn't actually matter; it will be replaced
     # during installation later.  Also note that if these flags are updated,
-    # the corresponding linkopt flags in CMakeLists.txt also have to be
-    # updated.
+    # the corresponding linkopt flags in pybind.bzl should be updated.
     linkopts = select({
         "//tools/cc_toolchain:apple": [],
         "//conditions:default": [

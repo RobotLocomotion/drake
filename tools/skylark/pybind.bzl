@@ -64,6 +64,21 @@ def _drake_pybind_cc_binary(
             "@stx",
         ] + deps,
         visibility = visibility,
+        # On Linux, we need to disable "new" dtags in the linker so that we use
+        # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is
+        # checked *before* LD_LIBRARY_PATH, which is important to avoid using
+        # the MATLAB versions of certain libraries (protobuf).  macOS doesn't
+        # understand this flag, so it is conditional on Linux only.  Note that
+        # the string we use for rpath here doesn't actually matter; it will be
+        # replaced during installation later.  Also note that if these flags
+        # are updated, the corresponding linkopt flags for libdrake.so should
+        # be updated.
+        linkopts = select({
+            "//tools/cc_toolchain:apple": [],
+            "//conditions:default": [
+                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
+            ],
+        }),
     )
 
 def drake_pybind_library(
