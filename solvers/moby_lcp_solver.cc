@@ -35,6 +35,19 @@ bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
   return false;
 }
 
+// Linear system solver, generic (and slower).
+template <class T>
+VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
+  return M.householderQr().solve(b);
+}
+
+// Linear system solver, specialized for double types (faster).
+template <>
+VectorX<double> LinearSolve(
+    const MatrixX<double>& M, const VectorX<double>& b) {
+ return M.partialPivLu().solve(b);
+}
+
 // Utility function for copying part of a matrix (designated by the indices
 // in rows and cols) from in to a target matrix, out. This template approach
 // allows selecting parts of both sparse and dense matrices for input; only
@@ -288,7 +301,7 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
     // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf for
     // example. The algorithm would ideally terminate at this point, but
     // compilation with AutoDiff currently generates template errors.
-    zz = Msub.householderQr().solve(zz.eval());
+    zz = LinearSolve(Msub, zz.eval());
 
     // Eigen doesn't handle empty matrices properly, which causes the code
     // below to abort in the absence of the conditional.
@@ -688,7 +701,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     // continue on for some time and could conceivably even indicate success on
     // return, though return does not guarantee the solution is correct to
     // desired tolerances anyway (see function documentation).
-    x = Bl.householderQr().solve(q);
+    x = LinearSolve(Bl, q);
   } else {
     Log() << "-- using basis of -1 (no warmstarting)" << std::endl;
 
@@ -770,7 +783,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     dl = Be;
 
     // See comments above on the possibility of this solve failing.
-    dl = Bl.householderQr().solve(dl.eval());
+    dl = LinearSolve(Bl, dl.eval());
 
     // ** find new leaving variable
     j_.clear();
