@@ -134,10 +134,21 @@ optional<string> file_exists(
   return file_query.getStr();
 }
 
+optional<string> AppendDrakeTo(const optional<string>& path) {
+  if (path) {
+    spruce::path result = *path;
+    result.append("drake");
+    return result.getStr();
+  }
+  return nullopt;
+}
+
+// Candidates hold paths like "common/thing.txt" not "drake/common/thing.txt";
+// in other words, they already mention the "drake" folder.
 optional<string> check_candidate_dir(const spruce::path& candidate_dir) {
   // If we found the sentinel, we win.
   spruce::path candidate_file = candidate_dir;
-  candidate_file.append("drake/.drake-find_resource-sentinel");
+  candidate_file.append(".drake-find_resource-sentinel");
   if (candidate_file.isFile()) {
     return candidate_dir.getStr();
   }
@@ -211,25 +222,29 @@ Result FindResource(string resource_path) {
         std::move(resource_path),
         "resource_path does not start with " + prefix);
   }
+  const std::string resource_path_substr = resource_path.substr(prefix.size());
 
-  // Collect a list of (priority-ordered) directories to check.
+  // Collect a list of (priority-ordered) directories to check.  Candidates
+  // should hold paths like "common/thing.txt" not "drake/common/thing.txt"; in
+  // other words, they already mention the "drake" folder.
   std::vector<optional<string>> candidate_dirs;
 
   // (1) Search the environment variable first; if it works, it should always
   // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
-  candidate_dirs.emplace_back(getenv_optional(
-      kDrakeResourceRootEnvironmentVariableName));
+  candidate_dirs.emplace_back(AppendDrakeTo(getenv_optional(
+      kDrakeResourceRootEnvironmentVariableName)));
 
   // (2) Add the list of paths given programmatically. Paths are added only
   // if the sentinel file can be found.
   for (const auto& search_path : GetMutableResourceSearchPaths()) {
-      spruce::path candidate_dir(search_path);
-      candidate_dirs.emplace_back(check_candidate_dir(candidate_dir));
+    spruce::path candidate_dir(*AppendDrakeTo(search_path));
+    candidate_dirs.emplace_back(check_candidate_dir(candidate_dir));
   }
+
   // (3) Find where `librake.so` is, and add search path that corresponds to
   // resource folder in install tree based on `libdrake.so` location.
   optional<string> from_libdrake = resource_path_from_libdrake();
-  candidate_dirs.emplace_back(from_libdrake);
+  candidate_dirs.emplace_back(AppendDrakeTo(from_libdrake));
 
   // (4) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
@@ -237,7 +252,7 @@ Result FindResource(string resource_path) {
 
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
-    if (auto absolute_path = file_exists(candidate_dir, resource_path)) {
+    if (auto absolute_path = file_exists(candidate_dir, resource_path_substr)) {
       return Result::make_success(
           std::move(resource_path), std::move(*absolute_path));
     }
