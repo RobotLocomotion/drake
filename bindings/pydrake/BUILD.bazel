@@ -134,6 +134,28 @@ drake_py_library(
     deps = PYBIND_LIBRARIES,
 )
 
+# Test ODR (One Definition Rule).
+drake_pybind_library(
+    name = "odr_test_module_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [
+        ":symbolic_types_py",
+    ],
+    cc_so_name = "test/odr_test_module",
+    cc_srcs = ["test/odr_test_module_py.cc"],
+)
+
+drake_py_test(
+    name = "odr_test",
+    size = "small",
+    srcs = ["test/odr_test.py"],
+    deps = [
+        ":odr_test_module_py",
+        ":symbolic_py",
+    ],
+)
+
 drake_py_test(
     name = "atlas_constructor_test",
     size = "small",

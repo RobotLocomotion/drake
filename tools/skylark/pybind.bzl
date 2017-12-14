@@ -30,7 +30,8 @@ def _drake_pybind_cc_binary(
         srcs = [],
         copts = [],
         deps = [],
-        visibility = None):
+        visibility = None,
+        testonly = None):
     """Declares a pybind11 shared library.
 
     The defines the library with the given name and srcs.
@@ -63,6 +64,7 @@ def _drake_pybind_cc_binary(
             # :drake_shared_library, but that isn't working yet.
             "@stx",
         ] + deps,
+        testonly = testonly,
         visibility = visibility,
     )
 
@@ -76,7 +78,8 @@ def drake_pybind_library(
         py_deps = [],
         py_imports = [],
         add_install = True,
-        visibility = None):
+        visibility = None,
+        testonly = None):
     """Declares a pybind11 library with C++ and Python portions.
 
     @param cc_srcs
@@ -108,6 +111,7 @@ def drake_pybind_library(
         name = cc_so_name,
         srcs = cc_srcs,
         deps = cc_deps,
+        testonly = testonly,
         visibility = visibility,
     )
     # Get current package's information.
@@ -121,6 +125,7 @@ def drake_pybind_library(
         srcs = py_srcs,
         deps = py_deps,
         imports = [py_base_rel_path] + py_imports,
+        testonly = testonly,
         visibility = visibility,
     )
     # Add installation target for C++ and C++ bits.
