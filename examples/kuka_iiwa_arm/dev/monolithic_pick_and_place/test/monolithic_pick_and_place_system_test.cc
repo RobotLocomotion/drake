@@ -230,14 +230,6 @@ TEST_P(SingleMoveTests, FinalObjectStateTest) {
   ValidateObjectStateAfterSingleMove();
 }
 
-INSTANTIATE_TEST_CASE_P(SelectedPairs, SingleMoveTests,
-                        ::testing::Values(std::make_tuple(0, 2),  // Scenario 1
-                                          std::make_tuple(4, 2),  // Scenario 2
-                                          std::make_tuple(4, 1),  // Scenario 3
-                                          std::make_tuple(1, 3),  // Scenario 4
-                                          std::make_tuple(2,
-                                                          0)));  // Scenario 5;
-
 const std::vector<int> kTableIndices{0, 1, 2, 3, 4, 5};
 INSTANTIATE_TEST_CASE_P(InitialTable0, SingleMoveTests,
                         ::testing::Combine(::testing::Values(0),
