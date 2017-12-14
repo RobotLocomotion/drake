@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -10,7 +12,7 @@
 namespace drake {
 namespace systems {
 namespace sensors {
-namespace {
+namespace test {
 
 using Eigen::Isometry3d;
 
@@ -128,7 +130,7 @@ class RgbdRendererTest : public ::testing::Test {
   std::unique_ptr<RgbdRenderer> renderer_;
 };
 
-}  // anonymous namespace
+}  // namespace test
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <limits>
-#include <memory>
 
 #include <Eigen/Dense>
 
@@ -76,7 +75,7 @@ class RgbdRenderer {
                double fov_y,
                bool show_window);
 
-  ~RgbdRenderer();
+  virtual ~RgbdRenderer();
 
   /// Adds a flat terrain in the rendering scene.
   void AddFlatTerrain();

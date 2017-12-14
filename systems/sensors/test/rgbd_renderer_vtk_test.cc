@@ -1,10 +1,11 @@
 #include "drake/systems/sensors/rgbd_renderer_vtk.h"
+
 #include "drake/systems/sensors/test/rgbd_renderer_test.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
-namespace {
+namespace test {
 
 using RgbdRendererVTKTest = RgbdRendererTest<RgbdRendererVTK>;
 
@@ -219,7 +220,7 @@ TEST_F(RgbdRendererVTKTest, MeshTest) {
 // TODO(kunimatsu-tri) Move DepthImageToPointCloudConversionTest here from
 // rgbd_camera_test.
 
-}  // anonymous namespace
+}  // namespace test
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake

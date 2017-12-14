@@ -1,6 +1,8 @@
 #pragma once
 
-#include "rgbd_renderer.h"
+#include <memory>
+
+#include "drake/systems/sensors/rgbd_renderer.h"
 
 namespace drake {
 namespace systems {
