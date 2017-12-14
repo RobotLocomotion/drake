@@ -48,10 +48,10 @@ cc_binary(
     # the corresponding linkopt flags in CMakeLists.txt also have to be
     # updated.
     linkopts = select({
-        "//tools/cc_toolchain:linux": [
+        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
             "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
         ],
-        "//conditions:default": [],
     }),
     linkshared = 1,
     linkstatic = 1,
