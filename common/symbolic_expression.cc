@@ -877,4 +877,9 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
   return Jacobian(f, vector<Variable>(vars.data(), vars.data() + vars.size()));
 }
 }  // namespace symbolic
+
+double ExtractDoubleOrThrow(const symbolic::Expression& e) {
+  return e.Evaluate();
+}
+
 }  // namespace drake

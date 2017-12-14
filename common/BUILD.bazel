@@ -195,6 +195,7 @@ drake_cc_library(
         ":cond",
         ":dummy_value",
         ":essential",
+        ":extract_double",
         ":hash",
         ":number_traits",
         ":polynomial",
