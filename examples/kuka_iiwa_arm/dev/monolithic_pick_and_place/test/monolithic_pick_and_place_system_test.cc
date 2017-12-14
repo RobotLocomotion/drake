@@ -230,36 +230,33 @@ TEST_P(SingleMoveTests, FinalObjectStateTest) {
   ValidateObjectStateAfterSingleMove();
 }
 
-INSTANTIATE_TEST_CASE_P(
-    SelectedPairs, SingleMoveTests,
-    ::testing::Values(
-        std::make_tuple(0, 2),  // Scenario 1
-        std::make_tuple(4, 2)));  // Scenario 2
-        // TODO(avalenzu): Uncomment these tests when planning is less brittle.
-        // std::make_tuple(4, 1),  // Scenario 3
-        // std::make_tuple(1, 3),  // Scenario 4
-        // std::make_tuple(2, 0)));  // Scenario 5;
+INSTANTIATE_TEST_CASE_P(SelectedPairs, SingleMoveTests,
+                        ::testing::Values(std::make_tuple(0, 2),  // Scenario 1
+                                          std::make_tuple(4, 2),  // Scenario 2
+                                          std::make_tuple(4, 1),  // Scenario 3
+                                          std::make_tuple(1, 3),  // Scenario 4
+                                          std::make_tuple(2,
+                                                          0)));  // Scenario 5;
 
-// TODO(avalenzu): Uncomment these tests when planning is less brittle.
-// const std::vector<int> kTableIndices{0, 1, 2, 3, 4, 5};
-// INSTANTIATE_TEST_CASE_P(InitialTable0, SingleMoveTests,
-// ::testing::Combine(::testing::Values(0),
-// ::testing::Values(1, 2, 3, 4, 5)));
-//  INSTANTIATE_TEST_CASE_P(InitialTable1, SingleMoveTests,
-// ::testing::Combine(::testing::Values(1),
-// ::testing::Values(0, 2, 3, 4, 5)));
-//  INSTANTIATE_TEST_CASE_P(InitialTable2, SingleMoveTests,
-// ::testing::Combine(::testing::Values(2),
-// ::testing::Values(0, 1, 3, 4, 5)));
-//  INSTANTIATE_TEST_CASE_P(InitialTable3, SingleMoveTests,
-// ::testing::Combine(::testing::Values(3),
-// ::testing::Values(0, 1, 2, 4, 5)));
-//  INSTANTIATE_TEST_CASE_P(InitialTable4, SingleMoveTests,
-// ::testing::Combine(::testing::Values(4),
-// ::testing::Values(0, 1, 2, 3, 5)));
-//  INSTANTIATE_TEST_CASE_P(InitialTable5, SingleMoveTests,
-// ::testing::Combine(::testing::Values(5),
-// ::testing::Values(0, 1, 2, 3, 4)));
+const std::vector<int> kTableIndices{0, 1, 2, 3, 4, 5};
+INSTANTIATE_TEST_CASE_P(InitialTable0, SingleMoveTests,
+                        ::testing::Combine(::testing::Values(0),
+                                           ::testing::Values(1, 2, 3, 4, 5)));
+INSTANTIATE_TEST_CASE_P(InitialTable1, SingleMoveTests,
+                        ::testing::Combine(::testing::Values(1),
+                                           ::testing::Values(0, 2, 3, 4, 5)));
+INSTANTIATE_TEST_CASE_P(InitialTable2, SingleMoveTests,
+                        ::testing::Combine(::testing::Values(2),
+                                           ::testing::Values(0, 1, 3, 4, 5)));
+INSTANTIATE_TEST_CASE_P(InitialTable3, SingleMoveTests,
+                        ::testing::Combine(::testing::Values(3),
+                                           ::testing::Values(0, 1, 2, 4, 5)));
+INSTANTIATE_TEST_CASE_P(InitialTable4, SingleMoveTests,
+                        ::testing::Combine(::testing::Values(4),
+                                           ::testing::Values(0, 1, 2, 3, 5)));
+INSTANTIATE_TEST_CASE_P(InitialTable5, SingleMoveTests,
+                        ::testing::Combine(::testing::Values(5),
+                                           ::testing::Values(0, 1, 2, 3, 4)));
 
 class SingleMoveExtraArmTests : public SingleMoveTests {
  protected:

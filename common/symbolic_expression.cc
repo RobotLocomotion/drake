@@ -8,6 +8,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <Eigen/Core>
@@ -76,9 +77,11 @@ ExpressionKind Expression::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->get_kind();
 }
-size_t Expression::get_hash() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->get_hash();
+
+void Expression::HashAppend(DelegatingHasher* hasher) const {
+  using drake::hash_append;
+  hash_append(*hasher, get_kind());
+  ptr_->HashAppendDetail(hasher);
 }
 
 Expression Expression::Zero() {
@@ -121,11 +124,7 @@ bool Expression::EqualTo(const Expression& e) const {
   if (get_kind() != e.get_kind()) {
     return false;
   }
-  if (get_hash() != e.get_hash()) {
-    return false;
-  }
-  // Same kind/hash, but it could be the result of hash collision,
-  // check structural equality.
+  // Check structural equality.
   return ptr_->EqualTo(*(e.ptr_));
 }
 
@@ -878,4 +877,9 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
   return Jacobian(f, vector<Variable>(vars.data(), vars.data() + vars.size()));
 }
 }  // namespace symbolic
+
+double ExtractDoubleOrThrow(const symbolic::Expression& e) {
+  return e.Evaluate();
+}
+
 }  // namespace drake

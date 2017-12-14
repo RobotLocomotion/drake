@@ -45,8 +45,11 @@ class ExpressionCell {
   /** Returns expression kind. */
   ExpressionKind get_kind() const { return kind_; }
 
-  /** Returns hash value. */
-  size_t get_hash() const { return hash_; }
+  /** Sends all hash-relevant bytes for this ExpressionCell type into the given
+   * hasher, per the @ref hash_append concept -- except for get_kind(), because
+   * Expression already sends that.
+   */
+  virtual void HashAppendDetail(DelegatingHasher*) const = 0;
 
   /** Collects variables in expression. */
   virtual Variables GetVariables() const = 0;
@@ -103,20 +106,20 @@ class ExpressionCell {
   ExpressionCell& operator=(ExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   ExpressionCell& operator=(const ExpressionCell& e) = delete;
-  /** Constructs ExpressionCell of kind @p k with @p hash and @p is_poly . */
-  ExpressionCell(ExpressionKind k, size_t hash, bool is_poly);
+  /** Constructs ExpressionCell of kind @p k with @p is_poly . */
+  ExpressionCell(ExpressionKind k, bool is_poly);
   /** Default destructor. */
   virtual ~ExpressionCell() = default;
 
  private:
   const ExpressionKind kind_{};
-  const size_t hash_{};
   const bool is_polynomial_{false};
 };
 
 /** Represents the base class for unary expressions.  */
 class UnaryExpressionCell : public ExpressionCell {
  public:
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -135,8 +138,7 @@ class UnaryExpressionCell : public ExpressionCell {
   UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
-  /** Constructs UnaryExpressionCell of kind @p k with @p hash, @p e, and @p
-   * is_poly. */
+  /** Constructs UnaryExpressionCell of kind @p k with @p e, and @p is_poly. */
   UnaryExpressionCell(ExpressionKind k, const Expression& e, bool is_poly);
   /** Returns the evaluation result f(@p v ). */
   virtual double DoEvaluate(double v) const = 0;
@@ -149,6 +151,7 @@ class UnaryExpressionCell : public ExpressionCell {
  */
 class BinaryExpressionCell : public ExpressionCell {
  public:
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -169,7 +172,7 @@ class BinaryExpressionCell : public ExpressionCell {
   BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
-  /** Constructs BinaryExpressionCell of kind @p k with @p hash, @p e1, @p e2,
+  /** Constructs BinaryExpressionCell of kind @p k with @p e1, @p e2,
    * @p is_poly.
    */
   BinaryExpressionCell(ExpressionKind k, const Expression& e1,
@@ -188,6 +191,7 @@ class ExpressionVar : public ExpressionCell {
   /** Constructs an expression from @p var.
    * @pre @p var is neither a dummy nor a BOOLEAN variable.
    */
+  void HashAppendDetail(DelegatingHasher*) const override;
   explicit ExpressionVar(const Variable& v);
   const Variable& get_variable() const { return var_; }
   Variables GetVariables() const override;
@@ -209,6 +213,7 @@ class ExpressionConstant : public ExpressionCell {
  public:
   explicit ExpressionConstant(double v);
   double get_value() const { return v_; }
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -227,6 +232,7 @@ class ExpressionConstant : public ExpressionCell {
 class ExpressionNaN : public ExpressionCell {
  public:
   ExpressionNaN();
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -257,6 +263,7 @@ class ExpressionAdd : public ExpressionCell {
    */
   ExpressionAdd(double constant,
                 const std::map<Expression, double>& expr_to_coeff_map);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -358,6 +365,7 @@ class ExpressionMul : public ExpressionCell {
   /** Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
   ExpressionMul(double constant,
                 const std::map<Expression, Expression>& base_to_exponent_map);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -752,6 +760,7 @@ class ExpressionIfThenElse : public ExpressionCell {
    * e_else. */
   ExpressionIfThenElse(const Formula& f_cond, const Expression& e_then,
                        const Expression& e_else);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
@@ -782,6 +791,7 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
    */
   ExpressionUninterpretedFunction(const std::string& name,
                                   const Variables& vars);
+  void HashAppendDetail(DelegatingHasher*) const override;
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
