@@ -93,14 +93,14 @@ drake_pybind_library(
 
 # TODO(eric.cousineau): Make private.
 drake_cc_library(
-    name = "symbolic_types_py",
+    name = "symbolic_types_py_h",
     hdrs = ["symbolic_types_py.h"],
 )
 
 drake_pybind_library(
     name = "symbolic_py",
     cc_deps = [
-        ":symbolic_types_py",
+        ":symbolic_types_py_h",
     ],
     cc_srcs = ["symbolic_py.cc"],
     py_deps = [
@@ -132,6 +132,28 @@ drake_py_library(
     name = "pydrake",
     visibility = ["//visibility:public"],
     deps = PYBIND_LIBRARIES,
+)
+
+# Test ODR (One Definition Rule).
+drake_pybind_library(
+    name = "odr_test_module_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [
+        ":symbolic_types_py_h",
+    ],
+    cc_so_name = "test/odr_test_module",
+    cc_srcs = ["test/odr_test_module_py.cc"],
+)
+
+drake_py_test(
+    name = "odr_test",
+    size = "small",
+    srcs = ["test/odr_test.py"],
+    deps = [
+        ":odr_test_module_py",
+        ":symbolic_py",
+    ],
 )
 
 drake_py_test(
