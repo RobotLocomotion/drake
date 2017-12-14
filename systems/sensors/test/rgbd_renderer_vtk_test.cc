@@ -7,7 +7,6 @@ namespace sensors {
 namespace {
 
 using RgbdRendererVTKTest = RgbdRendererTest<RgbdRendererVTK>;
-const double kFovY = M_PI_4;
 
 TEST_F(RgbdRendererVTKTest, InstantiationTest) {
   SetUp(Isometry3d::Identity());

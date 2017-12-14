@@ -107,7 +107,7 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
 
   Impl(Parent& parent, const Eigen::Isometry3d& X_WC);
-  ~Impl();
+  ~Impl() {}
 
   void DoAddFlatTerrain();
 
