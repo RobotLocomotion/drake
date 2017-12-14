@@ -102,8 +102,7 @@ class Expression;
 
 // Substitution is a map from a Variable to a symbolic expression. It is used in
 // Expression::Substitute and Formula::Substitute methods as an argument.
-using Substitution =
-    std::unordered_map<Variable, Expression, hash_value<Variable>>;
+using Substitution = std::unordered_map<Variable, Expression>;
 
 /** Represents a symbolic form of an expression.
 
@@ -186,8 +185,6 @@ class Expression {
   Expression(const Variable& var);
   /** Returns expression kind. */
   ExpressionKind get_kind() const;
-  /** Returns hash value. */
-  size_t get_hash() const;
   /** Collects variables in expression. */
   Variables GetVariables() const;
 
@@ -291,6 +288,17 @@ class Expression {
   static Expression E();
   /** Returns NaN (Not-a-Number). */
   static Expression NaN();
+
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const Expression& item) noexcept {
+    DelegatingHasher delegating_hasher(
+        [&hasher](const void* data, const size_t length) {
+          return hasher(data, length);
+        });
+    item.HashAppend(&delegating_hasher);
+  }
 
   friend Expression operator+(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -453,6 +461,7 @@ class Expression {
 
  private:
   explicit Expression(std::shared_ptr<ExpressionCell> ptr);
+  void HashAppend(DelegatingHasher* hasher) const;
 
   std::shared_ptr<ExpressionCell> ptr_;
 };
@@ -754,14 +763,6 @@ struct dummy_value<symbolic::Expression> {
   static symbolic::Expression get() { return symbolic::Expression::NaN(); }
 };
 
-/** Computes the hash value of a symbolic expression. */
-template <>
-struct hash_value<symbolic::Expression> {
-  size_t operator()(const symbolic::Expression& e) const {
-    return e.get_hash();
-  }
-};
-
 /** Specializes is_numeric to be false for symbolic::Expression type. */
 template <>
 struct is_numeric<symbolic::Expression> {
@@ -770,6 +771,16 @@ struct is_numeric<symbolic::Expression> {
 }  // namespace drake
 
 namespace std {
+/* Provides std::hash<drake::symbolic::Expression>. */
+template <>
+struct hash<drake::symbolic::Expression>
+    : public drake::DefaultHash {};
+#if defined(__GLIBCXX__)
+// https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
+template<>
+struct __is_fast_hash<hash<drake::symbolic::Expression>> : std::false_type {};
+#endif
+
 /* Provides std::less<drake::symbolic::Expression>. */
 template <>
 struct less<drake::symbolic::Expression> {

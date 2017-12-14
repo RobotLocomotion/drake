@@ -7,6 +7,11 @@ namespace drake {
 namespace symbolic {
 namespace {
 
+template <typename T>
+size_t get_std_hash(const T& item) {
+  return std::hash<T>{}(item);
+}
+
 // Provides common variables that are used by the following tests.
 class VariablesTest : public ::testing::Test {
  protected:
@@ -37,7 +42,7 @@ TEST_F(VariablesTest, ConstructFromVariableVector) {
 TEST_F(VariablesTest, HashEq) {
   const Variables vars1{x_, y_, z_};
   const Variables vars2{z_, y_, x_};
-  EXPECT_EQ(vars1.get_hash(), vars2.get_hash());
+  EXPECT_EQ(get_std_hash(vars1), get_std_hash(vars2));
   EXPECT_EQ(vars1, vars2);
 }
 
