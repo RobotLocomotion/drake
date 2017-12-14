@@ -97,8 +97,8 @@ github_archive(
 github_archive(
     name = "styleguide",
     repository = "RobotLocomotion/styleguide",
-    commit = "8d38c5909a5ab38824d7f4566b3f3c6ae4557826",
-    sha256 = "09baa2280a63b9d2efe5c07d08f4674339b5b2a0424f71c429c33ac1783a4cd8",  # noqa
+    commit = "5777e74b82e46f29ffbf41ffed0209d9d5f2ccb5",
+    sha256 = "434789debb7a81872302af5958a0b25bf5e3cafb7e666ed7a4218938bd8cc874",  # noqa
     build_file = "tools/workspace/styleguide/styleguide.BUILD.bazel",  # noqa
 )
 
