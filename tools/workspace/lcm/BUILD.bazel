@@ -16,7 +16,7 @@ exports_files(
 # run as part of all the drake tests to have access to //:install
 drake_py_test(
     name = "install_test",
-    size = "medium",
+    size = "large",
     srcs = ["test/install_test.py"],
     main = "test/install_test.py",
     deps = ["//tools/install:install_test_helper"],
