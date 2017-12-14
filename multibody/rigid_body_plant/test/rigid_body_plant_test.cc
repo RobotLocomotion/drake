@@ -15,6 +15,7 @@
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -33,9 +34,6 @@ using parsers::ModelInstanceIdTable;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
 namespace systems {
-namespace plants {
-namespace rigid_body_plant {
-namespace test {
 namespace {
 
 // Tests the ability to load an instance of a URDF model into a RigidBodyPlant.
@@ -584,8 +582,189 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace rigid_body_plant
-}  // namespace plants
+
+// Note that the typical anonymous namespace cannot be used here, because the
+// testing namespace must be the same as the class namespace.
+
+// Test fixture class for checking data used for time stepping. This test
+// uses a sphere resting on a fixed ground plane to determine contact Jacobians;
+// the sphere, with contact point located directly under the center-of-mass,
+// simplifies the resulting Jacobian matrices.
+class RigidBodyPlantTimeSteppingDataTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // Step size is arbitrarily chosen.
+    const double step_size = 1e-3;
+
+    // Load the ball SDF.
+    auto tree = std::make_unique<RigidBodyTree<double>>();
+    AddModelInstancesFromSdfFile(
+        FindResourceOrThrow(
+            "drake/multibody/rigid_body_plant/test/ball.sdf"),
+        kQuaternion, nullptr /* weld to frame */, tree.get());
+
+    // Get the ball geometry element.
+    RigidBody<double>* ball = tree->FindBody("ball");
+    ball_element_ = *ball->collision_elements_begin();
+
+    // Add a geometry to the world
+    const double plane_len = 100;
+    multibody::AddFlatTerrainToWorld(tree.get(), plane_len, plane_len);
+
+    // Get the world geometry element.
+    RigidBody<double>& world = tree->world();
+    plane_element_ = *world.collision_elements_begin();
+
+    // Create the plant.
+    plant_ = std::make_unique<RigidBodyPlant<double>>(move(tree), step_size);
+
+    // Create the context.
+    context_ = plant_->CreateDefaultContext();
+  }
+
+  std::unique_ptr<RigidBodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+  drake::multibody::collision::Element* plane_element_;
+  drake::multibody::collision::Element* ball_element_;
+};
+
+// Checks that the normal contact Jacobian is correct.
+TEST_F(RigidBodyPlantTimeSteppingDataTest, NormalJacobian) {
+  // Construct the contact; body A is the ball.
+  const double radius = 0.05;
+  std::vector<multibody::collision::PointPair> contacts;
+  contacts.push_back(multibody::collision::PointPair());
+
+  // Contact point expressed in A's frame (p_AoC_A).
+  contacts.back().ptA = Vector3<double>(0, 0, -radius);
+
+  // Contact point expressed in B's frame (p_BoC_B).
+  contacts.back().ptB = Vector3<double>(0, 0, 0);
+  contacts.back().normal = Vector3<double>(0, 0, 1);
+  contacts.back().elementA = ball_element_;
+  contacts.back().elementB = plane_element_;
+  contacts.back().distance = 0;
+  const int num_contacts = static_cast<int>(contacts.size());
+  ASSERT_EQ(num_contacts, 1);
+
+  // Set the coordinates.
+  const int num_positions = 7;
+  VectorX<double> q(num_positions);
+  q.setZero();
+  q[2] = radius;   // Location of ball c.o.m.
+  q[3] = 1.0;      // 'w' coordinate of quaternion.
+
+  // Set the tolerance value.
+  const double tol = 100 * std::numeric_limits<double>::epsilon();
+
+  // Construct the tangent Jacobian. Note that the velocity coordinate layout
+  // in RigidBodyPlant differs from the position coordinate layout: coordinates
+  // 0-2 correspond to angular velocity, while coordinates 3-5 correspond to
+  // translational velocity.
+  const int num_velocities = 6;
+  MatrixX<double> N(num_contacts, num_velocities);
+  for (int i = 0; i < num_velocities; ++i) {
+    N.col(i) = plant_->ContactNormalJacobianMult(
+        contacts, q, VectorX<double>::Unit(num_velocities, i));
+  }
+
+  // Check whether the Jacobian is correct. Since the normal points along +z,
+  // and the contact point is directly below the c.o.m., all entries but
+  // N(0,5) should be zero; that entry should be equal to +1.
+  EXPECT_NEAR(N(0, 0), 0.0, tol);
+  EXPECT_NEAR(N(0, 1), 0.0, tol);
+  EXPECT_NEAR(N(0, 2), 0.0, tol);
+  EXPECT_NEAR(N(0, 3), 0.0, tol);
+  EXPECT_NEAR(N(0, 4), 0.0, tol);
+  EXPECT_NEAR(N(0, 5), 1.0, tol);
+
+  // Compute the kinematics cache.
+  const VectorX<double> zero_gv = VectorX<double>::Zero(num_velocities);
+  auto kinematics_cache = plant_->get_rigid_body_tree().doKinematics(q,
+      zero_gv);
+
+  // Check whether the transpose Jacobian is correct.
+  MatrixX<double> NT(num_velocities, num_contacts);
+  NT.col(0) = plant_->TransposedContactNormalJacobianMult(
+      contacts, kinematics_cache, VectorX<double>::Unit(1, 0));
+  EXPECT_LT((NT.transpose() - N).norm(), tol);
+}
+
+// Checks that the tangential contact Jacobian is correct.
+TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
+  // Construct the contact; body A is the ball.
+  const double radius = 0.05;
+  std::vector<multibody::collision::PointPair> contacts;
+  contacts.push_back(multibody::collision::PointPair());
+
+  // Contact point expressed in A's frame (p_AoC_A).
+  contacts.back().ptA = Vector3<double>(0, 0, -radius);
+
+  // Contact point expressed in B's frame (p_BoC_B).
+  contacts.back().ptB = Vector3<double>(0, 0, 0);
+  contacts.back().normal = Vector3<double>(0, 0, 1);
+  contacts.back().elementA = ball_element_;
+  contacts.back().elementB = plane_element_;
+  contacts.back().distance = 0;
+  const int num_contacts = static_cast<int>(contacts.size());
+  ASSERT_EQ(num_contacts, 1);
+
+  // Set the coordinates. Coordinates 0-2 correspond to translation and
+  // coordinates 3-6 correspond to orientation.
+  const int num_positions = 7;
+  VectorX<double> q(num_positions);
+  q.setZero();
+  q[2] = radius;   // Location of ball c.o.m.
+  q[3] = 1.0;      // 'w' coordinate of quaternion.
+
+  // Set the tolerance value.
+  const double tol = 100 * std::numeric_limits<double>::epsilon();
+
+  // Set half the number of edges in the friction cone.
+  const std::vector<int> half_num_cone_edges = { 2 };
+
+  // Construct the tangent Jacobian. Note that the velocity coordinate layout
+  // in RigidBodyPlant differs from the position coordinate layout: coordinates
+  // 0-2 correspond to angular velocity, while coordinates 3-5 correspond to
+  // translational velocity.
+  const int num_velocities = 6;
+  MatrixX<double> F(num_contacts * half_num_cone_edges.front(), num_velocities);
+  for (int i = 0; i < num_velocities; ++i) {
+    F.col(i) = plant_->ContactTangentJacobianMult(
+        contacts, q, VectorX<double>::Unit(num_velocities, i),
+        half_num_cone_edges);
+  }
+
+  // Check whether the Jacobian is correct. Two vectors will be constructed in
+  // the plane defined by the normal +z. The vectors can be constructed
+  // arbitrarily, but should be orthogonal to each other and to the contact
+  // normal. Additionally, the 'z' torque component (the third entry of each
+  // row), and the 'x' and 'y' torque components should be orthogonal.
+  for (int i = 0; i < num_contacts * half_num_cone_edges.front(); ++i) {
+    EXPECT_NEAR(F(i, 2), 0.0, tol);
+    EXPECT_NEAR(F.row(i).segment(3, 3).dot(Vector3<double>(0, 0, 1)), 0.0, tol);
+  }
+  // Torque components must be perpendicular (since this is a friction pyramid).
+  EXPECT_NEAR(F.row(0).segment(0, 2).dot(F.row(1).segment(0, 2)), 0.0, tol);
+  // Force components must be perpendicular (since this is a friction pyramid).
+  EXPECT_NEAR(F.row(0).segment(3, 3).dot(F.row(1).segment(3, 3)), 0.0, tol);
+
+  // Compute the kinematics cache.
+  const VectorX<double> zero_gv = VectorX<double>::Zero(num_velocities);
+  auto kinematics_cache = plant_->get_rigid_body_tree().doKinematics(q,
+      zero_gv);
+
+  // Check whether the transpose Jacobian is correct.
+  MatrixX<double> FT(num_velocities,
+      num_contacts * half_num_cone_edges.front());
+  FT.col(0) = plant_->TransposedContactTangentJacobianMult(
+      contacts, kinematics_cache, VectorX<double>::Unit(2, 0),
+      half_num_cone_edges);
+  FT.col(1) = plant_->TransposedContactTangentJacobianMult(
+      contacts, kinematics_cache, VectorX<double>::Unit(2, 1),
+      half_num_cone_edges);
+  EXPECT_LT((FT.transpose() - F).norm(), tol);
+}
+
 }  // namespace systems
 }  // namespace drake
