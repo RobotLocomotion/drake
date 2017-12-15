@@ -445,9 +445,9 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
-    name = "rgbd_renderer_test",
+    name = "rgbd_renderer_test_util",
     testonly = 1,
-    hdrs = ["test/rgbd_renderer_test.h"],
+    hdrs = ["test/rgbd_renderer_test_util.h"],
 )
 
 drake_cc_googletest(
@@ -466,7 +466,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":rgbd_renderer",
-        ":rgbd_renderer_test",
+        ":rgbd_renderer_test_util",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:geometric_transform",

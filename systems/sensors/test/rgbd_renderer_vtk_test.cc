@@ -1,6 +1,6 @@
 #include "drake/systems/sensors/rgbd_renderer_vtk.h"
 
-#include "drake/systems/sensors/test/rgbd_renderer_test.h"
+#include "drake/systems/sensors/test/rgbd_renderer_test_util.h"
 
 namespace drake {
 namespace systems {
