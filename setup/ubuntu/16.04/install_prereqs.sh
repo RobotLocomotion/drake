@@ -118,17 +118,22 @@ zlib1g-dev
 EOF
     )
 
-# Install Bazel.
-wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
-if echo "5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd /tmp/bazel_0.6.1-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.6.1-linux-x86_64.deb
+if  ! [ -x "$(command -v bazel)" ] ; then
+  # Install Bazel if it is not already present.
+  wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
+  if echo "5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd /tmp/bazel_0.6.1-linux-x86_64.deb" | sha256sum -c -; then
+    dpkg -i /tmp/bazel_0.6.1-linux-x86_64.deb
+  else
+    die "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
+  fi
+
+  rm /tmp/bazel_0.6.1-linux-x86_64.deb
+
+  # Remove deb that we used to generate and install, but no longer need.
+  if [ -L /usr/lib/ccache/bazel ]; then
+    apt purge ccache-bazel-wrapper
+  fi
 else
-  die "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
-fi
-
-rm /tmp/bazel_0.6.1-linux-x86_64.deb
-
-# Remove deb that we used to generate and install, but no longer need.
-if [ -L /usr/lib/ccache/bazel ]; then
-  apt purge ccache-bazel-wrapper
+  echo "Warning: bazel (https://bazel.build) is already installed. We will assume the installed version what you want, but be aware Drake is tested with bazel 0.6.1. If you have problems, try installing 0.6.1. Your current version is:"
+  bazel version
 fi
