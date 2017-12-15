@@ -183,6 +183,11 @@ void PublishCallPython(const MatlabRPC& msg);
 
 }  // namespace internal
 
+/// Initializes `CallPython` for a given file.
+/// If this function is not called, then the file defaults to `/tmp/python_rpc`.
+/// @pre Neither this function nor `CallPython` should have already been called.
+void CallPythonInit(const std::string& filename);
+
 /// Calls a Python client with a given function and arguments, returning
 /// a handle to the result.
 template <typename... Types>
