@@ -355,6 +355,7 @@ def drake_cc_binary(
         data = [],
         deps = [],
         copts = [],
+        linkopts = [],
         gcc_copts = [],
         linkshared = 0,
         linkstatic = 1,
@@ -386,7 +387,6 @@ def drake_cc_binary(
         copts = new_copts,
         testonly = testonly,
         **kwargs)
-    linkopts = []
     if linkshared == 1:
         # On Linux, we need to disable "new" dtags in the linker so that we use
         # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is
@@ -396,8 +396,8 @@ def drake_cc_binary(
         # the string we use for rpath here doesn't actually matter; it will be
         # replaced during installation later.
         linkopts = select({
-            "//tools/cc_toolchain:apple": [],
-            "//conditions:default": [
+            "//tools/cc_toolchain:apple": linkopts,
+            "//conditions:default": linkopts + [
                 "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
             ],
         })
