@@ -15,7 +15,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// Common configurations of rendering systems
+/// Common configurations of rendering systems.
 struct RenderingConfig {
   /// The width of the image to be rendered in pixels.
   const int width;
@@ -72,8 +72,8 @@ class RgbdRenderer {
   /// @param X_WC The initial pose of the renderer's unique camera viewpoint `C`
   /// at the world coordinate system. The camera pose `C` can be updated by
   /// calling `UpdateViewpoint` later on. Default value: Identity.
-  /// TODO: Handle multiple viewpoints, e.g. for stereo depth camera?
-  ///
+  /// TODO(thduynguyen, kunimatsu-tri): Handle multiple viewpoints, e.g. for
+  /// stereo depth camera?
   RgbdRenderer(const RenderingConfig& config,
                const Eigen::Isometry3d& X_WC = Eigen::Isometry3d::Identity());
 
@@ -142,10 +142,10 @@ class RgbdRenderer {
   /// @param label_image_out The rendered label image.
   void RenderLabelImage(ImageLabel16I* label_image_out) const;
 
-  /// Returns the configuration object of this renderer
+  /// Returns the configuration object of this renderer.
   const RenderingConfig& config() const;
 
-  /// Returns the color palette of this renderer
+  /// Returns the color palette of this renderer.
   const ColorPalette& color_palette() const;
 
   /// Returns sky's color in RGB image.
@@ -155,13 +155,13 @@ class RgbdRenderer {
   const ColorI& get_flat_terrain_color() const;
 
  protected:
-  /// The common configuration nedded by all implementations of this interface
+  /// The common configuration nedded by all implementations of this interface.
   RenderingConfig config_;
 
   /// The color palette for sky, terrain colors and ground truth label rendering
-  /// TODO: This is a world's property (colors for each object/segment)
-  /// hence should be moved to GeometryWorld. That would also answer the
-  /// question whether this heavy object should be a singleton.
+  /// TODO(thduynguyen, SeanCurtis-TRI): This is a world's property (colors for
+  /// each object/segment) hence should be moved to GeometryWorld. That would
+  /// also answer the question whether this heavy object should be a singleton.
   ColorPalette color_palette_;
 
  private:
