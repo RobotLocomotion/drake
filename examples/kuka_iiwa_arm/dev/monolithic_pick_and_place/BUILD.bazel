@@ -64,7 +64,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "monolithic_pick_and_place_system_test",
-    size = "medium",
+    timeout = "long",
     # Setting shard_count allows the test runner to split up the test-points in
     # this test into shard_count separate pieces which will be exectuted in
     # parallel, subject to the availability of resources. There are 31 test
