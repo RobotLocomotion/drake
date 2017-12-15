@@ -19,6 +19,7 @@ load(
     "HAS_MOVED_6996",
 )
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
+load("//tools:drake.bzl", "drake_cc_binary")
 
 LIBDRAKE_COMPONENTS = adjust_labels_for_drake_hoist(LIBDRAKE_COMPONENTS)
 
@@ -36,22 +37,8 @@ install_cmake_config(
 # LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
 # that the binary package will not contain any references to shared libraries
 # inside the build tree.
-cc_binary(
+drake_cc_binary(
     name = "libdrake.so",
-    # On Linux, we need to disable "new" dtags in the linker so that we use
-    # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is checked
-    # *before* LD_LIBRARY_PATH, which is important to avoid using the MATLAB
-    # versions of certain libraries (protobuf).  macOS doesn't understand
-    # this flag, so it is conditional on Linux only.  Note that the string
-    # we use for rpath here doesn't actually matter; it will be replaced
-    # during installation later.  Also note that if these flags are updated,
-    # the corresponding linkopt flags in pybind.bzl should be updated.
-    linkopts = select({
-        "//tools/cc_toolchain:apple": [],
-        "//conditions:default": [
-            "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
-        ],
-    }),
     linkshared = 1,
     linkstatic = 1,
     deps = LIBDRAKE_COMPONENTS,
