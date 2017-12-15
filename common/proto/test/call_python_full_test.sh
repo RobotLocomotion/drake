@@ -20,8 +20,8 @@ cc_bin=${1}
 py_client_cli=${2}
 # TODO(eric.cousineau): Use `tempfile` once we can choose which file C++
 # uses.
-filename=/tmp/python_rpc
-done_file=/tmp/python_rpc_done
+filename=$(mktemp)
+done_file=${filename}_done
 
 py-error() {
     echo "ERROR: Python client did not exit successfully."
@@ -74,13 +74,13 @@ do-setup() {
     py_fail=${1}
     py_stop_on_error=${2}
 
-    cc_flags=
+    cc_flags="--file=${filename} --done_file=${done_file}"
     if [[ ${py_fail} -eq 1 ]]; then
-        cc_flags='--with_error'
+        cc_flags="${cc_flags} --with_error"
     fi
-    py_flags=
+    py_flags="--file=${filename}"
     if [[ ${py_stop_on_error} -eq 1 ]]; then
-        py_flags='--stop_on_error'
+        py_flags="${py_flags} --stop_on_error"
     fi
 
     rm -f ${filename}

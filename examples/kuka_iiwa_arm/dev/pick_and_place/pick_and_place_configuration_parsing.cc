@@ -27,8 +27,13 @@ using pick_and_place::TargetIndex;
 namespace {
 proto::PickAndPlaceConfiguration ReadProtobufFileOrThrow(
     const std::string& filename) {
-  auto istream =
-      drake::MakeFileInputStreamOrThrow(FindResourceOrThrow(filename));
+  std::string absolute_path;
+  if (filename.at(0) == '/') {
+    absolute_path = filename;
+  } else {
+    absolute_path = FindResourceOrThrow(filename);
+  }
+  auto istream = drake::MakeFileInputStreamOrThrow(absolute_path);
   proto::PickAndPlaceConfiguration configuration;
   google::protobuf::TextFormat::Parse(istream.get(), &configuration);
   return configuration;
@@ -57,7 +62,7 @@ const proto::Model& GetModelOrThrow(
     if (!current_item.has_key() || !current_item.has_value()) {
       continue;
     }
-    if (current_item.key() == model_instance.name()) {
+    if (current_item.key() == model_instance.model_name()) {
       return current_item.value();
     }
   }

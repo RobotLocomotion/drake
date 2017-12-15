@@ -47,6 +47,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+bison
 chrpath
 clang-4.0
 clang-format-4.0
@@ -56,6 +57,7 @@ coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
+flex
 g++
 g++-5
 g++-5-multilib
@@ -137,3 +139,28 @@ else
   echo "Warning: bazel (https://bazel.build) is already installed so assuming that is the version you want.  Drake is tested with bazel 0.6.1, so try that if you run into problems. Your current version is:"
   bazel version
 fi
+
+# Install IBEX, a dReal dependency.  See
+# https://launchpad.net/~dreal/+archive/ubuntu/dreal
+# for more information. To rebuild IBEX, add the PPA `ppa:dreal/dreal` and then
+# run `apt source libibex-dev` to get the sources.
+wget -O /tmp/libibex-dev_2.6.3_amd64.deb \
+     https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files/libibex-dev_2.6.3.20171215122721.git2275df8f465a9db6a42d497ca322011ff2c6f8f7~16.04_amd64.deb
+if echo "7d76c4450921b83971006f01b3259c75cddc178bc7f4f8766f996df7763ed2b5 /tmp/libibex-dev_2.6.3_amd64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/libibex-dev_2.6.3_amd64.deb
+else
+  die "The IBEX deb does not have the expected SHA256.  Not installing IBEX."
+fi
+rm /tmp/libibex-dev_2.6.3_amd64.deb
+
+# Install dReal. See
+# https://github.com/dreal/dreal4/blob/master/README.md#build-debian-package for
+# build instructions.
+wget -O /tmp/dreal_4.17.12.2_amd64.deb \
+     https://dl.bintray.com/dreal/dreal/dreal_4.17.12.2_amd64.deb
+if echo "9347492e47a518ff78991e15fe9de0cff0200573091385e42940cdbf1fcf77a5 /tmp/dreal_4.17.12.2_amd64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/dreal_4.17.12.2_amd64.deb
+else
+  die "The dReal deb does not have the expected SHA256.  Not installing dReal."
+fi
+rm /tmp/dreal_4.17.12.2_amd64.deb
