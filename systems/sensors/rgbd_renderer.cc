@@ -6,15 +6,12 @@ namespace sensors {
 
 const int kNumMaxLabel = 256;
 
-RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WR, int width, int height,
-               double z_near, double z_far, double fov_y, bool show_window)
-      : width_(width),
-        height_(height),
-        fov_y_(fov_y),
-        z_near_(z_near),
-        z_far_(z_far),
-        show_window_(show_window),
-        color_palette_(kNumMaxLabel, Label::kFlatTerrain, Label::kNoBody) {}
+RgbdRenderer::RgbdRenderer(const RenderingConfig& config,
+                           const Eigen::Isometry3d& X_WC)
+    : config_(config),
+      color_palette_(kNumMaxLabel, Label::kFlatTerrain, Label::kNoBody) {
+  (void)X_WC;
+}
 
 RgbdRenderer::~RgbdRenderer() {}
 
@@ -27,8 +24,8 @@ void RgbdRenderer::AddFlatTerrain() {
   DoAddFlatTerrain();
 }
 
-void RgbdRenderer::UpdateViewpoint(const Eigen::Isometry3d& X_WR) const {
-  DoUpdateViewpoint(X_WR);
+void RgbdRenderer::UpdateViewpoint(const Eigen::Isometry3d& X_WC) const {
+  DoUpdateViewpoint(X_WC);
 }
 
 void RgbdRenderer::UpdateVisualPose(
@@ -48,11 +45,11 @@ void RgbdRenderer::RenderLabelImage(ImageLabel16I* label_image_out) const {
   DoRenderLabelImage(label_image_out);
 }
 
-int RgbdRenderer::width() const { return width_; }
+const RenderingConfig& RgbdRenderer::config() const { return config_; }
 
-int RgbdRenderer::height() const { return height_; }
-
-double RgbdRenderer::fov_y() const { return fov_y_; }
+const ColorPalette& RgbdRenderer::color_palette() const {
+  return color_palette_;
+}
 
 const ColorI& RgbdRenderer::get_sky_color() const {
   return color_palette_.get_sky_color();

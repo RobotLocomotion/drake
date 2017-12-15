@@ -10,13 +10,12 @@ namespace sensors {
 
 /// An RgbdRenderer implementation using VTK
 class RgbdRendererVTK final : public RgbdRenderer {
-  using Base = RgbdRenderer;
-
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRendererVTK)
 
-  RgbdRendererVTK(const Eigen::Isometry3d& X_WR, int width, int height,
-               double z_near, double z_far, double fov_y, bool show_window);
+  RgbdRendererVTK(
+      const RenderingConfig& config,
+      const Eigen::Isometry3d& X_WC = Eigen::Isometry3d::Identity());
 
   ~RgbdRendererVTK();
 
@@ -29,7 +28,7 @@ class RgbdRendererVTK final : public RgbdRenderer {
   void DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
                         int body_id, VisualIndex visual_id) const override;
 
-  void DoUpdateViewpoint(const Eigen::Isometry3d& X_WR) const override;
+  void DoUpdateViewpoint(const Eigen::Isometry3d& X_WC) const override;
 
   void DoRenderColorImage(ImageRgba8U* color_image_out) const override;
 
@@ -37,7 +36,6 @@ class RgbdRendererVTK final : public RgbdRenderer {
 
   void DoRenderLabelImage(ImageLabel16I* label_image_out) const override;
 
- private:
   class Impl;
   std::unique_ptr<Impl> impl_;
 };

@@ -15,7 +15,30 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// Abstract interface of RGB-D renderers that renders RGB, depth and label
+/// Common configurations of rendering systems
+struct RenderingConfig {
+  /// The width of the image to be rendered in pixels.
+  const int width;
+  /// The height of the image to be rendered in pixels.
+  const int height;
+  /// The renderer's camera vertical field of view in radians.
+  const double fov_y;
+  /// The minimum depth RgbdRenderer can output. Note that this is different
+  /// from renderer's clipping range where all the objects outside the range are
+  /// not rendered even in RGB image while this only affects depth image.
+  const double z_near;
+  /// The maximum depth RgbdRenderer can output. Note that this is different
+  /// from renderer's clipping range where all the objects outside the range are
+  /// not rendered even in RGB image while this only affects depth image.
+  const double z_far;
+  /// A flag for showing visible windows for RGB and label images.  If this is
+  /// false, offscreen rendering is executed. This is useful for debugging
+  /// purposes.
+  const bool show_window;
+};
+
+
+/// Abstract interface of RGB-D renderers, which render RGB, depth and label
 /// images using VisualElement. The coordinate system of RgbdRenderer's
 /// viewpoint `R` is `X-right`, `Y-down` and `Z-forward` with respect to the
 /// rendered images.
@@ -44,36 +67,15 @@ class RgbdRenderer {
 
   /// A constructor for %RgbdRenderer.
   ///
-  /// @param X_WR The initial pose of the renderer's viewpoint `R` at the world
-  /// coordinate system. The `R` can be updated by calling `UpdateViewpoint`
-  /// later on.
+  /// @param config Configurations of the renderer. See RenderingConfig.
   ///
-  /// @param width The width of the image to be rendered in pixels.
+  /// @param X_WC The initial pose of the renderer's unique camera viewpoint `C`
+  /// at the world coordinate system. The camera pose `C` can be updated by
+  /// calling `UpdateViewpoint` later on. Default value: Identity.
+  /// TODO: Handle multiple viewpoints, e.g. for stereo depth camera?
   ///
-  /// @param height The height of the image to be rendered in pixels.
-  ///
-  /// @param z_near The minimum depth RgbdRenderer can output. Note that
-  /// this is different from renderer's clipping range where all the objects
-  /// outside the range are not rendered even in RGB image while this only
-  /// affects depth image.
-  ///
-  /// @param z_far The maximum depth RgbdRenderer can output. Note that
-  /// this is different from renderer's clipping range where all the objects
-  /// outside the range are not rendered even in RGB image while this only
-  /// affects depth image.
-  ///
-  /// @param fov_y The RgbdRenderer's vertical field of view in radians.
-  ///
-  /// @param show_window A flag for showing visible windows for RGB and label
-  /// images.  If this is false, offscreen rendering is executed. This is
-  /// useful for debugging purposes.
-  RgbdRenderer(const Eigen::Isometry3d& X_WR,
-               int width,
-               int height,
-               double z_near,
-               double z_far,
-               double fov_y,
-               bool show_window);
+  RgbdRenderer(const RenderingConfig& config,
+               const Eigen::Isometry3d& X_WC = Eigen::Isometry3d::Identity());
 
   virtual ~RgbdRenderer();
 
@@ -119,11 +121,11 @@ class RgbdRenderer {
   void UpdateVisualPose(const Eigen::Isometry3d& X_WV,
                         int body_id, VisualIndex visual_id) const;
 
-  /// Updates renderer's viewpoint with given pose X_WR.
+  /// Updates renderer's camera viewpoint with given pose X_WC.
   ///
-  /// @param X_WR The pose of renderer's viewpoint in the world coordinate
-  /// system.
-  void UpdateViewpoint(const Eigen::Isometry3d& X_WR) const;
+  /// @param X_WC The pose of renderer's camera viewpoint in the world
+  /// coordinate system.
+  void UpdateViewpoint(const Eigen::Isometry3d& X_WC) const;
 
   /// Renders and outputs the rendered color image.
   ///
@@ -140,20 +142,27 @@ class RgbdRenderer {
   /// @param label_image_out The rendered label image.
   void RenderLabelImage(ImageLabel16I* label_image_out) const;
 
-  /// Returns the image width.
-  int width() const;
+  /// Returns the configuration object of this renderer
+  const RenderingConfig& config() const;
 
-  /// Returns the image height.
-  int height() const;
-
-  /// Returns the renderer's vertical field of view.
-  double fov_y() const;
+  /// Returns the color palette of this renderer
+  const ColorPalette& color_palette() const;
 
   /// Returns sky's color in RGB image.
   const ColorI& get_sky_color() const;
 
   /// Returns flat terrain's color in RGB image.
   const ColorI& get_flat_terrain_color() const;
+
+ protected:
+  /// The common configuration nedded by all implementations of this interface
+  RenderingConfig config_;
+
+  /// The color palette for sky, terrain colors and ground truth label rendering
+  /// TODO: This is a world's property (colors for each object/segment)
+  /// hence should be moved to GeometryWorld. That would also answer the
+  /// question whether this heavy object should be a singleton.
+  ColorPalette color_palette_;
 
  private:
   virtual void DoAddFlatTerrain() = 0;
@@ -164,22 +173,13 @@ class RgbdRenderer {
   virtual void DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
                         int body_id, VisualIndex visual_id) const = 0;
 
-  virtual void DoUpdateViewpoint(const Eigen::Isometry3d& X_WR) const = 0;
+  virtual void DoUpdateViewpoint(const Eigen::Isometry3d& X_WC) const = 0;
 
   virtual void DoRenderColorImage(ImageRgba8U* color_image_out) const = 0;
 
   virtual void DoRenderDepthImage(ImageDepth32F* depth_image_out) const = 0;
 
   virtual void DoRenderLabelImage(ImageLabel16I* label_image_out) const = 0;
-
- protected:
-  const int width_;
-  const int height_;
-  const double fov_y_;
-  const double z_near_;
-  const double z_far_;
-  const bool show_window_;
-  const ColorPalette color_palette_;
 };
 
 }  // namespace sensors

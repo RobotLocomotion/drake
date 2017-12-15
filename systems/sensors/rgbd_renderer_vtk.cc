@@ -101,12 +101,10 @@ void SetModelTransformMatrixToVtkCamera(
 }  // namespace
 
 class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
-  using Parent = RgbdRendererVTK;
-
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
 
-  Impl(Parent* parent, const Eigen::Isometry3d& X_WC);
+  Impl(RgbdRendererVTK* parent, const Eigen::Isometry3d& X_WC);
   ~Impl() {}
 
   void DoAddFlatTerrain();
@@ -117,7 +115,7 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
   void DoUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,
                           VisualIndex visual_id) const;
 
-  void DoUpdateViewpoint(const Eigen::Isometry3d& X_WR) const;
+  void DoUpdateViewpoint(const Eigen::Isometry3d& X_WC) const;
 
   void DoRenderColorImage(ImageRgba8U* color_image_out) const;
 
@@ -128,7 +126,7 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
  private:
   float CheckRangeAndConvertToMeters(float z_buffer_value) const;
 
-  Parent* parent_ = nullptr;
+  RgbdRendererVTK* parent_ = nullptr;
 
   vtkNew<vtkActor> terrain_actor_;
   // An array of maps which take pairs of a body index in RBT and a vector of
@@ -160,9 +158,9 @@ float RgbdRendererVTK::Impl::CheckRangeAndConvertToMeters(
   } else {
     z = static_cast<float>(kB / (z_buffer_value - kA));
 
-    if (z > parent_->z_far_) {
+    if (z > parent_->config().z_far) {
       z = InvalidDepth::kTooFar;
-    } else if (z < parent_->z_near_) {
+    } else if (z < parent_->config().z_near) {
       z = InvalidDepth::kTooClose;
     }
   }
@@ -178,7 +176,7 @@ void RgbdRendererVTK::Impl::DoAddFlatTerrain() {
   terrain_actor_->SetMapper(mapper.GetPointer());
 
   auto color =
-      ColorPalette::Normalize(parent_->color_palette_.get_terrain_color());
+      ColorPalette::Normalize(parent_->color_palette().get_terrain_color());
   terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
   terrain_actor_->GetProperty()->LightingOff();
   for (auto& renderer :
@@ -201,13 +199,13 @@ void RgbdRendererVTK::Impl::DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
 }
 
 void RgbdRendererVTK::Impl::DoUpdateViewpoint(
-    const Eigen::Isometry3d& X_WR) const {
-  vtkSmartPointer<vtkTransform> vtk_X_WR = ConvertToVtkTransform(X_WR);
+    const Eigen::Isometry3d& X_WC) const {
+  vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
 
   for (auto& renderer :
        MakeVtkPointerArray(color_depth_renderer_, label_renderer_)) {
     auto camera = renderer->GetActiveCamera();
-    SetModelTransformMatrixToVtkCamera(camera, vtk_X_WR);
+    SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
   }
 }
 
@@ -225,8 +223,8 @@ void RgbdRendererVTK::Impl::DoRenderDepthImage(
   depth_exporter_->Export(depth_image_out->at(0, 0));
 
   // TODO(kunimatsu-tri) Calculate this in a vertex shader.
-  for (int v = 0; v < parent_->height_; ++v) {
-    for (int u = 0; u < parent_->width_; ++u) {
+  for (int v = 0; v < parent_->config().height; ++v) {
+    for (int u = 0; u < parent_->config().width; ++u) {
       depth_image_out->at(u, v)[0] =
           CheckRangeAndConvertToMeters(depth_image_out->at(u, v)[0]);
     }
@@ -238,17 +236,17 @@ void RgbdRendererVTK::Impl::DoRenderLabelImage(
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(label_render_window_, label_filter_, label_exporter_);
 
-  ImageRgb8U image(parent_->width_, parent_->height_);
+  ImageRgb8U image(parent_->config().width, parent_->config().height);
   label_exporter_->Export(image.at(0, 0));
 
   ColorI color;
-  for (int v = 0; v < parent_->height_; ++v) {
-    for (int u = 0; u < parent_->width_; ++u) {
+  for (int v = 0; v < parent_->config().height; ++v) {
+    for (int u = 0; u < parent_->config().width; ++u) {
       color.r = image.at(u, v)[0];
       color.g = image.at(u, v)[1];
       color.b = image.at(u, v)[2];
       label_image_out->at(u, v)[0] =
-          static_cast<int16_t>(parent_->color_palette_.LookUpId(color));
+          static_cast<int16_t>(parent_->color_palette().LookUpId(color));
     }
   }
 }
@@ -256,7 +254,7 @@ void RgbdRendererVTK::Impl::DoRenderLabelImage(
 RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
                             const Eigen::Isometry3d& X_WC)
     : parent_(parent) {
-  if (!parent_->show_window_) {
+  if (!parent_->config().show_window) {
     for (auto& window : MakeVtkPointerArray(color_depth_render_window_,
                                             label_render_window_)) {
       window->SetOffScreenRendering(1);
@@ -264,7 +262,7 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
   }
 
   const auto sky_color =
-      ColorPalette::Normalize(parent_->color_palette_.get_sky_color());
+      ColorPalette::Normalize(parent_->color_palette().get_sky_color());
   const auto renderers =
       MakeVtkPointerArray(color_depth_renderer_, label_renderer_);
   const vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
@@ -272,7 +270,7 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
   for (auto& renderer : renderers) {
     renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
     auto camera = renderer->GetActiveCamera();
-    camera->SetViewAngle(parent_->fov_y_ * 180. / M_PI);
+    camera->SetViewAngle(parent_->config().fov_y * 180. / M_PI);
     camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
     SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
   }
@@ -283,7 +281,7 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
   const auto windows =
       MakeVtkPointerArray(color_depth_render_window_, label_render_window_);
   for (size_t i = 0; i < windows.size(); ++i) {
-    windows[i]->SetSize(parent_->width_, parent_->height_);
+    windows[i]->SetSize(parent_->config().width, parent_->config().height);
     windows[i]->AddRenderer(renderers[i].GetPointer());
   }
   label_render_window_->SetMultiSamples(0);
@@ -417,7 +415,7 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::DoRegisterVisual(
       actor->GetProperty()->SetColor(color[0], color[1], color[2]);
     }
 
-    const auto& color = parent_->color_palette_.get_normalized_color(body_id);
+    const auto& color = parent_->color_palette().get_normalized_color(body_id);
     vtkNew<vtkActor> actor_for_label;
     actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
     // This is to disable shadows and to get an object painted with a single
@@ -446,10 +444,9 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::DoRegisterVisual(
   return nullopt;
 }
 
-RgbdRendererVTK::RgbdRendererVTK(const Eigen::Isometry3d& X_WC, int width,
-                                 int height, double z_near, double z_far,
-                                 double fov_y, bool show_window)
-    : Base(X_WC, width, height, z_near, z_far, fov_y, show_window),
+RgbdRendererVTK::RgbdRendererVTK(const RenderingConfig& config,
+                                 const Eigen::Isometry3d& X_WC)
+    : RgbdRenderer(config, X_WC),
       impl_(new RgbdRendererVTK::Impl(this, X_WC)) {}
 
 RgbdRendererVTK::~RgbdRendererVTK() {}
@@ -461,8 +458,8 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::DoRegisterVisual(
 
 void RgbdRendererVTK::DoAddFlatTerrain() { impl_->DoAddFlatTerrain(); }
 
-void RgbdRendererVTK::DoUpdateViewpoint(const Eigen::Isometry3d& X_WR) const {
-  impl_->DoUpdateViewpoint(X_WR);
+void RgbdRendererVTK::DoUpdateViewpoint(const Eigen::Isometry3d& X_WC) const {
+  impl_->DoUpdateViewpoint(X_WC);
 }
 
 void RgbdRendererVTK::DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
