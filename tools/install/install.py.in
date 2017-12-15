@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import collections
 import filecmp
 import os
 import re
@@ -191,15 +192,7 @@ def linux_fix_rpaths(dst_full):
     # The above may have duplicated some items into the list.  Uniquify it
     # here, preserving order.  Note that we do not just use a set() above,
     # since order matters.
-    seen = {}
-    newrpath = []
-    for item in rpath:
-        if item in seen:
-            continue
-        seen[item] = 1
-        newrpath.append(item)
-
-    rpath = newrpath
+    rpath = collections.OrderedDict.fromkeys(rpath).keys()
 
     # Replace build tree RPATH with computed install tree RPATH. Build tree
     # RPATH are automatically removed by this call. RPATH will contain the
