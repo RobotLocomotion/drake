@@ -20,7 +20,7 @@ cc_bin=${1}
 py_client_cli=${2}
 # TODO(eric.cousineau): Use `tempfile` once we can choose which file C++
 # uses.
-filename=$(tempfile)
+filename=$(mktemp)
 done_file=${filename}_done
 
 py-error() {
