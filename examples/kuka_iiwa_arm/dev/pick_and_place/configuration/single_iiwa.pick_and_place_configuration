@@ -1,3 +1,12 @@
+# This configuration file defines a scenario in which one Kuka iiwa arm is
+# surrounded by four tables (two high, round tables, and two low rectangular
+# tables). A robot toy is initially located on top of one of the tables. For
+# more details on the format of this file, see
+# <drake root>/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration.proto
+
+# Model Definitions
+# This section defines the models that will be used in the rest of the
+# configuration file.
 model {
   items {
     key: "cube"
@@ -8,7 +17,7 @@ model {
   items {
     key: "big_robot_toy"
     value {
-      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
+:      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
     }
   }
   items {
@@ -31,6 +40,10 @@ model {
   }
 }
 
+# Tables
+# This section describes the fixed tables in the scenario. The `pose` field of
+# each entry defines the pose of the model's base link relative to the world
+# frame.
 table {
   model_name: "round_table"
   optitrack_info {
@@ -69,6 +82,10 @@ table {
   }
 }
 
+# Robots
+# This section describes the robot arms in the scenario. The `pose` field of
+# each entry defines the pose of the model's base link relative to the world
+# frame.
 robot {
   model_name: "iiwa"
   optitrack_info {
@@ -79,6 +96,10 @@ robot {
   }
 }
 
+# Objects
+# This section describes the floating base objects in the scenario. The `pose`
+# field of each entry defines the initial pose of the model's base link
+# relative to the world frame.
 object {
   model_name: "big_robot_toy"
   optitrack_info {
@@ -90,11 +111,18 @@ object {
   }
 }
 
+# Tasks
+# This section describes the pick-and-place tasks to be executed in this
+# scenario. Each task specifies which object will be moved (if there are
+# multiple objects in the scenario), which robot will move it (if there are
+# multiple robots in the scenario), and which link of the robot the end
+# effector is attached to.
 task {
   end_effector_name: "iiwa_link_ee"
 }
 
-
+# Contact parameters
+# This section defines the contact parameters to be used in the scenario.
 default_compliant_material {
     youngs_modulus: 3e7
     dissipation: 5

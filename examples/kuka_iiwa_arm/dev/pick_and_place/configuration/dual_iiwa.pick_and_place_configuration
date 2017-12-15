@@ -1,3 +1,12 @@
+# This configuration file defines a scenario in which two Kuka iiwa arms are
+# surrounded by eight tables (four high, round tables and four low rectangular
+# tables). Robot toys are initially located on top of two of the tables. For
+# more details on the format of this file, see
+# <drake root>/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration.proto
+
+# Model Definitions
+# This section defines the models that will be used in the rest of the
+# configuration file.
 model {
   items {
     key: "cube"
@@ -31,6 +40,10 @@ model {
   }
 }
 
+# Tables
+# This section describes the fixed tables in the scenario. The `pose` field of
+# each entry defines the pose of the model's base link relative to the world
+# frame.
 table {
   model_name: "round_table"
   optitrack_info {
@@ -105,6 +118,10 @@ table {
   }
 }
 
+# Robots
+# This section describes the robot arms in the scenario. The `pose` field of
+# each entry defines the pose of the model's base link relative to the world
+# frame.
 robot {
   model_name: "iiwa"
   optitrack_info {
@@ -114,7 +131,6 @@ robot {
     xyz: [0.0, 0.0, 0.7645]
   }
 }
-
 robot {
   model_name: "iiwa"
   optitrack_info {
@@ -125,6 +141,10 @@ robot {
   }
 }
 
+# Objects
+# This section describes the floating base objects in the scenario. The `pose`
+# field of each entry defines the initial pose of the model's base link
+# relative to the world frame.
 object {
   model_name: "big_robot_toy"
   optitrack_info {
@@ -135,7 +155,6 @@ object {
     rpy: [0.0, 0.0, 1.571]
   }
 }
-
 object {
   model_name: "big_robot_toy"
   optitrack_info {
@@ -146,16 +165,25 @@ object {
   }
 }
 
+# Tasks
+# This section describes the pick-and-place tasks to be executed in this
+# scenario. Each task specifies which object will be moved (if there are
+# multiple objects in the scenario), which robot will move it (if there are
+# multiple robots in the scenario), and which link of the robot the end
+# effector is attached to.
 task {
   end_effector_name: "iiwa_link_ee"
+  robot_index: 0
+  target_index: 0
 }
-
 task {
   end_effector_name: "iiwa_link_ee"
   robot_index: 1
   target_index: 1
 }
 
+# Contact parameters
+# This section defines the contact parameters to be used in the scenario.
 default_compliant_material {
     youngs_modulus: 3e7
     dissipation: 5
