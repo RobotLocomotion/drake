@@ -15,12 +15,6 @@ model {
     }
   }
   items {
-    key: "big_robot_toy"
-    value {
-      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
-    }
-  }
-  items {
     key: "yellow_post"
     value {
       simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/yellow_post.urdf"
