@@ -188,6 +188,15 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>& context) const = 0;
 
+  // TODO(amcastro-tri): Implement a method AddInForcing() to have a parallel to
+  // Joint<T>::AddInForcing(). The signature will be:
+  // void AddInForcing(
+  //     const systems::Context<T>& context,
+  //     const Vector3<T>& p_BoP_B, const SpatialForce<T>& F_BP_W,
+  //     MultibodyForcing<T>* forcing);
+  // Notice that this requires evaluating p_BoP_W, hence R_WB, which ideally
+  // comes from the cache.
+
   /// NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
   /// type of the new clone to be created. This method is mostly intended to be
   /// called by MultibodyTree::CloneToScalar(). Most users should not call this

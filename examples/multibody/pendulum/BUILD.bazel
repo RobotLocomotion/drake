@@ -24,11 +24,9 @@ drake_cc_vector_gen_library(
 drake_cc_library(
     name = "pendulum_plant",
     srcs = [
-        "actuator_force_element.cc",
         "pendulum_plant.cc",
     ],
     hdrs = [
-        "actuator_force_element.h",
         "pendulum_plant.h",
     ],
     deps = [
