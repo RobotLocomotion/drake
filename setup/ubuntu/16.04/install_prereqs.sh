@@ -131,6 +131,24 @@ dpkg_install_from_wget() {
     exit 0
   fi
 
+  # If installing our desired version would be a downgrade, ask the user first.
+  if dpkg --compare-versions "${installed}" gt "${version}"; then
+    while true; do
+      echo "This system has ${package} version ${installed} installed."
+      echo "Drake suggests downgrading to version ${version}, our supported version."
+      read -p "Do you want to downgrade? [Y/n] " yn
+      case $yn in
+        [Yy]*)
+          break
+          ;;
+        [Nn]*)
+          exit 0
+          ;;
+        *) echo "Please answer yes or no." ;;
+      esac
+    done
+  fi
+
   # Download and verify.
   tmpdeb="/tmp/${package}_${version}-amd64.deb"
   wget -O "${tmpdeb}" "${url}"
