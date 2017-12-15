@@ -8,17 +8,18 @@ namespace sensors {
 namespace test {
 
 using RgbdRendererVTKTest = RgbdRendererTest<RgbdRendererVTK>;
+using Eigen::Isometry3d;
 
 TEST_F(RgbdRendererVTKTest, InstantiationTest) {
-  SetUp(Isometry3d::Identity());
+  Init(Isometry3d::Identity());
 
-  EXPECT_EQ(renderer_->width(), kWidth);
-  EXPECT_EQ(renderer_->height(), kHeight);
-  EXPECT_EQ(renderer_->fov_y(), kFovY);
+  EXPECT_EQ(renderer_->config().width, kWidth);
+  EXPECT_EQ(renderer_->config().height, kHeight);
+  EXPECT_EQ(renderer_->config().fov_y, kFovY);
 }
 
 TEST_F(RgbdRendererVTKTest, NoBodyTest) {
-  SetUp(Isometry3d::Identity());
+  Init(Isometry3d::Identity());
   Render();
 
   VerifyUniformColor(renderer_->get_sky_color(), 0u);
@@ -32,13 +33,13 @@ TEST_F(RgbdRendererVTKTest, NoBodyTest) {
 }
 
 TEST_F(RgbdRendererVTKTest, TerrainTest) {
-  SetUp(X_WR_, true);
+  Init(X_WC_, true);
 
   const auto& kTerrain = renderer_->get_flat_terrain_color();
   // At two different distances.
   for (auto depth : std::array<float, 2>({{2.f, 5.f}})) {
-    X_WR_.translation().z() = depth;
-    renderer_->UpdateViewpoint(X_WR_);
+    X_WC_.translation().z() = depth;
+    renderer_->UpdateViewpoint(X_WC_);
     Render();
     VerifyUniformColor(kTerrain, 255u);
     VerifyUniformLabel(Label::kFlatTerrain);
@@ -46,16 +47,16 @@ TEST_F(RgbdRendererVTKTest, TerrainTest) {
   }
 
   // Closer than kZNear.
-  X_WR_.translation().z() = kZNear - 1e-5;
-  renderer_->UpdateViewpoint(X_WR_);
+  X_WC_.translation().z() = kZNear - 1e-5;
+  renderer_->UpdateViewpoint(X_WC_);
   Render();
   VerifyUniformColor(kTerrain, 255u);
   VerifyUniformLabel(Label::kFlatTerrain);
   VerifyUniformDepth(InvalidDepth::kTooClose);
 
   // Farther than kZFar.
-  X_WR_.translation().z() = kZFar + 1e-3;
-  renderer_->UpdateViewpoint(X_WR_);
+  X_WC_.translation().z() = kZFar + 1e-3;
+  renderer_->UpdateViewpoint(X_WC_);
   Render();
   VerifyUniformColor(kTerrain, 255u);
   VerifyUniformLabel(Label::kFlatTerrain);
@@ -69,26 +70,26 @@ TEST_F(RgbdRendererVTKTest, TerrainTest) {
 
 TEST_F(RgbdRendererVTKTest, HorizonTest) {
   // Camera at the origin, pointing in a direction parallel to the ground.
-  Isometry3d X_WR =
+  Isometry3d X_WC =
       Eigen::Translation3d(0, 0, 0) *
       Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
-  SetUp(X_WR, true);
+  Init(X_WC, true);
 
   // Returns y in [0, kHeight / 2], index of horizon location in image
   // coordinate system under two assumptions: 1) the gound plane is not clipped
   // by `kClippingPlaneFar`, 2) camera is located above the ground.
-  auto CalcHorizon = [](double z) {
+  auto CalcHorizon = [](double z, double fov, double height) {
     const double kTerrainSize = 50.;
-    const double kFocalLength = kHeight * 0.5 / std::tan(0.5 * kFovY);
-    return 0.5 * kHeight + z / kTerrainSize * kFocalLength;
+    const double kFocalLength = height * 0.5 / std::tan(0.5 * fov);
+    return 0.5 * height + z / kTerrainSize * kFocalLength;
   };
 
   // Verifies v index of horizon at three different camera heights.
   const std::array<double, 3> Zs{{2., 1., 0.5}};
   for (const auto& z : Zs) {
-    X_WR.translation().z() = z;
-    renderer_->UpdateViewpoint(X_WR);
+    X_WC.translation().z() = z;
+    renderer_->UpdateViewpoint(X_WC);
     Render();
 
     const auto& kTerrain = renderer_->get_flat_terrain_color();
@@ -103,13 +104,13 @@ TEST_F(RgbdRendererVTKTest, HorizonTest) {
       }
     }
 
-    const double expected_horizon = CalcHorizon(z);
+    const double expected_horizon = CalcHorizon(z, kFovY, kHeight);
     ASSERT_NEAR(expected_horizon, actual_horizon, 1.001);
   }
 }
 
 TEST_F(RgbdRendererVTKTest, BoxTest) {
-  SetUp(X_WR_, true);
+  Init(X_WC_, true);
 
   // Sets up a box.
   Isometry3d X_WV = Isometry3d::Identity();
@@ -129,7 +130,8 @@ TEST_F(RgbdRendererVTKTest, BoxTest) {
   const int x = kInlier.x;
   const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u);
+  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u,
+               kColorPixelTolerance);
   // Depth
   ASSERT_NEAR(depth_.at(x, y)[0], 2.f, kDepthTolerance);
   // Label
@@ -137,7 +139,7 @@ TEST_F(RgbdRendererVTKTest, BoxTest) {
 }
 
 TEST_F(RgbdRendererVTKTest, SphereTest) {
-  SetUp(X_WR_, true);
+  Init(X_WC_, true);
 
   // Sets up a sphere.
   Isometry3d X_WV = Isometry3d::Identity();
@@ -156,7 +158,8 @@ TEST_F(RgbdRendererVTKTest, SphereTest) {
   const int x = kInlier.x;
   const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u);
+  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u,
+               kColorPixelTolerance);
   // Depth
   ASSERT_NEAR(depth_.at(x, y)[0], 2.f, kDepthTolerance);
   // Label
@@ -164,7 +167,7 @@ TEST_F(RgbdRendererVTKTest, SphereTest) {
 }
 
 TEST_F(RgbdRendererVTKTest, CylinderTest) {
-  SetUp(X_WR_, true);
+  Init(X_WC_, true);
 
   // Sets up a sphere.
   Isometry3d X_WV = Isometry3d::Identity();
@@ -183,7 +186,8 @@ TEST_F(RgbdRendererVTKTest, CylinderTest) {
   const int x = kInlier.x;
   const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u);
+  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u,
+               kColorPixelTolerance);
   // Depth
   ASSERT_NEAR(depth_.at(x, y)[0], 1.8f, kDepthTolerance);
   // Label
@@ -191,7 +195,7 @@ TEST_F(RgbdRendererVTKTest, CylinderTest) {
 }
 
 TEST_F(RgbdRendererVTKTest, MeshTest) {
-  SetUp(X_WR_, true);
+  Init(X_WC_, true);
 
   Isometry3d X_WV = Isometry3d::Identity();
   DrakeShapes::VisualElement visual(X_WV);
@@ -210,7 +214,8 @@ TEST_F(RgbdRendererVTKTest, MeshTest) {
   const int x = kInlier.x;
   const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(x, y), ColorI({4u, 241u, 33u}), 255u);
+  CompareColor(color_.at(x, y), ColorI({4u, 241u, 33u}), 255u,
+               kColorPixelTolerance);
   // Depth
   ASSERT_NEAR(depth_.at(x, y)[0], 2., kDepthTolerance);
   // Label
