@@ -12,11 +12,9 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 drake_cc_library(
     name = "pendulum_plant",
     srcs = [
-        "actuator_force_element.cc",
         "pendulum_plant.cc",
     ],
     hdrs = [
-        "actuator_force_element.h",
         "pendulum_plant.h",
     ],
     deps = [

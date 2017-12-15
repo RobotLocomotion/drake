@@ -28,9 +28,12 @@ template<typename T> class MultibodyTree;
 template <typename T>
 class MultibodyTreeForcing {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeForcing)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeForcing)
 
+  /// Constructs a **zero** MultibodyTree forcing object.
   MultibodyTreeForcing(const MultibodyTree<T>& model);
+
+  MultibodyTreeForcing<T>& SetZero();
 
   const VectorX<T>& generalized_forces() const {
     return tau_;
@@ -40,7 +43,7 @@ class MultibodyTreeForcing {
     return static_cast<int>(F_B_W_.size());
   }
 
-  int num_mobilities() {
+  int num_mobilities() const {
     return static_cast<int>(tau_.size());
   }
 
@@ -55,6 +58,11 @@ class MultibodyTreeForcing {
   std::vector<SpatialForce<T>>& mutable_body_forces() {
     return F_B_W_;
   }
+
+  /// Utility that checks that `this` forcing is compatible with the given
+  /// MultibodyTree model.
+  /// @returns true if `this` forcing is compatible with `model`.
+  bool CheckInvariants(const MultibodyTree<T>& model) const;
 
  private:
   // Vector holding, for each body in the MultibodyTree, the externally applied
