@@ -111,6 +111,9 @@ sh_test(
         ":call_python_client_cli",
         ":call_python_test",
     ],
+    # Certain versions of Mac don't like this script using `ps`. For this
+    # reason, make the test run locally.
+    local = 1,
 )
 
 drake_cc_googletest(

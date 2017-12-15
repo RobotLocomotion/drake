@@ -6,6 +6,14 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
+DEFINE_string(file, "/tmp/python_rpc",
+              "File written to by this binary, read by client.");
+// This file signals to `call_python_full_test.sh` that a full execution has
+// been completed. This is useful for the `threading-loop` case, where we want
+// send a Ctrl+C interrupt only when finished.
+DEFINE_string(done_file, "/tmp/python_rpc_done",
+              "Signifies last Python command has been executed.");
+// Ensure that we test error behavior.
 DEFINE_bool(with_error, false, "Inject an error towards the end.");
 
 // TODO(eric.cousineau): Instrument client to verify output (and make this a
@@ -14,17 +22,13 @@ DEFINE_bool(with_error, false, "Inject an error towards the end.");
 namespace drake {
 namespace common {
 
-// This file signals to `call_python_full_test.sh` that a full execution has
-// been completed. This is useful for the `threading-loop` case, where we want
-// send a Ctrl+C interrupt only when finished.
-constexpr char kDoneFile[] = "/tmp/python_rpc_done";
-
 GTEST_TEST(TestCallPython, Start) {
+  CallPythonInit(FLAGS_file);
   // Tell client to expect a finishing signal.
   CallPython("execution_check.start");
   // Ensure that we remove `kDoneFile` so that we are not stopped in the middle
   // of execution.
-  CallPython("setvar", "done_file", kDoneFile);
+  CallPython("setvar", "done_file", FLAGS_done_file);
   CallPython("exec", "if os.path.exists(done_file): os.remove(done_file)");
 }
 
