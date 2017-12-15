@@ -134,6 +134,6 @@ if  ! [ -x "$(command -v bazel)" ] ; then
     apt purge ccache-bazel-wrapper
   fi
 else
-  echo "Warning: bazel (https://bazel.build) is already installed. We will assume the installed version what you want, but be aware Drake is tested with bazel 0.6.1. If you have problems, try installing 0.6.1. Your current version is:"
+  echo "Warning: bazel (https://bazel.build) is already installed so assuming that is the version you want.  Drake is tested with bazel 0.6.1, so try that if you run into problems. Your current version is:"
   bazel version
 fi
