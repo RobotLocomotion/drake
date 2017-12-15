@@ -250,8 +250,8 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
           context.get_continuous_state_vector()).get_value();
   const int nv = model_->get_num_velocities();
 
+  // Constructor initializes forcing to zero:
   MultibodyTreeForcing<T> forcing(*model_);
-  joint_->AddInTorque(context, get_tau(context), &forcing);
 
   // TODO(amcastro-tri): Replace by an ABA forward dynamics.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
