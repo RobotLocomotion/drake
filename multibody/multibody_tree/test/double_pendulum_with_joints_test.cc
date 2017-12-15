@@ -25,9 +25,6 @@ namespace drake {
 namespace multibody {
 namespace {
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 using benchmarks::Acrobot;
@@ -75,13 +72,13 @@ using systems::Context;
 //      |  | So  | Shoulder outboard frame So.
 //      |  +-->  |
 //      |        |
-//      |  X_L2So | Pose of So in U.
+//      | X_L1So | Pose of So in L1.
 //      |        |
 //      |  ^     |
-//      |  | U   | Upper link body frame U.
+//      |  | L1  | Upper link body frame L1.
 //      |  +-->  |
 //      |        |
-//      |  X_L1Ei | Pose of Ei in U.
+//      | X_L1Ei | Pose of Ei in L1.
 //      |        |
 //      |  ^     |
 //      |  | Ei  | Elbow inboard frame Ei.
@@ -90,13 +87,13 @@ using systems::Context;
 //      X_EiEo(θ₂) Elbow revolute mobilizer with generalized position θ₂.
 //      +--+-----+
 //      |  ^     |
-//      |  |Eo/L | Elbow outboard frame Eo.
-//      |  +-->  | Lower link's frame L is coincident with the elbow frame Eo.
+//      |  |Eo/L2| Elbow outboard frame Eo.
+//      |  +-->  | Lower link's frame L2 is coincident with the elbow frame Eo.
 //      |        |
-//      |p_LoLcm | Position vector of the link's com measured from the link's
-//      |        | frame origin Lo.
+//      |p_L2oLcm| Position vector of link 2's com measured from the link's
+//      |        | frame origin L2o.
 //      |  ^     |
-//      |  | Lcm | Lower link's frame L shifted to its center of mass.
+//      |  | L2cm| Lower link's frame L2 shifted to its center of mass.
 //      |  +-->  |
 //      |        |
 //      |        |
@@ -164,9 +161,9 @@ class DoublePendulumModel {
 
     elbow_ = &tree_->template AddJoint<RevoluteJoint>(
         "ElbowJoint",
-        *link1_, X_L1Ei, /* Pose of Ei in L1. */
-        *link2_, {},     /* No pose provided, frame Eo IS frame L2. */
-        Vector3d::UnitZ()     /* revolute axis */);
+        *link1_, X_L1Ei,  /* Pose of Ei in L1. */
+        *link2_, {},      /* No pose provided, frame Eo IS frame L2. */
+        Vector3d::UnitZ() /* revolute axis */);
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
@@ -321,9 +318,6 @@ class PendulumTests : public ::testing::Test {
 
     Vector2d rhs = tau + tau_g - C;
     Vector2d vdot_benchmark = M.llt().solve(rhs);
-
-    PRINT_VAR(vdot.transpose());
-    PRINT_VAR(vdot_benchmark.transpose());
 
     CompareMatrices(
         vdot, vdot_benchmark, kTolerance, MatrixCompareType::relative);
