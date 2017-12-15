@@ -1,4 +1,8 @@
 # Overview
+The demo scenario consists of one or more Kuka iiwa arms surrounded by two or
+more tables. The arm will move a target object from one table to the next
+counter-clockwise about the base of the arm.
+
 This demo uses LCM ([Lightweight Communications and
 Marshalling](https://lcm-proj.github.io/)) for message passing between four
 executables:
@@ -38,9 +42,6 @@ the processes.
 │ └───────────────────────────────────────────────────────────────┘ │
 └───────────────────────────────────────────────────────────────────┘
 ```
-The demo scenario consists of one or more Kuka iiwa arms surrounded by two or
-more tables. The arm will move a target object from one table to the next
-counter-clockwise about the base of the arm.
 
 # Running the demo
 The following instructions assume Drake was
@@ -63,11 +64,11 @@ $ bot-procman-sheriff -l examples/kuka_iiwa_arm/dev/pick_and_place/multi-process
 This will bring up a `bot-procman-sheriff` window from which you can control
 the processes involved in the demo. You can now launch these processes in
 various configurations:
-- Select "Scripts" > "0.simulate-single-iiwa-scenario" from the menubar to
+- Select "Scripts" > "0.simulate-single-iiwa-scenario" from the menu bar to
   launch a scenario with one arm and four tables.
-- Select "Scripts" > "1.simulate-dual-iiwa-scenario" from the menubar to launch
+- Select "Scripts" > "1.simulate-dual-iiwa-scenario" from the menu bar to launch
   a scenario with two arms and eight tables.
-- Select "Scripts" > "2.stop-simulation" from the menubar to stop any running
+- Select "Scripts" > "2.stop-simulation" from the menu bar to stop any running
   simulations, but leave the visualizer open.  You can also start and stop
   individual processes or groups of processes through the right-click menu of
   the corresponding line in the GUI. 
