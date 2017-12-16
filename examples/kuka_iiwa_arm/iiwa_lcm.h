@@ -134,11 +134,13 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
 /// Creates and outputs lcmt_iiwa_status messages.
 ///
-/// This system has two vector-valued input ports, one for the plant's
-/// current state and one for the most recently received command.
-/// Both ports contain a position and velocity for each joint
-/// (velocity is unused, this is done to be more readily compatible
-/// with the outputs from IiwaCommandReceiver and RigidBodyPlant).
+/// This system has three vector-valued input ports, one for the plant's
+/// current state, one for the most recently received position command, and one
+/// for the most recently received joint torque command.
+/// The state and command ports contain a position and velocity for each joint
+/// (velocity is unused, this is done to be more readily compatible with the
+/// outputs from IiwaCommandReceiver and RigidBodyPlant). The torque command
+/// port contains a single torque for each joint.
 ///
 /// This system has one abstract valued output port that contains a
 /// systems::Value object templated on type `lcmt_iiwa_status`. Note that this
@@ -159,6 +161,11 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
 
   const systems::InputPortDescriptor<double>& get_state_input_port() const {
     return this->get_input_port(1);
+  }
+
+  const systems::InputPortDescriptor<double>& get_torque_commanded_input_port()
+  const {
+    return this->get_input_port(2);
   }
 
  private:

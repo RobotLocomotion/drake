@@ -77,6 +77,9 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
         iiwa_controller->get_input_port_desired_acceleration()));
     output_port_iiwa_state_.push_back(
         base_builder->ExportOutput(iiwa_output_port));
+    // Export the inverse dynamics controller computed torque output
+    output_port_iiwa_torque_.push_back(
+        base_builder->ExportOutput(iiwa_controller->get_output_port_control()));
 
     // Sets up the WSG gripper part.
     const auto& wsg_input_port =
