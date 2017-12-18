@@ -64,11 +64,29 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rotation_matrix",
+    srcs = ["rotation_matrix.cc"],
+    hdrs = ["rotation_matrix.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:default_scalars",
+        "//drake/math:geometric_transform",
+    ],
+)
+
 drake_cc_googletest(
     name = "spatial_algebra_test",
     deps = [
         ":spatial_algebra",
         "//drake/common:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rotation_matrix_test",
+    deps = [
+        ":rotation_matrix",
     ],
 )
 
