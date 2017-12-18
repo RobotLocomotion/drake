@@ -39,7 +39,7 @@ bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
 // transformations. The matrix is supposed to be a linear basis, but it's
 // possible that the basis becomes degenerate (meaning that the matrix becomes
 // singular) due to accumulated roundoff error from pivoting. Recovering from
-// a degenerate basis is currently an open problem; 
+// a degenerate basis is currently an open problem;
 // see http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf, for
 // example. The caller would ideally terminate at this point, but
 // compilation of householderQr().rank() with AutoDiff currently generates
