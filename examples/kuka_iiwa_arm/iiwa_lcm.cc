@@ -184,7 +184,7 @@ IiwaStatusSender::IiwaStatusSender(int num_joints)
     : num_joints_(num_joints) {
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
-  this->DeclareInputPort(systems::kVectorValued, num_joints_ );
+  this->DeclareInputPort(systems::kVectorValued, num_joints_);
   this->DeclareAbstractOutputPort(&IiwaStatusSender::MakeOutputStatus,
                                   &IiwaStatusSender::OutputStatus);
 }

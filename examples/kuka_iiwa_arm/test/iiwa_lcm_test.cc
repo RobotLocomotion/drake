@@ -175,6 +175,11 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
   state.tail(kNumJoints) << 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1;
   context->FixInputPort(dut.get_state_input_port().get_index(), state);
 
+  Eigen::VectorXd torque = Eigen::VectorXd::Zero(kNumJoints);
+  torque << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7;
+  context->FixInputPort(
+      dut.get_torque_commanded_input_port().get_index(), torque);
+
   dut.CalcOutput(*context, output.get());
   lcmt_iiwa_status status =
       output->get_data(0)->GetValue<lcmt_iiwa_status>();

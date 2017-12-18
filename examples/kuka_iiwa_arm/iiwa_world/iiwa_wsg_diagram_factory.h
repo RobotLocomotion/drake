@@ -131,7 +131,7 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
     return this->get_output_port(output_port_kinematics_results_);
   }
 
-  const systems::OutputPort<T> &get_output_port_computed_torque(
+  const systems::OutputPort<T>& get_output_port_computed_torque(
       int index = 0) const {
     return this->get_output_port(output_port_iiwa_torque_.at(index));
   }
