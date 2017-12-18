@@ -69,7 +69,7 @@ if(WITH_MATLAB)
   list(APPEND BAZEL_ARGS --define=NO_IPOPT=ON)
 endif()
 
-option(WITH_MOSEK "Build with support for MOSEK. Experimental." OFF)
+option(WITH_MOSEK "Build with support for MOSEK" OFF)
 
 if(WITH_MOSEK)
   list(APPEND BAZEL_ARGS --config=mosek)

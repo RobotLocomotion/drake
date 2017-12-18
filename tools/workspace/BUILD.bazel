@@ -43,7 +43,10 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gflags",
     "jchart2d",
     "optitrack_driver",
-]]
+]] + select({
+    "//tools:with_mosek": ["@mosek//:install"],
+    "//conditions:default": [],
+})
 
 install(
     name = "install_external_packages",
