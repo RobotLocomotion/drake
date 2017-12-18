@@ -182,6 +182,8 @@ drake_py_test(
 drake_py_test(
     name = "common_install_test",
     size = "medium",
+    # Increase the timeout so that debug builds are successful.
+    timeout = "long",
     srcs = ["test/common_install_test.py"],
     data = ["//:install"],
     main = "test/common_install_test.py",
