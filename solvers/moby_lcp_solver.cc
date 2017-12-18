@@ -35,7 +35,16 @@ bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
   return false;
 }
 
-// Linear system solver, generic (and slower).
+// AutoDiff-supported linear system solver for performing principle pivoting
+// transformations. The matrix is supposed to be a linear basis, but it's
+// possible that the basis becomes degenerate (meaning that the matrix becomes
+// singular) due to accumulated roundoff error from pivoting. Recovering from
+// a degenerate basis is currently an open problem; 
+// see http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf, for
+// example. The caller would ideally terminate at this point, but
+// compilation of householderQr().rank() with AutoDiff currently generates
+// template errors. Continuing on blindly means that the calling pivoting
+// algorithm might continue on for some time.
 template <class T>
 VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
   // Special case necessary because Eigen doesn't always handle empty matrices
@@ -47,7 +56,9 @@ VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
   return M.householderQr().solve(b);
 }
 
-// Linear system solver, specialized for double types (faster).
+// Linear system solver, specialized for double types. This method is faster
+// than the QR factorization necesary for AutoDiff support. It is assumed that
+// the matrix is full rank (see notes for generic LinearSolve() above).
 template <>
 VectorX<double> LinearSolve(
     const MatrixX<double>& M, const VectorX<double>& b) {
@@ -307,12 +318,7 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
     selectSubVec(q, bas_, &qbas);
     zz *= -1;
 
-    // Solve for nonbasic z. If the QR factorization reveals that the matrix
-    // is singular, the basis (Msub) has become degenerate. Recovering from
-    // a degenerate basis for pivoting algorithms is currently an open problem.
-    // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf for
-    // example. The algorithm would ideally terminate at this point, but
-    // compilation with AutoDiff currently generates template errors.
+    // Solve for nonbasic z.
     zz = LinearSolve(Msub, zz.eval());
 
     // Eigen doesn't handle empty matrices properly, which causes the code
@@ -701,18 +707,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     Bl.block(0, 0, t1.rows(), t1.cols()) = t1;
     Bl.block(0, t1.cols(), t2.rows(), t2.cols()) = t2;
 
-    // solve B*x = -q
-    //
-    // Solve for nonbasic z. If the QR factorization reveals that the matrix
-    // is singular, the basis (Msub) has become degenerate. Recovering from
-    // a degenerate basis for Lemke's Algorithm is currently an open problem.
-    // See http://www.optimization-online.org/DB_FILE/2011/03/2948.pdf, for
-    // example. The algorithm would ideally terminate at this point, but
-    // compilation of householderQr().rank() with AutoDiff currently generates
-    // template errors. Leaving this as-is means that the algorithm might
-    // continue on for some time and could conceivably even indicate success on
-    // return, though return does not guarantee the solution is correct to
-    // desired tolerances anyway (see function documentation).
+    // Solve B*x = -q.
     x = LinearSolve(Bl, q);
   } else {
     Log() << "-- using basis of -1 (no warmstarting)" << std::endl;
