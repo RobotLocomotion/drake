@@ -606,8 +606,24 @@ drake_cc_googletest(
     ],
 )
 
+# Test library for `find_loaded_library_test`.
+drake_cc_binary(
+    name = "lib_is_real.so",
+    testonly = 1,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+    deps = [
+        # This can be any arbitrary library.
+        ":find_resource",
+    ],
+)
+
 drake_cc_googletest(
     name = "find_loaded_library_test",
+    srcs = [
+        "test/find_loaded_library_test.cc",
+        ":lib_is_real.so",
+    ],
     deps = [
         ":find_resource",
     ],
