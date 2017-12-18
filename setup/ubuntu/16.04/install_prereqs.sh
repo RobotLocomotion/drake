@@ -99,6 +99,7 @@ lldb-4.0
 make
 mesa-common-dev
 openjdk-8-jdk
+patchelf
 patchutils
 pkg-config
 protobuf-compiler
