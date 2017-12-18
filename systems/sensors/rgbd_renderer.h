@@ -70,7 +70,7 @@ class RgbdRenderer {
   /// @param config Configurations of the renderer. See RenderingConfig.
   ///
   /// @param X_WC The initial pose of the renderer's unique camera viewpoint `C`
-  /// at the world coordinate system. The camera pose `C` can be updated by
+  /// in the world coordinate system. The camera pose `C` can be updated by
   /// calling `UpdateViewpoint` later on. Default value: Identity.
   /// TODO(thduynguyen, kunimatsu-tri): Handle multiple viewpoints, e.g. for
   /// stereo depth camera?
@@ -154,8 +154,24 @@ class RgbdRenderer {
   /// Returns flat terrain's color in RGB image.
   const ColorI& get_flat_terrain_color() const;
 
- protected:
-  /// The common configuration nedded by all implementations of this interface.
+ private:
+  virtual void ImplAddFlatTerrain() = 0;
+
+  virtual optional<VisualIndex> ImplRegisterVisual(
+      const DrakeShapes::VisualElement& visual, int body_id) = 0;
+
+  virtual void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,
+                                    VisualIndex visual_id) const = 0;
+
+  virtual void ImplUpdateViewpoint(const Eigen::Isometry3d& X_WC) const = 0;
+
+  virtual void ImplRenderColorImage(ImageRgba8U* color_image_out) const = 0;
+
+  virtual void ImplRenderDepthImage(ImageDepth32F* depth_image_out) const = 0;
+
+  virtual void ImplRenderLabelImage(ImageLabel16I* label_image_out) const = 0;
+
+  /// The common configuration needed by all implementations of this interface.
   RenderingConfig config_;
 
   /// The color palette for sky, terrain colors and ground truth label rendering
@@ -163,23 +179,6 @@ class RgbdRenderer {
   /// each object/segment) hence should be moved to GeometryWorld. That would
   /// also answer the question whether this heavy object should be a singleton.
   ColorPalette color_palette_;
-
- private:
-  virtual void DoAddFlatTerrain() = 0;
-
-  virtual optional<VisualIndex> DoRegisterVisual(
-      const DrakeShapes::VisualElement& visual, int body_id) = 0;
-
-  virtual void DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
-                        int body_id, VisualIndex visual_id) const = 0;
-
-  virtual void DoUpdateViewpoint(const Eigen::Isometry3d& X_WC) const = 0;
-
-  virtual void DoRenderColorImage(ImageRgba8U* color_image_out) const = 0;
-
-  virtual void DoRenderDepthImage(ImageDepth32F* depth_image_out) const = 0;
-
-  virtual void DoRenderLabelImage(ImageLabel16I* label_image_out) const = 0;
 };
 
 }  // namespace sensors

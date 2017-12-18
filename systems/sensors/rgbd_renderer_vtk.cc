@@ -107,21 +107,21 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
   Impl(RgbdRendererVTK* parent, const Eigen::Isometry3d& X_WC);
   ~Impl() {}
 
-  void DoAddFlatTerrain();
+  void ImplAddFlatTerrain();
 
-  optional<VisualIndex> DoRegisterVisual(
+  optional<VisualIndex> ImplRegisterVisual(
       const DrakeShapes::VisualElement& visual, int body_id);
 
-  void DoUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,
+  void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,
                           VisualIndex visual_id) const;
 
-  void DoUpdateViewpoint(const Eigen::Isometry3d& X_WC) const;
+  void ImplUpdateViewpoint(const Eigen::Isometry3d& X_WC) const;
 
-  void DoRenderColorImage(ImageRgba8U* color_image_out) const;
+  void ImplRenderColorImage(ImageRgba8U* color_image_out) const;
 
-  void DoRenderDepthImage(ImageDepth32F* depth_image_out) const;
+  void ImplRenderDepthImage(ImageDepth32F* depth_image_out) const;
 
-  void DoRenderLabelImage(ImageLabel16I* label_image_out) const;
+  void ImplRenderLabelImage(ImageLabel16I* label_image_out) const;
 
  private:
   float CheckRangeAndConvertToMeters(float z_buffer_value) const;
@@ -168,7 +168,7 @@ float RgbdRendererVTK::Impl::CheckRangeAndConvertToMeters(
   return z;
 }
 
-void RgbdRendererVTK::Impl::DoAddFlatTerrain() {
+void RgbdRendererVTK::Impl::ImplAddFlatTerrain() {
   vtkSmartPointer<vtkPlaneSource> plane =
       vtk_util::CreateSquarePlane(kTerrainSize);
   vtkNew<vtkPolyDataMapper> mapper;
@@ -185,7 +185,7 @@ void RgbdRendererVTK::Impl::DoAddFlatTerrain() {
   }
 }
 
-void RgbdRendererVTK::Impl::DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
+void RgbdRendererVTK::Impl::ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV,
                                                int body_id,
                                                VisualIndex visual_id) const {
   vtkSmartPointer<vtkTransform> vtk_X_WV = ConvertToVtkTransform(X_WV);
@@ -198,7 +198,7 @@ void RgbdRendererVTK::Impl::DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
   }
 }
 
-void RgbdRendererVTK::Impl::DoUpdateViewpoint(
+void RgbdRendererVTK::Impl::ImplUpdateViewpoint(
     const Eigen::Isometry3d& X_WC) const {
   vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
 
@@ -209,14 +209,14 @@ void RgbdRendererVTK::Impl::DoUpdateViewpoint(
   }
 }
 
-void RgbdRendererVTK::Impl::DoRenderColorImage(
+void RgbdRendererVTK::Impl::ImplRenderColorImage(
     ImageRgba8U* color_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(color_depth_render_window_, color_filter_, color_exporter_);
   color_exporter_->Export(color_image_out->at(0, 0));
 }
 
-void RgbdRendererVTK::Impl::DoRenderDepthImage(
+void RgbdRendererVTK::Impl::ImplRenderDepthImage(
     ImageDepth32F* depth_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(color_depth_render_window_, depth_filter_, depth_exporter_);
@@ -231,7 +231,7 @@ void RgbdRendererVTK::Impl::DoRenderDepthImage(
   }
 }
 
-void RgbdRendererVTK::Impl::DoRenderLabelImage(
+void RgbdRendererVTK::Impl::ImplRenderLabelImage(
     ImageLabel16I* label_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(label_render_window_, label_filter_, label_exporter_);
@@ -308,7 +308,7 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
   }
 }
 
-optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::DoRegisterVisual(
+optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   // Initializes containers in id_object_maps_ if it's not done.
   for (auto& id_object_map : id_object_maps_) {
@@ -451,33 +451,35 @@ RgbdRendererVTK::RgbdRendererVTK(const RenderingConfig& config,
 
 RgbdRendererVTK::~RgbdRendererVTK() {}
 
-optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::DoRegisterVisual(
+optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
-  return impl_->DoRegisterVisual(visual, body_id);
+  return impl_->ImplRegisterVisual(visual, body_id);
 }
 
-void RgbdRendererVTK::DoAddFlatTerrain() { impl_->DoAddFlatTerrain(); }
+void RgbdRendererVTK::ImplAddFlatTerrain() { impl_->ImplAddFlatTerrain(); }
 
-void RgbdRendererVTK::DoUpdateViewpoint(const Eigen::Isometry3d& X_WC) const {
-  impl_->DoUpdateViewpoint(X_WC);
+void RgbdRendererVTK::ImplUpdateViewpoint(const Eigen::Isometry3d& X_WC) const {
+  impl_->ImplUpdateViewpoint(X_WC);
 }
 
-void RgbdRendererVTK::DoUpdateVisualPose(const Eigen::Isometry3d& X_WV,
+void RgbdRendererVTK::ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV,
                                        int body_id,
                                        VisualIndex visual_id) const {
-  impl_->DoUpdateVisualPose(X_WV, body_id, visual_id);
+  impl_->ImplUpdateVisualPose(X_WV, body_id, visual_id);
 }
 
-void RgbdRendererVTK::DoRenderColorImage(ImageRgba8U* color_image_out) const {
-  impl_->DoRenderColorImage(color_image_out);
+void RgbdRendererVTK::ImplRenderColorImage(ImageRgba8U* color_image_out) const {
+  impl_->ImplRenderColorImage(color_image_out);
 }
 
-void RgbdRendererVTK::DoRenderDepthImage(ImageDepth32F* depth_image_out) const {
-  impl_->DoRenderDepthImage(depth_image_out);
+void RgbdRendererVTK::ImplRenderDepthImage(
+    ImageDepth32F* depth_image_out) const {
+  impl_->ImplRenderDepthImage(depth_image_out);
 }
 
-void RgbdRendererVTK::DoRenderLabelImage(ImageLabel16I* label_image_out) const {
-  impl_->DoRenderLabelImage(label_image_out);
+void RgbdRendererVTK::ImplRenderLabelImage(
+    ImageLabel16I* label_image_out) const {
+  impl_->ImplRenderLabelImage(label_image_out);
 }
 
 }  // namespace sensors
