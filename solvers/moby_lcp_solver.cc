@@ -57,7 +57,7 @@ VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
 }
 
 // Linear system solver, specialized for double types. This method is faster
-// than the QR factorization necesary for AutoDiff support. It is assumed that
+// than the QR factorization necessary for AutoDiff support. It is assumed that
 // the matrix is full rank (see notes for generic LinearSolve() above).
 template <>
 VectorX<double> LinearSolve(
