@@ -193,6 +193,14 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
     ],
+    # TODO(clalancette) UBSan fails due to a bug in Protobuf 2.6 (the workaround
+    # in later versions of Protobuf is described here:
+    # https://github.com/google/protobuf/blob/master/src/google/protobuf/generated_message_util.h#L78
+    # In the future we should add a codegen action to edit the generated file
+    # include block to add a fixup header with the workaround at the end.
+    tags = [
+        "no_ubsan",
+    ],
 )
 
 add_lint_tests()
