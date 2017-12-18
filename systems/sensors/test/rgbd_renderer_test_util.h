@@ -24,6 +24,9 @@ struct ScreenCoord {
 void CompareColor(const uint8_t* pixel,
                   const sensors::ColorI& color,
                   int alpha, double tolerance) {
+  // Use ASSERT here instead of EXPECT_NEAR here to stop all subsequent testing,
+  // because this function could be called inside for loops to search over all
+  // the pixels in an image.
   ASSERT_NEAR(pixel[0], color.r, tolerance);
   ASSERT_NEAR(pixel[1], color.g, tolerance);
   ASSERT_NEAR(pixel[2], color.b, tolerance);
