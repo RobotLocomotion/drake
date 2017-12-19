@@ -758,12 +758,14 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "dreal_solver_test",
-    deps = [
-        ":dreal_solver",
-    ],
-)
+# TODO(soonho-tri): Enable this test after checking lsan/tsan/asan results.
+#                   See https://github.com/RobotLocomotion/drake/pull/7647
+# drake_cc_googletest(
+#     name = "dreal_solver_test",
+#     deps = [
+#         ":dreal_solver",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "gurobi_solver_test",
