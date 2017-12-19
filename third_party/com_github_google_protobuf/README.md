@@ -8,3 +8,4 @@ LICENSE - Google, protobuf project
 protobuf.bzl - Google, protobuf project
 README.md - Drake project
 WORKSPACE - Drake project
+protobuf-ubsan-fixup.h - Google, protobuf project

@@ -26,3 +26,8 @@ py_library(
     name = "protobuf_python",
     # No srcs here, so we'll use the system default.
 )
+
+cc_library(
+    name = "protobuf_fixup_ubsan",
+    hdrs = ["protobuf-ubsan-fixup.h"],
+)
