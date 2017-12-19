@@ -149,6 +149,9 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 /// a systems::lcm::LcmPublisherSystem that accepts a
 /// systems::Value object templated on type `lcmt_iiwa_status`. For an example
 /// of this, see iiwa_wsg_simulation.cc.
+///
+/// This system is presently only used in simulation. The robot hardware drivers
+/// publish directly to LCM and do not make use of this system.
 class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaStatusSender)

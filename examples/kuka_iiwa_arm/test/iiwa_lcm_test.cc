@@ -188,6 +188,11 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
     EXPECT_EQ(status.joint_position_commanded[i], command(i));
     EXPECT_EQ(status.joint_position_measured[i], state(i));
     EXPECT_EQ(status.joint_velocity_estimated[i], state(i + kNumJoints));
+    EXPECT_EQ(status.joint_torque_commanded[i], torque(i));
+    // TODO(rcory) Update joint_torque_measured to report actual measured torque
+    // once RigidBodyPlant supports it. For now, assume
+    // joint_torque_measured == joint_torque_commanded.
+    EXPECT_EQ(status.joint_torque_measured[i], torque(i));
   }
 }
 

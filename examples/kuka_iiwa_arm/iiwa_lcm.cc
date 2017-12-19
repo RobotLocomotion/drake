@@ -218,6 +218,10 @@ void IiwaStatusSender::OutputStatus(
     status.joint_velocity_estimated[i] = state->GetAtIndex(i + num_joints_);
     status.joint_position_commanded[i] = command->GetAtIndex(i);
     status.joint_torque_commanded[i] = commanded_torque->GetAtIndex(i);
+    // TODO(rcory) Update joint_torque_measured to report actual measured torque
+    // once RigidBodyPlant supports it. For now, assume
+    // joint_torque_measured == joint_torque_commanded.
+    status.joint_torque_measured[i] = commanded_torque->GetAtIndex(i);
   }
 }
 
