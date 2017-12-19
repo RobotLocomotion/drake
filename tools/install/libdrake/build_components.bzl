@@ -78,7 +78,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/common:sorted_vectors_have_intersection",
     "//drake/common:symbolic",
     "//drake/common:symbolic_decompose",
-    "//drake/common:text_logging_gflags",
+    "//drake/common:text_logging_gflags_h",
     "//drake/common:type_safe_index",
     "//drake/common:unused",
     "//drake/geometry/query_results:penetration_as_point_pair",
