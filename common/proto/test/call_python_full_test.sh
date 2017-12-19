@@ -87,6 +87,7 @@ do-setup() {
     if [[ ${use_fifo} -eq 1 ]]; then
         mkfifo ${filename}
     fi
+    echo 0 > ${done_file}
 }
 
 # Execute tests using FIFO.
@@ -114,14 +115,16 @@ sub-tests threading-no_loop
 threading-loop() {
     ${py_client_cli} ${py_flags} &
     pid=$!
-    rm -f ${done_file}
     ${cc_bin} ${cc_bin_flags} ${cc_flags}
     if [[ ${py_stop_on_error} -ne 1 ]]; then
         # If the client will not halt execution based on an error, execute C++
         # client once more.
         ${cc_bin} ${cc_bin_flags} ${cc_flags}
-        # Ensure that we wait until the client is fully done.
-        while [[ ! -f ${done_file} ]]; do
+        # Ensure that we wait until the client is fully done with both
+        # executions.
+        done_count=0
+        while [[ ${done_count} -lt 2 ]]; do
+            done_count=$(cat ${done_file})
             pause
         done
         # Kill the client with Ctrl+C.
