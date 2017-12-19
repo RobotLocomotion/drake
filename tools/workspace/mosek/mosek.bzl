@@ -39,29 +39,32 @@ def _impl(repository_ctx):
     url = "http://download.mosek.com/stable/{}/mosektools{}.tar.bz2".format(
         mosek_major_version, mosek_platform)
     root_path = repository_ctx.path("")
-    strip_prefix = "mosek/{}/tools/platform/{}".format(mosek_major_version,
-                                                       mosek_platform)
+    strip_prefix = "mosek/{}".format(mosek_major_version)
 
     repository_ctx.download_and_extract(
         url, root_path, sha256 = sha256, stripPrefix = strip_prefix)
 
+    platform_prefix = "tools/platform/{}".format(mosek_platform)
+
     if repository_ctx.os.name == "mac os x":
         install_name_tool = repository_ctx.which("install_name_tool")
 
-        libraries = [
+        files = [
             "bin/libiomp5.dylib",
             "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
                                                 mosek_minor_version),
         ]
 
-        for library in libraries:
-            library_path = repository_ctx.path(library)
+        for file in files:
+            file_path = repository_ctx.path(
+                "{}/{}".format(platform_prefix, file)
+            )
 
             result = repository_ctx.execute([
                 install_name_tool,
                 "-id",
-                library_path,
-                library_path,
+                file_path,
+                file_path,
             ])
 
             if result.return_code != 0:
@@ -72,7 +75,7 @@ def _impl(repository_ctx):
 
         srcs = ["empty.cc"]
 
-        bin_path = repository_ctx.path("bin")
+        bin_path = repository_ctx.path("{}/bin".format(platform_prefix))
 
         linkopts = [
             "-L{}".format(bin_path),
@@ -80,24 +83,48 @@ def _impl(repository_ctx):
             "-lmosek64",
         ]
     else:
-        srcs = [
+        files = [
             "bin/libiomp5.so",
             "bin/libmosek64.so.{}.{}".format(mosek_major_version,
                                              mosek_minor_version),
         ]
 
         linkopts = []
+        srcs = ["{}/{}".format(platform_prefix, file) for file in files]
 
-    file_content = """
+    hdrs = ["{}/h/mosek.h".format(platform_prefix)]
+    includes = ["{}/h".format(platform_prefix)]
+    files = ["{}/{}".format(platform_prefix, file) for file in files]
+    libraries_strip_prefix = ["{}/bin".format(platform_prefix)]
+
+    file_content = """# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install", "install_files")
+
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "mosek",
     srcs = {},
-    hdrs = ["h/mosek.h"],
-    includes = ["h"],
+    hdrs = {},
+    includes = {},
     linkopts = {},
-    visibility = ["//visibility:public"],
 )
-    """.format(srcs, linkopts)
+
+install_files(
+    name = "install_libraries",
+    dest = "lib",
+    files = {},
+    strip_prefix = {},
+    visibility = ["//visibility:private"],
+)
+
+install(
+   name = "install",
+   docs = ["license.pdf"],
+   deps = [":install_libraries"],
+)
+    """.format(srcs, hdrs, includes, linkopts, files, libraries_strip_prefix)
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
