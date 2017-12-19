@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -33,7 +34,8 @@ static constexpr double kX2 = 0.567;
 template <typename T>
 class LanePositionTest : public ::testing::Test {};
 
-typedef ::testing::Types<double, AutoDiffXd> Implementations;
+typedef ::testing::Types<double, AutoDiffXd, symbolic::Expression>
+    Implementations;
 TYPED_TEST_CASE(LanePositionTest, Implementations);
 
 
@@ -108,7 +110,6 @@ TYPED_TEST(LanePositionTest, ComponentSetters) {
 template <typename T>
 class GeoPositionTest : public ::testing::Test {};
 
-typedef ::testing::Types<double, AutoDiffXd> Implementations;
 TYPED_TEST_CASE(GeoPositionTest, Implementations);
 
 TYPED_TEST(GeoPositionTest, DefaultConstructor) {
@@ -182,11 +183,6 @@ TYPED_TEST(GeoPositionTest, EqualityInequalityOperators) {
   GeoPositionT<T> gp_zerror(gp2.x(), gp2.y(), gp2.z() + T(1e-6));
   EXPECT_FALSE(gp1 == gp_zerror);
   EXPECT_TRUE(gp1 != gp_xerror);
-
-  GeoPositionT<T> gp_nan1(NAN, NAN, NAN);
-  GeoPositionT<T> gp_nan2(NAN, NAN, NAN);
-  EXPECT_TRUE(gp_nan1 != gp_nan2);
-  EXPECT_FALSE(gp_nan1 == gp_nan2);
 }
 
 // An arbitrary very small number (that passes the tests).

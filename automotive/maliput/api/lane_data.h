@@ -129,6 +129,7 @@ std::ostream& operator<<(std::ostream& out, const Rotation& rotation);
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - drake::AutoDiffXd
+/// - drake::symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
@@ -184,14 +185,14 @@ std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position);
 
 /// GeoPosition overload for the equality operator.
 template <typename T>
-bool operator==(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
-    return (lhs.xyz() == rhs.xyz());
+auto operator==(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
+  return (lhs.xyz() == rhs.xyz());
 }
 
 /// GeoPosition overload for the inequality operator.
 template <typename T>
-bool operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
-    return !(lhs.xyz() == rhs.xyz());
+auto operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
+  return !(lhs.xyz() == rhs.xyz());
 }
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
@@ -202,6 +203,7 @@ bool operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - drake::AutoDiffXd
+/// - drake::symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
