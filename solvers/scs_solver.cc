@@ -349,11 +349,11 @@ void ParsePositiveSemidefiniteConstraint(
     // s in positive semidefinite cone.
     // where A is a diagonal matrix, with its diagonal entries being the stacked
     // column vector of the lower triangular part of matrix
-    // [ -1 -√2 -√2 ... -√2]
-    // [-√2  -1 -√2 ... -√2]
-    // [-√2 -√2  -1 ... -√2]
-    // [    ...            ]
-    // [-√2 -√2 -√2 ...  -1]
+    // ⎡ -1 -√2 -√2 ... -√2⎤
+    // ⎢-√2  -1 -√2 ... -√2⎥
+    // ⎢-√2 -√2  -1 ... -√2⎥
+    // ⎢    ...            ⎥
+    // ⎣-√2 -√2 -√2 ...  -1⎦
     // The √2 scaling factor in the off-diagonal entries are required by SCS,
     // as it uses only the lower triangular part of the symmetric matrix, as
     // explained in https://github.com/cvxgrp/scs
@@ -388,17 +388,20 @@ void ParsePositiveSemidefiniteConstraint(
     // We convert this to SCS form as
     // A_cone * x + s = b_cone
     // s in SCS positive semidefinite cone.
-    // where A_cone = -[  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)]
-    //                 [√2F₁(1, 0) √2F₂(1, 0) ... √2Fₙ(1, 0)]
-    //                 [√2F₁(2, 0) √2F₂(2, 0) ... √2Fₙ(2, 0)]
-    //                              ...
-    //                 [  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)]
-    // b_cone = [  F₀(0, 0)]
-    //          [√2F₀(1, 0)]
-    //          [√2F₀(2, 0)]
-    //              ...
-    //          [  F₀(m, m)]
-    // x = [x₁; x₂; ... ; xₙ]
+    // where
+    //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
+    //              ⎢√2F₁(1, 0) √2F₂(1, 0) ... √2Fₙ(1, 0)⎥
+    //   A_cone = - ⎢√2F₁(2, 0) √2F₂(2, 0) ... √2Fₙ(2, 0)⎥,
+    //              ⎢            ...                     ⎥
+    //              ⎣  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)⎦
+    //
+    //              ⎡  F₀(0, 0)⎤
+    //              ⎢√2F₀(1, 0)⎥
+    //   b_cone =   ⎢√2F₀(2, 0)⎥,
+    //              ⎢   ...    ⎥
+    //              ⎣  F₀(m, m)⎦
+    // and
+    //   x = [x₁; x₂; ... ; xₙ].
     // As explained above, the off-diagonal rows are scaled by √2. Please refer
     // to https://github.com/cvxgrp/scs about the scaling factor √2.
     const std::vector<Eigen::MatrixXd>& F = lmi_constraint.constraint()->F();

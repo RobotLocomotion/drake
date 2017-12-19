@@ -26,24 +26,29 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver,
                         double tol);
 
 /*
- * Given some ellipsoids ℰᵢ : xᵀ*Qi*x + 2 * biᵀ * x <= 1, i = 1, 2, ..., n,
- * find an ellipsoid
- * xᵀ*P*x + 2*cᵀ*x <= 1 as an outer approximation for the union of ellipsoids
- * ℰᵢ.
- * Using s-lemma, the ellipsoid xᵀ*P*x + 2*cᵀ*x <= 1 contains the ellipsoid
- * ℰᵢ : xᵀ*Qi*x + 2*biᵀ*x <= 1, if and only if there exists a scalar si >= 0
- * and (1 - xᵀ*P*x - cᵀ * x) - si*(1 - xᵀ*Qi*x - biᵀ * x) >= 0 ∀x.
- * Namely the matrix
- * [ si*Qi - P    si*bi - c]
- * [si*biᵀ - cᵀ      1 - si]
+ * Given some ellipsoids ℰᵢ : xᵀQᵢx + 2 bᵢᵀx ≤ 1, i = 1, 2, ..., n, find an
+ * ellipsoid xᵀPx + 2cᵀx ≤ 1 as an outer approximation for the union of
+ * ellipsoids ℰᵢ.
+ *
+ * Using s-lemma, the ellipsoid xᵀPx + 2cᵀx ≤ 1 contains the ellipsoid ℰᵢ,
+ * if and only if there exists a scalar sᵢ ≥ 0 such that
+ *
+ * (1 - xᵀPx - cᵀx) - sᵢ(1 - xᵀQᵢx - bᵢᵀx) ≥ 0 ∀x.
+ *
+ * This is equivalent to requiring that the matrix
+ *
+ * ⎡sᵢQᵢ - P   sᵢbᵢ - c⎤
+ * ⎣sᵢbᵢᵀ - cᵀ   1 - sᵢ⎦
+ *
  * is positive semidefinite.
- * In order to find a tight outer approximation, we choose to minimize the
- * trace of P.
- * The optimiation problem becomes
+ *
+ * In order to find a tight outer approximation, we choose to maximize the
+ * trace of P. The optimization problem becomes
+ *
  * min_{P, c, si} -trace(P)
- * s.t [ si*Qi - P    si*bi - c] is p.s.d
- *     [si*biᵀ - cᵀ      1 - si]
- *     P is p.s.d
+ * s.t ⎡sᵢQᵢ - P   sᵢbᵢ - c⎤ is p.s.d
+ *     ⎣sᵢbᵢᵀ - cᵀ   1 - sᵢ⎦
+ * P is p.s.d
  */
 void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver,
                         double tol);
