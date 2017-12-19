@@ -32,13 +32,23 @@ def drake_cc_proto_library(
         outs = pb_srcs + pb_hdrs,
         visibility = ["//visibility:public"],
     )
+    pb_ubsan_fixups = [x[:-len(".proto")] + "_ubsan_fixup.pb.cc" for x in srcs]
+    native.genrule(
+        name = name + "_ubsan_fixup",
+        srcs = pb_srcs,
+        outs = pb_ubsan_fixups,
+        cmd = "for src in $(SRCS) ; do awk '/#include <google\/protobuf\/generated_message_reflection.h>/{print;print \"#include \\\"protobuf-ubsan-fixup.h\\\"\";next}1' $$src > $${src%??????}_ubsan_fixup.pb.cc ; done",  # noqa
+    )
     # Compile the cc file using standard include paths.
     native.cc_library(
         name = name + "_genproto_compile",
-        srcs = pb_srcs,
+        srcs = pb_ubsan_fixups,
         hdrs = pb_hdrs,
         tags = tags + ["nolint"],
-        deps = ["@com_google_protobuf//:protobuf"],
+        deps = [
+            "@com_google_protobuf//:protobuf",
+            "@com_google_protobuf//:protobuf_fixup_ubsan",
+        ],
         **kwargs)
     # Provide a library with drake-modified include paths, depending on the
     # already-compiled object code.  (We can't compile the .cc file using the

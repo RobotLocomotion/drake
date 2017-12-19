@@ -5,6 +5,7 @@ copyrighted by whom:
 
 BUILD.bazel - Drake project
 LICENSE - Google, protobuf project
+protobuf-ubsan-fixup.h - Google, protobuf project
 protobuf.bzl - Google, protobuf project
 README.md - Drake project
 WORKSPACE - Drake project
