@@ -148,12 +148,6 @@ class RgbdRenderer {
   /// Returns the color palette of this renderer.
   const ColorPalette& color_palette() const;
 
-  /// Returns sky's color in RGB image.
-  const ColorI& get_sky_color() const;
-
-  /// Returns flat terrain's color in RGB image.
-  const ColorI& get_flat_terrain_color() const;
-
  private:
   virtual void ImplAddFlatTerrain() = 0;
 

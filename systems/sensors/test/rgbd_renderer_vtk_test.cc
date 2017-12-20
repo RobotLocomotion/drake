@@ -22,7 +22,7 @@ TEST_F(RgbdRendererVTKTest, NoBodyTest) {
   Init(Isometry3d::Identity());
   Render();
 
-  VerifyUniformColor(renderer_->get_sky_color(), 0u);
+  VerifyUniformColor(renderer_->color_palette().get_sky_color(), 0u);
   VerifyUniformLabel(Label::kNoBody);
   // Verifies depth.
   for (int y = 0; y < kHeight; ++y) {
@@ -35,7 +35,7 @@ TEST_F(RgbdRendererVTKTest, NoBodyTest) {
 TEST_F(RgbdRendererVTKTest, TerrainTest) {
   Init(X_WC_, true);
 
-  const auto& kTerrain = renderer_->get_flat_terrain_color();
+  const auto& kTerrain = renderer_->color_palette().get_terrain_color();
   // At two different distances.
   for (auto depth : std::array<float, 2>({{2.f, 5.f}})) {
     X_WC_.translation().z() = depth;
@@ -92,7 +92,7 @@ TEST_F(RgbdRendererVTKTest, HorizonTest) {
     renderer_->UpdateViewpoint(X_WC);
     Render();
 
-    const auto& kTerrain = renderer_->get_flat_terrain_color();
+    const auto& kTerrain = renderer_->color_palette().get_terrain_color();
     int actual_horizon{0};
     for (int y = 0; y < kHeight; ++y) {
       // Looking for the boundary between the sky and the ground.

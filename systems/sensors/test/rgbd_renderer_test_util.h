@@ -77,7 +77,7 @@ class RgbdRendererTest : public ::testing::Test {
 
   // Verifies the chosen pixels, i.e. `kOutliers`, belong to the ground.
   void VerifyOutliers() {
-    const auto& kTerrain = renderer_->get_flat_terrain_color();
+    const auto& kTerrain = renderer_->color_palette().get_terrain_color();
     for (const auto& screen_coord : kOutliers) {
       const int x = screen_coord.x;
       const int y = screen_coord.y;

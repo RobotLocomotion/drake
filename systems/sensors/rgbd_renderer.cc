@@ -50,14 +50,6 @@ const ColorPalette& RgbdRenderer::color_palette() const {
   return color_palette_;
 }
 
-const ColorI& RgbdRenderer::get_sky_color() const {
-  return color_palette_.get_sky_color();
-}
-
-const ColorI& RgbdRenderer::get_flat_terrain_color() const {
-  return color_palette_.get_terrain_color();
-}
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
