@@ -43,7 +43,8 @@
 DEFINE_string(urdf, "", "Name of urdf file to load");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate (s)");
-DEFINE_double(youngs_modulus, 3e7, "Default material's Young's modulus (Pa)");
+// Set default Young's modulus to be that of aluminum.
+DEFINE_double(youngs_modulus, 6.9e10, "Default material Young's modulus (Pa)");
 DEFINE_double(dissipation, 5, "Contact Dissipation (s/m)");
 DEFINE_double(static_friction, 0.5, "Static Friction");
 DEFINE_double(dynamic_friction, 0.2, "Dynamic Friction");
