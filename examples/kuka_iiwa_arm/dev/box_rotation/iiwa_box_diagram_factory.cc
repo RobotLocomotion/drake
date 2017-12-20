@@ -82,6 +82,10 @@ IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
   output_port_plant_state_ =
       base_builder->ExportOutput(plant_->get_output_port(0));
 
+  // Export the inverse dynamics controller computed torque output
+  output_port_torque_ = base_builder->ExportOutput(
+      iiwa_controller_->get_output_port_control());
+
   // Sets up a "state estimator" for iiwa that generates
   // bot_core::robot_state_t messages.
   iiwa_state_est_ =

@@ -74,6 +74,16 @@ new_local_repository(
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
+    name = "ibex",
+    modname = "ibex",
+)
+
+pkg_config_package(
+    name = "dreal",
+    modname = "dreal",
+)
+
+pkg_config_package(
     name = "glib",
     modname = "glib-2.0",
 )
@@ -423,7 +433,7 @@ bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
     commit = "bac3dfb42cc7",
-    sha256 = "b10a3ac68ed46f8d5780ddc687e6c89c71cb4c1e4e65449197f8aac76be903d8",  # noqa
+    sha256 = "212211eddd9fa010b4b61a2dae87cd84a66a8b78ed302612d214b7388f9bc198",  # noqa
     strip_prefix = "osrf-sdformat-bac3dfb42cc7",
     build_file = "tools/workspace/sdformat/sdformat.BUILD.bazel",
 )

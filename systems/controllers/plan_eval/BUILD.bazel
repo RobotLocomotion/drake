@@ -62,6 +62,14 @@ drake_cc_googletest(
         "//drake/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
         "//drake/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
     ],
+    # TODO(clalancette) UBSan fails due to a bug in Protobuf 2.6 (the
+    # workaround in later versions of Protobuf is described here:
+    # https://github.com/google/protobuf/blob/master/src/google/protobuf/generated_message_util.h#L78
+    # In the future we should add a codegen action to edit the generated file
+    # include block to add a fixup header with the workaround at the end.
+    tags = [
+        "no_ubsan",
+    ],
     deps = [
         ":generic_plan",
         ":test_common",

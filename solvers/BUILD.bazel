@@ -439,6 +439,7 @@ drake_cc_library(
 drake_cc_library(
     name = "dreal_solver",
     srcs = [
+        "dreal_solver.cc",
         "dreal_solver_common.cc",
         "no_dreal.cc",
     ],
@@ -446,6 +447,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program_api",
         "//drake/common:essential",
+        "@dreal",
     ],
 )
 
@@ -755,6 +757,15 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
+
+# TODO(soonho-tri): Enable this test after checking lsan/tsan/asan results.
+#                   See https://github.com/RobotLocomotion/drake/pull/7647
+# drake_cc_googletest(
+#     name = "dreal_solver_test",
+#     deps = [
+#         ":dreal_solver",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "gurobi_solver_test",
