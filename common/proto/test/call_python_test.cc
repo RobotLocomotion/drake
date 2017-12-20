@@ -26,10 +26,6 @@ GTEST_TEST(TestCallPython, Start) {
   CallPythonInit(FLAGS_file);
   // Tell client to expect a finishing signal.
   CallPython("execution_check.start");
-  // Ensure that we remove `kDoneFile` so that we are not stopped in the middle
-  // of execution.
-  CallPython("setvar", "done_file", FLAGS_done_file);
-  CallPython("exec", "if os.path.exists(done_file): os.remove(done_file)");
 }
 
 GTEST_TEST(TestCallPython, DispStr) {
@@ -165,7 +161,16 @@ GTEST_TEST(TestCallPython, Finish) {
   // Signal finishing to client.
   CallPython("execution_check.finish");
   // Signal finishing to `call_python_full_test.sh`.
-  CallPython("exec", "with open(done_file, 'a'): os.utime(done_file, None)");
+  // Use persistence to increment the number of times this has been executed.
+  CallPython("setvar", "done_file", FLAGS_done_file);
+  CallPython("exec", R"""(
+if 'done_count' in locals():
+  done_count += 1
+else:
+  done_count = 1
+with open(done_file, 'w') as f:
+  f.write(str(done_count))
+)""");
 }
 
 }  // namespace common
