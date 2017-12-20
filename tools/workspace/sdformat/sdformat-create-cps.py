@@ -14,10 +14,14 @@ content = """
   "License": "Apache-2.0",
   "Version": "%(MAJOR_VERSION)s.%(MINOR_VERSION)s.%(PATCH_VERSION)s",
   "Requires": {
+    "Boost": {
+      "Version": "1.58",
+      "X-CMake-Find-Args": ["MODULE"]
+    },
     "ignition-math3": {
       "Version": "%(ignition-math3_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/ignition-math3"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
   "Default-Components": [ ":sdformat" ],
@@ -25,13 +29,15 @@ content = """
     "sdformat": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libsdformat.so",
-      "Includes": [ "@prefix@/include" ],
-      "Link-Flags": [ "-ltinyxml" ],
-      "Requires": [ "ignition-math3:ignition-math3" ]
+      "Includes": ["@prefix@/include"],
+      "Link-Flags": ["-ltinyxml"],
+      "Requires": [
+        "Boost:boost",
+        "ignition-math3:ignition-math3"
+      ]
     }
   }
 }
 """ % defs
-
 
 print(content[1:])
