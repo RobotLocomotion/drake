@@ -14,7 +14,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Helper function to create a rotation matrix associated with a BodyXYZ
 // rotation by angles q1, q2, q3.
-RotationMatrix<double> GetGenericRotationMatrixA() {
+RotationMatrix<double> GetRotationMatrixA() {
   double q1 = 0.2, q2 = 0.3, q3 = 0.4;
   double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
   double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
@@ -33,7 +33,7 @@ RotationMatrix<double> GetGenericRotationMatrixA() {
 
 // Helper function to create a rotation matrix associated with a BodyXYX
 // rotation by angles r1, r2, r3.
-RotationMatrix<double> GetGenericRotationMatrixB() {
+RotationMatrix<double> GetRotationMatrixB() {
   const double r1 = 0.5, r2 = 0.5, r3 = 0.7;
   const double c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
   const double s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
@@ -50,22 +50,17 @@ RotationMatrix<double> GetGenericRotationMatrixB() {
   return RotationMatrix<double>(m);
 }
 
-// Helper functions to create a generic position vectors.
-Vector3d GetGenericPositionVectorA() { return Vector3d(2, 3, 4); }
-Vector3d GetGenericPositionVectorB() { return Vector3d(5, 6, 7); }
+// Helper functions to create generic position vectors.
+Vector3d GetPositionVectorA() { return Vector3d(2, 3, 4); }
+Vector3d GetPositionVectorB() { return Vector3d(5, 6, 7); }
 
-// Helper function to create a transform that has a rotation matrix associated
-// with a BodyXYZ rotation by angles q1, q2, q3 and a generic position vector.
-Transform<double> GetGenericTransformA() {
-  return Transform<double>(GetGenericRotationMatrixA(),
-                           GetGenericPositionVectorA());
+// Helper function to create generic transforms.
+Transform<double> GetTransformA() {
+  return Transform<double>(GetRotationMatrixA(), GetPositionVectorA());
 }
 
-// Helper function to create a transform that has a rotation matrix associated
-// with a a BodyXYX rotation by angles r1, r2, r3 and a generic position vector.
-Transform<double> GetGenericTransformB() {
-  return Transform<double>(GetGenericRotationMatrixB(),
-                           GetGenericPositionVectorB());
+Transform<double> GetTransformB() {
+  return Transform<double>(GetRotationMatrixB(), GetPositionVectorB());
 }
 
 // Tests default constructor - should be identity transform.
@@ -79,7 +74,7 @@ GTEST_TEST(Transform, DefaultTransformIsIdentity) {
 
 // Tests constructing a Transform from a RotationMatrix and Vector3.
 GTEST_TEST(Transform, TransformConstructor) {
-  const RotationMatrix<double> R1 = GetGenericRotationMatrixB();
+  const RotationMatrix<double> R1 = GetRotationMatrixB();
   const Matrix3d m = R1.matrix();
   const Vector3<double> p(4, 5, 6);
   const Transform<double> X(R1, p);
@@ -99,7 +94,7 @@ GTEST_TEST(Transform, TransformConstructor) {
 
 // Tests getting a 4x4 matrix from a Transform.
 GTEST_TEST(Transform, Matrix44) {
-  const RotationMatrix<double> R = GetGenericRotationMatrixB();
+  const RotationMatrix<double> R = GetRotationMatrixB();
   const Vector3<double> p(4, 5, 6);
   const Transform<double> X(R, p);
   const Matrix4<double> Y = X.GetAsMatrix();
@@ -125,7 +120,7 @@ GTEST_TEST(Transform, Matrix44) {
 
 // Tests set/get a Transform with an Isometry3.
 GTEST_TEST(Transform, Isometry3) {
-  const RotationMatrix<double> R = GetGenericRotationMatrixB();
+  const RotationMatrix<double> R = GetRotationMatrixB();
   const Matrix3d m = R.matrix();
   const Vector3<double> p(4, 5, 6);
   Isometry3<double> isometryA;
@@ -164,7 +159,7 @@ GTEST_TEST(Transform, MakeIdentity) {
 
 // Tests method SetIdentity.
 GTEST_TEST(Transform, SetIdentity) {
-  const RotationMatrix<double> R = GetGenericRotationMatrixA();
+  const RotationMatrix<double> R = GetRotationMatrixA();
   const Vector3d p(2, 3, 4);
   Transform<double> X(R, p);
   X.SetIdentity();
@@ -180,7 +175,7 @@ GTEST_TEST(Transform, IsIdentity) {
   EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0));
 
   // Test non-identity matrix.
-  const RotationMatrix<double> R = GetGenericRotationMatrixA();
+  const RotationMatrix<double> R = GetRotationMatrixA();
   const Vector3d p(2, 3, 4);
   Transform<double> X2(R, p);
   EXPECT_FALSE(X2.IsIdentity());
@@ -199,7 +194,7 @@ GTEST_TEST(Transform, IsIdentity) {
 
 // Tests calculating the inverse of a Transform.
 GTEST_TEST(Transform, Inverse) {
-  const RotationMatrix<double> R_AB = GetGenericRotationMatrixA();
+  const RotationMatrix<double> R_AB = GetRotationMatrixA();
   const Vector3d p_AoBo_A(2, 3, 4);
   const Transform<double> X(R_AB, p_AoBo_A);
   const Transform<double> I = X * X.inverse();
@@ -209,14 +204,14 @@ GTEST_TEST(Transform, Inverse) {
 
 // Tests Transform multiplied by another Transform
 GTEST_TEST(Transform, OperatorMultiplyByTransform) {
-  const Transform<double> X_BA = GetGenericTransformA();
-  const Transform<double> X_CB = GetGenericTransformB();
+  const Transform<double> X_BA = GetTransformA();
+  const Transform<double> X_CB = GetTransformB();
   const Transform<double> X_CA = X_CB * X_BA;
 
   // Check accuracy of rotation calculations.
   const RotationMatrix<double> R_CA = X_CA.rotation();
-  const RotationMatrix<double> R_BA = GetGenericRotationMatrixA();
-  const RotationMatrix<double> R_CB = GetGenericRotationMatrixB();
+  const RotationMatrix<double> R_BA = GetRotationMatrixA();
+  const RotationMatrix<double> R_CB = GetRotationMatrixB();
   const RotationMatrix<double> R_CA_expected = R_CB * R_BA;
   EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 0));
 
@@ -237,11 +232,11 @@ GTEST_TEST(Transform, OperatorMultiplyByTransform) {
 
 // Tests Transform multiplied by a position vector.
 GTEST_TEST(Transform, OperatorMultiplyByPositionVector) {
-  const Transform<double> X_CB = GetGenericTransformB();
+  const Transform<double> X_CB = GetTransformB();
   const RotationMatrix<double> R_CB = X_CB.rotation();
 
   // Calculate position vector from Co to Q, expressed in C.
-  const Vector3d p_BoQ_B = GetGenericPositionVectorA();
+  const Vector3d p_BoQ_B = GetPositionVectorA();
   const Vector3d p_CoQ_C = X_CB * p_BoQ_B;
 
   // Expected position vector (from MotionGenesis).

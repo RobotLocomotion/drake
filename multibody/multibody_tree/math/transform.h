@@ -137,10 +137,10 @@ class Transform {
   }
 
   /// @returns `true` if the RotationMatrix portion of `this` satisfies
-  /// RotationMatrix::IsIdentityToInternalTolerance() and the position vector
-  /// portion of `this` is equal to zero vector with the specified `tolerance`.
-  /// @param[in] translation_tolerance a non-negative number.
-  /// @note One way to choose `tolerance` is to multiply a characteristic length
+  /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
+  /// portion of `this` is equal to zero vector within `translation_tolerance`.
+  /// @param[in] translation_tolerance a non-negative number.  One way to choose
+  /// `translation_tolerance` is to multiply a characteristic length
   /// (e.g., the magnitude of a characteristic position vector) by an epsilon
   /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
   bool IsIdentityToEpsilon(double translation_tolerance) const {
