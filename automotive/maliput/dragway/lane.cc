@@ -102,6 +102,12 @@ api::GeoPositionT<AutoDiffXd> Lane::DoToGeoPositionAutoDiff(
           lane_pos.h()};
 }
 
+api::GeoPositionT<symbolic::Expression> Lane::DoToGeoPositionSymbolic(
+    const api::LanePositionT<symbolic::Expression>& lane_pos) const {
+  return {lane_pos.s(), lane_pos.r() + symbolic::Expression(Lane::y_offset()),
+          lane_pos.h()};
+}
+
 api::Rotation Lane::DoGetOrientation(
     const api::LanePosition&) const {
   return api::Rotation();  // Default is Identity.
@@ -119,6 +125,14 @@ api::LanePositionT<AutoDiffXd> Lane::DoToLanePositionAutoDiff(
     api::GeoPositionT<AutoDiffXd>* nearest_point,
     AutoDiffXd* distance) const {
   return ImplDoToLanePositionT<AutoDiffXd>(geo_pos, nearest_point, distance);
+}
+
+api::LanePositionT<symbolic::Expression> Lane::DoToLanePositionSymbolic(
+    const api::GeoPositionT<symbolic::Expression>& geo_pos,
+    api::GeoPositionT<symbolic::Expression>* nearest_point,
+    symbolic::Expression* distance) const {
+  return ImplDoToLanePositionT<symbolic::Expression>(geo_pos, nearest_point,
+                                                     distance);
 }
 
 template <typename T>
@@ -169,11 +183,14 @@ api::LanePositionT<T> Lane::ImplDoToLanePositionT(
     // implementation chooses the derivatives taken from within the interior
     // (zero) in order to remain consistent with the derivatives of
     // nearest_point and the returned LanePositionT.
-    if (distance_unsat > T(0.)) {
-      *distance = distance_unsat;
-    } else {  // ∂/∂x(distance) = 0 when distance = 0.
-      *distance = T(0.);
-    }
+    //
+    // We want to make sure that ∂/∂x(distance) = 0 when distance = 0 (not
+    // ∂/∂x(distance) = ∂/∂x(distance_unsat). The max function in
+    // common/autodiffxd.h returns the first argument when the two arguments
+    // have the same value. As a result, one should not change the order of the
+    // arguments in the max function below.
+    using std::max;
+    *distance = max(T(0.), distance_unsat);
   }
 
   return {closest_point.x(),

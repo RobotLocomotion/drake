@@ -8,6 +8,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace maliput {
@@ -115,6 +116,7 @@ class Lane {
   /// Instantiated templates for the following kinds of T's are provided:
   /// - double
   /// - drake::AutoDiffXd
+  /// - drake::symbolic::Expression
   ///
   /// They are already available to link against in the containing library.
   ///
@@ -160,6 +162,7 @@ class Lane {
   /// Instantiated templates for the following kinds of T's are provided:
   /// - double
   /// - drake::AutoDiffXd
+  /// - drake::symbolic::Expression
   ///
   /// They are already available to link against in the containing library.
   ///
@@ -298,6 +301,25 @@ class Lane {
     throw std::runtime_error(
         "DoToLanePosition has been instantiated with AutoDiffXd arguments, "
         "but a Lane backend has not overridden its AutoDiffXd specialization.");
+  }
+
+  // symbolic::Expression overload of DoToGeoPosition().
+  virtual GeoPositionT<symbolic::Expression> DoToGeoPositionSymbolic(
+      const LanePositionT<symbolic::Expression>&) const {
+    throw std::runtime_error(
+        "DoToGeoPosition has been instantiated with symbolic::Expression "
+        "arguments, but a Lane backend has not overridden its "
+        "symbolic::Expression specialization.");
+  }
+
+  // symbolic::Expression overload of DoToLanePosition().
+  virtual LanePositionT<symbolic::Expression> DoToLanePositionSymbolic(
+      const GeoPositionT<symbolic::Expression>&,
+      GeoPositionT<symbolic::Expression>*, symbolic::Expression*) const {
+    throw std::runtime_error(
+        "DoToLanePosition has been instantiated with symbolic::Expression "
+        "arguments, but a Lane backend has not overridden its "
+        "symbolic::Expression specialization.");
   }
 
   // TODO(jadecastro): Template the entire `api::Lane` class to prevent explicit

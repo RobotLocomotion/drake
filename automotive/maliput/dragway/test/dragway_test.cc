@@ -826,6 +826,127 @@ TEST_F(MaliputDragwayLaneTest, ThrowIfLanePosHasMismatchedDerivatives) {
       std::runtime_error);
 }
 
+TEST_F(MaliputDragwayLaneTest, ToLanePositionSymbolic1) {
+  // We want to show that the result from ToLanePositionSymbolic() corresponds
+  // with the one from ToLanePosition() when x, y, z are instantiated with the
+  // same values used to construct the input to ToLanePosition().
+
+  MakeDragway(1 /* num lanes */);
+  const symbolic::Variable x{"x"};
+  const symbolic::Variable y{"y"};
+  const symbolic::Variable z{"z"};
+  const double v_x = 1.0;
+  const double v_y = 2.0;
+  const double v_z = -0.5;
+  symbolic::Environment env{{{x, v_x}, {y, v_y}, {z, v_z}}};
+
+  // Computes symbolic gp and distance.
+  api::GeoPositionT<symbolic::Expression> symbolic_gp;
+  symbolic::Expression symbolic_distance{0.0};
+  const api::LanePositionT<symbolic::Expression> symbolic_lp{
+      lane_->ToLanePositionT<symbolic::Expression>(
+          api::GeoPositionT<symbolic::Expression>{x, y, z}, &symbolic_gp,
+          &symbolic_distance)};
+
+  // Computes gp and distance (of double).
+  api::GeoPosition gp;
+  double distance{0.0};
+  const api::LanePosition lp{
+      lane_->ToLanePosition(api::GeoPosition{v_x, v_y, v_z}, &gp, &distance)};
+
+  EXPECT_EQ(symbolic_lp.s().Evaluate(env), lp.s());
+  EXPECT_EQ(symbolic_lp.r().Evaluate(env), lp.r());
+  EXPECT_EQ(symbolic_lp.h().Evaluate(env), lp.h());
+
+  EXPECT_EQ(symbolic_gp.x().Evaluate(env), gp.x());
+  EXPECT_EQ(symbolic_gp.y().Evaluate(env), gp.y());
+  EXPECT_EQ(symbolic_gp.z().Evaluate(env), gp.z());
+  EXPECT_EQ(symbolic_distance.Evaluate(env), distance);
+
+  // These values (1.0, 2.0, -0.5) lie outside the lane. Therefore, 1) we have a
+  // positive distance and 2) the symbolic_gp evaluated with those values is
+  // different from (1.0, 2.0, -0.5).
+  EXPECT_GT(distance, 0.0);
+  EXPECT_FALSE(symbolic_gp.x().Evaluate(env) == v_x &&
+               symbolic_gp.y().Evaluate(env) == v_y &&
+               symbolic_gp.z().Evaluate(env) == v_z);
+}
+
+TEST_F(MaliputDragwayLaneTest, ToLanePositionSymbolic2) {
+  // We want to show that the result from ToLanePositionSymbolic() corresponds
+  // with the one from ToLanePosition() when x, y, z are instantiated with the
+  // same values used to construct the input to ToLanePosition().
+
+  MakeDragway(1 /* num lanes */);
+  const symbolic::Variable x{"x"};
+  const symbolic::Variable y{"y"};
+  const symbolic::Variable z{"z"};
+  const double v_x = 1.0;
+  const double v_y = 2.0;
+  const double v_z = 0.0;
+  symbolic::Environment env{{{x, v_x}, {y, v_y}, {z, v_z}}};
+
+  // Computes symbolic gp and distance.
+  api::GeoPositionT<symbolic::Expression> symbolic_gp;
+  symbolic::Expression symbolic_distance{0.0};
+
+  const api::LanePositionT<symbolic::Expression> symbolic_lp{
+      lane_->ToLanePositionT<symbolic::Expression>(
+          api::GeoPositionT<symbolic::Expression>{x, y, z}, &symbolic_gp,
+          &symbolic_distance)};
+
+  // Computes gp and distance (of double).
+  api::GeoPosition gp;
+  double distance{0.0};
+  const api::LanePosition lp{
+      lane_->ToLanePosition(api::GeoPosition{v_x, v_y, v_z}, &gp, &distance)};
+
+  EXPECT_EQ(symbolic_lp.s().Evaluate(env), lp.s());
+  EXPECT_EQ(symbolic_lp.r().Evaluate(env), lp.r());
+  EXPECT_EQ(symbolic_lp.h().Evaluate(env), lp.h());
+
+  EXPECT_EQ(symbolic_gp.x().Evaluate(env), gp.x());
+  EXPECT_EQ(symbolic_gp.y().Evaluate(env), gp.y());
+  EXPECT_EQ(symbolic_gp.z().Evaluate(env), gp.z());
+  EXPECT_EQ(symbolic_distance.Evaluate(env), distance);
+
+  // These values (1.0, 2.0, 0.0) lie on the lane. Therefore we have 1) a zero
+  // distance and 2) the symbolic_gp evaluated with those values is (1.0, 2.0,
+  // 0.0).
+  EXPECT_EQ(distance, 0.0);
+  EXPECT_TRUE(symbolic_gp.x().Evaluate(env) == v_x &&
+              symbolic_gp.y().Evaluate(env) == v_y &&
+              symbolic_gp.z().Evaluate(env) == v_z);
+}
+
+TEST_F(MaliputDragwayLaneTest, ToGeoPositionSymbolic) {
+  // We want to show that the result from ToGeoPositionSymbolic() corresponds
+  // with the one from ToGeoPosition() when s, r, h are instantiated with the
+  // same values used to construct the input to ToGeoPosition().
+  MakeDragway(1 /* num lanes */);
+
+  const symbolic::Variable s{"s"};
+  const symbolic::Variable r{"r"};
+  const symbolic::Variable h{"h"};
+  const double v_s = 1.0;
+  const double v_r = 2.0;
+  const double v_h = -0.5;
+  symbolic::Environment env{{{s, v_s}, {r, v_r}, {h, v_h}}};
+
+  // Computes symbolic gp.
+  const api::GeoPositionT<symbolic::Expression> symbolic_gp{
+      lane_->ToGeoPositionT<symbolic::Expression>(
+          api::LanePositionT<symbolic::Expression>{s, r, h})};
+
+  // Computes gp (of double).
+  const api::GeoPosition gp{
+      lane_->ToGeoPosition(api::LanePosition{v_s, v_r, v_h})};
+
+  EXPECT_EQ(symbolic_gp.x().Evaluate(env), gp.x());
+  EXPECT_EQ(symbolic_gp.y().Evaluate(env), gp.y());
+  EXPECT_EQ(symbolic_gp.z().Evaluate(env), gp.z());
+}
+
 }  // namespace
 }  // namespace dragway
 }  // namespace maliput
