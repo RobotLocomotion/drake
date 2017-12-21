@@ -23,6 +23,12 @@ GeoPositionT<AutoDiffXd> Lane::ToGeoPositionT<AutoDiffXd>(
 }
 
 template<>
+GeoPositionT<symbolic::Expression> Lane::ToGeoPositionT<symbolic::Expression>(
+    const LanePositionT<symbolic::Expression>& lane_pos) const {
+  return DoToGeoPositionSymbolic(lane_pos);
+}
+
+template <>
 LanePositionT<double> Lane::ToLanePositionT<double>(
     const GeoPositionT<double>& geo_pos,
     GeoPositionT<double>* nearest_point,
@@ -62,6 +68,14 @@ LanePositionT<AutoDiffXd> Lane::ToLanePositionT<AutoDiffXd>(
     Eigen::internal::make_coherent(distance->derivatives(), deriv);
   }
   return result;
+}
+
+template <>
+LanePositionT<symbolic::Expression> Lane::ToLanePositionT<symbolic::Expression>(
+    const GeoPositionT<symbolic::Expression>& geo_pos,
+    GeoPositionT<symbolic::Expression>* nearest_point,
+    symbolic::Expression* distance) const {
+  return DoToLanePositionSymbolic(geo_pos, nearest_point, distance);
 }
 
 }  // namespace api
