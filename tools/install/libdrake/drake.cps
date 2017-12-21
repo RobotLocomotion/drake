@@ -7,6 +7,10 @@
   "Name": "drake",
   "Website": "http://drake.mit.edu/",
   "Requires": {
+    "Boost": {
+      "Version": "1.58",
+      "X-CMake-Find-Args": ["MODULE"]
+    },
     "bot2-core-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/bot2-core-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
@@ -103,6 +107,7 @@
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
+        "Boost:boost",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Bullet:BulletCollision",
         "Eigen3:Eigen",

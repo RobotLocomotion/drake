@@ -9,7 +9,7 @@ set -e -u
   bazel build //tools:drake_visualizer
   ./bazel-bin/tools/drake_visualizer&
   sleep 2
-  bazel run //drake/examples/acrobot:acrobot_run_passive
+  bazel run //examples/acrobot:acrobot_run_passive
 } || {
   eval "$@"
 }
