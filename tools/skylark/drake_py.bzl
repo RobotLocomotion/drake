@@ -32,14 +32,18 @@ def drake_py_binary(
 
 def drake_py_test(
         name,
+        srcs = None,
         deps = None,
         data = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations."""
+    if srcs == None:
+        srcs = ["test/%s.py" % name]
     deps = adjust_labels_for_drake_hoist(deps)
     data = adjust_labels_for_drake_hoist(data)
     native.py_test(
         name = name,
+        srcs = srcs,
         deps = deps,
         data = data,
         **kwargs)
