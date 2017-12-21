@@ -15,9 +15,9 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // Helper function to create a rotation matrix associated with a BodyXYZ
 // rotation by angles q1, q2, q3.
 RotationMatrix<double> GetRotationMatrixA() {
-  double q1 = 0.2, q2 = 0.3, q3 = 0.4;
-  double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
-  double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
+  const double q1 = 0.2, q2 = 0.3, q3 = 0.4;
+  const double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
+  const double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
   Matrix3d m;
   m << c2 * c3,
        s3 * c1 + s1 * s2 * c3,
@@ -85,6 +85,8 @@ GTEST_TEST(Transform, TransformConstructor) {
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   // Bad matrix should throw exception.
+  double theta = 0.5, cos_theta = std::cos(theta), sin_theta = std::sin(theta);
+  Matrix3d m;
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
@@ -142,9 +144,12 @@ GTEST_TEST(Transform, Isometry3) {
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   // Bad matrix should throw exception.
+  double theta = 0.5, cos_theta = std::cos(theta), sin_theta = std::sin(theta);
+  Matrix3d m;
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
+  Isometry3<double> isometryB;
   isometryB.linear() = m;
   EXPECT_THROW(Transform<double>(isometryB), std::logic_error);
 #endif
@@ -233,7 +238,6 @@ GTEST_TEST(Transform, OperatorMultiplyByTransform) {
 // Tests Transform multiplied by a position vector.
 GTEST_TEST(Transform, OperatorMultiplyByPositionVector) {
   const Transform<double> X_CB = GetTransformB();
-  const RotationMatrix<double> R_CB = X_CB.rotation();
 
   // Calculate position vector from Co to Q, expressed in C.
   const Vector3d p_BoQ_B = GetPositionVectorA();
