@@ -81,18 +81,18 @@ PYBIND_LIBRARIES = [
     ":mosek_py",
 ]
 
+PY_LIBRARIES = [
+    ":module_py",
+]
+
 drake_py_library(
     name = "solvers",
-    deps = PYBIND_LIBRARIES + [
-        ":module_py",
-    ],
+    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
 )
 
 install(
     name = "install",
-    targets = [
-        ":module_py",
-    ],
+    targets = PY_LIBRARIES,
     py_dest = get_pybind_library_dest(),
     deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
 )

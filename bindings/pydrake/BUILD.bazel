@@ -116,13 +116,16 @@ PYBIND_LIBRARIES = adjust_labels_for_drake_hoist([
     ":rbtree_py",
     ":symbolic_py",
     "//drake/bindings/pydrake/solvers",
+    "//drake/bindings/pydrake/systems",
 ])
+
+PY_LIBRARIES = [
+    ":util_py",
+]
 
 install(
     name = "install",
-    targets = [
-        ":util_py",
-    ],
+    targets = PY_LIBRARIES,
     py_dest = get_pybind_library_dest(),
     visibility = ["//visibility:public"],
     deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
@@ -131,7 +134,7 @@ install(
 drake_py_library(
     name = "pydrake",
     visibility = ["//visibility:public"],
-    deps = PYBIND_LIBRARIES,
+    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
 )
 
 # Test ODR (One Definition Rule).
