@@ -59,7 +59,7 @@ class RotationMatrix {
   }
 
   /// @returns a 3x3 identity %RotationMatrix.
-  static RotationMatrix<T> MakeIdentity() { return RotationMatrix(); }
+  static RotationMatrix<T> Identity() { return RotationMatrix(); }
 
   /// @retval R_BA = R_AB⁻¹, the inverse (transpose) of this %RotationMatrix.
   /// @note For a valid rotation matrix R_BA = R_AB⁻¹ = R_ABᵀ.
@@ -153,6 +153,16 @@ class RotationMatrix {
   /// to within the threshold of get_internal_tolerance_for_orthonormality().
   /// @returns `true` if `this` is a valid rotation matrix.
   bool IsValid() const { return IsValid(matrix()); }
+
+  /// @returns `true` if `this` is exactly equal to the identity matrix.
+  bool IsIdentity() const { return matrix() == Matrix3<T>::Identity(); }
+
+  /// @returns `true` if `this` is equal to the identity matrix to within the
+  /// threshold of get_internal_tolerance_for_orthonormality().
+  bool IsIdentityToInternalTolerance() const {
+    return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
+                           get_internal_tolerance_for_orthonormality());
+  }
 
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.

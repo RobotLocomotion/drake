@@ -12,26 +12,75 @@ using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+// Helper function to create a rotation matrix associated with a BodyXYZ
+// rotation by angles q1, q2, q3.
+RotationMatrix<double> GetGenericRotationMatrixA() {
+  double q1 = 0.2, q2 = 0.3, q3 = 0.4;
+  double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
+  double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
+  Matrix3d m;
+  m << c2 * c3,
+       s3 * c1 + s1 * s2 * c3,
+       s1 * s3 - s2 * c1 * c3,
+      -s3 * c2,
+       c1 * c3 - s1 * s2 * s3,
+       s1 * c3 + s2 * s3 * c1,
+       s2,
+      -s1 * c2,
+       c1 * c2;
+  return RotationMatrix<double>(m);
+}
+
+// Helper function to create a rotation matrix associated with a BodyXYX
+// rotation by angles r1, r2, r3.
+RotationMatrix<double> GetGenericRotationMatrixB() {
+  const double r1 = 0.5, r2 = 0.5, r3 = 0.7;
+  const double c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
+  const double s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
+  Matrix3d m;
+  m << c2,
+       s1 * s2,
+      -s2 * c1,
+       s2 * s3,
+       c1 * c3 - s1 * s3 * c2,
+       s1 * c3 + s3 * c1 * c2,
+       s2 * c3,
+      -s3 * c1 - s1 * c2 * c3,
+       c1 * c2 * c3 - s1 * s3;
+  return RotationMatrix<double>(m);
+}
+
+// Helper functions to create a generic position vectors.
+Vector3d GetGenericPositionVectorA() { return Vector3d(2, 3, 4); }
+Vector3d GetGenericPositionVectorB() { return Vector3d(5, 6, 7); }
+
+// Helper function to create a transform that has a rotation matrix associated
+// with a BodyXYZ rotation by angles q1, q2, q3 and a generic position vector.
+Transform<double> GetGenericTransformA() {
+  return Transform<double>(GetGenericRotationMatrixA(),
+                           GetGenericPositionVectorA());
+}
+
+// Helper function to create a transform that has a rotation matrix associated
+// with a a BodyXYX rotation by angles r1, r2, r3 and a generic position vector.
+Transform<double> GetGenericTransformB() {
+  return Transform<double>(GetGenericRotationMatrixB(),
+                           GetGenericPositionVectorB());
+}
+
 // Tests default constructor - should be identity transform.
 GTEST_TEST(Transform, DefaultTransformIsIdentity) {
   const Transform<double> X;
   const RotationMatrix<double>& R = X.rotation();
   const Vector3<double>& p = X.translation();
-  const Matrix3d zero_matrix = R.matrix() - Matrix3d::Identity();
-  EXPECT_TRUE((zero_matrix.array() == 0).all());
+  EXPECT_TRUE(R.IsIdentity());
   EXPECT_TRUE((p.array() == 0).all());
 }
 
 // Tests constructing a Transform from a RotationMatrix and Vector3.
 GTEST_TEST(Transform, TransformConstructor) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m;
-  m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-
-  const RotationMatrix<double> R1(m);
+  const RotationMatrix<double> R1 = GetGenericRotationMatrixB();
+  const Matrix3d m = R1.matrix();
   const Vector3<double> p(4, 5, 6);
   const Transform<double> X(R1, p);
   const Matrix3d zero_rotation = m - X.rotation().matrix();
@@ -44,22 +93,17 @@ GTEST_TEST(Transform, TransformConstructor) {
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_THROW(Transform(RotationMatrix<double> R2(m), p), std::logic_error);
+  EXPECT_THROW(Transform(RotationMatrix<double>(m), p), std::logic_error);
 #endif
 }
 
 // Tests getting a 4x4 matrix from a Transform.
 GTEST_TEST(Transform, Matrix44) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m;
-  m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-  const RotationMatrix<double> R(m);
+  const RotationMatrix<double> R = GetGenericRotationMatrixB();
   const Vector3<double> p(4, 5, 6);
   const Transform<double> X(R, p);
   const Matrix4<double> Y = X.GetAsMatrix();
+  const Matrix3d m = R.matrix();
 
   EXPECT_EQ(Y(0, 0), m(0, 0));
   EXPECT_EQ(Y(0, 1), m(0, 1));
@@ -81,28 +125,23 @@ GTEST_TEST(Transform, Matrix44) {
 
 // Tests set/get a Transform with an Isometry3.
 GTEST_TEST(Transform, Isometry3) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m;
-  m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-
+  const RotationMatrix<double> R = GetGenericRotationMatrixB();
+  const Matrix3d m = R.matrix();
   const Vector3<double> p(4, 5, 6);
-  Isometry3<double> isometry3;
-  isometry3.linear() = m;
-  isometry3.translation() = p;
+  Isometry3<double> isometryA;
+  isometryA.linear() = m;
+  isometryA.translation() = p;
 
-  const Transform<double> X(isometry3);
+  const Transform<double> X(isometryA);
   Matrix3d zero_rotation = m - X.rotation().matrix();
   Vector3d zero_position = p - X.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
   // Tests making an Isometry3 from a RotationMatrix.
-  isometry3 = X.GetAsIsometry3();
-  zero_rotation = m - isometry3.linear();
-  zero_position = p - isometry3.translation();
+  const Isometry3<double> isometryB = X.GetAsIsometry3();
+  zero_rotation = m - isometryB.linear();
+  zero_position = p - isometryB.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
@@ -111,114 +150,108 @@ GTEST_TEST(Transform, Isometry3) {
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  isometry3.linear() = m;
-  EXPECT_THROW(Transform(isometry3), std::logic_error);
+  isometryB.linear() = m;
+  EXPECT_THROW(Transform<double>(isometryB), std::logic_error);
 #endif
 }
 
 // Tests method MakeIdentity (identity rotation matrix and zero vector).
 GTEST_TEST(Transform, MakeIdentity) {
-  const Transform<double> X = Transform<double>::MakeIdentity();
-  const RotationMatrix<double> R = RotationMatrix<double>::MakeIdentity();
-  EXPECT_TRUE(X.rotation().IsNearlyEqualTo(R, 8 * kEpsilon));
+  const Transform<double>& X = Transform<double>::Identity();
+  EXPECT_TRUE(X.rotation().IsIdentity());
   EXPECT_TRUE((X.translation().array() == 0).all());
 }
 
-// Tests method SetIdentityMatrixAndZeroPositionVector.
-GTEST_TEST(Transform, SetIdentityMatrixAndZeroPositionVector) {
-  const RotationMatrix<double> R = RotationMatrix<double>::MakeIdentity();
+// Tests method SetIdentity.
+GTEST_TEST(Transform, SetIdentity) {
+  const RotationMatrix<double> R = GetGenericRotationMatrixA();
   const Vector3d p(2, 3, 4);
   Transform<double> X(R, p);
-  X.SetIdentityMatrixAndZeroPositionVector();
-  EXPECT_TRUE(X.rotation().IsNearlyEqualTo(R, 8 * kEpsilon));
+  X.SetIdentity();
+  EXPECT_TRUE(X.rotation().IsIdentity());
   EXPECT_TRUE((X.translation().array() == 0).all());
+}
+
+// Tests whether or not a Transform is an identity transform.
+GTEST_TEST(Transform, IsIdentity) {
+  // Test identity matrix.
+  Transform<double> X1;
+  EXPECT_TRUE(X1.IsIdentity());
+  EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0));
+
+  // Test non-identity matrix.
+  const RotationMatrix<double> R = GetGenericRotationMatrixA();
+  const Vector3d p(2, 3, 4);
+  Transform<double> X2(R, p);
+  EXPECT_FALSE(X2.IsIdentity());
+
+  // Change rotation matrix to identity, but leave non-zero position vector.
+  X2.set_rotation(RotationMatrix<double>::Identity());
+  EXPECT_FALSE(X2.IsIdentity());
+  EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99));
+  EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01));
+
+  // Change position vector to zero vector.
+  const Vector3d zero_vector(0, 0, 0);
+  X2.set_translation(zero_vector);
+  EXPECT_TRUE(X2.IsIdentity());
 }
 
 // Tests calculating the inverse of a Transform.
 GTEST_TEST(Transform, Inverse) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
-  Matrix3d m;
-  m << 1, 0, 0,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-  const RotationMatrix<double> R_AB(m);
+  const RotationMatrix<double> R_AB = GetGenericRotationMatrixA();
   const Vector3d p_AoBo_A(2, 3, 4);
   const Transform<double> X(R_AB, p_AoBo_A);
   const Transform<double> I = X * X.inverse();
-  const Transform<double> X_identity = Transform<double>::MakeIdentity();
+  const Transform<double> X_identity = Transform<double>::Identity();
   EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon));
 }
 
-// Tests Transform multiplied by another Transform or Vector3.
-GTEST_TEST(Transform, OperatorMultiply) {
-  // Create a rotation matrix from a BodyXYZ rotation by angles q1, q2, q3.
-  double q1 = 0.2, q2 = 0.3, q3 = 0.4;
-  double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
-  double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
-  Matrix3d m_BA;
-  m_BA << c2 * c3,
-          s3 * c1 + s1 * s2 * c3,
-          s1 * s3 - s2 * c1 * c3,
-         -s3 * c2,
-          c1 * c3 - s1 * s2 * s3,
-          s1 * c3 + s2 * s3 * c1,
-          s2,
-         -s1 * c2,
-          c1 * c2;
-  const RotationMatrix<double> R_BA(m_BA);
+// Tests Transform multiplied by another Transform
+GTEST_TEST(Transform, OperatorMultiplyByTransform) {
+  const Transform<double> X_BA = GetGenericTransformA();
+  const Transform<double> X_CB = GetGenericTransformB();
+  const Transform<double> X_CA = X_CB * X_BA;
 
-  // Create a rotation matrix from a BodyXYX rotation by angles r1, r2, r3.
-  double r1 = 0.5, r2 = 0.5, r3 = 0.7;
-  c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
-  s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
-  Matrix3d m_CB;
-  m_CB << c2,
-          s1 * s2,
-         -s2 * c1,
-          s2 * s3,
-          c1 * c3 - s1 * s3 * c2,
-          s1 * c3 + s3 * c1 * c2,
-          s2 * c3,
-         -s3 * c1 - s1 * c2 * c3,
-          c1 * c2 * c3 - s1 * s3;
-  const RotationMatrix<double> R_CB(m_CB);
-
-  // Create a position vector from Bo to Ao, expressed in A.
-  const Vector3d p_BoAo_B(2, 3, 4);
-
-  // Create a position vector from Co to Bo, expressed in C.
-  const Vector3d p_CoBo_C(5, 6, 7);
-
-  // Create associated transforms.
-  Transform<double> X_BA(R_BA, p_BoAo_B);
-  Transform<double> X_CB(R_CB, p_CoBo_C);
-  Transform<double> X_CA = X_CB * X_BA;
+  // Check accuracy of rotation calculations.
   const RotationMatrix<double> R_CA = X_CA.rotation();
-  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CB * R_BA, 8 * kEpsilon));
+  const RotationMatrix<double> R_BA = GetGenericRotationMatrixA();
+  const RotationMatrix<double> R_CB = GetGenericRotationMatrixB();
+  const RotationMatrix<double> R_CA_expected = R_CB * R_BA;
+  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 0));
 
   // Expected position vector (from MotionGenesis).
   const double x_expected = 5.761769695362743;
   const double y_expected = 11.26952907288644;
   const double z_expected = 6.192677089863299;
-  const Vector3d p_Co_Ao_C_expected(x_expected, y_expected, z_expected);
-  const Vector3d p_Co_Ao_C_actual = X_CA.translation();
-  EXPECT_TRUE(p_Co_Ao_C_actual.isApprox(p_Co_Ao_C_expected, 16 * kEpsilon));
+  const Vector3d p_CoAo_C_expected(x_expected, y_expected, z_expected);
 
-  // Tests multiplying a Transform by a position vector.
-  const Vector3d p_Co_Ao_C = X_CB * p_BoAo_B;
-  EXPECT_TRUE(p_Co_Ao_C.isApprox(p_Co_Ao_C_expected, 16 * kEpsilon));
+  // Check accuracy of translation calculations.
+  const Vector3d p_CoAo_C_actual = X_CA.translation();
+  EXPECT_TRUE(p_CoAo_C_actual.isApprox(p_CoAo_C_expected, 32 * kEpsilon));
 
-  // Tests GetMaximumAbsoluteDifference.
-  double max_diff = X_CB.GetMaximumAbsoluteDifference(X_BA);
-  EXPECT_TRUE(max_diff > 2.99 && max_diff < 3.01);
+  // Expected transform (with position vector from MotionGenesis).
+  const Transform<double> X_CA_expected(R_CA_expected, p_CoAo_C_expected);
+  EXPECT_TRUE(X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon));
+}
 
-  // Tests GetMaximumAbsoluteTranslationDifference.
-  max_diff = X_CB.GetMaximumAbsoluteTranslationDifference(X_BA);
-  EXPECT_TRUE(max_diff > 2.99 && max_diff < 3.01);
+// Tests Transform multiplied by a position vector.
+GTEST_TEST(Transform, OperatorMultiplyByPositionVector) {
+  const Transform<double> X_CB = GetGenericTransformB();
+  const RotationMatrix<double> R_CB = X_CB.rotation();
 
-  // EXPECT_TRUE(R_CB.IsNearlyEqualTo(R_CA, 10 * kEpsilon));
-  // EXPECT_FALSE(R_CB.IsNearlyEqualTo(R_BA, 10000 * kEpsilon));
+  // Calculate position vector from Co to Q, expressed in C.
+  const Vector3d p_BoQ_B = GetGenericPositionVectorA();
+  const Vector3d p_CoQ_C = X_CB * p_BoQ_B;
+
+  // Expected position vector (from MotionGenesis).
+  const double x_expected = 5.761769695362743;
+  const double y_expected = 11.26952907288644;
+  const double z_expected = 6.192677089863299;
+  const Vector3d p_CoQ_C_expected(x_expected, y_expected, z_expected);
+
+  // Check accuracy of translation calculations.
+  EXPECT_TRUE(p_CoQ_C.isApprox(p_CoQ_C_expected, 32 * kEpsilon));
 }
 
 }  // namespace
