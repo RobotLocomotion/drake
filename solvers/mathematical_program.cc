@@ -149,6 +149,33 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
 }
 
+void WithVariables(const Eigen::Ref<const VectorXDecisionVariable>& variables) {
+  const int num_existing_vars = num_vars();
+  for (int i = 0; i < variables.rows(); ++i) {
+    if (variables(i).is_dummy()) {
+      std::ostringstream oss;
+      oss  << "variables(" << i << ") is dummy.\n";
+      throw std::runtime_error(oss.str());
+    }
+    if (decision_variable_index_.find(variables(i).get_id()) != decision_variable_index_.end()) {
+      std::ostringstream oss;
+      oss << variables(i) << " is already a decision variable.\n";
+      throw std::runtime_error(oss.str());
+    }
+    if (indeterminates_index_.find(variables(i).get_id()) != indeterminates_index_.end()) {
+      std::ostringstream oss;
+      oss << variables(i) << " is already an indeterminate.\n";
+      throw std::runtime_error(oss.str());
+    }
+    decision_variable_index_.insert(std::make_pair(variables(i).get_id(), num_existing_vars + i));
+  }
+  decision_variables_.conservativeResize(num_existing_vars + variables.rows());
+  decision_variables_.tail(variables.rows()) = variables;
+  x_values_.resize(num_existing_vars + variables.rows(), NAN);
+  x_initial_guess_.conservativeResize(num_existing_vars + variables.rows());
+  x_initial_guess_.tail(variables.rows()).fill(std::numeric_limits<double>::quiet_NaN());
+}
+
 symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
     const Variables& indeterminates, const int degree,
     const string& coeff_name) {

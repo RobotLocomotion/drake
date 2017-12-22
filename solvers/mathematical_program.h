@@ -516,6 +516,16 @@ class MathematicalProgram {
   }
 
   /**
+   * Append some new variables to the end of the existing variables. 
+   * @param variables The newly added variables.
+   * @pre variables should not intersect with the existing variables in the
+   * optimization program.
+   * @pre each entry in `variables` should not be a dummy variable. 
+   * @throw runtime_error if the preconditions are not satisfied.
+   */
+  void WithVariables(const Eigen::Ref<const VectorXDecisionVariable>& variables);
+
+  /**
    * Returns a free polynomial in a monomial basis over @p indeterminates of a
    * given @p degree. It uses @p coeff_name to make new decision variables and
    * use them as coefficients. For example, `NewFreePolynomial({x₀, x₁}, 2)`
