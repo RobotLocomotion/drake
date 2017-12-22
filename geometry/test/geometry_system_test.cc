@@ -9,7 +9,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/geometry/query_handle.h"
+#include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/test_utilities/expect_error_message.h"
 #include "drake/systems/framework/context.h"
@@ -17,10 +17,10 @@
 #include "drake/systems/framework/leaf_system.h"
 
 // Test of the unique GeometrySystem operations. GeometrySystem is mostly a thin
-// wrapper around GeometryWorld. It's purpose is to connect GeometryWorld to the
+// wrapper around GeometryState. It's purpose is to connect GeometryState to the
 // Drake ecosystem. As such, there will be no tests on functional logic but just
 // on that wrapping. For examples, queries simply extract a context from the
-// QueryHandle and pass it to the GeometryWorld method. As such, there is
+// QueryObject and pass it to the GeometrySystem method. As such, there is
 // nothing to test.
 
 namespace drake {
@@ -31,29 +31,22 @@ using systems::System;
 using std::make_unique;
 using std::unique_ptr;
 
-// Friend class for working with QueryHandles in a test context.
-class QueryHandleTester {
+// Friend class for working with QueryObjects in a test context.
+class QueryObjectTester {
  public:
-  QueryHandleTester() = delete;
+  QueryObjectTester() = delete;
 
   template <typename T>
-  static QueryHandle<T> MakeNullQueryHandle() {
-    return QueryHandle<T>(nullptr, 0);
+  static QueryObject<T> MakeNullQueryObject() {
+    return QueryObject<T>();
   }
 
   template <typename T>
-  static QueryHandle<T> MakeQueryHandle(
-      const GeometryContext<T>* context) {
-    return QueryHandle<T>(context, 0);
-  }
-
-  template <typename T>
-  static void set_context(QueryHandle<T>* handle,
-                          const GeometryContext<T>* context) {
-    handle->context_ = context;
-    // NOTE: This does not set the hash because these tests do not depend on it
-    // yet.
-    // TODO(SeanCurtis-TRI): Set guard value. *Test* guard value.
+  static void set_query_object(QueryObject<T>* q_object,
+                               const GeometrySystem<T>* system,
+                               const GeometryContext<T>* context) {
+    q_object->context_ = context;
+    q_object->system_ = system;
   }
 };
 
@@ -76,16 +69,10 @@ class GeometrySystemTester {
   }
 
   template <typename T>
-  static std::vector<PenetrationAsPointPair<T>> ComputePenetration(
-      const GeometrySystem<T>& system, const QueryHandle<T>& handle) {
-    return system.ComputePenetration(handle);
-  }
-
-  template <typename T>
-  static void GetQueryHandlePortValue(const GeometrySystem<T>& system,
+  static void GetQueryObjectPortValue(const GeometrySystem<T>& system,
                                       const systems::Context<T>& context,
-                                      QueryHandle<T>* handle) {
-    system.CalcQueryHandle(context, handle);
+                                      QueryObject<T>* handle) {
+    system.CalcQueryObject(context, handle);
   }
 };
 
@@ -99,7 +86,7 @@ class GeometrySystemTest : public ::testing::Test {
  public:
   GeometrySystemTest()
       : ::testing::Test(),
-        query_handle_(QueryHandleTester::MakeNullQueryHandle<double>()) {}
+        query_object_(QueryObjectTester::MakeNullQueryObject<double>()) {}
 
  protected:
   void AllocateContext() {
@@ -108,15 +95,16 @@ class GeometrySystemTest : public ::testing::Test {
     context_ = system_.AllocateContext();
     geom_context_ = dynamic_cast<GeometryContext<double>*>(context_.get());
     ASSERT_NE(geom_context_, nullptr);
-    QueryHandleTester::set_context(&query_handle_, geom_context_);
+    QueryObjectTester::set_query_object(&query_object_, &system_,
+                                        geom_context_);
   }
 
-  const QueryHandle<double>& get_query_handle() const {
+  const QueryObject<double>& query_object() const {
     // The `AllocateContext()` method must have been called *prior* to this
     // method.
     if (!geom_context_)
       throw std::runtime_error("Must call AllocateContext() first.");
-    return query_handle_;
+    return query_object_;
   }
 
   static std::unique_ptr<GeometryInstance> make_sphere_instance(
@@ -134,7 +122,7 @@ class GeometrySystemTest : public ::testing::Test {
  private:
   // Keep this private so tests must access it through the getter so we can
   // determine if AllocateContext() has been invoked.
-  QueryHandle<double> query_handle_;
+  QueryObject<double> query_object_;
 };
 
 // Test sources.
@@ -145,8 +133,7 @@ TEST_F(GeometrySystemTest, RegisterSourceDefaultName) {
   SourceId id = system_.RegisterSource();
   EXPECT_TRUE(id.is_valid());
   AllocateContext();
-  EXPECT_THROW(system_.get_source_name(get_query_handle(), id),
-               std::runtime_error);
+  EXPECT_NO_THROW(query_object().GetSourceName(id));
   EXPECT_TRUE(system_.SourceIsRegistered(id));
 }
 
@@ -157,8 +144,7 @@ TEST_F(GeometrySystemTest, RegisterSourceSpecifiedName) {
   SourceId id = system_.RegisterSource(name);
   EXPECT_TRUE(id.is_valid());
   AllocateContext();
-  EXPECT_THROW(system_.get_source_name(get_query_handle(), id),
-               std::runtime_error);
+  EXPECT_EQ(query_object().GetSourceName(id), name);
   EXPECT_TRUE(system_.SourceIsRegistered(id));
 }
 
@@ -295,12 +281,6 @@ TEST_F(GeometrySystemTest, DirectFeedThrough) {
   // TODO(SeanCurtis-TRI): Update when the pose bundle output is added; it has
   // direct feedthrough as well.
 }
-
-// NOTE: There are no tests on the query methods: GetFrameId and ComputeContact.
-// Ultimately, that functionality will lie in a different class and will be
-// tested with *that* class. The tests included here, even those that currently
-// only throw exceptions, will change when meaningful functionality is given to
-// GeometrySystem.
 
 // Test the functionality that accumulates the values from the input ports.
 
@@ -562,9 +542,9 @@ GTEST_TEST(GeometrySystemAutoDiffTest, InstantiateAutoDiff) {
 
   ASSERT_NE(geometry_context, nullptr);
 
-  QueryHandle<AutoDiffXd> handle =
-      QueryHandleTester::MakeNullQueryHandle<AutoDiffXd>();
-  GeometrySystemTester::GetQueryHandlePortValue(geometry_system, *context,
+  QueryObject<AutoDiffXd> handle =
+      QueryObjectTester::MakeNullQueryObject<AutoDiffXd>();
+  GeometrySystemTester::GetQueryObjectPortValue(geometry_system, *context,
                                                 &handle);
 }
 
