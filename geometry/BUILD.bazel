@@ -10,6 +10,25 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "fcl_engine",
+    srcs = [
+        "fcl_engine.cc",
+    ],
+    hdrs = [
+        "fcl_engine.h",
+    ],
+    deps = [
+        ":geometry_ids",
+        ":geometry_index",
+        ":shape_specification",
+        "//drake/common",
+        "//drake/common:default_scalars",
+        "//drake/geometry/query_results:penetration_as_point_pair",
+        "@fcl",
+    ],
+)
+
+drake_cc_library(
     name = "frame_kinematics",
     srcs = [
         "frame_id_vector.cc",
@@ -77,6 +96,7 @@ drake_cc_library(
     srcs = ["geometry_state.cc"],
     hdrs = ["geometry_state.h"],
     deps = [
+        ":fcl_engine",
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
@@ -156,6 +176,14 @@ drake_cc_library(
 )
 
 # -----------------------------------------------------
+
+drake_cc_googletest(
+    name = "fcl_engine_test",
+    deps = [
+        ":fcl_engine",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "frame_id_vector_test",
