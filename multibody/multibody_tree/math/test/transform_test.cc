@@ -163,7 +163,7 @@ GTEST_TEST(Transform, Isometry3) {
   const Matrix3d bad = GetBadRotationMatrix();
   Isometry3<double> isometryC;
   isometryC.linear() = bad;
-  EXPECT_THROW(Transform<double>(isometryC), std::logic_error);
+  EXPECT_THROW((Transform<double>(isometryC)), std::logic_error);
 #endif
 }
 
