@@ -4,20 +4,27 @@ set -e -u
 # @file
 # @brief Tests the `call_python_client` CLI and `call_python` test together.
 
-cc_bin_flags=
-while [[ $# -gt 2 ]]; do
+no_plotting=
+# By default, set backend so that the test does not open windows.
+export MPLBACKEND="ps"
+
+while [[ $# -gt 0 ]]; do
     case ${1} in
         --no_plotting)
-            cc_bin_flags='--gtest_filter=-TestCallPython.Plot*'
+            no_plotting=1
             shift;;
+        --matplotlib_backend)
+            export MPLBACKEND=${2}
+            shift; shift;;
         *)
             echo "Bad argument: ${1}" >&2
             exit 1;;
     esac
 done
 
-cc_bin=${1}
-py_client_cli=${2}
+cur=$(dirname $0)
+cc_bin=${cur}/call_python_test
+py_client_cli=${cur}/call_python_client_cli
 # TODO(eric.cousineau): Use `tempfile` once we can choose which file C++
 # uses.
 filename=$(mktemp)
@@ -26,6 +33,17 @@ done_file=${filename}_done
 is_mac=
 if [[ "${OSTYPE}" == "darwin"* ]]; then
     is_mac=1
+    # Do not test if Mac has matplotlib 2.1.0:
+    # @ref https://github.com/matplotlib/matplotlib/issues/9345
+    mpl_ver=$(python -c "import matplotlib as mpl; print(mpl.__version__)")
+    if [[ ${mpl_ver} == "2.1.0" ]]; then
+        no_plotting=1
+    fi
+fi
+
+cc_bin_flags=
+if [[ ${no_plotting} == 1 ]]; then
+    cc_bin_flags='--gtest_filter=-TestCallPython.Plot*'
 fi
 
 py-error() {
@@ -35,7 +53,7 @@ py-error() {
 
 pause() {
     # General busy-spinning.
-    sleep 0.5
+    sleep 0.05
 }
 
 should-fail() {
@@ -136,7 +154,7 @@ threading-loop() {
         # TODO(eric.cousineau): In script form, this generally works well (only
         # one interrupt needed); however, interactively we need a few more.
         while ps -p ${pid} > /dev/null; do
-            kill -INT ${pid}
+            kill -INT ${pid} || :
             pause
         done
     fi
