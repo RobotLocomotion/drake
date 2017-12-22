@@ -56,6 +56,12 @@
 		<geometry>
 			<box size="0.56 0.56 0.56"/>
 		</geometry>
+        <drake_compliance>
+            <youngs_modulus>3e7</youngs_modulus>
+            <dissipation>5</dissipation>
+            <static_friction>0.5</static_friction>
+            <dynamic_friction>0.2</dynamic_friction>
+        </drake_compliance>
   </collision>
 
         <!--collision box-->
@@ -71,6 +77,12 @@
     <geometry>
       <sphere radius="1e-3"/>
     </geometry>
+      <drake_compliance>
+          <youngs_modulus>3e7</youngs_modulus>
+          <dissipation>5</dissipation>
+          <static_friction>0.5</static_friction>
+          <dynamic_friction>0.2</dynamic_friction>
+      </drake_compliance>
   </collision>
 
         <visual>
@@ -84,6 +96,12 @@
     <geometry>
       <sphere radius="1e-3"/>
     </geometry>
+      <drake_compliance>
+          <youngs_modulus>3e7</youngs_modulus>
+          <dissipation>5</dissipation>
+          <static_friction>0.5</static_friction>
+          <dynamic_friction>0.2</dynamic_friction>
+      </drake_compliance>
   </collision>
 
 
@@ -99,6 +117,12 @@
     <geometry>
       <sphere radius="1e-3"/>
     </geometry>
+      <drake_compliance>
+          <youngs_modulus>3e7</youngs_modulus>
+          <dissipation>5</dissipation>
+          <static_friction>0.5</static_friction>
+          <dynamic_friction>0.2</dynamic_friction>
+      </drake_compliance>
   </collision>
 
   <visual>
@@ -112,6 +136,12 @@
     <geometry>
       <sphere radius="1e-3"/>
     </geometry>
+      <drake_compliance>
+          <youngs_modulus>3e7</youngs_modulus>
+          <dissipation>5</dissipation>
+          <static_friction>0.5</static_friction>
+          <dynamic_friction>0.2</dynamic_friction>
+      </drake_compliance>
   </collision>
 
 <!--separator-->
@@ -126,6 +156,12 @@
             <geometry>
                 <sphere radius="1e-3"/>
             </geometry>
+            <drake_compliance>
+                <youngs_modulus>3e7</youngs_modulus>
+                <dissipation>5</dissipation>
+                <static_friction>0.5</static_friction>
+                <dynamic_friction>0.2</dynamic_friction>
+            </drake_compliance>
         </collision>
 
         <visual>
@@ -139,6 +175,12 @@
             <geometry>
                 <sphere radius="1e-3"/>
             </geometry>
+            <drake_compliance>
+                <youngs_modulus>3e7</youngs_modulus>
+                <dissipation>5</dissipation>
+                <static_friction>0.5</static_friction>
+                <dynamic_friction>0.2</dynamic_friction>
+            </drake_compliance>
         </collision>
 
         <visual>
@@ -152,6 +194,12 @@
             <geometry>
                 <sphere radius="1e-3"/>
             </geometry>
+            <drake_compliance>
+                <youngs_modulus>3e7</youngs_modulus>
+                <dissipation>5</dissipation>
+                <static_friction>0.5</static_friction>
+                <dynamic_friction>0.2</dynamic_friction>
+            </drake_compliance>
         </collision>
 
         <visual>
@@ -165,6 +213,12 @@
             <geometry>
                 <sphere radius="1e-3"/>
             </geometry>
+            <drake_compliance>
+                <youngs_modulus>3e7</youngs_modulus>
+                <dissipation>5</dissipation>
+                <static_friction>0.5</static_friction>
+                <dynamic_friction>0.2</dynamic_friction>
+            </drake_compliance>
         </collision>
 
 	</link>
