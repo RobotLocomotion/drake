@@ -14,6 +14,9 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Helper function to create a rotation matrix associated with a BodyXYZ
 // rotation by angles q1, q2, q3.
+// Note: These matrices must remain BodyXYZ matrices with the specified angles
+// q1, q2, q3, as these matrices are used in conjunction with MotionGenesis
+// pre-computed solutions based on these exact matrices.
 RotationMatrix<double> GetRotationMatrixA() {
   const double q1 = 0.2, q2 = 0.3, q3 = 0.4;
   const double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
@@ -33,6 +36,9 @@ RotationMatrix<double> GetRotationMatrixA() {
 
 // Helper function to create a rotation matrix associated with a BodyXYX
 // rotation by angles r1, r2, r3.
+// Note: These matrices must remain BodyXYX matrices with the specified angles
+// r1, r2, r3, as these matrices are used in conjunction with MotionGenesis
+// pre-computed solutions based on these exact matrices.
 RotationMatrix<double> GetRotationMatrixB() {
   const double r1 = 0.5, r2 = 0.5, r3 = 0.7;
   const double c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
@@ -49,6 +55,19 @@ RotationMatrix<double> GetRotationMatrixB() {
        c1 * c2 * c3 - s1 * s3;
   return RotationMatrix<double>(m);
 }
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+// Helper function to create an invalid rotation matrix.
+Matrix3d GetBadRotationMatrix() {
+  const double theta = 0.5;
+  const double cos_theta = std::cos(theta), sin_theta = std::sin(theta);
+  Matrix3d m;
+  m << 1, 9000*kEpsilon, 9000*kEpsilon,
+       0, cos_theta, sin_theta,
+       0, -sin_theta, cos_theta;
+  return m;
+}
+#endif
 
 // Helper functions to create generic position vectors.
 Vector3d GetPositionVectorA() { return Vector3d(2, 3, 4); }
@@ -85,12 +104,9 @@ GTEST_TEST(Transform, TransformConstructor) {
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   // Bad matrix should throw exception.
-  double theta = 0.5, cos_theta = std::cos(theta), sin_theta = std::sin(theta);
-  Matrix3d m;
-  m << 1, 9000*kEpsilon, 9000*kEpsilon,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-  EXPECT_THROW(Transform(RotationMatrix<double>(m), p), std::logic_error);
+  const Matrix3d bad = GetBadRotationMatrix();
+  EXPECT_THROW(Transform<double>(RotationMatrix<double>(bad), p),
+               std::logic_error);
 #endif
 }
 
@@ -141,22 +157,10 @@ GTEST_TEST(Transform, Isometry3) {
   zero_position = p - isometryB.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
-
-#ifdef DRAKE_ASSERT_IS_ARMED
-  // Bad matrix should throw exception.
-  double theta = 0.5, cos_theta = std::cos(theta), sin_theta = std::sin(theta);
-  Matrix3d m;
-  m << 1, 9000*kEpsilon, 9000*kEpsilon,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
-  Isometry3<double> isometryB;
-  isometryB.linear() = m;
-  EXPECT_THROW(Transform<double>(isometryB), std::logic_error);
-#endif
 }
 
-// Tests method MakeIdentity (identity rotation matrix and zero vector).
-GTEST_TEST(Transform, MakeIdentity) {
+// Tests method Identity (identity rotation matrix and zero vector).
+GTEST_TEST(Transform, Identity) {
   const Transform<double>& X = Transform<double>::Identity();
   EXPECT_TRUE(X.rotation().IsIdentity());
   EXPECT_TRUE((X.translation().array() == 0).all());
@@ -204,6 +208,8 @@ GTEST_TEST(Transform, Inverse) {
   const Transform<double> X(R_AB, p_AoBo_A);
   const Transform<double> I = X * X.inverse();
   const Transform<double> X_identity = Transform<double>::Identity();
+  // As documented in IsNearlyEqualTo(), 8 * epsilon was chosen because it is
+  // slightly larger than the characteristic length |p_AoBo_A| = 5.4
   EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon));
 }
 
@@ -231,6 +237,8 @@ GTEST_TEST(Transform, OperatorMultiplyByTransform) {
   EXPECT_TRUE(p_CoAo_C_actual.isApprox(p_CoAo_C_expected, 32 * kEpsilon));
 
   // Expected transform (with position vector from MotionGenesis).
+  // As documented in IsNearlyEqualTo(), 32 * epsilon was chosen because it is
+  // slightly larger than the characteristic length |p_CoAo_C| = 14.2
   const Transform<double> X_CA_expected(R_CA_expected, p_CoAo_C_expected);
   EXPECT_TRUE(X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon));
 }

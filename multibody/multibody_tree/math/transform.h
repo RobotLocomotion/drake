@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/multibody/multibody_tree/math/rotation_matrix.h"
 
 namespace drake {
@@ -13,9 +14,9 @@ namespace multibody {
 /// This class represents a rigid transform between two frames, which can be
 /// regarded in two ways.  It can be regarded as a distance-preserving linear
 /// operator (i.e., one that rotates and/or translates).  Alternately, a rigid
-/// transform can be regarded as storing the pose between two frames A and B
-/// (i.e., the relative orientation and position of A to B).  Herein, the terms
-/// rotation/orientation and translation/position are used interchangeably.
+/// transform describes the pose between two frames A and B (i.e., the relative
+/// orientation and position of A to B).  Herein, the terms rotation/orientation
+/// and translation/position are used interchangeably.
 /// The class stores a RotationMatrix that relates right-handed orthogonal
 /// unit vectors Ax, Ay, Az fixed in frame A to right-handed orthogonal
 /// unit vectors Bx, By, Bz fixed in frame B.
@@ -28,7 +29,7 @@ namespace multibody {
 ///
 /// @note This class does not store the frames associated with the transform and
 /// cannot enforce proper usage of this class.  For example, it makes sense to
-/// multiply transforms as `X_AB * X_BC`, but not as `X_AB * X_CB`.
+/// multiply transforms as `X_AB * X_BC`, but not `X_AB * X_CB`.
 ///
 /// @note This class is not a 4x4 transformation matrix -- even though its
 /// operator*() methods act like 4x4 matrix multiplication.  Instead, this
@@ -67,13 +68,16 @@ class Transform {
   /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
   /// Hence, the returned %Transform contains a 3x3 identity matrix and a
   /// zero position vector.
-  static const Transform<T>& Identity() { return kIdentity; }
+  static const Transform<T>& Identity() {
+    static const never_destroyed<Transform<T>> kIdentity;
+    return kIdentity.access();
+  }
 
   /// @retval `R_AB`, the rotation matrix portion of `this` transform.
   const RotationMatrix<T>& rotation() const { return R_AB_; }
 
   /// @retval `R_AB`, the rotation matrix portion of `this` transform.
-  RotationMatrix<T>& get_mutable_rotation() { return R_AB_; }
+  RotationMatrix<T>& mutable_rotation() { return R_AB_; }
 
   /// Sets the %RotationMatrix portion of `this` transform.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
@@ -85,7 +89,7 @@ class Transform {
 
   /// @retval `p_AoBo_A`, the position vector portion of `this` transform, i.e.,
   /// the position vector from Ao (frame A's origin) to Bo (frame B's origin).
-  Vector3<T>& get_mutable_translation() { return p_AoBo_A_; }
+  Vector3<T>& mutable_translation() { return p_AoBo_A_; }
 
   /// Sets the position vector portion of `this` transform.
   /// @param[in] p position vector from Ao (frame A's origin) to Bo (frame B's
@@ -220,9 +224,6 @@ class Transform {
 
   // Position vector from A's origin Ao to B's origin Bo, expressed in A.
   Vector3<T> p_AoBo_A_;
-
-  // Static quantity for fast assignment/initialization.
-  static const Transform<T> kIdentity;
 };
 
 }  // namespace multibody
