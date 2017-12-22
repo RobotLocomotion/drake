@@ -758,14 +758,22 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(soonho-tri): Enable this test after checking lsan/tsan/asan results.
-#                   See https://github.com/RobotLocomotion/drake/pull/7647
-# drake_cc_googletest(
-#     name = "dreal_solver_test",
-#     deps = [
-#         ":dreal_solver",
-#     ],
-# )
+drake_cc_googletest(
+    name = "dreal_solver_test",
+    tags = [
+        # For most of floating-point operations, Valgrind only supports the
+        # IEEE default mode (round to nearest) while dReal uses to +infinity
+        # and to -infinity rounding modes intensively to maintain conservative
+        # interval approximations. This causes some of the assertions to fail
+        # in the test. So we disable memcheck for this test. See
+        # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
+        # for more information.
+        "no_memcheck",
+    ],
+    deps = [
+        ":dreal_solver",
+    ],
+)
 
 drake_cc_googletest(
     name = "gurobi_solver_test",
