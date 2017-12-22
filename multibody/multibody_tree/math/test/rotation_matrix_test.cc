@@ -64,7 +64,7 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
 
 // Test setting a RotationMatrix to an identity matrix.
 GTEST_TEST(RotationMatrix, MakeIdentityMatrix) {
-  RotationMatrix<double> R = RotationMatrix<double>::Identity();
+  const RotationMatrix<double>& R = RotationMatrix<double>::Identity();
   Matrix3d zero_matrix = Matrix3<double>::Identity() - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
@@ -78,9 +78,9 @@ GTEST_TEST(RotationMatrix, Inverse) {
       0, cos_theta, sin_theta,
       0, -sin_theta, cos_theta;
   RotationMatrix<double> R(m);
-  RotationMatrix<double> I = R * R.inverse();
-  RotationMatrix<double> identity_matrix(Matrix3<double>::Identity());
-  EXPECT_TRUE(I.IsNearlyEqualTo(identity_matrix, 8 * kEpsilon));
+  RotationMatrix<double> RRinv = R * R.inverse();
+  const RotationMatrix<double>& I = RotationMatrix<double>::Identity();
+  EXPECT_TRUE(RRinv.IsNearlyEqualTo(I, 8 * kEpsilon));
 }
 
 
@@ -172,7 +172,7 @@ GTEST_TEST(RotationMatrix, IsValid) {
 }
 
 // Tests whether or not a RotationMatrix is an identity matrix.
-GTEST_TEST(RotationMatrix, IsIdentity) {
+GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
   Matrix3d m;
@@ -182,8 +182,8 @@ GTEST_TEST(RotationMatrix, IsIdentity) {
 
   const RotationMatrix<double> R1(m);
   const RotationMatrix<double> R2;
-  EXPECT_FALSE(R1.IsIdentity());
-  EXPECT_TRUE(R2.IsIdentity());
+  EXPECT_FALSE(R1.IsExactlyIdentity());
+  EXPECT_TRUE(R2.IsExactlyIdentity());
 }
 
 // Test ProjectMatrixToRotationMatrix.

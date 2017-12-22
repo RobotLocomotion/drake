@@ -85,10 +85,7 @@ Transform<double> GetTransformB() {
 // Tests default constructor - should be identity transform.
 GTEST_TEST(Transform, DefaultTransformIsIdentity) {
   const Transform<double> X;
-  const RotationMatrix<double>& R = X.rotation();
-  const Vector3<double>& p = X.translation();
-  EXPECT_TRUE(R.IsIdentity());
-  EXPECT_TRUE((p.array() == 0).all());
+  EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
 // Tests constructing a Transform from a RotationMatrix and Vector3.
@@ -103,7 +100,12 @@ GTEST_TEST(Transform, TransformConstructor) {
   EXPECT_TRUE((zero_position.array() == 0).all());
 
 #ifdef DRAKE_ASSERT_IS_ARMED
-  // Bad matrix should throw exception.
+  // Bad rotation matrix should throw exception.
+  // Note: Although this test seems redundant with similar tests for the
+  // RotationMatrix class, it is here due to the bug (mentioned below) in
+  // EXPECT_THROW.  Contrast the use here of EXPECT_THROW (which does not have
+  // an extra set of parentheses around its first argument) with the use of
+  // EXPECT_THROW((Transform<double>(isometryC)), std::logic_error); below.
   const Matrix3d bad = GetBadRotationMatrix();
   EXPECT_THROW(Transform<double>(RotationMatrix<double>(bad), p),
                std::logic_error);
@@ -151,7 +153,7 @@ GTEST_TEST(Transform, Isometry3) {
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
-  // Tests making an Isometry3 from a RotationMatrix.
+  // Tests making an Isometry3 from a Transform.
   const Isometry3<double> isometryB = X.GetAsIsometry3();
   zero_rotation = m - isometryB.linear();
   zero_position = p - isometryB.translation();
@@ -163,6 +165,11 @@ GTEST_TEST(Transform, Isometry3) {
   const Matrix3d bad = GetBadRotationMatrix();
   Isometry3<double> isometryC;
   isometryC.linear() = bad;
+  // Note: As of December 2017, there seems to be a bug in EXPECT_THROW.
+  // The next line incorrectly calls the default Transform constructor.
+  // The default Transform constructor does not throw an exception which means
+  // the EXPECT_THROW fails.  The fix (credit Sherm) was to add an extra set
+  // set of parentheses around the first argument of EXPECT_THROW.
   EXPECT_THROW((Transform<double>(isometryC)), std::logic_error);
 #endif
 }
@@ -170,8 +177,7 @@ GTEST_TEST(Transform, Isometry3) {
 // Tests method Identity (identity rotation matrix and zero vector).
 GTEST_TEST(Transform, Identity) {
   const Transform<double>& X = Transform<double>::Identity();
-  EXPECT_TRUE(X.rotation().IsIdentity());
-  EXPECT_TRUE((X.translation().array() == 0).all());
+  EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
 // Tests method SetIdentity.
@@ -180,33 +186,34 @@ GTEST_TEST(Transform, SetIdentity) {
   const Vector3d p(2, 3, 4);
   Transform<double> X(R, p);
   X.SetIdentity();
-  EXPECT_TRUE(X.rotation().IsIdentity());
-  EXPECT_TRUE((X.translation().array() == 0).all());
+  EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
 // Tests whether or not a Transform is an identity transform.
 GTEST_TEST(Transform, IsIdentity) {
-  // Test identity matrix.
+  // Test whether it is an identity matrix multiple ways.
   Transform<double> X1;
-  EXPECT_TRUE(X1.IsIdentity());
+  EXPECT_TRUE(X1.IsExactlyIdentity());
   EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0));
+  EXPECT_TRUE(X1.rotation().IsExactlyIdentity());
+  EXPECT_TRUE((X1.translation().array() == 0).all());
 
   // Test non-identity matrix.
   const RotationMatrix<double> R = GetRotationMatrixA();
   const Vector3d p(2, 3, 4);
   Transform<double> X2(R, p);
-  EXPECT_FALSE(X2.IsIdentity());
+  EXPECT_FALSE(X2.IsExactlyIdentity());
 
   // Change rotation matrix to identity, but leave non-zero position vector.
   X2.set_rotation(RotationMatrix<double>::Identity());
-  EXPECT_FALSE(X2.IsIdentity());
+  EXPECT_FALSE(X2.IsExactlyIdentity());
   EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99));
   EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01));
 
   // Change position vector to zero vector.
   const Vector3d zero_vector(0, 0, 0);
   X2.set_translation(zero_vector);
-  EXPECT_TRUE(X2.IsIdentity());
+  EXPECT_TRUE(X2.IsExactlyIdentity());
 }
 
 // Tests calculating the inverse of a Transform.
@@ -218,6 +225,9 @@ GTEST_TEST(Transform, Inverse) {
   const Transform<double> X_identity = Transform<double>::Identity();
   // As documented in IsNearlyEqualTo(), 8 * epsilon was chosen because it is
   // slightly larger than the characteristic length |p_AoBo_A| = 5.4
+  // Note: The square-root of the condition number for a Transform is roughly
+  // the magnitude of the position vector.  The accuracy of the calculation for
+  // the inverse of a Transform drops off with the sqrt condition number.
   EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon));
 }
 

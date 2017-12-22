@@ -13,7 +13,9 @@ namespace multibody {
 
 /// This class represents a rigid transform between two frames, which can be
 /// regarded in two ways.  It can be regarded as a distance-preserving linear
-/// operator (i.e., one that rotates and/or translates).  Alternately, a rigid
+/// operator (i.e., one that rotates and/or translates) which (for example) can
+/// add one position vector to another and express the result in a particular
+/// basis as `p_AoQ_A = X_AB * p_BoQ_B` (Q is any point).  Alternately, a rigid
 /// transform describes the pose between two frames A and B (i.e., the relative
 /// orientation and position of A to B).  Herein, the terms rotation/orientation
 /// and translation/position are used interchangeably.
@@ -32,9 +34,9 @@ namespace multibody {
 /// multiply transforms as `X_AB * X_BC`, but not `X_AB * X_CB`.
 ///
 /// @note This class is not a 4x4 transformation matrix -- even though its
-/// operator*() methods act like 4x4 matrix multiplication.  Instead, this
-/// class contains a rotation matrix class as well as a 3x1 position vector.
-/// To form a 4x4 matrix, use GetAsMatrix(). similarly for GetAsIsometry().
+/// operator*() methods act like 4x4 matrix multiplication.  Instead, this class
+/// contains a rotation matrix class as well as a 3x1 position vector.  To form
+/// a 4x4 matrix, use GetAsMatrix().  GetAsIsometry() is treated similarly.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -44,8 +46,8 @@ class Transform {
 
   /// Constructs the %Transform that corresponds to aligning the two frames so
   /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
-  /// Hence, the constructed %Transform contains a 3x3 identity matrix and a
-  /// zero position vector.
+  /// Hence, the constructed %Transform contains an identity RotationMatrix and
+  /// a zero position vector.
   Transform() { SetIdentity(); }
 
   /// Constructs a %Transform from a rotation matrix and a position vector.
@@ -60,42 +62,42 @@ class Transform {
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
   /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
   /// @throws exception std::logic_error in debug builds if R_AB is not a proper
-  /// orthonormal 3x3 matrix.
+  /// orthonormal 3x3 rotation matrix.
+  /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   explicit Transform(const Isometry3<T>& pose) :
       Transform(RotationMatrix<T>(pose.linear()), pose.translation()) {}
 
+  /// Returns the identity %Transform (which corresponds to coincident frames).
   /// @returns the %Transform that corresponds to aligning the two frames so
   /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
   /// Hence, the returned %Transform contains a 3x3 identity matrix and a
   /// zero position vector.
+  // @internal This method's name was chosen to mimic Eigen's Identity().
   static const Transform<T>& Identity() {
     static const never_destroyed<Transform<T>> kIdentity;
     return kIdentity.access();
   }
 
-  /// @retval `R_AB`, the rotation matrix portion of `this` transform.
+  /// Returns R_AB, the rotation matrix portion of `this` transform.
+  /// @retval R_AB the rotation matrix portion of `this` transform.
   const RotationMatrix<T>& rotation() const { return R_AB_; }
-
-  /// @retval `R_AB`, the rotation matrix portion of `this` transform.
-  RotationMatrix<T>& mutable_rotation() { return R_AB_; }
 
   /// Sets the %RotationMatrix portion of `this` transform.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   void set_rotation(const RotationMatrix<T>& R) { R_AB_ = R; }
 
-  /// @retval `p_AoBo_A`, the position vector portion of `this` transform, i.e.,
+  /// Returns `p_AoBo_A`, the position vector portion of `this` transform.
+  /// @retval p_AoBo_A the position vector portion of `this` transform, i.e.,
   /// the position vector from Ao (frame A's origin) to Bo (frame B's origin).
   const Vector3<T>& translation() const { return p_AoBo_A_; }
-
-  /// @retval `p_AoBo_A`, the position vector portion of `this` transform, i.e.,
-  /// the position vector from Ao (frame A's origin) to Bo (frame B's origin).
-  Vector3<T>& mutable_translation() { return p_AoBo_A_; }
 
   /// Sets the position vector portion of `this` transform.
   /// @param[in] p position vector from Ao (frame A's origin) to Bo (frame B's
   /// origin) expressed in frame A.  In monogram notation p is denoted p_AoBo_A.
   void set_translation(const Vector3<T>& p) { p_AoBo_A_ = p; }
 
+  /// Returns the 4x4 matrix associated with a %Transform.
   /// @returns the 4x4 matrix associated with a %Transform, i.e., returns
   ///  ┌                ┐
   ///  │ R_AB  p_AoBo_A │
@@ -105,15 +107,13 @@ class Transform {
   Matrix4<T> GetAsMatrix() const {
     Matrix4<T> pose;
     pose.topLeftCorner(3, 3) = rotation().matrix();
-    const Vector3<T> p = translation();
-    pose(0, 3) = p(0);
-    pose(1, 3) = p(1);
-    pose(2, 3) = p(2);
-    pose(3, 3) = 1;
-    pose(3, 0) = pose(3, 1) = pose(3, 2) = 0;
+    pose.topLeftCorner(3, 3) = rotation().matrix();
+    pose.topRightCorner(3, 1) = translation();
+    pose.row(3) = Vector4<T>(0, 0, 0, 1);
     return pose;
   }
 
+  /// Returns the Isometry associated with a %Transform.
   /// @returns the Isometry associated with a %Transform.
   Isometry3<T> GetAsIsometry3() const {
     // pose.linear() returns a mutable reference to the 3x3 rotation matrix part
@@ -135,11 +135,14 @@ class Transform {
     return *this;
   }
 
+  /// Returns `true` if `this` is exactly the identity transform.
   /// @returns `true` if `this` is exactly the identity transform.
-  bool IsIdentity() const {
-    return rotation().IsIdentity() && (translation().array() == 0).all();
+  /// @see IsIdentityToEpsilon().
+  bool IsExactlyIdentity() const {
+    return rotation().IsExactlyIdentity() && (translation().array() == 0).all();
   }
 
+  /// Returns true if `this` is within tolerance of the identity transform.
   /// @returns `true` if the RotationMatrix portion of `this` satisfies
   /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
   /// portion of `this` is equal to zero vector within `translation_tolerance`.
@@ -147,22 +150,28 @@ class Transform {
   /// `translation_tolerance` is to multiply a characteristic length
   /// (e.g., the magnitude of a characteristic position vector) by an epsilon
   /// (e.g., RotationMatrix::get_internal_tolerance_for_orthonormality()).
+  /// @see IsExactlyIdentity().
   bool IsIdentityToEpsilon(double translation_tolerance) const {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
     return max_component <= translation_tolerance &&
         rotation().IsIdentityToInternalTolerance();
   }
 
-  /// @retval X_BA = X_AB⁻¹, the inverse of this %Transform.
+  /// Calculates X_BA = X_AB⁻¹, the inverse of `this` %Transform.
+  /// @retval X_BA = X_AB⁻¹ the inverse of `this` %Transform.
   /// @note The inverse of transform X_AB is X_BA, which contains the rotation
-  /// matrix R_BA = R_AB⁻¹ = R_ABᵀand the position vector `p_BoAo_B_`,
+  /// matrix R_BA = R_AB⁻¹ = R_ABᵀ and the position vector `p_BoAo_B_`,
   /// (position from B's origin Bo to A's origin Ao, expressed in frame B).
+  /// @note: The square-root of the condition number for a Transform is roughly
+  /// the magnitude of the position vector.  The accuracy of the calculation for
+  /// the inverse of a Transform drops off with the sqrt condition number.
+  // @internal This method's name was chosen to mimic Eigen's inverse().
   Transform<T> inverse() const {
     const RotationMatrix<T> R_BA = R_AB_.inverse();
     return Transform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
 
-  /// Operator to multiply `this` transform `X_AB` by `other` transform `X_BC`.
+  /// In-place multiply of `this` transform `X_AB` by `other` transform `X_BC`.
   /// @param[in] other %Transform that post-multiplies `this`.
   /// @returns `this` transform which has been multiplied by `other`.
   /// On return, `this = X_AC`, where `X_AC = X_AB * X_BC`.
@@ -172,18 +181,18 @@ class Transform {
     return *this;
   }
 
-  /// Operator to multiply `this` transform `X_AB` by `other` transform `X_BC`.
+  /// Calculates `this` transform `X_AB` multipled by `other` transform `X_BC`.
   /// @param[in] other %Transform that post-multiplies `this`.
-  /// @retval `X_AC = X_AB * X_BC`
+  /// @retval X_AC = X_AB * X_BC
   Transform<T> operator*(const Transform<T>& other) const {
     const Vector3<T> p_AoCo_A = *this * other.translation();
     return Transform<T>(rotation() * other.rotation(), p_AoCo_A);
   }
 
-  /// Operator to multiply `this` transform `X_AB` by the position vector from
-  /// Bo (B's origin) to an arbitrary point Q.
+  /// Calculates `this` transform `X_AB` multiplied by the position vector
+  /// 'p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
   /// @param[in] p_BoQ_B position vector from Bo to Q, expressed in frame B.
-  /// @retval p_AoQ_A, position vector from Ao to Q, expressed in frame A.
+  /// @retval p_AoQ_A position vector from Ao to Q, expressed in frame A.
   Vector3<T> operator*(const Vector3<T>& p_BoQ_B) const {
     return p_AoBo_A_ + R_AB_ * p_BoQ_B;
   }
@@ -194,6 +203,9 @@ class Transform {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// elements in `this` and `other`.
   /// @returns `true` if `‖this.matrix() - other.matrix()‖∞ <= tolerance`.
+  /// @note Consider scaling tolerance with the largest of magA and magB, where
+  /// magA and magB denoted the magnitudes of `this` position vector and `other`
+  /// position vectors, respectively.
   bool IsNearlyEqualTo(const Transform<T>& other, double tolerance) const {
     return GetMaximumAbsoluteDifference(other) <= tolerance;
   }
