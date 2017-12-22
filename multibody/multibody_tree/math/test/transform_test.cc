@@ -157,6 +157,14 @@ GTEST_TEST(Transform, Isometry3) {
   zero_position = p - isometryB.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  // Bad matrix should throw exception.
+  const Matrix3d bad = GetBadRotationMatrix();
+  Isometry3<double> isometryC;
+  isometryC.linear() = bad;
+  EXPECT_THROW(Transform<double>(isometryC), std::logic_error);
+#endif
 }
 
 // Tests method Identity (identity rotation matrix and zero vector).
