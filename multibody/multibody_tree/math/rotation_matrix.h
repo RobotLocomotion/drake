@@ -89,7 +89,7 @@ class RotationMatrix {
     return *this;
   }
 
-  /// Calculates `this` rotation matrix `R_AB` multipled by `other` rotation
+  /// Calculates `this` rotation matrix `R_AB` multiplied by `other` rotation
   /// matrix `R_BC`, returning the composition `R_AB * R_BC`.
   /// @param[in] other %RotationMatrix that post-multiplies `this`.
   /// @returns rotation matrix that results from `this` multiplied by `other`.

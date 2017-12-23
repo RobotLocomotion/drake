@@ -181,7 +181,7 @@ class Transform {
     return *this;
   }
 
-  /// Calculates `this` transform `X_AB` multipled by `other` transform `X_BC`.
+  /// Calculates `this` transform `X_AB` multiplied by `other` transform `X_BC`.
   /// @param[in] other %Transform that post-multiplies `this`.
   /// @retval X_AC = X_AB * X_BC
   Transform<T> operator*(const Transform<T>& other) const {
