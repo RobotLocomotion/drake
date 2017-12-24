@@ -355,8 +355,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewContinuousVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -425,8 +425,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewBinaryVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -516,14 +516,15 @@ class MathematicalProgram {
   }
 
   /**
-   * Append some new variables to the end of the existing variables. 
+   * Append some new variables to the end of the existing variables.
    * @param variables The newly added variables.
    * @pre variables should not intersect with the existing variables in the
    * optimization program.
-   * @pre each entry in `variables` should not be a dummy variable. 
+   * @pre each entry in `variables` should not be a dummy variable.
    * @throw runtime_error if the preconditions are not satisfied.
    */
-  void WithVariables(const Eigen::Ref<const VectorXDecisionVariable>& variables);
+  void WithVariables(
+      const Eigen::Ref<const VectorXDecisionVariable>& variables);
 
   /**
    * Returns a free polynomial in a monomial basis over @p indeterminates of a
@@ -701,13 +702,17 @@ class MathematicalProgram {
                                          const std::string& name = "X");
 
   /** Adds indeterminates to this MathematicalProgram.
-   * This method appends some indeterminates to the end of the program's old indeterminates.
-   * @param new_indeterminates The indeterminates to be appended to the program's old indeterminates.
-   * @pre new_indeterminates should not intersect with the program's old indeterminates or decision variables.
+   * This method appends some indeterminates to the end of the program's old
+   * indeterminates.
+   * @param new_indeterminates The indeterminates to be appended to the
+   * program's old indeterminates.
+   * @pre new_indeterminates should not intersect with the program's old
+   * indeterminates or decision variables.
    * @pre each entry in new_indeterminates should not be dummy.
    * @pre each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  void WithIndeterminates(const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
+  void WithIndeterminates(
+      const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
 
   /**
    * Adds a generic cost to the optimization program.
