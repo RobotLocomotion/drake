@@ -428,6 +428,7 @@ GTEST_TEST(testWithVariable, testWithVariable2) {
 }
 
 GTEST_TEST(testWithVariable, testWithVariable3) {
+  // Test the error inputs.
   MathematicalProgram prog;
   auto y = prog.NewContinuousVariables<3>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);

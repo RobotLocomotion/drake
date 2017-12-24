@@ -700,6 +700,15 @@ class MathematicalProgram {
   MatrixXIndeterminate NewIndeterminates(int rows, int cols,
                                          const std::string& name = "X");
 
+  /** Adds indeterminates to this MathematicalProgram.
+   * This method appends some indeterminates to the end of the program's old indeterminates.
+   * @param new_indeterminates The indeterminates to be appended to the program's old indeterminates.
+   * @pre new_indeterminates should not intersect with the program's old indeterminates or decision variables.
+   * @pre each entry in new_indeterminates should not be dummy.
+   * @pre each entry in new_indeterminates should be of CONTINUOUS type.
+   */
+  void WithIndeterminates(const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
+
   /**
    * Adds a generic cost to the optimization program.
    */

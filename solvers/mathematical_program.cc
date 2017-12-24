@@ -243,6 +243,28 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
   return NewIndeterminates(rows, cols, names);
 }
 
+void MathematicalProgram::WithIndeterminates(const Eigen::Ref<const VectorXDecisionVariable>& new_indeterminates) {
+  const int num_old_indeterminates = num_indeterminates();
+  for (int i = 0; i < new_indeterminates.rows(); ++i) {
+    if (new_indeterminates(i).is_dummy()) {
+      std::ostringstream oss;
+      oss << "new_indeterminates(" << i << ") is dummy.\n";
+      throw std::runtime_error(oss.str());
+    }
+    if (indeterminates_index_.find(new_indeterminates(i).get_id()) != indeterminates_index_.end() || decision_variable_index_.find(new_indeterminates(i).get_id()) != decision_variable_index_.end()) {
+      std::ostringstream oss;
+      oss << new_indeterminates(i) << " already exists in the optimization program.\n";
+      throw std::runtime_error(oss.str());
+    }
+    if (new_indeterminates(i).type() != symbolic::Variable::Type::CONTINUOUS) {
+      throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
+    }
+    indeterminates_index_.insert(std::make_pair(new_indeterminates(i).get_id(), num_old_indeterminates + i));
+  }
+  indeterminates_.conservativeResize(num_old_indeterminates + new_indeterminates.rows());
+  indeterminates_.tail(new_indeterminates.rows()) = new_indeterminates;
+}
+
 namespace {
 
 template <typename To, typename From>
