@@ -25,6 +25,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/test/generic_trivial_constraints.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -2567,6 +2568,146 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
   GenericPtr quadratic_cost(new QuadraticCost(Matrix1d(1), Vector1d(1)));
   prog.AddCost(quadratic_cost, x);
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
+}
+
+// Determine if two bindings are the same. Two bindings are the same if
+// 1. Their contain the same constraint pointer.
+// 2. Their bound variables are the same.
+template <typename Constraint>
+bool IsBindingEqual(const Binding<Constraint>& binding1,
+                    const Binding<Constraint>& binding2) {
+  if (binding1.constraint() != binding2.constraint()) {
+    return false;
+  }
+  if (binding1.variables().rows() != binding2.variables().rows()) {
+    return false;
+  }
+  for (int i = 0; i < binding1.variables().rows(); ++i) {
+    if (!binding1.variables()(i).equal_to(binding2.variables()(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename Constraint>
+bool IsVectorOfBindingEqual(const std::vector<Binding<Constraint>>& bindings1,
+                            const std::vector<Binding<Constraint>>& bindings2) {
+  if (bindings1.size() != bindings2.size()) {
+    return false;
+  }
+  for (int i = 0; i < static_cast<int>(bindings1.size()); ++i) {
+    if (!IsBindingEqual(bindings1[i], bindings2[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+GTEST_TEST(testMathematicalProgram, testClone) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  auto X = prog.NewSymmetricContinuousVariables<3>("X");
+
+  // Add costs
+  shared_ptr<Cost> generic_trivial_cost1 = make_shared<GenericTrivialCost1>();
+  prog.AddCost(Binding<Cost>(generic_trivial_cost1,
+                             VectorDecisionVariable<3>(x(0), x(1), x(2))));
+  GenericTrivialCost2 generic_trivial_cost2;
+  prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(2), x(1)));
+  prog.AddLinearCost(x(0) + 2);
+  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
+  prog.AddLinearCost(x(0) + 2 * x(2));
+  prog.AddQuadraticCost(x(1) * x(1) + 1);
+
+  // Add constraints
+  shared_ptr<Constraint> generic_trivial_constraint1 =
+      make_shared<GenericTrivialConstraint1>();
+  prog.AddConstraint(
+      Binding<Constraint>(generic_trivial_constraint1,
+                          VectorDecisionVariable<3>(x(0), x(1), x(2))));
+  prog.AddConstraint(
+      Binding<Constraint>(generic_trivial_constraint1,
+                          VectorDecisionVariable<3>(x(2), x(1), x(0))));
+  prog.AddLinearConstraint(x(0) + x(1) <= 2);
+  prog.AddLinearConstraint(x(1) + x(2) <= 1);
+  prog.AddLinearEqualityConstraint(x(0) + x(2) == 0);
+  prog.AddLinearEqualityConstraint(x(0) + x(1) + 3 * x(2) == 1);
+  prog.AddBoundingBoxConstraint(-10, 10, x(0));
+  prog.AddBoundingBoxConstraint(-4, 5, x(1));
+  prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(+x(0), +x(1), x(2) - 0.5 * x(1)));
+  prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(x(0) + x(1), +x(0), x(2) - x(1)));
+  prog.AddRotatedLorentzConeConstraint(Vector4<symbolic::Expression>(
+      +x(0), +x(1), 0.5 * (x(0) + x(1)), 0.5 * x(2)));
+  prog.AddRotatedLorentzConeConstraint(
+      Vector4<symbolic::Expression>(x(0) + x(1), x(1) + x(2), +x(0), +x(1)));
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddPositiveSemidefiniteConstraint(X - Eigen::Matrix3d::Ones());
+  prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
+       2 * Eigen::Matrix2d::Ones()},
+      x.head<2>());
+  prog.AddLinearComplementarityConstraint(Eigen::Matrix2d::Identity(),
+                                          Eigen::Vector2d::Ones(), x.head<2>());
+  prog.AddLinearComplementarityConstraint(2 * Eigen::Matrix2d::Identity(),
+                                          Eigen::Vector2d::Ones(), x.tail<2>());
+
+  // Set initial guess
+  prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 9, 1>::Ones());
+
+  auto new_prog = prog.Clone();
+
+  // Cloned program should have the same variables and indeterminates.
+  EXPECT_EQ(prog.num_vars(), new_prog->num_vars());
+  EXPECT_EQ(prog.num_indeterminates(), new_prog->num_indeterminates());
+  for (int i = 0; i < prog.num_vars(); ++i) {
+    EXPECT_TRUE(
+        prog.decision_variable(i).equal_to(new_prog->decision_variable(i)));
+  }
+  for (int i = 0; i < prog.num_indeterminates(); ++i) {
+    EXPECT_TRUE(prog.indeterminate(i).equal_to(new_prog->indeterminate(i)));
+  }
+
+  // Cloned program should have the same costs.
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.generic_costs(), new_prog->generic_costs()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_costs(), new_prog->linear_costs()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.quadratic_costs(),
+                                     new_prog->quadratic_costs()));
+
+  // Cloned program should have the same constraints.
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.generic_constraints(),
+                                     new_prog->generic_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.linear_constraints(),
+                                     new_prog->linear_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.linear_equality_constraints(),
+                                     new_prog->linear_equality_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.bounding_box_constraints(),
+                                     new_prog->bounding_box_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.lorentz_cone_constraints(),
+                                     new_prog->lorentz_cone_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.rotated_lorentz_cone_constraints(),
+                             new_prog->rotated_lorentz_cone_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.positive_semidefinite_constraints(),
+                             new_prog->positive_semidefinite_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_matrix_inequality_constraints(),
+                             new_prog->linear_matrix_inequality_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_matrix_inequality_constraints(),
+                             new_prog->linear_matrix_inequality_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_complementarity_constraints(),
+                             new_prog->linear_complementarity_constraints()));
+
+  EXPECT_TRUE(CompareMatrices(new_prog->initial_guess(), prog.initial_guess()));
+  EXPECT_EQ(new_prog->GetSolverId(), prog.GetSolverId());
 }
 
 }  // namespace test

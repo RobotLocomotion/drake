@@ -287,11 +287,21 @@ struct assert_if_is_constraint {
 class MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
-
   using VarType = symbolic::Variable::Type;
 
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
+
+  /** Clone an optimization program.
+   * Constructed a new optimization program to be identical to the old program.
+   * These two programs will have the same decision variables, constraints and
+   * costs.
+   * They will also have the same solver settings, initial guess, and x_values_.
+   * But the internal solvers, such as EqualityConstrainedQPSolver, will be
+   * freshly constructed, instead of being copied.
+   * @retval new_prog. The newly constructed mathematical program.
+   */
+  virtual std::unique_ptr<MathematicalProgram> Clone() const;
 
   /**
    * Adds continuous variables, appending them to an internal vector of any
@@ -2266,12 +2276,12 @@ class MathematicalProgram {
   VectorXIndeterminate indeterminates_;
 
   std::vector<Binding<Cost>> generic_costs_;
-  std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
   std::vector<Binding<LinearCost>> linear_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
+  std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<LinearConstraint>> linear_constraints_;
   std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;
