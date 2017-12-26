@@ -2111,11 +2111,11 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
   // The quadratic expression is actually affine.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0), 3 * x_(1) + 2),
                runtime_error);
-  EXPECT_THROW(prog_.AddLorentzConeConstraint(
-                   2 * x_(0),
-                   x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
-                       x_(0) * x_(0) + 2 * x_(1) + 3),
-               runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(
+          2 * x_(0), x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
+                         x_(0) * x_(0) + 2 * x_(1) + 3),
+      runtime_error);
 
   // The Hessian matrix is not positive semidefinite.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
@@ -2139,11 +2139,10 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
                runtime_error);
 
   // The quadratic expression is a negative constant.
-  EXPECT_THROW(
-      prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
-                                     pow(x_(0), 2) - pow(x_(1), 2) -
-                                         (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
-      runtime_error);
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0) + 3, pow(x_(0), 2) - pow(x_(1), 2) -
+                                      (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
+               runtime_error);
 
   // The first expression is not actually linear.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) * x_(1), pow(x_(0), 2)),
@@ -2656,7 +2655,7 @@ GTEST_TEST(testMathematicalProgram, testClone) {
                                           Eigen::Vector2d::Ones(), x.tail<2>());
 
   // Set initial guess
-  prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 9, 1>::Ones());
+  prog.SetInitialGuessForAllVariables(Eigen::VectorXd::Ones(prog.num_vars()));
 
   auto new_prog = prog.Clone();
 
@@ -2666,9 +2665,13 @@ GTEST_TEST(testMathematicalProgram, testClone) {
   for (int i = 0; i < prog.num_vars(); ++i) {
     EXPECT_TRUE(
         prog.decision_variable(i).equal_to(new_prog->decision_variable(i)));
+    EXPECT_EQ(prog.FindDecisionVariableIndex(prog.decision_variable(i)),
+              new_prog->FindDecisionVariableIndex(prog.decision_variable(i)));
   }
   for (int i = 0; i < prog.num_indeterminates(); ++i) {
     EXPECT_TRUE(prog.indeterminate(i).equal_to(new_prog->indeterminate(i)));
+    EXPECT_EQ(prog.FindIndeterminateIndex(prog.indeterminate((i))),
+              new_prog->FindIndeterminateIndex(prog.indeterminate(i)));
   }
 
   // Cloned program should have the same costs.
