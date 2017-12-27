@@ -249,7 +249,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
         "//drake/systems/rendering:pose_stamped_t_pose_vector_translator",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -304,7 +304,7 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 

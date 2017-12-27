@@ -54,7 +54,7 @@ drake_cc_binary(
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:demultiplexer",
         "//drake/systems/primitives:multiplexer",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -78,7 +78,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/primitives:constant_vector_source",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -104,7 +104,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:constant_vector_source",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -128,7 +128,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:trajectory_source",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 

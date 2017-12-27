@@ -39,7 +39,7 @@ drake_cc_binary(
         "//drake/systems/framework:diagram",
         "//drake/systems/lcm",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 

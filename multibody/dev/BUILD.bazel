@@ -60,7 +60,7 @@ drake_cc_googletest(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
         "//drake/systems/primitives:constant_vector_source",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 

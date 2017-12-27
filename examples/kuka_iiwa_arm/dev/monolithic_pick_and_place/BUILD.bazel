@@ -57,7 +57,7 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
         "//drake/systems/analysis:simulator",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
         "@lcmtypes_bot2_core",
     ],
 )
