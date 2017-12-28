@@ -2,21 +2,37 @@
 
 namespace drake {
 namespace solvers {
+bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
+  std::cout << "Call has binary variables.\n";
+  for (int i = 0; i < prog.num_vars(); ++i) {
+    if (prog.decision_variable(i).get_type() ==
+        symbolic::Variable::Type::BINARY) {
+      return true;
+    }
+  }
+  return false;
+}
+
 MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
-    const MathematicalProgram& prog)
+    const MathematicalProgram& prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& binary_variables)
     : prog_{prog.Clone()},
       left_child_{nullptr},
       right_child_{nullptr},
-      parent_{},
+      parent_{nullptr},
       binary_var_index_{-1},
-      binary_var_value_{-1} {}
+      binary_var_value_{-1},
+      remaining_binary_variables_{} {
+  // Check if there are still binary variables.
+  DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
+  // Add binary_variables to remaining_binary_variables_
+  for (int i = 0; i < binary_variables.rows(); ++i) {
+    remaining_binary_variables_.push_back(binary_variables(i));
+  }
+}
 
 bool MixedIntegerBranchAndBoundNode::IsRoot() const {
-  // TODO(hongkai): This is not the ideal way. I want to detect if parent_ is an
-  // empty pointer, not if it is expired. One solution is suggested in
-  // https://stackoverflow.com/questions/45507041/how-to-check-if-weak-ptr-is-empty-non-assigned,
-  // using owner_before, but it requires C++17.
-  return parent_.expired();
+  return parent_ == nullptr;
 }
 
 template <typename Constraint>
@@ -153,7 +169,7 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   // TODO(hongkai.dai) Set the solver options as well.
 
   MixedIntegerBranchAndBoundNode* node =
-      new MixedIntegerBranchAndBoundNode(new_prog);
+      new MixedIntegerBranchAndBoundNode(new_prog, binary_variables);
   return std::make_pair(std::unique_ptr<MixedIntegerBranchAndBoundNode>(node),
                         map_old_vars_to_new_vars);
 }

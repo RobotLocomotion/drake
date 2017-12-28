@@ -73,7 +73,8 @@ SolutionResult SolveWithGurobiOrMosek(MathematicalProgram* prog) {
   throw std::runtime_error("None of the required solvers is available.");
 }
 
-void CheckRootNode(const MixedIntegerBranchAndBoundNode& root) {
+void CheckRootNode(const MixedIntegerBranchAndBoundNode& root,
+                   const std::list<symbolic::Variable>& binary_vars_expected) {
   // The left and right childs are empty.
   EXPECT_FALSE(root.left_child());
   EXPECT_FALSE(root.right_child());
@@ -82,6 +83,7 @@ void CheckRootNode(const MixedIntegerBranchAndBoundNode& root) {
   // None of the binary variables are fixed.
   EXPECT_EQ(root.binary_var_index(), -1);
   EXPECT_EQ(root.binary_var_value(), -1);
+  EXPECT_EQ(root.remaining_binary_variables(), binary_vars_expected);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
@@ -98,12 +100,13 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
     EXPECT_TRUE(x(i).equal_to(root->prog()->decision_variable(i)));
   }
 
-  CheckRootNode(*root);
+  CheckRootNode(*root, {x(0), x(2)});
 
   const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
-  EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5,
+                              MatrixCompareType::absolute));
   EXPECT_NEAR(root->prog()->GetOptimalCost(), 1.5, 1E-5);
 }
 
@@ -121,13 +124,14 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
     EXPECT_TRUE(x(i).equal_to(root->prog()->decision_variable(i)));
   }
 
-  CheckRootNode(*root);
-  
+  CheckRootNode(*root, {x(0), x(2), x(4)});
+
   const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 0.7, 1, 1, 1.4, 0;
-  EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5,
+                              MatrixCompareType::absolute));
   EXPECT_NEAR(root->prog()->GetOptimalCost(), -4.9, 1E-5);
 }
 

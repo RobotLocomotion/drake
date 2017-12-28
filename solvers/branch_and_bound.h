@@ -72,23 +72,21 @@ class MixedIntegerBranchAndBoundNode {
   /**
    * Getter for the left child.
    */
-  std::shared_ptr<MixedIntegerBranchAndBoundNode> left_child() const {
-    return left_child_;
+  MixedIntegerBranchAndBoundNode* left_child() const {
+    return left_child_.get();
   }
 
   /**
    * Getter for the right child.
    */
-  std::shared_ptr<MixedIntegerBranchAndBoundNode> right_child() const {
-    return right_child_;
+  MixedIntegerBranchAndBoundNode* right_child() const {
+    return right_child_.get();
   }
 
   /**
    * Getter for the parent node.
    */
-  std::weak_ptr<MixedIntegerBranchAndBoundNode> parent() const {
-    return parent_;
-  }
+  MixedIntegerBranchAndBoundNode* parent() const { return parent_.get(); }
 
   /**
    * Getter for the index of the binary variable, whose value was not fixed in
@@ -102,32 +100,44 @@ class MixedIntegerBranchAndBoundNode {
    */
   int binary_var_value() const { return binary_var_value_; }
 
+  /**
+   * Getter for the remaining binary variables in this node.
+   */
+  const std::list<symbolic::Variable>& remaining_binary_variables() const {
+    return remaining_binary_variables_;
+  }
+
  private:
   /**
    * Constructs an empty node. Clone the input mathematical program to this
-   * node.
-   * The child nodes are null pointers, the parent node is unset.
+   * node. The child and the parent nodes are all nullptr.
+   * @param prog The optimization program whose binary variable constraints are
+   * all relaxed to 0 ≤ y ≤ 1.
+   * @param binary_variables The list of binary variables in the mixed-integer
+   * problem.
    */
-  MixedIntegerBranchAndBoundNode(const MathematicalProgram& prog);
+  MixedIntegerBranchAndBoundNode(
+      const MathematicalProgram& prog,
+      const Eigen::Ref<const VectorXDecisionVariable>& binary_variables);
 
   std::unique_ptr<MathematicalProgram>
       prog_;  // Stores the optimization program in this node.
-  std::shared_ptr<MixedIntegerBranchAndBoundNode> left_child_;
-  std::shared_ptr<MixedIntegerBranchAndBoundNode> right_child_;
-  std::weak_ptr<MixedIntegerBranchAndBoundNode> parent_;
+  std::unique_ptr<MixedIntegerBranchAndBoundNode> left_child_;
+  std::unique_ptr<MixedIntegerBranchAndBoundNode> right_child_;
+  std::unique_ptr<MixedIntegerBranchAndBoundNode> parent_;
 
   // The index of the newly fixed binary variable z, in the decision variables
-  // x.
-  // The value of z was not fixed in the parent node, but is fixed in this node.
+  // x. The value of z was not fixed in the parent node, but is fixed in this
+  // node.
   int binary_var_index_;
   // The value of the newly fixed binary variable z, in the decision variables
-  // x.
-  // The value of z was not fixed in the parent node, but is fixed in this node.
+  // x. The value of z was not fixed in the parent node, but is fixed in this
+  // node.
   int binary_var_value_;
 
-  // In each node, we will need to construct
-  std::unordered_map<symbolic::Variable::Id, symbolic::Variable::Id>
-      original_var_to_node_var_map_;
+  // The variables that were binary in the original mixed-integer optimization
+  // problem, but whose value has not been fixed to either 0 or 1 yet.
+  std::list<symbolic::Variable> remaining_binary_variables_;
 };
 }  // namespace solvers
 }  // namespace drake
