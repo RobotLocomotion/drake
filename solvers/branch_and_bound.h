@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <memory>
 
 #include "drake/solvers/mathematical_program.h"
@@ -33,6 +34,16 @@ class MixedIntegerBranchAndBoundNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundNode)
 
+  enum class OptimalSolutionIsIntegral {
+    kTrue,   ///< The program in this node has been solved, and the solution to
+             ///all binary variables satisfies the integral constraints.
+    kFalse,  ///< The program in this node has been solved, and the solution to
+             ///some binary variables does not satisfy the integral constraints.
+    kUnknown,  ///< Either the program in this node has not been solved, or we
+               ///have not checked if the solution satisfy the integral
+               ///constraints yet.
+  };
+
   /** Construct the root node from an optimization program.
    * For the mixed-integer optimization program
    * min f(x)         (1)
@@ -63,6 +74,11 @@ class MixedIntegerBranchAndBoundNode {
    * A root node has no parent.
    */
   bool IsRoot() const;
+
+  /** Determine if a node is a leaf or not.
+   * A leaf node has no child nodes.
+   */
+  bool IsLeaf() const { return !left_child_ && !right_child_; }
 
   /**
    * Getter for the mathematical program.
@@ -107,6 +123,12 @@ class MixedIntegerBranchAndBoundNode {
     return remaining_binary_variables_;
   }
 
+  /** Check if the optimal solution to the program in this node satisfies all
+   * integral constraints.
+   * Only call this function AFTER the program is solved.
+   */
+  bool IsOptimalSolutionIntegral();
+
  private:
   /**
    * Constructs an empty node. Clone the input mathematical program to this
@@ -138,6 +160,10 @@ class MixedIntegerBranchAndBoundNode {
   // The variables that were binary in the original mixed-integer optimization
   // problem, but whose value has not been fixed to either 0 or 1 yet.
   std::list<symbolic::Variable> remaining_binary_variables_;
+
+  // Whether the optimal solution in this node satisfies all integral
+  // constraints.
+  OptimalSolutionIsIntegral optimal_solution_is_integral_;
 };
 }  // namespace solvers
 }  // namespace drake

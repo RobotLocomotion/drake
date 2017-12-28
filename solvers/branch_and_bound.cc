@@ -3,7 +3,6 @@
 namespace drake {
 namespace solvers {
 bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
-  std::cout << "Call has binary variables.\n";
   for (int i = 0; i < prog.num_vars(); ++i) {
     if (prog.decision_variable(i).get_type() ==
         symbolic::Variable::Type::BINARY) {
@@ -22,7 +21,8 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       parent_{nullptr},
       binary_var_index_{-1},
       binary_var_value_{-1},
-      remaining_binary_variables_{} {
+      remaining_binary_variables_{},
+      optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown} {
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
   // Add binary_variables to remaining_binary_variables_
@@ -172,6 +172,38 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
       new MixedIntegerBranchAndBoundNode(new_prog, binary_variables);
   return std::make_pair(std::unique_ptr<MixedIntegerBranchAndBoundNode>(node),
                         map_old_vars_to_new_vars);
+}
+
+bool MixedIntegerBranchAndBoundNode::IsOptimalSolutionIntegral() {
+  switch (optimal_solution_is_integral_) {
+    case OptimalSolutionIsIntegral::kTrue: {
+      return true;
+    }
+    case OptimalSolutionIsIntegral::kFalse: {
+      return false;
+    }
+    case OptimalSolutionIsIntegral::kUnknown: {
+      // Check if the solution to the remaining binary variables are all either
+      // 0 or 1.
+      for (const auto& var : remaining_binary_variables_) {
+        const double binary_var_val{prog_->GetSolution(var)};
+        if (std::isnan(binary_var_val)) {
+          throw std::runtime_error(
+              "The solution contains NAN, either the problem is not solved "
+              "yet, or the problem is infeasible, unbounded, or contains "
+              "numerical error.");
+        }
+        const double integral_tol = 1E-3;
+        if (binary_var_val > integral_tol &&
+            binary_var_val < 1 - integral_tol) {
+          optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kFalse;
+          return false;
+        }
+      }
+      optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kTrue;
+      return true;
+    }
+  }
 }
 }  // namespace solvers
 }  // namespace drake

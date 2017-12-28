@@ -73,8 +73,9 @@ SolutionResult SolveWithGurobiOrMosek(MathematicalProgram* prog) {
   throw std::runtime_error("None of the required solvers is available.");
 }
 
-void CheckRootNode(const MixedIntegerBranchAndBoundNode& root,
-                   const std::list<symbolic::Variable>& binary_vars_expected) {
+void CheckNewRootNode(
+    const MixedIntegerBranchAndBoundNode& root,
+    const std::list<symbolic::Variable>& binary_vars_expected) {
   // The left and right childs are empty.
   EXPECT_FALSE(root.left_child());
   EXPECT_FALSE(root.right_child());
@@ -84,6 +85,7 @@ void CheckRootNode(const MixedIntegerBranchAndBoundNode& root,
   EXPECT_EQ(root.binary_var_index(), -1);
   EXPECT_EQ(root.binary_var_value(), -1);
   EXPECT_EQ(root.remaining_binary_variables(), binary_vars_expected);
+  EXPECT_TRUE(root.IsLeaf());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
@@ -100,7 +102,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
     EXPECT_TRUE(x(i).equal_to(root->prog()->decision_variable(i)));
   }
 
-  CheckRootNode(*root, {x(0), x(2)});
+  CheckNewRootNode(*root, {x(0), x(2)});
+
+  EXPECT_THROW(root->IsOptimalSolutionIntegral(), std::runtime_error);
 
   const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
@@ -108,6 +112,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
   EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(root->prog()->GetOptimalCost(), 1.5, 1E-5);
+  EXPECT_TRUE(root->IsOptimalSolutionIntegral());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
@@ -124,7 +129,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
     EXPECT_TRUE(x(i).equal_to(root->prog()->decision_variable(i)));
   }
 
-  CheckRootNode(*root, {x(0), x(2), x(4)});
+  CheckNewRootNode(*root, {x(0), x(2), x(4)});
 
   const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
@@ -133,6 +138,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
   EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(root->prog()->GetOptimalCost(), -4.9, 1E-5);
+  EXPECT_FALSE(root->IsOptimalSolutionIntegral());
 }
 
 }  // namespace
