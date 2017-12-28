@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -33,6 +33,11 @@ class MixedIntegerBranchAndBoundNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundNode)
 
+  /**
+   * Constructs an empty node. Clone the input mathematical program to this node.
+   * The child nodes are null pointers, the parent node is unset.
+   */
+  MixedIntegerBranchAndBoundNode(const MathematicalProgram& parent_node_prog);
 
   /** Construct the root node from an optimization program.
    * For the mixed-integer optimization program
@@ -48,24 +53,56 @@ class MixedIntegerBranchAndBoundNode {
    *     0 ≤ y ≤ 1
    * @param prog The mixed-integer optimization program (1) in the
    * documentation above.
-   * @retval node The root node of the tree, that contains the optimization 
-   * program (2) in the documentation above. This root node has no parent.
+   * @retval (node, map_old_vars_to_new_vars) node is the root node of the tree, that contains the optimization program (2) in the documentation above. This root node has no parent. We also need to recreate new decision variables in the root node, from the original optimization program (1), since the binary variables will be converted to continuous variables in (2). We thus return the map from the old variable to the new variable.
    */
-  static MixedIntegerBranchAndBoundNode ConstructRootNode(const MathematicalProgram& prog);
+  static std::pair<std::unique_ptr<MixedIntegerBranchAndBoundNode>, std::unordered_map<symbolic::Variable::Id, symbolic::Variable>> ConstructRootNode(const MathematicalProgram& prog);
 
- private:
-  /**
-   * Construct an empty node
+  /** Returns if a node is the root.
+   * A root node has no parent.
    */
-  MixedIntegerBranchAndBoundNode();
-  MathematicalProgram prog_; // Stores the optimization program in this node.
+  bool IsRoot() const;
+
+  /**
+   * Getter for the mathematical program.
+   */
+  MathematicalProgram* prog() const {return prog_.get();}
+
+  /**
+   * Getter for the left child.
+   */
+  std::shared_ptr<MixedIntegerBranchAndBoundNode> left_child() const {return left_child_;}
+
+  /**
+   * Getter for the right child.
+   */
+  std::shared_ptr<MixedIntegerBranchAndBoundNode> right_child() const {return right_child_;}
+
+  /**
+   * Getter for the parent node.
+   */
+  std::weak_ptr<MixedIntegerBranchAndBoundNode> parent() const {return parent_;}
+
+  /**
+   * Getter for the index of the binary variable, whose value was not fixed in the parent node, but is fixed to either 0 or 1 in this node.
+   */
+  int binary_var_index() const {return binary_var_index_;}
+
+  /**
+   * Getter for the value of the binary variable, which was not fixed in the parent node, but is fixed to either 0 or 1 in this node.
+   */
+  int binary_var_value() const {return binary_var_value_;}
+  
+ private:
+  std::unique_ptr<MathematicalProgram> prog_; // Stores the optimization program in this node.
   std::shared_ptr<MixedIntegerBranchAndBoundNode> left_child_;
   std::shared_ptr<MixedIntegerBranchAndBoundNode> right_child_;
   std::weak_ptr<MixedIntegerBranchAndBoundNode> parent_;
 
   // The index of the newly fixed binary variable z, in the decision variables x.
+  // The value of z was not fixed in the parent node, but is fixed in this node.
   int binary_var_index_;
   // The value of the newly fixed binary variable z, in the decision variables x.
+  // The value of z was not fixed in the parent node, but is fixed in this node.
   int binary_var_value_;
 
   // In each node, we will need to construct
