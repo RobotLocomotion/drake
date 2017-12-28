@@ -114,7 +114,10 @@ sh_test(
     # lsan; however, when the binary fails, it simply aborts without
     # diagnostic information. When this is resolved, these tags should be
     # removed.
+    # TODO(jamiesnape): Tagged "manual" because fails with latest Matplotlib
+    # (~2.1.1) on macOS (and possibly other platforms).
     tags = [
+        "manual",
         "no_asan",
         "no_lsan",
     ],
