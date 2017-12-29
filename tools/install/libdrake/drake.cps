@@ -103,7 +103,8 @@
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
-        "tinyobjloader:tinyobjloader"
+        "tinyobjloader:tinyobjloader",
+        "yaml-cpp:yaml-cpp"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
@@ -119,8 +120,7 @@
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
-        "stx:stx",
-        "yaml-cpp:yaml-cpp"
+        "stx:stx"
       ]
     },
     "drake-common-text-logging-gflags": {
