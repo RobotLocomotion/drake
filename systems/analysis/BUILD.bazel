@@ -84,6 +84,27 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "integral_function",
+    srcs = [
+        "integral_function.cc",
+    ],
+    hdrs = [
+        "integral_function.h",
+        "integral_function-inl.h",
+    ],
+    deps = [
+        ":integrator_base",
+        ":runge_kutta3_integrator",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:context",
+        "//drake/systems/framework:continuous_state",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
@@ -151,6 +172,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "integral_function_test",
+    size = "small",
+    deps = [
+        ":integral_function",
+    ],
+)
+
+drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
@@ -162,5 +191,6 @@ drake_cc_googletest(
         "//drake/systems/analysis/test_utilities",
     ],
 )
+
 
 add_lint_tests()
