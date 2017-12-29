@@ -61,6 +61,26 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram2() {
   return prog;
 }
 
+
+// Construct an unbounded mixed-integer optimization problem.
+// min x(0) + 2*x(1) + 3 * x(2) + 2.5*x(3) + 2
+// s.t x(0) + x(1) - x(2) + x(3) <= 3
+//     1 <= x(0) + 2 * x(1) - 2 * x(2) + 4 * x(3) <= 3
+//     x(0), x(2) are binary.
+std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram3() {
+  auto prog = std::make_unique<MathematicalProgram>();
+  VectorDecisionVariable<4> x;
+  x(0) = symbolic::Variable("x0", symbolic::Variable::Type::BINARY);
+  x(1) = symbolic::Variable("x1", symbolic::Variable::Type::CONTINUOUS);
+  x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
+  x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
+  prog->WithVariables(x);
+  prog->AddCost(x(0) + 2 * x(1) + 3 * x(2) + 2.5 * x(3) + 2);
+  prog->AddLinearConstraint(x(0) + x(1) - x(2) + x(3) <= 3);
+  prog->AddLinearConstraint(x(0) + 2 * x(1) - 2 * x(2) + 4 * x(3), 1, 3);
+  return prog;
+}
+
 SolutionResult SolveWithGurobiOrMosek(MathematicalProgram* prog) {
   GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
@@ -82,8 +102,8 @@ void CheckNewRootNode(
   // The parent node is empty.
   EXPECT_TRUE(root.IsRoot());
   // None of the binary variables are fixed.
-  EXPECT_EQ(root.binary_var_index(), -1);
-  EXPECT_EQ(root.binary_var_value(), -1);
+  EXPECT_TRUE(root.fixed_binary_variable().is_dummy());
+  EXPECT_EQ(root.fixed_binary_value(), -1);
   EXPECT_EQ(root.remaining_binary_variables(), binary_vars_expected);
   EXPECT_TRUE(root.IsLeaf());
 }
@@ -139,6 +159,37 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
                               MatrixCompareType::absolute));
   EXPECT_NEAR(root->prog()->GetOptimalCost(), -4.9, 1E-5);
   EXPECT_FALSE(root->IsOptimalSolutionIntegral());
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
+  auto prog = ConstructMathematicalProgram3();
+
+  std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
+  std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
+      map_old_vars_to_new_vars;
+  std::tie(root, map_old_vars_to_new_vars) =
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+  VectorDecisionVariable<4> x;
+  for (int i = 0; i < 4; ++i) {
+    x(i) = map_old_vars_to_new_vars.at(prog->decision_variable(i).get_id());
+    EXPECT_TRUE(x(i).equal_to(root->prog()->decision_variable(i)));
+  }
+
+  CheckNewRootNode(*root, {x(0), x(2)});
+
+  const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
+  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded || result == SolutionResult::kUnbounded);
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
+  auto prog = ConstructMathematicalProgram2();
+
+  std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
+  std::tie(root, std::ignore) =
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+  VectorDecisionVariable<5> x = root->prog()->decision_variables();
+
+  root->Branch(x(0));
 }
 
 }  // namespace

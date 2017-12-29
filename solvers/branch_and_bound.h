@@ -34,16 +34,6 @@ class MixedIntegerBranchAndBoundNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundNode)
 
-  enum class OptimalSolutionIsIntegral {
-    kTrue,   ///< The program in this node has been solved, and the solution to
-             ///all binary variables satisfies the integral constraints.
-    kFalse,  ///< The program in this node has been solved, and the solution to
-             ///some binary variables does not satisfy the integral constraints.
-    kUnknown,  ///< Either the program in this node has not been solved, or we
-               ///have not checked if the solution satisfy the integral
-               ///constraints yet.
-  };
-
   /** Construct the root node from an optimization program.
    * For the mixed-integer optimization program
    * min f(x)         (1)
@@ -69,6 +59,17 @@ class MixedIntegerBranchAndBoundNode {
       std::unique_ptr<MixedIntegerBranchAndBoundNode>,
       std::unordered_map<symbolic::Variable::Id, symbolic::Variable>>
   ConstructRootNode(const MathematicalProgram& prog);
+
+  /**
+   * Branches on a binary variable, and creates two child nodes. In the left
+   * child node, the binary variable is fixed to 0. In the right node, the
+   * binary variable is fixed to 1. 
+   * @param binary_variable This binary variable is fixed to either 0 or 1 in
+   * the child node.
+   * @pre binary_variable is in remaining_binary_variables_;
+   * @throw std::runtime_error if the preconditions are not met.
+   */
+  void Branch(const symbolic::Variable& binary_variable);
 
   /** Returns if a node is the root.
    * A root node has no parent.
@@ -105,16 +106,18 @@ class MixedIntegerBranchAndBoundNode {
   MixedIntegerBranchAndBoundNode* parent() const { return parent_.get(); }
 
   /**
-   * Getter for the index of the binary variable, whose value was not fixed in
+   * Getter for the binary variable, whose value was not fixed in
    * the parent node, but is fixed to either 0 or 1 in this node.
    */
-  int binary_var_index() const { return binary_var_index_; }
+  const symbolic::Variable& fixed_binary_variable() const {
+    return fixed_binary_variable_;
+  }
 
   /**
    * Getter for the value of the binary variable, which was not fixed in the
    * parent node, but is fixed to either 0 or 1 in this node.
    */
-  int binary_var_value() const { return binary_var_value_; }
+  int fixed_binary_value() const { return fixed_binary_value_; }
 
   /**
    * Getter for the remaining binary variables in this node.
@@ -140,7 +143,26 @@ class MixedIntegerBranchAndBoundNode {
    */
   MixedIntegerBranchAndBoundNode(
       const MathematicalProgram& prog,
-      const Eigen::Ref<const VectorXDecisionVariable>& binary_variables);
+      const std::list<symbolic::Variable>& binary_variables);
+
+  /**
+   * Fix a binary variable to a binary value. Add a constraint y = 0 or y = 1 to
+   * the optimization program. Remove this binary variable from the
+   * remaining_binary_variables_ list; set the binary_var_ and
+   * binary_var_value_.
+   */
+  void FixBinaryVariable(const symbolic::Variable& binary_variable,
+                         int binary_value);
+
+  enum class OptimalSolutionIsIntegral {
+    kTrue,   ///< The program in this node has been solved, and the solution to
+             /// all binary variables satisfies the integral constraints.
+    kFalse,  ///< The program in this node has been solved, and the solution to
+    /// some binary variables does not satisfy the integral constraints.
+    kUnknown,  ///< Either the program in this node has not been solved, or we
+               /// have not checked if the solution satisfy the integral
+    /// constraints yet.
+  };
 
   std::unique_ptr<MathematicalProgram>
       prog_;  // Stores the optimization program in this node.
@@ -148,14 +170,14 @@ class MixedIntegerBranchAndBoundNode {
   std::unique_ptr<MixedIntegerBranchAndBoundNode> right_child_;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> parent_;
 
-  // The index of the newly fixed binary variable z, in the decision variables
-  // x. The value of z was not fixed in the parent node, but is fixed in this
+  // The newly fixed binary variable z, in the decision variables x.
+  // The value of z was not fixed in the parent node, but is fixed in this
   // node.
-  int binary_var_index_;
+  symbolic::Variable fixed_binary_variable_;
   // The value of the newly fixed binary variable z, in the decision variables
   // x. The value of z was not fixed in the parent node, but is fixed in this
   // node.
-  int binary_var_value_;
+  int fixed_binary_value_;
 
   // The variables that were binary in the original mixed-integer optimization
   // problem, but whose value has not been fixed to either 0 or 1 yet.

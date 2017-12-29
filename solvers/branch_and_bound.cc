@@ -14,21 +14,17 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
 
 MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
     const MathematicalProgram& prog,
-    const Eigen::Ref<const VectorXDecisionVariable>& binary_variables)
+    const std::list<symbolic::Variable>& binary_variables)
     : prog_{prog.Clone()},
       left_child_{nullptr},
       right_child_{nullptr},
       parent_{nullptr},
-      binary_var_index_{-1},
-      binary_var_value_{-1},
-      remaining_binary_variables_{},
+      fixed_binary_variable_{},
+      fixed_binary_value_{-1},
+      remaining_binary_variables_{binary_variables},
       optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown} {
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
-  // Add binary_variables to remaining_binary_variables_
-  for (int i = 0; i < binary_variables.rows(); ++i) {
-    remaining_binary_variables_.push_back(binary_variables(i));
-  }
 }
 
 bool MixedIntegerBranchAndBoundNode::IsRoot() const {
@@ -168,8 +164,12 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   }
   // TODO(hongkai.dai) Set the solver options as well.
 
+  std::list<symbolic::Variable> binary_variables_list;
+  for (int i = 0; i < binary_variables.rows(); ++i) {
+    binary_variables_list.push_back(binary_variables(i));
+  }
   MixedIntegerBranchAndBoundNode* node =
-      new MixedIntegerBranchAndBoundNode(new_prog, binary_variables);
+      new MixedIntegerBranchAndBoundNode(new_prog, binary_variables_list);
   return std::make_pair(std::unique_ptr<MixedIntegerBranchAndBoundNode>(node),
                         map_old_vars_to_new_vars);
 }
@@ -204,6 +204,54 @@ bool MixedIntegerBranchAndBoundNode::IsOptimalSolutionIntegral() {
       return true;
     }
   }
+}
+
+bool IsVariableInList(const std::list<symbolic::Variable>& binary_variable_list,
+                      const symbolic::Variable& binary_variable) {
+  for (const auto& var : binary_variable_list) {
+    if (var.equal_to(binary_variable)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void MixedIntegerBranchAndBoundNode::FixBinaryVariable(
+    const symbolic::Variable& binary_variable, int binary_value) {
+  DRAKE_ASSERT(binary_value == 0 || binary_value == 1);
+  // Add constraint y == 0 or y == 1.
+  prog_->AddBoundingBoxConstraint(binary_value, binary_value, binary_variable);
+  // Remove binary_variable from remaining_binary_variables_
+  bool found_binary_variable = false;
+  for (auto it = remaining_binary_variables_.begin();
+       it != remaining_binary_variables_.end(); ++it) {
+    if (it->equal_to(binary_variable)) {
+      found_binary_variable = true;
+      remaining_binary_variables_.erase(it);
+      break;
+    }
+  }
+  if (!found_binary_variable) {
+    std::ostringstream oss;
+    oss << binary_variable
+        << " is not a remaining binary variable in this node.\n";
+    throw std::runtime_error(oss.str());
+  }
+  // Set fixed_binary_variable_ and fixed_binary_value_.
+  fixed_binary_variable_ = binary_variable;
+  fixed_binary_value_ = binary_value;
+}
+
+void MixedIntegerBranchAndBoundNode::Branch(
+    const symbolic::Variable& binary_variable) {
+  left_child_.reset(
+      new MixedIntegerBranchAndBoundNode(*prog_, remaining_binary_variables_));
+  right_child_.reset(
+      new MixedIntegerBranchAndBoundNode(*prog_, remaining_binary_variables_));
+  left_child_->FixBinaryVariable(binary_variable, 0);
+  right_child_->FixBinaryVariable(binary_variable, 1);
+  left_child_->parent_.reset(this);
+  right_child_->parent_.reset(this);
 }
 }  // namespace solvers
 }  // namespace drake
