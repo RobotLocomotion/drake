@@ -1,5 +1,7 @@
 #include "drake/solvers/branch_and_bound.h"
 
+#include "drake/solvers/gurobi_solver.h"
+
 namespace drake {
 namespace solvers {
 bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
@@ -25,6 +27,8 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown} {
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
+  // Set Gurobi DualReductions to 0, to differentiate infeasible from unbounded.
+  prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
 }
 
 bool MixedIntegerBranchAndBoundNode::IsRoot() const {
@@ -250,8 +254,8 @@ void MixedIntegerBranchAndBoundNode::Branch(
       new MixedIntegerBranchAndBoundNode(*prog_, remaining_binary_variables_));
   left_child_->FixBinaryVariable(binary_variable, 0);
   right_child_->FixBinaryVariable(binary_variable, 1);
-  left_child_->parent_.reset(this);
-  right_child_->parent_.reset(this);
+  left_child_->parent_ = this;
+  right_child_->parent_ = this;
 }
 }  // namespace solvers
 }  // namespace drake

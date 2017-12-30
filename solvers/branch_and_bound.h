@@ -63,7 +63,7 @@ class MixedIntegerBranchAndBoundNode {
   /**
    * Branches on a binary variable, and creates two child nodes. In the left
    * child node, the binary variable is fixed to 0. In the right node, the
-   * binary variable is fixed to 1. 
+   * binary variable is fixed to 1.
    * @param binary_variable This binary variable is fixed to either 0 or 1 in
    * the child node.
    * @pre binary_variable is in remaining_binary_variables_;
@@ -103,7 +103,7 @@ class MixedIntegerBranchAndBoundNode {
   /**
    * Getter for the parent node.
    */
-  MixedIntegerBranchAndBoundNode* parent() const { return parent_.get(); }
+  MixedIntegerBranchAndBoundNode* parent() const { return parent_; }
 
   /**
    * Getter for the binary variable, whose value was not fixed in
@@ -168,7 +168,7 @@ class MixedIntegerBranchAndBoundNode {
       prog_;  // Stores the optimization program in this node.
   std::unique_ptr<MixedIntegerBranchAndBoundNode> left_child_;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> right_child_;
-  std::unique_ptr<MixedIntegerBranchAndBoundNode> parent_;
+  MixedIntegerBranchAndBoundNode* parent_;
 
   // The newly fixed binary variable z, in the decision variables x.
   // The value of z was not fixed in the parent node, but is fixed in this

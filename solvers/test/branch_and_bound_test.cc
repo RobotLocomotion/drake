@@ -61,7 +61,6 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram2() {
   return prog;
 }
 
-
 // Construct an unbounded mixed-integer optimization problem.
 // min x(0) + 2*x(1) + 3 * x(2) + 2.5*x(3) + 2
 // s.t x(0) + x(1) - x(2) + x(3) <= 3
@@ -108,6 +107,17 @@ void CheckNewRootNode(
   EXPECT_TRUE(root.IsLeaf());
 }
 
+void TestProgSolve(MathematicalProgram* prog,
+                   const Eigen::Ref<const VectorXDecisionVariable>& x,
+                   const Eigen::Ref<const Eigen::VectorXd>& x_expected,
+                   double optimal_cost, double tol = 1E-4) {
+  const SolutionResult result = SolveWithGurobiOrMosek(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(prog->GetSolution(x), x_expected, tol,
+                              MatrixCompareType::absolute));
+  EXPECT_NEAR(prog->GetOptimalCost(), optimal_cost, tol);
+}
+
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
   auto prog = ConstructMathematicalProgram1();
 
@@ -126,12 +136,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
 
   EXPECT_THROW(root->IsOptimalSolutionIntegral(), std::runtime_error);
 
-  const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
-  EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5,
-                              MatrixCompareType::absolute));
-  EXPECT_NEAR(root->prog()->GetOptimalCost(), 1.5, 1E-5);
+  TestProgSolve(root->prog(), x, x_expected, 1.5, 1E-5);
   EXPECT_TRUE(root->IsOptimalSolutionIntegral());
 }
 
@@ -151,13 +157,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
 
   CheckNewRootNode(*root, {x(0), x(2), x(4)});
 
-  const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 0.7, 1, 1, 1.4, 0;
-  EXPECT_TRUE(CompareMatrices(root->prog()->GetSolution(x), x_expected, 1E-5,
-                              MatrixCompareType::absolute));
-  EXPECT_NEAR(root->prog()->GetOptimalCost(), -4.9, 1E-5);
+  TestProgSolve(root->prog(), x, x_expected, -4.9, 1E-5);
   EXPECT_FALSE(root->IsOptimalSolutionIntegral());
 }
 
@@ -178,10 +180,44 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
   CheckNewRootNode(*root, {x(0), x(2)});
 
   const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
-  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded || result == SolutionResult::kUnbounded);
+  EXPECT_EQ(result, SolutionResult::kUnbounded);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
+  auto prog = ConstructMathematicalProgram1();
+
+  std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
+  std::tie(root, std::ignore) =
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+  VectorDecisionVariable<4> x = root->prog()->decision_variables();
+
+  // Branch on variable x(0).
+  root->Branch(x(0));
+
+  const Eigen::Vector4d x_expected_l0(0, 1, 0, 0.5);
+  const Eigen::Vector4d x_expected_r0(1, 1, 0, 0);
+  TestProgSolve(root->left_child()->prog(), x, x_expected_l0, 1.5, 1E-5);
+  TestProgSolve(root->right_child()->prog(), x, x_expected_r0, 4, 1E-5);
+  EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
+  EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
+
+  // Branch on variable x(2). The child nodes created by branching on x(0) will
+  // be deleted.
+  root->Branch(x(2));
+  const Eigen::Vector4d x_expected_l2(0, 1, 0, 0.5);
+  const Eigen::Vector4d x_expected_r2(0, 4.1, 1, -1.05);
+  TestProgSolve(root->left_child()->prog(), x, x_expected_l2, 1.5, 1E-5);
+  TestProgSolve(root->right_child()->prog(), x, x_expected_r2, 12.35, 1E-5);
+  EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
+  EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
+
+  // Branch on variable x(1) and x(3). Since these two variables are continuous,
+  // expect a runtime error thrown.
+  EXPECT_THROW(root->Branch(x(1)), std::runtime_error);
+  EXPECT_THROW(root->Branch(x(3)), std::runtime_error);
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
   auto prog = ConstructMathematicalProgram2();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -189,9 +225,66 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
       MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
   VectorDecisionVariable<5> x = root->prog()->decision_variables();
 
+  // Branch on x(0)
   root->Branch(x(0));
+  const SolutionResult result_l0 =
+      SolveWithGurobiOrMosek(root->left_child()->prog());
+  EXPECT_EQ(result_l0, SolutionResult::kInfeasibleConstraints);
+  Eigen::Matrix<double, 5, 1> x_expected_r;
+  x_expected_r << 1, 1.0 / 3.0, 1, 1, 0;
+  TestProgSolve(root->right_child()->prog(), x, x_expected_r, -13.0 / 3.0,
+                1E-5);
+  EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
+
+  // Branch on x(2)
+  root->Branch(x(2));
+  Eigen::Matrix<double, 5, 1> x_expected_l;
+  x_expected_l << 1, 2.0 / 3.0, 0, 1, 1;
+  TestProgSolve(root->left_child()->prog(), x, x_expected_l, 23.0 / 6.0, 1E-5);
+  EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
+  x_expected_r << 0.7, 1, 1, 1.4, 0;
+  TestProgSolve(root->right_child()->prog(), x, x_expected_r, -4.9, 1E-5);
+  EXPECT_FALSE(root->right_child()->IsOptimalSolutionIntegral());
+
+  // Branch on x(4)
+  root->Branch(x(4));
+  x_expected_l << 0.7, 1, 1, 1.4, 0;
+  x_expected_r << 0.2, 2.0 / 3.0, 1, 1.4, 1;
+  TestProgSolve(root->left_child()->prog(), x, x_expected_l, -4.9, 1E-5);
+  TestProgSolve(root->right_child()->prog(), x, x_expected_r, -47.0 / 30, 1E-5);
+  EXPECT_FALSE(root->left_child()->IsOptimalSolutionIntegral());
+  EXPECT_FALSE(root->right_child()->IsOptimalSolutionIntegral());
+
+  // x(1) and x(3) are continuous variables, expect runtime_error thrown when we
+  // branch on them.
+  EXPECT_THROW(root->Branch(x(1)), std::runtime_error);
+  EXPECT_THROW(root->Branch(x(3)), std::runtime_error);
 }
 
+GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
+  auto prog = ConstructMathematicalProgram3();
+
+  std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
+  std::tie(root, std::ignore) =
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+  VectorDecisionVariable<4> x = root->prog()->decision_variables();
+
+  // Branch on x(0) and x(2), the child nodes are all unbounded.
+  for (const auto& x_binary : {x(0), x(2)}) {
+    root->Branch(x_binary);
+    const SolutionResult result_l =
+        SolveWithGurobiOrMosek(root->left_child()->prog());
+    const SolutionResult result_r =
+        SolveWithGurobiOrMosek(root->right_child()->prog());
+    EXPECT_EQ(result_l, SolutionResult::kUnbounded);
+    EXPECT_EQ(result_r, SolutionResult::kUnbounded);
+  }
+
+  // Expect to throw a runtime_error when branching on x(1) and x(3), as they
+  // are continuous variables.
+  EXPECT_THROW(root->Branch(x(1)), std::runtime_error);
+  EXPECT_THROW(root->Branch(x(3)), std::runtime_error);
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
