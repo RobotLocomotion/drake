@@ -35,11 +35,6 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "gflags": {
-      "Version": "2.2.0",
-      "Hints": ["@prefix@/lib/cmake/gflags"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "ignition-math3": {
       "Version": "3.2.0",
       "Hints": ["@prefix@/lib/cmake/ignition-math3"],
@@ -126,10 +121,8 @@
     "drake-common-text-logging-gflags": {
       "Type": "interface",
       "Includes": ["@prefix@/include"],
-      "Requires": [
-        ":drake",
-        "gflags:gflags"
-      ]
+      "Link-Flags": ["-lgflags"],
+      "Requires": [":drake"]
     },
     "drake-lcmtypes-cpp": {
       "Type": "interface",

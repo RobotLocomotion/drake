@@ -26,7 +26,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives:constant_vector_source",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 

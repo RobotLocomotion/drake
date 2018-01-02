@@ -72,6 +72,7 @@ libboost-all-dev
 libbz2-dev
 libexpat1-dev
 libfreetype6-dev
+libgflags-dev
 libglib2.0-dev
 libglu1-mesa-dev
 libhdf5-dev

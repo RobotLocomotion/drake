@@ -26,7 +26,7 @@ drake_cc_binary(
     deps = [
         "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -81,7 +81,7 @@ drake_cc_binary(
         "//drake/systems/sensors:optitrack_encoder",
         "//drake/systems/sensors:optitrack_sender",
         "//drake/util:lcm_util",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],

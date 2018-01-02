@@ -42,6 +42,7 @@ cmake
 diffstat
 doxygen
 dreal/dreal/dreal
+gflags
 glew
 glib
 graphviz

@@ -325,7 +325,7 @@ drake_cc_library(
     }),
     deps = [
         ":essential",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 
