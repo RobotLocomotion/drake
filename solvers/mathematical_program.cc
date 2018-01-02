@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include <spdlog/fmt/ostr.h>
+
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
@@ -149,34 +151,32 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
 }
 
-void MathematicalProgram::WithVariables(
+void MathematicalProgram::AddVariables(
     const Eigen::Ref<const VectorXDecisionVariable>& variables) {
-  const int num_existing_vars = num_vars();
+  const int num_existing_decision_vars = num_vars();
   for (int i = 0; i < variables.rows(); ++i) {
     if (variables(i).is_dummy()) {
-      std::ostringstream oss;
-      oss << "variables(" << i << ") is dummy.\n";
-      throw std::runtime_error(oss.str());
+      throw std::runtime_error(fmt::format("variables({}) is dummy", i));
     }
     if (decision_variable_index_.find(variables(i).get_id()) !=
         decision_variable_index_.end()) {
-      std::ostringstream oss;
-      oss << variables(i) << " is already a decision variable.\n";
-      throw std::runtime_error(oss.str());
+      throw std::runtime_error(
+          fmt::format("{} is already a decision variable.", variables(i)));
     }
     if (indeterminates_index_.find(variables(i).get_id()) !=
         indeterminates_index_.end()) {
-      std::ostringstream oss;
-      oss << variables(i) << " is already an indeterminate.\n";
-      throw std::runtime_error(oss.str());
+      throw std::runtime_error(
+          fmt::format("{} is already an indeterminate.", variables(i)));
     }
     decision_variable_index_.insert(
-        std::make_pair(variables(i).get_id(), num_existing_vars + i));
+        std::make_pair(variables(i).get_id(), num_existing_decision_vars + i));
   }
-  decision_variables_.conservativeResize(num_existing_vars + variables.rows());
+  decision_variables_.conservativeResize(num_existing_decision_vars +
+                                         variables.rows());
   decision_variables_.tail(variables.rows()) = variables;
-  x_values_.resize(num_existing_vars + variables.rows(), NAN);
-  x_initial_guess_.conservativeResize(num_existing_vars + variables.rows());
+  x_values_.resize(num_existing_decision_vars + variables.rows(), NAN);
+  x_initial_guess_.conservativeResize(num_existing_decision_vars +
+                                      variables.rows());
   x_initial_guess_.tail(variables.rows())
       .fill(std::numeric_limits<double>::quiet_NaN());
 }
@@ -248,23 +248,21 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
   return NewIndeterminates(rows, cols, names);
 }
 
-void MathematicalProgram::WithIndeterminates(
+void MathematicalProgram::AddIndeterminates(
     const Eigen::Ref<const VectorXDecisionVariable>& new_indeterminates) {
   const int num_old_indeterminates = num_indeterminates();
   for (int i = 0; i < new_indeterminates.rows(); ++i) {
     if (new_indeterminates(i).is_dummy()) {
-      std::ostringstream oss;
-      oss << "new_indeterminates(" << i << ") is dummy.\n";
-      throw std::runtime_error(oss.str());
+      throw std::runtime_error(
+          fmt::format("new_indeterminates({}) is dummy.", i));
     }
     if (indeterminates_index_.find(new_indeterminates(i).get_id()) !=
             indeterminates_index_.end() ||
         decision_variable_index_.find(new_indeterminates(i).get_id()) !=
             decision_variable_index_.end()) {
-      std::ostringstream oss;
-      oss << new_indeterminates(i)
-          << " already exists in the optimization program.\n";
-      throw std::runtime_error(oss.str());
+      throw std::runtime_error(
+          fmt::format("{} already exists in the optimization program.",
+                      new_indeterminates(i)));
     }
     if (new_indeterminates(i).get_type() !=
         symbolic::Variable::Type::CONTINUOUS) {

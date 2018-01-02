@@ -515,15 +515,14 @@ class MathematicalProgram {
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
 
-  /**
-   * Append some new variables to the end of the existing variables.
+  /** Appends new variables to the end of the existing variables.
    * @param variables The newly added variables.
-   * @pre variables should not intersect with the existing variables in the
+   * @pre `variables` should not intersect with the existing variables in the
    * optimization program.
-   * @pre each entry in `variables` should not be a dummy variable.
+   * @pre Each entry in `variables` should not be a dummy variable.
    * @throw runtime_error if the preconditions are not satisfied.
    */
-  void WithVariables(
+  void AddVariables(
       const Eigen::Ref<const VectorXDecisionVariable>& variables);
 
   /**
@@ -701,17 +700,17 @@ class MathematicalProgram {
   MatrixXIndeterminate NewIndeterminates(int rows, int cols,
                                          const std::string& name = "X");
 
-  /** Adds indeterminates to this MathematicalProgram.
+  /** Adds indeterminates.
    * This method appends some indeterminates to the end of the program's old
    * indeterminates.
    * @param new_indeterminates The indeterminates to be appended to the
    * program's old indeterminates.
-   * @pre new_indeterminates should not intersect with the program's old
+   * @pre `new_indeterminates` should not intersect with the program's old
    * indeterminates or decision variables.
-   * @pre each entry in new_indeterminates should not be dummy.
-   * @pre each entry in new_indeterminates should be of CONTINUOUS type.
+   * @pre Each entry in new_indeterminates should not be dummy.
+   * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  void WithIndeterminates(
+  void AddIndeterminates(
       const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
 
   /**
