@@ -348,6 +348,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "type_util",
+    hdrs = ["type_util.h"],
+)
+
+drake_cc_library(
     name = "unused",
     hdrs = ["unused.h"],
     deps = [
@@ -879,6 +884,14 @@ drake_cc_googletest(
     deps = [
         ":type_safe_index",
         ":unused",
+    ],
+)
+
+drake_cc_googletest(
+    name = "type_util_test",
+    deps = [
+        ":nice_type_name",
+        ":type_util",
     ],
 )
 

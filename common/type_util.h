@@ -1,0 +1,189 @@
+#pragma once
+
+/// @file
+/// Basic meta-programming utilities for types, focused on template parameter
+/// packs.
+
+#include <cstddef>
+#include <typeindex>
+#include <typeinfo>
+#include <type_traits>
+#include <utility>
+
+namespace drake {
+
+template <typename ... Ts>
+struct type_pack;
+
+namespace detail {
+
+// Provides type at given index.
+template <size_t N, size_t K, typename T, typename ... Ts>
+struct type_at_impl {
+  using type = typename type_at_impl<N, K + 1, Ts...>::type;
+};
+
+// Base case.
+template <size_t N, typename T, typename ... Ts>
+struct type_at_impl<N, N, T, Ts...> {
+  using type = T;
+};
+
+// Visits a type given a VisitWith mechanism, templated to permit
+// conditional execution.
+template <typename VisitWith, typename Visitor>
+struct type_visit_impl {
+  template <typename T, bool execute>
+  struct runner {
+    inline static void run(Visitor&& visitor) {
+      VisitWith::template run<T>(std::forward<Visitor>(visitor));
+    }
+  };
+  template <typename T>
+  struct runner<T, false> {
+    inline static void run(Visitor&&) {}
+  };
+};
+
+// Catches non-template types explicitly.
+template <typename T>
+struct type_pack_extract_impl {
+  // Defer to show that this is a bad instantiation.
+  static_assert(!std::is_same<T, T>::value, "Wrong template");
+};
+
+template <template <typename ... Ts> class Tpl, typename ... Ts>
+struct type_pack_extract_impl<Tpl<Ts...>> {
+  using type = type_pack<Ts...>;
+};
+
+// Provides type for pack expansion into an initializer list for
+// deterministic execution order.
+using DummyList = bool[];
+
+}  // namespace detail
+
+
+/// Extracts the Ith type from a sequence of types.
+template <size_t I, typename ... Ts>
+struct type_at {
+  static_assert(I >= 0 && I < sizeof...(Ts), "Invalid type index");
+  using type = typename detail::type_at_impl<I, 0, Ts...>::type;
+};
+
+/// Provides a tag to pass a type for ease of inference.
+template <typename T>
+struct type_tag {
+  using type = T;
+};
+
+/// Provides a tag to pass a parameter packs for ease of inference.
+template <typename ... Ts>
+struct type_pack {
+  /// Number of template parameters.
+  static constexpr int size = sizeof...(Ts);
+
+  /// Rebinds parameter pack to a given template.
+  template <template <typename...> class Tpl>
+  using bind = Tpl<Ts...>;
+
+  /// Extracts the Ith type from this sequence.
+  template <size_t I>
+  using type_at = typename drake::type_at<I, Ts...>::type;
+};
+
+/// Returns an expression (only to be used in `decltype`) for inferring
+/// and binding a parameter pack to a template.
+template <template <typename...> class Tpl, typename ... Ts>
+Tpl<Ts...> type_bind(type_pack<Ts...>);
+
+/// Extracts the inner template arguments (typename only) for a typename which
+/// is a template instantiation.
+template <typename T>
+using type_pack_extract = typename detail::type_pack_extract_impl<T>::type;
+
+/// Visit a type by constructing its default value.
+/// Useful for iterating over `type_tag`, `type_pack`, `std::integral_constant`,
+/// etc.
+struct visit_with_default {
+  template <typename T, typename Visitor>
+  inline static void run(Visitor&& visitor) {
+    static_assert(std::is_default_constructible<T>::value,
+                  "Type T must be default-constructible");
+    visitor(T{});
+  }
+};
+
+/// Visits a type by construct a template tag's default value.
+template <template <typename> class Tag = type_tag>
+struct visit_with_tag {
+  template <typename T, typename Visitor>
+  inline static void run(Visitor&& visitor) {
+    visitor(Tag<T>{});
+  }
+};
+
+/// Provides a check which will return true for any type.
+struct check_always_true {
+  template <typename T>
+  using check = std::true_type;
+};
+
+/// Provides backport of C++17 `std::negation`.
+// TODO(eric.cousineau): Remove this once C++17 is used.
+template <typename T>
+using negation = std::integral_constant<bool, !T::value>;
+
+/// Provides a check which returns whether `T` is different than `U`.
+template <typename T>
+struct check_different_from {
+  template <typename U>
+  using check = negation<std::is_same<T, U>>;
+};
+
+/// Visits each type in a type pack.
+/// @tparam VisitWith
+///   Visit helper. @see `visit_with_default`, `visit_with_tag.
+/// @tparam Check
+///   Type-checking helper.
+/// @param visitor Lambda or functor for visiting a type.
+/// @param pack Inference argument for Ts...
+/// @param check Inference argument for `Check`.
+template <class VisitWith = visit_with_default,
+          typename Check = check_always_true,
+          typename Visitor = void,
+          typename ... Ts>
+inline void type_visit(
+    Visitor&& visitor, type_pack<Ts...> pack = {}, Check check = {}) {
+  (void)detail::DummyList{(
+      detail::type_visit_impl<VisitWith, Visitor>::
+          template runner<Ts, Check::template check<Ts>::value>::
+              run(std::forward<Visitor>(visitor)),
+      true)...};
+}
+
+/// Transforms an integer sequence.
+/// @tparam TForm
+///   Type with the interface `TForm::template type<T>::value`,
+///   which operates on a constexpr value.
+/// @tparam T Integral type.
+/// @tparam Values... Integral values.
+template <typename TForm, typename T, T... Values>
+auto sequence_transform(TForm = {}, std::integer_sequence<T, Values...> = {}) {
+  return std::integer_sequence<T, TForm::template type<Values>::value...>{};
+}
+
+/// Adds a constant value to a constexpr value.
+template <typename T, T x>
+struct constant_add {
+  template <T y>
+  using type = std::integral_constant<T, x + y>;
+};
+
+/// Provides short-hand for hashing a type.
+template <typename T>
+constexpr size_t type_hash() {
+  return std::type_index(typeid(T)).hash_code();
+}
+
+}  // namespace drake
