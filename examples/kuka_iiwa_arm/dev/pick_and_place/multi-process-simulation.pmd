@@ -1,25 +1,25 @@
 group "0.simulators" {
     cmd "0.0.single-iiwa-simulator" {
-        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_simulator --configuration_file drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/single_iiwa.pick_and_place_configuration";
+        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_simulator --configuration_file drake/examples/kuka_iiwa_arm/pick_and_place/configuration/single_iiwa.pick_and_place_configuration";
         host = "localhost";
     }
     cmd "0.1.dual-iiwa-simulator" {
-        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_simulator --configuration_file drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/dual_iiwa.pick_and_place_configuration";
+        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_simulator --configuration_file drake/examples/kuka_iiwa_arm/pick_and_place/configuration/dual_iiwa.pick_and_place_configuration";
         host = "localhost";
     }
 }
 
 group "1.planners" {
     cmd "1.0.single-iiwa-planner" {
-        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_planner --nouse_channel_suffix --spdlog_level debug --configuration_file drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/single_iiwa.pick_and_place_configuration";
+        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_planner --nouse_channel_suffix --spdlog_level debug --configuration_file drake/examples/kuka_iiwa_arm/pick_and_place/configuration/single_iiwa.pick_and_place_configuration";
         host = "localhost";
     }
     cmd "1.1.dual-iiwa-planner-0" {
-        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_planner --task_index 0 --spdlog_level debug --configuration_file drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/dual_iiwa.pick_and_place_configuration";
+        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_planner --task_index 0 --spdlog_level debug --configuration_file drake/examples/kuka_iiwa_arm/pick_and_place/configuration/dual_iiwa.pick_and_place_configuration";
         host = "localhost";
     }
     cmd "1.2.dual-iiwa-planner-1" {
-        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_planner --task_index 1 --spdlog_level debug --configuration_file drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/dual_iiwa.pick_and_place_configuration";
+        exec = "bazel-bin/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_pick_and_place_planner --task_index 1 --spdlog_level debug --configuration_file drake/examples/kuka_iiwa_arm/pick_and_place/configuration/dual_iiwa.pick_and_place_configuration";
         host = "localhost";
     }
 }

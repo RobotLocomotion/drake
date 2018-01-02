@@ -35,7 +35,7 @@ drake_cc_binary(
     add_test_rule = 1,
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:configuration",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:configuration",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",
     ],
@@ -53,7 +53,7 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration_parsing",  # noqa
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
         "//drake/systems/analysis:simulator",

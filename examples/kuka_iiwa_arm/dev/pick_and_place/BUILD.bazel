@@ -8,10 +8,6 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "@drake//tools/skylark:drake_proto.bzl",
-    "drake_cc_proto_library",
-)
-load(
     "//tools/skylark:6996.bzl",
     "adjust_labels_for_drake_hoist",
 )
@@ -20,31 +16,6 @@ package(
     default_visibility = adjust_labels_for_drake_hoist([
         "//drake/examples/kuka_iiwa_arm/dev:__subpackages__",
     ]),
-)
-
-drake_cc_proto_library(
-    name = "pick_and_place_configuration_proto",
-    srcs = [
-        "pick_and_place_configuration.proto",
-    ],
-)
-
-drake_cc_library(
-    name = "pick_and_place_configuration_parsing",
-    srcs = [
-        "pick_and_place_configuration_parsing.cc",
-    ],
-    hdrs = [
-        "pick_and_place_configuration_parsing.h",
-    ],
-    deps = [
-        ":pick_and_place_configuration_proto",
-        "//drake/common:find_resource",
-        "//drake/common/proto:protobuf",
-        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
-        "//drake/manipulation/util:world_sim_tree_builder",
-        "//drake/math:geometric_transform",
-    ],
 )
 
 drake_cc_library(
@@ -123,7 +94,7 @@ drake_cc_binary(
     srcs = ["lcm_pick_and_place_planner.cc"],
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:configuration",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:configuration",
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
@@ -133,7 +104,7 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:lcm_planner",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration_parsing",  # noqa
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
         "//drake/lcmtypes:schunk",
@@ -153,7 +124,7 @@ drake_cc_binary(
     srcs = ["lcm_pick_and_place_simulator.cc"],
     data = [
         "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:configuration",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:configuration",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",
     ],
@@ -163,8 +134,8 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:lcm_plant",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration_parsing",  # noqa
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
         "//drake/lcmtypes:viewer",
@@ -177,21 +148,6 @@ drake_cc_binary(
         "@gflags",
         "@lcmtypes_bot2_core",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "pick_and_place_configuration_parsing_test",
-    data = [
-        ":configuration",
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
     ],
 )
 

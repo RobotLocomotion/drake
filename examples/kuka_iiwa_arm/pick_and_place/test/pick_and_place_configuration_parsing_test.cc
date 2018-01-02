@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration_parsing.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration_parsing.h"
 
 #include <string>
 #include <vector>
@@ -8,8 +8,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration.pb.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.pb.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
@@ -77,7 +77,7 @@ const std::vector<Vector3<double>> kObjectPositions{{0.80, 0.36, 1.05}};
 const std::vector<Vector3<double>> kObjectRpy{{0.0, 0.0, 0.0}};
 
 const char kConfigurationFile[] =
-    "drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/"
+    "drake/examples/kuka_iiwa_arm/pick_and_place/configuration/"
     "yellow_posts.pick_and_place_configuration";
 
 ::testing::AssertionResult CompareIsometry3Vectors(

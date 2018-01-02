@@ -7,9 +7,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/monolithic_pick_and_place_system.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
@@ -31,7 +31,7 @@ DEFINE_bool(quick, false,
             "without executing the entire task");
 DEFINE_bool(single_move, false, "Move the object once and then stop.");
 DEFINE_string(configuration_file,
-              "drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/"
+              "drake/examples/kuka_iiwa_arm/pick_and_place/configuration/"
               "yellow_posts.pick_and_place_configuration",
               "Path to the configuration file.");
 
