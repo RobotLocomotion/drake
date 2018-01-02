@@ -206,46 +206,39 @@ class Context {
   // =========================================================================
   // Accessors and Mutators for Input.
 
-  /// Connects the input port at @p index to the value source @p port_value.
-  /// Disconnects whatever value source was previously there, and deregisters
-  /// it from the output port on which it depends.  In some Context
-  /// implementations, may require a recursive search through a tree of
-  /// subcontexts. Asserts if @p index is out of range.
-  virtual void SetInputPortValue(
-      int index, std::unique_ptr<InputPortValue> port_value) = 0;
-
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
 
   /// Connects the input port at @p index to a FreestandingInputPortValue with
-  /// the given vector @p value. Asserts if @p index is out of range.
-  void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
-    SetInputPortValue(
-        index, std::make_unique<FreestandingInputPortValue>(std::move(value)));
-  }
-
-  /// Connects the input port at @p index to a FreestandingInputPortValue with
   /// the given abstract @p value. Asserts if @p index is out of range.
-  void FixInputPort(int index, std::unique_ptr<AbstractValue> value) {
-    SetInputPortValue(
-        index, std::make_unique<FreestandingInputPortValue>(std::move(value)));
-  }
-
-  /// Connects the input port at @p index to a FreestandingInputPortValue with
-  /// the given vector @p value. Asserts if @p index is out of range.
   /// Returns a reference to the allocated FreestandingInputPortValue that will
   /// remain valid until this input port's value source is replaced or the
-  /// context is destroyed. You may use that reference to modify the input
+  /// %Context is destroyed. You may use that reference to modify the input
   /// port's value using the appropriate FreestandingInputPortValue method,
   /// which will ensure that invalidation notifications are delivered.
   FreestandingInputPortValue& FixInputPort(
+      int index, std::unique_ptr<AbstractValue> value) {
+    auto free_value_ptr =
+        std::make_unique<FreestandingInputPortValue>(std::move(value));
+    FreestandingInputPortValue& free_value = *free_value_ptr;
+    SetInputPortValue(index, std::move(free_value_ptr));
+    return free_value;
+  }
+
+  /// Connects the input port at @p index to a FreestandingInputPortValue with
+  /// the given vector @p vec. Otherwise same as above method.
+  FreestandingInputPortValue& FixInputPort(
+      int index, std::unique_ptr<BasicVector<T>> vec) {
+    return FixInputPort(
+        index, std::make_unique<Value<BasicVector<T>>>(std::move(vec)));
+  }
+
+  /// Same as above method but starts with an Eigen vector whose contents are
+  /// used to initialize a BasicVector in the FreestandingInputPortValue.
+  FreestandingInputPortValue& FixInputPort(
       int index, const Eigen::Ref<const VectorX<T>>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data);
-    auto freestanding =
-        std::make_unique<FreestandingInputPortValue>(std::move(vec));
-    FreestandingInputPortValue& freestanding_ref = *freestanding;
-    SetInputPortValue(index, std::move(freestanding));
-    return freestanding_ref;
+    return FixInputPort(index, std::move(vec));
   }
 
   /// Evaluates and returns the value of the input port identified by
@@ -489,12 +482,24 @@ class Context {
   /// Asserts if @p index is out of range.
   virtual const InputPortValue* GetInputPortValue(int index) const = 0;
 
-  /// Returns the InputPortValue at the given @p index from the given
-  /// @p context. Returns nullptr if the given port has never been set with
-  /// SetInputPortValue(). Asserts if @p index is out of range.
+  /// Allows derived classes to invoke the protected method on subcontexts.
   static const InputPortValue* GetInputPortValue(const Context<T>& context,
                                                  int index) {
     return context.GetInputPortValue(index);
+  }
+
+  /// Connects the input port at @p index to the value source @p port_value.
+  /// Disconnects whatever value source was previously there, and deregisters
+  /// it from the output port on which it depends.  In some Context
+  /// implementations, may require a recursive search through a tree of
+  /// subcontexts. Asserts if @p index is out of range.
+  virtual void SetInputPortValue(
+      int index, std::unique_ptr<InputPortValue> port_value) = 0;
+
+  /// Allows derived classes to invoke the protected method on subcontexts.
+  static void SetInputPortValue(Context<T>* context, int index,
+                                std::unique_ptr<InputPortValue> port_value) {
+    context->SetInputPortValue(index, std::move(port_value));
   }
 
  private:

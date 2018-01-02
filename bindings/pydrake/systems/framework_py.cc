@@ -28,6 +28,10 @@ PYBIND11_MODULE(framework, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 
+  // TODO(eric.cousineau): pybind11 defaults to C++-like copies when dealing
+  // with rvalues. We should wrap this into a drake-level binding, so that we
+  // can default this to `reference` or `reference_internal.`
+
   // Aliases for commonly used return value policies.
   // `py_ref` is used when `keep_alive` is explicitly used (e.g. for extraction
   // methods, like `GetMutableSubsystemState`).
@@ -123,7 +127,7 @@ PYBIND11_MODULE(framework, m) {
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort))
+             &Context<T>::FixInputPort), py_iref)
     .def("get_time", &Context<T>::get_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
@@ -152,10 +156,14 @@ PYBIND11_MODULE(framework, m) {
     .def("Connect",
          py::overload_cast<const OutputPort<T>&, const InputPortDescriptor<T>&>(
              &DiagramBuilder<T>::Connect))
-    .def("ExportInput", &DiagramBuilder<T>::ExportInput)
-    .def("ExportOutput", &DiagramBuilder<T>::ExportOutput)
+    .def("ExportInput", &DiagramBuilder<T>::ExportInput, py_iref)
+    .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py_iref)
     .def("Build", &DiagramBuilder<T>::Build)
     .def("BuildInto", &DiagramBuilder<T>::BuildInto);
+
+  // TODO(eric.cousineau): Figure out how to handle template-specialized method
+  // signatures(e.g. GetValue<T>()).
+  py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
 
   py::class_<OutputPort<T>>(m, "OutputPort");
 
