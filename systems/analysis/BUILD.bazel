@@ -192,5 +192,4 @@ drake_cc_googletest(
     ],
 )
 
-
 add_lint_tests()
