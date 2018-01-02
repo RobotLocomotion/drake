@@ -1,0 +1,18 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install(
+    name = "install_data",
+    visibility = ["//visibility:public"],
+    deps = adjust_labels_for_drake_hoist([
+        "//drake/manipulation/models/iiwa_description:install_data",
+        "//drake/manipulation/models/jaco_description:install_data",
+        "//drake/manipulation/models/wsg_50_description:install_data",
+        "//drake/manipulation/models/xtion_description:install_data",
+    ]),
+)
+
+add_lint_tests()

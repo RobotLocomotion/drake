@@ -20,6 +20,10 @@ load(":wrapped_ctx.bzl", "unwrap")
 
 def _write_build(repo_ctx, cflags, linkopts):
   # Silence a warning about unknown cflags.
+  unsupported_cflags = ["frounding-math", "ffloat-store", "ffloat-store", "msse", "mfpmath"]
+  cflags = [cflag for cflag in cflags
+            if all([not cflag.startswith("-" + unsupported_cflag)
+                    for unsupported_cflag in unsupported_cflags])]
   if "-pthread" in cflags and "-pthread" in linkopts:
     cflags.remove("-pthread")
   includes, defines = _parse_cflags(repo_ctx, cflags)

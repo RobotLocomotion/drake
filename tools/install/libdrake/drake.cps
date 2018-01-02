@@ -7,6 +7,10 @@
   "Name": "drake",
   "Website": "http://drake.mit.edu/",
   "Requires": {
+    "Boost": {
+      "Version": "1.58",
+      "X-CMake-Find-Args": ["MODULE"]
+    },
     "bot2-core-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/bot2-core-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
@@ -24,6 +28,11 @@
     "fmt": {
       "Version": "3.0.1",
       "Hints": ["@prefix@/lib/cmake/fmt"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "gflags": {
+      "Version": "2.2.0",
+      "Hints": ["@prefix@/lib/cmake/gflags"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "ignition-math3": {
@@ -45,18 +54,12 @@
       "Hints": ["@prefix@/lib/cmake/optitrack"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "protobuf": {
-      "Version": "3.1.0",
-      "Hints": ["@prefix@/lib/cmake/protobuf"],
-      "X-CMake-Find-Args": ["CONFIG"]
+    "Protobuf": {
+      "Version": "2.6.1",
+      "X-CMake-Find-Args": ["MODULE"]
     },
     "robotlocomotion-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "scs": {
-      "Version": "1.2.6",
-      "Hints": ["@prefix@/lib/cmake/scs"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "SDFormat": {
@@ -89,19 +92,17 @@
     "drake": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libdrake.so",
-      "Includes": [
-        "@prefix@/include"
-      ],
+      "Includes": ["@prefix@/include"],
       "Compile-Features": ["c++14"],
       "Link-Flags": ["-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
-        "scs:scsdir",
         "SDFormat:sdformat",
         "tinyobjloader:tinyobjloader"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
+        "Boost:boost",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Bullet:BulletCollision",
         "Eigen3:Eigen",
@@ -109,11 +110,19 @@
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
         "optitrack:lcmtypes_optitrack-cpp",
-        "protobuf:protobuf",
+        "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "stx:stx",
         "yaml-cpp:yaml-cpp"
+      ]
+    },
+    "drake-common-text-logging-gflags": {
+      "Type": "interface",
+      "Includes": ["@prefix@/include"],
+      "Requires": [
+        ":drake",
+        "gflags:gflags"
       ]
     },
     "drake-lcmtypes-cpp": {
@@ -129,5 +138,8 @@
   },
   "X-CMake-Variables": {
     "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
+  },
+  "X-CMake-Variables-Init": {
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
   }
 }

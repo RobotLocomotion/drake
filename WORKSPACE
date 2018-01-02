@@ -18,6 +18,7 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:which.bzl", "which")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
@@ -52,7 +53,35 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
+# This local repository imports the protobuf build rules for Bazel (based on
+# the upstream protobuf.bzl build rules).  The protobuf runtime is loaded
+# into "libprotobuf" via pkg-config below.
+local_repository(
+    name = "com_google_protobuf",
+    # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
+    # this should use an absolute path (so this should be prepended by
+    # __workspace_dir__).  However, in a clean build, this did not work.  We
+    # should investigate that and fix it.
+    path = "third_party/com_github_google_protobuf",
+)
+
+new_local_repository(
+    name = "find_protobuf_cmake",
+    build_file = "tools/workspace/protobuf/find_protobuf_cmake.BUILD.bazel",
+    path = __workspace_dir__ + "/third_party/com_kitware_gitlab_cmake_cmake",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
+
+pkg_config_package(
+    name = "ibex",
+    modname = "ibex",
+)
+
+pkg_config_package(
+    name = "dreal",
+    modname = "dreal",
+)
 
 pkg_config_package(
     name = "glib",
@@ -62,6 +91,19 @@ pkg_config_package(
 pkg_config_package(
     name = "gthread",
     modname = "gthread-2.0",
+)
+
+# Load in the paths and flags to the system version of the protobuf runtime;
+# the Bazel build rules are loaded into "protobuf" via local_repository above.
+pkg_config_package(
+    name = "libprotobuf",
+    modname = "protobuf",
+)
+
+# Find the protoc binary on $PATH.
+which(
+    name = "protoc",
+    command = "protoc",
 )
 
 load("//tools/workspace/python:python.bzl", "python_repository")
@@ -97,8 +139,8 @@ github_archive(
 github_archive(
     name = "styleguide",
     repository = "RobotLocomotion/styleguide",
-    commit = "8d38c5909a5ab38824d7f4566b3f3c6ae4557826",
-    sha256 = "09baa2280a63b9d2efe5c07d08f4674339b5b2a0424f71c429c33ac1783a4cd8",  # noqa
+    commit = "5777e74b82e46f29ffbf41ffed0209d9d5f2ccb5",
+    sha256 = "434789debb7a81872302af5958a0b25bf5e3cafb7e666ed7a4218938bd8cc874",  # noqa
     build_file = "tools/workspace/styleguide/styleguide.BUILD.bazel",  # noqa
 )
 
@@ -311,10 +353,12 @@ mosek_repository(
     name = "mosek",
 )
 
+# We directly declare a git_repository because the snopt source code requires
+# authentication, and our github_archive does not (yet, easily) support that.
 git_repository(
     name = "snopt",
     remote = "git@github.com:RobotLocomotion/snopt.git",
-    commit = "2ec980370eeb72897135b11570033a19bda885a7",
+    commit = "0f475624131c9ca4d5624e74c3f8273ccc926f9b",
 )
 
 # Python Libraries
@@ -333,15 +377,6 @@ bind(
     actual = "@six_archive//:six",
 )
 
-# When updating the version of protobuf,
-# update tools/install/protobuf/protobuf.cps
-github_archive(
-    name = "protobuf",
-    repository = "google/protobuf",
-    commit = "v3.1.0",
-    sha256 = "fb2a314f4be897491bb2446697be693d489af645cb0e165a85e7e64e07eb134d",  # noqa
-)
-
 pypi_archive(
     name = "semantic_version",
     version = "2.6.0",
@@ -353,8 +388,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "a6110cf2e769e9ff262a98ed18506ad565a14e89",
-    sha256 = "62b5054705152ba971a6e9a358bfcc1359eca6f3ba8e5788befd82d606933d98",  # noqa
+    commit = "544c1ded81b926a05b3dedb06504bd17bc8d0a95",
+    sha256 = "0b97cbaae107e5ddbe89073b6e42b679130f1eb81b913aa93da9e72e032a137b",  # noqa
     build_file = "tools/workspace/pycps/pycps.BUILD.bazel",
 )
 
@@ -398,7 +433,7 @@ bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
     commit = "bac3dfb42cc7",
-    sha256 = "b10a3ac68ed46f8d5780ddc687e6c89c71cb4c1e4e65449197f8aac76be903d8",  # noqa
+    sha256 = "212211eddd9fa010b4b61a2dae87cd84a66a8b78ed302612d214b7388f9bc198",  # noqa
     strip_prefix = "osrf-sdformat-bac3dfb42cc7",
     build_file = "tools/workspace/sdformat/sdformat.BUILD.bazel",
 )

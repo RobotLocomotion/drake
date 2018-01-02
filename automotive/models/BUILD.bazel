@@ -1,0 +1,40 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
+
+package(default_visibility = ["//visibility:public"])
+
+alias(
+    name = "yaml_to_obj",
+    actual = adjust_label_for_drake_hoist(
+        "//drake/automotive/maliput/utility:yaml_to_obj",
+    ),
+)
+
+genrule(
+    name = "speed_bump_genrule",
+    srcs = ["speed_bump/speed_bump.yaml"],
+    outs = [
+        "speed_bump/speed_bump.obj",
+        "speed_bump/speed_bump.mtl",
+    ],
+    cmd = " ".join([
+        "$(location :yaml_to_obj)",
+        "--spdlog_level warn",
+        "--yaml_file '$<'",
+        "--obj_dir $(@D)/speed_bump",
+        "--obj_file speed_bump",
+    ]),
+    tools = [":yaml_to_obj"],
+)
+
+install_data(
+    extra_prod_models = [
+        "speed_bump/speed_bump.mtl",
+        "speed_bump/speed_bump.obj",
+    ],
+)
+
+add_lint_tests()

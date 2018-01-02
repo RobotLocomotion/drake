@@ -13,7 +13,15 @@ load(
     "drake_transitive_installed_hdrs_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_labels_for_drake_hoist",
+    "HAS_MOVED_6996",
+)
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
+load("//tools:drake.bzl", "drake_cc_binary")
+
+LIBDRAKE_COMPONENTS = adjust_labels_for_drake_hoist(LIBDRAKE_COMPONENTS)
 
 cmake_config(
     cps_file_name = "drake.cps",
@@ -29,7 +37,7 @@ install_cmake_config(
 # LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
 # that the binary package will not contain any references to shared libraries
 # inside the build tree.
-cc_binary(
+drake_cc_binary(
     name = "libdrake.so",
     linkshared = 1,
     linkstatic = 1,
@@ -49,6 +57,7 @@ install(
     name = "install",
     targets = ["libdrake.so"],
     hdrs = [":libdrake_headers"],
+    hdr_dest = "include/drake" if HAS_MOVED_6996 else "include",
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
     deps = [
         ":install_cmake_config",
@@ -99,18 +108,24 @@ cc_library(
 # required *.so's that are WORKSPACE downloads (such as VTK, Gurobi, etc).
 #
 # TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
-# *.so files (Gurobi, LCM, Mosek, SCS, TinyXML2, VTK) for us, without us having
-# to know up-front here which dependencies are coming from the WORKSPACE in the
-# form of *.so.
+# *.so files for us, without us having to know up-front here which dependencies
+# are coming from the WORKSPACE in the form of *.so.
 cc_library(
     name = "drake_shared_library",
     hdrs = [":libdrake_headers"],
-    visibility = ["//drake/bindings/pydrake:__pkg__"],
+    include_prefix = "drake" if HAS_MOVED_6996 else None,
+    strip_include_prefix = "/" if HAS_MOVED_6996 else None,
+    visibility = adjust_labels_for_drake_hoist([
+        "//drake/bindings/pydrake:__subpackages__",
+        "//drake/examples:__subpackages__",
+    ]),
     deps = [
         ":gurobi_deps",
         ":mosek_deps",
         ":vtk_deps",
+        "@bullet//:BulletCollision",
         "@lcm",
+        "@libprotobuf",
         "@scs//:scsdir",
         "@tinyxml2",
     ],

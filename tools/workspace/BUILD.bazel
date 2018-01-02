@@ -20,6 +20,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "drake_visualizer",
     "eigen",
     "fcl",
+    "find_protobuf_cmake",
     "fmt",
     "ignition_math",
     "ignition_rndf",
@@ -42,8 +43,13 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gflags",
     "jchart2d",
     "optitrack_driver",
-    "protobuf",
-]]
+]] + select({
+    "//tools:with_gurobi": ["@gurobi//:install"],
+    "//conditions:default": [],
+}) + select({
+    "//tools:with_mosek": ["@mosek//:install"],
+    "//conditions:default": [],
+})
 
 install(
     name = "install_external_packages",

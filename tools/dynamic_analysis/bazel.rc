@@ -18,8 +18,10 @@ build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
 test:asan --run_under=//tools/dynamic_analysis:asan
 test:asan --test_env=ASAN_OPTIONS
+test:asan --test_env=LSAN_OPTIONS
 test:asan --test_env=ASAN_SYMBOLIZER_PATH
-test:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan
+# LSan is run with ASan by default
+test:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
 test:asan --test_lang_filters=-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
@@ -37,9 +39,11 @@ build:asan_everything --linkopt -fsanitize=address
 
 test:asan_everything --test_env=GRB_LICENSE_FILE
 test:asan_everything --test_env=HOME
-test:asan_everything --test_tag_filters=-no_asan
+# LSan is run with ASan by default
+test:asan_everything --test_tag_filters=-no_asan,-no_lsan
 test:asan_everything --run_under=//tools/dynamic_analysis:asan
 test:asan_everything --test_env=ASAN_OPTIONS
+test:asan_everything --test_env=LSAN_OPTIONS
 test:asan_everything --test_env=ASAN_SYMBOLIZER_PATH
 test:asan_everything --test_lang_filters=-py
 # Typical slowdown introduced by AddressSanitizer is 2x.

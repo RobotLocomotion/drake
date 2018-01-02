@@ -1,5 +1,11 @@
 # -*- python -*-
 
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_label_for_drake_hoist",
+    "adjust_labels_for_drake_hoist",
+)
+
 # Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
 # matlab/cmake/flags.cmake.
 
@@ -121,7 +127,7 @@ def installed_headers_for_dep(dep):
         last_slash = dep.rindex("/")
         libname = dep[last_slash + 1:]
         result = dep + ":" + libname + suffix
-    return result
+    return adjust_label_for_drake_hoist(result)
 
 def installed_headers_for_drake_deps(deps):
     """Filters `deps` to find drake labels (i.e., discard third_party labels),
@@ -223,6 +229,7 @@ def _raw_drake_cc_library(
         name,
         hdrs = [],
         srcs = [],  # Cannot list any headers here.
+        data = [],
         deps = [],
         declare_installed_headers = 0,
         install_hdrs_exclude = [],
@@ -232,6 +239,8 @@ def _raw_drake_cc_library(
     a drake_installed_headers() target.  (This should be set if and only if the
     caller is drake_cc_library.)
     """
+    data = adjust_labels_for_drake_hoist(data)
+    deps = adjust_labels_for_drake_hoist(deps)
     _check_library_deps_blacklist(name, deps)
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
@@ -248,6 +257,7 @@ def _raw_drake_cc_library(
         hdrs = hdrs,
         srcs = srcs,
         deps = deps,
+        data = data,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         **kwargs)
@@ -345,7 +355,9 @@ def drake_cc_binary(
         data = [],
         deps = [],
         copts = [],
+        linkopts = [],
         gcc_copts = [],
+        linkshared = 0,
         linkstatic = 1,
         testonly = 0,
         add_test_rule = 0,
@@ -365,6 +377,8 @@ def drake_cc_binary(
     tests. The smoke-test will be named <name>_test. You may override cc_test
     defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
     """
+    data = adjust_labels_for_drake_hoist(data)
+    deps = adjust_labels_for_drake_hoist(deps)
     new_copts = _platform_copts(copts, gcc_copts)
     new_srcs, new_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
@@ -373,6 +387,21 @@ def drake_cc_binary(
         copts = new_copts,
         testonly = testonly,
         **kwargs)
+    if linkshared == 1:
+        # On Linux, we need to disable "new" dtags in the linker so that we use
+        # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is
+        # checked *before* LD_LIBRARY_PATH, which is important to avoid using
+        # the MATLAB versions of certain libraries (protobuf).  macOS doesn't
+        # understand this flag, so it is conditional on Linux only.  Note that
+        # the string we use for rpath here doesn't actually matter; it will be
+        # replaced during installation later.
+        linkopts = select({
+            "//tools/cc_toolchain:apple": linkopts,
+            "//conditions:default": linkopts + [
+                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
+            ],
+        })
+
     native.cc_binary(
         name = name,
         srcs = new_srcs,
@@ -380,7 +409,9 @@ def drake_cc_binary(
         deps = new_deps,
         copts = new_copts,
         testonly = testonly,
+        linkshared = linkshared,
         linkstatic = linkstatic,
+        linkopts = linkopts,
         **kwargs)
 
     # Also generate the OS X debug symbol file for this binary.
@@ -416,6 +447,7 @@ def drake_cc_test(
         name,
         size = None,
         srcs = [],
+        data = [],
         deps = [],
         copts = [],
         gcc_copts = [],
@@ -432,6 +464,8 @@ def drake_cc_test(
     in debug-mode builds, so the test will trivially pass. This option should
     be used only rarely, and the reason should always be documented.
     """
+    data = adjust_labels_for_drake_hoist(data)
+    deps = adjust_labels_for_drake_hoist(deps)
     if size == None:
         size = "small"
     if not srcs:
@@ -455,6 +489,7 @@ def drake_cc_test(
         name = name,
         size = size,
         srcs = new_srcs,
+        data = data,
         deps = new_deps,
         copts = new_copts,
         **kwargs)
@@ -488,10 +523,59 @@ def drake_cc_googletest(
     be used only rarely, and the reason should always be documented.
     """
     if use_default_main:
-        deps += ["//drake/common/test_utilities:drake_cc_googletest_main"]
+        deps = deps + adjust_labels_for_drake_hoist([
+            "//drake/common/test_utilities:drake_cc_googletest_main",
+        ])
     else:
-        deps += ["@gtest//:without_main"]
+        deps = deps + ["@gtest//:without_main"]
     drake_cc_test(
         name = name,
         deps = deps,
+        **kwargs)
+
+def drake_example_cc_binary(
+        srcs = [],
+        deps = [],
+        **kwargs):
+    """Creates a rule to declare a C++ binary using `libdrake.so`.
+
+    This rule is a wrapper around `drake_cc_binary()`. It adds `libdrake.so`
+    and `drake_lcmtypes_headers` as dependencies to the target.
+
+    This allows the creation of examples for drake that depend on `libdrake.so`
+    which let the process discover the location of drake resources at runtime
+    based on the location of `libdrake.so` which is loaded by the process.
+
+    This macro will fail-fast if there is ODR violation. This happens if this
+    macro adds dependendies (`deps` or `srcs`) that are already part of
+    libdrake.so or drake_lcmtypes_headers.
+    """
+    if not native.package_name().startswith("examples"):
+        fail("`drake_example_cc_binary()` macro should only be used in examples \
+            subdirectory.")
+    # This verifies that there is no ODR violation. Targets that are part of
+    # libdrake should not be included a second time. Only targets that are in
+    # //examples (historically //drake/examples) or in the workspace can be
+    # added as dependencies. By extension, this makes sure that
+    # //tools/install/libdrake:drake_shared_library is not added as a
+    # dependency a second time.
+    for dep in deps:
+        if not (dep.startswith('@') or
+                dep.startswith(':') or
+                dep.startswith('//examples') or
+                dep.startswith('//drake/examples')):
+            fail("Dependency used in `drake_example_cc_binary()` macro should\
+                not already be part of libdrake.so: %s" % dep)
+    # This makes sure that //tools/install/libdrake:libdrake.so and
+    # //lcmtypes:drake_lcmtypes_headers are not added to srcs a second time.
+    if ("//tools/install/libdrake:libdrake.so" in srcs or
+            "//lcmtypes:drake_lcmtypes_headers"in srcs):
+        fail("//tools/install/libdrake:libdrake.so and \
+            //lcmtypes:drake_lcmtypes_headers are already included in \
+            `drake_example_cc_binary()` macro")
+    drake_cc_binary(
+        srcs = srcs +
+        ["//tools/install/libdrake:libdrake.so",
+         "//lcmtypes:drake_lcmtypes_headers"],
+        deps = deps + ["//tools/install/libdrake:drake_shared_library"],
         **kwargs)
