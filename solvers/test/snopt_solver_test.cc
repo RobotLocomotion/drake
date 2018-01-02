@@ -16,6 +16,27 @@ TEST_P(LinearProgramTest, TestLP) {
   prob()->RunProblem(&solver);
 }
 
+TEST_F(InfeasibleLinearProgramTest0, TestSnopt) {
+  prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
+  SnoptSolver solver;
+  if (solver.available()) {
+    const auto solver_result = solver.Solve(*prog_);
+    EXPECT_EQ(solver_result, SolutionResult::kInfeasibleConstraints);
+    const Eigen::Vector2d x_val = prog_->GetSolution(prog_->decision_variables());
+    EXPECT_EQ(prog_->GetOptimalCost(), -x_val(0) - x_val(1));
+  }
+}
+
+TEST_F(UnboundedLinearProgramTest0, TestSnopt) {
+  prog_->SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+  SnoptSolver solver;
+  if (solver.available()) {
+    const auto solver_result = solver.Solve(*prog_);
+    EXPECT_EQ(solver_result, SolutionResult::kUnbounded);
+    EXPECT_EQ(prog_->GetOptimalCost(), -std::numeric_limits<double>::infinity());
+  }
+}
+
 INSTANTIATE_TEST_CASE_P(
     SnoptTest, LinearProgramTest,
     ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
