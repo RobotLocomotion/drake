@@ -1,4 +1,9 @@
-//------------------------------------------------------------------------------
+#pragma once
+
+// Putting this document in drake::systems namespace makes the links work.
+namespace drake {
+namespace systems {
+
 /** @defgroup cache_design_notes System Cache Design and Implementation Notes
 
 <!-- Fluff needed to keep Doxygen from misformatting due to quotes and
@@ -10,17 +15,18 @@
                                 </center>
 @endparblock
 
+@warning DRAFT -- to be reviewed along with caching code. The text here refers
+to objects that are not yet in Drake's master branch.
+
 <h2>Background</h2>
 
-Drake @link drake::systems::System Systems @endlink
-are used to specify the computational _structure_ of a model to be
-studied. The actual _values_ during computation are stored in a separate
-@link drake::systems::Context Context @endlink object. The Context contains
-_source_ values (time, parameters, states, input
-ports) and _computed_ values (e.g. derivatives, output ports)
-that depend on some or all of the source values. We
-call the particular dependencies of a computed value its _prerequisites_. The
-caching system described here manages computed values so that
+Drake System objects are used to specify the computational _structure_ of a
+model to be studied. The actual _values_ during computation are stored in a
+separate Context object. The Context contains _source_ values (time, parameters,
+states, input ports) and _computed_ values (e.g. derivatives, output ports)
+that depend on some or all of the source values. We call the particular
+dependencies of a computed value its _prerequisites_. The caching system
+described here manages computed values so that
  - they are recomputed _only if_ a prerequisite has changed,
  - they are marked out of date _whenever_ a prerequisite changes, and
  - _every_ access to a computed value first ensures that it is up to date.
@@ -41,7 +47,8 @@ goals also influenced the design. Here are the main goals in roughly descending
 order of importance.
  1. Must be correct (same result with caching on or off).
  2. Must be fast.
- 3. Must preserve independence of System and Context objects (e.g., no cross-pointers).
+ 3. Must preserve independence of System and Context objects (e.g., no
+    cross-pointers).
  4. Should provide a simple conceptual model and API for users.
  5. Should treat all value sources and dependencies in Drake uniformly.
  6. Should be backwards compatible with the existing API.
@@ -64,18 +71,14 @@ Several follow-ons are possible to improve this:
 This is the basic architecture Drake uses to address the above design goals.
 
 Every declared source and computed value is assigned a small-integer
-@link drake::systems::DependencyTicket DependencyTicket @endlink
-(“ticket”) by the System (unique within a subsystem). The
-Context contains corresponding
-@link drake::systems::DependencyTracker DependencyTracker @endlink
-("tracker") objects that manage that
-value’s downstream dependents and upstream prerequisites; these can be accessed
-efficiently using the ticket. Cached computations are declared and accessed
-through System-owned @link drake::systems::CacheEntry CacheEntry @endlink
-objects; their values are stored in Context-owned
-@link drake::systems::CacheEntryValue CacheEntryValue @endlink
-objects whose validity with respect to source values is rigorously tracked via
-their associated dependency trackers. Computed values may in turn serve as
+DependencyTicket (“ticket”) by the System (unique within a subsystem). The
+Context contains corresponding DependencyTracker ("tracker") objects that manage
+that value’s downstream dependents and upstream prerequisites; these can be
+accessed efficiently using the ticket. Cached computations are declared and
+accessed through System-owned CacheEntry objects; their values are stored in
+Context-owned CacheEntryValue objects whose validity with respect to
+source values is rigorously tracked via their associated dependency
+trackers. Computed values may in turn serve as
 source values for further computations. A change to a source value invalidates
 any computed values that depend on it, recursively. Any value contained in a
 Context may be exported via an output port that exposes that value to downstream
@@ -95,8 +98,7 @@ From a user perspective:
    change.
 
 Figure 1 below illustrates the computational structure of a Drake LeafSystem,
-paired with its LeafContext. A Drake
-@link drake::systems::Diagram Diagram @endlink interconnects subsystems like
+paired with its LeafContext. A Drake Diagram interconnects subsystems like
 these by connecting output ports of subsystems to input ports of other
 subsystems, and aggregates results such as derivative calculations. When
 referring to individual Systems within a diagram, we use the terms
@@ -107,7 +109,7 @@ referring to individual Systems within a diagram, we use the terms
 
 /* Looks something like this ...
 
-                            drake::LeafSystem
+                       drake::systems::LeafSystem
                 ┌─────────────────────────────────────┐
     time ------>│>------.          ┌───────┐    ···---│--->  derivatives,
                 │       `--------->│cache  │----------│--->  updates, etc.
@@ -120,8 +122,9 @@ referring to individual Systems within a diagram, we use the terms
            |    └─────────────────────────────────────┘      │
            |           │                                     │
            └<----------│-(Fixed input)                       │
-                       │                  drake::LeafContext │
+                       │                                     │
                        └─────────────────────────────────────┘
+                             drake::systems::LeafContext
 */
 
 /** @addtogroup cache_design_notes  <!-- continuing on -->
@@ -210,9 +213,8 @@ Fixed input ports are treated identically to Parameters -- they may have
 numerical or abstract value types; they may be changed with downstream
 invalidation handled automatically; and their values do not change during a
 time-advancing simulation. The values for fixed input ports are represented by
-@link drake::systems::FreestandingInputPortValue FreestandingInputPortValue
-@endlink objects, which have their own ticket and tracker to which the
-corresponding input port subscribes.
+FreestandingInputPortValue objects, which have their own ticket and tracker to
+which the corresponding input port subscribes.
 
 Every input port has an associated dependency ticket and tracker. The tracker
 is automatically subscribed to the input port’s source’s tracker.
@@ -398,3 +400,6 @@ declarations which accept Allocator() and Calculator() functors and a
 dependency list for the Calculator(). Currently they are just defaulting to
 “depends on everything”.
 */
+
+}  // namespace systems
+}  // namespace drake
