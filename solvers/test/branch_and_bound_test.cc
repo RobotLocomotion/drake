@@ -183,6 +183,15 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
   EXPECT_EQ(result, SolutionResult::kUnbounded);
 }
 
+GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRootError) {
+  // The optimization program does not have a binary variable.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddCost(x.cast<symbolic::Expression>().sum());
+
+  EXPECT_THROW(MixedIntegerBranchAndBoundNode::ConstructRootNode(prog), std::runtime_error);
+}
+
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
   auto prog = ConstructMathematicalProgram1();
 
@@ -284,6 +293,25 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
   // are continuous variables.
   EXPECT_THROW(root->Branch(x(1)), std::runtime_error);
   EXPECT_THROW(root->Branch(x(3)), std::runtime_error);
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
+  auto prog = ConstructMathematicalProgram1();
+
+  MixedIntegerBranchAndBound bnb(*prog);
+  const VectorDecisionVariable<4> prog_x = prog->decision_variables();
+
+  const VectorDecisionVariable<4> bnb_x = bnb.root()->prog()->decision_variables();
+
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_TRUE(bnb_x(i).equal_to(bnb.NewVariable(prog_x(i))));
+  }
+
+  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head<2>())), VectorDecisionVariable<2>>::value, "Should return VectorDecisionVariable<2> object.\n");
+  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head(2))), VectorXDecisionVariable>::value, "Should return VectorXDecisionVariable object.\n");
+  MatrixDecisionVariable<2, 2> X;
+  X << prog_x(0), prog_x(1), prog_x(2), prog_x(3);
+  static_assert(std::is_same<decltype(bnb.NewVariables(X)), MatrixDecisionVariable<2, 2>>::value, "Should return MatrixDecisionVariable<2, 2> object.\n");
 }
 }  // namespace
 }  // namespace solvers

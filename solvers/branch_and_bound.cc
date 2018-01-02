@@ -257,5 +257,40 @@ void MixedIntegerBranchAndBoundNode::Branch(
   left_child_->parent_ = this;
   right_child_->parent_ = this;
 }
+
+MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(const MathematicalProgram& prog) 
+  : root_{nullptr},
+    map_old_vars_to_new_vars_{},
+    best_upper_bound_{std::numeric_limits<double>::infinity()},
+    best_lower_bound_{-std::numeric_limits<double>::infinity()},
+    active_leaves_{}{
+    std::tie(root_, map_old_vars_to_new_vars_) = MixedIntegerBranchAndBoundNode::ConstructRootNode(prog);
+}
+
+const symbolic::Variable& MixedIntegerBranchAndBound::NewVariable(const symbolic::Variable& old_variable) const {
+  const auto it = map_old_vars_to_new_vars_.find(old_variable.get_id());
+  if (it == map_old_vars_to_new_vars_.end()) {
+    std::ostringstream oss;
+    oss << old_variable << " is not a variable in the original mixed-integer problem.\n";
+    throw std::runtime_error(oss.str());
+  }
+  return it->second;
+}
+
+MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode() const {
+  // If active_leaves is empty, then the branch-and-bound should terminate, no need to branch further.
+  DRAKE_ASSERT(!active_leaves_.empty());
+  switch (pick_node_) {
+    case PickNode::kMinLowerBound: {
+       return PickMinLowerBoundNode();
+     }
+    case PickNode::kDepthFirst: {
+       return PickDepthFirstNode();
+     }
+    case PickNode::kUserDefined: {
+       return pick_branching_node_userfun_(*root_);
+     }
+  }
+}
 }  // namespace solvers
 }  // namespace drake
