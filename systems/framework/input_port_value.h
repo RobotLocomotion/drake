@@ -39,32 +39,10 @@ class FreestandingInputPortValue {
   /** @} */
 
   /** Constructs an abstract-valued %FreestandingInputPortValue from a value
-  of unknown type. Takes ownership of the given value and sets the serial
+  of arbitrary type. Takes ownership of the given value and sets the serial
   number to 1. */
   explicit FreestandingInputPortValue(std::unique_ptr<AbstractValue> value)
       : value_(std::move(value)), serial_number_{1} {}
-
-  /** Constructs a vector-valued %FreestandingInputPortValue using a given
-  vector object. Takes ownership of the vector and sets serial number to 1.
-  @tparam T The type of the vector data. Must be a valid Eigen scalar.
-  @tparam V The type of `vec` itself. Must implement BasicVector<T>. */
-  template <template <typename T> class V, typename T>
-  explicit FreestandingInputPortValue(std::unique_ptr<V<T>> vec)
-      : FreestandingInputPortValue(
-            std::make_unique<Value<BasicVector<T>>>(std::move(vec))) {
-    static_assert(std::is_base_of<BasicVector<T>, V<T>>::value,
-                  "Expected vector type derived from BasicVector.");
-  }
-
-  /** Constructs an abstract-valued %FreestandingInputPortValue from a value
-  of currently-known type. This will become a type-erased AbstractValue
-  here but a knowledgeable caller can recover the original typed object
-  using `dynamic_cast`. Takes ownership of `value` and sets serial number to 1.
-  @tparam T The type of the data. Must be copyable or cloneable. */
-  template <typename T>
-  explicit FreestandingInputPortValue(std::unique_ptr<Value<T>> value)
-      : FreestandingInputPortValue(
-            std::unique_ptr<AbstractValue>(value.release())) {}
 
   ~FreestandingInputPortValue() = default;
 
@@ -75,7 +53,7 @@ class FreestandingInputPortValue {
     return *value_;
   }
 
-  /** Returns a reference to the contained `BasicVector<T>` or throw an
+  /** Returns a reference to the contained `BasicVector<T>` or throws an
   exception if this doesn't contain an object of that type. */
   template <typename T>
   const BasicVector<T>& get_vector_value() const {
@@ -117,7 +95,7 @@ class FreestandingInputPortValue {
   /** Returns the ticket used to find the associated DependencyTracker. */
   DependencyTicket ticket() const { return ticket_; }
 
-  /** Returns index of the input port for which this is the value. */
+  /** Returns the index of the input port for which this is the value. */
   InputPortIndex input_port_index() const {
     DRAKE_ASSERT(index_.is_valid());
     return index_;
@@ -135,12 +113,15 @@ class FreestandingInputPortValue {
     return *owner_;
   }
 
-  /** Informs this %FreestandingInputPortValue of its assigned DependencyTracker
-  so it knows who to notify when its value changes. */
+  /** (Internal use only) */
+  // Informs this FreestandingInputPortValue of its assigned DependencyTracker
+  // so it knows who to notify when its value changes.
   void set_ticket(DependencyTicket ticket) { ticket_ = ticket; }
 
-  /** Informs this %FreestandingInputPortValue of the context that owns
-  it and the input port within that context for which it is the value. */
+  /** (Internal use only) */
+  // Informs this %FreestandingInputPortValue of the context that owns it and
+  // the input port within that context for which it is the value. Aborts if
+  // this has already been done or given bad args.
   void set_owning_context(ContextBase* context, InputPortIndex index) {
     DRAKE_DEMAND(owner_ == nullptr && !index_.is_valid());
     DRAKE_DEMAND(context != nullptr && index.is_valid());
@@ -148,10 +129,10 @@ class FreestandingInputPortValue {
     index_ = index;
   }
 
-  /** (Internal use only) Makes a copy of this %FreestandingInputPortValue
-  to be used in a new context. The copy must have the same index as the source;
-  we pass it here just to validate that. The value, ticket, and serial number
-  are preserved. */
+  /** (Internal use only) */
+  // Makes a copy of this %FreestandingInputPortValue to be used in a new
+  // context. The copy must have the same index as the source; we pass it here
+  // just to validate that. The value, ticket, and serial number are preserved.
   std::unique_ptr<FreestandingInputPortValue> CloneForNewContext(
       ContextBase* new_owner, InputPortIndex new_index) const {
     DRAKE_DEMAND(new_owner != nullptr && new_index.is_valid());
