@@ -1,5 +1,7 @@
 #include "drake/solvers/branch_and_bound.h"
 
+#include <algorithm>
+
 #include "drake/solvers/gurobi_solver.h"
 
 namespace drake {
@@ -291,6 +293,10 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode() 
        return pick_branching_node_userfun_(*root_);
      }
   }
+}
+
+MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickMinLowerBoundNode() {
+  return *(std::min_element(active_leaves_.begin(), active_leaves_.end(), [](ScsNode* node1, ScsNode* node2) { return node1->prog()->GetOptimalCost() < node2->prog()->GetOptimalCost(); }));
 }
 }  // namespace solvers
 }  // namespace drake
