@@ -43,7 +43,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [
-        "//drake/bindings/pydrake:symbolic_types_py_h",
+        "//drake/bindings/pydrake:symbolic_types_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
     py_deps = [
