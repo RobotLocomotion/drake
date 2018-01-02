@@ -2,7 +2,7 @@
 # surrounded by eight tables (four high, round tables and four low rectangular
 # tables). Robot toys are initially located on top of two of the tables. For
 # more details on the format of this file, see
-# <drake root>/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration.proto
+# <drake root>/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.proto
 
 # Model Definitions
 # This section defines the models that will be used in the rest of the

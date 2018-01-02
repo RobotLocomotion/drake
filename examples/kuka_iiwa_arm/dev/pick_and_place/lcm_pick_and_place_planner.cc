@@ -6,8 +6,8 @@
 
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_planner.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -23,7 +23,7 @@ DEFINE_int32(task_index, 0,
 DEFINE_bool(use_channel_suffix, false,
             "If true, append a suffix to channel names");
 DEFINE_string(configuration_file,
-              "drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/"
+              "drake/examples/kuka_iiwa_arm/pick_and_place/configuration/"
               "yellow_posts.pick_and_place_configuration",
               "Path to the configuration file.");
 

@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration_parsing.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration_parsing.h"
 
 #include <algorithm>
 #include <limits>
@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/proto/protobuf.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration.pb.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.pb.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/math/roll_pitch_yaw.h"
 
