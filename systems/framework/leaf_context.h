@@ -183,9 +183,8 @@ class LeafContext : public Context<T> {
 
  private:
   void SetInputPortValue(int index,
-                         std::unique_ptr<InputPortValue> port) override {
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    // TODO(david-german-tri): Set invalidation callbacks.
+                         std::unique_ptr<InputPortValue> port) final {
+    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
     input_values_[index] = std::move(port);
   }
 

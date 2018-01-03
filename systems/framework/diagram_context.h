@@ -365,8 +365,8 @@ class DiagramContext : public Context<T> {
   }
 
   void SetInputPortValue(int index,
-                         std::unique_ptr<InputPortValue> port) override {
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+                         std::unique_ptr<InputPortValue> port) final {
+    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;

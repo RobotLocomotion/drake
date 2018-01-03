@@ -210,12 +210,13 @@ class Context {
   virtual int get_num_input_ports() const = 0;
 
   /// Connects the input port at @p index to a FreestandingInputPortValue with
-  /// the given abstract @p value. Asserts if @p index is out of range.
-  /// Returns a reference to the allocated FreestandingInputPortValue that will
-  /// remain valid until this input port's value source is replaced or the
-  /// %Context is destroyed. You may use that reference to modify the input
-  /// port's value using the appropriate FreestandingInputPortValue method,
-  /// which will ensure that invalidation notifications are delivered.
+  /// the given abstract @p value. Aborts if @p index is out of range.
+  /// Returns a reference to the allocated FreestandingInputPortValue. The
+  /// reference will remain valid until this input port's value source is
+  /// replaced or the %Context is destroyed. You may use that reference to
+  /// modify the input port's value using the appropriate
+  /// FreestandingInputPortValue method, which will ensure that invalidation
+  /// notifications are delivered.
   FreestandingInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value) {
     auto free_value_ptr =
@@ -489,10 +490,10 @@ class Context {
   }
 
   /// Connects the input port at @p index to the value source @p port_value.
-  /// Disconnects whatever value source was previously there, and deregisters
+  /// Disconnects whatever value source was previously there, and unregisters
   /// it from the output port on which it depends.  In some Context
   /// implementations, may require a recursive search through a tree of
-  /// subcontexts. Asserts if @p index is out of range.
+  /// subcontexts. Aborts if @p index is out of range.
   virtual void SetInputPortValue(
       int index, std::unique_ptr<InputPortValue> port_value) = 0;
 
