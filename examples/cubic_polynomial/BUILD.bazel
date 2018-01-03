@@ -15,4 +15,17 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "backward_reachability",
+    srcs = ["backward_reachability.cc"],
+    add_test_rule = 1,
+    tags = mosek_test_tags(),
+    deps = [
+        "//drake/common/proto:call_python",
+        "//drake/solvers:mathematical_program",
+        "//drake/solvers:mosek_solver",
+        "//drake/systems/framework:vector_system",
+    ],
+)
+
 add_lint_tests()
