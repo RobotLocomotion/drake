@@ -15,7 +15,8 @@ load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_pybind_installs",
-    "get_pybind_library_dest",
+    "get_pybind_package_info",
+    "PYDRAKE_BASE_PACKAGE",
 )
 load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
@@ -25,17 +26,20 @@ package(default_visibility = adjust_labels_for_drake_hoist([
 
 # N.B. Any common headers should be shared via a HEADER ONLY library.
 
+PACKAGE_INFO = get_pybind_package_info(PYDRAKE_BASE_PACKAGE)
+
 # This is a pure-python, standalone library.
 # Keep this away from `common_py` to simplify test dependencies.
 drake_py_library(
     name = "util_py",
     srcs = ["util.py"],
-    imports = [".."],
+    imports = PACKAGE_INFO.py_imports,
 )
 
 drake_pybind_library(
     name = "common_py",
     cc_srcs = ["common_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":util_py",
     ],
@@ -59,6 +63,7 @@ drake_pybind_library(
         ":autodiff_types",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
     ],
@@ -74,6 +79,7 @@ drake_pybind_library(
         ":autodiff_types",
     ],
     cc_srcs = ["rbtree_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":autodiffutils_py",
         ":common_py",
@@ -86,6 +92,7 @@ drake_pybind_library(
     name = "parsers_py",
     cc_so_name = "parsers",
     cc_srcs = ["parsers_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
     ],
@@ -103,6 +110,7 @@ drake_pybind_library(
         ":symbolic_types_py_h",
     ],
     cc_srcs = ["symbolic_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
     ],
@@ -126,7 +134,7 @@ PY_LIBRARIES = [
 install(
     name = "install",
     targets = PY_LIBRARIES,
-    py_dest = get_pybind_library_dest(),
+    py_dest = PACKAGE_INFO.py_dest,
     visibility = ["//visibility:public"],
     deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
 )
@@ -147,6 +155,7 @@ drake_pybind_library(
     ],
     cc_so_name = "test/odr_test_module",
     cc_srcs = ["test/odr_test_module_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 drake_py_test(
