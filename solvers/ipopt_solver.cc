@@ -399,7 +399,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       }
       case Ipopt::DIVERGING_ITERATES: {
         result_ = SolutionResult::kUnbounded;
-        obj_value = -std::numeric_limits<double>::infinity();
+        obj_value = MathematicalProgram::kUnboundedCost;
         break;
       }
       case Ipopt::MAXITER_EXCEEDED: {

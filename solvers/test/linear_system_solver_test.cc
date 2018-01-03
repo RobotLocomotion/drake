@@ -48,7 +48,7 @@ GTEST_TEST(testLinearSystemSolver, InfeasibleProblem) {
   Eigen::Vector2d x_expected(12.0 / 27, 21.0 / 27);
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, 1E-12,
                               MatrixCompareType::absolute));
-  EXPECT_EQ(prog.GetOptimalCost(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 /**

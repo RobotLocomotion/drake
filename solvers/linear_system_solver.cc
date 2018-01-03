@@ -56,7 +56,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
     prog.SetOptimalCost(0.);
     return SolutionResult::kSolutionFound;
   } else {
-    prog.SetOptimalCost(std::numeric_limits<double>::infinity());
+    prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
     return SolutionResult::kInfeasibleConstraints;
   }
 }

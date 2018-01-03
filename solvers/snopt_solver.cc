@@ -498,8 +498,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
            ++it) {
         tripletList->emplace_back(
             *linear_constraint_index + it.row(),
-            prog.FindDecisionVariableIndex(binding.variables()(k)),
-            it.value());
+            prog.FindDecisionVariableIndex(binding.variables()(k)), it.value());
       }
     }
 
@@ -728,6 +727,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     drake::log()->debug("Snopt returns code {}\n", info);
     if (info >= 11 && info <= 16) {
       return SolutionResult::kInfeasibleConstraints;
+    } else if (info >= 20 && info <= 22) {
+      prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
+      return SolutionResult::kUnbounded;
     } else if (info == 91) {
       return SolutionResult::kInvalidInput;
     }

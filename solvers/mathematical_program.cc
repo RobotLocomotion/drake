@@ -112,6 +112,11 @@ enum {
 // to int so it is odr-used (see
 // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
 
+const double MathematicalProgram::kGlobalInfeasibleCost =
+    std::numeric_limits<double>::infinity();
+const double MathematicalProgram::kUnboundedCost =
+    -std::numeric_limits<double>::infinity();
+
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
@@ -379,7 +384,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
     DRAKE_ASSERT(binding.constraint()->A().cols() ==
-        static_cast<int>(binding.GetNumElements()));
+                 static_cast<int>(binding.GetNumElements()));
     CheckBinding(binding);
     required_capabilities_ |= kLinearConstraint;
     linear_constraints_.push_back(binding);
@@ -398,7 +403,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
   DRAKE_ASSERT(binding.constraint()->A().cols() ==
-      static_cast<int>(binding.GetNumElements()));
+               static_cast<int>(binding.GetNumElements()));
   CheckBinding(binding);
   required_capabilities_ |= kLinearEqualityConstraint;
   linear_equality_constraints_.push_back(binding);
@@ -433,7 +438,7 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
   CheckBinding(binding);
   DRAKE_ASSERT(binding.constraint()->num_constraints() ==
-      binding.GetNumElements());
+               binding.GetNumElements());
   required_capabilities_ |= kLinearConstraint;
   bbox_constraints_.push_back(binding);
   return bbox_constraints_.back();
@@ -582,7 +587,7 @@ Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
   CheckBinding(binding);
   DRAKE_ASSERT(static_cast<int>(binding.constraint()->F().size()) ==
-      static_cast<int>(binding.GetNumElements()) + 1);
+               static_cast<int>(binding.GetNumElements()) + 1);
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   linear_matrix_inequality_constraint_.push_back(binding);
   return linear_matrix_inequality_constraint_.back();
@@ -662,7 +667,7 @@ SolutionResult MathematicalProgram::Solve() {
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
-      scs_solver_->available()) {
+             scs_solver_->available()) {
     // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
     // modest accuracy quite fast, but then slows down significantly if the user
     // wants high accuracy.

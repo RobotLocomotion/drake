@@ -29,8 +29,8 @@ Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
 }
 
 AutoDiffVecXd MakeInputAutoDiffVec(const MathematicalProgram& prog,
-                               const Eigen::VectorXd& xvec,
-                               const VectorXDecisionVariable& vars) {
+                                   const Eigen::VectorXd& xvec,
+                                   const VectorXDecisionVariable& vars) {
   const int num_vars = vars.rows();
 
   auto tx = math::initializeAutoDiff(xvec);
@@ -312,20 +312,6 @@ bool IsVectorOfConstraintsSatisfiedAtSolution(
   }
   return true;
 }
-
-/**
- * Check if all the constraints are satisfied.
- * @param all_constraints_satisfied [in/out] If not all constraints were satisfied before we check `bindings`, then bypass this check. Otherwise check if `bindings` are satisfied.
- */
-template <typename Binding>
-void CheckConstraintsSatisfied(const MathematicalProgram& prog,
-                               const std::vector<Binding>& bindings, double tol,
-                               bool* all_constraints_satisfied) {
-  if (*all_constraints_satisfied) {
-    *all_constraints_satisfied &=
-        IsVectorOfConstraintsSatisfiedAtSolution(prog, bindings, tol);
-  }
-}
 }  // anonymous namespace
 
 bool NloptSolver::available() const { return true; }
@@ -437,18 +423,18 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         // TODO(hongkai.dai) Allow the user to set this tolerance.
         const double constraint_tol = 1E-6;
         bool all_constraints_satisfied = true;
-        CheckConstraintsSatisfied(prog, prog.generic_constraints(),
-                                  constraint_tol, &all_constraints_satisfied);
-        CheckConstraintsSatisfied(prog, prog.bounding_box_constraints(),
-                                  constraint_tol, &all_constraints_satisfied);
-        CheckConstraintsSatisfied(prog, prog.linear_constraints(),
-                                  constraint_tol, &all_constraints_satisfied);
-        CheckConstraintsSatisfied(prog, prog.linear_equality_constraints(),
-                                  constraint_tol, &all_constraints_satisfied);
-        CheckConstraintsSatisfied(prog, prog.lorentz_cone_constraints(),
-                                  constraint_tol, &all_constraints_satisfied);
-        CheckConstraintsSatisfied(prog, prog.rotated_lorentz_cone_constraints(),
-                                  constraint_tol, &all_constraints_satisfied);
+        auto constraint_test = [&prog, constraint_tol,
+                                &all_constraints_satisfied](auto constraints) {
+          all_constraints_satisfied &= IsVectorOfConstraintsSatisfiedAtSolution(
+              prog, constraints, constraint_tol);
+        };
+        constraint_test(prog.generic_constraints());
+        constraint_test(prog.bounding_box_constraints());
+        constraint_test(prog.linear_constraints());
+        constraint_test(prog.linear_equality_constraints());
+        constraint_test(prog.lorentz_cone_constraints());
+        constraint_test(prog.rotated_lorentz_cone_constraints());
+
         if (!all_constraints_satisfied) {
           result = SolutionResult::kInfeasibleConstraints;
         }
@@ -467,9 +453,9 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         if (minf < kUnboundedTol) {
           result = SolutionResult::kUnbounded;
           minf = -std::numeric_limits<double>::infinity();
-          break;
+        } else {
+          result = SolutionResult::kUnknownError;
         }
-        result = SolutionResult::kUnknownError;
         break;
       }
       default: { result = SolutionResult::kUnknownError; }
@@ -481,7 +467,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   } catch (nlopt::roundoff_limited) {
     if (minf < kUnboundedTol) {
       result = SolutionResult::kUnbounded;
-      minf = -std::numeric_limits<double>::infinity();
+      minf = MathematicalProgram::kUnboundedCost;
     } else {
       result = SolutionResult::kUnknownError;
     }

@@ -290,6 +290,11 @@ class MathematicalProgram {
 
   using VarType = symbolic::Variable::Type;
 
+  /// The optimal cost is +∞ when the problem is globally infeasible.
+  static const double kGlobalInfeasibleCost;
+  /// The optimal cost is -∞ when the problem is unbounded.
+  static const double kUnboundedCost;
+
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
 
@@ -355,8 +360,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewContinuousVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -425,8 +430,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewBinaryVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -1993,11 +1998,13 @@ class MathematicalProgram {
   optional<SolverId> GetSolverId() const { return solver_id_; }
 
   /**
-   * Getter for optimal cost at the solution. 
-   * If the solver finds an optimal solution, then we return the cost evaluated at this solution.
+   * Getter for optimal cost at the solution.
+   * If the solver finds an optimal solution, then we return the cost evaluated
+   * at this solution.
    * If the program is unbounded, then the optimal cost is -∞.
-   * If the program is globally infeasible, then the optimal cost is +∞ 
-   * If the program is locally infeasible, and the solver (e.g. SNOPT) finds some values for the decision variables, such as the solution with least constraint violation, then return the cost evaluated at that solution.
+   * If the program is globally infeasible, then the optimal cost is +∞.
+   * If the program is locally infeasible, then the solver (e.g. SNOPT) might
+   * return some finite value as the optimal cost.
    * Otherwise, the optimal cost is NaN.
    */
   double GetOptimalCost() const { return optimal_cost_; }

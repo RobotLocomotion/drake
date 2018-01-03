@@ -253,11 +253,11 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       break;
     }
     case SolutionResult::kUnbounded: {
-      optimal_cost = -std::numeric_limits<double>::infinity();
+      optimal_cost = MathematicalProgram::kUnboundedCost;
       break;
     }
     case SolutionResult::kInfeasibleConstraints: {
-      optimal_cost = std::numeric_limits<double>::infinity();
+      optimal_cost = MathematicalProgram::kGlobalInfeasibleCost;
       break;
     }
     default: {

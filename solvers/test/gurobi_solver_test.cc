@@ -51,8 +51,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
     result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kUnbounded);
-    EXPECT_TRUE(std::isinf(prog_->GetOptimalCost()));
-    EXPECT_LE(prog_->GetOptimalCost(), 0);
+    EXPECT_EQ(prog_->GetOptimalCost(), MathematicalProgram::kUnboundedCost);
   }
 }
 

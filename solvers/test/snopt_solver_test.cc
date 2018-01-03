@@ -28,9 +28,6 @@ TEST_F(InfeasibleLinearProgramTest0, TestSnopt) {
   if (solver.available()) {
     const auto solver_result = solver.Solve(*prog_);
     EXPECT_EQ(solver_result, SolutionResult::kInfeasibleConstraints);
-    const Eigen::Vector2d x_val =
-        prog_->GetSolution(prog_->decision_variables());
-    EXPECT_EQ(prog_->GetOptimalCost(), -x_val(0) - x_val(1));
   }
 }
 

@@ -144,7 +144,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
 }
 
 GTEST_TEST(testEqualityConstrainedQPSolver, testUnboundedQP) {
@@ -157,7 +157,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnboundedQP) {
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
 }
 
 GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeDefiniteHessianQP) {
@@ -169,7 +169,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeDefiniteHessianQP) {
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
 }
 
 // Test a QP with positive definite Hessian, but infeasible constraint.
@@ -187,7 +187,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-  EXPECT_EQ(prog.GetOptimalCost(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 // Test a QP with indefinite Hessian, but unique minimum.
@@ -217,7 +217,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDhessianUnbounded) {
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
 }
 
 // Test a QP with negative definite Hessian, but with a unique optimum.
@@ -248,7 +248,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUnbounded) {
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
 }
 
 // Test a QP with positive semidefinite Hessian (not strictly positive
@@ -283,7 +283,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessianInfeasible) {
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-  EXPECT_EQ(prog.GetOptimalCost(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 // Test changing the feasibility tolerance.
@@ -305,7 +305,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
                        1E-7);
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-  EXPECT_EQ(prog.GetOptimalCost(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
 
   // Now increase the feasibility tolerance.
   double tol = 1E-6;

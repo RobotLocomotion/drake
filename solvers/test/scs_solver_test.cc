@@ -156,7 +156,8 @@ TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
   if (solver.available()) {
     SolutionResult result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(prog_->GetOptimalCost(), std::numeric_limits<double>::infinity());
+    EXPECT_EQ(prog_->GetOptimalCost(),
+              MathematicalProgram::kGlobalInfeasibleCost);
   }
 }
 
@@ -165,8 +166,7 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   if (solver.available()) {
     SolutionResult result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kUnbounded);
-    EXPECT_EQ(prog_->GetOptimalCost(),
-              -std::numeric_limits<double>::infinity());
+    EXPECT_EQ(prog_->GetOptimalCost(), MathematicalProgram::kUnboundedCost);
   }
 }
 
