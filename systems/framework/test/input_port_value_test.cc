@@ -15,7 +15,8 @@ class FreestandingInputPortVectorTest : public ::testing::Test {
   void SetUp() override {
     std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
     vec->get_mutable_value() << 5, 6;
-    port_value_.reset(new FreestandingInputPortValue(std::move(vec)));
+    port_value_.reset(new FreestandingInputPortValue(
+        std::make_unique<Value<BasicVector<double>>>(std::move(vec))));
     port_value_->set_invalidation_callback(
         std::bind(&FreestandingInputPortVectorTest::Invalidate, this));
   }

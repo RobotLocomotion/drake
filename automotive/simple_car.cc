@@ -48,11 +48,9 @@ const DrivingCommand<T>& get_input(const SimpleCar<T>* simple_car,
 // Obtain our parameters from a context.
 template <typename T>
 const SimpleCarParams<T>& get_params(const systems::Context<T>& context) {
-  const SimpleCarParams<T>* const params =
-      dynamic_cast<const SimpleCarParams<T>*>(
-          &context.get_numeric_parameter(0));
-  DRAKE_DEMAND(params);
-  return *params;
+  const SimpleCarParams<T>& params =
+      dynamic_cast<const SimpleCarParams<T>&>(context.get_numeric_parameter(0));
+  return params;
 }
 
 }  // namespace

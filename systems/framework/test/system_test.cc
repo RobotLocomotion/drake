@@ -571,15 +571,13 @@ class SystemIOTest : public ::testing::Test {
     // make string input
     std::unique_ptr<Value<std::string>> str_input =
         std::make_unique<Value<std::string>>("input");
-    context_->SetInputPortValue(
-        0, std::make_unique<FreestandingInputPortValue>(std::move(str_input)));
+    context_->FixInputPort(0, std::move(str_input));
 
     // make vector input
     std::unique_ptr<BasicVector<double>> vec_input =
         std::make_unique<BasicVector<double>>(1);
     vec_input->SetAtIndex(0, 2);
-    context_->SetInputPortValue(
-        1, std::make_unique<FreestandingInputPortValue>(std::move(vec_input)));
+    context_->FixInputPort(1, std::move(vec_input));
   }
 
   ValueIOTestSystem<double> test_sys_;
