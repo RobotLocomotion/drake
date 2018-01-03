@@ -6,7 +6,7 @@ load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_pybind_installs",
-    "get_pybind_library_dest",
+    "get_pybind_package_info",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -14,11 +14,21 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_label_for_drake_hoist",
+    "adjust_labels_for_drake_hoist",
+)
 
 package(default_visibility = adjust_labels_for_drake_hoist([
     "//drake/bindings/pydrake:__subpackages__",
 ]))
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(
+    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
+)
 
 # @note Symbols are NOT imported directly into
 # `__init__.py` to simplify dependency management, meaning that
@@ -27,6 +37,7 @@ package(default_visibility = adjust_labels_for_drake_hoist([
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
     deps = [
         "//drake/bindings/pydrake:common_py",
     ],
@@ -36,6 +47,7 @@ drake_pybind_library(
     name = "framework_py",
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
     ],
@@ -45,6 +57,7 @@ drake_pybind_library(
     name = "primitives_py",
     cc_so_name = "primitives",
     cc_srcs = ["primitives_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":module_py",
@@ -55,6 +68,7 @@ drake_pybind_library(
     name = "analysis_py",
     cc_so_name = "analysis",
     cc_srcs = ["analysis_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":module_py",
@@ -64,9 +78,8 @@ drake_pybind_library(
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
+    imports = PACKAGE_INFO.py_imports,
     deps = [":module_py"],
-    # TODO(eric.cousineau): Expose information to allow `imports = ...` to be
-    # defined, rather than rely on `module_py`.
 )
 
 drake_py_library(
@@ -93,13 +106,14 @@ PY_LIBRARIES = [
 
 drake_py_library(
     name = "systems",
+    imports = PACKAGE_INFO.py_imports,
     deps = PYBIND_LIBRARIES + PY_LIBRARIES,
 )
 
 install(
     name = "install",
     targets = PY_LIBRARIES,
-    py_dest = get_pybind_library_dest(),
+    py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
 )
 
@@ -131,6 +145,7 @@ drake_pybind_library(
     add_install = False,
     cc_so_name = "test/lifetime_test_util",
     cc_srcs = ["test/lifetime_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         ":primitives_py",
     ],
