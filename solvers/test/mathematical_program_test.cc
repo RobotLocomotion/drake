@@ -385,13 +385,13 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable8) {
                      false, MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariables, AddVariables1) {
-  // Call WithVariable on an empty program.
+GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
+  // Call AddVariable on an empty program.
   MathematicalProgram prog;
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::CONTINUOUS);
   const Variable x2("x2", Variable::Type::BINARY);
-  prog.AddVariables(VectorDecisionVariable<3>(x0, x1, x2));
+  prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x2));
   EXPECT_EQ(prog.num_vars(), 3);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x0), 0);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 1);
@@ -406,14 +406,14 @@ GTEST_TEST(testAddVariables, AddVariables1) {
   }
 }
 
-GTEST_TEST(testAddVariables, AddVariable2) {
-  // Call WithVariable on a program that has some existing variables.
+GTEST_TEST(testAddDecisionVariables, AddVariable2) {
+  // Call AddDecisionVariables on a program that has some existing variables.
   MathematicalProgram prog;
   auto y = prog.NewContinuousVariables<3>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::CONTINUOUS);
   const Variable x2("x2", Variable::Type::BINARY);
-  prog.AddVariables(VectorDecisionVariable<3>(x0, x1, x2));
+  prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x2));
   EXPECT_EQ(prog.num_vars(), 6);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x0), 3);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
@@ -428,28 +428,28 @@ GTEST_TEST(testAddVariables, AddVariable2) {
   }
 }
 
-GTEST_TEST(testAddVariables, AddVariable3) {
+GTEST_TEST(testAddDecisionVariables, AddVariable3) {
   // Test the error inputs.
   MathematicalProgram prog;
   auto y = prog.NewContinuousVariables<3>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::CONTINUOUS);
-  // Call WithVariable on a program that has some existing variables, and the
+  // Call AddDecisionVariables on a program that has some existing variables, and the
   // new variables intersects with the existing variables.
-  EXPECT_THROW(prog.AddVariables(VectorDecisionVariable<3>(x0, x1, y(0))),
+  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, y(0))),
                std::runtime_error);
   // The newly added variables have duplicated entries.
-  EXPECT_THROW(prog.AddVariables(VectorDecisionVariable<3>(x0, x1, x0)),
+  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x0)),
                std::runtime_error);
   // The newly added variables contain a dummy variable.
   Variable dummy;
   EXPECT_TRUE(dummy.is_dummy());
-  EXPECT_THROW(prog.AddVariables(VectorDecisionVariable<3>(x0, x1, dummy)),
+  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, dummy)),
                std::runtime_error);
   auto z = prog.NewIndeterminates<2>("z");
-  // Call WithVariable on a program that has some indeterminates, and the new
+  // Call AddDecisionVariables on a program that has some indeterminates, and the new
   // variables intersects with the indeterminates.
-  EXPECT_THROW(prog.AddVariables(VectorDecisionVariable<2>(x0, z(0))),
+  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<2>(x0, z(0))),
                std::runtime_error);
 }
 

@@ -151,33 +151,33 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
 }
 
-void MathematicalProgram::AddVariables(
-    const Eigen::Ref<const VectorXDecisionVariable>& variables) {
+void MathematicalProgram::AddDecisionVariables(
+    const Eigen::Ref<const VectorXDecisionVariable>& decision_variables) {
   const int num_existing_decision_vars = num_vars();
-  for (int i = 0; i < variables.rows(); ++i) {
-    if (variables(i).is_dummy()) {
-      throw std::runtime_error(fmt::format("variables({}) is dummy", i));
+  for (int i = 0; i < decision_variables.rows(); ++i) {
+    if (decision_variables(i).is_dummy()) {
+      throw std::runtime_error(fmt::format("decision_variables({}) is dummy", i));
     }
-    if (decision_variable_index_.find(variables(i).get_id()) !=
+    if (decision_variable_index_.find(decision_variables(i).get_id()) !=
         decision_variable_index_.end()) {
       throw std::runtime_error(
-          fmt::format("{} is already a decision variable.", variables(i)));
+          fmt::format("{} is already a decision variable.", decision_variables(i)));
     }
-    if (indeterminates_index_.find(variables(i).get_id()) !=
+    if (indeterminates_index_.find(decision_variables(i).get_id()) !=
         indeterminates_index_.end()) {
       throw std::runtime_error(
-          fmt::format("{} is already an indeterminate.", variables(i)));
+          fmt::format("{} is already an indeterminate.", decision_variables(i)));
     }
     decision_variable_index_.insert(
-        std::make_pair(variables(i).get_id(), num_existing_decision_vars + i));
+        std::make_pair(decision_variables(i).get_id(), num_existing_decision_vars + i));
   }
   decision_variables_.conservativeResize(num_existing_decision_vars +
-                                         variables.rows());
-  decision_variables_.tail(variables.rows()) = variables;
-  x_values_.resize(num_existing_decision_vars + variables.rows(), NAN);
+                                         decision_variables.rows());
+  decision_variables_.tail(decision_variables.rows()) = decision_variables;
+  x_values_.resize(num_existing_decision_vars + decision_variables.rows(), NAN);
   x_initial_guess_.conservativeResize(num_existing_decision_vars +
-                                      variables.rows());
-  x_initial_guess_.tail(variables.rows())
+                                      decision_variables.rows());
+  x_initial_guess_.tail(decision_variables.rows())
       .fill(std::numeric_limits<double>::quiet_NaN());
 }
 

@@ -516,14 +516,14 @@ class MathematicalProgram {
   }
 
   /** Appends new variables to the end of the existing variables.
-   * @param variables The newly added variables.
-   * @pre `variables` should not intersect with the existing variables in the
-   * optimization program.
-   * @pre Each entry in `variables` should not be a dummy variable.
+   * @param decision_variables The newly added decision_variables.
+   * @pre `decision_variables` should not intersect with the existing variables
+   * or indeterminates in the optimization program.
+   * @pre Each entry in `decision_variables` should not be a dummy variable.
    * @throw runtime_error if the preconditions are not satisfied.
    */
-  void AddVariables(
-      const Eigen::Ref<const VectorXDecisionVariable>& variables);
+  void AddDecisionVariables(
+      const Eigen::Ref<const VectorXDecisionVariable>& decision_variables);
 
   /**
    * Returns a free polynomial in a monomial basis over @p indeterminates of a
