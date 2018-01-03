@@ -55,7 +55,6 @@ public_headers_no_gen = [
     "include/ignition/math/Angle.hh",
     "include/ignition/math/Box.hh",
     "include/ignition/math/Color.hh",
-    "include/ignition/math/Export.hh",
     "include/ignition/math/Filter.hh",
     "include/ignition/math/Frustum.hh",
     "include/ignition/math/Helpers.hh",
@@ -107,7 +106,10 @@ private_headers = [
 drake_generate_include_header(
     name = "mathhh_genrule",
     out = "include/ignition/math.hh",
-    hdrs = public_headers_no_gen + ["include/ignition/math/config.hh"],
+    hdrs = public_headers_no_gen + [
+        "include/ignition/math/config.hh",
+        "include/ignition/math/Export.hh",
+    ],
 )
 
 check_lists_consistency(
@@ -117,6 +119,7 @@ check_lists_consistency(
 
 public_headers = public_headers_no_gen + [
     "include/ignition/math/config.hh",
+    "include/ignition/math/Export.hh",
     "include/ignition/math.hh",
 ]
 
