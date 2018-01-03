@@ -490,10 +490,10 @@ class Context {
   }
 
   /// Connects the input port at @p index to the value source @p port_value.
-  /// Disconnects whatever value source was previously there, and unregisters
+  /// Disconnects whatever value source was previously there, and de-registers
   /// it from the output port on which it depends.  In some Context
   /// implementations, may require a recursive search through a tree of
-  /// subcontexts. Aborts if @p index is out of range.
+  /// subcontexts. Implementations must abort if @p index is out of range.
   virtual void SetInputPortValue(
       int index, std::unique_ptr<InputPortValue> port_value) = 0;
 
