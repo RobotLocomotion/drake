@@ -134,8 +134,8 @@ MathematicalProgram::MathematicalProgram()
 std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
   auto new_prog = std::make_unique<MathematicalProgram>();
   // Add variables and indeterminates
-  new_prog->WithVariables(decision_variables_);
-  new_prog->WithIndeterminates(indeterminates_);
+  new_prog->AddDecisionVariables(decision_variables_);
+  new_prog->AddIndeterminates(indeterminates_);
   // Add costs
   new_prog->generic_costs_ = generic_costs_;
   new_prog->linear_costs_ = linear_costs_;

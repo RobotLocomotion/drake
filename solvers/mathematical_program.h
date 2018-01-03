@@ -292,8 +292,8 @@ class MathematicalProgram {
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
 
-  /** Clone an optimization program.
-   * Constructed a new optimization program to be identical to the old program.
+  /** Clones an optimization program.
+   * Constructes a new optimization program to be identical to the old program.
    * These two programs will have the same decision variables, constraints and
    * costs.
    * They will also have the same solver settings, initial guess, and x_values_.
