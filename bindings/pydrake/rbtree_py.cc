@@ -4,7 +4,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/bindings/pydrake/autodiff_types_py.h"
+#include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
