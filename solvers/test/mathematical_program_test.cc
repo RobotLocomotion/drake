@@ -2570,7 +2570,7 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
 }
 
 // Determine if two bindings are the same. Two bindings are the same if
-// 1. Their contain the same constraint pointer.
+// 1. They contain the same constraint pointer.
 // 2. Their bound variables are the same.
 template <typename Constraint>
 bool IsBindingEqual(const Binding<Constraint>& binding1,
