@@ -434,20 +434,24 @@ GTEST_TEST(testAddDecisionVariables, AddVariable3) {
   auto y = prog.NewContinuousVariables<3>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::CONTINUOUS);
-  // Call AddDecisionVariables on a program that has some existing variables, and the
+  // Call AddDecisionVariables on a program that has some existing variables,
+  // and the
   // new variables intersects with the existing variables.
-  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, y(0))),
-               std::runtime_error);
+  EXPECT_THROW(
+      prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, y(0))),
+      std::runtime_error);
   // The newly added variables have duplicated entries.
   EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x0)),
                std::runtime_error);
   // The newly added variables contain a dummy variable.
   Variable dummy;
   EXPECT_TRUE(dummy.is_dummy());
-  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, dummy)),
-               std::runtime_error);
+  EXPECT_THROW(
+      prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, dummy)),
+      std::runtime_error);
   auto z = prog.NewIndeterminates<2>("z");
-  // Call AddDecisionVariables on a program that has some indeterminates, and the new
+  // Call AddDecisionVariables on a program that has some indeterminates, and
+  // the new
   // variables intersects with the indeterminates.
   EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<2>(x0, z(0))),
                std::runtime_error);

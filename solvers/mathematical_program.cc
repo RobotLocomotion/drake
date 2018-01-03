@@ -156,20 +156,21 @@ void MathematicalProgram::AddDecisionVariables(
   const int num_existing_decision_vars = num_vars();
   for (int i = 0; i < decision_variables.rows(); ++i) {
     if (decision_variables(i).is_dummy()) {
-      throw std::runtime_error(fmt::format("decision_variables({}) is dummy", i));
+      throw std::runtime_error(
+          fmt::format("decision_variables({}) is dummy", i));
     }
     if (decision_variable_index_.find(decision_variables(i).get_id()) !=
         decision_variable_index_.end()) {
-      throw std::runtime_error(
-          fmt::format("{} is already a decision variable.", decision_variables(i)));
+      throw std::runtime_error(fmt::format("{} is already a decision variable.",
+                                           decision_variables(i)));
     }
     if (indeterminates_index_.find(decision_variables(i).get_id()) !=
         indeterminates_index_.end()) {
-      throw std::runtime_error(
-          fmt::format("{} is already an indeterminate.", decision_variables(i)));
+      throw std::runtime_error(fmt::format("{} is already an indeterminate.",
+                                           decision_variables(i)));
     }
-    decision_variable_index_.insert(
-        std::make_pair(decision_variables(i).get_id(), num_existing_decision_vars + i));
+    decision_variable_index_.insert(std::make_pair(
+        decision_variables(i).get_id(), num_existing_decision_vars + i));
   }
   decision_variables_.conservativeResize(num_existing_decision_vars +
                                          decision_variables.rows());
