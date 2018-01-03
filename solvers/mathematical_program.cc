@@ -255,8 +255,8 @@ void MathematicalProgram::AddIndeterminates(
   const int num_old_indeterminates = num_indeterminates();
   for (int i = 0; i < new_indeterminates.rows(); ++i) {
     if (new_indeterminates(i).is_dummy()) {
-      throw std::runtime_error(
-          fmt::format("new_indeterminates({}) is dummy.", i));
+      throw std::runtime_error(fmt::format(
+          "new_indeterminates({}) should not be a dummy variable.", i));
     }
     if (indeterminates_index_.find(new_indeterminates(i).get_id()) !=
             indeterminates_index_.end() ||
