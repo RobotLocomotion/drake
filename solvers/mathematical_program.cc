@@ -13,7 +13,8 @@
 #include <utility>
 #include <vector>
 
-#include <spdlog/fmt/ostr.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
@@ -156,8 +157,8 @@ void MathematicalProgram::AddDecisionVariables(
   const int num_existing_decision_vars = num_vars();
   for (int i = 0; i < decision_variables.rows(); ++i) {
     if (decision_variables(i).is_dummy()) {
-      throw std::runtime_error(
-          fmt::format("decision_variables({}) is dummy", i));
+      throw std::runtime_error(fmt::format(
+          "decision_variables({}) should not be a dummy variable", i));
     }
     if (decision_variable_index_.find(decision_variables(i).get_id()) !=
         decision_variable_index_.end()) {
