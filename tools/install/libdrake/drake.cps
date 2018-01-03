@@ -139,6 +139,7 @@
     "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
   },
   "X-CMake-Variables-Init": {
+    "_Boost_COMPONENT_DEPENDENCIES": 1,
     "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
   }
 }
