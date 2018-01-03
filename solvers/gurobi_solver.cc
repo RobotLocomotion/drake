@@ -779,12 +779,12 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
           break;
         }
         case GRB_UNBOUNDED: {
-          SetOptimalCost(-std::numeric_limits<double>::infinity());
+          prog.SetOptimalCost(-std::numeric_limits<double>::infinity());
           result = SolutionResult::kUnbounded;
           break;
         }
         case GRB_INFEASIBLE: {
-          SetOptimalCost(std::numeric_limits<double>::infinity());
+          prog.SetOptimalCost(std::numeric_limits<double>::infinity());
           result = SolutionResult::kInfeasibleConstraints;
           break;
         }

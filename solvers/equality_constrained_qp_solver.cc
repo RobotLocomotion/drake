@@ -251,18 +251,18 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     case SolutionResult::kSolutionFound: {
       optimal_cost = 0.5 * x.dot(G * x) + c.dot(x) + constant_term;
       break;
-                                         }
+    }
     case SolutionResult::kUnbounded: {
       optimal_cost = -std::numeric_limits<double>::infinity();
       break;
-                                     }
+    }
     case SolutionResult::kInfeasibleConstraints: {
       optimal_cost = std::numeric_limits<double>::infinity();
       break;
     }
     default: {
-               optimal_cost = NAN;
-             }
+      optimal_cost = NAN;
+    }
   }
   prog.SetOptimalCost(optimal_cost);
   prog.SetSolverId(id());
