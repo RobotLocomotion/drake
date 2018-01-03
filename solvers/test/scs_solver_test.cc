@@ -151,6 +151,25 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
 
+TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
+  ScsSolver solver;
+  if (solver.available()) {
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+    EXPECT_EQ(prog_->GetOptimalCost(), std::numeric_limits<double>::infinity());
+  }
+}
+
+TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
+  ScsSolver solver;
+  if (solver.available()) {
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kUnbounded);
+    EXPECT_EQ(prog_->GetOptimalCost(),
+              -std::numeric_limits<double>::infinity());
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {

@@ -1,6 +1,7 @@
 #include "drake/solvers/linear_system_solver.h"
 
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <vector>
 

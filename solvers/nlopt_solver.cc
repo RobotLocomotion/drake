@@ -294,6 +294,38 @@ void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
   }
 }
 
+template <typename Binding>
+bool IsVectorOfConstraintsSatisfiedAtSolution(
+    const MathematicalProgram& prog, const std::vector<Binding>& bindings,
+    double tol) {
+  for (const auto& binding : bindings) {
+    const Eigen::VectorXd constraint_val = prog.EvalBindingAtSolution(binding);
+    const int num_constraint = constraint_val.rows();
+    if (((constraint_val - binding.constraint()->lower_bound()).array() <
+         -Eigen::ArrayXd::Constant(num_constraint, tol))
+            .any() ||
+        ((constraint_val - binding.constraint()->upper_bound()).array() >
+         Eigen::ArrayXd::Constant(num_constraint, tol))
+            .any()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Check if all the constraints are satisfied.
+ * @param all_constraints_satisfied [in/out] If not all constraints were satisfied before we check `bindings`, then bypass this check. Otherwise check if `bindings` are satisfied.
+ */
+template <typename Binding>
+void CheckConstraintsSatisfied(const MathematicalProgram& prog,
+                               const std::vector<Binding>& bindings, double tol,
+                               bool* all_constraints_satisfied) {
+  if (*all_constraints_satisfied) {
+    *all_constraints_satisfied &=
+        IsVectorOfConstraintsSatisfiedAtSolution(prog, bindings, tol);
+  }
+}
 }  // anonymous namespace
 
 bool NloptSolver::available() const { return true; }
@@ -378,27 +410,87 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   SolutionResult result = SolutionResult::kSolutionFound;
 
   double minf = 0;
+  const double kUnboundedTol = -1E30;
   try {
     const nlopt::result nlopt_result = opt.optimize(x, minf);
-    unused(nlopt_result);
+    if (nlopt_result == nlopt::SUCCESS ||
+        nlopt_result == nlopt::STOPVAL_REACHED ||
+        nlopt_result == nlopt::XTOL_REACHED ||
+        nlopt_result == nlopt::FTOL_REACHED ||
+        nlopt_result == nlopt::MAXEVAL_REACHED ||
+        nlopt_result == nlopt::MAXTIME_REACHED) {
+      Eigen::VectorXd sol(x.size());
+      for (int i = 0; i < nx; i++) {
+        sol(i) = x[i];
+      }
+      prog.SetDecisionVariableValues(sol);
+    }
+    switch (nlopt_result) {
+      case nlopt::SUCCESS:
+      case nlopt::STOPVAL_REACHED: {
+        result = SolutionResult::kSolutionFound;
+        break;
+      }
+      case nlopt::FTOL_REACHED:
+      case nlopt::XTOL_REACHED: {
+        // Now check if the constraints are violated.
+        // TODO(hongkai.dai) Allow the user to set this tolerance.
+        const double constraint_tol = 1E-6;
+        bool all_constraints_satisfied = true;
+        CheckConstraintsSatisfied(prog, prog.generic_constraints(),
+                                  constraint_tol, &all_constraints_satisfied);
+        CheckConstraintsSatisfied(prog, prog.bounding_box_constraints(),
+                                  constraint_tol, &all_constraints_satisfied);
+        CheckConstraintsSatisfied(prog, prog.linear_constraints(),
+                                  constraint_tol, &all_constraints_satisfied);
+        CheckConstraintsSatisfied(prog, prog.linear_equality_constraints(),
+                                  constraint_tol, &all_constraints_satisfied);
+        CheckConstraintsSatisfied(prog, prog.lorentz_cone_constraints(),
+                                  constraint_tol, &all_constraints_satisfied);
+        CheckConstraintsSatisfied(prog, prog.rotated_lorentz_cone_constraints(),
+                                  constraint_tol, &all_constraints_satisfied);
+        if (!all_constraints_satisfied) {
+          result = SolutionResult::kInfeasibleConstraints;
+        }
+        break;
+      }
+      case nlopt::MAXTIME_REACHED:
+      case nlopt::MAXEVAL_REACHED: {
+        result = SolutionResult::kIterationLimit;
+        break;
+      }
+      case nlopt::INVALID_ARGS: {
+        result = SolutionResult::kInvalidInput;
+        break;
+      }
+      case nlopt::ROUNDOFF_LIMITED: {
+        if (minf < kUnboundedTol) {
+          result = SolutionResult::kUnbounded;
+          minf = -std::numeric_limits<double>::infinity();
+          break;
+        }
+        result = SolutionResult::kUnknownError;
+        break;
+      }
+      default: { result = SolutionResult::kUnknownError; }
+    }
   } catch (std::invalid_argument&) {
     result = SolutionResult::kInvalidInput;
   } catch (std::bad_alloc&) {
     result = SolutionResult::kUnknownError;
   } catch (nlopt::roundoff_limited) {
-    result = SolutionResult::kUnknownError;
+    if (minf < kUnboundedTol) {
+      result = SolutionResult::kUnbounded;
+      minf = -std::numeric_limits<double>::infinity();
+    } else {
+      result = SolutionResult::kUnknownError;
+    }
   } catch (nlopt::forced_stop) {
     result = SolutionResult::kUnknownError;
-  } catch (std::runtime_error&) {
+  } catch (std::runtime_error) {
     result = SolutionResult::kUnknownError;
   }
 
-  Eigen::VectorXd sol(x.size());
-  for (int i = 0; i < nx; i++) {
-    sol(i) = x[i];
-  }
-
-  prog.SetDecisionVariableValues(sol);
   prog.SetOptimalCost(minf);
   prog.SetSolverId(id());
   return result;

@@ -397,6 +397,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         result_ = SolutionResult::kInfeasibleConstraints;
         break;
       }
+      case Ipopt::DIVERGING_ITERATES: {
+        result_ = SolutionResult::kUnbounded;
+        obj_value = -std::numeric_limits<double>::infinity();
+        break;
+      }
       case Ipopt::MAXITER_EXCEEDED: {
         result_ = SolutionResult::kIterationLimit;
         drake::log()->warn(
