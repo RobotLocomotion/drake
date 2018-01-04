@@ -421,7 +421,6 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
       case nlopt::XTOL_REACHED: {
         // Now check if the constraints are violated.
         // TODO(hongkai.dai) Allow the user to set this tolerance.
-        const double constraint_tol = 1E-6;
         bool all_constraints_satisfied = true;
         auto constraint_test = [&prog, constraint_tol,
                                 &all_constraints_satisfied](auto constraints) {
