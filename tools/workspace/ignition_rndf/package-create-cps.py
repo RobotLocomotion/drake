@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-from drake.tools.install.cpsutils import read_defs, read_requires
+from drake.tools.install.cpsutils import read_version_defs, read_requires
 
-defs = read_defs("set[\s]\(PROJECT_(.*_VERSION)\s+([^\s]+)\)")
+def_re = "#define IGNITION_RNDF_VERSION_FULL[\s]\"([0-9]+).([0-9]+).([0-9]+).*\""
+defs = read_version_defs(def_re)
 
 defs.update(read_requires())
 
@@ -12,7 +13,7 @@ content = """
   "Name": "ignition-rndf0",
   "Description": "Ignition RNDF is a portable C++ library for parsing RNDF road network files",
   "License": "Apache-2.0",
-  "Version": "%(MAJOR_VERSION)s.%(MINOR_VERSION)s.%(PATCH_VERSION)s",
+  "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
   "Requires": {
     "ignition-math4": {
       "Version": "%(ignition-math4_VERSION)s",

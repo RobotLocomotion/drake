@@ -6,8 +6,8 @@ def ignition_math_repository(name):
     bitbucket_archive(
         name = name,
         repository = "ignitionrobotics/ign-math",
-        commit = "392237e10ba4",
-        sha256 = "44068bb91c07c9305213057cad801ae5b689ac1a5f37cd8330dd6e729df8f5b0",  # noqa
-        strip_prefix = "ignitionrobotics-ign-math-392237e10ba4",
+        commit = "568cf1457760",
+        sha256 = "bd0cafb01cc219c5e12c6b049cae44cfa68bb39bdb52a3c79c37f2163d7d4967",  # noqa
+        strip_prefix = "ignitionrobotics-ign-math-568cf1457760",
         build_file = "@drake//tools/workspace/ignition_math:package.BUILD.bazel",  # noqa
     )

@@ -29,6 +29,7 @@ cmake_configure_file(
     out = "include/ignition/math/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
+        "PROJECT_VERSION_MAJOR=4",
         "PROJECT_MAJOR_VERSION=4",
         "PROJECT_MINOR_VERSION=0",
         "PROJECT_PATCH_VERSION=0",
