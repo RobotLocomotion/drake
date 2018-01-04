@@ -329,6 +329,7 @@ pkg_config_package(
     name = "yaml_cpp",
     atleast_version = "0.5.2",
     modname = "yaml-cpp",
+    build_file_template = "tools/workspace/yaml-cpp/yaml-cpp.BUILD.tpl",
 )
 
 load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
