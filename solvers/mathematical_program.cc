@@ -132,14 +132,18 @@ MathematicalProgram::MathematicalProgram()
       scs_solver_(new ScsSolver()) {}
 
 std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
+  // The constructor of MathematicalProgram will construct each solver. It also
+  // sets x_values_ and x_initial_guess_ to default values.
   auto new_prog = std::make_unique<MathematicalProgram>();
   // Add variables and indeterminates
+  // AddDecisionVariables and AddIndeterminates also set
+  // decision_variable_index_ and indeterminate_index_ properly.
   new_prog->AddDecisionVariables(decision_variables_);
   new_prog->AddIndeterminates(indeterminates_);
   // Add costs
   new_prog->generic_costs_ = generic_costs_;
-  new_prog->linear_costs_ = linear_costs_;
   new_prog->quadratic_costs_ = quadratic_costs_;
+  new_prog->linear_costs_ = linear_costs_;
 
   // Add constraints
   new_prog->generic_constraints_ = generic_constraints_;

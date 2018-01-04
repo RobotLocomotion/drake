@@ -2111,11 +2111,11 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
   // The quadratic expression is actually affine.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0), 3 * x_(1) + 2),
                runtime_error);
-  EXPECT_THROW(
-      prog_.AddLorentzConeConstraint(
-          2 * x_(0), x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
-                         x_(0) * x_(0) + 2 * x_(1) + 3),
-      runtime_error);
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0),
+                   x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
+                       x_(0) * x_(0) + 2 * x_(1) + 3),
+               runtime_error);
 
   // The Hessian matrix is not positive semidefinite.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
@@ -2139,10 +2139,11 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
                runtime_error);
 
   // The quadratic expression is a negative constant.
-  EXPECT_THROW(prog_.AddLorentzConeConstraint(
-                   2 * x_(0) + 3, pow(x_(0), 2) - pow(x_(1), 2) -
-                                      (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
-               runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
+                                     pow(x_(0), 2) - pow(x_(1), 2) -
+                                         (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
+      runtime_error);
 
   // The first expression is not actually linear.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) * x_(1), pow(x_(0), 2)),
@@ -2569,40 +2570,6 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
 }
 
-// Determine if two bindings are the same. Two bindings are the same if
-// 1. They contain the same constraint pointer.
-// 2. Their bound variables are the same.
-template <typename Constraint>
-bool IsBindingEqual(const Binding<Constraint>& binding1,
-                    const Binding<Constraint>& binding2) {
-  if (binding1.constraint() != binding2.constraint()) {
-    return false;
-  }
-  if (binding1.variables().rows() != binding2.variables().rows()) {
-    return false;
-  }
-  for (int i = 0; i < binding1.variables().rows(); ++i) {
-    if (!binding1.variables()(i).equal_to(binding2.variables()(i))) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template <typename Constraint>
-bool IsVectorOfBindingEqual(const std::vector<Binding<Constraint>>& bindings1,
-                            const std::vector<Binding<Constraint>>& bindings2) {
-  if (bindings1.size() != bindings2.size()) {
-    return false;
-  }
-  for (int i = 0; i < static_cast<int>(bindings1.size()); ++i) {
-    if (!IsBindingEqual(bindings1[i], bindings2[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
 GTEST_TEST(testMathematicalProgram, testClone) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
@@ -2667,6 +2634,9 @@ GTEST_TEST(testMathematicalProgram, testClone) {
         prog.decision_variable(i).equal_to(new_prog->decision_variable(i)));
     EXPECT_EQ(prog.FindDecisionVariableIndex(prog.decision_variable(i)),
               new_prog->FindDecisionVariableIndex(prog.decision_variable(i)));
+    // Cloned program has all variable values set to NaN.
+    EXPECT_TRUE(
+        std::isnan(new_prog->GetSolution(new_prog->decision_variable(i))));
   }
   for (int i = 0; i < prog.num_indeterminates(); ++i) {
     EXPECT_TRUE(prog.indeterminate(i).equal_to(new_prog->indeterminate(i)));
@@ -2712,7 +2682,6 @@ GTEST_TEST(testMathematicalProgram, testClone) {
   EXPECT_TRUE(CompareMatrices(new_prog->initial_guess(), prog.initial_guess()));
   EXPECT_EQ(new_prog->GetSolverId(), prog.GetSolverId());
 }
-
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

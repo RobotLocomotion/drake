@@ -17,7 +17,10 @@ namespace solvers {
 namespace test {
 
 // A generic constraint derived from Constraint class. This is meant for testing
-// adding a constraint to optimization program
+// adding a constraint to optimization program.
+// -1 <= x(0) * x(1) + x(2) / x(0) * private_val <= 2
+// -2 <= x(1) * x(2) - x(0) <= 1
+// This constraint stores that private_val internally, to detect object slicing.
 class GenericTrivialConstraint1 : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GenericTrivialConstraint1)

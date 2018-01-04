@@ -293,12 +293,15 @@ class MathematicalProgram {
   virtual ~MathematicalProgram() {}
 
   /** Clones an optimization program.
-   * Constructes a new optimization program to be identical to the old program.
-   * These two programs will have the same decision variables, constraints and
-   * costs.
-   * They will also have the same solver settings, initial guess, and x_values_.
-   * But the internal solvers, such as EqualityConstrainedQPSolver, will be
-   * freshly constructed, instead of being copied.
+   * The clone will be functionally equivalent to the source program with the
+   * same:
+   * - decision variables
+   * - constraints
+   * - costs
+   * - solver settings
+   * - initial guess
+   * However, the clones x values will be initialize to NaN, and all internal
+   * solvers will be freshly constructed.
    * @retval new_prog. The newly constructed mathematical program.
    */
   virtual std::unique_ptr<MathematicalProgram> Clone() const;
