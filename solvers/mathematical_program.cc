@@ -115,9 +115,6 @@ enum {
 // to int so it is odr-used (see
 // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
 
-constexpr double MathematicalProgram::kGlobalInfeasibleCost;
-constexpr double MathematicalProgram::kUnboundedCost;
-
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
