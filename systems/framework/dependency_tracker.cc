@@ -56,8 +56,13 @@ void DependencyTracker::NotePrerequisiteChange(
     return;
   }
   last_change_event_ = change_event;
-  // Update associated value if any.
-  cache_value_->set_is_up_to_date(false);
+
+  // TODO(sherm1) Stubbed to allow for null cache entry; can't happen once
+  // the cache is in place.
+  if (cache_value_) {
+    // Update associated value if any.
+    cache_value_->set_is_up_to_date(false);
+  }
   // Follow up with downstream subscribers.
   NotifySubscribers(change_event, depth);
 }
@@ -164,7 +169,8 @@ void DependencyTracker::RemoveDownstreamSubscriber(
 }
 
 std::string DependencyTracker::GetPathDescription() const {
-  return get_owning_subgraph().get_owning_subcontext().GetSystemPathname()
+  // TODO(sherm1) Name stubbed out.
+  return std::string("System/Pathname/Stubbed/Out")
       + ":" + description();
 }
 
@@ -185,18 +191,11 @@ bool DependencyTracker::HasSubscriber(
 void DependencyTracker::RepairTrackerPointers(
     const DependencyTracker& source,
     const DependencyTracker::PointerMap& tracker_map, Cache* cache) {
-  DRAKE_DEMAND(cache != nullptr);
-  // Set the cache entry pointer.
+  unused(cache);  // TODO(sherm1) Stubbed out.
   if (source.cache_value_ == &dummy_cache_value_) {
     cache_value_ = &dummy_cache_value_;
   } else {
-    const CacheIndex source_index(source.cache_value_->cache_index());
-    cache_value_ = &cache->get_mutable_cache_entry_value(source_index);
-    SPDLOG_DEBUG(
-        log(),
-        "Cloned tracker '{}' repairing cache entry {} invalidation to {:#x}.",
-        GetPathDescription(), source.cache_value_->cache_index(),
-        size_t(cache_value_));
+    // TODO(sherm1) Cache entry stubbed out.
   }
 
   // Set the subscriber pointers.
@@ -238,7 +237,7 @@ void DependencyGraph::RepairTrackerPointers(
     if (!has_tracker(ticket)) continue;
     get_mutable_tracker(ticket).RepairTrackerPointers(
         source.get_tracker(ticket), tracker_map,
-        &owning_subcontext->get_mutable_cache());
+        nullptr);  // TODO(sherm1) Cache stubbed out.
   }
 }
 

@@ -14,12 +14,6 @@ namespace drake {
 namespace systems {
 namespace {
 
-// These are dummies required by the API.
-auto alloc = [](const ContextBase&){return AbstractValue::Make<int>(3);};
-auto calc = [](const ContextBase&, AbstractValue* result) {
-  result->SetValue(99);
-};
-
 // This is so we can use the contained dependency graph and cache objects.
 class MyContextBase : public ContextBase {
  public:
@@ -75,16 +69,19 @@ class HandBuiltDependencies : public ::testing::Test {
     downstream1_->SubscribeToPrerequisite(upstream1_);
     downstream2_->SubscribeToPrerequisite(middle1_);
 
-    Cache& cache = context_.get_mutable_cache();
-    entry0_ = &system_.DeclareCacheEntry(
-        "entry0", alloc, calc,
-        {system_.time_ticket(), middle1_->ticket(), downstream2_->ticket()});
-    auto& value = cache.CreateNewCacheEntryValue(*entry0_, &graph);
-    value.SetInitialValue(entry0_->Allocate(context_));
-    entry0_tracker_ = &graph.get_mutable_tracker(entry0_->ticket());
-
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(system_.time_ticket());
+
+    // TODO(sherm1) Mock up a cache entry value and tracker that depends
+    // on time, middle1, and downstream2.
+    DependencyTicket cache_ticket = system_.assign_next_dependency_ticket();
+    entry0_value_ = std::make_unique<CacheEntryValue>(
+        CacheIndex(0), cache_ticket, "entry0", AbstractValue::Make<int>(3));
+    entry0_tracker_ = &graph.CreateNewDependencyTracker(cache_ticket, "entry0",
+                                                        entry0_value_.get());
+    entry0_tracker_->SubscribeToPrerequisite(time_tracker_);
+    entry0_tracker_->SubscribeToPrerequisite(middle1_);
+    entry0_tracker_->SubscribeToPrerequisite(downstream2_);
   }
 
   MySystemBase system_;
@@ -95,8 +92,8 @@ class HandBuiltDependencies : public ::testing::Test {
   DependencyTracker* upstream2_{};
   DependencyTracker* downstream1_{};
   DependencyTracker* downstream2_{};
-  const CacheEntry* entry0_{};
   DependencyTracker* entry0_tracker_{};
+  std::unique_ptr<CacheEntryValue> entry0_value_;
   DependencyTracker* time_tracker_{};
 };
 
@@ -117,13 +114,11 @@ TEST_F(HandBuiltDependencies, Unsubscribe) {
 TEST_F(HandBuiltDependencies, Notify) {
   // Just-allocated cache entries are not up to date. We're not using the
   // cache entry API here -- just playing with the underlying "up to date" flag.
-  CacheEntryValue& value =
-      entry0_->get_mutable_cache_entry_value(context_);
-  EXPECT_FALSE(entry0_->is_up_to_date(context_));
+  CacheEntryValue& value = *entry0_value_;
+
   EXPECT_FALSE(value.is_up_to_date());
   value.set_value(1125);
   EXPECT_TRUE(value.is_up_to_date());
-  EXPECT_TRUE(entry0_->is_up_to_date(context_));
 
   // Nobody should have been notified yet.
   EXPECT_EQ(time_tracker_->num_notifications_received(), 0);
@@ -138,20 +133,20 @@ TEST_F(HandBuiltDependencies, Notify) {
   downstream1_->NoteValueChange(1LL);
   EXPECT_EQ(downstream1_->num_value_change_events(), 1);
   EXPECT_EQ(downstream1_->num_notifications_received(), 1);
-  EXPECT_TRUE(entry0_->is_up_to_date(context_));
+  EXPECT_TRUE(value.is_up_to_date());
 
   // The cache entry depends directly on time.
   time_tracker_->NoteValueChange(2LL);
-  EXPECT_FALSE(entry0_->is_up_to_date(context_));
+  EXPECT_FALSE(value.is_up_to_date());
   EXPECT_EQ(time_tracker_->num_notifications_received(), 1);
   EXPECT_EQ(entry0_tracker_->num_notifications_received(), 1);
 
   // Cache entry depends indirectly on upstream1, two different ways. Also,
   // middle1, downstream1&2 should have been notified along the way.
   value.set_is_up_to_date(true);
-  EXPECT_TRUE(entry0_->is_up_to_date(context_));
+  EXPECT_TRUE(value.is_up_to_date());
   upstream1_->NoteValueChange(3LL);
-  EXPECT_FALSE(entry0_->is_up_to_date(context_));
+  EXPECT_FALSE(value.is_up_to_date());
   EXPECT_EQ(time_tracker_->num_notifications_received(), 1);
   EXPECT_EQ(upstream1_->num_notifications_received(), 1);
   EXPECT_EQ(upstream2_->num_notifications_received(), 0);
@@ -220,9 +215,9 @@ TEST_F(HandBuiltDependencies, Clone) {
   auto& down2 = clone_graph.get_mutable_tracker(downstream2_->ticket());
   // The CacheEntry belongs to the System so is unchanged, but the corresponding
   // value and tracker are in the cloned context.
-  auto& e0_tracker = clone_graph.get_mutable_tracker(entry0_->ticket());
-  CacheEntryValue& e0_value =
-      entry0_->get_mutable_cache_entry_value(*clone_context);
+  auto& e0_tracker = clone_graph.get_mutable_tracker(entry0_tracker_->ticket());
+
+  // TODO(sherm1) Cache value checks stubbed out.
 
   // All stats should have been cleared in the clone.
   EXPECT_EQ(time1.num_notifications_received(), 0);
@@ -232,10 +227,6 @@ TEST_F(HandBuiltDependencies, Clone) {
   EXPECT_EQ(down1.num_notifications_received(), 0);
   EXPECT_EQ(down2.num_notifications_received(), 0);
   EXPECT_EQ(e0_tracker.num_notifications_received(), 0);
-
-  EXPECT_FALSE(entry0_->is_up_to_date(*clone_context));
-  e0_value.set_value(101);
-  EXPECT_TRUE(entry0_->is_up_to_date(*clone_context));
 
   // Upstream2 is prerequisite to middle1 which is prerequisite to down1,2 and
   // the cache entry, and down2 gets the cache entry again so should be
