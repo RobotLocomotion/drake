@@ -69,16 +69,18 @@ bool IiwaMove::ActionFinished(const WorldState& est_state) const {
 WsgAction::WsgAction() {}
 
 void WsgAction::OpenGripper(const WorldState& est_state,
+                            double grip_force,
                             lcmt_schunk_wsg_command* msg) {
   StartAction(est_state.get_wsg_time());
   *msg = lcmt_schunk_wsg_command();
   msg->utime = est_state.get_wsg_time() * 1e6;
   msg->target_position_mm = 100;  // Maximum aperture for WSG
-  msg->force = 40;  // Force in center of WSG range
+  msg->force = grip_force;
   last_command_ = kOpen;
 }
 
 void WsgAction::CloseGripper(const WorldState& est_state,
+                             double grip_force,
                              lcmt_schunk_wsg_command* msg) {
   StartAction(est_state.get_wsg_time());
   *msg = lcmt_schunk_wsg_command();
@@ -86,7 +88,7 @@ void WsgAction::CloseGripper(const WorldState& est_state,
   msg->target_position_mm = 8;  // 0 would smash the fingers together
                                 // and keep applying force on a real
                                 // WSG when no object is grasped.
-  msg->force = 40;
+  msg->force = grip_force;
   last_command_ = kClose;
 }
 

@@ -148,6 +148,7 @@ object {
 # effector is attached to.
 task {
   end_effector_name: "iiwa_link_ee"
+  grip_force: 42
 }
 
 # Contact parameters
