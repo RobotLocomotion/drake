@@ -48,7 +48,6 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 bash-completion
 binutils
 bison
-chrpath
 clang-4.0
 clang-format-4.0
 cmake
@@ -98,7 +97,6 @@ libxt-dev
 libyaml-cpp-dev
 lldb-4.0
 make
-mesa-common-dev
 openjdk-8-jdk
 patchelf
 patchutils

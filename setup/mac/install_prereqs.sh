@@ -23,7 +23,7 @@ if [[ ! -f /usr/include/expat.h || ! -f /usr/include/zlib.h ]]; then
   exit 3
 fi
 
-brew tap homebrew/science
+brew tap dreal/dreal
 brew tap robotlocomotion/director
 
 brew update
@@ -41,7 +41,7 @@ clang-format
 cmake
 diffstat
 doxygen
-dreal/dreal/dreal
+dreal
 gflags
 glew
 glib
