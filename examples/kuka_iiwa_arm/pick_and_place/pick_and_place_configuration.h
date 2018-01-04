@@ -46,6 +46,8 @@ struct PlannerConfiguration {
   /// Number of tables for which the planner should expect to receive pose
   /// inputs.
   int num_tables{0};
+  /// Gripping force to apply (in Newtons).
+  double grip_force{40.};
 
   /// Returns the absolute path for our @p drake_relative_model_path.
   std::string absolute_model_path() const {

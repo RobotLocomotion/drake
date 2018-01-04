@@ -127,6 +127,7 @@ class WsgAction : public Action {
    * driver to fully open.
    */
   void OpenGripper(const WorldState& est_state,
+                   double grip_force,
                    lcmt_schunk_wsg_command* msg);
 
   /**
@@ -134,6 +135,7 @@ class WsgAction : public Action {
    * driver to fully close.
    */
   void CloseGripper(const WorldState& est_state,
+                    double grip_force,
                     lcmt_schunk_wsg_command* msg);
 
   // TODO(siyuanfeng): Implement something meaningful here like a check for a
