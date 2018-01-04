@@ -112,7 +112,7 @@
  forces are equal and opposite, we limit our discussion to the force `f` acting
  on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
 
- @image html simple_contact.png "Figure 1: Illustration of contact between two spheres."
+ @image html multibody/rigid_body_plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
 
  The computation of the contact force is most naturally discussed in the
  contact frame `C` (shown in Figure 1).
@@ -487,7 +487,7 @@
                       fₚ
       Figure 2: Idealized Stiction/Sliding Friction Model
  -->
- @image html ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
+ @image html multibody/rigid_body_plant/images/ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
 
  In _idealized_ stiction, tangent force `fₜ` is equal and opposite
  to the pushing force `fₚ` up to the point where that force is sufficient to
@@ -523,7 +523,7 @@
 
    Figure 3: Stribeck function for stiction.
  -->
- @image html stribeck.png "Figure 3: Stribeck function for stiction"
+ @image html multibody/rigid_body_plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
 
  <!-- TODO(SeanCurtis-TRI,sherm1) Consider using "static" and "kinetic"
  coefficients of friction so we can write μₛ and μₖ in Unicode ("d" isn't

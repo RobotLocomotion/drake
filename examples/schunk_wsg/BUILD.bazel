@@ -41,7 +41,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
         "//drake/systems/lcm",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 

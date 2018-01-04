@@ -95,8 +95,8 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  * </tr>
  * </table>
  *
@@ -290,6 +290,13 @@ class MathematicalProgram {
 
   using VarType = symbolic::Variable::Type;
 
+  /// The optimal cost is +∞ when the problem is globally infeasible.
+  static constexpr double kGlobalInfeasibleCost =
+    std::numeric_limits<double>::infinity();
+  /// The optimal cost is -∞ when the problem is unbounded.
+  static constexpr double kUnboundedCost =
+    -std::numeric_limits<double>::infinity();
+
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
 
@@ -355,8 +362,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewContinuousVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -425,8 +432,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewBinaryVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -514,6 +521,16 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /** Appends new variables to the end of the existing variables.
+   * @param decision_variables The newly added decision_variables.
+   * @pre `decision_variables` should not intersect with the existing variables
+   * or indeterminates in the optimization program.
+   * @pre Each entry in `decision_variables` should not be a dummy variable.
+   * @throw runtime_error if the preconditions are not satisfied.
+   */
+  void AddDecisionVariables(
+      const Eigen::Ref<const VectorXDecisionVariable>& decision_variables);
 
   /**
    * Returns a free polynomial in a monomial basis over @p indeterminates of a
@@ -689,6 +706,19 @@ class MathematicalProgram {
    */
   MatrixXIndeterminate NewIndeterminates(int rows, int cols,
                                          const std::string& name = "X");
+
+  /** Adds indeterminates.
+   * This method appends some indeterminates to the end of the program's old
+   * indeterminates.
+   * @param new_indeterminates The indeterminates to be appended to the
+   * program's old indeterminates.
+   * @pre `new_indeterminates` should not intersect with the program's old
+   * indeterminates or decision variables.
+   * @pre Each entry in new_indeterminates should not be dummy.
+   * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
+   */
+  void AddIndeterminates(
+      const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
 
   /**
    * Adds a generic cost to the optimization program.
@@ -1993,8 +2023,14 @@ class MathematicalProgram {
   optional<SolverId> GetSolverId() const { return solver_id_; }
 
   /**
-   * Getter for optimal cost at the solution. Will return NaN if there has
-   * been no successful solution.
+   * Getter for optimal cost at the solution.
+   * If the solver finds an optimal solution, then we return the cost evaluated
+   * at this solution.
+   * If the program is unbounded, then the optimal cost is -∞.
+   * If the program is globally infeasible, then the optimal cost is +∞.
+   * If the program is locally infeasible, then the solver (e.g. SNOPT) might
+   * return some finite value as the optimal cost.
+   * Otherwise, the optimal cost is NaN.
    */
   double GetOptimalCost() const { return optimal_cost_; }
 

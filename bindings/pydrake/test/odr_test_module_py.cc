@@ -1,6 +1,6 @@
 #include <pybind11/pybind11.h>
 
-#include "drake/bindings/pydrake/symbolic_types_py.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 
 namespace py = pybind11;
 

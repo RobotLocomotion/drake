@@ -128,12 +128,10 @@ github_archive(
     build_file = "tools/workspace/gtest/gtest.BUILD.bazel",
 )
 
-# When updating the version of gflags, update tools/install/gflags/gflags.cps
-github_archive(
-    name = "com_github_gflags_gflags",
-    repository = "gflags/gflags",
-    commit = "95ffb27c9c7496ede1409e042571054c70cb9519",
-    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",  # noqa
+load("//tools/workspace/gflags:gflags.bzl", "gflags_repository")
+
+gflags_repository(
+    name = "gflags",
 )
 
 github_archive(
@@ -280,8 +278,8 @@ github_archive(
 github_archive(
     name = "pybind11",
     repository = "RobotLocomotion/pybind11",
-    commit = "ffcf754ae9e766632610975d22372a86a7b63014",
-    sha256 = "7cd6f4efb02bf9ae17eeb2afba68023af913e61ae76e8b4254203d0eec019525",  # noqa
+    commit = "48999b69bde29cdf8d616d4fbd3d6ab1c561027d",
+    sha256 = "2ea18adfb608948cab1b5978081dc8c318ed47573ccd66f1603a37fbdbfc56da",  # noqa
     build_file = "tools/workspace/pybind11/pybind11.BUILD.bazel",
 )
 
@@ -408,9 +406,9 @@ new_local_repository(
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
-    commit = "ignition-math3_3.2.0",
-    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",  # noqa
-    strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4",
+    commit = "392237e10ba4",
+    sha256 = "44068bb91c07c9305213057cad801ae5b689ac1a5f37cd8330dd6e729df8f5b0",  # noqa
+    strip_prefix = "ignitionrobotics-ign-math-392237e10ba4",
     build_file = "tools/workspace/ignition_math/ignition_math.BUILD.bazel",
 )
 

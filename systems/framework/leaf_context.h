@@ -38,13 +38,6 @@ class LeafContext : public Context<T> {
         parameters_(std::make_unique<Parameters<T>>()) {}
   ~LeafContext() override {}
 
-  void SetInputPortValue(int index,
-                         std::unique_ptr<InputPortValue> port) override {
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    // TODO(david-german-tri): Set invalidation callbacks.
-    input_values_[index] = std::move(port);
-  }
-
   /// Removes all the input ports, and deregisters them from the output ports
   /// on which they depend.
   void ClearInputPorts() { input_values_.clear(); }
@@ -151,7 +144,7 @@ class LeafContext : public Context<T> {
         clone->input_values_.emplace_back(nullptr);
       } else {
         clone->input_values_.emplace_back(new FreestandingInputPortValue(
-            port->template get_vector_data<T>()->Clone()));
+            port->template get_abstract_data()->Clone()));
       }
     }
 
@@ -189,6 +182,12 @@ class LeafContext : public Context<T> {
   }
 
  private:
+  void SetInputPortValue(int index,
+                         std::unique_ptr<InputPortValue> port) final {
+    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
+    input_values_[index] = std::move(port);
+  }
+
   // The external inputs to the System.
   std::vector<std::unique_ptr<InputPortValue>> input_values_;
 

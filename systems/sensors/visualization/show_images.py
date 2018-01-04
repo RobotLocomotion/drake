@@ -338,7 +338,6 @@ def decode_image_t(msg, image_in=None):
     rli = rl.image_t
     w = msg.width
     h = msg.height
-    assert msg.compression_method == rli.COMPRESSION_METHOD_ZLIB
     pixel_desc = (msg.pixel_format, msg.channel_type)
     if pixel_desc == (rli.PIXEL_FORMAT_RGBA, rli.CHANNEL_TYPE_UINT8):
         num_channels = 4
@@ -353,14 +352,22 @@ def decode_image_t(msg, image_in=None):
         raise RuntimeError("Unsupported pixel type: {}".format(pixel_desc))
     bytes_per_pixel = np.dtype(dtype).itemsize * num_channels
     assert msg.row_stride == msg.width * bytes_per_pixel
-
+    if msg.compression_method == rli.COMPRESSION_METHOD_NOT_COMPRESSED:
+        data_bytes = msg.data
+    elif msg.compression_method == rli.COMPRESSION_METHOD_ZLIB:
+        # TODO(eric.cousineau): Consider using `data`s buffer, if possible.
+        # Can decompress() somehow use an existing buffer in Python?
+        data_bytes = zlib.decompress(msg.data)
+    else:
+        raise RuntimeError(
+            "Unsupported compression type: {}".format(msg.compression_method))
+    # Cast to desired type and shape.
+    data = np.frombuffer(data_bytes, dtype=dtype)
+    data.shape = (h, w, num_channels)
+    # Copy data to VTK image.
     image = create_image_if_needed(w, h, num_channels, dtype, image_in)
-    data = vtk_image_to_numpy(image)
-    # TODO(eric.cousineau): Consider using `data`s buffer, if possible.
-    # Can decompress() somehow use an existing buffer in Python?
-    data_in = np.frombuffer(zlib.decompress(msg.data), dtype=dtype)
-    data_in.shape = (h, w, num_channels)
-    data[:] = data_in[:]
+    image_data = vtk_image_to_numpy(image)
+    image_data[:] = data[:]
     return image
 
 

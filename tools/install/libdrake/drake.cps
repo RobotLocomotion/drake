@@ -30,14 +30,9 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "gflags": {
-      "Version": "2.2.0",
-      "Hints": ["@prefix@/lib/cmake/gflags"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "ignition-math3": {
-      "Version": "3.2.0",
-      "Hints": ["@prefix@/lib/cmake/ignition-math3"],
+    "ignition-math4": {
+      "Version": "4.0.0",
+      "Hints": ["@prefix@/lib/cmake/ignition-math4"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "ignition-rndf0": {
@@ -98,7 +93,8 @@
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
-        "tinyobjloader:tinyobjloader"
+        "tinyobjloader:tinyobjloader",
+        "yaml-cpp:yaml-cpp"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
@@ -106,24 +102,21 @@
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Bullet:BulletCollision",
         "Eigen3:Eigen",
-        "ignition-math3:ignition-math3",
+        "ignition-math4:ignition-math4",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
         "optitrack:lcmtypes_optitrack-cpp",
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
-        "stx:stx",
-        "yaml-cpp:yaml-cpp"
+        "stx:stx"
       ]
     },
     "drake-common-text-logging-gflags": {
       "Type": "interface",
       "Includes": ["@prefix@/include"],
-      "Requires": [
-        ":drake",
-        "gflags:gflags"
-      ]
+      "Link-Flags": ["-lgflags"],
+      "Requires": [":drake"]
     },
     "drake-lcmtypes-cpp": {
       "Type": "interface",
@@ -140,6 +133,7 @@
     "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
   },
   "X-CMake-Variables-Init": {
+    "_Boost_IMPORTED_TARGETS": 1,
     "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
   }
 }

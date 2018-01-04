@@ -442,11 +442,9 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
     EXPECT_EQ(w1, w2);
 
     // Verify that they are triggering.
-    // NOTE: value_or(999) necessary to work around Mac OS X bug where value()
-    // function is declared but not defined.
     optional<double> iso_time = simulator->GetCurrentWitnessTimeIsolation();
     EXPECT_TRUE(iso_time);
-    EXPECT_LT(std::abs(w1), iso_time.value_or(999));
+    EXPECT_LT(std::abs(w1), iso_time.value());
 
     // Indicate that the method has been called.
     published = true;

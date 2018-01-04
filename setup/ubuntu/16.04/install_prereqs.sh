@@ -48,7 +48,6 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 bash-completion
 binutils
 bison
-chrpath
 clang-4.0
 clang-format-4.0
 cmake
@@ -72,6 +71,7 @@ libboost-all-dev
 libbz2-dev
 libexpat1-dev
 libfreetype6-dev
+libgflags-dev
 libglib2.0-dev
 libglu1-mesa-dev
 libhdf5-dev
@@ -97,7 +97,6 @@ libxt-dev
 libyaml-cpp-dev
 lldb-4.0
 make
-mesa-common-dev
 openjdk-8-jdk
 patchelf
 patchutils
@@ -178,9 +177,9 @@ dpkg_install_from_wget \
 # https://github.com/dreal/dreal4/blob/master/README.md#build-debian-package for
 # build instructions.
 dpkg_install_from_wget \
-  dreal 4.17.12.2 \
-  https://dl.bintray.com/dreal/dreal/dreal_4.17.12.2_amd64.deb \
-  9347492e47a518ff78991e15fe9de0cff0200573091385e42940cdbf1fcf77a5
+  dreal 4.17.12.3 \
+  https://dl.bintray.com/dreal/dreal/dreal_4.17.12.3_amd64.deb \
+  72e878e2af14b1509b8d3a2943d7e7c824babfa755f4928cc3618e1fe85695c9
 
 # Remove deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then
