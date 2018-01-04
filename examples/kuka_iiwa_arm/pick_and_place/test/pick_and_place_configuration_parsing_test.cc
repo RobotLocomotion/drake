@@ -257,15 +257,6 @@ TEST_F(ConfigurationParsingTests, ParsePlannerConfigurationTaskIndex) {
                                planner_configuration_);
 }
 
-TEST_F(ConfigurationParsingTests,
-       ParsePlannerConfigurationRobotAndTargetIndex) {
-  PlannerConfiguration parsed_planner_configuration =
-      ParsePlannerConfigurationOrThrow(kConfigurationFile, "iiwa_link_ee",
-                                       RobotBaseIndex(0), TargetIndex(0));
-  ValidatePlannerConfiguration(parsed_planner_configuration,
-                               planner_configuration_);
-}
-
 TEST_F(ConfigurationParsingTests, ParseSimulatedPlantConfiguration) {
   SimulatedPlantConfiguration parsed_plant_configuration =
       ParseSimulatedPlantConfigurationOrThrow(kConfigurationFile);
