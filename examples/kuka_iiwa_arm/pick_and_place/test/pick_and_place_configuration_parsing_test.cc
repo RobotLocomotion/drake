@@ -243,6 +243,7 @@ class ConfigurationParsingTests : public ::testing::Test {
     planner_configuration_.end_effector_name = kEndEffectorName;
     planner_configuration_.target_dimensions = kTargetDimensions;
     planner_configuration_.num_tables = 6;
+    planner_configuration_.grip_force = 42;
   }
 
   SimulatedPlantConfiguration plant_configuration_;

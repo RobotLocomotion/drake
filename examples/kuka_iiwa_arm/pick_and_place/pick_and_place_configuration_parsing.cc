@@ -187,6 +187,10 @@ pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
           configuration.robot(planner_configuration.robot_index));
   planner_configuration.end_effector_name = end_effector_name;
 
+  if (task.grip_force() != 0) {
+    planner_configuration.grip_force = task.grip_force();
+  }
+
   // Extract number of tables
   planner_configuration.num_tables = configuration.table_size();
 

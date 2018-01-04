@@ -52,7 +52,7 @@ message ModelInstance {
     optional Pose pose = 3;
 }
 
-// Next ID: 4
+// Next ID: 5
 message PickAndPlaceTask {
     // The index of the robot arm to be used for this task.
     // DEFAULT: 0
@@ -62,6 +62,8 @@ message PickAndPlaceTask {
     optional int32 target_index = 2;
     // The name of the end-effector body in the robot.
     required string end_effector_name = 3;
+    // The gripping force to apply (in Newtons).
+    optional double grip_force = 4;
 }
 
 // Next ID: 5
