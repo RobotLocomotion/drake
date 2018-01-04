@@ -291,9 +291,11 @@ class MathematicalProgram {
   using VarType = symbolic::Variable::Type;
 
   /// The optimal cost is +∞ when the problem is globally infeasible.
-  static const double kGlobalInfeasibleCost;
+  static constexpr double kGlobalInfeasibleCost =
+    std::numeric_limits<double>::infinity();
   /// The optimal cost is -∞ when the problem is unbounded.
-  static const double kUnboundedCost;
+  static constexpr double kUnboundedCost =
+    -std::numeric_limits<double>::infinity();
 
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
