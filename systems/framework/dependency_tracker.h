@@ -212,8 +212,7 @@ class DependencyTracker {
   This is the sum of managed-value notifications and prerequisite notifications
   received. */
   int64_t num_notifications_received() const {
-    return num_value_change_notifications_received_ +
-           num_prerequisite_notifications_received_;
+    return num_value_change_events() + num_prerequisite_change_events();
   }
 
   /** How many times did we receive a repeat notification for the same change

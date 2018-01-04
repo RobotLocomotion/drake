@@ -239,7 +239,13 @@ TEST_F(HandBuiltDependencies, Clone) {
   EXPECT_EQ(down1.num_notifications_received(), 1);
   EXPECT_EQ(down2.num_notifications_received(), 1);
   EXPECT_EQ(e0_tracker.num_notifications_received(), 2);
-  EXPECT_EQ(e0_tracker.num_ignored_notifications(), 1);
+
+  // Checking notification sending statistics.
+  EXPECT_EQ(up2.num_notifications_sent(), 1);    // To middle1.
+  EXPECT_EQ(mid1.num_notifications_sent(), 3);   // To down1,2 & cache.
+  EXPECT_EQ(down1.num_notifications_sent(), 0);  // No dependents.
+  EXPECT_EQ(down2.num_notifications_sent(), 1);  // To cache ...
+  EXPECT_EQ(e0_tracker.num_ignored_notifications(), 1);   // ... but ignored.
 }
 
 }  // namespace
