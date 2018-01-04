@@ -18,30 +18,40 @@ load(
     "install",
     "install_cmake_config",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
 # Generates config.hh based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
-    src = "cmake/config.hh.in",
+    src = "include/ignition/math/config.hh.in",
     out = "include/ignition/math/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
-        # It would be nice to get this information directly from
-        # CMakeLists.txt, but it ends up being too hard.  ignition-math sets a
-        # project name as "ignition-math<version>", and then uses CMake
-        # substring to pick that version out.  We'd have to extend the
-        # cmake_configure_file functionality to do the same, and I'm not sure
-        # it is worth it.  We just hard code the major version here.
+        "PROJECT_MAJOR_VERSION=4",
+        "PROJECT_MINOR_VERSION=0",
+        "PROJECT_PATCH_VERSION=0",
+        "PROJECT_VERSION=4.0",
+        "PROJECT_VERSION_FULL=4.0.0~pre3",
         "PROJECT_NAME_NO_VERSION=ignition-math",
-        "PROJECT_MAJOR_VERSION=3",
-        "PROJECT_VERSION_FULL=3.2.0",
     ],
     visibility = ["//visibility:private"],
 )
 
-public_headers = [
+generate_file(
+    name = "export_genrule",
+    out = "include/ignition/math/Export.hh",
+    content = """
+#pragma once
+
+#define IGNITION_MATH_VISIBLE __attribute__ ((visibility("default")))
+#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+    """,
+    visibility = ["//visibility:private"],
+)
+
+public_headers_no_gen = [
     "include/ignition/math/Angle.hh",
     "include/ignition/math/Box.hh",
     "include/ignition/math/Color.hh",
@@ -66,7 +76,6 @@ public_headers = [
     "include/ignition/math/SignalStats.hh",
     "include/ignition/math/SphericalCoordinates.hh",
     "include/ignition/math/Spline.hh",
-    "include/ignition/math/System.hh",
     "include/ignition/math/Temperature.hh",
     "include/ignition/math/Triangle.hh",
     "include/ignition/math/Triangle3.hh",
@@ -74,16 +83,20 @@ public_headers = [
     "include/ignition/math/Vector3.hh",
     "include/ignition/math/Vector3Stats.hh",
     "include/ignition/math/Vector4.hh",
+    "include/ignition/math/graph/Edge.hh",
+    "include/ignition/math/graph/GraphAlgorithms.hh",
+    "include/ignition/math/graph/Graph.hh",
+    "include/ignition/math/graph/Vertex.hh",
 ]
 
 private_headers = [
-    "include/ignition/math/BoxPrivate.hh",
-    "include/ignition/math/FrustumPrivate.hh",
-    "include/ignition/math/KmeansPrivate.hh",
-    "include/ignition/math/RotationSplinePrivate.hh",
-    "include/ignition/math/SignalStatsPrivate.hh",
-    "include/ignition/math/SplinePrivate.hh",
-    "include/ignition/math/Vector3StatsPrivate.hh",
+    "src/BoxPrivate.hh",
+    "src/FrustumPrivate.hh",
+    "src/KmeansPrivate.hh",
+    "src/RotationSplinePrivate.hh",
+    "src/SignalStatsPrivate.hh",
+    "src/SplinePrivate.hh",
+    "src/Vector3StatsPrivate.hh",
 ]
 
 # Generates math.hh, which consists of #include statements for all of the
@@ -93,22 +106,29 @@ private_headers = [
 drake_generate_include_header(
     name = "mathhh_genrule",
     out = "include/ignition/math.hh",
-    hdrs = [":config"] + public_headers,
+    hdrs = public_headers_no_gen + [
+        "include/ignition/math/config.hh",
+        "include/ignition/math/Export.hh",
+    ],
 )
 
 check_lists_consistency(
-    file_list = private_headers + public_headers,
+    file_list = private_headers + public_headers_no_gen,
     glob = ["include/**/*.hh"],
 )
+
+public_headers = public_headers_no_gen + [
+    "include/ignition/math/config.hh",
+    "include/ignition/math/Export.hh",
+    "include/ignition/math.hh",
+]
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
 # upstream's explicitly listed sources plus private headers.  The explicitly
 # listed hdrs= matches upstream's public headers.
-cc_library(
-    name = "ignition_math",
+cc_binary(
+    name = "libignition_math.so",
     srcs = [
-        "include/ignition/math.hh",
-        "include/ignition/math/config.hh",  # created above
         "src/Angle.cc",
         "src/Box.cc",
         "src/Color.cc",
@@ -126,13 +146,21 @@ cc_library(
         "src/SplinePrivate.cc",
         "src/Temperature.cc",
         "src/Vector3Stats.cc",
-    ] + private_headers,
+    ] + private_headers + public_headers,
+    includes = ["include"],
+    linkshared = 1,
+    visibility = [],
+)
+
+cc_library(
+    name = "ignition_math",
+    srcs = ["libignition_math.so"],
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
 )
 
-CMAKE_PACKAGE = "ignition-math3"
+CMAKE_PACKAGE = "ignition-math4"
 
 cmake_config(
     package = CMAKE_PACKAGE,
@@ -146,11 +174,8 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":ignition_math"],
-    hdrs = public_headers + [
-        ":config",
-        ":mathhh_genrule",
-    ],
+    targets = [":libignition_math.so"],
+    hdrs = public_headers,
     hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",
