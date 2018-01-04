@@ -290,6 +290,13 @@ class MathematicalProgram {
 
   using VarType = symbolic::Variable::Type;
 
+  /// The optimal cost is +∞ when the problem is globally infeasible.
+  static constexpr double kGlobalInfeasibleCost =
+    std::numeric_limits<double>::infinity();
+  /// The optimal cost is -∞ when the problem is unbounded.
+  static constexpr double kUnboundedCost =
+    -std::numeric_limits<double>::infinity();
+
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
 
@@ -2016,8 +2023,14 @@ class MathematicalProgram {
   optional<SolverId> GetSolverId() const { return solver_id_; }
 
   /**
-   * Getter for optimal cost at the solution. Will return NaN if there has
-   * been no successful solution.
+   * Getter for optimal cost at the solution.
+   * If the solver finds an optimal solution, then we return the cost evaluated
+   * at this solution.
+   * If the program is unbounded, then the optimal cost is -∞.
+   * If the program is globally infeasible, then the optimal cost is +∞.
+   * If the program is locally infeasible, then the solver (e.g. SNOPT) might
+   * return some finite value as the optimal cost.
+   * Otherwise, the optimal cost is NaN.
    */
   double GetOptimalCost() const { return optimal_cost_; }
 

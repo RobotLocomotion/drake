@@ -247,12 +247,22 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   prog.SetDecisionVariableValues(x);
   double optimal_cost{};
-  if (solver_result == SolutionResult::kSolutionFound) {
-    optimal_cost = 0.5 * x.dot(G * x) + c.dot(x) + constant_term;
-  } else if (solver_result == SolutionResult::kUnbounded) {
-    optimal_cost = -std::numeric_limits<double>::infinity();
-  } else {
-    optimal_cost = NAN;
+  switch (solver_result.value()) {
+    case SolutionResult::kSolutionFound: {
+      optimal_cost = 0.5 * x.dot(G * x) + c.dot(x) + constant_term;
+      break;
+    }
+    case SolutionResult::kUnbounded: {
+      optimal_cost = MathematicalProgram::kUnboundedCost;
+      break;
+    }
+    case SolutionResult::kInfeasibleConstraints: {
+      optimal_cost = MathematicalProgram::kGlobalInfeasibleCost;
+      break;
+    }
+    default: {
+      optimal_cost = NAN;
+    }
   }
   prog.SetOptimalCost(optimal_cost);
   prog.SetSolverId(id());

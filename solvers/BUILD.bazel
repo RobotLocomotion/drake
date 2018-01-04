@@ -898,6 +898,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "nlopt_solver_test",
+    srcs = [
+        "test/nlopt_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
+        ":quadratic_program_examples",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "non_convex_optimization_util_test",
     srcs = [
         "test/non_convex_optimization_util_test.cc",

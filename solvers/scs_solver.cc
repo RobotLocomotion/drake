@@ -650,9 +650,11 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   } else if (scs_status == SCS_UNBOUNDED ||
              scs_status == SCS_UNBOUNDED_INACCURATE) {
     sol_result = SolutionResult::kUnbounded;
+    prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
   } else if (scs_status == SCS_INFEASIBLE ||
              scs_status == SCS_INFEASIBLE_INACCURATE) {
     sol_result = SolutionResult::kInfeasibleConstraints;
+    prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
   }
   if (scs_status != SCS_SOLVED) {
     drake::log()->info("SCS returns code {}, with message \"{}\".\n",
