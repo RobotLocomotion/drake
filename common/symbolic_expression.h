@@ -164,8 +164,13 @@ argument(s).
 
 Relational operators over expressions (==, !=, <, >, <=, >=) return
 symbolic::Formula instead of bool. Those operations are declared in
-symbolic_formula.h file. To check structural equality between two expressions a
-separate function, Expression::EqualTo, is provided.
+symbolic_formula.h file. To compare the structures of two expressions,
+Expression::EqualTo (called by std::equal_to<Expression>) and
+Expression::Less (called by std::less<Expression>) are provided.
+
+@note This is an exception to the style guide, which states that hash-related
+operations (e.g. ==, <, std::equal_to, std::less) should perform compatible
+comparisons.
 
 symbolic::Expression can be used as a scalar type of Eigen types.
 */
@@ -779,7 +784,12 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e);
 }  // namespace drake
 
 namespace std {
-/* Provides std::hash<drake::symbolic::Expression>. */
+/*
+ * Provides std::hash<drake::symbolic::Expression>.
+ * @note This is an exception to the style guide (regarding hash-related
+ * operators) since it does not perform a comparison compatible with
+ * operator<.
+ */
 template <>
 struct hash<drake::symbolic::Expression>
     : public drake::DefaultHash {};
@@ -798,7 +808,12 @@ struct less<drake::symbolic::Expression> {
   }
 };
 
-/* Provides std::equal_to<drake::symbolic::Expression>. */
+/*
+ * Provides std::equal_to<drake::symbolic::Expression>.
+ * @note This is an exception to the style guide (regarding hash-related
+ * operators) since it does not perform a comparison compatible with
+ * operator==.
+ */
 template <>
 struct equal_to<drake::symbolic::Expression> {
   bool operator()(const drake::symbolic::Expression& lhs,
