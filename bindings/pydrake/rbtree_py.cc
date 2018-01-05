@@ -103,6 +103,11 @@ PYBIND11_MODULE(_rbtree_py, m) {
                             const VectorXAutoDiffXd& v) {
       return tree.doKinematics(q, v);
     })
+    .def("CalcBodyPoseInWorldFrame", [](const RigidBodyTree<double>& tree,
+                                        const KinematicsCache<double> &cache,
+                                        const RigidBody<double> &body) {
+      return tree.CalcBodyPoseInWorldFrame(cache, body).matrix();
+    })
     .def("centerOfMass", &RigidBodyTree<double>::centerOfMass<double>,
          py::arg("cache"),
          py::arg("model_instance_id_set") =
