@@ -4,6 +4,7 @@ load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools:drake.bzl",
+    "drake_cc_googletest",
     "drake_cc_library",
 )
 load(
@@ -28,6 +29,11 @@ package(default_visibility = adjust_labels_for_drake_hoist([
 ]))
 
 # N.B. Any common headers should be shared via a HEADER ONLY library.
+
+drake_cc_library(
+    name = "type_pack",
+    hdrs = ["type_pack.h"],
+)
 
 # Target Naming Conventions:
 # `*_py`
@@ -158,6 +164,14 @@ drake_py_library(
     name = "pydrake",
     visibility = ["//visibility:public"],
     deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+)
+
+drake_cc_googletest(
+    name = "type_pack_test",
+    deps = [
+        ":type_pack",
+        "//common:nice_type_name",
+    ],
 )
 
 # Test ODR (One Definition Rule).
