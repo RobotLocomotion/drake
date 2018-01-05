@@ -85,6 +85,7 @@ libnlopt-dev
 libogg-dev
 libpng-dev
 libprotobuf-dev
+libqt5multimedia5
 libqt5opengl5-dev
 libqt5x11extras5-dev
 libtheora-dev
