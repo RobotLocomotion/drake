@@ -297,6 +297,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "generic_trivial_constraint",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/generic_trivial_constraints.h"],
+    deps = [
+        ":constraint",
+    ],
+)
+
 drake_cc_googletest(
     name = "indeterminate_test",
     deps = [
@@ -845,6 +855,7 @@ drake_cc_googletest(
         "test/mathematical_program_test.cc",
     ],
     deps = [
+        ":generic_trivial_constraint",
         ":generic_trivial_cost",
         ":mathematical_program",
         ":mathematical_program_test_util",
