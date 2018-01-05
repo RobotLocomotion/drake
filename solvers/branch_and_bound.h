@@ -253,6 +253,17 @@ class MixedIntegerBranchAndBound {
   }
 
   /**
+   * A leaf node is fathomed is any of the following conditions are satisfied:
+   * 1. The optimization problem in the node is infeasible.
+   * 2. The optimal cost of the node is larger than the best upper bound.
+   * 3. The optimal solution to the node satisfies all the integral constraints.
+   * @param leaf_node A leaf node to check if it is fathomed.
+   * @pre The node should be a leaf node.
+   * @throws runtime error if the precondition is not satisfied. 
+   */
+  bool IsNodeFathomed(const MixedIntegerBranchAndBoundNode& leaf_node) const;
+
+  /**
    * Getter for the root node. Note that this is aliased for the lifetime of this object.
    */
   MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }

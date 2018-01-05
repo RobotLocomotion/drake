@@ -298,5 +298,11 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode() 
 MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickMinLowerBoundNode() {
   return *(std::min_element(active_leaves_.begin(), active_leaves_.end(), [](ScsNode* node1, ScsNode* node2) { return node1->prog()->GetOptimalCost() < node2->prog()->GetOptimalCost(); }));
 }
+
+bool MixedIntegerBranchAndBoundNode::IsNodeFathomed(const MixedIntegerBranchAndBoundNode& node) {
+  if (!node.IsLeaf()) {
+    throw std::runtime_error("Not a leaf node.");
+  }
+}
 }  // namespace solvers
 }  // namespace drake
