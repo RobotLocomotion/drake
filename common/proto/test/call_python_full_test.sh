@@ -84,12 +84,14 @@ py-check() {
     # executable itself).
     if [[ ${py_fail} -eq 0 ]]; then
         # Should succeed.
-        "$@" || py-error
+        if ! "$@"; then
+            py-error
+        fi
     else
         # Should fail.
-        # TODO(eric.cousineau): File / find bug in Bash for this; this behaves
-        # differently depending on how this is placed in a function.
-        { "$@" && should-fail; } || :
+        if "$@"; then
+            should-fail
+        fi
     fi
 }
 

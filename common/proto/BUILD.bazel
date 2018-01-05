@@ -111,7 +111,7 @@ sh_test(
     # reason, make the test run locally.
     local = 1,
     # TODO(eric.cousineau): The `call_python_test` binary is flaky with asan /
-    # lsan; however, when the binary fails, it simply aborts without
+    # lsan / tsan; however, when the binary fails, it simply aborts without
     # diagnostic information. When this is resolved, these tags should be
     # removed.
     # TODO(jamiesnape): Tagged "manual" because fails with latest Matplotlib
@@ -120,6 +120,7 @@ sh_test(
         "manual",
         "no_asan",
         "no_lsan",
+        "no_tsan",
     ],
 )
 
