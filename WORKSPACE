@@ -328,8 +328,8 @@ github_archive(
 pkg_config_package(
     name = "yaml_cpp",
     atleast_version = "0.5.2",
+    build_file_template = "@drake//tools/workspace/yaml_cpp:yaml_cpp.BUILD.tpl",  # noqa
     modname = "yaml-cpp",
-    build_file_template = "@drake//tools/workspace/yaml_cpp:yaml_cpp.BUILD.tpl",
 )
 
 load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
