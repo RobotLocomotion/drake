@@ -287,7 +287,6 @@ struct assert_if_is_constraint {
 class MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
-
   using VarType = symbolic::Variable::Type;
 
   /// The optimal cost is +∞ when the problem is globally infeasible.
@@ -299,6 +298,20 @@ class MathematicalProgram {
 
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
+
+  /** Clones an optimization program.
+   * The clone will be functionally equivalent to the source program with the
+   * same:
+   * - decision variables
+   * - constraints
+   * - costs
+   * - solver settings
+   * - initial guess
+   * However, the clone's x values will be initialized to NaN, and all internal
+   * solvers will be freshly constructed.
+   * @retval new_prog. The newly constructed mathematical program.
+   */
+  virtual std::unique_ptr<MathematicalProgram> Clone() const;
 
   /**
    * Adds continuous variables, appending them to an internal vector of any
@@ -2279,12 +2292,12 @@ class MathematicalProgram {
   VectorXIndeterminate indeterminates_;
 
   std::vector<Binding<Cost>> generic_costs_;
-  std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
   std::vector<Binding<LinearCost>> linear_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
+  std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<LinearConstraint>> linear_constraints_;
   std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;
