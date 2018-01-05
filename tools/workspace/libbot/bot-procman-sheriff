@@ -1,7 +1,0 @@
-#!/bin/sh
-
-# This file is installed to <prefix>/bin.
-readonly prefix=$(python -c 'import os; print(os.path.realpath(os.path.join("'"$0"'", os.pardir, os.pardir)))')
-
-export PYTHONPATH=${prefix}/lib/python2.7/site-packages:${PYTHONPATH}
-exec python -m bot_procman.sheriff_gtk.sheriff_gtk $*

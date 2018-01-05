@@ -216,16 +216,6 @@ github_archive(
     build_file = "tools/workspace/lcm/lcm.BUILD.bazel",
 )
 
-# In the unlikely event that you update the version here, verify that the
-# licenses in tools/third_party/libbot/ldpc LICENSE are still applicable.
-github_archive(
-    name = "libbot",
-    repository = "RobotLocomotion/libbot2",
-    commit = "495ae366d5e380b58254368217fc5c798e72aadd",
-    sha256 = "c463460a4dd6133d6d21e6ab6e493fdcdca442d2df86bcb56749f6740bc61db5",  # noqa
-    build_file = "tools/workspace/libbot/libbot.BUILD.bazel",
-)
-
 github_archive(
     name = "bullet",
     repository = "bulletphysics/bullet3",

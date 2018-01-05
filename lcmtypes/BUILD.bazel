@@ -341,11 +341,6 @@ drake_java_binary(
         ":lcmtypes_drake_java",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
-        "@libbot//:lcmspy_plugins_bot2",
-        "@libbot//:lcmtypes_bot2_frames_java",
-        "@libbot//:lcmtypes_bot2_lcmgl_java",
-        "@libbot//:lcmtypes_bot2_param_java",
-        "@libbot//:lcmtypes_bot2_procman_java",
         "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
@@ -385,8 +380,6 @@ install(
         ":install_cc_headers",
         "//tools/workspace/optitrack_driver:install",
         "@lcmtypes_robotlocomotion//:install",
-        "@libbot//:install_bot2_core",
-        "@libbot//:install_lcmtypes",
     ],
 )
 
