@@ -96,8 +96,7 @@
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
-        "tinyobjloader:tinyobjloader",
-        "yaml-cpp:yaml-cpp"
+        "tinyobjloader:tinyobjloader"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
