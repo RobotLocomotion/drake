@@ -300,7 +300,7 @@ class MathematicalProgram {
    * - costs
    * - solver settings
    * - initial guess
-   * However, the clones x values will be initialize to NaN, and all internal
+   * However, the clone's x values will be initialized to NaN, and all internal
    * solvers will be freshly constructed.
    * @retval new_prog. The newly constructed mathematical program.
    */

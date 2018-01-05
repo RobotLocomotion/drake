@@ -55,11 +55,8 @@ template <typename Constraint>
            << bindings2.size() << ").";
   }
   for (int i = 0; i < static_cast<int>(bindings1.size()); ++i) {
-    if (!IsBindingEqual(bindings1[i], bindings2[i])) {
-      return ::testing::AssertionFailure()
-             << "Binding mismatches: (bindings1(" << i << ") vs. bindings2("
-             << i << ")).";
-    }
+    auto result = IsBindingEqual(bindings1[i], bindings2[i]);
+    if (!result) return result;
   }
   return ::testing::AssertionSuccess() << " Same bindings.";
 }
