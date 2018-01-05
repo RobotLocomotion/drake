@@ -234,6 +234,16 @@ DRAKE_RESOURCE_SENTINEL = adjust_label_for_drake_hoist(
 )
 
 drake_cc_library(
+    name = "sorted_pair",
+    srcs = [
+        "sorted_pair.cc",
+    ],
+    hdrs = [
+        "sorted_pair.h",
+    ],
+)
+
+drake_cc_library(
     name = "find_resource",
     srcs = [
         "find_loaded_library.cc",
@@ -595,6 +605,13 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sorted_pair_test",
+    deps = [
+        ":sorted_pair",
     ],
 )
 
