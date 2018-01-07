@@ -46,6 +46,7 @@ class MixedIntegerBranchAndBoundNode {
    * min f(x)         (2)
    * s.t g(x) ≤ 0
    *     0 ≤ y ≤ 1
+   * This optimization program is solved during the node construction.
    * @param prog The mixed-integer optimization program (1) in the
    * documentation above.
    * @retval (node, map_old_vars_to_new_vars) node is the root node of the tree,
@@ -65,7 +66,8 @@ class MixedIntegerBranchAndBoundNode {
   /**
    * Branches on a binary variable, and creates two child nodes. In the left
    * child node, the binary variable is fixed to 0. In the right node, the
-   * binary variable is fixed to 1.
+   * binary variable is fixed to 1. Solves the optimization program in each
+   * child node.
    * @param binary_variable This binary variable is fixed to either 0 or 1 in
    * the child node.
    * @pre binary_variable is in remaining_binary_variables_;
@@ -128,6 +130,9 @@ class MixedIntegerBranchAndBoundNode {
     return remaining_binary_variables_;
   }
 
+  /** Getter for the solution result when solving the optimization program. */
+  SolutionResult solution_result() const { return solution_result_; }
+
   /** Check if the optimal solution to the program in this node satisfies all
    * integral constraints.
    * Only call this function AFTER the program is solved.
@@ -167,7 +172,7 @@ class MixedIntegerBranchAndBoundNode {
   };
 
   // Stores the optimization program in this node.
-  std::unique_ptr<MathematicalProgram> prog_;  
+  std::unique_ptr<MathematicalProgram> prog_;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> left_child_;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> right_child_;
   MixedIntegerBranchAndBoundNode* parent_;
@@ -185,14 +190,25 @@ class MixedIntegerBranchAndBoundNode {
   // problem, but whose value has not been fixed to either 0 or 1 yet.
   std::list<symbolic::Variable> remaining_binary_variables_;
 
+  // The solution result of the optimization program.
+  SolutionResult solution_result_;
+
   // Whether the optimal solution in this node satisfies all integral
   // constraints.
   OptimalSolutionIsIntegral optimal_solution_is_integral_;
 };
 
 /**
- * Given a mixed-integer optimization problem (or more accurately, mixed binary problem), solve this problem through branch-and-bound process. We will first replace all the binary variables with continuous variables, and relax the integral constraint on the binary variables y ∈ {0, 1} with continuous constraints 0 ≤ y ≤ 1. And then in the subsequent steps, at each node of the tree, we will fix some binary variables to either 0 or 1, and solve the rest of the variables.
- * Notice that we will re-create a new set of variables in the branch-and-bound process, since we need to replace the binary variables with continuous variables.
+ * Given a mixed-integer optimization problem (or more accurately, mixed binary
+ * problem), solve this problem through branch-and-bound process. We will first
+ * replace all the binary variables with continuous variables, and relax the
+ * integral constraint on the binary variables y ∈ {0, 1} with continuous
+ * constraints 0 ≤ y ≤ 1. And then in the subsequent steps, at each node of the
+ * tree, we will fix some binary variables to either 0 or 1, and solve the rest
+ * of the variables.
+ * Notice that we will re-create a new set of variables in the branch-and-bound
+ * process, since we need to replace the binary variables with continuous
+ * variables.
  */
 class MixedIntegerBranchAndBound {
  public:
@@ -200,7 +216,7 @@ class MixedIntegerBranchAndBound {
    * Different methods to pick a branching variable.
    */
   enum class PickVariable {
-    kUserDefined,      ///< User defined. 
+    kUserDefined,      ///< User defined.
     kLeastAmbivalent,  ///< Pick the variable whose value is closest to 0 or 1.
     kMostAmbivalent,   ///< Pick the variable whose value is closest to 0.5
   };
@@ -215,33 +231,47 @@ class MixedIntegerBranchAndBound {
   };
 
   /**
-   * The function signature for the user defined method to pick a branching node or  a branching variable.
+   * The function signature for the user defined method to pick a branching node
+   * or  a branching variable.
    */
-  using PickNodeFun = std::function<MixedIntegerBranchAndBoundNode*(const MixedIntegerBranchAndBoundNode&)>;
-  using PickVariableFun = std::function<symbolic::Variable*(const MixedIntegerBranchAndBoundNode&)>;
+  using PickNodeFun = std::function<MixedIntegerBranchAndBoundNode*(
+      const MixedIntegerBranchAndBoundNode&)>;
+  using PickVariableFun =
+      std::function<symbolic::Variable*(const MixedIntegerBranchAndBoundNode&)>;
 
   /**
-   * Construct a branch-and-bound tree from a mixed-integer optimization program.
+   * Construct a branch-and-bound tree from a mixed-integer optimization
+   * program.
    * @param prog A mixed-integer optimization program.
    */
   MixedIntegerBranchAndBound(const MathematicalProgram& prog);
 
   /**
-   * Given an old variable in the original mixed-integer program, return the new corresponding variable in the branch-and-bound process.
+   * Given an old variable in the original mixed-integer program, return the new
+   * corresponding variable in the branch-and-bound process.
    * @param old_variable A variable in the original mixed-integer program.
-   * @retval new_variable The corresponding variable in the branch-and-bound procedure.
-   * @pre old_variable is a variable in the mixed-integer program, passed in the constructor of this MixedIntegerBranchAndBound.
+   * @retval new_variable The corresponding variable in the branch-and-bound
+   * procedure.
+   * @pre old_variable is a variable in the mixed-integer program, passed in the
+   * constructor of this MixedIntegerBranchAndBound.
    * @throw a runtime_error if the pre-condition fails.
    */
-  const symbolic::Variable& NewVariable(const symbolic::Variable& old_variable) const;
+  const symbolic::Variable& NewVariable(
+      const symbolic::Variable& old_variable) const;
 
   /**
-   * Given a matrix of old variables in the original mixed-integer program, return the new corresponding variables in the branch-and-bound process.
+   * Given a matrix of old variables in the original mixed-integer program,
+   * return the new corresponding variables in the branch-and-bound process.
    * @param old_variables Variables in the original mixed-integer program.
-   * @retval new_variables The corresponding variables in the branch-and-bound procedure.
+   * @retval new_variables The corresponding variables in the branch-and-bound
+   * procedure.
    */
-  template<typename Derived>
-  typename std::enable_if<is_eigen_scalar_same<Derived, symbolic::Variable>::value, MatrixDecisionVariable<Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>>::type NewVariables(const Eigen::MatrixBase<Derived>& old_variables) const {
+  template <typename Derived>
+  typename std::enable_if<
+      is_eigen_scalar_same<Derived, symbolic::Variable>::value,
+      MatrixDecisionVariable<Derived::RowsAtCompileTime,
+                             Derived::ColsAtCompileTime>>::type
+  NewVariables(const Eigen::MatrixBase<Derived>& old_variables) const {
     Eigen::MatrixBase<Derived> new_variables;
     new_variables.resize(old_variables.rows(), old_variables.cols());
     for (int i = 0; i < old_variables.rows(); ++i) {
@@ -259,12 +289,14 @@ class MixedIntegerBranchAndBound {
    * 3. The optimal solution to the node satisfies all the integral constraints.
    * @param leaf_node A leaf node to check if it is fathomed.
    * @pre The node should be a leaf node.
-   * @throws runtime error if the precondition is not satisfied. 
+   * @throws runtime error if the precondition is not satisfied.
    */
-  bool IsNodeFathomed(const MixedIntegerBranchAndBoundNode& leaf_node) const;
+  bool IsLeafNodeFathomed(
+      const MixedIntegerBranchAndBoundNode& leaf_node) const;
 
   /**
-   * Getter for the root node. Note that this is aliased for the lifetime of this object.
+   * Getter for the root node. Note that this is aliased for the lifetime of
+   * this object.
    */
   MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }
 
@@ -287,22 +319,37 @@ class MixedIntegerBranchAndBound {
   // The root node of the tree.
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root_;
 
-  // We re-created the decision variables in the optimization program in the branch-and-bound. All nodes uses the same new set of decision variables, which is different from the variables in the original mixed-integer program (the one passed in the constructor of MixedIntegerBranchAndBound). This map is used to find the corresponding new variable from the old variable in the mixed-integer program.
-  std::unordered_map<symbolic::Variable::Id, symbolic::Variable> map_old_vars_to_new_vars_;
-  
-  // The best upper bound of the mixed-integer optimization optimal cost. An upper bound is obtained by evaluating the cost at a solution satisfying all the constraints (including the integral constraints) in the mixed-integer problem.
+  // We re-created the decision variables in the optimization program in the
+  // branch-and-bound. All nodes uses the same new set of decision variables,
+  // which is different from the variables in the original mixed-integer program
+  // (the one passed in the constructor of MixedIntegerBranchAndBound). This map
+  // is used to find the corresponding new variable from the old variable in the
+  // mixed-integer program.
+  std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
+      map_old_vars_to_new_vars_;
+
+  // The best upper bound of the mixed-integer optimization optimal cost. An
+  // upper bound is obtained by evaluating the cost at a solution satisfying all
+  // the constraints (including the integral constraints) in the mixed-integer
+  // problem.
   double best_upper_bound_;
 
-  // The best lower bound of the mixed-integer optimization optimal cost. This best lower bound is obtained by taking the minimal of the optimal cost in each leaf node.
+  // The best lower bound of the mixed-integer optimization optimal cost. This
+  // best lower bound is obtained by taking the minimal of the optimal cost in
+  // each leaf node.
   double best_lower_bound_;
 
-  // The branch and bound process will terminate, when the best upper bound is sufficiently close to the best lower bound, that either of the following conditions is satisfied:
-  // 1. (best_upper_bound_ - best_lower_bound_) / abs(best_lower_bound_) < relative_gap_tol
+  // The branch and bound process will terminate, when the best upper bound is
+  // sufficiently close to the best lower bound, that either of the following
+  // conditions is satisfied:
+  // 1. (best_upper_bound_ - best_lower_bound_) / abs(best_lower_bound_) <
+  // relative_gap_tol
   // 2. best_upper_bound_ - best_lower_bound_ < absolute_gap_tol_;
   double absolute_gap_tol_ = 1E-2;
   double relative_gap_tol_ = 1E-2;
 
-  // The list of active leaves. A leaf node is active if its optimization problem has been solved, and the node is not fathomed.
+  // The list of active leaves. A leaf node is active if its optimization
+  // problem has been solved, and the node is not fathomed.
   // A leaf node is fathomed if any of the following conditions is satisfied:
   // 1. The optimization problem in the node is infeasible.
   // 2. The optimal cost of the node is larger than the best upper bound.

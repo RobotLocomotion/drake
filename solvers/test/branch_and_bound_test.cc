@@ -10,6 +10,21 @@
 namespace drake {
 namespace solvers {
 namespace {
+// Set the solver to either Gurobi of Mosek.
+void SolveWithGurobiOrMosek(MathematicalProgram* prog) {
+  GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    prog->SetSolverId(GurobiSolver::id());
+    return;
+  }
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    prog->SetSolverId(MosekSolver::id());
+    return;
+  }
+  throw std::runtime_error("None of the required solvers is available.");
+}
+
 // Construct a mixed-integer linear program
 // min x(0) + 2x(1) - 3x(3) + 1
 // s.t x(0) + x(1) + 2x(3) = 2
@@ -26,11 +41,12 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram1() {
   x(1) = symbolic::Variable("x1", symbolic::Variable::Type::CONTINUOUS);
   x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
   x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
-  prog->WithVariables(x);
+  prog->AddDecisionVariables(x);
   prog->AddCost(x(0) + 2 * x(1) - 3 * x(3) + 1);
   prog->AddLinearEqualityConstraint(x(0) + x(1) + 2 * x(3) == 2);
   prog->AddLinearConstraint(x(1) - 3.1 * x(2) >= 1);
   prog->AddLinearConstraint(x(2) + 1.2 * x(3) - x(0) <= 5);
+  SolveWithGurobiOrMosek(prog.get());
   return prog;
 }
 
@@ -51,13 +67,14 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram2() {
   x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
   x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
   x(4) = symbolic::Variable("x4", symbolic::Variable::Type::BINARY);
-  prog->WithVariables(x);
+  prog->AddDecisionVariables(x);
   prog->AddCost(x(0) + 2 * x(1) - 3 * x(2) - 4 * x(3) + 4.5 * x(4) + 1);
   prog->AddLinearEqualityConstraint(2 * x(0) + x(2) + 1.5 * x(3) + x(4) == 4.5);
   prog->AddLinearConstraint(2 * x(0) + 4 * x(3) + x(4), 1, 7);
   prog->AddLinearConstraint(3 * x(1) + 2 * x(2) - 5 * x(3) + x(4), -2, 7);
   prog->AddLinearConstraint(x(1) + x(2) + 2 * x(3), -5, 10);
   prog->AddBoundingBoxConstraint(-10, 10, x(1));
+  SolveWithGurobiOrMosek(prog.get());
   return prog;
 }
 
@@ -73,23 +90,12 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram3() {
   x(1) = symbolic::Variable("x1", symbolic::Variable::Type::CONTINUOUS);
   x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
   x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
-  prog->WithVariables(x);
+  prog->AddDecisionVariables(x);
   prog->AddCost(x(0) + 2 * x(1) + 3 * x(2) + 2.5 * x(3) + 2);
   prog->AddLinearConstraint(x(0) + x(1) - x(2) + x(3) <= 3);
   prog->AddLinearConstraint(x(0) + 2 * x(1) - 2 * x(2) + 4 * x(3), 1, 3);
+  SolveWithGurobiOrMosek(prog.get());
   return prog;
-}
-
-SolutionResult SolveWithGurobiOrMosek(MathematicalProgram* prog) {
-  GurobiSolver gurobi_solver;
-  if (gurobi_solver.available()) {
-    return gurobi_solver.Solve(*prog);
-  }
-  MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    return mosek_solver.Solve(*prog);
-  }
-  throw std::runtime_error("None of the required solvers is available.");
 }
 
 void CheckNewRootNode(
@@ -107,15 +113,15 @@ void CheckNewRootNode(
   EXPECT_TRUE(root.IsLeaf());
 }
 
-void TestProgSolve(MathematicalProgram* prog,
+void TestProgSolve(const MixedIntegerBranchAndBoundNode& node,
                    const Eigen::Ref<const VectorXDecisionVariable>& x,
                    const Eigen::Ref<const Eigen::VectorXd>& x_expected,
                    double optimal_cost, double tol = 1E-4) {
-  const SolutionResult result = SolveWithGurobiOrMosek(prog);
+  const SolutionResult result = node.solution_result();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog->GetSolution(x), x_expected, tol,
+  EXPECT_TRUE(CompareMatrices(node.prog()->GetSolution(x), x_expected, tol,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(prog->GetOptimalCost(), optimal_cost, tol);
+  EXPECT_NEAR(node.prog()->GetOptimalCost(), optimal_cost, tol);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
@@ -134,10 +140,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
 
   CheckNewRootNode(*root, {x(0), x(2)});
 
-  EXPECT_THROW(root->IsOptimalSolutionIntegral(), std::runtime_error);
-
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
-  TestProgSolve(root->prog(), x, x_expected, 1.5, 1E-5);
+  TestProgSolve(*root, x, x_expected, 1.5, 1E-5);
   EXPECT_TRUE(root->IsOptimalSolutionIntegral());
 }
 
@@ -159,7 +163,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
 
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 0.7, 1, 1, 1.4, 0;
-  TestProgSolve(root->prog(), x, x_expected, -4.9, 1E-5);
+  TestProgSolve(*root, x, x_expected, -4.9, 1E-5);
   EXPECT_FALSE(root->IsOptimalSolutionIntegral());
 }
 
@@ -179,8 +183,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
 
   CheckNewRootNode(*root, {x(0), x(2)});
 
-  const SolutionResult result = SolveWithGurobiOrMosek(root->prog());
-  EXPECT_EQ(result, SolutionResult::kUnbounded);
+  EXPECT_EQ(root->solution_result(), SolutionResult::kUnbounded);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRootError) {
@@ -189,7 +192,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRootError) {
   auto x = prog.NewContinuousVariables<3>();
   prog.AddCost(x.cast<symbolic::Expression>().sum());
 
-  EXPECT_THROW(MixedIntegerBranchAndBoundNode::ConstructRootNode(prog), std::runtime_error);
+  EXPECT_THROW(MixedIntegerBranchAndBoundNode::ConstructRootNode(prog),
+               std::runtime_error);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
@@ -205,8 +209,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
 
   const Eigen::Vector4d x_expected_l0(0, 1, 0, 0.5);
   const Eigen::Vector4d x_expected_r0(1, 1, 0, 0);
-  TestProgSolve(root->left_child()->prog(), x, x_expected_l0, 1.5, 1E-5);
-  TestProgSolve(root->right_child()->prog(), x, x_expected_r0, 4, 1E-5);
+  TestProgSolve(*(root->left_child()), x, x_expected_l0, 1.5, 1E-5);
+  TestProgSolve(*(root->right_child()), x, x_expected_r0, 4, 1E-5);
   EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
   EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
 
@@ -215,8 +219,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
   root->Branch(x(2));
   const Eigen::Vector4d x_expected_l2(0, 1, 0, 0.5);
   const Eigen::Vector4d x_expected_r2(0, 4.1, 1, -1.05);
-  TestProgSolve(root->left_child()->prog(), x, x_expected_l2, 1.5, 1E-5);
-  TestProgSolve(root->right_child()->prog(), x, x_expected_r2, 12.35, 1E-5);
+  TestProgSolve(*(root->left_child()), x, x_expected_l2, 1.5, 1E-5);
+  TestProgSolve(*(root->right_child()), x, x_expected_r2, 12.35, 1E-5);
   EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
   EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
 
@@ -236,31 +240,29 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
 
   // Branch on x(0)
   root->Branch(x(0));
-  const SolutionResult result_l0 =
-      SolveWithGurobiOrMosek(root->left_child()->prog());
-  EXPECT_EQ(result_l0, SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(root->left_child()->solution_result(),
+            SolutionResult::kInfeasibleConstraints);
   Eigen::Matrix<double, 5, 1> x_expected_r;
   x_expected_r << 1, 1.0 / 3.0, 1, 1, 0;
-  TestProgSolve(root->right_child()->prog(), x, x_expected_r, -13.0 / 3.0,
-                1E-5);
+  TestProgSolve(*(root->right_child()), x, x_expected_r, -13.0 / 3.0, 1E-5);
   EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
 
   // Branch on x(2)
   root->Branch(x(2));
   Eigen::Matrix<double, 5, 1> x_expected_l;
   x_expected_l << 1, 2.0 / 3.0, 0, 1, 1;
-  TestProgSolve(root->left_child()->prog(), x, x_expected_l, 23.0 / 6.0, 1E-5);
+  TestProgSolve(*(root->left_child()), x, x_expected_l, 23.0 / 6.0, 1E-5);
   EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
   x_expected_r << 0.7, 1, 1, 1.4, 0;
-  TestProgSolve(root->right_child()->prog(), x, x_expected_r, -4.9, 1E-5);
+  TestProgSolve(*(root->right_child()), x, x_expected_r, -4.9, 1E-5);
   EXPECT_FALSE(root->right_child()->IsOptimalSolutionIntegral());
 
   // Branch on x(4)
   root->Branch(x(4));
   x_expected_l << 0.7, 1, 1, 1.4, 0;
   x_expected_r << 0.2, 2.0 / 3.0, 1, 1.4, 1;
-  TestProgSolve(root->left_child()->prog(), x, x_expected_l, -4.9, 1E-5);
-  TestProgSolve(root->right_child()->prog(), x, x_expected_r, -47.0 / 30, 1E-5);
+  TestProgSolve(*(root->left_child()), x, x_expected_l, -4.9, 1E-5);
+  TestProgSolve(*(root->right_child()), x, x_expected_r, -47.0 / 30, 1E-5);
   EXPECT_FALSE(root->left_child()->IsOptimalSolutionIntegral());
   EXPECT_FALSE(root->right_child()->IsOptimalSolutionIntegral());
 
@@ -281,12 +283,10 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
   // Branch on x(0) and x(2), the child nodes are all unbounded.
   for (const auto& x_binary : {x(0), x(2)}) {
     root->Branch(x_binary);
-    const SolutionResult result_l =
-        SolveWithGurobiOrMosek(root->left_child()->prog());
-    const SolutionResult result_r =
-        SolveWithGurobiOrMosek(root->right_child()->prog());
-    EXPECT_EQ(result_l, SolutionResult::kUnbounded);
-    EXPECT_EQ(result_r, SolutionResult::kUnbounded);
+    EXPECT_EQ(root->left_child()->solution_result(),
+              SolutionResult::kUnbounded);
+    EXPECT_EQ(root->right_child()->solution_result(),
+              SolutionResult::kUnbounded);
   }
 
   // Expect to throw a runtime_error when branching on x(1) and x(3), as they
@@ -301,17 +301,24 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
   MixedIntegerBranchAndBound bnb(*prog);
   const VectorDecisionVariable<4> prog_x = prog->decision_variables();
 
-  const VectorDecisionVariable<4> bnb_x = bnb.root()->prog()->decision_variables();
+  const VectorDecisionVariable<4> bnb_x =
+      bnb.root()->prog()->decision_variables();
 
   for (int i = 0; i < 4; ++i) {
     EXPECT_TRUE(bnb_x(i).equal_to(bnb.NewVariable(prog_x(i))));
   }
 
-  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head<2>())), VectorDecisionVariable<2>>::value, "Should return VectorDecisionVariable<2> object.\n");
-  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head(2))), VectorXDecisionVariable>::value, "Should return VectorXDecisionVariable object.\n");
+  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head<2>())),
+                             VectorDecisionVariable<2>>::value,
+                "Should return VectorDecisionVariable<2> object.\n");
+  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head(2))),
+                             VectorXDecisionVariable>::value,
+                "Should return VectorXDecisionVariable object.\n");
   MatrixDecisionVariable<2, 2> X;
   X << prog_x(0), prog_x(1), prog_x(2), prog_x(3);
-  static_assert(std::is_same<decltype(bnb.NewVariables(X)), MatrixDecisionVariable<2, 2>>::value, "Should return MatrixDecisionVariable<2, 2> object.\n");
+  static_assert(std::is_same<decltype(bnb.NewVariables(X)),
+                             MatrixDecisionVariable<2, 2>>::value,
+                "Should return MatrixDecisionVariable<2, 2> object.\n");
 }
 }  // namespace
 }  // namespace solvers

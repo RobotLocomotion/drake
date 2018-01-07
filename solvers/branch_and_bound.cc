@@ -26,6 +26,7 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       fixed_binary_variable_{},
       fixed_binary_value_{-1},
       remaining_binary_variables_{binary_variables},
+      solution_result_{SolutionResult::kUnknownError},
       optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown} {
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
@@ -113,7 +114,7 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
       }
     }
   }
-  new_prog.WithVariables(new_vars);
+  new_prog.AddDecisionVariables(new_vars);
   if (binary_variable_indices.empty()) {
     throw std::runtime_error(
         "No binary variable found in the optimization program.\n");
@@ -128,7 +129,7 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
                                     binary_variables);
 
   // Add the indeterminates
-  new_prog.WithIndeterminates(prog.indeterminates());
+  new_prog.AddIndeterminates(prog.indeterminates());
 
   // Now add all the costs in prog to new_prog.
   AddVectorOfCostToNewProgram(prog.generic_costs(), map_old_vars_to_new_vars,
@@ -176,6 +177,7 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   }
   MixedIntegerBranchAndBoundNode* node =
       new MixedIntegerBranchAndBoundNode(new_prog, binary_variables_list);
+  node->solution_result_ = node->prog_->Solve();
   return std::make_pair(std::unique_ptr<MixedIntegerBranchAndBoundNode>(node),
                         map_old_vars_to_new_vars);
 }
@@ -258,49 +260,77 @@ void MixedIntegerBranchAndBoundNode::Branch(
   right_child_->FixBinaryVariable(binary_variable, 1);
   left_child_->parent_ = this;
   right_child_->parent_ = this;
+  left_child_->solution_result_ = left_child_->prog_->Solve();
+  right_child_->solution_result_ = right_child_->prog_->Solve();
 }
 
-MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(const MathematicalProgram& prog) 
-  : root_{nullptr},
-    map_old_vars_to_new_vars_{},
-    best_upper_bound_{std::numeric_limits<double>::infinity()},
-    best_lower_bound_{-std::numeric_limits<double>::infinity()},
-    active_leaves_{}{
-    std::tie(root_, map_old_vars_to_new_vars_) = MixedIntegerBranchAndBoundNode::ConstructRootNode(prog);
+MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
+    const MathematicalProgram& prog)
+    : root_{nullptr},
+      map_old_vars_to_new_vars_{},
+      best_upper_bound_{std::numeric_limits<double>::infinity()},
+      best_lower_bound_{-std::numeric_limits<double>::infinity()},
+      active_leaves_{} {
+  std::tie(root_, map_old_vars_to_new_vars_) =
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(prog);
 }
 
-const symbolic::Variable& MixedIntegerBranchAndBound::NewVariable(const symbolic::Variable& old_variable) const {
+const symbolic::Variable& MixedIntegerBranchAndBound::NewVariable(
+    const symbolic::Variable& old_variable) const {
   const auto it = map_old_vars_to_new_vars_.find(old_variable.get_id());
   if (it == map_old_vars_to_new_vars_.end()) {
     std::ostringstream oss;
-    oss << old_variable << " is not a variable in the original mixed-integer problem.\n";
+    oss << old_variable
+        << " is not a variable in the original mixed-integer problem.\n";
     throw std::runtime_error(oss.str());
   }
   return it->second;
 }
 
-MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode() const {
-  // If active_leaves is empty, then the branch-and-bound should terminate, no need to branch further.
+MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
+    const {
+  // If active_leaves is empty, then the branch-and-bound should terminate, no
+  // need to branch further.
   DRAKE_ASSERT(!active_leaves_.empty());
   switch (pick_node_) {
     case PickNode::kMinLowerBound: {
-       return PickMinLowerBoundNode();
-     }
+      return PickMinLowerBoundNode();
+    }
     case PickNode::kDepthFirst: {
-       return PickDepthFirstNode();
-     }
+      return PickDepthFirstNode();
+    }
     case PickNode::kUserDefined: {
-       return pick_branching_node_userfun_(*root_);
-     }
+      return pick_branching_node_userfun_(*root_);
+    }
   }
 }
 
-MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickMinLowerBoundNode() {
-  return *(std::min_element(active_leaves_.begin(), active_leaves_.end(), [](ScsNode* node1, ScsNode* node2) { return node1->prog()->GetOptimalCost() < node2->prog()->GetOptimalCost(); }));
+namespace {
+MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(
+    const MixedIntegerBranchAndBoundNode& root) {
+  if (root.IsLeaf()) {
+    return const_cast<MixedIntegerBranchAndBoundNode*>(&root);
+  } else {
+    MixedIntegerBranchAndBoundNode* left_min_lower_bound_node =
+        PickMinLowerBoundNodeInSubTree(*(root.left_child()));
+    MixedIntegerBranchAndBoundNode* right_min_lower_bound_node =
+        PickMinLowerBoundNodeInSubTree(*(root.right_child()));
+    return left_min_lower_bound_node->prog()->GetOptimalCost() <
+                   right_min_lower_bound_node->prog()->GetOptimalCost()
+               ? left_min_lower_bound_node
+               : right_min_lower_bound_node;
+  }
+}
+}  // namespace
+
+MixedIntegerBranchAndBoundNode*
+MixedIntegerBranchAndBound::PickMinLowerBoundNode() const {
+  return PickMinLowerBoundNodeInSubTree(*root_);
 }
 
-bool MixedIntegerBranchAndBoundNode::IsNodeFathomed(const MixedIntegerBranchAndBoundNode& node) {
-  if (!node.IsLeaf()) {
+bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
+    const MixedIntegerBranchAndBoundNode& leaf_node) const {
+  if (!leaf_node.IsLeaf()) {
     throw std::runtime_error("Not a leaf node.");
   }
 }
