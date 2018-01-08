@@ -11,20 +11,19 @@ namespace drake {
 namespace geometry {
 namespace {
 
-using std::move;
 using std::unique_ptr;
 
 // Confirm correct interactions with the Reifier.
 
 class ReifierTest : public ShapeReifier, public ::testing::Test {
  public:
-  void ImplementGeometry(const Sphere& sphere) override {
+  void ImplementGeometry(const Sphere& sphere, void*) override {
     sphere_made_ = true;
   }
-  void ImplementGeometry(const Cylinder& cylinder) override {
+  void ImplementGeometry(const Cylinder& cylinder, void*) override {
     cylinder_made_ = true;
   }
-  void ImplementGeometry(const HalfSpace& half_space) override {
+  void ImplementGeometry(const HalfSpace& half_space, void*) override {
     half_space_made_ = true;
   }
   void Reset() {

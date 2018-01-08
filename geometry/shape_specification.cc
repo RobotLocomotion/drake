@@ -5,7 +5,8 @@ namespace geometry {
 
 Shape::~Shape() {}
 
-void Shape::Reify(ShapeReifier* reifier) const { reifier_(*this, reifier); }
+void Shape::Reify(ShapeReifier* reifier, void* user_data) const {
+  reifier_(*this, reifier, user_data); }
 
 std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
 
