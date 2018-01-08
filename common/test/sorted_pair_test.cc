@@ -1,5 +1,8 @@
 #include "drake/common/sorted_pair.h"
 
+#include <unordered_map>
+#include <vector>
+
 #include "gtest/gtest.h"
 
 namespace drake {
@@ -23,14 +26,22 @@ GTEST_TEST(SortedPair, Values) {
   EXPECT_EQ(x.second, 3);
 }
 
-// Verifies that the templated copy constructor work.
+// Verifies that the type casting copy constructor works as desired.
 GTEST_TEST(SortedPair, Casting) {
   SortedPair<double> x = SortedPair<int>(3, 2);
   EXPECT_EQ(x.first, 2.0);
   EXPECT_EQ(x.second, 3.0);
 }
 
-// Checks the assignment operator. 
+// Verifies that the move constructor works as desired.
+GTEST_TEST(SortedPair, Move) {
+  SortedPair<int> y(1, 2);
+  SortedPair<int> x(std::move(y));
+  EXPECT_EQ(x.first, 1);
+  EXPECT_EQ(x.second, 2);
+}
+
+// Checks the assignment operator.
 GTEST_TEST(SortedPair, Assignment) {
   SortedPair<int> x;
   SortedPair<int> y(3, 2);
@@ -41,7 +52,7 @@ GTEST_TEST(SortedPair, Assignment) {
 
 // Checks the equality operator.
 GTEST_TEST(SortedPair, Equality) {
-  SortedPair<int> x(1,2), y(2, 1);
+  SortedPair<int> x(1, 2), y(2, 1);
   EXPECT_EQ(x, y);
 }
 
@@ -55,9 +66,38 @@ GTEST_TEST(SortedPair, Comparison) {
   EXPECT_TRUE(x < y);
 }
 
+// Checks the swap function.
+GTEST_TEST(SortedPair, Swap) {
+  SortedPair<int> x(1, 2), y(3, 4);
+  std::swap(x, y);
+  EXPECT_EQ(x.first, 3);
+  EXPECT_EQ(x.second, 4);
+  EXPECT_EQ(y.first, 1);
+  EXPECT_EQ(y.second, 2);
+}
+
+// Checks hash keys.
+GTEST_TEST(SortedPair, Hash) {
+  SortedPair<int> x(1, 2), y(2, 4);
+  std::unordered_map<SortedPair<int>, int> hash;
+  hash[x] = 11;
+  hash[y] = 13;
+  EXPECT_EQ(hash[x], 11);
+  EXPECT_EQ(hash[y], 13);
+}
+
+// Checks expansion with STL vector.
+GTEST_TEST(SortedPair, VectorExp) {
+  std::vector<SortedPair<int>> v;
+  v.emplace_back(1, 2);
+  v.resize(100000);
+  EXPECT_EQ(v.front().first, 1);
+  EXPECT_EQ(v.front().second, 2);
+}
+
 // Tests the MakeSortedPair operator.
 GTEST_TEST(SortedPair, MakeSortedPair) {
-  EXPECT_EQ(SortedPair<int>(1, 2), MakeSortedPair(1, 2)); 
+  EXPECT_EQ(SortedPair<int>(1, 2), MakeSortedPair(1, 2));
 }
 
 }  // namespace
