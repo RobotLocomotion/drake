@@ -346,6 +346,25 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   EXPECT_EQ(dut.get_output_count(), 0);
 }
 
+class NoFeedthroughContinuousTimeSystem : public VectorSystem<double> {
+ public:
+  NoFeedthroughContinuousTimeSystem() : VectorSystem<double>(1, 1) {
+    this->DeclareContinuousState(1);
+  }
+
+  optional<bool> DoHasDirectFeedthrough(int, int) const final { return false; }
+
+ private:
+  void DoCalcVectorOutput(
+      const drake::systems::Context<double>& context,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* output) const override {
+    EXPECT_EQ(input.size(), 0);
+    *output = state;
+  }
+};
+
 class NoInputContinuousTimeSystem : public VectorSystem<double> {
  public:
   NoInputContinuousTimeSystem() : VectorSystem<double>(0, 1) {
@@ -372,6 +391,17 @@ class NoInputContinuousTimeSystem : public VectorSystem<double> {
     *output = state;
   }
 };
+
+// Input is not provided to DoCalcOutput when non-direct-feedthrough.
+TEST_F(VectorSystemTest, NoFeedthroughContinuousTimeSystemTest) {
+  NoFeedthroughContinuousTimeSystem dut;
+
+  // The non-connected input is never evaluated.
+  auto context = dut.CreateDefaultContext();
+  auto output = dut.get_output_port().Allocate(*context);
+  dut.get_output_port().Calc(*context, output.get());
+  EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 0.0);
+}
 
 // Derivatives and Output methods still work when input size is zero.
 TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
