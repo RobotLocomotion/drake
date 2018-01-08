@@ -11,31 +11,46 @@ namespace drake {
 namespace geometry {
 namespace {
 
-using std::move;
 using std::unique_ptr;
 
 // Confirm correct interactions with the Reifier.
 
 class ReifierTest : public ShapeReifier, public ::testing::Test {
  public:
-  void ImplementGeometry(const Sphere& sphere) override {
+  void ImplementGeometry(const Sphere& sphere, void* data) override {
+    received_user_data_ = data;
     sphere_made_ = true;
   }
-  void ImplementGeometry(const Cylinder& cylinder) override {
+  void ImplementGeometry(const Cylinder& cylinder, void* data) override {
+    received_user_data_ = data;
     cylinder_made_ = true;
   }
-  void ImplementGeometry(const HalfSpace& half_space) override {
+  void ImplementGeometry(const HalfSpace& half_space, void* data) override {
+    received_user_data_ = data;
     half_space_made_ = true;
   }
   void Reset() {
     sphere_made_ = false;
     half_space_made_ = false;
+    cylinder_made_ = false;
+    received_user_data_ = nullptr;
   }
+
  protected:
   bool sphere_made_{false};
   bool cylinder_made_{false};
   bool half_space_made_{false};
+  void* received_user_data_{nullptr};
 };
+
+// Confirms that user data comes through intact.
+TEST_F(ReifierTest, UserData) {
+  ASSERT_EQ(received_user_data_, nullptr);
+  Sphere s(1.0);
+  std::pair<int, double> user_data{3, 5.0};
+  s.Reify(this, &user_data);
+  ASSERT_EQ(received_user_data_, &user_data);
+}
 
 // This confirms that the shapes invoke the correct Reify method.
 TEST_F(ReifierTest, ReificationDifferentiation) {
