@@ -16,7 +16,7 @@ class MixedIntegerBranchAndBoundTester {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundTester)
 
   MixedIntegerBranchAndBoundTester(const MathematicalProgram& prog)
-    : bnb_{new MixedIntegerBranchAndBound(prog)} {}
+      : bnb_{new MixedIntegerBranchAndBound(prog)} {}
 
   MixedIntegerBranchAndBound* bnb() const { return bnb_.get(); }
 
@@ -358,15 +358,20 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
   dut.bnb()->root()->Branch(x(0));
   // Both left and right children have integral optimal solution. Both nodes are
   // fathomed.
-  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
-  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
   dut.bnb()->root()->Branch(x(2));
-  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
-  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
   // The root node is not a leaf node. Expect a runtime error.
-  EXPECT_THROW(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())), std::runtime_error);
+  EXPECT_THROW(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())),
+               std::runtime_error);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
@@ -380,21 +385,29 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
 
   dut.bnb()->root()->Branch(x(0));
   // The left node is infeasible, thus fathomed.
-  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
   // The right node has integral optimal solution, thus fathomed.
-  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
   dut.bnb()->root()->Branch(x(2));
-  // The solution to the left node is integral, with optimal cost 23.0 / 6.0. The node is fathomed.
-  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
-  // The solution ot the right node is not integral, with optimal cost -4.9. The node is not fathomed.
-  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  // The solution to the left node is integral, with optimal cost 23.0 / 6.0.
+  // The node is fathomed.
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  // The solution ot the right node is not integral, with optimal cost -4.9. The
+  // node is not fathomed.
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
   dut.bnb()->root()->Branch(x(4));
   // Neither the left nor the right child nodes has integral solution.
   // Neither of the nodes is fathomed.
-  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
-  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode1) {
@@ -405,18 +418,45 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode1) {
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The root node has optimal cost -4.9.
-  dut.bnb()->SetPickBranchingNodeMethod(MixedIntegerBranchAndBound::PickNode::kMinLowerBound);
+  dut.bnb()->SetPickBranchingNodeMethod(
+      MixedIntegerBranchAndBound::PickNode::kMinLowerBound);
   // Pick the root node.
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
 
-  // The left node has optimal cost 23.0 / 6.0, the right node has optimal cost -4.9
+  // The left node has optimal cost 23.0 / 6.0, the right node has optimal cost
+  // -4.9
   // Also the left node is fathomed.
   dut.bnb()->root()->Branch(x(2));
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
 
   dut.bnb()->root()->Branch(x(4));
-  // The left node has optimal cost -4.9, the right node has optimal cost -47.0 / 30
+  // The left node has optimal cost -4.9, the right node has optimal cost -47.0
+  // / 30
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->left_child());
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
+  // Test choosing the deepest non-fathomed leaf node.
+  auto prog = ConstructMathematicalProgram2();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
+
+  dut.bnb()->SetPickBranchingNodeMethod(
+      MixedIntegerBranchAndBound::PickNode::kDepthFirst);
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
+
+  dut.bnb()->root()->Branch(x(2));
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
+
+  dut.bnb()->root()->Branch(x(4));
+  EXPECT_TRUE(dut.PickBranchingNode() == dut.bnb()->root()->left_child() ||
+              dut.PickBranchingNode() == dut.bnb()->root()->right_child());
+
+  dut.bnb()->root()->left_child()->Branch(x(0));
+  // root->left->left is infeasible, root->left->right has integral solution.
+  // The only non-fathomed leaf node is root->right
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
 }
 }  // namespace
 }  // namespace solvers

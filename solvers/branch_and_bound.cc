@@ -197,8 +197,7 @@ void MixedIntegerBranchAndBoundNode::CheckOptimalSolutionIsIntegral() {
           "numerical error.");
     }
     const double integral_tol = 1E-3;
-    if (binary_var_val > integral_tol &&
-        binary_var_val < 1 - integral_tol) {
+    if (binary_var_val > integral_tol && binary_var_val < 1 - integral_tol) {
       optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kFalse;
       return;
     }
@@ -218,7 +217,9 @@ bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
       return false;
     }
     case OptimalSolutionIsIntegral::kUnknown: {
-      throw std::runtime_error("Call CheckOptimalSolutionIsIntegral() before calling this function.");
+      throw std::runtime_error(
+          "Call CheckOptimalSolutionIsIntegral() before calling this "
+          "function.");
     }
   }
 }
@@ -318,7 +319,8 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
       if (pick_branching_node_userfun_) {
         return pick_branching_node_userfun_(*root_);
       } else {
-        throw std::runtime_error("The user defined function should not be null.");
+        throw std::runtime_error(
+            "The user defined function should not be null.");
       }
     }
   }
@@ -326,7 +328,9 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
 
 namespace {
 // Pick the non-fathomed leaf node in the tree with the smallest optimal cost.
-MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(const MixedIntegerBranchAndBound& bnb, const MixedIntegerBranchAndBoundNode& root) {
+MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(
+    const MixedIntegerBranchAndBound& bnb,
+    const MixedIntegerBranchAndBoundNode& root) {
   if (root.IsLeaf()) {
     if (bnb.IsLeafNodeFathomed(root)) {
       return nullptr;
@@ -338,14 +342,41 @@ MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(const MixedIntege
     MixedIntegerBranchAndBoundNode* right_min_lower_bound_node =
         PickMinLowerBoundNodeInSubTree(bnb, *(root.right_child()));
     if (left_min_lower_bound_node && right_min_lower_bound_node) {
-    return left_min_lower_bound_node->prog()->GetOptimalCost() <
-                   right_min_lower_bound_node->prog()->GetOptimalCost()
-               ? left_min_lower_bound_node
-               : right_min_lower_bound_node;
+      return left_min_lower_bound_node->prog()->GetOptimalCost() <
+                     right_min_lower_bound_node->prog()->GetOptimalCost()
+                 ? left_min_lower_bound_node
+                 : right_min_lower_bound_node;
     } else if (left_min_lower_bound_node) {
       return left_min_lower_bound_node;
     } else if (right_min_lower_bound_node) {
       return right_min_lower_bound_node;
+    }
+    return nullptr;
+  }
+}
+
+MixedIntegerBranchAndBoundNode* PickDepthFirstNodeInSubTree(
+    const MixedIntegerBranchAndBound& bnb,
+    const MixedIntegerBranchAndBoundNode& root) {
+  if (root.IsLeaf()) {
+    if (bnb.IsLeafNodeFathomed(root)) {
+      return nullptr;
+    }
+    return const_cast<MixedIntegerBranchAndBoundNode*>(&root);
+  } else {
+    MixedIntegerBranchAndBoundNode* left_deepest_node =
+        PickDepthFirstNodeInSubTree(bnb, *(root.left_child()));
+    MixedIntegerBranchAndBoundNode* right_deepest_node =
+        PickDepthFirstNodeInSubTree(bnb, *(root.right_child()));
+    if (left_deepest_node && right_deepest_node) {
+      return left_deepest_node->remaining_binary_variables().size() >
+                     right_deepest_node->remaining_binary_variables().size()
+                 ? right_deepest_node
+                 : left_deepest_node;
+    } else if (left_deepest_node) {
+      return left_deepest_node;
+    } else if (right_deepest_node) {
+      return right_deepest_node;
     }
     return nullptr;
   }
@@ -357,9 +388,10 @@ MixedIntegerBranchAndBound::PickMinLowerBoundNode() const {
   return PickMinLowerBoundNodeInSubTree(*this, *root_);
 }
 
-MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode() const {
+MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
+    const {
   // The deepest node has the most number of binary variables being fixed.
-
+  return PickDepthFirstNodeInSubTree(*this, *root_);
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(

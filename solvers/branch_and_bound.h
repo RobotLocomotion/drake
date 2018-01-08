@@ -290,9 +290,9 @@ class MixedIntegerBranchAndBound {
   }
 
   /**
-   * The user can choose the method to pick a node for branching. We provide 
+   * The user can choose the method to pick a node for branching. We provide
    * options such as "depth first" or "min lower bound".
-   * @param pick_node The option to pick a node. If the option is 
+   * @param pick_node The option to pick a node. If the option is
    * PickNode::UserDefined, then the user should also provide the method
    * to pick a node through SetUserDefinedBranchingNodeMethod
    */
@@ -305,7 +305,7 @@ class MixedIntegerBranchAndBound {
    * used if the user specifies to use user-defined method, by calling
    * SetPickBranchingNodeMethod(PickNode::UserDefined)
    */
-  void SetUserDefinedBranchingNodeMethod(PickNodeFun fun) { 
+  void SetUserDefinedBranchingNodeMethod(PickNodeFun fun) {
     pick_branching_node_userfun_ = fun;
   }
 
@@ -401,7 +401,6 @@ class MixedIntegerBranchAndBound {
 
   // The user defined function to pick a branching node. Default is null.
   PickNodeFun pick_branching_node_userfun_ = nullptr;
-
 };
 }  // namespace solvers
 }  // namespace drake
