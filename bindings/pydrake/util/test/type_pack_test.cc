@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/type_pack.h"
+#include "drake/bindings/pydrake/util/type_pack.h"
 
 #include <string>
 #include <vector>
