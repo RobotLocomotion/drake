@@ -113,9 +113,14 @@ void SetModelTransformMatrixToVtkCamera(
   camera->ApplyTransform(X_WC);
 }
 
-class vtkShaderCallback : public vtkCommand {
+// A callback class for setting uniform variables used in shader programs,
+// namely z_near and z_far, when vtkCommand::UpdateShaderEvent is caught.
+// See also shaders::kDepthFS, this is where the variables are used.
+// For the detail of VTK's callback mechanism, please refer to:
+// https://www.vtk.org/doc/nightly/html/classvtkCommand.html#details
+class ShaderCallback : public vtkCommand {
  public:
-  static vtkShaderCallback* New() { return new vtkShaderCallback; }
+  static ShaderCallback* New() { return new ShaderCallback; }
 
   void Execute(vtkObject*, uint64_t, void* callback_object) VTK_OVERRIDE {
     vtkOpenGLHelper* cell_bo =
@@ -135,7 +140,7 @@ class vtkShaderCallback : public vtkCommand {
     z_far_ = z_far;
   }
 
-  vtkShaderCallback() { this->renderer_ = nullptr; }
+  ShaderCallback() { this->renderer_ = nullptr; }
 
  private:
   vtkRenderer *renderer_;
@@ -183,7 +188,7 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
   // element specified in SDF / URDF.
   std::map<int, std::array<ActorCollection, 3>> id_object_maps_;
 
-  vtkNew<vtkShaderCallback> callback_;
+  vtkNew<ShaderCallback> callback_;
 };
 
 float RgbdRendererVTK::Impl::CheckRangeAndConvertToMeters(
@@ -231,9 +236,12 @@ void RgbdRendererVTK::Impl::ImplAddFlatTerrain() {
 
   // For depth.
   vtkNew<vtkOpenGLPolyDataMapper> depth_mapper;
+  // Setting a vertex shader program and a fragment shader program here.
   depth_mapper->SetVertexShaderCode(shaders::kDepthVS);
   depth_mapper->SetFragmentShaderCode(shaders::kDepthFS);
   depth_mapper->SetInputConnection(plane->GetOutputPort());
+  // Setting a callback for passing uniform variable to the fragment shader
+  // program.
   depth_mapper->AddObserver(
       vtkCommand::UpdateShaderEvent, callback_.Get());
 
@@ -324,6 +332,7 @@ void RgbdRendererVTK::Impl::ImplRenderLabelImage(
       color.r = image.at(u, v)[0];
       color.g = image.at(u, v)[1];
       color.b = image.at(u, v)[2];
+      // Converting an RGB color to an object instance ID.
       label_image_out->at(u, v)[0] =
           static_cast<int16_t>(parent_->color_palette().LookUpId(color));
     }
@@ -460,6 +469,7 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       mesh_reader->SetFileName(mesh_filename);
       mesh_reader->Update();
 
+      // Changing the scale of the loaded mesh.
       const double scale = mesh.scale_[0];
       vtkNew<vtkTransform> transform;
       transform->Scale(scale, scale, scale);

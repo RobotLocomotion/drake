@@ -5,8 +5,10 @@ namespace systems {
 namespace sensors {
 namespace shaders {
 
+/// A vertex shader program for rendering depth images, which computes vertices
+/// and normals for the fragment shader program coming after.
 constexpr char kDepthVS[] =
-    "//VTK::System::Dec\n"  // always start with this line
+    "//VTK::System::Dec\n"  // Always start with this line.
     "attribute vec4 vertexMC;\n"
     "attribute vec3 normalMC;\n"
     "uniform mat3 normalMatrix;\n"
@@ -23,6 +25,17 @@ constexpr char kDepthVS[] =
     "  gl_Position = MCDCMatrix * vertexMC;\n"
     "}\n";
 
+/// A fragment shader program for rendering depth images, which computes depth
+/// values for each pixel in depth images, converts them to be in range [0, 1]
+/// and packs those values to three color channels. In other words, we encode
+/// a depth image into a color image and output the color image. For the detail
+/// of packing algorithm, please refer to:
+/// https://aras-p.info/blog/2009/07/30/encoding-floats-to-rgba-the-final/
+/// Note that we are only using three channels instead of four channels to
+/// express a float value. This differs from the example code in the link above.
+/// The reason is that we need to set one to alpha channel so that the rendered
+/// "image" will be opaque. Otherwise, we will have different colors from what
+/// we output here, thus expect, in the end.
 constexpr char kDepthFS[] =
     "//VTK::System::Dec\n"  // Always start with this line.
     "//VTK::Output::Dec\n"  // Always have this line in your FS.

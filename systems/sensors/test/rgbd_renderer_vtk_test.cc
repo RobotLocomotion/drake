@@ -27,6 +27,9 @@ TEST_F(RgbdRendererVTKTest, NoBodyTest) {
   // Verifies depth.
   for (int y = 0; y < kHeight; ++y) {
     for (int x = 0; x < kWidth; ++x) {
+      // Using ASSERT here instead of EXPECT to stop all subsequent testing,
+      // because this function has been called inside for loops to search over
+      // all the pixels in an image.
       ASSERT_TRUE(std::isinf(depth_.at(x, y)[0]));
     }
   }
