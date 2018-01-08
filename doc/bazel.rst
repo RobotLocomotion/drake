@@ -142,6 +142,8 @@ The Drake Bazel build currently supports the following proprietary solvers:
  * MOSEK 7.1
  * SNOPT 7.2
 
+.. _gurobi:
+
 Gurobi 7.5.2
 ------------
 
@@ -150,8 +152,8 @@ Install on Ubuntu
 1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. Download ``gurobi7.5.2_linux64.tar.gz``.
-4. Unzip it in a local directory, e.g. ``/home/myuser/bin/gurobi``
-5. ``export GUROBI_PATH=/home/myuser/bin/gurobi/gurobi752/linux64``
+4. Unzip it. We suggest that you use ``/opt/gurobi752`` to simplify working with Drake installations.
+5. ``export GUROBI_PATH=/opt/gurobi752/linux64``
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
