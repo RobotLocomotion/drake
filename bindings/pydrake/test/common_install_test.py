@@ -26,9 +26,12 @@ class TestCommonInstall(unittest.TestCase):
         # system would result in a crash since pydrake was built against
         # brew python. On Linux this will still work and force using
         # python2 which should be a link to the actual executable.
+        # Calling `pydrake.getDrakePath()` twice verifies that there
+        # is no memory allocation issue in the C code.
         output_path = subprocess.check_output(
             ["python2",
-             "-c", "import pydrake; print(pydrake.getDrakePath())"
+             "-c", "import pydrake; print(pydrake.getDrakePath());\
+             import pydrake; print(pydrake.getDrakePath())"
              ],
             env=tool_env,
             ).strip()

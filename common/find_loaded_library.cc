@@ -6,7 +6,6 @@
 #include <mach-o/dyld.h>
 #include <mach-o/dyld_images.h>
 #else  // Not __APPLE__
-#include <libgen.h>
 #include <string.h>
 
 #include <link.h>
@@ -84,19 +83,18 @@ optional<string> LoadedLibraryPath(const string& library_name) {
 // with relative directory to find resource files in drake install tree.
 // This function is specific to Linux.
 optional<string> LoadedLibraryPath(const std::string& library_name) {
-  optional<string> binary_dirname;
   void* handle = dlopen(NULL, RTLD_NOW);
   link_map *map;
   dlinfo(handle, RTLD_DI_LINKMAP, &map);
   // Loop over loaded shared objects until `library_name` is found.
   while (map) {
-    if (!strcmp(basename(map->l_name), library_name.c_str())) {
-      binary_dirname = string(dirname(map->l_name));
-      break;
+    const char* pos_slash = strrchr(map->l_name, '/');
+    if (pos_slash && !strcmp(pos_slash + 1, library_name.c_str())) {
+      return string(map->l_name, pos_slash - map->l_name);
     }
     map = map->l_next;
   }
-  return binary_dirname;
+  return nullopt;
 }
 #endif
 }  // namespace drake
