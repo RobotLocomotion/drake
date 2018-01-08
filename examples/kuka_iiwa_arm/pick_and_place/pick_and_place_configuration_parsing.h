@@ -13,25 +13,29 @@ namespace pick_and_place {
 
 using TaskIndex = TypeSafeIndex<class TaskTag>;
 
+/// Read the pick and place configuration from @p filename, returning
+/// the planner configuration for the task specified by @p task_index.
 pick_and_place::PlannerConfiguration ParsePlannerConfigurationOrThrow(
     const std::string& filename, TaskIndex task_index = TaskIndex(0));
 
-pick_and_place::PlannerConfiguration ParsePlannerConfigurationOrThrow(
-    const std::string& filename,
-    const std::string& end_effector_name,
-    pick_and_place::RobotBaseIndex robot_base_index =
-        pick_and_place::RobotBaseIndex(0),
-    pick_and_place::TargetIndex target_index = pick_and_place::TargetIndex(0));
-
+/// Read the pick and place configuration from @p filename, returning
+/// the planner configuration for all tasks.
 std::vector<pick_and_place::PlannerConfiguration>
 ParsePlannerConfigurationsOrThrow(const std::string& filename);
 
+/// Read the pick and place configuration from @p filename, returning
+/// the simulated plant configuration.
 pick_and_place::SimulatedPlantConfiguration
 ParseSimulatedPlantConfigurationOrThrow(const std::string& filename);
 
+/// Parse the pick and place configuration from @p configuation,
+/// returning the simulated plant configuration.
 pick_and_place::SimulatedPlantConfiguration
 ParseSimulatedPlantConfigurationStringOrThrow(const std::string& configuration);
 
+
+/// Read the pick and place configuration from @p filename, returning
+/// the optitrack information for the scenario.
 pick_and_place::OptitrackConfiguration ParseOptitrackConfigurationOrThrow(
     const std::string& filename);
 

@@ -124,16 +124,26 @@ class WsgAction : public Action {
 
   /**
    * Populates @p msg with an LCM message that tells the WSG gripper
-   * driver to fully open.
+   * driver to fully open.  @p grip_force is passed to the gripper,
+   * but since the gripper is opening and (hopefully) not pushing
+   * against anything in this direction, it mostly affects the
+   * velocity of the fingers.
    */
   void OpenGripper(const WorldState& est_state,
+                   double grip_force,
                    lcmt_schunk_wsg_command* msg);
 
   /**
    * Populates @p msg with an LCM message that tells the WSG gripper
-   * driver to fully close.
+   * driver to fully close.  @p grip_force specifies the target
+   * gripping force to be applied to the grasped object.  The gripper
+   * will internally attempt to maintain this amount of clamping force
+   * by driving the motor appropriately, though the result will not be
+   * precise (and the actual outcome may depend on the gripper
+   * configuration).
    */
   void CloseGripper(const WorldState& est_state,
+                    double grip_force,
                     lcmt_schunk_wsg_command* msg);
 
   // TODO(siyuanfeng): Implement something meaningful here like a check for a

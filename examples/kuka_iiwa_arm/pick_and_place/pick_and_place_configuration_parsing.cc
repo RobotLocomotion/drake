@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration_parsing.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration_parsing.h"
 
 #include <algorithm>
 #include <limits>
@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/proto/protobuf.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration.pb.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.pb.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -164,9 +164,12 @@ void ExtractCompliantParameters(
 
 pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
     const proto::PickAndPlaceConfiguration& configuration,
-    const std::string& end_effector_name,
-    pick_and_place::RobotBaseIndex robot_index,
-    pick_and_place::TargetIndex target_index) {
+    const proto::PickAndPlaceTask& task) {
+
+  const RobotBaseIndex robot_index(task.robot_index());
+  const TargetIndex target_index(task.target_index());
+  const std::string& end_effector_name = task.end_effector_name();
+
   // Check that the robot base and target indices are valid.
   DRAKE_THROW_UNLESS(robot_index < configuration.robot_size());
   DRAKE_THROW_UNLESS(target_index < configuration.object_size());
@@ -183,6 +186,10 @@ pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
           configuration,
           configuration.robot(planner_configuration.robot_index));
   planner_configuration.end_effector_name = end_effector_name;
+
+  if (task.grip_force() != 0) {
+    planner_configuration.grip_force = task.grip_force();
+  }
 
   // Extract number of tables
   planner_configuration.num_tables = configuration.table_size();
@@ -226,27 +233,8 @@ pick_and_place::PlannerConfiguration ParsePlannerConfigurationOrThrow(
 
   // Check that the task index is valid.
   DRAKE_THROW_UNLESS(task_index < configuration.task_size());
-  RobotBaseIndex robot_index(configuration.task(task_index).robot_index());
-  TargetIndex target_index(configuration.task(task_index).target_index());
-
   return DoParsePlannerConfiguration(
-      configuration, configuration.task(task_index).end_effector_name(),
-      robot_index, target_index);
-}
-
-pick_and_place::PlannerConfiguration ParsePlannerConfigurationOrThrow(
-    const std::string& filename, const std::string& end_effector_name,
-    RobotBaseIndex robot_index, TargetIndex target_index) {
-  // Read configuration file
-  const proto::PickAndPlaceConfiguration configuration{
-      ReadProtobufFileOrThrow(filename)};
-
-  // Check that the robot and target indices are valid.
-  DRAKE_THROW_UNLESS(robot_index < configuration.robot_size());
-  DRAKE_THROW_UNLESS(target_index < configuration.object_size());
-
-  return DoParsePlannerConfiguration(configuration, end_effector_name,
-                                     robot_index, target_index);
+      configuration, configuration.task(task_index));
 }
 
 std::vector<pick_and_place::PlannerConfiguration>
@@ -262,9 +250,7 @@ ParsePlannerConfigurationsOrThrow(const std::string& filename) {
                  [&configuration](const proto::PickAndPlaceTask& task)
                      -> pick_and_place::PlannerConfiguration {
                    return DoParsePlannerConfiguration(
-                       configuration, task.end_effector_name(),
-                       pick_and_place::RobotBaseIndex(task.robot_index()),
-                       pick_and_place::TargetIndex(task.target_index()));
+                       configuration, task);
                  });
   return planner_configurations;
 }

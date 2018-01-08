@@ -7,9 +7,9 @@
 
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_plant.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_iiwa_command.hpp"
@@ -35,7 +35,7 @@ DEFINE_bool(quick, false,
             "Run only a brief simulation and return success "
             "without executing the entire task");
 DEFINE_string(configuration_file,
-              "drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/"
+              "drake/examples/kuka_iiwa_arm/pick_and_place/configuration/"
               "yellow_posts.pick_and_place_configuration",
               "Path to the configuration file.");
 
