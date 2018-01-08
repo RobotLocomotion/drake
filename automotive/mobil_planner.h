@@ -102,6 +102,21 @@ class MobilPlanner : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& lane_output() const;
   /// @}
 
+  /// Getters to mutable named-vector references associated with MobilPlanner's
+  /// Parameters groups.
+  /// @{
+  inline IdmPlannerParameters<T>& get_mutable_idm_params(
+      systems::Context<T>* context) const {
+    return this->template GetMutableNumericParameter<IdmPlannerParameters>(
+        context, kIdmParamsIndex);
+  }
+  inline MobilPlannerParameters<T>& get_mutable_mobil_params(
+      systems::Context<T>* context) const {
+    return this->template GetMutableNumericParameter<MobilPlannerParameters>(
+        context, kMobilParamsIndex);
+  }
+  /// @}
+
  private:
   void CalcLaneDirection(const systems::Context<T>& context,
                          LaneDirection* lane_direction) const;
@@ -148,6 +163,10 @@ class MobilPlanner : public systems::LeafSystem<T> {
   const T EvaluateIdm(const IdmPlannerParameters<T>& idm_params,
                       const ClosestPose<T>& trailing_closest_pose,
                       const ClosestPose<T>& leading_closest_pose) const;
+
+  static constexpr int kIdmParamsIndex{0};
+  static constexpr int kMobilParamsIndex{1};
+  static constexpr double kDefaultLargeAccel{1e6};  // m/s^2
 
   const maliput::api::RoadGeometry& road_;
   const bool with_s_{true};
