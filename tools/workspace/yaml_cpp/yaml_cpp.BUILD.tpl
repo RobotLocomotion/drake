@@ -14,5 +14,5 @@ cc_library(
     defines = ["%{defines}"],
     includes = ["%{includes}"],
     linkopts = ["%{linkopts}"],
-    deps = [ "@boost//:boost_headers" ]
+    deps = ["@boost//:boost_headers"]
 )
