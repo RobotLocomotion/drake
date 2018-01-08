@@ -208,8 +208,12 @@ class VectorSystem : public LeafSystem<T> {
     // Should only get here if we've declared an output.
     DRAKE_ASSERT(this->get_num_output_ports() > 0);
 
-    const Eigen::VectorBlock<const VectorX<T>> input_block =
-        EvalVectorInput(context);
+    // Only provide input when direct feedthrough occurs; otherwise, we might
+    // create a computational loop.
+    static const never_destroyed<VectorX<T>> empty_vector(0);
+    Eigen::VectorBlock<const VectorX<T>> input_block =
+        this->HasAnyDirectFeedthrough() ? EvalVectorInput(context) :
+        empty_vector.access().segment(0, 0);
 
     // Obtain the block form of xc or xd.
     const Eigen::VectorBlock<const VectorX<T>> state_block =
@@ -231,6 +235,9 @@ class VectorSystem : public LeafSystem<T> {
   /// The @p state will be either empty, the continuous state, or the discrete
   /// state, depending on which (or none) was declared at context-creation
   /// time.
+  ///
+  /// The @p input will be empty (zero-sized) when this System is declared to
+  /// be non-direct-feedthrough.
   ///
   /// By default, this function does nothing if the @p output is empty,
   /// and throws an exception otherwise.
