@@ -133,11 +133,12 @@ class MixedIntegerBranchAndBoundNode {
   /** Getter for the solution result when solving the optimization program. */
   SolutionResult solution_result() const { return solution_result_; }
 
-  /** Check if the optimal solution to the program in this node satisfies all
-   * integral constraints.
-   * Only call this function AFTER the program is solved.
+  /**
+   * Getter for optimal_solution_is_integral.
+   * @pre The optimization problem is solved successfully.
+   * @throws a runtime error if the precondition is not satisfied.
    */
-  bool IsOptimalSolutionIntegral();
+  bool optimal_solution_is_integral() const;
 
  private:
   /**
@@ -160,6 +161,12 @@ class MixedIntegerBranchAndBoundNode {
    */
   void FixBinaryVariable(const symbolic::Variable& binary_variable,
                          int binary_value);
+
+  /** Check if the optimal solution to the program in this node satisfies all
+   * integral constraints.
+   * Only call this function AFTER the program is solved.
+   */
+  void CheckOptimalSolutionIsIntegral();
 
   enum class OptimalSolutionIsIntegral {
     kTrue,   ///< The program in this node has been solved, and the solution to
@@ -256,7 +263,7 @@ class MixedIntegerBranchAndBound {
    * constructor of this MixedIntegerBranchAndBound.
    * @throw a runtime_error if the pre-condition fails.
    */
-  const symbolic::Variable& NewVariable(
+  const symbolic::Variable& GetNewVariable(
       const symbolic::Variable& old_variable) const;
 
   /**
@@ -271,15 +278,35 @@ class MixedIntegerBranchAndBound {
       is_eigen_scalar_same<Derived, symbolic::Variable>::value,
       MatrixDecisionVariable<Derived::RowsAtCompileTime,
                              Derived::ColsAtCompileTime>>::type
-  NewVariables(const Eigen::MatrixBase<Derived>& old_variables) const {
+  GetNewVariables(const Eigen::MatrixBase<Derived>& old_variables) const {
     Eigen::MatrixBase<Derived> new_variables;
     new_variables.resize(old_variables.rows(), old_variables.cols());
     for (int i = 0; i < old_variables.rows(); ++i) {
       for (int j = 0; j < old_variables.cols(); ++j) {
-        new_variables(i, j) = NewVariable(old_variables(i, j));
+        new_variables(i, j) = GetNewVariable(old_variables(i, j));
       }
     }
     return new_variables;
+  }
+
+  /**
+   * The user can choose the method to pick a node for branching. We provide 
+   * options such as "depth first" or "min lower bound".
+   * @param pick_node The option to pick a node. If the option is 
+   * PickNode::UserDefined, then the user should also provide the method
+   * to pick a node through SetUserDefinedBranchingNodeMethod
+   */
+  void SetPickBranchingNodeMethod(PickNode pick_node) {
+    pick_node_ = pick_node;
+  }
+
+  /**
+   * Set the user-defined method to pick the branching node. This method is
+   * used if the user specifies to use user-defined method, by calling
+   * SetPickBranchingNodeMethod(PickNode::UserDefined)
+   */
+  void SetUserDefinedBranchingNodeMethod(PickNodeFun fun) { 
+    pick_branching_node_userfun_ = fun;
   }
 
   /**
@@ -300,7 +327,16 @@ class MixedIntegerBranchAndBound {
    */
   MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }
 
+  /** Getter for the best upper bound. */
+  double best_upper_bound() const { return best_upper_bound_; }
+
+  /** Getter for the best lower bound. */
+  double best_lower_bound() const { return best_lower_bound_; }
+
  private:
+  // Forward declaration the tester class.
+  friend class MixedIntegerBranchAndBoundTester;
+
   /**
    * Pick one node to branch.
    */
@@ -365,6 +401,7 @@ class MixedIntegerBranchAndBound {
 
   // The user defined function to pick a branching node. Default is null.
   PickNodeFun pick_branching_node_userfun_ = nullptr;
+
 };
 }  // namespace solvers
 }  // namespace drake

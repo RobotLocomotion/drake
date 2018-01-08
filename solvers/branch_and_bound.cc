@@ -178,11 +178,38 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   MixedIntegerBranchAndBoundNode* node =
       new MixedIntegerBranchAndBoundNode(new_prog, binary_variables_list);
   node->solution_result_ = node->prog_->Solve();
+  if (node->solution_result_ == SolutionResult::kSolutionFound) {
+    node->CheckOptimalSolutionIsIntegral();
+  }
   return std::make_pair(std::unique_ptr<MixedIntegerBranchAndBoundNode>(node),
                         map_old_vars_to_new_vars);
 }
 
-bool MixedIntegerBranchAndBoundNode::IsOptimalSolutionIntegral() {
+void MixedIntegerBranchAndBoundNode::CheckOptimalSolutionIsIntegral() {
+  // Check if the solution to the remaining binary variables are all either
+  // 0 or 1.
+  for (const auto& var : remaining_binary_variables_) {
+    const double binary_var_val{prog_->GetSolution(var)};
+    if (std::isnan(binary_var_val)) {
+      throw std::runtime_error(
+          "The solution contains NAN, either the problem is not solved "
+          "yet, or the problem is infeasible, unbounded, or contains "
+          "numerical error.");
+    }
+    const double integral_tol = 1E-3;
+    if (binary_var_val > integral_tol &&
+        binary_var_val < 1 - integral_tol) {
+      optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kFalse;
+      return;
+    }
+  }
+  optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kTrue;
+}
+
+bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
+  if (solution_result_ != SolutionResult::kSolutionFound) {
+    throw std::runtime_error("The optimal solution is not found.");
+  }
   switch (optimal_solution_is_integral_) {
     case OptimalSolutionIsIntegral::kTrue: {
       return true;
@@ -191,25 +218,7 @@ bool MixedIntegerBranchAndBoundNode::IsOptimalSolutionIntegral() {
       return false;
     }
     case OptimalSolutionIsIntegral::kUnknown: {
-      // Check if the solution to the remaining binary variables are all either
-      // 0 or 1.
-      for (const auto& var : remaining_binary_variables_) {
-        const double binary_var_val{prog_->GetSolution(var)};
-        if (std::isnan(binary_var_val)) {
-          throw std::runtime_error(
-              "The solution contains NAN, either the problem is not solved "
-              "yet, or the problem is infeasible, unbounded, or contains "
-              "numerical error.");
-        }
-        const double integral_tol = 1E-3;
-        if (binary_var_val > integral_tol &&
-            binary_var_val < 1 - integral_tol) {
-          optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kFalse;
-          return false;
-        }
-      }
-      optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kTrue;
-      return true;
+      throw std::runtime_error("Call CheckOptimalSolutionIsIntegral() before calling this function.");
     }
   }
 }
@@ -262,6 +271,12 @@ void MixedIntegerBranchAndBoundNode::Branch(
   right_child_->parent_ = this;
   left_child_->solution_result_ = left_child_->prog_->Solve();
   right_child_->solution_result_ = right_child_->prog_->Solve();
+  if (left_child_->solution_result_ == SolutionResult::kSolutionFound) {
+    left_child_->CheckOptimalSolutionIsIntegral();
+  }
+  if (right_child_->solution_result_ == SolutionResult::kSolutionFound) {
+    right_child_->CheckOptimalSolutionIsIntegral();
+  }
 }
 
 MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
@@ -275,7 +290,7 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
       MixedIntegerBranchAndBoundNode::ConstructRootNode(prog);
 }
 
-const symbolic::Variable& MixedIntegerBranchAndBound::NewVariable(
+const symbolic::Variable& MixedIntegerBranchAndBound::GetNewVariable(
     const symbolic::Variable& old_variable) const {
   const auto it = map_old_vars_to_new_vars_.find(old_variable.get_id());
   if (it == map_old_vars_to_new_vars_.end()) {
@@ -300,32 +315,51 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
       return PickDepthFirstNode();
     }
     case PickNode::kUserDefined: {
-      return pick_branching_node_userfun_(*root_);
+      if (pick_branching_node_userfun_) {
+        return pick_branching_node_userfun_(*root_);
+      } else {
+        throw std::runtime_error("The user defined function should not be null.");
+      }
     }
   }
 }
 
 namespace {
-MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(
-    const MixedIntegerBranchAndBoundNode& root) {
+// Pick the non-fathomed leaf node in the tree with the smallest optimal cost.
+MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(const MixedIntegerBranchAndBound& bnb, const MixedIntegerBranchAndBoundNode& root) {
   if (root.IsLeaf()) {
+    if (bnb.IsLeafNodeFathomed(root)) {
+      return nullptr;
+    }
     return const_cast<MixedIntegerBranchAndBoundNode*>(&root);
   } else {
     MixedIntegerBranchAndBoundNode* left_min_lower_bound_node =
-        PickMinLowerBoundNodeInSubTree(*(root.left_child()));
+        PickMinLowerBoundNodeInSubTree(bnb, *(root.left_child()));
     MixedIntegerBranchAndBoundNode* right_min_lower_bound_node =
-        PickMinLowerBoundNodeInSubTree(*(root.right_child()));
+        PickMinLowerBoundNodeInSubTree(bnb, *(root.right_child()));
+    if (left_min_lower_bound_node && right_min_lower_bound_node) {
     return left_min_lower_bound_node->prog()->GetOptimalCost() <
                    right_min_lower_bound_node->prog()->GetOptimalCost()
                ? left_min_lower_bound_node
                : right_min_lower_bound_node;
+    } else if (left_min_lower_bound_node) {
+      return left_min_lower_bound_node;
+    } else if (right_min_lower_bound_node) {
+      return right_min_lower_bound_node;
+    }
+    return nullptr;
   }
 }
 }  // namespace
 
 MixedIntegerBranchAndBoundNode*
 MixedIntegerBranchAndBound::PickMinLowerBoundNode() const {
-  return PickMinLowerBoundNodeInSubTree(*root_);
+  return PickMinLowerBoundNodeInSubTree(*this, *root_);
+}
+
+MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode() const {
+  // The deepest node has the most number of binary variables being fixed.
+
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
@@ -333,6 +367,16 @@ bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
   if (!leaf_node.IsLeaf()) {
     throw std::runtime_error("Not a leaf node.");
   }
+  if (leaf_node.solution_result() == SolutionResult::kInfeasibleConstraints) {
+    return true;
+  }
+  if (leaf_node.prog()->GetOptimalCost() > best_upper_bound_) {
+    return true;
+  }
+  if (leaf_node.optimal_solution_is_integral()) {
+    return true;
+  }
+  return false;
 }
 }  // namespace solvers
 }  // namespace drake

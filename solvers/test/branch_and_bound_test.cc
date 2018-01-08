@@ -9,6 +9,33 @@
 
 namespace drake {
 namespace solvers {
+// This class exposes the protected and private members of
+//  MixedIntegerBranchAndBound, so that we can test its internal implementation.
+class MixedIntegerBranchAndBoundTester {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundTester)
+
+  MixedIntegerBranchAndBoundTester(const MathematicalProgram& prog)
+    : bnb_{new MixedIntegerBranchAndBound(prog)} {}
+
+  MixedIntegerBranchAndBound* bnb() const { return bnb_.get(); }
+
+  MixedIntegerBranchAndBoundNode* PickBranchingNode() const {
+    return bnb_->PickBranchingNode();
+  }
+
+  MixedIntegerBranchAndBoundNode* PickMinLowerBoundNode() const {
+    return bnb_->PickMinLowerBoundNode();
+  }
+
+  MixedIntegerBranchAndBoundNode* PickDepthFirstNode() const {
+    return bnb_->PickDepthFirstNode();
+  }
+
+ private:
+  std::unique_ptr<MixedIntegerBranchAndBound> bnb_;
+};
+
 namespace {
 // Set the solver to either Gurobi of Mosek.
 void SolveWithGurobiOrMosek(MathematicalProgram* prog) {
@@ -142,7 +169,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
 
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
   TestProgSolve(*root, x, x_expected, 1.5, 1E-5);
-  EXPECT_TRUE(root->IsOptimalSolutionIntegral());
+  EXPECT_TRUE(root->optimal_solution_is_integral());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
@@ -164,7 +191,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 0.7, 1, 1, 1.4, 0;
   TestProgSolve(*root, x, x_expected, -4.9, 1E-5);
-  EXPECT_FALSE(root->IsOptimalSolutionIntegral());
+  EXPECT_FALSE(root->optimal_solution_is_integral());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
@@ -211,8 +238,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
   const Eigen::Vector4d x_expected_r0(1, 1, 0, 0);
   TestProgSolve(*(root->left_child()), x, x_expected_l0, 1.5, 1E-5);
   TestProgSolve(*(root->right_child()), x, x_expected_r0, 4, 1E-5);
-  EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
-  EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
+  EXPECT_TRUE(root->left_child()->optimal_solution_is_integral());
+  EXPECT_TRUE(root->right_child()->optimal_solution_is_integral());
 
   // Branch on variable x(2). The child nodes created by branching on x(0) will
   // be deleted.
@@ -221,8 +248,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
   const Eigen::Vector4d x_expected_r2(0, 4.1, 1, -1.05);
   TestProgSolve(*(root->left_child()), x, x_expected_l2, 1.5, 1E-5);
   TestProgSolve(*(root->right_child()), x, x_expected_r2, 12.35, 1E-5);
-  EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
-  EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
+  EXPECT_TRUE(root->left_child()->optimal_solution_is_integral());
+  EXPECT_TRUE(root->right_child()->optimal_solution_is_integral());
 
   // Branch on variable x(1) and x(3). Since these two variables are continuous,
   // expect a runtime error thrown.
@@ -245,17 +272,17 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
   Eigen::Matrix<double, 5, 1> x_expected_r;
   x_expected_r << 1, 1.0 / 3.0, 1, 1, 0;
   TestProgSolve(*(root->right_child()), x, x_expected_r, -13.0 / 3.0, 1E-5);
-  EXPECT_TRUE(root->right_child()->IsOptimalSolutionIntegral());
+  EXPECT_TRUE(root->right_child()->optimal_solution_is_integral());
 
   // Branch on x(2)
   root->Branch(x(2));
   Eigen::Matrix<double, 5, 1> x_expected_l;
   x_expected_l << 1, 2.0 / 3.0, 0, 1, 1;
   TestProgSolve(*(root->left_child()), x, x_expected_l, 23.0 / 6.0, 1E-5);
-  EXPECT_TRUE(root->left_child()->IsOptimalSolutionIntegral());
+  EXPECT_TRUE(root->left_child()->optimal_solution_is_integral());
   x_expected_r << 0.7, 1, 1, 1.4, 0;
   TestProgSolve(*(root->right_child()), x, x_expected_r, -4.9, 1E-5);
-  EXPECT_FALSE(root->right_child()->IsOptimalSolutionIntegral());
+  EXPECT_FALSE(root->right_child()->optimal_solution_is_integral());
 
   // Branch on x(4)
   root->Branch(x(4));
@@ -263,8 +290,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
   x_expected_r << 0.2, 2.0 / 3.0, 1, 1.4, 1;
   TestProgSolve(*(root->left_child()), x, x_expected_l, -4.9, 1E-5);
   TestProgSolve(*(root->right_child()), x, x_expected_r, -47.0 / 30, 1E-5);
-  EXPECT_FALSE(root->left_child()->IsOptimalSolutionIntegral());
-  EXPECT_FALSE(root->right_child()->IsOptimalSolutionIntegral());
+  EXPECT_FALSE(root->left_child()->optimal_solution_is_integral());
+  EXPECT_FALSE(root->right_child()->optimal_solution_is_integral());
 
   // x(1) and x(3) are continuous variables, expect runtime_error thrown when we
   // branch on them.
@@ -305,20 +332,91 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
       bnb.root()->prog()->decision_variables();
 
   for (int i = 0; i < 4; ++i) {
-    EXPECT_TRUE(bnb_x(i).equal_to(bnb.NewVariable(prog_x(i))));
+    EXPECT_TRUE(bnb_x(i).equal_to(bnb.GetNewVariable(prog_x(i))));
   }
 
-  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head<2>())),
+  static_assert(std::is_same<decltype(bnb.GetNewVariables(prog_x.head<2>())),
                              VectorDecisionVariable<2>>::value,
                 "Should return VectorDecisionVariable<2> object.\n");
-  static_assert(std::is_same<decltype(bnb.NewVariables(prog_x.head(2))),
+  static_assert(std::is_same<decltype(bnb.GetNewVariables(prog_x.head(2))),
                              VectorXDecisionVariable>::value,
                 "Should return VectorXDecisionVariable object.\n");
   MatrixDecisionVariable<2, 2> X;
   X << prog_x(0), prog_x(1), prog_x(2), prog_x(3);
-  static_assert(std::is_same<decltype(bnb.NewVariables(X)),
+  static_assert(std::is_same<decltype(bnb.GetNewVariables(X)),
                              MatrixDecisionVariable<2, 2>>::value,
                 "Should return MatrixDecisionVariable<2, 2> object.\n");
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
+  auto prog1 = ConstructMathematicalProgram1();
+  MixedIntegerBranchAndBoundTester dut(*prog1);
+  // The optimal solution to the root is integral. The node is fathomed.
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
+  VectorDecisionVariable<4> x = dut.bnb()->root()->prog()->decision_variables();
+
+  dut.bnb()->root()->Branch(x(0));
+  // Both left and right children have integral optimal solution. Both nodes are
+  // fathomed.
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+
+  dut.bnb()->root()->Branch(x(2));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+
+  // The root node is not a leaf node. Expect a runtime error.
+  EXPECT_THROW(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())), std::runtime_error);
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
+  auto prog2 = ConstructMathematicalProgram2();
+  MixedIntegerBranchAndBoundTester dut(*prog2);
+  VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
+
+  // The optimal solution to the root is not integral, the node is not fathomed.
+  // The optimal cost is -4.9.
+  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
+
+  dut.bnb()->root()->Branch(x(0));
+  // The left node is infeasible, thus fathomed.
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  // The right node has integral optimal solution, thus fathomed.
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+
+  dut.bnb()->root()->Branch(x(2));
+  // The solution to the left node is integral, with optimal cost 23.0 / 6.0. The node is fathomed.
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  // The solution ot the right node is not integral, with optimal cost -4.9. The node is not fathomed.
+  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+
+  dut.bnb()->root()->Branch(x(4));
+  // Neither the left nor the right child nodes has integral solution.
+  // Neither of the nodes is fathomed.
+  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode1) {
+  // Test choosing the node with the minimal lower bound.
+  auto prog = ConstructMathematicalProgram2();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
+
+  // The root node has optimal cost -4.9.
+  dut.bnb()->SetPickBranchingNodeMethod(MixedIntegerBranchAndBound::PickNode::kMinLowerBound);
+  // Pick the root node.
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
+
+  // The left node has optimal cost 23.0 / 6.0, the right node has optimal cost -4.9
+  // Also the left node is fathomed.
+  dut.bnb()->root()->Branch(x(2));
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
+
+  dut.bnb()->root()->Branch(x(4));
+  // The left node has optimal cost -4.9, the right node has optimal cost -47.0 / 30
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->left_child());
 }
 }  // namespace
 }  // namespace solvers
