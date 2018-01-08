@@ -86,6 +86,20 @@ const systems::OutputPort<T>& MobilPlanner<T>::lane_output() const {
 }
 
 template <typename T>
+IdmPlannerParameters<T>& MobilPlanner<T>::get_idm_params(
+    systems::Context<T>* context) const {
+  return this->template GetMutableNumericParameter<IdmPlannerParameters>(
+      context, kIdmParamsIndex);
+}
+
+template <typename T>
+MobilPlannerParameters<T>& MobilPlanner<T>::get_mobil_params(
+    systems::Context<T>* context) const {
+  return this->template GetMutableNumericParameter<MobilPlannerParameters>(
+      context, kMobilParamsIndex);
+}
+
+template <typename T>
 void MobilPlanner<T>::CalcLaneDirection(const systems::Context<T>& context,
                                         LaneDirection* lane_direction) const {
   // Obtain the parameters.

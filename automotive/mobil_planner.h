@@ -102,6 +102,14 @@ class MobilPlanner : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& lane_output() const;
   /// @}
 
+  /// Getters to mutable named-vector references associated with MobilPlanner's
+  /// Parameters groups.
+  /// @{
+  IdmPlannerParameters<T>& get_idm_params(systems::Context<T>* context) const;
+  MobilPlannerParameters<T>& get_mobil_params(
+      systems::Context<T>* context) const;
+  /// @}
+
  private:
   void CalcLaneDirection(const systems::Context<T>& context,
                          LaneDirection* lane_direction) const;
