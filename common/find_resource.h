@@ -72,8 +72,6 @@ class FindResourceResult {
   optional<std::string> error_message_;
 };
 
-
-
 /// Adds a path in which resources are searched in a persistent variable. Paths
 /// are accumulated each time this function is called. It is searched after the
 /// path given by the environment variable but before the path that can be
