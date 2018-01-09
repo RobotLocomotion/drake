@@ -35,10 +35,13 @@ GTEST_TEST(SortedPair, Casting) {
 
 // Verifies that the move constructor works as desired.
 GTEST_TEST(SortedPair, Move) {
-  SortedPair<int> y(1, 2);
-  SortedPair<int> x(std::move(y));
-  EXPECT_EQ(x.first, 1);
-  EXPECT_EQ(x.second, 2);
+  std::unique_ptr<int> a = std::make_unique<int>(1);
+  std::unique_ptr<int> b = std::make_unique<int>(2);
+  SortedPair<std::unique_ptr<int>> y(std::move(a), std::move(b));
+  SortedPair<std::unique_ptr<int>> x;
+  x = std::move(y);
+  EXPECT_EQ(*x.first, 1);
+  EXPECT_EQ(*x.second, 2);
 }
 
 // Checks the assignment operator.

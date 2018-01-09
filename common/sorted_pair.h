@@ -44,6 +44,13 @@ struct SortedPair {
   SortedPair(const SortedPair& s) = default;
   SortedPair(SortedPair&& s) = default;
 
+  /// Move assignment operator.
+  SortedPair& operator=(SortedPair&& s) {
+    const_cast<T&>(first) = std::move(const_cast<T&>(s.first));
+    const_cast<T&>(second) = std::move(const_cast<T&>(s.second));
+    return *this;
+  }
+
   /// Constructs a %SortedPair from two objects.
   SortedPair(const T& a, const T& b) : first(a), second(b) {
     if (first > second) {
@@ -68,7 +75,8 @@ struct SortedPair {
   }
 };
 
-/// Two pairs of the same type are equal iff their members are equal.
+/// Two pairs of the same type are equal iff their members are equal after
+/// sorting.
 template <class T>
 inline bool operator==(const SortedPair<T>& x, const SortedPair<T>& y) {
   return x.first == y.first && x.second == y.second;
@@ -81,7 +89,7 @@ inline bool operator<(const SortedPair<T>& x, const SortedPair<T>& y) {
   return x.first < y.first || (x.first == y.first && x.second < y.second);
 }
 
-/// Determine whether two SortedPair objects are equal using `operator==`.
+/// Determine whether two SortedPair objects are not equal using `operator==`.
 template <class T> inline bool operator!=(
     const SortedPair<T>& x, const SortedPair<T>& y) {
   return !(x == y);
