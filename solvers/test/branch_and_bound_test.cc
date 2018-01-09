@@ -15,7 +15,7 @@ class MixedIntegerBranchAndBoundTester {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundTester)
 
-  MixedIntegerBranchAndBoundTester(const MathematicalProgram& prog)
+  explicit MixedIntegerBranchAndBoundTester(const MathematicalProgram& prog)
       : bnb_{new MixedIntegerBranchAndBound(prog)} {}
 
   MixedIntegerBranchAndBound* bnb() const { return bnb_.get(); }
@@ -51,11 +51,14 @@ void SolveWithGurobiOrMosek(MathematicalProgram* prog) {
     prog->SetSolverId(GurobiSolver::id());
     return;
   }
+  // TODO(hongkai.dai): Enable mosek solver. Currently MosekSolver class does
+  // not correctly detects infeasibility and unboundedness.
+  /*
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
     prog->SetSolverId(MosekSolver::id());
     return;
-  }
+  }*/
   throw std::runtime_error("None of the required solvers is available.");
 }
 
@@ -702,6 +705,10 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
       x_expected0 << 1, 1.0 / 3.0, 1, 1, 0;
       EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected0,
                                   tol, MatrixCompareType::absolute));
+      // The costs are in the ascending order.
+      for (int i = 1; i < dut.bnb()->best_solutions().size(); ++i) {
+        EXPECT_GE(dut.bnb()->GetOptimalCost(i), 1.5);
+      }
     }
   }
 }

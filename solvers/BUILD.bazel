@@ -702,7 +702,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "branch_and_bound_test",
-    tags = gurobi_test_tags() + mosek_test_tags(),
+    tags = gurobi_test_tags(),
     deps = [
         ":branch_and_bound",
         ":mathematical_program_test_util",

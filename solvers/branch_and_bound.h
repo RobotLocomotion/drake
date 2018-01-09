@@ -2,6 +2,8 @@
 
 #include <list>
 #include <memory>
+#include <unordered_map>
+#include <utility>
 
 #include "drake/solvers/mathematical_program.h"
 
@@ -251,7 +253,7 @@ class MixedIntegerBranchAndBound {
    * program.
    * @param prog A mixed-integer optimization program.
    */
-  MixedIntegerBranchAndBound(const MathematicalProgram& prog);
+  explicit MixedIntegerBranchAndBound(const MathematicalProgram& prog);
 
   /**
    * Solve the mixed-integer problem (MIP) through a branch and bound process.

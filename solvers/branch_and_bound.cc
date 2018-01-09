@@ -1,6 +1,8 @@
 #include "drake/solvers/branch_and_bound.h"
 
 #include <algorithm>
+#include <limits>
+#include <vector>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -9,6 +11,8 @@
 
 namespace drake {
 namespace solvers {
+/** Determines if the mathematical program has binary variables.
+ */
 bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
   for (int i = 0; i < prog.num_vars(); ++i) {
     if (prog.decision_variable(i).get_type() ==
@@ -41,6 +45,7 @@ bool MixedIntegerBranchAndBoundNode::IsRoot() const {
   return parent_ == nullptr;
 }
 
+// Replaces the variables bound with the constraint with new variables.
 template <typename Constraint>
 Binding<Constraint> ReplaceBoundVariables(
     const Binding<Constraint>& binding,
@@ -54,6 +59,7 @@ Binding<Constraint> ReplaceBoundVariables(
   return Binding<Constraint>(binding.constraint(), new_bound_vars);
 }
 
+// Adds a vector of costs to a mathematical program.
 template <typename Cost>
 void AddVectorOfCostToNewProgram(
     const std::vector<Binding<Cost>>& costs,
@@ -65,6 +71,7 @@ void AddVectorOfCostToNewProgram(
   }
 }
 
+// Adds a vector of constraints to a mathematical program.
 template <typename Constraint>
 void AddVectorOfConstraintToNewProgram(
     const std::vector<Binding<Constraint>>& constraints,
@@ -327,7 +334,7 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
     SearchIntegralSolution(*root_);
   }
   MixedIntegerBranchAndBoundNode* branching_node = PickBranchingNode();
-  if (branching_node) {
+  while (branching_node) {
     // Found a branching node, branch on this node. If no branching node is
     // found, then every leaf node is fathomed, the branch-and-bound process
     // should terminate.
