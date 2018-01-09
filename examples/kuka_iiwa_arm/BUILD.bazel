@@ -148,6 +148,26 @@ drake_example_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "move_iiwa_ee",
+    srcs = ["move_iiwa_ee.cc"],
+    data = [
+        ":models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":iiwa_common",
+        "//drake/common:text_logging_gflags",
+        "//drake/lcmtypes:iiwa",
+        "//drake/manipulation/planner:constraint_relaxing_ik",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/parsers",
+        "@lcm",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
 alias(
     name = "models",
     actual = adjust_label_for_drake_hoist(
