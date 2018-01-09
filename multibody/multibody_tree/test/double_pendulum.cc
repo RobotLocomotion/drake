@@ -192,7 +192,7 @@ class DoublePendulumModel {
   double length2() const { return length2_; }
   double half_length2() const { return half_length2_; }
   double Ic2() const { return Ic2_; }
-  
+
   double gravity() const { return acceleration_of_gravity_; }
 
   const RevoluteJoint<T>& shoulder() const { return *shoulder_; }
@@ -241,10 +241,10 @@ class PendulumTests : public ::testing::Test {
     // MultibodyTree mass matrix:
     Matrix2d H;
     tree_->CalcMassMatrixViaInverseDynamics(*context_, &H);
-    
+
     // Benchmark mass matrix:
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
-    
+
     CompareMatrices(H, H_expected, kTolerance, MatrixCompareType::relative);
   }
 
