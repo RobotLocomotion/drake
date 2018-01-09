@@ -358,6 +358,44 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
                 "Should return MatrixDecisionVariable<2, 2> object.\n");
 }
 
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
+  auto prog = ConstructMathematicalProgram1();
+  MixedIntegerBranchAndBound bnb(*prog);
+  // The root node of the tree has integral optimal cost (0, 1, 0, 0.5), with
+  // cost 1.5.
+  const double tol = 1E-3;
+  EXPECT_NEAR(bnb.best_upper_bound(), 1.5, tol);
+  EXPECT_NEAR(bnb.best_lower_bound(), 1.5, tol);
+  const auto& best_solutions = bnb.best_solutions();
+  EXPECT_EQ(best_solutions.size(), 1);
+  EXPECT_NEAR(best_solutions.front().first, 1.5, tol);
+  const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
+  EXPECT_TRUE(CompareMatrices(best_solutions.front().second, x_expected, tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(bnb.IsLeafNodeFathomed(*(bnb.root())));
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
+  auto prog = ConstructMathematicalProgram2();
+  MixedIntegerBranchAndBound bnb(*prog);
+  // The root node does not have an optimal integral solution.
+  const double tol{1E-3};
+  EXPECT_NEAR(bnb.best_lower_bound(), -4.9, tol);
+  EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(bnb.best_solutions().empty());
+  EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
+  auto prog = ConstructMathematicalProgram3();
+  MixedIntegerBranchAndBound bnb(*prog);
+  // The root node is unbounded.
+  EXPECT_EQ(bnb.best_lower_bound(), -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(bnb.best_solutions().empty());
+  EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
+}
+
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
   auto prog1 = ConstructMathematicalProgram1();
   MixedIntegerBranchAndBoundTester dut(*prog1);
@@ -420,6 +458,40 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 }
 
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed3) {
+  auto prog = ConstructMathematicalProgram3();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  const VectorDecisionVariable<4> x =
+      dut.bnb()->root()->prog()->decision_variables();
+
+  EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
+
+  dut.bnb()->root()->Branch(x(0));
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+
+  dut.bnb()->root()->left_child()->Branch(x(2));
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->left_child()->left_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->left_child()->right_child())));
+
+  dut.bnb()->root()->right_child()->Branch(x(2));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->right_child()->left_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->right_child()->right_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->left_child()->left_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->left_child()->right_child())));
+}
+
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode1) {
   // Test choosing the node with the minimal lower bound.
   auto prog = ConstructMathematicalProgram2();
@@ -469,22 +541,85 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
 }
 
-GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate) {
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   auto prog = ConstructMathematicalProgram2();
 
   MixedIntegerBranchAndBoundTester dut(*prog);
   EXPECT_TRUE(dut.bnb()->best_solutions().empty());
   const double tol = 1E-3;
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
-  EXPECT_EQ(dut.bnb()->best_upper_bound(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_upper_bound(),
+            std::numeric_limits<double>::infinity());
 
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   dut.BranchAndUpdate(dut.bnb()->root(), x(2));
-  // The left node has optimal cost 23.0 / 6.0. with integral solution (1, 2 / 3, 0, 1, 1,)
-  // The right node has optimal cost -4.9, with non-integral solution (0.7, 1, 1, 1.4, 0).
+  // The left node has optimal cost 23.0 / 6.0. with integral solution (1, 2 /
+  // 3, 0, 1, 1,)
+  // The right node has optimal cost -4.9, with non-integral solution (0.7, 1,
+  // 1, 1.4, 0).
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
   EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
+  EXPECT_EQ(dut.bnb()->best_solutions().size(), 1);
+  EXPECT_NEAR(dut.bnb()->best_solutions().front().first, 23.0 / 6.0, tol);
+  Eigen::Matrix<double, 5, 1> x_expected;
+  x_expected << 1, 2.0 / 3.0, 0, 1, 1;
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->best_solutions().front().second,
+                              x_expected, tol, MatrixCompareType::absolute));
+
+  dut.BranchAndUpdate(dut.bnb()->root(), x(4));
+  // The left node has optimal cost -4.9, with non-integral solution (0.7, 1, 1,
+  // 1.4, 0).
+  // The right node has optimal cost -47/30, with  non-integral solution (0.2,
+  // 2/3, 1, 1.4, 1).
+  EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
+  EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
+  EXPECT_EQ(dut.bnb()->best_solutions().size(), 1);
+  EXPECT_NEAR(dut.bnb()->best_solutions().front().first, 23.0 / 6.0, tol);
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->best_solutions().front().second,
+                              x_expected, tol, MatrixCompareType::absolute));
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
+  auto prog = ConstructMathematicalProgram3();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  const VectorDecisionVariable<4> x =
+      dut.bnb()->root()->prog()->decision_variables();
+
+  dut.BranchAndUpdate(dut.bnb()->root(), x(0));
+  // Both left and right childs are unbounded.
+  EXPECT_EQ(dut.bnb()->best_upper_bound(),
+            std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_lower_bound(),
+            -std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+
+  dut.BranchAndUpdate(dut.bnb()->root()->left_child(), x(2));
+  // Both root->l->l and root->l->r are unbounded.
+  EXPECT_EQ(dut.bnb()->best_upper_bound(),
+            std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_lower_bound(),
+            -std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->left_child()->left_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->left_child()->right_child())));
+
+  dut.BranchAndUpdate(dut.bnb()->root()->right_child(), x(2));
+  // Both root->r->l and root->r->r are unbounded.
+  EXPECT_EQ(dut.bnb()->best_upper_bound(),
+            std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_lower_bound(),
+            -std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->right_child()->left_child())));
+  EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
+      *(dut.bnb()->root()->right_child()->right_child())));
 }
 }  // namespace
 }  // namespace solvers

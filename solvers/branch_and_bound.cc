@@ -188,6 +188,9 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
 void MixedIntegerBranchAndBoundNode::CheckOptimalSolutionIsIntegral() {
   // Check if the solution to the remaining binary variables are all either
   // 0 or 1.
+  if (solution_result_ != SolutionResult::kSolutionFound) {
+    throw std::runtime_error("The program does not have an optimal solution.");
+  }
   for (const auto& var : remaining_binary_variables_) {
     const double binary_var_val{prog_->GetSolution(var)};
     if (std::isnan(binary_var_val)) {
@@ -291,11 +294,13 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
       MixedIntegerBranchAndBoundNode::ConstructRootNode(prog);
   if (root_->solution_result() == SolutionResult::kSolutionFound) {
     best_lower_bound_ = root_->prog()->GetOptimalCost();
-  }
-  // If an integral solution is found, then update the best solutions, together
-  // with the best upper bound.
-  if (root_->optimal_solution_is_integral()) {
-    UpdateIntegralSolution(root_->prog()->GetSolution(root_->prog()->decision_variables()), root_->prog()->GetOptimalCost());
+    // If an integral solution is found, then update the best solutions,
+    // together with the best upper bound.
+    if (root_->optimal_solution_is_integral()) {
+      UpdateIntegralSolution(
+          root_->prog()->GetSolution(root_->prog()->decision_variables()),
+          root_->prog()->GetOptimalCost());
+    }
   }
 }
 
@@ -391,7 +396,16 @@ double BestLowerBoundInSubTree(const MixedIntegerBranchAndBound& bnb,
                                const MixedIntegerBranchAndBoundNode& root) {
   if (root.IsLeaf()) {
     if (bnb.IsLeafNodeFathomed(root)) {
-      return std::numeric_limits<double>::infinity();
+      switch (root.solution_result()) {
+        case SolutionResult::kSolutionFound:
+          return root.prog()->GetOptimalCost();
+        case SolutionResult::kUnbounded:
+          return -std::numeric_limits<double>::infinity();
+        case SolutionResult::kInfeasibleConstraints:
+          return std::numeric_limits<double>::infinity();
+        default:
+          throw std::runtime_error("Cannot obtain the best lower bound for this fathomed leaf node.");
+      }
     }
     return root.prog()->GetOptimalCost();
   } else {
@@ -428,7 +442,11 @@ bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
   if (leaf_node.prog()->GetOptimalCost() > best_upper_bound_) {
     return true;
   }
-  if (leaf_node.optimal_solution_is_integral()) {
+  if (leaf_node.solution_result() == SolutionResult::kSolutionFound &&
+      leaf_node.optimal_solution_is_integral()) {
+    return true;
+  }
+  if (leaf_node.remaining_binary_variables().empty()) {
     return true;
   }
   return false;
@@ -470,14 +488,17 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
   // If either the left or the right children finds integral solution, then
   // we can potentially update the best upper bound, and insert the solutions
   // to the list best_solutions_;
-  if (node->left_child()->optimal_solution_is_integral()) {
+  if (node->left_child()->solution_result() == SolutionResult::kSolutionFound &&
+      node->left_child()->optimal_solution_is_integral()) {
     const double child_node_optimal_cost =
         node->left_child()->prog()->GetOptimalCost();
     const Eigen::VectorXd x_sol = node->left_child()->prog()->GetSolution(
         node->left_child()->prog()->decision_variables());
     UpdateIntegralSolution(x_sol, child_node_optimal_cost);
   }
-  if (node->right_child()->optimal_solution_is_integral()) {
+  if (node->right_child()->solution_result() ==
+          SolutionResult::kSolutionFound &&
+      node->right_child()->optimal_solution_is_integral()) {
     const double child_node_optimal_cost =
         node->right_child()->prog()->GetOptimalCost();
     const Eigen::VectorXd x_sol = node->right_child()->prog()->GetSolution(

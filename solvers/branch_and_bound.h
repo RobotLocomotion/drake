@@ -310,10 +310,14 @@ class MixedIntegerBranchAndBound {
   }
 
   /**
-   * A leaf node is fathomed is any of the following conditions are satisfied:
+   * If a leaf node is fathomed, then there is no need to branch on this node
+   * any more. A leaf node is fathomed is any of the following conditions are
+   * satisfied:
    * 1. The optimization problem in the node is infeasible.
    * 2. The optimal cost of the node is larger than the best upper bound.
    * 3. The optimal solution to the node satisfies all the integral constraints.
+   * 4. There is no binary variables that are not fixed to either 0 or 1 in
+   *    this node.
    * @param leaf_node A leaf node to check if it is fathomed.
    * @pre The node should be a leaf node.
    * @throws runtime error if the precondition is not satisfied.
