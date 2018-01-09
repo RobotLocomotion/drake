@@ -60,9 +60,6 @@ cc_library(
 install(
     name = "install",
     targets = [":libscsdir.so"],
-    hdrs = SCS_HDRS,
-    hdr_dest = "include/scs",
-    hdr_strip_prefix = ["include"],
     docs = [
         "LICENSE.txt",
         "linsys/direct/external/AMD_README.txt",
