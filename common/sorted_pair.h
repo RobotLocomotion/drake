@@ -28,6 +28,9 @@ struct is_equality_comparable<T, typename std::enable_if<true,
 /// The data are stored as `const` types to prevent user modification- which
 /// could break the sorted ordering- while permitting the familiar `first`
 /// and `second` member data accesses provided by std::pair.
+///
+/// @tparam T A template type that provides the operators `operator==` and
+///           `operator<` and supports default construction.
 template <class T>
 struct SortedPair {
   typedef T type;
