@@ -42,7 +42,9 @@ using std::unique_ptr;
 using std::vector;
 using systems::Context;
 
-// Set of MultibodyTree tests for a double pendulum model.
+// Set of MultibodyTree tests for a double pendulum model. This simple set of
+// tests serve as an example on how to build a model using RigidBody and Joint
+// objects.
 // This double pendulum is similar to the acrobot model described in Section 3.1
 // of the Underactuated Robotics notes available online at
 // http://underactuated.csail.mit.edu/underactuated.html?chapter=3.
