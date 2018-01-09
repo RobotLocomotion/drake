@@ -2,10 +2,9 @@
 
 #include <type_traits>
 
+#ifndef DRAKE_DOXYGEN_CXX
+
 namespace drake {
-
-/** @cond */
-
 
 namespace is_equality_comparable_detail {
 
@@ -63,3 +62,5 @@ using is_equality_comparable =
     is_equality_comparable_detail::is_equality_comparable_helper<T, void>;
 
 }  // namespace drake
+
+#endif

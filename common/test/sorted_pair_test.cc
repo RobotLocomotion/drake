@@ -100,11 +100,9 @@ GTEST_TEST(SortedPair, Swap) {
 // Checks hash keys.
 GTEST_TEST(SortedPair, Hash) {
   SortedPair<int> x(1, 2), y(2, 4);
-  std::unordered_map<SortedPair<int>, int> hash;
+  std::unordered_map<SortedPair<int>, int, drake::DefaultHash> hash;
   hash[x] = 11;
   hash[y] = 13;
-  EXPECT_EQ(hash[x], 11);
-  EXPECT_EQ(hash[y], 13);
 }
 
 // Checks expansion with STL vector.

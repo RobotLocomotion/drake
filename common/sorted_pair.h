@@ -27,10 +27,12 @@ namespace drake {
 ///           `operator<` and supports default construction.
 template <class T>
 struct SortedPair {
-  static_assert(is_equality_comparable<T>::value, "SortedPair can only be used"
-      "with a class that provides the equality operator (operator==).");
+  static_assert(is_equality_comparable<T>::value, "SortedPair can only be "
+      "used with types that can be compared using an equality operator "
+      "(operator==).");
   static_assert(is_less_than_comparable<T>::value, "SortedPair can only be used"
-      "with a class that provides the less than operator (operator<).");
+      "with types that can be compared using the less-than operator "
+      "(operator<).");
 
   typedef T type;
 
@@ -77,6 +79,7 @@ struct SortedPair {
   template <class U>
   SortedPair(const SortedPair<U>& p) : first(p.first), second(p.second) { }
 
+  /// Copies the contents of `p` to `this`.
   SortedPair& operator=(const SortedPair& p) {
     // This block of code is necessary since `first` and `second` are const
     // objects.
@@ -164,17 +167,6 @@ void swap(drake::SortedPair<T>& t, drake::SortedPair<T>& u) {
   std::swap(const_cast<T&>(t.first), const_cast<T&>(u.first));
   std::swap(const_cast<T&>(t.second), const_cast<T&>(u.second));
 }
-
-/// Implements std::hash().
-template <class T>
-struct hash<drake::SortedPair<T>> {
-  std::size_t operator()(const drake::SortedPair<T>& s) const noexcept {
-    // Formula below is taken from boost::hash_combine().
-    const std::size_t h1 = std::hash<T>()(s.first);
-    const std::size_t h2 = std::hash<T>()(s.second);
-    return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
-  }
-};
 
 }  // namespace std
 

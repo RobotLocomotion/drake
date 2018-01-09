@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef DRAKE_DOXYGEN_CXX
+
 #include <type_traits>
 
 namespace drake {
@@ -63,3 +65,5 @@ using is_less_than_comparable =
     is_less_than_comparable_detail::is_less_than_comparable_helper<T, void>;
 
 }  // namespace drake
+
+#endif
