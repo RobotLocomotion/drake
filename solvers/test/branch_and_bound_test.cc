@@ -163,12 +163,14 @@ void TestProgSolve(const MixedIntegerBranchAndBoundNode& node,
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
   auto prog = ConstructMathematicalProgram1();
-
+  std::cout << prog->GetSolverId().value().name() << std::endl;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
   std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
       map_old_vars_to_new_vars;
   std::tie(root, map_old_vars_to_new_vars) =
       MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+  std::cout << root->prog()->GetSolverId().value().name()<< std::endl;
+
   VectorDecisionVariable<4> x;
   for (int i = 0; i < 4; ++i) {
     x(i) = map_old_vars_to_new_vars.at(prog->decision_variable(i).get_id());
@@ -707,7 +709,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
                                   tol, MatrixCompareType::absolute));
       // The costs are in the ascending order.
       for (int i = 1; i < dut.bnb()->best_solutions().size(); ++i) {
-        EXPECT_GE(dut.bnb()->GetOptimalCost(i), 1.5);
+        EXPECT_GE(dut.bnb()->GetOptimalCost(i), dut.bnb()->GetOptimalCost(i - 1));
       }
     }
   }
@@ -729,6 +731,69 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve3) {
 
       const SolutionResult solution_result = dut.bnb()->Solve();
       EXPECT_EQ(solution_result, SolutionResult::kUnbounded);
+    }
+  }
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSteelBlendingProblem) {
+  // This problem is taken from
+  // "An application of Mixed Integer Programming in a Swedish Steel Mill"
+  //  by  Carl-Henrik Westerberg, Bengt Bjorklund and Eskil Hultman
+  //  on Interfaces, 1977
+  //  The formulation is
+  //  min 1750 * b(0) + 990 * b(1) + 1240 * b(2) + 1680 * b(3) + 550 * x(0) +
+  //  450 * x(1) + 400 * x(2) + 100 * x(3)
+  //  s.t 5 * b(0) + 3 * b(1) + 4 * b(2) + 6 * b(3) + x(0) + x(1) + x(2) + x(3)
+  //  = 25
+  //      0.25 * b(0) + 0.12 * b(1) + 0.2 * b(2) + 0.18 * b(3) + 0.08 * x(0) +
+  //      0.07 * x(1) + 0.06 * x(2) + 0.03 * x(3) = 1.25
+  //      0.15 * b(0) + 0.09 * b(1) + 0.16 * b(2) + 0.24 * b(3) + 0.06 * x(0) +
+  //      0.07 * x(1) + 0.08 * x(2) + 0.09 * x(3) = 1.25
+  //      x >= 0
+  //      b are binary variables.
+  MathematicalProgram prog;
+  auto b = prog.NewBinaryVariables<4>("b");
+  auto x = prog.NewContinuousVariables<4>("x");
+
+  prog.AddLinearCost(1750 * b(0) + 990 * b(1) + 1240 * b(2) + 1680 * b(3) +
+                     500 * x(0) + 450 * x(1) + 400 * x(2) + 100 * x(3));
+
+  prog.AddLinearConstraint(5 * b(0) + 3 * b(1) + 4 * b(2) + 6 * b(3) + x(0) +
+                               x(1) + x(2) + x(3) ==
+                           25);
+  prog.AddLinearConstraint(0.25 * b(0) + 0.12 * b(1) + 0.2 * b(2) +
+                               0.18 * b(3) + 0.08 * x(0) + 0.07 * x(1) +
+                               0.06 * x(2) + 0.03 * x(3) ==
+                           1.25);
+  prog.AddLinearConstraint(0.15 * b(0) + 0.09 * b(1) + 0.16 * b(2) +
+                               0.24 * b(3) + 0.06 * x(0) + 0.07 * x(1) +
+                               0.08 * x(2) + 0.09 * x(3) ==
+                           1.25);
+  prog.AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(), x);
+
+  MixedIntegerBranchAndBound bnb(prog);
+
+  for (auto pick_variable :
+       {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
+        MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent}) {
+    for (auto pick_node :
+         {MixedIntegerBranchAndBound::PickNode::kDepthFirst,
+          MixedIntegerBranchAndBound::PickNode::kMinLowerBound}) {
+      bnb.SetPickBranchingNodeMethod(pick_node);
+      bnb.SetPickBranchingVariableMethod(pick_variable);
+      SolutionResult solution_result = bnb.Solve();
+      EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+      const double tol = 1E-3;
+      const Eigen::Vector4d b_expected0(1, 1, 0, 1);
+      const Eigen::Vector4d x_expected0(7.25, 0, 0.25, 3.5);
+      EXPECT_TRUE(CompareMatrices(bnb.GetSolution(x), x_expected0, tol,
+                                  MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(bnb.GetSolution(b), b_expected0, tol,
+                                  MatrixCompareType::absolute));
+      EXPECT_NEAR(bnb.GetOptimalCost(), 8495, tol);
+      for (int i = 1; i < bnb.best_solutions().size(); ++i) {
+        EXPECT_GE(bnb.GetOptimalCost(i), bnb.GetOptimalCost(i - 1));
+      }
     }
   }
 }
