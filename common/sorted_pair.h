@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "drake/common/hash.h"
 #include "drake/common/is_equality_comparable.h"
 #include "drake/common/is_less_than_comparable.h"
 
@@ -84,7 +85,7 @@ struct SortedPair {
     return *this;
   }
 
-  // Resets the objects.
+  /// Resets the stored objects.
   void set(const T& a, const T& b) {
     if (a < b) {
       const_cast<T&>(first) = a;
@@ -93,6 +94,14 @@ struct SortedPair {
       const_cast<T&>(first) = b;
       const_cast<T&>(second) = a;
     }
+  }
+
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher, const SortedPair& p) noexcept {
+     using drake::hash_append;
+    hash_append(hasher, p.first);
+    hash_append(hasher, p.second);
   }
 };
 

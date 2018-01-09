@@ -136,6 +136,9 @@ drake_cc_library(
 drake_cc_library(
     name = "hash",
     hdrs = ["hash.h"],
+    deps = [
+        ":essential",
+    ],
 )
 
 drake_cc_library(
@@ -256,9 +259,10 @@ drake_cc_library(
         "sorted_pair.h",
     ],
     deps = [
+        ":hash",
         ":is_equality_comparable",
         ":is_less_than_comparable",
-    ]
+    ],
 )
 
 drake_cc_library(
