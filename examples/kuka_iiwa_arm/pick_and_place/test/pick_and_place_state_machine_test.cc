@@ -104,6 +104,7 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
   std::vector<TestStep> steps;
   steps.push_back(TestStep{0, 1, PickAndPlaceState::kOpenGripper});
   steps.push_back(TestStep{0, 1, PickAndPlaceState::kPlan});
+  steps.push_back(TestStep{0, 1, PickAndPlaceState::kPlan});
   steps.push_back(TestStep{0, 1, PickAndPlaceState::kApproachPickPregrasp});
   steps.push_back(TestStep{1, 1, PickAndPlaceState::kApproachPickPregrasp});
   steps.push_back(TestStep{1, 1, PickAndPlaceState::kApproachPick});

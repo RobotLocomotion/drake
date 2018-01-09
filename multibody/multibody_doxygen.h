@@ -234,7 +234,7 @@ When we speak of the "location" or "pose" of a body, we really mean the location
 of the body frame origin Bo or pose of the body frame B, respectively.
 Body properties such
 as inertia and geometry are given with respect to the body frame. We denote
-a body's center of mass point as @f$B_{cm}@f$ (`Bcm`); it's location on the body
+a body's center of mass point as @f$B_{cm}@f$ (`Bcm`); its location on the body
 is specified by a position vector from Bo to Bcm. For a rigid body, any frames
 attached to it are fixed with respect to the body frame. For a flexible body,
 deformations are measured with respect to the body frame.
@@ -437,6 +437,7 @@ pose, we are
 interested in the location of frame B's origin Bo in A, @f$^Ap^{B_O}@f$
 (`p_ABo`), or more explicitly @f$[^{A_O}p^{B_O}]_A@f$ (`p_AoBo_A`).
 
+@anchor orientation_discussion
 <h3>Orientation</h3>
 
 A rotation matrix R, also known as a direction cosine matrix, is an orthogonal

@@ -8,6 +8,7 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
+#include "drake/solvers/test/semidefinite_program_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -150,6 +151,25 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
 
+TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
+  ScsSolver solver;
+  if (solver.available()) {
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+    EXPECT_EQ(prog_->GetOptimalCost(),
+              MathematicalProgram::kGlobalInfeasibleCost);
+  }
+}
+
+TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
+  ScsSolver solver;
+  if (solver.available()) {
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kUnbounded);
+    EXPECT_EQ(prog_->GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
@@ -201,6 +221,34 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   ScsSolver solver;
   if (solver.available()) {
     TestQPonUnitBallExample(solver);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    TestTrivialSDP(scs_solver, 2E-3);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    FindCommonLyapunov(scs_solver, 5E-4);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    FindOuterEllipsoid(scs_solver, 1E-3);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    SolveEigenvalueProblem(scs_solver, 1E-3);
   }
 }
 }  // namespace test

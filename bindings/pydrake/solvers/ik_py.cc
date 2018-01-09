@@ -59,6 +59,21 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("bTbp"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
+  py::class_<RelativeQuatConstraint, RigidBodyConstraint>(
+    m, "RelativeQuatConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  int,
+                  int,
+                  const Eigen::Vector4d&,
+                  double,
+                  const Eigen::Vector2d&>(),
+         py::arg("model"),
+         py::arg("bodyA_idx"),
+         py::arg("bodyB_idx"),
+         py::arg("quat_des"),
+         py::arg("tol"),
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+
   py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(
     m, "WorldPositionInFrameConstraint")
     .def(py::init<RigidBodyTree<double>*,

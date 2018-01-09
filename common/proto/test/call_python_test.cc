@@ -1,12 +1,25 @@
 #include "drake/common/proto/call_python.h"
 
+#include <chrono>
 #include <cmath>
 #include <string>
+#include <thread>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
+DEFINE_string(file, "/tmp/python_rpc",
+              "File written to by this binary, read by client.");
+// This file signals to `call_python_full_test.sh` that a full execution has
+// been completed. This is useful for the `threading-loop` case, where we want
+// send a Ctrl+C interrupt only when finished.
+DEFINE_string(done_file, "/tmp/python_rpc_done",
+              "Signifies last Python command has been executed.");
+// Ensure that we test error behavior.
 DEFINE_bool(with_error, false, "Inject an error towards the end.");
+DEFINE_bool(sleep_at_end, false,
+            "Sleep at end to check behavior of C++ if the Python client "
+            "fails.");
 
 // TODO(eric.cousineau): Instrument client to verify output (and make this a
 // unittest).
@@ -14,18 +27,10 @@ DEFINE_bool(with_error, false, "Inject an error towards the end.");
 namespace drake {
 namespace common {
 
-// This file signals to `call_python_full_test.sh` that a full execution has
-// been completed. This is useful for the `threading-loop` case, where we want
-// send a Ctrl+C interrupt only when finished.
-constexpr char kDoneFile[] = "/tmp/python_rpc_done";
-
 GTEST_TEST(TestCallPython, Start) {
+  CallPythonInit(FLAGS_file);
   // Tell client to expect a finishing signal.
   CallPython("execution_check.start");
-  // Ensure that we remove `kDoneFile` so that we are not stopped in the middle
-  // of execution.
-  CallPython("setvar", "done_file", kDoneFile);
-  CallPython("exec", "if os.path.exists(done_file): os.remove(done_file)");
 }
 
 GTEST_TEST(TestCallPython, DispStr) {
@@ -158,10 +163,25 @@ GTEST_TEST(TestCallPython, Plot3d) {
 }
 
 GTEST_TEST(TestCallPython, Finish) {
+  if (FLAGS_sleep_at_end) {
+    // If the Python client closes before this program closes the FIFO pipe,
+    // then this executable should receive a SIGPIPE signal (and fail).
+    // Sleeping here simulates this condition for manual testing.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
   // Signal finishing to client.
   CallPython("execution_check.finish");
   // Signal finishing to `call_python_full_test.sh`.
-  CallPython("exec", "with open(done_file, 'a'): os.utime(done_file, None)");
+  // Use persistence to increment the number of times this has been executed.
+  CallPython("setvar", "done_file", FLAGS_done_file);
+  CallPython("exec", R"""(
+if 'done_count' in locals():
+  done_count += 1
+else:
+  done_count = 1
+with open(done_file, 'w') as f:
+  f.write(str(done_count))
+)""");
 }
 
 }  // namespace common

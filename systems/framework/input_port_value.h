@@ -119,31 +119,9 @@ class FreestandingInputPortValue : public InputPortValue {
   // FreestandingInputPortValue objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreestandingInputPortValue)
 
-  /// Constructs a vector-valued %FreestandingInputPortValue.
-  /// Takes ownership of @p vec.
-  ///
-  /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
-  /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
-  template <template <typename T> class V, typename T>
-  explicit FreestandingInputPortValue(std::unique_ptr<V<T>> vec)
-      : output_port_value_(std::move(vec)) {
-    output_port_value_.add_dependent(this);
-  }
-
   /// Constructs an abstract-valued %FreestandingInputPortValue from a value
-  /// of unknown type. Takes ownership of @p data.
+  /// of arbitrary type. Takes ownership of @p data.
   explicit FreestandingInputPortValue(std::unique_ptr<AbstractValue> data);
-
-  /// Constructs an abstract-valued %FreestandingInputPortValue from a value
-  /// of currently-known type. This will become a type-erased AbstractValue
-  /// here but a knowledgeable caller can recover the original typed object
-  /// using `dynamic_cast`. Takes ownership of @p data.
-  ///
-  /// @tparam T The type of the data.
-  template <typename T>
-  explicit FreestandingInputPortValue(std::unique_ptr<Value<T>> data)
-      : FreestandingInputPortValue(
-            std::unique_ptr<AbstractValue>(data.release())) {}
 
   ~FreestandingInputPortValue() override;
 

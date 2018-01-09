@@ -52,14 +52,14 @@ class ShapeToLcm : public ShapeReifier {
     return geometry_data_;
   }
 
-  void ImplementGeometry(const Sphere& sphere) override {
+  void ImplementGeometry(const Sphere& sphere, void*) override {
     geometry_data_.type = geometry_data_.SPHERE;
     geometry_data_.num_float_data = 1;
     geometry_data_.float_data.push_back(static_cast<float>(
                                             sphere.get_radius()));
   }
 
-  void ImplementGeometry(const Cylinder& cylinder) override {
+  void ImplementGeometry(const Cylinder& cylinder, void*) override {
     geometry_data_.type = geometry_data_.CYLINDER;
     geometry_data_.num_float_data = 2;
     geometry_data_.float_data.push_back(static_cast<float>(
@@ -68,7 +68,7 @@ class ShapeToLcm : public ShapeReifier {
                                             cylinder.get_length()));
   }
 
-  void ImplementGeometry(const HalfSpace&) override {
+  void ImplementGeometry(const HalfSpace&, void*) override {
     // Currently representing a half space as a big box. This assumes that the
     // underlying box representation is centered on the origin.
     geometry_data_.type = geometry_data_.BOX;

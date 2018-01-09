@@ -98,19 +98,18 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(eric.cousineau): Remove --no_plotting once we can open `$DISPLAY` on CI.
+# TODO(eric.cousineau): Add a test which will use an interactive matplotlib
+# backend on CI only.
 sh_test(
     name = "call_python_full_test",
     srcs = ["test/call_python_full_test.sh"],
-    args = [
-        "--no_plotting",
-        "$(location :call_python_test)",
-        "$(location :call_python_client_cli)",
-    ],
     data = [
         ":call_python_client_cli",
         ":call_python_test",
     ],
+    # Certain versions of Mac don't like this script using `ps`. For this
+    # reason, make the test run locally.
+    local = 1,
 )
 
 drake_cc_googletest(

@@ -297,6 +297,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "generic_trivial_constraint",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/generic_trivial_constraints.h"],
+    deps = [
+        ":constraint",
+    ],
+)
+
 drake_cc_googletest(
     name = "indeterminate_test",
     deps = [
@@ -439,6 +449,7 @@ drake_cc_library(
 drake_cc_library(
     name = "dreal_solver",
     srcs = [
+        "dreal_solver.cc",
         "dreal_solver_common.cc",
         "no_dreal.cc",
     ],
@@ -446,6 +457,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program_api",
         "//drake/common:essential",
+        "@dreal",
     ],
 )
 
@@ -757,6 +769,23 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "dreal_solver_test",
+    tags = [
+        # For most of floating-point operations, Valgrind only supports the
+        # IEEE default mode (round to nearest) while dReal uses to +infinity
+        # and to -infinity rounding modes intensively to maintain conservative
+        # interval approximations. This causes some of the assertions to fail
+        # in the test. So we disable memcheck for this test. See
+        # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
+        # for more information.
+        "no_memcheck",
+    ],
+    deps = [
+        ":dreal_solver",
+    ],
+)
+
+drake_cc_googletest(
     name = "gurobi_solver_test",
     srcs = [
         "test/gurobi_solver_test.cc",
@@ -826,6 +855,7 @@ drake_cc_googletest(
         "test/mathematical_program_test.cc",
     ],
     deps = [
+        ":generic_trivial_constraint",
         ":generic_trivial_cost",
         ":mathematical_program",
         ":mathematical_program_test_util",
@@ -875,6 +905,21 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+    ],
+)
+
+drake_cc_googletest(
+    name = "nlopt_solver_test",
+    srcs = [
+        "test/nlopt_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
+        ":quadratic_program_examples",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -976,6 +1021,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
+        ":semidefinite_program_examples",
     ],
 )
 

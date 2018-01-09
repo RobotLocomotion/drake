@@ -477,10 +477,7 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
       tree->get_num_positions() + tree->get_num_velocities();
   auto input_data = make_unique<BasicVector<double>>(vector_size);
   input_data->set_value(Eigen::VectorXd::Zero(vector_size));
-
-  context->SetInputPortValue(
-      0, std::make_unique<systems::FreestandingInputPortValue>(
-             std::move(input_data)));
+  context->FixInputPort(0, std::move(input_data));
 
   // Publishes the `RigidBodyTree` visualization messages.
   PublishLoadRobotModelMessageHelper(dut, *context);

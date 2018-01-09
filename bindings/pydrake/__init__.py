@@ -6,7 +6,7 @@ from sys import stderr
 # We specifically load `common` prior to loading any other pydrake modules,
 # in order to get assertion configuration done as early as possible.
 from . import common
-from .util import ModuleShim
+from .util.module_shim import ModuleShim
 
 
 def getDrakePath():

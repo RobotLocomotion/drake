@@ -2,7 +2,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 
-#include "drake/bindings/pydrake/symbolic_types_py.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 
 namespace py = pybind11;
 
@@ -16,6 +16,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
 
   py::class_<Variable>(m, "Variable")
     .def(py::init<const std::string&>())
+    .def("get_id", &Variable::get_id)
     .def("__repr__", &Variable::to_string)
     .def("__add__", [](const Variable& self, const Variable& other) {
       return Expression{self + other};

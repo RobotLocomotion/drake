@@ -8,22 +8,33 @@ load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_pybind_installs",
-    "get_pybind_library_dest",
+    "get_pybind_package_info",
 )
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
 )
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_label_for_drake_hoist",
+    "adjust_labels_for_drake_hoist",
+)
 
 package(default_visibility = adjust_labels_for_drake_hoist([
     "//drake/bindings/pydrake:__subpackages__",
 ]))
 
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(
+    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
+)
+
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
     deps = [
         "//drake/bindings/pydrake:common_py",
     ],
@@ -32,6 +43,7 @@ drake_py_library(
 drake_pybind_library(
     name = "ik_py",
     cc_srcs = ["ik_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         "//drake/bindings/pydrake:rbtree_py",
     ],
@@ -43,9 +55,10 @@ drake_pybind_library(
 drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [
-        "//drake/bindings/pydrake:symbolic_types_py",
+        "//drake/bindings/pydrake:symbolic_types_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [
         "//drake/bindings/pydrake:symbolic_py",
     ],
@@ -56,6 +69,7 @@ drake_pybind_library(
     name = "gurobi_py",
     cc_so_name = "gurobi",
     cc_srcs = ["gurobi_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
 )
 
@@ -63,6 +77,7 @@ drake_pybind_library(
     name = "ipopt_py",
     cc_so_name = "ipopt",
     cc_srcs = ["ipopt_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
 )
 
@@ -70,6 +85,7 @@ drake_pybind_library(
     name = "mosek_py",
     cc_so_name = "mosek",
     cc_srcs = ["mosek_py.cc"],
+    package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
 )
 
@@ -81,19 +97,19 @@ PYBIND_LIBRARIES = [
     ":mosek_py",
 ]
 
+PY_LIBRARIES = [
+    ":module_py",
+]
+
 drake_py_library(
     name = "solvers",
-    deps = PYBIND_LIBRARIES + [
-        ":module_py",
-    ],
+    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
 )
 
 install(
     name = "install",
-    targets = [
-        ":module_py",
-    ],
-    py_dest = get_pybind_library_dest(),
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
 )
 

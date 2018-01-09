@@ -13,6 +13,9 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
@@ -87,7 +90,8 @@ AttributesSet kMosekCapabilities =
 // Scs solver capatilities.
 AttributesSet kScsCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-        kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
+     kPositiveSemidefiniteConstraint);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =
@@ -110,6 +114,9 @@ enum {
 };  // not const static int because the VectorXd constructor takes a reference
 // to int so it is odr-used (see
 // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
+
+constexpr double MathematicalProgram::kGlobalInfeasibleCost;
+constexpr double MathematicalProgram::kUnboundedCost;
 
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(
@@ -146,6 +153,37 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
     }
   }
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
+}
+
+void MathematicalProgram::AddDecisionVariables(
+    const Eigen::Ref<const VectorXDecisionVariable>& decision_variables) {
+  const int num_existing_decision_vars = num_vars();
+  for (int i = 0; i < decision_variables.rows(); ++i) {
+    if (decision_variables(i).is_dummy()) {
+      throw std::runtime_error(fmt::format(
+          "decision_variables({}) should not be a dummy variable", i));
+    }
+    if (decision_variable_index_.find(decision_variables(i).get_id()) !=
+        decision_variable_index_.end()) {
+      throw std::runtime_error(fmt::format("{} is already a decision variable.",
+                                           decision_variables(i)));
+    }
+    if (indeterminates_index_.find(decision_variables(i).get_id()) !=
+        indeterminates_index_.end()) {
+      throw std::runtime_error(fmt::format("{} is already an indeterminate.",
+                                           decision_variables(i)));
+    }
+    decision_variable_index_.insert(std::make_pair(
+        decision_variables(i).get_id(), num_existing_decision_vars + i));
+  }
+  decision_variables_.conservativeResize(num_existing_decision_vars +
+                                         decision_variables.rows());
+  decision_variables_.tail(decision_variables.rows()) = decision_variables;
+  x_values_.resize(num_existing_decision_vars + decision_variables.rows(), NAN);
+  x_initial_guess_.conservativeResize(num_existing_decision_vars +
+                                      decision_variables.rows());
+  x_initial_guess_.tail(decision_variables.rows())
+      .fill(std::numeric_limits<double>::quiet_NaN());
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
@@ -213,6 +251,34 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
     }
   }
   return NewIndeterminates(rows, cols, names);
+}
+
+void MathematicalProgram::AddIndeterminates(
+    const Eigen::Ref<const VectorXDecisionVariable>& new_indeterminates) {
+  const int num_old_indeterminates = num_indeterminates();
+  for (int i = 0; i < new_indeterminates.rows(); ++i) {
+    if (new_indeterminates(i).is_dummy()) {
+      throw std::runtime_error(fmt::format(
+          "new_indeterminates({}) should not be a dummy variable.", i));
+    }
+    if (indeterminates_index_.find(new_indeterminates(i).get_id()) !=
+            indeterminates_index_.end() ||
+        decision_variable_index_.find(new_indeterminates(i).get_id()) !=
+            decision_variable_index_.end()) {
+      throw std::runtime_error(
+          fmt::format("{} already exists in the optimization program.",
+                      new_indeterminates(i)));
+    }
+    if (new_indeterminates(i).get_type() !=
+        symbolic::Variable::Type::CONTINUOUS) {
+      throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
+    }
+    indeterminates_index_.insert(std::make_pair(new_indeterminates(i).get_id(),
+                                                num_old_indeterminates + i));
+  }
+  indeterminates_.conservativeResize(num_old_indeterminates +
+                                     new_indeterminates.rows());
+  indeterminates_.tail(new_indeterminates.rows()) = new_indeterminates;
 }
 
 namespace {
@@ -378,7 +444,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
     DRAKE_ASSERT(binding.constraint()->A().cols() ==
-        static_cast<int>(binding.GetNumElements()));
+                 static_cast<int>(binding.GetNumElements()));
     CheckBinding(binding);
     required_capabilities_ |= kLinearConstraint;
     linear_constraints_.push_back(binding);
@@ -397,7 +463,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
   DRAKE_ASSERT(binding.constraint()->A().cols() ==
-      static_cast<int>(binding.GetNumElements()));
+               static_cast<int>(binding.GetNumElements()));
   CheckBinding(binding);
   required_capabilities_ |= kLinearEqualityConstraint;
   linear_equality_constraints_.push_back(binding);
@@ -432,7 +498,7 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
   CheckBinding(binding);
   DRAKE_ASSERT(binding.constraint()->num_constraints() ==
-      binding.GetNumElements());
+               binding.GetNumElements());
   required_capabilities_ |= kLinearConstraint;
   bbox_constraints_.push_back(binding);
   return bbox_constraints_.back();
@@ -581,7 +647,7 @@ Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
   CheckBinding(binding);
   DRAKE_ASSERT(static_cast<int>(binding.constraint()->F().size()) ==
-      static_cast<int>(binding.GetNumElements()) + 1);
+               static_cast<int>(binding.GetNumElements()) + 1);
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   linear_matrix_inequality_constraint_.push_back(binding);
   return linear_matrix_inequality_constraint_.back();
@@ -661,7 +727,7 @@ SolutionResult MathematicalProgram::Solve() {
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kScsCapabilities) &&
-      scs_solver_->available()) {
+             scs_solver_->available()) {
     // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
     // modest accuracy quite fast, but then slows down significantly if the user
     // wants high accuracy.

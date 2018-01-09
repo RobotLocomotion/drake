@@ -56,6 +56,24 @@ class TestRBMForwardKin(unittest.TestCase):
                                               [-1, 0, 0, 0],
                                               [0, 0, 0, 1]])))
 
+    def test_fk_pose_world_frame(self):
+        # load pendulum robot with fixed base
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(
+                pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf"),
+                pydrake.rbtree.FloatingBaseType.kFixed
+            )
+        # set test configuration (Pendulum robot has single joint 'theta')
+        q = r.getZeroConfiguration()
+        q[0] = np.pi / 2
+        # do FK and compare pose of 'arm' with expected pose
+        k = r.doKinematics(q)
+        pose_fk = r.CalcBodyPoseInWorldFrame(k, r.FindBody("arm"))
+        pose_true = np.array([[0, 0, 1, 0],
+                              [0, 1, 0, 0],
+                              [-1, 0, 0, 0],
+                              [0, 0, 0, 1]])
+        self.assertTrue(np.allclose(pose_fk, pose_true))
+
 
 if __name__ == '__main__':
     unittest.main()

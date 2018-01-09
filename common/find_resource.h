@@ -72,8 +72,6 @@ class FindResourceResult {
   optional<std::string> error_message_;
 };
 
-
-
 /// Adds a path in which resources are searched in a persistent variable. Paths
 /// are accumulated each time this function is called. It is searched after the
 /// path given by the environment variable but before the path that can be
@@ -85,15 +83,17 @@ void AddResourceSearchPath(std::string root_directory);
 std::vector<std::string> GetResourceSearchPaths();
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
-/// The @p resource_path refers to the relative path within the Drake
-/// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.  Paths that do
-/// not start with "drake/" will return a failed result.
+/// The @p resource_path refers to the relative path within the Drake source
+/// repository, prepended with `drake/`.  For example, to find the source
+/// file `examples/pendulum/Pendulum.urdf`, the @p resource_path would be
+/// `drake/examples/pendulum/Pendulum.urdf`.  Paths that do not start with
+/// `drake/` will return a failed result.
 ///
 /// The search scans for the resource in the following places and in
 /// the following order: 1) in the DRAKE_RESOURCE_ROOT environment variable
 /// 2) in the directories specified by `AddResourceSearchPath()` and 3) in the
 /// drake source workspace. If all of these are unavailable, or do not have the
-/// then it will return a failed result.
+/// resource, then it will return a failed result.
 FindResourceResult FindResource(std::string resource_path);
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by
@@ -107,6 +107,16 @@ std::string FindResourceOrThrow(std::string resource_path);
 ///
 /// The value is guaranteed to be "DRAKE_RESOURCE_ROOT".  (For some users, it
 /// may be easier to hard-code a value than refer to this constant.)
+///
+/// When the environment variable is set, resources are sought in relation to
+/// it by appending the FindResource() `resource_path` to the environment
+/// variable (with an intermediate `/` as appropriate).  For example, if the
+/// `resource_path` is `drake/examples/pendulum/Pendulum.urdf` and the
+/// `DRAKE_RESOURCE_ROOT` is set to `/home/someuser/foo` then the resource will
+/// be sought at `/home/someuser/foo/drake/examples/pendulum/Pendulum.urdf`.
+///
+/// The intended use of this variable is to seek resources from an installed
+/// copy of Drake, in case other methods have failed.
 extern const char* const kDrakeResourceRootEnvironmentVariableName;
 
 }  // namespace drake

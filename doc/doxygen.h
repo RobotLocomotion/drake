@@ -54,6 +54,12 @@ out the Doxygen C++ documentation</a></p>
 <a href="http://drake.mit.edu">hosted online</a> for the master branch, but is
 only updated nightly.</p>
 
+<h3>Technical Notes</h3>
+These links provide notes on Drake's design and implementation.
+
+- @ref multibody_concepts
+- @ref cache_design_notes
+
 */
 
 
