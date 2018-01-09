@@ -32,6 +32,16 @@ class MixedIntegerBranchAndBoundTester {
     return bnb_->PickDepthFirstNode();
   }
 
+  void UpdateIntegralSolution(const Eigen::Ref<const Eigen::VectorXd>& solution,
+                              double cost) {
+    return bnb_->UpdateIntegralSolution(solution, cost);
+  }
+
+  void BranchAndUpdate(MixedIntegerBranchAndBoundNode* node,
+                       const symbolic::Variable& branching_variable) {
+    return bnb_->BranchAndUpdate(node, branching_variable);
+  }
+
  private:
   std::unique_ptr<MixedIntegerBranchAndBound> bnb_;
 };
@@ -457,6 +467,24 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
   // root->left->left is infeasible, root->left->right has integral solution.
   // The only non-fathomed leaf node is root->right
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate) {
+  auto prog = ConstructMathematicalProgram2();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  const double tol = 1E-3;
+  EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
+  EXPECT_EQ(dut.bnb()->best_upper_bound(), std::numeric_limits<double>::infinity());
+
+  VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
+
+  dut.BranchAndUpdate(dut.bnb()->root(), x(2));
+  // The left node has optimal cost 23.0 / 6.0. with integral solution (1, 2 / 3, 0, 1, 1,)
+  // The right node has optimal cost -4.9, with non-integral solution (0.7, 1, 1, 1.4, 0).
+  EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
+  EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
 }
 }  // namespace
 }  // namespace solvers

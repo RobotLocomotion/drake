@@ -333,6 +333,16 @@ class MixedIntegerBranchAndBound {
   /** Getter for the best lower bound. */
   double best_lower_bound() const { return best_lower_bound_; }
 
+  /**
+   * Getter for the best solutions.
+   * Returns a list of solutions, together with the costs evaluated at the
+   * solutions. The solutions are sorted in the ascending order based on the
+   * cost.
+   */
+  const std::list<std::pair<double, Eigen::VectorXd>>& best_solutions() const {
+    return best_solutions_;
+  }
+
  private:
   // Forward declaration the tester class.
   friend class MixedIntegerBranchAndBoundTester;
@@ -351,6 +361,24 @@ class MixedIntegerBranchAndBound {
    * Pick the node with the most binary variables fixed.
    */
   MixedIntegerBranchAndBoundNode* PickDepthFirstNode() const;
+
+  /**
+   * Branch on a node, solves the optimization, and update the best lower and
+   * upper bounds.
+   * @param node. The node to be branched.
+   * @param branching_variable. Branch on this variable in the node.
+   */
+  void BranchAndUpdate(MixedIntegerBranchAndBoundNode* node,
+                       const symbolic::Variable& branching_variable);
+
+  /**
+   * Update the solutions (best_solutions_) and the best upper bound, with an
+   * integral solution and its cost.
+   * @param solution. The integral solution.
+   * @param cost. The cost evaluated at this integral solution.
+   */
+  void UpdateIntegralSolution(const Eigen::Ref<const Eigen::VectorXd>& solution,
+                              double cost);
 
   // The root node of the tree.
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root_;
@@ -375,6 +403,13 @@ class MixedIntegerBranchAndBound {
   // each leaf node.
   double best_lower_bound_;
 
+  // Best solutions found so far. Each entry in this list contains both the
+  // cost and the decision variable values. This list is sorted in the
+  // ascending order based on the cost, and it contains at most
+  // max_num_solutions_ elements.
+  std::list<std::pair<double, Eigen::VectorXd>> best_solutions_;
+  int max_num_solutions_{10};
+
   // The branch and bound process will terminate, when the best upper bound is
   // sufficiently close to the best lower bound, that either of the following
   // conditions is satisfied:
@@ -383,14 +418,6 @@ class MixedIntegerBranchAndBound {
   // 2. best_upper_bound_ - best_lower_bound_ < absolute_gap_tol_;
   double absolute_gap_tol_ = 1E-2;
   double relative_gap_tol_ = 1E-2;
-
-  // The list of active leaves. A leaf node is active if its optimization
-  // problem has been solved, and the node is not fathomed.
-  // A leaf node is fathomed if any of the following conditions is satisfied:
-  // 1. The optimization problem in the node is infeasible.
-  // 2. The optimal cost of the node is larger than the best upper bound.
-  // 3. The optimal Solution to the node satisfies all the integral constraints.
-  std::list<MixedIntegerBranchAndBoundNode*> active_leaves_;
 
   PickVariable pick_variable_ = PickVariable::kMostAmbivalent;
 

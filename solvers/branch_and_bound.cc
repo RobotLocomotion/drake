@@ -286,9 +286,17 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
       map_old_vars_to_new_vars_{},
       best_upper_bound_{std::numeric_limits<double>::infinity()},
       best_lower_bound_{-std::numeric_limits<double>::infinity()},
-      active_leaves_{} {
+      best_solutions_{} {
   std::tie(root_, map_old_vars_to_new_vars_) =
       MixedIntegerBranchAndBoundNode::ConstructRootNode(prog);
+  if (root_->solution_result() == SolutionResult::kSolutionFound) {
+    best_lower_bound_ = root_->prog()->GetOptimalCost();
+  }
+  // If an integral solution is found, then update the best solutions, together
+  // with the best upper bound.
+  if (root_->optimal_solution_is_integral()) {
+    UpdateIntegralSolution(root_->prog()->GetSolution(root_->prog()->decision_variables()), root_->prog()->GetOptimalCost());
+  }
 }
 
 const symbolic::Variable& MixedIntegerBranchAndBound::GetNewVariable(
@@ -305,9 +313,6 @@ const symbolic::Variable& MixedIntegerBranchAndBound::GetNewVariable(
 
 MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
     const {
-  // If active_leaves is empty, then the branch-and-bound should terminate, no
-  // need to branch further.
-  DRAKE_ASSERT(!active_leaves_.empty());
   switch (pick_node_) {
     case PickNode::kMinLowerBound: {
       return PickMinLowerBoundNode();
@@ -381,6 +386,24 @@ MixedIntegerBranchAndBoundNode* PickDepthFirstNodeInSubTree(
     return nullptr;
   }
 }
+
+double BestLowerBoundInSubTree(const MixedIntegerBranchAndBound& bnb,
+                               const MixedIntegerBranchAndBoundNode& root) {
+  if (root.IsLeaf()) {
+    if (bnb.IsLeafNodeFathomed(root)) {
+      return std::numeric_limits<double>::infinity();
+    }
+    return root.prog()->GetOptimalCost();
+  } else {
+    const double left_best_lower_bound =
+        BestLowerBoundInSubTree(bnb, *(root.left_child()));
+    const double right_best_lower_bound =
+        BestLowerBoundInSubTree(bnb, *(root.right_child()));
+    return left_best_lower_bound < right_best_lower_bound
+               ? left_best_lower_bound
+               : right_best_lower_bound;
+  }
+}
 }  // namespace
 
 MixedIntegerBranchAndBoundNode*
@@ -409,6 +432,58 @@ bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
     return true;
   }
   return false;
+}
+
+void MixedIntegerBranchAndBound::UpdateIntegralSolution(
+    const Eigen::Ref<const Eigen::VectorXd>& solution, double cost) {
+  if (best_solutions_.empty()) {
+    best_solutions_.emplace_back(cost, solution);
+  } else {
+    if (cost < best_solutions_.back().first) {
+      // Insert the pair <cost, solution> in the right place in best_solutions_.
+      for (auto it = best_solutions_.begin(); it != best_solutions_.end();
+           ++it) {
+        if (it->first > cost) {
+          best_solutions_.emplace(it, cost, solution);
+          break;
+        }
+      }
+    } else if (best_solutions_.size() < max_num_solutions_) {
+      best_solutions_.emplace_back(cost, solution);
+    }
+    if (best_solutions_.size() > max_num_solutions_) {
+      best_solutions_.pop_back();
+    }
+  }
+  best_upper_bound_ =
+      std::min(best_upper_bound_, best_solutions_.begin()->first);
+}
+
+void MixedIntegerBranchAndBound::BranchAndUpdate(
+    MixedIntegerBranchAndBoundNode* node,
+    const symbolic::Variable& branching_variable) {
+  node->Branch(branching_variable);
+  // Update the best lower and upper bounds.
+  // The best lower bound is the minimal among all the optimal costs of the
+  // non-fathomed leaf nodes.
+  best_lower_bound_ = BestLowerBoundInSubTree(*this, *root_);
+  // If either the left or the right children finds integral solution, then
+  // we can potentially update the best upper bound, and insert the solutions
+  // to the list best_solutions_;
+  if (node->left_child()->optimal_solution_is_integral()) {
+    const double child_node_optimal_cost =
+        node->left_child()->prog()->GetOptimalCost();
+    const Eigen::VectorXd x_sol = node->left_child()->prog()->GetSolution(
+        node->left_child()->prog()->decision_variables());
+    UpdateIntegralSolution(x_sol, child_node_optimal_cost);
+  }
+  if (node->right_child()->optimal_solution_is_integral()) {
+    const double child_node_optimal_cost =
+        node->right_child()->prog()->GetOptimalCost();
+    const Eigen::VectorXd x_sol = node->right_child()->prog()->GetSolution(
+        node->right_child()->prog()->decision_variables());
+    UpdateIntegralSolution(x_sol, child_node_optimal_cost);
+  }
 }
 }  // namespace solvers
 }  // namespace drake
