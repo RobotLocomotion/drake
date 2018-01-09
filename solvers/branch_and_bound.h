@@ -244,7 +244,7 @@ class MixedIntegerBranchAndBound {
   using PickNodeFun = std::function<MixedIntegerBranchAndBoundNode*(
       const MixedIntegerBranchAndBoundNode&)>;
   using PickVariableFun =
-      std::function<symbolic::Variable*(const MixedIntegerBranchAndBoundNode&)>;
+      std::function<const symbolic::Variable*(const MixedIntegerBranchAndBoundNode&)>;
 
   /**
    * Construct a branch-and-bound tree from a mixed-integer optimization
@@ -293,8 +293,8 @@ class MixedIntegerBranchAndBound {
    * The user can choose the method to pick a node for branching. We provide
    * options such as "depth first" or "min lower bound".
    * @param pick_node The option to pick a node. If the option is
-   * PickNode::UserDefined, then the user should also provide the method
-   * to pick a node through SetUserDefinedBranchingNodeMethod
+   * PickNode::kUserDefined, then the user should also provide the method
+   * to pick a node through SetUserDefinedBranchingNodeMethod.
    */
   void SetPickBranchingNodeMethod(PickNode pick_node) {
     pick_node_ = pick_node;
@@ -302,11 +302,31 @@ class MixedIntegerBranchAndBound {
 
   /**
    * Set the user-defined method to pick the branching node. This method is
-   * used if the user specifies to use user-defined method, by calling
-   * SetPickBranchingNodeMethod(PickNode::UserDefined)
+   * used if the user calls 
+   * SetPickBranchingNodeMethod(PickNode::kUserDefined)
    */
   void SetUserDefinedBranchingNodeMethod(PickNodeFun fun) {
     pick_branching_node_userfun_ = fun;
+  }
+
+  /**
+   * The user can choose the method to pick a variable for branching in each
+   * node. We provide options such as "most ambivalent" or "least ambivalent".
+   * @param pick_variable The option to pick a variable. If the option is
+   * PickVariable::kUserDefined, then the user should also provide the method
+   * to pick a variable through SetUserDefinedBranchingVariableMethod.
+   */
+  void SetPickBranchingVariableMethod(PickVariable pick_variable) {
+    pick_variable_ = pick_variable;
+  }
+
+  /**
+   * Set the user-defined method to pick the branching variable. This method is
+   * used if the user calls 
+   * SetPickBranchingVariableMethod(PickVariable::kUserDefined).
+   */
+  void SetUserDefinedBranchingVariableMethod(PickVariableFun fun) {
+    pick_branching_variable_userfun_ = fun;
   }
 
   /**
@@ -365,6 +385,23 @@ class MixedIntegerBranchAndBound {
    * Pick the node with the most binary variables fixed.
    */
   MixedIntegerBranchAndBoundNode* PickDepthFirstNode() const;
+
+  /**
+   * Pick the branching variable in a node.
+   */
+  const symbolic::Variable* PickBranchingVariable(const MixedIntegerBranchAndBoundNode& node) const;
+
+  /**
+   * Pick the most ambivalent one as the branching variable, namely the binary
+   * variable whose value is closest to 0.5.
+   */
+  const symbolic::Variable* PickMostAmbivalentAsBranchingVariable(const MixedIntegerBranchAndBoundNode& node) const;
+
+  /**
+   * Pick the least ambivalent one as the branching variable, namely the binary
+   * variable whose value is closet to 0 or 1.
+   */
+  const symbolic::Variable* PickLeastAmbivalentAsBranchingVariable(const MixedIntegerBranchAndBoundNode& node) const;
 
   /**
    * Branch on a node, solves the optimization, and update the best lower and

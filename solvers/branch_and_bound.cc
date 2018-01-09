@@ -404,7 +404,9 @@ double BestLowerBoundInSubTree(const MixedIntegerBranchAndBound& bnb,
         case SolutionResult::kInfeasibleConstraints:
           return std::numeric_limits<double>::infinity();
         default:
-          throw std::runtime_error("Cannot obtain the best lower bound for this fathomed leaf node.");
+          throw std::runtime_error(
+              "Cannot obtain the best lower bound for this fathomed leaf "
+              "node.");
       }
     }
     return root.prog()->GetOptimalCost();
@@ -429,6 +431,77 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
     const {
   // The deepest node has the most number of binary variables being fixed.
   return PickDepthFirstNodeInSubTree(*this, *root_);
+}
+
+const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
+    const MixedIntegerBranchAndBoundNode& node) const {
+  switch (pick_variable_) {
+    case PickVariable::kMostAmbivalent:
+      return PickMostAmbivalentAsBranchingVariable(node);
+    case PickVariable::kLeastAmbivalent:
+      return PickLeastAmbivalentAsBranchingVariable(node);
+    case PickVariable::kUserDefined:
+      if (pick_branching_node_userfun_) {
+        return pick_branching_variable_userfun_(node);
+      }
+      throw std::runtime_error(
+          "The user should specify the function to pick a branching variable "
+          "through SetUserDefinedBranchingVariableMethod.");
+  }
+}
+
+namespace {
+const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
+    const MixedIntegerBranchAndBoundNode& node,
+    MixedIntegerBranchAndBound::PickVariable pick_variable) {
+  DRAKE_ASSERT(pick_variable ==
+                   MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent ||
+               pick_variable ==
+                   MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+  if (node.solution_result() == SolutionResult::kSolutionFound) {
+    double value =
+        pick_variable ==
+                MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent
+            ? std::numeric_limits<double>::infinity()
+            : -std::numeric_limits<double>::infinity();
+    const symbolic::Variable* return_var{nullptr};
+    for (const auto& var : node.remaining_binary_variables()) {
+      const double var_value = node.prog()->GetSolution(var);
+      const double var_value_to_half = std::abs(var_value - 0.5);
+      if (pick_variable ==
+              MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent &&
+          var_value_to_half < value) {
+        value = var_value_to_half;
+        return_var = &var;
+      } else if (pick_variable == MixedIntegerBranchAndBound::PickVariable::
+                                      kLeastAmbivalent &&
+                 var_value_to_half > value) {
+        value = var_value_to_half;
+        return_var = &var;
+      }
+    }
+    return return_var;
+  } else if (node.solution_result() == SolutionResult::kUnbounded) {
+    return &(node.remaining_binary_variables().front());
+  }
+  throw std::runtime_error(
+      "The problem is neither optimal nor unbounded. Cannot pick a branching "
+      "variable.");
+}
+}  // namespace
+
+const symbolic::Variable*
+MixedIntegerBranchAndBound::PickMostAmbivalentAsBranchingVariable(
+    const MixedIntegerBranchAndBoundNode& node) const {
+  return PickMostOrLeastAmbivalentAsBranchingVariable(
+      node, MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+}
+
+const symbolic::Variable*
+MixedIntegerBranchAndBound::PickLeastAmbivalentAsBranchingVariable(
+    const MixedIntegerBranchAndBoundNode& node) const {
+  return PickMostOrLeastAmbivalentAsBranchingVariable(
+      node, MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(

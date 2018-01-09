@@ -24,12 +24,9 @@ class MixedIntegerBranchAndBoundTester {
     return bnb_->PickBranchingNode();
   }
 
-  MixedIntegerBranchAndBoundNode* PickMinLowerBoundNode() const {
-    return bnb_->PickMinLowerBoundNode();
-  }
-
-  MixedIntegerBranchAndBoundNode* PickDepthFirstNode() const {
-    return bnb_->PickDepthFirstNode();
+  const symbolic::Variable* PickBranchingVariable(
+      const MixedIntegerBranchAndBoundNode& node) const {
+    return bnb_->PickBranchingVariable(node);
   }
 
   void UpdateIntegralSolution(const Eigen::Ref<const Eigen::VectorXd>& solution,
@@ -539,6 +536,50 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
   // root->left->left is infeasible, root->left->right has integral solution.
   // The only non-fathomed leaf node is root->right
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable1) {
+  auto prog = ConstructMathematicalProgram2();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
+
+  // The optimal solution at the root is (0.7, 1, 1, 1.4, 0)
+  dut.bnb()->SetPickBranchingVariableMethod(
+      MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+  EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(0)));
+  dut.bnb()->SetPickBranchingVariableMethod(
+      MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+  EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(2)) ||
+              dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(4)));
+
+  dut.BranchAndUpdate(dut.bnb()->root(), x(0));
+  // The optimization at root->left is infeasible.
+  dut.bnb()->SetPickBranchingVariableMethod(
+      MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+  EXPECT_THROW(dut.PickBranchingVariable(*(dut.bnb()->root()->left_child())),
+               std::runtime_error);
+  dut.bnb()->SetPickBranchingVariableMethod(
+      MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+  EXPECT_THROW(dut.PickBranchingVariable(*(dut.bnb()->root()->left_child())),
+               std::runtime_error);
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable2) {
+  auto prog = ConstructMathematicalProgram3();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  VectorDecisionVariable<3> x = dut.bnb()->root()->prog()->decision_variables();
+
+  // The problem is unbounded, any branching variable is acceptable.
+  dut.bnb()->SetPickBranchingVariableMethod(
+      MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+  EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(0)) ||
+              dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(2)));
+  dut.bnb()->SetPickBranchingVariableMethod(
+      MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+  EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(0)) ||
+              dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(2)));
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
