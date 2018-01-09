@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <type_traits>
 #include <utility>
 
 /// @file
@@ -9,6 +10,15 @@
 
 namespace drake {
 
+template <typename T, typename = void>
+struct is_equality_comparable : std::false_type { };
+
+template <typename T>
+struct is_equality_comparable<T, typename std::enable_if<true,
+    decltype(std::declval<T&>() == std::declval<T&>(), (void)0)>::type> :
+    std::true_type {
+};
+
 /// This class is similar to the std::pair class. However, this class uses a
 /// pair of homogeneous types (std::pair can use heterogeneous types) and sorts
 /// the first and second values (the first value is lower). Thus the SortedPair
@@ -16,14 +26,14 @@ namespace drake {
 /// pairs of objects.
 ///
 /// The data are stored as `const` types to prevent user modification- which
-/// could break the sorted ordering- while allowing the familiar `first`
+/// could break the sorted ordering- while permitting the familiar `first`
 /// and `second` member data accesses provided by std::pair.
 template <class T>
 struct SortedPair {
   typedef T type;
 
-  const T first{};                 ///< The smaller of the two objects.
-  const T second{};                ///< The larger of the two objects.
+  const T first{};                 /// The smaller of the two objects.
+  const T second{};                /// The larger of the two objects.
 
   /// The default constructor creates `first`and `second` using their
   /// respective default constructors.
@@ -118,6 +128,7 @@ void swap(drake::SortedPair<T>& t, drake::SortedPair<T>& u) {
 template <class T>
 struct hash<drake::SortedPair<T>> {
   std::size_t operator()(const drake::SortedPair<T>& s) const noexcept {
+    // Formula below is taken from boost::hash_combine().
     const std::size_t h1 = std::hash<T>()(s.first);
     const std::size_t h2 = std::hash<T>()(s.second);
     return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));

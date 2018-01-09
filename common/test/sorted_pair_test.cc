@@ -88,11 +88,11 @@ GTEST_TEST(SortedPair, Hash) {
 
 // Checks expansion with STL vector.
 GTEST_TEST(SortedPair, VectorExp) {
-  std::vector<SortedPair<int>> v;
-  v.emplace_back(1, 2);
-  v.resize(100000);
-  EXPECT_EQ(v.front().first, 1);
-  EXPECT_EQ(v.front().second, 2);
+  std::vector<std::unique_ptr<SortedPair<int>>> v;
+  v.emplace_back(std::make_unique<SortedPair<int>>(1, 2));
+  v.resize(v.capacity() + 1);
+  EXPECT_EQ(v.front()->first, 1);
+  EXPECT_EQ(v.front()->second, 2);
 }
 
 // Tests the MakeSortedPair operator.
