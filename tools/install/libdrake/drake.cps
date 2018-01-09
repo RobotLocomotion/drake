@@ -80,11 +80,6 @@
       "Version": "1.0.4",
       "Hints": ["@prefix@/lib/cmake/tinyobjloader"],
       "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "yaml-cpp": {
-      "Version": "0.5.5",
-      "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
-      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
   "Default-Components": [":drake"],
@@ -94,12 +89,14 @@
       "Location": "@prefix@/lib/libdrake.so",
       "Includes": ["@prefix@/include"],
       "Compile-Features": ["c++14"],
-      "Link-Flags": ["-ltinyxml2"],
+      "Link-Flags": [
+        "-ltinyxml2",
+        "-lyaml-cpp"
+      ],
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
-        "tinyobjloader:tinyobjloader",
-        "yaml-cpp:yaml-cpp"
+        "tinyobjloader:tinyobjloader"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
