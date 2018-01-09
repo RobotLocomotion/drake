@@ -180,15 +180,17 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
 
   vtkNew<vtkActor> terrain_actor_;
   vtkNew<vtkActor> terrain_depth_actor_;
+  // Use ImageType to access to this array. We assume pipelines_'s indices to be
+  // 0 for RGB, 1 for depth, and 2 for ground-truth label rendering.
   std::array<std::unique_ptr<RenderingPipeline>, 3> pipelines_;
 
   // A map which takes pairs of a body index in RBT and three vectors of
   // vtkSmartPointer to vtkActor for color, depth and label rendering
-  // respectively. The each vtkActor corresponds to an visual
-  // element specified in SDF / URDF.
+  // respectively. Each vtkActor corresponds to an visual element specified in
+  // SDF / URDF.
   std::map<int, std::array<ActorCollection, 3>> id_object_maps_;
 
-  vtkNew<ShaderCallback> callback_;
+  vtkNew<ShaderCallback> uniform_setting_callback_;
 };
 
 float RgbdRendererVTK::Impl::CheckRangeAndConvertToMeters(
@@ -243,7 +245,7 @@ void RgbdRendererVTK::Impl::ImplAddFlatTerrain() {
   // Setting a callback for passing uniform variable to the fragment shader
   // program.
   depth_mapper->AddObserver(
-      vtkCommand::UpdateShaderEvent, callback_.Get());
+      vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
 
   terrain_depth_actor_->SetMapper(depth_mapper.GetPointer());
   pipelines_[ImageType::kDepth]->renderer->AddActor(
@@ -395,11 +397,13 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
   pipelines_[ImageType::kColor]->renderer->SetUseDepthPeeling(1);
   pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
 
-  callback_->set_renderer(pipelines_[ImageType::kDepth]->renderer.Get());
+  uniform_setting_callback_->set_renderer(
+      pipelines_[ImageType::kDepth]->renderer.Get());
   // Setting kClippingPlaneNear instead of z_near_ so that we can distinguish
   // kTooClose from out of range.
-  callback_->set_z_near(kClippingPlaneNear);
-  callback_->set_z_far(static_cast<float>(parent_->config().z_far));
+  uniform_setting_callback_->set_z_near(kClippingPlaneNear);
+  uniform_setting_callback_->set_z_far(
+      static_cast<float>(parent_->config().z_far));
 }
 
 optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
@@ -410,7 +414,7 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
   mappers[ImageType::kDepth]->SetVertexShaderCode(shaders::kDepthVS);
   mappers[ImageType::kDepth]->SetFragmentShaderCode(shaders::kDepthFS);
   mappers[ImageType::kDepth]->AddObserver(
-      vtkCommand::UpdateShaderEvent, callback_.Get());
+      vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
 
   bool shape_matched = true;
   const DrakeShapes::Geometry& geometry = visual.getGeometry();
@@ -522,9 +526,9 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
   if (shape_matched) {
     auto& color_actor = actors[ImageType::kColor];
     if (color_actor->GetProperty()->GetNumberOfTextures() == 0) {
-       const auto color = visual.getMaterial();
+      const auto color = visual.getMaterial();
       color_actor->GetProperty()->SetColor(color[0], color[1], color[2]);
-     }
+    }
 
     auto& label_actor = actors[ImageType::kLabel];
     // This is to disable shadows and to get an object painted with a single

@@ -36,6 +36,7 @@ constexpr char kDepthVS[] =
 /// The reason is that we need to set one to alpha channel so that the rendered
 /// "image" will be opaque. Otherwise, we will have different colors from what
 /// we output here, thus expect, in the end.
+
 constexpr char kDepthFS[] =
     "//VTK::System::Dec\n"  // Always start with this line.
     "//VTK::Output::Dec\n"  // Always have this line in your FS.
@@ -46,6 +47,15 @@ constexpr char kDepthFS[] =
     "uniform float z_near;\n"
     "uniform float z_far;\n"
     "\n"
+    "// This function splits a float value, whose range is [0, 1], to three\n"
+    "// float values, whose ranges are also [0, 1] but will eventually be\n"
+    "// converted to be [0, 255] of unsigned char. Each of the split float\n"
+    "// values holds specific decimal portion of the original float value\n"
+    "// using a bit shift operation, an integer part truncation and a bit\n"
+    "// mask operation. The maximum amount of information that each of the\n"
+    "// float value can hold is up to 8 bits which is the size of unsigned\n"
+    "// char and that is why we use a magic number 255 a lot in this\n"
+    "// function.\n"
     "vec3 PackFloatToVec3i(float value) {\n"
     "  const vec3 bit_shift = vec3(255. * 255., 255., 1.);\n"
     "  const float tmp = 1. / 255.;"
