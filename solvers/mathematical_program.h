@@ -310,8 +310,49 @@ class MathematicalProgram {
    * However, the clone's x values will be initialized to NaN, and all internal
    * solvers will be freshly constructed.
    * @retval new_prog. The newly constructed mathematical program.
+   * TODO(hongkai.dai): I put the definition of this function in the header
+   * file, so that the target mathematical_program_api has the definition of
+   * this virtual function. We should make MathematicalProgramSolverInterface
+   * independent of MathematicalProgram.
    */
-  virtual std::unique_ptr<MathematicalProgram> Clone() const;
+  virtual std::unique_ptr<MathematicalProgram> Clone() const {
+    // The constructor of MathematicalProgram will construct each solver. It
+    // also sets x_values_ and x_initial_guess_ to default values.
+    auto new_prog = std::make_unique<MathematicalProgram>();
+    // Add variables and indeterminates
+    // AddDecisionVariables and AddIndeterminates also set
+    // decision_variable_index_ and indeterminate_index_ properly.
+    new_prog->AddDecisionVariables(decision_variables_);
+    new_prog->AddIndeterminates(indeterminates_);
+    // Add costs
+    new_prog->generic_costs_ = generic_costs_;
+    new_prog->quadratic_costs_ = quadratic_costs_;
+    new_prog->linear_costs_ = linear_costs_;
+
+    // Add constraints
+    new_prog->generic_constraints_ = generic_constraints_;
+    new_prog->linear_constraints_ = linear_constraints_;
+    new_prog->linear_equality_constraints_ = linear_equality_constraints_;
+    new_prog->bbox_constraints_ = bbox_constraints_;
+    new_prog->lorentz_cone_constraint_ = lorentz_cone_constraint_;
+    new_prog->rotated_lorentz_cone_constraint_ =
+        rotated_lorentz_cone_constraint_;
+    new_prog->positive_semidefinite_constraint_ =
+        positive_semidefinite_constraint_;
+    new_prog->linear_matrix_inequality_constraint_ =
+        linear_matrix_inequality_constraint_;
+    new_prog->linear_complementarity_constraints_ =
+        linear_complementarity_constraints_;
+
+    new_prog->x_initial_guess_ = x_initial_guess_;
+    new_prog->solver_id_ = solver_id_;
+    new_prog->solver_options_double_ = solver_options_double_;
+    new_prog->solver_options_int_ = solver_options_int_;
+    new_prog->solver_options_str_ = solver_options_str_;
+
+    new_prog->required_capabilities_ = required_capabilities_;
+    return new_prog;
+  }
 
   /**
    * Adds continuous variables, appending them to an internal vector of any
