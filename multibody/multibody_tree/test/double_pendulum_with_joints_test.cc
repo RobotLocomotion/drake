@@ -14,7 +14,6 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -286,45 +285,6 @@ class PendulumTests : public ::testing::Test {
     CompareMatrices(H, H_expected, kTolerance, MatrixCompareType::relative);
   }
 
-  void VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      double theta1, double theta2,
-      double theta1dot, double theta2dot,
-      double tau1, double tau2) {
-    const double kTolerance = 10 * kEpsilon;
-
-    // Set angles:
-    model_.shoulder().set_angle(context_.get(), theta1);
-    model_.elbow().set_angle(context_.get(), theta2);
-
-    // Set angular rates:
-    model_.shoulder().set_angular_rate(context_.get(), theta1dot);
-    model_.elbow().set_angular_rate(context_.get(), theta2dot);
-
-    // Apply external torques at the joints:
-    MultibodyTreeForcing<double> forcing(model_.get_tree());
-    model_.shoulder().AddInTorque(*context_, tau1, &forcing);
-    model_.shoulder().AddInTorque(*context_, tau2, &forcing);
-
-    // Vector of generalized velocites time derivatives:
-    VectorX<double> vdot(tree_->get_num_velocities());
-
-    tree_->CalcForwardDynamicsViaExplicitMassMatrixSolve(
-        *context_, forcing, &vdot);
-
-    // Now compute forward dynamics using our benchmark:
-    Vector2d tau(tau1, tau2);
-    Vector2d C = acrobot_benchmark_.CalcCoriolisVector(
-        theta1, theta2, theta1dot, theta2dot);
-    Vector2d tau_g = acrobot_benchmark_.CalcGravityVector(theta1, theta2);
-    Matrix2d M = acrobot_benchmark_.CalcMassMatrix(theta2);
-
-    Vector2d rhs = tau + tau_g - C;
-    Vector2d vdot_benchmark = M.llt().solve(rhs);
-
-    CompareMatrices(
-        vdot, vdot_benchmark, kTolerance, MatrixCompareType::relative);
-  }
-
  protected:
   // The MultibodyTree model under test.
   DoublePendulumModel<double> model_;
@@ -360,80 +320,6 @@ TEST_F(PendulumTests, CalcMassMatrixViaInverseDynamics) {
   VerifyCalcMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
   VerifyCalcMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
   VerifyCalcMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
-}
-
-// Compute forward dynamics by explicitly forming the mass matrix.
-TEST_F(PendulumTests, CalcForwardDynamicsViaExplicitMassMatrixSolve) {
-  // With zero velocity and zero input torques.
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      0.0, 0.0,   /* joint's angles */
-      0.0, 0.0,   /* joint's angular rates */
-      0.0, 0.0);  /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      0.0, M_PI / 2.0,  /* joint's angles */
-      0.0, 0.0,         /* joint's angular rates */
-      0.0, 0.0);        /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      0.0, M_PI / 3.0,  /* joint's angles */
-      0.0, 0.0,         /* joint's angular rates */
-      0.0, 0.0);        /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      0.0, M_PI / 4.0,  /* joint's angles */
-      0.0, 0.0,         /* joint's angular rates */
-      0.0, 0.0);        /* joint's torques */
-
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      M_PI / 3.0, 0.0,   /* joint's angles */
-      0.0, 0.0,          /* joint's angular rates */
-      0.0, 0.0);         /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      M_PI / 3.0, M_PI / 2.0,  /* joint's angles */
-      0.0, 0.0,                /* joint's angular rates */
-      0.0, 0.0);               /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      M_PI / 3.0, M_PI / 3.0,  /* joint's angles */
-      0.0, 0.0,                /* joint's angular rates */
-      0.0, 0.0);               /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      M_PI / 3.0, M_PI / 4.0,  /* joint's angles */
-      0.0, 0.0,                /* joint's angular rates */
-      0.0, 0.0);               /* joint's torques */
-
-  // With non-zero velocities and zero torques:
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-     -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0,                /* joint's angular rates */
-      0.0, 0.0);               /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-     -M_PI / 5.0, M_PI / 3.0,  /* joint's angles */
-      0.5, 1.0,                /* joint's angular rates */
-      0.0, 0.0);               /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-     -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-     -1.5, 0.5,                /* joint's angular rates */
-      0.0, 0.0);               /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-     -M_PI / 5.0, M_PI / 3.0,  /* joint's angles */
-     -1.5, 0.5,                /* joint's angular rates */
-      0.0, 0.0);               /* joint's torques */
-
-  // With non-zero velocities and non-zero torques:
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0,                 /* joint's angular rates */
-      0.5, 1.0);                /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0,                 /* joint's angular rates */
-      0.5, -1.0);               /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0,                 /* joint's angular rates */
-     -0.5, 1.0);                /* joint's torques */
-  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
-      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0,                 /* joint's angular rates */
-     -0.5, -1.0);               /* joint's torques */
 }
 
 }  // namespace

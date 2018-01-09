@@ -11,7 +11,6 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -35,7 +34,6 @@ using geometry::SourceId;
 using geometry::Sphere;
 using drake::multibody::BodyIndex;
 using drake::multibody::MultibodyTree;
-using drake::multibody::MultibodyTreeForcing;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
@@ -250,19 +248,38 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
           context.get_continuous_state_vector()).get_value();
   const int nv = model_->get_num_velocities();
 
-  // Constructor initializes forcing to zero:
-  MultibodyTreeForcing<T> forcing(*model_);
+  PositionKinematicsCache<T> pc(model_->get_topology());
+  VelocityKinematicsCache<T> vc(model_->get_topology());
 
-  // TODO(amcastro-tri): Replace by an ABA forward dynamics.
+  MatrixX<T> M(nv, nv);
+  model_->CalcMassMatrixViaInverseDynamics(context, &M);
+
+  model_->CalcPositionKinematicsCache(context, &pc);
+  model_->CalcVelocityKinematicsCache(context, pc, &vc);
+
+  // Compute applied forces, which in this case will contain gravity.
+  std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_->get_num_bodies());
+  VectorX<T> tau_applied(model_->get_num_velocities());
+  model_->CalcForceElementsContribution(
+      context, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+
   VectorX<T> vdot = VectorX<T>::Zero(nv);
-  model_->CalcForwardDynamicsViaExplicitMassMatrixSolve(
-      context, forcing, &vdot);
+  VectorX<T> C(nv);
+  // WARNING: to reduce memory foot-print, we use the input applied arrays also
+  // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied
+  // get overwritten on output. This is not important in this case since we
+  // don't need their values anymore. Please see the documentation for
+  // CalcInverseDynamics() for details.
+  model_->CalcInverseDynamics(
+      context, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+      &A_WB_array, &Fapplied_Bo_W_array, &C);
 
   auto v = x.bottomRows(nv);
 
   VectorX<T> xdot(model_->get_num_states());
   // For this simple model v = qdot.
-  xdot << v, vdot;
+  xdot << v, M.llt().solve(-C);
   derivatives->SetFromVector(xdot);
 }
 
