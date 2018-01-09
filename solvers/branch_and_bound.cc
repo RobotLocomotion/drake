@@ -2,6 +2,9 @@
 
 #include <algorithm>
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
 #include "drake/solvers/gurobi_solver.h"
 
 namespace drake {
@@ -304,6 +307,83 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
   }
 }
 
+SolutionResult MixedIntegerBranchAndBound::Solve() {
+  // First check the status of the root node. If the root node is infeasible,
+  // then the MIP is infeasible.
+  if (root_->solution_result() == SolutionResult::kInfeasibleConstraints) {
+    return SolutionResult::kInfeasibleConstraints;
+  }
+  if (IsConverged()) {
+    return SolutionResult::kSolutionFound;
+  }
+  // If the optimal solution to the root node is not integral, do some
+  // post-processing on the non-integral solution, and try to find an integral
+  // solution of the MIP (but not necessarily optimal).
+  // I did not put this part in the class constructor, where we construct and
+  // solve the root node, because the strategy to search for the integral
+  // solution can be specified after the constructor call.
+  if (root_->solution_result() == SolutionResult::kSolutionFound &&
+      !root_->optimal_solution_is_integral()) {
+    SearchIntegralSolution(*root_);
+  }
+  MixedIntegerBranchAndBoundNode* branching_node = PickBranchingNode();
+  if (branching_node) {
+    // Found a branching node, branch on this node. If no branching node is
+    // found, then every leaf node is fathomed, the branch-and-bound process
+    // should terminate.
+    const symbolic::Variable* branching_variable =
+        PickBranchingVariable(*branching_node);
+    BranchAndUpdate(branching_node, *branching_variable);
+    if (IsConverged()) {
+      return SolutionResult::kSolutionFound;
+    }
+    branching_node = PickBranchingNode();
+  }
+  // No node to branch.
+  if (best_lower_bound_ == -std::numeric_limits<double>::infinity()) {
+    return SolutionResult::kUnbounded;
+  }
+  if (best_lower_bound_ == std::numeric_limits<double>::infinity()) {
+    return SolutionResult::kInfeasibleConstraints;
+  }
+  throw std::runtime_error(
+      "Unknown result. The problem is not optimal, infeasible, nor unbounded.");
+}
+
+double MixedIntegerBranchAndBound::GetOptimalCost(int nth_best_cost) const {
+  if (nth_best_cost < 0 || nth_best_cost >= best_solutions().size()) {
+    throw std::runtime_error(
+        fmt::format("Cannot access {}'th optimal cost. The branch and bound "
+                    "process only finds {} solution(s).",
+                    nth_best_cost, best_solutions().size()));
+  }
+  auto it = best_solutions().begin();
+  for (int best_cost_count = 0; best_cost_count < nth_best_cost;
+       ++best_cost_count) {
+    ++it;
+  }
+  return it->first;
+}
+
+double MixedIntegerBranchAndBound::GetSolution(
+    const symbolic::Variable& mip_var, int nth_best_solution) const {
+  if (nth_best_solution < 0 || nth_best_solution >= best_solutions().size()) {
+    throw std::runtime_error(
+        fmt::format("Cannot access {}'th integral solution. The "
+                    "branch-and-bound process only finds {} solution(s).",
+                    nth_best_solution, best_solutions().size()));
+  }
+  const int variable_index =
+      root_->prog()->FindDecisionVariableIndex(GetNewVariable(mip_var));
+
+  auto it = best_solutions().begin();
+  for (int best_solution_count = 0; best_solution_count < nth_best_solution;
+       ++best_solution_count) {
+    ++it;
+  }
+  return it->second(variable_index);
+}
+
 const symbolic::Variable& MixedIntegerBranchAndBound::GetNewVariable(
     const symbolic::Variable& old_variable) const {
   const auto it = map_old_vars_to_new_vars_.find(old_variable.get_id());
@@ -525,6 +605,42 @@ bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
   return false;
 }
 
+void MixedIntegerBranchAndBound::BranchAndUpdate(
+    MixedIntegerBranchAndBoundNode* node,
+    const symbolic::Variable& branching_variable) {
+  node->Branch(branching_variable);
+  // Update the best lower and upper bounds.
+  // The best lower bound is the minimal among all the optimal costs of the
+  // non-fathomed leaf nodes.
+  best_lower_bound_ = BestLowerBoundInSubTree(*this, *root_);
+  // If either the left or the right children finds integral solution, then
+  // we can potentially update the best upper bound, and insert the solutions
+  // to the list best_solutions_;
+  if (node->left_child()->solution_result() == SolutionResult::kSolutionFound) {
+    if (node->left_child()->optimal_solution_is_integral()) {
+      const double child_node_optimal_cost =
+          node->left_child()->prog()->GetOptimalCost();
+      const Eigen::VectorXd x_sol = node->left_child()->prog()->GetSolution(
+          node->left_child()->prog()->decision_variables());
+      UpdateIntegralSolution(x_sol, child_node_optimal_cost);
+    } else {
+      SearchIntegralSolution(*(node->left_child()));
+    }
+  }
+  if (node->right_child()->solution_result() ==
+      SolutionResult::kSolutionFound) {
+    if (node->right_child()->optimal_solution_is_integral()) {
+      const double child_node_optimal_cost =
+          node->right_child()->prog()->GetOptimalCost();
+      const Eigen::VectorXd x_sol = node->right_child()->prog()->GetSolution(
+          node->right_child()->prog()->decision_variables());
+      UpdateIntegralSolution(x_sol, child_node_optimal_cost);
+    } else {
+      SearchIntegralSolution(*(node->right_child()));
+    }
+  }
+}
+
 void MixedIntegerBranchAndBound::UpdateIntegralSolution(
     const Eigen::Ref<const Eigen::VectorXd>& solution, double cost) {
   if (best_solutions_.empty()) {
@@ -550,34 +666,23 @@ void MixedIntegerBranchAndBound::UpdateIntegralSolution(
       std::min(best_upper_bound_, best_solutions_.begin()->first);
 }
 
-void MixedIntegerBranchAndBound::BranchAndUpdate(
-    MixedIntegerBranchAndBoundNode* node,
-    const symbolic::Variable& branching_variable) {
-  node->Branch(branching_variable);
-  // Update the best lower and upper bounds.
-  // The best lower bound is the minimal among all the optimal costs of the
-  // non-fathomed leaf nodes.
-  best_lower_bound_ = BestLowerBoundInSubTree(*this, *root_);
-  // If either the left or the right children finds integral solution, then
-  // we can potentially update the best upper bound, and insert the solutions
-  // to the list best_solutions_;
-  if (node->left_child()->solution_result() == SolutionResult::kSolutionFound &&
-      node->left_child()->optimal_solution_is_integral()) {
-    const double child_node_optimal_cost =
-        node->left_child()->prog()->GetOptimalCost();
-    const Eigen::VectorXd x_sol = node->left_child()->prog()->GetSolution(
-        node->left_child()->prog()->decision_variables());
-    UpdateIntegralSolution(x_sol, child_node_optimal_cost);
+bool MixedIntegerBranchAndBound::IsConverged() const {
+  if (best_upper_bound_ - best_lower_bound_ <= absolute_gap_tol_) {
+    return true;
   }
-  if (node->right_child()->solution_result() ==
-          SolutionResult::kSolutionFound &&
-      node->right_child()->optimal_solution_is_integral()) {
-    const double child_node_optimal_cost =
-        node->right_child()->prog()->GetOptimalCost();
-    const Eigen::VectorXd x_sol = node->right_child()->prog()->GetSolution(
-        node->right_child()->prog()->decision_variables());
-    UpdateIntegralSolution(x_sol, child_node_optimal_cost);
+  if ((best_upper_bound_ - best_lower_bound_) / std::abs(best_lower_bound_) <=
+      relative_gap_tol_) {
+    return true;
   }
+  return false;
+}
+
+void MixedIntegerBranchAndBound::SearchIntegralSolution(
+    const MixedIntegerBranchAndBoundNode& node) {
+  // TODO(hongkai.dai): create a new program that fix the remaining binary
+  // variables to either 0 or 1, and solve for the continuous variables. If this
+  // optimization problem is feasible, then the optimal solution is a feasible
+  // solution to the MIP, and we get an upper bound on the MIP optimal cost.
 }
 }  // namespace solvers
 }  // namespace drake

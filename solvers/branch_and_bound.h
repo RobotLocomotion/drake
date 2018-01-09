@@ -206,10 +206,10 @@ class MixedIntegerBranchAndBoundNode {
 };
 
 /**
- * Given a mixed-integer optimization problem (or more accurately, mixed binary
- * problem), solve this problem through branch-and-bound process. We will first
- * replace all the binary variables with continuous variables, and relax the
- * integral constraint on the binary variables y ∈ {0, 1} with continuous
+ * Given a mixed-integer optimization problem (MIP) (or more accurately, mixed
+ * binary problem), solve this problem through branch-and-bound process. We will
+ * first replace all the binary variables with continuous variables, and relax
+ * the integral constraint on the binary variables y ∈ {0, 1} with continuous
  * constraints 0 ≤ y ≤ 1. And then in the subsequent steps, at each node of the
  * tree, we will fix some binary variables to either 0 or 1, and solve the rest
  * of the variables.
@@ -239,12 +239,12 @@ class MixedIntegerBranchAndBound {
 
   /**
    * The function signature for the user defined method to pick a branching node
-   * or  a branching variable.
+   * or a branching variable.
    */
   using PickNodeFun = std::function<MixedIntegerBranchAndBoundNode*(
       const MixedIntegerBranchAndBoundNode&)>;
-  using PickVariableFun =
-      std::function<const symbolic::Variable*(const MixedIntegerBranchAndBoundNode&)>;
+  using PickVariableFun = std::function<const symbolic::Variable*(
+      const MixedIntegerBranchAndBoundNode&)>;
 
   /**
    * Construct a branch-and-bound tree from a mixed-integer optimization
@@ -252,6 +252,69 @@ class MixedIntegerBranchAndBound {
    * @param prog A mixed-integer optimization program.
    */
   MixedIntegerBranchAndBound(const MathematicalProgram& prog);
+
+  /**
+   * Solve the mixed-integer problem (MIP) through a branch and bound process.
+   * @retval solution_result If solution_result=SolutionResult::kSolutionFound,
+   * then the best solutions are stored inside best_solutions(). The user
+   * can access the value of each variable(s) through GetSolution(...).
+   * If solution_result=SolutionResult::kInfeasibleConstraints, then the
+   * mixed-integer problem is primal infeasible.
+   * If solution_result=SolutionResult::kUnbounded, then the mixed-integer
+   * problem is primal unbounded.
+   */
+  SolutionResult Solve();
+
+  /**
+   * Get the n'th best cost.
+   * The costs are sorted in the ascending order. The 1st cost is the smallest
+   * cost.
+   * @param nth_best_cost The n'th best cost.
+   * @pre `nth_best_cost` is between 0 and best_solutions().size().
+   * @throws a runtime error if the precondition is not satisfied.
+   */
+  double GetOptimalCost(int nth_best_cost = 0) const;
+
+  /**
+   * Get the n'th best integral solution for a variable.
+   * The best solutions are sorted in the ascending order based on their costs.
+   * So the 1st best solution has the smallest cost.
+   * @param mip_var A variable in the original MIP.
+   * @param nth_best_solution. The index of the best integral solution.
+   * @pre `mip_var` is a variable in the original MIP.
+   * @pre `nth_best_solution` is between 0 and best_solutions().size().
+   * @throw runtime error if the preconditions are not satisfied.
+   */
+  double GetSolution(const symbolic::Variable& mip_var,
+                     int nth_best_solution = 0) const;
+
+  /**
+   * Get the n'th best integral solution for some variables.
+   * The best solutions are sorted in the ascending order based on their costs.
+   * So the 1st best solution has the smallest cost.
+   * @param mip_vars Variables in the original MIP.
+   * @param nth_best_solution. The index of the best integral solution.
+   * @pre `mip_vars` are variables in the original MIP.
+   * @pre `nth_best_solution` is between 0 and best_solutions().size().
+   * @throw runtime error if the preconditions are not satisfied.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                    Derived::ColsAtCompileTime>>::type
+  GetSolution(const Eigen::MatrixBase<Derived>& mip_vars,
+              int nth_best_solution = 0) const {
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>
+        value(mip_vars.rows(), mip_vars.cols());
+    for (int i = 0; i < mip_vars.rows(); ++i) {
+      for (int j = 0; j < mip_vars.cols(); ++j) {
+        value(i, j) = GetSolution(mip_vars(i, j), nth_best_solution);
+      }
+    }
+    return value;
+  }
 
   /**
    * Given an old variable in the original mixed-integer program, return the new
@@ -302,7 +365,7 @@ class MixedIntegerBranchAndBound {
 
   /**
    * Set the user-defined method to pick the branching node. This method is
-   * used if the user calls 
+   * used if the user calls
    * SetPickBranchingNodeMethod(PickNode::kUserDefined)
    */
   void SetUserDefinedBranchingNodeMethod(PickNodeFun fun) {
@@ -322,7 +385,7 @@ class MixedIntegerBranchAndBound {
 
   /**
    * Set the user-defined method to pick the branching variable. This method is
-   * used if the user calls 
+   * used if the user calls
    * SetPickBranchingVariableMethod(PickVariable::kUserDefined).
    */
   void SetUserDefinedBranchingVariableMethod(PickVariableFun fun) {
@@ -389,19 +452,22 @@ class MixedIntegerBranchAndBound {
   /**
    * Pick the branching variable in a node.
    */
-  const symbolic::Variable* PickBranchingVariable(const MixedIntegerBranchAndBoundNode& node) const;
+  const symbolic::Variable* PickBranchingVariable(
+      const MixedIntegerBranchAndBoundNode& node) const;
 
   /**
    * Pick the most ambivalent one as the branching variable, namely the binary
    * variable whose value is closest to 0.5.
    */
-  const symbolic::Variable* PickMostAmbivalentAsBranchingVariable(const MixedIntegerBranchAndBoundNode& node) const;
+  const symbolic::Variable* PickMostAmbivalentAsBranchingVariable(
+      const MixedIntegerBranchAndBoundNode& node) const;
 
   /**
    * Pick the least ambivalent one as the branching variable, namely the binary
    * variable whose value is closet to 0 or 1.
    */
-  const symbolic::Variable* PickLeastAmbivalentAsBranchingVariable(const MixedIntegerBranchAndBoundNode& node) const;
+  const symbolic::Variable* PickLeastAmbivalentAsBranchingVariable(
+      const MixedIntegerBranchAndBoundNode& node) const;
 
   /**
    * Branch on a node, solves the optimization, and update the best lower and
@@ -420,6 +486,19 @@ class MixedIntegerBranchAndBound {
    */
   void UpdateIntegralSolution(const Eigen::Ref<const Eigen::VectorXd>& solution,
                               double cost);
+
+  /**
+   * The branch-and-bound is converged if the gap between the best upper bound
+   * and the best lower bound is less than the tolerance.
+   */
+  bool IsConverged() const;
+
+  /**
+   * Search for an integral solution satisfying all the constraints in this
+   * node, together with the integral constraints in the original mixed-integer
+   * program.
+   */
+  void SearchIntegralSolution(const MixedIntegerBranchAndBoundNode& node);
 
   // The root node of the tree.
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root_;

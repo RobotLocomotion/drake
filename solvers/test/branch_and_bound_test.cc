@@ -569,7 +569,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable2) {
   auto prog = ConstructMathematicalProgram3();
 
   MixedIntegerBranchAndBoundTester dut(*prog);
-  VectorDecisionVariable<3> x = dut.bnb()->root()->prog()->decision_variables();
+  VectorDecisionVariable<4> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The problem is unbounded, any branching variable is acceptable.
   dut.bnb()->SetPickBranchingVariableMethod(
@@ -661,6 +661,69 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
       *(dut.bnb()->root()->right_child()->left_child())));
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
       *(dut.bnb()->root()->right_child()->right_child())));
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve1) {
+  auto prog = ConstructMathematicalProgram1();
+  const VectorDecisionVariable<4> x = prog->decision_variables();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+
+  const SolutionResult solution_result = dut.bnb()->Solve();
+  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
+  const double tol{1E-3};
+  // The root node finds an optimal integral solution, and the bnb terminates.
+  EXPECT_EQ(dut.bnb()->best_solutions().size(), 1);
+  EXPECT_NEAR(dut.bnb()->GetOptimalCost(0), 1.5, tol);
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected, tol,
+                              MatrixCompareType::absolute));
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
+  auto prog = ConstructMathematicalProgram2();
+  const VectorDecisionVariable<5> x = prog->decision_variables();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  for (auto pick_variable :
+       {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
+        MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent}) {
+    for (auto pick_node :
+         {MixedIntegerBranchAndBound::PickNode::kDepthFirst,
+          MixedIntegerBranchAndBound::PickNode::kMinLowerBound}) {
+      dut.bnb()->SetPickBranchingNodeMethod(pick_node);
+      dut.bnb()->SetPickBranchingVariableMethod(pick_variable);
+
+      const SolutionResult solution_result = dut.bnb()->Solve();
+      EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+      const double tol{1E-3};
+      EXPECT_NEAR(dut.bnb()->GetOptimalCost(0), -13.0 / 3, tol);
+      Eigen::Matrix<double, 5, 1> x_expected0;
+      x_expected0 << 1, 1.0 / 3.0, 1, 1, 0;
+      EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected0,
+                                  tol, MatrixCompareType::absolute));
+    }
+  }
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve3) {
+  auto prog = ConstructMathematicalProgram3();
+  const VectorDecisionVariable<4> x = prog->decision_variables();
+
+  MixedIntegerBranchAndBoundTester dut(*prog);
+  for (auto pick_variable :
+       {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
+        MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent}) {
+    for (auto pick_node :
+         {MixedIntegerBranchAndBound::PickNode::kDepthFirst,
+          MixedIntegerBranchAndBound::PickNode::kMinLowerBound}) {
+      dut.bnb()->SetPickBranchingNodeMethod(pick_node);
+      dut.bnb()->SetPickBranchingVariableMethod(pick_variable);
+
+      const SolutionResult solution_result = dut.bnb()->Solve();
+      EXPECT_EQ(solution_result, SolutionResult::kUnbounded);
+    }
+  }
 }
 }  // namespace
 }  // namespace solvers
