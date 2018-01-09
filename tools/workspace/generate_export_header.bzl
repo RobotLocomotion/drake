@@ -27,8 +27,8 @@ def _generate_export_header_impl(ctx):
         "#  define %s __attribute__ ((__deprecated__))" % ctx.attr.deprecated_macro_name,  # noqa
         "#endif",
         "",
-        "#ifndef %s_EXPORT" % ctx.attr.deprecated_macro_name,
-        "#  define %s_EXPORT %s FCL_EXPORT %s" % (ctx.attr.deprecated_macro_name, ctx.attr.export_macro_name, ctx.attr.deprecated_macro_name),  # noqa
+        "#ifndef %s" % ctx.attr.export_deprecated_macro_name,
+        "#  define %s %s %s" % (ctx.attr.export_deprecated_macro_name, ctx.attr.export_macro_name, ctx.attr.deprecated_macro_name),  # noqa
         "#endif",
         "",
         "#endif",
@@ -42,6 +42,7 @@ _generate_export_header_gen = rule(
         "out": attr.output(mandatory = True),
         "export_macro_name": attr.string(),
         "deprecated_macro_name": attr.string(),
+        "export_deprecated_macro_name": attr.string(),
         "static_define": attr.string(),
     },
     output_to_genfiles = True,
@@ -54,6 +55,7 @@ def generate_export_header(
         out = None,
         export_macro_name = None,
         deprecated_macro_name = None,
+        export_deprecated_macro_name = None,
         static_define = None,
         **kwargs):
     """Creates a rule to generate an export header for a named library.  This
@@ -78,11 +80,14 @@ def generate_export_header(
         export_macro_name = "%s_EXPORT" % lib.upper()
     if deprecated_macro_name == None:
         deprecated_macro_name = "%s_DEPRECATED" % lib.upper()
+    if export_deprecated_macro_name == None:
+        export_deprecated_macro_name = "%s_EXPORT_DEPRECATED" % lib.upper()
 
     _generate_export_header_gen(
         name = name,
         out = out,
         export_macro_name = export_macro_name,
         deprecated_macro_name = deprecated_macro_name,
+        export_deprecated_macro_name = export_deprecated_macro_name,
         static_define = static_define,
         **kwargs)
