@@ -234,6 +234,20 @@ DRAKE_RESOURCE_SENTINEL = adjust_label_for_drake_hoist(
 )
 
 drake_cc_library(
+    name = "is_equality_comparable",
+    hdrs = [
+        "is_equality_comparable.h",
+    ],
+)
+
+drake_cc_library(
+    name = "is_less_than_comparable",
+    hdrs = [
+        "is_less_than_comparable.h",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_pair",
     srcs = [
         "sorted_pair.cc",
@@ -241,6 +255,10 @@ drake_cc_library(
     hdrs = [
         "sorted_pair.h",
     ],
+    deps = [
+        ":is_equality_comparable",
+        ":is_less_than_comparable",
+    ]
 )
 
 drake_cc_library(
@@ -605,6 +623,20 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_equality_comparable_test",
+    deps = [
+        ":is_equality_comparable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_less_than_comparable_test",
+    deps = [
+        ":is_less_than_comparable",
     ],
 )
 

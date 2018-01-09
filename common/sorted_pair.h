@@ -1,23 +1,16 @@
 #pragma once
 
 #include <algorithm>
-#include <type_traits>
 #include <utility>
+
+#include "drake/common/is_equality_comparable.h"
+#include "drake/common/is_less_than_comparable.h"
 
 /// @file
 /// Provides drake::MakeSortedPair and drake::SortedPair for storing two
 /// values of a certain type in sorted order.
 
 namespace drake {
-
-template <typename T, typename = void>
-struct is_equality_comparable : std::false_type { };
-
-template <typename T>
-struct is_equality_comparable<T, typename std::enable_if<true,
-    decltype(std::declval<T&>() == std::declval<T&>(), (void)0)>::type> :
-    std::true_type {
-};
 
 /// This class is similar to the std::pair class. However, this class uses a
 /// pair of homogeneous types (std::pair can use heterogeneous types) and sorts
@@ -33,6 +26,11 @@ struct is_equality_comparable<T, typename std::enable_if<true,
 ///           `operator<` and supports default construction.
 template <class T>
 struct SortedPair {
+  static_assert(is_equality_comparable<T>::value, "SortedPair can only be used"
+      "with a class that provides the equality operator (operator==).");
+  static_assert(is_less_than_comparable<T>::value, "SortedPair can only be used"
+      "with a class that provides the less than operator (operator<).");
+
   typedef T type;
 
   const T first{};                 /// The smaller of the two objects.
@@ -42,7 +40,24 @@ struct SortedPair {
   /// respective default constructors.
   SortedPair() = default;
   SortedPair(const SortedPair& s) = default;
-  SortedPair(SortedPair&& s) = default;
+
+  /// Move constructor.
+  SortedPair(SortedPair&& s) {
+    const_cast<T&>(first) = std::move(const_cast<T&>(s.first));
+    const_cast<T&>(second) = std::move(const_cast<T&>(s.second));
+  }
+
+  /// Rvalue reference constructor, permits constructing with std::unique_ptr
+  /// types, for example.
+  SortedPair(T&& a, T&& b) {
+    if (a < b) {
+      const_cast<T&>(first) = std::move(const_cast<T&>(a));
+      const_cast<T&>(second) = std::move(const_cast<T&>(b));
+    } else {
+      const_cast<T&>(first) = std::move(const_cast<T&>(b));
+      const_cast<T&>(second) = std::move(const_cast<T&>(a));
+    }
+  }
 
   /// Move assignment operator.
   SortedPair& operator=(SortedPair&& s) {
@@ -53,11 +68,8 @@ struct SortedPair {
 
   /// Constructs a %SortedPair from two objects.
   SortedPair(const T& a, const T& b) : first(a), second(b) {
-    if (first > second) {
-      T* first_non_const = const_cast<T*>(&first);
-      T* second_non_const = const_cast<T*>(&second);
-      std::swap(*first_non_const, *second_non_const);
-    }
+    if (first > second)
+      std::swap(const_cast<T&>(first), const_cast<T&>(second));
   }
 
   /// Type-converting copy constructor.
@@ -67,11 +79,20 @@ struct SortedPair {
   SortedPair& operator=(const SortedPair& p) {
     // This block of code is necessary since `first` and `second` are const
     // objects.
-    T* first_non_const = const_cast<T*>(&first);
-    T* second_non_const = const_cast<T*>(&second);
-    *first_non_const = p.first;
-    *second_non_const = p.second;
+    const_cast<T&>(first) = p.first;
+    const_cast<T&>(second) = p.second;
     return *this;
+  }
+
+  // Resets the objects.
+  void set(const T& a, const T& b) {
+    if (a < b) {
+      const_cast<T&>(first) = a;
+      const_cast<T&>(second) = b;
+    } else {
+      const_cast<T&>(first) = b;
+      const_cast<T&>(second) = a;
+    }
   }
 };
 
