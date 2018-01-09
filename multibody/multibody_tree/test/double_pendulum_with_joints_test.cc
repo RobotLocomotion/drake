@@ -58,11 +58,14 @@ using systems::Context;
 //  - The pendulum moves in the x-y plane, with angles θ₁ and θ₂ defined
 //    positive according to the right-hand-rule with the thumb aligned in the
 //    z-direction.
-//  - The body frames for each link are placed at their geometric center.
+//  - The body frame for link 1 is placed at its geometric center.
+//  - The body frame for link 2 is placed at the joint's outboard frame.
 //  - The origin of the shoulder frames (Si and So) are coincident at all times.
 //    So is aligned with Si for θ₁ = 0.
 //  - The origin of the elbow frames (Ei and Eo) are coincident at all times.
 //    Eo is aligned with Ei for θ₂ = 0.
+//  - The elbow outboard frame Eo IS the link 2 frame L2, refer to schematic
+//    below.
 //
 //       y ^
 //         | Si ≡ W World body frame.
@@ -139,15 +142,16 @@ class DoublePendulumModel {
 
     // The shoulder joint connects the world with link 1.
     // Its inboard frame, Si, is the world frame.
-    // Its outboard frame, So, is at a fixed offset frame link 2's frame L2.
-    // L2's origin is located at the com of link 2.
-    // Pose of the shoulder outboard frame So in link 1's frame:
-    const Isometry3d X_L2So{Translation3d(0.0, half_length1_, 0.0)};
+    // Its outboard frame, So, is at a fixed offset from link 1's frame L1.
+    // L1's origin is located at the com of link 1.
+    // X_L1So defines the pose of the shoulder outboard frame So in link 1's
+    // frame:
+    const Isometry3d X_L1So{Translation3d(0.0, half_length1_, 0.0)};
 
     shoulder_ = &tree_->template AddJoint<RevoluteJoint>(
         "ShoulderJoint",
         *world_body_, {},  /* No input, frame Si IS the world frame W. */
-        *link1_, X_L2So,   /* Pose of So in link 2's frame L2. */
+        *link1_, X_L1So,   /* Pose of So in link 1's frame L1. */
         Vector3d::UnitZ()  /* revolute axis */);
 
     // The elbow is the mobilizer that connects links 1 and 2.
@@ -155,9 +159,9 @@ class DoublePendulumModel {
     // at y = -half_link_length_ in the frame of link 1.
     // X_L1Ei specifies the pose of the elbow inboard frame Ei in the body
     // frame L1 of link 1.
-    // The elbow's outboard frame Eo is taking to be coincident with link 2's
+    // The elbow's outboard frame Eo is taken to be coincident with link 2's
     // frame L2 (i.e. L2o != L2cm).
-    // Pose of the elbow inboard frame Ei link 1's frame L1:
+    // X_L1Ei defines the pose of the elbow inboard frame Ei link 1's frame L1:
     const Isometry3d X_L1Ei{Translation3d(0.0, -half_length1_, 0.0)};
 
     elbow_ = &tree_->template AddJoint<RevoluteJoint>(
@@ -226,47 +230,6 @@ class PendulumTests : public ::testing::Test {
   void SetUp() override {
     tree_ = &model_.get_tree();
     context_ = tree_->CreateDefaultContext();
-  }
-
-  // Helper method to extract a pose from the position kinematics.
-  // TODO(amcastro-tri):
-  // Replace this by a method Body<T>::get_pose_in_world(const Context<T>&)
-  // when we can place cache entries in the context.
-  template<typename T>
-  const Isometry3<T> &get_body_pose_in_world(
-      const PositionKinematicsCache<T> &pc,
-      const Body<T> &body) const {
-    const MultibodyTreeTopology &topology = tree_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
-  }
-
-  // Helper method to extract spatial velocity from the velocity kinematics
-  // cache.
-  // TODO(amcastro-tri):
-  // Replace this by a method
-  // Body<T>::get_spatial_velocity_in_world(const Context<T>&)
-  // when we can place cache entries in the context.
-  const SpatialVelocity<double> &get_body_spatial_velocity_in_world(
-      const VelocityKinematicsCache<double> &vc,
-      const Body<double> &body) const {
-    const MultibodyTreeTopology &topology = tree_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
-  }
-
-  // Helper method to extract spatial acceleration from the acceleration
-  // kinematics cache.
-  // TODO(amcastro-tri):
-  // Replace this by a method
-  // Body<T>::get_spatial_acceleration_in_world(const Context<T>&)
-  // when we can place cache entries in the context.
-  const SpatialAcceleration<double> &get_body_spatial_acceleration_in_world(
-      const AccelerationKinematicsCache<double> &ac,
-      const Body<double> &body) const {
-    const MultibodyTreeTopology &topology = tree_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.get_index()).body_node);
   }
 
   void VerifyCalcMassMatrixViaInverseDynamics(
