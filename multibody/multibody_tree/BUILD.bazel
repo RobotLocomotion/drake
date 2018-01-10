@@ -205,6 +205,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_forcing_test",
+    deps = [
+        ":multibody_tree",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "rotational_inertia_test",
     deps = [
         ":rotational_inertia",
