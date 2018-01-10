@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forcing.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
 namespace drake {

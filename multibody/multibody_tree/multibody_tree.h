@@ -18,7 +18,7 @@
 #include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forcing.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"

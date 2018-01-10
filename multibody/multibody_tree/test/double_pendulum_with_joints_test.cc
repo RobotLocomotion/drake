@@ -14,7 +14,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forcing.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
