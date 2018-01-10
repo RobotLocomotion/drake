@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include "drake/common/unused.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/scs_solver.h"
 
@@ -388,7 +389,8 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
 }
 
 double MixedIntegerBranchAndBound::GetOptimalCost(int nth_best_cost) const {
-  if (nth_best_cost < 0 || nth_best_cost >= best_solutions().size()) {
+  if (nth_best_cost < 0 ||
+      nth_best_cost >= static_cast<int>(best_solutions().size())) {
     throw std::runtime_error(
         fmt::format("Cannot access {}'th optimal cost. The branch and bound "
                     "process only finds {} solution(s).",
@@ -404,7 +406,8 @@ double MixedIntegerBranchAndBound::GetOptimalCost(int nth_best_cost) const {
 
 double MixedIntegerBranchAndBound::GetSolution(
     const symbolic::Variable& mip_var, int nth_best_solution) const {
-  if (nth_best_solution < 0 || nth_best_solution >= best_solutions().size()) {
+  if (nth_best_solution < 0 ||
+      nth_best_solution >= static_cast<int>(best_solutions().size())) {
     throw std::runtime_error(
         fmt::format("Cannot access {}'th integral solution. The "
                     "branch-and-bound process only finds {} solution(s).",
@@ -692,10 +695,10 @@ void MixedIntegerBranchAndBound::UpdateIntegralSolution(
           break;
         }
       }
-    } else if (best_solutions_.size() < max_num_solutions_) {
+    } else if (static_cast<int>(best_solutions_.size()) < max_num_solutions_) {
       best_solutions_.emplace_back(cost, solution);
     }
-    if (best_solutions_.size() > max_num_solutions_) {
+    if (static_cast<int>(best_solutions_.size()) > max_num_solutions_) {
       best_solutions_.pop_back();
     }
   }
@@ -720,6 +723,7 @@ void MixedIntegerBranchAndBound::SearchIntegralSolution(
   // variables to either 0 or 1, and solve for the continuous variables. If this
   // optimization problem is feasible, then the optimal solution is a feasible
   // solution to the MIP, and we get an upper bound on the MIP optimal cost.
+  unused(node);
 }
 }  // namespace solvers
 }  // namespace drake
