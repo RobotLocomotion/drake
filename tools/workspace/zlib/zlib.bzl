@@ -25,8 +25,8 @@ Argument:
 """
 
 load(
-    "@kythe//tools/build_rules/config:pkg_config.bzl",
-    "setup_pkg_config_package",
+    "@drake//tools/workspace:pkg_config.bzl",
+    "setup_pkg_config_repository",
 )
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
@@ -58,7 +58,7 @@ cc_library(
         repository_ctx.file("BUILD", content = file_content,
                             executable = False)
     else:
-        error = setup_pkg_config_package(repository_ctx).error
+        error = setup_pkg_config_repository(repository_ctx).error
 
         if error != None:
             fail(error)
@@ -66,11 +66,6 @@ cc_library(
 zlib_repository = repository_rule(
     attrs = {
         "modname": attr.string(default = "zlib"),
-        "build_file_template": attr.label(
-            default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
-            single_file = True,
-            allow_files = True,
-        ),
     },
     local = True,
     implementation = _impl,
