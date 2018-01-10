@@ -49,4 +49,15 @@ install(
     ]),
 )
 
+# This provides the directories necessary for `external_data:workspace_test` to
+# consume what it needs from `@drake//`.
+filegroup(
+    name = "skylark_files",
+    srcs = [
+        "BUILD.bazel",
+        "WORKSPACE",
+    ],
+    visibility = ["//tools/external_data:__pkg__"],
+)
+
 add_lint_tests()

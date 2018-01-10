@@ -1,0 +1,5 @@
+# -*- python -*-
+
+load("@drake//tools/external_data:external_data.bzl", "external_data_stub_test")
+
+external_data_stub_test()

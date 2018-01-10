@@ -2,6 +2,7 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
+load("//tools/skylark:meta.bzl", "all_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -72,3 +73,5 @@ config_setting(
 )
 
 add_lint_tests()
+
+all_files()

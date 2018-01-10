@@ -1,0 +1,3 @@
+# Make a workspace so that Bazel will ignore these tests when run with
+# `test ...` from the top-level workspace.
+workspace(name = "external_data_test_workspaces")
