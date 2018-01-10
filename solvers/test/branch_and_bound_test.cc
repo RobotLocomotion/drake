@@ -963,14 +963,13 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   //     x(4) <= y(3)
   //     y(0) + y(1) + y(2) + y(3) = 1
   //     x(0) + x(1) + x(2) + x(3) + x(4) = 1
-  //     3*x(0) + x(1) + 2*x(2) + 5*x(3) + x(4) = 1.5
+  //     3*x(0) + x(1) + 2*x(2) + 5*x(3) + x(4) = 4
   //     x >= 0
   //     y are binary variables.
-  // The optimal solution is x = (0.25, 0.75, 0, 0, 0), y = (1, 0, 0, 0), with
-  // optimal cost 0.25.
-  // There are other integral solutions, such as
-  // x = (0, 0.5, 0.5, 0, 0), y = (0, 1, 0, 0), with cost 1.5
-  // x = (0, 0, 0, 1/8, 7/8), y = (0, 0, 0, 1), with cost 31/8
+  // The optimal solution is x = (0, 0, 1/3, 2/3, 0), y = (0, 0, 1, 0), with
+  // optimal cost 8/3.
+  // There are other integral solutions,
+  // x = (0, 0, 0, 0.25, 75), y = (0, 0, 0, 1), with cost 13/4
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<5>("x");
   auto y = prog.NewBinaryVariables<4>("y");
@@ -982,7 +981,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   prog.AddLinearConstraint(x(4) <= y(3));
   prog.AddLinearConstraint(y.cast<symbolic::Expression>().sum() == 1);
   prog.AddLinearConstraint(x.cast<symbolic::Expression>().sum() == 1);
-  prog.AddLinearConstraint(3 * x(0) + x(1) + 2 * x(2) + 5 * x(3) + x(4) == 1.5);
+  prog.AddLinearConstraint(3 * x(0) + x(1) + 2 * x(2) + 5 * x(3) + x(4) == 4);
   prog.AddBoundingBoxConstraint(0, 1, x);
 
   MixedIntegerBranchAndBound bnb(prog, GurobiSolver::id());
@@ -998,12 +997,10 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
       EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
       std::vector<std::pair<double, Eigen::VectorXd>> best_solutions;
       Eigen::Matrix<double, 9, 1> xy_expected;
-      xy_expected << 0.25, 0.75, 0, 0, 0, 1, 0, 0, 0;
-      best_solutions.emplace_back(0.75, xy_expected);
-      xy_expected << 0, 0.5, 0.5, 0, 0, 0, 1, 0, 0;
-      best_solutions.emplace_back(1.5, xy_expected);
-      xy_expected << 0, 0, 0, 1.0 / 8, 7.0 / 8, 0, 0, 0, 1;
-      best_solutions.emplace_back(31.0 / 8, xy_expected);
+      xy_expected << 0, 0, 1.0/3, 2.0/3, 0, 0, 0, 1, 0;
+      best_solutions.emplace_back(8.0/3, xy_expected);
+      xy_expected << 0, 0, 0, 0.25, 75, 0, 0, 0, 1;
+      best_solutions.emplace_back(13.0 / 4, xy_expected);
 
       const double tol{1E-3};
       VectorDecisionVariable<9> xy;
