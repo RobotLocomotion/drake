@@ -8,6 +8,7 @@
 #include <fmt/ostream.h>
 
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/scs_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -25,7 +26,8 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
 
 MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
     const MathematicalProgram& prog,
-    const std::list<symbolic::Variable>& binary_variables)
+    const std::list<symbolic::Variable>& binary_variables,
+    const SolverId& solver_id)
     : prog_{prog.Clone()},
       left_child_{nullptr},
       right_child_{nullptr},
@@ -34,7 +36,13 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       fixed_binary_value_{-1},
       remaining_binary_variables_{binary_variables},
       solution_result_{SolutionResult::kUnknownError},
-      optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown} {
+      optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown},
+      solver_id_{solver_id} {
+  if (solver_id != GurobiSolver::id() && solver_id != ScsSolver::id()) {
+    throw std::runtime_error(fmt::format(
+        "MixedIntegerBranchAndBoundNode does not support solver {}.",
+        solver_id.name()));
+  }
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
   // Set Gurobi DualReductions to 0, to differentiate infeasible from unbounded.
@@ -87,7 +95,7 @@ void AddVectorOfConstraintToNewProgram(
 std::pair<std::unique_ptr<MixedIntegerBranchAndBoundNode>,
           std::unordered_map<symbolic::Variable::Id, symbolic::Variable>>
 MixedIntegerBranchAndBoundNode::ConstructRootNode(
-    const MathematicalProgram& prog) {
+    const MathematicalProgram& prog, const SolverId& solver_id) {
   // Construct a new optimization program, same as prog, but relaxing the binary
   // constraint to 0 ≤ y ≤ 1.
   MathematicalProgram new_prog;
@@ -175,19 +183,27 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
 
   // Set the initial guess.
   new_prog.SetInitialGuessForAllVariables(prog.initial_guess());
-  const optional<SolverId> prog_solver_id = prog.GetSolverId();
-  if (prog_solver_id) {
-    new_prog.SetSolverId(prog_solver_id.value());
-  }
   // TODO(hongkai.dai) Set the solver options as well.
 
   std::list<symbolic::Variable> binary_variables_list;
   for (int i = 0; i < binary_variables.rows(); ++i) {
     binary_variables_list.push_back(binary_variables(i));
   }
-  MixedIntegerBranchAndBoundNode* node =
-      new MixedIntegerBranchAndBoundNode(new_prog, binary_variables_list);
-  node->solution_result_ = node->prog_->Solve();
+  MixedIntegerBranchAndBoundNode* node = new MixedIntegerBranchAndBoundNode(
+      new_prog, binary_variables_list, solver_id);
+  if (solver_id == GurobiSolver::id()) {
+    GurobiSolver gurobi_solver;
+    if (!gurobi_solver.available()) {
+      throw std::runtime_error("Gurobi is not available.");
+    }
+    node->solution_result_ = gurobi_solver.Solve(*(node->prog_));
+  } else if (solver_id == ScsSolver::id()) {
+    ScsSolver scs_solver;
+    if (!scs_solver.available()) {
+      throw std::runtime_error("Scs is not available.");
+    }
+    node->solution_result_ = scs_solver.Solve(*(node->prog_));
+  }
   if (node->solution_result_ == SolutionResult::kSolutionFound) {
     node->CheckOptimalSolutionIsIntegral();
   }
@@ -275,16 +291,30 @@ void MixedIntegerBranchAndBoundNode::FixBinaryVariable(
 
 void MixedIntegerBranchAndBoundNode::Branch(
     const symbolic::Variable& binary_variable) {
-  left_child_.reset(
-      new MixedIntegerBranchAndBoundNode(*prog_, remaining_binary_variables_));
-  right_child_.reset(
-      new MixedIntegerBranchAndBoundNode(*prog_, remaining_binary_variables_));
+  left_child_.reset(new MixedIntegerBranchAndBoundNode(
+      *prog_, remaining_binary_variables_, solver_id_));
+  right_child_.reset(new MixedIntegerBranchAndBoundNode(
+      *prog_, remaining_binary_variables_, solver_id_));
   left_child_->FixBinaryVariable(binary_variable, 0);
   right_child_->FixBinaryVariable(binary_variable, 1);
   left_child_->parent_ = this;
   right_child_->parent_ = this;
-  left_child_->solution_result_ = left_child_->prog_->Solve();
-  right_child_->solution_result_ = right_child_->prog_->Solve();
+  if (solver_id_ == GurobiSolver::id()) {
+    GurobiSolver gurobi_solver;
+    if (!gurobi_solver.available()) {
+      throw std::runtime_error("Gurobi is not available.");
+    }
+    left_child_->solution_result_ = gurobi_solver.Solve(*(left_child_->prog_));
+    right_child_->solution_result_ =
+        gurobi_solver.Solve(*(right_child_->prog_));
+  } else if (solver_id_ == ScsSolver::id()) {
+    ScsSolver scs_solver;
+    if (!scs_solver.available()) {
+      throw std::runtime_error("Scs is not available.");
+    }
+    left_child_->solution_result_ = scs_solver.Solve(*(left_child_->prog_));
+    right_child_->solution_result_ = scs_solver.Solve(*(right_child_->prog_));
+  }
   if (left_child_->solution_result_ == SolutionResult::kSolutionFound) {
     left_child_->CheckOptimalSolutionIsIntegral();
   }
@@ -294,14 +324,14 @@ void MixedIntegerBranchAndBoundNode::Branch(
 }
 
 MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
-    const MathematicalProgram& prog)
+    const MathematicalProgram& prog, const SolverId& solver_id)
     : root_{nullptr},
       map_old_vars_to_new_vars_{},
       best_upper_bound_{std::numeric_limits<double>::infinity()},
       best_lower_bound_{-std::numeric_limits<double>::infinity()},
       best_solutions_{} {
   std::tie(root_, map_old_vars_to_new_vars_) =
-      MixedIntegerBranchAndBoundNode::ConstructRootNode(prog);
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(prog, solver_id);
   if (root_->solution_result() == SolutionResult::kSolutionFound) {
     best_lower_bound_ = root_->prog()->GetOptimalCost();
     // If an integral solution is found, then update the best solutions,

@@ -51,6 +51,7 @@ class MixedIntegerBranchAndBoundNode {
    * This optimization program is solved during the node construction.
    * @param prog The mixed-integer optimization program (1) in the
    * documentation above.
+   * @param solver_id The ID of the solver for the optimization program.
    * @retval (node, map_old_vars_to_new_vars) node is the root node of the tree,
    * that contains the optimization program (2) in the documentation above. This
    * root node has no parent. We also need to recreate new decision variables in
@@ -58,12 +59,13 @@ class MixedIntegerBranchAndBoundNode {
    * variables will be converted to continuous variables in (2). We thus return
    * the map from the old variable to the new variable.
    * @pre prog should contain binary variables.
+   * @pre solver_id can be either Gurobi or Scs.
    * @throw std::runtime_error if the preconditions are not met.
    */
   static std::pair<
       std::unique_ptr<MixedIntegerBranchAndBoundNode>,
       std::unordered_map<symbolic::Variable::Id, symbolic::Variable>>
-  ConstructRootNode(const MathematicalProgram& prog);
+  ConstructRootNode(const MathematicalProgram& prog, const SolverId& solver_id);
 
   /**
    * Branches on a binary variable, and creates two child nodes. In the left
@@ -153,7 +155,8 @@ class MixedIntegerBranchAndBoundNode {
    */
   MixedIntegerBranchAndBoundNode(
       const MathematicalProgram& prog,
-      const std::list<symbolic::Variable>& binary_variables);
+      const std::list<symbolic::Variable>& binary_variables,
+      const SolverId& solver_id);
 
   /**
    * Fix a binary variable to a binary value. Add a constraint y = 0 or y = 1 to
@@ -205,6 +208,8 @@ class MixedIntegerBranchAndBoundNode {
   // Whether the optimal solution in this node satisfies all integral
   // constraints.
   OptimalSolutionIsIntegral optimal_solution_is_integral_;
+
+  SolverId solver_id_;
 };
 
 /**
@@ -252,8 +257,10 @@ class MixedIntegerBranchAndBound {
    * Construct a branch-and-bound tree from a mixed-integer optimization
    * program.
    * @param prog A mixed-integer optimization program.
+   * @param solver_id The ID of the solver for the optimization.
    */
-  explicit MixedIntegerBranchAndBound(const MathematicalProgram& prog);
+  explicit MixedIntegerBranchAndBound(const MathematicalProgram& prog,
+                                      const SolverId& solver_id);
 
   /**
    * Solve the mixed-integer problem (MIP) through a branch and bound process.

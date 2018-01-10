@@ -15,8 +15,9 @@ class MixedIntegerBranchAndBoundTester {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundTester)
 
-  explicit MixedIntegerBranchAndBoundTester(const MathematicalProgram& prog)
-      : bnb_{new MixedIntegerBranchAndBound(prog)} {}
+  explicit MixedIntegerBranchAndBoundTester(const MathematicalProgram& prog,
+                                            const SolverId& solver_id)
+      : bnb_{new MixedIntegerBranchAndBound(prog, solver_id)} {}
 
   MixedIntegerBranchAndBound* bnb() const { return bnb_.get(); }
 
@@ -44,24 +45,6 @@ class MixedIntegerBranchAndBoundTester {
 };
 
 namespace {
-// Set the solver to either Gurobi of Mosek.
-void SolveWithGurobiOrMosek(MathematicalProgram* prog) {
-  GurobiSolver gurobi_solver;
-  if (gurobi_solver.available()) {
-    prog->SetSolverId(GurobiSolver::id());
-    return;
-  }
-  // TODO(hongkai.dai): Enable mosek solver. Currently MosekSolver class does
-  // not correctly detects infeasibility and unboundedness.
-  /*
-  MosekSolver mosek_solver;
-  if (mosek_solver.available()) {
-    prog->SetSolverId(MosekSolver::id());
-    return;
-  }*/
-  throw std::runtime_error("None of the required solvers is available.");
-}
-
 // Construct a mixed-integer linear program
 // min x(0) + 2x(1) - 3x(3) + 1
 // s.t x(0) + x(1) + 2x(3) = 2
@@ -83,7 +66,6 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram1() {
   prog->AddLinearEqualityConstraint(x(0) + x(1) + 2 * x(3) == 2);
   prog->AddLinearConstraint(x(1) - 3.1 * x(2) >= 1);
   prog->AddLinearConstraint(x(2) + 1.2 * x(3) - x(0) <= 5);
-  SolveWithGurobiOrMosek(prog.get());
   return prog;
 }
 
@@ -111,7 +93,6 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram2() {
   prog->AddLinearConstraint(3 * x(1) + 2 * x(2) - 5 * x(3) + x(4), -2, 7);
   prog->AddLinearConstraint(x(1) + x(2) + 2 * x(3), -5, 10);
   prog->AddBoundingBoxConstraint(-10, 10, x(1));
-  SolveWithGurobiOrMosek(prog.get());
   return prog;
 }
 
@@ -131,7 +112,6 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram3() {
   prog->AddCost(x(0) + 2 * x(1) + 3 * x(2) + 2.5 * x(3) + 2);
   prog->AddLinearConstraint(x(0) + x(1) - x(2) + x(3) <= 3);
   prog->AddLinearConstraint(x(0) + 2 * x(1) - 2 * x(2) + 4 * x(3), 1, 3);
-  SolveWithGurobiOrMosek(prog.get());
   return prog;
 }
 
@@ -163,13 +143,13 @@ void TestProgSolve(const MixedIntegerBranchAndBoundNode& node,
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
   auto prog = ConstructMathematicalProgram1();
-  std::cout << prog->GetSolverId().value().name() << std::endl;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
   std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
       map_old_vars_to_new_vars;
   std::tie(root, map_old_vars_to_new_vars) =
-      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
-  std::cout << root->prog()->GetSolverId().value().name()<< std::endl;
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog,
+                                                        GurobiSolver::id());
+  std::cout << root->prog()->GetSolverId().value().name() << std::endl;
 
   VectorDecisionVariable<4> x;
   for (int i = 0; i < 4; ++i) {
@@ -191,7 +171,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
   std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
       map_old_vars_to_new_vars;
   std::tie(root, map_old_vars_to_new_vars) =
-      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog,
+                                                        GurobiSolver::id());
   VectorDecisionVariable<5> x;
   for (int i = 0; i < 5; ++i) {
     x(i) = map_old_vars_to_new_vars.at(prog->decision_variable(i).get_id());
@@ -213,7 +194,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
   std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
       map_old_vars_to_new_vars;
   std::tie(root, map_old_vars_to_new_vars) =
-      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog,
+                                                        GurobiSolver::id());
   VectorDecisionVariable<4> x;
   for (int i = 0; i < 4; ++i) {
     x(i) = map_old_vars_to_new_vars.at(prog->decision_variable(i).get_id());
@@ -231,7 +213,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRootError) {
   auto x = prog.NewContinuousVariables<3>();
   prog.AddCost(x.cast<symbolic::Expression>().sum());
 
-  EXPECT_THROW(MixedIntegerBranchAndBoundNode::ConstructRootNode(prog),
+  EXPECT_THROW(MixedIntegerBranchAndBoundNode::ConstructRootNode(
+                   prog, GurobiSolver::id()),
                std::runtime_error);
 }
 
@@ -240,7 +223,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
   std::tie(root, std::ignore) =
-      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog,
+                                                        GurobiSolver::id());
   VectorDecisionVariable<4> x = root->prog()->decision_variables();
 
   // Branch on variable x(0).
@@ -274,7 +258,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
   std::tie(root, std::ignore) =
-      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog,
+                                                        GurobiSolver::id());
   VectorDecisionVariable<5> x = root->prog()->decision_variables();
 
   // Branch on x(0)
@@ -316,7 +301,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
   std::tie(root, std::ignore) =
-      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog);
+      MixedIntegerBranchAndBoundNode::ConstructRootNode(*prog,
+                                                        GurobiSolver::id());
   VectorDecisionVariable<4> x = root->prog()->decision_variables();
 
   // Branch on x(0) and x(2), the child nodes are all unbounded.
@@ -337,7 +323,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
   auto prog = ConstructMathematicalProgram1();
 
-  MixedIntegerBranchAndBound bnb(*prog);
+  MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   const VectorDecisionVariable<4> prog_x = prog->decision_variables();
 
   const VectorDecisionVariable<4> bnb_x =
@@ -362,7 +348,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
   auto prog = ConstructMathematicalProgram1();
-  MixedIntegerBranchAndBound bnb(*prog);
+  MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   // The root node of the tree has integral optimal cost (0, 1, 0, 0.5), with
   // cost 1.5.
   const double tol = 1E-3;
@@ -379,7 +365,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
   auto prog = ConstructMathematicalProgram2();
-  MixedIntegerBranchAndBound bnb(*prog);
+  MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   // The root node does not have an optimal integral solution.
   const double tol{1E-3};
   EXPECT_NEAR(bnb.best_lower_bound(), -4.9, tol);
@@ -390,7 +376,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
   auto prog = ConstructMathematicalProgram3();
-  MixedIntegerBranchAndBound bnb(*prog);
+  MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   // The root node is unbounded.
   EXPECT_EQ(bnb.best_lower_bound(), -std::numeric_limits<double>::infinity());
   EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
@@ -400,7 +386,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
   auto prog1 = ConstructMathematicalProgram1();
-  MixedIntegerBranchAndBoundTester dut(*prog1);
+  MixedIntegerBranchAndBoundTester dut(*prog1, GurobiSolver::id());
   // The optimal solution to the root is integral. The node is fathomed.
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
   VectorDecisionVariable<4> x = dut.bnb()->root()->prog()->decision_variables();
@@ -426,7 +412,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
   auto prog2 = ConstructMathematicalProgram2();
-  MixedIntegerBranchAndBoundTester dut(*prog2);
+  MixedIntegerBranchAndBoundTester dut(*prog2, GurobiSolver::id());
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The optimal solution to the root is not integral, the node is not fathomed.
@@ -463,7 +449,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed3) {
   auto prog = ConstructMathematicalProgram3();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   const VectorDecisionVariable<4> x =
       dut.bnb()->root()->prog()->decision_variables();
 
@@ -498,7 +484,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode1) {
   // Test choosing the node with the minimal lower bound.
   auto prog = ConstructMathematicalProgram2();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The root node has optimal cost -4.9.
@@ -523,7 +509,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
   // Test choosing the deepest non-fathomed leaf node.
   auto prog = ConstructMathematicalProgram2();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   dut.bnb()->SetPickBranchingNodeMethod(
@@ -546,7 +532,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable1) {
   auto prog = ConstructMathematicalProgram2();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The optimal solution at the root is (0.7, 1, 1, 1.4, 0)
@@ -573,7 +559,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable1) {
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable2) {
   auto prog = ConstructMathematicalProgram3();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   VectorDecisionVariable<4> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The problem is unbounded, any branching variable is acceptable.
@@ -590,7 +576,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable2) {
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   auto prog = ConstructMathematicalProgram2();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   EXPECT_TRUE(dut.bnb()->best_solutions().empty());
   const double tol = 1E-3;
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
@@ -629,7 +615,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
   auto prog = ConstructMathematicalProgram3();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   const VectorDecisionVariable<4> x =
       dut.bnb()->root()->prog()->decision_variables();
 
@@ -672,7 +658,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve1) {
   auto prog = ConstructMathematicalProgram1();
   const VectorDecisionVariable<4> x = prog->decision_variables();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
 
   const SolutionResult solution_result = dut.bnb()->Solve();
   EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
@@ -689,7 +675,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
   auto prog = ConstructMathematicalProgram2();
   const VectorDecisionVariable<5> x = prog->decision_variables();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   for (auto pick_variable :
        {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
         MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent}) {
@@ -709,7 +695,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
                                   tol, MatrixCompareType::absolute));
       // The costs are in the ascending order.
       for (int i = 1; i < dut.bnb()->best_solutions().size(); ++i) {
-        EXPECT_GE(dut.bnb()->GetOptimalCost(i), dut.bnb()->GetOptimalCost(i - 1));
+        EXPECT_GE(dut.bnb()->GetOptimalCost(i),
+                  dut.bnb()->GetOptimalCost(i - 1));
       }
     }
   }
@@ -719,7 +706,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve3) {
   auto prog = ConstructMathematicalProgram3();
   const VectorDecisionVariable<4> x = prog->decision_variables();
 
-  MixedIntegerBranchAndBoundTester dut(*prog);
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   for (auto pick_variable :
        {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
         MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent}) {
@@ -771,7 +758,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSteelBlendingProblem) {
                            1.25);
   prog.AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(), x);
 
-  MixedIntegerBranchAndBound bnb(prog);
+  MixedIntegerBranchAndBound bnb(prog, GurobiSolver::id());
 
   for (auto pick_variable :
        {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
