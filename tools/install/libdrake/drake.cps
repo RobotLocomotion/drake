@@ -89,10 +89,7 @@
       "Location": "@prefix@/lib/libdrake.so",
       "Includes": ["@prefix@/include"],
       "Compile-Features": ["c++14"],
-      "Link-Flags": [
-        "-ltinyxml2",
-        "-lyaml-cpp"
-      ],
+      "Link-Flags": ["-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
