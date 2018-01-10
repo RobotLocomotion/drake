@@ -137,9 +137,9 @@ gflags_repository(
 github_archive(
     name = "styleguide",
     repository = "RobotLocomotion/styleguide",
-    commit = "5777e74b82e46f29ffbf41ffed0209d9d5f2ccb5",
-    sha256 = "434789debb7a81872302af5958a0b25bf5e3cafb7e666ed7a4218938bd8cc874",  # noqa
-    build_file = "tools/workspace/styleguide/styleguide.BUILD.bazel",  # noqa
+    commit = "f9fb031554d398431bc0efcb511102d41bbed089",
+    sha256 = "1e40f4595406e208de8bde66bc3425e6c0dce4ea96254cc2c7e4105316df9a31",  # noqa
+    build_file = "tools/workspace/styleguide/styleguide.BUILD.bazel",
 )
 
 github_archive(
