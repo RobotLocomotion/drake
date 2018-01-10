@@ -889,7 +889,7 @@ class MultibodyTree {
 
   void CalcForwardDynamicsViaExplicitMassMatrixSolve(
       const systems::Context<T>& context,
-      const MultibodyTreeForcing<T>& applied_forcing,
+      const MultibodyForcing<T>& applied_forcing,
       EigenPtr<VectorX<T>> vdot) const;
 
   /// Computes the combined force contribution of ForceElement objects in the
@@ -925,7 +925,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      MultibodyTreeForcing<T>* forcing) const;
+      MultibodyForcing<T>* forcing) const;
 
   /// Computes and returns the total potential energy stored in `this` multibody
   /// model for the configuration given by `context`.

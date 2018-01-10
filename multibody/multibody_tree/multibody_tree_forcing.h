@@ -26,14 +26,14 @@ template<typename T> class MultibodyTree;
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class MultibodyTreeForcing {
+class MultibodyForcing {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeForcing)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForcing)
 
   /// Constructs a **zero** MultibodyTree forcing object.
-  MultibodyTreeForcing(const MultibodyTree<T>& model);
+  MultibodyForcing(const MultibodyTree<T>& model);
 
-  MultibodyTreeForcing<T>& SetZero();
+  MultibodyForcing<T>& SetZero();
 
   const VectorX<T>& generalized_forces() const {
     return tau_;
@@ -60,7 +60,7 @@ class MultibodyTreeForcing {
   }
 
   /// Adds into `this` the forcing stored in `addend`.
-  void AddInForcing(const MultibodyTreeForcing<T>& addend);
+  void AddInForcing(const MultibodyForcing<T>& addend);
 
   /// Utility that checks that `this` forcing is compatible with the given
   /// MultibodyTree model.

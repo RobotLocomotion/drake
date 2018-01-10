@@ -134,7 +134,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyTreeForcing<T>* forcing) const {
+      MultibodyForcing<T>* forcing) const {
     DRAKE_DEMAND(forcing != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
     DRAKE_DEMAND(forcing->CheckInvariants(this->get_parent_tree()));
@@ -232,7 +232,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyTreeForcing<T>* forcing) const = 0;
+      MultibodyForcing<T>* forcing) const = 0;
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.

@@ -422,7 +422,7 @@ void MultibodyTree<T>::CalcForceElementsContribution(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    MultibodyTreeForcing<T>* forcing) const {
+    MultibodyForcing<T>* forcing) const {
   DRAKE_DEMAND(forcing != nullptr);
   DRAKE_DEMAND(forcing->CheckInvariants(*this));
 
@@ -552,7 +552,7 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 template <typename T>
 void MultibodyTree<T>::CalcForwardDynamicsViaExplicitMassMatrixSolve(
     const systems::Context<T>& context,
-    const MultibodyTreeForcing<T>& applied_forcing,
+    const MultibodyForcing<T>& applied_forcing,
     EigenPtr<VectorX<T>> vdot) const {
   // The number of mobilities in the system.
   const int nv = get_num_velocities();
@@ -564,7 +564,7 @@ void MultibodyTree<T>::CalcForwardDynamicsViaExplicitMassMatrixSolve(
   // Mass matrix:
   MatrixX<T> M(nv, nv);
   // Forces:
-  MultibodyTreeForcing<T> forcing(*this);
+  MultibodyForcing<T> forcing(*this);
   // Bodies's accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
 

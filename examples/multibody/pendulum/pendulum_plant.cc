@@ -35,7 +35,7 @@ using geometry::SourceId;
 using geometry::Sphere;
 using drake::multibody::BodyIndex;
 using drake::multibody::MultibodyTree;
-using drake::multibody::MultibodyTreeForcing;
+using drake::multibody::MultibodyForcing;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
@@ -253,7 +253,7 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   // Mass matrix:
   MatrixX<T> M(nv, nv);
   // Forces:
-  MultibodyTreeForcing<T> forcing(*model_);
+  MultibodyForcing<T> forcing(*model_);
   // Bodies's accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
   // Generalized accelerations:

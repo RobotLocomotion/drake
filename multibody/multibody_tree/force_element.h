@@ -69,7 +69,7 @@ class ForceElement : public
   void CalcAndAddForceContribution(const MultibodyTreeContext<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    const VelocityKinematicsCache<T>& vc,
-                                   MultibodyTreeForcing<T>* forcing) {
+                                   MultibodyForcing<T>* forcing) {
     DRAKE_DEMAND(forcing != nullptr);
     DRAKE_DEMAND(forcing->CheckInvariants(this->get_parent_tree()));
     DoCalcAndAddForceContribution(context, pc, vc, forcing);
@@ -170,7 +170,7 @@ class ForceElement : public
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      MultibodyTreeForcing<T>* forcing) const = 0;
+      MultibodyForcing<T>* forcing) const = 0;
 
   /// @name Methods to make a clone templated on different scalar types.
   ///

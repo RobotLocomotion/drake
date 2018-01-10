@@ -301,7 +301,7 @@ class PendulumTests : public ::testing::Test {
     model_.elbow().set_angular_rate(context_.get(), theta2dot);
 
     // Apply external torques at the joints:
-    MultibodyTreeForcing<double> forcing(model_.get_tree());
+    MultibodyForcing<double> forcing(model_.get_tree());
     model_.shoulder().AddInTorque(*context_, tau1, &forcing);
     model_.shoulder().AddInTorque(*context_, tau2, &forcing);
 

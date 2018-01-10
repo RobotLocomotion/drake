@@ -135,7 +135,7 @@ class RevoluteJoint final : public Joint<T> {
   void AddInTorque(
       const systems::Context<T>& context,
       const T& torque,
-      MultibodyTreeForcing<T>* forcing) const {
+      MultibodyForcing<T>* forcing) const {
     this->AddInForcing(context, 0, torque, forcing);
   }
 
@@ -146,7 +146,7 @@ class RevoluteJoint final : public Joint<T> {
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyTreeForcing<T>* forcing) const override {
+      MultibodyForcing<T>* forcing) const override {
     // Right now we assume all the forcing in joint_tau goes into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
