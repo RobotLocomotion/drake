@@ -51,7 +51,7 @@ drake_generate_include_header(
 )
 
 # The globbed srcs= and hdrs= matches upstream's explicit globs of the same.
-# fcl/export.h it is a generated file so it is not automatically included by
+# fcl/export.h is a generated file so it is not automatically included by
 # the hdrs glob expression
 cc_library(
     name = "fcl",
