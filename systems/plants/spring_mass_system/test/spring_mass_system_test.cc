@@ -54,6 +54,17 @@ class SpringMassSystemTest : public ::testing::Test {
     state_->set_conservative_work(0);
   }
 
+  // Get a reference to the cached derivatives, downcast to our custom
+  // state vector type.
+  const SpringMassStateVector<double>&
+  EvalSpringMassDerivs(const Context<double>& context) {
+    const auto& generic_derivs =
+        system_->EvalTimeDerivatives(context).get_vector();
+    const auto& derivatives =
+        dynamic_cast<const SpringMassStateVector<double>&>(generic_derivs);
+    return derivatives;
+  }
+
  protected:
   std::unique_ptr<SpringMassSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
@@ -158,24 +169,24 @@ TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
 
 TEST_F(SpringMassSystemTest, ForcesPositiveDisplacement) {
   InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
-  system_->CalcTimeDerivatives(*context_, system_derivatives_.get());
+  auto& derivatives = EvalSpringMassDerivs(*context_);
 
-  ASSERT_EQ(3, derivatives_->size());
+  ASSERT_EQ(3, derivatives.size());
   // The derivative of position is velocity.
-  EXPECT_NEAR(0.1, derivatives_->get_position(), 1e-8);
+  EXPECT_NEAR(0.1, derivatives.get_position(), 1e-8);
   // The derivative of velocity is force over mass.
-  EXPECT_NEAR(-kSpring * 0.1 / kMass, derivatives_->get_velocity(), 1e-8);
+  EXPECT_NEAR(-kSpring * 0.1 / kMass, derivatives.get_velocity(), 1e-8);
 }
 
 TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
   InitializeState(-0.1, 0.2);  // Displacement -0.1m, velocity 0.2m/sec.
-  system_->CalcTimeDerivatives(*context_, system_derivatives_.get());
+  auto& derivatives = EvalSpringMassDerivs(*context_);
 
-  ASSERT_EQ(3, derivatives_->size());
+  ASSERT_EQ(3, derivatives.size());
   // The derivative of position is velocity.
-  EXPECT_NEAR(0.2, derivatives_->get_position(), 1e-8);
+  EXPECT_NEAR(0.2, derivatives.get_position(), 1e-8);
   // The derivative of velocity is force over mass.
-  EXPECT_NEAR(-kSpring * -0.1 / kMass, derivatives_->get_velocity(), 1e-8);
+  EXPECT_NEAR(-kSpring * -0.1 / kMass, derivatives.get_velocity(), 1e-8);
 }
 
 TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
@@ -200,15 +211,15 @@ TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   context_->FixInputPort(0, std::move(force_vector));
 
   InitializeState(0.1, 0.1);  // Displacement 0.1m, velocity 0.1m/sec.
-  system_->CalcTimeDerivatives(*context_, system_derivatives_.get());
+  auto& derivatives = EvalSpringMassDerivs(*context_);
 
-  ASSERT_EQ(3, derivatives_->size());
+  ASSERT_EQ(3, derivatives.size());
   // The derivative of position is velocity.
-  EXPECT_NEAR(0.1, derivatives_->get_position(),
+  EXPECT_NEAR(0.1, derivatives.get_position(),
               Eigen::NumTraits<double>::epsilon());
   // The derivative of velocity is force over mass.
   EXPECT_NEAR((-kSpring * 0.1 + kExternalForce) / kMass,
-              derivatives_->get_velocity(),
+              derivatives.get_velocity(),
               Eigen::NumTraits<double>::epsilon());
 }
 
@@ -220,11 +231,11 @@ TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {
   const double q = system_->get_position(*context_);
   const double v = system_->get_velocity(*context_);
   const double w_c = system_->get_conservative_work(*context_);
-  const double f = system_->EvalSpringForce(*context_);
-  const double pe = system_->CalcPotentialEnergy(*context_);
-  const double ke = system_->CalcKineticEnergy(*context_);
-  const double power_c = system_->CalcConservativePower(*context_);
-  const double power_nc = system_->CalcNonConservativePower(*context_);
+  const double f = system_->CalcSpringForce(*context_);
+  const double pe = system_->EvalPotentialEnergy(*context_);
+  const double ke = system_->EvalKineticEnergy(*context_);
+  const double power_c = system_->EvalConservativePower(*context_);
+  const double power_nc = system_->EvalNonConservativePower(*context_);
 
   EXPECT_EQ(q, 1.0);
   EXPECT_EQ(v, 2.0);
@@ -250,41 +261,45 @@ switching to central differences here to get more decimal places. */
 MatrixX<double> CalcDxdotDx(const System<double>& system,
                             const Context<double>& context) {
   const double perturb = 1e-7;  // roughly sqrt(precision)
-  auto derivs0 = system.AllocateTimeDerivatives();
-  system.CalcTimeDerivatives(context, derivs0.get());
-  const int nx = derivs0->size();
-  const VectorX<double> xdot0 = derivs0->CopyToVector();
+  const VectorX<double> xdot0 =
+      system.EvalTimeDerivatives(context).CopyToVector();
+  const int nx = static_cast<int>(xdot0.size());
   MatrixX<double> d_xdot_dx(nx, nx);
 
-  auto temp_context = context.Clone();
-  auto& x = temp_context->get_mutable_continuous_state_vector();
+  // We need a mutable Context.
+  auto x = context.Clone();
 
-  // This is a temp that holds one column of the result as a ContinuousState.
-  auto derivs = system.AllocateTimeDerivatives();
+  for (int i = 0; i < nx; ++i) {
+    const double xi = x->get_continuous_state_vector().GetAtIndex(i);
+    // Invalidates all xc-dependent quantities.
+    x->get_mutable_continuous_state_vector().SetAtIndex(i, xi + perturb);
 
-  for (int i = 0; i < x.size(); ++i) {
-    const double xi = x.GetAtIndex(i);
-    x.SetAtIndex(i, xi + perturb);
-    system.CalcTimeDerivatives(*temp_context, derivs.get());
-    d_xdot_dx.col(i) = (derivs->CopyToVector() - xdot0) / perturb;
-    x.SetAtIndex(i, xi);  // repair Context
+    const auto& derivs = system.EvalTimeDerivatives(*x);
+    const VectorX<double> xdot =
+        system.EvalTimeDerivatives(*x).CopyToVector();
+    d_xdot_dx.col(i) = (derivs.CopyToVector() - xdot0) / perturb;
+
+    // Undo above change (invalidates again).
+    x->get_mutable_continuous_state_vector().SetAtIndex(i, xi);  // repair xc
   }
 
   return d_xdot_dx;
 }
 
 /* Explicit Euler (unstable): x1 = x0 + h xdot(t0,x0) */
-void StepExplicitEuler(
-    double h, const ContinuousState<double>& derivs,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    Context<double>& context) {
-  const double t = context.get_time();
-  // Invalidate all xc-dependent quantities.
+void StepExplicitEuler(double h, const System<double>& system,
+                       Context<double>* context) {
+  const double t = context->get_time();
+
+  // Grabs a reference to the derivatives; still good after invalidation.
+  const auto& dx0 = system.EvalTimeDerivatives(*context).get_vector();
+
+  // Invalidates all xc-dependent quantities.
   VectorBase<double>& xc =
-      context.get_mutable_continuous_state_vector();
-  const auto& dxc = derivs.get_vector();
-  xc.PlusEqScaled(h, dxc);  // xc += h*dxc
-  context.set_time(t + h);
+      context->get_mutable_continuous_state_vector();
+
+  xc.PlusEqScaled(h, dx0);  // xc += h * dx0
+  context->set_time(t + h);
 }
 
 /* Semi-explicit Euler (neutrally stable):
@@ -293,30 +308,34 @@ void StepExplicitEuler(
     q1 = q0 + h qdot(q0,v1) */
 void StepSemiExplicitEuler(
     double h, const System<double>& system,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    ContinuousState<double>& derivs,  // in/out
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    Context<double>& context) {
-  const double t = context.get_time();
-  ContinuousState<double>& xc = context.get_mutable_continuous_state();
+    Context<double>* context) {
+  const double t0 = context->get_time();
 
-  // Invalidate z-dependent quantities.
+  // Grabs a reference to the derivatives; still good after invalidation.
+  const auto& dx0 = system.EvalTimeDerivatives(*context);
+
+  // Invalidates all xc-dependent quantities.
+  ContinuousState<double>& xc = context->get_mutable_continuous_state();
+
+  // Update z.
   VectorBase<double>& xz = xc.get_mutable_misc_continuous_state();
-  const auto& dxz = derivs.get_misc_continuous_state();
-  xz.PlusEqScaled(h, dxz);  // xz += h*dxz
+  const auto& dxz = dx0.get_misc_continuous_state();
+  xz.PlusEqScaled(h, dxz);  // xz += h * dxz
 
-  // Invalidate v-dependent quantities.
+  // Update v.
   VectorBase<double>& xv = xc.get_mutable_generalized_velocity();
-  const auto& dxv = derivs.get_generalized_velocity();
-  xv.PlusEqScaled(h, dxv);  // xv += h*dxv
+  const auto& dxv = dx0.get_generalized_velocity();
+  xv.PlusEqScaled(h, dxv);  // xv += h * dxv
 
-  context.set_time(t + h);
+  // Invalidates all time-dependent quantities.
+  context->set_time(t0 + h);
 
-  // Invalidate q-dependent quantities.
+  // Update q.
   VectorBase<double>& xq = xc.get_mutable_generalized_position();
-  auto& dxq = derivs.get_mutable_generalized_position();
-  system.MapVelocityToQDot(context, xv, &dxq);  // qdot = N(q)*v
-  xq.PlusEqScaled(h, dxq);                       // xq += h*qdot
+  // Yuck -- heap allocation for dxq. Don't do this in a real integrator.
+  BasicVector<double> dxq(dx0.num_q());
+  system.MapVelocityToQDot(*context, xv, &dxq);  // qdot = N(q) * v
+  xq.PlusEqScaled(h, dxq);                       // xq += h * qdot
 }
 
 /* Implicit Euler (unconditionally stable): x1 = x0 + h xdot(t1,x1)
@@ -328,36 +347,30 @@ void StepSemiExplicitEuler(
     while (norm(dx)/norm(x0) > tol) */
 void StepImplicitEuler(
     double h, const System<double>& system,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    ContinuousState<double>& derivs,  // in/out
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    Context<double>& context) {
-  const double t = context.get_time();
-  ContinuousState<double>& xc = context.get_mutable_continuous_state();
+    Context<double>* context) {
 
-  // Invalidate all xc-dependent quantities.
-  VectorBase<double>& x1 = xc.get_mutable_vector();
-
-  const auto vx0 = x1.CopyToVector();
-  const auto& dx0 = derivs.get_vector();
-  x1.PlusEqScaled(h, dx0);  // x1 += h*dx0 (initial guess)
-  context.set_time(t + h);   // t=t1
+  // Save initial time and state.
+  const double t0 = context->get_time();
+  const VectorX<double> vx0 = context->get_continuous_state().CopyToVector();
   const int nx = static_cast<int>(vx0.size());
   const auto I = MatrixX<double>::Identity(nx, nx);
+
+  const VectorX<double> vdx0 =
+      system.EvalTimeDerivatives(*context).CopyToVector();
+  context->SetTimeAndContinuousState(t0 + h,           // t = t1
+                                     vx0 + h * vdx0);  // Initial guess for x1.
 
   // Would normally iterate until convergence of dx norm as shown above.
   // Here I'm just iterating a fixed number of time that I know is plenty!
   for (int i = 0; i < 6; ++i) {
-    system.CalcTimeDerivatives(context, &derivs);
-    const auto& dx1 = derivs.get_vector();
-    const auto vx1 = x1.CopyToVector();
-    const auto vdx1 = dx1.CopyToVector();
+    const auto vdx1 = system.EvalTimeDerivatives(*context).CopyToVector();
+    const auto vx1 = context->get_continuous_state().CopyToVector();
     const auto err = vx1 - (vx0 + h * vdx1);
-    const auto DxdotDx = CalcDxdotDx(system, context);
+    const auto DxdotDx = CalcDxdotDx(system, *context);
     const auto J = I - h * DxdotDx;
     Eigen::PartialPivLU<MatrixX<double>> Jlu(J);
     VectorX<double> dx = Jlu.solve(err);
-    x1.SetFromVector(vx1 - dx);
+    context->SetContinuousState(vx1 - dx);
   }
 }
 
@@ -365,8 +378,8 @@ void StepImplicitEuler(
 TODO(sherm1): assuming there is only KE and PE to worry about. */
 double CalcEnergy(const SpringMassSystem<double>& system,
                   const Context<double>& context) {
-  return system.CalcPotentialEnergy(context) +
-         system.CalcKineticEnergy(context);
+  return system.EvalPotentialEnergy(context) +
+         system.EvalKineticEnergy(context);
 }
 
 /* This test simulates the spring-mass system simultaneously using three first-
@@ -419,7 +432,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
     both regression test form and as friendlier examples. */
 
     for (int i = 0; i < kNumIntegrators; ++i) {
-      system_->CalcTimeDerivatives(*contexts[i], derivs[i].get());
+      derivs[i] = system_->EvalTimeDerivatives(*contexts[i]).Clone();
       system_->CalcOutput(*contexts[i], outputs[i].get());
     }
 
@@ -429,9 +442,9 @@ TEST_F(SpringMassSystemTest, Integrate) {
     if (t >= kTfinal) break;
 
     // Integrate three ways.
-    StepExplicitEuler(h, *derivs[kXe], *contexts[kXe]);
-    StepImplicitEuler(h, *system_, *derivs[kIe], *contexts[kIe]);
-    StepSemiExplicitEuler(h, *system_, *derivs[kSxe], *contexts[kSxe]);
+    StepExplicitEuler(h, *system_, &*contexts[kXe]);
+    StepImplicitEuler(h, *system_, &*contexts[kIe]);
+    StepSemiExplicitEuler(h, *system_, &*contexts[kSxe]);
   }
 
   // Now verify that each integrator behaved as expected.
@@ -457,8 +470,6 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
 
   // Resources.
   unique_ptr<Context<double>> context = system_->CreateDefaultContext();
-  unique_ptr<ContinuousState<double>> derivs =
-      system_->AllocateTimeDerivatives();
 
   // Set initial conditions..
   context->set_time(0);
@@ -467,20 +478,16 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
   system_->set_conservative_work(context.get(), 0.);  // W(0)=0
 
   // Save the initial energy.
-  const double pe0 = system_->CalcPotentialEnergy(*context);
-  const double ke0 = system_->CalcKineticEnergy(*context);
+  const double pe0 = system_->EvalPotentialEnergy(*context);
+  const double ke0 = system_->EvalKineticEnergy(*context);
   const double e0 = pe0 + ke0;
 
   while (true) {
     const auto t = context->get_time();
-
-    // Evaluate derivatives at the beginning of a step. We don't need outputs.
-    system_->CalcTimeDerivatives(*context, derivs.get());
-
     if (t >= kTfinal) break;
 
-    const double pe = system_->CalcPotentialEnergy(*context);
-    const double ke = system_->CalcKineticEnergy(*context);
+    const double pe = system_->EvalPotentialEnergy(*context);
+    const double ke = system_->EvalKineticEnergy(*context);
     const double e = pe + ke;
     EXPECT_NEAR(e, e0, 1e-3);
 
@@ -493,7 +500,7 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
     EXPECT_NEAR(pe, pe0 - w, 1e-2);
 
     // Take a step of size h.
-    StepSemiExplicitEuler(h, *system_, *derivs, *context);
+    StepSemiExplicitEuler(h, *system_, &*context);
   }
 }
 
