@@ -1,0 +1,37 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(":workspace_test.bzl", "workspace_test", "glob_lint_sources")
+load("//tools/skylark:meta.bzl", "all_files")
+
+drake_workspace_files = [
+    ":all_files",
+    "//tools/external_data/bazel_external_data:all_files",
+    "//tools:all_files",
+    "//tools/lint:all_files",
+    "//tools/skylark:all_files",
+    "//:skylark_files",
+]
+
+workspace_test(
+    name = "bazel_pkg_test",
+    data = drake_workspace_files,
+    workspace = "test/workspaces/bazel_pkg_test",
+)
+
+# For use with `workspace_test`.
+exports_files(
+    srcs = [
+        "workspace_writeable_test.sh",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Bazel does not let us glob into `test/workspaces`, even though it's not a
+# package of this workspace. Thus, we cannot add lint tests for them externally.
+# (We could add each package as repository, and declare filegroups from within,
+# but then that couples Drake's `bazel test @drake//...` to these local
+# repositories).
+# TODO(eric.cousineau): Add linting repository things.
+
+add_lint_tests()
+
+all_files()

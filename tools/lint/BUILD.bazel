@@ -9,6 +9,7 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
+load("//tools/skylark:meta.bzl", "all_files")
 
 # TODO(jwnimmer-tri) This probably deserves to live in drake/common, since it
 # should probably be widely used, but we'll wait until we have more evidence
@@ -117,3 +118,5 @@ sh_test(
 )
 
 add_lint_tests()
+
+all_files()
