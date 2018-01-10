@@ -957,9 +957,9 @@ void CheckAllIntegralSolution(
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   // Test a program with multiple integral solutions.
-  // Given points P1 = (0, 3), P2 = (1, 1), P3 = (2, 2), P4 = (4, 5), 
-  // P5 = (5, 1), and the line segments connecting P1P2, P2P3, P3P4, P4P5, 
-  // find the point with the smallest x coordinate, with y coordinate equal 
+  // Given points P1 = (0, 3), P2 = (1, 1), P3 = (2, 2), P4 = (4, 5),
+  // P5 = (5, 1), and the line segments connecting P1P2, P2P3, P3P4, P4P5,
+  // find the point with the smallest x coordinate, with y coordinate equal
   // to 4.
   // min x(1) + 2 * x(2) + 3 * x(3) + 4 * x(4)
   // s.t x(0) <= y(0)
