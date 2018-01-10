@@ -8,6 +8,7 @@
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/multibody_tree/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -48,6 +49,21 @@ class RotationMatrix {
 #else
     SetUnchecked(R);
 #endif
+  }
+
+  /// Constructs a %RotationMatrix templatized on a scalar type T from a
+  /// %RotationMatrix templatized on U.  For example,
+  /// ```
+  /// const RotationMatrix<double> source = RotationMatrix::Identity();
+  /// const RotationMatrix<AutoDiffXd> Fred(source);
+  /// ```
+  /// @param[in] source a %RotationMatrix templatized on scalar type U.
+  template <typename U>
+  RotationMatrix(const RotationMatrix<U>& source) {
+     const Matrix3<U>& m = source.matrix();
+     for (int i = 0;  i < 3;  i++)
+       for (int j = 0;  j < 3;  j ++)
+         R_AB_(i, j) = ExtractDoubleOrThrow(m(i, j));
   }
 
   /// Sets `this` %RotationMatrix from a Matrix3.

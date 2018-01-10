@@ -212,6 +212,61 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
                std::logic_error);
 }
 
+// Test transmogrification of a RotationMatrix from AutoDiffXd to double.
+GTEST_TEST(RotationMatrix, TransmogrifyA) {
+  const RotationMatrix<AutoDiffXd> I_autodiff =
+      RotationMatrix<AutoDiffXd>::Identity();
+  const RotationMatrix<double> I_double(I_autodiff);
+
+  const Matrix3<AutoDiffXd>& m_autodiff = I_autodiff.matrix();
+  const Matrix3<double>& m_double = I_double.matrix();
+  for (int i = 0;  i < 3; i++) {
+    for (int j = 0;  j < 3;  j++) {
+      const double mij_double = m_double(i, j);
+      const AutoDiffXd mij_autodiff = m_autodiff(i, j);
+      EXPECT_EQ(mij_double, mij_autodiff.value());
+    }
+  }
+}
+
+// Test transmogrification of a RotationMatrix from double to AutoDiffXd.
+GTEST_TEST(RotationMatrix, TransmogrifyB) {
+  const RotationMatrix<double> I_double = RotationMatrix<double>::Identity();
+  const RotationMatrix<AutoDiffXd> I_autodiff(I_double);
+
+  const Matrix3<double>& m_double = I_double.matrix();
+  const Matrix3<AutoDiffXd>& m_autodiff = I_autodiff.matrix();
+  for (int i = 0;  i < 3; i++) {
+    for (int j = 0;  j < 3;  j++) {
+      const double mij_double = m_double(i, j);
+      const AutoDiffXd mij_autodiff = m_autodiff(i, j);
+      EXPECT_EQ(mij_double, mij_autodiff.value());
+    }
+  }
+}
+
+// Test transmogrification of a RotationMatrix from double to AutoDiffXd.
+GTEST_TEST(RotationMatrix, TransmogrifyC) {
+  const double cos_theta = std::cos(0.5);
+  const double sin_theta = std::sin(0.5);
+  Matrix3d m;
+  m << 1, 0, 0,
+      0, cos_theta, sin_theta,
+      0, -sin_theta, cos_theta;
+  const RotationMatrix<double> R_double(m);
+  const RotationMatrix<AutoDiffXd> R_autodiff(R_double);
+
+  const Matrix3<double>& m_double = R_double.matrix();
+  const Matrix3<AutoDiffXd>& m_autodiff = R_autodiff.matrix();
+  for (int i = 0;  i < 3; i++) {
+    for (int j = 0;  j < 3;  j++) {
+      const double mij_double = m_double(i, j);
+      const AutoDiffXd mij_autodiff = m_autodiff(i, j);
+      EXPECT_EQ(mij_double, mij_autodiff.value());
+    }
+  }
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace multibody
