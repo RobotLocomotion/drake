@@ -159,6 +159,29 @@ class Context : public ContextBase {
     return get_mutable_continuous_state().get_mutable_vector();
   }
 
+  /// Sets the continuous state to @p xc, including q, v, and z partitions.
+  /// The supplied vector must be the same size as the existing continuous
+  /// state. Invalidates all continuous state-dependent computations in this
+  /// context and its subcontexts, recursively.
+  void SetContinuousState(const Eigen::Ref<const VectorX<T>>& xc) {
+    get_mutable_continuous_state().SetFromVector(xc);
+  }
+
+
+  /// Sets time to @p t_sec and continuous state to @p xc. Performs a single
+  /// invalidation pass to avoid duplicate invalidations for computations that
+  /// depend on both time and state.
+  void SetTimeAndContinuousState(const T& t_sec,
+                                 const Eigen::Ref<const VectorX<T>>& xc) {
+    const int64_t change_event = this->start_new_change_event();
+    if (t_sec != get_time())
+      PropagateTimeChange(t_sec, change_event);
+    NoteAllContinuousStateChanged(change_event);
+    PropagateBulkChange(change_event,
+                        &ContextBase::NoteAllContinuousStateChanged);
+    do_access_mutable_state().get_mutable_continuous_state().SetFromVector(xc);
+  }
+
   /// Sets the continuous state to @p xc, deleting whatever was there before.
   /// Invalidates all continuous state-dependent computations in this context
   /// and its subcontexts, recursively.
