@@ -7,15 +7,10 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/autodiff.h"
-#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
-#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
@@ -27,18 +22,12 @@ namespace {
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 using benchmarks::Acrobot;
-using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix2d;
-using Eigen::Matrix3d;
-using Eigen::Matrix4d;
 using Eigen::Translation3d;
-using Eigen::Vector2d;
 using Eigen::Vector3d;
-using Eigen::VectorXd;
 using std::make_unique;
 using std::unique_ptr;
-using std::vector;
 using systems::Context;
 
 // Set of MultibodyTree tests for a double pendulum model. This simple set of
@@ -60,9 +49,9 @@ using systems::Context;
 //    z-direction.
 //  - The body frame for link 1 is placed at its geometric center.
 //  - The body frame for link 2 is placed at the joint's outboard frame.
-//  - The origin of the shoulder frames (Si and So) are coincident at all times.
-//    So is aligned with Si for θ₁ = 0.
-//  - The origin of the elbow frames (Ei and Eo) are coincident at all times.
+//  - The origins of the shoulder frames (Si and So) are coincident at all
+//    times. So is aligned with Si for θ₁ = 0.
+//  - The origins of the elbow frames (Ei and Eo) are coincident at all times.
 //    Eo is aligned with Ei for θ₂ = 0.
 //  - The elbow outboard frame Eo IS the link 2 frame L2, refer to schematic
 //    below.
@@ -70,7 +59,7 @@ using systems::Context;
 //       y ^
 //         | Si ≡ W World body frame.
 //         +--> x  Shoulder inboard frame Si coincides with W.
-//      X_SiSo(θ₁) Shoulder revolute mobilizer with generalized position θ₁.
+//      X_SiSo(θ₁) Shoulder revolute joint with generalized position θ₁.
 //      +--+-----+
 //      |  ^     |
 //      |  | So  | Shoulder outboard frame So.
@@ -88,11 +77,12 @@ using systems::Context;
 //      |  | Ei  | Elbow inboard frame Ei.
 //      |  +-->  |
 //      +--------+
-//      X_EiEo(θ₂) Elbow revolute mobilizer with generalized position θ₂.
+//      X_EiEo(θ₂) Elbow revolute joint with generalized position θ₂.
 //      +--+-----+
 //      |  ^     |
-//      |  |Eo/L2| Elbow outboard frame Eo.
+//      |  | Eo  | Elbow outboard frame Eo.
 //      |  +-->  | Lower link's frame L2 is coincident with the elbow frame Eo.
+//      | Eo ≡ L2|
 //      |        |
 //      |p_L2oLcm| Position vector of link 2's com measured from the link's
 //      |        | frame origin L2o.
@@ -145,29 +135,33 @@ class DoublePendulumModel {
     // Its outboard frame, So, is at a fixed offset from link 1's frame L1.
     // L1's origin is located at the com of link 1.
     // X_L1So defines the pose of the shoulder outboard frame So in link 1's
-    // frame:
+    // frame.
     const Isometry3d X_L1So{Translation3d(0.0, half_length1_, 0.0)};
 
     shoulder_ = &tree_->template AddJoint<RevoluteJoint>(
         "ShoulderJoint",
-        *world_body_, {},  /* No input, frame Si IS the world frame W. */
-        *link1_, X_L1So,   /* Pose of So in link 1's frame L1. */
+        *world_body_,
+        {},      /* Default to Identity; frame Si IS the world frame W. */
+        *link1_,
+        X_L1So,  /* Pose of So in link 1's frame L1. */
         Vector3d::UnitZ()  /* revolute axis */);
 
-    // The elbow is the mobilizer that connects links 1 and 2.
+    // The elbow is the joint that connects links 1 and 2.
     // An inboard frame Ei is rigidly attached to link 1. It is located
     // at y = -half_link_length_ in the frame of link 1.
     // X_L1Ei specifies the pose of the elbow inboard frame Ei in the body
     // frame L1 of link 1.
     // The elbow's outboard frame Eo is taken to be coincident with link 2's
     // frame L2 (i.e. L2o != L2cm).
-    // X_L1Ei defines the pose of the elbow inboard frame Ei link 1's frame L1:
+    // X_L1Ei defines the pose of the elbow inboard frame Ei link 1's frame L1.
     const Isometry3d X_L1Ei{Translation3d(0.0, -half_length1_, 0.0)};
 
     elbow_ = &tree_->template AddJoint<RevoluteJoint>(
         "ElbowJoint",
-        *link1_, X_L1Ei,  /* Pose of Ei in L1. */
-        *link2_, {},      /* No pose provided, frame Eo IS frame L2. */
+        *link1_,
+        X_L1Ei,  /* Pose of Ei in L1. */
+        *link2_,
+        {},      /* Default to Identity; frame Eo IS frame L2. */
         Vector3d::UnitZ() /* revolute axis */);
 
     // Add force element for a constant gravity pointing downwards, that is, in
@@ -232,6 +226,11 @@ class PendulumTests : public ::testing::Test {
     context_ = tree_->CreateDefaultContext();
   }
 
+  // For the double pendulum system it turns out that the mass matrix is only a
+  // function of the elbow angle, theta2, independent of the shoulder angle,
+  // theta1. This fact can be verified by calling this method with
+  // different values of theta1, given that our benchmark does have this
+  // property. This is done in the unit test below.
   void VerifyCalcMassMatrixViaInverseDynamics(
       double theta1, double theta2) {
     const double kTolerance = 10 * kEpsilon;
@@ -274,15 +273,21 @@ TEST_F(PendulumTests, CalcMassMatrixViaInverseDynamics) {
   VerifyCalcMassMatrixViaInverseDynamics(0.0, M_PI / 3.0);
   VerifyCalcMassMatrixViaInverseDynamics(0.0, M_PI / 4.0);
 
-  // For the double pendulum system it turns out that the mass matrix is only a
-  // function of the elbow angle, theta2, independent of the shoulder angle,
-  // theta1.
-  // Therefore M(q) = H(elbow_angle). We therefore run the same previous tests
-  // with different shoulder angles to verify this is true.
+  // We run run the same previous tests with different shoulder angles to verify
+  // that the mass matrix is a function of theta2 only.
+  // This is verified implicitly since the results are compared against a
+  // benchmark whose results depend on the elbow angle only.
+  // See the documentation for this test's method
+  // VerifyCalcMassMatrixViaInverseDynamics().
   VerifyCalcMassMatrixViaInverseDynamics(M_PI / 3.0, 0.0);
   VerifyCalcMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
   VerifyCalcMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
   VerifyCalcMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
+
+  VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, 0.0);
+  VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 2.0);
+  VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 3.0);
+  VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 4.0);
 }
 
 }  // namespace
