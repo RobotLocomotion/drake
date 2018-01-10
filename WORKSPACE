@@ -142,13 +142,9 @@ github_archive(
     build_file = "tools/workspace/styleguide/styleguide.BUILD.bazel",  # noqa
 )
 
-github_archive(
-    name = "pycodestyle",
-    repository = "PyCQA/pycodestyle",
-    commit = "2.3.1",
-    sha256 = "e9fc1ca3fd85648f45c0d2e33591b608a17d8b9b78e22c5f898e831351bacb03",  # noqa
-    build_file = "tools/workspace/pycodestyle/pycodestyle.BUILD.bazel",
-)
+load("//tools/lint:lint_repositories.bzl", "lint_repositories")
+
+lint_repositories()
 
 bitbucket_archive(
     name = "eigen",
@@ -321,12 +317,6 @@ github_archive(
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
     sha256 = "907fb42a502e1448a73959f9a648771b070d6d8513f16d74149f775fc56550ef",  # noqa
     build_file = "tools/workspace/yaml_cpp/yaml_cpp.BUILD.bazel",
-)
-
-load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
-
-buildifier_repository(
-    name = "buildifier",
 )
 
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_repository")

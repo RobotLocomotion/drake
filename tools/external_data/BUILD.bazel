@@ -6,8 +6,12 @@ drake_workspace_files = [
     ":all_files",
     "//tools/external_data/bazel_external_data:all_files",
     "//tools:all_files",
+    "//tools/install:all_files",
     "//tools/lint:all_files",
     "//tools/skylark:all_files",
+    "//tools/workspace:all_files",
+    "//tools/workspace/buildifier:all_files",
+    "//tools/workspace/pycodestyle:all_files",
     "//:skylark_files",
 ]
 
@@ -30,7 +34,6 @@ exports_files(
 # (We could add each package as repository, and declare filegroups from within,
 # but then that couples Drake's `bazel test @drake//...` to these local
 # repositories).
-# TODO(eric.cousineau): Add linting repository things.
 
 add_lint_tests()
 
