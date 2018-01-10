@@ -8,7 +8,6 @@
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
