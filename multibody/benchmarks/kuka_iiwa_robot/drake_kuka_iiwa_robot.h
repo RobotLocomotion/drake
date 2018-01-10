@@ -10,6 +10,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/test_utilities/spatial_kinematics.h"
@@ -302,33 +303,33 @@ class DrakeKukaIIwaRobot {
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
 
-    // Input vector of generalized forces for known applied force/torques,
-    // e.g., gravity, known models of visous friction, etc.
-    const int number_of_generalized_speeds = model_->get_num_velocities();
-    VectorX<T> generalized_force_applied(number_of_generalized_speeds);
+    // Applied forcing:
+    MultibodyTreeForcing<T> forcing(*model_);
 
-    // Input vector of spatial forces for known applied force/torques,
-    // e.g., gravity, known models of visous friction, etc.
-    const int number_of_bodies = get_number_of_rigid_bodies();
-    std::vector<SpatialForce<T>> Fapplied_Bo_W_array(number_of_bodies);
-
-    // Fill arrays generalized_force_applied and F_Bo_W_array using the fact
-    // that gravity was included earlier in the model via:
+    // Adds into forcing the effect of gravity given that it was included
+    // earlier in the model via:
     // model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
-    model_->CalcForceElementsContribution(
-        *context_, pc, vc, &Fapplied_Bo_W_array, &generalized_force_applied);
+    model_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
 
     // Output vector of generalized forces for calculated motor torques
     // required to drive the Kuka robot at its specified rate.
+    const int number_of_generalized_speeds = model_->get_num_velocities();
     VectorX<T> generalized_force_output(number_of_generalized_speeds);
 
     // Output vector of spatial forces for joint reaction force/torques for
     // each body B at their inboard frame Mo, expressed in the world W.
+    const int number_of_bodies = get_number_of_rigid_bodies();
     std::vector<SpatialForce<T>> F_BMo_W_array(number_of_bodies);
 
     // Output vector of generalized forces associated with the motor torques
     // required to drive the Kuka robot at its specified rate.
     std::vector<SpatialAcceleration<T>> A_WB_array(number_of_bodies);
+
+    // Aliases to the arrays of applied forces:
+    std::vector<SpatialForce<T>>& Fapplied_Bo_W_array =
+        forcing.mutable_body_forces();
+    VectorX<T>& generalized_force_applied =
+        forcing.mutable_generalized_forces();
 
     // Calculate inverse dynamics on this robot.
     model_->CalcInverseDynamics(*context_, pc, vc, qDDt,

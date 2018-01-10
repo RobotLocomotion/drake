@@ -250,16 +250,51 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
           context.get_continuous_state_vector()).get_value();
   const int nv = model_->get_num_velocities();
 
-  // Constructor initializes forcing to zero:
+  // Mass matrix:
+  MatrixX<T> M(nv, nv);
+  // Forces:
   MultibodyTreeForcing<T> forcing(*model_);
+  // Bodies's accelerations, ordered by BodyNodeIndex.
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  // Generalized accelerations:
+  VectorX<T> vdot(nv);
 
-  // TODO(amcastro-tri): Replace by an ABA forward dynamics.
-  VectorX<T> vdot = VectorX<T>::Zero(nv);
-  model_->CalcForwardDynamicsViaExplicitMassMatrixSolve(
-      context, forcing, &vdot);
+  // TODO(amcastro-tri): Eval() these from the context.
+  PositionKinematicsCache<T> pc(model_->get_topology());
+  VelocityKinematicsCache<T> vc(model_->get_topology());
+  model_->CalcPositionKinematicsCache(context, &pc);
+  model_->CalcVelocityKinematicsCache(context, pc, &vc);
+
+  // Compute forces applied through force elements. This effectively resets
+  // the forcing to zero and adds in contributions due to force elements:
+  model_->CalcForceElementsContribution(context, pc, vc, &forcing);
+
+  // TODO(amcastro-tri): add in external actuation torque from input port.
+
+  model_->CalcMassMatrixViaInverseDynamics(context, &M);
+
+  // Use inverse dynamics to compute right hand side:
+  vdot.setZero();  // re-use externally supplied vdot.
+
+  // WARNING: to reduce memory foot-print, we use the input applied arrays also
+  // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied
+  // get overwritten on output. This is not important in this case since we
+  // don't need their values anymore. Please see the documentation for
+  // CalcInverseDynamics() for details.
+  // With vdot = 0, this computes:
+  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forcing.mutable_body_forces();
+  VectorX<T>& tau_array = forcing.mutable_generalized_forces();
+  model_->CalcInverseDynamics(
+      context, pc, vc, vdot,
+      F_BBo_W_array, tau_array,
+      &A_WB_array,
+      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
+      &tau_array);
+
+  vdot = M.ldlt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-
   VectorX<T> xdot(model_->get_num_states());
   // For this simple model v = qdot.
   xdot << v, vdot;
