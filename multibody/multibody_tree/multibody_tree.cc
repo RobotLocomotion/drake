@@ -389,6 +389,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   }
 }
 
+#if 0
 template <typename T>
 void MultibodyTree<T>::CalcForceElementsContribution(
     const systems::Context<T>& context,
@@ -412,6 +413,26 @@ void MultibodyTree<T>::CalcForceElementsContribution(
   for (const auto& force_element : owned_force_elements_) {
     force_element->CalcAndAddForceContribution(
         mbt_context, pc, vc, F_Bo_W_array, tau_array);
+  }
+}
+#endif
+
+template <typename T>
+void MultibodyTree<T>::CalcForceElementsContribution(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    MultibodyTreeForcing<T>* forcing) const {
+  DRAKE_DEMAND(forcing != nullptr);
+  DRAKE_DEMAND(forcing->CheckInvariants(*this));
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  forcing->SetZero();
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->CalcAndAddForceContribution(mbt_context, pc, vc, forcing);
   }
 }
 
@@ -542,10 +563,8 @@ void MultibodyTree<T>::CalcForwardDynamicsViaExplicitMassMatrixSolve(
   // allocated workspace. Or maybe better just cache the results.
   // Mass matrix:
   MatrixX<T> M(nv, nv);
-  // Body forces (F_BMo_W on output):
-  std::vector<SpatialForce<T>> F_BBo_W_array(get_num_bodies());
-  // Generalized forces:
-  VectorX<T> tau_array(get_num_velocities());
+  // Forces:
+  MultibodyTreeForcing<T> forcing(*this);
   // Bodies's accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
 
@@ -557,17 +576,10 @@ void MultibodyTree<T>::CalcForwardDynamicsViaExplicitMassMatrixSolve(
 
   // Compute forces applied through force elements. This effectively resets
   // the forcing to zero and adds in contributions due to force elements:
-  CalcForceElementsContribution(
-      context, pc, vc, &F_BBo_W_array, &tau_array);
+  CalcForceElementsContribution(context, pc, vc, &forcing);
 
   // Add in externally applied forces:
-  // F_BBo_W_array += applied_forcing.body_forces()
-  std::transform(
-      F_BBo_W_array.begin( ), F_BBo_W_array.end( ),
-      applied_forcing.body_forces().begin( ),
-      F_BBo_W_array.begin( ), std::plus<SpatialForce<T>>());
-  //F_BBo_W_array = applied_forcing.body_forces();
-  tau_array += applied_forcing.generalized_forces();
+  forcing.AddInForcing(applied_forcing);
 
   DoCalcMassMatrixViaInverseDynamics(context, pc, &M);
 
@@ -580,6 +592,8 @@ void MultibodyTree<T>::CalcForwardDynamicsViaExplicitMassMatrixSolve(
   // don't need their values anymore. Please see the documentation for
   // CalcInverseDynamics() for details.
   // Computes tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forcing.mutable_body_forces();
+  VectorX<T>& tau_array = forcing.mutable_generalized_forces();
   CalcInverseDynamics(
       context, pc, vc, *vdot,
       F_BBo_W_array, tau_array,

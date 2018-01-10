@@ -28,6 +28,18 @@ bool MultibodyTreeForcing<T>::CheckInvariants(
       model.get_num_bodies() == num_bodies();
 }
 
+template <typename T>
+void MultibodyTreeForcing<T>::AddInForcing(
+    const MultibodyTreeForcing<T>& addend) {
+  // Add in body forces:
+  std::transform(
+      F_B_W_.begin( ), F_B_W_.end( ),
+      addend.body_forces().begin( ),
+      F_B_W_.begin( ), std::plus<SpatialForce<T>>());
+  // Add in generalized forces:
+  tau_ += addend.generalized_forces();
+}
+
 }  // namespace multibody
 }  // namespace drake
 

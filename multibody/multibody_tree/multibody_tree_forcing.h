@@ -59,6 +59,9 @@ class MultibodyTreeForcing {
     return F_B_W_;
   }
 
+  /// Adds into `this` the forcing stored in `addend`.
+  void AddInForcing(const MultibodyTreeForcing<T>& addend);
+
   /// Utility that checks that `this` forcing is compatible with the given
   /// MultibodyTree model.
   /// @returns true if `this` forcing is compatible with `model`.
