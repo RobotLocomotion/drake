@@ -1,0 +1,103 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "//tools/skylark:pybind.bzl",
+    "get_drake_pybind_installs",
+    "get_pybind_package_info",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_test",
+)
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_label_for_drake_hoist",
+    "adjust_labels_for_drake_hoist",
+)
+
+package(default_visibility = adjust_labels_for_drake_hoist([
+    "//drake/bindings/pydrake:__subpackages__",
+]))
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(
+    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
+)
+
+drake_cc_library(
+    name = "type_pack",
+    hdrs = ["type_pack.h"],
+)
+
+# This is a pure-python, standalone library SET.
+# Keep this away from `common_py` to simplify test dependencies.
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
+)
+
+drake_py_library(
+    name = "module_shim_py",
+    srcs = ["module_shim.py"],
+    imports = PACKAGE_INFO.py_imports,
+)
+
+PYBIND_LIBRARIES = []
+
+PY_LIBRARIES = [
+    ":module_py",
+    ":module_shim_py",
+]
+
+# Package target.
+drake_py_library(
+    name = "util",
+    imports = PACKAGE_INFO.py_imports,
+    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+)
+
+drake_cc_googletest(
+    name = "type_pack_test",
+    deps = [
+        ":type_pack",
+        "//common:nice_type_name",
+    ],
+)
+
+drake_py_library(
+    name = "module_shim_example",
+    testonly = 1,
+    srcs = [
+        "test/module_shim_example/__init__.py",
+        "test/module_shim_example/sub_module.py",
+    ],
+    imports = ["test"],
+    deps = [":module_shim_py"],
+)
+
+drake_py_test(
+    name = "module_shim_test",
+    srcs = ["test/module_shim_test.py"],
+    deps = [
+        ":module_shim_example",
+    ],
+)
+
+add_lint_tests()

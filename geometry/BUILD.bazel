@@ -89,10 +89,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "geometry_system",
-    srcs = ["geometry_system.cc"],
+    srcs = [
+        "geometry_system.cc",
+        "query_object.cc",
+    ],
     hdrs = [
         "geometry_system.h",
-        "query_handle.h",
+        "query_object.h",
     ],
     deps = [
         ":geometry_context",
@@ -207,6 +210,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "identifier_test",
     deps = [":identifier"],
+)
+
+drake_cc_googletest(
+    name = "query_object_test",
+    deps = [
+        ":geometry_system",
+        "//drake/geometry/test_utilities",
+    ],
 )
 
 drake_cc_googletest(

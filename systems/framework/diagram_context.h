@@ -181,7 +181,8 @@ class DiagramContext : public Context<T> {
     // Construct and install the destination port.
     auto input_port =
         std::make_unique<DependentInputPortValue>(output_port_value);
-    dest_context.SetInputPortValue(dest_port_index, std::move(input_port));
+    Context<T>::SetInputPortValue(&dest_context, dest_port_index,
+                                  std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
     dependency_graph_[dest] = src;
@@ -270,17 +271,6 @@ class DiagramContext : public Context<T> {
 
   int get_num_input_ports() const override {
     return static_cast<int>(input_ids_.size());
-  }
-
-  void SetInputPortValue(int index,
-                         std::unique_ptr<InputPortValue> port) override {
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    const PortIdentifier& id = input_ids_[index];
-    SystemIndex system_index = id.first;
-    PortIndex port_index = id.second;
-    GetMutableSubsystemContext(system_index)
-        .SetInputPortValue(port_index, std::move(port));
-    // TODO(david-german-tri): Set invalidation callbacks.
   }
 
   const State<T>& get_state() const final {
@@ -372,6 +362,16 @@ class DiagramContext : public Context<T> {
   int num_subsystems() const {
     DRAKE_ASSERT(contexts_.size() == outputs_.size());
     return static_cast<int>(contexts_.size());
+  }
+
+  void SetInputPortValue(int index,
+                         std::unique_ptr<InputPortValue> port) final {
+    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
+    const PortIdentifier& id = input_ids_[index];
+    SystemIndex system_index = id.first;
+    PortIndex port_index = id.second;
+    Context<T>::SetInputPortValue(&GetMutableSubsystemContext(system_index),
+                                  port_index, std::move(port));
   }
 
   std::vector<PortIdentifier> input_ids_;

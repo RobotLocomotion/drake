@@ -18,6 +18,7 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:which.bzl", "which")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
@@ -52,7 +53,35 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
+# This local repository imports the protobuf build rules for Bazel (based on
+# the upstream protobuf.bzl build rules).  The protobuf runtime is loaded
+# into "libprotobuf" via pkg-config below.
+local_repository(
+    name = "com_google_protobuf",
+    # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
+    # this should use an absolute path (so this should be prepended by
+    # __workspace_dir__).  However, in a clean build, this did not work.  We
+    # should investigate that and fix it.
+    path = "third_party/com_github_google_protobuf",
+)
+
+new_local_repository(
+    name = "find_protobuf_cmake",
+    build_file = "tools/workspace/protobuf/find_protobuf_cmake.BUILD.bazel",
+    path = __workspace_dir__ + "/third_party/com_kitware_gitlab_cmake_cmake",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
+
+pkg_config_package(
+    name = "ibex",
+    modname = "ibex",
+)
+
+pkg_config_package(
+    name = "dreal",
+    modname = "dreal",
+)
 
 pkg_config_package(
     name = "glib",
@@ -62,6 +91,19 @@ pkg_config_package(
 pkg_config_package(
     name = "gthread",
     modname = "gthread-2.0",
+)
+
+# Load in the paths and flags to the system version of the protobuf runtime;
+# the Bazel build rules are loaded into "protobuf" via local_repository above.
+pkg_config_package(
+    name = "libprotobuf",
+    modname = "protobuf",
+)
+
+# Find the protoc binary on $PATH.
+which(
+    name = "protoc",
+    command = "protoc",
 )
 
 load("//tools/workspace/python:python.bzl", "python_repository")
@@ -86,12 +128,10 @@ github_archive(
     build_file = "tools/workspace/gtest/gtest.BUILD.bazel",
 )
 
-# When updating the version of gflags, update tools/install/gflags/gflags.cps
-github_archive(
-    name = "com_github_gflags_gflags",
-    repository = "gflags/gflags",
-    commit = "95ffb27c9c7496ede1409e042571054c70cb9519",
-    sha256 = "723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f",  # noqa
+load("//tools/workspace/gflags:gflags.bzl", "gflags_repository")
+
+gflags_repository(
+    name = "gflags",
 )
 
 github_archive(
@@ -176,16 +216,6 @@ github_archive(
     build_file = "tools/workspace/lcm/lcm.BUILD.bazel",
 )
 
-# In the unlikely event that you update the version here, verify that the
-# licenses in tools/third_party/libbot/ldpc LICENSE are still applicable.
-github_archive(
-    name = "libbot",
-    repository = "RobotLocomotion/libbot2",
-    commit = "495ae366d5e380b58254368217fc5c798e72aadd",
-    sha256 = "c463460a4dd6133d6d21e6ab6e493fdcdca442d2df86bcb56749f6740bc61db5",  # noqa
-    build_file = "tools/workspace/libbot/libbot.BUILD.bazel",
-)
-
 github_archive(
     name = "bullet",
     repository = "bulletphysics/bullet3",
@@ -238,8 +268,8 @@ github_archive(
 github_archive(
     name = "pybind11",
     repository = "RobotLocomotion/pybind11",
-    commit = "ffcf754ae9e766632610975d22372a86a7b63014",
-    sha256 = "7cd6f4efb02bf9ae17eeb2afba68023af913e61ae76e8b4254203d0eec019525",  # noqa
+    commit = "48999b69bde29cdf8d616d4fbd3d6ab1c561027d",
+    sha256 = "2ea18adfb608948cab1b5978081dc8c318ed47573ccd66f1603a37fbdbfc56da",  # noqa
     build_file = "tools/workspace/pybind11/pybind11.BUILD.bazel",
 )
 
@@ -285,12 +315,11 @@ github_archive(
     build_file = "tools/workspace/tinyobjloader/tinyobjloader.BUILD.bazel",
 )
 
-github_archive(
+pkg_config_package(
     name = "yaml_cpp",
-    repository = "jbeder/yaml-cpp",
-    commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
-    sha256 = "907fb42a502e1448a73959f9a648771b070d6d8513f16d74149f775fc56550ef",  # noqa
-    build_file = "tools/workspace/yaml_cpp/yaml_cpp.BUILD.bazel",
+    atleast_version = "0.5.2",
+    build_file_template = "@drake//tools/workspace/yaml_cpp:yaml_cpp.BUILD.tpl",  # noqa
+    modname = "yaml-cpp",
 )
 
 load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
@@ -335,15 +364,6 @@ bind(
     actual = "@six_archive//:six",
 )
 
-# When updating the version of protobuf,
-# update tools/install/protobuf/protobuf.cps
-github_archive(
-    name = "com_google_protobuf",
-    repository = "google/protobuf",
-    commit = "v3.5.0",
-    sha256 = "0cc6607e2daa675101e9b7398a436f09167dffb8ca0489b0307ff7260498c13c",  # noqa
-)
-
 pypi_archive(
     name = "semantic_version",
     version = "2.6.0",
@@ -355,8 +375,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "a6110cf2e769e9ff262a98ed18506ad565a14e89",
-    sha256 = "62b5054705152ba971a6e9a358bfcc1359eca6f3ba8e5788befd82d606933d98",  # noqa
+    commit = "544c1ded81b926a05b3dedb06504bd17bc8d0a95",
+    sha256 = "0b97cbaae107e5ddbe89073b6e42b679130f1eb81b913aa93da9e72e032a137b",  # noqa
     build_file = "tools/workspace/pycps/pycps.BUILD.bazel",
 )
 
@@ -375,9 +395,9 @@ new_local_repository(
 bitbucket_archive(
     name = "ignition_math",
     repository = "ignitionrobotics/ign-math",
-    commit = "ignition-math3_3.2.0",
-    sha256 = "1948c1610fa4403bce7ba2a262a29662990ee66aab00882411a0868afe0e5309",  # noqa
-    strip_prefix = "ignitionrobotics-ign-math-e86e5bb392e4",
+    commit = "392237e10ba4",
+    sha256 = "44068bb91c07c9305213057cad801ae5b689ac1a5f37cd8330dd6e729df8f5b0",  # noqa
+    strip_prefix = "ignitionrobotics-ign-math-392237e10ba4",
     build_file = "tools/workspace/ignition_math/ignition_math.BUILD.bazel",
 )
 
@@ -400,7 +420,7 @@ bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
     commit = "bac3dfb42cc7",
-    sha256 = "b10a3ac68ed46f8d5780ddc687e6c89c71cb4c1e4e65449197f8aac76be903d8",  # noqa
+    sha256 = "212211eddd9fa010b4b61a2dae87cd84a66a8b78ed302612d214b7388f9bc198",  # noqa
     strip_prefix = "osrf-sdformat-bac3dfb42cc7",
     build_file = "tools/workspace/sdformat/sdformat.BUILD.bazel",
 )

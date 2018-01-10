@@ -19,7 +19,10 @@ content = """
       "Compile-Features": ["c++11"]
     }
   },
-  "X-CMake-Includes": ["${CMAKE_CURRENT_LIST_DIR}/pybind11Tools.cmake"]
+  "X-CMake-Includes": ["${CMAKE_CURRENT_LIST_DIR}/pybind11Tools.cmake"],
+  "X-CMake-Variables-Init": {
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR};${CMAKE_MODULE_PATH}"
+  }
 }
 """ % defs
 

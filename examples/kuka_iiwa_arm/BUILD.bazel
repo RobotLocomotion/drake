@@ -90,7 +90,7 @@ drake_example_cc_binary(
     deps = [
         ":iiwa_common",
         ":lcm_plan_interpolator",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -111,7 +111,7 @@ drake_example_cc_binary(
         ":iiwa_lcm",
         ":oracular_state_estimator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 
@@ -129,7 +129,7 @@ drake_example_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
 )
 

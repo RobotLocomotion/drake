@@ -269,7 +269,8 @@ Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
   DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
   using Scalar = typename Derived::Scalar;
   const Scalar det = M.determinant();
-  DRAKE_THROW_UNLESS(fabs(det) > std::numeric_limits<Scalar>::epsilon());
+  using std::abs;
+  DRAKE_THROW_UNLESS(abs(det) > std::numeric_limits<Scalar>::epsilon());
   const Eigen::SelfAdjointEigenSolver<Matrix3<Scalar>> eig(M.transpose() * M);
   // Get reciprocal square root.
   Vector3<Scalar> L = eig.eigenvalues().array().rsqrt();

@@ -57,10 +57,17 @@ if(CMAKE_VERBOSE_MAKEFILE)
   list(APPEND BAZEL_ARGS --subcommands)
 endif()
 
-option(WITH_GUROBI "Build with support for GUROBI. Experimental." OFF)
+option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
+  find_package(Gurobi 7.5.2 MODULE REQUIRED)
+
   list(APPEND BAZEL_ARGS --config=gurobi)
+
+  if(NOT APPLE)
+    get_filename_component(GUROBI_PATH "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
+    list(APPEND BAZEL_ENV "GUROBI_PATH=${GUROBI_PATH}")
+  endif()
 endif()
 
 option(WITH_MATLAB "Build with support for MATLAB" OFF)
@@ -69,7 +76,7 @@ if(WITH_MATLAB)
   list(APPEND BAZEL_ARGS --define=NO_IPOPT=ON)
 endif()
 
-option(WITH_MOSEK "Build with support for MOSEK. Experimental." OFF)
+option(WITH_MOSEK "Build with support for MOSEK" OFF)
 
 if(WITH_MOSEK)
   list(APPEND BAZEL_ARGS --config=mosek)

@@ -49,6 +49,7 @@ drake_cc_library(
     ],
     # Intentionally excluded items:
     # - text_logging_gflags
+    # - text_logging_gflags_h
 )
 
 # A library of things that EVERYONE should want and MUST EAT.
@@ -324,8 +325,17 @@ drake_cc_library(
     }),
     deps = [
         ":essential",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
+)
+
+# Compared to the above rule, this removes the deps attribute; we don't want to
+# link against gflags for libdrake.so, we just want to publish this header for
+# callers who have their own gflags to link against.
+drake_cc_library(
+    name = "text_logging_gflags_h",
+    hdrs = ["text_logging_gflags.h"],
+    visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
 drake_cc_library(
@@ -606,8 +616,23 @@ drake_cc_googletest(
     ],
 )
 
+# Test library for `find_loaded_library_test`.
+drake_cc_binary(
+    name = "lib_is_real.so",
+    testonly = 1,
+    srcs = [
+        "test/lib_is_real.cc",
+    ],
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_googletest(
     name = "find_loaded_library_test",
+    srcs = [
+        "test/find_loaded_library_test.cc",
+        ":lib_is_real.so",
+    ],
     deps = [
         ":find_resource",
     ],

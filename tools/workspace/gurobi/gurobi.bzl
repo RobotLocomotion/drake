@@ -48,47 +48,57 @@ def _gurobi_impl(repository_ctx):
 
         linkopts = ["-pthread"]
 
-    BUILD = """
-    hdrs = glob([
-        "gurobi-distro/include/gurobi_c.h",
-        "gurobi-distro/include/gurobi_c++.h",
-    ])
-    print("{warning}") if not hdrs else cc_library(
-        name = "gurobi",
-        srcs = {srcs},
-        hdrs = hdrs,
-        includes = ["gurobi-distro/include"],
-        linkopts = {linkopts},
-        visibility = ["//visibility:public"],
-    )
-    """.format(warning = warning, srcs = srcs, linkopts = linkopts)
-    BUILD = BUILD.replace("\n    ", "\n")  # Strip leading indent from lines.
-    repository_ctx.file("BUILD", content = BUILD, executable = False)
+    file_content = """# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+GUROBI_HDRS = glob([
+    "gurobi-distro/include/gurobi_c.h",
+    "gurobi-distro/include/gurobi_c++.h",
+])
+
+print("{warning}") if not GUROBI_HDRS else cc_library(
+    name = "gurobi",
+    srcs = {srcs},
+    hdrs = GUROBI_HDRS,
+    includes = ["gurobi-distro/include"],
+    linkopts = {linkopts},
+)
+""".format(warning = warning, srcs = srcs, linkopts = linkopts)
+
+    if os_result.is_macos:
+        file_content += """
+load("@drake//tools/install:install.bzl", "install")
+
+install(name = "install")
+"""
+    else:
+        file_content += """
+load("@drake//tools/install:install.bzl", "install", "install_files")
+
+install_files(
+    name = "install_libraries",
+    dest = ".",
+    files = [
+        "gurobi-distro/lib/libgurobi.so.7.5.2",
+        "gurobi-distro/lib/libgurobi75.so",
+    ],
+    strip_prefix = ["gurobi-distro"],
+    visibility = ["//visibility:private"],
+)
+
+install(
+   name = "install",
+   docs = ["gurobi-distro/EULA.pdf"],
+   doc_strip_prefix = ["gurobi-distro"],
+   deps = [":install_libraries"],
+)
+"""
+
+    repository_ctx.file("BUILD", content = file_content, executable = False)
 
 gurobi_repository = repository_rule(
     environ = ["GUROBI_PATH"],
     local = True,
     implementation = _gurobi_impl,
 )
-
-def gurobi_test_tags(gurobi_required = True):
-    """Returns the test tags necessary for properly running Gurobi tests.
-
-    By default, sets gurobi_required=True, which will require that the supplied
-    tag filters include "gurobi".
-
-    Gurobi checks a license file, and may need to contact a license server to
-    check out a license. Therefore, tests that use Gurobi must have the tag
-    "local", because they are non-hermetic. For the moment, we also require
-    the tag "exclusive", to rate-limit license servers with a small number of
-    licenses.
-    """
-    # TODO(david-german-tri): Find a better fix for the license server problem.
-    nominal_tags = [
-        "exclusive",
-        "local",
-    ]
-    if gurobi_required:
-        return nominal_tags + ["gurobi"]
-    else:
-        return nominal_tags

@@ -258,14 +258,18 @@ PostureInterpolationResult PlanInterpolatingMotion(
   return result;
 }
 
-void OpenGripper(const WorldState& env_state, WsgAction* wsg_act,
+void OpenGripper(const WorldState& env_state,
+                 double grip_force,
+                 WsgAction* wsg_act,
                  lcmt_schunk_wsg_command* msg) {
-  wsg_act->OpenGripper(env_state, msg);
+  wsg_act->OpenGripper(env_state, grip_force, msg);
 }
 
-void CloseGripper(const WorldState& env_state, WsgAction* wsg_act,
+void CloseGripper(const WorldState& env_state,
+                  double grip_force,
+                  WsgAction* wsg_act,
                   lcmt_schunk_wsg_command* msg) {
-  wsg_act->CloseGripper(env_state, msg);
+  wsg_act->CloseGripper(env_state, grip_force, msg);
 }
 
 std::unique_ptr<RigidBodyTree<double>> BuildTree(
@@ -281,8 +285,8 @@ std::unique_ptr<RigidBodyTree<double>> BuildTree(
         tree_builder.AddFixedModelInstance("iiwa", Vector3<double>::Zero());
   }
 
+  std::unique_ptr<RigidBodyTree<double>> robot{tree_builder.Build()};
   if (add_grasp_frame) {
-    std::unique_ptr<RigidBodyTree<double>> robot{tree_builder.Build()};
     // Add the grasp frame as a RigidBody. This allows it to be used in IK
     // constraints.
     // TODO(avalenzu): Add a planning model for the gripper that includes the
@@ -310,12 +314,23 @@ std::unique_ptr<RigidBodyTree<double>> BuildTree(
                            std::move(grasp_frame_fixed_joint));
     robot->add_rigid_body(std::move(grasp_frame));
     robot->compile();
-    drake::log()->set_level(previous_log_level);
-    return robot;
-  } else {
-    drake::log()->set_level(previous_log_level);
-    return tree_builder.Build();
   }
+
+  // The iiwa driver limits joint angle commands to one degree less
+  // than the min/max of each joint's range to avoid triggering
+  // exceptions in the controller when the limit is reached (for
+  // example, if a joint's range is +/- 120 degrees, the commanded
+  // joint positions sent to the hardware will be capped to a minimum
+  // of -119 and a maximum of 119 degrees).  Update the tree we're
+  // using for planning to reflect this limit.
+  const double kOneDegreeInRadians = M_PI / 180.;
+  robot->joint_limit_min += Eigen::VectorXd::Constant(
+      robot->joint_limit_min.size(), kOneDegreeInRadians);
+  robot->joint_limit_max -= Eigen::VectorXd::Constant(
+      robot->joint_limit_min.size(), kOneDegreeInRadians);
+
+  drake::log()->set_level(previous_log_level);
+  return robot;
 }
 
 optional<std::pair<Isometry3<double>, Isometry3<double>>>
@@ -858,7 +873,8 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
     case PickAndPlaceState::kPlace: {
       if (!wsg_act_.ActionStarted()) {
         lcmt_schunk_wsg_command msg;
-        schunk_action(env_state, &wsg_act_, &msg);
+        schunk_action(env_state, configuration_.grip_force,
+                      &wsg_act_, &msg);
         wsg_callback(&msg);
 
         drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());

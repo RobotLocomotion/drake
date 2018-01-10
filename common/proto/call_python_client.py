@@ -430,7 +430,7 @@ class CallPythonClient(object):
                     self._execute_message(msg)
                 # Spin busy for a bit, let matplotlib (or whatever) flush its
                 # event queue.
-                pause(0.001)
+                pause(0.01)
         except KeyboardInterrupt:
             # User pressed Ctrl+C.
             self._done = True
@@ -549,9 +549,9 @@ def main(argv):
     parser.add_argument(
         "--no_threading", action='store_true',
         help="Disable threaded dispatch.")
-    parser.add_argument("--stop_on_error", action='store_true',
-                        help="Stop client if there is an error when " +
-                             "executing a call.")
+    parser.add_argument(
+        "--stop_on_error", action='store_true',
+        help="Stop client if there is an error when executing a call.")
     parser.add_argument("-f", "--file", type=str, default=None)
     args = parser.parse_args(argv)
 

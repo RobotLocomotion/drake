@@ -226,9 +226,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   if (num_inputs > 0) {
     auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
     input_vector->SetFromVector(std::get<1>(autodiff_args));
-    autodiff_context->SetInputPortValue(
-        0,
-        std::make_unique<FreestandingInputPortValue>(std::move(input_vector)));
+    autodiff_context->FixInputPort(0, std::move(input_vector));
   }
 
   Eigen::MatrixXd AB;

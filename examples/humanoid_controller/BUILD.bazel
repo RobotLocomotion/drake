@@ -6,7 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -102,7 +102,7 @@ drake_cc_binary(
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
