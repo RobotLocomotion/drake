@@ -55,10 +55,7 @@ using std::unique_ptr;
 using std::vector;
 using systems::Context;
 
-// Set of MultibodyTree tests for a double pendulum model. The model is built
-// directly using Mobilizer objects and therefore it is used to test some of the
-// MultibodyTree internal details. Users would typically build their models
-// using Joint objects instead.
+// Set of MultibodyTree tests for a double pendulum model.
 // This double pendulum is similar to the acrobot model described in Section 3.1
 // of the Underactuated Robotics notes available online at
 // http://underactuated.csail.mit.edu/underactuated.html?chapter=3.

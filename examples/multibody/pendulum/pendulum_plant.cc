@@ -257,7 +257,7 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   // Bodies's accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
   // Generalized accelerations:
-  VectorX<T> vdot(nv);
+  VectorX<T> vdot = VectorX<T>::Zero(nv);
 
   // TODO(amcastro-tri): Eval() these from the context.
   PositionKinematicsCache<T> pc(model_->get_topology());
@@ -272,9 +272,6 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   // TODO(amcastro-tri): add in external actuation torque from input port.
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
-
-  // Use inverse dynamics to compute right hand side:
-  vdot.setZero();  // re-use externally supplied vdot.
 
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
   // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied

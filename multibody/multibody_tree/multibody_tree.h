@@ -601,11 +601,6 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
-  const Joint<T>& get_joint(JointIndex joint_index) const {
-    DRAKE_DEMAND(joint_index < get_num_joints());
-    return *owned_joints_[joint_index];
-  }
-
   /// Returns `true` if this %MultibodyTree was finalized with Finalize() after
   /// all multibody elements were added, and `false` otherwise.
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
@@ -886,11 +881,6 @@ class MultibodyTree {
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
-
-  void CalcForwardDynamicsViaExplicitMassMatrixSolve(
-      const systems::Context<T>& context,
-      const MultibodyForcing<T>& applied_forcing,
-      EigenPtr<VectorX<T>> vdot) const;
 
   /// Computes the combined force contribution of ForceElement objects in the
   /// model. A ForceElement can apply forcing as a spatial force per body or as
