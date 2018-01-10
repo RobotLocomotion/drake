@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/scs_solver.h"
 
@@ -956,6 +957,10 @@ void CheckAllIntegralSolution(
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   // Test a program with multiple integral solutions.
+  // Given points P1 = (0, 3), P2 = (1, 1), P3 = (2, 2), P4 = (4, 5), 
+  // P5 = (5, 1), and the line segments connecting P1P2, P2P3, P3P4, P4P5, 
+  // find the point with the smallest x coordinate, with y coordinate equal 
+  // to 4.
   // min x(1) + 2 * x(2) + 3 * x(3) + 4 * x(4)
   // s.t x(0) <= y(0)
   //     x(1) <= y(0) + y(1)
@@ -974,24 +979,15 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<5>("x");
   auto y = prog.NewBinaryVariables<4>("y");
+  AddSos2Constraint(&prog, x.cast<symbolic::Expression>(),
+                    y.cast<symbolic::Expression>());
   prog.AddLinearCost(x(1) + 2 * x(2) + 3 * x(3) + 4 * x(4));
-  prog.AddLinearConstraint(x(0) <= y(0));
-  prog.AddLinearConstraint(x(1) <= y(0) + y(1));
-  prog.AddLinearConstraint(x(2) <= y(1) + y(2));
-  prog.AddLinearConstraint(x(3) <= y(2) + y(3));
-  prog.AddLinearConstraint(x(4) <= y(3));
-  prog.AddLinearConstraint(y.cast<symbolic::Expression>().sum() == 1);
-  prog.AddLinearConstraint(x.cast<symbolic::Expression>().sum() == 1);
   prog.AddLinearConstraint(3 * x(0) + x(1) + 2 * x(2) + 5 * x(3) + x(4) == 4);
   prog.AddBoundingBoxConstraint(0, 1, x);
 
   MixedIntegerBranchAndBound bnb(prog, GurobiSolver::id());
-  for (auto pick_variable :
-       {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
-        MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent}) {
-    for (auto pick_node :
-         {MixedIntegerBranchAndBound::PickNode::kDepthFirst,
-          MixedIntegerBranchAndBound::PickNode::kMinLowerBound}) {
+  for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
+    for (auto pick_node : NonUserDefinedPickNodeMethods()) {
       bnb.SetPickBranchingNodeMethod(pick_node);
       bnb.SetPickBranchingVariableMethod(pick_variable);
       SolutionResult solution_result = bnb.Solve();
@@ -1007,6 +1003,61 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
       VectorDecisionVariable<9> xy;
       xy << x, y;
       CheckAllIntegralSolution(bnb, xy, best_solutions, tol);
+    }
+  }
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
+  // Test a program with multiple integral solutions.
+  // Given points P1 = (0, 3), P2 = (1, 1), P3 = (2, 4), P4 = (3, 2), and
+  // the line segments connecting P1P2, P2P3, and P3P4. Find the closest point
+  // on the line segment to the point (1.5, 2)
+  // This problem can be formulated as
+  // min (x(1) + 2*x(2)+3*x(3) - 1.5)² + (3*x(0) + x(1) + 4*x(2) + 2*x(3))²
+  // s.t x(0) <= y(0)
+  //     x(1) <= y(0) + y(1)
+  //     x(2) <= y(1) + y(2)
+  //     x(3) <= y(2)
+  //     y(0) + y(1) + y(2) = 1
+  //     x(0) + x(1) + x(2) + x(3) = 1
+  //     x >= 0
+  //     y are binary variables.
+  // The optimal solution is x = (0, 0.65, 0.35, 0), y = (0, 1, 0), with optimal
+  // cost 0.025
+  // The other integral solutions are
+  // x = (0.3, 0.7, 0, 0), y = (1, 0, 0), with cost 0.8
+  // x = (0, 0, 0.3, 0.7), y = (0, 0, 1), with cost 1.8
+  // Namely on each of the line segment, there is a closest point, corresponding
+  // to one integral solution.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  auto y = prog.NewBinaryVariables<3>("y");
+  AddSos2Constraint(&prog, x.cast<symbolic::Expression>(),
+                    y.cast<symbolic::Expression>());
+  Eigen::Matrix<symbolic::Expression, 2, 1> pt;
+  pt << x(1) + 2 * x(2) + 3 * x(3), 3 * x(0) + x(1) + 4 * x(2) + 2 * x(3);
+  prog.AddQuadraticCost((pt - Eigen::Vector2d(1.5, 2)).squaredNorm());
+
+  MixedIntegerBranchAndBound bnb(prog, GurobiSolver::id());
+  for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
+    for (auto pick_node : NonUserDefinedPickNodeMethods()) {
+      bnb.SetPickBranchingNodeMethod(pick_node);
+      bnb.SetPickBranchingVariableMethod(pick_variable);
+      const SolutionResult solution_result = bnb.Solve();
+      EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+      std::vector<std::pair<double, Eigen::VectorXd>> integral_solutions;
+      Eigen::Matrix<double, 7, 1> xy_expected;
+      xy_expected << 0, 0.65, 0.35, 0, 0, 1, 0;
+      integral_solutions.emplace_back(0.025, xy_expected);
+      xy_expected << 0.3, 0.7, 0, 0, 1, 0, 0;
+      integral_solutions.emplace_back(0.8, xy_expected);
+      xy_expected << 0, 0, 0.3, 0.7, 0, 0, 1;
+      integral_solutions.emplace_back(1.8, xy_expected);
+
+      const double tol{1E-3};
+      VectorDecisionVariable<7> xy;
+      xy << x, y;
+      CheckAllIntegralSolution(bnb, xy, integral_solutions, tol);
     }
   }
 }

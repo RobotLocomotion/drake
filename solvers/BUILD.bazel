@@ -706,6 +706,7 @@ drake_cc_googletest(
     deps = [
         ":branch_and_bound",
         ":mathematical_program_test_util",
+        ":mixed_integer_optimization_util",
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )

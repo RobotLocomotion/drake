@@ -251,11 +251,10 @@ bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
           "Call CheckOptimalSolutionIsIntegral() before calling this "
           "function.");
     }
-    // It is impossible to reach this default, but gcc throws the error
-    // Werror=return-type, if we do not have a default here.
-    default:
-      throw std::runtime_error("Should not reach this default.");
   }
+  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
+  // Werror=return-type, if we do not have it here.
+  DRAKE_ABORT();
 }
 
 bool IsVariableInList(const std::list<symbolic::Variable>& binary_variable_list,
@@ -457,11 +456,10 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
             "The user defined function should not be null.");
       }
     }
-    // It is impossible to reach this default, but gcc throws the error
-    // Werror=return-type, if we do not have a default here.
-    default:
-      throw std::runtime_error("Should not reach this default.");
   }
+  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
+  // Werror=return-type, if we do not have it here.
+  DRAKE_ABORT();
 }
 
 namespace {
@@ -575,11 +573,10 @@ const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
       throw std::runtime_error(
           "The user should specify the function to pick a branching variable "
           "through SetUserDefinedBranchingVariableMethod.");
-    // It is impossible to reach this default, but gcc throws the error
-    // Werror=return-type, if we do not have a default here.
-    default:
-      throw std::runtime_error("Should not reach this default.");
   }
+  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
+  // Werror=return-type, if we do not have it here.
+  DRAKE_ABORT();
 }
 
 namespace {
