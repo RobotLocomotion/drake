@@ -11,8 +11,8 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "stx",
-    hdrs = ["stx/optional.hpp"],
-    includes = ["."],
+    hdrs = ["include/stx/optional.hpp"],
+    includes = ["include"],
 )
 
 CMAKE_PACKAGE = "stx"
@@ -28,10 +28,10 @@ install(
     name = "install",
     targets = [":stx"],
     hdr_dest = "include/stx",
+    hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
-    docs = [
-        "LICENSE",
-    ],
+    docs = ["@drake//tools/workspace/stx:LICENSE"],
+    allowed_externals = ["@drake//tools/workspace/stx:LICENSE"],
     deps = [
         ":install_cmake_config",
     ],
