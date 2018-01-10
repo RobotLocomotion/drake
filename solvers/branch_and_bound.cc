@@ -251,6 +251,10 @@ bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
           "Call CheckOptimalSolutionIsIntegral() before calling this "
           "function.");
     }
+    // It is impossible to reach this default, but gcc throws the error
+    // Werror=return-type, if we do not have a default here.
+    default:
+      throw std::runtime_error("Should not reach this default.");
   }
 }
 
@@ -453,6 +457,10 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
             "The user defined function should not be null.");
       }
     }
+    // It is impossible to reach this default, but gcc throws the error
+    // Werror=return-type, if we do not have a default here.
+    default:
+      throw std::runtime_error("Should not reach this default.");
   }
 }
 
@@ -567,6 +575,10 @@ const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
       throw std::runtime_error(
           "The user should specify the function to pick a branching variable "
           "through SetUserDefinedBranchingVariableMethod.");
+    // It is impossible to reach this default, but gcc throws the error
+    // Werror=return-type, if we do not have a default here.
+    default:
+      throw std::runtime_error("Should not reach this default.");
   }
 }
 

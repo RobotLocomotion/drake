@@ -828,7 +828,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
       EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected0,
                                   tol, MatrixCompareType::absolute));
       // The costs are in the ascending order.
-      for (int i = 1; i < dut.bnb()->best_solutions().size(); ++i) {
+      for (int i = 1; i < static_cast<int>(dut.bnb()->best_solutions().size());
+           ++i) {
         EXPECT_GE(dut.bnb()->GetOptimalCost(i),
                   dut.bnb()->GetOptimalCost(i - 1));
       }
@@ -920,7 +921,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSteelBlendingProblem) {
       EXPECT_TRUE(CompareMatrices(bnb.GetSolution(b), b_expected0, tol,
                                   MatrixCompareType::absolute));
       EXPECT_NEAR(bnb.GetOptimalCost(), 8495, tol);
-      for (int i = 1; i < bnb.best_solutions().size(); ++i) {
+      for (int i = 1; i < static_cast<int>(bnb.best_solutions().size()); ++i) {
         EXPECT_GE(bnb.GetOptimalCost(i), bnb.GetOptimalCost(i - 1));
       }
     }
@@ -997,8 +998,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
       EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
       std::vector<std::pair<double, Eigen::VectorXd>> best_solutions;
       Eigen::Matrix<double, 9, 1> xy_expected;
-      xy_expected << 0, 0, 1.0/3, 2.0/3, 0, 0, 0, 1, 0;
-      best_solutions.emplace_back(8.0/3, xy_expected);
+      xy_expected << 0, 0, 1.0 / 3, 2.0 / 3, 0, 0, 0, 1, 0;
+      best_solutions.emplace_back(8.0 / 3, xy_expected);
       xy_expected << 0, 0, 0, 0.25, 75, 0, 0, 0, 1;
       best_solutions.emplace_back(13.0 / 4, xy_expected);
 
