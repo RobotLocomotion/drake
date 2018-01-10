@@ -81,7 +81,7 @@ def generate_export_header(
     if deprecated_macro_name == None:
         deprecated_macro_name = "%s_DEPRECATED" % lib.upper()
     if export_deprecated_macro_name == None:
-        export_deprecated_macro_name = "%s_EXPORT_DEPRECATED" % lib.upper()
+        export_deprecated_macro_name = "%s_DEPRECATED_EXPORT" % lib.upper()
 
     _generate_export_header_gen(
         name = name,
