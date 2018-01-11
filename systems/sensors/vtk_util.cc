@@ -18,6 +18,7 @@ vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size) {
   plane->SetOrigin(-half_size, -half_size, 0.);
   plane->SetPoint1(-half_size, half_size, 0.);
   plane->SetPoint2(half_size, -half_size, 0.);
+  plane->SetNormal(0., 0., 1.);
   plane->Update();
 
   return plane;

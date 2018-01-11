@@ -27,7 +27,10 @@ TEST_F(RgbdRendererVTKTest, NoBodyTest) {
   // Verifies depth.
   for (int y = 0; y < kHeight; ++y) {
     for (int x = 0; x < kWidth; ++x) {
-      EXPECT_TRUE(std::isnan(depth_.at(x, y)[0]));
+      // Using ASSERT here instead of EXPECT to stop all subsequent testing,
+      // because this function has been called inside for loops to search over
+      // all the pixels in an image.
+      ASSERT_TRUE(std::isinf(depth_.at(x, y)[0]));
     }
   }
 }
@@ -37,7 +40,7 @@ TEST_F(RgbdRendererVTKTest, TerrainTest) {
 
   const auto& kTerrain = renderer_->color_palette().get_terrain_color();
   // At two different distances.
-  for (auto depth : std::array<float, 2>({{2.f, 5.f}})) {
+  for (auto depth : std::array<float, 2>({{2.f, 4.9999f}})) {
     X_WC_.translation().z() = depth;
     renderer_->UpdateViewpoint(X_WC_);
     Render();
