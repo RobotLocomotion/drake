@@ -10,9 +10,11 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-MultibodyForcing<T>::MultibodyForcing(const MultibodyTree<T>& model) :
-    F_B_W_(model.get_num_bodies(), SpatialForce<T>::Zero()),
-    tau_(VectorX<T>::Zero(model.get_num_velocities())) {}
+MultibodyForcing<T>::MultibodyForcing(const MultibodyTree<T>& model) {
+  DRAKE_DEMAND(model.topology_is_valid());
+  F_B_W_.resize(model.get_num_bodies(), SpatialForce<T>::Zero());
+  tau_.resize(model.get_num_velocities());
+}
 
 template <typename T>
 MultibodyForcing<T>& MultibodyForcing<T>::SetZero() {
@@ -25,7 +27,7 @@ template <typename T>
 bool MultibodyForcing<T>::CheckInvariants(
     const MultibodyTree<T>& model) const {
   return
-      model.get_num_velocities() == num_mobilities() &&
+      model.get_num_velocities() == num_velocities() &&
       model.get_num_bodies() == num_bodies();
 }
 

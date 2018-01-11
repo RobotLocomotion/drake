@@ -306,9 +306,7 @@ class DrakeKukaIIwaRobot {
     // Applied forcing:
     MultibodyForcing<T> forcing(*model_);
 
-    // Adds into forcing the effect of gravity given that it was included
-    // earlier in the model via:
-    // model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
+    // Adds the previously included effect of gravity into forcing.
     model_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
 
     // Output vector of generalized forces for calculated motor torques

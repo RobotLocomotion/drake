@@ -7,10 +7,10 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/rotational_inertia.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/rotational_inertia.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
 namespace drake {
@@ -49,12 +49,12 @@ TEST_F(MultibodyForcingTests, Construction) {
   // Forcing object should be compatible with the original model.
   EXPECT_TRUE(forcing.CheckInvariants(model_));
   EXPECT_EQ(forcing.num_bodies(), model_.get_num_bodies());
-  EXPECT_EQ(forcing.num_mobilities(), model_.get_num_velocities());
+  EXPECT_EQ(forcing.num_velocities(), model_.get_num_velocities());
 
   EXPECT_TRUE(forcing.generalized_forces() == Vector2d::Zero());
 
   for (const SpatialForce<double>& F : forcing.body_forces()) {
-    EXPECT_TRUE(F.IsApprox(SpatialForce<double>::Zero(), kEpsilon));
+    EXPECT_TRUE(F.IsApprox(SpatialForce<double>::Zero(), 0));
   }
 }
 
@@ -71,7 +71,7 @@ TEST_F(MultibodyForcingTests, NonZeroForcing) {
   // Create a second non-zero forcing:
   MultibodyForcing<double> forcing2(model_);
   ASSERT_EQ(forcing2.num_bodies(), 3);
-  ASSERT_EQ(forcing2.num_mobilities(), 2);
+  ASSERT_EQ(forcing2.num_velocities(), 2);
   forcing2.mutable_generalized_forces() = Vector2d(3, 4);
   forcing2.mutable_body_forces()[0] =
       SpatialForce<double>(Vector3d(6, 7, 8), Vector3d(9, 10, 11));

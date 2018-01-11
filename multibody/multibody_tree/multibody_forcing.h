@@ -13,7 +13,7 @@ namespace multibody {
 template<typename T> class MultibodyTree;
 
 /// A class to hold the external forcing applied to a MultibodyTree system.
-/// External forcing might include generalized forces at joints as well as
+/// External forcing can include generalized forces at joints as well as
 /// spatial forces on bodies.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -32,6 +32,8 @@ class MultibodyForcing {
 
   /// Constructs a forcing object compatible with `model`. Forcing is
   /// initialized to zero, meaning no forces are applied to `model`.
+  /// `model` must have been already finalized with MultibodyTree::Finalize() or
+  /// this constructor will abort.
   explicit MultibodyForcing(const MultibodyTree<T>& model);
 
   /// Sets `this` forcing to hold zero forces (no applied forces).
@@ -43,9 +45,10 @@ class MultibodyForcing {
     return static_cast<int>(F_B_W_.size());
   }
 
-  /// Returns the number of mobilities for which this forcing applies.
+  /// Returns the number of generalized velocities for the model to which this
+  /// forcing applies.
   /// Determined at construction from the given model MultibodyTree object.
-  int num_mobilities() const {
+  int num_velocities() const {
     return static_cast<int>(tau_.size());
   }
 
@@ -60,7 +63,8 @@ class MultibodyForcing {
   }
 
   /// Returns a constant reference to the vector of applied spatial forces
-  /// F_B_W on each body B in the model, expressed in the world frame W.
+  /// `F_BBo_W` on each body B in the model, at the body's frame origin `Bo`,
+  /// expressed in the world frame W.
   /// @note Entries are ordered by BodyNodeIndex.
   const std::vector<SpatialForce<T>>& body_forces() const {
     return F_B_W_;
