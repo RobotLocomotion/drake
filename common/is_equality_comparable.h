@@ -58,7 +58,7 @@ struct is_equality_comparable_helper<T, typename std::enable_if<true,
  or a definition external to the class of the form:
 
  @code
- bool Foo::operator==(const Foo&, const Foo&);
+ bool operator==(const Foo&, const Foo&);
  @endcode
 
  @tparam  T  The class to test for equality comparability.
