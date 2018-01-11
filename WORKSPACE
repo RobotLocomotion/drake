@@ -216,24 +216,24 @@ github_archive(
 github_archive(
     name = "ccd",
     repository = "danfis/libccd",
-    commit = "v2.0",
-    sha256 = "1b4997e361c79262cf1fe5e1a3bf0789c9447d60b8ae2c1f945693ad574f9471",  # noqa
+    commit = "5677d384315d64c41a9e1dabe6a531f10ffbb7fb",
+    sha256 = "3b37ef4555d087f7abb6aa59c3b5cecb96410ea10e95a086ef2771569fb6fdfb",  # noqa
     build_file = "tools/workspace/ccd/ccd.BUILD.bazel",
 )
 
 github_archive(
     name = "octomap",
     repository = "OctoMap/octomap",
-    commit = "v1.7.2",
-    sha256 = "fe55efbb9ebf2b3388860e54b1c8a53d23e5a05de5956c043278013e01066c34",  # noqa
+    commit = "v1.8.1",
+    sha256 = "8b18ef7693e87f1400b9a8bc41f86e3b28259ac98c0b458037232652380aa6af",  # noqa
     build_file = "tools/workspace/octomap/octomap.BUILD.bazel",
 )
 
 github_archive(
     name = "fcl",
     repository = "flexible-collision-library/fcl",
-    commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
-    sha256 = "da86ed593a908d075657a305abec1670b895278a99ba76632b7afb6e678a9978",  # noqa
+    commit = "43048336c34a01156dc216e8534ffb2788675ddf",
+    sha256 = "fd74916b92ed58e77c06097dc18f545462417daa8c96fa8ea2a5c81cd3205917",  # noqa
     build_file = "tools/workspace/fcl/fcl.BUILD.bazel",
 )
 

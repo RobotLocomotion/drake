@@ -2,9 +2,4 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-exports_files(
-    ["ccd-create-cps.py"],
-    visibility = ["@ccd//:__pkg__"],
-)
-
 add_lint_tests()
