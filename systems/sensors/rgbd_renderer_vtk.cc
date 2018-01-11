@@ -301,12 +301,11 @@ void RgbdRendererVTK::Impl::ImplRenderDepthImage(
         depth_image_out->at(u, v)[0] = InvalidDepth::kTooFar;
       } else {
         // Decoding three channel color values to a float value. For the detail,
-        // see:
-        // https://aras-p.info/blog/2009/07/30/encoding-floats-to-rgba-the-final/
+        // see depth_shaders.h.
         float shader_value =
-            image.at(u, v)[0] / (255. * 255.) +
+            image.at(u, v)[0] +
             image.at(u, v)[1] / 255. +
-            image.at(u, v)[2];
+            image.at(u, v)[2] / (255. * 255.);
 
         // Dividing by 255 so that the range gets to be [0, 1].
         shader_value /= 255.f;
