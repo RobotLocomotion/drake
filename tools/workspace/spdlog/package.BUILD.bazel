@@ -35,7 +35,7 @@ cc_library(
 
 cmake_config(
     package = "spdlog",
-    script = "@drake//tools/workspace/spdlog:spdlog-create-cps.py",
+    script = "@drake//tools/workspace/spdlog:package-create-cps.py",
     version_file = "CMakeLists.txt",
     deps = ["@fmt//:cps"],
 )

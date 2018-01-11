@@ -8,7 +8,7 @@ dependency.
 
 Example:
     WORKSPACE:
-        load("//tools/workspace/mosek:mosek.bzl", "mosek_repository")
+        load("@drake//tools/workspace/mosek:package.bzl", "mosek_repository")
         mosek_repository(name = "foo")
 
     BUILD:

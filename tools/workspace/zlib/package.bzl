@@ -10,7 +10,7 @@ in /usr/include and /usr/lib, respectively.
 
 Example:
     WORKSPACE:
-        load("//tools/workspace/zlib:zlib.bzl", "zlib_repository")
+        load("@drake//tools/workspace/zlib:package.bzl", "zlib_repository")
         zlib_repository(name = "foo")
 
     BUILD:

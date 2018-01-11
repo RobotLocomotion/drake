@@ -53,7 +53,7 @@ cc_library(
 
 cmake_config(
     package = "ccd",
-    script = "@drake//tools/workspace/ccd:ccd-create-cps.py",
+    script = "@drake//tools/workspace/ccd:package-create-cps.py",
     version_file = "CMakeLists.txt",
 )
 

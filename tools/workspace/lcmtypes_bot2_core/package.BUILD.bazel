@@ -59,10 +59,7 @@ lcm_py_library(
 CMAKE_PACKAGE = "bot2-core-lcmtypes"
 
 cmake_config(
-    cps_file_name = "@drake//tools/workspace/{}:{}.cps".format(
-        "lcmtypes_bot2_core",
-        CMAKE_PACKAGE,
-    ),
+    cps_file_name = "@drake//tools/workspace/lcmtypes_bot2_core:package.cps",
     package = CMAKE_PACKAGE,
 )
 

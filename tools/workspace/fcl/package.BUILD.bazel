@@ -59,7 +59,7 @@ cc_library(
 
 cmake_config(
     package = "fcl",
-    script = "@drake//tools/workspace/fcl:fcl-create-cps.py",
+    script = "@drake//tools/workspace/fcl:package-create-cps.py",
     version_file = "CMakeModules/FCLVersion.cmake",
     deps = [
         "@ccd//:cps",
