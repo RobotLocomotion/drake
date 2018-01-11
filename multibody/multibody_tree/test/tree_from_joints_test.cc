@@ -25,6 +25,7 @@ using benchmarks::Acrobot;
 using Eigen::Isometry3d;
 using Eigen::Matrix2d;
 using Eigen::Translation3d;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
@@ -247,6 +248,74 @@ class PendulumTests : public ::testing::Test {
     CompareMatrices(H, H_expected, kTolerance, MatrixCompareType::relative);
   }
 
+  // VerifyInverseDynamicsWithAppliedJointForces
+  void VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      double theta1, double theta2,
+      double theta1dot, double theta2dot,
+      double tau1, double tau2) {
+    const double kTolerance = 10 * kEpsilon;
+
+    // Set up workspace:
+    const int nv = tree_->get_num_velocities();
+    // External forces:
+    MultibodyForcing<double> forcing(model_.get_tree());
+    // Bodies's accelerations:
+    std::vector<SpatialAcceleration<double>> A_WB_array(
+        tree_->get_num_bodies());
+    // Generalized accelerations:
+    VectorX<double> vdot = VectorX<double>::Zero(nv);
+
+    // Useful aliases:
+    std::vector<SpatialForce<double>>& F_BBo_W_array =
+        forcing.mutable_body_forces();
+    VectorX<double>& tau_array = forcing.mutable_generalized_forces();
+
+    // Set angles:
+    model_.shoulder().set_angle(context_.get(), theta1);
+    model_.elbow().set_angle(context_.get(), theta2);
+
+    // Set angular rates:
+    model_.shoulder().set_angular_rate(context_.get(), theta1dot);
+    model_.elbow().set_angular_rate(context_.get(), theta2dot);
+
+    PositionKinematicsCache<double> pc(tree_->get_topology());
+    VelocityKinematicsCache<double> vc(tree_->get_topology());
+    tree_->CalcPositionKinematicsCache(*context_, &pc);
+    tree_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+
+    // Compute forces applied through force elements. This effectively resets
+    // the forcing to zero and adds in contributions due to force elements:
+    tree_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
+
+    // Apply external torques at the joints:
+    model_.shoulder().AddInTorque(*context_, tau1, &forcing);
+    model_.elbow().AddInTorque(*context_, tau2, &forcing);
+
+    // WARNING: to reduce memory foot-print, we use the input applied arrays also
+    // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied
+    // get overwritten on output. This is not important in this case since we
+    // don't need their values anymore. Please see the documentation for
+    // CalcInverseDynamics() for details.
+    // With vdot = 0, this computes:
+    //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+    tree_->CalcInverseDynamics(
+        *context_, pc, vc, vdot,
+        F_BBo_W_array, tau_array,
+        &A_WB_array,
+        &F_BBo_W_array, /* Notice these arrays get overwritten on output. */
+        &tau_array);
+
+    // Now compute inverse dynamics using our benchmark:
+    Vector2d tau(tau1, tau2);
+    Vector2d C = acrobot_benchmark_.CalcCoriolisVector(
+        theta1, theta2, theta1dot, theta2dot);
+    Vector2d tau_g = acrobot_benchmark_.CalcGravityVector(theta1, theta2);
+    Vector2d rhs = C - tau_g - tau;
+
+    EXPECT_TRUE(CompareMatrices(
+        tau_array, rhs, kTolerance, MatrixCompareType::relative));
+  }
+
  protected:
   // The MultibodyTree model under test.
   DoublePendulumModel<double> model_;
@@ -288,6 +357,80 @@ TEST_F(PendulumTests, CalcMassMatrixViaInverseDynamics) {
   VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 2.0);
   VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 3.0);
   VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 4.0);
+}
+
+// Compute forward dynamics by explicitly forming the mass matrix.
+TEST_F(PendulumTests, CalcForwardDynamicsViaExplicitMassMatrixSolve) {
+  // With zero velocity and zero input torques.
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      0.0, 0.0,   /* joint's angles */
+      0.0, 0.0,   /* joint's angular rates */
+      0.0, 0.0);  /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      0.0, M_PI / 2.0,  /* joint's angles */
+      0.0, 0.0,         /* joint's angular rates */
+      0.0, 0.0);        /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      0.0, M_PI / 3.0,  /* joint's angles */
+      0.0, 0.0,         /* joint's angular rates */
+      0.0, 0.0);        /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      0.0, M_PI / 4.0,  /* joint's angles */
+      0.0, 0.0,         /* joint's angular rates */
+      0.0, 0.0);        /* joint's torques */
+
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      M_PI / 3.0, 0.0,   /* joint's angles */
+      0.0, 0.0,          /* joint's angular rates */
+      0.0, 0.0);         /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      M_PI / 3.0, M_PI / 2.0,  /* joint's angles */
+      0.0, 0.0,                /* joint's angular rates */
+      0.0, 0.0);               /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      M_PI / 3.0, M_PI / 3.0,  /* joint's angles */
+      0.0, 0.0,                /* joint's angular rates */
+      0.0, 0.0);               /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      M_PI / 3.0, M_PI / 4.0,  /* joint's angles */
+      0.0, 0.0,                /* joint's angular rates */
+      0.0, 0.0);               /* joint's torques */
+
+  // With non-zero velocities and zero torques:
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0,                 /* joint's angular rates */
+      0.0, 0.0);                /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 3.0,  /* joint's angles */
+      0.5, 1.0,                 /* joint's angular rates */
+      0.0, 0.0);                /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      -1.5, 0.5,                /* joint's angular rates */
+      0.0, 0.0);                /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 3.0,  /* joint's angles */
+      -1.5, 0.5,                /* joint's angular rates */
+      0.0, 0.0);                /* joint's torques */
+
+  // With non-zero velocities and non-zero torques:
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0,                 /* joint's angular rates */
+      0.5, 1.0);                /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0,                 /* joint's angular rates */
+      0.5, -1.0);               /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0,                 /* joint's angular rates */
+      -0.5, 1.0);               /* joint's torques */
+  VerifyCalcForwardDynamicsViaExplicitMassMatrixSolve(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0,                 /* joint's angular rates */
+      -0.5, -1.0);              /* joint's torques */
 }
 
 }  // namespace
