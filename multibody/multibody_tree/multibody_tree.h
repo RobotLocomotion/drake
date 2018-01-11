@@ -17,6 +17,7 @@
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
+#include "drake/multibody/multibody_tree/multibody_forcing.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
@@ -899,23 +900,12 @@ class MultibodyTree {
   /// @param[in] vc
   ///   A velocity kinematics cache object already updated to be in sync with
   ///   `context`.
-  /// @param[out] F_Bo_W_array
-  ///   A pointer to a valid, non nullptr, vector of spatial forces
-  ///   containing, for each body B, the total spatial force `F_Bo_W` applied at
-  ///   Bo by the force elements in `this` model, expressed in the world frame
-  ///   W. It must be of size equal to the number of bodies in the
-  ///   MultibodyTree. This method will abort if the the pointer is null or if
-  ///   `F_Bo_W_array` is not of size `get_num_bodies()`.
-  ///   On output, entries will be ordered by BodyNodeIndex.
-  ///   To access a mobilizer's reaction force on given body B in this array,
-  ///   use the index returned by Body::get_node_index().
-  /// @param[out] tau_array
-  ///   On output this array will contain the generalized forces contribution
-  ///   applied by the force elements in `this` model. It must not be nullptr
-  ///   and it must be of size MultibodyTree::get_num_velocities() or this
-  ///   method will abort.
-  ///   Generalized forces for each Mobilizer can be accessed with
-  ///   Mobilizer::get_generalized_forces_from_array().
+  /// @param[out] forcing
+  ///   A pointer to a valid, non nullptr, multibody forcing object. On output
+  ///   `forcing` will store the forces exerted by all the ForceElement
+  ///   objects in the model. This method will abort if the `forcing` pointer is
+  ///   null or if the forcing object is not compatible with `this`
+  ///   %MultibodyTree, see MultibodyForcing::CheckInvariants().
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -925,8 +915,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_Bo_W_array,
-      EigenPtr<VectorX<T>> tau_array) const;
+      MultibodyForcing<T>* forcing) const;
 
   /// Computes and returns the total potential energy stored in `this` multibody
   /// model for the configuration given by `context`.
