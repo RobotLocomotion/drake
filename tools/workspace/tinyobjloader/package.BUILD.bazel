@@ -25,7 +25,7 @@ cc_library(
 
 cmake_config(
     package = "tinyobjloader",
-    script = "@drake//tools/workspace/tinyobjloader:tinyobjloader-create-cps.py",  # noqa
+    script = "@drake//tools/workspace/tinyobjloader:package-create-cps.py",
     version_file = "CMakeLists.txt",
 )
 

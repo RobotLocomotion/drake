@@ -3,7 +3,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(
-    ["robotlocomotion-lcmtypes.cps"],
+    ["package.cps"],
     visibility = ["@lcmtypes_robotlocomotion//:__pkg__"],
 )
 

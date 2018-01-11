@@ -10,7 +10,7 @@ and /usr/lib, respectively.
 
 Example:
     WORKSPACE:
-        load("//tools/workspace/expat:expat.bzl", "expat_repository")
+        load("@drake//tools/workspace/expat:package.bzl", "expat_repository")
         expat_repository(name = "foo")
 
     BUILD:

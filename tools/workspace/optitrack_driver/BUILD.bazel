@@ -20,7 +20,7 @@ install_files(
 CMAKE_PACKAGE = "optitrack"
 
 cmake_config(
-    cps_file_name = CMAKE_PACKAGE + ".cps",
+    cps_file_name = "package.cps",
     package = CMAKE_PACKAGE,
 )
 
