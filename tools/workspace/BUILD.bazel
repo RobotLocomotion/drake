@@ -38,7 +38,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "tinyobjloader",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
-    "jchart2d",
+    "net_sf_jchart2d",
     "optitrack_driver",
 ]] + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
