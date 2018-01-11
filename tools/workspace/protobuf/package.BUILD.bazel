@@ -11,8 +11,8 @@ install_files(
     name = "install",
     dest = "lib/cmake/drake/modules",
     files = [
+        "3.10/Copyright.txt",
         "3.10/Modules/FindProtobuf.cmake",
-        "3.10/Copyright.txt"
     ],
     strip_prefix = ["3.10/Modules"],
 )

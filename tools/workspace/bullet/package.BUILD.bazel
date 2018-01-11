@@ -19,7 +19,7 @@ BULLET_INCLUDES = ["src"]
 LINEAR_MATH_HDRS = glob(["src/LinearMath/**/*.h"])
 
 # Keep defines in sync with Components.LinearMath.Definitions in
-# bullet-create-cps.py.
+# package-create-cps.py.
 LINEAR_MATH_DEFINES = ["BT_USE_DOUBLE_PRECISION"]
 
 cc_binary(
@@ -67,7 +67,7 @@ cc_library(
 
 cmake_config(
     package = "Bullet",
-    script = "@drake//tools/workspace/bullet:bullet-create-cps.py",
+    script = "@drake//tools/workspace/bullet:package-create-cps.py",
     version_file = "VERSION",
 )
 

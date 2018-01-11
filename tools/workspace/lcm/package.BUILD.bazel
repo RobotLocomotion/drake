@@ -227,7 +227,7 @@ java_binary(
 
 cmake_config(
     package = "lcm",
-    script = "@drake//tools/workspace/lcm:lcm-create-cps.py",
+    script = "@drake//tools/workspace/lcm:package-create-cps.py",
     version_file = "lcm/lcm_version.h",
 )
 

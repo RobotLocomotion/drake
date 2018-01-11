@@ -68,7 +68,7 @@ CMAKE_PACKAGE = "ignition-rndf0"
 
 cmake_config(
     package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/ignition_rndf:ignition_rndf-create-cps.py",  # noqa
+    script = "@drake//tools/workspace/ignition_rndf:package-create-cps.py",
     version_file = "CMakeLists.txt",
     deps = ["@ignition_math//:cps"],
 )

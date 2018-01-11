@@ -30,7 +30,7 @@ cc_library(
 
 cmake_config(
     package = "Eigen3",
-    script = "@drake//tools/workspace/eigen:eigen-create-cps.py",
+    script = "@drake//tools/workspace/eigen:package-create-cps.py",
     version_file = "Eigen/src/Core/util/Macros.h",
 )
 
