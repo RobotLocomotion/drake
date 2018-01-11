@@ -1,13 +1,10 @@
 #pragma once
 
-#ifndef DRAKE_DOXYGEN_CXX
-
 #include <type_traits>
 
 namespace drake {
 
-/** @cond */
-
+#ifndef DRAKE_DOXYGEN_CXX
 
 namespace is_less_than_comparable_detail {
 
@@ -56,6 +53,12 @@ struct is_less_than_comparable_helper<T, typename std::enable_if<true,
 
  @code
  bool Foo::operator<(const Foo&) const;
+ @endcode
+
+ or a definition external to the class of the form:
+
+ @code
+ bool Foo::operator<(const Foo&, const Foo&);
  @endcode
 
  @tparam  T  The class to test for less-than comparability.
