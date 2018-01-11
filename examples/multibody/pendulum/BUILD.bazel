@@ -11,8 +11,12 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "pendulum_plant",
-    srcs = ["pendulum_plant.cc"],
-    hdrs = ["pendulum_plant.h"],
+    srcs = [
+        "pendulum_plant.cc",
+    ],
+    hdrs = [
+        "pendulum_plant.h",
+    ],
     deps = [
         "//drake/common:default_scalars",
         "//drake/geometry:geometry_ids",
