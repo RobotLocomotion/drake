@@ -1,4 +1,9 @@
 {
+  "DOCUMENTATION_FOR_DEVELOPERS_EDITING_THIS_FILE": {
+    "What": "This file explains to buildifier how to sort attribute names, and which lists of labels get internally sorted.",
+    "Why": "Drake's skylark macros have custom attributes, and we want them to sort in a reasonable way.",
+    "See": "https://github.com/bazelbuild/buildtools/blob/master/tables/tables.go"
+  },
   "IsLabelArg": {
   },
   "LabelBlacklist": {
