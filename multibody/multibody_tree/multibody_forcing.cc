@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/multibody_forcing.h"
 
 #include <algorithm>
+#include <functional>
 
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -33,9 +34,9 @@ void MultibodyForcing<T>::AddInForcing(
     const MultibodyForcing<T>& addend) {
   // Add in body forces:
   std::transform(
-      F_B_W_.begin( ), F_B_W_.end( ),
-      addend.body_forces().begin( ),
-      F_B_W_.begin( ), std::plus<SpatialForce<T>>());
+      F_B_W_.begin(), F_B_W_.end(),
+      addend.body_forces().begin(),
+      F_B_W_.begin(), std::plus<SpatialForce<T>>());
   // Add in generalized forces:
   tau_ += addend.generalized_forces();
 }

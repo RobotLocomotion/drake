@@ -32,7 +32,7 @@ class MultibodyForcing {
 
   /// Constructs a forcing object compatible with `model`. Forcing is
   /// initialized to zero, meaning no forces are applied to `model`.
-  MultibodyForcing(const MultibodyTree<T>& model);
+  explicit MultibodyForcing(const MultibodyTree<T>& model);
 
   /// Sets `this` forcing to hold zero forces (no applied forces).
   MultibodyForcing<T>& SetZero();

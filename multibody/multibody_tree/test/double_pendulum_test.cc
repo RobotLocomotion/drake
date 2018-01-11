@@ -645,8 +645,6 @@ class PendulumKinematicTests : public PendulumTests {
     // UniformGravityFieldElement in the model.
     // Applied forcing:
     MultibodyForcing<double> forcing(*model_);
-    //VectorXd tau_applied(model_->get_num_velocities());
-    //vector<SpatialForce<double>> Fapplied_Bo_W_array(model_->get_num_bodies());
     model_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
 
     // ======================================================================
