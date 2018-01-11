@@ -7,7 +7,7 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(_cpp_types_py, m) {
   using drake::pydrake::internal::RegisterType;
-  py::exec("import ctypes; import numpy as np");
+  py::exec("import numpy as np");
   // Make mappings for C++ RTTI to Python types.
   // Unfortunately, this is hard to obtain from `pybind11`.
   RegisterType<bool>("bool");
