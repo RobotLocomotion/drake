@@ -26,6 +26,8 @@ def find_binary_executables():
     Takes `potential_binaries` as input list, and updates
     `files_to_fix_up` with executables that need to be fixed up.
     """
+    if not potential_binaries:
+        return
     # Checking file type with command `file` is the safest way to find
     # executables. Files without an extension are likely to be executables, but
     # it is not always the case.

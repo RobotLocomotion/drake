@@ -35,10 +35,12 @@ local_repository(
     path = "third_party/com_github_google_kythe",
 )
 
-new_local_repository(
+github_archive(
     name = "tinydir",
+    repository = "cxong/tinydir",
+    commit = "3aae9224376b5e1a23fd824f19d9501162620b53",
+    sha256 = "fa7eec0baaa5f6c57df1a38b064ec3a4f098f477f0a64d97c646a4470ffdd3b6",  # noqa
     build_file = "tools/workspace/tinydir/tinydir.BUILD.bazel",
-    path = __workspace_dir__ + "/third_party/com_github_cxong_tinydir",
 )
 
 new_local_repository(
@@ -47,10 +49,12 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/josephdavisco_spruce",
 )
 
-new_local_repository(
+github_archive(
     name = "stx",
+    repository = "tcbrindle/cpp17_headers",
+    commit = "e416b34c132e05487ef8d7fd197f4513d6535c1d",
+    sha256 = "26a534bef07e9e0b7c9bfa4dc0ae0b154e4a5ad8d71a2487f6e33d6e3ca0dadc",  # noqa
     build_file = "tools/workspace/stx/stx.BUILD.bazel",
-    path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
 # This local repository imports the protobuf build rules for Bazel (based on
