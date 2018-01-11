@@ -20,7 +20,7 @@ cc_library(
 
 cmake_config(
     package = "fmt",
-    script = "@drake//tools/workspace/fmt:fmt-create-cps.py",
+    script = "@drake//tools/workspace/fmt:package-create-cps.py",
     version_file = "CMakeLists.txt",
 )
 

@@ -7,7 +7,7 @@ C/C++ dependency.
 
 Example:
     WORKSPACE:
-        load("//tools/workspace/numpy:numpy.bzl", "numpy_repository")
+        load("@drake//tools/workspace/numpy:repo.bzl", "numpy_repository")
         numpy_repository(
             name = "foo",
             python_version = "2.7",

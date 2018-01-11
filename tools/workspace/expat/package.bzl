@@ -2,21 +2,21 @@
 # vi: set ft=python :
 
 """
-Makes a system-installed zlib image compression library headers and library
-available to be used as a C/C++ dependency. On Ubuntu Xenial,  pkg-config is
-used to locate the zlib headers and library. On macOS and OS X, no pkg-config
-zlib.pc file is installed, but the zlib headers and library are always located
-in /usr/include and /usr/lib, respectively.
+Makes a system-installed Expat XML parser headers and library available to be
+used as a C/C++ dependency. On Ubuntu Xenial, pkg-config is used to locate the
+Expat headers and library. On macOS and OS X, no pkg-config expat.pc file is
+installed, but the Expat headers and library are always located in /usr/include
+and /usr/lib, respectively.
 
 Example:
     WORKSPACE:
-        load("//tools/workspace/zlib:zlib.bzl", "zlib_repository")
-        zlib_repository(name = "foo")
+        load("@drake//tools/workspace/expat:package.bzl", "expat_repository")
+        expat_repository(name = "foo")
 
     BUILD:
         cc_library(
             name = "foobar",
-            deps = ["@foo//:zlib"],
+            deps = ["@foo//:expat"],
             srcs = ["bar.cc"],
         )
 
@@ -38,19 +38,20 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         repository_ctx.file("empty.cc", executable = False)
 
-        repository_ctx.symlink("/usr/include/zlib.h", "include/zlib.h")
-        repository_ctx.symlink("/usr/include/zconf.h", "include/zconf.h")
+        repository_ctx.symlink("/usr/include/expat.h", "include/expat.h")
+        repository_ctx.symlink("/usr/include/expat_external.h",
+                               "include/expat_external.h")
 
         file_content = """
 cc_library(
-    name = "zlib",
+    name = "expat",
     srcs = ["empty.cc"],
     hdrs = [
-      "include/zconf.h",
-      "include/zlib.h",
+        "include/expat_external.h",
+        "include/expat.h",
     ],
     includes = ["include"],
-    linkopts = ["-lz"],
+    linkopts = ["-lexpat"],
     visibility = ["//visibility:public"],
 )
 """
@@ -63,9 +64,9 @@ cc_library(
         if error != None:
             fail(error)
 
-zlib_repository = repository_rule(
+expat_repository = repository_rule(
     attrs = {
-        "modname": attr.string(default = "zlib"),
+        "modname": attr.string(default = "expat"),
     },
     local = True,
     implementation = _impl,

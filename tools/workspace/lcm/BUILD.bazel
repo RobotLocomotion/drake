@@ -7,7 +7,7 @@ load(
 )
 
 exports_files(
-    ["lcm-create-cps.py"],
+    ["package-create-cps.py"],
     visibility = ["@lcm//:__pkg__"],
 )
 

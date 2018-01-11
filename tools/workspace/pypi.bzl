@@ -19,7 +19,7 @@ def pypi_archive(
         https://files.pythonhosted.org/packages/source/f/foo/foo-1.2.3.tar.gz.
 
         WORKSPACE:
-            load("//tools/workspace:pypi_archive.bzl", "pypi_archive")
+            load("//tools/workspace:pypi.bzl", "pypi_archive")
             pypi_archive(
                 name = "foo",
                 version = "1.2.3",

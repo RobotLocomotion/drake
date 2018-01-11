@@ -132,7 +132,7 @@ cc_library(
 
 cmake_config(
     package = "SDFormat",
-    script = "@drake//tools/workspace/sdformat:sdformat-create-cps.py",
+    script = "@drake//tools/workspace/sdformat:package-create-cps.py",
     version_file = "CMakeLists.txt",
     deps = ["@ignition_math//:cps"],
 )

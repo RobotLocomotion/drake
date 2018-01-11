@@ -49,7 +49,7 @@ cc_library(
 
 cmake_config(
     package = "pybind11",
-    script = "@drake//tools/workspace/pybind11:pybind11-create-cps.py",
+    script = "@drake//tools/workspace/pybind11:package-create-cps.py",
     version_file = "include/pybind11/detail/common.h",
 )
 
