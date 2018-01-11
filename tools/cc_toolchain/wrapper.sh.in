@@ -1,0 +1,40 @@
+#!/bin/bash
+set -euo pipefail
+
+# Real compiler path. Configured by CMake
+_COMPILER=@COMPILER@
+# If bazel is configuring the project and trying to get the list of system
+# include directories, we also compute the real path (canonical path) of the
+# include directories that are symlinks. We keep both original and canonical
+# paths just in case. The flags used in this step are visible in bazel source
+# code [1].
+# [1] https://github.com/bazelbuild/bazel/blob/ceaed51/tools/cpp/unix_cc_configure.bzl#L149-L168
+if [[ "$*" ==  *"-E"* ]] &&
+    [[ "$*" == *"-xc++"* ]] &&
+    [[ "$*" == *"-"* ]] &&
+    [[ "$*" == *"-v"* ]]
+then
+    $_COMPILER "$@" 2>&1 >/dev/null | while IFS= read line ; do
+    # Prints include directory in stderr, and if it is a symlink, gets the link
+    # path and print it to stderr too. We cannot use `readlink -f` because
+    # MacOS `readlink` does not have this flag. Using Python instead.
+    line_escape=$(echo "$line" |sed "s/'/\\\\'/g")
+    python -c "$(echo "
+        import os
+        import sys
+        import re
+        line = '$line_escape'
+        sys.stderr.write(line + '\n')
+        if re.match('^[ ]*/usr/.*', line):
+            filename = line.lstrip()
+            nbspaces = len(line) - len(filename)
+            if os.path.islink(filename):
+                path = os.path.join(os.path.dirname(filename), os.readlink(filename))
+                path = os.path.abspath(path)
+                sys.stderr.write(' ' * nbspaces + path + '\n')
+        " | sed 's/        //')"
+    done
+else
+# Otherwise, just run the compiler normally.
+  $_COMPILER "$@"
+fi
