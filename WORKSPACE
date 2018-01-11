@@ -18,22 +18,9 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 load("//tools/workspace:which.bzl", "which")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-local_repository(
-    name = "kythe",
-    # TODO(jwnimmer-tri) According to Bazel documentation, the `path` argument
-    # to `local_repository()` is supposed be an absolute path.  We should be
-    # using using the __workspace_dir__ prefix here, like the other third_party
-    # workspace items below.  However, doing so causes loading-phase errors.
-    # We suspect that those errors are due to a Bazel bug, possibly related to
-    # either bazelbuild/bazel#2811 and/or bazelbuild/bazel#269.  Since the only
-    # use of kythe tooling is for pkg_config_package, and we plan to implement
-    # our own version of that soon anyway, we'll leave this alone for now,
-    # rather than diagnosing the errors.
-    path = "third_party/com_github_google_kythe",
-)
 
 github_archive(
     name = "tinydir",
@@ -75,31 +62,29 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/com_kitware_gitlab_cmake_cmake",
 )
 
-load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
-
-pkg_config_package(
+pkg_config_repository(
     name = "ibex",
     modname = "ibex",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "dreal",
     modname = "dreal",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "glib",
     modname = "glib-2.0",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "gthread",
     modname = "gthread-2.0",
 )
 
 # Load in the paths and flags to the system version of the protobuf runtime;
 # the Bazel build rules are loaded into "protobuf" via local_repository above.
-pkg_config_package(
+pkg_config_repository(
     name = "libprotobuf",
     modname = "protobuf",
 )
@@ -252,12 +237,12 @@ github_archive(
     build_file = "tools/workspace/fcl/fcl.BUILD.bazel",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "ipopt",
     modname = "ipopt",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "nlopt",
     modname = "nlopt",
 )
@@ -293,12 +278,12 @@ github_archive(
     build_file = "tools/workspace/lcmtypes_robotlocomotion/lcmtypes_robotlocomotion.BUILD.bazel",  # noqa
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "blas",
     modname = "blas",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "lapack",
     modname = "lapack",
 )
@@ -319,11 +304,11 @@ github_archive(
     build_file = "tools/workspace/tinyobjloader/tinyobjloader.BUILD.bazel",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "yaml_cpp",
-    atleast_version = "0.5.2",
-    build_file_template = "@drake//tools/workspace/yaml_cpp:yaml_cpp.BUILD.tpl",  # noqa
     modname = "yaml-cpp",
+    atleast_version = "0.5.2",
+    extra_deps = ["@boost//:boost_headers"],
 )
 
 load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
@@ -441,27 +426,27 @@ expat_repository(
     name = "expat",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "glew",
     modname = "glew",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "liblz4",
     modname = "liblz4",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "libpng",
     modname = "libpng",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "tinyxml",
     modname = "tinyxml",
 )
 
-pkg_config_package(
+pkg_config_repository(
     name = "tinyxml2",
     modname = "tinyxml2",
 )
