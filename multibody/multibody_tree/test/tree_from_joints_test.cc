@@ -31,7 +31,7 @@ using std::unique_ptr;
 using systems::Context;
 
 // Set of MultibodyTree tests for a double pendulum model. This simple set of
-// tests serve as an example on how to build a model using RigidBody and Joint
+// tests serves as an example on how to build a model using RigidBody and Joint
 // objects.
 // This double pendulum is similar to the acrobot model described in Section 3.1
 // of the Underactuated Robotics notes available online at
@@ -49,11 +49,11 @@ using systems::Context;
 //    z-direction.
 //  - The body frame for link 1 is placed at its geometric center.
 //  - The body frame for link 2 is placed at the joint's outboard frame.
-//  - The origins of the shoulder frames (Si and So) are coincident at all
-//    times. So is aligned with Si for θ₁ = 0.
-//  - The origins of the elbow frames (Ei and Eo) are coincident at all times.
-//    Eo is aligned with Ei for θ₂ = 0.
-//  - The elbow outboard frame Eo IS the link 2 frame L2, refer to schematic
+//  - The origins of the shoulder frames (`Si` and `So`) are coincident at all
+//    times. `So` is aligned with `Si` `for θ₁ = 0`.
+//  - The origins of the elbow frames (`Ei` and `Eo`) are coincident at all
+//    times. `Eo` is aligned with `Ei` for `θ₂ = 0`.
+//  - The elbow outboard frame `Eo` IS the link 2 frame `L2`, refer to schematic
 //    below.
 //
 //       y ^
@@ -194,13 +194,13 @@ class DoublePendulumModel {
 
  private:
   std::unique_ptr<MultibodyTree<T>> tree_;
-  const Body<T>* world_body_;
+  const Body<T>* world_body_{nullptr};
   // Bodies:
-  const RigidBody<T>* link1_;
-  const RigidBody<T>* link2_;
+  const RigidBody<T>* link1_{nullptr};
+  const RigidBody<T>* link2_{nullptr};
   // Joints:
-  const RevoluteJoint<T>* shoulder_;
-  const RevoluteJoint<T>* elbow_;
+  const RevoluteJoint<T>* shoulder_{nullptr};
+  const RevoluteJoint<T>* elbow_{nullptr};
 
   // Pendulum parameters:
   const double length1_ = 1.0;
@@ -229,7 +229,7 @@ class PendulumTests : public ::testing::Test {
   // For the double pendulum system it turns out that the mass matrix is only a
   // function of the elbow angle, theta2, independent of the shoulder angle,
   // theta1. This fact can be verified by calling this method with
-  // different values of theta1, given that our benchmark does have this
+  // arbitrary values of theta1, given that our benchmark does have this
   // property. This is done in the unit test below.
   void VerifyCalcMassMatrixViaInverseDynamics(
       double theta1, double theta2) {
@@ -273,7 +273,7 @@ TEST_F(PendulumTests, CalcMassMatrixViaInverseDynamics) {
   VerifyCalcMassMatrixViaInverseDynamics(0.0, M_PI / 3.0);
   VerifyCalcMassMatrixViaInverseDynamics(0.0, M_PI / 4.0);
 
-  // We run run the same previous tests with different shoulder angles to verify
+  // We run the same previous tests with different shoulder angles to verify
   // that the mass matrix is a function of theta2 only.
   // This is verified implicitly since the results are compared against a
   // benchmark whose results depend on the elbow angle only.
