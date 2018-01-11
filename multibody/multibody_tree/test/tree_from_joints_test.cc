@@ -50,7 +50,7 @@ using systems::Context;
 //  - The body frame for link 1 is placed at its geometric center.
 //  - The body frame for link 2 is placed at the joint's outboard frame.
 //  - The origins of the shoulder frames (`Si` and `So`) are coincident at all
-//    times. `So` is aligned with `Si` `for θ₁ = 0`.
+//    times. `So` is aligned with `Si` for `θ₁ = 0`.
 //  - The origins of the elbow frames (`Ei` and `Eo`) are coincident at all
 //    times. `Eo` is aligned with `Ei` for `θ₂ = 0`.
 //  - The elbow outboard frame `Eo` IS the link 2 frame `L2`, refer to schematic
