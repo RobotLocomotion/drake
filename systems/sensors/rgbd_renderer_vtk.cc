@@ -122,7 +122,8 @@ class ShaderCallback : public vtkCommand {
  public:
   static ShaderCallback* New() { return new ShaderCallback; }
 
-  void Execute(vtkObject*, uint64_t, void* callback_object) VTK_OVERRIDE {
+  // NOLINTNEXTLINE(runtime/int): To match pre-existing APIs.
+  void Execute(vtkObject*, unsigned long, void* callback_object) VTK_OVERRIDE {
     vtkOpenGLHelper* cell_bo =
         reinterpret_cast<vtkOpenGLHelper*>(callback_object);
     cell_bo->Program->SetUniformf("z_near", z_near_);
