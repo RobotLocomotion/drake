@@ -473,9 +473,11 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       mesh_reader->Update();
 
       // Changing the scale of the loaded mesh.
-      const double scale = mesh.scale_[0];
+      const double scale_x = mesh.scale_[0];
+      const double scale_y = mesh.scale_[1];
+      const double scale_z = mesh.scale_[2];
       vtkNew<vtkTransform> transform;
-      transform->Scale(scale, scale, scale);
+      transform->Scale(scale_x, scale_y, scale_z);
       vtkNew<vtkTransformPolyDataFilter> transform_filter;
       transform_filter->SetInputConnection(mesh_reader->GetOutputPort());
       transform_filter->SetTransform(transform.GetPointer());
