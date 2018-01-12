@@ -41,6 +41,7 @@ install(
         "//drake/automotive/models:install_data",
         "//drake/bindings/pydrake:install",
         "//drake/common:install",
+        "//drake/common/proto:install",
         "//drake/examples:install",
         "//drake/lcmtypes:install",
         "//drake/manipulation/models:install_data",
