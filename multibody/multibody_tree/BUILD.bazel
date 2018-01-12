@@ -168,9 +168,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "double_pendulum_test",
+    name = "tree_from_mobilizers_test",
     # Presently times out in valgrind + debug with default size, "small".
     size = "medium",
+    deps = [
+        ":multibody_tree",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/acrobot",
+    ],
+)
+
+drake_cc_googletest(
+    name = "tree_from_joints_test",
     deps = [
         ":multibody_tree",
         "//drake/common/test_utilities:eigen_matrix_compare",

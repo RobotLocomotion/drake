@@ -6,6 +6,10 @@ load(
     "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_cc_proto_library",
+)
 load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(
@@ -22,6 +26,31 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/multibody/rigid_body_plant:compliant_contact_model",
+    ],
+)
+
+drake_cc_proto_library(
+    name = "pick_and_place_configuration_proto",
+    srcs = [
+        "pick_and_place_configuration.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "pick_and_place_configuration_parsing",
+    srcs = [
+        "pick_and_place_configuration_parsing.cc",
+    ],
+    hdrs = [
+        "pick_and_place_configuration_parsing.h",
+    ],
+    deps = [
+        ":pick_and_place_configuration",
+        ":pick_and_place_configuration_proto",
+        "//drake/common:find_resource",
+        "//drake/common/proto:protobuf",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -53,6 +82,21 @@ drake_cc_library(
         "//drake/util:lcm_util",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "pick_and_place_configuration_parsing_test",
+    data = [
+        ":configuration",
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration_parsing",  # noqa
     ],
 )
 

@@ -6,7 +6,7 @@ load(
     "@drake//tools/skylark:drake_proto.bzl",
     "drake_cc_proto_library",
 )
-load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 

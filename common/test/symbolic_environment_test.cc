@@ -89,6 +89,19 @@ TEST_F(EnvironmentTest, DummyVariable2) {
   EXPECT_THROW(env.insert(var_dummy_, 0.0), runtime_error);
 }
 
+TEST_F(EnvironmentTest, LookupOperator) {
+  Environment env{{var_x_, 2}};
+  const Environment const_env{{var_x_, 2}};
+  EXPECT_EQ(env[var_x_], 2);
+  EXPECT_EQ(const_env[var_x_], 2);
+  EXPECT_EQ(env[var_y_], 0);
+  EXPECT_THROW(const_env[var_y_], runtime_error);
+  EXPECT_EQ(env.size(), 2u);
+  EXPECT_EQ(const_env.size(), 1u);
+  EXPECT_THROW(env[var_dummy_], runtime_error);
+  EXPECT_THROW(const_env[var_dummy_], runtime_error);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

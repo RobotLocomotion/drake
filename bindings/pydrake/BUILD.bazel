@@ -4,6 +4,7 @@ load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools:drake.bzl",
+    "drake_cc_googletest",
     "drake_cc_library",
 )
 load(
@@ -41,14 +42,6 @@ package(default_visibility = adjust_labels_for_drake_hoist([
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(
     base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
-
-# This is a pure-python, standalone library.
-# Keep this away from `common_py` to simplify test dependencies.
-drake_py_library(
-    name = "util_py",
-    srcs = ["util.py"],
-    imports = PACKAGE_INFO.py_imports,
 )
 
 drake_pybind_library(
@@ -132,6 +125,12 @@ drake_pybind_library(
     py_srcs = ["symbolic.py"],
 )
 
+# Alias sub-package.
+alias(
+    name = "util_py",
+    actual = "//bindings/pydrake/util",
+)
+
 PYBIND_LIBRARIES = adjust_labels_for_drake_hoist([
     ":autodiffutils_py",
     ":common_py",
@@ -140,11 +139,10 @@ PYBIND_LIBRARIES = adjust_labels_for_drake_hoist([
     ":symbolic_py",
     "//drake/bindings/pydrake/solvers",
     "//drake/bindings/pydrake/systems",
+    "//drake/bindings/pydrake/util",
 ])
 
-PY_LIBRARIES = [
-    ":util_py",
-]
+PY_LIBRARIES = []
 
 install(
     name = "install",
@@ -262,25 +260,6 @@ drake_py_test(
     data = ["//drake/examples/pr2:models"],
     main = "test/test_urdf_parser.py",
     deps = [":rbtree_py"],
-)
-
-drake_py_library(
-    name = "module_shim_example",
-    testonly = 1,
-    srcs = [
-        "test/module_shim_example/__init__.py",
-        "test/module_shim_example/sub_module.py",
-    ],
-    imports = ["test"],
-    deps = [":util_py"],
-)
-
-drake_py_test(
-    name = "module_shim_test",
-    srcs = ["test/module_shim_test.py"],
-    deps = [
-        ":module_shim_example",
-    ],
 )
 
 drake_py_test(

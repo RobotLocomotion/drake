@@ -1,0 +1,92 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+load("@drake//tools/lint:python_lint.bzl", "python_lint")
+
+package(default_visibility = ["//visibility:public"])
+
+# Note that this is only a portion of Bullet.
+
+BULLET_COPTS = ["-Wno-all"]
+
+BULLET_INCLUDES = ["src"]
+
+LINEAR_MATH_HDRS = glob(["src/LinearMath/**/*.h"])
+
+# Keep defines in sync with Components.LinearMath.Definitions in
+# package-create-cps.py.
+LINEAR_MATH_DEFINES = ["BT_USE_DOUBLE_PRECISION"]
+
+cc_binary(
+    name = "libLinearMath.so",
+    srcs = glob(["src/LinearMath/**/*.cpp"]) + LINEAR_MATH_HDRS,
+    copts = BULLET_COPTS,
+    defines = LINEAR_MATH_DEFINES,
+    includes = BULLET_INCLUDES,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "LinearMath",
+    srcs = ["libLinearMath.so"],
+    hdrs = LINEAR_MATH_HDRS,
+    copts = BULLET_COPTS,
+    defines = LINEAR_MATH_DEFINES,
+    includes = BULLET_INCLUDES,
+)
+
+BULLET_COLLISION_HDRS = glob(["src/BulletCollision/**/*.h"]) + [
+    "src/btBulletCollisionCommon.h",
+]
+
+# BulletCollision contains LGPL code so only build shared library.
+cc_binary(
+    name = "libBulletCollision.so",
+    srcs = glob(["src/BulletCollision/**/*.cpp"]) + BULLET_COLLISION_HDRS,
+    copts = BULLET_COPTS,
+    includes = BULLET_INCLUDES,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+    deps = [":LinearMath"],
+)
+
+cc_library(
+    name = "BulletCollision",
+    srcs = ["libBulletCollision.so"],
+    hdrs = BULLET_COLLISION_HDRS,
+    copts = BULLET_COPTS,
+    includes = BULLET_INCLUDES,
+    deps = [":LinearMath"],
+)
+
+cmake_config(
+    package = "Bullet",
+    script = "@drake//tools/workspace/bullet:package-create-cps.py",
+    version_file = "VERSION",
+)
+
+install_cmake_config(package = "Bullet")
+
+install(
+    name = "install",
+    targets = [
+        ":libBulletCollision.so",
+        ":libLinearMath.so",
+    ],
+    hdr_dest = "include/bullet",
+    hdr_strip_prefix = BULLET_INCLUDES,
+    guess_hdrs = "PACKAGE",
+    docs = [
+        "AUTHORS.txt",
+        "LICENSE.txt",
+    ],
+    deps = [":install_cmake_config"],
+)
+
+python_lint()

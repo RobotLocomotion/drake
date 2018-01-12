@@ -25,11 +25,6 @@
       "Hints": ["@prefix@/lib/cmake/eigen3"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "fcl": {
-      "Version": "0.6.0",
-      "Hints": ["@prefix@/lib/cmake/fcl"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "fmt": {
       "Version": "3.0.1",
       "Hints": ["@prefix@/lib/cmake/fmt"],
@@ -80,11 +75,6 @@
       "Version": "1.0.4",
       "Hints": ["@prefix@/lib/cmake/tinyobjloader"],
       "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "yaml-cpp": {
-      "Version": "0.5.5",
-      "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
-      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
   "Default-Components": [":drake"],
@@ -98,8 +88,7 @@
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
-        "tinyobjloader:tinyobjloader",
-        "yaml-cpp:yaml-cpp"
+        "tinyobjloader:tinyobjloader"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
@@ -107,7 +96,6 @@
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Bullet:BulletCollision",
         "Eigen3:Eigen",
-        "fcl:fcl",
         "ignition-math4:ignition-math4",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",

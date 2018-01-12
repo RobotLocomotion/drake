@@ -84,8 +84,8 @@ GeometrySystem<T>::GeometrySystem()
           .get_index();
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort(&GeometrySystem::MakeQueryHandle,
-                                      &GeometrySystem::CalcQueryHandle)
+      this->DeclareAbstractOutputPort(&GeometrySystem::MakeQueryObject,
+                                      &GeometrySystem::CalcQueryObject)
           .get_index();
 }
 
@@ -135,6 +135,11 @@ SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
   SourceId source_id = initial_state_->RegisterNewSource(name);
   MakeSourcePorts(source_id);
   return source_id;
+}
+
+template <typename T>
+bool GeometrySystem<T>::SourceIsRegistered(SourceId id) const {
+  return input_source_ids_.count(id) > 0;
 }
 
 template <typename T>
@@ -214,38 +219,6 @@ void GeometrySystem<T>::RemoveGeometry(SourceId source_id,
 }
 
 template <typename T>
-const std::string& GeometrySystem<T>::get_source_name(
-    const QueryHandle<T>& handle, SourceId id) const {
-  unused(handle, id);
-  throw std::runtime_error("Not implemented yet.");
-}
-
-template <typename T>
-bool GeometrySystem<T>::SourceIsRegistered(SourceId id) const {
-  return input_source_ids_.count(id) > 0;
-}
-
-template <typename T>
-FrameId GeometrySystem<T>::GetFrameId(
-    const QueryHandle<T>& handle, GeometryId geometry_id) const {
-  unused(handle, geometry_id);
-  throw std::runtime_error("Not implemented yet.");
-}
-
-template <typename T>
-std::vector<PenetrationAsPointPair<T>> GeometrySystem<T>::ComputePenetration(
-    const QueryHandle<T>& handle) const {
-  unused(handle);
-  throw std::runtime_error("Not implemented yet.");
-}
-
-template <typename T>
-QueryHandle<T> GeometrySystem<T>::MakeQueryHandle(
-    const systems::Context<T>&) const {
-  return QueryHandle<T>(nullptr, 0);
-}
-
-template <typename T>
 void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
@@ -255,11 +228,34 @@ void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
   source_ports.pose_port = this->DeclareAbstractInputPort().get_index();
 }
 
+template <typename T>
+QueryObject<T> GeometrySystem<T>::MakeQueryObject(
+    const systems::Context<T>&) const {
+  // Returns a null-initialized QueryObject to be compatible with context
+  // allocation (see documentation on QueryObject).
+  return QueryObject<T>();
+}
 
 template <typename T>
-void GeometrySystem<T>::CalcQueryHandle(const Context<T>& context,
-                                        QueryHandle<T>* output) const {
-  output->context_ = &context;
+void GeometrySystem<T>::CalcQueryObject(const Context<T>& context,
+                                        QueryObject<T>* output) const {
+  // NOTE: This is an exception to the style guide. It takes a const reference
+  // but then hangs onto a const pointer. The guide says the parameter should
+  // itself be a const pointer. We're breaking the guide to satisfy the
+  // following constraints:
+  //   1. This function serves as the output port calc callback; the signature
+  //      *must* be a const ref.
+  //   2. The design of the QueryObject requires a persisted pointer to the
+  //      context. However, the docs for the class emphasize that this should
+  //      *not* be persisted (and copying it clears this persisted copy).
+  //
+  // See the todo in the header for an alternate formulation.
+  const GeometryContext<T>* geom_context =
+      dynamic_cast<const GeometryContext<T>*>(&context);
+  DRAKE_DEMAND(geom_context);
+  // The result of calling calc should *always* produce a live query object.
+  output->context_ = geom_context;
+  output->system_ = this;
 }
 
 template <typename T>

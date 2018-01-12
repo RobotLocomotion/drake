@@ -80,6 +80,22 @@ Environment::mapped_type& Environment::operator[](const key_type& key) {
   return map_[key];
 }
 
+const Environment::mapped_type& Environment::operator[](
+    const key_type& key) const {
+  if (key.is_dummy()) {
+    ostringstream oss;
+    oss << "Environment::operator[] is called with a dummy variable.";
+    throw runtime_error(oss.str());
+  }
+  if (!map_.count(key)) {
+    ostringstream oss;
+    oss << "Environment::operator[] was called on a const Environment "
+        << "with a missing key \"" << key << "\".";
+    throw runtime_error(oss.str());
+  }
+  return map_.at(key);
+}
+
 ostream& operator<<(ostream& os, const Environment& env) {
   for (const auto& p : env) {
     os << p.first << " -> " << p.second << endl;
