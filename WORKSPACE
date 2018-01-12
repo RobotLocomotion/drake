@@ -29,11 +29,9 @@ github_archive(
     build_file = "@drake//tools/workspace/tinydir:package.BUILD.bazel",
 )
 
-new_local_repository(
-    name = "spruce",
-    build_file = "@drake//tools/workspace/spruce:package.BUILD.bazel",
-    path = __workspace_dir__ + "/third_party/josephdavisco_spruce",
-)
+load("//tools/workspace/spruce:package.bzl", "spruce_repository")
+
+spruce_repository(name = "spruce")
 
 github_archive(
     name = "stx",
