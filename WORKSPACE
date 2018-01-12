@@ -55,12 +55,6 @@ local_repository(
     path = "third_party/com_github_google_protobuf",
 )
 
-new_local_repository(
-    name = "find_protobuf_cmake",
-    build_file = "@drake//tools/workspace/protobuf:package.BUILD.bazel",
-    path = __workspace_dir__ + "/third_party/com_kitware_gitlab_cmake_cmake",
-)
-
 load("//tools/workspace/ibex:package.bzl", "ibex_repository")
 
 ibex_repository(name = "ibex")

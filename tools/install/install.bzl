@@ -529,7 +529,7 @@ install_files = rule(
         "rename": attr.string_dict(),
         "strip_prefix": attr.string_list(),
         "workspace": attr.string(),
-        "allowed_externals": attr.string_list(),
+        "allowed_externals": attr.label_list(allow_files = True),
     },
     implementation = _install_files_impl,
 )

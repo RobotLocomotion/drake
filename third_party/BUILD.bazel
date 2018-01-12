@@ -24,4 +24,9 @@ exports_files(
     visibility = ["@libbot//:__pkg__"],
 )
 
+exports_files(
+    glob(["com_kitware_gitlab_cmake_cmake/**"]),
+    visibility = ["//tools/workspace/find_protobuf_cmake:__pkg__"],
+)
+
 add_lint_tests()
