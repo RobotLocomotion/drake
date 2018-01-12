@@ -14,6 +14,7 @@ change.
 There are `experimental binary packages <https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338>`_ of Drake available at:
 
 - https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-xenial.tar.gz
+- https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac.tar.gz
 - :samp:`https://drake-packages.csail.mit.edu/drake/nightly/drake-{yyyymmdd}-xenial.tar.gz`.
     - Example: https://drake-packages.csail.mit.edu/drake/nightly/drake-20171015-xenial.tar.gz
 
