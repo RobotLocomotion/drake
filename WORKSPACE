@@ -83,17 +83,11 @@ which(
 
 load("//tools/workspace/python:package.bzl", "python_repository")
 
-python_repository(
-    name = "python",
-    version = "2.7",
-)
+python_repository(name = "python")
 
 load("//tools/workspace/numpy:package.bzl", "numpy_repository")
 
-numpy_repository(
-    name = "numpy",
-    python_version = "2.7",
-)
+numpy_repository(name = "numpy")
 
 github_archive(
     name = "gtest",
