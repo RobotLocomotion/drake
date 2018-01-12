@@ -9,7 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
-#include "drake/multibody/multibody_tree/multibody_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"

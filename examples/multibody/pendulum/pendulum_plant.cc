@@ -11,7 +11,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/leaf_system.h"
 

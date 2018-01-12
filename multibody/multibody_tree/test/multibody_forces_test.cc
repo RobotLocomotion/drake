@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 
 #include <limits>
 #include <sstream>
