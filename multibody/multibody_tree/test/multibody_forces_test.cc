@@ -79,7 +79,7 @@ TEST_F(MultibodyForcingTests, NonZeroForcing) {
       SpatialForce<double>(Vector3d(6, 7, 8), Vector3d(9, 10, 11));
 
   // Add-in forcing2 to forcing1:
-  forcing1.AddInForcing(forcing2);
+  forcing1.AddInForces(forcing2);
 
   // Const aliases:
   const VectorX<double>& generalized_forces = forcing1.generalized_forces();

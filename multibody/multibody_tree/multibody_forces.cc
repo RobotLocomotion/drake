@@ -32,8 +32,8 @@ bool MultibodyForces<T>::CheckInvariants(
 }
 
 template <typename T>
-void MultibodyForces<T>::AddInForcing(
-    const MultibodyForces<T>& addend) {
+void MultibodyForces<T>::AddInForces(
+    const MultibodyForces<T> &addend) {
   // Add in body forces:
   std::transform(
       F_B_W_.begin(), F_B_W_.end(),
