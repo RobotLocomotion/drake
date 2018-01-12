@@ -99,22 +99,26 @@ class MixedIntegerBranchAndBoundNode {
     return left_child_.get();
   }
 
-  /** Setter for the left child. */
-  MixedIntegerBranchAndBoundNode* left_child() { return left_child_.get(); }
+  /** Getter for the mutable left child. */
+  MixedIntegerBranchAndBoundNode* mutable_left_child() {
+    return left_child_.get();
+  }
 
   /** Getter for the right child. */
   const MixedIntegerBranchAndBoundNode* right_child() const {
     return right_child_.get();
   }
 
-  /** Setter for the right child. */
-  MixedIntegerBranchAndBoundNode* right_child() { return right_child_.get(); }
+  /** Getter for the mutable right child. */
+  MixedIntegerBranchAndBoundNode* mutable_right_child() {
+    return right_child_.get();
+  }
 
   /** Getter for the parent node. */
   const MixedIntegerBranchAndBoundNode* parent() const { return parent_; }
 
-  /** Setter for the parent node. */
-  MixedIntegerBranchAndBoundNode* parent() { return parent_; }
+  /** Getter for the mutable parent node. */
+  MixedIntegerBranchAndBoundNode* mutable_parent() { return parent_; }
 
   /**
    * Getter for the binary variable, whose value was not fixed in
@@ -435,7 +439,7 @@ class MixedIntegerBranchAndBound {
    * Setter for the root node. Note that this is aliased for the lifetime of
    * this object.
    */
-  MixedIntegerBranchAndBoundNode* root() { return root_.get(); }
+  MixedIntegerBranchAndBoundNode* mutable_root() { return root_.get(); }
 
   /** Getter for the best upper bound. */
   double best_upper_bound() const { return best_upper_bound_; }
@@ -530,10 +534,10 @@ class MixedIntegerBranchAndBound {
                               double cost);
 
   /**
-   * The branch-and-bound is converged if the gap between the best upper bound
+   * The branch-and-bound has converged if the gap between the best upper bound
    * and the best lower bound is less than the tolerance.
    */
-  bool IsConverged() const;
+  bool HasConverged() const;
 
   /**
    * Search for an integral solution satisfying all the constraints in this
@@ -572,9 +576,9 @@ class MixedIntegerBranchAndBound {
   std::list<std::pair<double, Eigen::VectorXd>> solutions_;
   int max_num_solutions_{10};
 
-  // The branch and bound process will terminate, when the best upper bound is
-  // sufficiently close to the best lower bound, that either of the following
-  // conditions is satisfied:
+  // The branch and bound process will terminate when the best upper bound is
+  // sufficiently close to the best lower bound, that is, when either of the
+  // following conditions is satisfied:
   // 1. (best_upper_bound_ - best_lower_bound_) / abs(best_lower_bound_) <
   // relative_gap_tol
   // 2. best_upper_bound_ - best_lower_bound_ < absolute_gap_tol_;

@@ -70,25 +70,25 @@ Binding<Constraint> ReplaceBoundVariables(
 
 // Adds a vector of costs to a mathematical program.
 template <typename Cost>
-void AddVectorOfCostToNewProgram(
+void AddVectorOfCostsToProgram(
     const std::vector<Binding<Cost>>& costs,
     const std::unordered_map<symbolic::Variable::Id, symbolic::Variable>&
         map_old_vars_to_new_vars,
-    MathematicalProgram* new_prog) {
+    MathematicalProgram* prog) {
   for (const auto& cost : costs) {
-    new_prog->AddCost(ReplaceBoundVariables(cost, map_old_vars_to_new_vars));
+    prog->AddCost(ReplaceBoundVariables(cost, map_old_vars_to_new_vars));
   }
 }
 
 // Adds a vector of constraints to a mathematical program.
 template <typename Constraint>
-void AddVectorOfConstraintToNewProgram(
+void AddVectorOfConstraintsToProgram(
     const std::vector<Binding<Constraint>>& constraints,
     const std::unordered_map<symbolic::Variable::Id, symbolic::Variable>&
         map_old_vars_to_new_vars,
-    MathematicalProgram* new_prog) {
+    MathematicalProgram* prog) {
   for (const auto& constraint : constraints) {
-    new_prog->AddConstraint(
+    prog->AddConstraint(
         ReplaceBoundVariables(constraint, map_old_vars_to_new_vars));
   }
 }
@@ -101,18 +101,17 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   // constraint to 0 ≤ y ≤ 1.
   MathematicalProgram new_prog;
   // First check the decision variables of prog. Construct a new set of decision
-  // variables with the same name as those in prog, but the ID will be
-  // different.
+  // variables with the same names as those in prog, but with different IDs.
   const auto& prog_vars = prog.decision_variables();
   VectorXDecisionVariable new_vars(prog_vars.rows());
   std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
       map_old_vars_to_new_vars;
   std::vector<int> binary_variable_indices{};
   for (int i = 0; i < prog_vars.rows(); ++i) {
-    // If the prog_vars(i) is of type CONTINUOUS, then new_vars(i) is also
-    // CONTINUOUS.
     switch (prog_vars(i).get_type()) {
       case symbolic::Variable::Type::CONTINUOUS: {
+        // If the prog_vars(i) is of type CONTINUOUS, then new_vars(i) is also
+        // CONTINUOUS.
         new_vars(i) = symbolic::Variable(prog_vars(i).get_name(),
                                          symbolic::Variable::Type::CONTINUOUS);
         map_old_vars_to_new_vars.emplace_hint(
@@ -120,6 +119,8 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
         break;
       }
       case symbolic::Variable::Type::BINARY: {
+        // If program_vars(i) is of type BINARY, then new_vars(i) is CONTINUOUS
+        // instead. We will later add the constraint 0 ≤ new_vars(i) ≤ 1
         new_vars(i) = symbolic::Variable(prog_vars(i).get_name(),
                                          symbolic::Variable::Type::CONTINUOUS);
         map_old_vars_to_new_vars.emplace_hint(
@@ -151,36 +152,36 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   new_prog.AddIndeterminates(prog.indeterminates());
 
   // Now add all the costs in prog to new_prog.
-  AddVectorOfCostToNewProgram(prog.generic_costs(), map_old_vars_to_new_vars,
-                              &new_prog);
-  AddVectorOfCostToNewProgram(prog.linear_costs(), map_old_vars_to_new_vars,
-                              &new_prog);
-  AddVectorOfCostToNewProgram(prog.quadratic_costs(), map_old_vars_to_new_vars,
-                              &new_prog);
+  AddVectorOfCostsToProgram(prog.generic_costs(), map_old_vars_to_new_vars,
+                            &new_prog);
+  AddVectorOfCostsToProgram(prog.linear_costs(), map_old_vars_to_new_vars,
+                            &new_prog);
+  AddVectorOfCostsToProgram(prog.quadratic_costs(), map_old_vars_to_new_vars,
+                            &new_prog);
 
   // Now add all the constraints in prog to new_prog.
   // TODO(hongkai.dai): Make sure that all constraints stored in
   // MathematicalProgram are added. In the future, if we add more constraint
   // type to MathematicalProgram, we need to add that constraint to new_prog
   // here as well.
-  AddVectorOfConstraintToNewProgram(prog.generic_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.linear_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.linear_equality_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.bounding_box_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.lorentz_cone_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.rotated_lorentz_cone_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.positive_semidefinite_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.linear_matrix_inequality_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
-  AddVectorOfConstraintToNewProgram(prog.linear_complementarity_constraints(),
-                                    map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.generic_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.linear_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.linear_equality_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.bounding_box_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.lorentz_cone_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.rotated_lorentz_cone_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.positive_semidefinite_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.linear_matrix_inequality_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
+  AddVectorOfConstraintsToProgram(prog.linear_complementarity_constraints(),
+                                  map_old_vars_to_new_vars, &new_prog);
 
   // Set the initial guess.
   new_prog.SetInitialGuessForAllVariables(prog.initial_guess());
@@ -354,7 +355,7 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
   if (root_->solution_result() == SolutionResult::kInfeasibleConstraints) {
     return SolutionResult::kInfeasibleConstraints;
   }
-  if (IsConverged()) {
+  if (HasConverged()) {
     return SolutionResult::kSolutionFound;
   }
   // If the optimal solution to the root node is not integral, do some
@@ -375,7 +376,7 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
     const symbolic::Variable* branching_variable =
         PickBranchingVariable(*branching_node);
     BranchAndUpdate(branching_node, *branching_variable);
-    if (IsConverged()) {
+    if (HasConverged()) {
       return SolutionResult::kSolutionFound;
     }
     branching_node = PickBranchingNode();
@@ -725,7 +726,7 @@ void MixedIntegerBranchAndBound::UpdateIntegralSolution(
   best_upper_bound_ = std::min(best_upper_bound_, solutions_.begin()->first);
 }
 
-bool MixedIntegerBranchAndBound::IsConverged() const {
+bool MixedIntegerBranchAndBound::HasConverged() const {
   if (best_upper_bound_ - best_lower_bound_ <= absolute_gap_tol_) {
     return true;
   }
