@@ -10,21 +10,21 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-MultibodyForcing<T>::MultibodyForcing(const MultibodyTree<T>& model) {
+MultibodyForces<T>::MultibodyForces(const MultibodyTree<T>& model) {
   DRAKE_DEMAND(model.topology_is_valid());
   F_B_W_.resize(model.get_num_bodies(), SpatialForce<T>::Zero());
   tau_.resize(model.get_num_velocities());
 }
 
 template <typename T>
-MultibodyForcing<T>& MultibodyForcing<T>::SetZero() {
+MultibodyForces<T>& MultibodyForces<T>::SetZero() {
   std::fill(F_B_W_.begin(), F_B_W_.end(), SpatialForce<T>::Zero());
   tau_.setZero();
   return *this;
 }
 
 template <typename T>
-bool MultibodyForcing<T>::CheckInvariants(
+bool MultibodyForces<T>::CheckInvariants(
     const MultibodyTree<T>& model) const {
   return
       model.get_num_velocities() == num_velocities() &&
@@ -32,8 +32,8 @@ bool MultibodyForcing<T>::CheckInvariants(
 }
 
 template <typename T>
-void MultibodyForcing<T>::AddInForcing(
-    const MultibodyForcing<T>& addend) {
+void MultibodyForces<T>::AddInForcing(
+    const MultibodyForces<T>& addend) {
   // Add in body forces:
   std::transform(
       F_B_W_.begin(), F_B_W_.end(),
@@ -47,4 +47,4 @@ void MultibodyForcing<T>::AddInForcing(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MultibodyForcing)
+    class ::drake::multibody::MultibodyForces)

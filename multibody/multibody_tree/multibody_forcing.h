@@ -26,18 +26,18 @@ template<typename T> class MultibodyTree;
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class MultibodyForcing {
+class MultibodyForces {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForcing)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
 
   /// Constructs a forcing object compatible with `model`. Forcing is
   /// initialized to zero, meaning no forces are applied to `model`.
   /// `model` must have been already finalized with MultibodyTree::Finalize() or
   /// this constructor will abort.
-  explicit MultibodyForcing(const MultibodyTree<T>& model);
+  explicit MultibodyForces(const MultibodyTree<T>& model);
 
   /// Sets `this` forcing to hold zero forces (no applied forces).
-  MultibodyForcing<T>& SetZero();
+  MultibodyForces<T>& SetZero();
 
   /// Returns the number of bodies for which this forcing applies. Determined at
   /// construction from the given model MultibodyTree object.
@@ -76,7 +76,7 @@ class MultibodyForcing {
   }
 
   /// Adds into `this` the forcing contribution stored in `addend`.
-  void AddInForcing(const MultibodyForcing<T>& addend);
+  void AddInForcing(const MultibodyForces<T>& addend);
 
   /// Utility that checks that `this` forcing is compatible with the given
   /// MultibodyTree model.

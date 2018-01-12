@@ -394,7 +394,7 @@ void MultibodyTree<T>::CalcForceElementsContribution(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    MultibodyForcing<T>* forcing) const {
+    MultibodyForces<T>* forcing) const {
   DRAKE_DEMAND(forcing != nullptr);
   DRAKE_DEMAND(forcing->CheckInvariants(*this));
 

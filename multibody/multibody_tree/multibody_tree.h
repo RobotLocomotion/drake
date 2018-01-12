@@ -915,7 +915,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      MultibodyForcing<T>* forcing) const;
+      MultibodyForces<T>* forcing) const;
 
   /// Computes and returns the total potential energy stored in `this` multibody
   /// model for the configuration given by `context`.

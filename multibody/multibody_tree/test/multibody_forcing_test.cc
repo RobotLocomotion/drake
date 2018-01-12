@@ -26,7 +26,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 class MultibodyForcingTests : public ::testing::Test {
  public:
   // Creates a simple MultibodyTree model so that we can instantiate
-  // MultibodyForcing objects for this model.
+  // MultibodyForces objects for this model.
   void SetUp() override {
     SpatialInertia<double> M;
     const RigidBody<double>& body1 = model_.AddBody<RigidBody>(M);
@@ -44,7 +44,7 @@ class MultibodyForcingTests : public ::testing::Test {
 // Test constructor that sets forcing to zero.
 TEST_F(MultibodyForcingTests, Construction) {
   // Create a forcing object compatible with model:
-  MultibodyForcing<double> forcing(model_);
+  MultibodyForces<double> forcing(model_);
 
   // Forcing object should be compatible with the original model.
   EXPECT_TRUE(forcing.CheckInvariants(model_));
@@ -61,7 +61,7 @@ TEST_F(MultibodyForcingTests, Construction) {
 // A number of unit tests involving non-zero forcing.
 TEST_F(MultibodyForcingTests, NonZeroForcing) {
   // Create a non-zero forcing:
-  MultibodyForcing<double> forcing1(model_);
+  MultibodyForces<double> forcing1(model_);
   forcing1.mutable_generalized_forces() = Vector2d(1, 2);
   forcing1.mutable_body_forces()[1] =
       SpatialForce<double>(Vector3d(0, 1, 2), Vector3d(3, 4, 5));
@@ -69,7 +69,7 @@ TEST_F(MultibodyForcingTests, NonZeroForcing) {
       SpatialForce<double>(Vector3d(0, 1, 2), Vector3d(3, 4, 5));
 
   // Create a second non-zero forcing:
-  MultibodyForcing<double> forcing2(model_);
+  MultibodyForces<double> forcing2(model_);
   ASSERT_EQ(forcing2.num_bodies(), 3);
   ASSERT_EQ(forcing2.num_velocities(), 2);
   forcing2.mutable_generalized_forces() = Vector2d(3, 4);

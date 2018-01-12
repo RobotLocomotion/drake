@@ -304,7 +304,7 @@ class DrakeKukaIIwaRobot {
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
 
     // Applied forcing:
-    MultibodyForcing<T> forcing(*model_);
+    MultibodyForces<T> forcing(*model_);
 
     // Adds the previously included effect of gravity into forcing.
     model_->CalcForceElementsContribution(*context_, pc, vc, &forcing);

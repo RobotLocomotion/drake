@@ -54,7 +54,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      MultibodyForcing<T>* forcing) const final;
+      MultibodyForces<T>* forcing) const final;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
