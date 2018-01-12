@@ -8,7 +8,7 @@ unpacked. On macOS and OS X, VTK must be installed using Homebrew.
 
 Example:
     WORKSPACE:
-        load("//tools/workspace/vtk:vtk.bzl", "vtk_repository")
+        load("@drake//tools/workspace/vtk:package.bzl", "vtk_repository")
         vtk_repository(name = "foo")
 
     BUILD:
