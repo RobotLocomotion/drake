@@ -333,7 +333,7 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
       map_old_vars_to_new_vars_{},
       best_upper_bound_{std::numeric_limits<double>::infinity()},
       best_lower_bound_{-std::numeric_limits<double>::infinity()},
-      best_solutions_{} {
+      solutions_{} {
   std::tie(root_, map_old_vars_to_new_vars_) =
       MixedIntegerBranchAndBoundNode::ConstructRootNode(prog, solver_id);
   if (root_->solution_result() == SolutionResult::kSolutionFound) {
@@ -391,17 +391,27 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
       "Unknown result. The problem is not optimal, infeasible, nor unbounded.");
 }
 
-double MixedIntegerBranchAndBound::GetOptimalCost(int nth_best_cost) const {
-  if (nth_best_cost < 0 ||
-      nth_best_cost >= static_cast<int>(solutions().size())) {
+double MixedIntegerBranchAndBound::GetOptimalCost() const {
+  if (solutions_.empty()) {
     throw std::runtime_error(
-        fmt::format("Cannot access {}'th optimal cost. The branch and bound "
-                    "process only finds {} solution(s).",
-                    nth_best_cost, solutions().size()));
+        "The branch-and-bound does not find an optimal solution.");
+  }
+  return solutions_.front().first;
+}
+
+double MixedIntegerBranchAndBound::GetSubOptimalCost(
+    int nth_suboptimal_cost) const {
+  if (nth_suboptimal_cost < 0 ||
+      nth_suboptimal_cost >= static_cast<int>(solutions().size()) - 1) {
+    throw std::runtime_error(
+        fmt::format("Cannot access {}'th sub-optimal cost. The branch and "
+                    "bound process only finds {} solution(s).",
+                    nth_suboptimal_cost, solutions().size()));
   }
   auto it = solutions().begin();
-  for (int best_cost_count = 0; best_cost_count < nth_best_cost;
-       ++best_cost_count) {
+  ++it;
+  for (int suboptimal_cost_count = 0;
+       suboptimal_cost_count < nth_suboptimal_cost; ++suboptimal_cost_count) {
     ++it;
   }
   return it->first;
@@ -583,27 +593,27 @@ namespace {
 const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node,
     MixedIntegerBranchAndBound::VariableSelectionMethod pick_variable) {
-  DRAKE_ASSERT(pick_variable ==
-                   MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent ||
-               pick_variable ==
-                   MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
+  DRAKE_ASSERT(pick_variable == MixedIntegerBranchAndBound::
+                                    VariableSelectionMethod::kMostAmbivalent ||
+               pick_variable == MixedIntegerBranchAndBound::
+                                    VariableSelectionMethod::kLeastAmbivalent);
   if (node.solution_result() == SolutionResult::kSolutionFound) {
-    double value =
-        pick_variable ==
-                MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent
-            ? std::numeric_limits<double>::infinity()
-            : -std::numeric_limits<double>::infinity();
+    double value = pick_variable == MixedIntegerBranchAndBound::
+                                        VariableSelectionMethod::kMostAmbivalent
+                       ? std::numeric_limits<double>::infinity()
+                       : -std::numeric_limits<double>::infinity();
     const symbolic::Variable* return_var{nullptr};
     for (const auto& var : node.remaining_binary_variables()) {
       const double var_value = node.prog()->GetSolution(var);
       const double var_value_to_half = std::abs(var_value - 0.5);
-      if (pick_variable ==
-              MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent &&
+      if (pick_variable == MixedIntegerBranchAndBound::VariableSelectionMethod::
+                               kMostAmbivalent &&
           var_value_to_half < value) {
         value = var_value_to_half;
         return_var = &var;
-      } else if (pick_variable == MixedIntegerBranchAndBound::VariableSelectionMethod::
-                                      kLeastAmbivalent &&
+      } else if (pick_variable ==
+                     MixedIntegerBranchAndBound::VariableSelectionMethod::
+                         kLeastAmbivalent &&
                  var_value_to_half > value) {
         value = var_value_to_half;
         return_var = &var;
@@ -623,14 +633,16 @@ const symbolic::Variable*
 MixedIntegerBranchAndBound::PickMostAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node) const {
   return PickMostOrLeastAmbivalentAsBranchingVariable(
-      node, MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
+      node,
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
 }
 
 const symbolic::Variable*
 MixedIntegerBranchAndBound::PickLeastAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node) const {
   return PickMostOrLeastAmbivalentAsBranchingVariable(
-      node, MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
+      node,
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
@@ -664,7 +676,7 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
   best_lower_bound_ = BestLowerBoundInSubTree(*this, *root_);
   // If either the left or the right children finds integral solution, then
   // we can potentially update the best upper bound, and insert the solutions
-  // to the list best_solutions_;
+  // to the list solutions_;
   if (node->left_child()->solution_result() == SolutionResult::kSolutionFound) {
     if (node->left_child()->optimal_solution_is_integral()) {
       const double child_node_optimal_cost =
@@ -692,27 +704,25 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
 
 void MixedIntegerBranchAndBound::UpdateIntegralSolution(
     const Eigen::Ref<const Eigen::VectorXd>& solution, double cost) {
-  if (best_solutions_.empty()) {
-    best_solutions_.emplace_back(cost, solution);
+  if (solutions_.empty()) {
+    solutions_.emplace_back(cost, solution);
   } else {
-    if (cost < best_solutions_.back().first) {
-      // Insert the pair <cost, solution> in the right place in best_solutions_.
-      for (auto it = best_solutions_.begin(); it != best_solutions_.end();
-           ++it) {
+    if (cost < solutions_.back().first) {
+      // Insert the pair <cost, solution> in the right place in solutions_.
+      for (auto it = solutions_.begin(); it != solutions_.end(); ++it) {
         if (it->first > cost) {
-          best_solutions_.emplace(it, cost, solution);
+          solutions_.emplace(it, cost, solution);
           break;
         }
       }
-    } else if (static_cast<int>(best_solutions_.size()) < max_num_solutions_) {
-      best_solutions_.emplace_back(cost, solution);
+    } else if (static_cast<int>(solutions_.size()) < max_num_solutions_) {
+      solutions_.emplace_back(cost, solution);
     }
-    if (static_cast<int>(best_solutions_.size()) > max_num_solutions_) {
-      best_solutions_.pop_back();
+    if (static_cast<int>(solutions_.size()) > max_num_solutions_) {
+      solutions_.pop_back();
     }
   }
-  best_upper_bound_ =
-      std::min(best_upper_bound_, best_solutions_.begin()->first);
+  best_upper_bound_ = std::min(best_upper_bound_, solutions_.begin()->first);
 }
 
 bool MixedIntegerBranchAndBound::IsConverged() const {

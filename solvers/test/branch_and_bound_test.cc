@@ -703,8 +703,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   EXPECT_NEAR(dut.bnb()->solutions().front().first, 23.0 / 6.0, tol);
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 1, 2.0 / 3.0, 0, 1, 1;
-  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second,
-                              x_expected, tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second, x_expected,
+                              tol, MatrixCompareType::absolute));
 
   dut.BranchAndUpdate(dut.bnb()->root(), x(4));
   // The left node has optimal cost -4.9, with non-integral solution (0.7, 1, 1,
@@ -715,8 +715,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
   EXPECT_EQ(dut.bnb()->solutions().size(), 1);
   EXPECT_NEAR(dut.bnb()->solutions().front().first, 23.0 / 6.0, tol);
-  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second,
-                              x_expected, tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second, x_expected,
+                              tol, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
@@ -793,7 +793,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve1) {
   const double tol{1E-3};
   // The root node finds an optimal integral solution, and the bnb terminates.
   EXPECT_EQ(dut.bnb()->solutions().size(), 1);
-  EXPECT_NEAR(dut.bnb()->GetOptimalCost(0), 1.5, tol);
+  EXPECT_NEAR(dut.bnb()->GetOptimalCost(), 1.5, tol);
   EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected, tol,
                               MatrixCompareType::absolute));
 }
@@ -806,8 +806,9 @@ NonUserDefinedPickNodeMethods() {
 
 std::vector<MixedIntegerBranchAndBound::VariableSelectionMethod>
 NonUserDefinedPickVariableMethods() {
-  return {MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent,
-          MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent};
+  return {
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent,
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent};
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
@@ -823,16 +824,17 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
       const SolutionResult solution_result = dut.bnb()->Solve();
       EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
       const double tol{1E-3};
-      EXPECT_NEAR(dut.bnb()->GetOptimalCost(0), -13.0 / 3, tol);
+      EXPECT_NEAR(dut.bnb()->GetOptimalCost(), -13.0 / 3, tol);
       Eigen::Matrix<double, 5, 1> x_expected0;
       x_expected0 << 1, 1.0 / 3.0, 1, 1, 0;
       EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected0,
                                   tol, MatrixCompareType::absolute));
       // The costs are in the ascending order.
+      double previous_cost = dut.bnb()->GetOptimalCost();
       for (int i = 1; i < static_cast<int>(dut.bnb()->solutions().size());
            ++i) {
-        EXPECT_GE(dut.bnb()->GetOptimalCost(i),
-                  dut.bnb()->GetOptimalCost(i - 1));
+        EXPECT_GE(dut.bnb()->GetSubOptimalCost(i - 1), previous_cost);
+        previous_cost = dut.bnb()->GetSubOptimalCost(i - 1);
       }
     }
   }
@@ -922,8 +924,10 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSteelBlendingProblem) {
       EXPECT_TRUE(CompareMatrices(bnb.GetSolution(b), b_expected0, tol,
                                   MatrixCompareType::absolute));
       EXPECT_NEAR(bnb.GetOptimalCost(), 8495, tol);
+      double previous_cost = bnb.GetOptimalCost();
       for (int i = 1; i < static_cast<int>(bnb.solutions().size()); ++i) {
-        EXPECT_GE(bnb.GetOptimalCost(i), bnb.GetOptimalCost(i - 1));
+        EXPECT_GE(bnb.GetSubOptimalCost(i - 1), previous_cost);
+        previous_cost = bnb.GetSubOptimalCost(i - 1);
       }
     }
   }
@@ -939,9 +943,11 @@ void CheckAllIntegralSolution(
   EXPECT_NEAR(bnb.GetOptimalCost(), all_integral_solutions[0].first, tol);
   EXPECT_TRUE(CompareMatrices(bnb.GetSolution(x),
                               all_integral_solutions[0].second, tol));
+  double previous_cost = bnb.GetOptimalCost();
   for (int i = 1; i < static_cast<int>(bnb.solutions().size()); ++i) {
-    const double cost_i = bnb.GetOptimalCost(i);
-    EXPECT_GE(cost_i, bnb.GetOptimalCost(i - 1) - tol);
+    const double cost_i = bnb.GetSubOptimalCost(i - 1);
+    EXPECT_GE(cost_i, previous_cost - tol);
+    previous_cost = cost_i;
     bool found_match = false;
     for (int j = 1; j < static_cast<int>(all_integral_solutions.size()); ++j) {
       if (std::abs(cost_i - all_integral_solutions[j].first) < tol &&

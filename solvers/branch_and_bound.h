@@ -100,9 +100,7 @@ class MixedIntegerBranchAndBoundNode {
   }
 
   /** Setter for the left child. */
-  MixedIntegerBranchAndBoundNode* left_child() {
-    return left_child_.get();
-  }
+  MixedIntegerBranchAndBoundNode* left_child() { return left_child_.get(); }
 
   /** Getter for the right child. */
   const MixedIntegerBranchAndBoundNode* right_child() const {
@@ -110,9 +108,7 @@ class MixedIntegerBranchAndBoundNode {
   }
 
   /** Setter for the right child. */
-  MixedIntegerBranchAndBoundNode* right_child() {
-    return right_child_.get();
-  }
+  MixedIntegerBranchAndBoundNode* right_child() { return right_child_.get(); }
 
   /** Getter for the parent node. */
   const MixedIntegerBranchAndBoundNode* parent() const { return parent_; }
@@ -272,7 +268,7 @@ class MixedIntegerBranchAndBound {
   /**
    * Solve the mixed-integer problem (MIP) through a branch and bound process.
    * @retval solution_result If solution_result=SolutionResult::kSolutionFound,
-   * then the best solutions are stored inside best_solutions(). The user
+   * then the best solutions are stored inside solutions(). The user
    * can access the value of each variable(s) through GetSolution(...).
    * If solution_result=SolutionResult::kInfeasibleConstraints, then the
    * mixed-integer problem is primal infeasible.
@@ -281,15 +277,18 @@ class MixedIntegerBranchAndBound {
    */
   SolutionResult Solve();
 
+  /** Get the optimal cost. */
+  double GetOptimalCost() const;
+
   /**
-   * Get the n'th best cost.
-   * The costs are sorted in the ascending order. The 1st cost is the smallest
-   * cost.
-   * @param nth_best_cost The n'th best cost.
-   * @pre `nth_best_cost` is between 0 and best_solutions().size().
+   * Get the n'th sub-optimal cost.
+   * The costs are sorted in the ascending order. The sub-optimal costs do not
+   * include the optimal cost.
+   * @param nth_suboptimal_cost The n'th sub-optimal cost.
+   * @pre `nth_suboptimal_cost` is between 0 and solutions().size() - 1.
    * @throws a runtime error if the precondition is not satisfied.
    */
-  double GetOptimalCost(int nth_best_cost = 0) const;
+  double GetSubOptimalCost(int nth_suboptimal_cost) const;
 
   /**
    * Get the n'th best integral solution for a variable.
@@ -297,7 +296,7 @@ class MixedIntegerBranchAndBound {
    * @param mip_var A variable in the original MIP.
    * @param nth_best_solution. The index of the best integral solution.
    * @pre `mip_var` is a variable in the original MIP.
-   * @pre `nth_best_solution` is between 0 and best_solutions().size().
+   * @pre `nth_best_solution` is between 0 and solutions().size().
    * @throw runtime error if the preconditions are not satisfied.
    */
   double GetSolution(const symbolic::Variable& mip_var,
@@ -309,7 +308,7 @@ class MixedIntegerBranchAndBound {
    * @param mip_vars Variables in the original MIP.
    * @param nth_best_solution. The index of the best integral solution.
    * @pre `mip_vars` are variables in the original MIP.
-   * @pre `nth_best_solution` is between 0 and best_solutions().size().
+   * @pre `nth_best_solution` is between 0 and solutions().size().
    * @throw runtime error if the preconditions are not satisfied.
    */
   template <typename Derived>
@@ -391,7 +390,8 @@ class MixedIntegerBranchAndBound {
    * The user can choose the method to pick a variable for branching in each
    * node. We provide options such as "most ambivalent" or "least ambivalent".
    * @param pick_variable The option to pick a variable. If the option is
-   * VariableSelectionMethod::kUserDefined, then the user should also provide the method
+   * VariableSelectionMethod::kUserDefined, then the user should also provide
+   * the method
    * to pick a variable through SetUserDefinedVariableSelectionFunction.
    */
   void SetVariableSelectionMethod(VariableSelectionMethod pick_variable) {
@@ -441,7 +441,7 @@ class MixedIntegerBranchAndBound {
    * cost.
    */
   const std::list<std::pair<double, Eigen::VectorXd>>& solutions() const {
-    return best_solutions_;
+    return solutions_;
   }
 
  private:
@@ -493,7 +493,7 @@ class MixedIntegerBranchAndBound {
                        const symbolic::Variable& branching_variable);
 
   /**
-   * Update the solutions (best_solutions_) and the best upper bound, with an
+   * Update the solutions (solutions_) and the best upper bound, with an
    * integral solution and its cost.
    * @param solution. The integral solution.
    * @param cost. The cost evaluated at this integral solution.
@@ -537,11 +537,11 @@ class MixedIntegerBranchAndBound {
   // each leaf node.
   double best_lower_bound_;
 
-  // Best solutions found so far. Each entry in this list contains both the
+  // Solutions found so far. Each entry in this list contains both the
   // cost and the decision variable values. This list is sorted in the
   // ascending order based on the cost, and it contains at most
   // max_num_solutions_ elements.
-  std::list<std::pair<double, Eigen::VectorXd>> best_solutions_;
+  std::list<std::pair<double, Eigen::VectorXd>> solutions_;
   int max_num_solutions_{10};
 
   // The branch and bound process will terminate, when the best upper bound is
@@ -553,7 +553,8 @@ class MixedIntegerBranchAndBound {
   double absolute_gap_tol_ = 1E-2;
   double relative_gap_tol_ = 1E-2;
 
-  VariableSelectionMethod pick_variable_ = VariableSelectionMethod::kMostAmbivalent;
+  VariableSelectionMethod pick_variable_ =
+      VariableSelectionMethod::kMostAmbivalent;
 
   NodeSelectionMethod pick_node_ = NodeSelectionMethod::kMinLowerBound;
 
