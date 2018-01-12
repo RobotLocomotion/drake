@@ -159,37 +159,21 @@ github_archive(
     build_file = "@drake//tools/workspace/fmt:package.BUILD.bazel",
 )
 
-MAVEN_REPOSITORY = "https://jcenter.bintray.com"
+load("//tools/workspace/net_sf_jchart2d:package.bzl", "net_sf_jchart2d_repository")  # noqa
 
-# In the unlikely event that you update the version here, verify that the
-# licenses in tools/third_party/jchart2d/LICENSE are still applicable.
-maven_jar(
-    name = "net_sf_jchart2d_jchart2d",
-    artifact = "net.sf.jchart2d:jchart2d:3.3.2",
-    repository = MAVEN_REPOSITORY,
-    sha1 = "4950821eefe4c204903e68b4d45a558b5ebdd6fa",
-)
+net_sf_jchart2d_repository(name = "net_sf_jchart2d")
 
-maven_jar(
-    name = "com_jidesoft_jide_oss",
-    artifact = "com.jidesoft:jide-oss:2.9.7",
-    repository = MAVEN_REPOSITORY,
-    sha1 = "a9bb0d8384012c25c1519f6dd9adc80dd720a050",
-)
+load("//tools/workspace/com_jidesoft_jide_oss:package.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 
-maven_jar(
-    name = "commons_io_commons_io",
-    artifact = "commons-io:commons-io:1.3.1",
-    repository = MAVEN_REPOSITORY,
-    sha1 = "b90b6ac57cf27a2858eaa490d02ba7945d18ca7b",
-)
+com_jidesoft_jide_oss_repository(name = "com_jidesoft_jide_oss")
 
-maven_jar(
-    name = "org_apache_xmlgraphics_xmlgraphics_commons",
-    artifact = "org.apache.xmlgraphics:xmlgraphics-commons:1.3.1",
-    repository = MAVEN_REPOSITORY,
-    sha1 = "f7d0fa54e2750acd82b1a241c043be6fce1bf0dc",
-)
+load("//tools/workspace/commons_io:package.bzl", "commons_io_repository")
+
+commons_io_repository(name = "commons_io")
+
+load("//tools/workspace/org_apache_xmlgraphics_commons:package.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
+
+org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons")  # noqa
 
 github_archive(
     name = "lcm",
