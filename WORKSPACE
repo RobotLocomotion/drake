@@ -287,19 +287,6 @@ git_repository(
 load("//tools/workspace:pypi.bzl", "pypi_archive")
 
 pypi_archive(
-    name = "six_archive",
-    package = "six",
-    version = "1.10.0",
-    sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",  # noqa
-    build_file = "@drake//tools/workspace/six:package.BUILD.bazel",
-)
-
-bind(
-    name = "six",
-    actual = "@six_archive//:six",
-)
-
-pypi_archive(
     name = "semantic_version",
     version = "2.6.0",
     sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",  # noqa
@@ -313,15 +300,6 @@ github_archive(
     commit = "544c1ded81b926a05b3dedb06504bd17bc8d0a95",
     sha256 = "0b97cbaae107e5ddbe89073b6e42b679130f1eb81b913aa93da9e72e032a137b",  # noqa
     build_file = "@drake//tools/workspace/pycps:package.BUILD.bazel",
-)
-
-# The "@python_headers//:python_headers" target is required by protobuf
-# during "bazel query" but not "bazel build", so a stub is fine.
-new_local_repository(
-    name = "python_headers",
-    path = "not/real/stub",
-    build_file_content = ("cc_library(name = 'python_headers', " +
-                          "visibility = ['//visibility:public'])"),
 )
 
 # If updating ignition_math version, do not forget to also update
