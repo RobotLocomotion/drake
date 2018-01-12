@@ -429,7 +429,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
   const double tol = 1E-3;
   EXPECT_NEAR(bnb.best_upper_bound(), 1.5, tol);
   EXPECT_NEAR(bnb.best_lower_bound(), 1.5, tol);
-  const auto& best_solutions = bnb.best_solutions();
+  const auto& best_solutions = bnb.solutions();
   EXPECT_EQ(best_solutions.size(), 1);
   EXPECT_NEAR(best_solutions.front().first, 1.5, tol);
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
@@ -445,7 +445,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
   const double tol{1E-3};
   EXPECT_NEAR(bnb.best_lower_bound(), -4.9, tol);
   EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
-  EXPECT_TRUE(bnb.best_solutions().empty());
+  EXPECT_TRUE(bnb.solutions().empty());
   EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
 }
 
@@ -455,7 +455,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
   // The root node is unbounded.
   EXPECT_EQ(bnb.best_lower_bound(), -std::numeric_limits<double>::infinity());
   EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
-  EXPECT_TRUE(bnb.best_solutions().empty());
+  EXPECT_TRUE(bnb.solutions().empty());
   EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
 }
 
@@ -465,7 +465,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor4) {
   const double tol{1E-3};
   EXPECT_NEAR(bnb.best_lower_bound(), 4.0 / 3.0, tol);
   EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
-  EXPECT_TRUE(bnb.best_solutions().empty());
+  EXPECT_TRUE(bnb.solutions().empty());
   EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
 }
 
@@ -595,8 +595,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode1) {
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The root node has optimal cost -4.9.
-  dut.bnb()->SetPickBranchingNodeMethod(
-      MixedIntegerBranchAndBound::PickNode::kMinLowerBound);
+  dut.bnb()->SetNodeSelectionMethod(
+      MixedIntegerBranchAndBound::NodeSelectionMethod::kMinLowerBound);
   // Pick the root node.
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
 
@@ -619,8 +619,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
-  dut.bnb()->SetPickBranchingNodeMethod(
-      MixedIntegerBranchAndBound::PickNode::kDepthFirst);
+  dut.bnb()->SetNodeSelectionMethod(
+      MixedIntegerBranchAndBound::NodeSelectionMethod::kDepthFirst);
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
 
   dut.bnb()->root()->Branch(x(2));
@@ -643,22 +643,22 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable1) {
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The optimal solution at the root is (0.7, 1, 1, 1.4, 0)
-  dut.bnb()->SetPickBranchingVariableMethod(
-      MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+  dut.bnb()->SetVariableSelectionMethod(
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
   EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(0)));
-  dut.bnb()->SetPickBranchingVariableMethod(
-      MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+  dut.bnb()->SetVariableSelectionMethod(
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
   EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(2)) ||
               dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(4)));
 
   dut.BranchAndUpdate(dut.bnb()->root(), x(0));
   // The optimization at root->left is infeasible.
-  dut.bnb()->SetPickBranchingVariableMethod(
-      MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+  dut.bnb()->SetVariableSelectionMethod(
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
   EXPECT_THROW(dut.PickBranchingVariable(*(dut.bnb()->root()->left_child())),
                std::runtime_error);
-  dut.bnb()->SetPickBranchingVariableMethod(
-      MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+  dut.bnb()->SetVariableSelectionMethod(
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
   EXPECT_THROW(dut.PickBranchingVariable(*(dut.bnb()->root()->left_child())),
                std::runtime_error);
 }
@@ -670,12 +670,12 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable2) {
   VectorDecisionVariable<4> x = dut.bnb()->root()->prog()->decision_variables();
 
   // The problem is unbounded, any branching variable is acceptable.
-  dut.bnb()->SetPickBranchingVariableMethod(
-      MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+  dut.bnb()->SetVariableSelectionMethod(
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
   EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(0)) ||
               dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(2)));
-  dut.bnb()->SetPickBranchingVariableMethod(
-      MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+  dut.bnb()->SetVariableSelectionMethod(
+      MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
   EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(0)) ||
               dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(2)));
 }
@@ -684,7 +684,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   auto prog = ConstructMathematicalProgram2();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
-  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  EXPECT_TRUE(dut.bnb()->solutions().empty());
   const double tol = 1E-3;
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
@@ -699,11 +699,11 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   // 1, 1.4, 0).
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
   EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
-  EXPECT_EQ(dut.bnb()->best_solutions().size(), 1);
-  EXPECT_NEAR(dut.bnb()->best_solutions().front().first, 23.0 / 6.0, tol);
+  EXPECT_EQ(dut.bnb()->solutions().size(), 1);
+  EXPECT_NEAR(dut.bnb()->solutions().front().first, 23.0 / 6.0, tol);
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 1, 2.0 / 3.0, 0, 1, 1;
-  EXPECT_TRUE(CompareMatrices(dut.bnb()->best_solutions().front().second,
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second,
                               x_expected, tol, MatrixCompareType::absolute));
 
   dut.BranchAndUpdate(dut.bnb()->root(), x(4));
@@ -713,9 +713,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   // 2/3, 1, 1.4, 1).
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
   EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
-  EXPECT_EQ(dut.bnb()->best_solutions().size(), 1);
-  EXPECT_NEAR(dut.bnb()->best_solutions().front().first, 23.0 / 6.0, tol);
-  EXPECT_TRUE(CompareMatrices(dut.bnb()->best_solutions().front().second,
+  EXPECT_EQ(dut.bnb()->solutions().size(), 1);
+  EXPECT_NEAR(dut.bnb()->solutions().front().first, 23.0 / 6.0, tol);
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second,
                               x_expected, tol, MatrixCompareType::absolute));
 }
 
@@ -732,7 +732,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
             std::numeric_limits<double>::infinity());
   EXPECT_EQ(dut.bnb()->best_lower_bound(),
             -std::numeric_limits<double>::infinity());
-  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  EXPECT_TRUE(dut.bnb()->solutions().empty());
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
 
@@ -742,7 +742,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
             std::numeric_limits<double>::infinity());
   EXPECT_EQ(dut.bnb()->best_lower_bound(),
             -std::numeric_limits<double>::infinity());
-  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  EXPECT_TRUE(dut.bnb()->solutions().empty());
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
       *(dut.bnb()->root()->left_child()->left_child())));
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
@@ -754,7 +754,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
             std::numeric_limits<double>::infinity());
   EXPECT_EQ(dut.bnb()->best_lower_bound(),
             -std::numeric_limits<double>::infinity());
-  EXPECT_TRUE(dut.bnb()->best_solutions().empty());
+  EXPECT_TRUE(dut.bnb()->solutions().empty());
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
       *(dut.bnb()->root()->right_child()->left_child())));
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
@@ -792,22 +792,22 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve1) {
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
   const double tol{1E-3};
   // The root node finds an optimal integral solution, and the bnb terminates.
-  EXPECT_EQ(dut.bnb()->best_solutions().size(), 1);
+  EXPECT_EQ(dut.bnb()->solutions().size(), 1);
   EXPECT_NEAR(dut.bnb()->GetOptimalCost(0), 1.5, tol);
   EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected, tol,
                               MatrixCompareType::absolute));
 }
 
-std::vector<MixedIntegerBranchAndBound::PickNode>
+std::vector<MixedIntegerBranchAndBound::NodeSelectionMethod>
 NonUserDefinedPickNodeMethods() {
-  return {MixedIntegerBranchAndBound::PickNode::kDepthFirst,
-          MixedIntegerBranchAndBound::PickNode::kMinLowerBound};
+  return {MixedIntegerBranchAndBound::NodeSelectionMethod::kDepthFirst,
+          MixedIntegerBranchAndBound::NodeSelectionMethod::kMinLowerBound};
 }
 
-std::vector<MixedIntegerBranchAndBound::PickVariable>
+std::vector<MixedIntegerBranchAndBound::VariableSelectionMethod>
 NonUserDefinedPickVariableMethods() {
-  return {MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent,
-          MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent};
+  return {MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent,
+          MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent};
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
@@ -817,8 +817,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
     for (auto pick_node : NonUserDefinedPickNodeMethods()) {
-      dut.bnb()->SetPickBranchingNodeMethod(pick_node);
-      dut.bnb()->SetPickBranchingVariableMethod(pick_variable);
+      dut.bnb()->SetNodeSelectionMethod(pick_node);
+      dut.bnb()->SetVariableSelectionMethod(pick_variable);
 
       const SolutionResult solution_result = dut.bnb()->Solve();
       EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
@@ -829,7 +829,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve2) {
       EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x, 0), x_expected0,
                                   tol, MatrixCompareType::absolute));
       // The costs are in the ascending order.
-      for (int i = 1; i < static_cast<int>(dut.bnb()->best_solutions().size());
+      for (int i = 1; i < static_cast<int>(dut.bnb()->solutions().size());
            ++i) {
         EXPECT_GE(dut.bnb()->GetOptimalCost(i),
                   dut.bnb()->GetOptimalCost(i - 1));
@@ -845,8 +845,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve3) {
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
     for (auto pick_node : NonUserDefinedPickNodeMethods()) {
-      dut.bnb()->SetPickBranchingNodeMethod(pick_node);
-      dut.bnb()->SetPickBranchingVariableMethod(pick_variable);
+      dut.bnb()->SetNodeSelectionMethod(pick_node);
+      dut.bnb()->SetVariableSelectionMethod(pick_variable);
 
       const SolutionResult solution_result = dut.bnb()->Solve();
       EXPECT_EQ(solution_result, SolutionResult::kUnbounded);
@@ -861,8 +861,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve4) {
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
     for (auto pick_node : NonUserDefinedPickNodeMethods()) {
-      dut.bnb()->SetPickBranchingNodeMethod(pick_node);
-      dut.bnb()->SetPickBranchingVariableMethod(pick_variable);
+      dut.bnb()->SetNodeSelectionMethod(pick_node);
+      dut.bnb()->SetVariableSelectionMethod(pick_variable);
 
       const SolutionResult solution_result = dut.bnb()->Solve();
       EXPECT_EQ(solution_result, SolutionResult::kInfeasibleConstraints);
@@ -910,8 +910,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSteelBlendingProblem) {
 
   for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
     for (auto pick_node : NonUserDefinedPickNodeMethods()) {
-      bnb.SetPickBranchingNodeMethod(pick_node);
-      bnb.SetPickBranchingVariableMethod(pick_variable);
+      bnb.SetNodeSelectionMethod(pick_node);
+      bnb.SetVariableSelectionMethod(pick_variable);
       SolutionResult solution_result = bnb.Solve();
       EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
       const double tol = 1E-3;
@@ -922,7 +922,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSteelBlendingProblem) {
       EXPECT_TRUE(CompareMatrices(bnb.GetSolution(b), b_expected0, tol,
                                   MatrixCompareType::absolute));
       EXPECT_NEAR(bnb.GetOptimalCost(), 8495, tol);
-      for (int i = 1; i < static_cast<int>(bnb.best_solutions().size()); ++i) {
+      for (int i = 1; i < static_cast<int>(bnb.solutions().size()); ++i) {
         EXPECT_GE(bnb.GetOptimalCost(i), bnb.GetOptimalCost(i - 1));
       }
     }
@@ -935,11 +935,11 @@ void CheckAllIntegralSolution(
     const std::vector<std::pair<double, Eigen::VectorXd>>&
         all_integral_solutions,
     double tol) {
-  EXPECT_LE(bnb.best_solutions().size(), all_integral_solutions.size());
+  EXPECT_LE(bnb.solutions().size(), all_integral_solutions.size());
   EXPECT_NEAR(bnb.GetOptimalCost(), all_integral_solutions[0].first, tol);
   EXPECT_TRUE(CompareMatrices(bnb.GetSolution(x),
                               all_integral_solutions[0].second, tol));
-  for (int i = 1; i < static_cast<int>(bnb.best_solutions().size()); ++i) {
+  for (int i = 1; i < static_cast<int>(bnb.solutions().size()); ++i) {
     const double cost_i = bnb.GetOptimalCost(i);
     EXPECT_GE(cost_i, bnb.GetOptimalCost(i - 1) - tol);
     bool found_match = false;
@@ -988,8 +988,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   MixedIntegerBranchAndBound bnb(prog, GurobiSolver::id());
   for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
     for (auto pick_node : NonUserDefinedPickNodeMethods()) {
-      bnb.SetPickBranchingNodeMethod(pick_node);
-      bnb.SetPickBranchingVariableMethod(pick_variable);
+      bnb.SetNodeSelectionMethod(pick_node);
+      bnb.SetVariableSelectionMethod(pick_variable);
       SolutionResult solution_result = bnb.Solve();
       EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
       std::vector<std::pair<double, Eigen::VectorXd>> best_solutions;
@@ -1041,8 +1041,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
   MixedIntegerBranchAndBound bnb(prog, GurobiSolver::id());
   for (auto pick_variable : NonUserDefinedPickVariableMethods()) {
     for (auto pick_node : NonUserDefinedPickNodeMethods()) {
-      bnb.SetPickBranchingNodeMethod(pick_node);
-      bnb.SetPickBranchingVariableMethod(pick_variable);
+      bnb.SetNodeSelectionMethod(pick_node);
+      bnb.SetVariableSelectionMethod(pick_variable);
       const SolutionResult solution_result = bnb.Solve();
       EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
       std::vector<std::pair<double, Eigen::VectorXd>> integral_solutions;

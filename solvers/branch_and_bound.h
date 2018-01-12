@@ -41,9 +41,9 @@ class MixedIntegerBranchAndBoundNode {
    * min f(x)         (1)
    * s.t g(x) ≤ 0
    *     y ∈ {0, 1}
-   * we will construct a root node for this program. In the root node, it
-   * enforces all the costs and constraints in the original program, except
-   * the binary constraint y ∈ {0, 1}. Instead, we will relax the binary
+   * we will construct a root node for this mixed-integer program. In the root
+   * node, it enforces all the costs and constraints in the original program,
+   * except the binary constraint y ∈ {0, 1}. Instead, it enforces the relaxed
    * constraint to 0 ≤ y ≤ 1. So the root node contains the program
    * min f(x)         (2)
    * s.t g(x) ≤ 0
@@ -57,7 +57,7 @@ class MixedIntegerBranchAndBoundNode {
    * root node has no parent. We also need to recreate new decision variables in
    * the root node, from the original optimization program (1), since the binary
    * variables will be converted to continuous variables in (2). We thus return
-   * the map from the old variable to the new variable.
+   * the map from the old variables to the new variables.
    * @pre prog should contain binary variables.
    * @pre solver_id can be either Gurobi or Scs.
    * @throw std::runtime_error if the preconditions are not met.
@@ -68,7 +68,7 @@ class MixedIntegerBranchAndBoundNode {
   ConstructRootNode(const MathematicalProgram& prog, const SolverId& solver_id);
 
   /**
-   * Branches on a binary variable, and creates two child nodes. In the left
+   * Branches on `binary_variable`, and creates two child nodes. In the left
    * child node, the binary variable is fixed to 0. In the right node, the
    * binary variable is fixed to 1. Solves the optimization program in each
    * child node.
@@ -79,7 +79,7 @@ class MixedIntegerBranchAndBoundNode {
    */
   void Branch(const symbolic::Variable& binary_variable);
 
-  /** Returns if a node is the root.
+  /** Returns true if a node is the root.
    * A root node has no parent.
    */
   bool IsRoot() const;
@@ -217,10 +217,10 @@ class MixedIntegerBranchAndBoundNode {
  * binary problem), solve this problem through branch-and-bound process. We will
  * first replace all the binary variables with continuous variables, and relax
  * the integral constraint on the binary variables y ∈ {0, 1} with continuous
- * constraints 0 ≤ y ≤ 1. And then in the subsequent steps, at each node of the
- * tree, we will fix some binary variables to either 0 or 1, and solve the rest
- * of the variables.
- * Notice that we will re-create a new set of variables in the branch-and-bound
+ * constraints 0 ≤ y ≤ 1. In the subsequent steps, at each node of the tree,
+ * we will fix some binary variables to either 0 or 1, and solve the rest of
+ * the variables.
+ * Notice that we will create a new set of variables in the branch-and-bound
  * process, since we need to replace the binary variables with continuous
  * variables.
  */
@@ -229,7 +229,7 @@ class MixedIntegerBranchAndBound {
   /**
    * Different methods to pick a branching variable.
    */
-  enum class PickVariable {
+  enum class VariableSelectionMethod {
     kUserDefined,      ///< User defined.
     kLeastAmbivalent,  ///< Pick the variable whose value is closest to 0 or 1.
     kMostAmbivalent,   ///< Pick the variable whose value is closest to 0.5
@@ -238,7 +238,7 @@ class MixedIntegerBranchAndBound {
   /**
    * Different methods to pick a branching node.
    */
-  enum class PickNode {
+  enum class NodeSelectionMethod {
     kUserDefined,    ///< User defined.
     kDepthFirst,     ///< Pick the node with the most binary variables fixed.
     kMinLowerBound,  ///< Pick the node with the smallest optimal cost.
@@ -248,9 +248,9 @@ class MixedIntegerBranchAndBound {
    * The function signature for the user defined method to pick a branching node
    * or a branching variable.
    */
-  using PickNodeFun = std::function<MixedIntegerBranchAndBoundNode*(
+  using NodeSelectFun = std::function<MixedIntegerBranchAndBoundNode*(
       const MixedIntegerBranchAndBoundNode&)>;
-  using PickVariableFun = std::function<const symbolic::Variable*(
+  using VariableSelectFun = std::function<const symbolic::Variable*(
       const MixedIntegerBranchAndBoundNode&)>;
 
   /**
@@ -287,7 +287,6 @@ class MixedIntegerBranchAndBound {
   /**
    * Get the n'th best integral solution for a variable.
    * The best solutions are sorted in the ascending order based on their costs.
-   * So the 1st best solution has the smallest cost.
    * @param mip_var A variable in the original MIP.
    * @param nth_best_solution. The index of the best integral solution.
    * @pre `mip_var` is a variable in the original MIP.
@@ -300,7 +299,6 @@ class MixedIntegerBranchAndBound {
   /**
    * Get the n'th best integral solution for some variables.
    * The best solutions are sorted in the ascending order based on their costs.
-   * So the 1st best solution has the smallest cost.
    * @param mip_vars Variables in the original MIP.
    * @param nth_best_solution. The index of the best integral solution.
    * @pre `mip_vars` are variables in the original MIP.
@@ -326,8 +324,8 @@ class MixedIntegerBranchAndBound {
   }
 
   /**
-   * Given an old variable in the original mixed-integer program, return the new
-   * corresponding variable in the branch-and-bound process.
+   * Given an old variable in the original mixed-integer program, return the
+   * corresponding new variable in the branch-and-bound process.
    * @param old_variable A variable in the original mixed-integer program.
    * @retval new_variable The corresponding variable in the branch-and-bound
    * procedure.
@@ -340,7 +338,8 @@ class MixedIntegerBranchAndBound {
 
   /**
    * Given a matrix of old variables in the original mixed-integer program,
-   * return the new corresponding variables in the branch-and-bound process.
+   * return a matrix of corresponding new variables in the branch-and-bound
+   * process.
    * @param old_variables Variables in the original mixed-integer program.
    * @retval new_variables The corresponding variables in the branch-and-bound
    * procedure.
@@ -365,40 +364,40 @@ class MixedIntegerBranchAndBound {
    * The user can choose the method to pick a node for branching. We provide
    * options such as "depth first" or "min lower bound".
    * @param pick_node The option to pick a node. If the option is
-   * PickNode::kUserDefined, then the user should also provide the method
-   * to pick a node through SetUserDefinedBranchingNodeMethod.
+   * NodeSelectionMethod::kUserDefined, then the user should also provide the
+   * method to pick a node through SetUserDefinedNodeSelectionFunction.
    */
-  void SetPickBranchingNodeMethod(PickNode pick_node) {
+  void SetNodeSelectionMethod(NodeSelectionMethod pick_node) {
     pick_node_ = pick_node;
   }
 
   /**
    * Set the user-defined method to pick the branching node. This method is
    * used if the user calls
-   * SetPickBranchingNodeMethod(PickNode::kUserDefined)
+   * SetNodeSelectionMethod(NodeSelectionMethod::kUserDefined)
    */
-  void SetUserDefinedBranchingNodeMethod(PickNodeFun fun) {
-    pick_branching_node_userfun_ = fun;
+  void SetUserDefinedNodeSelectionFunction(NodeSelectFun fun) {
+    node_selection_userfun_ = fun;
   }
 
   /**
    * The user can choose the method to pick a variable for branching in each
    * node. We provide options such as "most ambivalent" or "least ambivalent".
    * @param pick_variable The option to pick a variable. If the option is
-   * PickVariable::kUserDefined, then the user should also provide the method
-   * to pick a variable through SetUserDefinedBranchingVariableMethod.
+   * VariableSelectionMethod::kUserDefined, then the user should also provide the method
+   * to pick a variable through SetUserDefinedVariableSelectionFunction.
    */
-  void SetPickBranchingVariableMethod(PickVariable pick_variable) {
+  void SetVariableSelectionMethod(VariableSelectionMethod pick_variable) {
     pick_variable_ = pick_variable;
   }
 
   /**
    * Set the user-defined method to pick the branching variable. This method is
    * used if the user calls
-   * SetPickBranchingVariableMethod(PickVariable::kUserDefined).
+   * SetVariableSelectionMethod(VariableSelectionMethod::kUserDefined).
    */
-  void SetUserDefinedBranchingVariableMethod(PickVariableFun fun) {
-    pick_branching_variable_userfun_ = fun;
+  void SetUserDefinedVariableSelectionFunction(VariableSelectFun fun) {
+    variable_selection_userfun_ = fun;
   }
 
   /**
@@ -408,8 +407,7 @@ class MixedIntegerBranchAndBound {
    * 1. The optimization problem in the node is infeasible.
    * 2. The optimal cost of the node is larger than the best upper bound.
    * 3. The optimal solution to the node satisfies all the integral constraints.
-   * 4. There is no binary variables that are not fixed to either 0 or 1 in
-   *    this node.
+   * 4. All binary variables are fixed to either 0 or 1 in this node.
    * @param leaf_node A leaf node to check if it is fathomed.
    * @pre The node should be a leaf node.
    * @throws runtime error if the precondition is not satisfied.
@@ -430,12 +428,12 @@ class MixedIntegerBranchAndBound {
   double best_lower_bound() const { return best_lower_bound_; }
 
   /**
-   * Getter for the best solutions.
+   * Getter for the solutions.
    * Returns a list of solutions, together with the costs evaluated at the
    * solutions. The solutions are sorted in the ascending order based on the
    * cost.
    */
-  const std::list<std::pair<double, Eigen::VectorXd>>& best_solutions() const {
+  const std::list<std::pair<double, Eigen::VectorXd>>& solutions() const {
     return best_solutions_;
   }
 
@@ -548,15 +546,15 @@ class MixedIntegerBranchAndBound {
   double absolute_gap_tol_ = 1E-2;
   double relative_gap_tol_ = 1E-2;
 
-  PickVariable pick_variable_ = PickVariable::kMostAmbivalent;
+  VariableSelectionMethod pick_variable_ = VariableSelectionMethod::kMostAmbivalent;
 
-  PickNode pick_node_ = PickNode::kMinLowerBound;
+  NodeSelectionMethod pick_node_ = NodeSelectionMethod::kMinLowerBound;
 
   // The user defined function to pick a branching variable. Default is null.
-  PickVariableFun pick_branching_variable_userfun_ = nullptr;
+  VariableSelectFun variable_selection_userfun_ = nullptr;
 
   // The user defined function to pick a branching node. Default is null.
-  PickNodeFun pick_branching_node_userfun_ = nullptr;
+  NodeSelectFun node_selection_userfun_ = nullptr;
 };
 }  // namespace solvers
 }  // namespace drake

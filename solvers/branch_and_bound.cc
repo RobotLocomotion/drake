@@ -393,13 +393,13 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
 
 double MixedIntegerBranchAndBound::GetOptimalCost(int nth_best_cost) const {
   if (nth_best_cost < 0 ||
-      nth_best_cost >= static_cast<int>(best_solutions().size())) {
+      nth_best_cost >= static_cast<int>(solutions().size())) {
     throw std::runtime_error(
         fmt::format("Cannot access {}'th optimal cost. The branch and bound "
                     "process only finds {} solution(s).",
-                    nth_best_cost, best_solutions().size()));
+                    nth_best_cost, solutions().size()));
   }
-  auto it = best_solutions().begin();
+  auto it = solutions().begin();
   for (int best_cost_count = 0; best_cost_count < nth_best_cost;
        ++best_cost_count) {
     ++it;
@@ -410,16 +410,16 @@ double MixedIntegerBranchAndBound::GetOptimalCost(int nth_best_cost) const {
 double MixedIntegerBranchAndBound::GetSolution(
     const symbolic::Variable& mip_var, int nth_best_solution) const {
   if (nth_best_solution < 0 ||
-      nth_best_solution >= static_cast<int>(best_solutions().size())) {
+      nth_best_solution >= static_cast<int>(solutions().size())) {
     throw std::runtime_error(
         fmt::format("Cannot access {}'th integral solution. The "
                     "branch-and-bound process only finds {} solution(s).",
-                    nth_best_solution, best_solutions().size()));
+                    nth_best_solution, solutions().size()));
   }
   const int variable_index =
       root_->prog()->FindDecisionVariableIndex(GetNewVariable(mip_var));
 
-  auto it = best_solutions().begin();
+  auto it = solutions().begin();
   for (int best_solution_count = 0; best_solution_count < nth_best_solution;
        ++best_solution_count) {
     ++it;
@@ -442,15 +442,15 @@ const symbolic::Variable& MixedIntegerBranchAndBound::GetNewVariable(
 MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
     const {
   switch (pick_node_) {
-    case PickNode::kMinLowerBound: {
+    case NodeSelectionMethod::kMinLowerBound: {
       return PickMinLowerBoundNode();
     }
-    case PickNode::kDepthFirst: {
+    case NodeSelectionMethod::kDepthFirst: {
       return PickDepthFirstNode();
     }
-    case PickNode::kUserDefined: {
-      if (pick_branching_node_userfun_) {
-        return pick_branching_node_userfun_(*root_);
+    case NodeSelectionMethod::kUserDefined: {
+      if (node_selection_userfun_) {
+        return node_selection_userfun_(*root_);
       } else {
         throw std::runtime_error(
             "The user defined function should not be null.");
@@ -562,17 +562,17 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
 const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node) const {
   switch (pick_variable_) {
-    case PickVariable::kMostAmbivalent:
+    case VariableSelectionMethod::kMostAmbivalent:
       return PickMostAmbivalentAsBranchingVariable(node);
-    case PickVariable::kLeastAmbivalent:
+    case VariableSelectionMethod::kLeastAmbivalent:
       return PickLeastAmbivalentAsBranchingVariable(node);
-    case PickVariable::kUserDefined:
-      if (pick_branching_node_userfun_) {
-        return pick_branching_variable_userfun_(node);
+    case VariableSelectionMethod::kUserDefined:
+      if (variable_selection_userfun_) {
+        return variable_selection_userfun_(node);
       }
       throw std::runtime_error(
           "The user should specify the function to pick a branching variable "
-          "through SetUserDefinedBranchingVariableMethod.");
+          "through SetUserDefinedVariableSelectionFunction.");
   }
   // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
   // Werror=return-type, if we do not have it here.
@@ -582,15 +582,15 @@ const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
 namespace {
 const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node,
-    MixedIntegerBranchAndBound::PickVariable pick_variable) {
+    MixedIntegerBranchAndBound::VariableSelectionMethod pick_variable) {
   DRAKE_ASSERT(pick_variable ==
-                   MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent ||
+                   MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent ||
                pick_variable ==
-                   MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+                   MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
   if (node.solution_result() == SolutionResult::kSolutionFound) {
     double value =
         pick_variable ==
-                MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent
+                MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent
             ? std::numeric_limits<double>::infinity()
             : -std::numeric_limits<double>::infinity();
     const symbolic::Variable* return_var{nullptr};
@@ -598,11 +598,11 @@ const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
       const double var_value = node.prog()->GetSolution(var);
       const double var_value_to_half = std::abs(var_value - 0.5);
       if (pick_variable ==
-              MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent &&
+              MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent &&
           var_value_to_half < value) {
         value = var_value_to_half;
         return_var = &var;
-      } else if (pick_variable == MixedIntegerBranchAndBound::PickVariable::
+      } else if (pick_variable == MixedIntegerBranchAndBound::VariableSelectionMethod::
                                       kLeastAmbivalent &&
                  var_value_to_half > value) {
         value = var_value_to_half;
@@ -623,14 +623,14 @@ const symbolic::Variable*
 MixedIntegerBranchAndBound::PickMostAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node) const {
   return PickMostOrLeastAmbivalentAsBranchingVariable(
-      node, MixedIntegerBranchAndBound::PickVariable::kMostAmbivalent);
+      node, MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
 }
 
 const symbolic::Variable*
 MixedIntegerBranchAndBound::PickLeastAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node) const {
   return PickMostOrLeastAmbivalentAsBranchingVariable(
-      node, MixedIntegerBranchAndBound::PickVariable::kLeastAmbivalent);
+      node, MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
