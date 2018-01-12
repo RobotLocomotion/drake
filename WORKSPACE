@@ -18,7 +18,6 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
-load("//tools/workspace:which.bzl", "which")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 github_archive(
@@ -83,11 +82,9 @@ load("//tools/workspace/libprotobuf:package.bzl", "libprotobuf_repository")
 # in contrast, the Bazel build rules are loaded as @com_google_protobuf.
 libprotobuf_repository(name = "libprotobuf")
 
-# Find the protoc binary on $PATH.
-which(
-    name = "protoc",
-    command = "protoc",
-)
+load("//tools/workspace/protoc:package.bzl", "protoc_repository")
+
+protoc_repository(name = "protoc")
 
 load("//tools/workspace/python:package.bzl", "python_repository")
 
