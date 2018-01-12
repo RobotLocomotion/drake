@@ -75,7 +75,7 @@ PendulumPlant<T>::PendulumPlant(
   // Declare a vector input of size one for an applied torque about the revolute
   // joint's axis.
   applied_torque_input_ =
-      this->DeclareVectorInputPort(PendulumInput<T>()).get_index();
+      this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
 
   // Declare a port that outputs the state.
   state_output_port_ = this->DeclareVectorOutputPort(

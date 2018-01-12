@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "drake/common/drake_optional.h"
-#include "drake/examples/multibody/pendulum/gen/pendulum_input.h"
 #include "drake/examples/multibody/pendulum/gen/pendulum_state.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
@@ -72,17 +71,11 @@ class PendulumPlant final : public systems::LeafSystem<T> {
 
   /// Evaluates the input port and returns the scalar value
   /// of the commanded torque.
-  /// It aborts if the connected output port to this input is not of type
-  /// PendulumInput.
   const T& get_tau(const systems::Context<T>& context) const {
-    const PendulumInput<T>* input =
-        this->template EvalVectorInput<PendulumInput>(
-            context, applied_torque_input_);
-    if (input == nullptr) {
-      DRAKE_ABORT_MSG("Input port to this plant must be connected to an output"
-                          "of type PendulumInput<T>");
-    }
-    return input->tau();
+    const Eigen::VectorBlock<const VectorX<T>> input =
+        this->template EvalEigenVectorInput(context, applied_torque_input_);
+    DRAKE_DEMAND(input.size() == 1);
+    return input.coeff(0);
   }
 
   /// Returns the unique id identifying this plant as a source for a

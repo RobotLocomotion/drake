@@ -77,8 +77,7 @@ int do_main() {
   pendulum.set_name("Pendulum");
 
   // A constant source for a zero applied torque at the pin joint.
-  PendulumInput<double> applied_torque;
-  applied_torque.set_tau(0.0);
+  double applied_torque(0.0);
   auto torque_source =
       builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
   torque_source->set_name("Applied Torque");

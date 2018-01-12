@@ -53,7 +53,7 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
       length_(pendulum.length()),
       gravity_(pendulum.gravity()) {
     this->DeclareVectorInputPort(PendulumState<T>());
-    this->DeclareVectorOutputPort(PendulumInput<T>(),
+    this->DeclareVectorOutputPort(BasicVector<T>(1),
                                   &PendulumEnergyShapingController::CalcTau);
   }
 
@@ -61,7 +61,9 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
   double mass_, length_, gravity_;
 
   void CalcTau(const systems::Context<T>& context,
-               PendulumInput<T>* output) const {
+               BasicVector<T>* output) const {
+    DRAKE_DEMAND(output->size() == 1);
+
     const auto* state =
         this->template EvalVectorInput<PendulumState>(context, 0);
 
@@ -78,8 +80,9 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
             mass_ * gravity_ * mass_ * cos(state->theta());
 
     const double kEnergyFeedbackGain = .1;
-    output->set_tau(kEnergyFeedbackGain *
+    const T tau = (kEnergyFeedbackGain *
         state->thetadot() * (desired_energy - current_energy));
+    output->SetAtIndex(0, tau);
   }
 };
 
