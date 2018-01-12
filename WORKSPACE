@@ -18,8 +18,6 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
-load("//tools/workspace:which.bzl", "which")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 github_archive(
     name = "tinydir",
@@ -73,11 +71,9 @@ load("//tools/workspace/libprotobuf:package.bzl", "libprotobuf_repository")
 
 libprotobuf_repository(name = "libprotobuf")
 
-# Find the protoc binary on $PATH.
-which(
-    name = "protoc",
-    command = "protoc",
-)
+load("//tools/workspace/protoc:package.bzl", "protoc_repository")
+
+protoc_repository(name = "protoc")
 
 load("//tools/workspace/python:package.bzl", "python_repository")
 
@@ -276,36 +272,13 @@ load("//tools/workspace/mosek:package.bzl", "mosek_repository")
 
 mosek_repository(name = "mosek")
 
-# We directly declare a git_repository because the snopt source code requires
-# authentication, and our github_archive does not (yet, easily) support that.
-git_repository(
-    name = "snopt",
-    remote = "git@github.com:RobotLocomotion/snopt.git",
-    commit = "0f475624131c9ca4d5624e74c3f8273ccc926f9b",
-)
+load("//tools/workspace/snopt:package.bzl", "snopt_repository")
 
-load("//tools/workspace:pypi.bzl", "pypi_archive")
+snopt_repository(name = "snopt")
 
-pypi_archive(
-    name = "six_archive",
-    package = "six",
-    version = "1.10.0",
-    sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",  # noqa
-    build_file = "@drake//tools/workspace/six:package.BUILD.bazel",
-)
+load("//tools/workspace/semantic_version:package.bzl", "semantic_version_repository")  # noqa
 
-bind(
-    name = "six",
-    actual = "@six_archive//:six",
-)
-
-pypi_archive(
-    name = "semantic_version",
-    version = "2.6.0",
-    sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",  # noqa
-    strip_prefix = "semantic_version",
-    build_file = "@drake//tools/workspace/semantic_version:package.BUILD.bazel",  # noqa
-)
+semantic_version_repository(name = "semantic_version")
 
 github_archive(
     name = "pycps",
@@ -313,15 +286,6 @@ github_archive(
     commit = "544c1ded81b926a05b3dedb06504bd17bc8d0a95",
     sha256 = "0b97cbaae107e5ddbe89073b6e42b679130f1eb81b913aa93da9e72e032a137b",  # noqa
     build_file = "@drake//tools/workspace/pycps:package.BUILD.bazel",
-)
-
-# The "@python_headers//:python_headers" target is required by protobuf
-# during "bazel query" but not "bazel build", so a stub is fine.
-new_local_repository(
-    name = "python_headers",
-    path = "not/real/stub",
-    build_file_content = ("cc_library(name = 'python_headers', " +
-                          "visibility = ['//visibility:public'])"),
 )
 
 # If updating ignition_math version, do not forget to also update
