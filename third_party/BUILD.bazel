@@ -15,8 +15,8 @@ exports_files(
 )
 
 exports_files(
-    ["net_sf_jchart2d_jchart2d/LICENSE"],
-    visibility = ["//tools/workspace/jchart2d:__pkg__"],
+    ["net_sf_jchart2d/LICENSE"],
+    visibility = ["//tools/workspace/net_sf_jchart2d:__pkg__"],
 )
 
 exports_files(
