@@ -92,26 +92,33 @@ class MixedIntegerBranchAndBoundNode {
   /**
    * Getter for the mathematical program.
    */
-  MathematicalProgram* prog() const { return prog_.get(); }
+  const MathematicalProgram* prog() const { return prog_.get(); }
 
-  /**
-   * Getter for the left child.
-   */
-  MixedIntegerBranchAndBoundNode* left_child() const {
+  /** Getter for the left child. */
+  const MixedIntegerBranchAndBoundNode* left_child() const {
     return left_child_.get();
   }
 
-  /**
-   * Getter for the right child.
-   */
-  MixedIntegerBranchAndBoundNode* right_child() const {
+  /** Setter for the left child. */
+  MixedIntegerBranchAndBoundNode* left_child() {
+    return left_child_.get();
+  }
+
+  /** Getter for the right child. */
+  const MixedIntegerBranchAndBoundNode* right_child() const {
     return right_child_.get();
   }
 
-  /**
-   * Getter for the parent node.
-   */
-  MixedIntegerBranchAndBoundNode* parent() const { return parent_; }
+  /** Setter for the right child. */
+  MixedIntegerBranchAndBoundNode* right_child() {
+    return right_child_.get();
+  }
+
+  /** Getter for the parent node. */
+  const MixedIntegerBranchAndBoundNode* parent() const { return parent_; }
+
+  /** Setter for the parent node. */
+  MixedIntegerBranchAndBoundNode* parent() { return parent_; }
 
   /**
    * Getter for the binary variable, whose value was not fixed in
@@ -419,7 +426,7 @@ class MixedIntegerBranchAndBound {
    * Getter for the root node. Note that this is aliased for the lifetime of
    * this object.
    */
-  MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }
+  MixedIntegerBranchAndBoundNode* root() { return root_.get(); }
 
   /** Getter for the best upper bound. */
   double best_upper_bound() const { return best_upper_bound_; }
