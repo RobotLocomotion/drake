@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "drake/common/hash.h"
-#include "drake/common/is_equality_comparable.h"
 #include "drake/common/is_less_than_comparable.h"
 
 /// @file
@@ -20,13 +19,10 @@ namespace drake {
 /// class is able to be used to generate keys (e.g., for std::map, etc.) from
 /// pairs of objects.
 ///
-/// @tparam T A template type that provides the operators `operator==` and
-///           `operator<` and supports default construction.
+/// @tparam T A template type that provides `operator<` and supports default
+///           construction.
 template <class T>
 struct SortedPair {
-  static_assert(is_equality_comparable<T>::value, "SortedPair can only be "
-      "used with types that can be compared using an equality operator "
-      "(operator==).");
   static_assert(is_less_than_comparable<T>::value, "SortedPair can only be used"
       "with types that can be compared using the less-than operator "
       "(operator<).");
@@ -38,10 +34,8 @@ struct SortedPair {
 
   /// Move constructor.
   SortedPair(SortedPair&& s)
-      noexcept(std::is_nothrow_move_constructible<T>::value) {
-    first_ = std::move(s.first_);
-    second_ = std::move(s.second_);
-  }
+      noexcept(std::is_nothrow_move_constructible<T>::value) : 
+      first_{std::move(s.first_)}, second_{std::move(s.second_)} {}
 
   /// Rvalue reference constructor, permits constructing with std::unique_ptr
   /// types, for example.
@@ -81,9 +75,10 @@ struct SortedPair {
   }
 
   /// Resets the stored objects.
-  void set(const T& a, const T& b) {
-    first_ = a;
-    second_ = b;
+  template <class U>
+  void set(U&& a, U&& b) {
+    first_ = std::forward<U>(a);
+    second_ = std::forward<U>(b);
     if (second_ < first_)
       std::swap(first_, second_);
   }
@@ -117,7 +112,7 @@ struct SortedPair {
 /// sorting.
 template <class T>
 inline bool operator==(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return x.first() == y.first() && x.second() == y.second();
+  return !(x < y) && !(y < x);
 }
 
 /// Compares two pairs in the following way: `x < y` is true iff when
