@@ -609,7 +609,7 @@ def cmake_config(
             deps = ["@drake//tools/install:cpsutils"],
         )
 
-        cps_file_name = "{}.cps".format(package)
+        cps_file_name = "package.cps"
 
         native.genrule(
             name = "cps",
@@ -620,8 +620,8 @@ def cmake_config(
             visibility = ["//visibility:public"],
         )
     elif not cps_file_name:
-        cps_file_name = "@drake//tools/workspace/{}:{}.cps".format(
-            package, package)
+        cps_file_name = "@drake//tools/workspace/{}:package.cps".format(
+            package)
 
     package_lower = package.lower()
 

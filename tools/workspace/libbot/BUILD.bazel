@@ -6,7 +6,7 @@ exports_files(
     [
         "bot-procman-sheriff",
         "build_prefix.py",
-        "libbot.cps",
+        "package.cps",
     ],
     visibility = ["@libbot//:__pkg__"],
 )

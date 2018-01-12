@@ -13,7 +13,7 @@ package(default_visibility = ["//visibility:public"])
 CMAKE_PACKAGE = "jchart2d"
 
 cmake_config(
-    cps_file_name = CMAKE_PACKAGE + ".cps",
+    cps_file_name = "package.cps",
     package = CMAKE_PACKAGE,
 )
 
