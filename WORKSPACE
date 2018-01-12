@@ -319,15 +319,9 @@ git_repository(
 )
 
 # Python Libraries
-load("//tools/workspace:pypi.bzl", "pypi_archive")
+load("//tools/workspace/semantic_version:package.bzl", "semantic_version_repository")  # noqa
 
-pypi_archive(
-    name = "semantic_version",
-    version = "2.6.0",
-    sha256 = "2a4328680073e9b243667b201119772aefc5fc63ae32398d6afafff07c4f54c0",  # noqa
-    strip_prefix = "semantic_version",
-    build_file = "@drake//tools/workspace/semantic_version:package.BUILD.bazel",  # noqa
-)
+semantic_version_repository(name = "semantic_version")
 
 github_archive(
     name = "pycps",
