@@ -39,6 +39,8 @@ PYBIND11_MODULE(framework, m) {
   // `py_iref` is used when pointers / lvalue references are returned (no need
   // for `keep_alive`, as it is implicit.
   auto py_iref = py::return_value_policy::reference_internal;
+  // For more information on `py::keep_alive`, please see:
+  // http://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive
 
   m.doc() = "Bindings for the core Systems framework.";
 
@@ -127,7 +129,7 @@ PYBIND11_MODULE(framework, m) {
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort), py_iref)
+             &Context<T>::FixInputPort), py_iref, py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
@@ -152,14 +154,16 @@ PYBIND11_MODULE(framework, m) {
         "AddSystem",
         [](DiagramBuilder<T>* self, unique_ptr<System<T>> arg1) {
           return self->AddSystem(std::move(arg1));
-        })
+        }, py::keep_alive<2, 1>())
     .def("Connect",
          py::overload_cast<const OutputPort<T>&, const InputPortDescriptor<T>&>(
              &DiagramBuilder<T>::Connect))
     .def("ExportInput", &DiagramBuilder<T>::ExportInput, py_iref)
     .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py_iref)
-    .def("Build", &DiagramBuilder<T>::Build)
-    .def("BuildInto", &DiagramBuilder<T>::BuildInto);
+    // Use transitive keep_alive to ensure all Systems stay alive with their
+    // new owner.
+    .def("Build", &DiagramBuilder<T>::Build, py::keep_alive<1, 0>())
+    .def("BuildInto", &DiagramBuilder<T>::BuildInto, py::keep_alive<1, 2>());
 
   // TODO(eric.cousineau): Figure out how to handle template-specialized method
   // signatures(e.g. GetValue<T>()).
