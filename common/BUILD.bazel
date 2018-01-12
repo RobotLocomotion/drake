@@ -241,12 +241,18 @@ drake_cc_library(
     hdrs = [
         "is_equality_comparable.h",
     ],
+    deps = [
+        ":unused",
+    ],
 )
 
 drake_cc_library(
     name = "is_less_than_comparable",
     hdrs = [
         "is_less_than_comparable.h",
+    ],
+    deps = [
+        ":unused",
     ],
 )
 

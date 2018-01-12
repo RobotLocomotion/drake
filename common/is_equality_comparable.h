@@ -2,6 +2,8 @@
 
 #include <type_traits>
 
+#include "drake/common/unused.h"
+
 #ifndef DRAKE_DOXYGEN_CXX
 
 namespace drake {
@@ -17,8 +19,8 @@ struct is_equality_comparable_helper : std::false_type { };
 // prefers this overload over the default overload.
 template <typename T>
 struct is_equality_comparable_helper<T, typename std::enable_if<true,
-    decltype(std::declval<T&>() == std::declval<T&>(), (void)0)>::type> :
-    std::true_type {};
+    decltype(unused(std::declval<T&>() == std::declval<T&>()),
+    (void)0)>::type> : std::true_type {};
 
 }  // namespace is_equality_comparable_detail
 
