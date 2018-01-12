@@ -18,7 +18,6 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 github_archive(
     name = "tinydir",
@@ -273,13 +272,9 @@ load("//tools/workspace/mosek:package.bzl", "mosek_repository")
 
 mosek_repository(name = "mosek")
 
-# We directly declare a git_repository because the snopt source code requires
-# authentication, and our github_archive does not (yet, easily) support that.
-git_repository(
-    name = "snopt",
-    remote = "git@github.com:RobotLocomotion/snopt.git",
-    commit = "0f475624131c9ca4d5624e74c3f8273ccc926f9b",
-)
+load("//tools/workspace/snopt:package.bzl", "snopt_repository")
+
+snopt_repository(name = "snopt")
 
 load("//tools/workspace/semantic_version:package.bzl", "semantic_version_repository")  # noqa
 
