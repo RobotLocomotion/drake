@@ -77,8 +77,6 @@ gthread_repository(name = "gthread")
 
 load("//tools/workspace/libprotobuf:package.bzl", "libprotobuf_repository")
 
-# Load in the paths and flags to the system version of the protobuf runtime;
-# in contrast, the Bazel build rules are loaded as @com_google_protobuf.
 libprotobuf_repository(name = "libprotobuf")
 
 # Find the protoc binary on $PATH.
@@ -105,9 +103,7 @@ github_archive(
 
 load("//tools/workspace/gflags:package.bzl", "gflags_repository")
 
-gflags_repository(
-    name = "gflags",
-)
+gflags_repository(name = "gflags")
 
 github_archive(
     name = "styleguide",
@@ -310,7 +306,6 @@ git_repository(
     commit = "0f475624131c9ca4d5624e74c3f8273ccc926f9b",
 )
 
-# Python Libraries
 load("//tools/workspace:pypi.bzl", "pypi_archive")
 
 pypi_archive(
@@ -417,9 +412,6 @@ load("//tools/workspace/zlib:package.bzl", "zlib_repository")
 
 zlib_repository(name = "zlib")
 
-load(
-    "//tools/workspace/drake_visualizer:package.bzl",
-    "drake_visualizer_repository",
-)
+load("//tools/workspace/drake_visualizer:package.bzl", "drake_visualizer_repository")  # noqa
 
 drake_visualizer_repository(name = "drake_visualizer")
