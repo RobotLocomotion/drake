@@ -30,7 +30,7 @@ namespace solvers {
  * contains value either 0 or 1.
  *
  * Each node is created from its parent node, by fixing one binary variable to
- * either 0 or 1. We denote this special binary variable as z.
+ * either 0 or 1.
  */
 class MixedIntegerBranchAndBoundNode {
  public:
@@ -293,6 +293,8 @@ class MixedIntegerBranchAndBound {
   /**
    * Get the n'th best integral solution for a variable.
    * The best solutions are sorted in the ascending order based on their costs.
+   * Each solution is found in a separate node in the branch-and-bound tree, so
+   * the values of the binary variables are different in each solution.
    * @param mip_var A variable in the original MIP.
    * @param nth_best_solution. The index of the best integral solution.
    * @pre `mip_var` is a variable in the original MIP.
@@ -305,6 +307,7 @@ class MixedIntegerBranchAndBound {
   /**
    * Get the n'th best integral solution for some variables.
    * The best solutions are sorted in the ascending order based on their costs.
+   * Each solution is found in a separate node in the branch-and-bound tree, so
    * @param mip_vars Variables in the original MIP.
    * @param nth_best_solution. The index of the best integral solution.
    * @pre `mip_vars` are variables in the original MIP.
@@ -449,6 +452,25 @@ class MixedIntegerBranchAndBound {
   const std::list<std::pair<double, Eigen::VectorXd>>& solutions() const {
     return solutions_;
   }
+
+  /** Setter for the absolute gap tolerance.
+   * The branch-and-bound will terminate if its difference between its best
+   * upper bound and best lower bound is below this gap tolerance.
+   */
+  void SetAbsoluteGapTol(double tol) { absolute_gap_tol_ = tol; }
+
+  /** Getter for the absolute gap tolerance. */
+  double absolute_gap_tol() const { return absolute_gap_tol_; }
+
+  /** Setter for the relative gap tolerance.
+   * The branch-and-bound will terminate if
+   * (best_upper_bound() - best_lower_bound()) / abs(best_lower_bound())
+   * is smaller than this tolerance.
+   */
+  void SetRelativeGapTol(double tol) { relative_gap_tol_ = tol; }
+
+  /** Geeter for the relative gap tolerance. */
+  double relative_gap_tol() const { return relative_gap_tol_; }
 
  private:
   // Forward declaration the tester class.
