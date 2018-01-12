@@ -34,7 +34,7 @@ struct SortedPair {
 
   /// Move constructor.
   SortedPair(SortedPair&& s)
-      noexcept(std::is_nothrow_move_constructible<T>::value) : 
+      noexcept(std::is_nothrow_move_constructible<T>::value) :
       first_{std::move(s.first_)}, second_{std::move(s.second_)} {}
 
   /// Rvalue reference constructor, permits constructing with std::unique_ptr
@@ -65,7 +65,8 @@ struct SortedPair {
 
   /// Type-converting copy constructor.
   template <class U>
-  SortedPair(const SortedPair<U>& u) : SortedPair<T>(u.first(), u.second()) { }
+  SortedPair(SortedPair<U>&& u) : first_{std::forward<T>(u.first())},
+      second_{std::forward<T>(u.second())} {}
 
   /// Copies the contents of `p` to `this`.
   SortedPair& operator=(const SortedPair& p) {
@@ -115,28 +116,15 @@ inline bool operator==(const SortedPair<T>& x, const SortedPair<T>& y) {
   return !(x < y) && !(y < x);
 }
 
-/// Compares two pairs in the following way: `x < y` is true iff when
-/// `x.first() < y.first()` or (not(x.first() < y.first()) and
-/// not(y.second() < x.second()).
+/// Compares two pairs using lexicographic ordering.
 template <class T>
 inline bool operator<(const SortedPair<T>& x, const SortedPair<T>& y) {
-  if (y.first() < x.first())
-    return false;
-
-  // If still here, we know that x <= y.
-  if (x.first() < y.first())
-    return true;
-
-  // If still here, we know that x = y.
-  if (x.second() < y.second()) {
-    return true;
-  } else {
-    return false;
-  }
+  return std::tie(x.first(), x.second()) < std::tie(y.first(), y.second());
 }
 
 /// Determine whether two SortedPair objects are not equal using `operator==`.
-template <class T> inline bool operator!=(
+template <class T>
+inline bool operator!=(
     const SortedPair<T>& x, const SortedPair<T>& y) {
   return !(x == y);
 }
@@ -165,9 +153,10 @@ operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
 /// @param y  The second_ object.
 /// @return A newly-constructed SortedPair object.
 template <class T>
-inline SortedPair<T>
-MakeSortedPair(const T& x, const T& y) {
-  return SortedPair<T>(x, y);
+inline SortedPair<typename std::decay<T>::type>
+MakeSortedPair(T&& x, T&& y) {
+  return SortedPair<
+      typename std::decay<T>::type>(std::forward<T>(x), std::forward<T>(y));
 }
 
 }  // namespace drake
