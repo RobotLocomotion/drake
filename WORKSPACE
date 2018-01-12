@@ -29,11 +29,9 @@ github_archive(
     build_file = "@drake//tools/workspace/tinydir:package.BUILD.bazel",
 )
 
-new_local_repository(
-    name = "spruce",
-    build_file = "@drake//tools/workspace/spruce:package.BUILD.bazel",
-    path = __workspace_dir__ + "/third_party/josephdavisco_spruce",
-)
+load("//tools/workspace/spruce:package.bzl", "spruce_repository")
+
+spruce_repository(name = "spruce")
 
 github_archive(
     name = "stx",
@@ -73,8 +71,6 @@ gthread_repository(name = "gthread")
 
 load("//tools/workspace/libprotobuf:package.bzl", "libprotobuf_repository")
 
-# Load in the paths and flags to the system version of the protobuf runtime;
-# in contrast, the Bazel build rules are loaded as @com_google_protobuf.
 libprotobuf_repository(name = "libprotobuf")
 
 # Find the protoc binary on $PATH.
@@ -85,17 +81,11 @@ which(
 
 load("//tools/workspace/python:package.bzl", "python_repository")
 
-python_repository(
-    name = "python",
-    version = "2.7",
-)
+python_repository(name = "python")
 
 load("//tools/workspace/numpy:package.bzl", "numpy_repository")
 
-numpy_repository(
-    name = "numpy",
-    python_version = "2.7",
-)
+numpy_repository(name = "numpy")
 
 github_archive(
     name = "gtest",
@@ -107,9 +97,7 @@ github_archive(
 
 load("//tools/workspace/gflags:package.bzl", "gflags_repository")
 
-gflags_repository(
-    name = "gflags",
-)
+gflags_repository(name = "gflags")
 
 github_archive(
     name = "styleguide",
@@ -296,7 +284,6 @@ git_repository(
     commit = "0f475624131c9ca4d5624e74c3f8273ccc926f9b",
 )
 
-# Python Libraries
 load("//tools/workspace:pypi.bzl", "pypi_archive")
 
 pypi_archive(
@@ -403,9 +390,6 @@ load("//tools/workspace/zlib:package.bzl", "zlib_repository")
 
 zlib_repository(name = "zlib")
 
-load(
-    "//tools/workspace/drake_visualizer:package.bzl",
-    "drake_visualizer_repository",
-)
+load("//tools/workspace/drake_visualizer:package.bzl", "drake_visualizer_repository")  # noqa
 
 drake_visualizer_repository(name = "drake_visualizer")
