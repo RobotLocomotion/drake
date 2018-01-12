@@ -10,6 +10,7 @@ load(
     "drake_cc_proto_library",
     "drake_py_proto_library",
 )
+load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:6996.bzl", "HAS_MOVED_6996")
 
@@ -78,6 +79,26 @@ py_binary(
         # spellings such as this one.
         "@drake//common/proto:call_python_client" if HAS_MOVED_6996 else ":call_python_client",  # noqa
     ],
+)
+
+_UBSAN_H = "//third_party:com_github_google_protobuf/protobuf-ubsan-fixup.h"
+
+# This library is used by //tools/skylark:drake_proto.bzl.  Developers should
+# never need to mention it directly.  The source code is placed in third_party
+# because it is forked from protobuf upstream, and thus copyright by Google.
+cc_library(
+    name = "protobuf_ubsan_fixup",
+    hdrs = [_UBSAN_H],
+    include_prefix = "drake/common/proto",
+    strip_include_prefix = "/third_party/com_github_google_protobuf",
+)
+
+install(
+    name = "install",
+    hdrs = [_UBSAN_H],
+    hdr_dest = "include/drake/common/proto",
+    hdr_strip_prefix = ["com_github_google_protobuf"],
+    allowed_externals = [_UBSAN_H],
 )
 
 # === test/ ===
