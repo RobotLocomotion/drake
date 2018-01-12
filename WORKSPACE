@@ -18,7 +18,6 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
-load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 load("//tools/workspace:which.bzl", "which")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
@@ -45,8 +44,8 @@ github_archive(
 )
 
 # This local repository imports the protobuf build rules for Bazel (based on
-# the upstream protobuf.bzl build rules).  The protobuf runtime is loaded
-# into "libprotobuf" via pkg-config below.
+# the upstream protobuf.bzl build rules); in constrast, the protobuf runtime is
+# loaded as @libprotobuf.
 local_repository(
     name = "com_google_protobuf",
     # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
@@ -62,32 +61,27 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/com_kitware_gitlab_cmake_cmake",
 )
 
-pkg_config_repository(
-    name = "ibex",
-    modname = "ibex",
-)
+load("//tools/workspace/ibex:package.bzl", "ibex_repository")
 
-pkg_config_repository(
-    name = "dreal",
-    modname = "dreal",
-)
+ibex_repository(name = "ibex")
 
-pkg_config_repository(
-    name = "glib",
-    modname = "glib-2.0",
-)
+load("//tools/workspace/dreal:package.bzl", "dreal_repository")
 
-pkg_config_repository(
-    name = "gthread",
-    modname = "gthread-2.0",
-)
+dreal_repository(name = "dreal")
+
+load("//tools/workspace/glib:package.bzl", "glib_repository")
+
+glib_repository(name = "glib")
+
+load("//tools/workspace/gthread:package.bzl", "gthread_repository")
+
+gthread_repository(name = "gthread")
+
+load("//tools/workspace/libprotobuf:package.bzl", "libprotobuf_repository")
 
 # Load in the paths and flags to the system version of the protobuf runtime;
-# the Bazel build rules are loaded into "protobuf" via local_repository above.
-pkg_config_repository(
-    name = "libprotobuf",
-    modname = "protobuf",
-)
+# in contrast, the Bazel build rules are loaded as @com_google_protobuf.
+libprotobuf_repository(name = "libprotobuf")
 
 # Find the protoc binary on $PATH.
 which(
@@ -237,15 +231,13 @@ github_archive(
     build_file = "@drake//tools/workspace/fcl:package.BUILD.bazel",
 )
 
-pkg_config_repository(
-    name = "ipopt",
-    modname = "ipopt",
-)
+load("//tools/workspace/ipopt:package.bzl", "ipopt_repository")
 
-pkg_config_repository(
-    name = "nlopt",
-    modname = "nlopt",
-)
+ipopt_repository(name = "ipopt")
+
+load("//tools/workspace/nlopt:package.bzl", "nlopt_repository")
+
+nlopt_repository(name = "nlopt")
 
 github_archive(
     name = "optitrack_driver",
@@ -278,15 +270,13 @@ github_archive(
     build_file = "@drake//tools/workspace/lcmtypes_robotlocomotion:package.BUILD.bazel",  # noqa
 )
 
-pkg_config_repository(
-    name = "blas",
-    modname = "blas",
-)
+load("//tools/workspace/blas:package.bzl", "blas_repository")
 
-pkg_config_repository(
-    name = "lapack",
-    modname = "lapack",
-)
+blas_repository(name = "blas")
+
+load("//tools/workspace/lapack:package.bzl", "lapack_repository")
+
+lapack_repository(name = "lapack")
 
 github_archive(
     name = "scs",
@@ -304,12 +294,9 @@ github_archive(
     build_file = "@drake//tools/workspace/tinyobjloader:package.BUILD.bazel",
 )
 
-pkg_config_repository(
-    name = "yaml_cpp",
-    modname = "yaml-cpp",
-    atleast_version = "0.5.2",
-    extra_deps = ["@boost//:boost_headers"],
-)
+load("//tools/workspace/yaml_cpp:package.bzl", "yaml_cpp_repository")
+
+yaml_cpp_repository(name = "yaml_cpp")
 
 load("//tools/workspace/buildifier:package.bzl", "buildifier_repository")
 
@@ -414,30 +401,25 @@ load("//tools/workspace/expat:package.bzl", "expat_repository")
 
 expat_repository(name = "expat")
 
-pkg_config_repository(
-    name = "glew",
-    modname = "glew",
-)
+load("//tools/workspace/glew:package.bzl", "glew_repository")
 
-pkg_config_repository(
-    name = "liblz4",
-    modname = "liblz4",
-)
+glew_repository(name = "glew")
 
-pkg_config_repository(
-    name = "libpng",
-    modname = "libpng",
-)
+load("//tools/workspace/liblz4:package.bzl", "liblz4_repository")
 
-pkg_config_repository(
-    name = "tinyxml",
-    modname = "tinyxml",
-)
+liblz4_repository(name = "liblz4")
 
-pkg_config_repository(
-    name = "tinyxml2",
-    modname = "tinyxml2",
-)
+load("//tools/workspace/libpng:package.bzl", "libpng_repository")
+
+libpng_repository(name = "libpng")
+
+load("//tools/workspace/tinyxml:package.bzl", "tinyxml_repository")
+
+tinyxml_repository(name = "tinyxml")
+
+load("//tools/workspace/tinyxml2:package.bzl", "tinyxml2_repository")
+
+tinyxml2_repository(name = "tinyxml2")
 
 load("//tools/workspace/zlib:package.bzl", "zlib_repository")
 
