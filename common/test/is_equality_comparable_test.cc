@@ -11,6 +11,10 @@ bool operator==(const Z&, const Z&) { return true; }
 
 // Verifies that this class is equality comparable.
 GTEST_TEST(EqualityComparable, RunTime) {
+  // Necessary to work around a Clang error.
+  const Z z;
+  operator==(z, z);
+
   struct X {};
   struct Y {
     bool operator==(const Y&) const { return true; }

@@ -15,13 +15,10 @@ namespace drake {
 
 /// This class is similar to the std::pair class. However, this class uses a
 /// pair of homogeneous types (std::pair can use heterogeneous types) and sorts
-/// the first and second values (the first value is lower). Thus the SortedPair
+/// the first and second values such that the first value is less than or equal
+/// to the second one). Note that the sort is a stable one. Thus the SortedPair
 /// class is able to be used to generate keys (e.g., for std::map, etc.) from
 /// pairs of objects.
-///
-/// The data are stored as `const` types to prevent user modification- which
-/// could break the sorted ordering- while permitting the familiar `first`
-/// and `second` member data accesses provided by std::pair.
 ///
 /// @tparam T A template type that provides the operators `operator==` and
 ///           `operator<` and supports default construction.
@@ -34,92 +31,113 @@ struct SortedPair {
       "with types that can be compared using the less-than operator "
       "(operator<).");
 
-  typedef T type;
-
-  const T first{};                 /// The smaller of the two objects.
-  const T second{};                /// The larger of the two objects.
-
-  /// The default constructor creates `first`and `second` using their
+  /// The default constructor creates `first()` and `second()` using their
   /// respective default constructors.
   SortedPair() = default;
   SortedPair(const SortedPair& s) = default;
 
   /// Move constructor.
-  SortedPair(SortedPair&& s) {
-    const_cast<T&>(first) = std::move(const_cast<T&>(s.first));
-    const_cast<T&>(second) = std::move(const_cast<T&>(s.second));
+  SortedPair(SortedPair&& s)
+      noexcept(std::is_nothrow_move_constructible<T>::value) {
+    first_ = std::move(s.first_);
+    second_ = std::move(s.second_);
   }
 
   /// Rvalue reference constructor, permits constructing with std::unique_ptr
   /// types, for example.
   SortedPair(T&& a, T&& b) {
-    if (a < b) {
-      const_cast<T&>(first) = std::move(const_cast<T&>(a));
-      const_cast<T&>(second) = std::move(const_cast<T&>(b));
+    if (b < a) {
+      first_ = std::move(b);
+      second_ = std::move(a);
     } else {
-      const_cast<T&>(first) = std::move(const_cast<T&>(b));
-      const_cast<T&>(second) = std::move(const_cast<T&>(a));
+      first_ = std::move(a);
+      second_ = std::move(b);
     }
   }
 
   /// Move assignment operator.
-  SortedPair& operator=(SortedPair&& s) {
-    const_cast<T&>(first) = std::move(const_cast<T&>(s.first));
-    const_cast<T&>(second) = std::move(const_cast<T&>(s.second));
+  SortedPair& operator=(SortedPair&& s)
+      noexcept(std::is_nothrow_move_constructible<T>::value) {
+    first_ = std::move(s.first_);
+    second_ = std::move(s.second_);
     return *this;
   }
 
   /// Constructs a %SortedPair from two objects.
-  SortedPair(const T& a, const T& b) : first(a), second(b) {
-    if (first > second)
-      std::swap(const_cast<T&>(first), const_cast<T&>(second));
+  SortedPair(const T& a, const T& b) : first_(a), second_(b) {
+    if (second_ < first_)
+      std::swap(first_, second_);
   }
 
   /// Type-converting copy constructor.
   template <class U>
-  SortedPair(const SortedPair<U>& p) : first(p.first), second(p.second) { }
+  SortedPair(const SortedPair<U>& u) : SortedPair<T>(u.first(), u.second()) { }
 
   /// Copies the contents of `p` to `this`.
   SortedPair& operator=(const SortedPair& p) {
-    // This block of code is necessary since `first` and `second` are const
-    // objects.
-    const_cast<T&>(first) = p.first;
-    const_cast<T&>(second) = p.second;
+    first_ = p.first_;
+    second_ = p.second_;
     return *this;
   }
 
   /// Resets the stored objects.
   void set(const T& a, const T& b) {
-    if (a < b) {
-      const_cast<T&>(first) = a;
-      const_cast<T&>(second) = b;
-    } else {
-      const_cast<T&>(first) = b;
-      const_cast<T&>(second) = a;
-    }
+    first_ = a;
+    second_ = b;
+    if (second_ < first_)
+      std::swap(first_, second_);
+  }
+
+  /// Gets the first (according to `operator<`) of the objects.
+  const T& first() const { return first_; }
+
+  /// Gets the second (according to `operator<`) of the objects.
+  const T& second() const { return second_; }
+
+  /// Swaps `this` and `t`.
+  void Swap(drake::SortedPair<T>& t) {
+    std::swap(t.first_, first_);
+    std::swap(t.second_, second_);
   }
 
   /// Implements the @ref hash_append concept.
   template <class HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher, const SortedPair& p) noexcept {
      using drake::hash_append;
-    hash_append(hasher, p.first);
-    hash_append(hasher, p.second);
+    hash_append(hasher, p.first_);
+    hash_append(hasher, p.second_);
   }
+
+ private:
+  T first_{};          // The first of the two objects, according to operator<.
+  T second_{};         // The second of the two objects, according to operator<.
 };
 
 /// Two pairs of the same type are equal iff their members are equal after
 /// sorting.
 template <class T>
 inline bool operator==(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return x.first == y.first && x.second == y.second;
+  return x.first() == y.first() && x.second() == y.second();
 }
 
-// Compares two pairs in the following way: `x < y` is true iff when
-// `x.first < y.first` or `x.first == y.first and x.second < y.second)`.
+/// Compares two pairs in the following way: `x < y` is true iff when
+/// `x.first() < y.first()` or (not(x.first() < y.first()) and
+/// not(y.second() < x.second()).
 template <class T>
 inline bool operator<(const SortedPair<T>& x, const SortedPair<T>& y) {
-  return x.first < y.first || (x.first == y.first && x.second < y.second);
+  if (y.first() < x.first())
+    return false;
+
+  // If still here, we know that x <= y.
+  if (x.first() < y.first())
+    return true;
+
+  // If still here, we know that x = y.
+  if (x.second() < y.second()) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 /// Determine whether two SortedPair objects are not equal using `operator==`.
@@ -148,8 +166,8 @@ operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
 }
 
 /// @brief A convenience wrapper for creating a sorted pair from two objects.
-/// @param x  The first object.
-/// @param y  The second object.
+/// @param x  The first_ object.
+/// @param y  The second_ object.
 /// @return A newly-constructed SortedPair object.
 template <class T>
 inline SortedPair<T>
@@ -164,8 +182,7 @@ namespace std {
 /// Implements std::swap().
 template <class T>
 void swap(drake::SortedPair<T>& t, drake::SortedPair<T>& u) {
-  std::swap(const_cast<T&>(t.first), const_cast<T&>(u.first));
-  std::swap(const_cast<T&>(t.second), const_cast<T&>(u.second));
+  t.Swap(u);
 }
 
 /// Provides std::hash<SortedPair<T>>.

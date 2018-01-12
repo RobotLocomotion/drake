@@ -11,37 +11,37 @@ namespace {
 // Verifies behavior of the default constructor.
 GTEST_TEST(SortedPair, Default) {
   SortedPair<int> x;
-  EXPECT_EQ(x.first, 0);
-  EXPECT_EQ(x.second, 0);
+  EXPECT_EQ(x.first(), 0);
+  EXPECT_EQ(x.second(), 0);
 
   SortedPair<double> y;
-  EXPECT_EQ(y.first, 0.0);
-  EXPECT_EQ(y.second, 0.0);
+  EXPECT_EQ(y.first(), 0.0);
+  EXPECT_EQ(y.second(), 0.0);
 }
 
 // Verifies sorting occurs.
 GTEST_TEST(SortedPair, Values) {
   SortedPair<int> x(3, 2);
-  EXPECT_EQ(x.first, 2);
-  EXPECT_EQ(x.second, 3);
+  EXPECT_EQ(x.first(), 2);
+  EXPECT_EQ(x.second(), 3);
 }
 
 // Verifies that the type casting copy constructor works as desired.
 GTEST_TEST(SortedPair, Casting) {
   SortedPair<double> x = SortedPair<int>(3, 2);
-  EXPECT_EQ(x.first, 2.0);
-  EXPECT_EQ(x.second, 3.0);
+  EXPECT_EQ(x.first(), 2.0);
+  EXPECT_EQ(x.second(), 3.0);
 }
 
 // Verifies that 'set()' works properly.
 GTEST_TEST(SortedPair, Set) {
   SortedPair<double> x;
   x.set(1.0, 2.0);
-  EXPECT_EQ(x.first, 1.0);
-  EXPECT_EQ(x.second, 2.0);
+  EXPECT_EQ(x.first(), 1.0);
+  EXPECT_EQ(x.second(), 2.0);
   x.set(5.0, 3.0);
-  EXPECT_EQ(x.first, 3.0);
-  EXPECT_EQ(x.second, 5.0);
+  EXPECT_EQ(x.first(), 3.0);
+  EXPECT_EQ(x.second(), 5.0);
 }
 
 // Verifies that the move assignment operator and move constructor work.
@@ -51,15 +51,15 @@ GTEST_TEST(SortedPair, Move) {
   SortedPair<std::unique_ptr<int>> y(std::move(a), std::move(b));
   SortedPair<std::unique_ptr<int>> x;
   x = std::move(y);
-  EXPECT_EQ(*x.first, 1);
-  EXPECT_EQ(*x.second, 2);
-  EXPECT_EQ(y.first.get(), nullptr);
-  EXPECT_EQ(y.second.get(), nullptr);
+  EXPECT_EQ(*x.first(), 1);
+  EXPECT_EQ(*x.second(), 2);
+  EXPECT_EQ(y.first().get(), nullptr);
+  EXPECT_EQ(y.second().get(), nullptr);
   y = SortedPair<std::unique_ptr<int>>(std::move(x));
-  EXPECT_EQ(*y.first, 1);
-  EXPECT_EQ(*y.second, 2);
-  EXPECT_EQ(x.first.get(), nullptr);
-  EXPECT_EQ(x.second.get(), nullptr);
+  EXPECT_EQ(*y.first(), 1);
+  EXPECT_EQ(*y.second(), 2);
+  EXPECT_EQ(x.first().get(), nullptr);
+  EXPECT_EQ(x.second().get(), nullptr);
 }
 
 // Checks the assignment operator.
@@ -67,8 +67,8 @@ GTEST_TEST(SortedPair, Assignment) {
   SortedPair<int> x;
   SortedPair<int> y(3, 2);
   EXPECT_EQ(&(x = y), &x);
-  EXPECT_EQ(x.first, 2.0);
-  EXPECT_EQ(x.second, 3.0);
+  EXPECT_EQ(x.first(), 2.0);
+  EXPECT_EQ(x.second(), 3.0);
 }
 
 // Checks the equality operator.
@@ -91,10 +91,10 @@ GTEST_TEST(SortedPair, Comparison) {
 GTEST_TEST(SortedPair, Swap) {
   SortedPair<int> x(1, 2), y(3, 4);
   std::swap(x, y);
-  EXPECT_EQ(x.first, 3);
-  EXPECT_EQ(x.second, 4);
-  EXPECT_EQ(y.first, 1);
-  EXPECT_EQ(y.second, 2);
+  EXPECT_EQ(x.first(), 3);
+  EXPECT_EQ(x.second(), 4);
+  EXPECT_EQ(y.first(), 1);
+  EXPECT_EQ(y.second(), 2);
 }
 
 // Checks hash keys.
@@ -112,8 +112,8 @@ GTEST_TEST(SortedPair, VectorExp) {
   std::vector<std::unique_ptr<SortedPair<int>>> v;
   v.emplace_back(std::make_unique<SortedPair<int>>(1, 2));
   v.resize(v.capacity() + 1);
-  EXPECT_EQ(v.front()->first, 1);
-  EXPECT_EQ(v.front()->second, 2);
+  EXPECT_EQ(v.front()->first(), 1);
+  EXPECT_EQ(v.front()->second(), 2);
 }
 
 // Tests the MakeSortedPair operator.
