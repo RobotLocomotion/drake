@@ -52,6 +52,14 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
+drake_py_library(
+    name = "cpp_template_py",
+    srcs = ["cpp_template.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PYBIND_LIBRARIES = []
 
 PY_LIBRARIES = [
@@ -97,6 +105,13 @@ drake_py_test(
     srcs = ["test/module_shim_test.py"],
     deps = [
         ":module_shim_example",
+    ],
+)
+
+drake_py_test(
+    name = "cpp_template_test",
+    deps = [
+        ":cpp_template_py",
     ],
 )
 
