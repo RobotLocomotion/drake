@@ -224,8 +224,8 @@ void MixedIntegerBranchAndBoundNode::CheckOptimalSolutionIsIntegral() {
     if (std::isnan(binary_var_val)) {
       throw std::runtime_error(
           "The solution contains NAN, either the problem is not solved "
-          "yet, or the problem is infeasible, unbounded, or contains "
-          "numerical error.");
+          "yet, or the problem is infeasible, unbounded, or encountered"
+          "numerical errors during solve.");
     }
     const double integral_tol = 1E-3;
     if (binary_var_val > integral_tol && binary_var_val < 1 - integral_tol) {
