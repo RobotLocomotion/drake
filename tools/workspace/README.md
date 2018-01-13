@@ -48,3 +48,28 @@ Referring to some new third-party software as "foo", the steps are roughly:
 - In Drake's top-level `WORKSPACE`, `load()` the new `package.bzl` file and
   call `foo_repository(name = "foo")`.
 - TODO(jwnimmer-tri) Write the rest of this.
+
+Changing the version of third-party software
+--------------------------------------------
+
+To temporarily use a local copy of a `github_archive`, within the relevant
+`//tools/workspace/foo:package.bzl` file add a `local_repository_archive`
+argument to its `github_archive` macro call pointing at a local checkout, e.g.:
+
+    github_archive(
+        name = "foobar",
+        local_repository_override = "/path/to/local/foo/bar",
+        repository = "foo/bar",
+        commit = "0123456789abcdef0123456789abcdef01234567",
+        sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",  # noqa
+    )
+
+This allows for easy editing and debugging (e.g., adding logging) temporarily.
+Removing the `local_repository_override` reverts to using the given `commit`
+and ignores the local checkout.
+
+To use a new upstream revision, change the `commit` argument to refer to a
+different revision, then comment out the `sha256` argument and run `bazel
+build`.  Bazel's fetch step will download the new version and then complain
+about a checksum mismatch.  Paste the new checksum into the `sha256` argument
+and remove its commenting-out.  Then, `bazel build` should succeed.

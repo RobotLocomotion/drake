@@ -3,41 +3,19 @@
 # This file marks a workspace root for the Bazel build system. see
 # http://bazel.io/ .
 
-# To temporarily use a local copy of a github_archive, within this file add a
-# local_repository_archive argument to its github_archive macro call, e.g.:
-#
-# github_archive(
-#     name = "foobar",
-#     local_repository_override = "/path/to/local/foo/bar",
-#     repository = "foo/bar",
-#     commit = "0123456789abcdef0123456789abcdef01234567",
-#     sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",  # noqa
-# )
-
 workspace(name = "drake")
 
-load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
-load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace/tinydir:package.bzl", "tinydir_repository")
 
-github_archive(
-    name = "tinydir",
-    repository = "cxong/tinydir",
-    commit = "3aae9224376b5e1a23fd824f19d9501162620b53",
-    sha256 = "fa7eec0baaa5f6c57df1a38b064ec3a4f098f477f0a64d97c646a4470ffdd3b6",  # noqa
-    build_file = "@drake//tools/workspace/tinydir:package.BUILD.bazel",
-)
+tinydir_repository(name = "tinydir")
 
 load("//tools/workspace/spruce:package.bzl", "spruce_repository")
 
 spruce_repository(name = "spruce")
 
-github_archive(
-    name = "stx",
-    repository = "tcbrindle/cpp17_headers",
-    commit = "e416b34c132e05487ef8d7fd197f4513d6535c1d",
-    sha256 = "26a534bef07e9e0b7c9bfa4dc0ae0b154e4a5ad8d71a2487f6e33d6e3ca0dadc",  # noqa
-    build_file = "@drake//tools/workspace/stx:package.BUILD.bazel",
-)
+load("//tools/workspace/stx:package.bzl", "stx_repository")
+
+stx_repository(name = "stx")
 
 load("//tools/workspace/com_google_protobuf:package.bzl", "com_google_protobuf_repository")  # noqa
 
@@ -75,59 +53,33 @@ load("//tools/workspace/numpy:package.bzl", "numpy_repository")
 
 numpy_repository(name = "numpy")
 
-github_archive(
-    name = "gtest",
-    repository = "google/googletest",
-    commit = "release-1.8.0",
-    sha256 = "58a6f4277ca2bc8565222b3bbd58a177609e9c488e8a72649359ba51450db7d8",  # noqa
-    build_file = "@drake//tools/workspace/gtest:package.BUILD.bazel",
-)
+load("//tools/workspace/gtest:package.bzl", "gtest_repository")
+
+gtest_repository(name = "gtest")
 
 load("//tools/workspace/gflags:package.bzl", "gflags_repository")
 
 gflags_repository(name = "gflags")
 
-github_archive(
-    name = "styleguide",
-    repository = "RobotLocomotion/styleguide",
-    commit = "f9fb031554d398431bc0efcb511102d41bbed089",
-    sha256 = "1e40f4595406e208de8bde66bc3425e6c0dce4ea96254cc2c7e4105316df9a31",  # noqa
-    build_file = "@drake//tools/workspace/styleguide:package.BUILD.bazel",
-)
+load("//tools/workspace/styleguide:package.bzl", "styleguide_repository")
 
-github_archive(
-    name = "pycodestyle",
-    repository = "PyCQA/pycodestyle",
-    commit = "2.3.1",
-    sha256 = "e9fc1ca3fd85648f45c0d2e33591b608a17d8b9b78e22c5f898e831351bacb03",  # noqa
-    build_file = "@drake//tools/workspace/pycodestyle:package.BUILD.bazel",
-)
+styleguide_repository(name = "styleguide")
 
-bitbucket_archive(
-    name = "eigen",
-    repository = "eigen/eigen",
-    # N.B. See #5785; do your best not to have to bump this to a newer commit.
-    commit = "3.3.3",
-    sha256 = "94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f",  # noqa
-    strip_prefix = "eigen-eigen-67e894c6cd8f",
-    build_file = "@drake//tools/workspace/eigen:package.BUILD.bazel",
-)
+load("//tools/workspace/pycodestyle:package.bzl", "pycodestyle_repository")
 
-github_archive(
-    name = "spdlog",
-    repository = "gabime/spdlog",
-    commit = "v0.13.0",
-    sha256 = "d798a6ca19165f0a18a43938859359269f5a07fd8e0eb83ab8674739c9e8f361",  # noqa
-    build_file = "@drake//tools/workspace/spdlog:package.BUILD.bazel",
-)
+pycodestyle_repository(name = "pycodestyle")
 
-github_archive(
-    name = "fmt",
-    repository = "fmtlib/fmt",
-    commit = "3.0.1",
-    sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",  # noqa
-    build_file = "@drake//tools/workspace/fmt:package.BUILD.bazel",
-)
+load("//tools/workspace/eigen:package.bzl", "eigen_repository")
+
+eigen_repository(name = "eigen")
+
+load("//tools/workspace/spdlog:package.bzl", "spdlog_repository")
+
+spdlog_repository(name = "spdlog")
+
+load("//tools/workspace/fmt:package.bzl", "fmt_repository")
+
+fmt_repository(name = "fmt")
 
 load("//tools/workspace/net_sf_jchart2d:package.bzl", "net_sf_jchart2d_repository")  # noqa
 
@@ -145,45 +97,25 @@ load("//tools/workspace/org_apache_xmlgraphics_commons:package.bzl", "org_apache
 
 org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons")  # noqa
 
-github_archive(
-    name = "lcm",
-    repository = "lcm-proj/lcm",
-    commit = "87866bd0dbb1f9d5a0f662a6f5caecf469fd42d2",
-    sha256 = "fd0afaf29954c26a725626b7bd24e873e303e84bb62dfcc05162be3f5ae30cd1",  # noqa
-    build_file = "@drake//tools/workspace/lcm:package.BUILD.bazel",
-)
+load("//tools/workspace/lcm:package.bzl", "lcm_repository")
 
-github_archive(
-    name = "bullet",
-    repository = "bulletphysics/bullet3",
-    commit = "2.86.1",
-    sha256 = "c058b2e4321ba6adaa656976c1a138c07b18fc03b29f5b82880d5d8228fbf059",  # noqa
-    build_file = "@drake//tools/workspace/bullet:package.BUILD.bazel",
-)
+lcm_repository(name = "lcm")
 
-github_archive(
-    name = "ccd",
-    repository = "danfis/libccd",
-    commit = "5677d384315d64c41a9e1dabe6a531f10ffbb7fb",
-    sha256 = "3b37ef4555d087f7abb6aa59c3b5cecb96410ea10e95a086ef2771569fb6fdfb",  # noqa
-    build_file = "@drake//tools/workspace/ccd:package.BUILD.bazel",
-)
+load("//tools/workspace/bullet:package.bzl", "bullet_repository")
 
-github_archive(
-    name = "octomap",
-    repository = "OctoMap/octomap",
-    commit = "v1.8.1",
-    sha256 = "8b18ef7693e87f1400b9a8bc41f86e3b28259ac98c0b458037232652380aa6af",  # noqa
-    build_file = "@drake//tools/workspace/octomap:package.BUILD.bazel",
-)
+bullet_repository(name = "bullet")
 
-github_archive(
-    name = "fcl",
-    repository = "flexible-collision-library/fcl",
-    commit = "43048336c34a01156dc216e8534ffb2788675ddf",
-    sha256 = "fd74916b92ed58e77c06097dc18f545462417daa8c96fa8ea2a5c81cd3205917",  # noqa
-    build_file = "@drake//tools/workspace/fcl:package.BUILD.bazel",
-)
+load("//tools/workspace/ccd:package.bzl", "ccd_repository")
+
+ccd_repository(name = "ccd")
+
+load("//tools/workspace/octomap:package.bzl", "octomap_repository")
+
+octomap_repository(name = "octomap")
+
+load("//tools/workspace/fcl:package.bzl", "fcl_repository")
+
+fcl_repository(name = "fcl")
 
 load("//tools/workspace/ipopt:package.bzl", "ipopt_repository")
 
@@ -193,36 +125,21 @@ load("//tools/workspace/nlopt:package.bzl", "nlopt_repository")
 
 nlopt_repository(name = "nlopt")
 
-github_archive(
-    name = "optitrack_driver",
-    repository = "RobotLocomotion/optitrack-driver",
-    commit = "b0d633570966e08b8915dee0867747596839d06c",
-    sha256 = "5f7f46273f36073dc15191fe37dc538b4b23eaeaae63de153abeaa61d1134ad6",  # noqa
-)
+load("//tools/workspace/optitrack_driver:package.bzl", "optitrack_driver_repository")  # noqa
 
-github_archive(
-    name = "pybind11",
-    repository = "RobotLocomotion/pybind11",
-    commit = "48999b69bde29cdf8d616d4fbd3d6ab1c561027d",
-    sha256 = "2ea18adfb608948cab1b5978081dc8c318ed47573ccd66f1603a37fbdbfc56da",  # noqa
-    build_file = "@drake//tools/workspace/pybind11:package.BUILD.bazel",
-)
+optitrack_driver_repository(name = "optitrack_driver")
 
-github_archive(
-    name = "lcmtypes_bot2_core",
-    repository = "openhumanoids/bot_core_lcmtypes",
-    commit = "99676541398749c2aab4b5b2c38be77d268085cc",
-    sha256 = "896fd3edf87c7dfaae378af12d52d233577cc495ae96b5076c48b5b9ca700b4a",  # noqa
-    build_file = "@drake//tools/workspace/lcmtypes_bot2_core:package.BUILD.bazel",  # noqa
-)
+load("//tools/workspace/pybind11:package.bzl", "pybind11_repository")
 
-github_archive(
-    name = "lcmtypes_robotlocomotion",
-    repository = "RobotLocomotion/lcmtypes",
-    commit = "8aea7a94d53dea01bfceba5f3cbe8e8cc9fb0244",
-    sha256 = "f23a143d7865ea4f6cd9aeb2211fe36e20712a39d439cf16fea2b11685f29b61",  # noqa
-    build_file = "@drake//tools/workspace/lcmtypes_robotlocomotion:package.BUILD.bazel",  # noqa
-)
+pybind11_repository(name = "pybind11")
+
+load("//tools/workspace/lcmtypes_robotlocomotion:package.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
+
+lcmtypes_robotlocomotion_repository(name = "lcmtypes_robotlocomotion")
+
+load("//tools/workspace/lcmtypes_bot2_core:package.bzl", "lcmtypes_bot2_core_repository")  # noqa
+
+lcmtypes_bot2_core_repository(name = "lcmtypes_bot2_core")
 
 load("//tools/workspace/blas:package.bzl", "blas_repository")
 
@@ -232,21 +149,13 @@ load("//tools/workspace/lapack:package.bzl", "lapack_repository")
 
 lapack_repository(name = "lapack")
 
-github_archive(
-    name = "scs",
-    repository = "cvxgrp/scs",
-    commit = "v1.2.6",
-    sha256 = "b4bebb43a1257b6e88a5f97c855c0559d6c8a8c0548d3156fc5a28d82bb9533f",  # noqa
-    build_file = "@drake//tools/workspace/scs:package.BUILD.bazel",
-)
+load("//tools/workspace/scs:package.bzl", "scs_repository")
 
-github_archive(
-    name = "tinyobjloader",
-    repository = "syoyo/tinyobjloader",
-    commit = "v1.0.6",
-    sha256 = "19ee82cd201761954dd833de551edb570e33b320d6027e0d91455faf7cd4c341",  # noqa
-    build_file = "@drake//tools/workspace/tinyobjloader:package.BUILD.bazel",
-)
+scs_repository(name = "scs")
+
+load("//tools/workspace/tinyobjloader:package.bzl", "tinyobjloader_repository")
+
+tinyobjloader_repository(name = "tinyobjloader")
 
 load("//tools/workspace/yaml_cpp:package.bzl", "yaml_cpp_repository")
 
@@ -272,47 +181,25 @@ load("//tools/workspace/semantic_version:package.bzl", "semantic_version_reposit
 
 semantic_version_repository(name = "semantic_version")
 
-github_archive(
-    name = "pycps",
-    repository = "mwoehlke/pycps",
-    commit = "544c1ded81b926a05b3dedb06504bd17bc8d0a95",
-    sha256 = "0b97cbaae107e5ddbe89073b6e42b679130f1eb81b913aa93da9e72e032a137b",  # noqa
-    build_file = "@drake//tools/workspace/pycps:package.BUILD.bazel",
-)
+load("//tools/workspace/pycps:package.bzl", "pycps_repository")
 
-# If updating ignition_math version, do not forget to also update
-# tools/ignition_math.BUILD in which the version number is hard-coded
-# to configure config.hh with cmake_configure_file().
-bitbucket_archive(
-    name = "ignition_math",
-    repository = "ignitionrobotics/ign-math",
-    commit = "392237e10ba4",
-    sha256 = "44068bb91c07c9305213057cad801ae5b689ac1a5f37cd8330dd6e729df8f5b0",  # noqa
-    strip_prefix = "ignitionrobotics-ign-math-392237e10ba4",
-    build_file = "@drake//tools/workspace/ignition_math:package.BUILD.bazel",
-)
+pycps_repository(name = "pycps")
 
-bitbucket_archive(
-    name = "ignition_rndf",
-    repository = "ignitionrobotics/ign-rndf",
-    commit = "ignition-rndf_0.1.5",
-    sha256 = "fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf",  # noqa
-    strip_prefix = "ignitionrobotics-ign-rndf-214a333fbdcb",
-    build_file = "@drake//tools/workspace/ignition_rndf:package.BUILD.bazel",
-)
+load("//tools/workspace/ignition_math:package.bzl", "ignition_math_repository")
+
+ignition_math_repository(name = "ignition_math")
+
+load("//tools/workspace/ignition_rndf:package.bzl", "ignition_rndf_repository")
+
+ignition_rndf_repository(name = "ignition_rndf")
 
 load("//tools/workspace/boost:package.bzl", "boost_repository")
 
 boost_repository(name = "boost")
 
-bitbucket_archive(
-    name = "sdformat",
-    repository = "osrf/sdformat",
-    commit = "bac3dfb42cc7",
-    sha256 = "212211eddd9fa010b4b61a2dae87cd84a66a8b78ed302612d214b7388f9bc198",  # noqa
-    strip_prefix = "osrf-sdformat-bac3dfb42cc7",
-    build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
-)
+load("//tools/workspace/sdformat:package.bzl", "sdformat_repository")
+
+sdformat_repository(name = "sdformat")
 
 load("//tools/workspace/vtk:package.bzl", "vtk_repository")
 
