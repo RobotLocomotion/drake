@@ -97,17 +97,11 @@ GTEST_TEST(TypeUtilTest, Visit) {
   EXPECT_EQ(names, names_expected_sub);
 
   names.clear();
-  type_visit(visitor, PackTags{},
-      template_tag<type_check_different_from<type_tag<double>>::type>{});
+  using CheckTag =
+      template_single_tag<type_check_different_from<type_tag<double>>::type>;
+  type_visit(visitor, PackTags{}, CheckTag{});
   EXPECT_EQ(names, names_expected_sub);
 };
-
-GTEST_TEST(TypeUtilTest, Transform) {
-  auto seq = sequence_transform(
-      constant_add<int, 5>{}, std::make_integer_sequence<int, 5>{});
-  EXPECT_TRUE((std::is_same<
-      decltype(seq), std::integer_sequence<int, 5, 6, 7, 8, 9>>::value));
-}
 
 GTEST_TEST(TypeUtilTest, Hash) {
   using T = int;

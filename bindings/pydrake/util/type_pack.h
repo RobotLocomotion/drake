@@ -83,9 +83,15 @@ struct type_tag {
   using type = T;
 };
 
-// @note Cannot bind templates with parameters packs arbitrarily.
+/// Provides a tag for single-parameter templates.
+/// @note Single-parameter is specialized because `using` aliases are picky
+/// about how template parameters are passed.
+/// @see https://stackoverflow.com/a/33131008/7829525
+/// @note The above issues can be worked around if either (a) inheritance
+/// rather than aliasing is used, or (b) the alias uses the *exact* matching
+/// form of expansion.
 template <template <typename> class Tpl>
-struct template_tag {
+struct template_single_tag {
   template <typename T>
   using type = Tpl<T>;
 };
@@ -155,7 +161,7 @@ struct type_check_different_from {
 
 /// Visits each type in a type pack.
 /// @tparam VisitWith
-///   Visit helper. @see `type_visit_with_default`, `type_visit_with_tag.
+///   Visit helper. @see `type_visit_with_default`, `type_visit_with_tag`.
 /// @tparam Predicate Predicate operating on the type dictated by `VisitWith`.
 /// @param visitor Lambda or functor for visiting a type.
 template <class VisitWith = type_visit_with_default,
@@ -163,32 +169,14 @@ template <class VisitWith = type_visit_with_default,
           typename Visitor = void,
           typename ... Ts>
 void type_visit(
-    Visitor&& visitor, type_pack<Ts...> = {}, template_tag<Predicate> = {},
-    VisitWith = {}) {
+    Visitor&& visitor, type_pack<Ts...> = {},
+    template_single_tag<Predicate> = {}) {
   (void)detail::DummyList{(
       detail::type_visit_impl<VisitWith, Visitor>::
           template runner<Ts, Predicate<Ts>::value>::
               run(std::forward<Visitor>(visitor)),
       true)...};
 }
-
-/// Transforms an integer sequence.
-/// @tparam TForm
-///   Type with the interface `TForm::template type<T>::value`,
-///   which operates on a constexpr value.
-/// @tparam T Integral type.
-/// @tparam Values... Integral values.
-template <typename TForm, typename T, T... Values>
-auto sequence_transform(TForm = {}, std::integer_sequence<T, Values...> = {}) {
-  return std::integer_sequence<T, TForm::template type<Values>::value...>{};
-}
-
-/// Adds a constant value to a constexpr value.
-template <typename T, T x>
-struct constant_add {
-  template <T y>
-  using type = std::integral_constant<T, x + y>;
-};
 
 /// Provides short-hand for hashing a type.
 template <typename T>
