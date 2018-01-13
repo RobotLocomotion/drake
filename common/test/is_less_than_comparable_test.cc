@@ -1,6 +1,6 @@
 #include "drake/common/is_less_than_comparable.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace drake {
 namespace {

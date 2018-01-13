@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/is_less_than_comparable.h"
 
@@ -23,6 +24,7 @@ namespace drake {
 ///           construction.
 template <class T>
 struct SortedPair {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SortedPair)
   static_assert(is_less_than_comparable<T>::value, "SortedPair can only be used"
       "with types that can be compared using the less-than operator "
       "(operator<).");
@@ -30,12 +32,6 @@ struct SortedPair {
   /// The default constructor creates `first()` and `second()` using their
   /// respective default constructors.
   SortedPair() = default;
-  SortedPair(const SortedPair& s) = default;
-
-  /// Move constructor.
-  SortedPair(SortedPair&& s)
-      noexcept(std::is_nothrow_move_constructible<T>::value) :
-      first_{std::move(s.first_)}, second_{std::move(s.second_)} {}
 
   /// Rvalue reference constructor, permits constructing with std::unique_ptr
   /// types, for example.
@@ -49,14 +45,6 @@ struct SortedPair {
     }
   }
 
-  /// Move assignment operator.
-  SortedPair& operator=(SortedPair&& s)
-      noexcept(std::is_nothrow_move_constructible<T>::value) {
-    first_ = std::move(s.first_);
-    second_ = std::move(s.second_);
-    return *this;
-  }
-
   /// Constructs a %SortedPair from two objects.
   SortedPair(const T& a, const T& b) : first_(a), second_(b) {
     if (second_ < first_)
@@ -67,13 +55,6 @@ struct SortedPair {
   template <class U>
   SortedPair(SortedPair<U>&& u) : first_{std::forward<T>(u.first())},
       second_{std::forward<T>(u.second())} {}
-
-  /// Copies the contents of `p` to `this`.
-  SortedPair& operator=(const SortedPair& p) {
-    first_ = p.first_;
-    second_ = p.second_;
-    return *this;
-  }
 
   /// Resets the stored objects.
   template <class U>
@@ -153,7 +134,7 @@ operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
 /// @param y  The second_ object.
 /// @return A newly-constructed SortedPair object.
 template <class T>
-inline SortedPair<typename std::decay<T>::type>
+inline constexpr SortedPair<typename std::decay<T>::type>
 MakeSortedPair(T&& x, T&& y) {
   return SortedPair<
       typename std::decay<T>::type>(std::forward<T>(x), std::forward<T>(y));

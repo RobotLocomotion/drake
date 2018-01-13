@@ -40,7 +40,7 @@ struct is_less_than_comparable_helper<T, typename std::enable_if<true,
  bool value = drake::is_less_than_comparable<Foo>::value;
  @endcode
 
- If `Foo` is less-than comparable, it will evalute to true. It can also be used
+ If `Foo` is less-than comparable, it will evaluate to true. It can also be used
  in compile-time tests (e.g., SFINAE and `static_assert`s):
 
  @code
