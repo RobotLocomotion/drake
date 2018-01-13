@@ -172,24 +172,6 @@ void type_visit(
       true)...};
 }
 
-/// Transforms an integer sequence.
-/// @tparam TForm
-///   Type with the interface `TForm::template type<T>::value`,
-///   which operates on a constexpr value.
-/// @tparam T Integral type.
-/// @tparam Values... Integral values.
-template <typename TForm, typename T, T... Values>
-auto sequence_transform(TForm = {}, std::integer_sequence<T, Values...> = {}) {
-  return std::integer_sequence<T, TForm::template type<Values>::value...>{};
-}
-
-/// Adds a constant value to a constexpr value.
-template <typename T, T x>
-struct constant_add {
-  template <T y>
-  using type = std::integral_constant<T, x + y>;
-};
-
 /// Provides short-hand for hashing a type.
 template <typename T>
 constexpr size_t type_hash() {
