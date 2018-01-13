@@ -1,5 +1,17 @@
 # -*- python -*-
 
+# To temporarily use a local copy of a github_archive, within the relevant
+# //tools/workspace/package.bzl file add a local_repository_archive argument to
+# its github_archive macro call, e.g.:
+#
+# github_archive(
+#     name = "foobar",
+#     local_repository_override = "/path/to/local/foo/bar",
+#     repository = "foo/bar",
+#     commit = "0123456789abcdef0123456789abcdef01234567",
+#     sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",  # noqa
+# )
+
 def github_archive(
         name,
         repository = None,
