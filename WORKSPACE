@@ -39,17 +39,9 @@ github_archive(
     build_file = "@drake//tools/workspace/stx:package.BUILD.bazel",
 )
 
-# This local repository imports the protobuf build rules for Bazel (based on
-# the upstream protobuf.bzl build rules); in constrast, the protobuf runtime is
-# loaded as @libprotobuf.
-local_repository(
-    name = "com_google_protobuf",
-    # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
-    # this should use an absolute path (so this should be prepended by
-    # __workspace_dir__).  However, in a clean build, this did not work.  We
-    # should investigate that and fix it.
-    path = "third_party/com_github_google_protobuf",
-)
+load("//tools/workspace/com_google_protobuf:package.bzl", "com_google_protobuf_repository")  # noqa
+
+com_google_protobuf_repository(name = "com_google_protobuf")
 
 load("//tools/workspace/ibex:package.bzl", "ibex_repository")
 

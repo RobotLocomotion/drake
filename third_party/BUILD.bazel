@@ -34,4 +34,17 @@ exports_files(
     visibility = ["@spruce//:__pkg__"],
 )
 
+exports_files(
+    [
+        "com_github_google_protobuf/LICENSE",
+        "com_github_google_protobuf/protobuf.bzl",
+    ],
+    visibility = ["@com_google_protobuf//:__pkg__"],
+)
+
+exports_files(
+    ["com_github_google_protobuf/protobuf-ubsan-fixup.h"],
+    visibility = ["//common/proto:__pkg__"],
+)
+
 add_lint_tests()
