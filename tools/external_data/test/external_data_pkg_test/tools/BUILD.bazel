@@ -1,0 +1,4 @@
+# -*- python -*-
+load("@drake//tools/external_data:expose_all_files.bzl", "expose_all_files")
+
+expose_all_files()
