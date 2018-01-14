@@ -161,9 +161,10 @@ GTEST_TEST(ArticulatedBodyInertia, TimesEqualOperator) {
   Vector6<double> H;
   H << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
-  // Ensure that results of multiplying by H transpose and H on the left and
+  // Ensure that the results of multiplying by H transpose and H on the left and
   // right are the same as operating directly on the the matrix.
-  EXPECT_TRUE((H.transpose() * P_matrix * H).isApprox(H.transpose() * P * H));
+  EXPECT_TRUE((H.transpose() * P_matrix * H)
+                  .isApprox(H.transpose() * P * H, kEpsilon));
 }
 
 }  // namespace
