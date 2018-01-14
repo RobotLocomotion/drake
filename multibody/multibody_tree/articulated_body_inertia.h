@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -187,8 +189,8 @@ class ArticulatedBodyInertia {
   ///
   /// @warning This operation is only valid if both articulated body inertias
   /// are computed about the same point A and expressed in the same frame E.
-  ArticulatedBodyInertia<T>& operator+=(const ArticulatedBodyInertia<T>& P_BP_E)
-  {
+  ArticulatedBodyInertia<T>&
+  operator+=(const ArticulatedBodyInertia<T>& P_BP_E) {
     matrix_.template triangularView<Eigen::Lower>() = matrix_ + P_BP_E.matrix_;
     return *this;
   }
@@ -231,5 +233,5 @@ class ArticulatedBodyInertia {
   Matrix6<T> matrix_{Matrix6<T>::Constant(nan())};
 };
 
-} // namespace multibody
-} // namespace drake
+}  // namespace multibody
+}  // namespace drake

@@ -4,8 +4,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
-#include "drake/multibody/multibody_tree/unit_inertia.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
+#include "drake/multibody/multibody_tree/unit_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -24,8 +24,7 @@ GTEST_TEST(ArticulatedBodyInertia, DefaultConstructor) {
   ASSERT_TRUE(std::all_of(
       P_matrix.data(),
       P_matrix.data() + 36,
-      [](double x) { return std::isnan(x); }
-  ));
+      [](double x) { return std::isnan(x); }));
 }
 
 // Construct a non-trivial articulated body inertia from a spatial inertia,
