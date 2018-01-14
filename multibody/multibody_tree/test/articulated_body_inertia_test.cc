@@ -105,6 +105,7 @@ GTEST_TEST(ArticulatedBodyInertia, ReExpress) {
                   .isApprox(M_CP_W.CopyToFullMatrix6(), kEpsilon));
 }
 
+// Test the plus equal operator for adding articulated body inertias.
 GTEST_TEST(ArticulatedBodyInertia, PlusEqualOperator) {
   // Spatial inertia for a cube C computed about a point P and expressed in a
   // frame E.
@@ -138,6 +139,8 @@ GTEST_TEST(ArticulatedBodyInertia, PlusEqualOperator) {
                   .isApprox(M_SP_E.CopyToFullMatrix6(), kEpsilon));
 }
 
+// Test the times equal for operator for multiplying on the left and right
+// by arbitrary Eigen matrices of valid sizes.
 GTEST_TEST(ArticulatedBodyInertia, TimesEqualOperator) {
   // Spatial inertia for a cube C.
   double Lx = 1.0, Ly = 1.0, Lz = 1.0;  // Cube's lengths.
