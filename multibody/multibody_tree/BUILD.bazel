@@ -243,4 +243,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "articulated_body_inertia_test",
+    deps = [
+        ":articulated_body_inertia",
+        ":multibody_tree",
+        ":spatial_inertia",
+    ],
+)
+
 add_lint_tests()
