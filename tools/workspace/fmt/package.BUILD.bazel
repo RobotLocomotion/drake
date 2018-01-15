@@ -6,12 +6,17 @@ load(
     "install",
     "install_cmake_config",
 )
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_solib_library",
+    "cc_solib_library_artifacts",
+)
 
 package(
     default_visibility = ["//visibility:public"],
 )
 
-cc_library(
+cc_solib_library(
     name = "fmt",
     srcs = glob(["fmt/*.cc"]),
     hdrs = glob(["fmt/*.h"]),
@@ -28,7 +33,7 @@ install_cmake_config(package = "fmt")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    targets = [":fmt"],
+    targets = cc_solib_library_artifacts("fmt"),
     hdr_dest = "include/fmt",
     hdr_strip_prefix = ["fmt"],
     guess_hdrs = "PACKAGE",

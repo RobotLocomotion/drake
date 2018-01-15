@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
+load("@drake//tools/skylark:drake_cc.bzl", "DrakeCc")
 load(
     "@drake//tools/skylark:pathutils.bzl",
     "dirname",
@@ -328,6 +329,24 @@ def _install_impl(ctx):
                 rename,
                 t
             )
+        elif DrakeCc in t:
+            tx = t[DrakeCc]
+            # Headers:
+            hdrs = [struct(files = tx.transitive_hdrs)]
+            actions += _install_actions(
+                ctx,
+                hdrs,
+                ctx.attr.hdr_dest,
+                strip_prefixes = ctx.attr.hdr_strip_prefix,
+                rename = rename)
+            # Solib (library):
+            solibs = [struct(files = tx.transitive_solibs)]
+            actions += _install_actions(
+                ctx,
+                solibs,
+                ctx.attr.library_dest,
+                strip_prefixes = ctx.attr.library_strip_prefix,
+                rename = rename)
         elif hasattr(t, "files_to_run") and t.files_to_run.executable:
             # Executable scripts copied from source directory.
             actions += _install_runtime_actions(ctx, t)

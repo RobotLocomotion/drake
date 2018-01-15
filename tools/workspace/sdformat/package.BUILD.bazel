@@ -14,6 +14,11 @@ load(
     "install",
     "install_cmake_config",
 )
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_solib_library",
+    "cc_solib_library_artifacts",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -64,7 +69,7 @@ drake_generate_include_header(
 # Generates the library exported to users.  The explicitly listed srcs= matches
 # upstream's explicitly listed sources plus private headers.  The explicitly
 # listed hdrs= matches upstream's public headers.
-cc_library(
+cc_solib_library(
     name = "sdformat",
     srcs = [
         "include/sdf/Converter.hh",
@@ -142,11 +147,7 @@ install_cmake_config(package = "SDFormat")
 
 install(
     name = "install",
-    targets = [":sdformat"],
-    hdrs = public_headers + [
-        ":sdfhh_genrule",
-        ":config",
-    ],
+    targets = cc_solib_library_artifacts("sdformat"),
     hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",

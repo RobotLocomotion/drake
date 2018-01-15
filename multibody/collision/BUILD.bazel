@@ -76,6 +76,10 @@ drake_cc_library(
         "//drake/common:unused",
         "@fcl",
     ],
+    # For FCL and its upstream dependencies.
+    # This is the ONLY place these should EVER be linked in; otherwise, FCL
+    # and its upstream dependencies must become shared libraries.
+    linkstatic = 1,
 )
 
 # By default, supply a bullet-only model.  As we gain more collision library

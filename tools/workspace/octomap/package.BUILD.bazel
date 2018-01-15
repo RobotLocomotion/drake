@@ -23,6 +23,7 @@ cc_library(
         "octomap/include/octomap/math/*.h*",
     ]),
     includes = ["octomap/include"],
+    linkstatic = 1,
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -47,6 +48,7 @@ cc_library(
     includes = ["octomap/include"],
     linkstatic = 1,
     deps = [":octomath"],
+    # See notes in `fcl` regarding privacy and limited linking.
 )
 
 install(

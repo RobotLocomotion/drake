@@ -1,12 +1,18 @@
 # -*- python -*-
 
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_solib_library",
+)
+
 config_setting(
     name = "linux",
     values = {"cpu": "k8"},
 )
 
-cc_library(
+cc_solib_library(
     name = "without_main",
+    solib_name = "libgtest_without_main.so",
     testonly = 1,
     srcs = glob(
         [

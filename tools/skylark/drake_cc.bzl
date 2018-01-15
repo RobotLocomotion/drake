@@ -160,14 +160,18 @@ DrakeCc = provider()
 
 def _drake_installed_headers_impl(ctx):
     hdrs = list(ctx.files.hdrs)
+    solibs = list(ctx.files.solibs)
     for x in ctx.files.hdrs_exclude:
         hdrs.remove(x)
     transitive_hdrs = depset(hdrs)
+    transitive_solibs = depset(solibs)
     for dep in ctx.attr.deps:
         transitive_hdrs += depset(dep[DrakeCc].transitive_hdrs)
+        transitive_solibs += depset(dep[DrakeCc].transitive_solibs)
     return [
         DrakeCc(
             transitive_hdrs = transitive_hdrs,
+            transitive_solibs = transitive_solibs,
         )
     ]
 
@@ -186,6 +190,10 @@ drake_installed_headers = rule(
         "hdrs_exclude": attr.label_list(
             allow_files = True,
         ),
+        "solibs": attr.label_list(
+            mandatory = False,
+            allow_files = False,
+        ),
         "deps": attr.label_list(
             mandatory = True,
             providers = [DrakeCc],
@@ -194,36 +202,32 @@ drake_installed_headers = rule(
     implementation = _drake_installed_headers_impl,
 )
 
-def _gather_transitive_hdrs_impl(ctx):
-    result = depset()
-    for dep in ctx.attr.deps:
-        result += dep[DrakeCc].transitive_hdrs
-    return struct(files = result)
-
-_gather_transitive_hdrs = rule(
-    attrs = {
-        "deps": attr.label_list(
-            allow_files = False,
-            providers = [DrakeCc],
-        ),
-    },
-    implementation = _gather_transitive_hdrs_impl,
-)
-
+# TODO: Rename to `gather_transitive_artifacts`
 def drake_transitive_installed_hdrs_filegroup(name, deps = [], **kwargs):
     """Declare a filegroup that contains the transtive installed hdrs of the
     targets named by `deps`.
     """
-    _gather_transitive_hdrs(
-        name = name + "_gather",
-        deps = [installed_headers_for_dep(x) for x in deps],
-        visibility = []
-    )
-    native.filegroup(
+    drake_installed_headers(
         name = name,
-        srcs = [":" + name + "_gather"],
+        hdrs = [],
+        deps = [installed_headers_for_dep(x) for x in deps],
         **kwargs
     )
+
+def _drake_abslabel_to_solib_name(abslabel):
+    if not abslabel.startswith("//"):
+        fail("Internal error: {} should be absolute".format(abslabel))
+    if abslabel.endswith(".so"):
+        fail("Target should not already end in '.so': {}".format(abslabel))
+    out = "libdrake-" + abslabel[2:].replace("/", "-").replace(":", "-") + ".so"
+    return out
+
+def _drake_cc_solib_name(target_name):
+    if target_name.startswith("/"):
+        fail("Internal error: {} ".format(target_name) +
+             "should be a target name (not absolute label)")
+    abslabel = "//" + native.package_name() + ":" + target_name
+    return _drake_abslabel_to_solib_name(abslabel)
 
 def _raw_drake_cc_library(
         name,
@@ -231,8 +235,12 @@ def _raw_drake_cc_library(
         srcs = [],  # Cannot list any headers here.
         data = [],
         deps = [],
+        solib_name = None,
         declare_installed_headers = 0,
         install_hdrs_exclude = [],
+        testonly = None,
+        linkshared = 1,
+        linkstatic = 0,
         **kwargs):
     """Creates a rule to declare a C++ library.  Uses Drake's include_prefix and
     checks the deps blacklist.  If declare_installed_headers is true, also adds
@@ -252,21 +260,46 @@ def _raw_drake_cc_library(
         # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
         strip_include_prefix = "/"
         include_prefix = "drake"
-    native.cc_library(
-        name = name,
-        hdrs = hdrs,
-        srcs = srcs,
-        deps = deps,
-        data = data,
-        strip_include_prefix = strip_include_prefix,
-        include_prefix = include_prefix,
-        **kwargs)
+    if linkshared:
+        if solib_name == None:
+            solib_name = _drake_cc_solib_name(name)
+        hdr_lib, solib = cc_solib_library(
+            name = name,
+            solib_name = solib_name,
+            hdrs = hdrs,
+            srcs = srcs,
+            deps = deps,
+            data = data,
+            linkshared = 1,
+            linkstatic = linkstatic,
+            strip_include_prefix = strip_include_prefix,
+            include_prefix = include_prefix,
+            testonly = testonly,
+            **kwargs)
+        solibs = [solib]
+    else:
+        if not linkstatic:
+            fail("Non-shared libraries *must* link statically.")
+        # Static linking.
+        native.cc_library(
+            name = name,
+            hdrs = hdrs,
+            deps = deps,
+            data = data,
+            linkstatic = 1,
+            strip_include_prefix = strip_include_prefix,
+            include_prefix = include_prefix,
+            testonly = testonly,
+            **kwargs)
+        solibs = []
     if declare_installed_headers:
         drake_installed_headers(
             name = name + ".installed_headers",
             hdrs = hdrs,
             hdrs_exclude = install_hdrs_exclude,
+            solibs = solibs,
             deps = installed_headers_for_drake_deps(deps),
+            testonly = testonly,
             tags = ["nolint"],
             visibility = ["//visibility:public"],
         )
@@ -295,8 +328,10 @@ def _maybe_add_pruned_private_hdrs_dep(
             hdrs = private_hdrs,
             srcs = [],
             deps = deps,
-            linkstatic = 1,
             visibility = ["//visibility:private"],
+            # Header-only.
+            linkstatic = 1,
+            linkshared = 0,
             **kwargs)
         new_deps = deps + [":" + name]
     else:
@@ -309,8 +344,10 @@ def drake_cc_library(
         srcs = [],
         deps = [],
         copts = [],
+        solib_name = None,
         gcc_copts = [],
-        linkstatic = 1,
+        linkstatic = 0,
+        linkshared = 1,
         install_hdrs_exclude = [],
         **kwargs):
     """Creates a rule to declare a C++ library.
@@ -340,10 +377,12 @@ def drake_cc_library(
         **kwargs)
     _raw_drake_cc_library(
         name = name,
+        solib_name = solib_name,
         hdrs = hdrs,
         srcs = new_srcs,
         deps = new_deps,
         copts = new_copts,
+        linkshared = linkshared,
         linkstatic = linkstatic,
         declare_installed_headers = 1,
         install_hdrs_exclude = install_hdrs_exclude,
@@ -358,7 +397,7 @@ def drake_cc_binary(
         linkopts = [],
         gcc_copts = [],
         linkshared = 0,
-        linkstatic = 1,
+        linkstatic = 0,
         testonly = 0,
         add_test_rule = 0,
         test_rule_args = [],
@@ -533,6 +572,7 @@ def drake_cc_googletest(
         deps = deps,
         **kwargs)
 
+# TODO(eric.cousineau): Remove this once it's unneeded.
 def drake_example_cc_binary(
         srcs = [],
         deps = [],
@@ -574,8 +614,72 @@ def drake_example_cc_binary(
             //lcmtypes:drake_lcmtypes_headers are already included in \
             `drake_example_cc_binary()` macro")
     drake_cc_binary(
-        srcs = srcs +
-        ["//tools/install/libdrake:libdrake.so",
-         "//lcmtypes:drake_lcmtypes_headers"],
-        deps = deps + ["//tools/install/libdrake:drake_shared_library"],
+        srcs = srcs,  # + ["//tools/install/libdrake:libdrake.so"],
+        deps = deps + [
+            "//lcmtypes:drake_lcmtypes_headers",
+            "//tools/install/libdrake:drake_shared_library",
+        ],
         **kwargs)
+
+def cc_solib_library(
+        name,
+        solib_name = None,
+        hdrs = None,
+        srcs = None,
+        linkstatic = 0,
+        linkshared = 1,
+        linkopts = [],
+        deps = None,
+        # cc_library flags
+        include_prefix = None,
+        strip_include_prefix = None,
+        includes = None,
+        # Other flags.
+        **kwargs):
+    """
+    Declares shared library with transitive headers.
+    """
+    if linkshared != 1:
+        fail("`cc_solib_library` only be used with `linkshaed = 1`.")
+    if solib_name == None:
+        solib_name = "lib{}.so".format(name)
+    hdrlib, solib = cc_solib_library_artifacts(name)
+
+    # Headers and upstream dependencies (for transitive consumption).
+    native.cc_library(
+        name = hdrlib,
+        hdrs = hdrs,
+        deps = deps,
+        include_prefix = include_prefix,
+        strip_include_prefix = strip_include_prefix,
+        includes = includes,
+        **kwargs)
+    # Shared library artifact.
+    native.cc_binary(
+        name = solib_name,
+        srcs = srcs,
+        linkshared = 1,
+        linkstatic = linkstatic,
+        linkopts = linkopts,
+        deps = [hdrlib],
+        **kwargs)
+    # Alias library naming for consistent consumption.
+    native.alias(
+        name = solib,
+        actual = solib_name,
+    )
+    # Development glue.
+    native.cc_library(
+        name = name,
+        srcs = [solib],
+        deps = [hdrlib],
+        linkstatic = 1,
+        **kwargs)
+    return (hdrlib, solib)
+
+def cc_solib_library_artifacts(name, private=False):
+    """Get targets that should be installed. """
+    if not private:
+        return [name + ".headers", name + ".solib"]
+    else:
+        return [name + ".solib"]

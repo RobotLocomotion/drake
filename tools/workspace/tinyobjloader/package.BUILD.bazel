@@ -6,12 +6,17 @@ load(
     "install",
     "install_cmake_config",
 )
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_solib_library",
+    "cc_solib_library_artifacts",
+)
 
 package(
     default_visibility = ["//visibility:public"],
 )
 
-cc_library(
+cc_solib_library(
     name = "tinyobjloader",
     srcs = [
         "tiny_obj_loader.cc",
@@ -34,9 +39,8 @@ install_cmake_config(package = "tinyobjloader")
 
 install(
     name = "install",
-    targets = [":tinyobjloader"],
+    targets = cc_solib_library_artifacts("tinyobjloader"),
     hdr_dest = "include/tinyobjloader",
-    guess_hdrs = "PACKAGE",
     docs = ["LICENSE"],
     deps = [":install_cmake_config"],
 )
