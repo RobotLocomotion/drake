@@ -84,16 +84,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "integral_function",
+    name = "initial_value_problem",
     srcs = [
-        "integral_function.cc",
+        "initial_value_problem.cc",
     ],
     hdrs = [
-        "integral_function.h",
-        "integral_function-inl.h",
+        "initial_value_problem.h",
+        "initial_value_problem-inl.h",
     ],
     deps = [
-        ":integrator_base",
         ":runge_kutta3_integrator",
         "//drake/common:essential",
         "//drake/common:unused",
@@ -101,6 +100,42 @@ drake_cc_library(
         "//drake/systems/framework:continuous_state",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/framework:vector",
+        "//drake/systems/framework:parameters",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_initial_value_problem",
+    srcs = [
+        "scalar_initial_value_problem.cc",
+    ],
+    hdrs = [
+        "scalar_initial_value_problem.h",
+        "scalar_initial_value_problem-inl.h",
+    ],
+    deps = [
+        ":initial_value_problem",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:vector",
+        "//drake/systems/framework:parameters",
+    ],
+)
+
+drake_cc_library(
+    name = "primitive_function",
+    srcs = [
+        "primitive_function.cc",
+    ],
+    hdrs = [
+        "primitive_function.h",
+        "primitive_function-inl.h",
+    ],
+    deps = [
+        ":scalar_initial_value_problem",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:parameters",
     ],
 )
 
@@ -172,10 +207,26 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "integral_function_test",
+    name = "primitive_function_test",
     size = "small",
     deps = [
-        ":integral_function",
+        ":primitive_function",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scalar_initial_value_problem_test",
+    size = "small",
+    deps = [
+        ":scalar_initial_value_problem",
+    ],
+)
+
+drake_cc_googletest(
+    name = "initial_value_problem_test",
+    size = "small",
+    deps = [
+        ":initial_value_problem",
     ],
 )
 
