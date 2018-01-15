@@ -67,6 +67,9 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
     const auto* state =
         this->template EvalVectorInput<PendulumState>(context, 0);
 
+    const T& theta = state->theta();
+    const T& thetadot = state->thetadot();
+
     // Pendulum energy shaping from Section 3.5.2 of
     // http://underactuated.csail.mit.edu/underactuated.html?chapter=3
     using std::pow;
@@ -76,12 +79,12 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
 
     // Current total energy (see PendulumPlant::CalcTotalEnergy).
     const T current_energy =
-        0.5 * mass_ * pow(length_ * state->thetadot(), 2) -
-            mass_ * gravity_ * mass_ * cos(state->theta());
+        0.5 * mass_ * pow(length_ * thetadot, 2) -
+            mass_ * gravity_ * mass_ * cos(theta);
 
     const double kEnergyFeedbackGain = .1;
     const T tau = (kEnergyFeedbackGain *
-        state->thetadot() * (desired_energy - current_energy));
+        thetadot * (desired_energy - current_energy));
     output->SetAtIndex(0, tau);
   }
 };
@@ -114,7 +117,7 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  auto pendulum = builder.AddSystem<PendulumPlant>(
+  PendulumPlant<double>* pendulum = builder.AddSystem<PendulumPlant>(
       mass, length, gravity, geometry_system);
   pendulum->set_name("Pendulum");
 

@@ -68,7 +68,7 @@ PendulumPlant<T>::PendulumPlant(
   DRAKE_DEMAND(model_->get_num_states() == 2);
 
   this->DeclareContinuousState(
-      PendulumState<T>(),
+      BasicVector<T>(model_->get_num_states()),
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
@@ -163,9 +163,8 @@ void PendulumPlant<T>::CalcFramePoseOutput(
 template <typename T>
 void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
                                     PendulumState<T>* output) const {
-  const auto& xc = dynamic_cast<const PendulumState<T>&>(
-      context.get_continuous_state().get_vector());
-  output->set_value(xc.get_value());
+  output->set_theta(joint_->get_angle(context));
+  output->set_thetadot(joint_->get_angular_rate(context));
 }
 
 template <typename T>
