@@ -303,11 +303,11 @@ class DrakeKukaIIwaRobot {
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
 
-    // Applied forcing:
-    MultibodyForces<T> forcing(*model_);
+    // Applied forces:
+    MultibodyForces<T> forces(*model_);
 
-    // Adds the previously included effect of gravity into forcing.
-    model_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
+    // Adds the previously included effect of gravity into forces.
+    model_->CalcForceElementsContribution(*context_, pc, vc, &forces);
 
     // Output vector of generalized forces for calculated motor torques
     // required to drive the Kuka robot at its specified rate.
@@ -325,9 +325,9 @@ class DrakeKukaIIwaRobot {
 
     // Aliases to the arrays of applied forces:
     std::vector<SpatialForce<T>>& Fapplied_Bo_W_array =
-        forcing.mutable_body_forces();
+        forces.mutable_body_forces();
     VectorX<T>& generalized_force_applied =
-        forcing.mutable_generalized_forces();
+        forces.mutable_generalized_forces();
 
     // Calculate inverse dynamics on this robot.
     model_->CalcInverseDynamics(*context_, pc, vc, qDDt,
@@ -335,15 +335,15 @@ class DrakeKukaIIwaRobot {
                 &A_WB_array, &F_BMo_W_array, &generalized_force_output);
 
     // Put joint reaction forces into return struct.
-    KukaRobotJointReactionForces<T> forces;
-    forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
-    forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
-    forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
-    forces.F_Do_W = F_BMo_W_array[linkD_->get_node_index()];
-    forces.F_Eo_W = F_BMo_W_array[linkE_->get_node_index()];
-    forces.F_Fo_W = F_BMo_W_array[linkF_->get_node_index()];
-    forces.F_Go_W = F_BMo_W_array[linkG_->get_node_index()];
-    return forces;
+    KukaRobotJointReactionForces<T> reaction_forces;
+    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
+    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
+    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
+    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->get_node_index()];
+    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->get_node_index()];
+    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->get_node_index()];
+    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->get_node_index()];
+    return reaction_forces;
   }
 
  private:

@@ -13,7 +13,7 @@ namespace multibody {
 template<typename T> class MultibodyTree;
 
 /// A class to hold a set of forces applied to a MultibodyTree system.
-/// Forces can include generalized forces as well as spatial body forces.
+/// Forces can include generalized forces as well as body spatial forces.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -45,7 +45,8 @@ class MultibodyForces {
   }
 
   /// Returns the number of generalized velocities for the model to which these
-  /// forces apply.
+  /// forces apply. The number of generalized forces in a multibody model always
+  /// equals the number of generalized velocities.
   /// Determined at construction from the given model MultibodyTree object.
   int num_velocities() const {
     return static_cast<int>(tau_.size());
@@ -76,13 +77,13 @@ class MultibodyForces {
   }
 
   /// Adds into `this` the force contribution stored in `addend`.
-  void AddInForces(const MultibodyForces<T> &addend);
+  void AddInForces(const MultibodyForces<T>& addend);
 
   /// Utility that checks that the forces stored by `this` object have the
   /// proper sizes to represent the set of forces for the given `model`.
   /// @returns true if `this` forces object has the proper sizes for the given
   /// `model`.
-  bool CheckInvariants(const MultibodyTree<T>& model) const;
+  bool CheckHasRightSizeForModel(const MultibodyTree<T> &model) const;
 
  private:
   // Vector holding, for each body in the MultibodyTree, the externally applied

@@ -54,13 +54,12 @@ class ForceElement : public
   /// @param[in] vc
   ///   A velocity kinematics cache object already updated to be in sync with
   ///   `context`.
-  /// @param[out] forcing
-  ///   A pointer to a valid, non nullptr, multibody forcing object.
-  ///   On output `this` force element adds its forcing contribution into
-  ///   `forcing`.
-  ///   This method will abort if the `forcing` pointer is null or if the
-  ///   forcing object is not compatible with `this` %MultibodyTree, see
-  ///   MultibodyForcing::CheckInvariants().
+  /// @param[out] forces
+  ///   A pointer to a valid, non nullptr, multibody forces object.
+  ///   On output `this` force element adds its contribution into `forces`.
+  ///   This method will abort if the `forces` pointer is null or if the
+  ///   forces object is not compatible with `this` %MultibodyTree, see
+  ///   MultibodyForces::CheckInvariants().
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -69,10 +68,10 @@ class ForceElement : public
   void CalcAndAddForceContribution(const MultibodyTreeContext<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    const VelocityKinematicsCache<T>& vc,
-                                   MultibodyForces<T>* forcing) {
-    DRAKE_DEMAND(forcing != nullptr);
-    DRAKE_DEMAND(forcing->CheckInvariants(this->get_parent_tree()));
-    DoCalcAndAddForceContribution(context, pc, vc, forcing);
+                                   MultibodyForces<T>* forces) {
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    DoCalcAndAddForceContribution(context, pc, vc, forces);
   }
 
   /// @name Methods to track the energy budget.
@@ -80,11 +79,13 @@ class ForceElement : public
   /// a MultibodyTree model. This methods are pure virtual and subclasses must
   /// provide an implementation. Conservative force elements must implement
   /// CalcPotentialEnergy() in order to track the potential energy stored in
-  /// forcing elements. In addition, conservative force elements must implement
+  /// force elements. In addition, conservative force elements must implement
   /// the rate of change of this potential energy in CalcConservativePower().
   /// Non-conservative force elements need to implement the rate of change,
   /// power, at which they either generate or dissipate energy in the system in
-  /// CalcNonConservativePower().
+  /// CalcNonConservativePower(). Note that a force element may have both
+  /// conservative and non-conservative contributions, such as a spring-damper
+  /// element for instance.
   /// All of these methods have the same signature. Refer to the documentation
   /// for CalcPotentialEnergy() for a detailed description of the input
   /// arguments of the methods in this group.
@@ -103,8 +104,6 @@ class ForceElement : public
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
   ///
   /// @returns For conservative force models, the potential energy stored by
   /// `this` force element. For non-conservative force models, zero.
@@ -159,7 +158,7 @@ class ForceElement : public
   /// the parameters so you don't have to. Refer to the documentation for
   /// CalcAndAddForceContribution() for details describing the purpose and
   /// parameters of this method.
-  /// It assumes `forcing` to be a valid pointer to a MultibodyForcing object
+  /// It assumes `forces` to be a valid pointer to a MultibodyForces object
   /// compatible with the MultibodyTree model owning `this` force element.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
@@ -170,7 +169,7 @@ class ForceElement : public
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      MultibodyForces<T>* forcing) const = 0;
+      MultibodyForces<T>* forces) const = 0;
 
   /// @name Methods to make a clone templated on different scalar types.
   ///

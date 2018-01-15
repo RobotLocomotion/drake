@@ -23,7 +23,7 @@ using std::numeric_limits;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-class MultibodyForcingTests : public ::testing::Test {
+class MultibodyForcesTests : public ::testing::Test {
  public:
   // Creates a simple MultibodyTree model so that we can instantiate
   // MultibodyForces objects for this model.
@@ -41,50 +41,50 @@ class MultibodyForcingTests : public ::testing::Test {
   MultibodyTree<double> model_;
 };
 
-// Test constructor that sets forcing to zero.
-TEST_F(MultibodyForcingTests, Construction) {
-  // Create a forcing object compatible with model:
-  MultibodyForces<double> forcing(model_);
+// Test constructor that sets forces to zero.
+TEST_F(MultibodyForcesTests, Construction) {
+  // Create a forces object compatible with model:
+  MultibodyForces<double> forces(model_);
 
-  // Forcing object should be compatible with the original model.
-  EXPECT_TRUE(forcing.CheckInvariants(model_));
-  EXPECT_EQ(forcing.num_bodies(), model_.get_num_bodies());
-  EXPECT_EQ(forcing.num_velocities(), model_.get_num_velocities());
+  // Forces object should be compatible with the original model.
+  EXPECT_TRUE(forces.CheckHasRightSizeForModel(model_));
+  EXPECT_EQ(forces.num_bodies(), model_.get_num_bodies());
+  EXPECT_EQ(forces.num_velocities(), model_.get_num_velocities());
 
-  EXPECT_TRUE(forcing.generalized_forces() == Vector2d::Zero());
+  EXPECT_TRUE(forces.generalized_forces() == Vector2d::Zero());
 
-  for (const SpatialForce<double>& F : forcing.body_forces()) {
+  for (const SpatialForce<double>& F : forces.body_forces()) {
     EXPECT_TRUE(F.IsApprox(SpatialForce<double>::Zero(), 0));
   }
 }
 
-// A number of unit tests involving non-zero forcing.
-TEST_F(MultibodyForcingTests, NonZeroForcing) {
-  // Create a non-zero forcing:
-  MultibodyForces<double> forcing1(model_);
-  forcing1.mutable_generalized_forces() = Vector2d(1, 2);
-  forcing1.mutable_body_forces()[1] =
+// A number of unit tests involving non-zero forces.
+TEST_F(MultibodyForcesTests, NonZeroForces) {
+  // Create a non-zero forces:
+  MultibodyForces<double> forces1(model_);
+  forces1.mutable_generalized_forces() = Vector2d(1, 2);
+  forces1.mutable_body_forces()[1] =
       SpatialForce<double>(Vector3d(0, 1, 2), Vector3d(3, 4, 5));
-  forcing1.mutable_body_forces()[2] =
+  forces1.mutable_body_forces()[2] =
       SpatialForce<double>(Vector3d(0, 1, 2), Vector3d(3, 4, 5));
 
-  // Create a second non-zero forcing:
-  MultibodyForces<double> forcing2(model_);
-  ASSERT_EQ(forcing2.num_bodies(), 3);
-  ASSERT_EQ(forcing2.num_velocities(), 2);
-  forcing2.mutable_generalized_forces() = Vector2d(3, 4);
-  forcing2.mutable_body_forces()[0] =
+  // Create a second non-zero forces:
+  MultibodyForces<double> forces2(model_);
+  ASSERT_EQ(forces2.num_bodies(), 3);
+  ASSERT_EQ(forces2.num_velocities(), 2);
+  forces2.mutable_generalized_forces() = Vector2d(3, 4);
+  forces2.mutable_body_forces()[0] =
       SpatialForce<double>(Vector3d(6, 7, 8), Vector3d(9, 10, 11));
-  forcing2.mutable_body_forces()[2] =
+  forces2.mutable_body_forces()[2] =
       SpatialForce<double>(Vector3d(6, 7, 8), Vector3d(9, 10, 11));
 
-  // Add-in forcing2 to forcing1:
-  forcing1.AddInForces(forcing2);
+  // Add-in forces2 to forces1:
+  forces1.AddInForces(forces2);
 
   // Const aliases:
-  const VectorX<double>& generalized_forces = forcing1.generalized_forces();
+  const VectorX<double>& generalized_forces = forces1.generalized_forces();
   const std::vector<SpatialForce<double>>& spatial_forces =
-      forcing1.body_forces();
+      forces1.body_forces();
 
   // Check the results:
   EXPECT_EQ(generalized_forces, Vector2d(4, 6));
@@ -102,9 +102,9 @@ TEST_F(MultibodyForcingTests, NonZeroForcing) {
       kEpsilon, MatrixCompareType::absolute));
 
   // Set to zero and assess the result:
-  forcing1.SetZero();
-  EXPECT_TRUE(forcing1.generalized_forces() == Vector2d::Zero());
-  for (const SpatialForce<double>& F : forcing1.body_forces()) {
+  forces1.SetZero();
+  EXPECT_TRUE(forces1.generalized_forces() == Vector2d::Zero());
+  for (const SpatialForce<double>& F : forces1.body_forces()) {
     EXPECT_TRUE(F.IsApprox(SpatialForce<double>::Zero(), kEpsilon));
   }
 }

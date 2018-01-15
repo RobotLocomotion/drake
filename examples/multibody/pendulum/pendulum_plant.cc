@@ -253,8 +253,8 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   // Mass matrix:
   MatrixX<T> M(nv, nv);
   // Forces:
-  MultibodyForces<T> forcing(*model_);
-  // Bodies's accelerations, ordered by BodyNodeIndex.
+  MultibodyForces<T> forces(*model_);
+  // Bodies' accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
   // Generalized accelerations:
   VectorX<T> vdot = VectorX<T>::Zero(nv);
@@ -266,8 +266,8 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   model_->CalcVelocityKinematicsCache(context, pc, &vc);
 
   // Compute forces applied through force elements. This effectively resets
-  // the forcing to zero and adds in contributions due to force elements:
-  model_->CalcForceElementsContribution(context, pc, vc, &forcing);
+  // the forces to zero and adds in contributions due to force elements:
+  model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
   // TODO(amcastro-tri): add in external actuation torque from input port.
 
@@ -280,8 +280,8 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   // CalcInverseDynamics() for details.
   // With vdot = 0, this computes:
   //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forcing.mutable_body_forces();
-  VectorX<T>& tau_array = forcing.mutable_generalized_forces();
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
+  VectorX<T>& tau_array = forces.mutable_generalized_forces();
   model_->CalcInverseDynamics(
       context, pc, vc, vdot,
       F_BBo_W_array, tau_array,
