@@ -379,6 +379,8 @@ install(
     deps = [
         ":install_cc_headers",
         "//tools/workspace/optitrack_driver:install",
+        "@lcm//:install",
+        "@lcmtypes_bot2_core//:install",
         "@lcmtypes_robotlocomotion//:install",
     ],
 )
