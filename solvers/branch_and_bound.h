@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -453,7 +454,7 @@ class MixedIntegerBranchAndBound {
    * solutions. The solutions are sorted in the ascending order based on the
    * cost.
    */
-  const std::list<std::pair<double, Eigen::VectorXd>>& solutions() const {
+  const std::multimap<double, Eigen::VectorXd>& solutions() const {
     return solutions_;
   }
 
@@ -461,7 +462,7 @@ class MixedIntegerBranchAndBound {
    * The branch-and-bound will terminate if its difference between its best
    * upper bound and best lower bound is below this gap tolerance.
    */
-  void SetAbsoluteGapTol(double tol) { absolute_gap_tol_ = tol; }
+  void set_absolute_gap_tol(double tol) { absolute_gap_tol_ = tol; }
 
   /** Getter for the absolute gap tolerance. */
   double absolute_gap_tol() const { return absolute_gap_tol_; }
@@ -471,7 +472,7 @@ class MixedIntegerBranchAndBound {
    * (best_upper_bound() - best_lower_bound()) / abs(best_lower_bound())
    * is smaller than this tolerance.
    */
-  void SetRelativeGapTol(double tol) { relative_gap_tol_ = tol; }
+  void set_relative_gap_tol(double tol) { relative_gap_tol_ = tol; }
 
   /** Geeter for the relative gap tolerance. */
   double relative_gap_tol() const { return relative_gap_tol_; }
@@ -573,7 +574,7 @@ class MixedIntegerBranchAndBound {
   // cost and the decision variable values. This list is sorted in the
   // ascending order based on the cost, and it contains at most
   // max_num_solutions_ elements.
-  std::list<std::pair<double, Eigen::VectorXd>> solutions_;
+  std::multimap<double, Eigen::VectorXd> solutions_;
   int max_num_solutions_{10};
 
   // The branch and bound process will terminate when the best upper bound is

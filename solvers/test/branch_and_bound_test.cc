@@ -5,7 +5,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
-#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/scs_solver.h"
 
 namespace drake {
@@ -431,9 +430,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
   EXPECT_NEAR(bnb.best_lower_bound(), 1.5, tol);
   const auto& best_solutions = bnb.solutions();
   EXPECT_EQ(best_solutions.size(), 1);
-  EXPECT_NEAR(best_solutions.front().first, 1.5, tol);
+  EXPECT_NEAR(best_solutions.begin()->first, 1.5, tol);
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
-  EXPECT_TRUE(CompareMatrices(best_solutions.front().second, x_expected, tol,
+  EXPECT_TRUE(CompareMatrices(best_solutions.begin()->second, x_expected, tol,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(bnb.IsLeafNodeFathomed(*(bnb.root())));
 }
@@ -700,11 +699,11 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
   EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
   EXPECT_EQ(dut.bnb()->solutions().size(), 1);
-  EXPECT_NEAR(dut.bnb()->solutions().front().first, 23.0 / 6.0, tol);
+  EXPECT_NEAR(dut.bnb()->solutions().begin()->first, 23.0 / 6.0, tol);
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 1, 2.0 / 3.0, 0, 1, 1;
-  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second, x_expected,
-                              tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().begin()->second,
+                              x_expected, tol, MatrixCompareType::absolute));
 
   dut.BranchAndUpdate(dut.bnb()->mutable_root(), x(4));
   // The left node has optimal cost -4.9, with non-integral solution (0.7, 1, 1,
@@ -714,9 +713,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
   EXPECT_NEAR(dut.bnb()->best_upper_bound(), 23.0 / 6.0, tol);
   EXPECT_EQ(dut.bnb()->solutions().size(), 1);
-  EXPECT_NEAR(dut.bnb()->solutions().front().first, 23.0 / 6.0, tol);
-  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().front().second, x_expected,
-                              tol, MatrixCompareType::absolute));
+  EXPECT_NEAR(dut.bnb()->solutions().begin()->first, 23.0 / 6.0, tol);
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().begin()->second,
+                              x_expected, tol, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
