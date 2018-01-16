@@ -97,7 +97,6 @@ cc_library(
     srcs = ["liblcm.so"],
     hdrs = LCM_PUBLIC_HEADERS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
-    deps = ["@glib"],
 )
 
 cc_binary(
@@ -108,7 +107,10 @@ cc_binary(
         "lcm-logger/lcm_logger.c",
     ],
     copts = LCM_COPTS,
-    deps = [":lcm"],
+    deps = [
+        ":lcm",
+        "@glib",
+    ],
 )
 
 cc_binary(
@@ -139,7 +141,10 @@ cc_binary(
     ],
     copts = LCM_COPTS,
     includes = ["."],
-    deps = [":lcm"],
+    deps = [
+        ":lcm",
+        "@glib",
+    ],
 )
 
 cc_binary(

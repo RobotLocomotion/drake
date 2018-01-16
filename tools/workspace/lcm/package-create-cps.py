@@ -26,7 +26,6 @@ content = """
     "lcm": {
       "Type": "dylib",
       "Includes": ["@prefix@/include"],
-      "Link-Flags": ["-lglib-2.0", "-lpthread"],
       "Location": "@prefix@/lib/liblcm.so",
       "Requires": [ ":lcm-coretypes" ]
     },
