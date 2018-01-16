@@ -31,7 +31,7 @@ class UtilTest(unittest.TestCase):
                 self.assertTrue(
                     one_relpath in THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND or
                     one_relpath.startswith("."),
-                    one_relpath)
+                    one_relpath + " has been mis-identified as a source file")
 
 
 # TODO(jwnimmer-tri) Omitting or mistyping these lines means that no tests get
