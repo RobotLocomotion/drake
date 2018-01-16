@@ -1,0 +1,11 @@
+# -*- python -*-
+
+load("@drake//tools/external_data:expose_all_files.bzl", "expose_all_files")
+load(
+    "@drake//tools/external_data:external_data.bzl",
+    "external_data_stub_test",
+)
+
+external_data_stub_test()
+
+expose_all_files()
