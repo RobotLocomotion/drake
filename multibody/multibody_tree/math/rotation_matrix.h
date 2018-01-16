@@ -50,19 +50,20 @@ class RotationMatrix {
 #endif
   }
 
-  /// Constructs a %RotationMatrix templatized on a scalar type T from a
-  /// %RotationMatrix templatized on U.  For example,
+  /// Creates a %RotationMatrix templatized on a scalar type U from a
+  /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```
-  /// const RotationMatrix<double> source = RotationMatrix::Identity();
-  /// const RotationMatrix<AutoDiffXd> Fred(source);
+  /// RotationMatrix<double> source = RotationMatrix::Identity();
+  /// RotationMatrix<AutoDiffXd> Fred = source.cast<AutoDiffXd>();
   /// ```
-  /// @param[in] source a %RotationMatrix templatized on scalar type U.
+  /// @tparam U Scalar type on which the returned %RotationMatrix is templated.
+  /// @note This cast works in accordance with Eigen's cast method for the
+  /// %Matrix3 that underlies this %RotationMatrix.  For example, Eigen
+  /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
   template <typename U>
-  RotationMatrix(const RotationMatrix<U>& source) {
-     const Matrix3<U>& m = source.matrix();
-     for (int i = 0;  i < 3;  i++)
-       for (int j = 0;  j < 3;  j ++)
-         R_AB_(i, j) = ExtractDoubleOrThrow(m(i, j));
+  RotationMatrix<U> cast() const {
+    const Matrix3<U> m = R_AB_.template cast<U>();
+    return RotationMatrix<U>(m, true);
   }
 
   /// Sets `this` %RotationMatrix from a Matrix3.
@@ -233,6 +234,14 @@ class RotationMatrix {
   }
 
  private:
+  // Make RotationMatrix<U> templatized on any typename U be a friend of a
+  // %RotationMatrix templatized on any other typename T.
+  // This is needed for the method RotationMatrix<T>::cast<U>() to be able to
+  // use the private constructor RotationMatrix<T>(const Eigen::MatrixBase&)
+  // for an Eigen expression templatized on scalar type U.
+  template <typename U>
+  friend class RotationMatrix;
+
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality_{
