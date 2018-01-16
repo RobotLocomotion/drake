@@ -1,0 +1,8 @@
+workspace(name = "external_data_pkg_test")
+
+load("//:drake_path.bzl", "get_drake_path")
+
+local_repository(
+    name = "drake",
+    path = get_drake_path(__workspace_dir__),
+)

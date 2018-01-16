@@ -1,0 +1,15 @@
+# -*- python -*-
+
+load("//tools/external_data:expose_all_files.bzl", "expose_all_files")
+
+# For macro testing.
+exports_files(["stub_test.py"])
+
+# Stub file pending Python code.
+py_test(
+    name = "stub_test",
+    srcs = ["stub_test.py"],
+    visibility = ["//visibility:public"],
+)
+
+expose_all_files()

@@ -13,7 +13,7 @@ def _python_lint(name, files, ignore):
         size = "small",
         srcs = ["@pycodestyle//:pycodestyle"],
         data = files,
-        args = (ignore or []) + ["$(location %s)" % f for f in files],
+        args = (ignore or []) + ["$(locations %s)" % f for f in files],
         main = "@pycodestyle//:pycodestyle.py",
         srcs_version = "PY2AND3",
         tags = ["pycodestyle", "lint"],
