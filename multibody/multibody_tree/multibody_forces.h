@@ -83,7 +83,7 @@ class MultibodyForces {
   /// proper sizes to represent the set of forces for the given `model`.
   /// @returns true if `this` forces object has the proper sizes for the given
   /// `model`.
-  bool CheckHasRightSizeForModel(const MultibodyTree<T> &model) const;
+  bool CheckHasRightSizeForModel(const MultibodyTree<T>& model) const;
 
  private:
   // Vector holding, for each body in the MultibodyTree, the externally applied

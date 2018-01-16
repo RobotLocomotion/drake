@@ -1,7 +1,7 @@
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 
+#include <array>
 #include <limits>
-#include <sstream>
 
 #include <gtest/gtest.h>
 
@@ -43,19 +43,30 @@ class MultibodyForcesTests : public ::testing::Test {
 
 // Test constructor that sets forces to zero.
 TEST_F(MultibodyForcesTests, Construction) {
-  // Create a forces object compatible with model:
-  MultibodyForces<double> forces(model_);
+  // We create a multibody forces object within a dirty memory location so that
+  // we can assess the zeroing performed by the constructor. That is, the stored
+  // forces would not be zero if the constructor had not explicitly zeroed them.
+  std::array<char, sizeof(MultibodyForces<double>)> mem;  // memory buffer.
+  mem.fill(1);  // fill in with garbage.
+  auto forces = new(&mem) MultibodyForces<double>(model_);  // placement new.
+  ASSERT_NE(forces, nullptr);
 
   // Forces object should be compatible with the original model.
-  EXPECT_TRUE(forces.CheckHasRightSizeForModel(model_));
-  EXPECT_EQ(forces.num_bodies(), model_.get_num_bodies());
-  EXPECT_EQ(forces.num_velocities(), model_.get_num_velocities());
+  EXPECT_TRUE(forces->CheckHasRightSizeForModel(model_));
 
-  EXPECT_TRUE(forces.generalized_forces() == Vector2d::Zero());
+  // Test the API to retrieve sizes.
+  EXPECT_EQ(forces->num_bodies(), model_.get_num_bodies());
+  EXPECT_EQ(forces->num_velocities(), model_.get_num_velocities());
 
-  for (const SpatialForce<double>& F : forces.body_forces()) {
+  // Assess the constructor did zero the forces.
+  EXPECT_TRUE(forces->generalized_forces() == Vector2d::Zero());
+  for (const SpatialForce<double>& F : forces->body_forces()) {
     EXPECT_TRUE(F.IsApprox(SpatialForce<double>::Zero(), 0));
   }
+
+  // Since we used a placement new, we must now explicitly call the object's
+  // destructor in order to perform a proper cleanup.
+  forces->~MultibodyForces<double>();
 }
 
 // A number of unit tests involving non-zero forces.
