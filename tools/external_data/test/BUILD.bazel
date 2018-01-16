@@ -1,0 +1,29 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    ":external_data_workspace_test.bzl",
+    "collect_external_data_lint_files",
+    "external_data_workspace_test",
+)
+
+external_data_workspace_test(
+    name = "external_data_pkg_test",
+)
+
+exports_files(
+    srcs = ["workspace_test.sh"],
+)
+
+# To simplify testing `load` dependencies, linting is done in this package
+# only. This macro collects all lint files under `//tools/external_data/...`,
+# excluding the files in this package (which are implicitly added by
+# `add_lint_tests`).
+collect_external_data_lint_files()
+
+add_lint_tests(
+    bazel_lint_extra_srcs = [
+        ":all_bazel_lint_files",
+    ],
+    python_lint_extra_srcs = [
+        ":all_python_lint_files",
+    ],
+)
