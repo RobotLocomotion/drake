@@ -394,24 +394,17 @@ void MultibodyTree<T>::CalcForceElementsContribution(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    std::vector<SpatialForce<T>>* F_Bo_W_array,
-    EigenPtr<VectorX<T>> tau_array) const {
-  DRAKE_DEMAND(F_Bo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_Bo_W_array->size()) == get_num_bodies());
-  DRAKE_DEMAND(tau_array != nullptr);
-  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
-  // Zero the arrays before adding contributions.
-  tau_array->setZero();
-  for (auto& F : *F_Bo_W_array) F.SetZero();
-
+  forces->SetZero();
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
-    force_element->CalcAndAddForceContribution(
-        mbt_context, pc, vc, F_Bo_W_array, tau_array);
+    force_element->CalcAndAddForceContribution(mbt_context, pc, vc, forces);
   }
 }
 
