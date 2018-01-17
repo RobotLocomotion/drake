@@ -17,7 +17,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // Note: These matrices must remain BodyXYZ matrices with the specified angles
 // q1, q2, q3, as these matrices are used in conjunction with MotionGenesis
 // pre-computed solutions based on these exact matrices.
-Matrix3d GetRotationMatrixBodyXYZ() {
+Matrix3d MakeRotationMatrixBodyXYZ() {
   const double q1 = 0.2, q2 = 0.3, q3 = 0.4;
   const double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
   const double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
@@ -39,7 +39,7 @@ Matrix3d GetRotationMatrixBodyXYZ() {
 // Note: These matrices must remain BodyXYX matrices with the specified angles
 // r1, r2, r3, as these matrices are used in conjunction with MotionGenesis
 // pre-computed solutions based on these exact matrices.
-Matrix3d GetRotationMatrixBodyXYX() {
+Matrix3d MakeRotationMatrixBodyXYX() {
   const double r1 = 0.5, r2 = 0.5, r3 = 0.7;
   const double c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
   const double s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
@@ -130,8 +130,8 @@ GTEST_TEST(RotationMatrix, Inverse) {
 
 // Test rotation matrix multiplication and IsNearlyEqualTo.
 GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
-  Matrix3d m_BA = GetRotationMatrixBodyXYZ();
-  Matrix3d m_CB = GetRotationMatrixBodyXYX();
+  Matrix3d m_BA = MakeRotationMatrixBodyXYZ();
+  Matrix3d m_CB = MakeRotationMatrixBodyXYX();
 
   RotationMatrix<double> R_BA(m_BA);
   RotationMatrix<double> R_CB(m_CB);
@@ -231,7 +231,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
 
 // Test RotationMatrix cast method from double to AutoDiffXd.
 GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
-  const Matrix3d m = GetRotationMatrixBodyXYZ();
+  const Matrix3d m = MakeRotationMatrixBodyXYZ();
   const RotationMatrix<double> R_double(m);
   const RotationMatrix<AutoDiffXd> R_autodiff = R_double.cast<AutoDiffXd>();
 
@@ -244,8 +244,9 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   for (int i = 0;  i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       const double mij_double = m_double(i, j);
-      const AutoDiffXd mij_autodiff = m_autodiff(i, j);
+      const AutoDiffXd& mij_autodiff = m_autodiff(i, j);
       EXPECT_EQ(mij_autodiff.value(), mij_double);
+      EXPECT_EQ(mij_autodiff.derivatives().size(), 0);
     }
   }
 }

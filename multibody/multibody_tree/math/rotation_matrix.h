@@ -53,11 +53,14 @@ class RotationMatrix {
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```
-  /// RotationMatrix<double> source = RotationMatrix::Identity();
+  /// RotationMatrix<double> source = RotationMatrix<double>::Identity();
   /// RotationMatrix<AutoDiffXd> foo = source.cast<AutoDiffXd>();
   /// ```
   /// @tparam U Scalar type on which the returned %RotationMatrix is templated.
-  /// @note This cast works in accordance with Eigen's cast method for the
+  /// @note `RotationMatrix<From>::cast<To>()` creates a new
+  /// `RotationMatrix<To>` from a `RotationMatrix<From>` but only if
+  /// type `To` is constructible from type `From`.
+  /// This cast method works in accordance with Eigen's cast method for Eigen's
   /// %Matrix3 that underlies this %RotationMatrix.  For example, Eigen
   /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
   template <typename U>
