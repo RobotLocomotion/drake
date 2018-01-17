@@ -1,4 +1,5 @@
 # -*- python -*-
+
 load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
@@ -8,18 +9,31 @@ load(
     "drake_generate_include_header",
 )
 load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
     "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
+
+PROJECT_NAME = "ignition-rndf"
+
+PROJECT_MAJOR = 0
+
+PROJECT_MINOR = 1
+
+PROJECT_PATCH = 5
 
 # Generates config.hh based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
-    src = "cmake/config.hh.in",
+    src = "include/ignition/rndf/config.hh.in",
     out = "include/ignition/rndf/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
@@ -28,15 +42,47 @@ cmake_configure_file(
         # the cmake_configure_file functionality to create variables from
         # "project" command as well as manipulate strings, and I'm not sure it
         # is worth it.  We just hard code some values that should not change.
-        "PROJECT_NAME=ignition-rndf",
-        "PROJECT_NAME_LOWER=ignition-rndf",
+        "PROJECT_NAME=%s" % (PROJECT_NAME),
+        "PROJECT_NAME_LOWER=%s" % (PROJECT_NAME),
+        "PROJECT_MAJOR_VERSION=%d" % (PROJECT_MAJOR),
+        "PROJECT_MINOR_VERSION=%d" % (PROJECT_MINOR),
+        "PROJECT_PATCH_VERSION=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION_MAJOR=%d" % (PROJECT_MAJOR),
+        "PROJECT_VERSION_MINOR=%d" % (PROJECT_MINOR),
+        "PROJECT_VERSION_PATCH=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
+        "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
     ],
     visibility = ["//visibility:private"],
 )
 
-public_headers = glob([
-    "include/**/*.hh",
-])
+generate_file(
+    name = "export_genrule",
+    out = "include/ignition/rndf/Export.hh",
+    content = """
+#pragma once
+
+#define IGNITION_RNDF_VISIBLE __attribute__ ((visibility("default")))
+#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+    """,
+    visibility = ["//visibility:private"],
+)
+
+public_headers_no_gen = [
+    "include/ignition/rndf/Checkpoint.hh",
+    "include/ignition/rndf/Exit.hh",
+    "include/ignition/rndf/Helpers.hh",
+    "include/ignition/rndf/Lane.hh",
+    "include/ignition/rndf/ParkingSpot.hh",
+    "include/ignition/rndf/ParserUtils.hh",
+    "include/ignition/rndf/Perimeter.hh",
+    "include/ignition/rndf/RNDF.hh",
+    "include/ignition/rndf/RNDFNode.hh",
+    "include/ignition/rndf/Segment.hh",
+    "include/ignition/rndf/UniqueId.hh",
+    "include/ignition/rndf/Waypoint.hh",
+    "include/ignition/rndf/Zone.hh",
+]
 
 # Generates rndf.hh, which consists of #include statements for all of the
 # public headers in the library.  The first line is
@@ -45,18 +91,53 @@ public_headers = glob([
 drake_generate_include_header(
     name = "rndfhh_genrule",
     out = "include/ignition/rndf.hh",
-    hdrs = [":config"] + public_headers,
+    hdrs = public_headers_no_gen + [
+        "include/ignition/rndf/config.hh",
+        "include/ignition/rndf/Export.hh",
+    ],
     visibility = ["//visibility:private"],
+)
+
+check_lists_consistency(
+    file_list = public_headers_no_gen,
+    glob = ["include/**/*.hh"],
+)
+
+public_headers = public_headers_no_gen + [
+    "include/ignition/rndf/config.hh",
+    "include/ignition/rndf/Export.hh",
+    "include/ignition/rndf.hh",
+]
+
+cc_binary(
+    name = "libignition_rndf.so",
+    srcs = [
+        "src/Checkpoint.cc",
+        "src/Exit.cc",
+        "src/Lane.cc",
+        "src/ParkingSpot.cc",
+        "src/ParserUtils.cc",
+        "src/Perimeter.cc",
+        "src/RNDF.cc",
+        "src/RNDFNode.cc",
+        "src/Segment.cc",
+        "src/UniqueId.cc",
+        "src/Waypoint.cc",
+        "src/Zone.cc",
+    ] + public_headers,
+    copts = ["-w"],
+    includes = ["include"],
+    linkshared = 1,
+    visibility = [],
+    deps = [
+        "@ignition_math",
+    ],
 )
 
 cc_library(
     name = "ignition_rndf",
-    srcs = glob(
-        ["src/*.cc"],
-        exclude = ["src/*_TEST.cc"],
-    ),
+    srcs = ["libignition_rndf.so"],
     hdrs = public_headers,
-    copts = ["-w"],
     includes = ["include"],
     visibility = ["//visibility:public"],
     deps = [
@@ -69,7 +150,7 @@ CMAKE_PACKAGE = "ignition-rndf0"
 cmake_config(
     package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/ignition_rndf:package-create-cps.py",
-    version_file = "CMakeLists.txt",
+    version_file = ":config",
     deps = ["@ignition_math//:cps"],
 )
 
@@ -79,11 +160,8 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":ignition_rndf"],
-    hdrs = public_headers + [
-        ":config",
-        ":rndfhh_genrule",
-    ],
+    targets = [":libignition_rndf.so"],
+    hdrs = public_headers,
     hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",
