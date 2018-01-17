@@ -393,8 +393,8 @@ install(
     # for putting programs into libexec and including the workspace and/or
     # package name in the installed path.  For now, we'll just specify it
     # manually.
-    runtime_dest = "libexec/drake/drake/common",
-    data_dest = "share/drake/drake",
+    runtime_dest = "libexec/drake/common",
+    data_dest = "share/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )

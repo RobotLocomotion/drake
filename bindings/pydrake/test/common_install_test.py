@@ -21,7 +21,7 @@ class TestCommonInstall(unittest.TestCase):
         tool_env[env_python_path] = os.path.abspath(
             os.path.join(tmp_folder, "lib", "python2.7", "site-packages")
         )
-        data_folder = os.path.join(tmp_folder, "share", "drake", "drake")
+        data_folder = os.path.join(tmp_folder, "share", "drake")
         # Call python2 to force using python brew install. Calling python
         # system would result in a crash since pydrake was built against
         # brew python. On Linux this will still work and force using

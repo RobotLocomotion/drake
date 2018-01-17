@@ -114,7 +114,7 @@ optional<std::string> getenv_optional(const char* const name) {
 optional<std::string>  GetCandidateDirFromLibdrake() {
   optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake.so");
   if (libdrake_dir) {
-    libdrake_dir = libdrake_dir.value() + "/../share/drake/drake";
+    libdrake_dir = libdrake_dir.value() + "/../share/drake";
   }
   return libdrake_dir;
 }

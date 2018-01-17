@@ -21,9 +21,9 @@ def install_data(
     install directory is also created. The corresponding install directory is
     generated based on the current folder which is prepended with
     "share/drake/":
-    The file `drake/drake/examples/acrobot/Acrobot_no_collision.urdf` will be
+    The file `drake/examples/acrobot/Acrobot_no_collision.urdf` will be
     installed in:
-    {install_dir}/share/drake/drake/examples/acrobot/Acrobot_no_collision.urdf
+    {install_dir}/share/drake/examples/acrobot/Acrobot_no_collision.urdf
     Test files (files contained in a `test` subfolder or named `*test*`) are
     not installed.
 
