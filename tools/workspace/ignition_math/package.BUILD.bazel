@@ -22,6 +22,12 @@ load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
+PROJECT_MAJOR = 4
+
+PROJECT_MINOR = 0
+
+PROJECT_PATCH = 0
+
 # Generates config.hh based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
@@ -29,11 +35,12 @@ cmake_configure_file(
     out = "include/ignition/math/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
-        "PROJECT_MAJOR_VERSION=4",
-        "PROJECT_MINOR_VERSION=0",
-        "PROJECT_PATCH_VERSION=0",
-        "PROJECT_VERSION=4.0",
-        "PROJECT_VERSION_FULL=4.0.0~pre3",
+        "PROJECT_VERSION_MAJOR=%d" % (PROJECT_MAJOR),
+        "PROJECT_MAJOR_VERSION=%d" % (PROJECT_MAJOR),
+        "PROJECT_MINOR_VERSION=%d" % (PROJECT_MINOR),
+        "PROJECT_PATCH_VERSION=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
+        "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
         "PROJECT_NAME_NO_VERSION=ignition-math",
     ],
     visibility = ["//visibility:private"],

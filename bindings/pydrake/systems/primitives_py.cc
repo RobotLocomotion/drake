@@ -5,6 +5,7 @@
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
 namespace py = pybind11;
@@ -32,6 +33,12 @@ PYBIND11_MODULE(primitives, m) {
 
   py::class_<ZeroOrderHold<T>, LeafSystem<T>>(m, "ZeroOrderHold")
     .def(py::init<double, int>());
+
+  py::class_<SignalLogger<T>, LeafSystem<T>>(m, "SignalLogger")
+    .def(py::init<int>())
+    .def(py::init<int, int>())
+    .def("sample_times", &SignalLogger<T>::sample_times)
+    .def("data", &SignalLogger<T>::data);
 
   // TODO(eric.cousineau): Add more systems as needed.
 }
