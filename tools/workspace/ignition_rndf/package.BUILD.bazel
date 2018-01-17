@@ -22,6 +22,14 @@ load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
+PROJECT_NAME = "ignition-rndf"
+
+PROJECT_MAJOR = 0
+
+PROJECT_MINOR = 1
+
+PROJECT_PATCH = 5
+
 # Generates config.hh based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
@@ -34,16 +42,16 @@ cmake_configure_file(
         # the cmake_configure_file functionality to create variables from
         # "project" command as well as manipulate strings, and I'm not sure it
         # is worth it.  We just hard code some values that should not change.
-        "PROJECT_NAME=ignition-rndf",
-        "PROJECT_NAME_LOWER=ignition-rndf",
-        "PROJECT_MAJOR_VERSION=0",
-        "PROJECT_MINOR_VERSION=1",
-        "PROJECT_PATCH_VERSION=5",
-        "PROJECT_VERSION_MAJOR=0",
-        "PROJECT_VERSION_MINOR=1",
-        "PROJECT_VERSION_PATCH=5",
-        "PROJECT_VERSION=0.1",
-        "PROJECT_VERSION_FULL=0.1.5",
+        "PROJECT_NAME=%s" % (PROJECT_NAME),
+        "PROJECT_NAME_LOWER=%s" % (PROJECT_NAME),
+        "PROJECT_MAJOR_VERSION=%d" % (PROJECT_MAJOR),
+        "PROJECT_MINOR_VERSION=%d" % (PROJECT_MINOR),
+        "PROJECT_PATCH_VERSION=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION_MAJOR=%d" % (PROJECT_MAJOR),
+        "PROJECT_VERSION_MINOR=%d" % (PROJECT_MINOR),
+        "PROJECT_VERSION_PATCH=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
+        "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
     ],
     visibility = ["//visibility:private"],
 )
