@@ -60,7 +60,7 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class MaliputRailcar : public systems::LeafSystem<T> {
+class MaliputRailcar final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaliputRailcar)
   /// Defines a distance that is "close enough" to the end of a lane for the
@@ -94,17 +94,6 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   ///
   explicit MaliputRailcar(const LaneDirection& initial_lane_direction);
 
-  // System<T> overrides.
-  void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
-
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
-
-  /// Sets `railcar_state` to contain the default state for MaliputRailcar.
-  static void SetDefaultState(MaliputRailcarState<T>* railcar_state);
-
   /// Returns a mutable reference to the parameters in the given @p context.
   MaliputRailcarParams<T>& get_mutable_parameters(
       systems::Context<T>* context) const;
@@ -121,7 +110,18 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   static constexpr T kDefaultInitialS = T(0);
   static constexpr T kDefaultInitialSpeed = T(1);
 
- protected:
+ private:
+  // System<T> overrides.
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
+
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
+
+  /// Sets `railcar_state` to contain the default state for MaliputRailcar.
+  static void SetDefaultState(MaliputRailcarState<T>* railcar_state);
+
   // LeafSystem<T> overrides.
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
@@ -134,7 +134,6 @@ class MaliputRailcar : public systems::LeafSystem<T> {
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
       systems::State<T>* state) const override;
 
- private:
   void CalcStateOutput(
       const systems::Context<T>& context,
       MaliputRailcarState<T>* output) const;
