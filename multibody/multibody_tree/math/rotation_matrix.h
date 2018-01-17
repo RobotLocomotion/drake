@@ -54,7 +54,7 @@ class RotationMatrix {
   /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```
   /// RotationMatrix<double> source = RotationMatrix::Identity();
-  /// RotationMatrix<AutoDiffXd> Fred = source.cast<AutoDiffXd>();
+  /// RotationMatrix<AutoDiffXd> foo = source.cast<AutoDiffXd>();
   /// ```
   /// @tparam U Scalar type on which the returned %RotationMatrix is templated.
   /// @note This cast works in accordance with Eigen's cast method for the
@@ -237,8 +237,7 @@ class RotationMatrix {
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
   // %RotationMatrix templatized on any other typename T.
   // This is needed for the method RotationMatrix<T>::cast<U>() to be able to
-  // use the private constructor RotationMatrix<T>(const Eigen::MatrixBase&)
-  // for an Eigen expression templatized on scalar type U.
+  // use the necessary private constructor.
   template <typename U>
   friend class RotationMatrix;
 

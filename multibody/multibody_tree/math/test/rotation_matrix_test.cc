@@ -12,20 +12,6 @@ using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// Helper function to check whether the values of the elements of a Matrix3
-// templated on double is exactly equal to the corresponding elements of a
-// Matrix3 templated on AutoDiffXd.
-void ExpectEqualMatrix3TemplatedOnAutoDiffXdAndDouble(
-    const Matrix3<AutoDiffXd>& m_autodiff, const Matrix3<double>& m_double) {
-  for (int i = 0;  i < 3; i++) {
-    for (int j = 0;  j < 3;  j++) {
-      const double mij_double = m_double(i, j);
-      const AutoDiffXd mij_autodiff = m_autodiff(i, j);
-      EXPECT_EQ(mij_autodiff.value(), mij_double);
-    }
-  }
-}
-
 // Helper function to create a rotation matrix associated with a BodyXYZ
 // rotation by angles q1 = 0.2 radians, q2 = 0.3 radians, q3 = 0.4 radians.
 // Note: These matrices must remain BodyXYZ matrices with the specified angles
@@ -248,8 +234,20 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   const Matrix3d m = GetRotationMatrixBodyXYZ();
   const RotationMatrix<double> R_double(m);
   const RotationMatrix<AutoDiffXd> R_autodiff = R_double.cast<AutoDiffXd>();
-  ExpectEqualMatrix3TemplatedOnAutoDiffXdAndDouble(
-      R_autodiff.matrix(), R_double.matrix());
+
+  // To avoid a (perhaps) tautological test, do not just use an Eigen cast() to
+  // the Matrix3 that underlies the RotationMatrix class -- i.e., avoid just
+  // comparing m_autodiff.cast<double>() with m_double.
+  // Instead, check element-by-element equality as follows.
+  const Matrix3<double>& m_double = R_double.matrix();
+  const Matrix3<AutoDiffXd>& m_autodiff = R_autodiff.matrix();
+  for (int i = 0;  i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      const double mij_double = m_double(i, j);
+      const AutoDiffXd mij_autodiff = m_autodiff(i, j);
+      EXPECT_EQ(mij_autodiff.value(), mij_double);
+    }
+  }
 }
 
 
