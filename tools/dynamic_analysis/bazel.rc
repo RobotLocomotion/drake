@@ -7,8 +7,25 @@ build:kcov --copt -O0
 test:kcov --spawn_strategy=standalone
 test:kcov --run_under //tools/dynamic_analysis:kcov
 test:kcov --local_test_jobs=1
-test:kcov --test_tag_filters=-cpplint,-gurobi,-pycodestyle
+test:kcov --test_tag_filters=-cpplint,-pycodestyle,-gurobi,-mosek,-snopt,-no_kcov
 test:kcov --nocache_test_results
+test:kcov --test_timeout=120,600,1800,7200
+
+### Kcov everything build. ###
+build:kcov_everything --define=WITH_GUROBI=ON
+build:kcov_everything --define=WITH_MOSEK=ON
+build:kcov_everything --define=WITH_SNOPT=ON
+build:kcov_everything --copt -g
+build:kcov_everything --copt -O0
+
+test:kcov_everything --test_env=GRB_LICENSE_FILE
+test:kcov_everything --test_env=HOME
+test:kcov_everything --spawn_strategy=standalone
+test:kcov_everything --run_under=//tools/dynamic_analysis:kcov
+test:kcov_everything --local_test_jobs=1
+test:kcov_everything --test_tag_filters=-cpplint,-pycodestyle,-no_kcov
+test:kcov_everything --nocache_test_results
+test:kcov_everything --test_timeout=120,600,1800,7200
 
 ### ASan build. ###
 build:asan --copt -g
