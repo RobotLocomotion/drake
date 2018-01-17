@@ -282,9 +282,6 @@ install(
         "COPYING",
         "NEWS",
     ],
-    rename = {
-        "share/java/liblcm-java.jar": "lcm.jar",
-    },
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",
