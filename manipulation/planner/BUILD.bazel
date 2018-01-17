@@ -24,6 +24,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "jacobian_ik",
+    srcs = ["jacobian_ik.cc"],
+    hdrs = ["jacobian_ik.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "robot_plan_interpolator",
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
@@ -54,6 +64,20 @@ drake_cc_googletest(
     deps = [
         ":constraint_relaxing_ik",
         "//drake/common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "jacobian_ik_test",
+    srcs = ["test/jacobian_ik_test.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":jacobian_ik",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/parsers",
     ],
 )
 
