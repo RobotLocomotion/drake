@@ -19,7 +19,6 @@
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
@@ -891,11 +890,6 @@ class MultibodyTree {
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
-
-  void CalcForwardDynamicsViaExplicitMassMatrixSolve(
-      const systems::Context<T>& context,
-      const MultibodyTreeForcing<T>& applied_forcing,
-      EigenPtr<VectorX<T>> vdot) const;
 
   /// Computes the combined force contribution of ForceElement objects in the
   /// model. A ForceElement can apply forces as a spatial force per body or as

@@ -522,68 +522,6 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcForwardDynamicsViaExplicitMassMatrixSolve(
-    const systems::Context<T>& context,
-    const MultibodyTreeForcing<T>& applied_forcing,
-    EigenPtr<VectorX<T>> vdot) const {
-  // The number of mobilities in the system.
-  const int nv = get_num_velocities();
-  DRAKE_DEMAND(vdot->size() == nv);
-
-  // Workspace:
-  // TODO(amcastro-tri): implement a way for users to provide an externally
-  // allocated workspace. Or maybe better just cache the results.
-  // Mass matrix:
-  MatrixX<T> M(nv, nv);
-  // Body forces (F_BMo_W on output):
-  std::vector<SpatialForce<T>> F_BBo_W_array(get_num_bodies());
-  // Generalized forces:
-  VectorX<T> tau_array(get_num_velocities());
-  // Bodies's accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
-
-  // TODO(amcastro-tri): Eval() these from the context.
-  PositionKinematicsCache<T> pc(get_topology());
-  VelocityKinematicsCache<T> vc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
-  CalcVelocityKinematicsCache(context, pc, &vc);
-
-  // Compute forces applied through force elements. This effectively resets
-  // the forcing to zero and adds in contributions due to force elements:
-  CalcForceElementsContribution(
-      context, pc, vc, &F_BBo_W_array, &tau_array);
-
-  // Add in externally applied forces:
-  // F_BBo_W_array += applied_forcing.body_forces()
-  std::transform(
-      F_BBo_W_array.begin( ), F_BBo_W_array.end( ),
-      applied_forcing.body_forces().begin( ),
-      F_BBo_W_array.begin( ), std::plus<SpatialForce<T>>());
-  //F_BBo_W_array = applied_forcing.body_forces();
-  tau_array += applied_forcing.generalized_forces();
-
-  DoCalcMassMatrixViaInverseDynamics(context, pc, &M);
-
-  // Use inverse dynamics to compute right hand side:
-  vdot->setZero();  // re-use externally supplied vdot.
-
-  // WARNING: to reduce memory foot-print, we use the input applied arrays also
-  // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied
-  // get overwritten on output. This is not important in this case since we
-  // don't need their values anymore. Please see the documentation for
-  // CalcInverseDynamics() for details.
-  // Computes tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
-  CalcInverseDynamics(
-      context, pc, vc, *vdot,
-      F_BBo_W_array, tau_array,
-      &A_WB_array,
-      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
-      &tau_array);
-
-  *vdot = M.ldlt().solve(-tau_array);
-}
-
-template <typename T>
 Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
     const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const {

@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
 namespace drake {
@@ -135,7 +135,7 @@ class RevoluteJoint final : public Joint<T> {
   void AddInTorque(
       const systems::Context<T>& context,
       const T& torque,
-      MultibodyTreeForcing<T>* forcing) const {
+      MultibodyForces<T>* forcing) const {
     this->AddInForcing(context, 0, torque, forcing);
   }
 
@@ -146,7 +146,7 @@ class RevoluteJoint final : public Joint<T> {
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyTreeForcing<T>* forcing) const override {
+      MultibodyForces<T>* forcing) const override {
     // Right now we assume all the forcing in joint_tau goes into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);

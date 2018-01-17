@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
-#include "drake/multibody/multibody_tree/multibody_tree_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -134,11 +134,11 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyTreeForcing<T>* forcing) const {
-    DRAKE_DEMAND(forcing != nullptr);
+      MultibodyForces<T>* forces) const {
+    DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
-    DRAKE_DEMAND(forcing->CheckInvariants(this->get_parent_tree()));
-    DoAddInForcing(context, joint_dof, joint_tau, forcing);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    DoAddInForcing(context, joint_dof, joint_tau, forces);
   }
 
   // Hide the following section from Doxygen.
@@ -232,7 +232,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyTreeForcing<T>* forcing) const = 0;
+      MultibodyForces<T>* forcing) const = 0;
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
