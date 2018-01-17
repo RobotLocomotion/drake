@@ -150,7 +150,7 @@ double Monomial::Evaluate(const Environment& env) const {
                     });
 }
 
-pair<double, Monomial> Monomial::Substitute(const Environment& env) const {
+pair<double, Monomial> Monomial::EvaluatePartial(const Environment& env) const {
   double coeff{1.0};
   map<Variable, int> new_powers;
   for (const auto& p : powers_) {
