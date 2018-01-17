@@ -397,10 +397,10 @@ class RotationalInertia {
   ///
   /// @note `RotationalInertia<From>::cast<To>()` creates a new
   /// `RotationalInertia<To>` from a `RotationalInertia<From>` but only if
-  /// type `To` is constructible from type `From`. As an example of this,
-  /// `RotationalInertia<double>::cast<AutoDiffXd>()` is valid since
-  /// `AutoDiffXd a(1.0)` is valid. However,
-  /// `RotationalInertia<AutoDiffXd>::cast<double>()` is not.
+  /// type `To` is constructible from type `From`.
+  /// This cast method works in accordance with Eigen's cast method for Eigen's
+  /// %Matrix3 that underlies this %RotationalInertia.  For example, Eigen
+  /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
   template <typename Scalar>
   RotationalInertia<Scalar> cast() const {
     return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>());
