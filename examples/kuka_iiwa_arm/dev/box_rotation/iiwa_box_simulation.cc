@@ -43,13 +43,17 @@
 DEFINE_string(urdf, "", "Name of urdf file to load");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate (s)");
-DEFINE_double(youngs_modulus, 3e7, "Default material's Young's modulus (Pa)");
+// Set default Young's modulus to be that of aluminum. This demo assumes the box
+// defines it's own Young's modulus in it's URDF, and does not use this default
+// value.
+DEFINE_double(youngs_modulus, 6.9e10,
+              "Default Young's modulus (Pa), set to be that of aluminum.");
 DEFINE_double(dissipation, 5, "Contact Dissipation (s/m)");
 DEFINE_double(static_friction, 0.5, "Static Friction");
 DEFINE_double(dynamic_friction, 0.2, "Dynamic Friction");
 DEFINE_double(v_stiction_tol, 0.01, "v Stiction Tol (m/s)");
-DEFINE_double(contact_area, 2e-4,
-              "The characteristic scale of contact area (m^2)");
+DEFINE_double(contact_radius, 2e-4,
+              "The characteristic scale of radius (m) of the contact area");
 DEFINE_bool(use_visualizer, true, "Use Drake Visualizer?");
 
 namespace drake {
@@ -158,7 +162,7 @@ int DoMain() {
       .set_friction(FLAGS_static_friction, FLAGS_dynamic_friction);
   model_ptr->set_default_compliant_material(default_material);
   systems::CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.characteristic_radius = FLAGS_contact_radius;
   model_parameters.v_stiction_tolerance = FLAGS_v_stiction_tol;
   model_ptr->set_contact_model_parameters(model_parameters);
 
@@ -255,6 +259,9 @@ int DoMain() {
 
   builder.Connect(iiwa_command_receiver->get_output_port(0),
                   iiwa_status_sender->get_command_input_port());
+
+  builder.Connect(model->get_output_port_computed_torque(),
+                  iiwa_status_sender->get_torque_commanded_input_port());
 
   builder.Connect(iiwa_status_sender->get_output_port(0),
                   iiwa_status_pub->get_input_port(0));

@@ -15,13 +15,36 @@ exports_files(
 )
 
 exports_files(
-    ["net_sf_jchart2d_jchart2d/LICENSE"],
-    visibility = ["//tools/workspace/jchart2d:__pkg__"],
+    ["net_sf_jchart2d/LICENSE"],
+    visibility = ["//tools/workspace/net_sf_jchart2d:__pkg__"],
 )
 
 exports_files(
     ["com_github_robotlocomotion_libbot2/LICENSE.ldpc"],
     visibility = ["@libbot//:__pkg__"],
+)
+
+exports_files(
+    glob(["com_kitware_gitlab_cmake_cmake/**"]),
+    visibility = ["//tools/workspace/find_protobuf_cmake:__pkg__"],
+)
+
+exports_files(
+    glob(["josephdavisco_spruce/**"]),
+    visibility = ["@spruce//:__pkg__"],
+)
+
+exports_files(
+    [
+        "com_github_google_protobuf/LICENSE",
+        "com_github_google_protobuf/protobuf.bzl",
+    ],
+    visibility = ["@com_google_protobuf//:__pkg__"],
+)
+
+exports_files(
+    ["com_github_google_protobuf/protobuf-ubsan-fixup.h"],
+    visibility = ["//common/proto:__pkg__"],
 )
 
 add_lint_tests()

@@ -1,7 +1,7 @@
 IIWA Manipulation Examples
 ==========================
 
-There are a number of examples contained in these directories.  
+There are a number of examples contained in these directories.
 
 The following instructions assume Drake was
 [built using bazel](http://drake.mit.edu/bazel.html?highlight=bazel).
@@ -17,10 +17,10 @@ bazel build //tools:drake_visualizer
 Ensure that you have set your
 [PYTHONPATH](http://drake.mit.edu/python_bindings.html?highlight=python).
 
-All instructions assume that you are launching from the `drake-distro`
-directory.
+All instructions assume that you are launching from the `drake`
+workspace directory.
 ```
-cd drake-distro
+cd drake
 ```
 
 
@@ -34,16 +34,19 @@ bazel-bin/tools/drake_visualizer
 
 Launch the kuka simulation
 ```
-bazel-bin/drake/examples/kuka_iiwa_arm/kuka_simulation
+bazel-bin/examples/kuka_iiwa_arm/kuka_simulation
 ```
 
 Launch the "plan runner" (which produces position commands over time
 upon receiving a single plan message)
 ```
-bazel-bin/drake/examples/kuka_iiwa_arm/kuka_plan_runner
+bazel-bin/examples/kuka_iiwa_arm/kuka_plan_runner
+```
+
+Command the robot to move the end effector
+```
+bazel-bin/examples/kuka_iiwa_arm/move_iiwa_ee -x 0.8 -y 0.3 -z 0.25 -yaw 1.57
 ```
 
 Coming back soon - generate plans using the graphical IK interface.
 See https://github.com/RobotLocomotion/drake/issues/7321 .
-
-

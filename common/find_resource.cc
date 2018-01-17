@@ -7,6 +7,7 @@
 #include <spruce.hh>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/find_loaded_library.h"
 #include "drake/common/never_destroyed.h"
 
 using std::string;
@@ -106,7 +107,20 @@ optional<std::string> getenv_optional(const char* const name) {
   return nullopt;
 }
 
-bool is_relative_path(const string& path) {
+// If we are linked against libdrake.so, return a candidate directory based on
+// libdrake.so's path; otherwise, return nullopt.  The resulting string will
+// already end with "drake"; that is, the directory will contain files named
+// like "common/foo.txt", not "drake/common/foo.txt".
+optional<std::string>  GetCandidateDirFromLibdrake() {
+  optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake.so");
+  if (libdrake_dir) {
+    libdrake_dir = libdrake_dir.value() + "/../share/drake/drake";
+  }
+  return libdrake_dir;
+}
+
+// Returns true iff the path is relative (not absolute).
+bool IsRelativePath(const string& path) {
   // TODO(jwnimmer-tri) Prevent .. escape?
   return !path.empty() && (path[0] != '/');
 }
@@ -114,9 +128,9 @@ bool is_relative_path(const string& path) {
 // Returns the absolute_path iff the `$dirpath/$relpath` exists, else nullopt.
 // As a convenience to callers, if `dirpath` is nullopt, the result is nullopt.
 // (To inquire about an empty `dirpath`, pass the empty string, not nullopt.)
-optional<string> file_exists(
+optional<string> FileExists(
     const optional<string>& dirpath, const string& relpath) {
-  DRAKE_ASSERT(is_relative_path(relpath));
+  DRAKE_ASSERT(IsRelativePath(relpath));
   if (!dirpath) { return nullopt; }
   const spruce::path dir_query(*dirpath);
   if (!dir_query.isDir()) { return nullopt; }
@@ -125,18 +139,37 @@ optional<string> file_exists(
   return file_query.getStr();
 }
 
-optional<string> check_candidate_dir(const spruce::path& candidate_dir) {
-  // If we found the sentinel, we win.
-  spruce::path candidate_file = candidate_dir;
-  candidate_file.append("drake/.drake-find_resource-sentinel");
-  if (candidate_file.isFile()) {
-    return candidate_dir.getStr();
+// Given a path like /foo/bar, returns the path /foo/bar/drake.
+// Iff the path is nullopt, then the result is nullopt.
+optional<string> AppendDrakeTo(const optional<string>& path) {
+  if (path) {
+    spruce::path result = *path;
+    result.append("drake");
+    return result.getStr();
   }
-
   return nullopt;
 }
 
-optional<string> find_sentinel_dir() {
+// Returns candidate_dir iff it exists and contains our sentinel file.
+// Candidate paths will already end with "drake" as their final path element,
+// or possibly a related name like "drake2"; that is, they will contain files
+// named like "common/foo.txt", not "drake/common/foo.txt".
+optional<string> CheckCandidateDir(const spruce::path& candidate_dir) {
+  // If we found the sentinel, we win.
+  spruce::path candidate_file = candidate_dir;
+  candidate_file.append(".drake-find_resource-sentinel");
+  if (candidate_file.isFile()) {
+    return candidate_dir.getStr();
+  }
+  return nullopt;
+}
+
+// Returns the directory that contains our sentinel file, searching from the
+// current directory and working up through all transitive parent directories
+// up to "/".  Candidate paths will already end with "drake" as their final
+// path element, or possibly a related name like "drake2"; that is, they will
+// contain files named like "common/foo.txt", not "drake/common/foo.txt".
+optional<string> FindSentinelDir() {
   spruce::path candidate_dir;
   candidate_dir.setAsCurrent();
   int num_attempts = 0;
@@ -150,7 +183,7 @@ optional<string> find_sentinel_dir() {
     }
 
     // If we found the sentinel, we win.
-    optional<string> result = check_candidate_dir(candidate_dir);
+    optional<string> result = CheckCandidateDir(candidate_dir);
     if (result) {
       return result;
     }
@@ -191,7 +224,7 @@ Result FindResource(string resource_path) {
   // to drake::FindResource to start with "drake" is redundant, but preserves
   // compatibility with the original semantics of this function; if we want to
   // offer a function that takes paths without "drake", we can use a new name.
-  if (!is_relative_path(resource_path)) {
+  if (!IsRelativePath(resource_path)) {
     return Result::make_error(
         std::move(resource_path),
         "resource_path is not a relative path");
@@ -202,29 +235,37 @@ Result FindResource(string resource_path) {
         std::move(resource_path),
         "resource_path does not start with " + prefix);
   }
+  const std::string resource_path_substr = resource_path.substr(prefix.size());
 
-  // Collect a list of (priority-ordered) directories to check.
+  // Collect a list of (priority-ordered) directories to check.  Candidate
+  // paths will already end with "drake" as their final path element, or
+  // possibly a related name like "drake2"; that is, they will contain files
+  // named like "common/foo.txt", not "drake/common/foo.txt".
   std::vector<optional<string>> candidate_dirs;
 
   // (1) Search the environment variable first; if it works, it should always
   // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
-  candidate_dirs.emplace_back(getenv_optional(
-      kDrakeResourceRootEnvironmentVariableName));
+  candidate_dirs.emplace_back(AppendDrakeTo(getenv_optional(
+      kDrakeResourceRootEnvironmentVariableName)));
 
   // (2) Add the list of paths given programmatically. Paths are added only
   // if the sentinel file can be found.
   for (const auto& search_path : GetMutableResourceSearchPaths()) {
-      spruce::path candidate_dir(search_path);
-      candidate_dirs.emplace_back(check_candidate_dir(candidate_dir));
+    spruce::path candidate_dir(*AppendDrakeTo(search_path));
+    candidate_dirs.emplace_back(CheckCandidateDir(candidate_dir));
   }
 
-  // (3) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // (3) Find where `librake.so` is, and add search path that corresponds to
+  // resource folder in install tree based on `libdrake.so` location.
+  candidate_dirs.emplace_back(GetCandidateDirFromLibdrake());
+
+  // (4) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
-  candidate_dirs.emplace_back(find_sentinel_dir());
+  candidate_dirs.emplace_back(FindSentinelDir());
 
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
-    if (auto absolute_path = file_exists(candidate_dir, resource_path)) {
+    if (auto absolute_path = FileExists(candidate_dir, resource_path_substr)) {
       return Result::make_success(
           std::move(resource_path), std::move(*absolute_path));
     }

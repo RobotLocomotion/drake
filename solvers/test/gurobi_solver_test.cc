@@ -35,7 +35,8 @@ TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
     result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-    EXPECT_TRUE(std::isnan(prog_->GetOptimalCost()));
+    EXPECT_TRUE(std::isinf(prog_->GetOptimalCost()));
+    EXPECT_GE(prog_->GetOptimalCost(), 0);
   }
 }
 
@@ -50,6 +51,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
     result = solver.Solve(*prog_);
     EXPECT_EQ(result, SolutionResult::kUnbounded);
+    EXPECT_EQ(prog_->GetOptimalCost(), MathematicalProgram::kUnboundedCost);
   }
 }
 

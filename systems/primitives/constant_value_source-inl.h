@@ -18,7 +18,8 @@ namespace systems {
 template <typename T>
 ConstantValueSource<T>::ConstantValueSource(
     std::unique_ptr<AbstractValue> value)
-    : source_value_(std::move(value)) {
+    : LeafSystem<T>(SystemTypeTag<systems::ConstantValueSource>{}),
+      source_value_(std::move(value)) {
   // Use the "advanced" method to provide explicit non-member functors here
   // since we already have AbstractValues.
   this->DeclareAbstractOutputPort(
@@ -29,6 +30,11 @@ ConstantValueSource<T>::ConstantValueSource(
         output->SetFrom(*source_value_);
       });
 }
+
+template <typename T>
+template <typename U>
+ConstantValueSource<T>::ConstantValueSource(const ConstantValueSource<U>& other)
+    : ConstantValueSource<T>(other.source_value_->Clone()) {}
 
 }  // namespace systems
 }  // namespace drake

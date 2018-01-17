@@ -43,12 +43,6 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
-DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
-              "'compliant' or 'timestepping'");
-DEFINE_double(dt, 1e-3, "The step size to use for "
-              "'simulation_type=timestepping' (ignored for "
-              "'simulation_type=compliant'");
-
 namespace drake {
 namespace examples {
 namespace schunk_wsg {
@@ -101,90 +95,97 @@ class Sinusoid : public systems::LeafSystem<double> {
   double freq_{0.0}, amp_{0.0}, offset_{0.0}, tstart_{0.0};
 };
 
-// Finds the single end-effector from a RigidBodyTree and returns it. Aborts if
-// there is more than one end-effector or more than one base link.
-RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {
-  // There should only be one base body.
-  auto base_indices = tree->FindBaseBodies();
-  DRAKE_DEMAND(base_indices.size() == 1);
+// A parameterized test fixture. When instantiated with `false`, uses the
+// compliant contact model. When instantiated with `true`, uses the time
+// stepping approach.
+class SchunkWsgLiftTest : public ::testing::TestWithParam<bool> {
+ protected:
 
-  // Performs a depth first traversal of the multibody tree from the single
-  // base body. Verifies that there is only a single branch, and considers the
-  // terminal body in that branch to be the end effector.
-  std::vector<int> end_effectors;
-  std::queue<int> q;
-  q.push(base_indices.front());
-  while (!q.empty()) {
-    int index = q.front();
-    q.pop();
-    auto children = tree->FindChildrenOfBody(index);
-    if (children.empty()) {
-      end_effectors.push_back(index);
-    } else {
-      for (auto i : children)
-        q.push(i);
+  // Finds the single end-effector from a RigidBodyTree and returns it. Aborts 
+  // if there is more than one end-effector or more than one base link.
+  RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {
+    // There should only be one base body.
+    auto base_indices = tree->FindBaseBodies();
+    DRAKE_DEMAND(base_indices.size() == 1);
+
+    // Performs a depth first traversal of the multibody tree from the single
+    // base body. Verifies that there is only a single branch, and considers the
+    // terminal body in that branch to be the end effector.
+    std::vector<int> end_effectors;
+    std::queue<int> q;
+    q.push(base_indices.front());
+    while (!q.empty()) {
+      int index = q.front();
+      q.pop();
+      auto children = tree->FindChildrenOfBody(index);
+      if (children.empty()) {
+        end_effectors.push_back(index);
+      } else {
+        for (auto i : children)
+          q.push(i);
+      }
     }
+
+    DRAKE_DEMAND(end_effectors.size() == 1);
+    return tree->get_mutable_body(end_effectors.front());
   }
 
-  DRAKE_DEMAND(end_effectors.size() == 1);
-  return tree->get_mutable_body(end_effectors.front());
-}
+  std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
+      int* lifter_instance_id, int* gripper_instance_id) {
+    std::unique_ptr<RigidBodyTreed> tree = std::make_unique<RigidBodyTreed>();
+    multibody::AddFlatTerrainToWorld(tree.get());
 
-std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
-    int* lifter_instance_id, int* gripper_instance_id) {
-  std::unique_ptr<RigidBodyTreed> tree = std::make_unique<RigidBodyTreed>();
-  multibody::AddFlatTerrainToWorld(tree.get());
+    // Add a joint to the world which can lift the gripper.
+    const auto lifter_id_table =
+        parsers::sdf::AddModelInstancesFromSdfFile(
+        FindResourceOrThrow(
+            "drake/examples/schunk_wsg/test/test_lifter.sdf"),
+        multibody::joints::kFixed, nullptr, tree.get());
+    EXPECT_EQ(lifter_id_table.size(), 1);
+    *lifter_instance_id = lifter_id_table.begin()->second;
 
-  // Add a joint to the world which can lift the gripper.
-  const auto lifter_id_table =
-      parsers::sdf::AddModelInstancesFromSdfFile(
-      FindResourceOrThrow(
-          "drake/examples/schunk_wsg/test/test_lifter.sdf"),
-      multibody::joints::kFixed, nullptr, tree.get());
-  EXPECT_EQ(lifter_id_table.size(), 1);
-  *lifter_instance_id = lifter_id_table.begin()->second;
+    // Get the end-effector link.
+    RigidBody<double>* ee = FindEndEffector(tree.get());
 
-  // Get the end-effector link.
-  RigidBody<double>* ee = FindEndEffector(tree.get());
+    // Add the gripper.  Offset it slightly back and up so that we can
+    // locate the target at the origin.
+    auto gripper_frame = std::allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(), "link_frame",
+        ee, Eigen::Vector3d(0, -0.05, 0.05),
+        Eigen::Vector3d::Zero());
+    const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
+        FindResourceOrThrow(
+            "drake/manipulation/models/wsg_50_description/sdf/"
+            "schunk_wsg_50_ball_contact.sdf"),
+        multibody::joints::kFixed, gripper_frame, tree.get());
+    EXPECT_EQ(gripper_id_table.size(), 1);
+    *gripper_instance_id = gripper_id_table.begin()->second;
 
-  // Add the gripper.  Offset it slightly back and up so that we can
-  // locate the target at the origin.
-  auto gripper_frame = std::allocate_shared<RigidBodyFrame<double>>(
-      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "link_frame",
-      ee, Eigen::Vector3d(0, -0.05, 0.05),
-      Eigen::Vector3d::Zero());
-  const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
-      FindResourceOrThrow(
-          "drake/manipulation/models/wsg_50_description/sdf/"
-          "schunk_wsg_50_ball_contact.sdf"),
-      multibody::joints::kFixed, gripper_frame, tree.get());
-  EXPECT_EQ(gripper_id_table.size(), 1);
-  *gripper_instance_id = gripper_id_table.begin()->second;
+    // Add a box to grip.
+    auto box_frame = std::allocate_shared<RigidBodyFrame<double>>(
+        Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
+        nullptr,
+        Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d::Zero());
+    parsers::urdf::AddModelInstanceFromUrdfFile(
+        FindResourceOrThrow("drake/multibody/models/box_small.urdf"),
+        multibody::joints::kQuaternion, box_frame, tree.get());
 
-  // Add a box to grip.
-  auto box_frame = std::allocate_shared<RigidBodyFrame<double>>(
-      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world",
-      nullptr,
-      Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d::Zero());
-  parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow("drake/multibody/models/box_small.urdf"),
-      multibody::joints::kQuaternion, box_frame, tree.get());
+    tree->compile();
+    return tree;
+  }
+};
 
-  tree->compile();
-  return tree;
-}
-
-GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
+TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   systems::DiagramBuilder<double> builder;
 
   int lifter_instance_id{};
   int gripper_instance_id{};
-  if (FLAGS_simulation_type != "timestepping")
-    FLAGS_dt = 0.0;
+
+  const double timestep = (GetParam()) ? 5e-3 : 0.0;
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id),
-          FLAGS_dt);
+          timestep);
   plant->set_name("plant");
 
   ASSERT_GE(plant->get_num_actuators(), 2);
@@ -202,9 +203,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   plant->set_default_compliant_material(default_material);
 
   const double kVStictionTolerance = 0.01;  // m/s
-  const double kContactArea = 2e-4;  // m^2
+  const double kContactRadius = 2e-4;  // m
   systems::CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = kContactArea;
+  model_parameters.characteristic_radius = kContactRadius;
   model_parameters.v_stiction_tolerance = kVStictionTolerance;
   plant->set_contact_model_parameters(model_parameters);
 
@@ -518,6 +519,10 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kMeanSlipSpeed = distance / kLiftDuration;
   EXPECT_LT(kMeanSlipSpeed, kVStictionTolerance);
 }
+
+// Instantiate the tests.
+INSTANTIATE_TEST_CASE_P(CompliantAndTimeSteppingTest, SchunkWsgLiftTest,
+                        ::testing::Bool());
 
 }  // namespace
 }  // namespace schunk_wsg

@@ -191,6 +191,8 @@ int DoMain() {
                   iiwa_status_sender->get_state_input_port());
   builder.Connect(iiwa_command_receiver->get_output_port(0),
                   iiwa_status_sender->get_command_input_port());
+  builder.Connect(model->get_output_port_computed_torque(),
+                  iiwa_status_sender->get_torque_commanded_input_port());
   builder.Connect(iiwa_status_sender->get_output_port(0),
                   iiwa_status_pub->get_input_port(0));
 

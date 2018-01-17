@@ -18,7 +18,6 @@
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/util/lcmUtil.h"
 
 namespace drake {
@@ -94,9 +93,6 @@ class WorldStateSubscriber {
   std::list<lcm::Subscription*> lcm_subscriptions_;
 };
 
-
-using manipulation::planner::ConstraintRelaxingIk;
-
 // Makes a state machine that drives the iiwa to pick up a block from one table
 // and place it on the other table.
 void RunPickAndPlaceDemo() {
@@ -116,10 +112,6 @@ void RunPickAndPlaceDemo() {
          env_state.get_obj_time() == -1 || env_state.get_wsg_time() == -1) {
   }
 
-  // Makes a planner.
-  const Isometry3<double>& iiwa_base = env_state.get_iiwa_base();
-  ConstraintRelaxingIk planner(
-      iiwa_absolute_path, iiwa_end_effector_name, iiwa_base);
   PickAndPlaceStateMachine::IiwaPublishCallback iiwa_callback =
       ([&](const robotlocomotion::robot_plan_t* plan) {
         lcm.publish("COMMITTED_ROBOT_PLAN", plan);

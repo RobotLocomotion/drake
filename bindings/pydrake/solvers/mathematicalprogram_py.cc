@@ -5,7 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/bindings/pydrake/symbolic_types_py.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_type_converter.h"
 

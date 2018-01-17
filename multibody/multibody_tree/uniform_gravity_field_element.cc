@@ -16,8 +16,10 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     const MultibodyTreeContext<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>&,
-    std::vector<SpatialForce<T>>* F_Bo_W_array,
-    EigenPtr<VectorX<T>>) const {
+    MultibodyForces<T>* forces) const {
+  // Alias to the array of applied body forces:
+  std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
+
   // Add the force of gravity contribution for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
@@ -37,7 +39,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
 
     const Vector3<T> f_Bcm_W = mass * gravity_vector();
     const SpatialForce<T> F_Bo_W(p_BoBcm_W.cross(f_Bcm_W), f_Bcm_W);
-    F_Bo_W_array->at(node_index) += F_Bo_W;
+    F_Bo_W_array[node_index] += F_Bo_W;
   }
 }
 

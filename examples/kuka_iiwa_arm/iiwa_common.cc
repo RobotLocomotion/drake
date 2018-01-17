@@ -32,6 +32,21 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+VectorX<double> get_iiwa_max_joint_velocities() {
+  // These are the maximum joint velocities given in Section 4.3.2 "Axis data,
+  // LBR iiwa 14 R820" of the "LBR iiwa 7 R800, LBR iiwa 14 R820 Specification".
+  // That document is available here:
+  // https://www.kuka.com/-/media/kuka-downloads/imported/48ec812b1b2947898ac2598aff70abc0/spez_lbr_iiwa_en.pdf
+  return (VectorX<double>(7) << 1.483529,  //  85°/s in rad/s
+          1.483529,                        //  85°/s in rad/s
+          1.745329,                        // 100°/s in rad/s
+          1.308996,                        //  75°/s in rad/s
+          2.268928,                        // 130°/s in rad/s
+          2.356194,                        // 135°/s in rad/s
+          2.356194)                        // 135°/s in rad/s
+      .finished();
+}
+
 template <typename T>
 Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
     const RigidBodyTree<T>& world_tree,
@@ -121,8 +136,7 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
   *Ki = Eigen::VectorXd::Zero(7);
 }
 
-void ApplyJointVelocityLimits(double max_joint_velocity,
-                              const MatrixX<double>& keyframes,
+void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
                               std::vector<double>* time) {
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time->size()));
 
@@ -141,15 +155,27 @@ void ApplyJointVelocityLimits(double max_joint_velocity,
     }
   }
 
-  // The code below slows the entire plan such that the fastest step
-  // meets the limits.  If that step is much faster than the others,
-  // the whole plan becomes very slow.
-  const double max_plan_velocity = velocities.maxCoeff();
-  if (max_plan_velocity > max_joint_velocity) {
-    drake::log()->debug("Slowing plan by {}",
-                        max_plan_velocity / max_joint_velocity);
+  DRAKE_ASSERT(velocities.rows() == kIiwaArmNumJoints);
+
+  Eigen::VectorXd velocity_ratios(velocities.rows());
+
+  const VectorX<double> iiwa_max_joint_velocities =
+      get_iiwa_max_joint_velocities();
+  for (int i = 0; i < velocities.rows(); i++) {
+    const double max_plan_velocity = velocities.row(i).maxCoeff();
+    // Maybe don't try max velocity at first...
+    velocity_ratios(i) =
+        max_plan_velocity / (iiwa_max_joint_velocities[i] * 0.9);
+  }
+
+  const double max_velocity_ratio = velocity_ratios.maxCoeff();
+  if (max_velocity_ratio > 1) {
+    // The code below slows the entire plan such that the fastest step
+    // meets the limits.  If that step is much faster than the others,
+    // the whole plan becomes very slow.
+    drake::log()->debug("Slowing plan by {}", max_velocity_ratio);
     for (int j = 0; j < num_time_steps; j++) {
-      (*time)[j] *= max_plan_velocity / max_joint_velocity;
+      (*time)[j] *= max_velocity_ratio;
     }
   }
 }
@@ -160,10 +186,25 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
     const std::vector<double>& time,
     const std::vector<int>& info,
     const MatrixX<double>& keyframes) {
+  const int num_positions = robot.get_num_positions();
+  DRAKE_DEMAND(keyframes.rows() == num_positions);
+  std::vector<std::string> joint_names(num_positions);
+  for (int i = 0; i < num_positions; ++i) {
+    joint_names[i] = robot.get_position_name(i);
+  }
+
+  return EncodeKeyFrames(joint_names, time, info, keyframes);
+}
+
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const std::vector<std::string>& joint_names,
+    const std::vector<double>& time,
+    const std::vector<int>& info,
+    const MatrixX<double>& keyframes) {
 
   DRAKE_DEMAND(info.size() == time.size());
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
-  DRAKE_DEMAND(keyframes.rows() == robot.get_num_positions());
+  DRAKE_DEMAND(keyframes.rows() == static_cast<int>(joint_names.size()));
 
   const int num_time_steps = keyframes.cols();
 
@@ -181,7 +222,7 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
     step.utime = time[i] * 1e6;
     step.num_joints = keyframes.rows();
     for (int j = 0; j < step.num_joints; j++) {
-      step.joint_name.push_back(robot.get_position_name(j));
+      step.joint_name.push_back(joint_names[j]);
       step.joint_position.push_back(keyframes(j, i));
       step.joint_velocity.push_back(0);
       step.joint_effort.push_back(0);

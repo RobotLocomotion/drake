@@ -53,9 +53,6 @@ class Monomial {
   /** Returns the total degree of this Monomial. */
   int total_degree() const { return total_degree_; }
 
-  /** Returns hash value. */
-  size_t GetHash() const;
-
   /** Returns the set of variables in this monomial. */
   Variables GetVariables() const;
 
@@ -105,6 +102,16 @@ class Monomial {
    */
   Monomial& pow_in_place(int p);
 
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const Monomial& item) noexcept {
+    using drake::hash_append;
+    // We do not send total_degree_ to the hasher, because it is already fully
+    // represented by powers_ -- it is just a cached tally of the exponents.
+    hash_append(hasher, item.powers_);
+  }
+
  private:
   int total_degree_{0};
   std::map<Variable, int> powers_;
@@ -121,14 +128,14 @@ Monomial operator*(Monomial m1, const Monomial& m2);
  */
 Monomial pow(Monomial m, int p);
 }  // namespace symbolic
-
-/** Computes the hash value of a Monomial. */
-template <>
-struct hash_value<symbolic::Monomial> {
-  size_t operator()(const symbolic::Monomial& m) const { return m.GetHash(); }
-};
-
 }  // namespace drake
+
+namespace std {
+/* Provides std::hash<drake::symbolic::Monomial>. */
+template <>
+struct hash<drake::symbolic::Monomial>
+    : public drake::DefaultHash {};
+}  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {

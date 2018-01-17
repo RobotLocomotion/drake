@@ -355,7 +355,9 @@ def drake_cc_binary(
         data = [],
         deps = [],
         copts = [],
+        linkopts = [],
         gcc_copts = [],
+        linkshared = 0,
         linkstatic = 1,
         testonly = 0,
         add_test_rule = 0,
@@ -385,6 +387,21 @@ def drake_cc_binary(
         copts = new_copts,
         testonly = testonly,
         **kwargs)
+    if linkshared == 1:
+        # On Linux, we need to disable "new" dtags in the linker so that we use
+        # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is
+        # checked *before* LD_LIBRARY_PATH, which is important to avoid using
+        # the MATLAB versions of certain libraries (protobuf).  macOS doesn't
+        # understand this flag, so it is conditional on Linux only.  Note that
+        # the string we use for rpath here doesn't actually matter; it will be
+        # replaced during installation later.
+        linkopts = select({
+            "//tools/cc_toolchain:apple": linkopts,
+            "//conditions:default": linkopts + [
+                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
+            ],
+        })
+
     native.cc_binary(
         name = name,
         srcs = new_srcs,
@@ -392,7 +409,9 @@ def drake_cc_binary(
         deps = new_deps,
         copts = new_copts,
         testonly = testonly,
+        linkshared = linkshared,
         linkstatic = linkstatic,
+        linkopts = linkopts,
         **kwargs)
 
     # Also generate the OS X debug symbol file for this binary.
@@ -512,4 +531,51 @@ def drake_cc_googletest(
     drake_cc_test(
         name = name,
         deps = deps,
+        **kwargs)
+
+def drake_example_cc_binary(
+        srcs = [],
+        deps = [],
+        **kwargs):
+    """Creates a rule to declare a C++ binary using `libdrake.so`.
+
+    This rule is a wrapper around `drake_cc_binary()`. It adds `libdrake.so`
+    and `drake_lcmtypes_headers` as dependencies to the target.
+
+    This allows the creation of examples for drake that depend on `libdrake.so`
+    which let the process discover the location of drake resources at runtime
+    based on the location of `libdrake.so` which is loaded by the process.
+
+    This macro will fail-fast if there is ODR violation. This happens if this
+    macro adds dependendies (`deps` or `srcs`) that are already part of
+    libdrake.so or drake_lcmtypes_headers.
+    """
+    if not native.package_name().startswith("examples"):
+        fail("`drake_example_cc_binary()` macro should only be used in examples \
+            subdirectory.")
+    # This verifies that there is no ODR violation. Targets that are part of
+    # libdrake should not be included a second time. Only targets that are in
+    # //examples (historically //drake/examples) or in the workspace can be
+    # added as dependencies. By extension, this makes sure that
+    # //tools/install/libdrake:drake_shared_library is not added as a
+    # dependency a second time.
+    for dep in deps:
+        if not (dep.startswith('@') or
+                dep.startswith(':') or
+                dep.startswith('//examples') or
+                dep.startswith('//drake/examples')):
+            fail("Dependency used in `drake_example_cc_binary()` macro should\
+                not already be part of libdrake.so: %s" % dep)
+    # This makes sure that //tools/install/libdrake:libdrake.so and
+    # //lcmtypes:drake_lcmtypes_headers are not added to srcs a second time.
+    if ("//tools/install/libdrake:libdrake.so" in srcs or
+            "//lcmtypes:drake_lcmtypes_headers"in srcs):
+        fail("//tools/install/libdrake:libdrake.so and \
+            //lcmtypes:drake_lcmtypes_headers are already included in \
+            `drake_example_cc_binary()` macro")
+    drake_cc_binary(
+        srcs = srcs +
+        ["//tools/install/libdrake:libdrake.so",
+         "//lcmtypes:drake_lcmtypes_headers"],
+        deps = deps + ["//tools/install/libdrake:drake_shared_library"],
         **kwargs)

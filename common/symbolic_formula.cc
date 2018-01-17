@@ -34,9 +34,10 @@ FormulaKind Formula::get_kind() const {
   return ptr_->get_kind();
 }
 
-size_t Formula::get_hash() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->get_hash();
+void Formula::HashAppend(DelegatingHasher* hasher) const {
+  using drake::hash_append;
+  hash_append(*hasher, get_kind());
+  ptr_->HashAppendDetail(hasher);
 }
 
 Variables Formula::GetFreeVariables() const {
@@ -52,9 +53,6 @@ bool Formula::EqualTo(const Formula& f) const {
     return true;
   }
   if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  if (get_hash() != f.get_hash()) {
     return false;
   }
   // Same kind/hash, but it could be the result of hash collision,

@@ -25,6 +25,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/test/generic_trivial_constraints.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -385,6 +386,78 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable8) {
                      false, MathematicalProgram::VarType::BINARY);
 }
 
+GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
+  // Call AddVariable on an empty program.
+  MathematicalProgram prog;
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  const Variable x2("x2", Variable::Type::BINARY);
+  prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x2));
+  EXPECT_EQ(prog.num_vars(), 3);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x0), 0);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 1);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 2);
+  EXPECT_EQ(prog.initial_guess().rows(), 3);
+  EXPECT_EQ(prog.decision_variables().rows(), 3);
+  const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
+  prog.SetDecisionVariableValues(Vector3<double>::Zero());
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
+    EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
+  }
+}
+
+GTEST_TEST(testAddDecisionVariables, AddVariable2) {
+  // Call AddDecisionVariables on a program that has some existing variables.
+  MathematicalProgram prog;
+  auto y = prog.NewContinuousVariables<3>("y");
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  const Variable x2("x2", Variable::Type::BINARY);
+  prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x2));
+  EXPECT_EQ(prog.num_vars(), 6);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x0), 3);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
+  EXPECT_EQ(prog.initial_guess().rows(), 6);
+  prog.SetDecisionVariableValues(Vector6<double>::Zero());
+  VectorDecisionVariable<6> vars_expected;
+  vars_expected << y, x0, x1, x2;
+  for (int i = 0; i < 6; ++i) {
+    EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
+    EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
+  }
+}
+
+GTEST_TEST(testAddDecisionVariables, AddVariable3) {
+  // Test the error inputs.
+  MathematicalProgram prog;
+  auto y = prog.NewContinuousVariables<3>("y");
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  // Call AddDecisionVariables on a program that has some existing variables,
+  // and the
+  // new variables intersects with the existing variables.
+  EXPECT_THROW(
+      prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, y(0))),
+      std::runtime_error);
+  // The newly added variables have duplicated entries.
+  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x0)),
+               std::runtime_error);
+  // The newly added variables contain a dummy variable.
+  Variable dummy;
+  EXPECT_TRUE(dummy.is_dummy());
+  EXPECT_THROW(
+      prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, dummy)),
+      std::runtime_error);
+  auto z = prog.NewIndeterminates<2>("z");
+  // Call AddDecisionVariables on a program that has some indeterminates, and
+  // the new
+  // variables intersects with the indeterminates.
+  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<2>(x0, z(0))),
+               std::runtime_error);
+}
+
 GTEST_TEST(testAddIndeterminates, testAddIndeterminates1) {
   // Adds a dynamic-sized matrix of Indeterminates.
   MathematicalProgram prog;
@@ -447,6 +520,61 @@ CheckGetSolution(const MathematicalProgram& prog,
   }
 }
 
+GTEST_TEST(testAddIndeterminates, AddIndeterminates1) {
+  // Call AddIndeterminates on an empty program.
+  MathematicalProgram prog;
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  const Variable x2("x2", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminates(VectorIndeterminate<3>(x0, x1, x2));
+  const VectorIndeterminate<3> indeterminates_expected(x0, x1, x2);
+  EXPECT_EQ(prog.indeterminates().rows(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(prog.indeterminates()(i).equal_to(indeterminates_expected(i)));
+    EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates_expected(i)), i);
+  }
+}
+
+GTEST_TEST(testAddIndeterminates, AddIndeterminates2) {
+  // Call AddIndeterminates on a program with some indeterminates.
+  MathematicalProgram prog;
+  auto y = prog.NewIndeterminates<2>("y");
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  const Variable x2("x2", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminates(VectorIndeterminate<3>(x0, x1, x2));
+  VectorIndeterminate<5> indeterminates_expected;
+  indeterminates_expected << y(0), y(1), x0, x1, x2;
+  EXPECT_EQ(prog.indeterminates().rows(), 5);
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_TRUE(prog.indeterminates()(i).equal_to(indeterminates_expected(i)));
+    EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates_expected(i)), i);
+  }
+}
+
+GTEST_TEST(testAddIndeterminates, AddIndeterminates3) {
+  // Call with erroneous inputs.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::BINARY);
+  // Call AddIndeterminates with a input that intersects with old
+  // indeterminates.
+  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, y(0))),
+               std::runtime_error);
+  // Call AddIndeterminates with a input that intersects with old decision
+  // variables.
+  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, x(0))),
+               std::runtime_error);
+  // Call AddIndeterminates with a input of type BINARY.
+  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, x1)),
+               std::runtime_error);
+  // Call AddIndeterminates with a dummy variable.
+  Variable dummy;
+  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
+               std::runtime_error);
+}
 GTEST_TEST(testGetSolution, testSetSolution1) {
   // Tests setting and getting solution for
   // 1. A static-sized  matrix of decision variables.
@@ -506,8 +634,7 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
   using internal::CreateBinding;
   auto c = make_shared<C>(std::forward<Args>(args)...);
   VectorXDecisionVariable x(num_var);
-  for (int i = 0; i < num_var; ++i)
-    x(i) = Variable("bad" + std::to_string(i));
+  for (int i = 0; i < num_var; ++i) x(i) = Variable("bad" + std::to_string(i));
   // Use minimal call site (directly on adding Binding<C>).
   // TODO(eric.cousineau): Check if there is a way to parse the error text to
   // ensure that we are capturing the correct error.
@@ -1984,11 +2111,11 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
   // The quadratic expression is actually affine.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0), 3 * x_(1) + 2),
                runtime_error);
-  EXPECT_THROW(
-      prog_.AddLorentzConeConstraint(
-          2 * x_(0), x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
-                         x_(0) * x_(0) + 2 * x_(1) + 3),
-      runtime_error);
+  EXPECT_THROW(prog_.AddLorentzConeConstraint(
+                   2 * x_(0),
+                   x_(1) * x_(1) - (x_(1) - x_(0)) * (x_(1) + x_(0)) -
+                       x_(0) * x_(0) + 2 * x_(1) + 3),
+               runtime_error);
 
   // The Hessian matrix is not positive semidefinite.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
@@ -2012,10 +2139,11 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
                runtime_error);
 
   // The quadratic expression is a negative constant.
-  EXPECT_THROW(prog_.AddLorentzConeConstraint(
-                   2 * x_(0) + 3, pow(x_(0), 2) - pow(x_(1), 2) -
-                                      (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
-               runtime_error);
+  EXPECT_THROW(
+      prog_.AddLorentzConeConstraint(2 * x_(0) + 3,
+                                     pow(x_(0), 2) - pow(x_(1), 2) -
+                                         (x_(0) + x_(1)) * (x_(0) - x_(1)) - 1),
+      runtime_error);
 
   // The first expression is not actually linear.
   EXPECT_THROW(prog_.AddLorentzConeConstraint(2 * x_(0) * x_(1), pow(x_(0), 2)),
@@ -2101,8 +2229,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
                                       symbolic::Polynomial(z(1)), tol));
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(quadratic_expression),
-      symbolic::Polynomial(z.tail(z.rows() - 2).squaredNorm()),
-      tol));
+      symbolic::Polynomial(z.tail(z.rows() - 2).squaredNorm()), tol));
 }
 
 namespace {
@@ -2443,6 +2570,118 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
 }
 
+GTEST_TEST(testMathematicalProgram, testClone) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  auto X = prog.NewSymmetricContinuousVariables<3>("X");
+
+  // Add costs
+  shared_ptr<Cost> generic_trivial_cost1 = make_shared<GenericTrivialCost1>();
+  prog.AddCost(Binding<Cost>(generic_trivial_cost1,
+                             VectorDecisionVariable<3>(x(0), x(1), x(2))));
+  GenericTrivialCost2 generic_trivial_cost2;
+  prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(2), x(1)));
+  prog.AddLinearCost(x(0) + 2);
+  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
+  prog.AddLinearCost(x(0) + 2 * x(2));
+  prog.AddQuadraticCost(x(1) * x(1) + 1);
+
+  // Add constraints
+  shared_ptr<Constraint> generic_trivial_constraint1 =
+      make_shared<GenericTrivialConstraint1>();
+  prog.AddConstraint(
+      Binding<Constraint>(generic_trivial_constraint1,
+                          VectorDecisionVariable<3>(x(0), x(1), x(2))));
+  prog.AddConstraint(
+      Binding<Constraint>(generic_trivial_constraint1,
+                          VectorDecisionVariable<3>(x(2), x(1), x(0))));
+  prog.AddLinearConstraint(x(0) + x(1) <= 2);
+  prog.AddLinearConstraint(x(1) + x(2) <= 1);
+  prog.AddLinearEqualityConstraint(x(0) + x(2) == 0);
+  prog.AddLinearEqualityConstraint(x(0) + x(1) + 3 * x(2) == 1);
+  prog.AddBoundingBoxConstraint(-10, 10, x(0));
+  prog.AddBoundingBoxConstraint(-4, 5, x(1));
+  prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(+x(0), +x(1), x(2) - 0.5 * x(1)));
+  prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(x(0) + x(1), +x(0), x(2) - x(1)));
+  prog.AddRotatedLorentzConeConstraint(Vector4<symbolic::Expression>(
+      +x(0), +x(1), 0.5 * (x(0) + x(1)), 0.5 * x(2)));
+  prog.AddRotatedLorentzConeConstraint(
+      Vector4<symbolic::Expression>(x(0) + x(1), x(1) + x(2), +x(0), +x(1)));
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddPositiveSemidefiniteConstraint(X - Eigen::Matrix3d::Ones());
+  prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
+       2 * Eigen::Matrix2d::Ones()},
+      x.head<2>());
+  prog.AddLinearComplementarityConstraint(Eigen::Matrix2d::Identity(),
+                                          Eigen::Vector2d::Ones(), x.head<2>());
+  prog.AddLinearComplementarityConstraint(2 * Eigen::Matrix2d::Identity(),
+                                          Eigen::Vector2d::Ones(), x.tail<2>());
+
+  // Set initial guess
+  prog.SetInitialGuessForAllVariables(Eigen::VectorXd::Ones(prog.num_vars()));
+
+  auto new_prog = prog.Clone();
+
+  // Cloned program should have the same variables and indeterminates.
+  EXPECT_EQ(prog.num_vars(), new_prog->num_vars());
+  EXPECT_EQ(prog.num_indeterminates(), new_prog->num_indeterminates());
+  for (int i = 0; i < prog.num_vars(); ++i) {
+    EXPECT_TRUE(
+        prog.decision_variable(i).equal_to(new_prog->decision_variable(i)));
+    EXPECT_EQ(prog.FindDecisionVariableIndex(prog.decision_variable(i)),
+              new_prog->FindDecisionVariableIndex(prog.decision_variable(i)));
+    // Cloned program has all variable values set to NaN.
+    EXPECT_TRUE(
+        std::isnan(new_prog->GetSolution(new_prog->decision_variable(i))));
+  }
+  for (int i = 0; i < prog.num_indeterminates(); ++i) {
+    EXPECT_TRUE(prog.indeterminate(i).equal_to(new_prog->indeterminate(i)));
+    EXPECT_EQ(prog.FindIndeterminateIndex(prog.indeterminate((i))),
+              new_prog->FindIndeterminateIndex(prog.indeterminate(i)));
+  }
+
+  // Cloned program should have the same costs.
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.generic_costs(), new_prog->generic_costs()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_costs(), new_prog->linear_costs()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.quadratic_costs(),
+                                     new_prog->quadratic_costs()));
+
+  // Cloned program should have the same constraints.
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.generic_constraints(),
+                                     new_prog->generic_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.linear_constraints(),
+                                     new_prog->linear_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.linear_equality_constraints(),
+                                     new_prog->linear_equality_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.bounding_box_constraints(),
+                                     new_prog->bounding_box_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.lorentz_cone_constraints(),
+                                     new_prog->lorentz_cone_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.rotated_lorentz_cone_constraints(),
+                             new_prog->rotated_lorentz_cone_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.positive_semidefinite_constraints(),
+                             new_prog->positive_semidefinite_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_matrix_inequality_constraints(),
+                             new_prog->linear_matrix_inequality_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_matrix_inequality_constraints(),
+                             new_prog->linear_matrix_inequality_constraints()));
+  EXPECT_TRUE(
+      IsVectorOfBindingEqual(prog.linear_complementarity_constraints(),
+                             new_prog->linear_complementarity_constraints()));
+
+  EXPECT_TRUE(CompareMatrices(new_prog->initial_guess(), prog.initial_guess()));
+  EXPECT_EQ(new_prog->GetSolverId(), prog.GetSolverId());
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

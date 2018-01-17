@@ -128,6 +128,8 @@ int DoMain() {
                         status_sender->get_command_input_port());
   base_builder->Connect(status_sender->get_output_port(0),
                         status_pub->get_input_port(0));
+  base_builder->Connect(controller->get_output_port_control(),
+                        status_sender->get_torque_commanded_input_port());
 
   if (FLAGS_visualize_frames) {
     // TODO(sam.creasey) This try/catch block is here because even

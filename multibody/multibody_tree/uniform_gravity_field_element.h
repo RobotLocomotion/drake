@@ -35,6 +35,12 @@ class UniformGravityFieldElement : public ForceElement<T> {
   /// W.
   const Vector3<double>& gravity_vector() const { return g_W_; }
 
+  /// Computes the total potential energy of all bodies in the model in this
+  /// uniform gravity field. The definition of potential energy allows to
+  /// arbitrarily choose the zero energy height. This element takes the zero
+  /// energy height to be the same as the world's height. That is, a body
+  /// will have zero potential energy when its the height of its center of mass
+  /// is at the world's origin.
   T CalcPotentialEnergy(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc) const final;
@@ -54,8 +60,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_B_W,
-      EigenPtr<VectorX<T>> tau) const final;
+      MultibodyForces<T>* forces) const final;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;

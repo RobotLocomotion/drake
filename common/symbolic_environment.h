@@ -59,9 +59,7 @@ class Environment {
 
   typedef Variable key_type;
   typedef double mapped_type;
-  typedef
-      typename std::unordered_map<key_type, mapped_type, hash_value<key_type>>
-          map;
+  typedef typename std::unordered_map<key_type, mapped_type> map;
   /** std::pair<key_type, mapped_type> */
   typedef typename map::value_type value_type;
   typedef typename map::iterator iterator;
@@ -113,6 +111,10 @@ class Environment {
    *  @p key, performing an insertion if such key does not already exist.
    */
   mapped_type& operator[](const key_type& key);
+
+  /** As above, but returns a constref and does not perform an insertion
+   * (throwing a runtime error instead) if the key does not exist. */
+  const mapped_type& operator[](const key_type& key) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Environment& env);
 

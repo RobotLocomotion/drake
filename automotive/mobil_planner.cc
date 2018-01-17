@@ -28,14 +28,6 @@ using systems::rendering::PoseVector;
 
 namespace automotive {
 
-namespace {
-
-static constexpr int kIdmParamsIndex{0};
-static constexpr int kMobilParamsIndex{1};
-static constexpr double kDefaultLargeAccel{1e6};  // m/s^2
-
-}  // namespace
-
 template <typename T>
 MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s)
     : road_(road),

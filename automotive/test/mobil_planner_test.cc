@@ -174,6 +174,28 @@ TEST_F(MobilPlannerTest, Topology) {
   EXPECT_EQ(systems::kAbstractValued, lane_output_port.get_data_type());
 }
 
+// Tests that the parameters index getters access the correct parameter groups.
+TEST_F(MobilPlannerTest, MutableParameterAccessors) {
+  InitializeDragway(2 /* num_lanes */);
+  InitializeMobilPlanner(true /* initial_with_s */);
+
+  ASSERT_EQ(2, context_->num_numeric_parameters());
+  const auto mobil = dynamic_cast<const MobilPlanner<double>*>(dut_.get());
+
+  auto& mobil_params = mobil->get_mutable_mobil_params(context_.get());
+  EXPECT_EQ(MobilPlannerParametersIndices::kNumCoordinates,
+            mobil_params.size());
+  EXPECT_TRUE(MobilPlannerParametersIndices::GetCoordinateNames() ==
+              mobil_params.GetCoordinateNames());
+  mobil_params[0] = 42.;
+
+  auto& idm_params = mobil->get_mutable_idm_params(context_.get());
+  EXPECT_EQ(IdmPlannerParametersIndices::kNumCoordinates, idm_params.size());
+  EXPECT_TRUE(IdmPlannerParametersIndices::GetCoordinateNames() ==
+              idm_params.GetCoordinateNames());
+  idm_params[0] = 42.;
+}
+
 // Tests the incentive of the ego car to change lanes when tailgating a car
 // close ahead.
 TEST_F(MobilPlannerTest, IncentiveWhileTailgating) {

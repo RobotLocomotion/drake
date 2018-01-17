@@ -25,16 +25,10 @@ void Action::StartAction(double start_time) {
   act_start_time_ = start_time;
 }
 
-// This limit was chosen arbitrarily because on the physical iiwa it
-// seemed to occupy a space which was qualitatively "not too fast" and
-// "not too slow".  It's below the actual joint velocity limits of the
-// arm (significantly so for some joints).
-const double kMaxIiwaJointVelocity = 1.;  // rad/s
-
 IiwaMove::IiwaMove() {}
 
 void IiwaMove::MoveJoints(const WorldState& est_state,
-                          const RigidBodyTree<double>& iiwa,
+                          const std::vector<std::string>& joint_names,
                           const std::vector<double>& time_in,
                           const std::vector<VectorX<double>>& q,
                           robotlocomotion::robot_plan_t* plan) {
@@ -45,8 +39,8 @@ void IiwaMove::MoveJoints(const WorldState& est_state,
   std::vector<int> info(time.size(), 1);
   MatrixX<double> q_mat(q.front().size(), q.size());
   for (size_t i = 0; i < q.size(); ++i) q_mat.col(i) = q[i];
-  ApplyJointVelocityLimits(kMaxIiwaJointVelocity, q_mat, &time);
-  *plan = EncodeKeyFrames(iiwa, time, info, q_mat);
+  ApplyJointVelocityLimits(q_mat, &time);
+  *plan = EncodeKeyFrames(joint_names, time, info, q_mat);
   StartAction(est_state.get_iiwa_time());
   // Set the duration for this action to be longer than that of the plan to
   // ensure that we do not advance to the next action befor the robot finishes
@@ -75,16 +69,18 @@ bool IiwaMove::ActionFinished(const WorldState& est_state) const {
 WsgAction::WsgAction() {}
 
 void WsgAction::OpenGripper(const WorldState& est_state,
+                            double grip_force,
                             lcmt_schunk_wsg_command* msg) {
   StartAction(est_state.get_wsg_time());
   *msg = lcmt_schunk_wsg_command();
   msg->utime = est_state.get_wsg_time() * 1e6;
   msg->target_position_mm = 100;  // Maximum aperture for WSG
-  msg->force = 40;  // Force in center of WSG range
+  msg->force = grip_force;
   last_command_ = kOpen;
 }
 
 void WsgAction::CloseGripper(const WorldState& est_state,
+                             double grip_force,
                              lcmt_schunk_wsg_command* msg) {
   StartAction(est_state.get_wsg_time());
   *msg = lcmt_schunk_wsg_command();
@@ -92,7 +88,7 @@ void WsgAction::CloseGripper(const WorldState& est_state,
   msg->target_position_mm = 8;  // 0 would smash the fingers together
                                 // and keep applying force on a real
                                 // WSG when no object is grasped.
-  msg->force = 40;
+  msg->force = grip_force;
   last_command_ = kClose;
 }
 

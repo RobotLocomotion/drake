@@ -1,7 +1,6 @@
 #pragma once
 
 #include <limits>
-#include <memory>
 
 #include <Eigen/Dense>
 
@@ -16,9 +15,33 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// An RGB-D renderer that renders RGB, depth and label images using
-/// VisualElement. The coordinate system of RgbdRenderer's viewpoint `R` is
-/// `X-right`, `Y-down` and `Z-forward` with respect to the rendered images.
+/// Common configurations of rendering systems.
+struct RenderingConfig {
+  /// The width of the image to be rendered in pixels.
+  const int width;
+  /// The height of the image to be rendered in pixels.
+  const int height;
+  /// The renderer's camera vertical field of view in radians.
+  const double fov_y;
+  /// The minimum depth RgbdRenderer can output. Note that this is different
+  /// from renderer's clipping range where all the objects outside the range are
+  /// not rendered even in RGB image while this only affects depth image.
+  const double z_near;
+  /// The maximum depth RgbdRenderer can output. Note that this is different
+  /// from renderer's clipping range where all the objects outside the range are
+  /// not rendered even in RGB image while this only affects depth image.
+  const double z_far;
+  /// A flag for showing visible windows for RGB and label images.  If this is
+  /// false, offscreen rendering is executed. This is useful for debugging
+  /// purposes.
+  const bool show_window;
+};
+
+
+/// Abstract interface of RGB-D renderers, which render RGB, depth and label
+/// images using VisualElement. The coordinate system of RgbdRenderer's
+/// viewpoint `R` is `X-right`, `Y-down` and `Z-forward` with respect to the
+/// rendered images.
 ///
 /// Output image format:
 ///   - RGB (ImageRgba8U) : the RGB image has four channels in the following
@@ -38,44 +61,23 @@ namespace sensors {
 ///     corresponds to an object in the scene. For the pixels corresponding to
 ///     no body, namely the sky and the flat terrain, we assign Label::kNoBody
 ///     and Label::kFlatTerrain, respectively.
-class RgbdRenderer final {
+class RgbdRenderer {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRenderer)
 
   /// A constructor for %RgbdRenderer.
   ///
-  /// @param X_WR The initial pose of the renderer's viewpoint `R` at the world
-  /// coordinate system. The `R` can be updated by calling `UpdateViewpoint`
-  /// later on.
+  /// @param config Configurations of the renderer. See RenderingConfig.
   ///
-  /// @param width The width of the image to be rendered in pixels.
-  ///
-  /// @param height The height of the image to be rendered in pixels.
-  ///
-  /// @param z_near The minimum depth RgbdRenderer can output. Note that
-  /// this is different from renderer's clipping range where all the objects
-  /// outside the range are not rendered even in RGB image while this only
-  /// affects depth image.
-  ///
-  /// @param z_far The maximum depth RgbdRenderer can output. Note that
-  /// this is different from renderer's clipping range where all the objects
-  /// outside the range are not rendered even in RGB image while this only
-  /// affects depth image.
-  ///
-  /// @param fov_y The RgbdRenderer's vertical field of view in radians.
-  ///
-  /// @param show_window A flag for showing visible windows for RGB and label
-  /// images.  If this is false, offscreen rendering is executed. This is
-  /// useful for debugging purposes.
-  RgbdRenderer(const Eigen::Isometry3d& X_WR,
-               int width,
-               int height,
-               double z_near,
-               double z_far,
-               double fov_y,
-               bool show_window);
+  /// @param X_WC The initial pose of the renderer's unique camera viewpoint `C`
+  /// in the world coordinate system. The camera pose `C` can be updated by
+  /// calling `UpdateViewpoint` later on. Default value: Identity.
+  /// TODO(thduynguyen, kunimatsu-tri): Handle multiple viewpoints, e.g. for
+  /// stereo depth camera?
+  RgbdRenderer(const RenderingConfig& config,
+               const Eigen::Isometry3d& X_WC = Eigen::Isometry3d::Identity());
 
-  ~RgbdRenderer();
+  virtual ~RgbdRenderer();
 
   /// Adds a flat terrain in the rendering scene.
   void AddFlatTerrain();
@@ -119,11 +121,11 @@ class RgbdRenderer final {
   void UpdateVisualPose(const Eigen::Isometry3d& X_WV,
                         int body_id, VisualIndex visual_id) const;
 
-  /// Updates renderer's viewpoint with given pose X_WR.
+  /// Updates renderer's camera viewpoint with given pose X_WC.
   ///
-  /// @param X_WR The pose of renderer's viewpoint in the world coordinate
-  /// system.
-  void UpdateViewpoint(const Eigen::Isometry3d& X_WR) const;
+  /// @param X_WC The pose of renderer's camera viewpoint in the world
+  /// coordinate system.
+  void UpdateViewpoint(const Eigen::Isometry3d& X_WC) const;
 
   /// Renders and outputs the rendered color image.
   ///
@@ -140,24 +142,37 @@ class RgbdRenderer final {
   /// @param label_image_out The rendered label image.
   void RenderLabelImage(ImageLabel16I* label_image_out) const;
 
-  /// Returns the image width.
-  int width() const;
+  /// Returns the configuration object of this renderer.
+  const RenderingConfig& config() const;
 
-  /// Returns the image height.
-  int height() const;
-
-  /// Returns the renderer's vertical field of view.
-  double fov_y() const;
-
-  /// Returns sky's color in RGB image.
-  const ColorI& get_sky_color() const;
-
-  /// Returns flat terrain's color in RGB image.
-  const ColorI& get_flat_terrain_color() const;
+  /// Returns the color palette of this renderer.
+  const ColorPalette& color_palette() const;
 
  private:
-  class Impl;
-  std::unique_ptr<Impl> impl_;
+  virtual void ImplAddFlatTerrain() = 0;
+
+  virtual optional<VisualIndex> ImplRegisterVisual(
+      const DrakeShapes::VisualElement& visual, int body_id) = 0;
+
+  virtual void ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV, int body_id,
+                                    VisualIndex visual_id) const = 0;
+
+  virtual void ImplUpdateViewpoint(const Eigen::Isometry3d& X_WC) const = 0;
+
+  virtual void ImplRenderColorImage(ImageRgba8U* color_image_out) const = 0;
+
+  virtual void ImplRenderDepthImage(ImageDepth32F* depth_image_out) const = 0;
+
+  virtual void ImplRenderLabelImage(ImageLabel16I* label_image_out) const = 0;
+
+  /// The common configuration needed by all implementations of this interface.
+  RenderingConfig config_;
+
+  /// The color palette for sky, terrain colors and ground truth label rendering
+  /// TODO(thduynguyen, SeanCurtis-TRI): This is a world's property (colors for
+  /// each object/segment) hence should be moved to GeometryWorld. That would
+  /// also answer the question whether this heavy object should be a singleton.
+  ColorPalette color_palette_;
 };
 
 }  // namespace sensors

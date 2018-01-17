@@ -109,7 +109,7 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoLoopPortLevel) {
   // +----------------+
   //
   // The input feeds through to the echo output, but it is the constant output
-  // that is connected to input. So, the system has direct feeedthrough, the
+  // that is connected to input. So, the system has direct feedthrough, the
   // diagram has a cycle at the *system* level, but there is no algebraic loop.
 
   auto echo = builder.AddSystem<ConstAndEcho>();

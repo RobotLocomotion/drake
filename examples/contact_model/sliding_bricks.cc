@@ -45,8 +45,8 @@ DEFINE_double(ud, 0.5, "The dynamic coefficient of friction");
 DEFINE_double(v_tol, 0.01,
               "The maximum slipping speed allowed during stiction (m/s)");
 DEFINE_double(dissipation, 1.0, "The contact model's dissipation (s/m)");
-DEFINE_double(contact_area, 1e-3,
-              "The characteristic scale of contact area (m^2)");
+DEFINE_double(contact_radius, 1e-3,
+              "The characteristic scale of radius (m) of the contact area");
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
@@ -73,7 +73,7 @@ int main() {
   std::cout << "\tStatic friction:  " << FLAGS_us << "\n";
   std::cout << "\tDynamic friction: " << FLAGS_ud << "\n";
   std::cout << "\tSlip Threshold:   " << FLAGS_v_tol << "\n";
-  std::cout << "\tContact area:     " << FLAGS_contact_area << "\n";
+  std::cout << "\tContact radius    " << FLAGS_contact_radius << "\n";
   std::cout << "\tDissipation:      " << FLAGS_dissipation << "\n";
 
   DiagramBuilder<double> builder;
@@ -102,7 +102,7 @@ int main() {
       .set_friction(FLAGS_us, FLAGS_ud);
   plant.set_default_compliant_material(default_material);
   systems::CompliantContactModelParameters model_parameters;
-  model_parameters.characteristic_area = FLAGS_contact_area;
+  model_parameters.characteristic_radius = FLAGS_contact_radius;
   model_parameters.v_stiction_tolerance = FLAGS_v_tol;
   plant.set_contact_model_parameters(model_parameters);
 

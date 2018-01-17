@@ -699,7 +699,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
 /**
  * Impose the matrix inequality constraint on variable x
  * <!-->
- * F0 + x1 * F1 + ... xn * Fn is p.s.d
+ * F₀ + x₁ * F₁ + ... xₙ * Fₙ is p.s.d
  * <-->
  * @f[
  * F_0 + x_1  F_1 + ... + x_n  F_n \text{ is p.s.d}

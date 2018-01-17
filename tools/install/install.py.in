@@ -1,21 +1,44 @@
 #!/usr/bin/env python
 
 import argparse
+import collections
 import filecmp
 import os
 import re
 import shutil
 import stat
 import sys
-from subprocess import check_output, check_call, CalledProcessError
+from subprocess import check_output, check_call
 
 subdirs = set()
 prefix = None
-libs = {}
+files_to_fix_up = {}
+potential_binaries = []
 list_only = False
 # On linux, dynamic libraries may have their version number
 # as a suffix (e.g. my_lib.so.x.y.z).
 dylib_match = r"(.*\.so)(\.\d+)*$|(.*\.dylib)$"
+
+
+def find_binary_executables():
+    """Finds installed files that are binary executables to fix them up later.
+
+    Takes `potential_binaries` as input list, and updates
+    `files_to_fix_up` with executables that need to be fixed up.
+    """
+    if not potential_binaries:
+        return
+    # Checking file type with command `file` is the safest way to find
+    # executables. Files without an extension are likely to be executables, but
+    # it is not always the case.
+    file_output = check_output(["file"] + potential_binaries)
+    # On Linux, executables can be ELF shared objects.
+    executable_pattern = r"(.*):.*(ELF.*executable|shared object.*|Mach-O.*executable.*)"  # noqa
+    executable_match = re.compile(executable_pattern)
+    for line in file_output.splitlines():
+        re_result = executable_match.match(line)
+        if re_result is not None:
+            files_to_fix_up[re_result.group(1)] = (re_result.group(1), 1)
 
 
 def needs_install(src, dst):
@@ -64,37 +87,54 @@ def install(src, dst):
     else:
         print("[Up to date] %s" % dst)
     re_result = re.match(dylib_match, dst)
-    if re_result is not None:
+    if re_result is not None:  # It is a library
         basename = os.path.basename(re_result.group(0))
         # Check that dependency is only referenced once
         # in the library dictionary. If it is referenced multiple times,
         # we do not know which one to use, and fail fast.
-        if basename in libs:
+        if basename in files_to_fix_up:
             sys.stderr.write(
                 "Multiple installation rules found for %s." % (basename))
             sys.exit(1)
-        libs[basename] = (dst_full, installed)
+        files_to_fix_up[basename] = (dst_full, installed)
+    else:  # It is not a library, it may be an executable.
+        # Do not check files with the following extensions (over 100 files
+        # with each extension, and we are certain these are not executables).
+        if (installed and
+                not dst_full.endswith(".h") and
+                not dst_full.endswith(".py") and
+                not dst_full.endswith(".obj") and
+                not dst_full.endswith(".cmake") and
+                not dst_full.endswith(".1") and
+                not dst_full.endswith(".hpp") and
+                not dst_full.endswith(".txt")):
+            potential_binaries.append(dst_full)
+        else:
+            pass
 
 
-def fix_libraries_rpaths():
-    # Only fix libraries that are installed now.
-    fix_libs = [(k, libs[k][0]) for k in libs.keys() if libs[k][1]]
-    for basename, dst_full in fix_libs:
+def fix_rpaths():
+    # Add binary executables to list of files to be fixed up:
+    find_binary_executables()
+    # Only fix files that are installed now.
+    fix_files = [(k, files_to_fix_up[k][0])
+                 for k in files_to_fix_up.keys() if files_to_fix_up[k][1]]
+    for basename, dst_full in fix_files:
         # Enable write permissions to allow modification.
         os.chmod(dst_full, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
                  stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         if sys.platform == "darwin":
-            macos_fix_libraries_rpaths(basename, dst_full)
+            macos_fix_rpaths(basename, dst_full)
         else:
-            linux_fix_libraries_rpaths(dst_full)
+            linux_fix_rpaths(dst_full)
 
 
-def macos_fix_libraries_rpaths(basename, dst_full):
-    # Update library ID (remove relative path).
+def macos_fix_rpaths(basename, dst_full):
+    # Update file (library, executable) ID (remove relative path).
     check_call(
         ['install_name_tool', "-id", "@rpath/" + basename, dst_full]
         )
-    # Check if library dependencies are specified with relative paths.
+    # Check if file dependencies are specified with relative paths.
     file_output = check_output(["otool", "-L", dst_full])
     for line in file_output.splitlines():
         # keep only file path, remove version information.
@@ -103,11 +143,13 @@ def macos_fix_libraries_rpaths(basename, dst_full):
         if "@loader_path" not in relative_path:
             continue
         dep_basename = os.path.basename(relative_path)
-        # Look for the absolute path in the dictionary of libraries.
-        if dep_basename not in libs.keys():
+        # Look for the absolute path in the dictionary of fixup files to
+        # find library paths.
+        if dep_basename not in files_to_fix_up.keys():
             continue
         lib_dirname = os.path.dirname(dst_full)
-        diff_path = os.path.relpath(libs[dep_basename][0], lib_dirname)
+        diff_path = os.path.relpath(files_to_fix_up[dep_basename][0],
+                                    lib_dirname)
         check_call(
             ['install_name_tool',
              "-change", relative_path,
@@ -128,55 +170,52 @@ def macos_fix_libraries_rpaths(basename, dst_full):
             )
 
 
-def linux_fix_libraries_rpaths(dst_full):
-    # Check that library has an rpath or a runpath tag
-    try:
-        check_output(["chrpath", "-l", dst_full])
-    except OSError as ex:
-        if ex.errno == 2 and ex.strerror == "No such file or directory":
-            print("`chrpath` not found. Please run install_prereqs.sh.")
-        raise ex
-    except CalledProcessError as ex:
-        if ex.returncode == 2 and \
-                ex.output.strip().endswith('no rpath or runpath tag found.'):
-            # Cannot be modified with `chrpath`, so we skip it.
-            return
-        raise ex
-    # Check if library dependencies are found and not in install prefix.
-    # The found libraries outside of the install prefix are the system
+def linux_fix_rpaths(dst_full):
+    # Check if file dependencies are found and not in install prefix.
+    # The found libraries outside of the install prefix are system
     # libraries and we do not worry about these. We only make sure that
-    # the installed libraries would be found.
+    # drake libraries will be found.
     file_output = check_output(["ldd", dst_full])
-    rpath = set()
+    rpath = []
     for line in file_output.splitlines():
         ldd_result = line.strip().split(' => ')
-        # If library found, then skip.
+        # If library found and not in install prefix, then skip.
         if len(ldd_result) < 2 or \
-                not (ldd_result[1] == "not found"
-                     or ldd_result[1].startswith(prefix)):
+                not (ldd_result[1] == "not found" or
+                     ldd_result[1].startswith(prefix)):
             continue
         re_result = re.match(dylib_match, ldd_result[0])
         # Look for the absolute path in the dictionary of libraries using the
         # library name without its possible version number.
         soname, _, _ = re_result.groups()
-        if soname not in libs.keys():
+        if soname not in files_to_fix_up.keys():
             continue
         lib_dirname = os.path.dirname(dst_full)
         diff_path = os.path.dirname(
-            os.path.relpath(libs[soname][0], lib_dirname)
+            os.path.relpath(files_to_fix_up[soname][0], lib_dirname)
         )
-        rpath.add('$ORIGIN' + '/' + diff_path)
+        rpath.append('$ORIGIN' + '/' + diff_path)
+
+    # Ensure that system libraries get loaded instead of those bundled with
+    # MATLAB that are added to the LD_LIBRARY_PATH.
+    rpath.append('/usr/lib/x86_64-linux-gnu/')
+
+    # The above may have duplicated some items into the list.  Uniquify it
+    # here, preserving order.  Note that we do not just use a set() above,
+    # since order matters.
+    rpath = collections.OrderedDict.fromkeys(rpath).keys()
+
     # Replace build tree RPATH with computed install tree RPATH. Build tree
     # RPATH are automatically removed by this call. RPATH will contain the
     # necessary relative paths to find the libraries that are needed. RPATH
     # will typically be set to `$ORIGIN` or `$ORIGIN/../../..` .
-    if rpath:
-        str_rpath = ":".join(x for x in rpath)
-        check_output(
-            ['chrpath',
-             "-r", str_rpath,
-             dst_full]
-        )
+    str_rpath = ":".join(x for x in rpath)
+    check_output(
+        ["patchelf",
+         "--force-rpath",  # We need to override LD_LIBRARY_PATH.
+         "--set-rpath", str_rpath,
+         dst_full]
+    )
 
 
 def create_java_launcher(filename, classpath, main_class):
@@ -244,8 +283,8 @@ def main(args):
     # Execute the install actions.
     <<actions>>
 
-    # Libraries paths may need to be updated.
-    fix_libraries_rpaths()
+    # Libraries paths may need to be updated in libraries and executables.
+    fix_rpaths()
 
 
 if __name__ == "__main__":

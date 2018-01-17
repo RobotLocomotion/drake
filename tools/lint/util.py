@@ -48,6 +48,8 @@ def find_all_sources():
         rel_dirpath = abs_dirpath[len(workspace_root) + 1:]
         # Take all files within the currently-walked directory.
         for one_filename in files:
+            if one_filename == ".DS_Store":
+                continue
             relpaths.append(os.path.join(rel_dirpath, one_filename))
         # Don't recurse into children of "third_party".
         if abs_dirpath.endswith("/third_party"):

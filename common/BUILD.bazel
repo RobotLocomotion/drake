@@ -49,6 +49,7 @@ drake_cc_library(
     ],
     # Intentionally excluded items:
     # - text_logging_gflags
+    # - text_logging_gflags_h
 )
 
 # A library of things that EVERYONE should want and MUST EAT.
@@ -135,6 +136,9 @@ drake_cc_library(
 drake_cc_library(
     name = "hash",
     hdrs = ["hash.h"],
+    deps = [
+        ":essential",
+    ],
 )
 
 drake_cc_library(
@@ -195,6 +199,7 @@ drake_cc_library(
         ":cond",
         ":dummy_value",
         ":essential",
+        ":extract_double",
         ":hash",
         ":number_traits",
         ":polynomial",
@@ -232,12 +237,47 @@ DRAKE_RESOURCE_SENTINEL = adjust_label_for_drake_hoist(
 )
 
 drake_cc_library(
+    name = "is_less_than_comparable",
+    hdrs = [
+        "is_less_than_comparable.h",
+    ],
+    deps = [
+        ":unused",
+    ],
+)
+
+drake_cc_library(
+    name = "sorted_pair",
+    srcs = [
+        "sorted_pair.cc",
+    ],
+    hdrs = [
+        "sorted_pair.h",
+    ],
+    deps = [
+        ":hash",
+        ":is_less_than_comparable",
+    ],
+)
+
+drake_cc_library(
     name = "find_resource",
-    srcs = ["find_resource.cc"],
-    hdrs = ["find_resource.h"],
+    srcs = [
+        "find_loaded_library.cc",
+        "find_resource.cc",
+    ],
+    hdrs = [
+        "find_loaded_library.h",
+        "find_resource.h",
+    ],
     data = [
         DRAKE_RESOURCE_SENTINEL,
     ],
+    # for libdrake.so path on linux
+    linkopts = select({
+        "//tools/cc_toolchain:linux": ["-ldl"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":essential",
         "@spruce",
@@ -312,8 +352,17 @@ drake_cc_library(
     }),
     deps = [
         ":essential",
-        "@com_github_gflags_gflags//:gflags",
+        "@gflags",
     ],
+)
+
+# Compared to the above rule, this removes the deps attribute; we don't want to
+# link against gflags for libdrake.so, we just want to publish this header for
+# callers who have their own gflags to link against.
+drake_cc_library(
+    name = "text_logging_gflags_h",
+    hdrs = ["text_logging_gflags.h"],
+    visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
 drake_cc_library(
@@ -577,6 +626,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "is_less_than_comparable_test",
+    deps = [
+        ":is_less_than_comparable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sorted_pair_test",
+    deps = [
+        ":sorted_pair",
+    ],
+)
+
+drake_cc_googletest(
     name = "extract_double_test",
     deps = [
         ":essential",
@@ -588,6 +651,28 @@ drake_cc_googletest(
     name = "find_resource_test",
     data = [
         "test/find_resource_test_data.txt",
+    ],
+    deps = [
+        ":find_resource",
+    ],
+)
+
+# Test library for `find_loaded_library_test`.
+drake_cc_binary(
+    name = "lib_is_real.so",
+    testonly = 1,
+    srcs = [
+        "test/lib_is_real.cc",
+    ],
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_googletest(
+    name = "find_loaded_library_test",
+    srcs = [
+        "test/find_loaded_library_test.cc",
+        ":lib_is_real.so",
     ],
     deps = [
         ":find_resource",

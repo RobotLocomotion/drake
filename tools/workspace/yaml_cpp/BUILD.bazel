@@ -2,9 +2,4 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-exports_files(
-    ["yaml_cpp-create-cps.py"],
-    visibility = ["@yaml_cpp//:__pkg__"],
-)
-
 add_lint_tests()

@@ -28,7 +28,6 @@ using std::all_of;
 using std::domain_error;
 using std::endl;
 using std::equal;
-using std::hash;
 using std::lexicographical_compare;
 using std::make_shared;
 using std::map;
@@ -194,16 +193,20 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
 }
 }  // anonymous namespace
 
-ExpressionCell::ExpressionCell(const ExpressionKind k, const size_t hash,
-                               const bool is_poly)
+ExpressionCell::ExpressionCell(const ExpressionKind k, const bool is_poly)
     : kind_{k},
-      hash_{hash_combine(static_cast<size_t>(kind_), hash)},
       is_polynomial_{is_poly} {}
 
 UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k,
                                          const Expression& e,
                                          const bool is_poly)
-    : ExpressionCell{k, e.get_hash(), is_poly}, e_{e} {}
+    : ExpressionCell{k, is_poly}, e_{e} {}
+
+void UnaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, e_);
+}
 
 Variables UnaryExpressionCell::GetVariables() const {
   return e_.GetVariables();
@@ -232,9 +235,16 @@ BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
                                            const Expression& e1,
                                            const Expression& e2,
                                            const bool is_poly)
-    : ExpressionCell{k, hash_combine(e1.get_hash(), e2), is_poly},
+    : ExpressionCell{k, is_poly},
       e1_{e1},
       e2_{e2} {}
+
+void BinaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, e1_);
+  hash_append(*hasher, e2_);
+}
 
 Variables BinaryExpressionCell::GetVariables() const {
   Variables ret{e1_.GetVariables()};
@@ -270,7 +280,7 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v), true},
+    : ExpressionCell{ExpressionKind::Var, true},
       var_{v} {
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic expressions.
@@ -278,6 +288,12 @@ ExpressionVar::ExpressionVar(const Variable& v)
   // Boolean symbolic variable should not be used in constructing symbolic
   // expressions.
   DRAKE_DEMAND(var_.get_type() != Variable::Type::BOOLEAN);
+}
+
+void ExpressionVar::HashAppendDetail(DelegatingHasher* hasher) const {
+  DRAKE_ASSERT(hasher);
+  using drake::hash_append;
+  hash_append(*hasher, var_);
 }
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
@@ -334,8 +350,13 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
 ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
 
 ExpressionConstant::ExpressionConstant(const double v)
-    : ExpressionCell{ExpressionKind::Constant, hash<double>{}(v), true}, v_{v} {
+    : ExpressionCell{ExpressionKind::Constant, true}, v_{v} {
   DRAKE_ASSERT(!std::isnan(v));
+}
+
+void ExpressionConstant::HashAppendDetail(DelegatingHasher* hasher) const {
+  using drake::hash_append;
+  hash_append(*hasher, v_);
 }
 
 Variables ExpressionConstant::GetVariables() const { return Variables{}; }
@@ -373,11 +394,9 @@ Expression ExpressionConstant::Differentiate(const Variable&) const {
 ostream& ExpressionConstant::Display(ostream& os) const { return os << v_; }
 
 ExpressionNaN::ExpressionNaN()
-    : ExpressionCell{ExpressionKind::NaN, 41, false} {
-  // ExpressionCell constructor calls hash_combine(ExpressionKind::NaN, 41) to
-  // compute the hash of ExpressionNaN. Here 41 does not have any special
-  // meaning.
-}
+    : ExpressionCell{ExpressionKind::NaN, false} {}
+
+void ExpressionNaN::HashAppendDetail(DelegatingHasher*) const {}
 
 Variables ExpressionNaN::GetVariables() const { return Variables{}; }
 
@@ -418,11 +437,16 @@ ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 ExpressionAdd::ExpressionAdd(const double constant,
                              const map<Expression, double>& expr_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
-                     hash_combine(hash<double>{}(constant), expr_to_coeff_map),
                      determine_polynomial(expr_to_coeff_map)},
       constant_(constant),
       expr_to_coeff_map_(expr_to_coeff_map) {
   DRAKE_ASSERT(!expr_to_coeff_map_.empty());
+}
+
+void ExpressionAdd::HashAppendDetail(DelegatingHasher* hasher) const {
+  using drake::hash_append;
+  hash_append(*hasher, constant_);
+  hash_append(*hasher, expr_to_coeff_map_);
 }
 
 Variables ExpressionAdd::GetVariables() const {
@@ -668,12 +692,16 @@ ExpressionMul::ExpressionMul(
     const double constant,
     const map<Expression, Expression>& base_to_exponent_map)
     : ExpressionCell{ExpressionKind::Mul,
-                     hash_combine(hash<double>{}(constant),
-                                  base_to_exponent_map),
                      determine_polynomial(base_to_exponent_map)},
       constant_(constant),
       base_to_exponent_map_(base_to_exponent_map) {
   DRAKE_ASSERT(!base_to_exponent_map_.empty());
+}
+
+void ExpressionMul::HashAppendDetail(DelegatingHasher* hasher) const {
+  using drake::hash_append;
+  hash_append(*hasher, constant_);
+  hash_append(*hasher, base_to_exponent_map_);
 }
 
 Variables ExpressionMul::GetVariables() const {
@@ -1767,12 +1795,17 @@ ExpressionIfThenElse::ExpressionIfThenElse(const Formula& f_cond,
                                            const Expression& e_then,
                                            const Expression& e_else)
     : ExpressionCell{ExpressionKind::IfThenElse,
-                     hash_combine(hash_value<Formula>{}(f_cond), e_then,
-                                  e_else),
                      false},
       f_cond_{f_cond},
       e_then_{e_then},
       e_else_{e_else} {}
+
+void ExpressionIfThenElse::HashAppendDetail(DelegatingHasher* hasher) const {
+  using drake::hash_append;
+  hash_append(*hasher, f_cond_);
+  hash_append(*hasher, e_then_);
+  hash_append(*hasher, e_else_);
+}
 
 Variables ExpressionIfThenElse::GetVariables() const {
   Variables ret{f_cond_.GetFreeVariables()};
@@ -1851,10 +1884,16 @@ ostream& ExpressionIfThenElse::Display(ostream& os) const {
 // --------------------
 ExpressionUninterpretedFunction::ExpressionUninterpretedFunction(
     const string& name, const Variables& vars)
-    : ExpressionCell{ExpressionKind::UninterpretedFunction,
-                     hash_combine(hash_value<string>{}(name), vars), false},
+    : ExpressionCell{ExpressionKind::UninterpretedFunction, false},
       name_{name},
       variables_{vars} {}
+
+void ExpressionUninterpretedFunction::HashAppendDetail(
+    DelegatingHasher* hasher) const {
+  using drake::hash_append;
+  hash_append(*hasher, name_);
+  hash_append(*hasher, variables_);
+}
 
 Variables ExpressionUninterpretedFunction::GetVariables() const {
   return variables_;

@@ -35,8 +35,9 @@ class Shape {
   virtual ~Shape();
 
   /** Causes this description to be reified in the given `reifier`. Each
-   concrete subclass must invoke the single, matching method on the reifier. */
-  void Reify(ShapeReifier* reifier) const;
+   concrete subclass must invoke the single, matching method on the reifier.
+   Provides optional user-data (cast as a void*) for the reifier to consume. */
+  void Reify(ShapeReifier* reifier, void* user_data = nullptr) const;
 
   /** Creates a unique copy of this shape. Invokes the protected DoClone(). */
   std::unique_ptr<Shape> Clone() const;
@@ -76,7 +77,7 @@ class Shape {
 
  private:
   std::function<std::unique_ptr<Shape>(const Shape&)> cloner_;
-  std::function<void(const Shape&, ShapeReifier*)> reifier_;
+  std::function<void(const Shape&, ShapeReifier*, void*)> reifier_;
 };
 
 /** Definition of sphere. It is centered in its canonical frame with the
@@ -143,13 +144,55 @@ class HalfSpace final : public Shape {
  addition of a new concrete shape class requires the addition of a new
  corresponding method. There should *never* be a method that accepts the Shape
  base class as an argument; it should _only_ operate on concrete derived
- classes. */
+ classes.
+
+ The expected workflow is for a class that needs to turn shape specifications
+ into concrete geometry instances to implement the %ShapeReifier interface
+ _and_ invoke the Shape::Reify() method. For example, a simple reifier that
+ requires no user data would look like:
+
+ ```
+ class SimpleReifier : public ShapeReifier {
+   void ProcessShape(const Shape& shape) {
+     // Requires no user data.
+     shape.Reify(this);
+   }
+   ...
+   void ImplementGeometry(const Sphere& sphere, void*) override {
+     // Do work to create a sphere.
+   }
+ };
+ ```
+
+ Or a complex reifier that requires user data would look like:
+
+ ```
+ class ComplexReifier : public ShapeReifier {
+   void ProcessShape(const Shape& shape) {
+     ImportantData data{...};
+     shape.Reify(this, &data);
+   }
+   ...
+   void ImplementGeometry(const Sphere& sphere, void* data) override {
+     DRAKE_ASSERT(data);
+     ImportantData& data = *reinterpret_cast<ImportantData*>(data);
+     // Do work to create a sphere using the provided user data.
+   }
+ };
+ ```
+
+ Implementing a particular shape may require more data than is strictly
+ encapsulated in the Shape. The Implement* interface supports passing user
+ data through a type-erased `void*`. Because a single class invoked
+ Shape::Reify() it is in a position to provide exactly the data the shape
+ implementations require.  */
 class ShapeReifier {
  public:
   virtual ~ShapeReifier() {}
-  virtual void ImplementGeometry(const Sphere& sphere) = 0;
-  virtual void ImplementGeometry(const Cylinder& cylinder) = 0;
-  virtual void ImplementGeometry(const HalfSpace& half_space) = 0;
+  virtual void ImplementGeometry(const Sphere& sphere, void* user_data) = 0;
+  virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
+  virtual void ImplementGeometry(const HalfSpace& half_space,
+                                 void* user_data) = 0;
 };
 
 template <typename S>
@@ -161,10 +204,11 @@ Shape::Shape(ShapeTag<S>) {
     const S& derived_shape = static_cast<const S&>(shape_arg);
     return std::unique_ptr<Shape>(new S(derived_shape));
   };
-  reifier_ = [](const Shape& shape_arg, ShapeReifier* reifier) {
+  reifier_ = [](const Shape& shape_arg, ShapeReifier* reifier,
+                void* user_data) {
     DRAKE_DEMAND(typeid(shape_arg) == typeid(S));
     const S& derived_shape = static_cast<const S&>(shape_arg);
-    reifier->ImplementGeometry(derived_shape);
+    reifier->ImplementGeometry(derived_shape, user_data);
   };
 }
 

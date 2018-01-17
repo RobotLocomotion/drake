@@ -169,7 +169,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   //
   // TODO(liang.fok): Obtain the following hard-coded radius from tree. It is
   // currently hard-coded to match the wheel radius specified in
-  // drake-distro/drake/automotive/models/prius/prius_with_lidar.sdf.
+  // drake/automotive/models/prius/prius_with_lidar.sdf.
   const double kWheelRadius = 0.323342;
 
   // Instantiates a MatrixGain system to covert from user command space to

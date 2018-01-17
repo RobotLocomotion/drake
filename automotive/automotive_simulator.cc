@@ -26,6 +26,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/multiplexer.h"
 
 namespace drake {
@@ -58,14 +59,16 @@ AutomotiveSimulator<T>::AutomotiveSimulator(
       builder_->template AddSystem<systems::rendering::PoseAggregator<T>>();
   aggregator_->set_name("pose_aggregator");
 
-  car_vis_applicator_ =
-      builder_->template AddSystem<CarVisApplicator<T>>();
-  car_vis_applicator_->set_name("car_vis_applicator");
+  if (lcm_) {
+    car_vis_applicator_ =
+        builder_->template AddSystem<CarVisApplicator<T>>();
+    car_vis_applicator_->set_name("car_vis_applicator");
 
-  bundle_to_draw_ =
-      builder_->template
-          AddSystem<systems::rendering::PoseBundleToDrawMessage>();
-  bundle_to_draw_->set_name("bundle_to_draw");
+    bundle_to_draw_ =
+        builder_->template
+        AddSystem<systems::rendering::PoseBundleToDrawMessage>();
+    bundle_to_draw_->set_name("bundle_to_draw");
+  }
 }
 
 template <typename T>
@@ -96,7 +99,9 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
   builder_->Connect(pose_output, ports.first);
   builder_->Connect(velocity_output, ports.second);
-  car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
+  if (lcm_) {
+    car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
+  }
 }
 
 // TODO(jwnimmer-tri): Modify the various vehicle model systems to be more
@@ -113,11 +118,6 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   CheckNameUniqueness(name);
   const int id = allocate_vehicle_number();
 
-  static const DrivingCommandTranslator driving_command_translator;
-  DRAKE_DEMAND(!channel_name.empty());
-  auto command_subscriber =
-      builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
-          channel_name, driving_command_translator, lcm_.get());
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
   simple_car->set_name(name);
   vehicles_[id] = simple_car;
@@ -126,9 +126,16 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
       simple_car->velocity_output());
 
-  builder_->Connect(*command_subscriber, *simple_car);
+  if (!channel_name.empty() && lcm_) {
+    static const DrivingCommandTranslator driving_command_translator;
+    auto command_subscriber =
+        builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
+            channel_name, driving_command_translator, lcm_.get());
 
-  AddPublisher(*simple_car, id);
+    builder_->Connect(*command_subscriber, *simple_car);
+
+    AddPublisher(*simple_car, id);
+  }
   return id;
 }
 
@@ -191,7 +198,9 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
                                simple_car->velocity_output());
 
-  AddPublisher(*simple_car, id);
+  if (lcm_) {
+    AddPublisher(*simple_car, id);
+  }
   return id;
 }
 
@@ -220,7 +229,76 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
   ConnectCarOutputsAndPriusVis(id, trajectory_car->pose_output(),
       trajectory_car->velocity_output());
 
-  AddPublisher(*trajectory_car, id);
+  if (lcm_) {
+    AddPublisher(*trajectory_car, id);
+  }
+  return id;
+}
+
+template <typename T>
+int AutomotiveSimulator<T>::AddIdmControlledCar(
+    const std::string& name, bool initial_with_s,
+    const SimpleCarState<T>& initial_state,
+    const maliput::api::Lane* goal_lane) {
+  DRAKE_DEMAND(!has_started());
+  DRAKE_DEMAND(aggregator_ != nullptr);
+  DRAKE_THROW_UNLESS(goal_lane != nullptr);
+  DRAKE_THROW_UNLESS(FindLane(goal_lane->id().string()) != nullptr);
+  if (road_ == nullptr) {
+    throw std::runtime_error(
+        "AutomotiveSimulator::AddIdmControlledCar(): "
+        "RoadGeometry not set. Please call SetRoadGeometry() first before "
+        "calling this method.");
+  }
+
+  CheckNameUniqueness(name);
+  const int id = allocate_vehicle_number();
+
+  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
+  idm_controller->set_name(name + "_idm_controller");
+
+  const LaneDirection lane_direction(goal_lane, initial_with_s);
+  auto lane_source =
+      builder_->template AddSystem<systems::ConstantValueSource<T>>(
+          systems::AbstractValue::Make<LaneDirection>(lane_direction));
+
+  auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
+  simple_car->set_name(name + "_simple_car");
+  vehicles_[id] = simple_car;
+
+  simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
+
+  auto pursuit = builder_->template AddSystem<PurePursuitController<T>>();
+  pursuit->set_name(name + "_pure_pursuit_controller");
+  auto mux = builder_->template AddSystem<systems::Multiplexer<T>>(
+      DrivingCommand<T>());
+  mux->set_name(name + "_mux");
+
+  // Wire up the simple car and pose aggregator to IdmController.
+  builder_->Connect(simple_car->pose_output(),
+                    idm_controller->ego_pose_input());
+  builder_->Connect(simple_car->velocity_output(),
+                    idm_controller->ego_velocity_input());
+  builder_->Connect(aggregator_->get_output_port(0),
+                    idm_controller->traffic_input());
+
+  // Wire up the lane source and simple car to PurePursuitController.
+  builder_->Connect(simple_car->pose_output(), pursuit->ego_pose_input());
+  builder_->Connect(lane_source->get_output_port(0), pursuit->lane_input());
+  // Build DrivingCommand via a mux of two scalar outputs (a BasicVector where
+  // row 0 = steering command, row 1 = acceleration command).
+  builder_->Connect(pursuit->steering_command_output(),
+                    mux->get_input_port(0));
+  builder_->Connect(idm_controller->acceleration_output(),
+                    mux->get_input_port(1));
+  builder_->Connect(mux->get_output_port(0), simple_car->get_input_port(0));
+
+  ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
+                               simple_car->velocity_output());
+  if (lcm_) {
+    AddPublisher(*simple_car, id);
+  }
+
   return id;
 }
 
@@ -365,6 +443,7 @@ template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
+  DRAKE_DEMAND(lcm_ != nullptr);
   static const MaliputRailcarStateTranslator translator;
   const std::string channel =
       std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
@@ -377,6 +456,7 @@ template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
+  DRAKE_DEMAND(lcm_ != nullptr);
   static const SimpleCarStateTranslator translator;
   const std::string channel =
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
@@ -389,6 +469,7 @@ template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
+  DRAKE_DEMAND(lcm_ != nullptr);
   static const SimpleCarStateTranslator translator;
   const std::string channel =
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
@@ -448,6 +529,7 @@ void AutomotiveSimulator<T>::TransmitLoadMessage() {
 template <typename T>
 void AutomotiveSimulator<T>::SendLoadRobotMessage(
     const lcmt_viewer_load_robot& message) {
+  DRAKE_DEMAND(lcm_ != nullptr);
   const int num_bytes = message.getEncodedSize();
   std::vector<uint8_t> message_bytes(num_bytes);
   const int num_bytes_encoded =
@@ -460,18 +542,20 @@ template <typename T>
 void AutomotiveSimulator<T>::Build() {
   DRAKE_DEMAND(diagram_ == nullptr);
 
-  builder_->Connect(
-      aggregator_->get_output_port(0),
-      car_vis_applicator_->get_car_poses_input_port());
-  builder_->Connect(
-      car_vis_applicator_->get_visual_geometry_poses_output_port(),
-      bundle_to_draw_->get_input_port(0));
-  lcm_publisher_ = builder_->AddSystem(
-      LcmPublisherSystem::Make<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW",
-                                                 lcm_.get()));
-  builder_->Connect(
-      bundle_to_draw_->get_output_port(0),
-      lcm_publisher_->get_input_port(0));
+  if (lcm_) {
+    builder_->Connect(
+        aggregator_->get_output_port(0),
+        car_vis_applicator_->get_car_poses_input_port());
+    builder_->Connect(
+        car_vis_applicator_->get_visual_geometry_poses_output_port(),
+        bundle_to_draw_->get_input_port(0));
+    lcm_publisher_ = builder_->AddSystem(
+        LcmPublisherSystem::Make<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW",
+                                                   lcm_.get()));
+    builder_->Connect(
+        bundle_to_draw_->get_output_port(0),
+        lcm_publisher_->get_input_port(0));
+  }
   pose_bundle_output_port_ =
       builder_->ExportOutput(aggregator_->get_output_port(0));
 
@@ -480,26 +564,40 @@ void AutomotiveSimulator<T>::Build() {
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
+void AutomotiveSimulator<T>::BuildAndInitialize(
+    std::unique_ptr<systems::Context<double>> initial_context) {
   DRAKE_DEMAND(!has_started());
   if (diagram_ == nullptr) {
     Build();
   }
-
-  TransmitLoadMessage();
-
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
 
-  InitializeTrajectoryCars();
-  InitializeSimpleCars();
-  InitializeMaliputRailcars();
+  if (initial_context == nullptr) {
+    InitializeTrajectoryCars();
+    InitializeSimpleCars();
+    InitializeMaliputRailcars();
+  } else {
+    simulator_->reset_context(std::move(initial_context));
+  }
+}
 
-  lcm_->StartReceiveThread();
+template <typename T>
+void AutomotiveSimulator<T>::Start(
+    double target_realtime_rate,
+    std::unique_ptr<systems::Context<double>> initial_context) {
+  DRAKE_DEMAND(!has_started());
+
+  BuildAndInitialize(std::move(initial_context));
+
+  if (lcm_) {
+    TransmitLoadMessage();
+    lcm_->StartReceiveThread();
+  }
 
   simulator_->set_target_realtime_rate(target_realtime_rate);
   const double max_step_size = 0.01;
-  simulator_->template reset_integrator<RungeKutta2Integrator<T>>(*diagram_,
-      max_step_size, &simulator_->get_mutable_context());
+  simulator_->template reset_integrator<RungeKutta2Integrator<T>>(
+      *diagram_, max_step_size, &simulator_->get_mutable_context());
   simulator_->get_mutable_integrator()->set_fixed_step_mode(true);
   simulator_->Initialize();
 }
@@ -513,7 +611,7 @@ void AutomotiveSimulator<T>::InitializeTrajectoryCars() {
     systems::VectorBase<T>& context_state =
         diagram_->GetMutableSubsystemContext(*car,
                                              &simulator_->get_mutable_context())
-        .get_mutable_continuous_state().get_mutable_vector();
+        .get_mutable_continuous_state_vector();
     TrajectoryCarState<T>* const state =
         dynamic_cast<TrajectoryCarState<T>*>(&context_state);
     DRAKE_ASSERT(state);
@@ -530,7 +628,7 @@ void AutomotiveSimulator<T>::InitializeSimpleCars() {
     systems::VectorBase<T>& context_state =
         diagram_->GetMutableSubsystemContext(*car,
                                              &simulator_->get_mutable_context())
-        .get_mutable_continuous_state().get_mutable_vector();
+        .get_mutable_continuous_state_vector();
     SimpleCarState<T>* const state =
         dynamic_cast<SimpleCarState<T>*>(&context_state);
     DRAKE_ASSERT(state);
@@ -549,7 +647,7 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
          *car, &simulator_->get_mutable_context());
 
     systems::VectorBase<T>& context_state =
-        context.get_mutable_continuous_state().get_mutable_vector();
+        context.get_mutable_continuous_state_vector();
     MaliputRailcarState<T>* const state =
         dynamic_cast<MaliputRailcarState<T>*>(&context_state);
     DRAKE_ASSERT(state);
