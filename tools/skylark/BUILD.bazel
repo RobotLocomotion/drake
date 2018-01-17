@@ -4,4 +4,8 @@ package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+exports_files([
+    "py_env_runner.py",
+])
+
 add_lint_tests()
