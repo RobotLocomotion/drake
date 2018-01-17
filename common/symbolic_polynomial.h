@@ -99,6 +99,19 @@ class Polynomial {
     return J;
   }
 
+  /** Partially evaluates this polynomial using an environment @p
+   * env.
+   *
+   * @throws std::runtime_error if NaN is detected during evaluation.
+   */
+  Polynomial EvaluatePartial(const Environment& env) const;
+
+  /** Partially evaluates this polynomial by substituting `var` with `c`.
+   *
+   * @throws std::runtime_error if NaN is detected during evaluation.
+   */
+  Polynomial EvaluatePartial(const Variable& var, double c) const;
+
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
