@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -302,33 +303,31 @@ class DrakeKukaIIwaRobot {
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
 
-    // Input vector of generalized forces for known applied force/torques,
-    // e.g., gravity, known models of visous friction, etc.
-    const int number_of_generalized_speeds = model_->get_num_velocities();
-    VectorX<T> generalized_force_applied(number_of_generalized_speeds);
+    // Applied forces:
+    MultibodyForces<T> forces(*model_);
 
-    // Input vector of spatial forces for known applied force/torques,
-    // e.g., gravity, known models of visous friction, etc.
-    const int number_of_bodies = get_number_of_rigid_bodies();
-    std::vector<SpatialForce<T>> Fapplied_Bo_W_array(number_of_bodies);
-
-    // Fill arrays generalized_force_applied and F_Bo_W_array using the fact
-    // that gravity was included earlier in the model via:
-    // model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
-    model_->CalcForceElementsContribution(
-        *context_, pc, vc, &Fapplied_Bo_W_array, &generalized_force_applied);
+    // Adds the previously included effect of gravity into forces.
+    model_->CalcForceElementsContribution(*context_, pc, vc, &forces);
 
     // Output vector of generalized forces for calculated motor torques
     // required to drive the Kuka robot at its specified rate.
+    const int number_of_generalized_speeds = model_->get_num_velocities();
     VectorX<T> generalized_force_output(number_of_generalized_speeds);
 
     // Output vector of spatial forces for joint reaction force/torques for
     // each body B at their inboard frame Mo, expressed in the world W.
+    const int number_of_bodies = get_number_of_rigid_bodies();
     std::vector<SpatialForce<T>> F_BMo_W_array(number_of_bodies);
 
     // Output vector of generalized forces associated with the motor torques
     // required to drive the Kuka robot at its specified rate.
     std::vector<SpatialAcceleration<T>> A_WB_array(number_of_bodies);
+
+    // Aliases to the arrays of applied forces:
+    std::vector<SpatialForce<T>>& Fapplied_Bo_W_array =
+        forces.mutable_body_forces();
+    VectorX<T>& generalized_force_applied =
+        forces.mutable_generalized_forces();
 
     // Calculate inverse dynamics on this robot.
     model_->CalcInverseDynamics(*context_, pc, vc, qDDt,
@@ -336,15 +335,15 @@ class DrakeKukaIIwaRobot {
                 &A_WB_array, &F_BMo_W_array, &generalized_force_output);
 
     // Put joint reaction forces into return struct.
-    KukaRobotJointReactionForces<T> forces;
-    forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
-    forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
-    forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
-    forces.F_Do_W = F_BMo_W_array[linkD_->get_node_index()];
-    forces.F_Eo_W = F_BMo_W_array[linkE_->get_node_index()];
-    forces.F_Fo_W = F_BMo_W_array[linkF_->get_node_index()];
-    forces.F_Go_W = F_BMo_W_array[linkG_->get_node_index()];
-    return forces;
+    KukaRobotJointReactionForces<T> reaction_forces;
+    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
+    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
+    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
+    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->get_node_index()];
+    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->get_node_index()];
+    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->get_node_index()];
+    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->get_node_index()];
+    return reaction_forces;
   }
 
  private:

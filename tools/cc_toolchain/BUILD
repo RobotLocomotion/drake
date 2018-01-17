@@ -48,7 +48,7 @@ filegroup(
     visibility = ["//visibility:private"],
 )
 
-# A compiler wrapper script that adjusts linker paths on OS X.
+# A compiler wrapper script that adjusts linker paths on macOS.
 filegroup(
     name = "osx_cc_wrapper",
     srcs = [
@@ -59,8 +59,15 @@ filegroup(
 )
 
 filegroup(
+    name = "osx_ar_wrapper",
+    srcs = ["osx_ar_wrapper.sh"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
     name = "apple_toolchain_deps",
     srcs = [
+        ":osx_ar_wrapper",
         ":osx_cc_wrapper",
         ":universal_toolchain_deps",
     ],

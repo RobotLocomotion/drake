@@ -16,6 +16,12 @@ load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 # Generate header to provide ABI export symbols for LCM.
 generate_export_header(
     out = "lcm/lcm_export.h",
@@ -86,6 +92,10 @@ cc_binary(
     ] + LCM_PUBLIC_HEADERS,
     copts = LCM_COPTS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
+    linkopts = select({
+        ":linux": ["-pthread"],  # For lcm_(mp)udpm.c.
+        "@//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
     deps = ["@glib"],
@@ -97,7 +107,6 @@ cc_library(
     srcs = ["liblcm.so"],
     hdrs = LCM_PUBLIC_HEADERS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
-    deps = ["@glib"],
 )
 
 cc_binary(
@@ -108,7 +117,10 @@ cc_binary(
         "lcm-logger/lcm_logger.c",
     ],
     copts = LCM_COPTS,
-    deps = [":lcm"],
+    deps = [
+        ":lcm",
+        "@glib",
+    ],
 )
 
 cc_binary(
@@ -139,7 +151,10 @@ cc_binary(
     ],
     copts = LCM_COPTS,
     includes = ["."],
-    deps = [":lcm"],
+    deps = [
+        ":lcm",
+        "@glib",
+    ],
 )
 
 cc_binary(

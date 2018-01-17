@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -53,26 +54,12 @@ class ForceElement : public
   /// @param[in] vc
   ///   A velocity kinematics cache object already updated to be in sync with
   ///   `context`.
-  /// @param[out] F_B_W_array
-  ///   A pointer to a valid, non nullptr, vector of spatial forces. For each
-  ///   body B, `this` force element must add its contribution to the total
-  ///   spatial force `F_Bo_W` applied at Bo, expressed in the world frame W.
-  ///   It must be of size equal to the number of bodies in the
-  ///   MultibodyTree. This method will abort if the the pointer is null or if
-  ///   `F_Bo_W_array` is not of size `get_num_bodies()`.
-  ///   On output, entries will be ordered by BodyNodeIndex.
-  ///   To access a mobilizer's reaction force on given body B in this array,
-  ///   use the index returned by Body::get_node_index().
-  /// @param[out] tau_array
-  ///   On output `this` force element adds its contribution to the total
-  ///   generalized forces. Typically used to model forces that are best
-  ///   formulated as generalized forces rather than as spatial forces.
-  ///   For instance, damping on a RevoluteMobilizer's angular velocity is best
-  ///   modeled as a generalized force.
-  ///   `tau_array` must not be nullptr and must have size
-  ///   MultibodyTree::get_num_velocities() or this method will abort.
-  ///   Generalized forces for each Mobilizer can be accessed
-  ///   with Mobilizer::get_generalized_forces_from_array().
+  /// @param[out] forces
+  ///   A pointer to a valid, non nullptr, multibody forces object.
+  ///   On output `this` force element adds its contribution into `forces`.
+  ///   This method will abort if the `forces` pointer is null or if the
+  ///   forces object is not compatible with `this` %MultibodyTree, see
+  ///   MultibodyForces::CheckInvariants().
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -81,15 +68,10 @@ class ForceElement : public
   void CalcAndAddForceContribution(const MultibodyTreeContext<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    const VelocityKinematicsCache<T>& vc,
-                                   std::vector<SpatialForce<T>>* F_B_W_array,
-                                   EigenPtr<VectorX<T>> tau_array) const {
-    DRAKE_DEMAND(F_B_W_array != nullptr);
-    DRAKE_DEMAND(static_cast<int>(F_B_W_array->size()) ==
-        this->get_parent_tree().get_num_bodies());
-    DRAKE_DEMAND(tau_array != nullptr);
-    DRAKE_DEMAND(tau_array->size() ==
-        this->get_parent_tree().get_num_velocities());
-    DoCalcAndAddForceContribution(context, pc, vc, F_B_W_array, tau_array);
+                                   MultibodyForces<T>* forces) {
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    DoCalcAndAddForceContribution(context, pc, vc, forces);
   }
 
   /// @name Methods to track the energy budget.
@@ -97,11 +79,13 @@ class ForceElement : public
   /// a MultibodyTree model. This methods are pure virtual and subclasses must
   /// provide an implementation. Conservative force elements must implement
   /// CalcPotentialEnergy() in order to track the potential energy stored in
-  /// forcing elements. In addition, conservative force elements must implement
+  /// force elements. In addition, conservative force elements must implement
   /// the rate of change of this potential energy in CalcConservativePower().
   /// Non-conservative force elements need to implement the rate of change,
   /// power, at which they either generate or dissipate energy in the system in
-  /// CalcNonConservativePower().
+  /// CalcNonConservativePower(). Note that a force element may have both
+  /// conservative and non-conservative contributions, such as a spring-damper
+  /// element for instance.
   /// All of these methods have the same signature. Refer to the documentation
   /// for CalcPotentialEnergy() for a detailed description of the input
   /// arguments of the methods in this group.
@@ -120,8 +104,6 @@ class ForceElement : public
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
   ///
   /// @returns For conservative force models, the potential energy stored by
   /// `this` force element. For non-conservative force models, zero.
@@ -176,8 +158,9 @@ class ForceElement : public
   /// the parameters so you don't have to. Refer to the documentation for
   /// CalcAndAddForceContribution() for details describing the purpose and
   /// parameters of this method.
-  /// It assumes both `F_B_W` and `tau` are valid pointers with appropriate
-  /// sizes already checked by CalcAndAddForceContribution().
+  /// It assumes `forces` to be a valid pointer to a MultibodyForces object
+  /// compatible with the MultibodyTree model owning `this` force element.
+  ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
   /// @pre The velocity kinematics `vc` must have been previously updated with a
@@ -186,8 +169,7 @@ class ForceElement : public
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_B_W,
-      EigenPtr<VectorX<T>> tau) const = 0;
+      MultibodyForces<T>* forces) const = 0;
 
   /// @name Methods to make a clone templated on different scalar types.
   ///

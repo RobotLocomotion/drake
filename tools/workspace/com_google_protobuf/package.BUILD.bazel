@@ -4,6 +4,7 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+# Provide a recent version of the protobuf skylark code from upstream.
 exports_files(["protobuf.bzl"])
 
 # The protobuf.bzl looks here to find which protoc to use.
@@ -25,9 +26,4 @@ alias(
 py_library(
     name = "protobuf_python",
     # No srcs here, so we'll use the system default.
-)
-
-cc_library(
-    name = "protobuf_fixup_ubsan",
-    hdrs = ["protobuf-ubsan-fixup.h"],
 )

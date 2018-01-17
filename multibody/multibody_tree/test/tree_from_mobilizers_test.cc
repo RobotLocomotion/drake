@@ -15,6 +15,7 @@
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -645,10 +646,9 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // The force of gravity gets included in this call since we have
     // UniformGravityFieldElement in the model.
-    VectorXd tau_applied(model_->get_num_velocities());
-    vector<SpatialForce<double>> Fapplied_Bo_W_array(model_->get_num_bodies());
-    model_->CalcForceElementsContribution(
-        *context_, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
+    // Applied forcing:
+    MultibodyForces<double> forcing(*model_);
+    model_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
 
     // ======================================================================
     // To get generalized forces, compute inverse dynamics applying the forces
@@ -674,6 +674,11 @@ class PendulumKinematicTests : public PendulumTests {
 
     const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
+
+    // Aliases to external forcing arrays:
+    std::vector<SpatialForce<double>>& Fapplied_Bo_W_array =
+        forcing.mutable_body_forces();
+    VectorX<double>& tau_applied = forcing.mutable_generalized_forces();
 
     // Try first using different arrays for input/ouput:
     // Initialize output to garbage, it should not affect the results.

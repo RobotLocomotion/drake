@@ -2,6 +2,8 @@
 
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
+_DEFAULT_STATIC = False
+
 def _run_pkg_config(repository_ctx, command_line):
     """Run command_line and return its tokenized output."""
     result = repository_ctx.execute(command_line)
@@ -41,7 +43,11 @@ def setup_pkg_config_repository(repository_ctx):
             return struct(error = result.error + "during version check")
 
     # Determine linkopts.
-    result = _run_pkg_config(repository_ctx, args + ["--static", "--libs"])
+    static = getattr(repository_ctx.attr, "static", _DEFAULT_STATIC)
+    libs_args = args + ["--libs"]
+    if static:
+        libs_args = libs_args + ["--static"]
+    result = _run_pkg_config(repository_ctx, libs_args)
     if result.error != None:
         return result
     linkopts = result.tokens
@@ -146,6 +152,7 @@ pkg_config_repository = repository_rule(
     attrs = {
         "modname": attr.string(mandatory = True),
         "atleast_version": attr.string(),
+        "static": attr.bool(default = _DEFAULT_STATIC),
         "build_file_template": attr.label(
             default = _DEFAULT_TEMPLATE,
             single_file = True,
@@ -194,6 +201,7 @@ Args:
     name: A unique name for this rule.
     modname: The library name as known to pkg-config.
     atleast_version: (Optional) The --atleast-version to pkg-config.
+    static: (Optional) Add linkopts for static linking to the library target.
     build_file_template: (Optional) (Advanced) Override the BUILD template.
     extra_srcs: (Optional) Extra items to add to the library target.
     extra_hdrs: (Optional) Extra items to add to the library target.

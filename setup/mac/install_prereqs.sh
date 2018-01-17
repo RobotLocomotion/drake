@@ -47,6 +47,7 @@ glew
 glib
 graphviz
 ipopt
+kcov
 libyaml
 lz4
 nlopt

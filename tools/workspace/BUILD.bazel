@@ -20,7 +20,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "drake_visualizer",
     "eigen",
     "fcl",
-    "find_protobuf_cmake",
     "fmt",
     "ignition_math",
     "ignition_rndf",
@@ -39,6 +38,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "net_sf_jchart2d",
+    "find_protobuf_cmake",
     "optitrack_driver",
 ]] + select({
     "//tools:with_gurobi": ["@gurobi//:install"],

@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -34,6 +35,7 @@ using geometry::SourceId;
 using geometry::Sphere;
 using drake::multibody::BodyIndex;
 using drake::multibody::MultibodyTree;
+using drake::multibody::MultibodyForces;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
@@ -248,38 +250,51 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
           context.get_continuous_state_vector()).get_value();
   const int nv = model_->get_num_velocities();
 
+  // Mass matrix:
+  MatrixX<T> M(nv, nv);
+  // Forces:
+  MultibodyForces<T> forces(*model_);
+  // Bodies' accelerations, ordered by BodyNodeIndex.
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  // Generalized accelerations:
+  VectorX<T> vdot = VectorX<T>::Zero(nv);
+
+  // TODO(amcastro-tri): Eval() these from the context.
   PositionKinematicsCache<T> pc(model_->get_topology());
   VelocityKinematicsCache<T> vc(model_->get_topology());
-
-  MatrixX<T> M(nv, nv);
-  model_->CalcMassMatrixViaInverseDynamics(context, &M);
-
   model_->CalcPositionKinematicsCache(context, &pc);
   model_->CalcVelocityKinematicsCache(context, pc, &vc);
 
-  // Compute applied forces, which in this case will contain gravity.
-  std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_->get_num_bodies());
-  VectorX<T> tau_applied(model_->get_num_velocities());
-  model_->CalcForceElementsContribution(
-      context, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  // Compute forces applied through force elements. This effectively resets
+  // the forces to zero and adds in contributions due to force elements:
+  model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
-  VectorX<T> vdot = VectorX<T>::Zero(nv);
-  VectorX<T> C(nv);
+  // TODO(amcastro-tri): add in external actuation torque from input port.
+
+  model_->CalcMassMatrixViaInverseDynamics(context, &M);
+
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
   // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied
   // get overwritten on output. This is not important in this case since we
   // don't need their values anymore. Please see the documentation for
   // CalcInverseDynamics() for details.
+  // With vdot = 0, this computes:
+  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
+  VectorX<T>& tau_array = forces.mutable_generalized_forces();
   model_->CalcInverseDynamics(
-      context, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
-      &A_WB_array, &Fapplied_Bo_W_array, &C);
+      context, pc, vc, vdot,
+      F_BBo_W_array, tau_array,
+      &A_WB_array,
+      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
+      &tau_array);
+
+  vdot = M.ldlt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-
   VectorX<T> xdot(model_->get_num_states());
   // For this simple model v = qdot.
-  xdot << v, M.llt().solve(-C);
+  xdot << v, vdot;
   derivatives->SetFromVector(xdot);
 }
 
