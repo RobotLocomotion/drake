@@ -56,6 +56,7 @@ cc_library(
     defines = ["CCD_STATIC_DEFINE"],
     includes = ["src"],
     linkstatic = 1,
+    # See notes in `fcl` regarding privacy and limited linking.
 )
 
 install(

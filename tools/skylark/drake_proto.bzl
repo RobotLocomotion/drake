@@ -7,8 +7,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_installed_headers",
-    "installed_headers_for_drake_deps",
+    "drake_cc_library",
 )
 load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
@@ -37,11 +36,17 @@ def drake_cc_proto_library(
         name = name + "_ubsan_fixup",
         srcs = pb_srcs,
         outs = pb_ubsan_fixups,
-        cmd = "for src in $(SRCS) ; do awk '/#include <google\/protobuf\/generated_message_reflection.h>/{print;print \"#include \\\"drake/common/proto/protobuf-ubsan-fixup.h\\\"\";next}1' $$src > $${src%??????}_ubsan_fixup.pb.cc ; done",  # noqa
+        # TODO: Replace this with Python.
+        cmd = """
+for src in $(SRCS) ; do
+    out=$${src%??????}_ubsan_fixup.pb.cc
+    awk '/#include <google\/protobuf\/generated_message_reflection.h>/{print;print \"#include \\\"common/proto/protobuf-ubsan-fixup.h\\\"\";next}1' $$src > $$out ;
+    sed -i 's|#include "|#include "drake/|g' $$out
+done""",  # noqa
     )
     # Compile the cc file using standard include paths.
-    native.cc_library(
-        name = name + "_genproto_compile",
+    drake_cc_library(
+        name = name,
         srcs = pb_ubsan_fixups,
         hdrs = pb_hdrs,
         tags = tags + ["nolint"],
@@ -50,31 +55,6 @@ def drake_cc_proto_library(
             "@drake//common/proto:protobuf_ubsan_fixup",
         ],
         **kwargs)
-    # Provide a library with drake-modified include paths, depending on the
-    # already-compiled object code.  (We can't compile the .cc file using the
-    # drake-modified include paths.)
-    if native.package_name().startswith("drake"):
-        strip_include_prefix = None
-        include_prefix = None
-    else:
-        # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
-        strip_include_prefix = "/"
-        include_prefix = "drake"
-    native.cc_library(
-        name = name,
-        hdrs = pb_hdrs,
-        tags = tags + ["nolint"],
-        strip_include_prefix = strip_include_prefix,
-        include_prefix = include_prefix,
-        deps = [name + "_genproto_compile"],
-        **kwargs)
-    # Install the header file.
-    drake_installed_headers(
-        name = name + ".installed_headers",
-        hdrs = pb_hdrs,
-        deps = installed_headers_for_drake_deps(deps),
-        tags = ["nolint"],
-    )
 
 def drake_py_proto_library(
         name,

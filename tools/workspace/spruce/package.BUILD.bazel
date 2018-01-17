@@ -1,11 +1,19 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_solib_library",
+    "cc_solib_library_artifacts",
+)
 
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
+# Because this is referenced in multiple places, this *must* be a shared
+# library.
+cc_solib_library(
     name = "spruce",
+    solib_name = "libdrake-spruce.so",
     srcs = ["spruce.cc"],
     hdrs = ["spruce.hh"],
     includes = ["."],
@@ -15,5 +23,6 @@ cc_library(
 # need to install its license file.
 install(
     name = "install",
+    targets = cc_solib_library_artifacts("spruce", private=True),
     docs = ["LICENSE"],
 )

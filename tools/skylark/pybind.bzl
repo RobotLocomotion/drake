@@ -45,7 +45,7 @@ def _drake_pybind_cc_binary(
         ] + copts,
         # This is how you tell Bazel to create a shared library.
         linkshared = 1,
-        linkstatic = 1,
+        linkstatic = 0,
         # For all pydrake_foo.so, always link to Drake and pybind11.
         deps = [
             # Even though "libdrake.so" appears in srcs above, we have to list

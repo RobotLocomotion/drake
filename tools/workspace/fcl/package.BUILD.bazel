@@ -73,6 +73,9 @@ cc_library(
         "@eigen",
         "@octomap",
     ],
+    # Only ONE Drake solib should *ever* consume this.
+    # Otherwise, this must become a shared library, and we must rethink
+    # visibility. We cannot use visibility, however, to control this.
 )
 
 install(
