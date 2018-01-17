@@ -91,12 +91,13 @@ class MonomialTest : public ::testing::Test {
     return result1 == result2;
   }
 
-  // Checks if Monomial::Substitute corresponds to Expression::Substitute.
+  // Checks if Monomial::EvaluatePartial corresponds to Expression's
+  // EvaluatePartial.
   //
   //                            ToExpression
   //                   Monomial ------------> Expression
   //                      ||                      ||
-  // Monomial::Substitute ||                      || Expression::Substitute
+  //      EvaluatePartial ||                      || EvaluatePartial
   //                      ||                      ||
   //                      \/                      \/
   //          double * Monomial (e2)   ==   Expression (e1)
@@ -107,12 +108,9 @@ class MonomialTest : public ::testing::Test {
   // Monomial::Substitution which returns a pair of double (coefficient part)
   // and Monomial. We obtain e2 by multiplying the two. Then, we check if e1 and
   // e2 are structurally equal.
-  bool CheckSubstitute(const Monomial& m, const Environment& env) {
-    const Substitution subst{ExtractSubst(env)};
-
-    const Expression e1{m.ToExpression().Substitute(subst)};
-
-    const pair<double, Monomial> subst_result{m.Substitute(env)};
+  bool CheckEvaluatePartial(const Monomial& m, const Environment& env) {
+    const Expression e1{m.ToExpression().EvaluatePartial(env)};
+    const pair<double, Monomial> subst_result{m.EvaluatePartial(env)};
     const Expression e2{subst_result.first *
                         subst_result.second.ToExpression()};
 
@@ -586,7 +584,7 @@ TEST_F(MonomialTest, EvaluateException) {
   EXPECT_THROW(m.Evaluate(env), out_of_range);
 }
 
-TEST_F(MonomialTest, Substitute) {
+TEST_F(MonomialTest, EvaluatePartial) {
   const vector<Environment> environments{
       {{var_x_, 2.0}},
       {{var_y_, 3.0}},
@@ -598,7 +596,7 @@ TEST_F(MonomialTest, Substitute) {
   };
   for (const Monomial m : monomials_) {
     for (const Environment env : environments) {
-      EXPECT_TRUE(CheckSubstitute(m, env));
+      EXPECT_TRUE(CheckEvaluatePartial(m, env));
     }
   }
 }
