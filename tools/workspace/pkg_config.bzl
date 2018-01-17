@@ -59,8 +59,25 @@ def setup_pkg_config_repository(repository_ctx):
     # a repair.  We process args in reserve order to keep our loop index
     # unchanged by a pop.
     for i in reversed(range(len(linkopts))):
+        linkopt = linkopts[i]
+        # Absolute system paths to *.so files get turned into -l instead.
+        if linkopt.endswith(".so"):
+            possible_libdirs = [
+                "/usr/lib",
+                "/usr/lib/x86_64-linux-gnu",
+            ]
+            matched = False
+            for dir in possible_libdirs:
+                prefix = dir + "/lib"
+                if linkopt.startswith(prefix):
+                    name = linkopt[len(prefix):-3]
+                    if "/" not in name:
+                        linkopts[i] = "-l" + name
+                        matched = True
+            if matched:
+                continue
         # Switches stay put.
-        if linkopts[i].startswith("-"):
+        if linkopt.startswith("-"):
             continue
         # A non-switch arg should be recombined with the preceding arg.
         non_switch_arg = linkopts.pop(i)
