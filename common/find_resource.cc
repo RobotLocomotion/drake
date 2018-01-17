@@ -114,7 +114,7 @@ optional<std::string> getenv_optional(const char* const name) {
 optional<std::string>  GetCandidateDirFromLibdrake() {
   optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake.so");
   if (libdrake_dir) {
-    libdrake_dir = libdrake_dir.value() + "/../share/drake/drake";
+    libdrake_dir = libdrake_dir.value() + "/../share/drake";
   }
   return libdrake_dir;
 }
@@ -236,7 +236,6 @@ Result FindResource(string resource_path) {
         "resource_path does not start with " + prefix);
   }
   const std::string resource_path_substr = resource_path.substr(prefix.size());
-
   // Collect a list of (priority-ordered) directories to check.  Candidate
   // paths will already end with "drake" as their final path element, or
   // possibly a related name like "drake2"; that is, they will contain files
