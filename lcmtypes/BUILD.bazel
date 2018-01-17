@@ -379,11 +379,24 @@ install(
     deps = [
         ":install_cc_headers",
         "//tools/workspace/optitrack_driver:install",
+        "@lcm//:install",
+        "@lcmtypes_bot2_core//:install",
         "@lcmtypes_robotlocomotion//:install",
     ],
 )
 
 # === test/ ===
+
+# `//:install` is run in this test to verify that once installed
+# drake-lcm-spy still works. Cannot be run on its own, needs to be
+# run as part of all the drake tests to have access to //:install
+drake_py_test(
+    name = "drake-lcm-spy_install_test",
+    size = "large",
+    srcs = ["test/drake-lcm-spy_install_test.py"],
+    main = "test/drake-lcm-spy_install_test.py",
+    deps = ["//tools/install:install_test_helper"],
+)
 
 drake_py_test(
     name = "polynomial_matrix_test",
