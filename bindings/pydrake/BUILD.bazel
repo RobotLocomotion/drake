@@ -254,11 +254,14 @@ drake_py_test(
 )
 
 drake_py_test(
-    name = "urdf_parser_test",
+    name = "parsers_test",
     size = "small",
-    srcs = ["test/test_urdf_parser.py"],
-    data = ["//drake/examples/pr2:models"],
-    main = "test/test_urdf_parser.py",
+    srcs = ["test/parsers_test.py"],
+    data = [
+        "//drake/examples/acrobot:models",
+        "//drake/examples/pr2:models",
+    ],
+    main = "test/parsers_test.py",
     deps = [":rbtree_py"],
 )
 
