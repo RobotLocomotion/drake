@@ -394,17 +394,17 @@ void MultibodyTree<T>::CalcForceElementsContribution(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    MultibodyForcing<T>* forcing) const {
-  DRAKE_DEMAND(forcing != nullptr);
-  DRAKE_DEMAND(forcing->CheckInvariants(*this));
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
-  forcing->SetZero();
+  forces->SetZero();
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
-    force_element->CalcAndAddForceContribution(mbt_context, pc, vc, forcing);
+    force_element->CalcAndAddForceContribution(mbt_context, pc, vc, forces);
   }
 }
 

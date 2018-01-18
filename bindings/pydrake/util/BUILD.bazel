@@ -9,6 +9,7 @@ load(
 )
 load(
     "//tools/skylark:pybind.bzl",
+    "drake_pybind_cc_googletest",
     "get_drake_pybind_installs",
     "get_pybind_package_info",
 )
@@ -52,9 +53,39 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
+# ODR does not matter, because the singleton will be stored in Python.
+drake_cc_library(
+    name = "cpp_param_pybind",
+    srcs = ["cpp_param_pybind.cc"],
+    hdrs = ["cpp_param_pybind.h"],
+    deps = [
+        ":type_pack",
+        "@pybind11",
+    ],
+)
+
+drake_py_library(
+    name = "cpp_param_py",
+    srcs = ["cpp_param.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
+drake_py_library(
+    name = "cpp_template_py",
+    srcs = ["cpp_template.py"],
+    deps = [
+        ":cpp_param_py",
+        ":module_py",
+    ],
+)
+
 PYBIND_LIBRARIES = []
 
 PY_LIBRARIES = [
+    ":cpp_param_py",
+    ":cpp_template_py",
     ":module_py",
     ":module_shim_py",
 ]
@@ -97,6 +128,26 @@ drake_py_test(
     srcs = ["test/module_shim_test.py"],
     deps = [
         ":module_shim_example",
+    ],
+)
+
+drake_py_test(
+    name = "cpp_param_test",
+    deps = [
+        ":cpp_param_py",
+    ],
+)
+
+drake_pybind_cc_googletest(
+    name = "cpp_param_pybind_test",
+    cc_deps = [":cpp_param_pybind"],
+    py_deps = [":cpp_param_py"],
+)
+
+drake_py_test(
+    name = "cpp_template_test",
+    deps = [
+        ":cpp_template_py",
     ],
 )
 

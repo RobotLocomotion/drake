@@ -5,10 +5,12 @@ load("@drake//tools/install:install.bzl", "install")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
+    "drake_cc_googletest",
 )
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
+    "drake_py_test",
 )
 load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
 
@@ -197,3 +199,52 @@ def _get_package_info(base_package, sub_package = None):
         base_path_rel = base_path_rel,
         # Sub-package's path relative to base package's path.
         sub_path_rel = sub_path_rel)
+
+def drake_pybind_cc_googletest(
+        name,
+        cc_srcs = [],
+        py_deps = [],
+        cc_deps = [],
+        args = [],
+        visibility = None,
+        tags = []):
+    """Defines a C++ test (using `pybind`) which has access to Python
+    libraries. """
+    cc_name = name + "_cc"
+    if not cc_srcs:
+        cc_srcs = ["test/{}.cc".format(name)]
+    drake_cc_googletest(
+        name = cc_name,
+        srcs = cc_srcs,
+        deps = cc_deps + [
+            "//tools/install/libdrake:drake_shared_library",
+            "@pybind11",
+        ],
+        # Add 'manual', because we only want to run it with Python present.
+        tags = ["manual"],
+        visibility = visibility,
+    )
+
+    py_name = name + "_py"
+    # Expose as library, to make it easier to expose Bazel environment for
+    # external tools.
+    drake_py_library(
+        name = py_name,
+        deps = py_deps,
+        testonly = 1,
+        visibility = visibility,
+    )
+
+    # Use this Python test as the glue for Bazel to expose the appropriate
+    # environment for the C++ binary.
+    py_main = "//tools/skylark:py_env_runner.py"
+    drake_py_test(
+        name = name,
+        srcs = [py_main],
+        main = py_main,
+        data = [cc_name],
+        args = ["$(location {})".format(cc_name)] + args,
+        deps = [py_name],
+        tags = tags,
+        visibility = visibility,
+    )

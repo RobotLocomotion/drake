@@ -182,6 +182,7 @@ drake_cc_library(
     ],
     hdrs = [
         "color_palette.h",
+        "depth_shaders.h",
         "rgbd_renderer.h",
         "rgbd_renderer_vtk.h",
     ],

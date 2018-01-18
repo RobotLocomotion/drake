@@ -1,0 +1,89 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_pybind_installs",
+    "get_pybind_package_info",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+)
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_label_for_drake_hoist",
+    "adjust_labels_for_drake_hoist",
+)
+
+package(default_visibility = adjust_labels_for_drake_hoist([
+    "//drake/bindings/pydrake:__subpackages__",
+]))
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(
+    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
+)
+
+# @note Symbols are NOT imported directly into
+# `__init__.py` to simplify dependency management, meaning that
+# classes are organized by their directory structure rather than
+# by C++ namespace.
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        "//drake/bindings/pydrake:common_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "pendulum_py",
+    cc_deps = [
+        "//drake/examples/pendulum:pendulum_plant",
+    ],
+    cc_so_name = "pendulum",
+    cc_srcs = ["pendulum_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+PYBIND_LIBRARIES = [
+    ":pendulum_py",
+]
+
+PY_LIBRARIES = [
+    ":module_py",
+]
+
+drake_py_library(
+    name = "examples",
+    imports = PACKAGE_INFO.py_imports,
+    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+)
+
+drake_py_test(
+    name = "pendulum_test",
+    size = "small",
+    deps = [
+        ":pendulum_py",
+        "//drake/bindings/pydrake/systems",
+    ],
+)
+
+add_lint_tests()

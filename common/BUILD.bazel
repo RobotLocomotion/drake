@@ -136,6 +136,9 @@ drake_cc_library(
 drake_cc_library(
     name = "hash",
     hdrs = ["hash.h"],
+    deps = [
+        ":essential",
+    ],
 )
 
 drake_cc_library(
@@ -231,6 +234,30 @@ drake_cc_library(
 
 DRAKE_RESOURCE_SENTINEL = adjust_label_for_drake_hoist(
     "//drake:.drake-find_resource-sentinel",
+)
+
+drake_cc_library(
+    name = "is_less_than_comparable",
+    hdrs = [
+        "is_less_than_comparable.h",
+    ],
+    deps = [
+        ":unused",
+    ],
+)
+
+drake_cc_library(
+    name = "sorted_pair",
+    srcs = [
+        "sorted_pair.cc",
+    ],
+    hdrs = [
+        "sorted_pair.h",
+    ],
+    deps = [
+        ":hash",
+        ":is_less_than_comparable",
+    ],
 )
 
 drake_cc_library(
@@ -595,6 +622,20 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_less_than_comparable_test",
+    deps = [
+        ":is_less_than_comparable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sorted_pair_test",
+    deps = [
+        ":sorted_pair",
     ],
 )
 

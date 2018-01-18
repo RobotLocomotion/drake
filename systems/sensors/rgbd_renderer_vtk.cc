@@ -11,17 +11,22 @@
 #include <vtkActor.h>
 #include <vtkAutoInit.h>
 #include <vtkCamera.h>
+#include <vtkCommand.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
 #include <vtkImageExport.h>
 #include <vtkNew.h>
 #include <vtkOBJReader.h>
+#include <vtkOpenGLPolyDataMapper.h>
+#include <vtkOpenGLRenderWindow.h>
+#include <vtkOpenGLTexture.h>
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
+#include <vtkShaderProgram.h>
 #include <vtkSmartPointer.h>
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
@@ -29,6 +34,7 @@
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/systems/sensors/depth_shaders.h"
 #include "drake/systems/sensors/vtk_util.h"
 
 // This macro declares vtkRenderingOpenGL2_AutoInit_{Construct(), Destruct()}
@@ -54,9 +60,20 @@ const double kClippingPlaneNear = 0.01;
 const double kClippingPlaneFar = 100.;
 const double kTerrainSize = 100.;
 
-// For Zbuffer value conversion.
-const double kA = kClippingPlaneFar / (kClippingPlaneFar - kClippingPlaneNear);
-const double kB = -kA * kClippingPlaneNear;
+enum ImageType {
+  kColor = 0,
+  kLabel = 1,
+  kDepth = 2,
+};
+
+struct RenderingPipeline {
+  vtkNew<vtkRenderer> renderer;
+  vtkNew<vtkRenderWindow> window;
+  vtkNew<vtkWindowToImageFilter> filter;
+  vtkNew<vtkImageExport> exporter;
+};
+
+using ActorCollection = std::vector<vtkSmartPointer<vtkActor>>;
 
 // Register the object factories for the vtkRenderingOpenGL2 module.
 struct ModuleInitVtkRenderingOpenGL2 {
@@ -76,13 +93,11 @@ std::string RemoveFileExtension(const std::string& filepath) {
 // Updates VTK rendering related objects including vtkRenderWindow,
 // vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
 // vtkActors' pose update for rendering.
-void PerformVTKUpdate(const vtkNew<vtkRenderWindow>& window,
-                      const vtkNew<vtkWindowToImageFilter>& filter,
-                      const vtkNew<vtkImageExport>& exporter) {
-  window->Render();
-  filter->Modified();
-  filter->Update();
-  exporter->Update();
+void PerformVTKUpdate(const std::unique_ptr<RenderingPipeline>& p) {
+  p->window->Render();
+  p->filter->Modified();
+  p->filter->Update();
+  p->exporter->Update();
 }
 
 void SetModelTransformMatrixToVtkCamera(
@@ -97,6 +112,42 @@ void SetModelTransformMatrixToVtkCamera(
   // to CameraInfo's document.
   camera->ApplyTransform(X_WC);
 }
+
+// A callback class for setting uniform variables used in shader programs,
+// namely z_near and z_far, when vtkCommand::UpdateShaderEvent is caught.
+// See also shaders::kDepthFS, this is where the variables are used.
+// For the detail of VTK's callback mechanism, please refer to:
+// https://www.vtk.org/doc/nightly/html/classvtkCommand.html#details
+class ShaderCallback : public vtkCommand {
+ public:
+  static ShaderCallback* New() { return new ShaderCallback; }
+
+  // NOLINTNEXTLINE(runtime/int): To match pre-existing APIs.
+  void Execute(vtkObject*, unsigned long, void* callback_object) VTK_OVERRIDE {
+    vtkOpenGLHelper* cell_bo =
+        reinterpret_cast<vtkOpenGLHelper*>(callback_object);
+    cell_bo->Program->SetUniformf("z_near", z_near_);
+    cell_bo->Program->SetUniformf("z_far", z_far_);
+    cell_bo = nullptr;
+  }
+
+  void set_renderer(vtkRenderer* renderer) { renderer_ = renderer; }
+
+  void set_z_near(float z_near) {
+    z_near_ = z_near;
+  }
+
+  void set_z_far(float z_far) {
+    z_far_ = z_far;
+  }
+
+  ShaderCallback() { this->renderer_ = nullptr; }
+
+ private:
+  vtkRenderer *renderer_;
+  float z_near_{0.f};
+  float z_far_{0.f};
+};
 
 }  // namespace
 
@@ -124,43 +175,42 @@ class RgbdRendererVTK::Impl : private ModuleInitVtkRenderingOpenGL2 {
   void ImplRenderLabelImage(ImageLabel16I* label_image_out) const;
 
  private:
-  float CheckRangeAndConvertToMeters(float z_buffer_value) const;
+  float CheckRangeAndConvertToMeters(float shader_output) const;
 
   RgbdRendererVTK* parent_ = nullptr;
 
   vtkNew<vtkActor> terrain_actor_;
-  // An array of maps which take pairs of a body index in RBT and a vector of
-  // vtkSmartPointer to vtkActor. The each vtkActor corresponds to an visual
-  // element specified in SDF / URDF. The first element of this array is for
-  // color and depth rendering and the second is for label image rendering.
-  // TODO(kunimatsu-tri) Make this more straight forward for the readability.
-  std::array<std::map<int, std::vector<vtkSmartPointer<vtkActor>>>, 2>
-      id_object_maps_;
-  vtkNew<vtkRenderer> color_depth_renderer_;
-  vtkNew<vtkRenderer> label_renderer_;
-  vtkNew<vtkRenderWindow> color_depth_render_window_;
-  vtkNew<vtkRenderWindow> label_render_window_;
-  vtkNew<vtkWindowToImageFilter> color_filter_;
-  vtkNew<vtkWindowToImageFilter> depth_filter_;
-  vtkNew<vtkWindowToImageFilter> label_filter_;
-  vtkNew<vtkImageExport> color_exporter_;
-  vtkNew<vtkImageExport> depth_exporter_;
-  vtkNew<vtkImageExport> label_exporter_;
+  vtkNew<vtkActor> terrain_depth_actor_;
+  // Use ImageType to access to this array. We assume pipelines_'s indices to be
+  // 0 for RGB, 1 for depth, and 2 for ground-truth label rendering.
+  std::array<std::unique_ptr<RenderingPipeline>, 3> pipelines_;
+
+  // A map which takes pairs of a body index in RBT and three vectors of
+  // vtkSmartPointer to vtkActor for color, depth and label rendering
+  // respectively. Each vtkActor corresponds to an visual element specified in
+  // SDF / URDF.
+  std::map<int, std::array<ActorCollection, 3>> id_object_maps_;
+
+  vtkNew<ShaderCallback> uniform_setting_callback_;
 };
 
 float RgbdRendererVTK::Impl::CheckRangeAndConvertToMeters(
-    float z_buffer_value) const {
+    float shader_output) const {
   float z;
+  const double z_far = parent_->config().z_far;
+  const double z_near = parent_->config().z_near;
+  const double kA = z_far - kClippingPlaneNear;
+
   // When the depth is either closer than `kClippingPlaneNear` or farther than
-  // `kClippingPlaneFar`, `z_buffer_value` becomes `1.f`.
-  if (z_buffer_value == 1.f) {
+  // `kClippingPlaneFar`, `shader_output` becomes 1.f.
+  if (shader_output == 1.f) {
     z = std::numeric_limits<float>::quiet_NaN();
   } else {
-    z = static_cast<float>(kB / (z_buffer_value - kA));
+    z = static_cast<float>(shader_output * kA + kClippingPlaneNear);
 
-    if (z > parent_->config().z_far) {
+    if (z > z_far) {
       z = InvalidDepth::kTooFar;
-    } else if (z < parent_->config().z_near) {
+    } else if (z < z_near) {
       z = InvalidDepth::kTooClose;
     }
   }
@@ -171,19 +221,38 @@ float RgbdRendererVTK::Impl::CheckRangeAndConvertToMeters(
 void RgbdRendererVTK::Impl::ImplAddFlatTerrain() {
   vtkSmartPointer<vtkPlaneSource> plane =
       vtk_util::CreateSquarePlane(kTerrainSize);
-  vtkNew<vtkPolyDataMapper> mapper;
+
+  // For color and label.
+  vtkNew<vtkOpenGLPolyDataMapper> mapper;
   mapper->SetInputConnection(plane->GetOutputPort());
   terrain_actor_->SetMapper(mapper.GetPointer());
-
   auto color =
       ColorPalette::Normalize(parent_->color_palette().get_terrain_color());
+
   terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
   terrain_actor_->GetProperty()->LightingOff();
-  for (auto& renderer :
-       MakeVtkPointerArray(color_depth_renderer_, label_renderer_)) {
-    renderer->AddActor(terrain_actor_.GetPointer());
-  }
+
+  pipelines_[ImageType::kColor]->renderer->AddActor(
+      terrain_actor_.GetPointer());
+  pipelines_[ImageType::kLabel]->renderer->AddActor(
+      terrain_actor_.GetPointer());
+
+  // For depth.
+  vtkNew<vtkOpenGLPolyDataMapper> depth_mapper;
+  // Setting a vertex shader program and a fragment shader program here.
+  depth_mapper->SetVertexShaderCode(shaders::kDepthVS);
+  depth_mapper->SetFragmentShaderCode(shaders::kDepthFS);
+  depth_mapper->SetInputConnection(plane->GetOutputPort());
+  // Setting a callback for passing uniform variable to the fragment shader
+  // program.
+  depth_mapper->AddObserver(
+      vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
+
+  terrain_depth_actor_->SetMapper(depth_mapper.GetPointer());
+  pipelines_[ImageType::kDepth]->renderer->AddActor(
+      terrain_depth_actor_.GetPointer());
 }
+
 
 void RgbdRendererVTK::Impl::ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV,
                                                int body_id,
@@ -192,9 +261,9 @@ void RgbdRendererVTK::Impl::ImplUpdateVisualPose(const Eigen::Isometry3d& X_WV,
   // `id_object_maps_` is modified here. This is OK because 1) we are just
   // copying data to the memory spaces allocated at construction time
   // and 2) we are not outputting these data to outside the class.
-  for (auto& id_object_map : id_object_maps_) {
-    auto& actor = id_object_map.at(body_id).at(visual_id);
-    actor->SetUserTransform(vtk_X_WV);
+  auto& actor_collections = id_object_maps_.at(body_id);
+  for (auto& actor_collection : actor_collections) {
+    actor_collection.at(visual_id)->SetUserTransform(vtk_X_WV);
   }
 }
 
@@ -202,9 +271,8 @@ void RgbdRendererVTK::Impl::ImplUpdateViewpoint(
     const Eigen::Isometry3d& X_WC) const {
   vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
 
-  for (auto& renderer :
-       MakeVtkPointerArray(color_depth_renderer_, label_renderer_)) {
-    auto camera = renderer->GetActiveCamera();
+  for (auto& pipeline : pipelines_) {
+    auto camera = pipeline->renderer->GetActiveCamera();
     SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
   }
 }
@@ -212,39 +280,61 @@ void RgbdRendererVTK::Impl::ImplUpdateViewpoint(
 void RgbdRendererVTK::Impl::ImplRenderColorImage(
     ImageRgba8U* color_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(color_depth_render_window_, color_filter_, color_exporter_);
-  color_exporter_->Export(color_image_out->at(0, 0));
+  PerformVTKUpdate(pipelines_[ImageType::kColor]);
+  pipelines_[ImageType::kColor]->exporter->Export(color_image_out->at(0, 0));
 }
 
 void RgbdRendererVTK::Impl::ImplRenderDepthImage(
     ImageDepth32F* depth_image_out) const {
-  // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(color_depth_render_window_, depth_filter_, depth_exporter_);
-  depth_exporter_->Export(depth_image_out->at(0, 0));
+  const int width = parent_->config().width;
+  const int height = parent_->config().height;
+  ImageRgba8U image(width, height);
 
-  // TODO(kunimatsu-tri) Calculate this in a vertex shader.
-  for (int v = 0; v < parent_->config().height; ++v) {
-    for (int u = 0; u < parent_->config().width; ++u) {
-      depth_image_out->at(u, v)[0] =
-          CheckRangeAndConvertToMeters(depth_image_out->at(u, v)[0]);
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(pipelines_[ImageType::kDepth]);
+  pipelines_[ImageType::kDepth]->exporter->Export(image.at(0, 0));
+
+  for (int v = 0; v < height; ++v) {
+    for (int u = 0; u < width; ++u) {
+      if (image.at(u, v)[0] == 255u &&
+          image.at(u, v)[1] == 255u &&
+          image.at(u, v)[2] == 255u) {
+        depth_image_out->at(u, v)[0] = InvalidDepth::kTooFar;
+      } else {
+        // Decoding three channel color values to a float value. For the detail,
+        // see depth_shaders.h.
+        float shader_value =
+            image.at(u, v)[0] +
+            image.at(u, v)[1] / 255. +
+            image.at(u, v)[2] / (255. * 255.);
+
+        // Dividing by 255 so that the range gets to be [0, 1].
+        shader_value /= 255.f;
+        // TODO(kunimatsu-tri) Calculate this in a vertex shader.
+        depth_image_out->at(u, v)[0] =
+            CheckRangeAndConvertToMeters(shader_value);
+      }
     }
   }
 }
 
 void RgbdRendererVTK::Impl::ImplRenderLabelImage(
     ImageLabel16I* label_image_out) const {
-  // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(label_render_window_, label_filter_, label_exporter_);
+  const int width = parent_->config().width;
+  const int height = parent_->config().height;
+  ImageRgba8U image(width, height);
 
-  ImageRgb8U image(parent_->config().width, parent_->config().height);
-  label_exporter_->Export(image.at(0, 0));
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(pipelines_[ImageType::kLabel]);
+  pipelines_[ImageType::kLabel]->exporter->Export(image.at(0, 0));
 
   ColorI color;
-  for (int v = 0; v < parent_->config().height; ++v) {
-    for (int u = 0; u < parent_->config().width; ++u) {
+  for (int v = 0; v < height; ++v) {
+    for (int u = 0; u < width; ++u) {
       color.r = image.at(u, v)[0];
       color.g = image.at(u, v)[1];
       color.b = image.at(u, v)[2];
+      // Converting an RGB color to an object instance ID.
       label_image_out->at(u, v)[0] =
           static_cast<int16_t>(parent_->color_palette().LookUpId(color));
     }
@@ -253,76 +343,80 @@ void RgbdRendererVTK::Impl::ImplRenderLabelImage(
 
 RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
                             const Eigen::Isometry3d& X_WC)
-    : parent_(parent) {
-  if (!parent_->config().show_window) {
-    for (auto& window : MakeVtkPointerArray(color_depth_render_window_,
-                                            label_render_window_)) {
-      window->SetOffScreenRendering(1);
+    : parent_(parent),
+      pipelines_{{
+          std::make_unique<RenderingPipeline>(),
+          std::make_unique<RenderingPipeline>(),
+          std::make_unique<RenderingPipeline>()}} {
+  if (parent_->config().show_window) {
+    pipelines_[ImageType::kColor]->window->SetWindowName("Color Image");
+    pipelines_[ImageType::kLabel]->window->SetWindowName("Label Image");
+    // Always setting off to depth window since displaying the colors which
+    // encode floats as depth values doesn't provide useful information to
+    // users.
+    pipelines_[ImageType::kDepth]->window->SetOffScreenRendering(1);
+  } else {
+    for (auto& pipeline : pipelines_) {
+      pipeline->window->SetOffScreenRendering(1);
     }
   }
 
   const auto sky_color =
       ColorPalette::Normalize(parent_->color_palette().get_sky_color());
-  const auto renderers =
-      MakeVtkPointerArray(color_depth_renderer_, label_renderer_);
   const vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
 
-  for (auto& renderer : renderers) {
-    renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
-    auto camera = renderer->GetActiveCamera();
+  pipelines_[ImageType::kLabel]->window->SetMultiSamples(0);
+
+  for (auto& pipeline : pipelines_) {
+    pipeline->renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
+    auto camera = pipeline->renderer->GetActiveCamera();
     camera->SetViewAngle(parent_->config().fov_y * 180. / M_PI);
     camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
     SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
+
+    pipeline->window->SetSize(parent_->config().width,
+                              parent_->config().height);
+    pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
+    pipeline->filter->SetInput(pipeline->window.GetPointer());
+    pipeline->filter->SetMagnification(1);
+    pipeline->filter->ReadFrontBufferOff();
+    pipeline->filter->SetInputBufferTypeToRGBA();
+    pipeline->filter->Update();
+    pipeline->exporter->SetInputData(pipeline->filter->GetOutput());
+    pipeline->exporter->ImageLowerLeftOff();
   }
 
-  color_depth_renderer_->SetUseDepthPeeling(1);
-  color_depth_renderer_->UseFXAAOn();
-
-  const auto windows =
-      MakeVtkPointerArray(color_depth_render_window_, label_render_window_);
-  for (size_t i = 0; i < windows.size(); ++i) {
-    windows[i]->SetSize(parent_->config().width, parent_->config().height);
-    windows[i]->AddRenderer(renderers[i].GetPointer());
+  // Differing depth's clipping range from others, so that we can gain
+  // precision for depth calculation.
+  {
+    auto camera = pipelines_[ImageType::kDepth]->renderer->GetActiveCamera();
+    camera->SetClippingRange(kClippingPlaneNear, parent_->config().z_far);
+    pipelines_[ImageType::kDepth]->renderer->SetBackground(1., 1., 1.);
   }
-  label_render_window_->SetMultiSamples(0);
 
-  color_filter_->SetInput(color_depth_render_window_.GetPointer());
-  color_filter_->SetInputBufferTypeToRGBA();
-  depth_filter_->SetInput(color_depth_render_window_.GetPointer());
-  depth_filter_->SetInputBufferTypeToZBuffer();
-  label_filter_->SetInput(label_render_window_.GetPointer());
-  label_filter_->SetInputBufferTypeToRGB();
+  pipelines_[ImageType::kColor]->renderer->SetUseDepthPeeling(1);
+  pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
 
-  auto exporters =
-      MakeVtkPointerArray(color_exporter_, depth_exporter_, label_exporter_);
-
-  auto filters =
-      MakeVtkPointerArray(color_filter_, depth_filter_, label_filter_);
-
-  for (int i = 0; i < 3; ++i) {
-    filters[i]->SetMagnification(1);
-    filters[i]->ReadFrontBufferOff();
-    filters[i]->Update();
-    exporters[i]->SetInputData(filters[i]->GetOutput());
-    exporters[i]->ImageLowerLeftOff();
-  }
+  uniform_setting_callback_->set_renderer(
+      pipelines_[ImageType::kDepth]->renderer.Get());
+  // Setting kClippingPlaneNear instead of z_near_ so that we can distinguish
+  // kTooClose from out of range.
+  uniform_setting_callback_->set_z_near(kClippingPlaneNear);
+  uniform_setting_callback_->set_z_far(
+      static_cast<float>(parent_->config().z_far));
 }
 
 optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
-  // Initializes containers in id_object_maps_ if it's not done.
-  for (auto& id_object_map : id_object_maps_) {
-    const auto it = id_object_map.find(body_id);
-    if (it == id_object_map.end()) {
-      std::vector<vtkSmartPointer<vtkActor>> vec;
-      id_object_map[body_id] = vec;
-    }
-  }
+  std::array<vtkNew<vtkActor>, 3> actors;
+  std::array<vtkNew<vtkOpenGLPolyDataMapper>, 3> mappers;
+  // Sets vertex and fragment shaders only to the depth mapper.
+  mappers[ImageType::kDepth]->SetVertexShaderCode(shaders::kDepthVS);
+  mappers[ImageType::kDepth]->SetFragmentShaderCode(shaders::kDepthFS);
+  mappers[ImageType::kDepth]->AddObserver(
+      vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
 
-  vtkNew<vtkActor> actor;
-  vtkNew<vtkPolyDataMapper> mapper;
   bool shape_matched = true;
-  bool texture_found = false;
   const DrakeShapes::Geometry& geometry = visual.getGeometry();
   switch (visual.getShape()) {
     case DrakeShapes::BOX: {
@@ -332,7 +426,9 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       vtk_cube->SetYLength(box.size(1));
       vtk_cube->SetZLength(box.size(2));
 
-      mapper->SetInputConnection(vtk_cube->GetOutputPort());
+      for (auto& mapper : mappers) {
+        mapper->SetInputConnection(vtk_cube->GetOutputPort());
+      }
       break;
     }
     case DrakeShapes::SPHERE: {
@@ -342,7 +438,9 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       vtk_sphere->SetThetaResolution(50);
       vtk_sphere->SetPhiResolution(50);
 
-      mapper->SetInputConnection(vtk_sphere->GetOutputPort());
+      for (auto& mapper : mappers) {
+        mapper->SetInputConnection(vtk_sphere->GetOutputPort());
+      }
       break;
     }
     case DrakeShapes::CYLINDER: {
@@ -361,18 +459,34 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       transform_filter->SetTransform(transform.GetPointer());
       transform_filter->Update();
 
-      mapper->SetInputConnection(transform_filter->GetOutputPort());
+      for (auto& mapper : mappers) {
+        mapper->SetInputConnection(transform_filter->GetOutputPort());
+      }
       break;
     }
     case DrakeShapes::MESH: {
-      const auto* mesh_filename =
-          dynamic_cast<const DrakeShapes::Mesh&>(geometry)
-              .resolved_filename_.c_str();
+      const auto& mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
+      const auto* mesh_filename = mesh.resolved_filename_.c_str();
 
       // TODO(kunimatsu-tri) Add support for other file formats.
       vtkNew<vtkOBJReader> mesh_reader;
       mesh_reader->SetFileName(mesh_filename);
       mesh_reader->Update();
+
+      // Changing the scale of the loaded mesh.
+      const double scale_x = mesh.scale_[0];
+      const double scale_y = mesh.scale_[1];
+      const double scale_z = mesh.scale_[2];
+      vtkNew<vtkTransform> transform;
+      transform->Scale(scale_x, scale_y, scale_z);
+      vtkNew<vtkTransformPolyDataFilter> transform_filter;
+      transform_filter->SetInputConnection(mesh_reader->GetOutputPort());
+      transform_filter->SetTransform(transform.GetPointer());
+      transform_filter->Update();
+
+      for (auto& mapper : mappers) {
+        mapper->SetInputConnection(transform_filter->GetOutputPort());
+      }
 
       // TODO(kunimatsu-tri) Guessing the texture file name is bad. Instead,
       // get it from somewhere like `DrakeShapes::MeshWithTexture` when it's
@@ -386,15 +500,17 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
         vtkNew<vtkPNGReader> texture_reader;
         texture_reader->SetFileName(texture_file.c_str());
         texture_reader->Update();
-        vtkNew<vtkTexture> texture;
+        vtkNew<vtkOpenGLTexture> texture;
         texture->SetInputConnection(texture_reader->GetOutputPort());
         texture->InterpolateOn();
-        actor->SetTexture(texture.GetPointer());
 
-        texture_found = true;
+        // TODO(kunimatsu-tri) Use proper values from material file for
+        // ambient, diffuse and specular.
+        // The current setting is hardcoded as to be (1, 1, 0) respectively.
+        actors[ImageType::kColor]->GetProperty()->SetAmbient(1.);
+        actors[ImageType::kColor]->SetTexture(texture.Get());
       }
 
-      mapper->SetInputConnection(mesh_reader->GetOutputPort());
       break;
     }
     case DrakeShapes::CAPSULE: {
@@ -410,35 +526,31 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
 
   // Registers actors.
   if (shape_matched) {
-    if (!texture_found) {
+    auto& color_actor = actors[ImageType::kColor];
+    if (color_actor->GetProperty()->GetNumberOfTextures() == 0) {
       const auto color = visual.getMaterial();
-      actor->GetProperty()->SetColor(color[0], color[1], color[2]);
+      color_actor->GetProperty()->SetColor(color[0], color[1], color[2]);
     }
 
-    const auto& color = parent_->color_palette().get_normalized_color(body_id);
-    vtkNew<vtkActor> actor_for_label;
-    actor_for_label->GetProperty()->SetColor(color.r, color.g, color.b);
+    auto& label_actor = actors[ImageType::kLabel];
     // This is to disable shadows and to get an object painted with a single
     // color.
-    actor_for_label->GetProperty()->LightingOff();
+    label_actor->GetProperty()->LightingOff();
+    const auto& color = parent_->color_palette().get_normalized_color(body_id);
+    label_actor->GetProperty()->SetColor(color.r, color.g, color.b);
 
     vtkSmartPointer<vtkTransform> vtk_transform =
         ConvertToVtkTransform(visual.getWorldTransform());
-
-    auto renderers =
-        MakeVtkPointerArray(color_depth_renderer_, label_renderer_);
-    auto actors = MakeVtkPointerArray(actor, actor_for_label);
-
+    auto& actor_collections = id_object_maps_[body_id];
     for (size_t i = 0; i < actors.size(); ++i) {
-      actors[i]->SetMapper(mapper.GetPointer());
+      actors[i]->SetMapper(mappers[i].GetPointer());
       actors[i]->SetUserTransform(vtk_transform);
-      renderers[i]->AddActor(actors[i].GetPointer());
-      id_object_maps_[i][body_id].push_back(
-          vtkSmartPointer<vtkActor>(actors[i].GetPointer()));
+      pipelines_[i]->renderer->AddActor(actors[i].GetPointer());
+      actor_collections[i].push_back(actors[i].GetPointer());
     }
 
-    return optional<VisualIndex>(
-        VisualIndex(static_cast<int>(id_object_maps_[0][body_id].size() - 1)));
+    return optional<VisualIndex>(VisualIndex(static_cast<int>(
+        id_object_maps_[body_id][ImageType::kColor].size() - 1)));
   }
 
   return nullopt;

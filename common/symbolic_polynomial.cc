@@ -1,6 +1,7 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
 #include <map>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -10,6 +11,7 @@
 #include "drake/common/symbolic_expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
+using std::accumulate;
 using std::make_pair;
 using std::map;
 using std::ostream;
@@ -464,6 +466,16 @@ Polynomial Polynomial::Differentiate(const Variable& x) const {
     // The variable `x` does not appear in this polynomial.
     return p;
   }
+}
+
+double Polynomial::Evaluate(const Environment& env) const {
+  return accumulate(
+      monomial_to_coefficient_map_.begin(), monomial_to_coefficient_map_.end(),
+      0.0, [&env](const double v, const pair<const Monomial, Expression> item) {
+        const Monomial& monomial{item.first};
+        const Expression& coeff{item.second};
+        return v + monomial.Evaluate(env) * coeff.Evaluate(env);
+      });
 }
 
 Polynomial& Polynomial::operator+=(const Polynomial& p) {

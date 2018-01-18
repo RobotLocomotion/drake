@@ -340,6 +340,7 @@ drake_cc_library(
     name = "system_scalar_converter",
     srcs = [
         "system_scalar_converter.cc",
+        "system_type_tag.cc",
     ],
     hdrs = [
         "scalar_conversion_traits.h",
