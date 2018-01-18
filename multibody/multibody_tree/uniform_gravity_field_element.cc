@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
+#include <vector>
+
 #include "drake/common/autodiff.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -10,6 +12,49 @@ namespace multibody {
 template <typename T>
 UniformGravityFieldElement<T>::UniformGravityFieldElement(Vector3<double> g_W) :
     g_W_(g_W) {}
+
+template <typename T>
+VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
+    const systems::Context<T>& context) const {
+  const MultibodyTree<T>& model = this->get_parent_tree();
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // TODO(amcastro-tri): Get these from the cache.
+  PositionKinematicsCache<T> pc(model.get_topology());
+  model.CalcPositionKinematicsCache(context, &pc);
+  VelocityKinematicsCache<T> vc(model.get_topology());
+  vc.InitializeToZero();
+
+  MultibodyForces<T> forces(model);
+  this->CalcAndAddForceContribution(mbt_context, pc, vc, &forces);
+
+  // Temporary output vector of spatial forces for each body B at their inboard
+  // frame Mo, expressed in the world W.
+  std::vector<SpatialForce<T>> F_BMo_W_array(model.get_num_bodies());
+
+  // Zero vector of generalized accelerations.
+  const VectorX<T> vdot = VectorX<T>::Zero(model.get_num_velocities());
+
+  // Temporary array for body accelerations.
+  std::vector<SpatialAcceleration<T>> A_WB_array(model.get_num_bodies());
+
+  // Ouput vector of generalized forces:
+  VectorX<T> tau_g(model.get_num_velocities());
+
+  // Try first using different arrays for input/ouput:
+  // Initialize output to garbage, it should not affect the results.
+  model.CalcInverseDynamics(
+      context, pc, vc, /* state */
+      VectorX<T>::Zero(model.get_num_velocities()), /* vdot = 0 */
+      /* Applied forces. In this case only gravity. */
+      forces.body_forces(), forces.generalized_forces(),
+      &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
+      &tau_g /* Output, the generalized forces. */);
+
+  // We want to return the generalized forces as they appear in M
+  return -tau_g;
+}
 
 template <typename T>
 void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
