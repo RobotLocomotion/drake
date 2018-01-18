@@ -16,7 +16,6 @@ load(
 drake_cc_vector_gen_library(
     name = "pendulum_vector_types",
     srcs = [
-        "pendulum_input.named_vector",
         "pendulum_state.named_vector",
     ],
 )
