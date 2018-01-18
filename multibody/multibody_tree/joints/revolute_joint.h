@@ -130,7 +130,8 @@ class RevoluteJoint final : public Joint<T> {
 
   /// @}
 
-  /// Adds into `forces` a given `torque` for `this` joint.
+  /// Adds into `forces` a given `torque` for `this` joint that is to be applied
+  /// about the joint's axis.
   /// @note A torque is the moment of a set of forces whose resultant is zero.
   void AddInTorque(
       const systems::Context<T>& context,

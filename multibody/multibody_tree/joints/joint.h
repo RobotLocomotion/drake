@@ -121,6 +121,9 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
+
+  /// Returns the number of degrees of freedom for `this` joint.
+  /// E.g., one for a revolute joint and three for a ball joint.
   virtual int num_dofs() const = 0;
 
   /// Adds into `forces` a force along the one of the joint's degrees of
@@ -227,6 +230,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// How forces is added to a MultibodyTree model depends on the underlying
   /// implementation of a particular joint and therefore specific %Joint
   /// subclasses must provide a definition for this method.
+  /// This method is only called by the public NVI AddInForces() and therefore
+  /// input arguments were checked to be valid.
   /// @see The public NVI AddInForces() for details.
   virtual void DoAddInForces(
       const systems::Context<T>& context,
