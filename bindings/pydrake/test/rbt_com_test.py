@@ -18,6 +18,17 @@ class TestRBTCoM(unittest.TestCase):
 
         self.assertTrue(np.allclose(c.flat, [0.0, 0.0, -0.2425], atol=1e-4))
 
+    def testCoMBody(self):
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
+                                         "examples/pendulum/Pendulum.urdf"))
+
+        kinsol = r.doKinematics(np.zeros((7, 1)), np.zeros((7, 1)))
+
+        arm_com = r.FindBody("arm_com")
+        c = arm_com.get_center_of_mass()
+
+        self.assertTrue(np.allclose(c.flat, [0.0, 0.0, -0.5], atol=1e-4))
+
     def testCoMJacobian(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
                                          "examples/pendulum/Pendulum.urdf"))
