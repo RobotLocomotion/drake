@@ -638,10 +638,12 @@ def generate_code(
         dotfile = find_data(".clang-format")
         temp_dotfile = os.path.join(
             os.path.dirname(one_filename), ".clang-format")
+        print("!!! Linking %s to %s (exists: %i)" % (temp_dotfile, dotfile, os.path.exists(temp_dotfile)))
         assert not os.path.exists(temp_dotfile)
         os.symlink(dotfile, temp_dotfile)
         subprocess.check_call([
             get_clang_format_path(), "--style=file", "-i", one_filename])
+        print("!!! Unlinking %s" % temp_dotfile)
         os.unlink(temp_dotfile)
 
 
