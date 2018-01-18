@@ -218,10 +218,10 @@ def linux_fix_rpaths(dst_full):
     )
 
 
-def create_java_launcher(filename, classpath, main_class):
+def create_java_launcher(filename, classpath, jvm_flags, main_class):
     # In list-only mode, just display the filename, don't do any real work.
+    print("[Generating] %s" % filename)
     if list_only:
-        print(filename)
         return
     # Make sure install directory exists.
     filename = os.path.join(prefix, filename)
@@ -248,8 +248,8 @@ for jar_file in %s; do
   fi
 done
 
-java %s "$@"
-""" % (strclasspath, main_class)
+java %s %s "$@"
+""" % (strclasspath, jvm_flags, main_class)
         launcher_file.write(content)
     os.chmod(filename, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |
              stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)

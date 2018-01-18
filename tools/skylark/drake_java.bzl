@@ -12,6 +12,7 @@ def _drake_java_binary_install_launcher_impl(ctx):
             main_class = ctx.attr.main_class,
             classpath = classpath,
             filename = ctx.attr.filename,
+            jvm_flags = " ".join(ctx.attr.jvm_flags)
         )
     ]
 
@@ -20,6 +21,7 @@ _drake_java_binary_install_launcher = rule(
         "main_class": attr.string(mandatory = True),
         "filename": attr.string(mandatory = True),
         "target": attr.label(mandatory = True),
+        "jvm_flags": attr.string_list(mandatory = False, default = []),
     },
     implementation = _drake_java_binary_install_launcher_impl,
 )
@@ -43,7 +45,7 @@ def drake_java_binary(
     """
     vkwargs = {
         key: value for key, value in kwargs.items()
-        if key == "visibility"
+        if key == "visibility" or key == "jvm_flags"
     }
     native.java_binary(
         name = name,
