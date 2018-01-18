@@ -13,7 +13,6 @@
 
 using std::map;
 using std::ostringstream;
-using std::out_of_range;
 using std::pair;
 using std::runtime_error;
 using std::unordered_map;
@@ -583,7 +582,7 @@ TEST_F(MonomialTest, Evaluate) {
 TEST_F(MonomialTest, EvaluateException) {
   const Monomial m{{{var_x_, 1}, {var_y_, 2}}};  // xy^2
   const Environment env{{{var_x_, 1.0}}};
-  EXPECT_THROW(m.Evaluate(env), out_of_range);
+  EXPECT_THROW(m.Evaluate(env), runtime_error);
 }
 
 TEST_F(MonomialTest, Substitute) {
