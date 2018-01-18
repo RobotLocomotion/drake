@@ -14,10 +14,10 @@ namespace drake {
 namespace systems {
 
 /// A LeafSystem subclass used to describe general ODE systems
-/// i.e. d𝐱/dt = f(t, 𝐱, 𝐩) where f : t ⨯ 𝐱 ⊆ ℝ ⁿ⁺¹ →  d𝐱/dt ⊆ ℝ ⁿ, t ∈ ℝ ,
-/// 𝐱 ∈ ℝ ⁿ, 𝐩 ∈ ℝ ᵐ.
+/// i.e. d𝐱/dt = f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) where f : t ⨯ 𝐱 →  ℝ ⁿ, t ∈ ℝ ,
+/// 𝐱 ∈ ℝ ⁿ, 𝐤₀ ∈ ℝ ᵐ⁰, 𝐤₁ ∈ ℝ ᵐ¹, ..., 𝐤ₙ ∈ ℝ ᵐᶻ.
 ///
-/// @tparam T The ℝ domain scalar type, which must be a valid scalar type.
+/// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
 class AnySystem : public LeafSystem<T> {
  public:
@@ -29,9 +29,10 @@ class AnySystem : public LeafSystem<T> {
   /// parameterized as described by the @p param_model, to compute the
   /// derivatives and advance the @p state_model.
   ///
-  /// @param system_function The system function f(t, 𝐱, 𝐩).
+  /// @param system_function The system function f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ).
   /// @param state_model The state model 𝐱₀, with initial values.
-  /// @param param_model The parameter model 𝐩₀, with default values.
+  /// @param param_model The parameter sequence model 𝐤₀, 𝐤₁, ..., 𝐤ₙ, with
+  /// default values.
   AnySystem(const SystemFunction& system_function,
             const BasicVector<T>& state_model,
             const Parameters<T>& param_model);
@@ -45,7 +46,7 @@ class AnySystem : public LeafSystem<T> {
       ContinuousState<T>* derivatives) const override;
 
  private:
-  /// General ODE system d𝐱/dt = f(t, 𝐱, 𝐩) function.
+  /// General ODE system d𝐱/dt = f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) function.
   const SystemFunction system_function_;
 };
 
@@ -141,11 +142,11 @@ bool InitialValueProblem<T>::AreContextsValid(
 template <typename T>
 const VectorBase<T>& InitialValueProblem<T>::Solve(
     const T& t0, const VectorBase<T>& x0,
-    const T& t, const Parameters<T>& p) const {
+    const T& t, const Parameters<T>& k) const {
   DRAKE_THROW_UNLESS(t >= t0);
 
   if (!context_ || !AreContextsValid(*initial_context_,
-                                     *context_, t0, x0, t, p)) {
+                                     *context_, t0, x0, t, k)) {
     // Modifies cached initial context time.
     initial_context_->set_time(t0);
 
@@ -157,7 +158,7 @@ const VectorBase<T>& InitialValueProblem<T>::Solve(
     // Modifies cached parameters.
     Parameters<T>& parameters =
         initial_context_->get_mutable_parameters();
-    parameters.SetFrom(p);
+    parameters.SetFrom(k);
 
     // Clones initial context for solver usage.
     context_ = std::move(initial_context_->Clone());

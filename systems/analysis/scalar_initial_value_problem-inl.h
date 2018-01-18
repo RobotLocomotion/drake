@@ -19,9 +19,9 @@ ScalarInitialValueProblem<T>::ScalarInitialValueProblem(
   // Generalizes the given scalar ODE function.
   typename InitialValueProblem<T>::ODEFunction ode_function =
       [scalar_ode_function](const T& t, const VectorBase<T>& x,
-                            const Parameters<T>& p, VectorBase<T>* dx_dt) {
+                            const Parameters<T>& k, VectorBase<T>* dx_dt) {
         dx_dt->SetAtIndex(
-            0, scalar_ode_function(t, x.GetAtIndex(0), p));
+            0, scalar_ode_function(t, x.GetAtIndex(0), k));
       };
 
   // Builds a vector initial state from the given scalar one.

@@ -15,9 +15,9 @@ PrimitiveFunction<T>::PrimitiveFunction(
   // Generalizes the given scalar integrand function to build a system.
   typename ScalarInitialValueProblem<T>::ScalarODEFunction
       scalar_ode_function = [integrand_function](const T& t, const T& x,
-                                                 const Parameters<T>& p) -> T {
+                                                 const Parameters<T>& k) -> T {
     unused(x);
-    return integrand_function(t, p);
+    return integrand_function(t, k);
   };
 
   // Instantiates a single element state vector model using the given constant.
