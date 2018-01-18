@@ -191,11 +191,27 @@ cc_binary(
 #
 # To repair this, we provide our own init file at the root of the sandbox that
 # overrides the Bazel empty default.  Its implementation just delegates to the
-# lcm-python init file.
+# lcm-python init file.  (Note that this __init__.py shim is neither used nor
+# present in the installed copy of Drake; once Drake is installed, the paths
+# are standard and there is no aliasing confusion.)
+#
+# Relatedly, within the upstream __init__.py there is a `from ._lcm import`
+# statement that loads the compiled C code for LCM python support.  Even though
+# the `./_lcm.so` (the glue) resolves correctly in the sandbox, it needs to
+# then load the main library `liblcm.so` to operate.  That happens via its
+# RUNPATH, but because the RUNPATH is relative, when the lcm module is loaded
+# from the wrong sys.path entry, the RUNPATH no longer works.  To work around
+# that, we pre-load the shared library before calling the upstream __init__,
+# using python ctypes with the realpath to the shared library.
 generate_file(
     name = "init_genrule",
     out = "__init__.py",
-    content = "execfile(__path__[0] + \"/lcm-python/lcm/__init__.py\")",
+    content = """
+import ctypes
+import os.path
+ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
+execfile(__path__[0] + \"/lcm-python/lcm/__init__.py\")
+""",
     visibility = ["//visibility:private"],
 )
 
