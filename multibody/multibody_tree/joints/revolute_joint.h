@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
-#include "drake/multibody/multibody_tree/multibody_forcing.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
 namespace drake {
@@ -130,30 +130,30 @@ class RevoluteJoint final : public Joint<T> {
 
   /// @}
 
-  /// Adds into `forcing` a given `torque` for `this` joint.
+  /// Adds into `forces` a given `torque` for `this` joint.
   /// @note A torque is the moment of a set of forces whose resultant is zero.
   void AddInTorque(
       const systems::Context<T>& context,
       const T& torque,
-      MultibodyForcing<T>* forcing) const {
-    DRAKE_DEMAND(forcing != nullptr);
-    DRAKE_DEMAND(forcing->CheckInvariants(this->get_parent_tree()));
-    this->AddInForcing(context, 0, torque, forcing);
+      MultibodyForces<T>* forces) const {
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    this->AddInForces(context, 0, torque, forces);
   }
 
  private:
   // Joint<T> override called through public NVI. Therefore arguments were
   // already checked to be valid.
-  void DoAddInForcing(
+  void DoAddInForces(
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyForcing<T>* forcing) const override {
-    // Right now we assume all the forcing in joint_tau goes into a single
+      MultibodyForces<T>* forces) const override {
+    // Right now we assume all the forces in joint_tau goes into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
     auto tau_mob = get_mobilizer()->get_mutable_generalized_forces_from_array(
-        &forcing->mutable_generalized_forces());
+        &forces->mutable_generalized_forces());
     tau_mob(joint_dof) = joint_tau;
   }
 

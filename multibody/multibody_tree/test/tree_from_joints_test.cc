@@ -258,7 +258,7 @@ class PendulumTests : public ::testing::Test {
     // Set up workspace:
     const int nv = tree_->get_num_velocities();
     // External forces:
-    MultibodyForcing<double> forcing(model_.get_tree());
+    MultibodyForces<double> forces(model_.get_tree());
     // Bodies's accelerations:
     std::vector<SpatialAcceleration<double>> A_WB_array(
         tree_->get_num_bodies());
@@ -267,8 +267,8 @@ class PendulumTests : public ::testing::Test {
 
     // Useful aliases:
     std::vector<SpatialForce<double>>& F_BBo_W_array =
-        forcing.mutable_body_forces();
-    VectorX<double>& tau_array = forcing.mutable_generalized_forces();
+        forces.mutable_body_forces();
+    VectorX<double>& tau_array = forces.mutable_generalized_forces();
 
     // Set angles:
     model_.shoulder().set_angle(context_.get(), theta1);
@@ -284,12 +284,12 @@ class PendulumTests : public ::testing::Test {
     tree_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // Compute forces applied through force elements. This effectively resets
-    // the forcing to zero and adds in contributions due to force elements:
-    tree_->CalcForceElementsContribution(*context_, pc, vc, &forcing);
+    // the forces to zero and adds in contributions due to force elements:
+    tree_->CalcForceElementsContribution(*context_, pc, vc, &forces);
 
     // Apply external torques at the joints:
-    model_.shoulder().AddInTorque(*context_, tau1, &forcing);
-    model_.elbow().AddInTorque(*context_, tau2, &forcing);
+    model_.shoulder().AddInTorque(*context_, tau1, &forces);
+    model_.elbow().AddInTorque(*context_, tau2, &forces);
 
     // WARNING: to reduce memory foot-print, we use the input applied arrays also
     // as output arrays. This means that both Fapplied_Bo_W_array and tau_applied
