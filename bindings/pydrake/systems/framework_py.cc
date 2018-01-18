@@ -40,6 +40,28 @@ PYBIND11_MODULE(framework, m) {
   // for `keep_alive`, as it is implicit.
   auto py_iref = py::return_value_policy::reference_internal;
 
+  // `py::keep_alive` is used heavily throughout this code. For more
+  // information, please see:
+  // http://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive
+  // Terse notes are added to method bindings to indicate the patient
+  // (object being kept alive by nurse) and the nurse (object keeping patient
+  // alive).
+  // - "Keep alive, ownership" implies that one argument is owned directly by
+  // one of the other arguments (`self` is included in those arguments, for
+  // `py::init<>` and class methods).
+  // - "Keep alive, reference" implies a reference that is lifetime-sensitive
+  // (something that is not necessarily owned by the other arguments).
+  // - "Keep alive, transitive" implies a transfer of ownership of owned
+  // objects from one container to another. (e.g. transfering all `System`s
+  // from `DiagramBuilder` to `Diagram` when calling
+  // `DiagramBuilder.Build()`.)
+  // N.B. `py::return_value_policy::reference_internal` implies
+  // `py::keep_alive<0, 1>`, which implies
+  // "Keep alive, reference: `return` keeps `self` alive".
+
+  // TODO(eric.cousineau): Move these notes to `pydrake/pydrake_pybind.h`, to
+  // be used with other utilities; Doxygen-ize them.
+
   m.doc() = "Bindings for the core Systems framework.";
 
   // TODO(eric.cousineau): At present, we only bind doubles.
@@ -127,7 +149,9 @@ PYBIND11_MODULE(framework, m) {
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort), py_iref)
+             &Context<T>::FixInputPort), py_iref,
+         // Keep alive, ownership: `BasicVector` keeps `self` alive.
+         py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
@@ -143,7 +167,9 @@ PYBIND11_MODULE(framework, m) {
           // @note Use `auto&&` to get perfect forwarding.
           // @note Compiler does not like `py::overload_cast` with this setup?
           return self->GetMutableSubsystemState(arg1, arg2);
-        }, py_ref, py::keep_alive<0, 3>());
+        }, py_ref,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+        py::keep_alive<0, 3>());
 
   // Glue mechanisms.
   py::class_<DiagramBuilder<T>>(m, "DiagramBuilder")
@@ -152,14 +178,20 @@ PYBIND11_MODULE(framework, m) {
         "AddSystem",
         [](DiagramBuilder<T>* self, unique_ptr<System<T>> arg1) {
           return self->AddSystem(std::move(arg1));
-        })
+        },
+        // Keep alive, ownership: `System` keeps `self` alive.
+        py::keep_alive<2, 1>())
     .def("Connect",
          py::overload_cast<const OutputPort<T>&, const InputPortDescriptor<T>&>(
              &DiagramBuilder<T>::Connect))
     .def("ExportInput", &DiagramBuilder<T>::ExportInput, py_iref)
     .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py_iref)
-    .def("Build", &DiagramBuilder<T>::Build)
-    .def("BuildInto", &DiagramBuilder<T>::BuildInto);
+    .def("Build", &DiagramBuilder<T>::Build,
+         // Keep alive, transitive: `return` keeps `self` alive.
+         py::keep_alive<1, 0>())
+    .def("BuildInto", &DiagramBuilder<T>::BuildInto,
+         // Keep alive, transitive: `Diagram` keeps `self` alive.
+         py::keep_alive<2, 1>());
 
   // TODO(eric.cousineau): Figure out how to handle template-specialized method
   // signatures(e.g. GetValue<T>()).
