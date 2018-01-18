@@ -35,8 +35,6 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   UnrevisedLemkeSolver() = default;
   ~UnrevisedLemkeSolver() override = default;
 
-  void SetLoggingEnabled(bool enabled);
-
   /// Calculates the zero tolerance that the solver would compute if the user
   /// does not specify a tolerance.
   template <class U>
@@ -133,6 +131,15 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   SolverId solver_id() const override;
 
  private:
+  // A structure for holding a linear complementarity problem variable.
+  struct LCPVariable {
+    bool z{true};        // Is this a z variable or a w variable?
+    bool indep{true};    // Is this an independent (right-hand-side) or
+                         // dependent (left-hand-side) variable in w* = Mz* + q.
+    int index{-1};       // Index of the variable in the problem, 0...n. n 
+                         // indicates that the variable is artificial.
+  };
+
   void ClearIndexVectors() const;
 
   template <typename MatrixType, typename Scalar>

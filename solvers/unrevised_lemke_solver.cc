@@ -237,30 +237,29 @@ void UnrevisedLemkeSolver<T>::FinishLemkeSolution(const MatrixType& M,
     VectorX<T> wl = (M * (*z)) + q;
     const T minw = wl.minCoeff();
     const T w_dot_z = abs(wl.dot(*z));
-    log() << "  z: " << z << std::endl;
-    log() << "  w: " << wl << std::endl;
-    log() << "  minimum w: " << minw << std::endl;
-    log() << "  w'z: " << w_dot_z << std::endl;
+    SPDLOG_DEBUG(log(), "  z: " << z << std::endl;
+    SPDLOG_DEBUG(log(), "  w: " << wl << std::endl;
+    SPDLOG_DEBUG(log(), "  minimum w: " << minw << std::endl;
+    SPDLOG_DEBUG(log(), "  w'z: " << w_dot_z << std::endl;
   }
 }
 
 template <typename T>
 bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                                      const VectorX<T>& q, VectorX<T>* z,
+                                     int* num_pivots,
                                      const T& piv_tol,
                                      const T& zero_tol) const {
   using std::max;
+  DRAKE_DEMAND(num_pivots);
 
   // Variables that will be reused multiple times, thus hopefully allowing
   // Eigen to keep from freeing/reallocating memory repeatedly.
   VectorX<T> result, dj, dl, x, xj, Be, u, z0;
   MatrixX<T> Bl, t1, t2;
 
-  if (log_enabled_) {
-    log() << "UnrevisedLemkeSolver::SolveLcpLemke() entered" << std::endl;
-    log() << "  M: " << std::endl << M;
-    log() << "  q: " << q << std::endl;
-  }
+  SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() entered, M: {}, "
+      "q: {}, ", M, q.transpose());
 
   const unsigned n = q.size();
   const unsigned max_iter = std::min(unsigned{1000}, 50 * n);
@@ -268,34 +267,121 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   if (M.rows() != n || M.cols() != n)
     throw std::logic_error("M's dimensions do not match that of q.");
 
-  // update the pivots
-  pivots_ = 0;
+  // Update the pivots.
+  *num_pivots = 0;
 
-  // look for immediate exit
+  // Look for immediate exit.
   if (n == 0) {
     z->resize(0);
     return true;
   }
 
-  // come up with a sensible value for zero tolerance if none is given
+  // Denote the artificial index.
+  const int kArtificial = n;
+
+  // Compute a sensible value for zero tolerance if none is given.
   T mod_zero_tol = zero_tol;
   if (mod_zero_tol <= 0)
     mod_zero_tol = ComputeZeroTolerance(M);
 
   if (CheckLemkeTrivial(n, mod_zero_tol, q, z)) {
-    log() << " -- trivial solution found" << std::endl;
-    log() << "UnrevisedLemkeSolver::SolveLcpLemke() exited" << std::endl;
+    SPDLOG_DEBUG(log(), " -- trivial solution found");
+    SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited";
     return true;
   }
 
-  // Lemke's algorithm doesn't seem to like warmstarting
-  //
-  // TODO(sammy-tri) this is not present in the sparse solver, and it
-  // causes subtle dead code below.
-  z->fill(0);
+  // If 'n' is identical to the size of the last problem solved, try using the
+  // indices from the last problem solved.
 
-  // copy z to z0
-  z0 = *z;
+  // Set the LCP variables. Start with all z variables independent and all w
+  // variables dependent.
+  z_variables_.resize(n+1);
+  w_variables_.resize(n+1);
+  for (int i = 0; i < n + 1; ++i) {
+    z_variables_[i].z = z_variables_[i].indep = true;
+    w_variables_[i].z = w_variables_[i].indep = false;
+    z_variables_[i].index = w_variables_[i].index = i;
+  }
+
+  // Create the sets of independent and dependent variables. 
+  indep_variables_.clear();
+  dep_variables_.clear();
+  for (int i = 0; i < z_variables_.size(); ++i)
+    indep_variables.push_back(&z_variables_[i]);
+  for (int i = 0; i < n; ++i)  // w0 will be unused.
+    dep_variables.push_back(&w_variables_[i]);
+  DRAKE_ASSERT(indep_variables.size() == n + 1);
+  DRAKE_ASSERT(dep_variables.size() == n);
+
+  // Compute zn*, the smallest value of the artificial variable zn for which 
+  // w = q + zn >= 0. Let blocking denote a component of w that equals
+  // zero when zn = zn*.
+  int blocking_index = -1;
+  T znstar = 0;
+  for (int i = 0; i < n; ++i) {
+    if (q[i] < 0) {
+      if (-q[i] > znstar) {
+        znstar = -q[i];
+        blocking_index = i;
+      }
+    }
+  }
+  DRAKE_DEMAND(blocking_index >= 0);
+
+  // Pivot blocking, artificial 
+  LCPVariable* blocking = dep_variables_[blocking_index];
+  int driving_index = ComplementIndex(blocking, indep_variables_);
+  LCPVariable* driving = indep_variables_[driving_index];
+  std::swap(dep_variables_[blocking_index], indep_variables_[kArtificial]);
+
+  // Pivot up to the maximum number of times.
+  VectorX<T> q_bar, M_bar_col;
+  while (++(*num_pivots) < max_pivots)) {
+    // Compute the permuted q and driving column of the permuted M matrix.
+
+    // Perform the minimum ratio test.
+    T min_ratio = std::numeric_limits<double>::infinity();
+    int blocking_index = -1;
+    for (int i = 0; i < M_bar_col.size(); ++i) {
+      if (M_bar_col[i] < 0) {
+        ratio = -q_bar[i] / M_bar_col[i];
+        if (ratio < min_ratio) {
+          min_ratio = ratio;
+          blocking_index = i;
+        }
+      }
+    }
+
+    if (blocking_index < 0) {
+      SPDLOG_DEBUG(log(), "driving variable is unblocked- algorithm failed");
+      return false;
+    }
+
+    // Get the blocking variable.
+    blocking = dep_variables_[blocking_index];
+
+    // See whether the artificial variable blocks the driving variable.
+    if (blocking.index == kArtificialIndex) {
+      DRAKE_DEMAND(blocking->z);
+
+      // Remove the driving variable from the independent set.
+
+      // Remove the artificial variable from the dependent set, replacing it
+      // with the driving variable. 
+
+      // Compute the permuted q, and convert it into a solution.
+
+      z->setZero(n);
+      for (int i = 0; i < dep_variables_.size(); ++i) {
+        if (dep_variables_[i]->z)
+          (*z)[dep_variables_[i]->index] = q_bar[i];
+      }
+    } else {
+      // Pivot the blocking variable and the driving variable.
+
+      // Make the driving variable the complement of the blocking variable.
+    }
+  }
 
   ClearIndexVectors();
 
@@ -328,7 +414,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   // determine initial values
   if (!bas_.empty()) {
-    log() << "-- initial basis not empty (warmstarting)" << std::endl;
+    SPDLOG_DEBUG(log(), "-- initial basis not empty (warmstarting)";
 
     // start from good initial basis
     Bl.resize(n, n);
@@ -349,7 +435,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     // Solve B*x = -q.
     x = LinearSolve(Bl, q);
   } else {
-    log() << "-- using basis of -1 (no warmstarting)" << std::endl;
+    SPDLOG_DEBUG(log(), "-- using basis of -1 (no warmstarting)";
 
     // use standard initial basis
     Bl.resize(n, n);
@@ -360,9 +446,9 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   // check whether initial basis provides a solution
   if (x.minCoeff() >= 0.0) {
-    log() << " -- initial basis provides a solution!" << std::endl;
+    SPDLOG_DEBUG(log(), " -- initial basis provides a solution!";
     FinishLemkeSolution(M, q, x, z);
-    log() << "UnrevisedLemkeSolver::SolveLcpLemke() exited" << std::endl;
+    SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited";
     return true;
   }
 
@@ -382,10 +468,10 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   iiter = bas_.begin();
   std::advance(iiter, lvindex);
   leaving = *iiter;
-  log() << " -- x: " << x << std::endl;
-  log() << " -- first pivot: leaving index=" << lvindex
+  SPDLOG_DEBUG(log(), " -- x: " << x;
+  SPDLOG_DEBUG(log(), " -- first pivot: leaving index=" << lvindex
         << "  entering index=" << entering << " minimum value: " << tval
-        << std::endl;
+       ;
 
   // pivot in the artificial variable
   *iiter = t;  // replace w var with _z0 in basic indices
@@ -398,7 +484,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   x += u;
   x[lvindex] = tval;
   Bl.col(lvindex) = Be;
-  log() << "  new q: " << x << std::endl;
+  SPDLOG_DEBUG(log(), "  new q: " << x;
 
   // main iterations begin here
   for (pivots_ = 0; pivots_ < max_iter; pivots_++) {
@@ -407,15 +493,15 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       for (unsigned i = 0; i < bas_.size(); i++) {
         basic << " " << bas_[i];
       }
-      log() << "basic variables:" << basic.str() << std::endl;
-      log() << "leaving: " << leaving << " t:" << t << std::endl;
+      SPDLOG_DEBUG(log(), "basic variables:" << basic.str();
+      SPDLOG_DEBUG(log(), "leaving: " << leaving << " t:" << t;
     }
 
     // check whether done; if not, get new entering variable
     if (leaving == t) {
-      log() << "-- solved LCP successfully!" << std::endl;
+      SPDLOG_DEBUG(log(), "-- solved LCP successfully!";
       FinishLemkeSolution(M, q, x, z);
-      log() << "UnrevisedLemkeSolver::SolveLcpLemke() exited" << std::endl;
+      SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited";
       return true;
     } else if (leaving < n) {
       entering = n + leaving;
@@ -443,8 +529,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     if (j_.empty()) {
       log()
           << "UnrevisedLemkeSolver::SolveLcpLemke() - no new pivots (ray termination)"
-          << std::endl;
-      log() << "UnrevisedLemkeSolver::SolveLcpLemke() exiting" << std::endl;
+         ;
+      SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exiting";
       z->setZero(n);
       return false;
     }
@@ -452,8 +538,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     if (log_enabled_) {
       std::ostringstream j;
       for (unsigned i = 0; i < j_.size(); i++) j << " " << j_[i];
-      log() << "d: " << dl << std::endl;
-      log() << "j (before min ratio):" << j.str() << std::endl;
+      SPDLOG_DEBUG(log(), "d: " << dl;
+      SPDLOG_DEBUG(log(), "j (before min ratio):" << j.str();
     }
 
     // select elements j from x and d
@@ -493,13 +579,13 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       for (unsigned i = 0; i < j_.size(); i++) {
         j << " " << j_[i];
       }
-      log() << "j (after min ratio):" << j.str() << std::endl;
+      SPDLOG_DEBUG(log(), "j (after min ratio):" << j.str();
     }
 
     // if j is empty, then likely the zero tolerance is too low
     if (j_.empty()) {
-      log() << "zero tolerance too low?" << std::endl;
-      log() << "UnrevisedLemkeSolver::SolveLcpLemke() exited" << std::endl;
+      SPDLOG_DEBUG(log(), "zero tolerance too low?";
+      SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited";
       z->setZero(n);
       return false;
     }
@@ -533,13 +619,13 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     x[lvindex] = ratio;
     Bl.col(lvindex) = Be;
     *iiter = entering;
-    log() << " -- pivoting: leaving index=" << lvindex
-          << "  entering index=" << entering << std::endl;
+    SPDLOG_DEBUG(log(), " -- pivoting: leaving index=" << lvindex
+          << "  entering index=" << entering;
   }
 
-  log() << " -- maximum number of iterations exceeded (n=" << n
-        << ", max=" << max_iter << ")" << std::endl;
-  log() << "UnrevisedLemkeSolver::SolveLcpLemke() exited" << std::endl;
+  SPDLOG_DEBUG(log(), " -- maximum number of iterations ({}) exceeded ", 
+      max_iter);
+  SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited");
   z->setZero(n);
   return false;
 }
@@ -556,7 +642,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
   // Eigen to keep from freeing/reallocating memory repeatedly.
   VectorX<T> wx;
 
-  log() << "UnrevisedLemkeSolver::SolveLcpLemkeRegularized() entered" << std::endl;
+  SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemkeRegularized() entered"      );
 
   // look for fast exit
   if (q.size() == 0) {
@@ -567,12 +653,28 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
   // copy MM
   MatrixX<T> MM = M;
 
-  // Assign value for zero tolerance, if necessary. See discussion in
-  // SolveLcpFastRegularized() to see why this tolerance is computed here once,
-  // rather than for each regularized version of M.
+  // A discourse on the zero tolerance in the context of regularization:
+  // The zero tolerance is used to determine when an element of w or z is
+  // effectively zero though its floating point value is negative. The question
+  // is whether the regularization process will change the zero tolerance
+  // necessary to solve the problem numerically. In such a case, the infinity
+  // norm of M would be small while the infinity norm of MM (regularized M)
+  // would be large. Consider the case of a symmetric, indefinite matrix with
+  // maximum and minimum eigenvalues of a and -a, respectively. The matrix could
+  // be made positive definite (and thereby guaranteed to possess a solution to
+  // the linear complementarity problem) by adding an identity matrix times
+  // (a+ε) to the LCP matrix, where ε > 0 (its magnitude will depend upon the
+  // magnitude of a). The infinity norm (and hence the zero tolerance) could
+  // then be expected to grow by a factor of approximately two during the
+  // regularization process. In other words, recomputing the zero tolerance
+  // for each regularization update to the LCP matrix appears wasteful. For
+  // this reason, we compute it only once below, but a practical effect is
+  // not discernible at this time.
+
+  // Assign value for zero tolerance, if necessary.
   const T mod_zero_tol = (zero_tol > 0) ? zero_tol : ComputeZeroTolerance(M);
 
-  SPDLOG_DEBUG(drake::log(), " zero tolerance: {}", mod_zero_tol);
+  SPDLOG_DEBUG(log(), " zero tolerance: {}", mod_zero_tol);
 
   // store the total pivots
   *num_pivots = 0;
