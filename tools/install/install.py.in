@@ -79,13 +79,13 @@ def install(src, dst):
     dst_full = os.path.join(prefix, dst)
     # Install file, if not up to date.
     if needs_install(src, dst):
-        print("[Installing] %s" % dst)
+        print("[Installing] {}".format(dst))
         if os.path.exists(dst_full):
             os.remove(dst_full)
         shutil.copy2(src, dst_full)
         installed = True
     else:
-        print("[Up to date] %s" % dst)
+        print("[Up to date] {}".format(dst))
     re_result = re.match(dylib_match, dst)
     if re_result is not None:  # It is a library
         basename = os.path.basename(re_result.group(0))
@@ -94,7 +94,7 @@ def install(src, dst):
         # we do not know which one to use, and fail fast.
         if basename in files_to_fix_up:
             sys.stderr.write(
-                "Multiple installation rules found for %s." % (basename))
+                "Multiple installation rules found for {}.".format(basename))
             sys.exit(1)
         files_to_fix_up[basename] = (dst_full, installed)
     else:  # It is not a library, it may be an executable.
@@ -220,9 +220,10 @@ def linux_fix_rpaths(dst_full):
 
 def create_java_launcher(filename, classpath, jvm_flags, main_class):
     # In list-only mode, just display the filename, don't do any real work.
-    print("[Generating] %s" % filename)
     if list_only:
+        print(filename)
         return
+    print("[Generating] {}".format(filename))
     # Make sure install directory exists.
     filename = os.path.join(prefix, filename)
     filepath = os.path.dirname(filename)
@@ -242,14 +243,14 @@ set -euo pipefail
 readonly prefix=$(python -c 'import os;\
     print(os.path.realpath(os.path.join(\"'\"$0\"'\", os.pardir, os.pardir)))')
 
-for jar_file in %s; do
+for jar_file in {}; do
   if [ -f "$jar_file" ]; then
-    export CLASSPATH="${CLASSPATH:+$CLASSPATH:}$jar_file"
+    export CLASSPATH="${{CLASSPATH:+$CLASSPATH:}}$jar_file"
   fi
 done
 
-java %s %s "$@"
-""" % (strclasspath, jvm_flags, main_class)
+java {} {} "$@"
+""".format(strclasspath, jvm_flags, main_class)
         launcher_file.write(content)
     os.chmod(filename, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |
              stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
@@ -276,8 +277,8 @@ def main(args):
     # location is an absolute path so that the user is not surprised.
     if not os.path.isabs(prefix):
         sys.stderr.write(
-            "Install prefix must be an absolute path (got %r)\n"
-            % prefix)
+            "Install prefix must be an absolute path (got {})\n"
+            .format(prefix))
         sys.exit(1)
 
     # Execute the install actions.

@@ -284,8 +284,9 @@ def _install_code(action):
 #------------------------------------------------------------------------------
 # Generate install code for a java launcher.
 def _java_launcher_code(action):
-    return "create_java_launcher(%r, %r, %r, %r)" % (action.dst, action.classpath,
-                                              action.jvm_flags, action.main_class)
+    return "create_java_launcher(%r, %r, %r, %r)" % (
+        action.dst, action.classpath, " ".join(action.jvm_flags),
+        action.main_class)
 
 #END internal helpers
 #==============================================================================
