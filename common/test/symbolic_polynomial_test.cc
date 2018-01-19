@@ -719,6 +719,47 @@ TEST_F(SymbolicPolynomialTest, Evaluate) {
   }};
   EXPECT_THROW(p.Evaluate(partial_env), runtime_error);
 }
+
+TEST_F(SymbolicPolynomialTest, PartialEvaluate1) {
+  // p1 = a*x² + b*x + c
+  // p2 = p1[x ↦ 3.0] = 3²a + 3b + c.
+  const Polynomial p1{a_ * x_ * x_ + b_ * x_ + c_, var_xyz_};
+  const Polynomial p2{a_ * 3.0 * 3.0 + b_ * 3.0 + c_, var_xyz_};
+  const Environment env{{{var_x_, 3.0}}};
+  EXPECT_PRED2(PolyEqual, p1.EvaluatePartial(env), p2);
+  EXPECT_PRED2(PolyEqual, p1.EvaluatePartial(var_x_, 3.0), p2);
+}
+
+TEST_F(SymbolicPolynomialTest, PartialEvaluate2) {
+  // p1 = a*xy² - a*xy + c
+  // p2 = p1[y ↦ 2.0] = (4a - 2a)*x + c = 2ax + c
+  const Polynomial p1{a_ * x_ * y_ * y_ - a_ * x_ * y_ + c_, var_xyz_};
+  const Polynomial p2{2 * a_ * x_ + c_, var_xyz_};
+  const Environment env{{{var_y_, 2.0}}};
+  EXPECT_PRED2(PolyEqual, p1.EvaluatePartial(env), p2);
+  EXPECT_PRED2(PolyEqual, p1.EvaluatePartial(var_y_, 2.0), p2);
+}
+
+TEST_F(SymbolicPolynomialTest, PartialEvaluate3) {
+  // p1 = a*x² + b*x + c
+  // p2 = p1[a ↦ 2.0, x ↦ 3.0] = 2*3² + 3b + c
+  //                           = 18 + 3b + c
+  const Polynomial p1{a_ * x_ * x_ + b_ * x_ + c_, var_xyz_};
+  const Polynomial p2{18 + 3 * b_ + c_, var_xyz_};
+  const Environment env{{{var_a_, 2.0}, {var_x_, 3.0}}};
+  EXPECT_PRED2(PolyEqual, p1.EvaluatePartial(env), p2);
+}
+
+TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
+  // p = (a + c / b + c)*x² + b*x + c
+  //
+  // Partially evaluating p with [a ↦ 0, b ↦ 0, c ↦ 0] throws `runtime_error`
+  // because of the divide-by-zero
+  const Polynomial p{((a_ + c_) / (b_ + c_)) * x_ * x_ + b_ * x_ + c_,
+                     var_xyz_};
+  const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
+  EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
