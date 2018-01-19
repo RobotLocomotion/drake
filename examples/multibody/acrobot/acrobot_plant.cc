@@ -256,8 +256,6 @@ void AcrobotPlant<T>::BuildMultibodyTreeModel() {
       {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
-//  model_->template AddJointActuator("JointMotor", *joint_);
-
   // Gravity acting in the -z direction.
   model_->template AddForceElement<UniformGravityFieldElement>(
       -g() * Vector3d::UnitZ());
@@ -270,12 +268,9 @@ void AcrobotPlant<T>::RegisterGeometry(
     geometry::GeometrySystem<double>* geometry_system) {
   DRAKE_DEMAND(geometry_system != nullptr);
 
+  // Register this system to be a source for the input geometry_system.
   source_id_ = geometry_system->RegisterSource("multibody_acrobot");
 
-  // The acrobot's body frame B is defined to have its origin Bo coincident
-  // with the world's origin Wo. For the acrobot at rest pointing downwards in
-  // the -z direction, the acrobot's body frame B is coincident with the world
-  // frame W.
   link1_frame_id_ = geometry_system->RegisterFrame(
       source_id_.value(),
       GeometryFrame(
@@ -348,8 +343,8 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   // the forces to zero and adds in contributions due to force elements:
   model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
-  // Add in input forces:
-  elbow_->AddInTorque(context, get_tau(context), &forces);
+  // TODO(amcastro-tri): Add in input forces when #7797 lands.
+  // Like so: elbow_->AddInTorque(context, get_tau(context), &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 

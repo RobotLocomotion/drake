@@ -51,10 +51,10 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant)
 
-  /// Constructs a model of an idealized acrobot of a given `mass` and
-  /// suspended by a massless rigid rod with a given `length`. Gravity points in
-  /// the `-z` axis direction with the acceleration constant `gravity`.
-  /// This constructor doesn't register any geometry.
+  /// Constructor for an acrobot model with default parameters. See this plant's
+  /// documentation for details on the parameters for the plant.
+  /// @warning Damping is still not included in this model.
+  // TODO(amcastro-tri): Add damping.
   AcrobotPlant(double m1 = 1.0,
                double m2 = 1.0,
                double l1 = 1.0,
@@ -67,9 +67,8 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
                double b2 = 0.1,
                double g = 9.81);
 
-  /// Constructs a model of an idealized acrobot of a given `mass` and
-  /// suspended by a massless rigid rod with a given `length`. Gravity points in
-  /// the `-z` axis direction with the acceleration constant `gravity`.
+  /// Constructor for an acrobot model with parameters specified in the default
+  /// constructor.
   /// This constructor registers `this` plant as a source for `geometry_system`
   /// as well as the frames and geometry used for visualization.
   AcrobotPlant(geometry::GeometrySystem<double>* geometry_system);
@@ -132,8 +131,7 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_state_output_port() const;
 
   /// Sets the state in `context` so that generalized positions and velocities
-  /// are zero. For quaternion based joints the quaternion is set to be the
-  /// identity (or equivalently a zero rotation).
+  /// are zero.
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_DEMAND(state != nullptr);

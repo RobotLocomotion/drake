@@ -49,10 +49,9 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  // Simulate about five periods of oscillation.
   const double simulation_time = 10.0;
 
-  // Desired maximum time step.
+  // Make the desired maximum time step a fraction of the simulation time.
   const double max_time_step = simulation_time / 1000.0;
 
   // The target accuracy determines the size of the actual time steps taken
@@ -63,7 +62,7 @@ int do_main() {
       *builder.AddSystem<AcrobotPlant>(&geometry_system);
   acrobot.set_name("Acrobot");
 
-  // A constant source for a zero applied torque at the pin joint.
+  // A constant source for a zero applied torque at the elbow joint.
   double applied_torque(0.0);
   auto torque_source =
       builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
@@ -100,8 +99,10 @@ int do_main() {
   // geometry.
   geometry::DispatchLoadMessage(geometry_system);
 
+  // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
+  // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
@@ -182,7 +183,8 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple acrobot demo using Drake's MultibodyTree. "
+      "A simple acrobot demo using Drake's MultibodyTree,"
+      "with GeometrySystem visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::acrobot::do_main();
