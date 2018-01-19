@@ -150,12 +150,12 @@ class RevoluteJoint final : public Joint<T> {
       int joint_dof,
       const T& joint_tau,
       MultibodyForces<T>* forces) const override {
-    // Right now we assume all the forces in joint_tau goes into a single
+    // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
     auto tau_mob = get_mobilizer()->get_mutable_generalized_forces_from_array(
         &forces->mutable_generalized_forces());
-    tau_mob(joint_dof) = joint_tau;
+    tau_mob(joint_dof) += joint_tau;
   }
 
   // Joint<T> overrides:

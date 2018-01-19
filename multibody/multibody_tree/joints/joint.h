@@ -127,12 +127,31 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   virtual int num_dofs() const = 0;
 
   /// Adds into `forces` a force along the one of the joint's degrees of
-  /// freedom given by `joint_dof`. The meaning for this degree of freedom and
-  /// even its dimensional units depend on the specific joint sub-class.
-  /// For a RevoluteJoint for instance, `joint_dof` can only be 0 since revolute
-  /// joints's motion subspace only has one degree of freedom, while the units
-  /// of `joint_tau` are those of torque (N⋅m in the MKS system of units).
+  /// freedom indicated by index `joint_dof`.
+  /// The meaning for this degree of freedom and even its dimensional units
+  /// depend on the specific joint sub-class. For a RevoluteJoint for instance,
+  /// `joint_dof` can only be 0 since revolute joints's motion subspace only has
+  /// one degree of freedom, while the units of `joint_tau` are those of torque
+  /// (N⋅m in the MKS system of units). For multi-dof joints please refer to
+  /// the documentation provided by specific joint sub-classes regarding the
+  /// meaning of `joint_dof`.
   /// NVI to DoAddInForces().
+  ///
+  /// @param[in] context
+  ///   The context storing the state and parameters for the model to which
+  ///   `this` joint belongs.
+  /// @param[in] joint_dof
+  ///   Index specifying one of the degress of freedom for this joint. The index
+  ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
+  ///   method will abort.
+  /// @param[in] joint_tau
+  ///   Generalized force corresponding to the degree of freedom indicated by
+  ///   `joint_dof` to be added into `forces`.
+  /// @param[out] forces
+  ///   On return, this method will add force `joint_tau` for the degree of
+  ///   freedom `joint_dof` into the output `forces`. This method aborts if
+  ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
+  ///   accommodate a set of forces for the model to which this joint belongs.
   void AddInForces(
       const systems::Context<T>& context,
       int joint_dof,

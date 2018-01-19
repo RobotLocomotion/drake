@@ -289,8 +289,9 @@ class PendulumTests : public ::testing::Test {
     tree_->CalcPositionKinematicsCache(*context_, &pc);
     tree_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
-    // Compute forces applied through force elements. This effectively resets
-    // the forces to zero and adds in contributions due to force elements:
+    // Compute forces applied through force elements. This effectively
+    // initializes the forces to zero and adds in contributions due to force
+    // elements:
     tree_->CalcForceElementsContribution(*context_, pc, vc, &forces);
 
     // Apply external torques at the joints:
