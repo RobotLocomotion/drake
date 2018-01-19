@@ -986,16 +986,6 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "resource_tool_installed_test",
-    args = [
-        "$(location :install)",
-    ],
-    data = [
-        ":install",
-    ],
-)
-
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
