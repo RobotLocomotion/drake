@@ -18,24 +18,34 @@ namespace examples {
 namespace multibody {
 namespace acrobot {
 
-/// A model of an idealized acrobot with a point mass on the end of a massless
-/// rigid rod.
-/// The acrobot oscillates in the x-z plane with its revolute axis coincident
-/// with the y-axis. Gravity points downwards in the -z axis direction.
+/// The Acrobot - a canonical underactuated system as described in <a
+/// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
+/// of Underactuated Robotics</a>.
+/// This plant is modeled using a MultibodyTree.
 ///
-/// The parameters of the plant are:
-/// - mass: the mass of the idealized point mass.
-/// - length: the length of the massless rod on which the mass is suspended.
-/// - gravity: the acceleration of gravity.
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @param m1 Mass of link 1 (kg).
+/// @param m2 Mass of link 2 (kg).
+/// @param l1 Length of link 1 (m).
+/// @param l2 Length of link 2 (m).
+/// @param lc1 Vertical distance from shoulder joint to center of mass of
+/// link 1 (m).
+/// @param lc2 Vertical distance from elbow joint to center of mass of
+/// link 2 (m).
+/// @param Ic1 Inertia of link 1 about the center of mass of link 1
+/// (kg*m^2).
+/// @param Ic2 Inertia of link 2 about the center of mass of link 2
+/// (kg*m^2).
+/// @param b1 Damping coefficient of the shoulder joint (kg*m^2/s).
+/// @param b2 Damping coefficient of the elbow joint (kg*m^2/s).
+/// @param g Gravitational constant (m/s^2).
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// The parameters are defaulted to values in Spong's paper (see
+/// acrobot_spong_controller.cc for more details).
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
 template<typename T>
 class AcrobotPlant final : public systems::LeafSystem<T> {
  public:
@@ -45,29 +55,41 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
   /// suspended by a massless rigid rod with a given `length`. Gravity points in
   /// the `-z` axis direction with the acceleration constant `gravity`.
   /// This constructor doesn't register any geometry.
-  AcrobotPlant(double mass, double length, double gravity);
+  AcrobotPlant(double m1 = 1.0,
+               double m2 = 1.0,
+               double l1 = 1.0,
+               double l2 = 2.0,
+               double lc1 = 0.5,
+               double lc2 = 1.0,
+               double Ic1 = .083,
+               double Ic2 = .33,
+               double b1 = 0.1,
+               double b2 = 0.1,
+               double g = 9.81);
 
   /// Constructs a model of an idealized acrobot of a given `mass` and
   /// suspended by a massless rigid rod with a given `length`. Gravity points in
   /// the `-z` axis direction with the acceleration constant `gravity`.
   /// This constructor registers `this` plant as a source for `geometry_system`
   /// as well as the frames and geometry used for visualization.
-  AcrobotPlant(
-      double mass, double length, double gravity,
-      geometry::GeometrySystem<double>* geometry_system);
+  AcrobotPlant(geometry::GeometrySystem<double>* geometry_system);
 
   /// Scalar-converting copy constructor.
   template <typename U>
   explicit AcrobotPlant(const AcrobotPlant<U>&);
 
-  /// Returns the mass of this point acrobot.
-  double mass() const { return mass_; }
-
-  /// Returns the length of the rod from which the point mass is suspended.
-  double length() const { return length_; }
-
-  /// Returns the value of the acceleration of gravity in the model.
-  double gravity() const { return gravity_; }
+  // getters for robot parameters
+  double m1() const { return m1_; }
+  double m2() const { return m2_; }
+  double l1() const { return l1_; }
+  double l2() const { return l2_; }
+  double lc1() const { return lc1_; }
+  double lc2() const { return lc2_; }
+  double Ic1() const { return Ic1_; }
+  double Ic2() const { return Ic2_; }
+  double b1() const { return b1_; }
+  double b2() const { return b2_; }
+  double g() const { return g_; }
 
   /// Evaluates the input port and returns the scalar value
   /// of the commanded torque.
@@ -98,19 +120,6 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& get_input_port() const;
 
   const systems::OutputPort<T>& get_state_output_port() const;
-
-  /// Sets the state for this system in `context` to be that of `this` acrobot
-  /// at a given `angle`, in radians. Mainly used to set initial conditions.
-  void SetAngle(systems::Context<T>*, const T& angle) const;
-
-  /// Computes the period for the small oscillations of a simple acrobot.
-  /// The solution assumes no damping. Useful to compute a reference time scale.
-  static T CalcSimpleAcrobotPeriod(const T& length, const T& gravity) {
-    DRAKE_DEMAND(length > 0);
-    DRAKE_DEMAND(gravity > 0);
-    using std::sqrt;
-    return 2.0 * M_PI * sqrt(length / gravity);
-  }
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
@@ -178,26 +187,31 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
 
   // The physical parameters of the model. They are initialized with NaN for a
   // quick detection of uninitialized values.
-  double mass_{nan()};      // In kilograms.
-  double length_{nan()};    // In meters.
-  double gravity_{nan()};   // In m/s².
+  double m1_{nan()}, m2_{nan()},  // In kilograms.
+      l1_{nan()}, l2_{nan()},     // In meters.
+      lc1_{nan()}, lc2_{nan()},   // In meters.
+      Ic1_{nan()}, Ic2_{nan()},   // In Kgr⋅m².
+      b1_{nan()}, b2_{nan()},     // In N⋅m⋅s.
+      g_{nan()};                  // In m/s².
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
-  // The one and only body in this model.
-  const drake::multibody::RigidBody<T>* link_;
-
-  // The one and only joint in this model.
-  const drake::multibody::RevoluteJoint<T>* joint_;
+  // Bodies:
+  const drake::multibody::RigidBody<T>* link1_;  // Upper link.
+  const drake::multibody::RigidBody<T>* link2_;  // Lower link.
+  // Joints:
+  const drake::multibody::RevoluteJoint<T>* shoulder_;
+  const drake::multibody::RevoluteJoint<T>* elbow_;
 
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
   optional<geometry::SourceId> source_id_{nullopt};
 
-  // The frame Id associated with the only Body in the model.
-  optional<geometry::FrameId> frame_id_{nullopt};
+  // Frame Id's for each body in the model:
+  optional<geometry::FrameId> link1_frame_id_{nullopt};
+  optional<geometry::FrameId> link2_frame_id_{nullopt};
 
   // Port handles
   int geometry_id_port_{-1};

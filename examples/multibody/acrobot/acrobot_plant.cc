@@ -40,6 +40,7 @@ using drake::multibody::MultibodyForces;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
+using drake::multibody::RotationalInertia;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
 using drake::multibody::SpatialInertia;
@@ -54,28 +55,38 @@ using systems::State;
 
 template<typename T>
 AcrobotPlant<T>::AcrobotPlant(
-    double mass, double length, double gravity) :
+    double m1, double m2, double l1, double l2,
+    double lc1, double lc2, double Ic1, double Ic2,
+    double b1, double b2, double g) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::examples::multibody::acrobot::AcrobotPlant>()),
-    mass_(mass),
-    length_(length),
-    gravity_(gravity) {
+    m1_(m1),
+    m2_(m2),
+    l1_(l1),
+    l2_(l2),
+    lc1_(lc1),
+    lc2_(lc2),
+    Ic1_(Ic1),
+    Ic2_(Ic2),
+    b1_(b1),
+    b2_(b2),
+    g_(g) {
   BuildMultibodyTreeModel();
 
   // Some very basic verification that the model is what we expect it to be.
-  DRAKE_DEMAND(model_->get_num_positions() == 1);
-  DRAKE_DEMAND(model_->get_num_velocities() == 1);
-  DRAKE_DEMAND(model_->get_num_states() == 2);
+  DRAKE_DEMAND(model_->get_num_positions() == 2);
+  DRAKE_DEMAND(model_->get_num_velocities() == 2);
+  DRAKE_DEMAND(model_->get_num_states() == 4);
 
   this->DeclareContinuousState(
       BasicVector<T>(model_->get_num_states()),
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
-  // Declare a vector input of size one for an applied torque about the revolute
-  // joint's axis.
-  applied_torque_input_ =
-      this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
+  // Declare a vector input of size one for an applied torque at the
+  // elbow joint.
+  //applied_torque_input_ =
+    //  this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
 
   // Declare a port that outputs the state.
   state_output_port_ = this->DeclareVectorOutputPort(
@@ -84,9 +95,7 @@ AcrobotPlant<T>::AcrobotPlant(
 
 template<typename T>
 AcrobotPlant<T>::AcrobotPlant(
-    double mass, double length, double gravity,
-    geometry::GeometrySystem<double>* geometry_system) :
-    AcrobotPlant(mass, length, gravity) {
+    geometry::GeometrySystem<double>* geometry_system) : AcrobotPlant() {
   DRAKE_DEMAND(geometry_system != nullptr);
   RegisterGeometry(geometry_system);
   DeclareGeometrySystemPorts();
@@ -96,12 +105,18 @@ template<typename T>
 template<typename U>
 AcrobotPlant<T>::AcrobotPlant(
     const AcrobotPlant<U> &other) :
-    AcrobotPlant(other.mass(), other.length(), other.gravity()) {
+    AcrobotPlant(other.m1(), other.m2(),
+                 other.l1(), other.l2(),
+                 other.lc1(), other.lc2(),
+                 other.Ic1(), other.Ic2(),
+                 other.b1(), other.b2(), other.g()) {
   source_id_ = other.source_id_;
-  frame_id_ = other.frame_id_;
+  link1_frame_id_ = other.link1_frame_id_;
+  link2_frame_id_ = other.link2_frame_id_;
+
   // Only declare ports to communicate with a GeometrySystem if the plant is
   // provided with a valid source id.
-  if (frame_id_) DeclareGeometrySystemPorts();
+  if (source_id_) DeclareGeometrySystemPorts();
 }
 
 template<typename T>
@@ -120,10 +135,12 @@ template <typename T>
 FrameIdVector AcrobotPlant<T>::AllocateFrameIdOutput(
     const Context<T>&) const {
   DRAKE_DEMAND(source_id_ != nullopt);
-  DRAKE_DEMAND(frame_id_ != nullopt);
+  DRAKE_DEMAND(link1_frame_id_ != nullopt);
+  DRAKE_DEMAND(link2_frame_id_ != nullopt);
   FrameIdVector ids(source_id_.value());
   // Add a frame for the one single body in this model.
-  ids.AddFrameId(frame_id_.value());
+  ids.AddFrameId(link1_frame_id_.value());
+  ids.AddFrameId(link2_frame_id_.value());
   return ids;
 }
 
@@ -132,7 +149,8 @@ void AcrobotPlant<T>::CalcFrameIdOutput(
     const Context<T>&, FrameIdVector*) const {
   // Just a sanity check.
   DRAKE_DEMAND(source_id_ != nullopt);
-  DRAKE_DEMAND(frame_id_ != nullopt);
+  DRAKE_DEMAND(link1_frame_id_ != nullopt);
+  DRAKE_DEMAND(link2_frame_id_ != nullopt);
   // NOTE: This only needs to do work if the topology changes. This system makes
   // no topology changes.
 }
@@ -142,29 +160,34 @@ FramePoseVector<T> AcrobotPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
   DRAKE_DEMAND(source_id_ != nullopt);
   FramePoseVector<T> poses(source_id_.value());
-  // There is only one moveable frame.
-  poses.mutable_vector().resize(1);
+  // There are two moveable frames, one for each link.
+  poses.mutable_vector().resize(2);
   return poses;
 }
 
 template <typename T>
 void AcrobotPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
-  DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == 1);
-  DRAKE_ASSERT(model_->get_num_bodies() == 2);
+  DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == 2);
+  DRAKE_ASSERT(model_->get_num_bodies() == 3);  // Includes the world body.
 
   PositionKinematicsCache<T> pc(model_->get_topology());
   model_->CalcPositionKinematicsCache(context, &pc);
 
   std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
-  pose_data[0] = pc.get_X_WB(link_->get_node_index());
+  // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
+  // lands.
+  pose_data[0] = pc.get_X_WB(link1_->get_node_index());
+  pose_data[1] = pc.get_X_WB(link2_->get_node_index());
 }
 
 template <typename T>
 void AcrobotPlant<T>::CopyStateOut(const systems::Context<T>& context,
                                     AcrobotState<T>* output) const {
-  output->set_theta(joint_->get_angle(context));
-  output->set_thetadot(joint_->get_angular_rate(context));
+  output->set_theta1(shoulder_->get_angle(context));
+  output->set_theta1dot(shoulder_->get_angular_rate(context));
+  output->set_theta2(elbow_->get_angle(context));
+  output->set_theta2dot(elbow_->get_angular_rate(context));
 }
 
 template <typename T>
@@ -194,30 +217,50 @@ void AcrobotPlant<T>::BuildMultibodyTreeModel() {
   model_ = std::make_unique<MultibodyTree<T>>();
   DRAKE_DEMAND(model_ != nullptr);
 
-  // Position of the com of the acrobot's body (in this case a point mass) in
-  // the body's frame. The body's frame's origin Bo is defined to be at the
-  // world's origin Wo, through which the rotation axis passes.
-  // With the acrobot at rest pointing in the downwards -z direction, the body
-  // frame B and the world frame W are coincident.
-  const Vector3<double> p_BoBcm_B = -length() * Vector3<double>::UnitZ();
+  // COM's positions in each link (L1/L2) frame:
+  // Frame L1's origin is located at the shoulder outboard frame.
+  const Vector3d p_L1L1cm = -lc1() * Vector3d::UnitZ();
+  // Frame L2's origin is located at the elbow outboard frame.
+  const Vector3d p_L2L2cm = -lc2() * Vector3d::UnitZ();
 
-  // Define each link's spatial inertia about the body's origin Bo.
-  UnitInertia<double> G_Bo =
-      UnitInertia<double>::PointMass(p_BoBcm_B);
-  SpatialInertia<double> M_Bo(mass(), p_BoBcm_B, G_Bo);
+  // Define each link's spatial inertia about their respective COM.
+  RotationalInertia<double> G1_Bcm =
+      UnitInertia<double>::StraightLine(Ic1(), Vector3d::UnitY());
+  SpatialInertia<double> M1_L1o =
+      SpatialInertia<double>::MakeFromCentralInertia(m1(), p_L1L1cm, G1_Bcm);
 
-  link_ = &model_->template AddBody<RigidBody>(M_Bo);
+  UnitInertia<double> G2_Bcm =
+      UnitInertia<double>::StraightLine(Ic2(), Vector3d::UnitY());
+  SpatialInertia<double> M2_L2o =
+      SpatialInertia<double>::MakeFromCentralInertia(m2(), p_L2L2cm, G2_Bcm);
 
-  joint_ = &model_->template AddJoint<RevoluteJoint>(
-      "Joint",
-      model_->get_world_body(), {}, /* frame F IS the the world frame W. */
-      *link_, {}, /* frame M IS the the body frame B. */
+  // Add a rigid body to model each link.
+  link1_ = &model_->template AddBody<RigidBody>(M1_L1o);
+  link2_ = &model_->template AddBody<RigidBody>(M2_L2o);
+
+  shoulder_ = &model_->template AddJoint<RevoluteJoint>(
+      "ShoulderJoint",
+      /* Shoulder inboard frame Si IS the the world frame W. */
+      model_->get_world_body(), {},
+      /* Shoulder outboard frame So IS frame L1. */
+      *link1_, {},
+      Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
+
+  elbow_ = &model_->template AddJoint<RevoluteJoint>(
+      "ElbowJoint",
+      *link1_,
+      /* Pose of the elbow inboard frame Ei in Link 1's frame. */
+      Isometry3d(Translation3d(-l1() * Vector3d::UnitZ())),
+      *link2_,
+      /* Elbow outboard frame Eo IS frame L2 for link 2. */
+      {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
 //  model_->template AddJointActuator("JointMotor", *joint_);
 
+  // Gravity acting in the -z direction.
   model_->template AddForceElement<UniformGravityFieldElement>(
-      -gravity() * Vector3d::UnitZ());
+      -g() * Vector3d::UnitZ());
 
   model_->Finalize();
 }
@@ -233,37 +276,40 @@ void AcrobotPlant<T>::RegisterGeometry(
   // with the world's origin Wo. For the acrobot at rest pointing downwards in
   // the -z direction, the acrobot's body frame B is coincident with the world
   // frame W.
-  frame_id_ = geometry_system->RegisterFrame(
+  link1_frame_id_ = geometry_system->RegisterFrame(
       source_id_.value(),
-      GeometryFrame("AcrobotFrame", Isometry3<double>::Identity()));
+      GeometryFrame(
+          "Link1Frame",
+          /* Initial pose of L2 in the world frame W. */
+          Isometry3<double>::Identity()));
 
-  // Pose of the acrobot's point mass in the body's frame.
-  const Vector3<double> p_BoBcm_B = -length() * Vector3<double>::UnitZ();
+  link2_frame_id_ = geometry_system->RegisterFrame(
+      source_id_.value(),
+      GeometryFrame(
+          "Link2Frame",
+          /* Initial pose of L2 in the world frame W. */
+          Isometry3d(Translation3d(-l1() * Vector3d::UnitZ()))));
 
-  // Pose of the geometry frame G in the body frame B.
-  const Isometry3<double> X_BG{Translation3<double>(p_BoBcm_B)};
-
-  // A sphere at the world's origin.
+  // A sphere at the world's origin (actually we are making it move with L1).
   geometry_system->RegisterGeometry(
-      source_id_.value(), frame_id_.value(),
+      source_id_.value(), link1_frame_id_.value(),
       std::make_unique<GeometryInstance>(
           Isometry3d::Identity(), /* Geometry pose in link's frame */
-          std::make_unique<Sphere>(length() / 8)));
+          std::make_unique<Sphere>(l1() / 8)));
 
-  // A rod (massless in the multibody model) between the revolute pin and the
-  // point mass.
+  // A rod geometry for link 1.
   geometry_system->RegisterGeometry(
-      source_id_.value(), frame_id_.value(),
+      source_id_.value(), link1_frame_id_.value(),
       std::make_unique<GeometryInstance>(
-          Isometry3d{Translation3d(p_BoBcm_B / 2.0)},
-          std::make_unique<Cylinder>(length() / 15, length())));
+          Isometry3d{Translation3d(-l1() / 2.0 * Vector3d::UnitZ())},
+          std::make_unique<Cylinder>(l1() / 15, l1())));
 
-  // A sphere at the point mass:
+  // A rod geometry for link 2.
   geometry_system->RegisterGeometry(
-      source_id_.value(), frame_id_.value(),
+      source_id_.value(), link2_frame_id_.value(),
       std::make_unique<GeometryInstance>(
-          X_BG, /* Geometry pose in link's frame */
-          std::make_unique<Sphere>(length() / 5)));
+          Isometry3d{Translation3d(-l2() / 2.0 * Vector3d::UnitZ())},
+          std::make_unique<Cylinder>(l2() / 15, l2())));
 }
 
 template<typename T>
@@ -301,7 +347,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
   // Add in input forces:
-  joint_->AddInTorque(context, get_tau(context), &forces);
+  //joint_->AddInTorque(context, get_tau(context), &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -328,13 +374,6 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   // For this simple model v = qdot.
   xdot << v, vdot;
   derivatives->SetFromVector(xdot);
-}
-
-template<typename T>
-void AcrobotPlant<T>::SetAngle(
-    Context<T>* context, const T& angle) const {
-  DRAKE_DEMAND(context != nullptr);
-  joint_->set_angle(context, angle);
 }
 
 }  // namespace acrobot

@@ -1,10 +1,18 @@
 namespace: "drake::examples::multibody::acrobot"
 
 element {
-    name: "theta"
-    doc: "theta"
+    name: "theta1"
+    doc: "theta1"
 }
 element {
-    name: "thetadot"
-    doc: "thetadot"
+    name: "theta2"
+    doc: "theta2"
+}
+element {
+    name: "theta1dot"
+    doc: "theta1dot"
+}
+element {
+    name: "theta2dot"
+    doc: "theta2dot"
 }
