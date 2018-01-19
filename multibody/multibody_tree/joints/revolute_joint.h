@@ -146,7 +146,7 @@ class RevoluteJoint final : public Joint<T> {
   // Joint<T> override called through public NVI. Therefore arguments were
   // already checked to be valid.
   void DoAddInForces(
-      const systems::Context<T>& context,
+      const systems::Context<T>&,
       int joint_dof,
       const T& joint_tau,
       MultibodyForces<T>* forces) const override {
