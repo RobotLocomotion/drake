@@ -243,4 +243,15 @@ drake_cc_googletest(
     ],
 )
 
+# === joints/test/ ===
+
+drake_cc_googletest(
+    name = "revolute_joint_test",
+    srcs = ["joints/test/revolute_joint_test.cc"],
+    deps = [
+        ":multibody_tree",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 add_lint_tests()
