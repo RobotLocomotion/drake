@@ -21,11 +21,6 @@
       "Hints": ["@prefix@/lib/cmake/eigen3"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "fmt": {
-      "Version": "3.0.1",
-      "Hints": ["@prefix@/lib/cmake/fmt"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "ignition-math4": {
       "Version": "4.0.0",
       "Hints": ["@prefix@/lib/cmake/ignition-math4"],
