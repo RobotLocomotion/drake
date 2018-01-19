@@ -459,9 +459,9 @@ class LeafSystem : public System<T> {
 
   /// Reserves the parameters as required by CreateDefaultContext.  The default
   /// implementation in this class clones the model_vector for all parameters
-  /// declared via DeclareNumericParameter(), and so does not allocate any
-  /// abstract parameters.  Subclasses can override this method if the default
-  /// behavior is not sufficient.
+  /// declared via DeclareNumericParameter(), as well as the model value for all
+  /// parameters declared via DeclareAbstractParameter().  Subclasses can
+  /// override this method if the default behavior is not sufficient.
   virtual std::unique_ptr<Parameters<T>> AllocateParameters() const {
     std::vector<std::unique_ptr<BasicVector<T>>> numeric_params;
     numeric_params.reserve(model_numeric_parameters_.size());
@@ -470,7 +470,15 @@ class LeafSystem : public System<T> {
       DRAKE_ASSERT(param != nullptr);
       numeric_params.emplace_back(std::move(param));
     }
-    return std::make_unique<Parameters<T>>(std::move(numeric_params));
+    std::vector<std::unique_ptr<AbstractValue>> abstract_params;
+    abstract_params.reserve(model_abstract_parameters_.size());
+    for (int i = 0; i < model_abstract_parameters_.size(); ++i) {
+      auto param = model_abstract_parameters_.CloneModel(i);
+      DRAKE_ASSERT(param != nullptr);
+      abstract_params.emplace_back(std::move(param));
+    }
+    return std::make_unique<Parameters<T>>(std::move(numeric_params),
+                                           std::move(abstract_params));
   }
 
   /// Returns true if there is direct-feedthrough from the given @p input_port
@@ -557,6 +565,37 @@ class LeafSystem : public System<T> {
         &leaf_context->get_mutable_numeric_parameter(index));
     DRAKE_ASSERT(params != nullptr);
     return *params;
+  }
+
+  /// Declares an abstract parameter using the given @p model_value.  This is
+  /// the best way to declare LeafSystem abstract parameters.  LeafSystem's
+  /// default implementation of AllocateParameters uses model_value.Clone(), and
+  /// the default implementation of SetDefaultParameters() will reset parameters
+  /// to their model values.  Returns the index of the new parameter.
+  int DeclareAbstractParameter(const AbstractValue& model_value) {
+    const int index = model_abstract_parameters_.size();
+    model_abstract_parameters_.AddModel(index, model_value.Clone());
+    return index;
+  }
+
+  /// Extracts the abstract parameter from the @p context at @p index.  Asserts
+  /// if the context is not a LeafContext, or if it does not have an
+  /// abstract-valued parameter @p index.
+  const AbstractValue& GetAbstractParameter(const Context<T>& context,
+                                            int index) const {
+    const auto& leaf_context =
+        dynamic_cast<const systems::LeafContext<T>&>(context);
+    return leaf_context.get_abstract_parameter(index);
+  }
+
+  /// Extracts the abstract parameter from the @p context at @p index.  Asserts
+  /// if the context is not a LeafContext, or if it does not have an
+  /// abstract-valued parameter @p index.
+  AbstractValue& GetMutableAbstractParameter(Context<T>* context,
+                                             int index) const {
+    auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
+    DRAKE_ASSERT(leaf_context != nullptr);
+    return leaf_context->get_mutable_abstract_parameter(index);
   }
 
   /// Declares that this System has a simple, fixed-period event specified with
@@ -1463,8 +1502,11 @@ class LeafSystem : public System<T> {
   // Model inputs to be used in AllocateOutput{Vector,Abstract}.
   detail::ModelValues model_input_values_;
 
-  // Model outputs to be used in AllocateParameters.
+  // Model numeric parameters to be used in AllocateParameters.
   detail::ModelValues model_numeric_parameters_;
+
+  // Model abstract parameters to be used in AllocateParameters.
+  detail::ModelValues model_abstract_parameters_;
 };
 
 }  // namespace systems
