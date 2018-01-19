@@ -200,54 +200,6 @@ def lcm_cc_library(
     # We report the computed output filenames for use by calling code.
     return struct(hdrs = outs)
 
-def lcm_c_library(
-        name,
-        lcm_srcs,
-        lcm_package,
-        lcm_structs = None,
-        aggregate_hdr = "AUTO",
-        aggregate_hdr_strip_prefix = ["**/include/"],
-        includes = [],
-        **kwargs):
-    """Declares a cc_library on message C structs generated from ``*.lcm``
-    files.
-
-    The required ``lcm_srcs`` :obj:`list` parameter specifies the ``*.lcm``
-    source files. All ``lcm_srcs`` must reside in the same subdirectory.
-
-    The standard parameters (``lcm_srcs``, ``lcm_package``, ``lcm_structs``,
-    ``aggregate_hdr_strip_prefix``) are documented in :func:`lcm_cc_library`.
-    The ``aggregate_hdr`` parameter default value is ``AUTO``.
-    """
-    outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
-
-    _lcm_library_gen(
-        name = name + "_lcm_library_gen",
-        language = "c",
-        lcm_srcs = lcm_srcs,
-        lcm_package = lcm_package,
-        outs = outs.hdrs + outs.srcs)
-
-    hdrs = outs.hdrs
-    if aggregate_hdr:
-        hdrs += _lcm_aggregate_hdr(
-            lcm_package,
-            name,
-            aggregate_hdr,
-            outs.hdrs,
-            "h",
-            aggregate_hdr_strip_prefix)
-
-    deps = depset(kwargs.pop('deps', [])) | ["@lcm"]
-    includes = depset(includes) | ["."]
-    native.cc_library(
-        name = name,
-        srcs = outs.srcs,
-        hdrs = hdrs,
-        deps = deps,
-        includes = includes,
-        **kwargs)
-
 def lcm_py_library(
         name,
         lcm_srcs = None,
