@@ -52,7 +52,14 @@ generate_file(
     content = """
 #pragma once
 
+#ifdef IGNITION_MATH_VISIBLE
+#undef IGNITION_MATH_VISIBLE
+#endif
 #define IGNITION_MATH_VISIBLE __attribute__ ((visibility("default")))
+
+#ifdef IGN_DEPRECATED
+#undef IGN_DEPRECATED
+#endif
 #define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
     """,
     visibility = ["//visibility:private"],
