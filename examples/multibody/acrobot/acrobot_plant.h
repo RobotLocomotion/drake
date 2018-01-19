@@ -91,8 +91,18 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
   double b2() const { return b2_; }
   double g() const { return g_; }
 
+  // getters for joints:
+  const drake::multibody::RevoluteJoint<T>& shoulder() const {
+    DRAKE_DEMAND(shoulder_ != nullptr);
+    return *shoulder_;
+  }
+  const drake::multibody::RevoluteJoint<T>& elbow() const {
+    DRAKE_DEMAND(elbow_ != nullptr);
+    return *elbow_;
+  }
+
   /// Evaluates the input port and returns the scalar value
-  /// of the commanded torque.
+  /// of the commanded torque on the elbow joint.
   const T& get_tau(const systems::Context<T>& context) const {
     const Eigen::VectorBlock<const VectorX<T>> input =
         this->template EvalEigenVectorInput(context, applied_torque_input_);

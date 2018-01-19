@@ -85,8 +85,8 @@ AcrobotPlant<T>::AcrobotPlant(
 
   // Declare a vector input of size one for an applied torque at the
   // elbow joint.
-  //applied_torque_input_ =
-    //  this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
+  applied_torque_input_ =
+      this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
 
   // Declare a port that outputs the state.
   state_output_port_ = this->DeclareVectorOutputPort(
@@ -298,18 +298,20 @@ void AcrobotPlant<T>::RegisterGeometry(
           std::make_unique<Sphere>(l1() / 8)));
 
   // A rod geometry for link 1.
+  const double rod1_radius = 0.05;
   geometry_system->RegisterGeometry(
       source_id_.value(), link1_frame_id_.value(),
       std::make_unique<GeometryInstance>(
           Isometry3d{Translation3d(-l1() / 2.0 * Vector3d::UnitZ())},
-          std::make_unique<Cylinder>(l1() / 15, l1())));
+          std::make_unique<Cylinder>(rod1_radius, l1())));
 
   // A rod geometry for link 2.
+  const double rod2_radius = 0.05;
   geometry_system->RegisterGeometry(
       source_id_.value(), link2_frame_id_.value(),
       std::make_unique<GeometryInstance>(
           Isometry3d{Translation3d(-l2() / 2.0 * Vector3d::UnitZ())},
-          std::make_unique<Cylinder>(l2() / 15, l2())));
+          std::make_unique<Cylinder>(rod2_radius, l2())));
 }
 
 template<typename T>
@@ -347,7 +349,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
   // Add in input forces:
-  //joint_->AddInTorque(context, get_tau(context), &forces);
+  elbow_->AddInTorque(context, get_tau(context), &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 

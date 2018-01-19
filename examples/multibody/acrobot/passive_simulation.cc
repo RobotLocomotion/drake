@@ -49,31 +49,18 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  // Define plant's parameters:
-  const double mass = 0.5;      // [Kgr], about a pound.
-  const double length = 0.7;    // [m]
-  const double gravity = 9.81;  // [m/s²]
-
-  // Define simulation parameters:
-  // Compute a reference time scale to set reasonable values for time step and
-  // simulation time.
-  const double reference_time_scale =
-      AcrobotPlant<double>::CalcSimpleAcrobotPeriod(length, gravity);
-
-  // Define a reasonable maximum time step based off the expected dynamics's
-  // time scales.
-  const double max_time_step = reference_time_scale / 100;
-
   // Simulate about five periods of oscillation.
-  const double simulation_time = 5.0 * reference_time_scale;
+  const double simulation_time = 10.0;
+
+  // Desired maximum time step.
+  const double max_time_step = simulation_time / 1000.0;
 
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
   AcrobotPlant<double>& acrobot =
-      *builder.AddSystem<AcrobotPlant>(
-          mass, length, gravity, &geometry_system);
+      *builder.AddSystem<AcrobotPlant>(&geometry_system);
   acrobot.set_name("Acrobot");
 
   // A constant source for a zero applied torque at the pin joint.
@@ -120,7 +107,10 @@ int do_main() {
   diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& acrobot_context =
       diagram->GetMutableSubsystemContext(acrobot, diagram_context.get());
-  acrobot.SetAngle(&acrobot_context, M_PI / 3.0);
+
+  // Set initial angles. Velocities are left to the default zero values.
+  acrobot.shoulder().set_angle(&acrobot_context, 1.0);
+  acrobot.elbow().set_angle(&acrobot_context, 1.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
