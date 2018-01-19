@@ -15,15 +15,6 @@
   },
   "Default-Components": [":robotlocomotion-lcmtypes-cpp"],
   "Components": {
-    "robotlocomotion-lcmtypes": {
-      "Type": "dylib",
-      "Includes": ["@prefix@/include/lcmtypes"],
-      "Location": "@prefix@/lib/liblcmtypes_robotlocomotion_c.so",
-      "Requires": [
-        "bot2-core-lcmtypes:lcmtypes_bot2-core",
-        "lcm:lcm-coretypes"
-      ]
-    },
     "robotlocomotion-lcmtypes-cpp": {
       "Type": "interface",
       "Includes": ["@prefix@/include/lcmtypes"],
