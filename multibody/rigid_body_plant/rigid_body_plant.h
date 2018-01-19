@@ -221,6 +221,9 @@ class RigidBodyPlant : public LeafSystem<T> {
 
       // Write the zero configuration into the discrete state.
       xd.SetFromVector(x0);
+
+      // Set the initial time.
+      state->get_mutable_discrete_state().get_mutable_vector(1)[0] = 0;
     } else {
       // Extract a reference to continuous state from the context.
       ContinuousState<T>& xc = state->get_mutable_continuous_state();

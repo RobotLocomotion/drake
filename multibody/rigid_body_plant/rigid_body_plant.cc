@@ -346,8 +346,17 @@ std::unique_ptr<DiscreteValues<T>> RigidBodyPlant<T>::AllocateDiscreteState()
     // State of the plant is continuous- return an empty discrete state.
     return std::make_unique<DiscreteValues<T>>();
   }
-  return make_unique<DiscreteValues<T>>(
+  std::vector<std::unique_ptr<BasicVector<T>>> discrete_state_vector;
+
+  // Configuration and velocity.
+  discrete_state_vector.push_back(
       make_unique<BasicVector<T>>(get_num_states()));
+
+  // Time.
+  discrete_state_vector.push_back(
+      make_unique<BasicVector<T>>(1));
+
+  return make_unique<DiscreteValues<T>>(std::move(discrete_state_vector));
 }
 
 template <typename T>
@@ -891,7 +900,8 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   if (!is_state_discrete()) return;
 
   // Get the time step.
-  double dt = context.get_time() - context.get_last_discrete_update_time();
+  const T t = context.get_discrete_state(1).get_value()[0];
+  double dt = context.get_time() - t;
   if (dt <= 0.0)
     dt = this->get_time_step();
 
@@ -1137,6 +1147,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   xn << q + dt * tree.transformVelocityToQDot(kinematics_cache, new_velocity),
       new_velocity;
   updates->get_mutable_vector(0).SetFromVector(xn);
+  updates->get_mutable_vector(1)[0] = t + dt;
 }
 
 template <typename T>
