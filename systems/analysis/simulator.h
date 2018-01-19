@@ -490,6 +490,9 @@ void Simulator<T>::HandleDiscreteUpdate(
     xd.CopyFrom(*discrete_updates_);
     ++num_discrete_updates_;
   }
+
+  // Update the last discrete update time.
+  context_->set_last_discrete_update_time(context_->get_time());
 }
 
 // Processes Publish events.
