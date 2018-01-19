@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -48,6 +49,76 @@ class RotationMatrix {
 #else
     SetUnchecked(R);
 #endif
+  }
+
+
+  /// Makes the %RotationMatrix R_AB associated with a simple rotation by an
+  /// angle `theta` about a shared x vector, as shown below.
+  /// @param[in] theta radian measure of rotation angle about x vector.
+  /// @note R_AB relates two right-handed orthogonal bases A and B having unit
+  /// vectors Ax, Ay, Az and Bx, By, Bz.  Initially, Bx = Ax, By = Ay, Bz = Az,
+  /// then B is subjected to a right-handed rotation relative to A of theta*Bx.
+  /// ```
+  ///        ⎡ 1       0                 0  ⎤
+  /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
+  ///        ⎣ 0   sin(theta)    cos(theta) ⎦
+  /// ```
+  static RotationMatrix<T> MakeRotationMatrixX(const T& theta) {
+    return RotationMatrix(math::XRotation(theta));
+  }
+
+  /// Makes the %RotationMatrix R_AB associated with a simple rotation by an
+  /// angle `theta` about a shared y vector, as shown below.
+  /// @param[in] theta radian measure of rotation angle about y vector.
+  /// ```
+  ///        ⎡  cos(theta)   0   sin(theta) ⎤
+  /// R_AB = ⎢          0    1           0  ⎥
+  ///        ⎣ -sin(theta)   0   cos(theta) ⎦
+  /// ```
+  /// @see MakeRotationMatrixX
+  static RotationMatrix<T> MakeRotationMatrixY(const T& theta) {
+    return RotationMatrix(math::YRotation(theta));
+  }
+
+  /// Makes the %RotationMatrix R_AB associated with a simple rotation by an
+  /// angle `theta` about a shared z vector, as shown below.
+  /// @param[in] theta radian measure of rotation angle about z vector.
+  /// ```
+  ///        ⎡ cos(theta)  -sin(theta)   0 ⎤
+  /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
+  ///        ⎣         0            0    1 ⎦
+  /// ```
+  /// @see MakeRotationMatrixX
+  static RotationMatrix<T> MakeRotationMatrixZ(const T& theta) {
+    return RotationMatrix(math::ZRotation(theta));
+  }
+
+  /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
+  /// "roll-pitch-yaw" angles [q(0), q(1), q(2)], which is equivalent to a
+  /// Body-fixed Z-Y-X rotation by "yaw-pitch-roll" angles [q(2), q(1), q(0)].
+  /// @param[in] q radian measures of three angles, namely roll, pitch, and yaw.
+  /// @see MakeRotationMatrixBodyZYX
+  static RotationMatrix<T> MakeRotationMatrixSpaceXYZ(const Vector3<T>& q) {
+    return RotationMatrix(math::rpy2rotmat(q));
+  }
+
+  /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
+  /// "yaw-pitch-roll" angles [q(0), q(1), q(2)], which is equivalent to a
+  /// Space-fixed X-Y-Z rotation by "roll-pitch-yaw" angles [q(2), q(1), q(0)].
+  /// @param[in] q radian measures of three angles, namely yaw, pitch, and roll.
+  /// @note Denoting yaw y = q(0), pitch p = q(1), roll r = q(2), this method
+  /// returns a rotation matrix R_AB equal to the matrix multiplication below.
+  /// This rotation sequence relates frames A and B as follows: Initially,
+  /// Bx = Ax, By = Ay, Bz = Az, then B is subjected to sucessive right-handed
+  /// rotations relative to A, characterized by y*Bz, then p*By, then r*Bx.
+  /// ```
+  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
+  /// R_AB = ⎢sin(y)  cos(a)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
+  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
+  /// ```
+  static RotationMatrix<T> MakeRotationMatrixBodyZYX(const Vector3<T>& q) {
+    const Vector3<T> roll_pitch_yaw(q(2), q(1), q(0));
+    return RotationMatrix<T>::MakeRotationMatrixSpaceXYZ(roll_pitch_yaw);
   }
 
   /// Creates a %RotationMatrix templatized on a scalar type U from a
@@ -201,6 +272,14 @@ class RotationMatrix {
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
   bool IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
+  }
+
+  /// Compares each element of `this` to the corresponding element of `other`
+  /// to check if they are exactly the same.
+  /// @param[in] other %RotationMatrix to compare to `this`.
+  /// @returns `true` if `‖this - other‖∞ = 0`.
+  bool IsExactlyEqualTo(const RotationMatrix<T>& other) const {
+    return IsNearlyEqualTo(matrix(), other.matrix(), 0.0);
   }
 
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute

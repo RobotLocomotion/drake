@@ -113,6 +113,71 @@ GTEST_TEST(RotationMatrix, MakeIdentityMatrix) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
+// Test making a rotation matrix associated with a X-rotation.
+GTEST_TEST(RotationMatrix, RotationMatrixX) {
+  const double theta = 0.3;
+  const double cos_theta = std::cos(theta);
+  const double sin_theta = std::sin(theta);
+  Matrix3d m;
+  m <<  1,         0,            0,
+        0, cos_theta,   -sin_theta,
+        0, sin_theta,    cos_theta;
+
+  RotationMatrix<double> R = RotationMatrix<double>::MakeRotationMatrixX(theta);
+  const Matrix3d zero_matrix = m - R.matrix();
+  EXPECT_TRUE((zero_matrix.array() == 0).all());
+}
+
+// Test making a rotation matrix associated with a Y-rotation.
+GTEST_TEST(RotationMatrix, RotationMatrixY) {
+  const double theta = 0.4;
+  const double cos_theta = std::cos(theta);
+  const double sin_theta = std::sin(theta);
+  Matrix3d m;
+  m <<  cos_theta,    0,   sin_theta,
+                0,    1,           0,
+       -sin_theta,    0,   cos_theta;
+
+  RotationMatrix<double> R = RotationMatrix<double>::MakeRotationMatrixY(theta);
+  const Matrix3d zero_matrix = m - R.matrix();
+  EXPECT_TRUE((zero_matrix.array() == 0).all());
+}
+
+// Test making a rotation matrix associated with a Z-rotation.
+GTEST_TEST(RotationMatrix, RotationMatrixZ) {
+  const double theta = 0.5;
+  const double cos_theta = std::cos(theta);
+  const double sin_theta = std::sin(theta);
+  Matrix3d m;
+  m << cos_theta,  -sin_theta,    0,
+       sin_theta,   cos_theta,    0,
+               0,           0,    1;
+
+  RotationMatrix<double> R = RotationMatrix<double>::MakeRotationMatrixZ(theta);
+  const Matrix3d zero_matrix = m - R.matrix();
+  EXPECT_TRUE((zero_matrix.array() == 0).all());
+}
+
+// Test making a rotation matrix associated with a Body-fixed Z-Y-X rotation.
+// or with a Space-fixed X-Y-Z rotation.  Also tests method IsExactlyEqualTo().
+GTEST_TEST(RotationMatrix, RotationMatrixBodyZYX) {
+  const Vector3d q(0.3, 0.4, 0.5);  // yaw-pitch-roll angles.
+  RotationMatrix<double> R1 = RotationMatrix<double>::MakeRotationMatrixZ(q(0));
+  RotationMatrix<double> R2 = RotationMatrix<double>::MakeRotationMatrixY(q(1));
+  RotationMatrix<double> R3 = RotationMatrix<double>::MakeRotationMatrixX(q(2));
+  RotationMatrix<double> R_expected = R1 * R2 * R3;
+  RotationMatrix<double> R_bodyZYX =
+      RotationMatrix<double>::MakeRotationMatrixBodyZYX(q);
+  const Matrix3d zero_matrix = R_expected.matrix() - R_bodyZYX.matrix();
+  EXPECT_TRUE((zero_matrix.array() == 0).all());
+  EXPECT_TRUE(R_bodyZYX.IsExactlyEqualTo(R_expected));
+
+  const Vector3d roll_pitch_yaw(0.5, 0.4, 0.3);
+  const RotationMatrix<double> R_spaceXYZ =
+      RotationMatrix<double>::MakeRotationMatrixSpaceXYZ(roll_pitch_yaw);
+  EXPECT_TRUE(R_spaceXYZ.IsExactlyEqualTo(R_bodyZYX));
+}
+
 // Test calculating the inverse of a RotationMatrix.
 GTEST_TEST(RotationMatrix, Inverse) {
   const double cos_theta = std::cos(0.5);
@@ -126,7 +191,6 @@ GTEST_TEST(RotationMatrix, Inverse) {
   const RotationMatrix<double>& I = RotationMatrix<double>::Identity();
   EXPECT_TRUE(RRinv.IsNearlyEqualTo(I, 8 * kEpsilon));
 }
-
 
 // Test rotation matrix multiplication and IsNearlyEqualTo.
 GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
