@@ -26,7 +26,9 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   VelocityKinematicsCache<T> vc(model.get_topology());
   vc.InitializeToZero();
 
+  // Create a multibody forces initialized by default to zero forces.
   MultibodyForces<T> forces(model);
+  // Add this element's force contributions, gravity, into the forces object.
   this->CalcAndAddForceContribution(mbt_context, pc, vc, &forces);
 
   // Temporary output vector of spatial forces for each body B at their inboard
@@ -42,8 +44,11 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   // Ouput vector of generalized forces:
   VectorX<T> tau_g(model.get_num_velocities());
 
-  // Try first using different arrays for input/ouput:
-  // Initialize output to garbage, it should not affect the results.
+  // Compute inverse dynamics with zero generalized velocities and zero
+  // generalized accelerations. Since inverse dynamics computes:
+  // tau_g = M(q)v̇ + C(q, v)v - ∑ J_WBᵀ(q) Fgrav_Bo_W
+  // with v = 0 and vdot = 0 we get:
+  // tau_g(q) = - ∑ J_WBᵀ(q) Fgrav_Bo_W, which is exactly the result we want.
   model.CalcInverseDynamics(
       context, pc, vc, /* state */
       VectorX<T>::Zero(model.get_num_velocities()), /* vdot = 0 */
@@ -51,9 +56,7 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
       forces.body_forces(), forces.generalized_forces(),
       &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
       &tau_g /* Output, the generalized forces. */);
-
-  // We want to return the generalized forces as they appear in M
-  return -tau_g;
+  return tau_g;
 }
 
 template <typename T>
