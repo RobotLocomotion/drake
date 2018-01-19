@@ -81,6 +81,16 @@ drake_py_library(
     ],
 )
 
+drake_cc_library(
+    name = "cpp_template_pybind",
+    srcs = [],
+    hdrs = ["cpp_template_pybind.h"],
+    deps = [
+        ":cpp_param_pybind",
+        "@pybind11",
+    ],
+)
+
 PYBIND_LIBRARIES = []
 
 PY_LIBRARIES = [
@@ -149,6 +159,15 @@ drake_py_test(
     deps = [
         ":cpp_template_py",
     ],
+)
+
+drake_pybind_cc_googletest(
+    name = "cpp_template_pybind_test",
+    cc_deps = [
+        ":cpp_template_pybind",
+        "//common:nice_type_name",
+    ],
+    py_deps = [":cpp_template_py"],
 )
 
 add_lint_tests()
