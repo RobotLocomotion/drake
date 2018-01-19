@@ -248,7 +248,7 @@ for jar_file in %s; do
   fi
 done
 
-java %s
+java %s "$@"
 """ % (strclasspath, main_class)
         launcher_file.write(content)
     os.chmod(filename, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |

@@ -53,21 +53,6 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
-PYBIND_LIBRARIES = []
-
-PY_LIBRARIES = [
-    ":cpp_param_py",
-    ":module_py",
-    ":module_shim_py",
-]
-
-# Package target.
-drake_py_library(
-    name = "util",
-    imports = PACKAGE_INFO.py_imports,
-    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
-)
-
 # ODR does not matter, because the singleton will be stored in Python.
 drake_cc_library(
     name = "cpp_param_pybind",
@@ -85,6 +70,31 @@ drake_py_library(
     deps = [
         ":module_py",
     ],
+)
+
+drake_py_library(
+    name = "cpp_template_py",
+    srcs = ["cpp_template.py"],
+    deps = [
+        ":cpp_param_py",
+        ":module_py",
+    ],
+)
+
+PYBIND_LIBRARIES = []
+
+PY_LIBRARIES = [
+    ":cpp_param_py",
+    ":cpp_template_py",
+    ":module_py",
+    ":module_shim_py",
+]
+
+# Package target.
+drake_py_library(
+    name = "util",
+    imports = PACKAGE_INFO.py_imports,
+    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
 )
 
 install(
@@ -132,6 +142,13 @@ drake_pybind_cc_googletest(
     name = "cpp_param_pybind_test",
     cc_deps = [":cpp_param_pybind"],
     py_deps = [":cpp_param_py"],
+)
+
+drake_py_test(
+    name = "cpp_template_test",
+    deps = [
+        ":cpp_template_py",
+    ],
 )
 
 add_lint_tests()

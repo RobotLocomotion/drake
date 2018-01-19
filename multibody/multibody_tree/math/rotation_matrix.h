@@ -50,6 +50,25 @@ class RotationMatrix {
 #endif
   }
 
+  /// Creates a %RotationMatrix templatized on a scalar type U from a
+  /// %RotationMatrix templatized on scalar type T.  For example,
+  /// ```
+  /// RotationMatrix<double> source = RotationMatrix<double>::Identity();
+  /// RotationMatrix<AutoDiffXd> foo = source.cast<AutoDiffXd>();
+  /// ```
+  /// @tparam U Scalar type on which the returned %RotationMatrix is templated.
+  /// @note `RotationMatrix<From>::cast<To>()` creates a new
+  /// `RotationMatrix<To>` from a `RotationMatrix<From>` but only if
+  /// type `To` is constructible from type `From`.
+  /// This cast method works in accordance with Eigen's cast method for Eigen's
+  /// %Matrix3 that underlies this %RotationMatrix.  For example, Eigen
+  /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
+  template <typename U>
+  RotationMatrix<U> cast() const {
+    const Matrix3<U> m = R_AB_.template cast<U>();
+    return RotationMatrix<U>(m, true);
+  }
+
   /// Sets `this` %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws exception std::logic_error in debug builds if R fails IsValid(R).
@@ -218,6 +237,13 @@ class RotationMatrix {
   }
 
  private:
+  // Make RotationMatrix<U> templatized on any typename U be a friend of a
+  // %RotationMatrix templatized on any other typename T.
+  // This is needed for the method RotationMatrix<T>::cast<U>() to be able to
+  // use the necessary private constructor.
+  template <typename U>
+  friend class RotationMatrix;
+
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality_{

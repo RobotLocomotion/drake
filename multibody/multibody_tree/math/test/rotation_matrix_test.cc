@@ -12,6 +12,50 @@ using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+// Helper function to create a rotation matrix associated with a BodyXYZ
+// rotation by angles q1 = 0.2 radians, q2 = 0.3 radians, q3 = 0.4 radians.
+// Note: These matrices must remain BodyXYZ matrices with the specified angles
+// q1, q2, q3, as these matrices are used in conjunction with MotionGenesis
+// pre-computed solutions based on these exact matrices.
+Matrix3d MakeRotationMatrixBodyXYZ() {
+  const double q1 = 0.2, q2 = 0.3, q3 = 0.4;
+  const double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
+  const double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
+  Matrix3d m;
+  m << c2 * c3,
+      s3 * c1 + s1 * s2 * c3,
+      s1 * s3 - s2 * c1 * c3,
+      -s3 * c2,
+      c1 * c3 - s1 * s2 * s3,
+      s1 * c3 + s2 * s3 * c1,
+      s2,
+      -s1 * c2,
+      c1 * c2;
+  return m;
+}
+
+// Helper function to create a rotation matrix associated with a BodyXYX
+// rotation by angles r1 = 0.5 radians, r2 = 0.5 radians, r3 = 0.7 radians.
+// Note: These matrices must remain BodyXYX matrices with the specified angles
+// r1, r2, r3, as these matrices are used in conjunction with MotionGenesis
+// pre-computed solutions based on these exact matrices.
+Matrix3d MakeRotationMatrixBodyXYX() {
+  const double r1 = 0.5, r2 = 0.5, r3 = 0.7;
+  const double c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
+  const double s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
+  Matrix3d m;
+  m << c2,
+      s1 * s2,
+      -s2 * c1,
+      s2 * s3,
+      c1 * c3 - s1 * s3 * c2,
+      s1 * c3 + s3 * c1 * c2,
+      s2 * c3,
+      -s3 * c1 - s1 * c2 * c3,
+      c1 * c2 * c3 - s1 * s3;
+  return m;
+}
+
 // Test default constructor - should be identity matrix.
 GTEST_TEST(RotationMatrix, DefaultRotationMatrixIsIdentity) {
   RotationMatrix<double> R;
@@ -86,35 +130,8 @@ GTEST_TEST(RotationMatrix, Inverse) {
 
 // Test rotation matrix multiplication and IsNearlyEqualTo.
 GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
-  // Create a rotation matrix from a BodyXYZ rotation by angles q1, q2, q3.
-  double q1 = 0.2, q2 = 0.3, q3 = 0.4;
-  double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
-  double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
-  Matrix3d m_BA;
-  m_BA << c2 * c3,
-          s3 * c1 + s1 * s2 * c3,
-          s1 * s3 - s2 * c1 * c3,
-         -s3 * c2,
-          c1 * c3 - s1 * s2 * s3,
-          s1 * c3 + s2 * s3 * c1,
-          s2,
-         -s1 * c2,
-          c1 * c2;
-
-  // Create a rotation matrix from a BodyXYX rotation by angles r1, r2, r3.
-  double r1 = 0.5, r2 = 0.5, r3 = 0.7;
-  c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
-  s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
-  Matrix3d m_CB;
-  m_CB << c2,
-          s1 * s2,
-         -s2 * c1,
-          s2 * s3,
-          c1 * c3 - s1 * s3 * c2,
-          s1 * c3 + s3 * c1 * c2,
-          s2 * c3,
-         -s3 * c1 - s1 * c2 * c3,
-          c1 * c2 * c3 - s1 * s3;
+  Matrix3d m_BA = MakeRotationMatrixBodyXYZ();
+  Matrix3d m_CB = MakeRotationMatrixBodyXYX();
 
   RotationMatrix<double> R_BA(m_BA);
   RotationMatrix<double> R_CB(m_CB);
@@ -211,6 +228,29 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m),
                std::logic_error);
 }
+
+// Test RotationMatrix cast method from double to AutoDiffXd.
+GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
+  const Matrix3d m = MakeRotationMatrixBodyXYZ();
+  const RotationMatrix<double> R_double(m);
+  const RotationMatrix<AutoDiffXd> R_autodiff = R_double.cast<AutoDiffXd>();
+
+  // To avoid a (perhaps) tautological test, do not just use an Eigen cast() to
+  // the Matrix3 that underlies the RotationMatrix class -- i.e., avoid just
+  // comparing m_autodiff.cast<double>() with m_double.
+  // Instead, check element-by-element equality as follows.
+  const Matrix3<double>& m_double = R_double.matrix();
+  const Matrix3<AutoDiffXd>& m_autodiff = R_autodiff.matrix();
+  for (int i = 0;  i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      const double mij_double = m_double(i, j);
+      const AutoDiffXd& mij_autodiff = m_autodiff(i, j);
+      EXPECT_EQ(mij_autodiff.value(), mij_double);
+      EXPECT_EQ(mij_autodiff.derivatives().size(), 0);
+    }
+  }
+}
+
 
 }  // namespace
 }  // namespace math

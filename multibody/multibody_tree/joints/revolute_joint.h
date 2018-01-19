@@ -130,31 +130,35 @@ class RevoluteJoint final : public Joint<T> {
 
   /// @}
 
-  /// Adds into `forcing` a given `torque` for `this` joint.
+  /// Adds into `forces` a given `torque` for `this` joint that is to be applied
+  /// about the joint's axis.
   /// @note A torque is the moment of a set of forces whose resultant is zero.
   void AddInTorque(
       const systems::Context<T>& context,
       const T& torque,
-      MultibodyForces<T>* forcing) const {
-    this->AddInForcing(context, 0, torque, forcing);
+      MultibodyForces<T>* forces) const {
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    this->AddInForces(context, 0, torque, forces);
   }
 
  private:
   // Joint<T> override called through public NVI. Therefore arguments were
   // already checked to be valid.
-  void DoAddInForcing(
-      const systems::Context<T>& context,
+  void DoAddInForces(
+      const systems::Context<T>&,
       int joint_dof,
       const T& joint_tau,
-      MultibodyForces<T>* forcing) const override {
-    // Right now we assume all the forcing in joint_tau goes into a single
+      MultibodyForces<T>* forces) const override {
+    // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
     auto tau_mob = get_mobilizer()->get_mutable_generalized_forces_from_array(
-        &forcing->mutable_generalized_forces());
-    tau_mob(joint_dof) = joint_tau;
+        &forces->mutable_generalized_forces());
+    tau_mob(joint_dof) += joint_tau;
   }
 
+  // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const override {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();

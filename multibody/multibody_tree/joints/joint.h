@@ -121,16 +121,37 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
+  /// Returns the number of degrees of freedom for `this` joint.
+  /// E.g., one for a revolute joint and three for a ball joint.
   virtual int num_dofs() const = 0;
 
-  /// Adds into `forcing` a force along the one of the joint's degrees of
-  /// freedom given by `joint_dof`. The meaning for this degree of freedom and
-  /// even its dimensional units depend on the specific joint sub-class.
-  /// For a RevoluteJoint for instance, `joint_dof` can only be 0 since revolute
-  /// joints's motion subspace only has one degree of freedom, while the units
-  /// of `joint_tau` are those of torque (N⋅m in the MKS system of units).
-  /// NVI to DoAddInForcing().
-  void AddInForcing(
+  /// Adds into `forces` a force along the one of the joint's degrees of
+  /// freedom indicated by index `joint_dof`.
+  /// The meaning for this degree of freedom and even its dimensional units
+  /// depend on the specific joint sub-class. For a RevoluteJoint for instance,
+  /// `joint_dof` can only be 0 since revolute joints's motion subspace only has
+  /// one degree of freedom, while the units of `joint_tau` are those of torque
+  /// (N⋅m in the MKS system of units). For multi-dof joints please refer to
+  /// the documentation provided by specific joint sub-classes regarding the
+  /// meaning of `joint_dof`.
+  /// NVI to DoAddInForces().
+  ///
+  /// @param[in] context
+  ///   The context storing the state and parameters for the model to which
+  ///   `this` joint belongs.
+  /// @param[in] joint_dof
+  ///   Index specifying one of the degress of freedom for this joint. The index
+  ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
+  ///   method will abort.
+  /// @param[in] joint_tau
+  ///   Generalized force corresponding to the degree of freedom indicated by
+  ///   `joint_dof` to be added into `forces`.
+  /// @param[out] forces
+  ///   On return, this method will add force `joint_tau` for the degree of
+  ///   freedom `joint_dof` into the output `forces`. This method aborts if
+  ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
+  ///   accommodate a set of forces for the model to which this joint belongs.
+  void AddInForces(
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
@@ -138,7 +159,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    DoAddInForcing(context, joint_dof, joint_tau, forces);
+    DoAddInForces(context, joint_dof, joint_tau, forces);
   }
 
   // Hide the following section from Doxygen.
@@ -222,17 +243,19 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
 
-  /// Adds into `forcing` a force along the one of the joint's degrees of
+  /// Adds into `forces` a force along the one of the joint's degrees of
   /// freedom given by `joint_dof`.
-  /// How forcing is added to a MultibodyTree model depends on the underlying
+  /// How forces is added to a MultibodyTree model depends on the underlying
   /// implementation of a particular joint and therefore specific %Joint
   /// subclasses must provide a definition for this method.
-  /// @see The public NVI AddInForcing() for details.
-  virtual void DoAddInForcing(
+  /// This method is only called by the public NVI AddInForces() and therefore
+  /// input arguments were checked to be valid.
+  /// @see The public NVI AddInForces() for details.
+  virtual void DoAddInForces(
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
-      MultibodyForces<T>* forcing) const = 0;
+      MultibodyForces<T>* forces) const = 0;
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
