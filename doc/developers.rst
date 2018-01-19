@@ -58,6 +58,7 @@ Testing
     :maxdepth: 1
 
     unit_testing_instructions
+    downstream_testing
 
 .. See :doc:`unit_testing_instructions`
 
