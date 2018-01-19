@@ -891,8 +891,9 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   if (!is_state_discrete()) return;
 
   // Get the time step.
-  double dt = this->get_time_step();
-  DRAKE_DEMAND(dt > 0.0);
+  double dt = context.get_time() - context.get_last_discrete_update_time();
+  if (dt <= 0.0)
+    dt = this->get_time_step();
 
   VectorX<T> u = this->EvaluateActuatorInputs(context);
 

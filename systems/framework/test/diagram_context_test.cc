@@ -184,6 +184,17 @@ TEST_F(DiagramContextTest, Time) {
   }
 }
 
+// Tests that the last discrete update time writes through to the subsystem
+// contexts.
+TEST_F(DiagramContextTest, LastDiscreteUpdateTime) {
+  context_->set_last_discrete_update_time(42.0);
+  EXPECT_EQ(42.0, context_->get_last_discrete_update_time());
+  for (int i = 0; i < kNumSystems; ++i) {
+    EXPECT_EQ(42.0,
+        context_->GetSubsystemContext(i).get_last_discrete_update_time());
+  }
+}
+
 // Tests that state variables appear in the diagram context, and write
 // transparently through to the constituent system contexts.
 TEST_F(DiagramContextTest, State) {

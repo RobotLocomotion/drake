@@ -24,6 +24,12 @@ struct StepInfo {
   /// doubles, time resolution will gradually degrade as time increases.
   // TODO(sherm1): Consider whether this is sufficiently robust.
   T time_sec{0.0};
+
+  /// The time, in seconds, that the last discrete update was performed.
+  /// The same caveat about time resolution degradation above applies.
+  /// Setting initial conditions can be considered to be a (initial)
+  /// discrete update, so this variable should always hold a valid value.
+  T last_discrete_update_time_sec{0.0};
 };
 
 /// Context is an abstract base class template that represents all
@@ -51,6 +57,16 @@ class Context {
   /// Set the current time in seconds.
   virtual void set_time(const T& time_sec) {
     get_mutable_step_info()->time_sec = time_sec;
+  }
+
+  /// Gets the time of the last discrete update, if any.
+  const T& get_last_discrete_update_time() const {
+    return get_step_info().last_discrete_update_time_sec;
+  }
+
+  /// Sets the time of the last discrete update.
+  virtual void set_last_discrete_update_time(const T& time_sec) {
+    get_mutable_step_info()->last_discrete_update_time_sec = time_sec;
   }
 
   // =========================================================================
