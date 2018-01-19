@@ -22,35 +22,11 @@ trap at_exit EXIT
 [[ "${EUID}" -eq 0 ]] || die "${me} must run as root. Please use sudo."
 
 apt update
-apt install --no-install-recommends lsb-release wget
+apt install --no-install-recommends lsb-release
 
 [[ "$(lsb_release -sc)" == "xenial" ]] || die "${me} only supports Ubuntu 16.04."
 
-# Install Clang 3.9
-while true; do
-  echo "The Ubuntu 16.04 distribution includes Clang 3.8 by default."
-  echo "To install Clang 3.9 it is necessary to add a Personal Package Archive (PPA)."
-  echo "This script will add the repository
-    'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main'"
-  read -p "Do you want to continue? [Y/n] " yn
-  case $yn in
-    [Yy]*)
-      apt install --no-install-recommends software-properties-common
-      wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | apt-key add -
-      # In this form, add-apt-repository is only truly idempotent when -s is
-      # added, since it otherwise duplicates the commented deb-src line.
-      add-apt-repository -s -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
-      apt update
-      apt install --no-install-recommends clang-3.9 lldb-3.9
-      break
-      ;;
-    [Nn]*) break ;;
-    *) echo "Please answer yes or no." ;;
-  esac
-done
-
 # Install the APT dependencies.
-apt update -y
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
@@ -123,6 +99,7 @@ python-sphinx
 python-tk
 python-yaml
 valgrind
+wget
 zip
 zlib1g-dev
 
