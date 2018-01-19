@@ -1,0 +1,63 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+
+drake_cc_vector_gen_library(
+    name = "acrobot_vector_types",
+    srcs = [
+        "acrobot_state.named_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "acrobot_plant",
+    srcs = [
+        "acrobot_plant.cc",
+    ],
+    hdrs = [
+        "acrobot_plant.h",
+    ],
+    deps = [
+        ":acrobot_vector_types",
+        "//drake/common:default_scalars",
+        "//drake/geometry:geometry_ids",
+        "//drake/geometry:geometry_system",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree",
+        "//drake/systems/framework",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "passive_simulation",
+    srcs = ["passive_simulation.cc"],
+    add_test_rule = 1,
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":acrobot_plant",
+        "//drake/geometry:geometry_visualization",
+        "//drake/systems/analysis:implicit_euler_integrator",
+        "//drake/systems/analysis:runge_kutta3_integrator",
+        "//drake/systems/analysis:semi_explicit_euler_integrator",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/lcm",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/rendering:pose_bundle_to_draw_message",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
