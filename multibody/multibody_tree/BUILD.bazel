@@ -250,7 +250,6 @@ drake_cc_googletest(
     srcs = ["joints/test/revolute_joint_test.cc"],
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

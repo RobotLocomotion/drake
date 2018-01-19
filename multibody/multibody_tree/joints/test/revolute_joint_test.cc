@@ -2,13 +2,9 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 // clang-format: on
 
-#include <functional>
-#include <memory>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -19,13 +15,7 @@ namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
-using Eigen::Isometry3d;
-using Eigen::Matrix2d;
-using Eigen::Translation3d;
-using Eigen::Vector2d;
 using Eigen::Vector3d;
-using std::make_unique;
-using std::unique_ptr;
 using systems::Context;
 
 class RevoluteJointTest : public ::testing::Test {
