@@ -2,10 +2,10 @@
 """
 
 import os
-import shutil
 import subprocess
-import sys
 import unittest
+
+import install_test_helper
 
 
 class TestResourceTool(unittest.TestCase):
@@ -17,25 +17,15 @@ class TestResourceTool(unittest.TestCase):
 
     def test_install_and_run(self):
         # Install into a temporary directory.
-        os.mkdir("tmp")
-        subprocess.check_call(
-            [self._install_exe,
-             os.path.abspath("tmp"),
-             ])
+        result = install_test_helper.install("tmp", ["libexec"])
+        self.assertEqual(None, result)
 
         # Create a resource in the temporary directory.
         os.makedirs("tmp/share/drake/common/test")
         with open("tmp/share/drake/common/test/tmp_resource", "w") as f:
             f.write("tmp_resource")
 
-        # Remove the un-installed copy, so we _know_ it won't be used.
-        content_test_folder = os.listdir(os.getcwd())
-        content_test_folder.remove("tmp")
-        for element in content_test_folder:
-            if os.path.isdir(element):
-                shutil.rmtree(element)
-            else:
-                os.remove(element)
+        # Verify un-installed copy was removed, so we _know_ it won't be used.
         self.assertEqual(os.listdir(os.getcwd()), ["tmp"])
 
         # Cross-check the resource root environment variable name.
@@ -72,3 +62,7 @@ class TestResourceTool(unittest.TestCase):
             ).strip()
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), "tmp_resource")
+
+
+if __name__ == '__main__':
+    unittest.main()
