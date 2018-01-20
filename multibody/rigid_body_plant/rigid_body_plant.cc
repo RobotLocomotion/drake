@@ -69,7 +69,7 @@ Eigen::VectorBlock<const VectorX<T>> RigidBodyPlant<T>::GetStateVector(
     const Context<T>& context) const {
   if (is_state_discrete()) {
     return dynamic_cast<const BasicVector<T>&>(
-        context.get_discrete_state_vector()).get_value();
+        context.get_discrete_state(0)).get_value();
   } else {
     return dynamic_cast<const BasicVector<T>&>(
         context.get_continuous_state_vector()).get_value();
