@@ -14,6 +14,8 @@
 
 #include "drake/common/nice_type_name.h"
 
+namespace py = pybind11;
+
 using std::string;
 using std::vector;
 

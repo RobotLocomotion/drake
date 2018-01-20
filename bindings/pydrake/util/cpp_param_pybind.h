@@ -13,32 +13,27 @@
 
 namespace drake {
 namespace pydrake {
-
-// This alias is intended to be part of the public API, as it follows
-// `pybind11` conventions.
-namespace py = pybind11;
-
 namespace internal {
 
 // Gets singleton for type aliases from `cpp_param`.
-py::object GetParamAliases();
+pybind11::object GetParamAliases();
 
 // Gets Python type object given `std::type_info`.
 // @throws std::runtime_error if type is neither aliased nor registered in
 // `pybind11`.
-py::object GetPyParamScalarImpl(const std::type_info& tinfo);
+pybind11::object GetPyParamScalarImpl(const std::type_info& tinfo);
 
 // Gets Python type for a C++ type (base case).
 template <typename T>
-inline py::object GetPyParamScalarImpl(type_pack<T> = {}) {
+inline pybind11::object GetPyParamScalarImpl(type_pack<T> = {}) {
   return GetPyParamScalarImpl(typeid(T));
 }
 
 // Gets Python literal for a C++ literal (specialization).
 template <typename T, T Value>
-inline py::object GetPyParamScalarImpl(
+inline pybind11::object GetPyParamScalarImpl(
     type_pack<std::integral_constant<T, Value>> = {}) {
-  return py::cast(Value);
+  return pybind11::cast(Value);
 }
 
 }  // namespace internal
@@ -48,8 +43,9 @@ inline py::object GetPyParamScalarImpl(
 /// @throws std::runtime_error on the first type it encounters that is neither
 /// aliased nor registered in `pybind11`.
 template <typename ... Ts>
-inline py::tuple GetPyParam(type_pack<Ts...> = {}) {
-  return py::make_tuple(internal::GetPyParamScalarImpl(type_pack<Ts>{})...);
+inline pybind11::tuple GetPyParam(type_pack<Ts...> = {}) {
+  return pybind11::make_tuple(
+      internal::GetPyParamScalarImpl(type_pack<Ts>{})...);
 }
 
 }  // namespace pydrake
