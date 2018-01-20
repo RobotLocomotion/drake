@@ -1,0 +1,22 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_binary(
+    name = "dummy",
+    srcs = ["dummy.cc"],
+    copts = [
+        "-Wno-mismatched-tags",
+    ],
+    deps = [
+        "@godotengine",
+    ],
+)
+
+add_lint_tests()

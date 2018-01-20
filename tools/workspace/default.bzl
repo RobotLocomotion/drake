@@ -17,6 +17,7 @@ load("@drake//tools/workspace/fmt:package.bzl", "fmt_repository")
 load("@drake//tools/workspace/gflags:package.bzl", "gflags_repository")
 load("@drake//tools/workspace/glew:package.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:package.bzl", "glib_repository")
+load("@drake//tools/workspace/godotengine:package.bzl", "godotengine_repository")  # noqa
 load("@drake//tools/workspace/gtest:package.bzl", "gtest_repository")
 load("@drake//tools/workspace/gthread:package.bzl", "gthread_repository")
 load("@drake//tools/workspace/gurobi:package.bzl", "gurobi_repository")
@@ -103,6 +104,8 @@ def add_default_repositories(excludes = []):
         glew_repository(name = "glew")
     if "glib" not in excludes:
         glib_repository(name = "glib")
+    if "godotengine" not in excludes:
+        godotengine_repository(name = "godotengine")
     if "gtest" not in excludes:
         gtest_repository(name = "gtest")
     if "gthread" not in excludes:
