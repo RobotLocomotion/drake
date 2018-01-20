@@ -446,7 +446,7 @@ const symbolic::Variable& MixedIntegerBranchAndBound::GetNewVariable(
 
 MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
     const {
-  switch (pick_node_) {
+  switch (node_selection_method_) {
     case NodeSelectionMethod::kMinLowerBound: {
       return PickMinLowerBoundNode();
     }
@@ -569,7 +569,7 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
 
 const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node) const {
-  switch (pick_variable_) {
+  switch (variable_selection_method_) {
     case VariableSelectionMethod::kMostAmbivalent:
       return PickMostAmbivalentAsBranchingVariable(node);
     case VariableSelectionMethod::kLeastAmbivalent:
@@ -591,13 +591,16 @@ const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
 namespace {
 const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node,
-    MixedIntegerBranchAndBound::VariableSelectionMethod pick_variable) {
-  DRAKE_ASSERT(pick_variable == MixedIntegerBranchAndBound::
-                                    VariableSelectionMethod::kMostAmbivalent ||
-               pick_variable == MixedIntegerBranchAndBound::
-                                    VariableSelectionMethod::kLeastAmbivalent);
+    MixedIntegerBranchAndBound::VariableSelectionMethod
+        variable_selection_method) {
+  DRAKE_ASSERT(variable_selection_method ==
+                   MixedIntegerBranchAndBound::VariableSelectionMethod::
+                       kMostAmbivalent ||
+               variable_selection_method ==
+                   MixedIntegerBranchAndBound::VariableSelectionMethod::
+                       kLeastAmbivalent);
   if (node.solution_result() == SolutionResult::kSolutionFound) {
-    const double sign = pick_variable ==
+    const double sign = variable_selection_method ==
                                 MixedIntegerBranchAndBound::
                                     VariableSelectionMethod::kMostAmbivalent
                             ? 1
@@ -693,7 +696,6 @@ void MixedIntegerBranchAndBound::UpdateIntegralSolution(
   }
   best_upper_bound_ = std::min(best_upper_bound_, solutions_.begin()->first);
 }
-
 
 bool MixedIntegerBranchAndBound::HasConverged() const {
   if (best_upper_bound_ - best_lower_bound_ <= absolute_gap_tol_) {

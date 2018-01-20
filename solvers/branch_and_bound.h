@@ -377,12 +377,12 @@ class MixedIntegerBranchAndBound {
   /**
    * The user can choose the method to pick a node for branching. We provide
    * options such as "depth first" or "min lower bound".
-   * @param pick_node The option to pick a node. If the option is
+   * @param node_selection_method The option to pick a node. If the option is
    * NodeSelectionMethod::kUserDefined, then the user should also provide the
    * method to pick a node through SetUserDefinedNodeSelectionFunction.
    */
-  void SetNodeSelectionMethod(NodeSelectionMethod pick_node) {
-    pick_node_ = pick_node;
+  void SetNodeSelectionMethod(NodeSelectionMethod node_selection_method) {
+    node_selection_method_ = node_selection_method;
   }
 
   /**
@@ -397,13 +397,14 @@ class MixedIntegerBranchAndBound {
   /**
    * The user can choose the method to pick a variable for branching in each
    * node. We provide options such as "most ambivalent" or "least ambivalent".
-   * @param pick_variable The option to pick a variable. If the option is
-   * VariableSelectionMethod::kUserDefined, then the user should also provide
-   * the method
-   * to pick a variable through SetUserDefinedVariableSelectionFunction.
+   * @param variable_selection_method The option to pick a variable. If the
+   * option is VariableSelectionMethod::kUserDefined, then the user should also
+   * provide the method to pick a variable through
+   * SetUserDefinedVariableSelectionFunction(...).
    */
-  void SetVariableSelectionMethod(VariableSelectionMethod pick_variable) {
-    pick_variable_ = pick_variable;
+  void SetVariableSelectionMethod(
+      VariableSelectionMethod variable_selection_method) {
+    variable_selection_method_ = variable_selection_method;
   }
 
   /**
@@ -586,10 +587,11 @@ class MixedIntegerBranchAndBound {
   double absolute_gap_tol_ = 1E-2;
   double relative_gap_tol_ = 1E-2;
 
-  VariableSelectionMethod pick_variable_ =
+  VariableSelectionMethod variable_selection_method_ =
       VariableSelectionMethod::kMostAmbivalent;
 
-  NodeSelectionMethod pick_node_ = NodeSelectionMethod::kMinLowerBound;
+  NodeSelectionMethod node_selection_method_ =
+      NodeSelectionMethod::kMinLowerBound;
 
   // The user defined function to pick a branching variable. Default is null.
   VariableSelectFun variable_selection_userfun_ = nullptr;
