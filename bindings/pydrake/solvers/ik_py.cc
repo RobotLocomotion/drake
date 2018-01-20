@@ -2,11 +2,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(_ik_py, m) {
   m.doc() = "RigidBodyTree inverse kinematics";
@@ -261,3 +263,6 @@ PYBIND11_MODULE(_ik_py, m) {
     .def_readonly("info", &IKResults::info)
     .def_readonly("infeasible_constraints", &IKResults::infeasible_constraints);
 }
+
+}  // namespace pydrake
+}  // namespace drake

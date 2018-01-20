@@ -1,19 +1,21 @@
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
-namespace py = pybind11;
-
 using std::unique_ptr;
-using drake::VectorX;
+
+namespace drake {
+
 using drake::systems::BasicVector;
 using drake::systems::ConstantVectorSource;
 
-using T = double;
-
+namespace pydrake {
 namespace {
+
+using T = double;
 
 // Informs listener when this class is deleted.
 class DeleteListenerSystem : public ConstantVectorSource<T> {
@@ -56,3 +58,6 @@ PYBIND11_MODULE(lifetime_test_util, m) {
       m, "DeleteListenerVector")
     .def(py::init<std::function<void()>>());
 }
+
+}  // namespace pydrake
+}  // namespace drake
