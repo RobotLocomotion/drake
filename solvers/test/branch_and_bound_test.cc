@@ -46,11 +46,11 @@ class MixedIntegerBranchAndBoundTester {
 
 namespace {
 // Construct a mixed-integer linear program
-// min x(0) + 2x(1) - 3x(3) + 1
-// s.t x(0) + x(1) + 2x(3) = 2
-//     x(1) - 3.1x(2) >= 1
-//     x(2) + 1.2x(3) - x(0) <= 5
-//     x(0) , x(2) are binary
+// min x₀ + 2x₁ - 3x₃ + 1
+// s.t x₀ + x₁ + 2x₃ = 2
+//     x₁ - 3.1x₂ ≥ 1
+//     x₂ + 1.2x₃ - x₀ ≤ 5
+//     x₀ , x₂ are binary
 // At the root node, the optimizer should obtain an integral solution. So the
 // root node does not need to branch.
 // The optimal solution is (0, 1, 0, 0.5), the optimal cost is 1.5
@@ -97,10 +97,10 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram2() {
 }
 
 // Construct an unbounded mixed-integer optimization problem.
-// min x(0) + 2*x(1) + 3 * x(2) + 2.5*x(3) + 2
-// s.t x(0) + x(1) - x(2) + x(3) <= 3
-//     1 <= x(0) + 2 * x(1) - 2 * x(2) + 4 * x(3) <= 3
-//     x(0), x(2) are binary.
+// min x₀ + 2*x₁ + 3 * x₂ + 2.5*x₃ + 2
+// s.t x₀ + x₁ - x₂ + x₃ ≤ 3
+//     1 ≤ x₀ + 2 * x₁ - 2 * x₂ + 4 * x₃ ≤ 3
+//     x₀, x₂ are binary.
 std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram3() {
   auto prog = std::make_unique<MathematicalProgram>();
   VectorDecisionVariable<4> x;
@@ -119,16 +119,19 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram3() {
 // Given points P0 = (0, 3), P1 = (1, 1), and P2 = (2, 2), and the line segments
 // connecting P0P1 and P1P2, we want to find if the point (1, 2) is on the
 // line segments, and optimize some cost. This problem can be formulated as
-// min x(0) + x(1) + 2 * x(2) // A random cost.
-// s.t x(0) <= y(0)
-//     x(1) <= y(0) + y(1)
-//     x(2) <= y(1)
-//     x(0) + x(1) + x(2) = 1
-//     x(1) + 2 * x(2) = 1
-//     y(0) + y(1) = 1
-//     3 * x(0) + x(1) + 2 * x(2) = 2
-//     y(0), y(1) are binary
-//     x(0), x(1), x(2) >= 0
+// min x₀ + x₁ + 2 * x₂ // An arbitrary cost.
+// s.t x₀ ≤ y₀
+//     x₁ ≤ y₀ + y₁
+//     x₂ ≤ y₁
+//     x₀ + x₁ + x₂ = 1
+//     x₁ + 2 * x₂ = 1
+//     y₀ + y₁ = 1
+//     3 * x₀ + x₁ + 2 * x₂ = 2
+//     y₀, y₁ are binary
+//     x₀, x₁, x₂ ≥ 0
+// This formulation is obtained by using the special ordered set constraint
+// with yᵢbeing the indicator binary variable that the point is on the line
+// segment PᵢPᵢ₊₁
 std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram4() {
   auto prog = std::make_unique<MathematicalProgram>();
   auto x = prog->NewContinuousVariables<3>("x");
@@ -157,7 +160,7 @@ void CheckNewRootNode(
   EXPECT_TRUE(root.IsLeaf());
 }
 
-void TestProgSolve(const MixedIntegerBranchAndBoundNode& node,
+void CheckNodeSolution(const MixedIntegerBranchAndBoundNode& node,
                    const Eigen::Ref<const VectorXDecisionVariable>& x,
                    const Eigen::Ref<const Eigen::VectorXd>& x_expected,
                    double optimal_cost, double tol = 1E-4) {
@@ -169,6 +172,7 @@ void TestProgSolve(const MixedIntegerBranchAndBoundNode& node,
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
+  // Test constructing root node for prog 1.
   auto prog = ConstructMathematicalProgram1();
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
   std::unordered_map<symbolic::Variable::Id, symbolic::Variable>
@@ -186,11 +190,14 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
   CheckNewRootNode(*root, {x(0), x(2)});
 
   const Eigen::Vector4d x_expected(0, 1, 0, 0.5);
-  TestProgSolve(*root, x, x_expected, 1.5, 1E-5);
+  const double tol{1E-5};
+  const double cost_expected{1.5};
+  CheckNodeSolution(*root, x, x_expected, cost_expected, tol);
   EXPECT_TRUE(root->optimal_solution_is_integral());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
+  // Test constructing root node for prog 2.
   auto prog = ConstructMathematicalProgram2();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -209,11 +216,14 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot2) {
 
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 0.7, 1, 1, 1.4, 0;
-  TestProgSolve(*root, x, x_expected, -4.9, 1E-5);
+  const double tol{1E-5};
+  const double cost_expected{-4.9};
+  CheckNodeSolution(*root, x, x_expected, cost_expected, tol);
   EXPECT_FALSE(root->optimal_solution_is_integral());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
+  // Test constructing root node for prog 3.
   auto prog = ConstructMathematicalProgram3();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -234,6 +244,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot3) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot4) {
+  // Test constructing root node for prog 4.
   auto prog = ConstructMathematicalProgram4();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -253,7 +264,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot4) {
   EXPECT_EQ(root->solution_result(), SolutionResult::kSolutionFound);
   Eigen::Matrix<double, 5, 1> x_expected;
   x_expected << 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 1.0 / 3;
-  TestProgSolve(*root, x, x_expected, 4.0 / 3.0, 1E-5);
+  const double tol{1E-5};
+  const double cost_expected{4.0 / 3.0};
+  CheckNodeSolution(*root, x, x_expected, cost_expected, tol);
   EXPECT_FALSE(root->optimal_solution_is_integral());
 }
 
@@ -269,6 +282,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRootError) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
+  // Test branching on the root node for prog 1.
   auto prog = ConstructMathematicalProgram1();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -282,8 +296,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
 
   const Eigen::Vector4d x_expected_l0(0, 1, 0, 0.5);
   const Eigen::Vector4d x_expected_r0(1, 1, 0, 0);
-  TestProgSolve(*(root->left_child()), x, x_expected_l0, 1.5, 1E-5);
-  TestProgSolve(*(root->right_child()), x, x_expected_r0, 4, 1E-5);
+  const double tol{1E-5};
+  CheckNodeSolution(*(root->left_child()), x, x_expected_l0, 1.5, tol);
+  CheckNodeSolution(*(root->right_child()), x, x_expected_r0, 4, tol);
   EXPECT_TRUE(root->left_child()->optimal_solution_is_integral());
   EXPECT_TRUE(root->right_child()->optimal_solution_is_integral());
 
@@ -292,8 +307,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
   root->Branch(x(2));
   const Eigen::Vector4d x_expected_l2(0, 1, 0, 0.5);
   const Eigen::Vector4d x_expected_r2(0, 4.1, 1, -1.05);
-  TestProgSolve(*(root->left_child()), x, x_expected_l2, 1.5, 1E-5);
-  TestProgSolve(*(root->right_child()), x, x_expected_r2, 12.35, 1E-5);
+  CheckNodeSolution(*(root->left_child()), x, x_expected_l2, 1.5, tol);
+  CheckNodeSolution(*(root->right_child()), x, x_expected_r2, 12.35, tol);
   EXPECT_TRUE(root->left_child()->optimal_solution_is_integral());
   EXPECT_TRUE(root->right_child()->optimal_solution_is_integral());
 
@@ -304,6 +319,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
+  // Test branching on the root node for prog 2.
   auto prog = ConstructMathematicalProgram2();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -318,25 +334,26 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
             SolutionResult::kInfeasibleConstraints);
   Eigen::Matrix<double, 5, 1> x_expected_r;
   x_expected_r << 1, 1.0 / 3.0, 1, 1, 0;
-  TestProgSolve(*(root->right_child()), x, x_expected_r, -13.0 / 3.0, 1E-5);
+  const double tol{1E-5};
+  CheckNodeSolution(*(root->right_child()), x, x_expected_r, -13.0 / 3.0, tol);
   EXPECT_TRUE(root->right_child()->optimal_solution_is_integral());
 
   // Branch on x(2)
   root->Branch(x(2));
   Eigen::Matrix<double, 5, 1> x_expected_l;
   x_expected_l << 1, 2.0 / 3.0, 0, 1, 1;
-  TestProgSolve(*(root->left_child()), x, x_expected_l, 23.0 / 6.0, 1E-5);
+  CheckNodeSolution(*(root->left_child()), x, x_expected_l, 23.0 / 6.0, tol);
   EXPECT_TRUE(root->left_child()->optimal_solution_is_integral());
   x_expected_r << 0.7, 1, 1, 1.4, 0;
-  TestProgSolve(*(root->right_child()), x, x_expected_r, -4.9, 1E-5);
+  CheckNodeSolution(*(root->right_child()), x, x_expected_r, -4.9, tol);
   EXPECT_FALSE(root->right_child()->optimal_solution_is_integral());
 
   // Branch on x(4)
   root->Branch(x(4));
   x_expected_l << 0.7, 1, 1, 1.4, 0;
   x_expected_r << 0.2, 2.0 / 3.0, 1, 1.4, 1;
-  TestProgSolve(*(root->left_child()), x, x_expected_l, -4.9, 1E-5);
-  TestProgSolve(*(root->right_child()), x, x_expected_r, -47.0 / 30, 1E-5);
+  CheckNodeSolution(*(root->left_child()), x, x_expected_l, -4.9, tol);
+  CheckNodeSolution(*(root->right_child()), x, x_expected_r, -47.0 / 30, tol);
   EXPECT_FALSE(root->left_child()->optimal_solution_is_integral());
   EXPECT_FALSE(root->right_child()->optimal_solution_is_integral());
 
@@ -347,6 +364,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
+  // Test branching on the root node for prog 3.
   auto prog = ConstructMathematicalProgram3();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -371,6 +389,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch4) {
+  // Test branching on the root node for prog 4.
   auto prog = ConstructMathematicalProgram4();
 
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root;
@@ -395,6 +414,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch4) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
+  // Test GetNewVariable() function.
   auto prog = ConstructMathematicalProgram1();
 
   MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
@@ -421,6 +441,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestNewVariable) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
+  // Test the constructor for MixedIntegerBranchAndBound for prog 1.
   auto prog = ConstructMathematicalProgram1();
   MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   // The root node of the tree has integral optimal cost (0, 1, 0, 0.5), with
@@ -438,6 +459,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
+  // Test the constructor for MixedIntegerBranchAndBound for prog 2.
   auto prog = ConstructMathematicalProgram2();
   MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   // The root node does not have an optimal integral solution.
@@ -449,6 +471,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
+  // Test the constructor for MixedIntegerBranchAndBound for prog 3.
   auto prog = ConstructMathematicalProgram3();
   MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   // The root node is unbounded.
@@ -459,6 +482,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor4) {
+  // Test the constructor for MixedIntegerBranchAndBound for prog 4.
   auto prog = ConstructMathematicalProgram4();
   MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   const double tol{1E-3};
@@ -469,6 +493,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor4) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
+  // Test IsLeafNodeFathomed for prog1.
   auto prog1 = ConstructMathematicalProgram1();
   MixedIntegerBranchAndBoundTester dut(*prog1, GurobiSolver::id());
   // The optimal solution to the root is integral. The node is fathomed.
@@ -495,6 +520,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
+  // Test IsLeafNodeFathomed for prog2.
   auto prog2 = ConstructMathematicalProgram2();
   MixedIntegerBranchAndBoundTester dut(*prog2, GurobiSolver::id());
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
@@ -531,6 +557,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed3) {
+  // Test IsLeafNodeFathomed for prog3.
   auto prog = ConstructMathematicalProgram3();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -565,6 +592,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed3) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed4) {
+  // Test IsLeafNodeFathomed for prog4.
   auto prog = ConstructMathematicalProgram4();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -636,6 +664,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable1) {
+  // Test picking branching variable for prog 2.
   auto prog = ConstructMathematicalProgram2();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -663,6 +692,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable1) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable2) {
+  // Test picking branching variable for prog 3.
   auto prog = ConstructMathematicalProgram3();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -680,6 +710,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
+  // TestBranchAndUpdate for prog2.
   auto prog = ConstructMathematicalProgram2();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -719,6 +750,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
+  // TestBranchAndUpdate for prog3.
   auto prog = ConstructMathematicalProgram3();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -761,6 +793,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate4) {
+  // TestBranchAndUpdate for prog4.
   auto prog = ConstructMathematicalProgram4();
 
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -781,6 +814,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate4) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSolve1) {
+  // Test Solve() function for prog 1.
   auto prog = ConstructMathematicalProgram1();
   const VectorDecisionVariable<4> x = prog->decision_variables();
 
@@ -877,15 +911,15 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestSteelBlendingProblem) {
   //  by  Carl-Henrik Westerberg, Bengt Bjorklund and Eskil Hultman
   //  on Interfaces, 1977
   //  The formulation is
-  //  min 1750 * b(0) + 990 * b(1) + 1240 * b(2) + 1680 * b(3) + 550 * x(0) +
-  //  450 * x(1) + 400 * x(2) + 100 * x(3)
-  //  s.t 5 * b(0) + 3 * b(1) + 4 * b(2) + 6 * b(3) + x(0) + x(1) + x(2) + x(3)
+  //  min 1750 * b₀ + 990 * b₁ + 1240 * b₂ + 1680 * b₃ + 550 * x₀ +
+  //  450 * x₁ + 400 * x₂ + 100 * x₃
+  //  s.t 5 * b₀ + 3 * b₁ + 4 * b₂ + 6 * b₃ + x₀ + x₁ + x₂ + x₃
   //  = 25
-  //      0.25 * b(0) + 0.12 * b(1) + 0.2 * b(2) + 0.18 * b(3) + 0.08 * x(0) +
-  //      0.07 * x(1) + 0.06 * x(2) + 0.03 * x(3) = 1.25
-  //      0.15 * b(0) + 0.09 * b(1) + 0.16 * b(2) + 0.24 * b(3) + 0.06 * x(0) +
-  //      0.07 * x(1) + 0.08 * x(2) + 0.09 * x(3) = 1.25
-  //      x >= 0
+  //      0.25 * b₀ + 0.12 * b₁ + 0.2 * b₂ + 0.18 * b₃ + 0.08 * x₀ +
+  //      0.07 * x₁ + 0.06 * x₂ + 0.03 * x₃ = 1.25
+  //      0.15 * b₀ + 0.09 * b₁ + 0.16 * b₂ + 0.24 * b₃ + 0.06 * x₀ +
+  //      0.07 * x₁ + 0.08 * x₂ + 0.09 * x₃ = 1.25
+  //      x ≥ 0
   //      b are binary variables.
   MathematicalProgram prog;
   auto b = prog.NewBinaryVariables<4>("b");
@@ -966,17 +1000,20 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   // P5 = (5, 1), and the line segments connecting P1P2, P2P3, P3P4, P4P5,
   // find the point with the smallest x coordinate, with y coordinate equal
   // to 4.
-  // min x(1) + 2 * x(2) + 3 * x(3) + 4 * x(4)
-  // s.t x(0) <= y(0)
-  //     x(1) <= y(0) + y(1)
-  //     x(2) <= y(1) + y(2)
-  //     x(3) <= y(2) + y(3)
-  //     x(4) <= y(3)
-  //     y(0) + y(1) + y(2) + y(3) = 1
-  //     x(0) + x(1) + x(2) + x(3) + x(4) = 1
-  //     3*x(0) + x(1) + 2*x(2) + 5*x(3) + x(4) = 4
-  //     x >= 0
+  // min x₁ + 2 * x₂ + 3 * x₃ + 4 * x(4)
+  // s.t x₀ ≤ y₀
+  //     x₁ ≤ y₀ + y₁
+  //     x₂ ≤ y₁ + y₂
+  //     x₃ ≤ y₂ + y₃
+  //     x(4) ≤ y₃
+  //     y₀ + y₁ + y₂ + y₃ = 1
+  //     x₀ + x₁ + x₂ + x₃ + x(4) = 1
+  //     3*x₀ + x₁ + 2*x₂ + 5*x₃ + x(4) = 4
+  //     x ≥ 0
   //     y are binary variables.
+  // This formulation is obtained by using the special ordered set constraint
+  // with yᵢbeing the indicator binary variable that the point is on the line
+  // segment PᵢPᵢ₊₁
   // The optimal solution is x = (0, 0, 1/3, 2/3, 0), y = (0, 0, 1, 0), with
   // optimal cost 8/3.
   // There are other integral solutions,
@@ -1018,15 +1055,18 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
   // the line segments connecting P1P2, P2P3, and P3P4. Find the closest point
   // on the line segment to the point (1.5, 2)
   // This problem can be formulated as
-  // min (x(1) + 2*x(2)+3*x(3) - 1.5)² + (3*x(0) + x(1) + 4*x(2) + 2*x(3))²
-  // s.t x(0) <= y(0)
-  //     x(1) <= y(0) + y(1)
-  //     x(2) <= y(1) + y(2)
-  //     x(3) <= y(2)
-  //     y(0) + y(1) + y(2) = 1
-  //     x(0) + x(1) + x(2) + x(3) = 1
-  //     x >= 0
+  // min (x₁ + 2*x₂+3*x₃ - 1.5)² + (3*x₀ + x₁ + 4*x₂ + 2*x₃)²
+  // s.t x₀ ≤ y₀
+  //     x₁ ≤ y₀ + y₁
+  //     x₂ ≤ y₁ + y₂
+  //     x₃ ≤ y₂
+  //     y₀ + y₁ + y₂ = 1
+  //     x₀ + x₁ + x₂ + x₃ = 1
+  //     x ≥ 0
   //     y are binary variables.
+  // This formulation is obtained by using the special ordered set constraint
+  // with yᵢbeing the indicator binary variable that the point is on the line
+  // segment PᵢPᵢ₊₁
   // The optimal solution is x = (0, 0.65, 0.35, 0), y = (0, 1, 0), with optimal
   // cost 0.025
   // The other integral solutions are

@@ -400,7 +400,7 @@ double MixedIntegerBranchAndBound::GetSubOptimalCost(
       nth_suboptimal_cost >= static_cast<int>(solutions().size()) - 1) {
     throw std::runtime_error(
         fmt::format("Cannot access {}'th sub-optimal cost. The branch-and-"
-                    "bound process only founds {} solution(s).",
+                    "bound process only found {} solution(s).",
                     nth_suboptimal_cost, solutions().size()));
   }
   auto it = solutions().begin();
