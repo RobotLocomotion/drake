@@ -3,6 +3,11 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+    "drake_py_unittest",
+)
 
 py_library(
     name = "cpsutils",
@@ -20,7 +25,28 @@ py_library(
 )
 
 exports_files(
-    ["install.py.in"],
+    [
+        "install.py.in",
+        "test/install_tests.py",
+    ],
 )
 
-add_lint_tests()
+# Runs `install_test_helper` unit tests.
+drake_py_unittest(
+    name = "install_test_helper_test",
+    size = "small",
+    deps = [":install_test_helper"],
+)
+
+# Runs the install-testing framework with only minimal sanity checks; does not
+# actually run any of the package-specific install_tests that are declared in
+# install() rules elsewhere.
+drake_py_test(
+    name = "install_tests",
+    size = "small",
+    # Increase the timeout so that debug builds are successful.
+    timeout = "long",
+    data = ["@drake//:install"],
+    deps = [":install_test_helper"],
+    allow_import_unittest = True,
+)
