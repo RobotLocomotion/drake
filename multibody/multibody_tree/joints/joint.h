@@ -121,10 +121,14 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
-
   /// Returns the number of degrees of freedom for `this` joint.
   /// E.g., one for a revolute joint and three for a ball joint.
-  virtual int num_dofs() const = 0;
+  /// NVI to do_get_num_dofs();
+  int num_dofs() const {
+    // Verifies the implementation returns an acceptable value.
+    DRAKE_DEMAND(0 <= do_get_num_dofs() && do_get_num_dofs() <= 6);
+    return do_get_num_dofs();
+  }
 
   /// Adds into `forces` a force along the one of the joint's degrees of
   /// freedom indicated by index `joint_dof`.
@@ -243,6 +247,13 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     std::vector<const Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
+
+  /// Returns the number of degrees of freedom for `this` joint.
+  /// Implementation to the NVI num_dofs() that must be implemented by all
+  /// subclasses.
+  /// E.g., this method should return one for a revolute joint and it should
+  /// return three for a ball joint.
+  virtual int do_get_num_dofs() const = 0;
 
   /// Adds into `forces` a force along the one of the joint's degrees of
   /// freedom given by `joint_dof`.

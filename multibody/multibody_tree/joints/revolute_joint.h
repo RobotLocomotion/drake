@@ -66,8 +66,6 @@ class RevoluteJoint final : public Joint<T> {
     axis_ = axis.normalized();
   }
 
-  int num_dofs() const override { return 1; }
-
   /// Returns the axis of revolution of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,
@@ -131,7 +129,9 @@ class RevoluteJoint final : public Joint<T> {
   /// @}
 
   /// Adds into `forces` a given `torque` for `this` joint that is to be applied
-  /// about the joint's axis.
+  /// about the joint's axis. The torque is defined to be positive according to
+  /// the right-hand-rule with the thumb aligned in the direction of `this`
+  /// joint's axis.
   /// @note A torque is the moment of a set of forces whose resultant is zero.
   void AddInTorque(
       const systems::Context<T>& context,
@@ -156,6 +156,10 @@ class RevoluteJoint final : public Joint<T> {
     auto tau_mob = get_mobilizer()->get_mutable_generalized_forces_from_array(
         &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
+  }
+
+  int do_get_num_dofs() const override {
+    return 1;
   }
 
   // Joint<T> overrides:
