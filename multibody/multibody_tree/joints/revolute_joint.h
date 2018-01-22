@@ -131,7 +131,9 @@ class RevoluteJoint final : public Joint<T> {
   /// Adds into `forces` a given `torque` for `this` joint that is to be applied
   /// about the joint's axis. The torque is defined to be positive according to
   /// the right-hand-rule with the thumb aligned in the direction of `this`
-  /// joint's axis.
+  /// joint's axis. That is, a positive torque causes a positive rotational
+  /// acceleration according to the right-hand-rule around the joint's axis.
+  ///
   /// @note A torque is the moment of a set of forces whose resultant is zero.
   void AddInTorque(
       const systems::Context<T>& context,
@@ -139,13 +141,13 @@ class RevoluteJoint final : public Joint<T> {
       MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    this->AddInForces(context, 0, torque, forces);
+    this->AddInOneForce(context, 0, torque, forces);
   }
 
  private:
   // Joint<T> override called through public NVI. Therefore arguments were
   // already checked to be valid.
-  void DoAddInForces(
+  void DoAddInOneForce(
       const systems::Context<T>&,
       int joint_dof,
       const T& joint_tau,
@@ -153,8 +155,9 @@ class RevoluteJoint final : public Joint<T> {
     // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
-    auto tau_mob = get_mobilizer()->get_mutable_generalized_forces_from_array(
-        &forces->mutable_generalized_forces());
+    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau_mob =
+        get_mobilizer()->get_mutable_generalized_forces_from_array(
+            &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
   }
 

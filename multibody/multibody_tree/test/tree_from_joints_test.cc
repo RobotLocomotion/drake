@@ -265,7 +265,7 @@ class PendulumTests : public ::testing::Test {
     const int nv = tree_->get_num_velocities();
     // External forces:
     MultibodyForces<double> forces(model_.get_tree());
-    // Bodies's accelerations:
+    // Accelerations of the bodies:
     std::vector<SpatialAcceleration<double>> A_WB_array(
         tree_->get_num_bodies());
     // Generalized accelerations:
