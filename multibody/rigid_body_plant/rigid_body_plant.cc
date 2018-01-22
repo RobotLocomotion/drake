@@ -114,8 +114,8 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
       input_map_[i] =
           this->DeclareInputPort(kVectorValued, actuator_map_[i].second)
               .get_index();
-      torque_output_map_[i] = 
-          this->DeclareVectorOutputPort(BasicVector<T>(get_num_actuators(i)), 
+      torque_output_map_[i] =
+          this->DeclareVectorOutputPort(BasicVector<T>(get_num_actuators(i)),
           [this, i](const Context<T>& context, BasicVector<T>* output) {
             this->CopyInstanceTorqueOutput(i, context, output);
           }).get_index();

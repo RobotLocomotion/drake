@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"

@@ -111,9 +111,9 @@ int DoMain() {
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
   command_receiver->set_name("command_receiver");
-  std::vector<int> iiwa_instances = 
+  std::vector<int> iiwa_instances =
       {RigidBodyTreeConstants::kFirstNonWorldModelInstanceId};
-  auto external_torque_converter = 
+  auto external_torque_converter =
       base_builder->AddSystem<IiwaContactResultsToExternalTorque>(
           tree, iiwa_instances);
   auto status_pub = base_builder->AddSystem(
