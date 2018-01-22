@@ -3,6 +3,10 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+)
 
 py_library(
     name = "cpsutils",
@@ -20,7 +24,30 @@ py_library(
 )
 
 exports_files(
-    ["install.py.in"],
+    [
+        "install.py.in",
+        "install_tests.py.in",
+    ],
 )
 
-add_lint_tests()
+drake_py_test(
+    name = "install_test_helper_test",
+    size = "small",
+    srcs = ["test/install_test_helper_test.py"],
+    main = "test/install_test_helper_test.py",
+    deps = ["//tools/install:install_test_helper"],
+)
+
+drake_py_test(
+    name = "install_tests_test",
+    size = "small",
+    # Increase the timeout so that debug builds are successful.
+    timeout = "long",
+    srcs = [":install_tests.py"],
+    data = ["@drake//:install"],
+    main = ":install_tests.py",
+    # This test fails when bazel is run with `no_everything` because
+    # `libgurobi70.so` is not found [Issue #7283].
+    tags = ["no_everything"],
+    deps = ["//tools/install:install_test_helper"],
+)

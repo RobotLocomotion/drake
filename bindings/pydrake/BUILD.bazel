@@ -139,6 +139,10 @@ drake_py_library(
 
 install(
     name = "install",
+    install_tests = [
+        ":test/common_install_test.py",
+        ":test/all_install_test.py",
+    ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     visibility = ["//visibility:public"],
@@ -149,17 +153,6 @@ drake_py_test(
     name = "all_test",
     data = ["//examples/pendulum:models"],
     deps = [":all_py"],
-)
-
-drake_py_test(
-    name = "all_install_test",
-    size = "medium",
-    # Increase the timeout so that debug builds are successful.
-    timeout = "long",
-    data = ["//:install"],
-    deps = [
-        "//tools/install:install_test_helper",
-    ],
 )
 
 # Test ODR (One Definition Rule).
@@ -194,21 +187,6 @@ drake_py_test(
     deps = [":common_py"],
 )
 
-# `//:install` is run in this test to verify that once installed
-# pydrake still works. This test is implemented in a separate file from
-# common_test to be able to remove files in the sandbox without
-# interfering with other tests.
-drake_py_test(
-    name = "common_install_test",
-    size = "medium",
-    # Increase the timeout so that debug builds are successful.
-    timeout = "long",
-    data = ["//:install"],
-    deps = [
-        "//tools/install:install_test_helper",
-    ],
-)
-
 drake_py_test(
     name = "forward_diff_test",
     size = "small",
@@ -232,4 +210,9 @@ drake_py_test(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/all_install_test.py",
+        ":test/common_install_test.py",
+    ],
+)
