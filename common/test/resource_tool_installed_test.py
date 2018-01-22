@@ -1,30 +1,38 @@
+#!/usr/bin/env python
+
 """Performs tests for resource_tool as used _after_ installation.
 """
 
 import os
-import subprocess
 import unittest
 import install_test_helper
 
 
 class TestResourceTool(unittest.TestCase):
     def test_install_and_run(self):
-        # Install into a temporary directory.
-        result = install_test_helper.install("tmp", ["libexec"])
-        self.assertEqual(None, result)
-
+        install_dir = install_test_helper.get_install_dir()
         # Create a resource in the temporary directory.
-        os.makedirs("tmp/share/drake/common/test")
-        with open("tmp/share/drake/common/test/tmp_resource", "w") as f:
-            f.write("tmp_resource")
+        tmp_dir = os.environ['TEST_TMPDIR']
 
-        # Verify un-installed copy was removed, so we _know_ it won't be used.
-        self.assertEqual(os.listdir(os.getcwd()), ["tmp"])
+        test_folder = os.path.join(tmp_dir, "share/drake/common/test")
+        os.makedirs(test_folder)
+        # Create sentinel file.
+        sentinel = os.path.join(tmp_dir,
+                                "share/drake",
+                                ".drake-find_resource-sentinel")
+        with open(sentinel, "w") as f:
+            f.write("")
+        # Create resource file.
+        resource = os.path.join(test_folder, "tmp_resource")
+        resource_data = "tmp_resource"
+        with open(resource, "w") as f:
+            f.write(resource_data)
 
         # Cross-check the resource root environment variable name.
         env_name = "DRAKE_RESOURCE_ROOT"
-        resource_tool = "tmp/share/drake/common/resource_tool"
-        output_name = subprocess.check_output(
+        resource_tool = os.path.join(
+            install_dir, "share/drake/common/resource_tool")
+        output_name = install_test_helper.check_output(
             [resource_tool,
              "--print_resource_root_environment_variable_name",
              ],
@@ -33,8 +41,8 @@ class TestResourceTool(unittest.TestCase):
 
         # Use the installed resource_tool to find a resource.
         tool_env = dict(os.environ)
-        tool_env[env_name] = "tmp/share"
-        absolute_path = subprocess.check_output(
+        tool_env[env_name] = os.path.join(tmp_dir, "share")
+        absolute_path = install_test_helper.check_output(
             [resource_tool,
              "--print_resource_path",
              "drake/common/test/tmp_resource",
@@ -42,19 +50,19 @@ class TestResourceTool(unittest.TestCase):
             env=tool_env,
             ).strip()
         with open(absolute_path, 'r') as data:
-            self.assertEqual(data.read(), "tmp_resource")
+            self.assertEqual(data.read(), resource_data)
 
         # Remove environment variable.
-        absolute_path = subprocess.check_output(
+        absolute_path = install_test_helper.check_output(
             [resource_tool,
              "--print_resource_path",
              "drake/common/test/tmp_resource",
              "--add_resource_search_path",
-             "tmp/share",
+             os.path.join(tmp_dir, "share"),
              ],
             ).strip()
         with open(absolute_path, 'r') as data:
-            self.assertEqual(data.read(), "tmp_resource")
+            self.assertEqual(data.read(), resource_data)
 
 
 if __name__ == '__main__':
