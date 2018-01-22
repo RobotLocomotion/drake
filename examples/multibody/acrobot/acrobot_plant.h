@@ -71,7 +71,7 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
   /// constructor.
   /// This constructor registers `this` plant as a source for `geometry_system`
   /// as well as the frames and geometry used for visualization.
-  AcrobotPlant(geometry::GeometrySystem<double>* geometry_system);
+  explicit AcrobotPlant(geometry::GeometrySystem<double>* geometry_system);
 
   /// Scalar-converting copy constructor.
   template <typename U>
