@@ -294,6 +294,9 @@ install(
 
 install(
     name = "install",
+    install_tests = [
+        "@drake//tools/workspace/lcm:test/lcm-gen_install_test.py",
+    ],
     targets = [
         ":lcm-gen",
         ":lcm-java",
@@ -325,4 +328,4 @@ install(
     ],
 )
 
-python_lint()
+python_lint(extra_srcs = [":test/lcm-gen_install_test.py"])
