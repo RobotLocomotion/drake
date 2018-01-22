@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+
+# This file is configured automatically.
+
+import os
+import subprocess
+import unittest
+import install_test_helper
+
+
+class TestCommonInstall(unittest.TestCase):
+    def testDrakeInstall(self):
+        # Install into a temporary directory. The temporary directory does not
+        # need to be removed as bazel tests are run in a scratch space.
+        tmp_folder = "tmp"
+        install_test_helper.install(tmp_folder)
+        # Execute the install actions.
+        os.environ['TESTINSTALLPATH'] = os.path.join(os.getcwd(), tmp_folder)
+        <<actions>>
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -386,8 +386,11 @@ drake_py_binary(
     main = "test/cpplint_wrapper.py",
 )
 
+exports_files(["test/resource_tool_installed_test"])
+
 install(
     name = "install",
+    install_tests = [":test/resource_tool_installed_test.py"],
     targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for putting programs into libexec and including the workspace and/or
@@ -934,12 +937,6 @@ drake_py_test(
         ":resource_tool",
         "//drake/examples/pendulum:models",
     ],
-)
-
-drake_py_test(
-    name = "resource_tool_installed_test",
-    srcs = ["test/resource_tool_installed_test.py"],
-    deps = ["//tools/install:install_test_helper"],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...

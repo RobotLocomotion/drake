@@ -10,6 +10,8 @@ load(
 
 InstallInfo = provider()
 
+InstalledTestInfo = provider()
+
 #==============================================================================
 #BEGIN internal helpers
 
@@ -88,8 +90,8 @@ def _guess_files(target, candidates, scope, attr_name):
 
 #------------------------------------------------------------------------------
 def _install_action(
-    ctx, artifact, dests, strip_prefixes = [], rename = {}, warn_foreign = True
-):
+        ctx, target, artifact, dests, strip_prefixes = [],
+        rename = {}, warn_foreign = True):
     """Compute install action for a single file.
 
     This takes a single file artifact and returns the appropriate install
@@ -114,7 +116,7 @@ def _install_action(
         dest, _output_path(ctx, artifact, strip_prefix, warn_foreign))
     file_dest = _rename(file_dest, rename)
 
-    return struct(src = artifact, dst = file_dest)
+    return struct(tgt = target, src = artifact, dst = file_dest)
 
 #------------------------------------------------------------------------------
 def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
@@ -158,7 +160,7 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
                 continue
 
             actions.append(
-                _install_action(ctx, a, dests, strip_prefixes,
+                _install_action(ctx, f, a, dests, strip_prefixes,
                                 rename, warn_foreign)
             )
 
@@ -257,8 +259,9 @@ def _install_java_launcher_actions(
     actions = []
 
     for jar in target[MainClassInfo].classpath:
-        jar_install = _install_action(ctx, jar, java_dest, java_strip_prefix,
-                                      rename, warn_foreign = False)
+        jar_install = _install_action(ctx, target, jar, java_dest,
+                                      java_strip_prefix, rename,
+                                      warn_foreign = False)
         # Adding double quotes around the generated scripts to avoid
         # white-space problems when running the generated shell script. This
         # string is used in a "for-loop" in the script.
@@ -273,6 +276,32 @@ def _install_java_launcher_actions(
                           main_class = main_class))
 
     return actions
+
+#------------------------------------------------------------------------------
+# Compute install test actions.
+def _install_test_actions(
+        ctx,
+        actions):
+    test_actions = []
+    targets_dict = {}
+    # Create a directory of the targets to easily find if they are installed
+    # and where they are installed.
+    for a in actions:
+        if hasattr(a, "src"):
+            targets_dict[a.src] = a.dst
+
+    for test in ctx.attr.install_tests:
+        for f in test.files:
+            # If the file is found in the list of installed files, we use the
+            # file from the install tree. If not, we use the target file that
+            # was specified.
+            if f in targets_dict:
+                test_actions.append(
+                    struct(src = f, cmd = targets_dict[f], installed = True))
+            else:
+                test_actions.append(
+                    struct(src = f, cmd = f.path, installed = False))
+    return test_actions
 
 #------------------------------------------------------------------------------
 # Generate install code for an install action.
@@ -294,11 +323,14 @@ def _java_launcher_code(action):
 # targets, headers, or documentation files.
 def _install_impl(ctx):
     actions = []
+    installedTests = []
     rename = dict(ctx.attr.rename)
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d[InstallInfo].install_actions
         rename.update(d[InstallInfo].rename)
+        if InstalledTestInfo in d:
+            installedTests += d[InstalledTestInfo].tests
 
     # Generate actions for data, docs and includes.
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
@@ -332,6 +364,9 @@ def _install_impl(ctx):
             # Executable scripts copied from source directory.
             actions += _install_runtime_actions(ctx, t)
 
+    # Generate install test actions.
+    installedTests += _install_test_actions(ctx, actions)
+
     # Generate code for install actions.
     script_actions = []
     installed_files = {}
@@ -359,11 +394,38 @@ def _install_impl(ctx):
         output = ctx.outputs.executable,
         substitutions = {"<<actions>>": "\n    ".join(script_actions)})
 
+    script_tests = []
+    # Generate the install test script.
+    # Commands are run in current working directory '/' to avoid relying of
+    # build artifact that could be found in the sandbox directory or the
+    # source tree.
+    for i in installedTests:
+        if i.installed:
+            script_tests += [
+                "subprocess.check_call(os.path.join(os.environ['TESTINSTALLPATH'], '%s'), cwd='/')  # noqa" % i.cmd]  # noqa
+        else:
+            script_tests += [
+                "subprocess.check_call(os.path.join(os.getcwd(), '%s'), cwd='/')  # noqa" % i.cmd]  # noqa
+
+    # Generate test installation script
+    if ctx.attr.install_tests_script:
+        ctx.template_action(
+            template = ctx.executable.install_test_script_template,
+            output = ctx.outputs.install_tests_script,
+            substitutions =
+            {
+                "        <<actions>>": "        " + "\n        ".
+                join(script_tests)
+            }
+        )
+
     # Return actions.
     files = ctx.runfiles(
-        files = [a.src for a in actions if not hasattr(a, "main_class")])
+        files = [a.src for a in actions if not hasattr(a, "main_class")] +
+                [i.src for i in installedTests])
     return [
         InstallInfo(install_actions = actions, rename = rename),
+        InstalledTestInfo(tests = installedTests),
         DefaultInfo(runfiles = files),
     ]
 
@@ -398,6 +460,10 @@ install = rule(
         "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
+        "install_tests": attr.label_list(
+            default = [],
+            allow_files = True,
+        ),
         "workspace": attr.string(),
         "allowed_externals": attr.label_list(allow_files = True),
         "install_script_template": attr.label(
@@ -406,6 +472,13 @@ install = rule(
             cfg = "target",
             default = Label("//tools/install:install.py.in"),
         ),
+        "install_test_script_template": attr.label(
+            allow_files = True,
+            executable = True,
+            cfg = "target",
+            default = Label("//tools/install:install_tests.py.in"),
+        ),
+        "install_tests_script": attr.output(),
     },
     executable = True,
     implementation = _install_impl,
@@ -470,6 +543,15 @@ Note:
             filename = Java launcher file name
         )
 
+    A Python launcher is created to test executables after installation. The
+    list of commands to run is given by the dictionary `test_commands`. The
+    key is the name of the executable. The list given for each key is the list
+    of arguments given to the executable at runtime. The keyword 'kill' is
+    a special argument that can be given to the Python script. It specifies
+    that the script will start the executable and kill it after a harcoded
+    period of time (2s). This is useful to test executables that do not
+    finish and exit normally.
+
 Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
@@ -502,6 +584,13 @@ Args:
     py_strip_prefix: List of prefixes to remove from Python paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.
+    install_tests: List of targets that will be run to test the install tree.
+        It can contain executables that are installed, but also scripts that
+        are designed to test the install tree.
+    install_tests_script: Name of the generated Python script that contains
+        the commands run to test the install tree. This only needs to be
+        specified for the main `install()` call, and the same name should be
+        passed to `install_test()` as `srcs`.
     workspace: Workspace name to use in default paths (overrides built-in
         guess).
     allowed_externals: List of external packages whose files may be installed.
@@ -675,6 +764,35 @@ def install_cmake_config(
         dest = cmake_config_dest,
         files = cmake_config_files,
         visibility = visibility,
+    )
+
+#------------------------------------------------------------------------------
+def install_test(
+        name,
+        srcs,
+        **kwargs):
+    """A wrapper to test installed drake executables.
+
+    !!!Important: This command should be called only once, when the main
+    installation step occurs!!!
+
+    This wrapper takes as `srcs` the file generated by the `install()`
+    rule. This list should contain only the file that is generated by the main
+    `install()` call since it will contain all the install tests declared in
+    the entire project.
+    """
+    native.py_test(
+        name = name,
+        size = "small",
+        # Increase the timeout so that debug builds are successful.
+        timeout = "long",
+        srcs = [srcs],
+        main = srcs,
+        # This test fails when bazel is run with `no_everything` because
+        # `libgurobi70.so` is not found [Issue #7283].
+        tags = ["no_everything"],
+        deps = ["//tools/install:install_test_helper"],
+        **kwargs
     )
 
 #END macros
