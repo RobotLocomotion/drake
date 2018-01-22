@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -120,6 +121,26 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
+  virtual int num_dofs() const = 0;
+
+  /// Adds into `forcing` a force along the one of the joint's degrees of
+  /// freedom given by `joint_dof`. The meaning for this degree of freedom and
+  /// even its dimensional units depend on the specific joint sub-class.
+  /// For a RevoluteJoint for instance, `joint_dof` can only be 0 since revolute
+  /// joints's motion subspace only has one degree of freedom, while the units
+  /// of `joint_tau` are those of torque (N⋅m in the MKS system of units).
+  /// NVI to DoAddInForcing().
+  void AddInForcing(
+      const systems::Context<T>& context,
+      int joint_dof,
+      const T& joint_tau,
+      MultibodyForces<T>* forces) const {
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    DoAddInForcing(context, joint_dof, joint_tau, forces);
+  }
+
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -200,6 +221,18 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     std::vector<const Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
+
+  /// Adds into `forcing` a force along the one of the joint's degrees of
+  /// freedom given by `joint_dof`.
+  /// How forcing is added to a MultibodyTree model depends on the underlying
+  /// implementation of a particular joint and therefore specific %Joint
+  /// subclasses must provide a definition for this method.
+  /// @see The public NVI AddInForcing() for details.
+  virtual void DoAddInForcing(
+      const systems::Context<T>& context,
+      int joint_dof,
+      const T& joint_tau,
+      MultibodyForces<T>* forcing) const = 0;
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.

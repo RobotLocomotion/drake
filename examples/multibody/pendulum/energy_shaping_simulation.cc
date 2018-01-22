@@ -9,6 +9,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -25,7 +26,7 @@ namespace pendulum {
 namespace {
 
 DEFINE_double(target_realtime_rate, 1.0,
-              "Desired rate relative to real time.  See documentation for "
+              "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
 DEFINE_string(integration_scheme, "runge_kutta3",
@@ -35,6 +36,8 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using systems::BasicVector;
+using systems::Context;
 using systems::ImplicitEulerIntegrator;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
@@ -42,12 +45,55 @@ using systems::rendering::PoseBundleToDrawMessage;
 using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
 
+template <typename T>
+class PendulumEnergyShapingController : public systems::LeafSystem<T> {
+ public:
+  explicit PendulumEnergyShapingController(const PendulumPlant<T>& pendulum) :
+      mass_(pendulum.mass()),
+      length_(pendulum.length()),
+      gravity_(pendulum.gravity()) {
+    this->DeclareVectorInputPort(PendulumState<T>());
+    this->DeclareVectorOutputPort(BasicVector<T>(1),
+                                  &PendulumEnergyShapingController::CalcTau);
+  }
+
+ private:
+  double mass_, length_, gravity_;
+
+  void CalcTau(const systems::Context<T>& context,
+               BasicVector<T>* output) const {
+    DRAKE_DEMAND(output->size() == 1);
+
+    const auto* state =
+        this->template EvalVectorInput<PendulumState>(context, 0);
+
+    const T& theta = state->theta();
+    const T& thetadot = state->thetadot();
+
+    // Pendulum energy shaping from Section 3.5.2 of
+    // http://underactuated.csail.mit.edu/underactuated.html?chapter=3
+    using std::pow;
+    // Desired energy is slightly more than the energy at the top (want to pass
+    // through the upright with non-zero velocity).
+    const T desired_energy = 1.1 * mass_ * gravity_ * length_;
+
+    // Current total energy (see PendulumPlant::CalcTotalEnergy).
+    const T current_energy =
+        0.5 * mass_ * pow(length_ * thetadot, 2) -
+            mass_ * gravity_ * mass_ * cos(theta);
+
+    const double kEnergyFeedbackGain = .1;
+    const T tau = (kEnergyFeedbackGain *
+        thetadot * (desired_energy - current_energy));
+    output->SetAtIndex(0, tau);
+  }
+};
+
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  GeometrySystem<double>& geometry_system =
-      *builder.AddSystem<GeometrySystem>();
-  geometry_system.set_name("geometry_system");
+  auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
+  geometry_system->set_name("geometry_system");
 
   // Define plant's parameters:
   const double mass = 0.5;      // [Kgr], about a pound.
@@ -71,60 +117,61 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  PendulumPlant<double>& pendulum =
-      *builder.AddSystem<PendulumPlant>(
-          mass, length, gravity, &geometry_system);
-  pendulum.set_name("Pendulum");
+  PendulumPlant<double>* pendulum = builder.AddSystem<PendulumPlant>(
+      mass, length, gravity, geometry_system);
+  pendulum->set_name("Pendulum");
 
-  // A constant source for a zero applied torque at the pin joint.
-  double applied_torque(0.0);
-  auto torque_source =
-      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
-  torque_source->set_name("Applied Torque");
-  builder.Connect(torque_source->get_output_port(), pendulum.get_input_port());
+  auto controller =
+      builder.AddSystem<PendulumEnergyShapingController>(*pendulum);
+  controller->set_name("controller");
+  builder.Connect(
+      pendulum->get_state_output_port(), controller->get_input_port(0));
+  builder.Connect(
+      controller->get_output_port(0), pendulum->get_input_port());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
   DrakeLcm lcm;
-  const PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem& publisher =
-      *builder.template AddSystem<LcmPublisherSystem>(
+  PoseBundleToDrawMessage* converter =
+      builder.template AddSystem<PoseBundleToDrawMessage>();
+  LcmPublisherSystem* publisher =
+      builder.template AddSystem<LcmPublisherSystem>(
           "DRAKE_VIEWER_DRAW",
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher.set_publish_period(1 / 60.0);
+  publisher->set_publish_period(1 / 60.0);
 
   // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(!!pendulum.get_source_id());
+  DRAKE_DEMAND(!!pendulum->get_source_id());
 
   builder.Connect(
-      pendulum.get_geometry_id_output_port(),
-      geometry_system.get_source_frame_id_port(
-          pendulum.get_source_id().value()));
+      pendulum->get_geometry_id_output_port(),
+      geometry_system->get_source_frame_id_port(
+          pendulum->get_source_id().value()));
   builder.Connect(
-      pendulum.get_geometry_pose_output_port(),
-      geometry_system.get_source_pose_port(pendulum.get_source_id().value()));
+      pendulum->get_geometry_pose_output_port(),
+      geometry_system->get_source_pose_port(pendulum->get_source_id().value()));
 
-  builder.Connect(geometry_system.get_pose_bundle_output_port(),
-                  converter.get_input_port(0));
-  builder.Connect(converter, publisher);
+  builder.Connect(geometry_system->get_pose_bundle_output_port(),
+                  converter->get_input_port(0));
+  builder.Connect(*converter, *publisher);
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
-  geometry::DispatchLoadMessage(geometry_system);
+  geometry::DispatchLoadMessage(*geometry_system);
 
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  auto diagram = builder.Build();
 
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& pendulum_context =
-      diagram->GetMutableSubsystemContext(pendulum, diagram_context.get());
-  pendulum.SetAngle(&pendulum_context, M_PI / 3.0);
+      diagram->GetMutableSubsystemContext(
+          *pendulum, diagram_context.get());
+  pendulum->SetAngle(&pendulum_context, M_PI / 3.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
-  systems::IntegratorBase<double>* integrator{nullptr};
+  systems::IntegratorBase<double>* integrator;
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
@@ -138,9 +185,8 @@ int do_main() {
         simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
             *diagram, max_time_step, &simulator.get_mutable_context());
   } else {
-    throw std::runtime_error(
-        "Integration scheme '" + FLAGS_integration_scheme +
-        "' not supported for this example.");
+    throw std::logic_error(
+        "Integration scheme not supported for this example.");
   }
   integrator->set_maximum_step_size(max_time_step);
 
@@ -193,7 +239,9 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A simple pendulum demo using Drake's MultibodyTree. "
-      "Launch drake-visualizer before running this example.");
+      "An energy shaping controller regulates the energy of the pendulum to "
+      "place it in the homoclinic orbit that passes through its unstable fixed "
+      "point. Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::pendulum::do_main();
 }

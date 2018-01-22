@@ -4,7 +4,9 @@
 #include <memory>
 
 #include "drake/common/drake_optional.h"
+#include "drake/examples/multibody/pendulum/gen/pendulum_state.h"
 #include "drake/geometry/geometry_system.h"
+#include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -67,6 +69,15 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /// Returns the value of the acceleration of gravity in the model.
   double gravity() const { return gravity_; }
 
+  /// Evaluates the input port and returns the scalar value
+  /// of the commanded torque.
+  const T& get_tau(const systems::Context<T>& context) const {
+    const Eigen::VectorBlock<const VectorX<T>> input =
+        this->template EvalEigenVectorInput(context, applied_torque_input_);
+    DRAKE_DEMAND(input.size() == 1);
+    return input.coeff(0);
+  }
+
   /// Returns the unique id identifying this plant as a source for a
   /// GeometrySystem.
   /// Returns `nullopt` if `this` plant did not register any geometry.
@@ -84,6 +95,10 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /// not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
+  const systems::InputPortDescriptor<T>& get_input_port() const;
+
+  const systems::OutputPort<T>& get_state_output_port() const;
+
   /// Sets the state for this system in `context` to be that of `this` pendulum
   /// at a given `angle`, in radians. Mainly used to set initial conditions.
   void SetAngle(systems::Context<T>*, const T& angle) const;
@@ -95,6 +110,15 @@ class PendulumPlant final : public systems::LeafSystem<T> {
     DRAKE_DEMAND(gravity > 0);
     using std::sqrt;
     return 2.0 * M_PI * sqrt(length / gravity);
+  }
+
+  /// Sets the state in `context` so that generalized positions and velocities
+  /// are zero. For quaternion based joints the quaternion is set to be the
+  /// identity (or equivalently a zero rotation).
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    model_->SetDefaultState(context, state);
   }
 
  private:
@@ -113,8 +137,9 @@ class PendulumPlant final : public systems::LeafSystem<T> {
     return false;
   }
 
-  // Override of context construction so that we can delegate it to
-  // MultibodyTree.
+  // It creates an empty context with no state or parameters.
+  // This override gives System::AllocateContext() the chance to create a more
+  // specialized context type, in this case, a MultibodyTreeContext.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
 
   void DoCalcTimeDerivatives(
@@ -147,6 +172,10 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
+  // Copies the state in `context` to `output`.
+  void CopyStateOut(const systems::Context<T>& context,
+                    PendulumState<T>* output) const;
+
   // The physical parameters of the model. They are initialized with NaN for a
   // quick detection of uninitialized values.
   double mass_{nan()};      // In kilograms.
@@ -173,6 +202,8 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   // Port handles
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
+  int applied_torque_input_{-1};
+  int state_output_port_{-1};
 };
 
 }  // namespace pendulum

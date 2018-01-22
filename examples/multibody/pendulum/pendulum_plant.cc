@@ -35,6 +35,7 @@ using geometry::SourceId;
 using geometry::Sphere;
 using drake::multibody::BodyIndex;
 using drake::multibody::MultibodyTree;
+using drake::multibody::MultibodyTreeContext;
 using drake::multibody::MultibodyForces;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::RevoluteJoint;
@@ -47,6 +48,7 @@ using drake::multibody::UnitInertia;
 using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
+using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::State;
 
@@ -66,8 +68,18 @@ PendulumPlant<T>::PendulumPlant(
   DRAKE_DEMAND(model_->get_num_states() == 2);
 
   this->DeclareContinuousState(
+      BasicVector<T>(model_->get_num_states()),
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
+
+  // Declare a vector input of size one for an applied torque about the revolute
+  // joint's axis.
+  applied_torque_input_ =
+      this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
+
+  // Declare a port that outputs the state.
+  state_output_port_ = this->DeclareVectorOutputPort(
+      PendulumState<T>(), &PendulumPlant::CopyStateOut).get_index();
 }
 
 template<typename T>
@@ -149,6 +161,13 @@ void PendulumPlant<T>::CalcFramePoseOutput(
 }
 
 template <typename T>
+void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
+                                    PendulumState<T>* output) const {
+  output->set_theta(joint_->get_angle(context));
+  output->set_thetadot(joint_->get_angular_rate(context));
+}
+
+template <typename T>
 const OutputPort<T>& PendulumPlant<T>::get_geometry_id_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_id_port_);
@@ -158,6 +177,16 @@ template <typename T>
 const OutputPort<T>& PendulumPlant<T>::get_geometry_pose_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
+}
+
+template <typename T>
+const InputPortDescriptor<T>& PendulumPlant<T>::get_input_port() const {
+  return systems::System<T>::get_input_port(applied_torque_input_);
+}
+
+template <typename T>
+const OutputPort<T>& PendulumPlant<T>::get_state_output_port() const {
+  return systems::System<T>::get_output_port(state_output_port_);
 }
 
 template<typename T>
@@ -238,7 +267,7 @@ void PendulumPlant<T>::RegisterGeometry(
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
 PendulumPlant<T>::DoMakeContext() const {
-  return model_->CreateDefaultContext();
+  return std::make_unique<MultibodyTreeContext<T>>(model_->get_topology());
 }
 
 template<typename T>
@@ -269,7 +298,8 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   // the forces to zero and adds in contributions due to force elements:
   model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
-  // TODO(amcastro-tri): add in external actuation torque from input port.
+  // Add in input forces:
+  joint_->AddInTorque(context, get_tau(context), &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 

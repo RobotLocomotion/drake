@@ -601,6 +601,11 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
+  const Joint<T>& get_joint(JointIndex joint_index) const {
+    DRAKE_DEMAND(joint_index < get_num_joints());
+    return *owned_joints_[joint_index];
+  }
+
   /// Returns `true` if this %MultibodyTree was finalized with Finalize() after
   /// all multibody elements were added, and `false` otherwise.
   /// When a %MultibodyTree is instantiated, its topology remains invalid until
@@ -634,6 +639,10 @@ class MultibodyTree {
 
   /// Allocates a new context for this %MultibodyTree uniquely identifying the
   /// state of the multibody system.
+  /// This convinience method allows for a stand-alone testing of the
+  /// %MultibodyTree functionality without the need of an external System
+  /// wrapper around it. Therefore the created context is very simple in that it
+  /// only declares state but no other system specifics such as inputs.
   ///
   /// @pre The method Finalize() must be called before attempting to create a
   /// context in order for the %MultibodyTree topology to be valid at the moment
