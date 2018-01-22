@@ -183,7 +183,7 @@ void AcrobotPlant<T>::CalcFramePoseOutput(
 
 template <typename T>
 void AcrobotPlant<T>::CopyStateOut(const systems::Context<T>& context,
-                                    AcrobotState<T>* output) const {
+                                   systems::BasicVector<T>* output) const {
   output->set_theta1(shoulder_->get_angle(context));
   output->set_theta1dot(shoulder_->get_angular_rate(context));
   output->set_theta2(elbow_->get_angle(context));
