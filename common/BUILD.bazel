@@ -419,6 +419,7 @@ drake_py_binary(
 
 install(
     name = "install",
+    install_tests = [":test/resource_tool_installed_test.py"],
     targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for programs not in bin/, and including the workspace and/or package name
@@ -993,4 +994,8 @@ drake_py_unittest(
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/resource_tool_installed_test.py",
+    ],
+)
