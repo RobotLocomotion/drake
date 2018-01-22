@@ -20,7 +20,10 @@ py_library(
 )
 
 exports_files(
-    ["install.py.in"],
+    [
+        "install.py.in",
+        "install_tests.py.in",
+    ],
 )
 
 add_lint_tests()

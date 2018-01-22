@@ -10,6 +10,8 @@ load(
 
 InstallInfo = provider()
 
+InstalledTestInfo = provider()
+
 #==============================================================================
 #BEGIN internal helpers
 
@@ -275,6 +277,28 @@ def _install_java_launcher_actions(
     return actions
 
 #------------------------------------------------------------------------------
+# Compute install test actions
+def _install_test_actions(
+        ctx,
+        actions):
+    test_actions = []
+    paths = {}
+    for a in actions:
+        if hasattr(a, "src"):
+            paths[a.src.basename] = a.dst
+    for key in ctx.attr.test_commands:
+        cmd = ctx.attr.test_commands[key]
+        if cmd and cmd[0] == "kill":
+            kill = True
+            cmd = cmd[1:]
+        else:
+            kill = False
+            cmd = cmd
+        cmd.insert(0, paths[key])
+        test_actions.append(struct(cmd = cmd, kill = kill))
+    return test_actions
+
+#------------------------------------------------------------------------------
 # Generate install code for an install action.
 def _install_code(action):
     return "install(%r, %r)" % (action.src.short_path, action.dst)
@@ -294,11 +318,14 @@ def _java_launcher_code(action):
 # targets, headers, or documentation files.
 def _install_impl(ctx):
     actions = []
+    installedTests = []
     rename = dict(ctx.attr.rename)
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d[InstallInfo].install_actions
         rename.update(d[InstallInfo].rename)
+        if InstalledTestInfo in d:
+            installedTests += d[InstalledTestInfo].tests
 
     # Generate actions for data, docs and includes.
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
@@ -332,6 +359,9 @@ def _install_impl(ctx):
             # Executable scripts copied from source directory.
             actions += _install_runtime_actions(ctx, t)
 
+    # Generate install test actions.
+    installedTests += _install_test_actions(ctx, actions)
+
     # Generate code for install actions.
     script_actions = []
     installed_files = {}
@@ -359,11 +389,30 @@ def _install_impl(ctx):
         output = ctx.outputs.executable,
         substitutions = {"<<actions>>": "\n    ".join(script_actions)})
 
+    script_tests = []
+    for i in installedTests:
+        if i.kill:
+            fct = "runAndKill"
+        else:
+            fct = "run"
+        script_tests += [fct + "(" + str(i.cmd) + ")"]
+
+    # Generate test installation script
+    ctx.template_action(
+        template = ctx.executable.install_test_script_template,
+        output = ctx.outputs.tests,
+        substitutions =
+        {
+            "        <<actions>>": "        " + "\n        ".join(script_tests)
+        }
+    )
+
     # Return actions.
     files = ctx.runfiles(
         files = [a.src for a in actions if not hasattr(a, "main_class")])
     return [
         InstallInfo(install_actions = actions, rename = rename),
+        InstalledTestInfo(tests = installedTests),
         DefaultInfo(runfiles = files),
     ]
 
@@ -398,6 +447,7 @@ install = rule(
         "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
+        "test_commands": attr.string_list_dict(default = {}),
         "workspace": attr.string(),
         "allowed_externals": attr.label_list(allow_files = True),
         "install_script_template": attr.label(
@@ -406,8 +456,17 @@ install = rule(
             cfg = "target",
             default = Label("//tools/install:install.py.in"),
         ),
+        "install_test_script_template": attr.label(
+            allow_files = True,
+            executable = True,
+            cfg = "target",
+            default = Label("//tools/install:install_tests.py.in"),
+        ),
     },
     executable = True,
+    outputs = {
+        "tests": "%{name}TestCommands.py",
+    },
     implementation = _install_impl,
 )
 
@@ -470,6 +529,15 @@ Note:
             filename = Java launcher file name
         )
 
+    A Python launcher is created to test executables after installation. The
+    list of commands to run is given by the dictionary `test_commands`. The
+    key is the name of the executable. The list given for each key is the list
+    of arguments given to the executable at runtime. The keyword 'kill' is
+    a special argument that can be given to the Python script. It specifies
+    that the script will start the executable and kill it after a harcoded
+    period of time (2s). This is useful to test executables that do not
+    finish and exit normally.
+
 Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
@@ -502,6 +570,7 @@ Args:
     py_strip_prefix: List of prefixes to remove from Python paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.
+    test_commands: Dictionary of commands to run while testing.
     workspace: Workspace name to use in default paths (overrides built-in
         guess).
     allowed_externals: List of external packages whose files may be installed.

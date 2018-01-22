@@ -3,6 +3,10 @@
 load("//tools:drake.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
+load(
+    "//tools/skylark:drake_install_and_test.bzl",
+    "drake_install_and_test",
+)
 load("@drake//tools/install:install.bzl", "install")
 
 drake_cc_binary(
@@ -65,7 +69,7 @@ INSTALLED_EXAMPLES = adjust_labels_for_drake_hoist([
     "//drake/examples/kuka_iiwa_arm",
 ])
 
-install(
+drake_install_and_test(
     name = "install",
     visibility = ["//visibility:public"],
     deps = [

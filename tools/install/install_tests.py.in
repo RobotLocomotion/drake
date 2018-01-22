@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+import signal
+import os
+import shutil
+import subprocess
+import time
+import unittest
+import install_test_helper
+
+
+def AbsoluteExecutablePath(folder, exe):
+    return os.path.join(os.path.abspath(folder), exe)
+
+
+class TestCommonInstall(unittest.TestCase):
+    def testDrakeFindResourceOrThrowInInstall(self):
+        # Install into a temporary directory. The temporary directory does not
+        # need to be removed as bazel tests are run in a scratch space.
+        tmp_folder = "tmp"
+        result = install_test_helper.install(tmp_folder)
+        self.assertEqual(None, result)
+
+        def runAndKill(cmd, timeout=2.0):
+            cmd[0] = AbsoluteExecutablePath(tmp_folder, cmd[0])
+            proc = subprocess.Popen(
+                cmd,
+                cwd='/'
+                )
+            start = time.time()
+            while time.time() - start < timeout:
+                time.sleep(0.5)
+                ret = proc.poll()
+                self.assertEqual(None, result)
+            # time's up: kill the proc (and it's group):
+            try:
+                os.kill(proc.pid, signal.SIGTERM)
+            except OSError as e:
+                self.assertEqual("", e.strerror)
+            self.assertEqual(-signal.SIGTERM, proc.wait())
+
+        def run(cmd):
+            cmd[0] = AbsoluteExecutablePath(tmp_folder, cmd[0])
+            output_path = subprocess.check_call(
+                cmd,
+                cwd='/',
+                )
+
+        # Execute the install actions.
+        <<actions>>
+
+if __name__ == '__main__':
+    unittest.main()
