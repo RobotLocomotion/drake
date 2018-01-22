@@ -1,8 +1,8 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 
 #include <algorithm>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"
@@ -300,10 +300,13 @@ void IiwaContactResultsToExternalTorque::OutputExternalTorque(
 
   int start = 0;
   const VectorX<double>& generalized_force =
-    contact_results->get_contact_force_in_genearlized_coordinate();
+      contact_results->get_contact_force_in_genearlized_coordinate();
   for (const auto& entry : velocity_map_) {
     const int v_idx = entry.first;
     const int v_length = entry.second;
+    if (v_idx == -1)
+      continue;
+
     for (int idx = 0; idx < v_length; idx++) {
       output->SetAtIndex(start + idx, generalized_force[v_idx + idx]);
     }

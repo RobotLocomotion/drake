@@ -189,9 +189,13 @@ alias(
 
 drake_cc_googletest(
     name = "iiwa_lcm_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_lcm",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/systems/framework",
     ],
 )

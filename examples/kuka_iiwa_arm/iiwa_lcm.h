@@ -194,10 +194,12 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
 };
 
 /**
- * A translator class that takes in systems::ContactResults and splices together 
+ * A translator class that takes in systems::ContactResults and splices together
  * only the relevant sections of the contact force in the generalized
  * coordinate. The selection is determined by a set of model instance ids and
  * a RigidBodyTree reference that is used to generate ContactResults.
+ * This class assumes that contact force is the only source to the external
+ * torque.
  */
 class IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
  public:
