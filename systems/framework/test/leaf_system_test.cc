@@ -28,6 +28,8 @@ class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {
     this->set_name("TestSystem");
+    this->DeclareNumericParameter(BasicVector<T>(Vector2<T>(13.0, 7.0)));
+    this->DeclareAbstractParameter(Value<std::string>("parameter value"));
   }
   ~TestSystem() override {}
 
@@ -70,21 +72,8 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePerStepEvent(event);
   }
 
-  void DoCalcTimeDerivatives(
-      const Context<T>& context,
-      ContinuousState<T>* derivatives) const override {}
-
-  std::unique_ptr<Parameters<T>> AllocateParameters() const override {
-    return std::make_unique<Parameters<T>>(std::make_unique<BasicVector<T>>(2));
-  }
-
-  void SetDefaultParameters(const Context<T>& context,
-                            Parameters<T>* params) const override {
-    BasicVector<T>& param = params->get_mutable_numeric_parameter(0);
-    Vector2<T> p0;
-    p0 << 13.0, 7.0;
-    param.SetFromVector(p0);
-  }
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {}
 
   const BasicVector<T>& GetVanillaNumericParameters(
       const Context<T>& context) const {
@@ -313,7 +302,7 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
 
 // Tests that the leaf system reserved the declared Parameters with default
 // values, and that they are modifiable.
-TEST_F(LeafSystemTest, Parameters) {
+TEST_F(LeafSystemTest, NumericParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const BasicVector<double>& vec =
       system_.GetVanillaNumericParameters(*context);
@@ -323,6 +312,20 @@ TEST_F(LeafSystemTest, Parameters) {
       system_.GetVanillaMutableNumericParameters(context.get());
   mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
+}
+
+// Tests that the leaf system reserved the declared abstract Parameters with
+// default values, and that they are modifiable.
+TEST_F(LeafSystemTest, AbstractParameters) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const std::string& param = context->get_abstract_parameter(0 /*index*/)
+                                 .GetValueOrThrow<std::string>();
+  EXPECT_EQ(param, "parameter value");
+  std::string& mutable_param =
+      context->get_mutable_abstract_parameter(0 /*index*/)
+          .GetMutableValueOrThrow<std::string>();
+  mutable_param = "modified parameter value";
+  EXPECT_EQ("modified parameter value", param);
 }
 
 // Tests that the leaf system reserved the declared misc continuous state.
