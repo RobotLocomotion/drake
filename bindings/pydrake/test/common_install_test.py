@@ -33,6 +33,7 @@ class TestCommonInstall(unittest.TestCase):
              "-c", "import pydrake; print(pydrake.getDrakePath());\
              import pydrake; print(pydrake.getDrakePath())"
              ],
+            cwd='/',
             env=tool_env,
             ).strip()
         found_install_path = (data_folder in output_path)
