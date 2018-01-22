@@ -1,10 +1,12 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/multibody/rigid_body_plant/contact_results.h"
 
 namespace drake {
 namespace examples {
@@ -182,9 +184,17 @@ void IiwaStatusReceiver::OutputCommandedPosition(
 
 IiwaStatusSender::IiwaStatusSender(int num_joints)
     : num_joints_(num_joints) {
+  // Commanded state.
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
+  // Measured state.
   this->DeclareInputPort(systems::kVectorValued, num_joints_ * 2);
+  // Commanded torque.
   this->DeclareInputPort(systems::kVectorValued, num_joints_);
+  // Measured torque.
+  this->DeclareInputPort(systems::kVectorValued, num_joints_);
+  // Measured external torque.
+  this->DeclareInputPort(systems::kVectorValued, num_joints_);
+
   this->DeclareAbstractOutputPort(&IiwaStatusSender::MakeOutputStatus,
                                   &IiwaStatusSender::OutputStatus);
 }
@@ -213,18 +223,93 @@ void IiwaStatusSender::OutputStatus(
       this->EvalVectorInput(context, 1);
   const systems::BasicVector<double>* commanded_torque =
       this->EvalVectorInput(context, 2);
+  const systems::BasicVector<double>* measured_torque =
+      this->EvalVectorInput(context, 3);
+  const systems::BasicVector<double>* external_torque =
+      this->EvalVectorInput(context, 4);
+
   for (int i = 0; i < num_joints_; ++i) {
     status.joint_position_measured[i] = state->GetAtIndex(i);
     status.joint_velocity_estimated[i] = state->GetAtIndex(i + num_joints_);
     status.joint_position_commanded[i] = command->GetAtIndex(i);
     status.joint_torque_commanded[i] = commanded_torque->GetAtIndex(i);
-    // TODO(rcory) Update joint_torque_measured to report actual measured torque
-    // once RigidBodyPlant supports it. For now, assume
-    // joint_torque_measured == joint_torque_commanded.
-    status.joint_torque_measured[i] = commanded_torque->GetAtIndex(i);
+
+    if (external_torque) {
+      status.joint_torque_external[i] = external_torque->GetAtIndex(i);
+    }
+    if (measured_torque) {
+      status.joint_torque_measured[i] = measured_torque->GetAtIndex(i);
+    } else {
+      // TODO(rcory) Update joint_torque_measured to report actual measured
+      // torque once RigidBodyPlant supports it. For now, assume
+      // joint_torque_measured == joint_torque_commanded.
+      status.joint_torque_measured[i] = commanded_torque->GetAtIndex(i);
+    }
   }
 }
 
+IiwaContactResultsToExternalTorque::IiwaContactResultsToExternalTorque(
+    const RigidBodyTree<double>& tree,
+    const std::vector<int>& model_instance_ids) {
+  int length = 0;
+  velocity_map_.resize(tree.get_num_model_instances(),
+                       std::pair<int, int>(-1, -1));
+
+  for (const auto& body : tree.bodies) {
+    if (!body->has_parent_body()) {
+      continue;
+    }
+
+    const int instance_id = body->get_model_instance_id();
+    const int velocity_start_index = body->get_velocity_start_index();
+    const int num_velocities = body->getJoint().get_num_velocities();
+
+    if (std::find(model_instance_ids.begin(), model_instance_ids.end(),
+                  instance_id) == model_instance_ids.end()) {
+      continue;
+    }
+
+    if (num_velocities) {
+      if (velocity_map_[instance_id].first == -1) {
+        velocity_map_[instance_id] =
+          std::pair<int, int>(velocity_start_index, num_velocities);
+      } else {
+        std::pair<int, int> map_entry = velocity_map_[instance_id];
+        DRAKE_DEMAND(velocity_start_index ==
+            map_entry.first + map_entry.second);
+        map_entry.second += num_velocities;
+        velocity_map_[instance_id] = map_entry;
+      }
+      length += num_velocities;
+    }
+  }
+
+  this->DeclareAbstractInputPort();
+
+  this->DeclareVectorOutputPort(
+      systems::BasicVector<double>(length),
+      &IiwaContactResultsToExternalTorque::OutputExternalTorque);
+}
+
+void IiwaContactResultsToExternalTorque::OutputExternalTorque(
+    const systems::Context<double>& context,
+    systems::BasicVector<double>* output) const {
+  const systems::ContactResults<double>* contact_results =
+      this->EvalInputValue<systems::ContactResults<double>>(context, 0);
+
+  int start = 0;
+  const VectorX<double>& generalized_force =
+    contact_results->get_contact_force_in_genearlized_coordinate();
+  for (const auto& entry : velocity_map_) {
+    const int v_idx = entry.first;
+    const int v_length = entry.second;
+    for (int idx = 0; idx < v_length; idx++) {
+      output->SetAtIndex(start + idx, generalized_force[v_idx + idx]);
+    }
+    start += v_length;
+  }
+  DRAKE_DEMAND(start == output->size());
+}
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

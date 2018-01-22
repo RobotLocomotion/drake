@@ -47,8 +47,25 @@ class ContactResults {
   ContactInfo<T>& AddContact(drake::multibody::collision::ElementId element_a,
                              drake::multibody::collision::ElementId element_b);
 
+  /**
+   * Stores the contact forces as a force in the generalized coordinate.
+   * @param f = J^T * contact_force, where J is the stacked contact Jacobian,
+   * and contact_force is the stacked contact forces.
+   */
+  void set_contact_force_in_genearlized_coordinate(const VectorX<T>& f) {
+    contact_force_in_genearlized_coordinate_ = f;
+  }
+
+  /**
+   * Returns the stored generalized force that represents the contact forces.
+   */
+  const VectorX<T>& get_contact_force_in_genearlized_coordinate() const {
+    return contact_force_in_genearlized_coordinate_;
+  }
+
  private:
   std::vector<ContactInfo<T>> contacts_;
+  VectorX<T> contact_force_in_genearlized_coordinate_;
 };
 
 }  // namespace systems

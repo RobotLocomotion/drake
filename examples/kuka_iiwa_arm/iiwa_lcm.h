@@ -166,9 +166,19 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
-  const systems::InputPortDescriptor<double>& get_torque_commanded_input_port()
+  const systems::InputPortDescriptor<double>& get_commanded_torque_input_port()
   const {
     return this->get_input_port(2);
+  }
+
+  const systems::InputPortDescriptor<double>& get_measured_torque_input_port()
+  const {
+    return this->get_input_port(3);
+  }
+
+  const systems::InputPortDescriptor<double>& get_external_torque_input_port()
+  const {
+    return this->get_input_port(4);
   }
 
  private:
@@ -180,6 +190,36 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
                     lcmt_iiwa_status* output) const;
 
   const int num_joints_;
+};
+
+/**
+ * A translator class that takes in systems::ContactResults and splices together 
+ * only the relevant sections of the contact force in the generalized
+ * coordinate. The selection is determined by a set of model instance ids and
+ * a RigidBodyTree reference that is used to generate ContactResults.
+ */
+class IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaContactResultsToExternalTorque)
+
+  /**
+   * Constructor.
+   * @param tree const RigidBodyTree reference that generates ContactResults.
+   * @param model_instance_ids A set of model instances in @p tree, whose
+   * corresponding generalized contact forces will be stacked and output.
+   */
+  IiwaContactResultsToExternalTorque(
+      const RigidBodyTree<double>& tree,
+      const std::vector<int>& model_instance_ids);
+
+ private:
+  // Maps model instance ids to velocity indices and number of
+  // velocity states in the RigidBodyTree.  Values are stored as a
+  // pair of (index, count).
+  std::vector<std::pair<int, int>> velocity_map_;
+
+  void OutputExternalTorque(const systems::Context<double>& context,
+                            systems::BasicVector<double>* output) const;
 };
 
 }  // namespace kuka_iiwa_arm
