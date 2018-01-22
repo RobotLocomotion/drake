@@ -53,11 +53,6 @@
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "SDFormat": {
-      "Version": "6.0.0",
-      "Hints": ["@prefix@/lib/cmake/sdformat"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "spdlog": {
       "Version": "1.0.0",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
@@ -76,10 +71,7 @@
       "Includes": ["@prefix@/include"],
       "Compile-Features": ["c++14"],
       "Link-Flags": ["-ltinyxml2"],
-      "Link-Requires": [
-        "fmt:fmt",
-        "SDFormat:sdformat"
-      ],
+      "Link-Requires": ["fmt:fmt"],
       "Requires": [
         ":drake-lcmtypes-cpp",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
