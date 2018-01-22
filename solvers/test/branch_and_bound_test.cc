@@ -42,7 +42,10 @@ class MixedIntegerBranchAndBoundTester {
     return bnb_->BranchAndUpdate(node, branching_variable);
   }
 
-  MixedIntegerBranchAndBoundNode* mutable_root() { return bnb_->root_.get(); }
+  void SearchIntegralSolutionByRounding(
+      const MixedIntegerBranchAndBoundNode& node) {
+    bnb_->SearchIntegralSolutionByRounding(node);
+  }
 
  private:
   std::unique_ptr<MixedIntegerBranchAndBound> bnb_;
@@ -182,7 +185,7 @@ void CheckNodeSolution(const MixedIntegerBranchAndBoundNode& node,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(node.prog()->GetOptimalCost(), optimal_cost, tol);
 }
-
+/*
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
   // Test constructing root node for prog 1.
   auto prog = ConstructMathematicalProgram1();
@@ -1117,6 +1120,71 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
       CheckAllIntegralSolution(bnb, xy, integral_solutions, tol);
     }
   }
+} */
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding2) {
+  // Test the node callback to search an integral solution by rounding the
+  // fractional solution to binary values, and solve the continuous variables.
+  // Test on prog2.
+  auto prog = ConstructMathematicalProgram2();
+  VectorDecisionVariable<5> x = prog->decision_variables();
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
+  // The solution to the root node is (0.7, 1, 1, 1.4, 0), with optimal cost
+  // -4.9. We will add the constraint x₀ = 1, x₂ = 1, x₄ = 0, and then solve the
+  // continuous variables.
+  // The optimal solution to this new program is (1, 1/3, 1, 1, 0), with cost
+  // -13 / 3. This is also the optimal solution to the MIP prog2.
+  dut.SearchIntegralSolutionByRounding(*(dut.bnb()->root()));
+  const double tol{1E-5};
+  EXPECT_NEAR(dut.bnb()->best_upper_bound(), -13.0 / 3, tol);
+  // The best lower bound is unchanged after solving the new program with fixed
+  // binary variables.
+  EXPECT_NEAR(dut.bnb()->best_lower_bound(), -4.9, tol);
+  Eigen::Matrix<double, 5, 1> x_expected;
+  x_expected << 1, 1.0 / 3, 1, 1, 0;
+  EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x), x_expected, tol,
+                              MatrixCompareType::absolute));
+
+  // Now test to solve the mip with the callback to search for integral solution
+  // by rounding. The branch-and-bound should terminate at the root node, as
+  // it should find the optimal integral solution at the root.
+  MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
+  bnb.SetNodeCallbackMethod(MixedIntegerBranchAndBound::NodeCallbackMethod::kSearchIntegralSolutionByRounding);
+  const SolutionResult result = bnb.Solve();
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  // The branch-and-bound terminates at the root node, thus the root node is
+  // a leaf node.
+  EXPECT_TRUE(bnb.root()->IsLeaf());
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding3) {
+  // Test the node callback to search an integral solution by rounding the
+  // fractional solution to binary values, and solve the continuous variables.
+  // Test on prog3.
+  auto prog = ConstructMathematicalProgram3();
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
+  // The solution to the root node is unbounded. If we fix the binary variables
+  // and search for the continuous variables, the new program is still unbounded.
+  dut.SearchIntegralSolutionByRounding(*(dut.bnb()->root()));
+  EXPECT_EQ(dut.bnb()->best_upper_bound(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_lower_bound(), -std::numeric_limits<double>::infinity());
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding4) {
+  // Test the node callback to search an integral solution by rounding the
+  // fractional solution to binary values, and solve the continuous variables.
+  // Test on prog4.
+  auto prog = ConstructMathematicalProgram4();
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
+  // The optimal solution to the root node is (1/3, 1/3, 1/3, 2/3, 1/3), with 
+  // optimal cost 4/3. We will add the constraint y₀ = 1, y₁ = 0, and solve for
+  // the continuous variable x. The new problem is infeasible.
+  dut.SearchIntegralSolutionByRounding(*(dut.bnb()->root()));
+  const double tol{1E-5};
+  EXPECT_EQ(dut.bnb()->best_upper_bound(), std::numeric_limits<double>::infinity());
+  // This best lower bound is unchanged, after we search for the integral
+  // solution, since the new program is infeasible.
+  EXPECT_NEAR(dut.bnb()->best_lower_bound(), 4.0 / 3, tol);
 }
 
 MixedIntegerBranchAndBoundNode* LeftMostNodeInSubTree(
