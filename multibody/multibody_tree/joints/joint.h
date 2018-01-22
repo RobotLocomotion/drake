@@ -264,7 +264,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// revolute joint could be modeled with a single generalized coordinate for
   /// the angular rotation (implemented through a RevoluteMobilizer) or it could
   /// be modeled using a constraint that only allows rotation about the joint's
-  /// axis but that constraints the motion in the other five degrees of freedom.
+  /// axis but that constrains the motion in the other five degrees of freedom.
   /// This method is only called by the public NVI AddInOneForce() and therefore
   /// input arguments were checked to be valid.
   /// @see The public NVI AddInOneForce() for details.
