@@ -129,6 +129,7 @@ cc_library(
         "@lcm",
         "@libprotobuf",
         "@scs//:scsdir",
+        "@tinyobjloader",
         "@tinyxml2",
     ],
 )

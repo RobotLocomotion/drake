@@ -66,11 +66,6 @@
     "stx": {
       "Hints": ["@prefix@/lib/cmake/stx"],
       "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "tinyobjloader": {
-      "Version": "1.0.4",
-      "Hints": ["@prefix@/lib/cmake/tinyobjloader"],
-      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
   "Default-Components": [":drake"],
@@ -83,8 +78,7 @@
       "Link-Flags": ["-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
-        "SDFormat:sdformat",
-        "tinyobjloader:tinyobjloader"
+        "SDFormat:sdformat"
       ],
       "Requires": [
         ":drake-lcmtypes-cpp",
