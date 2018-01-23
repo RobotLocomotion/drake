@@ -41,8 +41,9 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
       const Eigen::Ref<const VectorX<double>> x) const;
 
  private:
-  void OutputCommand(const systems::Context<double>& context,
-                     systems::BasicVector<double>* output) const;
+  void CopyStateToOutput(const systems::Context<double>& context,
+                         int start_idx, int length,
+                         systems::BasicVector<double>* output) const;
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,

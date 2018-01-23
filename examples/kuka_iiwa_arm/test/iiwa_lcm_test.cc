@@ -71,6 +71,30 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
       delta/ kIiwaLcmStatusPeriod,
       output->get_vector_data(0)->get_value().tail(kNumJoints),
       tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      VectorX<double>::Zero(kNumJoints),
+      output->get_vector_data(1)->get_value(),
+      tol, MatrixCompareType::absolute));
+
+  // Test with joint torque command.
+  command.num_torques = kNumJoints;
+  command.joint_torque.resize(kNumJoints);
+  VectorX<double> expected_torque(kNumJoints);
+  for (int i = 0; i < kNumJoints; i++) {
+    command.joint_torque[i] = -1 + 3 * i;
+    expected_torque[i] = command.joint_torque[i];
+  }
+  context->FixInputPort(
+      0, std::make_unique<systems::Value<lcmt_iiwa_command>>(command));
+  update = dut.AllocateDiscreteVariables();
+  dut.CalcDiscreteVariableUpdates(*context, update.get());
+  context->set_discrete_state(std::move(update));
+  dut.CalcOutput(*context, output.get());
+
+  EXPECT_TRUE(CompareMatrices(
+      expected_torque,
+      output->get_vector_data(1)->get_value(),
+      tol, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(IiwaLcmTest, IiwaCommandSenderTest) {
