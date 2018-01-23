@@ -254,7 +254,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/framework:leaf_context",
     "//drake/systems/framework:leaf_output_port",
     "//drake/systems/framework:leaf_system",
-    "//drake/systems/framework:output_port_listener_interface",
     "//drake/systems/framework:output_port_value",
     "//drake/systems/framework:parameters",
     "//drake/systems/framework:single_output_vector_source",
