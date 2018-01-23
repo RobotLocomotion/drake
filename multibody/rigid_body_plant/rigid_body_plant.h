@@ -83,7 +83,10 @@ namespace systems {
 /// addition, the model may contain loop constraints described by
 /// RigidBodyLoop instances in the multibody model. Even though loop constraints
 /// are a particular case of holonomic constraints, general holonomic
-/// constraints are not yet supported.
+/// constraints are not yet supported. For %RigidBodyPlant systems
+/// simulated using time stepping algorithms, an additional (discrete)
+/// scalar state variable stores the last time that the system's state was
+/// updated.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic
