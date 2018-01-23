@@ -67,6 +67,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_num_bodies();
   }
 
+  int num_positions() const { return model_->get_num_positions(); }
+  int num_velocities() const { return model_->get_num_velocities(); }
+  int num_states() const { return model_->get_num_states(); }
+
   // NOTE: it'd be nice to have a get_bodies() method so we can do range loops
   // like in:
   // for (const auto& body : plant.get_bodies())
@@ -78,7 +82,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   template <typename U>
   explicit MultibodyPlant(const MultibodyPlant<U>&);
 
-  /// @name Methods to add new MultibodyTree elements.
+#if 0
+  /// @name Methods to add new multibody elements.
   /// @{
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_E) {
@@ -95,7 +100,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
   };
   /// @}
-
+#endif
   /// Register geometry for `body`.
   /// 1. If not done yet, register this plant as a source for the given GS.
   /// 2. Register frame for this body if not already done so.
@@ -107,6 +112,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       geometry::GeometrySystem<double>* geometry_system);
 #endif
 
+#if 0
   /// Returns the unique id identifying this plant as a source for a
   /// GeometrySystem.
   /// Returns `nullopt` if `this` plant did not register any geometry.
@@ -117,12 +123,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Returns the output port of frame id's used to communicate poses to a
   /// GeometrySystem. It throws a std::out_of_range exception if this system was
   /// not registered with a GeometrySystem.
-  const systems::OutputPort<T>& get_geometry_id_output_port() const;
+  const systems::OutputPort<T>& get_geometry_ids_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// GeometrySystem. It throws a std::out_of_range exception if this system was
   /// not registered with a GeometrySystem.
-  const systems::OutputPort<T>& get_geometry_pose_output_port() const;
+  const systems::OutputPort<T>& get_geometry_poses_output_port() const;
 
   const systems::InputPortDescriptor<T>& get_input_port() const;
 
@@ -135,6 +141,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     DRAKE_DEMAND(state != nullptr);
     model_->SetDefaultState(context, state);
   }
+#endif
 
   bool is_finalized() const { return model_->topology_is_valid(); }
 
@@ -167,14 +174,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  // Helper method to build the MultibodyTree model of the system.
-  void BuildMultibodyTreeModel();
-
   void RegisterGeometry(geometry::GeometrySystem<double>* geometry_system);
 
   // Helper method to declare output ports used by this plant to communicate
   // with a GeometrySystem.
-  void DeclareGeometrySystemPorts();
+  //void DeclareGeometrySystemPorts();
 
   // Allocate the id output.
   geometry::FrameIdVector AllocateFrameIdOutput(
@@ -234,6 +238,17 @@ namespace scalar_conversion {
 template <>
 struct Traits<drake::multibody::multibody_plant::MultibodyPlant> :
     public NonSymbolicTraits {};
+
+#if 0
+template <>
+struct Traits<drake::multibody::multibody_plant::MultibodyPlant> {
+  template <typename T, typename U>
+  using supported = typename std::conditional<
+      FromDoubleTraits::supported<T, U>::value &&
+      NonSymbolicTraits::supported<T, U>::value,
+      std::true_type, std::false_type>::type;
+};
+#endif
 }  // namespace scalar_conversion
 }  // namespace systems
 }  // namespace drake

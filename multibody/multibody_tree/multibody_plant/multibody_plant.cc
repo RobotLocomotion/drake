@@ -52,6 +52,8 @@ using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::State;
 
+//template<typename T>
+//MultibodyPlant<T>::MultibodyPlant() {
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
@@ -66,7 +68,7 @@ MultibodyPlant<T>::MultibodyPlant(
     MultibodyPlant() {
   DRAKE_DEMAND(source_id.is_valid());
   source_id_ = source_id;
-  body_name_to_frame_id_ = frame_ids;
+  //body_name_to_frame_id_ = frame_ids;
 
   // TODO(amcastro-tri): verify all frame ids actually are part of the
   // geometry system.
@@ -103,6 +105,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
       &MultibodyPlant::CopyStateOut).get_index();
 }
 
+#if 0
 template<typename T>
 void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
   geometry_id_port_ =
@@ -114,6 +117,7 @@ void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
           &MultibodyPlant::AllocateFramePoseOutput,
           &MultibodyPlant::CalcFramePoseOutput).get_index();
 }
+#endif
 
 template <typename T>
 FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
@@ -125,8 +129,8 @@ FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
   // Add a frame for the one single body in this model.
   // ids are ordered by body index. This must be consistent with the order in
   // which CalcFramePoseOutput() places the poses in its output.
-  for (auto it : body_index_to_frame_id_)
-    ids.AddFrameId(it.second);
+  //for (auto it : body_index_to_frame_id_)
+    //ids.AddFrameId(it.second);
   return ids;
 }
 
@@ -177,14 +181,15 @@ void MultibodyPlant<T>::CopyStateOut(const systems::Context<T>& context,
   output->SetFromVector(state_vector);
 }
 
+#if 0
 template <typename T>
-const OutputPort<T>& MultibodyPlant<T>::get_geometry_id_output_port()
+const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
 template <typename T>
-const OutputPort<T>& MultibodyPlant<T>::get_geometry_pose_output_port()
+const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
@@ -198,6 +203,7 @@ template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
   return systems::System<T>::get_output_port(state_output_port_);
 }
+#endif
 
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
@@ -205,13 +211,13 @@ void MultibodyPlant<T>::Finalize() {
   DeclareStateAndPorts();
   // Only declare ports to communicate with a GeometrySystem if the plant is
   // provided with a valid source id.
-  if (source_id_) DeclareGeometrySystemPorts();
+  //if (source_id_) DeclareGeometrySystemPorts();
 }
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
 MultibodyPlant<T>::DoMakeContext() const {
-  MultibodyPlant<T>* nonconst_this = static_cast<MultibodyPlant<T>*>(this);
+  MultibodyPlant<T>* nonconst_this = const_cast<MultibodyPlant<T>*>(this);
   nonconst_this->Finalize();
   return std::make_unique<MultibodyTreeContext<T>>(model_->get_topology());
 }
@@ -274,9 +280,11 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
+template class MultibodyPlant<double>;
+
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::multibody_plant::MultibodyPlant)
+//DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+  //  class drake::multibody::multibody_plant::MultibodyPlant)
