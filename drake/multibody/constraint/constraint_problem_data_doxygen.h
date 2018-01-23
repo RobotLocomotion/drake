@@ -63,9 +63,9 @@ constraints (e.g., c(q) ≥ 0). The former can be realized through the
 latter using a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
 the constraint problem structure distinguishes the two types to maximize
 computational efficiency in the solution algorithms. It is assumed throughout
-this documentation that c() is a vector function. In general, the constraint
+this documentation that c(.) is a vector function. In general, the constraint
 functions do not maintain consistent units: the units of the iᵗʰ dimension of
-c() are not necessarily equivalent to the units of the jᵗʰ dimension of c().
+c(.) are not necessarily equivalent to the units of the jᵗʰ dimension of c(.).
 
 Constraints may be posed at the position level:<pre>
 c(t;q)
@@ -84,9 +84,11 @@ position-level unknowns, velocity-level unknowns, or acceleration-level
 unknowns*, respectively.
 
 <h4>Constraints with velocity-level unknowns</h4>
-This document and class does not generally attempt (or need) to distinguish
-between equations that are posable at the position level but are
-differentiated once with respect to time (i.e., holonomic constraints):<pre>
+This documentation does not generally attempt to distinguish
+between equations that are posed at the position level but are
+differentiated once with respect to time (i.e., to reduce the Differential
+Algebraic Equation or Differential Complementarity Problem index [Ascher 1998]):
+<pre>
 d/dt c(t; q) = ċ(t, q; v)
 </pre>
 vs. equations that **must** be posed at at the velocity-level
@@ -94,11 +96,10 @@ vs. equations that **must** be posed at at the velocity-level
 c(t, q; v).
 </pre>
 Both cases yield a constraint with velocity-level unknowns, thereby
-admitting the constraint's immediate use (i.e., no further time differentiation
-is required) in a velocity-level constraint formulation. Note that truncation
-and discretization errors can cause the former constraint to "drift": c(t; q)
-may increasingly deviate from zero over time unless corrected. See
-@ref constraint_stabilization for further information.
+allowing the constraint to be used in a velocity-level constraint formulation
+(e.g., an Index-2 DAE or Index-2 DCP). *Only the former constraint may "drift"
+from zero over time*, due to truncation and discretization errors, unless
+corrected. See @ref constraint_stabilization for further information.
 
 <h4>Constraints with acceleration-level unknowns</h4>
 A bilateral constraint equation with acceleration-level unknowns will take the
@@ -106,20 +107,25 @@ form:
 <pre>
 c̈(t,q,v;v̇) = 0
 </pre>
-if c() is holonomic, or<pre>
+if c(.) has been differentiated twice with respect to time (for DAE/DCP index
+reduction), or<pre>
 ċ(t,q,v;v̇) = 0
 </pre>
-if c() is nonholonomic. Both of these constraints have been differentiated (once
-or twice) with respect to time. Constraints with acceleration-level unknowns
-can be also be modified to incorporate terms dependent on constraint forces,
-like:<pre>
+if c(.) is nonholonomic and has been differentiated once with respect to time
+(again, for DAE/DCP index reduction). Constraints with acceleration-level
+unknowns can be also be modified to incorporate terms dependent on constraint
+forces, like:<pre>
 c̅(t,q,v;v̇,λ) = 0
 </pre>
 where<pre>
 c̅(t,q,v;v̇,λ) ≡ c̈(t,q,v;v̇) + λ
 </pre>
-The equation above was constructed purely for pedagogic purposes, but a similar
-construct is introduced in @ref constraint_regularization.
+Making the constraint type above more general by permitting unknowns over λ
+allows constraints to readily express, e.g., sliding Coulomb friction
+constraints (of the form fₜ = μ⋅fₙ). It also admits more sophisticated
+constraints that are functions of both v̇ and λ (simultaneously), like the
+illustrative example above, which will be examined further in
+@ref constraint_regularization.
 
 <h4>Complementarity conditions</h4>
 Each unilateral constraint comprises a triplet of equations. For example:<pre>
@@ -142,12 +148,20 @@ direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
 Both truncation and rounding errors can prevent constraints from being 
 exactly satisfied. For example, consider the bilateral holonomic constraint
 equation c(t,q) = 0. Even if
-c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, c(t₁,q(t₁))
-is unlikely to be zero for sufficiently large Δt = t₁ - t₀. Consequently,
-we can modify holonomic unilateral constraints to:<pre>
+c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, it is often
+true that c(t₁,q(t₁)) will be zero for sufficiently large Δt = t₁ - t₀.
+One way to address this constraint "drift" is through *dynamic stabilization*.
+In particular, holonomic unilateral constraints that have been differentiated
+twice with respect to time can be modified from:<pre>
+0 ≤ c̈  ⊥  λ ≥ 0
+</pre>
+to:<pre>
 0 ≤ c̈ + 2αċ + β²c  ⊥  λ ≥ 0
 </pre>
-and holonomic bilateral constraints to:<pre>
+and holonomic bilateral constraints can be modified from:<pre>
+c̈ = 0
+</pre>
+to:<pre>
 c̈ + 2αċ + β²c = 0
 </pre>
 for non-negative scalar α and real β (α and β can also represent diagonal
@@ -155,7 +169,7 @@ matrices for greater generality). α and β, which both have units of 1/sec
 (i.e., the reciprocal of unit time) are described more fully in
 [Baumgarte 1972].
 
-We will temporarily consider the case c → ℝ, i.e., c() maps to a scalar rather
+We will temporarily consider the case c → ℝ, i.e., c(.) maps to a scalar rather
 than a vector. The use of α and β above make correcting position-level (c) and
 velocity-level (ċ) holonomic constraint errors analogous to the dynamic problem
 of stabilizing a damped harmonic oscillator. Given that analogy, 2α is the
@@ -171,8 +185,8 @@ To eliminate constraint errors as quickly as possible, one will typically use
 ζ=1, implying *critical damping*, and undamped angular frequency ω₀ that is
 high enough to correct errors rapidly but low enough to avoid computational
 stiffness. Picking that parameter is currently considered to be more art
-than science (see [Ascher 1992]). Given ω₀ and ζ, α and β are set using the
-equations above.
+than science (see [Ascher 1992]). Given desired ω₀ and ζ, α and β are set using
+the equations above.
 */
 
 /** @defgroup constraint_regularization Constraint regularization and softening
@@ -180,7 +194,10 @@ equations above.
 
 It can be both numerically advantageous and a desirable modeling feature to
 regularize constraints. For example, consider modifying a 
-unilateral complementarity constraint to:<pre>
+unilateral complementarity constraint from:<pre>
+0 ≤ c(t,q,v;v̇,λ)  ⊥  λ ≥ 0
+</pre>
+to:<pre>
 0 ≤ c(t,q,v;v̇,λ) + ελ  ⊥  λ ≥ 0
 </pre>
 where ε is a non-negative scalar; alternatively, it can represent a diagonal
@@ -190,15 +207,14 @@ With ελ > 0, it becomes easier to satisfy the constraint
 c(t,q,v;v̇,λ) + ελ ≥ 0, though the resulting v̇ and λ will not quite
 satisfy c ≥ 0: c will become slightly negative. As hinted above,
 regularization can confer two benefits. First, the resulting complementarity
-problems become easier to solve; more importantly, any
-complementarity problem becomes solvable given sufficient regularization
-[Cottle 1992]. 
+problems become easier to solve; more importantly, any complementarity problem
+becomes solvable given sufficient regularization [Cottle 1992].
 
 <h4>Regularization introduces compliance</h4>
 Second (in concert with constraint stabilization and a particular discretization
 of the constrained multibody dynamics equations), regularization introduces
 compliant effects, e.g., at joint stops and between contacting bodies; such
-*softening* effects are often desirable.
+"softening" effects are often desirable.
 
 Unfortunately, not all constraints can be intuitively softened. While
 [Lacoursiere 2007] convincingly argues for softening interpenetration
@@ -247,15 +263,15 @@ by 1/(GM⁻¹Gᵀ), where G ≡ ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial der
 constraint function with respect to the quasi-coordinates (see
 @ref quasi_coordinates; equivalently, G maps generalized velocities to the time
 derivative of the constraints, i.e., ċ) and M is the generalized inertia matrix.
-Considering c() to be a scalar function for simplicity of presentation
+Considering c(.) to be a scalar function for simplicity of presentation
 should make it clear that GM⁻¹Gᵀ would be a scalar as well.
 
 While Catto studied a mass-spring system, these results apply to general
 multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
 time stepping scheme in Drake using ConstraintSolver, one would
-use ω and ζ to correspondingly set gammaN to γ and kN to ϱ/h times the
-signed constraint distance (using, e.g., signed distance for the point contact
-non-interpenetration constraint).
+use ω and ζ to correspondingly set gammaN (or gammaL) to γ and kN (kL) to ϱ/h
+times the signed constraint distance (using, e.g., signed distance for the point
+contact non-interpenetration constraint).
 
 <h4>Regularization at the acceleration-level</h4>
 Starting from the same stabilized and regularized spring mass system:
@@ -289,14 +305,17 @@ Jacobian matrices as the partial derivatives of the constraint equations
 taken with respect to the quasi-coordinates (see @ref quasi_coordinates);
 using the notation within the citation for
 quasi-coordinates means we write the Jacobian as ∂c/∂q̅ (quasi-coordinates
-possess the property that ∂q̅/∂v = Iₙₓₙ, the n × n identity matrix).
+possess the property that ∂q̅/∂v = Iₙₓₙ, the n × n identity matrix). In
+robotics literature, ∂c/∂q̅ is known as a *geometric Jacobian* while
+∂c/∂q is known as an *analytical Jacobian* [Sciavicco 2000].
 
-Fortunately, for constraints defined in the form c(t,q), the Jacobians are
-described completely by the equation ċ = ∂c/∂q̅⋅v + ∂c/∂t, where v are the
-generalized velocities of the system. Since the problem data specifically
-requires operators (see ConstraintAccelProblemData and
+Fortunately, for constraints defined in the form c(t,q), the distinction is
+moot: the Jacobians are described completely by the equation ċ = ∂c/∂q̅⋅v +
+∂c/∂t, where v are the generalized velocities of the system. Since the problem
+data calls for operators (see ConstraintAccelProblemData and
 ConstraintVelProblemData) that compute (∂c/∂q̅⋅v), one can simply
-evaluate ċ - ∂c/∂t for a given v: no Jacobian need be formed explicitly. 
+evaluate ċ - ∂c/∂t for a given v: no Jacobian need be formed explicitly.
+
 */
 
 /** @defgroup noninterpenetration_constraints Noninterpenetration constraints
@@ -314,7 +333,7 @@ complementarity constraints are necessary (see @ref constraint_types):<pre>
 </pre>
 
 <h4>Differentiating c() with respect to time</h4>
-As usual, c() must be differentiated (with respect to time) once to use the
+As usual, c(.) must be differentiated (with respect to time) once to use the
 contact constraint in velocity-level constraint formulation or twice to use
 it in an acceleration-level formulation. 
 Differentiating c(q) once with respect to
@@ -342,12 +361,12 @@ constraint problem data does, see @ref frictional_constraints), by applying no
 force at all, or by using a "regularized" Coulomb friction model (using e.g.,
 the hyperbolic tangent function). 
 
-Drake's constraint solver solves for ᶜλ using substitution: ᶜλ is substituted
-with μλ in the multi-body dynamics equations. As a concrete example, consider
+Drake's constraint solver solves for ᶜλ by substituting it with μλ in the
+multi-body dynamics equations. As a concrete example, consider
 a system consisting for two bodies sliding at a single point of contact with
 surface normal (n̂) and sliding direction q̂. If all other (non-contact related)
 forces are captured by the generalized force f, the dynamics of that system
-*could* be written
+could be written
 as:<pre>
 Mv̇ = f + Nᵀλ - (Qᵀ)ᶜλ
 </pre>
@@ -357,8 +376,8 @@ equation:
 Mv̇ = f + (Nᵀ - μQᵀ)λ
 </pre>
 Where Nᵀ is the wrench on the bodies that results from applying a unit force
-along n̂ to the bodies at the point of contact and Qᵀ is the wrench on the bodies
-that results from applying a unit force along q̂. 
+along n̂ to the bodies at the point of contact and Qᵀ is the wrench on the
+bodies that results from applying a unit force along q̂.
 
 Note that *the Coulomb friction model is not applied in velocity-level
 constraint equations* (see @ref frictional_constraints).
