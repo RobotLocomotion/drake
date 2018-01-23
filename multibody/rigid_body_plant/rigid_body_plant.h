@@ -85,7 +85,7 @@ namespace systems {
 /// are a particular case of holonomic constraints, general holonomic
 /// constraints are not yet supported. For %RigidBodyPlant systems simulated
 /// using time stepping algorithms, an additional (discrete) scalar state
-/// variable stores the last time that the system's state was updated. 
+/// variable stores the last time that the system's state was updated.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic

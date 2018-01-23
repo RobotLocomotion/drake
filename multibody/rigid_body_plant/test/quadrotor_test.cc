@@ -1,7 +1,7 @@
 /// @file
 ///
-/// This example cross-checks the TimeSteppingRigidBodyPlant (using discrete
-/// state) dynamics against those of a rigid body model using RigidBodyPlant
+/// This example cross-checks the RigidBodyPlant (using discrete state)
+/// dynamics against those of a rigid body model using RigidBodyPlant
 /// with continuous state.
 
 #include <gflags/gflags.h>
@@ -11,7 +11,6 @@
 #include "drake/common/text_logging.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/dev/time_stepping_rigid_body_plant.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -33,7 +32,6 @@ using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 using systems::InputPortDescriptor;
 using systems::RigidBodyPlant;
-using systems::TimeSteppingRigidBodyPlant;
 using systems::Context;
 
 namespace multibody {
@@ -57,7 +55,7 @@ class Quadrotor : public systems::Diagram<T> {
       plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
           std::move(tree));
     } else {
-      plant_ = builder.template AddSystem<TimeSteppingRigidBodyPlant<T>>(
+      plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
           std::move(tree), dt);
     }
 
@@ -112,8 +110,7 @@ GTEST_TEST(QuadrotorTest, Equality) {
   // Set the initial conditions for the discrete plant.
   Context<double>& discrete_context = discrete_model.GetMutableSubsystemContext(
       discrete_plant, &discrete_sim.get_mutable_context());
-  discrete_context.get_mutable_discrete_state(0).
-      SetFromVector(x0);
+  discrete_plant.set_state_vector(&discrete_context.get_mutable_state(), x0);
 
   // Step both forward by one step into the future.
   const double duration = step_size;
@@ -125,7 +122,7 @@ GTEST_TEST(QuadrotorTest, Equality) {
       get_continuous_state_vector();
   auto& discrete_state = *discrete_sim.get_context().
       get_discrete_state().get_data().front();
-  const double tol = 1e3 * std::numeric_limits<double>::epsilon();
+  const double tol = 2e5 * std::numeric_limits<double>::epsilon();
   ASSERT_EQ(continuous_state.size(), discrete_state.size());
   for (int i = 0; i < discrete_state.size(); ++i)
     EXPECT_NEAR(discrete_state[i], continuous_state[i], tol);
