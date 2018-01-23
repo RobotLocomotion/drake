@@ -6,7 +6,7 @@ Makes Boost headers available to be used as a C/C++ dependency.
 
 Example:
     WORKSPACE:
-        load("@drake//tools/workspace/boost:package.bzl", "boost_repository")
+        load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")  # noqa
         boost_repository(name = "foo")
 
     BUILD:

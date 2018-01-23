@@ -7,7 +7,7 @@ WORKSPACE.
 
 Example:
     WORKSPACE:
-        load("@drake//tools/workspace/buildifier:package.bzl", "buildifier_repository")  # noqa
+        load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
         buildifier_repository(name = "foo")
 
     BUILD:

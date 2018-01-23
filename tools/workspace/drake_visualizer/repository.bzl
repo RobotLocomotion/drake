@@ -18,7 +18,7 @@ Build configuration:
 Example:
     WORKSPACE:
         load(
-            "@drake//tools/workspace/drake_visualizer:package.bzl",
+            "@drake//tools/workspace/drake_visualizer:repository.bzl",
             "drake_visualizer_repository",
         )
         drake_visualizer_repository(name = "foo")
