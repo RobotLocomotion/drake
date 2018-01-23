@@ -75,6 +75,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "sensors_py",
+    cc_deps = [
+        "//bindings/pydrake/util:cpp_template_pybind",
+    ],
+    cc_so_name = "sensors",
+    cc_srcs = ["sensors_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/util:cpp_template_py",
+    ],
+)
+
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
@@ -89,6 +104,7 @@ drake_py_library(
         ":drawing_py",
         ":framework_py",
         ":primitives_py",
+        ":sensors_py",
     ],
 )
 
@@ -96,6 +112,7 @@ PYBIND_LIBRARIES = [
     ":analysis_py",
     ":framework_py",
     ":primitives_py",
+    ":sensors_py",
 ]
 
 PY_LIBRARIES = [
@@ -176,6 +193,14 @@ drake_py_test(
     size = "small",
     deps = [
         ":framework_py",
+    ],
+)
+
+drake_py_test(
+    name = "sensors_test",
+    size = "small",
+    deps = [
+        ":sensors_py",
     ],
 )
 
