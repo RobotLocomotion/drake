@@ -332,7 +332,7 @@ complementarity constraints are necessary (see @ref constraint_types):<pre>
 0 ≤ c  ⊥  λ ≥ 0
 </pre>
 
-<h4>Differentiating c() with respect to time</h4>
+<h4>Differentiating c(.) with respect to time</h4>
 As usual, c(.) must be differentiated (with respect to time) once to use the
 contact constraint in velocity-level constraint formulation or twice to use
 it in an acceleration-level formulation. 
@@ -381,6 +381,35 @@ bodies that results from applying a unit force along q̂.
 
 Note that *the Coulomb friction model is not applied in velocity-level
 constraint equations* (see @ref frictional_constraints).
+
+
+<h4>Constraint regularization and softening</h4>
+As discussed in @ref constraint_regularization, the non-interpenetration
+constraint can be regularized or softened by adding a term to, e.g., the
+second time derivative of the equation:
+<pre>
+0 ≤ c̈  ⊥  λ ≥ 0
+</pre>
+resulting in:<pre>
+0 ≤ c̈ + ελ  ⊥  λ ≥ 0
+</pre>
+for ε ≥ 0.
+
+<h4>Constraint stabilization</h4>
+As discussed in @ref constraint_stabilization, the drift induced by solving an
+Index-0 DAE or DCP (that has been reduced from an Index-3 DAE or DCP) can be
+mitigated through one of several strategies, one of which is Baumgarte
+Stabilization. The typical application of Baumgarte Stabilization will use the
+second time derivative of the complementarity condition (the regularization
+term from above is incorporated as well for purposes of illustration):<pre>
+0 ≤ c̈ + ελ  ⊥  λ ≥ 0
+</pre>
+Baumgarte Stabilization would be layered on top of this equation, resulting in:
+<pre>
+0 ≤ c̈ + 2αċ + β²c + ελ  ⊥  λ ≥ 0
+</pre>
+Note that *neither Baumgarte Stabilization nor constraint regularization/
+softening affects the definition of c(.)'s Jacobian*.
 */
  
 /** @defgroup frictional_constraints Frictional constraints
@@ -541,5 +570,35 @@ formulation and yields the complementarity condition:<pre>
 </pre>
 For this simple range of motion constraint example, it will generally be
 the case that q̇ᵢ = vᵢ.
-*/ 
+
+<h4>Constraint regularization and softening</h4>
+As discussed in @ref constraint_regularization, generic unilateral
+constraints can be regularized or softened by adding a term to, e.g., the
+second time derivative of the equation:
+<pre>
+0 ≤ c̈  ⊥  λᵢ ≥ 0
+</pre>
+resulting in:<pre>
+0 ≤ c̈ + ελᵢ  ⊥  λᵢ ≥ 0
+</pre>
+for ε ≥ 0. This same concept applies equally well to the first time derivative
+of c(.), as also discussed in @ref constraint_regularization.
+
+<h4>Constraint stabilization</h4>
+As discussed in @ref constraint_stabilization, the drift induced by solving an
+Index-0 DAE or DCP (that has been reduced from an Index-3 DAE or DCP) can be
+mitigated through one of several strategies, one of which is Baumgarte
+Stabilization. The typical application of Baumgarte Stabilization will use the
+second time derivative of the complementarity condition (the regularization
+term from above is incorporated as well for purposes of illustration):<pre>
+0 ≤ c̈ + ελᵢ  ⊥  λᵢ ≥ 0
+</pre>
+Baumgarte Stabilization would be layered on top of this equation, resulting in:
+<pre>
+0 ≤ c̈ + 2αċ + β²c + ελᵢ  ⊥  λᵢ ≥ 0
+</pre>
+Note that *neither Baumgarte Stabilization nor constraint regularization/
+softening affects the definition of c(.)'s Jacobian*.
+
+*/
 
