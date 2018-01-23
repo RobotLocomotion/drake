@@ -352,7 +352,7 @@ std::unique_ptr<DiscreteValues<T>> RigidBodyPlant<T>::AllocateDiscreteState()
   discrete_state_vector.push_back(
       make_unique<BasicVector<T>>(get_num_states()));
 
-  // Time.
+  // The last time that the state was (discretely) updated.
   discrete_state_vector.push_back(
       make_unique<BasicVector<T>>(1));
 
