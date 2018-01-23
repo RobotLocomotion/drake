@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/hash.h"
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
@@ -446,3 +447,13 @@ class TypeSafeIndex {
 };
 
 }  // namespace drake
+
+namespace std {
+/// Specialization of std::hash for drake::TypeSafeIndex<Tag>.
+template <typename Tag>
+struct hash<drake::TypeSafeIndex<Tag>> {
+  size_t operator()(const drake::TypeSafeIndex<Tag>& index) const {
+    return hash<int64_t>()(index);
+  }
+};
+}  // namespace std
