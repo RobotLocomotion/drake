@@ -66,8 +66,7 @@ std::string TemporaryClassName(
 /// @param param Parameters for the instantiation.
 inline py::object AddTemplateClass(
     py::handle scope, const std::string& name,
-    py::handle py_class, py::tuple param,
-    const std::string& default_instantiation_name = "") {
+    py::handle py_class, py::tuple param) {
   py::object py_template =
       internal::GetOrInitTemplate(scope, name, "TemplateClass");
   internal::AddInstantiation(py_template, py_class, param);
