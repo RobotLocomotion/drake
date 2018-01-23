@@ -9,6 +9,10 @@ list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(CTest)
 
 configure_file(CTestCustom.cmake.in CTestCustom.cmake @ONLY)
+foreach(LANG C CXX)
+  set(COMPILER ${CMAKE_${LANG}_COMPILER})
+  configure_file(tools/cc_toolchain/wrapper.sh.in ${CMAKE_CURRENT_BINARY_DIR}/${LANG}_wrapper.sh @ONLY)
+endforeach()
 
 if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
@@ -44,7 +48,7 @@ else()
   set(BAZEL_COMPILATION_MODE opt)
 endif()
 
-set(BAZEL_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
+set(BAZEL_ENV "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh" "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh")
 
 set(BAZEL_ARGS
   --compilation_mode=${BAZEL_COMPILATION_MODE}
@@ -57,10 +61,17 @@ if(CMAKE_VERBOSE_MAKEFILE)
   list(APPEND BAZEL_ARGS --subcommands)
 endif()
 
-option(WITH_GUROBI "Build with support for GUROBI. Experimental." OFF)
+option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
+  find_package(Gurobi 7.5.2 MODULE REQUIRED)
+
   list(APPEND BAZEL_ARGS --config=gurobi)
+
+  if(NOT APPLE)
+    get_filename_component(GUROBI_PATH "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
+    list(APPEND BAZEL_ENV "GUROBI_PATH=${GUROBI_PATH}")
+  endif()
 endif()
 
 option(WITH_MATLAB "Build with support for MATLAB" OFF)
@@ -69,7 +80,7 @@ if(WITH_MATLAB)
   list(APPEND BAZEL_ARGS --define=NO_IPOPT=ON)
 endif()
 
-option(WITH_MOSEK "Build with support for MOSEK. Experimental." OFF)
+option(WITH_MOSEK "Build with support for MOSEK" OFF)
 
 if(WITH_MOSEK)
   list(APPEND BAZEL_ARGS --config=mosek)

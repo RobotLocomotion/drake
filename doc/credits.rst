@@ -35,6 +35,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Matt Marjanovic
 * Pat Marion
 * Betsy McPhail
+* Paul Mitiguy
 * Jeremy Nimmer
 * Michael Posa
 * Rick Poyner

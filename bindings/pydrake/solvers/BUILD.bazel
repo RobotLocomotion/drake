@@ -1,0 +1,174 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_pybind_installs",
+    "get_pybind_package_info",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_test",
+)
+load(
+    "//tools/skylark:6996.bzl",
+    "adjust_label_for_drake_hoist",
+    "adjust_labels_for_drake_hoist",
+)
+
+package(default_visibility = adjust_labels_for_drake_hoist([
+    "//drake/bindings/pydrake:__subpackages__",
+]))
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(
+    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
+)
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        "//drake/bindings/pydrake:common_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "ik_py",
+    cc_srcs = ["ik_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        "//drake/bindings/pydrake:rbtree_py",
+    ],
+    py_srcs = ["ik.py"],
+)
+
+# TODO(eric.cousineau): Rename `mathematicalprogram` to
+# `mathematical_program` when `pydrake` is renamed to `drake`.
+drake_pybind_library(
+    name = "mathematicalprogram_py",
+    cc_deps = [
+        "//drake/bindings/pydrake:symbolic_types_pybind",
+    ],
+    cc_srcs = ["mathematicalprogram_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        "//drake/bindings/pydrake:symbolic_py",
+    ],
+    py_srcs = ["mathematicalprogram.py"],
+)
+
+drake_pybind_library(
+    name = "gurobi_py",
+    cc_so_name = "gurobi",
+    cc_srcs = ["gurobi_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":mathematicalprogram_py"],
+)
+
+drake_pybind_library(
+    name = "ipopt_py",
+    cc_so_name = "ipopt",
+    cc_srcs = ["ipopt_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":mathematicalprogram_py"],
+)
+
+drake_pybind_library(
+    name = "mosek_py",
+    cc_so_name = "mosek",
+    cc_srcs = ["mosek_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":mathematicalprogram_py"],
+)
+
+PYBIND_LIBRARIES = [
+    ":gurobi_py",
+    ":ik_py",
+    ":ipopt_py",
+    ":mathematicalprogram_py",
+    ":mosek_py",
+]
+
+PY_LIBRARIES = [
+    ":module_py",
+]
+
+drake_py_library(
+    name = "solvers",
+    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+)
+
+drake_py_test(
+    name = "gurobi_solver_test",
+    size = "small",
+    srcs = ["test/gurobi_solver_test.py"],
+    main = "test/gurobi_solver_test.py",
+    tags = gurobi_test_tags(),
+    deps = [":gurobi_py"],
+)
+
+drake_py_test(
+    name = "ipopt_solver_test",
+    size = "small",
+    srcs = ["test/ipopt_solver_test.py"],
+    args = select({
+        "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    main = "test/ipopt_solver_test.py",
+    deps = [":ipopt_py"],
+)
+
+drake_py_test(
+    name = "mosek_solver_test",
+    size = "small",
+    srcs = ["test/mosek_solver_test.py"],
+    main = "test/mosek_solver_test.py",
+    tags = mosek_test_tags(),
+    deps = [":mosek_py"],
+)
+
+drake_py_test(
+    name = "mathematicalprogram_test",
+    size = "small",
+    srcs = ["test/mathematicalprogram_test.py"],
+    main = "test/mathematicalprogram_test.py",
+    tags = gurobi_test_tags(),
+    deps = [":mathematicalprogram_py"],
+)
+
+drake_py_test(
+    name = "pr2_ik_test",
+    size = "small",
+    srcs = ["test/pr2_ik_test.py"],
+    data = ["//drake/examples/pr2:models"],
+    main = "test/pr2_ik_test.py",
+    tags = ["snopt"],
+    deps = [":ik_py"],
+)
+
+drake_py_test(
+    name = "rbt_ik_test",
+    size = "small",
+    srcs = ["test/rbt_ik_test.py"],
+    data = ["//drake/examples/pendulum:models"],
+    main = "test/rbt_ik_test.py",
+    tags = ["snopt"],
+    deps = [":ik_py"],
+)
+
+add_lint_tests()

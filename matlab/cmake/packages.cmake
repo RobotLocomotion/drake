@@ -3,8 +3,7 @@ set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
 
 if(APPLE)
   set(MINIMUM_MATLAB_VERSION 9.2)
-  # TODO(jamiesnape): Change from 3.1 to 3.5 when #7323 merges.
-  set(MINIMUM_PROTOBUF_VERSION 3.1)
+  set(MINIMUM_PROTOBUF_VERSION 3.5)
 else()
   # TODO(jamiesnape): Change from 9 to 9.2 when support for R2016a and R2016 is
   # no longer needed.

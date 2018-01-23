@@ -529,7 +529,7 @@ install_files = rule(
         "rename": attr.string_dict(),
         "strip_prefix": attr.string_list(),
         "workspace": attr.string(),
-        "allowed_externals": attr.string_list(),
+        "allowed_externals": attr.label_list(allow_files = True),
     },
     implementation = _install_files_impl,
 )
@@ -609,7 +609,7 @@ def cmake_config(
             deps = ["@drake//tools/install:cpsutils"],
         )
 
-        cps_file_name = "{}.cps".format(package)
+        cps_file_name = "package.cps"
 
         native.genrule(
             name = "cps",
@@ -620,8 +620,8 @@ def cmake_config(
             visibility = ["//visibility:public"],
         )
     elif not cps_file_name:
-        cps_file_name = "@drake//tools/workspace/{}:{}.cps".format(
-            package, package)
+        cps_file_name = "@drake//tools/workspace/{}:package.cps".format(
+            package)
 
     package_lower = package.lower()
 

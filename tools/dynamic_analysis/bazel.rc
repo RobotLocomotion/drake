@@ -7,8 +7,30 @@ build:kcov --copt -O0
 test:kcov --spawn_strategy=standalone
 test:kcov --run_under //tools/dynamic_analysis:kcov
 test:kcov --local_test_jobs=1
-test:kcov --test_tag_filters=-cpplint,-gurobi,-pycodestyle
+test:kcov --test_tag_filters=-cpplint,-pycodestyle,-gurobi,-mosek,-snopt,-no_kcov
 test:kcov --nocache_test_results
+# These increased timeouts were set through experimentation. Because kcov runs
+# in a separate process from the main program, the OS has to context-switch
+# between the processes every time a line is hit, slowing down execution
+# significantly.
+test:kcov --test_timeout=120,600,1800,7200
+
+### Kcov everything build. ###
+build:kcov_everything --define=WITH_GUROBI=ON
+build:kcov_everything --define=WITH_MOSEK=ON
+build:kcov_everything --define=WITH_SNOPT=ON
+build:kcov_everything --copt -g
+build:kcov_everything --copt -O0
+
+test:kcov_everything --test_env=GRB_LICENSE_FILE
+test:kcov_everything --test_env=HOME
+test:kcov_everything --spawn_strategy=standalone
+test:kcov_everything --run_under=//tools/dynamic_analysis:kcov
+test:kcov_everything --local_test_jobs=1
+test:kcov_everything --test_tag_filters=-cpplint,-pycodestyle,-no_kcov
+test:kcov_everything --nocache_test_results
+# See timeout note above.
+test:kcov_everything --test_timeout=120,600,1800,7200
 
 ### ASan build. ###
 build:asan --copt -g
@@ -172,8 +194,8 @@ build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
 # https://groups.google.com/forum/#!topic/bazel-discuss/15h4GPixeGI
-build:ubsan --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
-build:ubsan --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
+build:ubsan --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
+build:ubsan --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
 test:ubsan --run_under=//tools/dynamic_analysis:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
@@ -193,8 +215,8 @@ build:ubsan_everything --copt -O1
 build:ubsan_everything --copt -fno-omit-frame-pointer
 build:ubsan_everything --linkopt -fsanitize=undefined
 # https://groups.google.com/forum/#!topic/bazel-discuss/15h4GPixeGI
-build:ubsan_everything --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
-build:ubsan_everything --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
+build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
+build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
 test:ubsan_everything --test_env=GRB_LICENSE_FILE
 test:ubsan_everything --test_env=HOME
 test:ubsan_everything --test_tag_filters=-no_ubsan

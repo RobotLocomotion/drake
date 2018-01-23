@@ -1,0 +1,29 @@
+# -*- python -*-
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Provide a recent version of the protobuf skylark code from upstream.
+exports_files(["protobuf.bzl"])
+
+# The protobuf.bzl looks here to find which protoc to use.
+# Drake uses the protoc found on $PATH (typically from the host OS).
+filegroup(
+    name = "protoc",
+    srcs = ["@protoc"],
+)
+
+# The protobuf.bzl looks here to find which runtime to use.
+# Drake uses the libprotobuf found by pkg-config (typically from the host OS).
+alias(
+    name = "protobuf",
+    actual = "@libprotobuf",
+)
+
+# The protobuf.bzl looks here to find which python runtime to use.
+# Drake uses the library already on $PYTHONPATH (typically from the host OS).
+py_library(
+    name = "protobuf_python",
+    # No srcs here, so we'll use the system default.
+)

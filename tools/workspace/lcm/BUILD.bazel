@@ -1,10 +1,25 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+)
 
 exports_files(
-    ["lcm-create-cps.py"],
+    ["package-create-cps.py"],
     visibility = ["@lcm//:__pkg__"],
+)
+
+# `//:install` is run in this test to verify that once installed
+# lcm-gen still works. Cannot be run on its own, needs to be
+# run as part of all the drake tests to have access to //:install
+drake_py_test(
+    name = "install_test",
+    size = "large",
+    srcs = ["test/install_test.py"],
+    main = "test/install_test.py",
+    deps = ["//tools/install:install_test_helper"],
 )
 
 add_lint_tests()

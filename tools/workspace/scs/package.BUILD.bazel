@@ -1,0 +1,69 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+
+package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "darwin",
+    values = {"cpu": "darwin"},
+    visibility = ["//visibility:private"],
+)
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
+SCS_HDRS = glob(["include/*.h"]) + ["linsys/amatrix.h"]
+
+# TODO(jamiesnape): Use system AMD and LDL instead of outdated versions in
+# linsys/direct/external. These are licensed under the LGPL so only build a
+# shared library for :scsdir.
+
+cc_binary(
+    name = "libscsdir.so",
+    srcs = SCS_HDRS + glob([
+        "linsys/*.c",
+        "linsys/common.h",
+        "linsys/direct/**/*.c",
+        "linsys/direct/**/*.h",
+        "src/*.c",
+    ]),
+    defines = ["LAPACK_LIB_FOUND=1"],
+    includes = ["include"],
+    linkopts = select({
+        ":darwin": ["-framework Accelerate"],
+        ":linux": ["-lrt"],
+        "@//conditions:default": [],
+    }),
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+    deps = select({
+        ":linux": [
+            "@blas",
+            "@lapack",
+        ],
+        "@//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "scsdir",
+    srcs = [":libscsdir.so"],
+    hdrs = SCS_HDRS,
+    defines = ["LAPACK_LIB_FOUND=1"],
+    includes = ["include"],
+)
+
+install(
+    name = "install",
+    targets = [":libscsdir.so"],
+    docs = [
+        "LICENSE.txt",
+        "linsys/direct/external/AMD_README.txt",
+        "linsys/direct/external/LDL_README.txt",
+    ],
+    doc_strip_prefix = ["linsys/direct/external"],
+)

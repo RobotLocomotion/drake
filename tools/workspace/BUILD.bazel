@@ -26,7 +26,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcm",
     "lcmtypes_bot2_core",
     "lcmtypes_robotlocomotion",
-    "libbot",
     "octomap",
     "pybind11",
     "scs",
@@ -37,13 +36,17 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "tinydir",
     "tinyobjloader",
     "vtk",
-    "yaml_cpp",
 ]] + ["//tools/workspace/%s:install" % p for p in [
-    "gflags",
-    "jchart2d",
+    "net_sf_jchart2d",
+    "find_protobuf_cmake",
     "optitrack_driver",
-    "protobuf",
-]]
+]] + select({
+    "//tools:with_gurobi": ["@gurobi//:install"],
+    "//conditions:default": [],
+}) + select({
+    "//tools:with_mosek": ["@mosek//:install"],
+    "//conditions:default": [],
+})
 
 install(
     name = "install_external_packages",
