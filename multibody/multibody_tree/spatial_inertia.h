@@ -151,7 +151,7 @@ class SpatialInertia {
   ///
   /// @tparam Scalar The scalar type on which the new spatial inertia will
   /// be templated.
-  ///
+  ///`
   /// @note `SpatialInertia<From>::cast<To>()` creates a new
   /// `SpatialInertia<To>` from a `SpatialInertia<From>` but only if
   /// type `To` is constructible from type `From`. As an example of this,
