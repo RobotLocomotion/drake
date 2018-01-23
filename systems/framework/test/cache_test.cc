@@ -84,24 +84,17 @@ class CacheTest : public ::testing::Test {
   void SetUp() override {
     auto& cache_entry0 = system_.DeclareCacheEntry(
         "entry0", alloc, calc, {system_.all_sources_ticket()});
-    index0_ = cache()
-                  .CreateNewCacheEntryValue(cache_entry0, &trackers())
-                  .cache_index();
+    index0_ = CreateCacheEntryValue(cache_entry0).cache_index();
     cache_value(index0_).SetInitialValue(PackValue(0));
 
     auto& cache_entry1 = system_.DeclareCacheEntry("entry1", alloc, calc,
-                                                  {cache_entry0.ticket()});
-    index1_ = cache()
-                  .CreateNewCacheEntryValue(cache_entry1, &trackers())
-                  .cache_index();
+                                                   {cache_entry0.ticket()});
+    index1_ = CreateCacheEntryValue(cache_entry1).cache_index();
     cache_value(index1_).SetInitialValue(PackValue(1));
 
-    auto& cache_entry2 = system_.DeclareCacheEntry("entry2", alloc, calc,
-                                                  {cache_entry0.ticket(),
-                                                   cache_entry1.ticket()});
-    index2_ = cache()
-                  .CreateNewCacheEntryValue(cache_entry2, &trackers())
-                  .cache_index();
+    auto& cache_entry2 = system_.DeclareCacheEntry(
+        "entry2", alloc, calc, {cache_entry0.ticket(), cache_entry1.ticket()});
+    index2_ = CreateCacheEntryValue(cache_entry2).cache_index();
     cache_value(index2_).SetInitialValue(PackValue(2));
 
     // Set the initial values and mark them up to date.
@@ -110,13 +103,10 @@ class CacheTest : public ::testing::Test {
     cache_value(index1_).set_is_up_to_date(true);
     cache_value(index2_).set_is_up_to_date(true);
 
-    auto& string_entry = system_.DeclareCacheEntry("string thing",
-                                               string("initial"),
-                                               &MySystemBase::CalcString,
-                                               {system_.time_ticket()});
-    string_index_ = cache()
-        .CreateNewCacheEntryValue(string_entry, &trackers())
-        .cache_index();
+    auto& string_entry = system_.DeclareCacheEntry(
+        "string thing", string("initial"), &MySystemBase::CalcString,
+        {system_.time_ticket()});
+    string_index_ = CreateCacheEntryValue(string_entry).cache_index();
     cache_value(string_index_).SetInitialValue(string_entry.Allocate(context_));
     EXPECT_FALSE(cache_value(string_index_).is_up_to_date());
     cache_value(string_index_).set_is_up_to_date(true);
@@ -124,9 +114,7 @@ class CacheTest : public ::testing::Test {
     auto& vector_entry =
         system_.DeclareCacheEntry("vector thing", &MySystemBase::CalcMyVector3,
                                   {system_.xc_ticket(), string_entry.ticket()});
-    vector_index_ = cache()
-                        .CreateNewCacheEntryValue(vector_entry, &trackers())
-                        .cache_index();
+    vector_index_ = CreateCacheEntryValue(vector_entry).cache_index();
     cache_value(vector_index_).SetInitialValue(vector_entry.Allocate(context_));
     EXPECT_FALSE(cache_value(vector_index_).is_up_to_date());
     cache_value(vector_index_).set_value(MyVector3d(Vector3d(99., 98., 97.)));
@@ -163,6 +151,12 @@ class CacheTest : public ::testing::Test {
     return trackers().get_mutable_tracker(dticket);
   }
 
+  const CacheEntryValue& CreateCacheEntryValue(const CacheEntry& entry) {
+    return cache().CreateNewCacheEntryValue(entry.cache_index(), entry.ticket(),
+                                            entry.description(),
+                                            entry.prerequisites(), &trackers());
+  }
+
   // Turn on logging before anything else happens.
   bool logging_enabled_ = []() {
     // log()->set_level(spdlog::level::trace);
@@ -182,8 +176,7 @@ class CacheTest : public ::testing::Test {
 TEST_F(CacheTest, ValueMethodsWork) {
   auto& cache_entry = system_.DeclareCacheEntry("get test", alloc, calc,
                                                {system_.nothing_ticket()});
-  CacheIndex index = cache()
-      .CreateNewCacheEntryValue(cache_entry, &trackers())
+  CacheIndex index = CreateCacheEntryValue(cache_entry)
       .cache_index();
   cache_value(index).SetInitialValue(PackValue(42));
 

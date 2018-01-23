@@ -19,7 +19,7 @@ namespace systems {
 
 /** Provides non-templatized functionality shared by the templatized derived
 classes. That includes caching and dependency tracking. */
-class ContextBase {
+class ContextBase : public SystemPathnameInterface {
  public:
   /** @name  Does not allow move or assignment; copy is protected. */
   /** @{ */
@@ -83,11 +83,11 @@ class ContextBase {
 
   /** (Debugging) Returns the local name of the subsystem for which this is the
   Context. See GetSystemPathname() if you want to the full name. */
-  const std::string& system_name() const { return system_name_; }
+  std::string GetSystemName() const final { return system_name_; }
 
   /** (Debugging) Returns the full pathname of the subsystem for which this is
   the Context. See get_system_pathname() if you want to the full name. */
-  std::string GetSystemPathname() const;
+  std::string GetSystemPathname() const final;
 
   /** Returns a const reference to this subcontext's cache. */
   const Cache& get_cache() const {
@@ -412,8 +412,8 @@ class ContextBase {
   void FixTrackerPointers(const ContextBase& source,
                           const DependencyTracker::PointerMap& tracker_map) {
     // First repair pointers local to this context.
-    graph_.RepairTrackerPointers(this, source.get_dependency_graph(),
-                                 tracker_map);
+    graph_.RepairTrackerPointers(source.get_dependency_graph(),
+                                 tracker_map, this, &cache_);
     // Then recursively ask our descendants to repair their pointers.
     for (SubsystemIndex i(0); i < num_subcontexts(); ++i)
       get_mutable_subcontext(i).FixTrackerPointers(source.get_subcontext(i),

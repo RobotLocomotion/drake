@@ -446,7 +446,10 @@ class Cache {
   memory address is stable after allocation in a particular Context while the
   CacheIndex remains stable even after copying the Context. */
   CacheEntryValue& CreateNewCacheEntryValue(
-      const CacheEntry& entry, DependencyGraph* graph);
+      CacheIndex index, DependencyTicket ticket,
+      const std::string& description,
+      const std::vector<DependencyTicket>& prerequisites,
+      DependencyGraph* graph);
 
   /** Returns the number of CacheEntryValue objects currently stored in this
   cache. */

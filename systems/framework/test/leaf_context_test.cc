@@ -296,7 +296,10 @@ TEST_F(LeafContextTest, SetAndGetCache) {
   const LeafContext<double>& ctx = context_;
   CacheIndex index =
       context_.get_mutable_cache()
-          .CreateNewCacheEntryValue(cache_entry,
+          .CreateNewCacheEntryValue(cache_entry.cache_index(),
+                                    cache_entry.ticket(),
+                                    cache_entry.description(),
+                                    cache_entry.prerequisites(),
                                     &context_.get_mutable_dependency_graph())
           .cache_index();
   CacheEntryValue& entry =

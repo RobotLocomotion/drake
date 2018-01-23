@@ -27,7 +27,8 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   Cache& cache = context.get_mutable_cache();
   for (CacheIndex index(0); index < num_cache_entries(); ++index) {
     const CacheEntry& entry = get_cache_entry(index);
-    cache.CreateNewCacheEntryValue(entry, &trackers);
+    cache.CreateNewCacheEntryValue(entry.cache_index(), entry.ticket(),
+        entry.description(), entry.prerequisites(), &trackers);
   }
 
   // Create the output port trackers yᵢ here. Nothing in this System may

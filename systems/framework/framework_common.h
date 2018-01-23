@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -52,6 +53,25 @@ typedef enum {
   kVectorValued = 0,
   kAbstractValued = 1,
 } PortDataType;
+
+/** Any class that can provide a System name and (for Diagrams) a subsystem
+path name should implement this interface. This is used by System and Context
+so that contained objects can provide helpful error messages and log
+diagnostics that identify the offending object within a diagram. (Diagram
+Systems and their Contexts have identical substructure.) Providing
+this as an separate interface allows us to avoid circular dependencies between
+the containers and their contained objects. */
+class SystemPathnameInterface {
+ public:
+  virtual ~SystemPathnameInterface() = default;
+
+  /** Returns the simple name of this subsystem, with no path separators. */
+  virtual std::string GetSystemName() const = 0;
+
+  /** Returns the full path name of this subsystem, starting at the root
+  of the containing Diagram, with path name separators between segments. */
+  virtual std::string GetSystemPathname() const = 0;
+};
 
 
 namespace internal {

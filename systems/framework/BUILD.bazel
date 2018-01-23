@@ -184,35 +184,46 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "framework_base",
+    name = "cache_and_dependencies",
     srcs = [
         "cache.cc",
+        "dependency_tracker.cc",
+    ],
+    hdrs = [
+        "cache.h",
+        "dependency_tracker.h",
+    ],
+    deps = [
+        ":framework_common",
+        ":value",
+        "//drake/common:copyable_unique_ptr",
+        "//drake/common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "framework_base",
+    srcs = [
         "cache_entry.cc",
         "context_base.cc",
-        "dependency_tracker.cc",
         "input_port_base.cc",
         "input_port_value.cc",
         "output_port_base.cc",
         "system_base.cc",
     ],
     hdrs = [
-        "cache.h",
         "cache_entry.h",
         "context_base.h",
-        "dependency_tracker.h",
         "input_port_base.h",
         "input_port_value.h",
         "output_port_base.h",
         "system_base.h",
     ],
     deps = [
+        ":cache_and_dependencies",
         ":framework_common",
-        ":value",
-        "//drake/common:copyable_unique_ptr",
         "//drake/common:default_scalars",
         "//drake/common:essential",
-        "//drake/common:type_safe_index",
-        "//drake/common:unused",
     ],
 )
 

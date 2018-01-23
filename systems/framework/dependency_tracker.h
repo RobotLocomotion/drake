@@ -13,7 +13,6 @@ trackers. */
 #include <utility>
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
@@ -23,9 +22,6 @@ trackers. */
 
 namespace drake {
 namespace systems {
-
-// ContextBase must include this header so we can't include context_base.h.
-class ContextBase;
 
 class DependencyGraph;  // defined below
 
@@ -101,7 +97,8 @@ computations may subscribe to any of the individual or grouped nodes. */
 // For maximum speed, DependencyTracker objects contain pointers to other
 // trackers within the same complete Context tree, not necessarily limited to
 // trackers within the same subcontext that owns the tracker. There is also
-// a back pointer to the containing DependencyGraph. These pointers provide
+// a pointer to the containing Context's system pathname service for use in
+// logging and error messages. These pointers provide
 // great performance but makes these things hard to clone because the pointers
 // have to be fixed up to point to corresponding entries in the new copy.
 //
@@ -123,15 +120,15 @@ class DependencyTracker {
   should be marked out-of-date when a prerequisite changes. The description
   should be of the associated value only, like "input port 3"; don't include
   "tracker". This constructor is only for use by DependencyGraph, and the
-  owning DependencyGraph must be supplied here and be non-null. */
-  DependencyTracker(const DependencyGraph* owning_subgraph,
-                    DependencyTicket ticket, std::string description,
+  system pathname service of the owning subcontext must be supplied here and
+  be non-null. */
+  DependencyTracker(DependencyTicket ticket, std::string description,
+                    const SystemPathnameInterface* owning_subcontext,
                     CacheEntryValue* cache_value)
-      : owning_subgraph_(owning_subgraph),
-        ticket_(ticket),
+      : ticket_(ticket),
         description_(std::move(description)),
+        owning_subcontext_(owning_subcontext),
         cache_value_(cache_value ? cache_value : &dummy_cache_value_) {
-    DRAKE_DEMAND(owning_subgraph != nullptr);
     SPDLOG_DEBUG(
         log(), "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
         description_, cache_value ? "with" : "without", size_t(cache_value),
@@ -243,24 +240,19 @@ class DependencyTracker {
   DependencyGraph. */
   DependencyTicket ticket() const { return ticket_; }
 
-  /** Returns the DependencyGraph that owns this tracker. */
-  const DependencyGraph& get_owning_subgraph() const {
-    return *owning_subgraph_;
-  }
-
   /** Assumes `this` tracker is a recent clone containing no pointers, sets
   the pointers here to addresses corresponding to those in the source tracker,
   with the help of the given map. It is a fatal error if any needed pointer is
   not present in the map. */
   void RepairTrackerPointers(const DependencyTracker& source,
                              const DependencyTracker::PointerMap& tracker_map,
+                             const SystemPathnameInterface* owning_subcontext,
                              Cache* cache);
 
   /** Copies the current tracker but with all pointers set to null. */
-  std::unique_ptr<DependencyTracker> CloneWithoutPointers(
-      const DependencyGraph* new_owner) const {
+  std::unique_ptr<DependencyTracker> CloneWithoutPointers() const {
     auto clone = std::make_unique<DependencyTracker>(
-        new_owner, ticket(), description(), nullptr);
+        ticket(), description(), nullptr, nullptr);
     clone->SetSizesAndNullPointers(*this);
     return clone;
   }
@@ -295,12 +287,18 @@ class DependencyTracker {
   // For debugging use, provide an indent of 2*depth characters.
   static std::string Indent(int depth);
 
-  // Back pointer to the subgraph that created and owns this tracker.
-  const DependencyGraph* owning_subgraph_{};
+  std::string GetSystemPathname() const {
+    DRAKE_DEMAND(owning_subcontext_!= nullptr);
+    return owning_subcontext_->GetSystemPathname();
+  }
+
   // This tracker's index within its owning DependencyGraph.
   DependencyTicket ticket_;
 
   std::string description_;
+
+  // Pointer to the system name service of the owning subcontext.
+  const SystemPathnameInterface* owning_subcontext_{};
 
   // Points to the dummy_cache_value below if we're not told otherwise.
   CacheEntryValue* cache_value_{};
@@ -354,9 +352,9 @@ class DependencyGraph {
   DependencyGraph& operator=(DependencyGraph&&) = delete;
   /** @} */
 
-  /** Constructor creates an empty graph referencing its owning subcontext.
-  The supplied pointer must not be null. */
-  explicit DependencyGraph(const ContextBase* owning_subcontext)
+  /** Constructor creates an empty graph referencing the system pathname
+  service of its owning subcontext. The supplied pointer must not be null. */
+  explicit DependencyGraph(const SystemPathnameInterface* owning_subcontext)
       : owning_subcontext_(owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr);
   }
@@ -379,7 +377,8 @@ class DependencyGraph {
     DRAKE_DEMAND(!has_tracker(known_ticket));
     if (known_ticket >= num_trackers()) graph_.resize(known_ticket + 1);
     graph_[known_ticket] = std::make_unique<DependencyTracker>(
-        this, known_ticket, std::move(description), cache_value);
+        known_ticket, std::move(description), owning_subcontext_,
+        cache_value);
     return *graph_[known_ticket];
   }
 
@@ -419,24 +418,18 @@ class DependencyGraph {
     return const_cast<DependencyTracker&>(get_tracker(ticket));
   }
 
-  /** Returns a reference to the (sub)Context of which this DependencyGraph is
-  a member. */
-  const ContextBase& get_owning_subcontext() const {
-    return *owning_subcontext_;
-  }
-
   /** (Internal use only) Copy constructor partially duplicates the source
   %DependencyGraph object, with identical structure to the source but
   with all internal pointers set to null. These must be set properly in a later
   pass to reference corresponding elements of the new Context. This should
   only be invoked by Context code as part of copying an entire Context tree.
   @see AppendToTrackerPointerMap(), RepairTrackerPointers() */
-  DependencyGraph(const DependencyGraph& source) : owning_subcontext_(nullptr) {
+  DependencyGraph(const DependencyGraph& source) {
     graph_.reserve(source.num_trackers());
     for (DependencyTicket ticket(0); ticket < source.num_trackers(); ++ticket) {
       graph_.emplace_back(
           source.has_tracker(ticket)
-              ? source.get_tracker(ticket).CloneWithoutPointers(this)
+              ? source.get_tracker(ticket).CloneWithoutPointers()
               : nullptr);
     }
   }
@@ -451,16 +444,20 @@ class DependencyGraph {
 
   /** Assumes `this` %DependencyGraph is a recent clone whose trackers do not
   yet contain subscriber and prerequisite pointers and sets the local pointers
-  to point to the `source`-corresponding trackers in the new owning context.
+  to point to the `source`-corresponding trackers in the new owning context,
+  the appropriate cache entry values in the new cache, and to the system name
+  providing service of the new owning Context for logging and error reporting.
   The supplied map should map source pointers to their corresponding trackers.
   It is an error if any old pointer we encounter is not present in the map. */
-  void RepairTrackerPointers(const ContextBase* owning_subcontext,
-                             const DependencyGraph& source,
-                             const DependencyTracker::PointerMap& tracker_map);
+  void RepairTrackerPointers(
+      const DependencyGraph& source,
+      const DependencyTracker::PointerMap& tracker_map,
+      const SystemPathnameInterface* owning_subcontext,
+      Cache* new_cache);
 
  private:
-  // Back pointer to the subcontext that owns this subgraph.
-  const ContextBase* owning_subcontext_{};
+  // The system name service of the subcontext that owns this subgraph.
+  const SystemPathnameInterface* owning_subcontext_{};
 
   // All value trackers, indexed by DependencyTicket.
   std::vector<std::unique_ptr<DependencyTracker>> graph_;
