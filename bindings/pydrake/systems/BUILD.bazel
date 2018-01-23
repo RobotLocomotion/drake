@@ -140,13 +140,14 @@ drake_py_binary(
 )
 
 drake_pybind_library(
-    name = "lifetime_test_util",
+    name = "test_util",
     testonly = 1,
     add_install = False,
-    cc_so_name = "test/lifetime_test_util",
-    cc_srcs = ["test/lifetime_test_util_py.cc"],
+    cc_so_name = "test/test_util",
+    cc_srcs = ["test/test_util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":framework_py",
         ":primitives_py",
     ],
 )
@@ -156,8 +157,8 @@ drake_py_test(
     deps = [
         ":analysis_py",
         ":framework_py",
-        ":lifetime_test_util",
         ":primitives_py",
+        ":test_util",
     ],
 )
 
@@ -168,6 +169,7 @@ drake_py_test(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        ":test_util",
     ],
 )
 
