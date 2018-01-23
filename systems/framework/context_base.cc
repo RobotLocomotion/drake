@@ -13,7 +13,7 @@ std::string ContextBase::GetSystemPathname() const {
   std::string path;
   std::for_each(path_to_root.rbegin(), path_to_root.rend(),
                 [&path](const ContextBase* node) {
-                  path += "/" + node->system_name();
+                  path += "/" + node->GetSystemName();
                 });
   return path;
 }

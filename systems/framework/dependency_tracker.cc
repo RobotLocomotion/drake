@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <utility>
 
-#include "drake/systems/framework/context_base.h"
-
 using std::pair;
 
 namespace drake {
@@ -164,8 +162,7 @@ void DependencyTracker::RemoveDownstreamSubscriber(
 }
 
 std::string DependencyTracker::GetPathDescription() const {
-  return get_owning_subgraph().get_owning_subcontext().GetSystemPathname()
-      + ":" + description();
+  return GetSystemPathname() + ":" + description();
 }
 
 // Figure out which list the prerequisite would be on, then see if it
@@ -184,8 +181,12 @@ bool DependencyTracker::HasSubscriber(
 
 void DependencyTracker::RepairTrackerPointers(
     const DependencyTracker& source,
-    const DependencyTracker::PointerMap& tracker_map, Cache* cache) {
+    const DependencyTracker::PointerMap& tracker_map,
+    const SystemPathnameInterface* owning_subcontext, Cache* cache) {
+  DRAKE_DEMAND(owning_subcontext != nullptr);
   DRAKE_DEMAND(cache != nullptr);
+  owning_subcontext_ = owning_subcontext;
+
   // Set the cache entry pointer.
   if (source.cache_value_ == &dummy_cache_value_) {
     cache_value_ = &dummy_cache_value_;
@@ -230,15 +231,15 @@ void DependencyGraph::AppendToTrackerPointerMap(
 }
 
 void DependencyGraph::RepairTrackerPointers(
-    const ContextBase* owning_subcontext, const DependencyGraph& source,
-    const DependencyTracker::PointerMap& tracker_map) {
-  DRAKE_DEMAND(owning_subcontext_ == nullptr);
+    const DependencyGraph& source,
+    const DependencyTracker::PointerMap& tracker_map,
+    const SystemPathnameInterface* owning_subcontext, Cache* new_cache) {
+  DRAKE_DEMAND(owning_subcontext != nullptr);
   owning_subcontext_ = owning_subcontext;
   for (DependencyTicket ticket(0); ticket < num_trackers(); ++ticket) {
     if (!has_tracker(ticket)) continue;
     get_mutable_tracker(ticket).RepairTrackerPointers(
-        source.get_tracker(ticket), tracker_map,
-        &owning_subcontext->get_mutable_cache());
+        source.get_tracker(ticket), tracker_map, owning_subcontext, new_cache);
   }
 }
 

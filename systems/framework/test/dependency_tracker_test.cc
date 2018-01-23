@@ -79,13 +79,22 @@ class HandBuiltDependencies : public ::testing::Test {
     entry0_ = &system_.DeclareCacheEntry(
         "entry0", alloc, calc,
         {system_.time_ticket(), middle1_->ticket(), downstream2_->ticket()});
-    auto& value = cache.CreateNewCacheEntryValue(*entry0_, &graph);
+    auto& value = cache.CreateNewCacheEntryValue(
+        entry0_->cache_index(), entry0_->ticket(),
+        entry0_->description(), entry0_->prerequisites(), &graph);
     value.SetInitialValue(entry0_->Allocate(context_));
     entry0_tracker_ = &graph.get_mutable_tracker(entry0_->ticket());
 
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(system_.time_ticket());
   }
+
+  // Turn on logging before anything else happens.
+  bool logging_enabled_ = []() {
+    // log()->set_level(spdlog::level::trace);
+    // log()->flush_on(spdlog::level::trace);
+    return true;
+  }();
 
   MySystemBase system_;
   std::unique_ptr<ContextBase> context_ptr_ = system_.AllocateContext();
@@ -179,16 +188,13 @@ TEST_F(HandBuiltDependencies, Clone) {
   auto clone_context = context_.Clone();
   // Now study the cloned graph to see if it got fixed up correctly.
   const DependencyGraph& graph = context_.get_dependency_graph();
-  EXPECT_EQ(&graph.get_owning_subcontext(), &context_);
   DependencyGraph& clone_graph = clone_context->get_mutable_dependency_graph();
-  EXPECT_EQ(&clone_graph.get_owning_subcontext(), clone_context.get());
 
   EXPECT_EQ(clone_graph.num_trackers(), graph.num_trackers());
   for (DependencyTicket ticket(0); ticket < graph.num_trackers(); ++ticket) {
     const auto& tracker = graph.get_tracker(ticket);
     const auto& clone_tracker = clone_graph.get_tracker(ticket);
     EXPECT_NE(&clone_tracker, &tracker);
-    EXPECT_EQ(&clone_tracker.get_owning_subgraph(), &clone_graph);
     EXPECT_EQ(clone_tracker.description(), tracker.description());
     EXPECT_EQ(clone_tracker.num_subscribers(), tracker.num_subscribers());
     EXPECT_EQ(clone_tracker.num_prerequisites(), tracker.num_prerequisites());
