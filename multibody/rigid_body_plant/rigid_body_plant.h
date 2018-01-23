@@ -83,7 +83,10 @@ namespace systems {
 /// addition, the model may contain loop constraints described by
 /// RigidBodyLoop instances in the multibody model. Even though loop constraints
 /// are a particular case of holonomic constraints, general holonomic
-/// constraints are not yet supported.
+/// constraints are not yet supported. For %RigidBodyPlant systems
+/// simulated using time stepping algorithms, an additional (discrete)
+/// scalar state variable stores the last time that the system's state was
+/// updated.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic
@@ -221,6 +224,9 @@ class RigidBodyPlant : public LeafSystem<T> {
 
       // Write the zero configuration into the discrete state.
       xd.SetFromVector(x0);
+
+      // Set the initial time.
+      state->get_mutable_discrete_state().get_mutable_vector(1)[0] = 0;
     } else {
       // Extract a reference to continuous state from the context.
       ContinuousState<T>& xc = state->get_mutable_continuous_state();
