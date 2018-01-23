@@ -28,5 +28,6 @@ PYBIND11_MODULE(analysis, m) {
     .def("Initialize", &Simulator<T>::Initialize)
     .def("StepTo", &Simulator<T>::StepTo)
     .def("get_context", &Simulator<T>::get_context, py_iref)
-    .def("get_mutable_context", &Simulator<T>::get_mutable_context, py_iref);
+    .def("get_mutable_context", &Simulator<T>::get_mutable_context, py_iref)
+    .def("set_target_realtime_rate", &Simulator<T>::set_target_realtime_rate);
 }
