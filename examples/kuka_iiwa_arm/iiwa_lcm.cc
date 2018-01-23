@@ -251,7 +251,8 @@ void IiwaStatusSender::OutputStatus(
 
 IiwaContactResultsToExternalTorque::IiwaContactResultsToExternalTorque(
     const RigidBodyTree<double>& tree,
-    const std::vector<int>& model_instance_ids) {
+    const std::vector<int>& model_instance_ids)
+    : num_dof_{tree.get_num_velocities()} {
   int length = 0;
   velocity_map_.resize(tree.get_num_model_instances(),
                        std::pair<int, int>(-1, -1));
@@ -273,11 +274,11 @@ IiwaContactResultsToExternalTorque::IiwaContactResultsToExternalTorque(
     if (num_velocities) {
       if (velocity_map_[instance_id].first == -1) {
         velocity_map_[instance_id] =
-          std::pair<int, int>(velocity_start_index, num_velocities);
+            std::pair<int, int>(velocity_start_index, num_velocities);
       } else {
         std::pair<int, int> map_entry = velocity_map_[instance_id];
         DRAKE_DEMAND(velocity_start_index ==
-            map_entry.first + map_entry.second);
+                     map_entry.first + map_entry.second);
         map_entry.second += num_velocities;
         velocity_map_[instance_id] = map_entry;
       }
@@ -301,11 +302,12 @@ void IiwaContactResultsToExternalTorque::OutputExternalTorque(
   int start = 0;
   const VectorX<double>& generalized_force =
       contact_results->get_contact_force_in_genearlized_coordinate();
+  DRAKE_DEMAND(generalized_force.size() == num_dof_);
+
   for (const auto& entry : velocity_map_) {
     const int v_idx = entry.first;
     const int v_length = entry.second;
-    if (v_idx == -1)
-      continue;
+    if (v_idx == -1) continue;
 
     for (int idx = 0; idx < v_length; idx++) {
       output->SetAtIndex(start + idx, generalized_force[v_idx + idx]);

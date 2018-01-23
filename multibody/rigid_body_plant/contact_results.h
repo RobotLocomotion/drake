@@ -15,7 +15,9 @@ class RigidBodyPlant;
 
 /**
  A class containg the contact results (contact points and response spatial
- forces for each colliding pair of collision elements).
+ forces for each colliding pair of collision elements) as well as the sum of
+ all J^T * F for each contact, where J is the contact point Jacobian, and F is
+ the contact force.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 

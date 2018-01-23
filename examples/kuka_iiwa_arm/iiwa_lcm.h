@@ -135,13 +135,17 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
 /// Creates and outputs lcmt_iiwa_status messages.
 ///
-/// This system has three vector-valued input ports, one for the plant's
-/// current state, one for the most recently received position command, and one
-/// for the most recently received joint torque command.
+/// This system has five vector-valued input ports, one for the plant's
+/// current state, one for the most recently received position command, one
+/// for the most recently received joint torque command, one for the plant's
+/// measured joint torque, and one for the plant's external joint torque. The
+/// last two inputs are optional. If left unconnected, the measured joint torque
+/// field in the output message will be identical to the commanded joint torque,
+/// and external torque will be filled with zeros.
 /// The state and command ports contain a position and velocity for each joint
 /// (velocity is unused, this is done to be more readily compatible with the
-/// outputs from IiwaCommandReceiver and RigidBodyPlant). The torque command
-/// port contains a single torque for each joint.
+/// outputs from IiwaCommandReceiver and RigidBodyPlant). The torque related
+/// ports contain a single torque for each joint.
 ///
 /// This system has one abstract valued output port that contains a
 /// systems::Value object templated on type `lcmt_iiwa_status`. Note that this
@@ -172,11 +176,19 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
     return this->get_input_port(2);
   }
 
+  /**
+   * Optional input port. If not connected, the joint_torque_measured field in
+   * the output message will be identical to the joint_torque_commanded field.
+   */
   const systems::InputPortDescriptor<double>& get_measured_torque_input_port()
   const {
     return this->get_input_port(3);
   }
 
+  /**
+   * Optional input port. If not connected, the joint_torque_external field in
+   * the output message will be zeros.
+   */
   const systems::InputPortDescriptor<double>& get_external_torque_input_port()
   const {
     return this->get_input_port(4);
@@ -194,12 +206,12 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
 };
 
 /**
- * A translator class that takes in systems::ContactResults and splices together
- * only the relevant sections of the contact force in the generalized
- * coordinate. The selection is determined by a set of model instance ids and
- * a RigidBodyTree reference that is used to generate ContactResults.
- * This class assumes that contact force is the only source to the external
- * torque.
+ * A translator class that converts the contact force field in
+ * systems::ContactResults to external joint torque for a set of specified
+ * model instances in RigidBodyTree. The input, systems::ContactResults, is
+ * assumed to be generated using the same RigidBodyTree. This class also assumes
+ * that contact force is the only cause of external joint torque, no other
+ * effects such as friction is considered.
  */
 class IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
  public:
@@ -209,13 +221,15 @@ class IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
    * Constructor.
    * @param tree const RigidBodyTree reference that generates ContactResults.
    * @param model_instance_ids A set of model instances in @p tree, whose
-   * corresponding generalized contact forces will be stacked and output.
+   * corresponding generalized contact forces will be stacked and output. Order
+   * of @p model_instance_ids does not matter.
    */
   IiwaContactResultsToExternalTorque(
       const RigidBodyTree<double>& tree,
       const std::vector<int>& model_instance_ids);
 
  private:
+  const int num_dof_;
   // Maps model instance ids to velocity indices and number of
   // velocity states in the RigidBodyTree.  Values are stored as a
   // pair of (index, count).
