@@ -24,15 +24,15 @@ using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 
-using geometry::Cylinder;
-using geometry::FrameId;
-using geometry::FrameIdVector;
-using geometry::FramePoseVector;
-using geometry::GeometryFrame;
-using geometry::GeometryInstance;
-using geometry::GeometrySystem;
-using geometry::SourceId;
-using geometry::Sphere;
+using drake::geometry::Cylinder;
+using drake::geometry::FrameId;
+using drake::geometry::FrameIdVector;
+using drake::geometry::FramePoseVector;
+using drake::geometry::GeometryFrame;
+using drake::geometry::GeometryInstance;
+using drake::geometry::GeometrySystem;
+using drake::geometry::SourceId;
+using drake::geometry::Sphere;
 using drake::multibody::BodyIndex;
 using drake::multibody::MultibodyTree;
 using drake::multibody::MultibodyTreeContext;
@@ -47,11 +47,11 @@ using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 using drake::multibody::VelocityKinematicsCache;
-using systems::BasicVector;
-using systems::Context;
-using systems::InputPortDescriptor;
-using systems::OutputPort;
-using systems::State;
+using drake::systems::BasicVector;
+using drake::systems::Context;
+using drake::systems::InputPortDescriptor;
+using drake::systems::OutputPort;
+using drake::systems::State;
 
 template<typename T>
 AcrobotPlant<T>::AcrobotPlant(
