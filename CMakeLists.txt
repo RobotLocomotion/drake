@@ -9,10 +9,15 @@ list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(CTest)
 
 configure_file(CTestCustom.cmake.in CTestCustom.cmake @ONLY)
-foreach(LANG C CXX)
-  set(COMPILER ${CMAKE_${LANG}_COMPILER})
-  configure_file(tools/cc_toolchain/wrapper.sh.in ${CMAKE_CURRENT_BINARY_DIR}/${LANG}_wrapper.sh @ONLY)
-endforeach()
+if(NOT APPLE)
+  foreach(LANG C CXX)
+    set(COMPILER ${CMAKE_${LANG}_COMPILER})
+    configure_file(tools/cc_toolchain/wrapper.sh.in ${CMAKE_CURRENT_BINARY_DIR}/${LANG}_wrapper.sh @ONLY)
+  endforeach()
+  set(BAZEL_ENV "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh" "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh")
+else()
+  set(BAZEL_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
+endif()
 
 if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
@@ -47,8 +52,6 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
 else()
   set(BAZEL_COMPILATION_MODE opt)
 endif()
-
-set(BAZEL_ENV "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh" "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh")
 
 set(BAZEL_ARGS
   --compilation_mode=${BAZEL_COMPILATION_MODE}
