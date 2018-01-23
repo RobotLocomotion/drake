@@ -36,13 +36,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   /// velocity) until a position message is received.  If this
   /// function is not called, the starting position will be the zero
   /// configuration.
-  void set_initial_position(
-      systems::Context<double>* context,
-      const Eigen::Ref<const VectorX<double>> x) const;
+  void set_initial_position(systems::Context<double>* context,
+                            const Eigen::Ref<const VectorX<double>> x) const;
 
  private:
-  void CopyStateToOutput(const systems::Context<double>& context,
-                         int start_idx, int length,
+  void CopyStateToOutput(const systems::Context<double>& context, int start_idx,
+                         int length,
                          systems::BasicVector<double>* output) const;
 
   void DoCalcDiscreteVariableUpdates(
@@ -108,13 +107,12 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
 
-  const systems::OutputPort<double>&
-    get_measured_position_output_port() const {
+  const systems::OutputPort<double>& get_measured_position_output_port() const {
     return this->get_output_port(measured_position_output_port_);
   }
 
-  const systems::OutputPort<double>&
-    get_commanded_position_output_port() const {
+  const systems::OutputPort<double>& get_commanded_position_output_port()
+      const {
     return this->get_output_port(commanded_position_output_port_);
   }
 
@@ -173,7 +171,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   }
 
   const systems::InputPortDescriptor<double>& get_commanded_torque_input_port()
-  const {
+      const {
     return this->get_input_port(2);
   }
 
@@ -182,7 +180,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
    * the output message will be identical to the joint_torque_commanded field.
    */
   const systems::InputPortDescriptor<double>& get_measured_torque_input_port()
-  const {
+      const {
     return this->get_input_port(3);
   }
 
@@ -191,7 +189,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
    * the output message will be zeros.
    */
   const systems::InputPortDescriptor<double>& get_external_torque_input_port()
-  const {
+      const {
     return this->get_input_port(4);
   }
 
