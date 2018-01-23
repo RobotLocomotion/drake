@@ -20,6 +20,10 @@ from pydrake.systems.primitives import (
     ZeroOrderHold,
     )
 
+from pydrake.systems.test.test_util import (
+    call_overrides,
+    )
+
 
 class CustomAdder(LeafSystem):
     # Reimplements `Adder`.
@@ -81,6 +85,28 @@ class TestCustom(unittest.TestCase):
         state = diagram.GetMutableSubsystemState(zoh, context)
         value = state.get_discrete_state().get_data()[0].get_value()
         self.assertTrue(np.allclose([5, 7, 9], value))
+
+    def test_overrides(self):
+
+        class TrivialSystem(LeafSystem):
+            def __init__(self):
+                LeafSystem.__init__(self)
+                self.called_publish = False
+                # Ensure we have desired overloads.
+                self._DeclarePeriodicPublish(0.1)
+                self._DeclarePeriodicPublish(0.1, 0)
+                self._DeclarePeriodicPublish(period=0.1, offset=0)
+
+            def _DoPublish(self, context, events):
+                # Call base `DoPublish` to ensure that we do not get
+                # recursion.
+                LeafSystem._DoPublish(self, context, events)
+                self.called_publish = True
+
+        system = TrivialSystem()
+        self.assertFalse(system.called_publish)
+        call_overrides(system)
+        self.assertTrue(system.called_publish)
 
 
 if __name__ == '__main__':
