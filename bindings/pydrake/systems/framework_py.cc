@@ -94,10 +94,8 @@ PYBIND11_MODULE(framework, m) {
     .def("get_input_port", &System<T>::get_input_port, py_iref)
     .def("get_output_port", &System<T>::get_output_port, py_iref)
     .def(
-        "_DeclareInputPort",
-        [](PySystem* self, PortDataType arg1, int arg2) -> auto&& {
-          return self->DeclareInputPort(arg1, arg2);
-        }, py_iref)
+        "_DeclareInputPort", &PySystem::DeclareInputPort, py_iref,
+        py::arg("type"), py::arg("size"), py::arg("random_type") = nullopt)
     // Context.
     .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
     .def("AllocateOutput", &System<T>::AllocateOutput)
@@ -117,12 +115,48 @@ PYBIND11_MODULE(framework, m) {
           return str_py(self->GetGraphvizString());
         });
 
-  class PyLeafSystem : public py::wrapper<LeafSystem<T>> {
+  class LeafSystemPublic : public LeafSystem<T> {
    public:
-    using Base = py::wrapper<LeafSystem<T>>;
+    using Base = LeafSystem<T>;
     using Base::Base;
+
+    // N.B. These function methods are still typed as (LeafSystem<T>::*)(...),
+    // since they are more or less visibility imports.
+    // Defining methods here won't work, as it will become
+    // (LeafSystemPublic::*)(...), since this typeid is not exposed in pybind.
+    // If needed, solution is to expose it as an intermediate type if needed.
+
     // Expose protected methods for binding.
     using Base::DeclareVectorOutputPort;
+    using Base::DeclarePeriodicPublish;
+    // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
+    // this method in `PyLeafSystem`, expose the method here for direct(-ish)
+    // access.
+    // (Otherwise, we get an error about inaccessible downcasting when trying to
+    // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
+    using Base::DoPublish;
+  };
+
+  class PyLeafSystem : public py::wrapper<LeafSystemPublic> {
+   public:
+    using Base = py::wrapper<LeafSystemPublic>;
+    using Base::Base;
+
+    // Trampoline virtual methods.
+    void DoPublish(
+        const Context<T>& context,
+        const vector<const PublishEvent<T>*>& events) const override {
+      // Yuck! We have to dig in and use internals :(
+      // We must ensure that pybind only sees pointers, since this method may
+      // be called from C++, and pybind will not have seen these objects yet.
+      // @see https://github.com/pybind/pybind11/issues/1241
+      // TODO(eric.cousineau): Figure out how to supply different behavior,
+      // possibly using function wrapping.
+      PYBIND11_OVERLOAD_INT(
+          void, LeafSystem<T>, "_DoPublish", &context, events);
+      // If the macro did not return, use default functionality.
+      LeafSystem<T>::DoPublish(context, events);
+    }
   };
 
   // Don't use a const-rvalue as a function handle parameter, as pybind11 wants
@@ -143,7 +177,10 @@ PYBIND11_MODULE(framework, m) {
                 return arg2(&nest_arg1, nest_arg2);
               };
           return self->DeclareVectorOutputPort(arg1, wrapped);
-        }, py_iref);
+        }, py_iref)
+    .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
+         py::arg("period"), py::arg("offset") = 0., py_iref)
+    .def("_DoPublish", &LeafSystemPublic::DoPublish);
 
   py::class_<Context<T>>(m, "Context")
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
@@ -170,6 +207,10 @@ PYBIND11_MODULE(framework, m) {
         }, py_ref,
         // Keep alive, ownership: `return` keeps `Context` alive.
         py::keep_alive<0, 3>());
+
+  // Event mechanisms.
+  py::class_<Event<T>>(m, "Event");
+  py::class_<PublishEvent<T>, Event<T>>(m, "PublishEvent");
 
   // Glue mechanisms.
   py::class_<DiagramBuilder<T>>(m, "DiagramBuilder")

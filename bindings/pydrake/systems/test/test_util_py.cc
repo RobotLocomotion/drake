@@ -44,7 +44,10 @@ class DeleteListenerVector : public BasicVector<T> {
 
 }  // namespace
 
-PYBIND11_MODULE(lifetime_test_util, m) {
+PYBIND11_MODULE(test_util, m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::systems;
+
   // Import dependencies.
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
@@ -55,4 +58,13 @@ PYBIND11_MODULE(lifetime_test_util, m) {
   py::class_<DeleteListenerVector, BasicVector<T>>(
       m, "DeleteListenerVector")
     .def(py::init<std::function<void()>>());
+
+  // Call overrides to ensure a custom Python class can override these methods.
+  m.def("call_overrides", [](const LeafSystem<T>* system) {
+    auto context = system->AllocateContext();
+    // Call `Publish` to test `DoPublish`.
+    auto events =
+        LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    system->Publish(*context, *events);
+  });
 }
