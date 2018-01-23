@@ -47,6 +47,7 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":acrobot_plant",
+        "//drake/common:text_logging_gflags",
         "//drake/geometry:geometry_visualization",
         "//drake/systems/analysis:implicit_euler_integrator",
         "//drake/systems/analysis:runge_kutta3_integrator",

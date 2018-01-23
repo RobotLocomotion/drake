@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/multibody/acrobot/acrobot_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
@@ -191,5 +192,6 @@ int main(int argc, char* argv[]) {
       "with GeometrySystem visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   return drake::examples::multibody::acrobot::do_main();
 }
