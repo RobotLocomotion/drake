@@ -370,6 +370,7 @@ drake_cc_library(
     hdrs = ["type_safe_index.h"],
     deps = [
         ":essential",
+        ":hash",
         ":nice_type_name",
     ],
 )
