@@ -584,6 +584,14 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
+  /// Returns a constant reference to the joint with unique index `joint_index`.
+  /// This method aborts when `joint_index` does not correspond to a joint in
+  /// this multibody tree.
+  const Joint<T>& get_joint(JointIndex joint_index) const {
+    DRAKE_ASSERT(joint_index < get_num_joints());
+    return *owned_joints_[joint_index];
+  }
+
   /// Returns a constant reference to the frame with unique index `frame_index`.
   /// This method aborts in Debug builds when `frame_index` does not correspond
   /// to a frame in `this` multibody tree.

@@ -61,6 +61,7 @@ MultibodyPlant<T>::MultibodyPlant() :
   model_ = std::make_unique<MultibodyTree<T>>();
 }
 
+#if 0
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant(
     geometry::SourceId source_id,
@@ -73,6 +74,7 @@ MultibodyPlant<T>::MultibodyPlant(
   // TODO(amcastro-tri): verify all frame ids actually are part of the
   // geometry system.
 }
+#endif
 
 template<typename T>
 template<typename U>
@@ -85,19 +87,50 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
 }
 
 template<typename T>
+void MultibodyPlant<T>::RegisterGeometry(
+    const Body<T>& body,
+    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    geometry::GeometrySystem<double>* geometry_system) {
+  DRAKE_THROW_UNLESS(!this->is_finalized());
+
+  // If not already done, register with the provided geometry system.
+  if (!geometry_source_is_registered())
+    source_id_ = geometry_system->RegisterSource("MultibodyPlant");
+
+  // If not already done, register a frame for this body.
+  if (!body_has_registered_frame(body)) {
+    body_index_to_frame_id_[body.get_index()] =
+        geometry_system->RegisterFrame(
+            source_id_.value(),
+            GeometryFrame(
+                // TODO: add body names!!
+                "Body" + std::to_string(body.get_index()),
+                /* Initial pose ??? */
+                Isometry3<double>::Identity()));
+  }
+
+  // Register geometry in the body frame.
+  geometry_system->RegisterGeometry(
+      source_id_.value(), body_index_to_frame_id_[body.get_index()],
+      std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
+}
+
+template<typename T>
 void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
-  DRAKE_DEMAND(model_->topology_is_valid());
+  DRAKE_DEMAND(this->is_finalized());
 
   this->DeclareContinuousState(
       BasicVector<T>(model_->get_num_states()),
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
+#if 0
   // Declare a vector input of size one for an applied torque at the
   // elbow joint.
   applied_torque_input_ =
       this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
+#endif
 
   // Declare a port that outputs the state.
   state_output_port_ = this->DeclareVectorOutputPort(
@@ -105,7 +138,6 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
       &MultibodyPlant::CopyStateOut).get_index();
 }
 
-#if 0
 template<typename T>
 void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
   geometry_id_port_ =
@@ -117,7 +149,6 @@ void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
           &MultibodyPlant::AllocateFramePoseOutput,
           &MultibodyPlant::CalcFramePoseOutput).get_index();
 }
-#endif
 
 template <typename T>
 FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
@@ -129,8 +160,9 @@ FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
   // Add a frame for the one single body in this model.
   // ids are ordered by body index. This must be consistent with the order in
   // which CalcFramePoseOutput() places the poses in its output.
-  //for (auto it : body_index_to_frame_id_)
-    //ids.AddFrameId(it.second);
+  // Not all bodies need go have geometry.
+  for (auto it : body_index_to_frame_id_)
+    ids.AddFrameId(it.second);
   return ids;
 }
 
@@ -148,9 +180,10 @@ FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
   DRAKE_DEMAND(source_id_ != nullopt);
   FramePoseVector<T> poses(source_id_.value());
-  // There are as many frames in the geometry system as bodies in the plant
-  // (minus the world).
-  poses.mutable_vector().resize(num_bodies() - 1);
+  // Only the pose for bodies for which geometry has been regiestered needs to
+  // be placed in the output.
+  const int num_bodies_with_geometry = body_index_to_frame_id_.size();
+  poses.mutable_vector().resize(num_bodies_with_geometry);
   return poses;
 }
 
@@ -165,9 +198,11 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
   std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
-  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+  int pose_index = 0;
+  for (const auto it : body_index_to_frame_id_) {
+    const BodyIndex body_index = it.first;
     const Body<T>& body = model_->get_body(body_index);
-    pose_data[body_index] = pc.get_X_WB(body.get_node_index());
+    pose_data[pose_index++] = pc.get_X_WB(body.get_node_index());
   }
 }
 
@@ -181,29 +216,34 @@ void MultibodyPlant<T>::CopyStateOut(const systems::Context<T>& context,
   output->SetFromVector(state_vector);
 }
 
-#if 0
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
 const {
+  DRAKE_THROW_UNLESS(is_finalized());
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
+  DRAKE_THROW_UNLESS(is_finalized());
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
+#if 0
 template <typename T>
 const InputPortDescriptor<T>& MultibodyPlant<T>::get_input_port() const {
   return systems::System<T>::get_input_port(applied_torque_input_);
 }
+#endif
 
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
+  DRAKE_THROW_UNLESS(is_finalized());
   return systems::System<T>::get_output_port(state_output_port_);
 }
-#endif
 
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
@@ -211,14 +251,13 @@ void MultibodyPlant<T>::Finalize() {
   DeclareStateAndPorts();
   // Only declare ports to communicate with a GeometrySystem if the plant is
   // provided with a valid source id.
-  //if (source_id_) DeclareGeometrySystemPorts();
+  if (source_id_) DeclareGeometrySystemPorts();
 }
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
 MultibodyPlant<T>::DoMakeContext() const {
-  MultibodyPlant<T>* nonconst_this = const_cast<MultibodyPlant<T>*>(this);
-  nonconst_this->Finalize();
+  DRAKE_THROW_UNLESS(is_finalized());
   return std::make_unique<MultibodyTreeContext<T>>(model_->get_topology());
 }
 
