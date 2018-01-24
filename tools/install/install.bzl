@@ -268,8 +268,10 @@ def _install_java_launcher_actions(
     filename = target[MainClassInfo].filename
     file_dest = join_paths(dest, filename)
     file_dest = _rename(file_dest, rename)
+    jvm_flags = target[MainClassInfo].jvm_flags
 
     actions.append(struct(dst = file_dest, classpath = classpath,
+                          jvm_flags = jvm_flags,
                           main_class = main_class))
 
     return actions
@@ -282,8 +284,9 @@ def _install_code(action):
 #------------------------------------------------------------------------------
 # Generate install code for a java launcher.
 def _java_launcher_code(action):
-    return "create_java_launcher(%r, %r, %r)" % (action.dst, action.classpath,
-                                                 action.main_class)
+    return "create_java_launcher(%r, %r, %r, %r)" % (
+        action.dst, action.classpath, " ".join(action.jvm_flags),
+        action.main_class)
 
 #END internal helpers
 #==============================================================================

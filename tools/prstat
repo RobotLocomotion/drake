@@ -19,7 +19,7 @@ excludes="$excludes --exclude=*/dev/*"
 # generated code.  See https://github.com/Reviewable/Reviewable/wiki/FAQ.
 marker="GENERATED FILE ""DO NOT EDIT"
 toplevel=$(git rev-parse --show-toplevel)
-git_base_path=upstream/master
+git_base_path=$(git merge-base upstream/master HEAD)
 for relpath in $(git diff $git_base_path | lsdiff $excludes --strip=1); do
     if fgrep -s -q -e"$marker" $toplevel/$relpath; then
         excludes="$excludes --exclude=$relpath"

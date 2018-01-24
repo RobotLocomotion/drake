@@ -40,8 +40,11 @@ namespace acrobot {
 /// @param b2 Damping coefficient of the elbow joint (kg*m^2/s).
 /// @param g Gravitational constant (m/s^2).
 ///
-/// The parameters are defaulted to values in Spong's paper (see
-/// acrobot_spong_controller.cc for more details).
+/// The parameters are defaulted to values in Spong's paper [Spong 1994].
+///
+///  - [Spong 1994] Spong, M.W., 1994. Swing up control of the acrobot.
+///    In Robotics and Automation, 1994. Proceedings., 1994 IEEE International
+///    Conference on (pp. 2356-2361). IEEE.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -149,12 +152,11 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
 
-  // No inputs implies no feedthrough; this makes it explicit.
+  // The input torque is not a direct feedthrough; this makes it explicit.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
     return false;
   }
 
-  // It creates an empty context with no state or parameters.
   // This override gives System::AllocateContext() the chance to create a more
   // specialized context type, in this case, a MultibodyTreeContext.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
@@ -198,7 +200,7 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
   double m1_{nan()}, m2_{nan()},  // In kilograms.
       l1_{nan()}, l2_{nan()},     // In meters.
       lc1_{nan()}, lc2_{nan()},   // In meters.
-      Ic1_{nan()}, Ic2_{nan()},   // In Kgr⋅m².
+      Ic1_{nan()}, Ic2_{nan()},   // In kg⋅m².
       b1_{nan()}, b2_{nan()},     // In N⋅m⋅s.
       g_{nan()};                  // In m/s².
 

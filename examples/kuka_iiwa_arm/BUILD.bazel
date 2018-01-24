@@ -103,6 +103,9 @@ drake_example_cc_binary(
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",
     ],
+    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
+    # causes timeouts in kcov.
+    tags = ["no_kcov"],
     test_rule_args = ["--simulation_sec=0.01"],
     # Flaky because LCM self-test can fail (PR #7311)
     test_rule_flaky = 1,
@@ -123,6 +126,9 @@ drake_example_cc_binary(
         ":models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
+    # causes timeouts in kcov.
+    tags = ["no_kcov"],
     test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
     # Flaky because LCM self-test can fail (PR #7311)
     test_rule_flaky = 1,
@@ -226,6 +232,9 @@ sh_test(
     ],
     # Flaky because LCM self-test can fail (PR #7311)
     flaky = 1,
+    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
+    # causes timeouts in kcov.
+    tags = ["no_kcov"],
 )
 
 # This examples needs to be install for external projects such as Spartan.

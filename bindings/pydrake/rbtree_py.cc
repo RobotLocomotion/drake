@@ -6,6 +6,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -17,6 +18,7 @@ PYBIND11_MODULE(_rbtree_py, m) {
   using drake::AutoDiffXd;
   using drake::multibody::joints::FloatingBaseType;
   using drake::parsers::PackageMap;
+  namespace sdf = drake::parsers::sdf;
 
   py::module::import("pydrake.parsers");
 
@@ -192,7 +194,8 @@ PYBIND11_MODULE(_rbtree_py, m) {
 
   py::class_<RigidBody<double> >(m, "RigidBody")
     .def("get_name", &RigidBody<double>::get_name)
-    .def("get_body_index", &RigidBody<double>::get_body_index);
+    .def("get_body_index", &RigidBody<double>::get_body_index)
+    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass);
 
   py::class_<RigidBodyFrame<double>,
              std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
@@ -205,4 +208,8 @@ PYBIND11_MODULE(_rbtree_py, m) {
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         &drake::parsers::urdf::\
           AddModelInstanceFromUrdfStringSearchingInRosPackages);
+  m.def("AddModelInstancesFromSdfString",
+        &sdf::AddModelInstancesFromSdfString);
+  m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
+        &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages);
 }

@@ -3,6 +3,7 @@
 #include <limits>
 #include <regex>
 #include <sstream>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -492,16 +493,16 @@ GTEST_TEST(TypeSafeIndex, ConstructorAvailability) {
 // Confirms that type safe indexes are configured to serve as key and/or values
 // within std::unordered_map
 GTEST_TEST(TypeSafeIndex, CompatibleWithUnorderedMap) {
-  std::unordered_map<BIndex, AIndex> indexes;
+  std::unordered_map<AIndex, std::string> indexes;
   AIndex a1(1), a2(2), a3(3);
-  BIndex b1(0), b2(2), b3(6);
-  indexes.emplace(b1, a1);
-  indexes.emplace(b2, a2);
-  EXPECT_EQ(indexes.find(b3), indexes.end());
-  EXPECT_NE(indexes.find(b2), indexes.end());
-  EXPECT_NE(indexes.find(b1), indexes.end());
-  indexes[b3] = a3;
-  EXPECT_NE(indexes.find(b3), indexes.end());
+  std::string s1("hello"), s2("unordered"), s3("map");
+  indexes.emplace(a1, s1);
+  indexes.emplace(a2, s2);
+  EXPECT_EQ(indexes.find(a3), indexes.end());
+  EXPECT_NE(indexes.find(a2), indexes.end());
+  EXPECT_NE(indexes.find(a1), indexes.end());
+  indexes[a3] = s3;
+  EXPECT_NE(indexes.find(a3), indexes.end());
 }
 
 // Confirms that type safe indexes are configured to serve as values

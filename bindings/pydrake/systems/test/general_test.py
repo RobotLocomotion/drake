@@ -40,6 +40,8 @@ class TestGeneral(unittest.TestCase):
         # Create simulator with basic constructor.
         simulator = Simulator(system)
         simulator.Initialize()
+        simulator.set_target_realtime_rate(0)
+        simulator.set_publish_every_time_step(True)
         self.assertTrue(simulator.get_context() is
                         simulator.get_mutable_context())
         check_output(simulator.get_context())

@@ -59,17 +59,17 @@ def _platform_copts(rule_copts, rule_gcc_copts, cc_test = 0):
     if cc_test:
         extra_gcc_flags = GCC_CC_TEST_FLAGS
     return select({
-        "//tools/cc_toolchain:gcc4.9-linux":
-            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
+        "//tools/cc_toolchain:apple": CLANG_FLAGS + rule_copts,
+        "//tools/cc_toolchain:clang4.0-linux": CLANG_FLAGS + rule_copts,
         "//tools/cc_toolchain:gcc5-linux":
             GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
-        "//tools/cc_toolchain:clang3.9-linux": CLANG_FLAGS + rule_copts,
-        "//tools/cc_toolchain:apple": CLANG_FLAGS + rule_copts,
+        "//tools/cc_toolchain:gcc6-linux":
+            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
         "//conditions:default": rule_copts,
     })
 
 def _dsym_command(name):
-    """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
+    """Returns the command to produce .dSYM on macOS, or a no-op on Linux."""
     return select({
         "//tools/cc_toolchain:apple_debug":
             "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",

@@ -49,13 +49,10 @@ class SystemWithNumericParameters : public LeafSystem<double> {
 
 class SystemWithAbstractParameters : public LeafSystem<double> {
  public:
-  SystemWithAbstractParameters() {}
-  ~SystemWithAbstractParameters() override {}
-
-
-  std::unique_ptr<Parameters<double>> AllocateParameters() const override {
-    return std::make_unique<Parameters<double>>(PackValue<int>(2048));
+  SystemWithAbstractParameters() {
+    this->DeclareAbstractParameter(Value<int>(2048));
   }
+  ~SystemWithAbstractParameters() override {}
 };
 
 class DiagramContextTest : public ::testing::Test {

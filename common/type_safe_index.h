@@ -1,10 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <limits>
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/hash.h"
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
@@ -453,7 +453,7 @@ namespace std {
 template <typename Tag>
 struct hash<drake::TypeSafeIndex<Tag>> {
   size_t operator()(const drake::TypeSafeIndex<Tag>& index) const {
-    return hash<int64_t>()(index);
+    return std::hash<int>()(index);
   }
 };
 }  // namespace std

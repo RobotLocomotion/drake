@@ -4,6 +4,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -40,6 +41,28 @@ PYBIND11_MODULE(framework, m) {
   // for `keep_alive`, as it is implicit.
   auto py_iref = py::return_value_policy::reference_internal;
 
+  // `py::keep_alive` is used heavily throughout this code. For more
+  // information, please see:
+  // http://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive
+  // Terse notes are added to method bindings to indicate the patient
+  // (object being kept alive by nurse) and the nurse (object keeping patient
+  // alive).
+  // - "Keep alive, ownership" implies that one argument is owned directly by
+  // one of the other arguments (`self` is included in those arguments, for
+  // `py::init<>` and class methods).
+  // - "Keep alive, reference" implies a reference that is lifetime-sensitive
+  // (something that is not necessarily owned by the other arguments).
+  // - "Keep alive, transitive" implies a transfer of ownership of owned
+  // objects from one container to another. (e.g. transfering all `System`s
+  // from `DiagramBuilder` to `Diagram` when calling
+  // `DiagramBuilder.Build()`.)
+  // N.B. `py::return_value_policy::reference_internal` implies
+  // `py::keep_alive<0, 1>`, which implies
+  // "Keep alive, reference: `return` keeps `self` alive".
+
+  // TODO(eric.cousineau): Move these notes to `pydrake/pydrake_pybind.h`, to
+  // be used with other utilities; Doxygen-ize them.
+
   m.doc() = "Bindings for the core Systems framework.";
 
   // TODO(eric.cousineau): At present, we only bind doubles.
@@ -72,10 +95,8 @@ PYBIND11_MODULE(framework, m) {
     .def("get_input_port", &System<T>::get_input_port, py_iref)
     .def("get_output_port", &System<T>::get_output_port, py_iref)
     .def(
-        "_DeclareInputPort",
-        [](PySystem* self, PortDataType arg1, int arg2) -> auto&& {
-          return self->DeclareInputPort(arg1, arg2);
-        }, py_iref)
+        "_DeclareInputPort", &PySystem::DeclareInputPort, py_iref,
+        py::arg("type"), py::arg("size"), py::arg("random_type") = nullopt)
     // Context.
     .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
     .def("AllocateOutput", &System<T>::AllocateOutput)
@@ -95,12 +116,48 @@ PYBIND11_MODULE(framework, m) {
           return str_py(self->GetGraphvizString());
         });
 
-  class PyLeafSystem : public py::wrapper<LeafSystem<T>> {
+  class LeafSystemPublic : public LeafSystem<T> {
    public:
-    using Base = py::wrapper<LeafSystem<T>>;
+    using Base = LeafSystem<T>;
     using Base::Base;
+
+    // N.B. These function methods are still typed as (LeafSystem<T>::*)(...),
+    // since they are more or less visibility imports.
+    // Defining methods here won't work, as it will become
+    // (LeafSystemPublic::*)(...), since this typeid is not exposed in pybind.
+    // If needed, solution is to expose it as an intermediate type if needed.
+
     // Expose protected methods for binding.
     using Base::DeclareVectorOutputPort;
+    using Base::DeclarePeriodicPublish;
+    // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
+    // this method in `PyLeafSystem`, expose the method here for direct(-ish)
+    // access.
+    // (Otherwise, we get an error about inaccessible downcasting when trying to
+    // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
+    using Base::DoPublish;
+  };
+
+  class PyLeafSystem : public py::wrapper<LeafSystemPublic> {
+   public:
+    using Base = py::wrapper<LeafSystemPublic>;
+    using Base::Base;
+
+    // Trampoline virtual methods.
+    void DoPublish(
+        const Context<T>& context,
+        const vector<const PublishEvent<T>*>& events) const override {
+      // Yuck! We have to dig in and use internals :(
+      // We must ensure that pybind only sees pointers, since this method may
+      // be called from C++, and pybind will not have seen these objects yet.
+      // @see https://github.com/pybind/pybind11/issues/1241
+      // TODO(eric.cousineau): Figure out how to supply different behavior,
+      // possibly using function wrapping.
+      PYBIND11_OVERLOAD_INT(
+          void, LeafSystem<T>, "_DoPublish", &context, events);
+      // If the macro did not return, use default functionality.
+      LeafSystem<T>::DoPublish(context, events);
+    }
   };
 
   // Don't use a const-rvalue as a function handle parameter, as pybind11 wants
@@ -121,13 +178,18 @@ PYBIND11_MODULE(framework, m) {
                 return arg2(&nest_arg1, nest_arg2);
               };
           return self->DeclareVectorOutputPort(arg1, wrapped);
-        }, py_iref);
+        }, py_iref)
+    .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
+         py::arg("period"), py::arg("offset") = 0., py_iref)
+    .def("_DoPublish", &LeafSystemPublic::DoPublish);
 
   py::class_<Context<T>>(m, "Context")
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort), py_iref)
+             &Context<T>::FixInputPort), py_iref,
+         // Keep alive, ownership: `BasicVector` keeps `self` alive.
+         py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
@@ -143,7 +205,13 @@ PYBIND11_MODULE(framework, m) {
           // @note Use `auto&&` to get perfect forwarding.
           // @note Compiler does not like `py::overload_cast` with this setup?
           return self->GetMutableSubsystemState(arg1, arg2);
-        }, py_ref, py::keep_alive<0, 3>());
+        }, py_ref,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+        py::keep_alive<0, 3>());
+
+  // Event mechanisms.
+  py::class_<Event<T>>(m, "Event");
+  py::class_<PublishEvent<T>, Event<T>>(m, "PublishEvent");
 
   // Glue mechanisms.
   py::class_<DiagramBuilder<T>>(m, "DiagramBuilder")
@@ -152,14 +220,20 @@ PYBIND11_MODULE(framework, m) {
         "AddSystem",
         [](DiagramBuilder<T>* self, unique_ptr<System<T>> arg1) {
           return self->AddSystem(std::move(arg1));
-        })
+        },
+        // Keep alive, ownership: `System` keeps `self` alive.
+        py::keep_alive<2, 1>())
     .def("Connect",
          py::overload_cast<const OutputPort<T>&, const InputPortDescriptor<T>&>(
              &DiagramBuilder<T>::Connect))
     .def("ExportInput", &DiagramBuilder<T>::ExportInput, py_iref)
     .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py_iref)
-    .def("Build", &DiagramBuilder<T>::Build)
-    .def("BuildInto", &DiagramBuilder<T>::BuildInto);
+    .def("Build", &DiagramBuilder<T>::Build,
+         // Keep alive, transitive: `return` keeps `self` alive.
+         py::keep_alive<1, 0>())
+    .def("BuildInto", &DiagramBuilder<T>::BuildInto,
+         // Keep alive, transitive: `Diagram` keeps `self` alive.
+         py::keep_alive<2, 1>());
 
   // TODO(eric.cousineau): Figure out how to handle template-specialized method
   // signatures(e.g. GetValue<T>()).
