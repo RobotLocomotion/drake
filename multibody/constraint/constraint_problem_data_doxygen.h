@@ -115,10 +115,7 @@ if c(.) is nonholonomic and has been differentiated once with respect to time
 (again, for DAE/DCP index reduction). Constraints with acceleration-level
 unknowns can be also be modified to incorporate terms dependent on constraint
 forces, like:<pre>
-c̅(t,q,v;v̇,λ) = 0
-</pre>
-where<pre>
-c̅(t,q,v;v̇,λ) ≡ c̈(t,q,v;v̇) + λ
+c̈ + λ = 0
 </pre>
 Making the constraint type above more general by permitting unknowns over λ
 allows constraints to readily express, e.g., sliding Coulomb friction
@@ -149,7 +146,7 @@ Both truncation and rounding errors can prevent constraints from being
 exactly satisfied. For example, consider the bilateral holonomic constraint
 equation c(t,q) = 0. Even if
 c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, it is often
-true that c(t₁,q(t₁)) will be zero for sufficiently large Δt = t₁ - t₀.
+true that c(t₁,q(t₁)) will be nonzero for sufficiently large Δt = t₁ - t₀.
 One way to address this constraint "drift" is through *dynamic stabilization*.
 In particular, holonomic unilateral constraints that have been differentiated
 twice with respect to time can be modified from:<pre>
@@ -355,7 +352,7 @@ introduces a new constraint equation:<pre>
 where ᶜλ is the force due to Coulomb friction, μ is the (dimensionless)
 Coulomb coefficient of friction, and λ retains its previous definition.
 The frictional force ᶜλ is applied against the direction of sliding between
-two bodies. When there is no sliding, Coulomb friction does not apply; those
+two bodies. When there is no sliding, this equation does not apply; those
 cases can be treated using special equations for stiction (as Drake's
 constraint problem data does, see @ref frictional_constraints), by applying no
 force at all, or by using a "regularized" Coulomb friction model (using e.g.,
@@ -408,8 +405,16 @@ Baumgarte Stabilization would be layered on top of this equation, resulting in:
 <pre>
 0 ≤ c̈ + 2αċ + β²c + ελ  ⊥  λ ≥ 0
 </pre>
-Note that *neither Baumgarte Stabilization nor constraint regularization/
-softening affects the definition of c(.)'s Jacobian*.
+
+<h4>Effects of constraint regularization/softening and stabilization on
+constraint problem data</h4>
+
+  - Constraint regularization/softening is effected through `gammaN`
+  - Constraint stabilization is effected through `kN`
+  - Note that *neither Baumgarte Stabilization nor constraint regularization/
+    softening affects the definition of c(.)'s Jacobian* operators, `N_mult` and
+    either `N_minus_muQ_transpose_mult` (ConstraintAccelProblemData) or
+    `N_transpose_mult` (ConstraintVelProblemData).
 */
  
 /** @defgroup frictional_constraints Frictional constraints
@@ -508,6 +513,27 @@ fᴺ and fᵇ now reflect impulsive forces, and, similarly, Λ now corresponds t
 residual tangential velocity post-impact. The remainder of the discussion in
 the previous section, apart from these modifications to the constraints, still
 applies. 
+
+<h4>Effects of constraint regularization/softening and stabilization on
+constraint problem data</h4>
+
+It is expected both that users will not wish to soften the frictional
+constraints and that constraint drift will remain sufficiently small that
+constraint stabilization will not be required. Nevertheless, Drake provides
+infrastructure that permits using these capabilities:
+
+  - Regularization/softening of the no-slip constraint is effected through
+    `gammaF`
+  - Regularization/softening of the linearized version of the Coulomb friction
+    relationship constraint (i.e., μ⋅fᴺ = 1ᵀfᵇ) is effected through
+    `gammaE`. A positive value of `gammaE` corresponds to permitting the
+    linearized frictional force to lie outside of the friction cone
+    (μ⋅fᴺ < 1ᵀfᵇ); a zero value of `gammaE` requires the linearized
+    frictional force force to lie inside or on the friction cone.
+  - Constraint stabilization of the no-slip constraint is effected through `kF`
+  - Note that *neither Baumgarte Stabilization nor constraint regularization/
+    softening affects the definition of c(.)'s Jacobian* operators, `F_mult` and
+    `F_transpose_mult`.
 */
 
 /** @defgroup generic_bilateral Generic bilateral constraints
@@ -597,8 +623,14 @@ Baumgarte Stabilization would be layered on top of this equation, resulting in:
 <pre>
 0 ≤ c̈ + 2αċ + β²c + ελᵢ  ⊥  λᵢ ≥ 0
 </pre>
-Note that *neither Baumgarte Stabilization nor constraint regularization/
-softening affects the definition of c(.)'s Jacobian*.
 
+<h4>Effects of constraint regularization/softening and stabilization on
+constraint problem data</h4>
+
+  - Constraint regularization/softening is effected through `gammaL`
+  - Constraint stabilization is effected through `kL`
+  - Note that *neither Baumgarte Stabilization nor constraint regularization/
+    softening affects the definition of c(.)'s Jacobian* operators, `L_mult` and
+    `L_transpose_mult`.
 */
 
