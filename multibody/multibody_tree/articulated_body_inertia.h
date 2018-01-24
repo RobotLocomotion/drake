@@ -11,20 +11,61 @@
 namespace drake {
 namespace multibody {
 
-/// This class represents the physical concept of a _Articulated Body Inertia_.
-/// An articulated body inertia encapsulates the mass distribution, first
-/// moment distribution, and rotational inertia of an articulated body A.
-/// Unlike spatial inertia, articulated body inertia does not provide a center
-/// of mass.
+/// _Articulated %Body Inertia_ is the inertia that a body appears to have when
+/// it is the base (or root) of a rigid-body system, also referred to as
+/// _Articulated %Body_ in the context of articulated body algorithms.
+/// The _Articulated %Body Inertia_ is a very useful multibody dynamics concept
+/// that was introduced by Featherstone [Featherstone 1983] to develop the
+/// remarkable `O(n)` Articulated Body Algorithm (ABA) for solving forward
+/// dynamics. Recall that the Newton-Euler equations allow us to describe the
+/// combined rotational and translational dynamics of a rigid body: <pre>
+///   F_BBo_W = M_B_W * A_WB + b_Bo_W                                    (1)
+/// </pre>
+/// where the spatial inertia (see SpatialInertia) `M_B_W` of body B expressed
+/// in the world frame W linearly relates the spatial acceleration (see
+/// SpatialAcceleration) of body B in the world frame with the total applied
+/// spatial forces (see SpatialForce) `F_BBo` on body B and where `b_Bo_W`
+/// contains the velocity dependent gyroscopic terms.
 ///
-/// An articulated body inertia is an element of ℝ⁶ˣ⁶ that is symmetric and
-/// positive semi-definite. While spatial inertia requires only 10 parameters
-/// to describe, an articulated body inertia requires 21 parameters [Jain 2010].
+/// A similar relationship is found for an articulated body with a rigid body B
+/// at the base (or root). Even though the bodies in this multibody system are
+/// allowed to have relative motions among them, there still is a linear
+/// relationship between the spatial force `F_BBo_W` applied on this body and
+/// the resulting acceleration `A_WB`: <pre>
+///   F_BBo_W = P_B_W * A_WB + z_Bo_W                                       (2)
+/// </pre>
+/// where `P_B_W` is the articulated body inertia of body B and `z_Bo_W` is a
+/// bias force that becomes zero when all applied generalized forces outboard
+/// from body B are zero [Jain 2010, §6.3.1]. The articulated body inertia
+/// `P_B_W` is related to the multibody subsystem consisting only of bodies that
+/// are outboard of body B. We refer to this subsystem as the
+/// _articulated body subsystem_ associated with body B. Equation (2) describes
+/// the acceleration response of body B, but also taking into account all
+/// outboard bodies connected to B. A special case is that of an articulated
+/// body composed of a single rigid body. For this special case, Eq. (2) reduces
+/// to Eq. (1) for the dynamics of rigid body B. In other words, the ABI for an
+/// articulated body consisting of a single rigid body exactly equals the
+/// spatial inertia of that body.
 ///
-/// In typeset material we use the symbol @f$ [P^{A/Q}]_E @f$ to represent the
-/// articulated body inertia of an articulated body A, about point Q, and
-/// expressed in frame E. For this inertia, the monogram notation reads
-/// `P_AQ_E`.
+/// Articulated body inertias are elements of ℝ⁶ˣ⁶ that, as spatial inertias,
+/// are symmetric and positive semi-definite. However, ABI objects **are not**
+/// spatial inertias. The spatial inertia of a rigid body can be described by a
+/// reduced set of ten parameters, namely the mass, center of mass and the six
+/// components of the rotational inertia for that body. However, this
+/// parametrization by ten parameters is just not possible for an ABI and the
+/// full 21 elements of the symmetric `6x6` matrix must be specified
+/// [Jain 2010, §6.4]. As a result ABI objects can have different properties
+/// than spatial inertia objects. As an example, the apparent mass of an
+/// articulated body will in general depend on the direction of the applied
+/// force. That is, the simple relationship `F = m * a` is no longer valid for
+/// an articulated body's center of mass (refer to the excellent example 7.1 in
+/// [Featherstone 2008]).
+///
+/// We adopt the notation introduced by [Jain 2010] and generally we will use
+/// an uppercase P to represent an ABI. Thus, in typeset material we use the
+/// symbol @f$ [P^{A/Q}]_E @f$ to represent the spatial inertia of an
+/// articulated body A, about a point Q, expressed in a frame E. For this
+/// inertia, the monogram notation reads `P_AQ_E`.
 ///
 /// @note This class does not implement any mechanism to track the frame E in
 /// which an articulated body inertia is expressed or about what point is
@@ -34,10 +75,14 @@ namespace multibody {
 /// performed. We suggest doing that using disciplined notation, as described
 /// above.
 ///
-/// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
-///                       algorithms. Springer.
-/// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
-///                algorithms. Springer Science & Business Media.
+/// - [Featherstone 1983] Featherstone, R., 1983.
+///     The calculation of robot dynamics using articulated-body inertias. The
+///     International Journal of Robotics Research, 2(1), pp.13-30.
+/// - [Featherstone 2008] Featherstone, R., 2008.
+///     Rigid body dynamics algorithms. Springer.
+/// - [Jain 2010]  Jain, A., 2010.
+///     Robot and multibody dynamics: analysis and algorithms.
+///     Springer Science & Business Media.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
