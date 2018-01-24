@@ -185,7 +185,7 @@ void CheckNodeSolution(const MixedIntegerBranchAndBoundNode& node,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(node.prog()->GetOptimalCost(), optimal_cost, tol);
 }
-/*
+
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
   // Test constructing root node for prog 1.
   auto prog = ConstructMathematicalProgram1();
@@ -1120,7 +1120,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
       CheckAllIntegralSolution(bnb, xy, integral_solutions, tol);
     }
   }
-} */
+} 
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding2) {
   // Test the node callback to search an integral solution by rounding the
@@ -1149,12 +1149,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding2) {
   // by rounding. The branch-and-bound should terminate at the root node, as
   // it should find the optimal integral solution at the root.
   MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
-  bnb.SetNodeCallbackMethod(MixedIntegerBranchAndBound::NodeCallbackMethod::kSearchIntegralSolutionByRounding);
+  bnb.SetSearchIntegralSolutionByRounding(true);
   const SolutionResult result = bnb.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  // The branch-and-bound terminates at the root node, thus the root node is
-  // a leaf node.
-  EXPECT_TRUE(bnb.root()->IsLeaf());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding3) {

@@ -359,6 +359,9 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
   if (root_->solution_result() == SolutionResult::kInfeasibleConstraints) {
     return SolutionResult::kInfeasibleConstraints;
   }
+  if (search_integral_solution_by_rounding_) {
+    SearchIntegralSolutionByRounding(*root_);
+  }
   if (HasConverged()) {
     return SolutionResult::kSolutionFound;
   }
@@ -400,28 +403,8 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
 
 void MixedIntegerBranchAndBound::NodeCallback(
     const MixedIntegerBranchAndBoundNode& node) {
-  switch (node_callback_method_) {
-    case NodeCallbackMethod::kDoNothing:
-      break;
-    case NodeCallbackMethod::kSearchIntegralSolutionByRounding:
-      // If the optimal solution to the root node is not integral, do some
-      // post-processing on the non-integral solution, and try to find an
-      // integral
-      // solution of the MIP (but not necessarily optimal).
-      // This is done here (rather than when the rot node is solved in the
-      // constructor), because the strategy to search for the integral
-      // solution can be specified after the constructor call.
-      SearchIntegralSolutionByRounding(*root_);
-      break;
-    case NodeCallbackMethod::kUserDefined: {
-      if (!node_callback_userfun_) {
-        throw std::runtime_error(
-            "The user call back function is not defined. Call "
-            "SetUserDefinedCallbackFunction to provide the function.");
-      }
-      node_callback_userfun_(*root_, this);
-      break;
-    }
+  if (node_callback_userfun_ != nullptr) {
+    node_callback_userfun_(node, this);
   }
 }
 
@@ -493,7 +476,7 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
       return PickDepthFirstNode();
     }
     case NodeSelectionMethod::kUserDefined: {
-      if (node_selection_userfun_) {
+      if (node_selection_userfun_ != nullptr) {
         auto node = node_selection_userfun_(*this);
         if (!node->IsLeaf() || IsLeafNodeFathomed(*node)) {
           throw std::runtime_error(
@@ -597,6 +580,39 @@ double BestLowerBoundInSubTree(
                ? left_best_lower_bound
                : right_best_lower_bound;
   }
+}
+}  // namespace
+
+MixedIntegerBranchAndBoundNode*
+MixedIntegerBranchAndBound::PickMinLowerBoundNode() const {
+  return PickMinLowerBoundNodeInSubTree(*this, *root_);
+}
+
+MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
+    const {
+  // The deepest node has the largest number of fixed binary variables.
+  return PickDepthFirstNodeInSubTree(*this, *root_);
+}
+
+const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
+    const MixedIntegerBranchAndBoundNode& node) const {
+  switch (variable_selection_method_) {
+    case VariableSelectionMethod::kMostAmbivalent:
+      return PickMostAmbivalentAsBranchingVariable(node);
+    case VariableSelectionMethod::kLeastAmbivalent:
+      return PickLeastAmbivalentAsBranchingVariable(node);
+    case VariableSelectionMethod::kUserDefined:
+      if (variable_selection_userfun_ != nullptr) {
+        return variable_selection_userfun_(node);
+      }
+      throw std::runtime_error(
+          "The user defined function cannot be null. Call "
+          "SetUserDefinedVariableSelectionFunction to provide the user-defined "
+          "function for selecting the branching variable.");
+  }
+  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
+  // Werror=return-type, if we do not have it here.
+  DRAKE_ABORT();
 }
 
 const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
@@ -707,6 +723,9 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
           child->prog()->GetSolution(child->prog()->decision_variables());
       UpdateIntegralSolution(x_sol, child_node_optimal_cost);
     }
+    if (search_integral_solution_by_rounding_) {
+      SearchIntegralSolutionByRounding(*child);
+    }
     NodeCallback(*child);
   }
 }
@@ -735,8 +754,10 @@ bool MixedIntegerBranchAndBound::HasConverged() const {
 
 void MixedIntegerBranchAndBound::SearchIntegralSolutionByRounding(
     const MixedIntegerBranchAndBoundNode& node) {
-  if (root_->solution_result() == SolutionResult::kSolutionFound &&
-      !root_->optimal_solution_is_integral()) {
+  // Only searches integral solution by rounding, if the optimization program
+  // in this node has an optimal solution, and that solution is non-integral.
+  if (node.solution_result() == SolutionResult::kSolutionFound &&
+      !node.optimal_solution_is_integral()) {
     // Create a new program that fix the remaining binary variables to either 0
     // or 1, and solve for the continuous variables. If this optimization
     // problem is feasible, then the optimal solution is a feasible

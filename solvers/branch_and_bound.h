@@ -265,23 +265,6 @@ class MixedIntegerBranchAndBound {
   };
 
   /**
-   * In each node, after the optimization problem is solved, the user can
-   * call some callback method. For example, the user can try to find an
-   * integral solution based on the solution to the optimization problem
-   * in the node.
-   */
-  enum class NodeCallbackMethod {
-    kDoNothing,                         ///< No callback. This is the default.
-    kSearchIntegralSolutionByRounding,  ///< If the optimal solution to the
-                                        ///< problem in this node is not
-                                        ///< integral, then round off the
-                                        ///< fractional solutions to either 0 or
-                                        ///< 1, and then solve the remaining
-                                        ///< continuous variables.
-    kUserDefined,                       ///< User defined call back
-  };
-
-  /**
    * The function signature for the user defined method to pick a branching node
    * or a branching variable.
    */
@@ -491,19 +474,20 @@ class MixedIntegerBranchAndBound {
     variable_selection_userfun_ = fun;
   }
 
-  /**
-   * The user can choose the method for the call back for each node, after the 
-   * node is created, and the optimization problem in the node is solved.
-   * @param node_callback_method The option to call back in each node. If the
-   * option is NodeCallbackMethod::kUserDfined, the the user should provide
-   * the callback function through SetUserDefinedNodeCallbackFunction(...).
+  /** Set the flag to true if the user wants to search an integral solution
+   * in each node, after the optimization problem in that node is solved.
+   * The program can search for an integral solution based on the solution to
+   * the optimization program in the node, by rounding the binary variables
+   * to the nearest integer value, and solve for the continuous variables.
+   * If a solution is obtained in this new program, then this solution is
+   * an integral solution to the mixed-integer program.
    */
-  void SetNodeCallbackMethod(NodeCallbackMethod node_callback_method) {
-    node_callback_method_ = node_callback_method;
+  void SetSearchIntegralSolutionByRounding(bool flag) {
+    search_integral_solution_by_rounding_ = flag;
   }
 
   /**
-   * Set the user defined callback function in each node. This function is 
+   * The user can set a defined callback function in each node. This function is 
    * called after the optimization is solved in each node, if the user has 
    * called SetNodeCallbackMethod(NodeCallbackMethod::kUserDefined).
    */
@@ -683,7 +667,7 @@ class MixedIntegerBranchAndBound {
   NodeSelectionMethod node_selection_method_ =
       NodeSelectionMethod::kMinLowerBound;
 
-  NodeCallbackMethod node_callback_method_ = NodeCallbackMethod::kDoNothing;
+  bool search_integral_solution_by_rounding_ = false;
 
   // The user defined function to pick a branching variable. Default is null.
   VariableSelectFun variable_selection_userfun_ = nullptr;
