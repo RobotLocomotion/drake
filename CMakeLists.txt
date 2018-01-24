@@ -9,15 +9,6 @@ list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(CTest)
 
 configure_file(CTestCustom.cmake.in CTestCustom.cmake @ONLY)
-if(NOT APPLE)
-  foreach(LANG C CXX)
-    set(COMPILER ${CMAKE_${LANG}_COMPILER})
-    configure_file(tools/cc_toolchain/wrapper.sh.in ${CMAKE_CURRENT_BINARY_DIR}/${LANG}_wrapper.sh @ONLY)
-  endforeach()
-  set(BAZEL_ENV "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh" "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh")
-else()
-  set(BAZEL_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
-endif()
 
 if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
@@ -47,18 +38,33 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   )
 endif()
 
+find_package(PythonInterp 2.7 EXACT MODULE REQUIRED)
+
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
   set(BAZEL_COMPILATION_MODE dbg)
 else()
   set(BAZEL_COMPILATION_MODE opt)
 endif()
 
-set(BAZEL_ARGS
-  --compilation_mode=${BAZEL_COMPILATION_MODE}
-  --config=unsupported_crosstool
-  --cxxopt=${CMAKE_CXX14_STANDARD_COMPILE_OPTION}
-  --host_cxxopt=${CMAKE_CXX14_STANDARD_COMPILE_OPTION}
-)
+set(BAZEL_ENV)
+
+if(NOT APPLE)
+  foreach(LANG C CXX)
+    set(COMPILER ${CMAKE_${LANG}_COMPILER})
+    configure_file(tools/cc_toolchain/wrapper.sh.in ${LANG}_wrapper.sh @ONLY)
+  endforeach()
+
+  list(APPEND BAZEL_ENV
+    "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh"
+    "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh"
+  )
+endif()
+
+configure_file(tools/cc_toolchain/bazel.rc.in bazel.rc @ONLY)
+
+set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
+
+set(BAZEL_ARGS)
 
 if(CMAKE_VERBOSE_MAKEFILE)
   list(APPEND BAZEL_ARGS --subcommands)
@@ -108,10 +114,10 @@ include(ExternalProject)
 ExternalProject_Add(drake_cxx_python
   SOURCE_DIR "${PROJECT_SOURCE_DIR}"
   CONFIGURE_COMMAND :
-  BUILD_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" build ${BAZEL_ARGS} ${BAZEL_TARGETS}
+  BUILD_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} build ${BAZEL_ARGS} ${BAZEL_TARGETS}
   BUILD_IN_SOURCE 1
   BUILD_ALWAYS 1
-  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- "${CMAKE_INSTALL_PREFIX}"
+  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- "${CMAKE_INSTALL_PREFIX}"
   USES_TERMINAL_BUILD 1
   USES_TERMINAL_INSTALL 1
 )
