@@ -29,5 +29,7 @@ PYBIND11_MODULE(analysis, m) {
     .def("StepTo", &Simulator<T>::StepTo)
     .def("get_context", &Simulator<T>::get_context, py_iref)
     .def("get_mutable_context", &Simulator<T>::get_mutable_context, py_iref)
+    .def("set_publish_every_time_step",
+         &Simulator<T>::set_publish_every_time_step)
     .def("set_target_realtime_rate", &Simulator<T>::set_target_realtime_rate);
 }
