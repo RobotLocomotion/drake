@@ -102,7 +102,7 @@ class ArticulatedBodyInertia {
 
   /// Constructs an articulated body inertia for an articulated body consisting
   /// of a single rigid body given its spatial inertia. From an input spatial
-  /// inertia M_SQ_E for a body or composite body S, about point Q, and
+  /// inertia `M_SQ_E` for a body or composite body S, about point Q, and
   /// expressed in a frame E, this constructor creates an articulated body
   /// inertia about the same point Q and expressed in the same frame E.
   ///
@@ -236,9 +236,9 @@ class ArticulatedBodyInertia {
   /// expressed in the same frame E. The result is equivalent to the articulated
   /// body inertia `P_CQ_E` for the composite articulated body C which has at
   /// its base a rigid body composed of the bases of A and B welded together
-  /// [Featherstone 2008]. The composite articulated body inertia `P_CQ_E` is
-  /// also about the same point Q and expressed in the same frame E as the
-  /// addends.
+  /// [Featherstone 2008, example 7.1]. The composite articulated body inertia
+  /// `P_CQ_E` is also about the same point Q and expressed in the same frame E
+  /// as the addends.
   ///
   /// @param[in] P_BQ_E An articulated body inertia of some articulated body B
   ///                   to be added to `this` articulated body inertia. It must
