@@ -245,6 +245,39 @@ void UnrevisedLemkeSolver<T>::FinishLemkeSolution(const MatrixType& M,
 }
 
 template <typename T>
+void UnrevisedLemkeSolver<T>::LemkePivot(const MatrixX<T>& M, const VectorX<T>& q, VectorX<T>* M_bar_col, VectorX<T>* q_bar) {
+  // Verify zn (the artificial variable) is not in the set of independent
+  // variables.
+
+  // There will be at least one variable in independents from z; we arbitrarily
+  // call one such variable z+ and denote the rest of the variables in
+  // independents as independents+. Also, we denote z' as the rest of the
+  // variables in z (including zn) after removing z+. We can thus write
+  // equation w = q + 1*zn + M * z as w = q + d*z+ + M' * z'. After pivoting,
+  // we get:
+  // w_bar = q_bar + d+ * z+ + M+ * z+.
+
+  // First, find z+ as the first element in independents that comes from z.
+  int z_plus_index = -1;
+  for (int i = 0; i < independents.size(); ++i) {
+    if (independents[i]->z) {
+      z_plus_index = i;
+      break;
+    }
+  }
+  DRAKE_DEMAND(z_plus_index >= 0);
+  LCPVariable* z_plus = independents[z_plus_index];
+
+  // Form independents+.
+  independents_plus = independents;
+  independents_plus[z_plus_index] = independents_plus.back();
+  independents_plus.pop_back();
+
+  // Get d+.
+  const auto d_plus = M.col(z_plus->index);
+} 
+
+template <typename T>
 bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                                      const VectorX<T>& q, VectorX<T>* z,
                                      int* num_pivots,
@@ -338,6 +371,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   VectorX<T> q_bar, M_bar_col;
   while (++(*num_pivots) < max_pivots)) {
     // Compute the permuted q and driving column of the permuted M matrix.
+    LemkePivot(M, q, indep_variables_, driving_index, dep_variables_,
+        &M_bar_col, &q_bar_col);
 
     // Perform the minimum ratio test.
     T min_ratio = std::numeric_limits<double>::infinity();
@@ -370,6 +405,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       // with the driving variable. 
 
       // Compute the permuted q, and convert it into a solution.
+      LemkePivot(M, q, indep_variables_, z0_index, dep_variables_,
+          &M_bar_col, &q_bar_col);
 
       z->setZero(n);
       for (int i = 0; i < dep_variables_.size(); ++i) {

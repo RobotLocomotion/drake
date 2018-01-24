@@ -140,6 +140,12 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                          // indicates that the variable is artificial.
   };
 
+  void LemkePivot(const MatrixX<T>& M, const VectorX<T>& q,
+      const std::vector<LCPVariable>& indep_variables, int driving_index,
+      const std::vector<LCPVariable>& dep_variables, VectorX<T>* M_bar_col,
+      VectorX<T>* q_bar) const;
+  static int FindComplementIndex(
+      const LCPVariable* query, const std::vector<LCPVariable>& set_to_search);
   void ClearIndexVectors() const;
 
   template <typename MatrixType, typename Scalar>
@@ -151,6 +157,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // semantic const'ness of the class under its methods.
   // Vectors which correspond to indices into other data.
   mutable std::vector<unsigned> all_, tlist_, bas_, nonbas_, j_;
+
+  // The index sets for the Lemke Algorithm.
+  std::vector<LCPVariable> indep_variables_, dep_variables_;
 };
 
 }  // end namespace solvers
