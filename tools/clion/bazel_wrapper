@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+# TODO(jwnimmer-tri) At some point, a Drake Developer who is a CLion user will
+# probably want to use the "CLion with Bazel" plug-in on a Bazel project that
+# does not involve Drake at all.  In that case, because the plug-in's path to
+# bazel is a global setting in CLion, this script would still be used and then
+# would fail to find `@drake`.  It would be nice to automatically sense whether
+# or not we should be substituting the aspect path, so that the user doesn't
+# have to reconfigure the path to bazel when they switch projects.
+
+if __name__ == "__main__":
+    # Copy args for modification.
+    args = sys.argv[1:]
+
+    # If this magic argument is found, replace it with our hooks instead.
+    old_magic = "--aspects=@intellij_aspect//:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
+    new_magic = "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"
+    if old_magic in args:
+        args[args.index(old_magic)] = new_magic
+
+    # Delegate to bazel.
+    os.execvp("bazel", ["bazel"] + args)
