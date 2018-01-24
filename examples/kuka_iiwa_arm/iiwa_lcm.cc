@@ -265,7 +265,7 @@ void IiwaStatusSender::OutputStatus(const Context<double>& context,
 IiwaContactResultsToExternalTorque::IiwaContactResultsToExternalTorque(
     const RigidBodyTree<double>& tree,
     const std::vector<int>& model_instance_ids)
-    : num_dof_{tree.get_num_velocities()} {
+    : num_joints_{tree.get_num_velocities()} {
   int length = 0;
   velocity_map_.resize(tree.get_num_model_instances(),
                        std::pair<int, int>(-1, -1));
@@ -314,8 +314,8 @@ void IiwaContactResultsToExternalTorque::OutputExternalTorque(
 
   int start = 0;
   const VectorX<double>& generalized_force =
-      contact_results->get_contact_force_in_genearlized_coordinate();
-  DRAKE_DEMAND(generalized_force.size() == num_dof_);
+      contact_results->get_generalized_contact_force();
+  DRAKE_DEMAND(generalized_force.size() == num_joints_);
 
   for (const auto& entry : velocity_map_) {
     const int v_idx = entry.first;

@@ -262,7 +262,7 @@ GTEST_TEST(IiwaLcmTest, IiwaContactResultsToExternalTorque) {
   for (int i = 0; i < expected.size(); i++)
     expected[i] = 42 + i;
   systems::ContactResults<double> contact_results;
-  contact_results.set_contact_force_in_genearlized_coordinate(expected);
+  contact_results.set_generalized_contact_force(expected);
 
   context->FixInputPort(0,
       systems::AbstractValue::Make<systems::ContactResults<double>>(
