@@ -21,9 +21,9 @@ namespace kuka_iiwa_arm {
 extern const double kIiwaLcmStatusPeriod;
 
 /// Handles lcmt_iiwa_command messages from a LcmSubscriberSystem.
-/// Has a single output port which publishes the commanded position
-/// for each joint along with an estimate of the commanded velocity
-/// for each joint.
+/// Has two output ports: one for the commanded position for each joint along
+/// with an estimate of the commanded velocity for each joint, and another for
+/// commanded additional feedforward joint torque.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
@@ -38,6 +38,16 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   /// configuration.
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const VectorX<double>> x) const;
+
+  const systems::OutputPort<double>& get_commanded_state_input_port()
+      const {
+    return this->get_output_port(0);
+  }
+
+  const systems::OutputPort<double>& get_commanded_torque_input_port()
+      const {
+    return this->get_output_port(1);
+  }
 
  private:
   void CopyStateToOutput(const systems::Context<double>& context, int start_idx,
@@ -228,7 +238,7 @@ class IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
       const std::vector<int>& model_instance_ids);
 
  private:
-  const int num_dof_;
+  const int num_joints_;
   // Maps model instance ids to velocity indices and number of
   // velocity states in the RigidBodyTree.  Values are stored as a
   // pair of (index, count).

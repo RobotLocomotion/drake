@@ -136,6 +136,16 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
     return this->get_output_port(output_port_iiwa_torque_.at(index));
   }
 
+  const systems::OutputPort<T>& get_output_port_iiwa_measured_torque(
+      int index = 0) const {
+    return this->get_output_port(output_port_iiwa_measured_torque_.at(index));
+  }
+
+  const systems::OutputPort<T>& get_output_port_wsg_measured_torque(
+      int index = 0) const {
+    return this->get_output_port(output_port_wsg_measured_torque_.at(index));
+  }
+
  private:
   std::vector<std::unique_ptr<RigidBodyTree<T>>> objects_;
   systems::RigidBodyPlant<T>* plant_{nullptr};
@@ -148,6 +158,8 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   std::vector<int> output_port_iiwa_torque_;
   std::vector<int> output_port_iiwa_robot_state_t_;
   std::vector<int> output_port_object_robot_state_t_;
+  std::vector<int> output_port_iiwa_measured_torque_;
+  std::vector<int> output_port_wsg_measured_torque_;
   int output_port_plant_state_{-1};
   int output_port_contact_results_{-1};
   int output_port_kinematics_results_{-1};
