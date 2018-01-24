@@ -1,8 +1,10 @@
 #include <pybind11/pybind11.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsers/package_map.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(parsers, m) {
   using drake::parsers::PackageMap;
@@ -19,3 +21,6 @@ PYBIND11_MODULE(parsers, m) {
     .def("PopulateFromEnvironment", &PackageMap::PopulateFromEnvironment)
     .def("PopulateUpstreamToDrake", &PackageMap::PopulateUpstreamToDrake);
 }
+
+}  // namespace pydrake
+}  // namespace drake

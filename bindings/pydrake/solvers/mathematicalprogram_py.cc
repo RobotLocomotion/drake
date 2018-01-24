@@ -5,39 +5,42 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_type_converter.h"
 
-namespace py = pybind11;
 using std::string;
 
-using drake::solvers::Binding;
-using drake::solvers::BoundingBoxConstraint;
-using drake::solvers::Constraint;
-using drake::solvers::Cost;
-using drake::solvers::EvaluatorBase;
-using drake::solvers::LinearConstraint;
-using drake::solvers::LinearCost;
-using drake::solvers::LinearEqualityConstraint;
-using drake::solvers::MathematicalProgram;
-using drake::solvers::MathematicalProgramSolverInterface;
-using drake::solvers::MatrixXDecisionVariable;
-using drake::solvers::QuadraticCost;
-using drake::solvers::SolutionResult;
-using drake::solvers::SolverId;
-using drake::solvers::SolverType;
-using drake::solvers::SolverTypeConverter;
-using drake::solvers::VectorXDecisionVariable;
-using drake::symbolic::Expression;
-using drake::symbolic::Formula;
-using drake::symbolic::Variable;
+namespace drake {
+namespace pydrake {
+
+using solvers::Binding;
+using solvers::BoundingBoxConstraint;
+using solvers::Constraint;
+using solvers::Cost;
+using solvers::EvaluatorBase;
+using solvers::LinearConstraint;
+using solvers::LinearCost;
+using solvers::LinearEqualityConstraint;
+using solvers::MathematicalProgram;
+using solvers::MathematicalProgramSolverInterface;
+using solvers::MatrixXDecisionVariable;
+using solvers::QuadraticCost;
+using solvers::SolutionResult;
+using solvers::SolverId;
+using solvers::SolverType;
+using solvers::SolverTypeConverter;
+using solvers::VectorXDecisionVariable;
+using symbolic::Expression;
+using symbolic::Formula;
+using symbolic::Variable;
 
 namespace {
 // Unwrap an optional<T> for more idiomatic use in Python.  A nullopt in C++
 // becomes None in Python, and non-nullopt in C++ becomes T directly in Python.
 template <typename T>
-std::unique_ptr<T> deref_optional(const drake::optional<T>& value) {
+std::unique_ptr<T> deref_optional(const optional<T>& value) {
   return value ? std::make_unique<T>(*value) : nullptr;
 }
 
@@ -271,3 +274,6 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
 }
+
+}  // namespace pydrake
+}  // namespace drake

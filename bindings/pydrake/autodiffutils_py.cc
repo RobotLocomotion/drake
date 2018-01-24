@@ -3,13 +3,13 @@
 #include <pybind11/stl.h>
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-
-namespace py = pybind11;
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 
 using std::sin;
 using std::cos;
 
-using drake::AutoDiffXd;
+namespace drake {
+namespace pydrake {
 
 /**
  * Force Eigen to evaluate an autodiff expression. We need this function
@@ -78,3 +78,6 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
       return eval(other / self);
     }, py::is_operator());
 }
+
+}  // namespace pydrake
+}  // namespace drake
