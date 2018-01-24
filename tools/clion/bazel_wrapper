@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+if __name__ == "__main__":
+    # Copy args for modification.
+    args = sys.argv[1:]
+
+    # If this magic argument is found, replace it with our hooks instead.
+    old_magic = "--aspects=@intellij_aspect//:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
+    new_magic = "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"
+    if old_magic in args:
+        args[args.index(old_magic)] = new_magic
+
+    # Delegate to bazel.
+    os.execvp("bazel", ["bazel"] + args)
