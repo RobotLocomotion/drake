@@ -39,12 +39,15 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//drake/bindings/pydrake:common_py",
+        "//bindings/pydrake:common_py",
     ],
 )
 
 drake_pybind_library(
     name = "framework_py",
+    cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
+    ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
     package_info = PACKAGE_INFO,

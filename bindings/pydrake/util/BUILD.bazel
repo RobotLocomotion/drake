@@ -91,6 +91,11 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "drake_optional_pybind",
+    hdrs = ["drake_optional_pybind.h"],
+)
+
 PYBIND_LIBRARIES = []
 
 PY_LIBRARIES = [
