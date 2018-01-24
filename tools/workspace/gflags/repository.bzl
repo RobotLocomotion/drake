@@ -10,7 +10,7 @@ gflags headers and library are always located in /usr/include and
 
 Example:
     WORKSPACE:
-        load("@drake//tools/workspace/gflags:package.bzl", "gflags_repository")
+        load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")  # noqa
         gflags_repository(name = "foo")
 
     BUILD:
