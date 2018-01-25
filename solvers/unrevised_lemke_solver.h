@@ -120,7 +120,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   bool SolveLcpLemkeRegularized(const MatrixX<T>& M,
                                 const VectorX<T>& q, VectorX<T>* z,
                                 int* num_pivots,
-                                int min_exp = -20, unsigned step_exp = 1,
+                                int min_exp = -20, int step_exp = 1,
                                 int max_exp = 1, const T& piv_tol = T(-1),
                                 const T& zero_tol = T(-1)) const;
 
@@ -134,32 +134,25 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // A structure for holding a linear complementarity problem variable.
   struct LCPVariable {
     bool z{true};        // Is this a z variable or a w variable?
-    bool indep{true};    // Is this an independent (right-hand-side) or
-                         // dependent (left-hand-side) variable in w* = Mz* + q.
-    int index{-1};       // Index of the variable in the problem, 0...n. n 
+    int index{-1};       // Index of the variable in the problem, 0...n. n
                          // indicates that the variable is artificial.
   };
 
-  void LemkePivot(const MatrixX<T>& M, const VectorX<T>& q,
+  static bool IsEachUnique(const std::vector<LCPVariable>& vars);
+  static void LemkePivot(const MatrixX<T>& M, const VectorX<T>& q,
       const std::vector<LCPVariable>& indep_variables, int driving_index,
-      const std::vector<LCPVariable>& dep_variables, VectorX<T>* M_bar_col,
-      VectorX<T>* q_bar) const;
-  static int FindComplementIndex(
-      const LCPVariable* query, const std::vector<LCPVariable>& set_to_search);
-  void ClearIndexVectors() const;
-
-  template <typename MatrixType, typename Scalar>
-  void FinishLemkeSolution(const MatrixType& M, const VectorX<Scalar>& q,
-                           const VectorX<Scalar>& x, VectorX<Scalar>* z) const;
-
-  // NOTE:  The temporaries below are stored in the class to minimize
-  // allocations; all are marked 'mutable' as they do not affect the
-  // semantic const'ness of the class under its methods.
-  // Vectors which correspond to indices into other data.
-  mutable std::vector<unsigned> all_, tlist_, bas_, nonbas_, j_;
+      const std::vector<LCPVariable>& dep_variables,
+      VectorX<T>* M_bar_col, VectorX<T>* q_bar);
+  static void ConstructLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
+      const std::vector<LCPVariable>& indep_variables, int artificial_index,
+      const std::vector<LCPVariable>& dep_variables, VectorX<T>* z);
+    static int FindComplementIndex(
+      const LCPVariable& query,
+      const std::vector<LCPVariable>& indep_variables);
 
   // The index sets for the Lemke Algorithm.
-  std::vector<LCPVariable> indep_variables_, dep_variables_;
+  // TODO: Explain why these can be mutable.
+  mutable std::vector<LCPVariable> indep_variables_, dep_variables_;
 };
 
 }  // end namespace solvers
