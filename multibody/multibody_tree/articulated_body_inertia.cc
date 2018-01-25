@@ -1,11 +1,6 @@
 #include "drake/multibody/multibody_tree/articulated_body_inertia.h"
 
-namespace drake {
-namespace multibody {
+#include "drake/common/default_scalars.h"
 
-// Explicitly instantiates on the most common scalar types.
-template class ArticulatedBodyInertia<double>;
-template class ArticulatedBodyInertia<AutoDiffXd>;
-
-}  // namespace multibody
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::ArticulatedBodyInertia)

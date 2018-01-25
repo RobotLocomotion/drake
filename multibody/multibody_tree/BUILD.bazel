@@ -147,6 +147,7 @@ drake_cc_library(
     hdrs = ["articulated_body_inertia.h"],
     deps = [
         ":spatial_inertia",
+        "//drake/common:default_scalars",
         "//drake/multibody/multibody_tree/math:spatial_algebra",
     ],
 )
