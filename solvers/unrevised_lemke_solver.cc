@@ -152,7 +152,7 @@ void SelectSubMatrixPlusCovering(const Eigen::MatrixBase<Derived>& in,
 // allows selecting parts of both sparse and dense matrices for input; only
 // a dense matrix is returned.
 template <typename Derived, typename T>
-void SelectSubVectorPlusCovering(const Eigen::MatrixBase<Derived>& in,
+void SelectSubColumnPlusCovering(const Eigen::MatrixBase<Derived>& in,
                                  const std::vector<int>& rows,
                                  int col, VectorX<T>* out) {
   const int n = in.rows();
@@ -166,7 +166,7 @@ void SelectSubVectorPlusCovering(const Eigen::MatrixBase<Derived>& in,
   } else {
     for (int i = 0; i < num_rows; i++) {
       const auto row_in = in.row(rows[i]);
-      out[i] = row_in(col);
+      (*out)[i] = row_in(col);
     }
   }
 }
@@ -347,7 +347,9 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
   // Mαα comprises the submatrix corresponding to the dependent z variables /
   // independent w variables. Due to Hongkai's Lemma, there can be at most n
   // independent w variables, so we don't have to worry about whether we
-  // select using dependent z variables or independent w variables.
+  // select using dependent z variables or independent w variables. We
+  // simultaneously determine the set of indices in α̅, which corresponds to
+  // independent z variables and dependent w variables. 
   std::vector<int> alpha_indices, not_alpha_indices;
   for (int i = 0; i < indep_variables.size(); ++i) {
     if (!indep_variables[i].z) {
@@ -372,8 +374,8 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
   const VectorX<T> q_not_alpha_prime = q_not_alpha + Mba * q_alpha_prime;
   q_bar->resize(n);
   q_bar->segment(0, alpha_indices.size()) = q_alpha_prime;
-  q_bar->segment(alpha_indices.size(), not_alpha_indices.size()) =
-      q_not_alpha_prime;
+  q_bar->segment(alpha_indices.size(), not_alpha_indices.size() - 1) =
+      q_not_alpha_prime.head(not_alpha_indices.size() - 1);
 
   // If the driving index corresponds to the artificial variable, no need to
   // perform an unnecessary calculation.
@@ -382,15 +384,24 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
     return;
   }
 
-  // There are two possible cases for the driving variable: it either
-  // corresponds to one of the independent w variables, meaning the column
-  // should be drawn from the two left equations of (11) in [Cottle 1992] p. 72,
-  // or it corresponds to one of the independent z variables, meaning the
-  // column should be drawn from the two right equations of (11). Note that we
+  // Reform not_alpha_indices, now using the artificial variable.
+  not_alpha_indices.clear();
+  for (int i = 0; i < indep_variables.size(); ++i) {
+    if (indep_variables[i].z)
+      not_alpha_indices.push_back(indep_variables[i].index);
+  }
+
+  // There are two possible cases for the driving variable, depending on the
+  // driving variable index. If the index is less than the number of dependent
+  // z variables (i.e., the number of alpha indices), the column should either
+  // be drawn from the two left equations of (11) in [Cottle 1992] p. 72 or the
+  // two right equations. Note that we
   // do not say that the latter should correspond to one of the dependent w
   // variables, because we need to be able to include the covering vector.
-  if (indep_variables[driving_index].z) {
-    const VectorX<T> unit = VectorX<T>::Unit(alpha_indices.size(), -1);
+  if (driving_index < alpha_indices.size()) {
+    // Left two equations.
+    const VectorX<T> unit = VectorX<T>::Unit(alpha_indices.size(),
+        driving_index);
     const VectorX<T> M_bar_alpha_prime = solver.Solve(unit);
     const VectorX<T> M_bar_not_alpha_prime = Mba * M_bar_alpha_prime;
     M_bar_col->resize(n);
@@ -398,9 +409,11 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
     M_bar_col->segment(alpha_indices.size(), not_alpha_indices.size()) =
       M_bar_not_alpha_prime;
   } else {
+    // Right two equations.
+    const int index = driving_index - alpha_indices.size();
     VectorX<T> Mab, Mbb;
-    SelectSubColumnPlusCovering(M, alpha_indices, -1, &Mab);
-    SelectSubColumnPlusCovering(M, not_alpha_indices, -1, &Mbb);
+    SelectSubColumnPlusCovering(M, alpha_indices, index, &Mab);
+    SelectSubColumnPlusCovering(M, not_alpha_indices, index, &Mbb);
     VectorX<T> M_bar_alpha_prime = -solver.Solve(Mab);
     VectorX<T> M_bar_not_alpha_prime = Mbb + Mba * M_bar_alpha_prime;
   }
