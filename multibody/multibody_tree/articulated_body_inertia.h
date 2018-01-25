@@ -35,7 +35,8 @@ namespace multibody {
 ///   F_BBo_W = P_B_W * A_WB + z_Bo_W                                       (2)
 /// </pre>
 /// where `P_B_W` is the articulated body inertia of body B and `z_Bo_W` is a
-/// bias force that becomes zero when all applied generalized forces outboard
+/// bias force containing gyroscopic and Coriolis forces that becomes zero when
+/// all body velocities are zero and all applied generalized forces outboard
 /// from body B are zero [Jain 2010, §6.3.1]. The articulated body inertia
 /// `P_B_W` is related to the multibody subsystem consisting only of bodies that
 /// are outboard of body B. We refer to this subsystem as the
@@ -47,13 +48,13 @@ namespace multibody {
 /// articulated body consisting of a single rigid body exactly equals the
 /// spatial inertia of that body.
 ///
-/// Articulated body inertias are elements of ℝ⁶ˣ⁶ that, as spatial inertias,
-/// are symmetric and positive semi-definite. However, ABI objects **are not**
-/// spatial inertias. The spatial inertia of a rigid body can be described by a
-/// reduced set of ten parameters, namely the mass, center of mass and the six
-/// components of the rotational inertia for that body. However, this
-/// parametrization by ten parameters is just not possible for an ABI and the
-/// full 21 elements of the symmetric `6x6` matrix must be specified
+/// Articulated body inertias are elements of ℝ⁶ˣ⁶ that, as for spatial
+/// inertias, are symmetric and positive semi-definite. However, ABI objects
+/// **are not** spatial inertias. The spatial inertia of a rigid body can be
+/// described by a reduced set of ten parameters, namely the mass, center of
+/// mass and the six components of the rotational inertia for that body.
+/// However, this parametrization by ten parameters is just not possible for an
+/// ABI and the full 21 elements of the symmetric `6x6` matrix must be specified
 /// [Jain 2010, §6.4]. As a result ABI objects can have different properties
 /// than spatial inertia objects. As an example, the apparent mass of an
 /// articulated body will in general depend on the direction of the applied
@@ -256,14 +257,38 @@ class ArticulatedBodyInertia {
     return *this;
   }
 
+  /// Multiplies `this` articulated body inertia on the right by a matrix or
+  /// vector.
+  ///
+  /// @note This method does not evaluate the product immediately. Instead, it
+  /// returns an intermediate Eigen quantity that can be optimized automatically
+  /// during compile time.
+  template<typename OtherDerived>
+  const Eigen::Product<Eigen::SelfAdjointView<const Matrix6<T>, Eigen::Lower>,
+                       OtherDerived>
+  operator*(const Eigen::MatrixBase<OtherDerived>& rhs) const {
+    return matrix_.template selfadjointView<Eigen::Lower>() * rhs;
+  }
+
+  /// Multiplies `this` articulated body inertia on the left by a matrix or
+  /// vector.
+  ///
+  /// @note This method does not evaluate the product immediately. Instead, it
+  /// returns an intermediate Eigen quantity that can be optimized automatically
+  /// during compile time.
+  template<typename OtherDerived> friend
+  const Eigen::Product<OtherDerived,
+                       Eigen::SelfAdjointView<const Matrix6<T>, Eigen::Lower>>
+  operator*(const Eigen::MatrixBase<OtherDerived>& lhs,
+            const ArticulatedBodyInertia& rhs) {
+    return lhs * rhs.matrix_.template selfadjointView<Eigen::Lower>();
+  }
+
  private:
   // Make ArticulatedBodyInertia templated on every other scalar type a friend
   // of ArticulatedBodyInertia<T> so that cast<Scalar>() can access private
   // members of ArticulatedBodyInertia<T>.
   template <typename> friend class ArticulatedBodyInertia;
-
-  // Typedef for SelfAdjointView.
-  typedef Eigen::SelfAdjointView<const Matrix6<T>, Eigen::Lower> AdjointView;
 
   // Helper method for NaN initialization.
   static constexpr T nan() {
@@ -276,32 +301,6 @@ class ArticulatedBodyInertia {
   // All elements of the articulated body inertia matrix are initially set to
   // NaN.
   Matrix6<T> matrix_{Matrix6<T>::Constant(nan())};
-
- public:
-  /// Multiplies `this` articulated body inertia on the right by a matrix or
-  /// vector.
-  ///
-  /// @note This method does not evaluate the product immediately. Instead, it
-  /// returns an intermediate Eigen quantity that can be optimized automatically
-  /// during compile time.
-  template<typename OtherDerived>
-  const Eigen::Product<AdjointView, OtherDerived>
-  operator*(const Eigen::MatrixBase<OtherDerived>& rhs) const {
-    return matrix_.template selfadjointView<Eigen::Lower>() * rhs;
-  }
-
-  /// Multiplies `this` articulated body inertia on the left by a matrix or
-  /// vector.
-  ///
-  /// @note This method does not evaluate the product immediately. Instead, it
-  /// returns an intermediate Eigen quantity that can be optimized automatically
-  /// during compile time.
-  template<typename OtherDerived> friend
-  const Eigen::Product<OtherDerived, AdjointView>
-  operator*(const Eigen::MatrixBase<OtherDerived>& lhs,
-            const ArticulatedBodyInertia& rhs) {
-    return lhs * rhs.matrix_.template selfadjointView<Eigen::Lower>();
-  }
 };
 
 }  // namespace multibody
