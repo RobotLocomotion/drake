@@ -201,28 +201,38 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "context_base",
+    srcs = [
+        "context_base.cc",
+        "input_port_value.cc",
+    ],
+    hdrs = [
+        "context_base.h",
+        "input_port_value.h",
+    ],
+    deps = [
+        ":cache_and_dependencies",
+        "//drake/common:default_scalars",
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "framework_base",
     srcs = [
         "cache_entry.cc",
-        "context_base.cc",
         "input_port_base.cc",
-        "input_port_value.cc",
         "output_port_base.cc",
         "system_base.cc",
     ],
     hdrs = [
         "cache_entry.h",
-        "context_base.h",
         "input_port_base.h",
-        "input_port_value.h",
         "output_port_base.h",
         "system_base.h",
     ],
     deps = [
-        ":cache_and_dependencies",
-        ":framework_common",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
+        ":context_base",
     ],
 )
 

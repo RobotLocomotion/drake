@@ -387,52 +387,66 @@ class SystemBase {
   source value, including time, state, input ports, parameters, and the accuracy
   setting (but not cache entries). This is the default dependency for
   computations that have not specified anything more refined. */
-  static constexpr DependencyTicket all_sources_ticket() {
-    return all_sources_ticket_;
+  static DependencyTicket all_sources_ticket() {
+    return DependencyTicket(internal::kAllSourcesTicket);
   }
 
   /** Returns a ticket indicating that a computation does not depend on *any*
   source value; that is, it is a constant. If this appears in a prerequisite
   list, it must be the only entry. */
-  static constexpr DependencyTicket nothing_ticket() {
-    return nothing_ticket_;
+  static DependencyTicket nothing_ticket() {
+    return DependencyTicket(internal::kNothingTicket);
   }
 
   /** Returns a ticket indicating dependence on time. This is the same ticket
   for all subsystems and refers to the same time value. */
-  static constexpr DependencyTicket time_ticket() { return time_ticket_; }
+  static DependencyTicket time_ticket() {
+    return DependencyTicket(internal::kTimeTicket);
+  }
 
   /** Returns a ticket indicating dependence on the accuracy setting in the
   Context. This is the same ticket for all subsystems and refers to the same
   accuracy value. */
-  static constexpr DependencyTicket accuracy_ticket() {
-    return accuracy_ticket_;
+  static DependencyTicket accuracy_ticket() {
+    return DependencyTicket(internal::kAccuracyTicket);
   }
 
   /** Returns a ticket indicating that a computation depends on configuration
   state variables q. */
-  static constexpr DependencyTicket q_ticket() { return q_ticket_; }
+  static DependencyTicket q_ticket() {
+    return DependencyTicket(internal::kQTicket);
+  }
 
   /** Returns a ticket indicating dependence on velocity state variables v. This
   does _not_ also indicate a dependence on configuration variables q -- you must
   list that explicitly or use kinematics_ticket() instead. */
-  static constexpr DependencyTicket v_ticket() { return v_ticket_; }
+  static DependencyTicket v_ticket() {
+    return DependencyTicket(internal::kVTicket);
+  }
 
   /** Returns a ticket indicating dependence on all of the miscellaneous
   continuous state variables z. */
-  static constexpr DependencyTicket z_ticket() { return z_ticket_; }
+  static DependencyTicket z_ticket() {
+    return DependencyTicket(internal::kZTicket);
+  }
 
   /** Returns a ticket indicating dependence on all of the continuous
   state variables q, v, or z. */
-  static constexpr DependencyTicket xc_ticket() { return xc_ticket_; }
+  static DependencyTicket xc_ticket() {
+    return DependencyTicket(internal::kXcTicket);
+  }
 
   /** Returns a ticket indicating dependence on all of the numerical
   discrete state variables, in any discrete variable group. */
-  static constexpr DependencyTicket xd_ticket() { return xd_ticket_; }
+  static DependencyTicket xd_ticket() {
+    return DependencyTicket(internal::kXdTicket);
+  }
 
   /** Returns a ticket indicating dependence on all of the abstract
   state variables in the current Context. */
-  static constexpr DependencyTicket xa_ticket() { return xa_ticket_; }
+  static DependencyTicket xa_ticket() {
+    return DependencyTicket(internal::kXaTicket);
+  }
 
   /** Returns a ticket indicating dependence on _all_ state variables x in this
   subsystem, including continuous variables xc, discrete (numeric) variables xd,
@@ -440,25 +454,29 @@ class SystemBase {
   parameters, or inputs; those must be specified separately. If you mean to
   express dependence on all possible value sources, use all_sources_ticket()
   instead. */
-  static constexpr DependencyTicket all_state_ticket() {
-    return x_ticket_;
+  static DependencyTicket all_state_ticket() {
+    return DependencyTicket(internal::kXTicket);
   }
 
   /** Returns a ticket for the cache entry that holds time derivatives of
   the continuous variables. */
-  static constexpr DependencyTicket xcdot_ticket() { return xcdot_ticket_; }
+  static DependencyTicket xcdot_ticket() {
+    return DependencyTicket(internal::kXcdotTicket);
+  }
 
   /** Returns a ticket for the cache entry that holds the discrete state
   update for the numerical discrete variables in the state. */
-  static constexpr DependencyTicket xdhat_ticket() { return xdhat_ticket_; }
+  static DependencyTicket xdhat_ticket() {
+    return DependencyTicket(internal::kXdhatTicket);
+  }
 
   /** Returns a ticket indicating dependence on all the configuration
   variables for this System. By default this is set to the continuous
   second-order state variables q, but configuration may be represented
   differently in some systems (discrete ones, for example), in which case this
   ticket should have been set to depend on that representation. */
-  static constexpr DependencyTicket configuration_ticket() {
-    return configuration_ticket_;
+  static DependencyTicket configuration_ticket() {
+    return DependencyTicket(internal::kConfigurationTicket);
   }
 
   /** Returns a ticket indicating dependence on all of the velocity variables
@@ -466,28 +484,28 @@ class SystemBase {
   but velocity may be represented differently in some systems (discrete ones,
   for example), in which case this ticket should have been set to depend on that
   representation. */
-  static constexpr DependencyTicket velocity_ticket() {
-    return velocity_ticket_;
+  static DependencyTicket velocity_ticket() {
+    return DependencyTicket(internal::kVelocityTicket);
   }
 
   /** Returns a ticket indicating dependence on all of the configuration
   and velocity state variables of this System. This ticket depends on the
   configuration_ticket and the velocity_ticket.
   @see configuration_ticket(), velocity_ticket() */
-  static constexpr DependencyTicket kinematics_ticket() {
-    return kinematics_ticket_;
+  static DependencyTicket kinematics_ticket() {
+    return DependencyTicket(internal::kKinematicsTicket);
   }
 
   /** Returns a ticket indicating dependence on _all_ parameters p in this
   subsystem, including numeric parameters pn, and abstract parameters pa. */
-  static constexpr DependencyTicket all_parameters_ticket() {
-    return all_parameters_ticket_;
+  static DependencyTicket all_parameters_ticket() {
+    return DependencyTicket(internal::kAllParametersTicket);
   }
 
   /** Returns a ticket indicating dependence on _all_ input ports u of this
   subsystem. */
-  static constexpr DependencyTicket all_input_ports_ticket() {
-    return all_input_ports_ticket_;
+  static DependencyTicket all_input_ports_ticket() {
+    return DependencyTicket(internal::kAllInputPortsTicket);
   }
 
   /** Returns a ticket indicating dependence on a particular input port. */
@@ -710,6 +728,11 @@ class SystemBase {
   std::string name_;
   const SystemBase* parent_{nullptr};
 
+  // Initialize to the first ticket number available after all the well-known
+  // ones. This gets incremented as tickets are handed out for the optional
+  // entities below.
+  DependencyTicket next_available_ticket_{internal::kNextAvailableTicket};
+
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
 
@@ -720,32 +743,7 @@ class SystemBase {
   // Indexed by CacheIndex.
   std::vector<std::unique_ptr<CacheEntry>> cache_entries_;
 
-  // DependencyTickets are assigned during System construction, then used both
-  // in System and Context so it is easy and very fast to find the
-  // DependencyTracker that goes with a given ticket.
-
-  // These built-in sources have the same ticket number in every System.
-  static constexpr DependencyTicket
-      nothing_ticket_        { 0, true},
-      time_ticket_           { 1, true},  // t (second argument is a dummy)
-      accuracy_ticket_       { 2, true},  // a
-      q_ticket_              { 3, true},
-      v_ticket_              { 4, true},
-      z_ticket_              { 5, true},
-      xc_ticket_             { 6, true},
-      xd_ticket_             { 7, true},
-      xa_ticket_             { 8, true},
-      x_ticket_              { 9, true},  // x
-      configuration_ticket_  {10, true},  // typically just q
-      velocity_ticket_       {11, true},  // typically just v
-      kinematics_ticket_     {12, true},  // configuration + velocity
-      all_parameters_ticket_ {13, true},  // p
-      all_input_ports_ticket_{14, true},  // u
-      all_sources_ticket_    {15, true},  // t,a,x,p,u
-      xcdot_ticket_          {16, true},  // xc time derivatives cache entry
-      xdhat_ticket_          {17, true};  // xd update cache entry
-
-  DependencyTicket next_available_ticket_{xdhat_ticket_ + 1};
+  // States and parameters don't hold their own tickets so we track them here.
 
   // Indexed by DiscreteStateIndex.
   std::vector<TrackerInfo> discrete_state_tickets_;
