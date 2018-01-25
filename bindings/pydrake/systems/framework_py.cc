@@ -4,6 +4,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -17,51 +18,16 @@
 #include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/system.h"
 
-namespace py = pybind11;
-
 using std::make_unique;
 using std::unique_ptr;
 using std::vector;
 
+namespace drake {
+namespace pydrake {
+
 PYBIND11_MODULE(framework, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
-
-  // TODO(eric.cousineau): pybind11 defaults to C++-like copies when dealing
-  // with rvalues. We should wrap this into a drake-level binding, so that we
-  // can default this to `reference` or `reference_internal.`
-
-  // Aliases for commonly used return value policies.
-  // `py_ref` is used when `keep_alive` is explicitly used (e.g. for extraction
-  // methods, like `GetMutableSubsystemState`).
-  auto py_ref = py::return_value_policy::reference;
-  // `py_iref` is used when pointers / lvalue references are returned (no need
-  // for `keep_alive`, as it is implicit.
-  auto py_iref = py::return_value_policy::reference_internal;
-
-  // `py::keep_alive` is used heavily throughout this code. For more
-  // information, please see:
-  // http://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive
-  // Terse notes are added to method bindings to indicate the patient
-  // (object being kept alive by nurse) and the nurse (object keeping patient
-  // alive).
-  // - "Keep alive, ownership" implies that one argument is owned directly by
-  // one of the other arguments (`self` is included in those arguments, for
-  // `py::init<>` and class methods).
-  // - "Keep alive, reference" implies a reference that is lifetime-sensitive
-  // (something that is not necessarily owned by the other arguments).
-  // - "Keep alive, transitive" implies a transfer of ownership of owned
-  // objects from one container to another. (e.g. transfering all `System`s
-  // from `DiagramBuilder` to `Diagram` when calling
-  // `DiagramBuilder.Build()`.)
-  // N.B. `py::return_value_policy::reference_internal` implies
-  // `py::keep_alive<0, 1>`, which implies
-  // "Keep alive, reference: `return` keeps `self` alive".
-
-  // TODO(eric.cousineau): Move these notes to `pydrake/pydrake_pybind.h`, to
-  // be used with other utilities; Doxygen-ize them.
 
   m.doc() = "Bindings for the core Systems framework.";
 
@@ -73,7 +39,7 @@ PYBIND11_MODULE(framework, m) {
   // TODO(eric.cousineau): Resolve `str_py` workaround.
   auto str_py = py::eval("str");
 
-  py::setattr(m, "kAutoSize", py::cast(kAutoSize));
+  m.attr("kAutoSize") = kAutoSize;
 
   py::enum_<PortDataType>(m, "PortDataType")
     .value("kVectorValued", kVectorValued)
@@ -92,10 +58,10 @@ PYBIND11_MODULE(framework, m) {
   py::class_<System<T>, PySystem>(m, "System")
     .def("set_name", &System<T>::set_name)
     // Topology.
-    .def("get_input_port", &System<T>::get_input_port, py_iref)
-    .def("get_output_port", &System<T>::get_output_port, py_iref)
+    .def("get_input_port", &System<T>::get_input_port, py_reference_internal)
+    .def("get_output_port", &System<T>::get_output_port, py_reference_internal)
     .def(
-        "_DeclareInputPort", &PySystem::DeclareInputPort, py_iref,
+        "_DeclareInputPort", &PySystem::DeclareInputPort, py_reference_internal,
         py::arg("type"), py::arg("size"), py::arg("random_type") = nullopt)
     // Context.
     .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
@@ -104,7 +70,7 @@ PYBIND11_MODULE(framework, m) {
         "EvalVectorInput",
         [](const System<T>* self, const Context<T>& arg1, int arg2) {
           return self->EvalVectorInput(arg1, arg2);
-        }, py_iref)
+        }, py_reference_internal)
     .def("CalcOutput", &System<T>::CalcOutput)
     // Sugar.
     .def(
@@ -178,23 +144,24 @@ PYBIND11_MODULE(framework, m) {
                 return arg2(&nest_arg1, nest_arg2);
               };
           return self->DeclareVectorOutputPort(arg1, wrapped);
-        }, py_iref)
+        }, py_reference_internal)
     .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
-         py::arg("period"), py::arg("offset") = 0., py_iref)
+         py::arg("period"), py::arg("offset") = 0.)
     .def("_DoPublish", &LeafSystemPublic::DoPublish);
 
   py::class_<Context<T>>(m, "Context")
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort), py_iref,
+             &Context<T>::FixInputPort), py_reference_internal,
          // Keep alive, ownership: `BasicVector` keeps `self` alive.
          py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
-    .def("get_state", &Context<T>::get_state, py_iref)
-    .def("get_mutable_state", &Context<T>::get_mutable_state, py_iref);
+    .def("get_state", &Context<T>::get_state, py_reference_internal)
+    .def("get_mutable_state", &Context<T>::get_mutable_state,
+         py_reference_internal);
 
   py::class_<LeafContext<T>, Context<T>>(m, "LeafContext");
 
@@ -205,7 +172,7 @@ PYBIND11_MODULE(framework, m) {
           // @note Use `auto&&` to get perfect forwarding.
           // @note Compiler does not like `py::overload_cast` with this setup?
           return self->GetMutableSubsystemState(arg1, arg2);
-        }, py_ref,
+        }, py_reference,
         // Keep alive, ownership: `return` keeps `Context` alive.
         py::keep_alive<0, 3>());
 
@@ -226,8 +193,9 @@ PYBIND11_MODULE(framework, m) {
     .def("Connect",
          py::overload_cast<const OutputPort<T>&, const InputPortDescriptor<T>&>(
              &DiagramBuilder<T>::Connect))
-    .def("ExportInput", &DiagramBuilder<T>::ExportInput, py_iref)
-    .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py_iref)
+    .def("ExportInput", &DiagramBuilder<T>::ExportInput, py_reference_internal)
+    .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
+         py_reference_internal)
     .def("Build", &DiagramBuilder<T>::Build,
          // Keep alive, transitive: `return` keeps `self` alive.
          py::keep_alive<1, 0>())
@@ -243,7 +211,8 @@ PYBIND11_MODULE(framework, m) {
 
   py::class_<SystemOutput<T>>(m, "SystemOutput")
     .def("get_num_ports", &SystemOutput<T>::get_num_ports)
-    .def("get_vector_data", &SystemOutput<T>::get_vector_data, py_iref);
+    .def("get_vector_data", &SystemOutput<T>::get_vector_data,
+         py_reference_internal);
 
   py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor");
 
@@ -259,11 +228,11 @@ PYBIND11_MODULE(framework, m) {
     .def("get_value",
         [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
           return self->get_value();
-        }, py_iref)
+        }, py_reference_internal)
     .def("get_mutable_value",
         [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
           return self->get_mutable_value();
-        }, py_iref);
+        }, py_reference_internal);
 
   py::class_<Supervector<T>, VectorBase<T>>(m, "Supervector");
 
@@ -283,22 +252,25 @@ PYBIND11_MODULE(framework, m) {
   py::class_<State<T>>(m, "State")
     .def(py::init<>())
     .def("get_continuous_state",
-         &State<T>::get_continuous_state, py_iref)
+         &State<T>::get_continuous_state, py_reference_internal)
     .def("get_mutable_continuous_state",
-         &State<T>::get_mutable_continuous_state, py_iref)
+         &State<T>::get_mutable_continuous_state, py_reference_internal)
     .def("get_discrete_state",
-        &State<T>::get_discrete_state, py_iref);
+        &State<T>::get_discrete_state, py_reference_internal);
 
   // - Constituents.
   py::class_<ContinuousState<T>>(m, "ContinuousState")
     .def(py::init<>())
-    .def("get_vector", &ContinuousState<T>::get_vector, py_iref)
+    .def("get_vector", &ContinuousState<T>::get_vector, py_reference_internal)
     .def("get_mutable_vector",
-         &ContinuousState<T>::get_mutable_vector, py_iref);
+         &ContinuousState<T>::get_mutable_vector, py_reference_internal);
 
   py::class_<DiscreteValues<T>>(m, "DiscreteValues")
     .def("num_groups", &DiscreteValues<T>::num_groups)
-    .def("get_data", &DiscreteValues<T>::get_data, py_iref);
+    .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal);
 
   py::class_<AbstractValues>(m, "AbstractValues");
 }
+
+}  // namespace pydrake
+}  // namespace drake

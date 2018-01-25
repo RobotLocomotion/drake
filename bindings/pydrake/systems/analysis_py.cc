@@ -1,16 +1,16 @@
 #include <pybind11/pybind11.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/analysis/simulator.h"
 
-namespace py = pybind11;
-
 using std::unique_ptr;
+
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(analysis, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
-
-  auto py_iref = py::return_value_policy::reference_internal;
 
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
@@ -27,9 +27,13 @@ PYBIND11_MODULE(analysis, m) {
          py::keep_alive<3, 1>())
     .def("Initialize", &Simulator<T>::Initialize)
     .def("StepTo", &Simulator<T>::StepTo)
-    .def("get_context", &Simulator<T>::get_context, py_iref)
-    .def("get_mutable_context", &Simulator<T>::get_mutable_context, py_iref)
+    .def("get_context", &Simulator<T>::get_context, py_reference_internal)
+    .def("get_mutable_context", &Simulator<T>::get_mutable_context,
+         py_reference_internal)
     .def("set_publish_every_time_step",
          &Simulator<T>::set_publish_every_time_step)
     .def("set_target_realtime_rate", &Simulator<T>::set_target_realtime_rate);
 }
+
+}  // namespace pydrake
+}  // namespace drake
