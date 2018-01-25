@@ -107,6 +107,7 @@ drake_cc_binary(
     add_test_rule = 1,
     data = [":models"],
     test_rule_args = ["-realtime_factor=0.0"],
+    test_rule_size = "medium",
     deps = [
         ":acrobot_plant",
         "//drake/common:find_resource",
