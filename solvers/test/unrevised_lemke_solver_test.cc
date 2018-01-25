@@ -77,6 +77,24 @@ void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   RunRegularizedLcp(M, q, expected_z_in);
 }
 
+GTEST_TEST(testUnrevisedLCP, testCottle) {
+  Eigen::Matrix<double, 3, 3> M;
+
+  // clang-format off
+  M <<
+    0, -1, 2,
+    2, 0, -2,
+    -1, 1, 0;
+  // clang-format on
+
+  Eigen::Matrix<double, 3, 1> q;
+  q << -3, 6, -1;
+
+  Eigen::VectorXd expected_z(3);
+  expected_z << 0, 1, 3;
+  RunBasicLcp(M, q, expected_z);
+}
+
 GTEST_TEST(testUnrevisedLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
   // clang-format off
@@ -95,12 +113,13 @@ GTEST_TEST(testUnrevisedLCP, testTrivial) {
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
 
-  Eigen::VectorXd empty_z;
-  RunBasicLcp(M, q, empty_z);
+  Eigen::VectorXd expected_z(9);
+  expected_z << 1, 1.0/2, 1.0/3, 1.0/4, 1.0/5, 1.0/6, 1.0/7, 1.0/8, 1.0/9;
+  RunBasicLcp(M, q, expected_z);
 
   // Mangle the input matrix so that some regularization occurs.
   M(0, 8) = 10;
-  RunRegularizedLcp(M, q, empty_z);
+  RunRegularizedLcp(M, q, expected_z);
 }
 
 /*

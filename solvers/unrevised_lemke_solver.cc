@@ -128,7 +128,6 @@ template <typename Derived, typename T>
 void SelectSubMatrixPlusCovering(const Eigen::MatrixBase<Derived>& in,
                      const std::vector<int>& rows,
                      const std::vector<int>& cols, MatrixX<T>* out) {
-  const int n = in.rows();
   const int num_rows = rows.size();
   const int num_cols = cols.size();
   out->resize(num_rows, num_cols);
@@ -137,8 +136,8 @@ void SelectSubMatrixPlusCovering(const Eigen::MatrixBase<Derived>& in,
     const auto row_in = in.row(rows[i]);
     auto row_out = out->row(i);
     for (int j = 0; j < num_cols; j++) {
-      if (cols[j] < n) {
-        row_out(j) = row_in(cols[j]);
+      if (cols[j] > 0) {
+        row_out(j) = row_in(cols[j] - 1);
       } else {
         row_out(j) = 1.0;
       }
@@ -155,18 +154,17 @@ template <typename Derived, typename T>
 void SelectSubColumnPlusCovering(const Eigen::MatrixBase<Derived>& in,
                                  const std::vector<int>& rows,
                                  int col, VectorX<T>* out) {
-  const int n = in.rows();
   const int num_rows = rows.size();
   out->resize(num_rows);
 
   // Look for the covering vector first.
-  if (col == n) {
+  if (col == 0) {
     out->setOnes();
     return;
   } else {
     for (int i = 0; i < num_rows; i++) {
       const auto row_in = in.row(rows[i]);
-      (*out)[i] = row_in(col);
+      (*out)[i] = row_in(col - 1);
     }
   }
 }
@@ -180,6 +178,13 @@ void SelectSubVector(const VectorX<T>& in,
   for (int i = 0; i < num_rows; i++) {
     (*out)(i) = in(rows[i]);
   }
+}
+
+template <typename T>
+void SetSubVector(const std::vector<int>& indices, const VectorX<T>& v_sub, VectorX<T>* v) {
+  DRAKE_DEMAND(indices.size() == v_sub.size());
+  for (int i = 0; i < indices.size(); ++i)
+    (*v)[indices[i]] = v_sub[i];
 }
 
 }  // anonymous namespace
@@ -332,9 +337,27 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
 
   // If the driving index does not correspond to the artificial variable,
   // M_bar_col must be non-null.
-  if (indep_variables[driving_index].z &&
-      indep_variables[driving_index].index == kArtificial) {
+  if (!indep_variables[driving_index].z ||
+      indep_variables[driving_index].index != kArtificial) {
     DRAKE_DEMAND(M_bar_col);
+  }
+
+  // Determine sets.
+  std::vector<int> w_vars_in_indep, w_vars_in_dep, z_vars_in_indep,
+      z_vars_in_dep;
+  for (int i = 0; i < indep_variables.size(); ++i) {
+    if (!indep_variables[i].z) {
+      w_vars_in_indep.push_back(indep_variables[i].index);
+    } else {
+      z_vars_in_indep.push_back(indep_variables[i].index);
+    }
+  }
+  for (int i = 0; i < dep_variables.size(); ++i) {
+    if (!dep_variables[i].z) {
+      w_vars_in_dep.push_back(dep_variables[i].index);
+    } else {
+      z_vars_in_dep.push_back(dep_variables[i].index);
+    }
   }
 
   // If α is empty, all z are on the right hand side (independent) and all
@@ -350,47 +373,49 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
   // select using dependent z variables or independent w variables. We
   // simultaneously determine the set of indices in α̅, which corresponds to
   // independent z variables and dependent w variables. 
-  std::vector<int> alpha_indices, not_alpha_indices;
-  for (int i = 0; i < indep_variables.size(); ++i) {
-    if (!indep_variables[i].z) {
-      alpha_indices.push_back(indep_variables[i].index);
-    } else {
-      if (indep_variables[i].index < kArtificial)
-        not_alpha_indices.push_back(indep_variables[i].index);
-    }
-  }
+
+  std::sort(w_vars_in_indep.begin(), w_vars_in_indep.end());
+  std::sort(z_vars_in_indep.begin(), z_vars_in_indep.end());
+  std::sort(w_vars_in_dep.begin(), w_vars_in_dep.end());
+  std::sort(z_vars_in_dep.begin(), z_vars_in_dep.end());
+
   MatrixX<T> Maa, Mba;
-  SelectSubMatrix(M, alpha_indices, alpha_indices, &Maa);
-  SelectSubMatrix(M, not_alpha_indices, alpha_indices, &Mba);
+  SelectSubMatrixPlusCovering(M, w_vars_in_indep, z_vars_in_dep, &Maa);
+  SelectSubMatrixPlusCovering(M, w_vars_in_dep, z_vars_in_dep, &Mba);
   LinearSolver<T> solver(Maa);
 
+  std::vector<int> alpha_indices, not_alpha_indices;
   // qα comprises the components of q corresponding to the dependent z
   // variables. qα̅ comprises the components of q corresponding to the
   // independent z variables.
   VectorX<T> q_alpha, q_not_alpha;
-  SelectSubVector(q, alpha_indices, &q_alpha);
-  SelectSubVector(q, not_alpha_indices, &q_not_alpha);
+  SelectSubVector(q, w_vars_in_indep, &q_alpha);
+  SelectSubVector(q, w_vars_in_dep, &q_not_alpha);
   const VectorX<T> q_alpha_prime = -solver.Solve(q_alpha);
   const VectorX<T> q_not_alpha_prime = q_not_alpha + Mba * q_alpha_prime;
   q_bar->resize(n);
+  SetSubVector(z_vars_in_dep, q_alpha_prime, q_bar);
+  SetSubVector(w_vars_in_indep, q_not_alpha_prime, q_bar);
+/*
   q_bar->segment(0, alpha_indices.size()) = q_alpha_prime;
-  q_bar->segment(alpha_indices.size(), not_alpha_indices.size() - 1) =
-      q_not_alpha_prime.head(not_alpha_indices.size() - 1);
-
+  q_bar->segment(alpha_indices.size(), not_alpha_indices.size()) =
+      q_not_alpha_prime;
+*/
   // If the driving index corresponds to the artificial variable, no need to
   // perform an unnecessary calculation.
-  if (!indep_variables[driving_index].z ||
-      indep_variables[driving_index].index != kArtificial) {
+  if (indep_variables[driving_index].z &&
+      indep_variables[driving_index].index == kArtificial) {
     return;
   }
 
+  /*
   // Reform not_alpha_indices, now using the artificial variable.
   not_alpha_indices.clear();
   for (int i = 0; i < indep_variables.size(); ++i) {
     if (indep_variables[i].z)
       not_alpha_indices.push_back(indep_variables[i].index);
   }
-
+*/
   // There are two possible cases for the driving variable, depending on the
   // driving variable index. If the index is less than the number of dependent
   // z variables (i.e., the number of alpha indices), the column should either
@@ -398,25 +423,31 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
   // two right equations. Note that we
   // do not say that the latter should correspond to one of the dependent w
   // variables, because we need to be able to include the covering vector.
-  if (driving_index < alpha_indices.size()) {
+  VectorX<T> M_bar_alpha_prime, M_bar_not_alpha_prime;
+
+  // Get the column index, which must wrap around.
+  int col_index = indep_variables[driving_index].index + 1;
+  if (col_index > n)
+    col_index = 0;
+
+  if (!indep_variables[driving_index].z) {
     // Left two equations.
-    const VectorX<T> unit = VectorX<T>::Unit(alpha_indices.size(),
-        driving_index);
-    const VectorX<T> M_bar_alpha_prime = solver.Solve(unit);
-    const VectorX<T> M_bar_not_alpha_prime = Mba * M_bar_alpha_prime;
-    M_bar_col->resize(n);
-    M_bar_col->segment(0, alpha_indices.size()) = M_bar_alpha_prime;
-    M_bar_col->segment(alpha_indices.size(), not_alpha_indices.size()) =
-      M_bar_not_alpha_prime;
+    const VectorX<T> unit = VectorX<T>::Unit(alpha_indices.size(), col_index);
+    M_bar_alpha_prime = solver.Solve(unit);
+    M_bar_not_alpha_prime = Mba * M_bar_alpha_prime;
   } else {
     // Right two equations.
-    const int index = driving_index - alpha_indices.size();
     VectorX<T> Mab, Mbb;
-    SelectSubColumnPlusCovering(M, alpha_indices, index, &Mab);
-    SelectSubColumnPlusCovering(M, not_alpha_indices, index, &Mbb);
-    VectorX<T> M_bar_alpha_prime = -solver.Solve(Mab);
-    VectorX<T> M_bar_not_alpha_prime = Mbb + Mba * M_bar_alpha_prime;
+    SelectSubColumnPlusCovering(M, alpha_indices, col_index, &Mab);
+    SelectSubColumnPlusCovering(M, not_alpha_indices, col_index, &Mbb);
+    M_bar_alpha_prime = -solver.Solve(Mab);
+    M_bar_not_alpha_prime = Mbb + Mba * M_bar_alpha_prime;
   }
+
+  M_bar_col->resize(n);
+  M_bar_col->segment(0, alpha_indices.size()) = M_bar_alpha_prime;
+  M_bar_col->segment(alpha_indices.size(), not_alpha_indices.size()) =
+      M_bar_not_alpha_prime;
 }
 
 // O(n) method for finding the index of the complement of an LCP variable in
@@ -471,8 +502,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() entered, M: {}, "
       "q: {}, ", M, q.transpose());
 
-  const unsigned n = q.size();
-  const unsigned max_pivots = std::min(unsigned{1000}, 50 * n);
+  const int n = q.size();
+  const int max_pivots = std::min(1000, 50 * n);
 
   if (M.rows() != n || M.cols() != n)
     throw std::logic_error("M's dimensions do not match that of q.");
@@ -577,7 +608,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
     // Perform the minimum ratio test.
     T min_ratio = std::numeric_limits<double>::infinity();
-    int blocking_index = -1;
+    blocking_index = -1;
     for (int i = 0; i < M_bar_col.size(); ++i) {
       if (M_bar_col[i] < 0) {
         const T ratio = -q_bar[i] / M_bar_col[i];
@@ -605,7 +636,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                 indep_variables_[driving_index]);
 
       // Compute the permuted q, and convert it into a solution.
-      ConstructLemkeSolution(M, q, indep_variables_, blocking_index,
+      ConstructLemkeSolution(M, q, indep_variables_, driving_index,
                              dep_variables_, z);
       return true;
     } else {
