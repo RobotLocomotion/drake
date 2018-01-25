@@ -146,9 +146,9 @@ dpkg_install_from_wget() {
 
 # Install Bazel.
 dpkg_install_from_wget \
-  bazel 0.6.1 \
-  https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb \
-  5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd
+  bazel 0.9.0 \
+  https://github.com/bazelbuild/bazel/releases/download/0.9.0/bazel_0.9.0-linux-x86_64.deb \
+  a600454ec218bffd1a1cea0f5bb511031081d23c4de15bfde674164dc2f9cd7f
 
 # Install IBEX, a dReal dependency.  See
 # https://launchpad.net/~dreal/+archive/ubuntu/dreal
