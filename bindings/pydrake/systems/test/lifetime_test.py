@@ -21,7 +21,7 @@ from pydrake.systems.framework import (
 from pydrake.systems.primitives import (
     Adder,
     )
-from pydrake.systems.test.lifetime_test_util import (
+from pydrake.systems.test.test_util import (
     DeleteListenerSystem,
     DeleteListenerVector,
     )

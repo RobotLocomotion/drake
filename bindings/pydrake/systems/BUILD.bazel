@@ -39,12 +39,15 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//drake/bindings/pydrake:common_py",
+        "//bindings/pydrake:common_py",
     ],
 )
 
 drake_pybind_library(
     name = "framework_py",
+    cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
+    ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
     package_info = PACKAGE_INFO,
@@ -75,6 +78,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "sensors_py",
+    cc_deps = [
+        "//bindings/pydrake/util:cpp_template_pybind",
+    ],
+    cc_so_name = "sensors",
+    cc_srcs = ["sensors_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/util:cpp_template_py",
+    ],
+)
+
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
@@ -89,6 +107,7 @@ drake_py_library(
         ":drawing_py",
         ":framework_py",
         ":primitives_py",
+        ":sensors_py",
     ],
 )
 
@@ -96,6 +115,7 @@ PYBIND_LIBRARIES = [
     ":analysis_py",
     ":framework_py",
     ":primitives_py",
+    ":sensors_py",
 ]
 
 PY_LIBRARIES = [
@@ -140,13 +160,14 @@ drake_py_binary(
 )
 
 drake_pybind_library(
-    name = "lifetime_test_util",
+    name = "test_util",
     testonly = 1,
     add_install = False,
-    cc_so_name = "test/lifetime_test_util",
-    cc_srcs = ["test/lifetime_test_util_py.cc"],
+    cc_so_name = "test/test_util",
+    cc_srcs = ["test/test_util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":framework_py",
         ":primitives_py",
     ],
 )
@@ -156,8 +177,8 @@ drake_py_test(
     deps = [
         ":analysis_py",
         ":framework_py",
-        ":lifetime_test_util",
         ":primitives_py",
+        ":test_util",
     ],
 )
 
@@ -168,6 +189,7 @@ drake_py_test(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        ":test_util",
     ],
 )
 
@@ -176,6 +198,14 @@ drake_py_test(
     size = "small",
     deps = [
         ":framework_py",
+    ],
+)
+
+drake_py_test(
+    name = "sensors_test",
+    size = "small",
+    deps = [
+        ":sensors_py",
     ],
 )
 

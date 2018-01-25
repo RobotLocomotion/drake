@@ -66,6 +66,9 @@ int GetIKSolverInfo(SolutionResult result) {
     case SolutionResult::kIterationLimit: {
       return 3;
     }
+    case SolutionResult::kDualInfeasible: {
+      return 100;  // Not a real SNOPT error.
+    }
   }
 
   return -1;
