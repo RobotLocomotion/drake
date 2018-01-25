@@ -210,7 +210,9 @@ int DoMain() {
       manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->get_output_port_wsg_state().size(), 0, 1);
+      model->get_output_port_wsg_state().size(),
+      manipulation::schunk_wsg::kSchunkWsgPositionIndex,
+      manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
   wsg_status_sender->set_name("wsg_status_sender");
 
   builder.Connect(wsg_command_sub->get_output_port(0),
