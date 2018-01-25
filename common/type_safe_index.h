@@ -159,19 +159,9 @@ class TypeSafeIndex {
         AssertValid("Explicitly constructing an invalid index."));
   }
 
-  /// Compile-time (constexpr) construction from a non-negative `int` value.
-  /// A compile-time error will be reported for a negative index, but the
-  /// clarity is limited by constexpr requirements; don't use
-  /// this constructor except for compile time initialization. The second
-  /// parameter is a dummy to force use of this constructor; just pass `true`.
-  constexpr TypeSafeIndex(int index, bool) : index_(index) {
-    if (index < 0)
-      throw "Explicitly constructing an invalid index.";
-  }
-
   /// Disallow construction from another index type.
   template <typename U>
-  TypeSafeIndex( const TypeSafeIndex<U>& idx) = delete;
+  TypeSafeIndex(const TypeSafeIndex<U>& idx) = delete;
 
   TypeSafeIndex(const TypeSafeIndex&) = default;
 

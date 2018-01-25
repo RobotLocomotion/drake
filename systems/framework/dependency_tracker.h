@@ -123,7 +123,7 @@ class DependencyTracker {
   system pathname service of the owning subcontext must be supplied here and
   be non-null. */
   DependencyTracker(DependencyTicket ticket, std::string description,
-                    const SystemPathnameInterface* owning_subcontext,
+                    const internal::SystemPathnameInterface* owning_subcontext,
                     CacheEntryValue* cache_value)
       : ticket_(ticket),
         description_(std::move(description)),
@@ -244,10 +244,10 @@ class DependencyTracker {
   the pointers here to addresses corresponding to those in the source tracker,
   with the help of the given map. It is a fatal error if any needed pointer is
   not present in the map. */
-  void RepairTrackerPointers(const DependencyTracker& source,
-                             const DependencyTracker::PointerMap& tracker_map,
-                             const SystemPathnameInterface* owning_subcontext,
-                             Cache* cache);
+  void RepairTrackerPointers(
+      const DependencyTracker& source,
+      const DependencyTracker::PointerMap& tracker_map,
+      const internal::SystemPathnameInterface* owning_subcontext, Cache* cache);
 
   /** Copies the current tracker but with all pointers set to null. */
   std::unique_ptr<DependencyTracker> CloneWithoutPointers() const {
@@ -298,7 +298,7 @@ class DependencyTracker {
   std::string description_;
 
   // Pointer to the system name service of the owning subcontext.
-  const SystemPathnameInterface* owning_subcontext_{};
+  const internal::SystemPathnameInterface* owning_subcontext_{};
 
   // Points to the dummy_cache_value below if we're not told otherwise.
   CacheEntryValue* cache_value_{};
@@ -354,7 +354,8 @@ class DependencyGraph {
 
   /** Constructor creates an empty graph referencing the system pathname
   service of its owning subcontext. The supplied pointer must not be null. */
-  explicit DependencyGraph(const SystemPathnameInterface* owning_subcontext)
+  explicit DependencyGraph(
+      const internal::SystemPathnameInterface* owning_subcontext)
       : owning_subcontext_(owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr);
   }
@@ -452,12 +453,12 @@ class DependencyGraph {
   void RepairTrackerPointers(
       const DependencyGraph& source,
       const DependencyTracker::PointerMap& tracker_map,
-      const SystemPathnameInterface* owning_subcontext,
+      const internal::SystemPathnameInterface* owning_subcontext,
       Cache* new_cache);
 
  private:
   // The system name service of the subcontext that owns this subgraph.
-  const SystemPathnameInterface* owning_subcontext_{};
+  const internal::SystemPathnameInterface* owning_subcontext_{};
 
   // All value trackers, indexed by DependencyTicket.
   std::vector<std::unique_ptr<DependencyTracker>> graph_;

@@ -54,6 +54,9 @@ typedef enum {
   kAbstractValued = 1,
 } PortDataType;
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+
 /** Any class that can provide a System name and (for Diagrams) a subsystem
 path name should implement this interface. This is used by System and Context
 so that contained objects can provide helpful error messages and log
@@ -73,8 +76,31 @@ class SystemPathnameInterface {
   virtual std::string GetSystemPathname() const = 0;
 };
 
-
-namespace internal {
+/** These dependency ticket numbers are common to all systems and contexts so
+are defined here. Actual ticket objects are created from these integers.
+Ticket numbers for conditionally-allocated objects like ports and cache
+entries are allocated beginning with kNextAvailableTicket defined below. */
+enum WellKnownTicketNumbers {
+  kNothingTicket        =  0,
+  kTimeTicket           =  1,
+  kAccuracyTicket       =  2,
+  kQTicket              =  3,
+  kVTicket              =  4,
+  kZTicket              =  5,
+  kXcTicket             =  6,
+  kXdTicket             =  7,
+  kXaTicket             =  8,
+  kXTicket              =  9,
+  kConfigurationTicket  = 10,
+  kVelocityTicket       = 11,
+  kKinematicsTicket     = 12,
+  kAllParametersTicket  = 13,
+  kAllInputPortsTicket  = 14,
+  kAllSourcesTicket     = 15,
+  kXcdotTicket          = 16,
+  kXdhatTicket          = 17,
+  kNextAvailableTicket  = kXdhatTicket+1
+};
 
 // These are some utility methods that are reused within the framework.
 
@@ -105,6 +131,7 @@ void CheckNonNull(const std::vector<PtrType>& pointers) {
 }
 
 }  // namespace internal
+#endif
 
 }  // namespace systems
 }  // namespace drake

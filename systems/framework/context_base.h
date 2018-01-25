@@ -18,8 +18,9 @@ namespace drake {
 namespace systems {
 
 /** Provides non-templatized functionality shared by the templatized derived
-classes. That includes caching and dependency tracking. */
-class ContextBase : public SystemPathnameInterface {
+classes. That includes caching and dependency tracking, and management of
+local values for fixed input ports. */
+class ContextBase : public internal::SystemPathnameInterface {
  public:
   /** @name  Does not allow move or assignment; copy is protected. */
   /** @{ */
@@ -52,13 +53,14 @@ class ContextBase : public SystemPathnameInterface {
   and all its subcontexts. Disabling forces every `Eval()` method to perform a
   full calculation rather than returning the cached one. Results should be
   identical with or without caching, except for performance. If they are not,
-  there is either a problem with the specified dependencies for some
-  calculation, or a bug in the caching system. The `is_disabled` flag is
-  independent of the `is_up_to_date` flag, which continues to be maintained
-  even when caching is disabled (though it is ignored). Hence re-enabling the
-  cache with this method may result in some entries already considered
-  up to date. See SetAllCacheEntriesOutOfDate() if you want to ensure that
-  caching starts with everything out of date. */
+  there is likely a problem with (a) the specified dependencies for some
+  calculation, or (b) a misuse of references into cached values that hides
+  modifications from the caching system, or (c) a bug in the caching system. The
+  `is_disabled` flag is independent of the `is_up_to_date` flag, which continues
+  to be maintained even when caching is disabled (though it is ignored). Hence
+  re-enabling the cache with this method may result in some entries already
+  considered up to date. See SetAllCacheEntriesOutOfDate() if you want to ensure
+  that caching starts with everything out of date. */
   void SetIsCacheDisabled(bool is_disabled) const {
     cache_.SetIsCacheDisabled(is_disabled);
     const int n = do_num_subcontexts();
@@ -71,9 +73,10 @@ class ContextBase : public SystemPathnameInterface {
   each cache entry to perform a full calculation rather than returning the
   cached one. After that, normal caching behavior resumes. Results should be
   identical whether this is called or not, since the caching system should be
-  maintaining this flag correctly. If they are not, there is either a problem
-  with the specified dependencies for some calculation, or a bug in the caching
-  system. */
+  maintaining this flag correctly. If they are not, there is likely a problem
+  with (a) the specified dependencies for some calculation, or (b) a misuse of
+  references into cached values that hides modifications from the caching
+  system, or (c) a bug in the caching system. */
   void SetAllCacheEntriesOutOfDate() const {
     cache_.SetAllEntriesOutOfDate();
     const int n = do_num_subcontexts();
@@ -189,10 +192,16 @@ class ContextBase : public SystemPathnameInterface {
   }
 
   /** Force invalidation of any time-dependent computation. */
-  void NoteTimeChanged(int64_t change_event);
+  void NoteTimeChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kTimeTicket))
+        .NoteValueChange(change_event);
+  }
 
   /** Force invalidation of any accuracy-dependent computation. */
-  void NoteAccuracyChanged(int64_t change_event);
+  void NoteAccuracyChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kAccuracyTicket))
+        .NoteValueChange(change_event);
+  }
 
   /** Force invalidation of any state-dependent computation. */
   void NoteAllStateChanged(int64_t change_event) {
@@ -209,13 +218,22 @@ class ContextBase : public SystemPathnameInterface {
   }
 
   /** Force invalidation of any q-dependent computation. */
-  void NoteAllQChanged(int64_t change_event);
+  void NoteAllQChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kQTicket))
+        .NoteValueChange(change_event);
+  }
 
   /** Force invalidation of any v-dependent computation. */
-  void NoteAllVChanged(int64_t change_event);
+  void NoteAllVChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kVTicket))
+        .NoteValueChange(change_event);
+  }
 
   /** Force invalidation of any z-dependent computation. */
-  void NoteAllZChanged(int64_t change_event);
+  void NoteAllZChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kZTicket))
+        .NoteValueChange(change_event);
+  }
 
   /** Force invalidation of any discrete state-dependent computation. */
   void NoteAllDiscreteStateChanged(int64_t change_event) {

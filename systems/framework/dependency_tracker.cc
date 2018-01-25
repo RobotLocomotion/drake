@@ -182,7 +182,7 @@ bool DependencyTracker::HasSubscriber(
 void DependencyTracker::RepairTrackerPointers(
     const DependencyTracker& source,
     const DependencyTracker::PointerMap& tracker_map,
-    const SystemPathnameInterface* owning_subcontext, Cache* cache) {
+    const internal::SystemPathnameInterface* owning_subcontext, Cache* cache) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   DRAKE_DEMAND(cache != nullptr);
   owning_subcontext_ = owning_subcontext;
@@ -233,7 +233,8 @@ void DependencyGraph::AppendToTrackerPointerMap(
 void DependencyGraph::RepairTrackerPointers(
     const DependencyGraph& source,
     const DependencyTracker::PointerMap& tracker_map,
-    const SystemPathnameInterface* owning_subcontext, Cache* new_cache) {
+    const internal::SystemPathnameInterface* owning_subcontext,
+    Cache* new_cache) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   owning_subcontext_ = owning_subcontext;
   for (DependencyTicket ticket(0); ticket < num_trackers(); ++ticket) {

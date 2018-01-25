@@ -120,25 +120,5 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
   }
 }
 
-// Static member definitions.
-constexpr DependencyTicket SystemBase::nothing_ticket_;
-constexpr DependencyTicket SystemBase::time_ticket_;
-constexpr DependencyTicket SystemBase::accuracy_ticket_;
-constexpr DependencyTicket SystemBase::q_ticket_;
-constexpr DependencyTicket SystemBase::v_ticket_;
-constexpr DependencyTicket SystemBase::z_ticket_;
-constexpr DependencyTicket SystemBase::xc_ticket_;
-constexpr DependencyTicket SystemBase::xd_ticket_;
-constexpr DependencyTicket SystemBase::xa_ticket_;
-constexpr DependencyTicket SystemBase::x_ticket_;
-constexpr DependencyTicket SystemBase::configuration_ticket_;
-constexpr DependencyTicket SystemBase::velocity_ticket_;
-constexpr DependencyTicket SystemBase::kinematics_ticket_;
-constexpr DependencyTicket SystemBase::all_parameters_ticket_;
-constexpr DependencyTicket SystemBase::all_input_ports_ticket_;
-constexpr DependencyTicket SystemBase::all_sources_ticket_;
-constexpr DependencyTicket SystemBase::xcdot_ticket_;
-constexpr DependencyTicket SystemBase::xdhat_ticket_;
-
 }  // namespace systems
 }  // namespace drake

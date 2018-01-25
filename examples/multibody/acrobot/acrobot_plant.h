@@ -159,7 +159,7 @@ class AcrobotPlant final : public systems::LeafSystem<T> {
 
   // This override gives System::AllocateContext() the chance to create a more
   // specialized context type, in this case, a MultibodyTreeContext.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
