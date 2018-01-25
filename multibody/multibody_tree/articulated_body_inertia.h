@@ -35,9 +35,9 @@ namespace multibody {
 ///   F_BBo_W = P_B_W * A_WB + z_Bo_W                                       (2)
 /// </pre>
 /// where `P_B_W` is the articulated body inertia of body B and `z_Bo_W` is a
-/// bias force containing gyroscopic and Coriolis forces that becomes zero when
-/// all body velocities are zero and all applied generalized forces outboard
-/// from body B are zero [Jain 2010, §6.3.1]. The articulated body inertia
+/// bias force that includes the gyroscopic and Coriolis forces and becomes zero
+/// when all body velocities and all applied generalized forces outboard
+/// from body B are zero [Jain 2010, §7.2.1]. The articulated body inertia
 /// `P_B_W` is related to the multibody subsystem consisting only of bodies that
 /// are outboard of body B. We refer to this subsystem as the
 /// _articulated body subsystem_ associated with body B. Equation (2) describes
