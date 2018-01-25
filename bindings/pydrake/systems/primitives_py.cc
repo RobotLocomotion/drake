@@ -1,6 +1,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -8,11 +9,10 @@
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(primitives, m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 
@@ -42,3 +42,6 @@ PYBIND11_MODULE(primitives, m) {
 
   // TODO(eric.cousineau): Add more systems as needed.
 }
+
+}  // namespace pydrake
+}  // namespace drake

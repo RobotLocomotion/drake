@@ -2,12 +2,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/find_resource.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 // This function is defined in drake/common/drake_assert_and_throw.cc.
 extern "C" void drake_set_assertion_failure_to_throw_exception();
@@ -28,21 +30,21 @@ PYBIND11_MODULE(_common_py, m) {
   py::register_exception_translator([](std::exception_ptr p) {
       try {
         if (p) { std::rethrow_exception(p); }
-      } catch (const drake::detail::assertion_error& e) {
+      } catch (const detail::assertion_error& e) {
         PyErr_SetString(PyExc_SystemExit, e.what());
       }
     });
   // Convenient wrapper to add a resource search path.
-  m.def("AddResourceSearchPath", &drake::AddResourceSearchPath,
+  m.def("AddResourceSearchPath", &AddResourceSearchPath,
         "Adds a path in which to search for resource files. "
         "The path refers to the relative path within the Drake repository, ",
         py::arg("search_path"));
   // Convenient wrapper to get the list of resource search paths.
-  m.def("GetResourceSearchPaths", &drake::GetResourceSearchPaths,
+  m.def("GetResourceSearchPaths", &GetResourceSearchPaths,
         "Gets a copy of the list of paths set programmatically in which "
         "resource files are searched.");
   // Convenient wrapper for querying FindResource(resource_path).
-  m.def("FindResourceOrThrow", &drake::FindResourceOrThrow,
+  m.def("FindResourceOrThrow", &FindResourceOrThrow,
         "Attempts to locate a Drake resource named by the given path string. "
         "The path refers to the relative path within the Drake repository, "
         "e.g., drake/examples/pendulum/Pendulum.urdf. Raises an exception "
@@ -51,7 +53,7 @@ PYBIND11_MODULE(_common_py, m) {
   // Returns the fully-qualified path to the root of the `drake` source tree.
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GetDrakePath", &drake::GetDrakePath,
+  m.def("GetDrakePath", &GetDrakePath,
         "Get Drake path");
   #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   // These are meant to be called internally by pydrake; not by users.
@@ -61,3 +63,6 @@ PYBIND11_MODULE(_common_py, m) {
   m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
         "Trigger a Drake C++ assertion failure");
 }
+
+}  // namespace pydrake
+}  // namespace drake

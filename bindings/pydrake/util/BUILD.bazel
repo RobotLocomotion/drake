@@ -60,6 +60,7 @@ drake_cc_library(
     hdrs = ["cpp_param_pybind.h"],
     deps = [
         ":type_pack",
+        "//bindings/pydrake:pydrake_pybind",
         "@pybind11",
     ],
 )
@@ -87,6 +88,7 @@ drake_cc_library(
     hdrs = ["cpp_template_pybind.h"],
     deps = [
         ":cpp_param_pybind",
+        "//bindings/pydrake:pydrake_pybind",
         "@pybind11",
     ],
 )

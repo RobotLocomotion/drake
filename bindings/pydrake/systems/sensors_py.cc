@@ -24,9 +24,6 @@ using constant = std::integral_constant<T, Value>;
 template <typename T, T ... Values>
 using constant_pack = type_pack<type_pack<constant<T, Values>>...>;
 
-const auto py_reference = py::return_value_policy::reference;
-const auto py_reference_internal = py::return_value_policy::reference_internal;
-
 using Eigen::Map;
 using Eigen::Ref;
 
