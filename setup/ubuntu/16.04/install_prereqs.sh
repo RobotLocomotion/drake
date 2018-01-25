@@ -21,7 +21,7 @@ trap at_exit EXIT
 
 [[ "${EUID}" -eq 0 ]] || die "${me} must run as root. Please use sudo."
 
-apt update
+source install_prereqs_installed.sh
 apt install --no-install-recommends lsb-release
 
 [[ "$(lsb_release -sc)" == "xenial" ]] || die "${me} only supports Ubuntu 16.04."
@@ -30,32 +30,20 @@ apt install --no-install-recommends lsb-release
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
-binutils
-bison
 clang-4.0
 clang-format-4.0
-cmake
 cmake-curses-gui
 coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
-flex
-g++
-g++-5
-g++-5-multilib
-gcc
-gcc-5
-gcc-5-multilib
 gdb
 git
 graphviz
 libblas-dev
-libboost-all-dev
 libbz2-dev
 libexpat1-dev
 libfreetype6-dev
-libgflags-dev
 libglib2.0-dev
 libglu1-mesa-dev
 libhdf5-dev
@@ -68,20 +56,16 @@ libnetcdf-dev
 libnlopt-dev
 libogg-dev
 libpng-dev
-libprotobuf-dev
-libqt5multimedia5
 libqt5opengl5-dev
 libqt5x11extras5-dev
 libtheora-dev
 libtiff5-dev
 libtinyxml-dev
-libtinyxml2-dev
 libtool
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
 lldb-4.0
-make
 openjdk-8-jdk
 patchelf
 patchutils
@@ -89,15 +73,11 @@ pkg-config
 protobuf-compiler
 python-dev
 python-gtk2
-python-lxml
 python-matplotlib
-python-numpy
 python-protobuf
 python-pygame
-python-scipy
 python-sphinx
 python-tk
-python-yaml
 valgrind
 wget
 zip
@@ -149,15 +129,6 @@ dpkg_install_from_wget \
   bazel 0.9.0 \
   https://github.com/bazelbuild/bazel/releases/download/0.9.0/bazel_0.9.0-linux-x86_64.deb \
   a600454ec218bffd1a1cea0f5bb511031081d23c4de15bfde674164dc2f9cd7f
-
-# Install IBEX, a dReal dependency.  See
-# https://launchpad.net/~dreal/+archive/ubuntu/dreal
-# for more information. To rebuild IBEX, add the PPA `ppa:dreal/dreal` and then
-# run `apt source libibex-dev` to get the sources.
-dpkg_install_from_wget \
-  ibex 2.6.3 \
-  https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files/libibex-dev_2.6.3.20171215122721.git2275df8f465a9db6a42d497ca322011ff2c6f8f7~16.04_amd64.deb \
-  7d76c4450921b83971006f01b3259c75cddc178bc7f4f8766f996df7763ed2b5
 
 # Install dReal. See
 # https://github.com/dreal/dreal4/blob/master/README.md#build-debian-package for
