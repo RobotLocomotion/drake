@@ -1,5 +1,13 @@
 #pragma once
 
+#include "drake/examples/rod2d/normal_accel_witness.h"
+#include "drake/examples/rod2d/normal_force_witness.h"
+#include "drake/examples/rod2d/normal_vel_witness.h"
+#include "drake/examples/rod2d/signed_distance_witness.h"
+#include "drake/examples/rod2d/sliding_witness.h"
+#include "drake/examples/rod2d/sticking_friction_forces_slack_witness.h"
+
+
 #include <memory>
 #include <utility>
 #include <vector>
@@ -161,6 +169,13 @@ Outputs: Output Port 0 corresponds to the state vector; Output Port 1
 // TODO(edrumwri): Track energy and add a test to check it.
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
+  friend class SlidingWitness<T>;
+  friend class StickingFrictionForcesSlackWitness<T>;
+  friend class NormalAccelWitness<T>;
+  friend class NormalVelWitness<T>;
+  friend class NormalForceWitness<T>;
+  friend class SignedDistanceWitness<T>;
+
  public:
   ~Rod2D() override {}
 
