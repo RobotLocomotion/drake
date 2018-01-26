@@ -116,6 +116,21 @@ void MultibodyPlant<T>::RegisterGeometry(
 }
 
 template<typename T>
+void MultibodyPlant<T>::RegisterAnchoredGeometry(
+    const Isometry3<double>& X_WG, const geometry::Shape& shape,
+    geometry::GeometrySystem<double>* geometry_system) {
+  DRAKE_THROW_UNLESS(!this->is_finalized());
+
+  // If not already done, register with the provided geometry system.
+  if (!geometry_source_is_registered())
+    source_id_ = geometry_system->RegisterSource("MultibodyPlant");
+
+  geometry_system->RegisterAnchoredGeometry(
+      source_id_.value(),
+      std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
+}
+
+template<typename T>
 void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());

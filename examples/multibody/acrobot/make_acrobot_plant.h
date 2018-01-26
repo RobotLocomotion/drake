@@ -3,16 +3,10 @@
 #include <limits>
 #include <memory>
 
-#include "drake/common/drake_optional.h"
-#include "drake/examples/multibody/acrobot/gen/acrobot_state.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_system.h"
-#include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
 namespace examples {

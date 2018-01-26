@@ -167,6 +167,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<double>* geometry_system);
 
+  void RegisterAnchoredGeometry(
+      const Isometry3<double>& X_WG, const geometry::Shape& shape,
+      geometry::GeometrySystem<double>* geometry_system);
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& get_world_body() const {
     return model_->get_world_body();
