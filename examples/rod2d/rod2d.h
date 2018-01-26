@@ -1,18 +1,16 @@
 #pragma once
 
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "drake/examples/rod2d/gen/rod2d_state_vector.h"
 #include "drake/examples/rod2d/normal_accel_witness.h"
 #include "drake/examples/rod2d/normal_force_witness.h"
 #include "drake/examples/rod2d/normal_vel_witness.h"
 #include "drake/examples/rod2d/signed_distance_witness.h"
 #include "drake/examples/rod2d/sliding_witness.h"
 #include "drake/examples/rod2d/sticking_friction_forces_slack_witness.h"
-
-
-#include <memory>
-#include <utility>
-#include <vector>
-
-#include "drake/examples/rod2d/gen/rod2d_state_vector.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"

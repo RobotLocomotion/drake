@@ -1,7 +1,8 @@
 #pragma once
 
-#include "drake/examples/rod2d/rod2d.h"
+#include <memory>
 
+#include "drake/examples/rod2d/rod2d.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/context.h"
@@ -15,7 +16,7 @@ namespace rod2d {
 template <class T>
 class Rod2D;
 
-/// All witness functions for the 2D Rod inherit from this one. 
+/// All witness functions for the 2D Rod inherit from this one.
 template <class T>
 class Rod2dWitnessFunction : public systems::AbstractValues,
                            public systems::WitnessFunction<T> {
@@ -38,7 +39,7 @@ class Rod2dWitnessFunction : public systems::AbstractValues,
   void set_enabled(bool flag) { enabled_ = flag; }
 
   /// Gets the rod.
-  const Rod2D<T>& get_rod() const { return *rod_; } 
+  const Rod2D<T>& get_rod() const { return *rod_; }
 
   /// Gets the index of the contact candidate for this witness function.
   int get_contact_index() const { return contact_index_; }
@@ -48,15 +49,15 @@ class Rod2dWitnessFunction : public systems::AbstractValues,
       /// The signed distance for a contact from the half-space.
       kSignedDistance,
 
-      /// The acceleration along the contact normal at a point of contact. 
+      /// The acceleration along the contact normal at a point of contact.
       kNormalAccel,
 
-      /// The velocity along the contact normal at a point of contact. 
+      /// The velocity along the contact normal at a point of contact.
       kNormalVel,
 
       /// The slack in the stiction forces. If the slack is non-zero, stiction
       /// will be maintained. When it is less than zero, too much stiction
-      /// force is being generated. 
+      /// force is being generated.
       kStickingFrictionForceSlack,
 
       /// The normal force applied at a point of contact.
@@ -67,8 +68,8 @@ class Rod2dWitnessFunction : public systems::AbstractValues,
       kSlidingWitness,
   };
 
-  /// Gets the type of witness function. 
-  virtual WitnessType get_witness_function_type() const = 0; 
+  /// Gets the type of witness function.
+  virtual WitnessType get_witness_function_type() const = 0;
 
  private:
   void DoAddEvent(systems::CompositeEventCollection<T>* events) const override {

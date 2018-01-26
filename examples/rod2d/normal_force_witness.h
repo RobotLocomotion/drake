@@ -4,7 +4,6 @@
 
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/examples/rod2d/rod2d_witness_function.h"
-
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event.h"
@@ -14,7 +13,7 @@ namespace examples {
 namespace rod2d {
 
 /// Witness function for determining whether the force applied in the normal
-/// direction at a contact goes from compressive to tensile. 
+/// direction at a contact goes from compressive to tensile.
 template <class T>
 class NormalForceWitness : public Rod2dWitnessFunction<T> {
  public:
@@ -32,7 +31,7 @@ class NormalForceWitness : public Rod2dWitnessFunction<T> {
   }
 
   typename Rod2dWitnessFunction<T>::WitnessType
-      get_witness_function_type() const override {  
+      get_witness_function_type() const override {
     return Rod2dWitnessFunction<T>::WitnessType::kNormalForce;
   }
 

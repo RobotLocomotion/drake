@@ -4,7 +4,6 @@
 
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/examples/rod2d/rod2d_witness_function.h"
-
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/context.h"
 
@@ -30,7 +29,7 @@ class SignedDistanceWitness : public Rod2dWitnessFunction<T> {
   }
 
   typename Rod2dWitnessFunction<T>::WitnessType
-      get_witness_function_type() const override {  
+      get_witness_function_type() const override {
     return Rod2dWitnessFunction<T>::WitnessType::kSignedDistance;
   }
 

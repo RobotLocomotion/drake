@@ -4,7 +4,6 @@
 
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/examples/rod2d/rod2d_witness_function.h"
-
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event.h"
@@ -13,7 +12,7 @@ namespace drake {
 namespace examples {
 namespace rod2d {
 
-/// Witness function using the acceleration of a point away from the halfspace. 
+/// Witness function using the acceleration of a point away from the halfspace.
 template <class T>
 class NormalAccelWitness : public Rod2dWitnessFunction<T> {
  public:
@@ -31,7 +30,7 @@ class NormalAccelWitness : public Rod2dWitnessFunction<T> {
   }
 
   typename Rod2dWitnessFunction<T>::WitnessType
-      get_witness_function_type() const override {  
+      get_witness_function_type() const override {
     return Rod2dWitnessFunction<T>::WitnessType::kNormalAccel;
   }
 

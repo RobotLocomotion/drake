@@ -4,7 +4,6 @@
 
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/examples/rod2d/rod2d_witness_function.h"
-
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/context.h"
 
@@ -21,7 +20,7 @@ class StickingFrictionForcesSlackWitness : public Rod2dWitnessFunction<T> {
 
   StickingFrictionForcesSlackWitness(const Rod2D<T>* rod, int contact_index) :
       Rod2dWitnessFunction<T>(
-          rod, 
+          rod,
           systems::WitnessFunctionDirection::kPositiveThenNonPositive,
           contact_index) {
     std::ostringstream oss;
@@ -31,14 +30,14 @@ class StickingFrictionForcesSlackWitness : public Rod2dWitnessFunction<T> {
   }
 
   typename Rod2dWitnessFunction<T>::WitnessType
-      get_witness_function_type() const override {  
+      get_witness_function_type() const override {
     return Rod2dWitnessFunction<T>::WitnessType::kStickingFrictionForceSlack;
   }
 
  private:
   T DoEvaluate(const systems::Context<T>& context) const override {
     // TODO(edrumwri): Flesh out this stub once PointContact class has been
-    // added. 
+    // added.
     DRAKE_ABORT();
     return 0;
   }
