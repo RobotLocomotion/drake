@@ -3,10 +3,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(
-    [
-        "drake_visualizer_apple.sh",
-        "drake_visualizer_linux.sh",
-    ],
+    ["drake_visualizer.py"],
     visibility = ["//tools:__pkg__"],
 )
 
