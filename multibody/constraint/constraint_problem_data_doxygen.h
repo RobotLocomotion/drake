@@ -25,33 +25,33 @@ further in @ref constraint_types.
 
  A prodigious number of variables will be referenced throughout the discussion
  on constraints. Variables common to both acceleration-level constraints and
- velocity-level constraints will be covered in @ref constraint_variable_defs. 
+ velocity-level constraints will be covered in @ref constraint_variable_defs.
 */
- 
+
 /** @defgroup constraint_variable_defs Variable definitions
 @ingroup constraint_overview
 - b ∈ ℕ   The number of bilateral constraint equations.
 - k ∈ ℕ   The number of edges in a polygonal approximation to a friction
            cone. Note that k = 2r.
-- p ∈ ℕ   The number of non-interpenetration constraint equations
-- q ∈ ℝⁿ' The generalized coordinate vector of the system. n' is at least
-           as large as n.
-- n ∈ ℕ   The dimension of the system generalized velocity / force.
-- n' ∈ ℕ  The dimension of the system generalized coordinates.
 - r ∈ ℕ   *Half* the number of edges in a polygonal approximation to a
           friction cone. Note that k = 2r.
+- p ∈ ℕ   The number of non-interpenetration constraint equations
+- n ∈ ℕ   The dimension of the system generalized velocity / force.
+- n' ∈ ℕ  The dimension of the system generalized coordinates.
+- v ∈ ℝⁿ  The generalized velocity vector of the system, which is equivalent
+          to the time derivative of the system quasi-coordinates.
+- q ∈ ℝⁿ' The generalized coordinate vector of the system. n' is at least
+           as large as n.
 - t ∈ ℝ   The system time variable (t ≥ 0).
 - u ∈ ℕ   The number of "generic" (non-contact related) unilateral
           constraint equations.
-- v ∈ ℝⁿ  The generalized velocity vector of the system, which is equivalent
-          to the time derivative of the system quasi-coordinates.
 - α ∈ ℝ   A non-negative scalar used to correct velocity-level constraint
           errors (i.e., "stabilize" the velocity constraints) via an error
           feedback process (Baumgarte Stabilization).
 - β ∈ ℝ   A non-negative scalar used to correct position-level constraint
           errors via the same error feedback process (Baumgarte
           Stabilization) that uses α.
-- γ,ε ∈ ℝ Non-negative scalars used to regularize constraints. 
+- γ,ε ∈ ℝ Non-negative scalars used to regularize constraints.
 */
 
 /** @defgroup constraint_types Constraint types
