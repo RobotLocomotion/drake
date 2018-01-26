@@ -313,10 +313,14 @@ TEST_P(KukaArmTest, EvalOutput) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
+  VectorX<double> expected_torque(kuka_plant_->get_num_actuators());
+  for (int i = 0; i < kuka_plant_->get_num_actuators(); i++) {
+    expected_torque[i] = i + 1;
+  }
   context_->FixInputPort(
       kuka_plant_->model_instance_actuator_command_input_port(kModelInstanceId)
           .get_index(),
-      make_unique<BasicVector<double>>(kuka_plant_->get_num_actuators()));
+      make_unique<BasicVector<double>>(expected_torque));
 
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
@@ -329,16 +333,17 @@ TEST_P(KukaArmTest, EvalOutput) {
   auto x = kuka_plant_->GetStateVector(*context_);
   ASSERT_EQ(x, desired_state);
 
-  // Four output ports:
+  // Five output ports:
   //
   //    (1) plant state
   //    (2) model instance state for tree containing a single model instance
   //    (3) kinematic results
   //    (4) contact results
+  //    (5) model instance measure joint torque
   //
   // (In this context, there is only one model instance and thus only one model
   // instance state port.)
-  ASSERT_EQ(4, output_->get_num_ports());
+  ASSERT_EQ(5, output_->get_num_ports());
 
   kuka_plant_->CalcOutput(*context_, output_.get());
 
@@ -376,6 +381,15 @@ TEST_P(KukaArmTest, EvalOutput) {
     EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
     EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
   }
+
+  // Check the measured joint torque should equal to zeros.
+  const int measured_torque_idx =
+      kuka_plant_->model_instance_torque_output_port(kModelInstanceId)
+          .get_index();
+  const BasicVector<double>* measured_torque =
+      output_->get_vector_data(measured_torque_idx);
+  ASSERT_NE(nullptr, measured_torque);
+  EXPECT_EQ(expected_torque, measured_torque->get_value().eval());
 }
 
 // Instantiate the value-parameterized tests to run twice: once with continuous

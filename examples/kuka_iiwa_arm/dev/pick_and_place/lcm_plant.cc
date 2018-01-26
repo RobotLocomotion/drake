@@ -271,7 +271,7 @@ LcmPlant::LcmPlant(
     builder.Connect(iiwa_command_receiver->get_output_port(0),
                     iiwa_status_sender->get_command_input_port());
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_computed_torque(),
-                    iiwa_status_sender->get_torque_commanded_input_port());
+                    iiwa_status_sender->get_commanded_torque_input_port());
 
     // Export iiwa status output port.
     output_port_iiwa_status_.push_back(
