@@ -33,6 +33,7 @@ drake_cc_binary(
         "//drake/systems/analysis",
         "//drake/systems/framework",
         "//drake/systems/lcm",
+        "//drake/systems/primitives",
         "//drake/systems/rendering:drake_visualizer_client",
         "//drake/systems/rendering:pose_aggregator",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
@@ -44,8 +45,15 @@ drake_cc_library(
     name = "rod2d",
     srcs = ["rod2d.cc"],
     hdrs = [
+        "normal_accel_witness.h",
+        "normal_force_witness.h",
+        "normal_vel_witness.h",
         "rod2d.h",
         "rod2d-inl.h",
+        "rod_witness_function.h",
+        "signed_distance_witness.h",
+        "sliding_witness.h",
+        "sticking_friction_forces_slack_witness.h",
     ],
     deps = [
         ":rod2d_state_vector",
@@ -68,6 +76,7 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/constraint:constraint_solver",
         "//drake/systems/analysis",
+        "//drake/systems/framework",
     ],
 )
 
