@@ -11,7 +11,7 @@ import argparse
 import os
 import sys
 
-from tools.lint.formatter import IncludeFormatter
+from drake.tools.lint.formatter import IncludeFormatter
 
 
 def main():
