@@ -13,10 +13,44 @@ namespace examples {
 namespace multibody {
 namespace acrobot {
 
+/// This class is used to store the numerical parameters defining the model of
+/// an acrobot with the method MakeAcrobotPlant().
+/// Refer to this the documentation of this class's constructor for further
+/// details on the parameters stored by this class and their default values.
 class AcrobotParameters {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters)
 
+  /// Constructor used to initialize the physical parameters for an acrobot
+  /// model. The parameters are defaulted to values in Spong's paper
+  /// [Spong 1994].
+  ///
+  /// @param m1
+  ///   Mass of link 1 (kg).
+  /// @param m2
+  ///   Mass of link 2 (kg).
+  /// @param l1
+  ///   Length of link 1 (m).
+  /// @param l2
+  ///   Length of link 2 (m).
+  /// @param lc1
+  ///   Vertical distance from shoulder joint to center of mass of link 1 (m).
+  /// @param lc2
+  ///   Vertical distance from elbow joint to center of mass of link 2 (m).
+  /// @param Ic1
+  ///   Inertia of link 1 about the center of mass of link 1 (kg⋅m²).
+  /// @param Ic2
+  ///   Inertia of link 2 about the center of mass of link 2 (kg*m^2).
+  /// @param b1
+  ///   Damping coefficient of the shoulder joint (N⋅m⋅s).
+  /// @param b2
+  ///   Damping coefficient of the elbow joint (N⋅m⋅s).
+  /// @param g
+  ///   Gravitational constant (m/s²).
+  ///
+  ///  - [Spong 1994] Spong, M.W., 1994. Swing up control of the acrobot.
+  ///    In Robotics and Automation, 1994. Proceedings., 1994 IEEE International
+  ///    Conference on (pp. 2356-2361). IEEE.
   AcrobotParameters(
       double m1 = 1.0,
       double m2 = 1.0,
@@ -70,34 +104,20 @@ class AcrobotParameters {
       g_{nan()};                  // In m/s².
 };
 
-/// The Acrobot - a canonical underactuated system as described in <a
+/// This method makes a MultibodyPlant model of the Acrobot - a canonical
+/// underactuated system as described in <a
 /// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
 /// of Underactuated Robotics</a>.
-/// This plant is modeled using a MultibodyTree.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-/// @param m1 Mass of link 1 (kg).
-/// @param m2 Mass of link 2 (kg).
-/// @param l1 Length of link 1 (m).
-/// @param l2 Length of link 2 (m).
-/// @param lc1 Vertical distance from shoulder joint to center of mass of
-/// link 1 (m).
-/// @param lc2 Vertical distance from elbow joint to center of mass of
-/// link 2 (m).
-/// @param Ic1 Inertia of link 1 about the center of mass of link 1
-/// (kg*m^2).
-/// @param Ic2 Inertia of link 2 about the center of mass of link 2
-/// (kg*m^2).
-/// @param b1 Damping coefficient of the shoulder joint (kg*m^2/s).
-/// @param b2 Damping coefficient of the elbow joint (kg*m^2/s).
-/// @param g Gravitational constant (m/s^2).
-///
-/// The parameters are defaulted to values in Spong's paper (see
-/// acrobot_spong_controller.cc for more details).
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
+/// @param[in] default_parameters
+///   Default parameters of the model set at construction. These parameters
+///   include masses, link lengths, rotational inertias, etc. Refer to the
+///   documentation of AcrobotParameters for further details.
+/// @param[out] geometry_system
+///   If a GeometrySystem is provided with this argument, this factory method
+///   will register the new multibody plant to be a source for that geometry
+///   system and it will also register geometry for visualization.
+///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeAcrobotPlant(
     const AcrobotParameters& default_parameters,
