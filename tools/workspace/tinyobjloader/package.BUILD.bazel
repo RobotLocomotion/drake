@@ -9,27 +9,16 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-TINYOBJLOADER_HDRS = ["tiny_obj_loader.h"]
-
-TINYOBJLOADER_INCLUDES = ["."]
-
-cc_binary(
-    name = "libtinyobjloader.so",
-    srcs = ["tiny_obj_loader.cc"] + TINYOBJLOADER_HDRS,
-    includes = TINYOBJLOADER_INCLUDES,
-    linkshared = 1,
-    visibility = ["//visibility:private"],
-)
-
 cc_library(
     name = "tinyobjloader",
-    srcs = ["libtinyobjloader.so"],
-    hdrs = TINYOBJLOADER_HDRS,
-    includes = TINYOBJLOADER_INCLUDES,
+    srcs = ["tiny_obj_loader.cc"],
+    hdrs = ["tiny_obj_loader.h"],
+    copts = ["-fvisibility=hidden"],
+    includes = ["."],
+    linkstatic = 1,
 )
 
 install(
     name = "install",
-    targets = [":libtinyobjloader.so"],
     docs = ["LICENSE"],
 )
