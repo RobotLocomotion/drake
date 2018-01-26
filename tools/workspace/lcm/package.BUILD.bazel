@@ -247,6 +247,12 @@ java_library(
 )
 
 drake_java_binary(
+    name = "lcm-logplayer-gui",
+    main_class = "lcm.logging.LogPlayer",
+    runtime_deps = [":lcm-java"],
+)
+
+drake_java_binary(
     name = "lcm-spy",
     jvm_flags = [
         # These flags are copied from the lcm/lcm-java/lcm-spy.sh.in.
@@ -291,6 +297,8 @@ install(
         ":lcm-java",
         ":lcm-logger",
         ":lcm-logplayer",
+        ":lcm-logplayer-gui",
+        ":lcm-logplayer-gui-launcher",
         ":lcm-spy",
         ":lcm-spy-launcher",
         ":liblcm.so",
@@ -304,6 +312,7 @@ install(
     ],
     rename = {
         "share/java/liblcm-java.jar": "lcm.jar",
+        "bin/lcm-logplayer-gui-launcher.sh": "lcm-logplayer-gui",
         "bin/lcm-spy-launcher.sh": "lcm-spy",
     },
     deps = [
