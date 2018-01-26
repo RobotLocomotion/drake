@@ -302,12 +302,34 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(state_output_port_index_);
   }
 
-  /// Returns he output port containing the state of a
+  /// Returns the output port containing the state of a
   /// particular model with instance ID equal to `model_instance_id`. Throws a
   /// std::runtime_error if `model_instance_id` does not exist. This method can
   /// only be called when this class is instantiated with constructor parameter
   /// `export_model_instance_centric_ports` equal to `true`.
   const OutputPort<T>& model_instance_state_output_port(
+      int model_instance_id) const;
+
+  /// Returns the output port containing measured joint torques.
+  /// @throws std::runtime_error if this RigidBodyTree contains more than one
+  /// model instances.
+  const OutputPort<T>& torque_output_port() const {
+    if (get_num_model_instances() != 1) {
+      throw std::runtime_error(
+          "RigidBodyPlant::torque_output_port(): "
+          "ERROR: This method can only called when there is only one model "
+          "instance in the RigidBodyTree. There are currently " +
+          std::to_string(get_num_model_instances()) +
+          " model instances in the "
+          "RigidBodyTree.");
+    }
+    return model_instance_torque_output_port(
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
+  }
+
+  /// Returns the output port containing the measured joint torques of a
+  /// particular model with @p model_instance_id.
+  const OutputPort<T>& model_instance_torque_output_port(
       int model_instance_id) const;
 
   /// Returns the KinematicsResults output port.
@@ -388,13 +410,18 @@ class RigidBodyPlant : public LeafSystem<T> {
   friend class RigidBodyPlantTimeSteppingDataTest_TangentJacobian_Test;
   OutputPortIndex DeclareContactResultsOutputPort();
 
-  // These four are the output port calculator methods.
+  // These five are the output port calculator methods.
   void CopyStateToOutput(const Context<T>& context,
                          BasicVector<T>* state_output_vector) const;
 
   void CalcInstanceOutput(int instance_id,
                           const Context<T>& context,
                           BasicVector<T>* instance_output) const;
+
+  // Measured torque is currently directly copied from the inputs.
+  void CopyInstanceTorqueOutput(int instance_id,
+                                const Context<T>& context,
+                                BasicVector<T>* instance_output) const;
 
   void CalcKinematicsResultsOutput(const Context<T>& context,
                                    KinematicsResults<T>* output) const;
@@ -467,6 +494,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   // kInvalidPortIdentifier indicates that a model instance has no state and
   // thus no corresponding output port.
   std::vector<int> output_map_;
+
+  // Maps model instance ids to output port indices. A value of
+  // kInvalidPortIdentifier indicates that a model instance has no actuators,
+  // and thus no corresponding output port.
+  std::vector<int> torque_output_map_;
+
   // Maps model instance ids to position indices and number of
   // position states in the RigidBodyTree.  Values are stored as a
   // pair of (index, count).

@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -69,6 +70,30 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
   EXPECT_TRUE(CompareMatrices(
       delta/ kIiwaLcmStatusPeriod,
       output->get_vector_data(0)->get_value().tail(kNumJoints),
+      tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      VectorX<double>::Zero(kNumJoints),
+      output->get_vector_data(1)->get_value(),
+      tol, MatrixCompareType::absolute));
+
+  // Test with joint torque command.
+  command.num_torques = kNumJoints;
+  command.joint_torque.resize(kNumJoints);
+  VectorX<double> expected_torque(kNumJoints);
+  for (int i = 0; i < kNumJoints; i++) {
+    command.joint_torque[i] = -1 + 3 * i;
+    expected_torque[i] = command.joint_torque[i];
+  }
+  context->FixInputPort(
+      0, std::make_unique<systems::Value<lcmt_iiwa_command>>(command));
+  update = dut.AllocateDiscreteVariables();
+  dut.CalcDiscreteVariableUpdates(*context, update.get());
+  context->set_discrete_state(std::move(update));
+  dut.CalcOutput(*context, output.get());
+
+  EXPECT_TRUE(CompareMatrices(
+      expected_torque,
+      output->get_vector_data(1)->get_value(),
       tol, MatrixCompareType::absolute));
 }
 
@@ -178,7 +203,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
   Eigen::VectorXd torque = Eigen::VectorXd::Zero(kNumJoints);
   torque << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7;
   context->FixInputPort(
-      dut.get_torque_commanded_input_port().get_index(), torque);
+      dut.get_commanded_torque_input_port().get_index(), torque);
 
   dut.CalcOutput(*context, output.get());
   lcmt_iiwa_status status =
@@ -189,13 +214,68 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusSenderTest) {
     EXPECT_EQ(status.joint_position_measured[i], state(i));
     EXPECT_EQ(status.joint_velocity_estimated[i], state(i + kNumJoints));
     EXPECT_EQ(status.joint_torque_commanded[i], torque(i));
-    // TODO(rcory) Update joint_torque_measured to report actual measured torque
-    // once RigidBodyPlant supports it. For now, assume
-    // joint_torque_measured == joint_torque_commanded.
+    // If the measured torque input port is not connected, the commanded torque
+    // is used instead.
     EXPECT_EQ(status.joint_torque_measured[i], torque(i));
+    // When not connected, this field should always be 0.
+    EXPECT_EQ(status.joint_torque_external[i], 0);
+  }
+
+  // Now fix the measured torque input.
+  torque << 11, 12, 13, 14, 15, 16, 17;
+  context->FixInputPort(
+      dut.get_measured_torque_input_port().get_index(), torque);
+  context->FixInputPort(
+      dut.get_external_torque_input_port().get_index(), torque);
+  dut.CalcOutput(*context, output.get());
+  status = output->get_data(0)->GetValue<lcmt_iiwa_status>();
+  for (int i = 0; i < kNumJoints; i++) {
+    EXPECT_EQ(status.joint_torque_measured[i], torque(i));
+    EXPECT_EQ(status.joint_torque_external[i], torque(i));
   }
 }
 
+// Builds a RBT with two iiwas, but only select the second iiwa's generalized
+// force when converting to external joint torque.
+GTEST_TEST(IiwaLcmTest, IiwaContactResultsToExternalTorque) {
+  const std::string kIiwaUrdf =
+    "drake/manipulation/models/iiwa_description/urdf/"
+    "iiwa14_polytope_collision.urdf";
+  auto tree_builder =
+      std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
+  tree_builder->StoreDrakeModel("iiwa", kIiwaUrdf);
+
+  tree_builder->AddFixedModelInstance("iiwa", Vector3<double>::Zero());
+  int id1 =
+      tree_builder->AddFixedModelInstance("iiwa", Vector3<double>(0, 0, 1));
+
+  auto tree = tree_builder->Build();
+
+  // Only interested in the second iiwa's external torque output.
+  IiwaContactResultsToExternalTorque dut(*tree, {id1});
+  std::unique_ptr<systems::Context<double>>
+      context = dut.CreateDefaultContext();
+  std::unique_ptr<systems::SystemOutput<double>> output =
+      dut.AllocateOutput(*context);
+
+  VectorX<double> expected(tree->get_num_velocities());
+  for (int i = 0; i < expected.size(); i++)
+    expected[i] = 42 + i;
+  systems::ContactResults<double> contact_results;
+  contact_results.set_generalized_contact_force(expected);
+
+  context->FixInputPort(0,
+      systems::AbstractValue::Make<systems::ContactResults<double>>(
+          contact_results));
+
+  // Check output.
+  dut.CalcOutput(*context, output.get());
+  const auto ext_torque = output->get_vector_data(0)->get_value();
+  EXPECT_EQ(ext_torque.size(), 7);
+  for (int i = 0; i < 7; i++) {
+    EXPECT_EQ(ext_torque[i], expected[7 + i]);
+  }
+}
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

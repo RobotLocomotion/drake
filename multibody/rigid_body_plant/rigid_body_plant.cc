@@ -84,6 +84,7 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
   input_map_.resize(num_instances, kInvalidPortIdentifier);
   actuator_map_.resize(num_instances, default_entry);
   output_map_.resize(num_instances, kInvalidPortIdentifier);
+  torque_output_map_.resize(num_instances, kInvalidPortIdentifier);
   position_map_.resize(num_instances, default_entry);
   velocity_map_.resize(num_instances, default_entry);
 
@@ -113,6 +114,11 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
       input_map_[i] =
           this->DeclareInputPort(kVectorValued, actuator_map_[i].second)
               .get_index();
+      torque_output_map_[i] =
+          this->DeclareVectorOutputPort(BasicVector<T>(get_num_actuators(i)),
+          [this, i](const Context<T>& context, BasicVector<T>* output) {
+            this->CopyInstanceTorqueOutput(i, context, output);
+          }).get_index();
     }
 
     // Now create the appropriate maps for the position and velocity
@@ -325,6 +331,20 @@ RigidBodyPlant<T>::model_instance_state_output_port(
 }
 
 template <typename T>
+const OutputPort<T>&
+RigidBodyPlant<T>::model_instance_torque_output_port(
+    int model_instance_id) const {
+  if (model_instance_id >= static_cast<int>(torque_output_map_.size())) {
+    throw std::runtime_error(
+        "RigidBodyPlant::model_instance_torque_output_port(): "
+        "ERROR: Model instance with ID " +
+        std::to_string(model_instance_id) + " does not exist! Maximum ID is " +
+        std::to_string(output_map_.size() - 1) + ".");
+  }
+  return System<T>::get_output_port(torque_output_map_[model_instance_id]);
+}
+
+template <typename T>
 std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
     const {
   if (is_state_discrete()) {
@@ -424,6 +444,19 @@ void RigidBodyPlant<T>::CalcInstanceOutput(
   values.tail(instance_velocities.second) =
       state_vector.segment(instance_velocities.first + get_num_positions(),
                            instance_velocities.second);
+}
+
+template <typename T>
+void RigidBodyPlant<T>::CopyInstanceTorqueOutput(
+    int instance_id, const Context<T>& context,
+    BasicVector<T>* instance_output) const {
+  if (input_map_[instance_id] != kInvalidPortIdentifier) {
+    const BasicVector<T> *instance_input =
+        this->EvalVectorInput(context, input_map_[instance_id]);
+    if (instance_input != nullptr) {
+      instance_output->get_mutable_value() = instance_input->get_value();
+    }
+  }
 }
 
 // Updates the kinematics results output port.
@@ -1266,6 +1299,11 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
     const Context<T>& context, ContactResults<T>* contacts) const {
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();
+  contacts->set_generalized_contact_force(
+      VectorX<T>::Zero(get_num_velocities()));
+
+  // TODO(siyuanfeng-tri): Need to correctly output contact results for time
+  // stepping.
 
   // This code should do nothing if the state is discrete because the compliant
   // contact model will not be used to compute contact forces.

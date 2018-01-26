@@ -49,6 +49,7 @@ drake_cc_library(
         "//drake/lcmtypes:iiwa",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/rigid_body_plant:contact_results",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -194,9 +195,13 @@ alias(
 
 drake_cc_googletest(
     name = "iiwa_lcm_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_lcm",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/systems/framework",
     ],
 )
