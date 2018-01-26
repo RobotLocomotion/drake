@@ -171,30 +171,57 @@ def macos_fix_rpaths(basename, dst_full):
 
 
 def linux_fix_rpaths(dst_full):
-    # Check if file dependencies are found and not in install prefix.
-    # The found libraries outside of the install prefix are system
-    # libraries and we do not worry about these. We only make sure that
-    # drake libraries will be found.
+    # A conservative subset of the ld.so search path. These paths are added
+    # to /etc/ld.so.conf by default or after the prerequisites install script
+    # has been run. Query on a given system using `ldconfig -v`.
+    ld_so_search_paths = [
+        '/lib',
+        '/lib/libblas',
+        '/lib/liblapack',
+        '/lib/x86_64-linux-gnu',
+        '/lib32',
+        '/libx32',
+        '/usr/lib',
+        '/usr/lib/x86_64-linux-gnu',
+        '/usr/lib/x86_64-linux-gnu/libfakeroot',
+        '/usr/lib/x86_64-linux-gnu/mesa-egl',
+        '/usr/lib/x86_64-linux-gnu/mesa',
+        '/usr/lib/x86_64-linux-gnu/pulseaudio',
+        '/usr/lib32',
+        '/usr/libx32',
+        '/usr/local/lib',
+    ]
     file_output = check_output(["ldd", dst_full])
     rpath = []
     for line in file_output.splitlines():
         ldd_result = line.strip().split(' => ')
-        # If library found and not in install prefix, then skip.
-        if len(ldd_result) < 2 or \
-                not (ldd_result[1] == "not found" or
-                     ldd_result[1].startswith(prefix)):
+        if len(ldd_result) < 2:
             continue
-        re_result = re.match(dylib_match, ldd_result[0])
-        # Look for the absolute path in the dictionary of libraries using the
-        # library name without its possible version number.
-        soname, _, _ = re_result.groups()
-        if soname not in files_to_fix_up.keys():
-            continue
-        lib_dirname = os.path.dirname(dst_full)
-        diff_path = os.path.dirname(
-            os.path.relpath(files_to_fix_up[soname][0], lib_dirname)
-        )
-        rpath.append('$ORIGIN' + '/' + diff_path)
+        # Library in install prefix.
+        if ldd_result[1] == 'not found' or ldd_result[1].startswith(prefix):
+            re_result = re.match(dylib_match, ldd_result[0])
+            # Look for the absolute path in the dictionary of libraries using
+            # the library name without its possible version number.
+            soname, _, _ = re_result.groups()
+            if soname not in files_to_fix_up.keys():
+                continue
+            lib_dirname = os.path.dirname(dst_full)
+            diff_path = os.path.dirname(
+                os.path.relpath(files_to_fix_up[soname][0], lib_dirname)
+            )
+            rpath.append('$ORIGIN' + '/' + diff_path)
+        # System library not in ld.so search path.
+        else:
+            # Remove (hexadecimal) address from output leaving (at most) the
+            # path to the library.
+            ldd_regex = r"(.*\.so(?:\.\d+)*) \(0x[0-9a-f]+\)$"
+            re_result = re.match(ldd_regex, ldd_result[1])
+            if re_result:
+                lib_dirname = os.path.dirname(
+                    os.path.realpath(re_result.group(1))
+                )
+                if lib_dirname not in ld_so_search_paths:
+                    rpath.append(lib_dirname + '/')
 
     # Ensure that system libraries get loaded instead of those bundled with
     # MATLAB that are added to the LD_LIBRARY_PATH.
@@ -207,8 +234,9 @@ def linux_fix_rpaths(dst_full):
 
     # Replace build tree RPATH with computed install tree RPATH. Build tree
     # RPATH are automatically removed by this call. RPATH will contain the
-    # necessary relative paths to find the libraries that are needed. RPATH
-    # will typically be set to `$ORIGIN` or `$ORIGIN/../../..` .
+    # necessary absolute and relative paths to find the libraries that are
+    # needed. RPATH will typically be set to `$ORIGIN` or `$ORIGIN/../../..`,
+    # possibly concatenated with directories under /opt.
     str_rpath = ":".join(x for x in rpath)
     check_output(
         ["patchelf",
