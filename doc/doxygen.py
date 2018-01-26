@@ -13,11 +13,11 @@ from collections import OrderedDict
 from os.path import dirname
 
 def _get_drake_distro():
-    """Find and return the path to drake-distro."""
+    """Find and return the path to the drake workspace."""
 
     result = dirname(dirname(os.path.abspath(sys.argv[0])))
     if not os.path.exists(os.path.join(result, "WORKSPACE")):
-        raise RuntimeError("Could not place drake-distro at " + result)
+        raise RuntimeError("Could not place drake at " + result)
     return result
 
 def _run_doxygen(args):

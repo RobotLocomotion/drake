@@ -119,7 +119,7 @@ class RigidBodyFrame {
   const Eigen::Isometry3d& get_transform_to_body() const;
 
   // TODO(liang.fok) Remove this method once it's no longer needed by
-  // drake-distro/drake/systems/plants/constructModelmex.cpp.
+  // drake/systems/plants/constructModelmex.cpp.
   // Frames' poses should only be specified at construction as described in
   // #4407.
   /**
