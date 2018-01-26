@@ -64,7 +64,7 @@ yaml-cpp
 EOF
 )
 
-pip2 install --upgrade $(tr '\n' ' ' <<EOF
+pip2 install --upgrade --user $(tr '\n' ' ' <<EOF
 lxml
 matplotlib
 pip
