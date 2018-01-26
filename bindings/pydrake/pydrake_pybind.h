@@ -147,6 +147,25 @@ const auto py_reference = py::return_value_policy::reference;
 
 /// @}
 
+/// Provides option to provide explicit signature when
+/// `py::overload_cast<Args...>` fails to infer the Return argument.
+template <typename Return, typename... Args>
+auto overload_cast_explicit(Return (*func)(Args...)) { return func; }
+
+/// Provides option to provide explicit signature when
+/// `py::overload_cast<Args...>` fails to infer the Return argument.
+template <typename Return, typename... Args, typename Class>
+auto overload_cast_explicit(Return (Class::*method)(Args...)) {
+    return method;
+}
+
+/// Provides option to provide explicit signature when
+/// `py::overload_cast<Args...>` fails to infer the Return argument.
+template <typename Return, typename... Args, typename Class>
+auto overload_cast_explicit(Return (Class::*method)(Args...) const) {
+    return method;
+}
+
 // TODO(eric.cousineau): pybind11 defaults to C++-like copies when dealing
 // with rvalues. We should wrap this into a drake-level binding, so that we
 // can default this to `py_reference` or `py_reference_internal.`
