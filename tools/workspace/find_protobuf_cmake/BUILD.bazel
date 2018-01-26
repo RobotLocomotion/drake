@@ -4,6 +4,7 @@ load(
     "@drake//tools/install:install.bzl",
     "install_files",
 )
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -12,10 +13,7 @@ install_files(
     dest = "lib/cmake/drake/modules",
     files = [
         "//third_party:com_kitware_gitlab_cmake_cmake/3.10/Copyright.txt",
-        "//third_party:com_kitware_gitlab_cmake_cmake/3.10/Modules/FindProtobuf.cmake",
-    ],
-    allowed_externals = [
-        "//third_party:com_kitware_gitlab_cmake_cmake/3.10/Copyright.txt",
+        "//third_party:com_kitware_gitlab_cmake_cmake/3.10/Modules/FindProtobuf.cmake",  # noqa
     ],
     strip_prefix = [
         # The first strip_prefix match wins; thus, we will end up with:
@@ -24,4 +22,9 @@ install_files(
         # - install to "lib/cmake/drake/modules/3.10/Copyright.txt"
         "com_kitware_gitlab_cmake_cmake",
     ],
+    allowed_externals = [
+        "//third_party:com_kitware_gitlab_cmake_cmake/3.10/Copyright.txt",
+    ],
 )
+
+add_lint_tests()
