@@ -19,34 +19,6 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
-/// The Acrobot - a canonical underactuated system as described in <a
-/// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
-/// of Underactuated Robotics</a>.
-/// This plant is modeled using a MultibodyTree.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-/// @param m1 Mass of link 1 (kg).
-/// @param m2 Mass of link 2 (kg).
-/// @param l1 Length of link 1 (m).
-/// @param l2 Length of link 2 (m).
-/// @param lc1 Vertical distance from shoulder joint to center of mass of
-/// link 1 (m).
-/// @param lc2 Vertical distance from elbow joint to center of mass of
-/// link 2 (m).
-/// @param Ic1 Inertia of link 1 about the center of mass of link 1
-/// (kg*m^2).
-/// @param Ic2 Inertia of link 2 about the center of mass of link 2
-/// (kg*m^2).
-/// @param b1 Damping coefficient of the shoulder joint (kg*m^2/s).
-/// @param b2 Damping coefficient of the elbow joint (kg*m^2/s).
-/// @param g Gravitational constant (m/s^2).
-///
-/// The parameters are defaulted to values in Spong's paper (see
-/// acrobot_spong_controller.cc for more details).
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
 template<typename T>
 class MultibodyPlant final : public systems::LeafSystem<T> {
  public:
@@ -71,13 +43,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   int num_positions() const { return model_->get_num_positions(); }
   int num_velocities() const { return model_->get_num_velocities(); }
   int num_states() const { return model_->get_num_states(); }
-
-  // NOTE: it'd be nice to have a get_bodies() method so we can do range loops
-  // like in:
-  // for (const auto& body : plant.get_bodies())
-  //     body.do_something();
-  //
-  // Look at code for GeometryState::get_frame_ids() for ideas.
 
   /// Scalar-converting copy constructor.
   template <typename U>
@@ -214,13 +179,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // scalar conversion.
   template <typename U> friend class MultibodyPlant;
 
-  // Helper method for NaN initialization.
-  static constexpr T nan() {
-    return std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
-  }
-
   // No inputs implies no feedthrough; this makes it explicit.
+  // TODO(amcastro-tri): add input ports for actuators.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
     return false;
   }
@@ -236,8 +196,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  void RegisterGeometry(geometry::GeometrySystem<double>* geometry_system);
-
+  // maybe geometry_source_is_registered_with(const GeometrySystem<T>& gs) ???
   bool geometry_source_is_registered() const {
     return !!source_id_;
   }
@@ -316,17 +275,6 @@ namespace scalar_conversion {
 template <>
 struct Traits<drake::multibody::multibody_plant::MultibodyPlant> :
     public NonSymbolicTraits {};
-
-#if 0
-template <>
-struct Traits<drake::multibody::multibody_plant::MultibodyPlant> {
-  template <typename T, typename U>
-  using supported = typename std::conditional<
-      FromDoubleTraits::supported<T, U>::value &&
-      NonSymbolicTraits::supported<T, U>::value,
-      std::true_type, std::false_type>::type;
-};
-#endif
 }  // namespace scalar_conversion
 }  // namespace systems
 }  // namespace drake

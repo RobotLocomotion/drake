@@ -52,8 +52,6 @@ using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::State;
 
-//template<typename T>
-//MultibodyPlant<T>::MultibodyPlant() {
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
@@ -140,12 +138,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
-#if 0
-  // Declare a vector input of size one for an applied torque at the
-  // elbow joint.
-  applied_torque_input_ =
-      this->DeclareVectorInputPort(BasicVector<T>(1)).get_index();
-#endif
+  // TODO(amcastro-tri): Declare input ports for actuators.
 
   // Declare a port that outputs the state.
   state_output_port_ = this->DeclareVectorOutputPort(
@@ -247,13 +240,6 @@ const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
-#if 0
-template <typename T>
-const InputPortDescriptor<T>& MultibodyPlant<T>::get_input_port() const {
-  return systems::System<T>::get_input_port(applied_torque_input_);
-}
-#endif
-
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
   DRAKE_THROW_UNLESS(is_finalized());
@@ -334,11 +320,9 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
-template class MultibodyPlant<double>;
-
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 
-//DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-  //  class drake::multibody::multibody_plant::MultibodyPlant)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::multibody::multibody_plant::MultibodyPlant)
