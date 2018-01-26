@@ -14,20 +14,20 @@ content = """
   "Requires": {
     "jchart2d": {
       "Hints": ["@prefix@/lib/cmake/jchart2d"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
-  "Default-Components": [ ":lcm" ],
+  "Default-Components": [":lcm"],
   "Components": {
     "lcm-coretypes": {
       "Type": "interface",
-      "Includes": [ "@prefix@/include" ]
+      "Includes": ["@prefix@/include"]
     },
     "lcm": {
       "Type": "dylib",
       "Includes": ["@prefix@/include"],
       "Location": "@prefix@/lib/liblcm.so",
-      "Requires": [ ":lcm-coretypes" ]
+      "Requires": [":lcm-coretypes"]
     },
     "lcm-gen": {
       "Type": "exe",
@@ -36,7 +36,23 @@ content = """
     "lcm-java": {
       "Type": "jar",
       "Location": "@prefix@/share/java/lcm.jar",
-      "Requires": [ "jchart2d:jchart2d" ]
+      "Requires": ["jchart2d:jchart2d"]
+    },
+    "lcm-logger": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/lcm-logger"
+    },
+    "lcm-logplayer": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/lcm-logplayer"
+    },
+    "lcm-logplayer-gui": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/lcm-logplayer-gui"
+    },
+    "lcm-spy": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/lcm-spy"
     }
   },
   "X-CMake-Variables": {
