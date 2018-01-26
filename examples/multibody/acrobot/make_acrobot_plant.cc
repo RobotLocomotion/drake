@@ -55,9 +55,10 @@ using systems::OutputPort;
 using systems::State;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeAcrobotPlant(geometry::GeometrySystem<double>* geometry_system) {
+MakeAcrobotPlant(
+    const AcrobotParameters& params,
+    geometry::GeometrySystem<double>* geometry_system) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
-  AcrobotDefaultParameters params;
 
   // COM's positions in each link (L1/L2) frame:
   // Frame L1's origin is located at the shoulder outboard frame.

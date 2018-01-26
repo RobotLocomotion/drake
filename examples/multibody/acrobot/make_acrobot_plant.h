@@ -19,11 +19,11 @@ namespace examples {
 namespace multibody {
 namespace acrobot {
 
-class AcrobotDefaultParameters {
+class AcrobotParameters {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotDefaultParameters)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters)
 
-  AcrobotDefaultParameters(
+  AcrobotParameters(
       double m1 = 1.0,
       double m2 = 1.0,
       double l1 = 1.0,
@@ -104,9 +104,10 @@ class AcrobotDefaultParameters {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
-
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeAcrobotPlant(geometry::GeometrySystem<double>* geometry_system = nullptr);
+MakeAcrobotPlant(
+    const AcrobotParameters& default_parameters,
+    geometry::GeometrySystem<double>* geometry_system = nullptr);
 
 }  // namespace acrobot
 }  // namespace multibody

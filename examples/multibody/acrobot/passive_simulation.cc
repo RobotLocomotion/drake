@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/multibody/acrobot/acrobot_plant.h"
 #include "drake/examples/multibody/acrobot/make_acrobot_plant.h"
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/geometry/geometry_system.h"
@@ -25,8 +24,6 @@
 
 #include <iostream>
 #define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-
-#define WITH_GEOMETRY_SYSTEM
 
 namespace drake {
 
@@ -73,32 +70,21 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
+  // Create an acrobot model with default parameters.
+  AcrobotParameters default_parameters;
   MultibodyPlant<double>& acrobot =
-      *builder.AddSystem(MakeAcrobotPlant(&geometry_system));
-  //*builder.AddSystem(MakeAcrobotPlant());
-
-//  AcrobotPlant<double>& acrobot =
-  //    *builder.AddSystem<AcrobotPlant>(&geometry_system);
+      *builder.AddSystem(MakeAcrobotPlant(
+          default_parameters, &geometry_system));
   acrobot.set_name("Acrobot");
 
-  PRINT_VAR(acrobot.num_bodies());
-  PRINT_VAR(acrobot.num_positions());
-  PRINT_VAR(acrobot.num_velocities());
-
-#if 0
-  // A constant source for a zero applied torque at the elbow joint.
-  double applied_torque(0.0);
-  auto torque_source =
-      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
-  torque_source->set_name("Applied Torque");
-  builder.Connect(torque_source->get_output_port(), acrobot.get_input_port());
-#endif
+  // Obtain some of the components by name.
+  const auto& shoulder = acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
+  const auto& elbow = acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
 
   // Log the acrobot's state.
   auto x_logger = LogOutput(acrobot.get_state_output_port(), &builder);
   x_logger->set_name("x_logger");
 
-#ifdef WITH_GEOMETRY_SYSTEM
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
   DrakeLcm lcm;
@@ -128,30 +114,19 @@ int do_main() {
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
   geometry::DispatchLoadMessage(geometry_system);
-#endif
 
   // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
-  // Create a context for this system:
+  // Create a context for this system and initialize it with default values:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
-
-  PRINT_VAR(diagram_context->get_continuous_state().size());
-  PRINT_VAR(diagram_context->get_continuous_state().get_generalized_position().size());
-  PRINT_VAR(diagram_context->get_continuous_state().get_generalized_velocity().size());
-
   diagram->SetDefaultContext(diagram_context.get());
+
+  // Get the acrobot's portion of the context in order to set initial
+  // angles. Velocities are left to the default zero values.
   systems::Context<double>& acrobot_context =
       diagram->GetMutableSubsystemContext(acrobot, diagram_context.get());
-
-  PRINT_VAR(acrobot_context.get_continuous_state().size());
-  PRINT_VAR(acrobot_context.get_continuous_state().get_generalized_position().size());
-  PRINT_VAR(acrobot_context.get_continuous_state().get_generalized_velocity().size());
-
-  // Set initial angles. Velocities are left to the default zero values.
-  const auto& shoulder = acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
-  const auto& elbow = acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
   shoulder.set_angle(&acrobot_context, 1.0);
   elbow.set_angle(&acrobot_context, 1.0);
 
@@ -190,14 +165,6 @@ int do_main() {
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
-
-  PRINT_VAR(x_logger->sample_times().size());
-  PRINT_VAR(x_logger->sample_times().rows());
-  PRINT_VAR(x_logger->sample_times().cols());
-  PRINT_VAR(x_logger->data().size());
-  PRINT_VAR(x_logger->data().rows());
-  PRINT_VAR(x_logger->data().cols());
-
   std::ofstream file("state.dat");
   const int nt = x_logger->sample_times().size();
   MatrixX<double> tt(nt, 5);
@@ -206,8 +173,6 @@ int do_main() {
   PRINT_VAR(tt.cols());
   file << tt;
   file.close();
-
-  return 0;
 
   // Some sanity checks:
   if (FLAGS_integration_scheme == "semi_explicit_euler") {
