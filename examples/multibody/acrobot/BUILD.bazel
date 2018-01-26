@@ -64,26 +64,6 @@ drake_cc_binary(
 )
 
 drake_cc_library(
-    name = "mbp_acrobot_plant",
-    srcs = [
-        "mbp_acrobot_plant.cc",
-    ],
-    hdrs = [
-        "mbp_acrobot_plant.h",
-    ],
-    deps = [
-        ":acrobot_vector_types",
-        "//drake/common:default_scalars",
-        "//drake/geometry:geometry_ids",
-        "//drake/geometry:geometry_system",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/multibody_tree/multibody_plant",
-        "//drake/systems/framework",
-        "//drake/systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
     name = "make_acrobot_plant",
     srcs = [
         "make_acrobot_plant.cc",
