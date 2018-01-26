@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include "drake/examples/rod2d/rod2d.h"
-#include "drake/examples/rod2d/rod_witness_function.h"
+#include "drake/examples/rod2d/rod2d_witness_function.h"
 
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/context.h"
@@ -17,7 +17,7 @@ namespace rod2d {
 /// a contact has moved from non-sliding-to-sliding-transition to proper sliding
 /// and (2) it determines when a contact has moved from sliding to non-sliding.
 template <class T>
-class SlidingWitness : public RodWitnessFunction<T> {
+class SlidingWitness : public Rod2dWitnessFunction<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SlidingWitness)
 
@@ -26,7 +26,7 @@ class SlidingWitness : public RodWitnessFunction<T> {
       int contact_index,
       bool pos_direction,
       double sliding_velocity_threshold) :
-      RodWitnessFunction<T>(
+      Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kCrossesZero,
           contact_index) {
@@ -43,43 +43,17 @@ class SlidingWitness : public RodWitnessFunction<T> {
     velocity_threshold_ = sliding_velocity_threshold;
   }
 
-  typename RodWitnessFunction<T>::WitnessType
+  typename Rod2dWitnessFunction<T>::WitnessType
       get_witness_function_type() const override {  
-    return RodWitnessFunction<T>::WitnessType::kSlidingWitness;
+    return Rod2dWitnessFunction<T>::WitnessType::kSlidingWitness;
   }
 
  private:
   T DoEvaluate(const systems::Context<T>& context) const override {
-    using std::sin;
-
-    // Get the rod system.
-    const Rod2D<T>& rod = this->get_rod();
-
-    // Verify the system is simulated using piecewise DAE.
-    DRAKE_DEMAND(rod.get_simulation_type() ==
-        Rod2D<T>::SimulationType::kPiecewiseDAE);
-
-    // Get the contact information.
-    const int contact_index = this->get_contact_index();
-    const auto& contact = rod.get_contacts_used_in_force_calculations(
-        context.get_state())[contact_index];
-
-    // Verify rod is undergoing sliding contact at the specified index.
-    DRAKE_DEMAND(contact.sliding_type ==
-        multibody::constraint::SlidingModeType::kSliding || 
-        contact.sliding_type ==
-        multibody::constraint::SlidingModeType::kTransitioning);
-
-    // Compute the translational velocity at the point of contact.
-    const Vector2<T> pdot = rod.CalcContactVelocity(context,
-                                                    contact_index);
-
-    // Return the tangent velocity.
-    if (positive_) {
-      return velocity_threshold_ - pdot[0];
-    } else {
-      return -pdot[0] - velocity_threshold_;
-    }
+    // TODO(edrumwri): Flesh out this stub once PointContact class has been
+    // introduced.
+    DRAKE_ABORT();
+    return 0;
   }
 
   // If 'true', witness function triggers when the sliding velocity is

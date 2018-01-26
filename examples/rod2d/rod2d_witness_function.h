@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/examples/rod2d/rod2d.h"
-#include "drake/multibody/constraint/point_contact.h"
 
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/abstract_values.h"
@@ -18,10 +17,10 @@ class Rod2D;
 
 /// All witness functions for the 2D Rod inherit from this one. 
 template <class T>
-class RodWitnessFunction : public systems::AbstractValues,
+class Rod2dWitnessFunction : public systems::AbstractValues,
                            public systems::WitnessFunction<T> {
  public:
-  RodWitnessFunction(const Rod2D<T>* rod,
+  Rod2dWitnessFunction(const Rod2D<T>* rod,
                      systems::WitnessFunctionDirection dir,
                      int contact_index) :
       systems::WitnessFunction<T>(*rod, dir),
@@ -74,7 +73,7 @@ class RodWitnessFunction : public systems::AbstractValues,
  private:
   void DoAddEvent(systems::CompositeEventCollection<T>* events) const override {
     event_->set_attribute(
-        std::make_unique<systems::Value<const RodWitnessFunction<T>*>>(this));
+        std::make_unique<systems::Value<const Rod2dWitnessFunction<T>*>>(this));
     event_->add_to_composite(events);
   }
 

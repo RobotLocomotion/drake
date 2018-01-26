@@ -50,7 +50,7 @@ drake_cc_library(
         "normal_vel_witness.h",
         "rod2d.h",
         "rod2d-inl.h",
-        "rod_witness_function.h",
+        "rod2d_witness_function.h",
         "signed_distance_witness.h",
         "sliding_witness.h",
         "sticking_friction_forces_slack_witness.h",
