@@ -44,7 +44,10 @@ drake_cc_binary(
     name = "passive_simulation",
     srcs = ["passive_simulation.cc"],
     add_test_rule = 1,
-    test_rule_args = ["--target_realtime_rate=0.0"],
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
+    ],
     deps = [
         ":acrobot_plant",
         "//drake/common:text_logging_gflags",
