@@ -205,6 +205,7 @@ def lcm_py_library(
         lcm_srcs = None,
         lcm_package = None,
         lcm_structs = None,
+        add_to_imports = True,
         **kwargs):
     """Declares a py_library on message classes generated from `*.lcm` files.
 
@@ -214,6 +215,12 @@ def lcm_py_library(
     This library has an ${lcm_package}/__init__.py, which means that this macro
     should only be used once for a given lcm_package in a given subdirectory.
     (Bazel will fail-fast with a "duplicate file" error if this is violated.)
+
+    The add_to_imports argument controls whether or not the library declares an
+    imports attribute so that `from ${lcm_package} import ${lcm_src}` will work
+    (as opposed to needing to prefix with the package name within the source
+    tree).  It is True by default, but might be set to False if a package needs
+    its own manually-written __init__.py handling.
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -228,7 +235,9 @@ def lcm_py_library(
         lcm_package = lcm_package,
         outs = outs)
 
-    imports = depset(kwargs.pop('imports', [])) | ["."]
+    imports = depset(kwargs.pop('imports', []))
+    if add_to_imports:
+        imports = imports | ["."]
     native.py_library(
         name = name,
         srcs = outs,

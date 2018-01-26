@@ -1,6 +1,6 @@
 import sys
 
-from tools.lint.formatter import IncludeFormatter
+from drake.tools.lint.formatter import IncludeFormatter
 
 
 def _check_invalid_line_endings(filename):

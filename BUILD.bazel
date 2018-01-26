@@ -17,6 +17,7 @@ exports_files([
     ".clang-format",
     # TODO(jwnimmer-tri) This won't appear until #6996 merges.
     ".drake-find_resource-sentinel",
+    "__init__.py",
 ])
 
 alias(

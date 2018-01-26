@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from tools.lint.find_data import find_data
+from drake.tools.lint.find_data import find_data
 
 
 class FindDataTest(unittest.TestCase):

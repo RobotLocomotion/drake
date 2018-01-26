@@ -18,14 +18,18 @@ def drake_py_library(
 
 def drake_py_binary(
         name,
+        srcs = None,
         deps = None,
         data = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations."""
     deps = adjust_labels_for_drake_hoist(deps)
     data = adjust_labels_for_drake_hoist(data)
+    # Work around https://github.com/bazelbuild/bazel/issues/1567.
+    srcs = (srcs or []) + ["//:__init__.py"]
     native.py_binary(
         name = name,
+        srcs = srcs,
         deps = deps,
         data = data,
         **kwargs)
@@ -41,6 +45,8 @@ def drake_py_test(
         srcs = ["test/%s.py" % name]
     deps = adjust_labels_for_drake_hoist(deps)
     data = adjust_labels_for_drake_hoist(data)
+    # Work around https://github.com/bazelbuild/bazel/issues/1567.
+    srcs = srcs + ["//:__init__.py"]
     native.py_test(
         name = name,
         srcs = srcs,
