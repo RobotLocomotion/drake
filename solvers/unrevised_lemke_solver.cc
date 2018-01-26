@@ -357,6 +357,7 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
       w_vars_in_dep.push_back(dep_variables[i].index);
     } else {
       z_vars_in_dep.push_back(dep_variables[i].index);
+      if (z_vars_in_dep.back() )
     }
   }
 
