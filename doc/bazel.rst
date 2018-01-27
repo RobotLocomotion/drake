@@ -42,7 +42,7 @@ options are available to use GCC on Ubuntu.
 
 Cheat sheet for operating on the entire project::
 
-  cd /path/to/drake-distro
+  cd /path/to/drake
   bazel build //...                     # Build the entire project.
   bazel test //...                      # Build and test the entire project.
   bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
@@ -59,7 +59,7 @@ Cheat sheet for operating on the entire project::
 You may use relative pathnames if your shell's working directory is not at the
 project root::
 
-  cd /path/to/drake-distro/drake/common
+  cd /path/to/drake/common
   bazel build ...                   # Build everything in common and its child subdirectories.
   bazel test ...                    # Test everything in common and its child subdirectories.
   bazel build //...                 # Build the entire project.
@@ -69,14 +69,14 @@ project root::
 
   - In the first two lines we did not precede "``...``" with "``//``", so the
     search begins in the current directory (``common``) and not from the
-    ``drake-distro`` root.
+    ``drake`` root.
   - In the second two lines we used the "``//``" prefix to specify the project
     root, so we're back to operating on the entire project even though
     ``common`` is still our shell's current working directory.
 
 Cheat sheet for operating on specific portions of the project::
 
-  cd /path/to/drake-distro/drake
+  cd /path/to/drake
   bazel build common/...                               # Build everything in common and its child subdirectories.
   bazel build common                                   # Build libcommon.
   bazel build common:polynomial                        # Build libpolynomial.
@@ -99,7 +99,7 @@ Cheat sheet for operating on specific portions of the project::
 - Note that the configuration switches (``-c`` and ``--config``) influence the
   entire command.  For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
-- For the definitions of the "``--config``" options see ``drake-distro/tools/bazel.rc``.
+- For the definitions of the "``--config``" options see ``drake/tools/bazel.rc``.
 
 Debugging on macOS
 ------------------
@@ -123,14 +123,14 @@ Updating BUILD files
 Please use the "``buildifier``" tool to format edits to ``BUILD`` files (in the
 same spirit as ``clang-format`` formatting C++ code)::
 
-  cd /path/to/drake-distro
-  bazel-bin/tools/lint/buildifier --all               # Reformat all Bazel files.
-  bazel-bin/tools/lint/buildifier drake/common/BUILD  # Only reformat one file.
+  cd /path/to/drake
+  bazel-bin/tools/lint/buildifier --all         # Reformat all Bazel files.
+  bazel-bin/tools/lint/buildifier common/BUILD  # Only reformat one file.
 
 In most cases the ``bazel-bin/tools/lint/buildifier`` will already be compiled
 by the time you need it.  In case it's absent, you can compile it via::
 
-  cd /path/to/drake-distro
+  cd /path/to/drake
   bazel build //tools/lint:buildifier
 
 Proprietary Solvers
@@ -226,8 +226,8 @@ Note that it disables compiler-optimization (``-O0``) to have a better and more
 precise coverage report. If you have trouble with kcov and unoptimized programs,
 you can turn it back on by also supplying ``--copt -O2``.
 
-The coverage report is written to the ``drake-distro/bazel-kcov`` directory. To
-view it, browse to ``drake-distro/bazel-kcov/index.html``.
+The coverage report is written to the ``drake/bazel-kcov`` directory. To
+view it, browse to ``drake/bazel-kcov/index.html``.
 
 .. toctree::
    :hidden:
