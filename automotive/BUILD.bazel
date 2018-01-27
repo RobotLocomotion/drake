@@ -666,4 +666,14 @@ drake_cc_googletest(
     ],
 )
 
+sh_test(
+    name = "demo_dry_run_test",
+    srcs = ["test/demo_test.sh"],
+    args = [
+        "--driving_command_gui_names=alpha,beta",
+        "--dry-run",
+    ],
+    data = [":demo"],
+)
+
 add_lint_tests()
