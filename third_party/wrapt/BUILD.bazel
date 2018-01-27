@@ -1,0 +1,28 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["permissive"])
+
+py_library(
+    name = "wrapt",
+    srcs = [
+        "__init__.py",
+        "wrappers.py",
+    ],
+    imports = [".."],
+    tags = ["nolint"],
+)
+
+install(
+    name = "install",
+    targets = [":wrapt"],
+    py_dest = "lib/python2.7/dist-packages/wrapt",
+    docs = [":LICENSE"],
+    doc_dest = "share/doc/wrapt",
+)
+
+add_lint_tests()
