@@ -76,8 +76,8 @@ Vector3<T> Rod2D<T>::ComputeExternalForces(
 }
 
 template <class T>
-int Rod2D<T>::DetermineNumWitnessFunctions(const systems::Context<T>&
-                                             context) const {
+int Rod2D<T>::DetermineNumWitnessFunctions(
+    const systems::Context<T&) const {
   // No witness functions if this is not a piecewise DAE model.
   if (simulation_type_ != SimulationType::kPiecewiseDAE)
     return 0;
