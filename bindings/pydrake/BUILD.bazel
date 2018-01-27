@@ -198,8 +198,7 @@ drake_py_test(
 # `//:install` is run in this test to verify that once installed
 # pydrake still works. This test is implemented in a separate file from
 # common_test to be able to remove files in the sandbox without
-# interfering with other tests. This test fails when bazel is run with
-# `no_everything` because `libgurobi70.so` is not found [Issue #7283].
+# interfering with other tests.
 drake_py_test(
     name = "common_install_test",
     size = "medium",
@@ -208,7 +207,6 @@ drake_py_test(
     srcs = ["test/common_install_test.py"],
     data = ["//:install"],
     main = "test/common_install_test.py",
-    tags = ["no_everything"],
     deps = [
         ":pydrake",
         "//tools/install:install_test_helper",
