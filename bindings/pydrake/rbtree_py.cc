@@ -123,6 +123,7 @@ PYBIND11_MODULE(_rbtree_py, m) {
          py::arg("in_terms_of_qdot") = false)
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
     .def("get_num_frames", &RigidBodyTree<double>::get_num_frames)
+    .def("get_num_actuators", &RigidBodyTree<double>::get_num_actuators)
     .def("getBodyOrFrameName",
          &RigidBodyTree<double>::getBodyOrFrameName,
          py::arg("body_or_frame_id"))
@@ -210,7 +211,8 @@ PYBIND11_MODULE(_rbtree_py, m) {
   py::class_<RigidBody<double> >(m, "RigidBody")
     .def("get_name", &RigidBody<double>::get_name)
     .def("get_body_index", &RigidBody<double>::get_body_index)
-    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass);
+    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass)
+    .def("get_visual_elements", &RigidBody<double>::get_visual_elements);
 
   py::class_<RigidBodyFrame<double>,
              std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
@@ -227,6 +229,71 @@ PYBIND11_MODULE(_rbtree_py, m) {
         &sdf::AddModelInstancesFromSdfString);
   m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
         &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages);
+
+  using namespace DrakeShapes;
+  py::enum_<Shape>(m, "Shape")
+    .value("UNKNOWN", Shape::UNKNOWN)
+    .value("BOX", Shape::BOX)
+    .value("SPHERE", Shape::SPHERE)
+    .value("CYLINDER", Shape::CYLINDER)
+    .value("MESH", Shape::MESH)
+    .value("MESH_POINTS", Shape::MESH_POINTS)
+    .value("CAPSULE", Shape::CAPSULE);
+
+  py::class_<Geometry>(m, "Geometry")
+    .def("getShape", &Geometry::getShape)
+    .def("hasFaces", &Geometry::hasFaces)
+    .def("getFaces", [](const Geometry& self) {
+          auto tris = TrianglesVector();
+          self.getFaces(&tris);
+          return tris;
+        })
+    .def("getPoints", 
+        [](const Geometry& self) {
+          auto pts = Eigen::Matrix3Xd(3, 0);
+          self.getPoints(pts);
+          std::cout << "pts: " << pts << std::endl;
+          return pts;
+        })
+    .def("getBoundingBoxPoints", 
+        [](const Geometry& self) {
+          auto pts = Eigen::Matrix3Xd(3, 0);
+          self.getBoundingBoxPoints(pts);
+          std::cout << "pts: " << pts << std::endl;
+          return pts;
+        });
+
+  py::class_<Cylinder>(m, "Cylinder")
+    .def("clone", &Cylinder::clone)
+    .def("getShape", &Cylinder::getShape)
+    .def("hasFaces", &Cylinder::hasFaces)
+    .def("getFaces", [](const Cylinder& self) {
+          auto tris = TrianglesVector();
+          self.getFaces(&tris);
+          return tris;
+        })
+    .def("getPoints", 
+        [](const Cylinder& self) {
+          auto pts = Eigen::Matrix3Xd(3, 0);
+          self.getPoints(pts);
+          std::cout << "pts: " << pts << std::endl;
+          return pts;
+        })
+    .def("getBoundingBoxPoints", 
+        [](const Cylinder& self) {
+          auto pts = Eigen::Matrix3Xd(3, 0);
+          self.getBoundingBoxPoints(pts);
+          std::cout << "pts: " << pts << std::endl;
+          return pts;
+        });
+
+  py::class_<Element>(m, "Element")
+    .def("hasGeometry", &Element::hasGeometry)
+    .def("getGeometry", &Element::getGeometry);
+
+  py::class_<VisualElement>(m, "VisualElement")
+    .def("hasGeometry", &Element::hasGeometry)
+    .def("getGeometry", &Element::getGeometry);
 }
 
 }  // namespace pydrake
