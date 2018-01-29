@@ -63,6 +63,18 @@ To check this:
 
 .. note::
 
+    If you are on Mac, you must ensure that you are using ``python2`` to
+    execute these scripts. You may do this by either explicitly using
+    ``python2`` on your command line, or follow the instructions from
+    ``brew info python``::
+
+        This formula installs a python2 executable to /usr/local/bin.
+        If you wish to have this formula's python executable in your PATH then
+        add the following to ~/.bash_profile:
+          export PATH="/usr/local/opt/python/libexec/bin:$PATH"
+
+.. note::
+
     If you are using Gurobi, you must either have it installed in the suggested
     location under ``/opt/...`` mentioned in :ref:`gurobi`, or you must ensure
     that you define the ``${GUROBI_PATH}`` environment variable, or specify
