@@ -36,6 +36,16 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
   EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0*kEpsilon));
 }
 
+// Test rigid body constructor passing a string name.
+GTEST_TEST(RigidBody, RigidBodyConstructorWithName) {
+  const std::string kLinkName = "LinkName";
+  // For this test the numerical values of the spatial intertia are not
+  // important and therefore it is left uninitialized.
+  const SpatialInertia<double> M_Bo_B;
+  const RigidBody<double> B("LinkName", M_Bo_B);
+  EXPECT_EQ(B.get_name(), kLinkName);
+}
+
 }  // namespace
 }  // namespace multibody_tree
 }  // namespace multibody
