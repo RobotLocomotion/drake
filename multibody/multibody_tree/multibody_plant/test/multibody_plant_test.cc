@@ -14,18 +14,19 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
+using Eigen::Vector3d;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 
 GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
-  const AcrobotParameters parameters;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlant(parameters);
-
   const std::string kLink1Name = "Link1";
   const std::string kLink2Name = "Link2";
   const std::string kShoulderJointName = "ShoulderJoint";
   const std::string kElbowJointName = "ElbowJoint";
   const std::string kInvalidName = "InvalidName";
+
+  const AcrobotParameters parameters;
+  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlant(parameters);
 
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(plant->num_bodies(), 3);
@@ -71,6 +72,14 @@ GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
       plant->GetJointByName<RevoluteJoint>(kElbowJointName);
   EXPECT_EQ(elbow.get_name(), kElbowJointName);
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
+
+  // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
+  // Therefore no more modeling elements can be added. Verify this.
+  EXPECT_THROW(plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
+               std::logic_error);
+  EXPECT_THROW(plant->AddJoint<RevoluteJoint>(
+      "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
+               std::logic_error);
 }
 
 }  // namespace
