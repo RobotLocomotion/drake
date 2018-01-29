@@ -121,6 +121,11 @@ class EvaluatorBase {
                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       AutoDiffVecXd& y) const = 0;
 
+  // Setter for the number of outputs.
+  void set_num_outputs(int num_outputs) {
+    num_outputs_ = num_outputs;
+  }
+
  private:
   int num_vars_{};
   int num_outputs_{};

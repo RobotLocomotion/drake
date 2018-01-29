@@ -129,6 +129,7 @@ class Constraint : public EvaluatorBase {
 
     lower_bound_ = lower_bound;
     upper_bound_ = upper_bound;
+    set_num_outputs(lower_bound.rows());
   }
 
  protected:
@@ -162,7 +163,7 @@ class Constraint : public EvaluatorBase {
 };
 
 /**
- * lb <= .5 x'Qx + b'x <= ub
+ * lb ≤ .5 xᵀQx + bᵀx ≤ ub
  * Without loss of generality, the class stores a symmetric matrix Q.
  * For a non-symmetric matrix Q₀, we can define Q = (Q₀ + Q₀ᵀ) / 2, since
  * xᵀQ₀x = xᵀQ₀ᵀx = xᵀ*(Q₀+Q₀ᵀ)/2 *x. The first equality holds because the
@@ -239,14 +240,14 @@ class QuadraticConstraint : public Constraint {
 
 /**
  Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
- A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
+ A vector z ∈ ℝ ⁿ lies within Lorentz cone if
  @f[
  z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
  @f]
  <!-->
- z(0) >= sqrt(z(1)^2 + ... + z(n-1)^2)
+ z₀ ≥ sqrt(z₁² + ... + zₙ₋₁²)
  <-->
- where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given matrices.
+ where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
  Ideally this constraint should be handled by a second-order cone solver.
  In case the user wants to enforce this constraint through general nonlinear
  optimization, with smooth gradient, we alternatively impose the following
@@ -298,17 +299,17 @@ class LorentzConeConstraint : public Constraint {
 /**
  * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated
  * Lorentz cone.
- * A vector \f$ z \in\mathbb{R}^n \f$ lies within rotated Lorentz cone, if
+ * A vector z ∈ ℝ ⁿ lies within rotated Lorentz cone, if
  * @f[
  * z_0 \ge 0\\
  * z_1 \ge 0\\
  * z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
  * @f]
- * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given matrices.
+ * where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
  * <!-->
- * z(0) >= 0
- * z(1) >= 0
- * z(0) * z(1) >= z(2)^2 + z(3)^2 + ... + z(n-1)^2
+ * z₀ ≥ 0
+ * z₁ ≥ 0
+ * z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁²
  * <-->
  * For more information and visualization, please refer to
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
