@@ -654,6 +654,7 @@ drake_cc_googletest(
         "test/find_resource_test_data.txt",
     ],
     deps = [
+        ":drake_path",
         ":find_resource",
     ],
 )
