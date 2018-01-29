@@ -674,6 +674,13 @@ sh_test(
         "--dry-run",
     ],
     data = [":demo"],
+    tags = [
+        # TODO(jwnimmer-tri) Apparently the liblcm.so is broken when compiled
+        # with sanitizers that have a runtime support library.
+        "no_asan",
+        "no_tsan",
+        "no_ubsan",
+    ],
 )
 
 add_lint_tests()
