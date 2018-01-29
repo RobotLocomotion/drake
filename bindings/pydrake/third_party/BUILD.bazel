@@ -1,0 +1,76 @@
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+)
+load(
+    "//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
+load(":forward_files.bzl", "forward_files")
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(
+    base_package = "//bindings",
+)
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
+)
+
+# Forward physical files to simplify working with `third_party` files (both
+# for Python imports and for installation).
+wrapt_prefix = "//third_party:com_github_grahamdumpleton_wrapt/"
+
+forward_files(
+    srcs = [wrapt_prefix + f for f in [
+        "__init__.py",
+        "LICENSE",
+        "wrappers.py",
+    ]],
+    dest_prefix = "wrapt/",
+    strip_prefix = wrapt_prefix,
+    tags = ["nolint"],
+    visibility = ["//visibility:private"],
+)
+
+# TODO(eric.cousineau): Use Ubuntu packages once we have a later version of
+# `python-wrapt` that does not have bugs like a mis-mapped `__mod__` proxy.
+drake_py_library(
+    name = "wrapt_py",
+    srcs = [
+        "wrapt/__init__.py",
+        "wrapt/wrappers.py",
+    ],
+    imports = PACKAGE_INFO.py_imports,
+    tags = ["nolint"],
+)
+
+PY_LIBRARIES = [
+    ":module_py",
+    ":wrapt_py",
+]
+
+drake_py_library(
+    name = "third_party",
+    visibility = ["//visibility:public"],
+    deps = PY_LIBRARIES,
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
+    docs = ["wrapt/LICENSE"],
+    doc_dest = "share/doc",
+)
+
+add_lint_tests()
