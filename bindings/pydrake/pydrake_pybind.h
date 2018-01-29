@@ -122,6 +122,26 @@ sources in Bazel's symlink forests.
 
 If using CLion, consider using `gdbserver`.
 
+# Installing Python Bindings from Bazel
+
+We suggest that you use the CMake workflow for installing the Python bindings
+as it should be more stable w.r.t. the rest of your system:
+http://drake.mit.edu/python_bindings.html
+
+However, if you need to test this without CMake in the loop, you may install
+all of Drake (including the Python bindings) using the target `//:install`.
+As an example:
+
+    mkdir build_install
+    bazel run //:install -- ~+/build_install
+
+N.B. Ensure that you use the correcet `--config` flags; if you do not want your
+`~/.bazelrc` flags leaking in, considuer using `bazel --bazelrc=/dev/null`.
+
+You may then start using the bindings by exposing these artifacts to Python:
+
+    export PYTHONPATH=${PWD}/build_install/lib/python2.7/site-packages:${PYTHONPATH}
+
 */
 
 // TODO(eric.cousineau): Add API naming conventions (#7819).
