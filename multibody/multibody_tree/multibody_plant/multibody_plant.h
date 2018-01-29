@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
@@ -256,7 +257,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
     joint_name_to_index_[name] = joint.get_index();
     return joint;
-  };
+  }
 
   /// Adds a new force element model of type `ForceElementType` to `this`
   /// %MultibodyPlant.

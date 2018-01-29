@@ -151,7 +151,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   Body() : body_frame_(*this) {}
 
   /// Creates a %Body named `name` with a BodyFrame associated with it.
-  Body(const std::string& name) : name_(name), body_frame_(*this) {}
+  explicit Body(const std::string& name) : name_(name), body_frame_(*this) {}
 
   /// Gets the `name` associated with `this` body.
   const std::string& get_name() const { return name_; }
