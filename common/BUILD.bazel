@@ -416,16 +416,14 @@ drake_py_binary(
 
 install(
     name = "install",
-    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
-    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
-    data_dest = "share/drake/drake",
-    data_dest = "share/drake",
-    guess_data = "WORKSPACE",
-    guess_data = "WORKSPACE",
+    targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for programs not in bin/, and including the workspace and/or package name
     # in the installed path.  For now, we'll just specify it manually.
     runtime_dest = "share/drake/common",
+    data_dest = "share/drake",
+    guess_data = "WORKSPACE",
+    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )
 
 # === test/ ===

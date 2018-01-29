@@ -1,13 +1,10 @@
-#include <fstream>
 #include <memory>
-
 
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
-#include "drake/systems/primitives/signal_logger.h"
+#include "drake/examples/multibody/acrobot/acrobot_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
@@ -22,17 +19,7 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-
 namespace drake {
-
-using multibody::benchmarks::acrobot::AcrobotParameters;
-using multibody::benchmarks::acrobot::MakeAcrobotPlant;
-using multibody::multibody_plant::MultibodyPlant;
-using multibody::RevoluteJoint;
-using systems::LogOutput;
-
 namespace examples {
 namespace multibody {
 namespace acrobot {
@@ -75,20 +62,16 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  // Create an acrobot model with default parameters.
-  AcrobotParameters default_parameters;
-  MultibodyPlant<double>& acrobot =
-      *builder.AddSystem(MakeAcrobotPlant(
-          default_parameters, &geometry_system));
+  AcrobotPlant<double>& acrobot =
+      *builder.AddSystem<AcrobotPlant>(&geometry_system);
   acrobot.set_name("Acrobot");
 
-  // Obtain some of the components by name.
-  const auto& shoulder = acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
-  const auto& elbow = acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
-
-  // Log the acrobot's state.
-  auto x_logger = LogOutput(acrobot.get_state_output_port(), &builder);
-  x_logger->set_name("x_logger");
+  // A constant source for a zero applied torque at the elbow joint.
+  double applied_torque(0.0);
+  auto torque_source =
+      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
+  torque_source->set_name("Applied Torque");
+  builder.Connect(torque_source->get_output_port(), acrobot.get_input_port());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
@@ -105,11 +88,11 @@ int do_main() {
   DRAKE_DEMAND(!!acrobot.get_source_id());
 
   builder.Connect(
-      acrobot.get_geometry_ids_output_port(),
+      acrobot.get_geometry_id_output_port(),
       geometry_system.get_source_frame_id_port(
           acrobot.get_source_id().value()));
   builder.Connect(
-      acrobot.get_geometry_poses_output_port(),
+      acrobot.get_geometry_pose_output_port(),
       geometry_system.get_source_pose_port(acrobot.get_source_id().value()));
 
   builder.Connect(geometry_system.get_pose_bundle_output_port(),
@@ -123,21 +106,16 @@ int do_main() {
   // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
-  // Create a context for this system and initialize it with default values:
+  // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
-
-  // Get the acrobot's portion of the context in order to set initial
-  // angles. Velocities are left to the default zero values.
   systems::Context<double>& acrobot_context =
       diagram->GetMutableSubsystemContext(acrobot, diagram_context.get());
-  shoulder.set_angle(&acrobot_context, 1.0);
-  elbow.set_angle(&acrobot_context, 1.0);
 
-  //std::unique_ptr<systems::ContinuousState<double>> derivatives =
-    //  diagram->AllocateTimeDerivatives();
-  //diagram->CalcTimeDerivatives(*diagram_context, derivatives.get());
+  // Set initial angles. Velocities are left to the default zero values.
+  acrobot.shoulder().set_angle(&acrobot_context, 1.0);
+  acrobot.elbow().set_angle(&acrobot_context, 1.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -165,19 +143,10 @@ int do_main() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(target_accuracy);
 
-  simulator.set_publish_every_time_step(true);
+  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(simulation_time);
-
-  std::ofstream file("state.dat");
-  const int nt = x_logger->sample_times().size();
-  MatrixX<double> tt(nt, 5);
-  tt << x_logger->sample_times(), x_logger->data().transpose();
-  PRINT_VAR(tt.rows());
-  PRINT_VAR(tt.cols());
-  file << tt;
-  file.close();
 
   // Some sanity checks:
   if (FLAGS_integration_scheme == "semi_explicit_euler") {
