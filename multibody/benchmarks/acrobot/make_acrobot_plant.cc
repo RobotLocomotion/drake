@@ -38,13 +38,13 @@ MakeAcrobotPlant(
 
   // Define each link's spatial inertia about their respective COM.
   UnitInertia<double> G1_Bcm =
-      UnitInertia<double>::StraightLine(params.Ic1(), Vector3d::UnitY());
+      UnitInertia<double>::StraightLine(params.Ic1(), Vector3d::UnitZ());
   SpatialInertia<double> M1_L1o =
       SpatialInertia<double>::MakeFromCentralInertia(
           params.m1(), p_L1L1cm, G1_Bcm);
 
   UnitInertia<double> G2_Bcm =
-      UnitInertia<double>::StraightLine(params.Ic2(), Vector3d::UnitY());
+      UnitInertia<double>::StraightLine(params.Ic2(), Vector3d::UnitZ());
   SpatialInertia<double> M2_L2o =
       SpatialInertia<double>::MakeFromCentralInertia(
           params.m2(), p_L2L2cm, G2_Bcm);

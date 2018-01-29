@@ -1,22 +1,33 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
 #include <functional>
+#include <limits>
 #include <memory>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/continuous_state.h"
 
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
 namespace {
 
+using Eigen::Matrix2d;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
+using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using systems::Context;
+using systems::ContinuousState;
 
 GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
   const std::string kLink1Name = "Link1";
@@ -85,6 +96,92 @@ GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
   EXPECT_THROW(plant->AddJoint<RevoluteJoint>(
       "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
                std::logic_error);
+}
+
+class AcrobotPlantTests : public ::testing::Test {
+ public:
+  // Creates MultibodyPlant for an acrobot model.
+  void SetUp() override {
+    plant_ = MakeAcrobotPlant(parameters_);
+    link1_ = &plant_->GetBodyByName("Link1");
+    link2_ = &plant_->GetBodyByName("Link2");
+    shoulder_ = &plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");
+    elbow_ = &plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
+
+    context_ = plant_->CreateDefaultContext();
+    derivatives_ = plant_->AllocateTimeDerivatives();
+  }
+
+  // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
+  // for the acrobot model. The comparison is carried out against a benchmark
+  // with hand written dynamics.
+  void VerifyCalcTimeDerivatives(double theta1, double theta2,
+                                 double theta1dot, double theta2dot) {
+    const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+    // Set the state:
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angular_rate(context_.get(), theta1dot);
+    elbow_->set_angular_rate(context_.get(), theta2dot);
+
+    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    const VectorXd xdot = derivatives_->CopyToVector();
+
+    // Now compute inverse dynamics using our benchmark:
+    Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        theta1, theta2, theta1dot, theta2dot);
+    Vector2d tau_g_expected =
+        acrobot_benchmark_.CalcGravityVector(theta1, theta2);
+    Vector2d rhs = tau_g_expected - C_expected;
+    Matrix2d M_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
+    Vector2d vdot_expected = M_expected.inverse() * rhs;
+    VectorXd xdot_expected(4);
+    xdot_expected << Vector2d(theta1dot, theta2dot), vdot_expected;
+
+    EXPECT_TRUE(CompareMatrices(
+        xdot, xdot_expected, kTolerance, MatrixCompareType::relative));
+  }
+
+ protected:
+  // The parameters of the model:
+  const AcrobotParameters parameters_;
+  // The model plant:
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  // Workspace including context and derivatives vector:
+  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<ContinuousState<double>> derivatives_;
+  // Non-owning pointers to the model's elements:
+  const Body<double>* link1_{nullptr};
+  const Body<double>* link2_{nullptr};
+  const RevoluteJoint<double>* shoulder_{nullptr};
+  const RevoluteJoint<double>* elbow_{nullptr};
+
+  // Reference benchmark for verification.
+  Acrobot<double> acrobot_benchmark_{
+      Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
+      parameters_.m1(), parameters_.m2(),
+      parameters_.l1(), parameters_.l2(),
+      parameters_.lc1(), parameters_.lc2(),
+      parameters_.Ic1(), parameters_.Ic2(),
+      parameters_.b1(), parameters_.b2(),
+      parameters_.g()};
+};
+
+TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
+  // Some random tests with non-zero state:
+  VerifyCalcTimeDerivatives(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0);                /* joint's angular rates */
+  VerifyCalcTimeDerivatives(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0);                /* joint's angular rates */
+  VerifyCalcTimeDerivatives(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0);                /* joint's angular rates */
+  VerifyCalcTimeDerivatives(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0);                /* joint's angular rates */
 }
 
 }  // namespace
