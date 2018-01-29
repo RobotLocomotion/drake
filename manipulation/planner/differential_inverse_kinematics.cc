@@ -1,5 +1,8 @@
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
 
+#include <memory>
+#include <string>
+
 namespace drake {
 namespace manipulation {
 namespace planner {
@@ -73,11 +76,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     A.topRightCorner(num_cart_constraints, 1) = -V_dir;
     prog.AddLinearEqualityConstraint(
         A, VectorX<double>::Zero(num_cart_constraints), {v_next, alpha});
-    cart_cost =
-        prog.AddQuadraticErrorCost(drake::Vector1<double>(100),
-                                   drake::Vector1<double>(V_mag), alpha)
-            .constraint()
-            .get();
+    cart_cost = prog.AddQuadraticErrorCost(drake::Vector1<double>(100),
+                                           drake::Vector1<double>(V_mag), alpha)
+                    .constraint()
+                    .get();
 
     Eigen::JacobiSVD<MatrixX<double>> svd(J, Eigen::ComputeFullV);
 
@@ -98,8 +100,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   if (num_cart_constraints < num_velocities) {
     prog.AddQuadraticErrorCost(
         identity_num_positions * dt * dt,
-        (parameters.get_nominal_joint_position() - q_current) / dt,
-        v_next);
+        (parameters.get_nominal_joint_position() - q_current) / dt, v_next);
   }
 
   // Add q upper and lower joint limit.
@@ -114,8 +115,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   if (parameters.get_joint_velocity_limits()) {
     prog.AddBoundingBoxConstraint(
         parameters.get_joint_velocity_limits()->first,
-        parameters.get_joint_velocity_limits()->second,
-        v_next);
+        parameters.get_joint_velocity_limits()->second, v_next);
   }
 
   // Add vd constraint.
@@ -168,17 +168,15 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   KinematicsCache<double> cache = robot.doKinematics(q_current, v_current);
   const Isometry3<double> X_WE =
       robot.CalcFramePoseInWorldFrame(cache, frame_E);
-  const Vector6<double> V_WE =
-      ComputePoseDiffInWorldFrame(X_WE, X_WE_desired) / parameters.get_timestep();
+  const Vector6<double> V_WE = ComputePoseDiffInWorldFrame(X_WE, X_WE_desired) /
+                               parameters.get_timestep();
   return DoDifferentialInverseKinematics(robot, cache, frame_E, V_WE,
                                          parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot,
-    const KinematicsCache<double>& cache,
-    const RigidBodyFrame<double>& frame_E,
-    const Vector6<double>& V_WE,
+    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
+    const RigidBodyFrame<double>& frame_E, const Vector6<double>& V_WE,
     const DifferentialInverseKinematicsParameters& parameters) {
   Eigen::Isometry3d X_WE = robot.CalcFramePoseInWorldFrame(cache, frame_E);
 

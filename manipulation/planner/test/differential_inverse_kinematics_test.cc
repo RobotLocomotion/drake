@@ -48,9 +48,9 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     VectorX<double> q = tree_->getRandomConfiguration(rand);
     VectorX<double> v = VectorX<double>::Zero(num_velocities);
 
-    cache_ = std::make_unique<KinematicsCache<double>>(
-        tree_->doKinematics(q, v));
-   
+    cache_ =
+        std::make_unique<KinematicsCache<double>>(tree_->doKinematics(q, v));
+
     params_ = std::make_unique<DifferentialInverseKinematicsParameters>(
         tree_->get_num_positions(), tree_->get_num_velocities());
 
@@ -88,7 +88,7 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   const double dt = params_->get_timestep();
 
   const double velocity_tolerance{1e-7};
-  
+
   DifferentialInverseKinematicsResult function_result =
       DoDifferentialInverseKinematics(*tree_, *cache_, *frame_E_, V_WE,
                                       *params_);
@@ -112,7 +112,7 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
 
   drake::log()->info("function_result.joint_velocities = {}",
                      function_result.joint_velocities->transpose());
-  
+
   const KinematicsCache<double> cache1 =
       tree_->doKinematics(q, function_result.joint_velocities.value());
 
@@ -160,17 +160,15 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     params_->set_end_effector_velocity_gain(gain_E);
 
     DifferentialInverseKinematicsResult function_result =
-        DoDifferentialInverseKinematics(*tree_, *cache_, *frame_E_, V_WE_desired,
-                                        *params_);
+        DoDifferentialInverseKinematics(*tree_, *cache_, *frame_E_,
+                                        V_WE_desired, *params_);
     std::cout << function_result.status << "\n";
     ASSERT_TRUE(function_result.joint_velocities != nullopt);
     std::cout << function_result.joint_velocities.value().transpose() << "\n";
-    
+
     // Transform the resulting end effector frame's velocity into body frame.
-    *cache_ =
-        tree_->doKinematics(q, function_result.joint_velocities.value());
-    V_WE =
-        tree_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *frame_E_);
+    *cache_ = tree_->doKinematics(q, function_result.joint_velocities.value());
+    V_WE = tree_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *frame_E_);
     V_WE_E.head<3>() = X_WE.linear().transpose() * V_WE.head<3>();
     V_WE_E.tail<3>() = X_WE.linear().transpose() * V_WE.tail<3>();
 
@@ -195,8 +193,8 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     v_desired(i) = std::max(v_desired(i), v_bounds.first(i));
     v_desired(i) = std::min(v_desired(i), v_bounds.second(i));
   }
-  EXPECT_TRUE(
-      CompareMatrices(cache_->getV(), v_desired, 1e-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(cache_->getV(), v_desired, 1e-8,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace

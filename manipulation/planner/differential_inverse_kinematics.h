@@ -1,6 +1,10 @@
 #pragma once
 
 #include <iostream>
+#include <limits>
+#include <memory>
+#include <string>
+#include <utility>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
@@ -110,9 +114,9 @@ class DifferentialInverseKinematicsParameters {
     dt_ = dt;
   }
 
-  int get_num_positions() const { return num_positions_; };
+  int get_num_positions() const { return num_positions_; }
 
-  int get_num_velocities() const { return num_velocities_; };
+  int get_num_velocities() const { return num_velocities_; }
 
  private:
   int num_positions_{0};
@@ -134,8 +138,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const RigidBodyFrame<double>& frame_E,
-    const Vector6<double>& V_WE,
+    const RigidBodyFrame<double>& frame_E, const Vector6<double>& V_WE,
     const DifferentialInverseKinematicsParameters& parameters);
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -224,8 +227,7 @@ class DifferentialInverseKinematics {
 
   DifferentialInverseKinematicsResult Solve() const {
     return DoDifferentialInverseKinematics(
-        *robot_, q_current_, v_current_,
-        *frame_E_, V_WE_desired_, parameters_);
+        *robot_, q_current_, v_current_, *frame_E_, V_WE_desired_, parameters_);
   }
 
   DifferentialInverseKinematicsResult ComputeJointVelocities(
