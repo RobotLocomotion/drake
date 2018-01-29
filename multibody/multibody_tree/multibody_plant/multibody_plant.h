@@ -1,15 +1,12 @@
 #pragma once
 
-#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -338,55 +335,30 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  /// Register geometry for `body`.
-  /// 1. If not done yet, register this plant as a source for the given GS.
-  /// 2. Register frame for this body if not already done so.
-  /// 3. Register geomtery for the corresponding FrameId.
-  void RegisterGeometry(
-      const Body<T>& body,
-      const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
-
-  void RegisterAnchoredGeometry(
-      const Isometry3<double>& X_WG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
-
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& get_world_body() const {
     return model_->get_world_body();
   }
 
-  /// Returns the unique id identifying this plant as a source for a
-  /// GeometrySystem.
-  /// Returns `nullopt` if `this` plant did not register any geometry.
-  optional<geometry::SourceId> get_source_id() const {
-    return source_id_;
-  }
-
-  /// Returns the output port of frame id's used to communicate poses to a
-  /// GeometrySystem. It throws a std::out_of_range exception if this system was
-  /// not registered with a GeometrySystem.
-  const systems::OutputPort<T>& get_geometry_ids_output_port() const;
-
-  /// Returns the output port of frames' poses to communicate with a
-  /// GeometrySystem. It throws a std::out_of_range exception if this system was
-  /// not registered with a GeometrySystem.
-  const systems::OutputPort<T>& get_geometry_poses_output_port() const;
-
-//  const systems::InputPortDescriptor<T>& get_input_port() const;
-
-  const systems::OutputPort<T>& get_state_output_port() const;
-
-  /// Sets the `state` so that all the generalized positions and velocities are
-  /// zero.
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override {
-    DRAKE_DEMAND(state != nullptr);
-    model_->SetDefaultState(context, state);
-  }
-
+  /// Returns `true` if this %MultibodyPlant was finalized with a call to
+  /// Finalize() after all multibody elements were added, and `false` otherwise.
+  /// @see Finalize().
   bool is_finalized() const { return model_->topology_is_valid(); }
 
+  /// This method must be called after all elements in the tree (joints, bodies,
+  /// force elements, constraints) were added and before any computations are
+  /// performed.
+  /// It essentially compiles all the necessary "topological information", i.e.
+  /// how bodies, joints and, any other elements connect with each other, and
+  /// performs all the required pre-processing to perform computations at a
+  /// later stage.
+  ///
+  /// If the finalize stage is successful, the topology of this %MultibodyTree
+  /// is validated, meaning that the topology is up-to-date after this call.
+  /// No more multibody tree elements can be added after a call to Finalize().
+  ///
+  /// @throws std::logic_error If users attempt to call this method on an
+  ///         already finalized %MultibodyTree.
   void Finalize();
 
  private:
@@ -400,82 +372,26 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return false;
   }
 
+  // Helper method to declare state and ports after Finalize().
   void DeclareStateAndPorts();
 
-  // It creates an empty context with no state or parameters.
   // This override gives System::AllocateContext() the chance to create a more
   // specialized context type, in this case, a MultibodyTreeContext.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
 
+  // Implements the system dynamics according to this class's documentation.
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  // maybe geometry_source_is_registered_with(const GeometrySystem<T>& gs) ???
-  bool geometry_source_is_registered() const {
-    return !!source_id_;
-  }
-
-  bool body_has_registered_frame(const Body<T>& body) const {
-    return body_index_to_frame_id_.find(body.get_index()) !=
-        body_index_to_frame_id_.end();
-  }
-
-  // Helper method to declare output ports used by this plant to communicate
-  // with a GeometrySystem.
-  void DeclareGeometrySystemPorts();
-
-  // Allocate the id output.
-  geometry::FrameIdVector AllocateFrameIdOutput(
-      const systems::Context<T>& context) const;
-
-  // Calculate the id output.
-  void CalcFrameIdOutput(
-      const systems::Context<T>& context,
-      geometry::FrameIdVector* id_set) const;
-
-  // Allocate the frame pose set output port value.
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const systems::Context<T>& context) const;
-
-  // Calculate the frame pose set output port value.
-  void CalcFramePoseOutput(const systems::Context<T>& context,
-                           geometry::FramePoseVector<T>* poses) const;
-
-  // Copies the state in `context` to `output`.
-  void CopyStateOut(const systems::Context<T>& context,
-                    systems::BasicVector<T>* output) const;
-
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
-  // Geometry source identifier for this system to interact with geometry
-  // system. It is made optional for plants that do not register geometry
-  // (dynamics only).
-  optional<geometry::SourceId> source_id_{nullopt};
-
-  // Map used to find body indexes by body name.
+  // Map used to find body indexes by their unique body name.
   std::unordered_map<std::string, BodyIndex> body_name_to_index_;
 
-  // Map used to find joint indexes by joint name.
+  // Map used to find joint indexes by their joint name.
   std::unordered_map<std::string, JointIndex> joint_name_to_index_;
-
-  // Frame Id's for each body in the model:
-  // Not all bodies need to be in this map.
-  std::unordered_map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
-
-  // Map provided at construction that tells how bodies (referenced by name),
-  // map to frame ids.
-  std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
-
-  // Port handles for geometry:
-  int geometry_id_port_{-1};
-  int geometry_pose_port_{-1};
-
-  // Port handles for general input/output:
-  int applied_torque_input_{-1};
-  int state_output_port_{-1};
-
 };
 
 }  // namespace multibody_plant

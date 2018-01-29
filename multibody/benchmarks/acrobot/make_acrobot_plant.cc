@@ -53,26 +53,8 @@ MakeAcrobotPlant(
   const RigidBody<double>& link1 = plant->AddRigidBody("Link1", M1_L1o);
   const RigidBody<double>& link2 = plant->AddRigidBody("Link2", M2_L2o);
 
-  if (geometry_system != nullptr) {
-    // A sphere at the world's origin.
-    plant->RegisterAnchoredGeometry(
-        Isometry3d::Identity(), Sphere(params.l1() / 8), geometry_system);
-
-    // A rod geometry for link 1.
-    const double rod1_radius = 0.05;
-    plant->RegisterGeometry(
-        link1,
-        /* Pose X_L1G of the geometry frame G in the body frame L1 of link 1. */
-        Isometry3d{Translation3d(-params.l1() / 2.0 * Vector3d::UnitZ())},
-        Cylinder(rod1_radius, params.l1()), geometry_system);
-
-    // A rod geometry for link 2.
-    const double rod2_radius = 0.05;
-    plant->RegisterGeometry(
-        link2,
-        Isometry3d{Translation3d(-params.l2() / 2.0 * Vector3d::UnitZ())},
-        Cylinder(rod2_radius, params.l2()), geometry_system);
-  }
+  // TODO(amcastro-tri): Register geometry if a valid GeometrySystem is
+  // provided.
 
   plant->AddJoint<RevoluteJoint>(
       "ShoulderJoint",

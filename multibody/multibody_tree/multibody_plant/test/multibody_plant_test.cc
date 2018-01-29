@@ -28,6 +28,11 @@ GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
   const AcrobotParameters parameters;
   std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlant(parameters);
 
+  // MakeAcrobotPlant() has already called Finalize() on the new acrobot plant.
+  // Therefore attempting to call this method again will throw an exception.
+  // Verify this.
+  EXPECT_THROW(plant->Finalize(), std::logic_error);
+
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(plant->num_bodies(), 3);
   EXPECT_EQ(plant->num_joints(), 2);
