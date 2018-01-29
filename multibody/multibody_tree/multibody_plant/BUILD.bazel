@@ -32,4 +32,13 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "multibody_plant_test",
+    deps = [
+        ":multibody_plant",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
 add_lint_tests()

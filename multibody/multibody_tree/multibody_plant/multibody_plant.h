@@ -40,6 +40,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_num_bodies();
   }
 
+  int num_joints() const {
+    return model_->get_num_joints();
+  }
+
   int num_positions() const { return model_->get_num_positions(); }
   int num_velocities() const { return model_->get_num_velocities(); }
   int num_states() const { return model_->get_num_states(); }
@@ -54,7 +58,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const std::string& name, const SpatialInertia<double>& M_BBo_E) {
     // An exception is thrown if a body named `name` was already exists.
     DRAKE_THROW_UNLESS(!HasBodyNamed(name));
-    const RigidBody<T>& body = model_->template AddBody<RigidBody>(M_BBo_E);
+    const RigidBody<T>& body =
+        model_->template AddBody<RigidBody>(name, M_BBo_E);
     body_name_to_index_[name] = body.get_index();
     return body;
   }
