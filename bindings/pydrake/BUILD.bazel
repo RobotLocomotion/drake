@@ -135,6 +135,7 @@ PYBIND_LIBRARIES = adjust_labels_for_drake_hoist([
     "//drake/bindings/pydrake/examples",
     "//drake/bindings/pydrake/solvers",
     "//drake/bindings/pydrake/systems",
+    "//drake/bindings/pydrake/third_party",
     "//drake/bindings/pydrake/util",
 ])
 
