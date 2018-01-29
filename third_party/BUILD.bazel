@@ -47,4 +47,13 @@ exports_files(
     visibility = ["//common/proto:__pkg__"],
 )
 
+exports_files(
+    ["com_github_grahamdumpleton_wrapt/" + f for f in [
+        "LICENSE",
+        "__init__.py",
+        "wrappers.py",
+    ]],
+    visibility = ["//bindings/pydrake/third_party:__pkg__"],
+)
+
 add_lint_tests()
