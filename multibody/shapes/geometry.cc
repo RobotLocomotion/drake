@@ -57,7 +57,7 @@ Shape Geometry::getShape() const { return shape; }
 
 Geometry* Geometry::clone() const { return new Geometry(*this); }
 
-void Geometry::getPoints(Matrix3Xd& points) const { points = Matrix3Xd(); }
+void Geometry::getPoints(Matrix3Xd& points) const { points = Matrix3Xd(); printf("Went through Geometry getpoints\n"); }
 
 void Geometry::getBoundingBoxPoints(Matrix3Xd& points) const {
   points = Matrix3Xd();
@@ -171,6 +171,7 @@ Cylinder* Cylinder::clone() const { return new Cylinder(*this); }
 
 void Cylinder::getPoints(Matrix3Xd& points) const {
   static bool warnOnce = true;
+  printf("in cylinder getpts\n");
   if (warnOnce) {
     std::cerr
         << "Warning: DrakeShapes::Cylinder::getPoints(): "
