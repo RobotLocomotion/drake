@@ -252,48 +252,40 @@ PYBIND11_MODULE(_rbtree_py, m) {
         [](const Geometry& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getPoints(pts);
-          std::cout << "pts: " << pts << std::endl;
+          std::cout << "geometry pts: " << pts << std::endl;
           return pts;
         })
     .def("getBoundingBoxPoints", 
         [](const Geometry& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getBoundingBoxPoints(pts);
-          std::cout << "pts: " << pts << std::endl;
+          std::cout << "geometry bb pts: " << pts << std::endl;
           return pts;
         });
 
-  py::class_<Cylinder>(m, "Cylinder")
-    .def("clone", &Cylinder::clone)
-    .def("getShape", &Cylinder::getShape)
-    .def("hasFaces", &Cylinder::hasFaces)
-    .def("getFaces", [](const Cylinder& self) {
-          auto tris = TrianglesVector();
-          self.getFaces(&tris);
-          return tris;
-        })
+  py::class_<Cylinder, Geometry>(m, "Cylinder")    
     .def("getPoints", 
         [](const Cylinder& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getPoints(pts);
-          std::cout << "pts: " << pts << std::endl;
+          std::cout << "cylinder pts: " << pts << std::endl;
           return pts;
         })
     .def("getBoundingBoxPoints", 
         [](const Cylinder& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getBoundingBoxPoints(pts);
-          std::cout << "pts: " << pts << std::endl;
+          std::cout << "cylinder bb pts: " << pts << std::endl;
           return pts;
         });
+
+  py::class_<Sphere, Geometry>(m, "Sphere");
 
   py::class_<Element>(m, "Element")
     .def("hasGeometry", &Element::hasGeometry)
     .def("getGeometry", &Element::getGeometry);
 
-  py::class_<VisualElement>(m, "VisualElement")
-    .def("hasGeometry", &Element::hasGeometry)
-    .def("getGeometry", &Element::getGeometry);
+  py::class_<VisualElement, Element>(m, "VisualElement");
 }
 
 }  // namespace pydrake
