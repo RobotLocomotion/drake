@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/multibody/acrobot/make_acrobot_plant.h"
+#include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
@@ -27,6 +27,8 @@
 
 namespace drake {
 
+using multibody::benchmarks::acrobot::AcrobotParameters;
+using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::RevoluteJoint;
 using systems::LogOutput;
