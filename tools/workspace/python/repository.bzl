@@ -7,7 +7,7 @@ makes them available to be used as a C/C++ dependency.
 
 Example:
     WORKSPACE:
-        load("@drake//tools/workspace/python:package.bzl", "python_repository")
+        load("@drake//tools/workspace/python:repository.bzl", "python_repository")  # noqa
         python_repository(
             name = "foo",
             version = "2.7",

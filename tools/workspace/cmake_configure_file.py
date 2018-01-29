@@ -17,7 +17,7 @@ import sys
 from collections import OrderedDict
 
 # Looks like "#cmakedefine VAR ..." or "#cmakedefine01 VAR".
-_cmakedefine = re.compile(r'^#cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)')
+_cmakedefine = re.compile(r'^(\s*)#cmakedefine(01)? ([^ \r\n]+)(.*?)([\r\n]+)')
 
 # Looks like "@VAR@" or "${VAR}".
 _varsubst = re.compile(r'^(.*?)(@[^ ]+?@|\$\{[^ ]+?\})(.*)([\r\n]*)')
@@ -28,14 +28,14 @@ def _transform(line, definitions):
     # Replace define statements.
     match = _cmakedefine.match(line)
     if match:
-        maybe01, var, rest, newline = match.groups()
+        blank, maybe01, var, rest, newline = match.groups()
         defined = var in definitions
         if maybe01:
-            return '#define ' + var + [' 0', ' 1'][defined] + newline
+            return blank + '#define ' + var + [' 0', ' 1'][defined] + newline
         elif defined:
-            line = '#define ' + var + rest + newline
+            line = blank + '#define ' + var + rest + newline
         else:
-            return '/* #undef ' + var + ' */' + newline
+            return blank + '/* #undef ' + var + ' */' + newline
 
     # Replace variable substitutions.
     while True:

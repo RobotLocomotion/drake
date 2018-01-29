@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
+#include "drake/common/drake_path.h"
+
 using std::string;
 
 namespace drake {
@@ -104,6 +106,13 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
 
   // Sugar works the same way.
   EXPECT_EQ(FindResourceOrThrow(relpath), absolute_path);
+}
+
+GTEST_TEST(GetDrakePathTest, BasicTest) {
+  // Just test that we find a path, without any exceptions.
+  const auto& result = MaybeGetDrakePath();
+  ASSERT_TRUE(result);
+  EXPECT_GT(result->length(), 5);
 }
 
 }  // namespace

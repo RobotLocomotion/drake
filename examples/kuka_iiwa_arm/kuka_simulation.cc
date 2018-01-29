@@ -68,6 +68,7 @@ int DoMain() {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         urdf, multibody::joints::kFixed, tree.get());
+    multibody::AddFlatTerrainToWorld(tree.get(), 100., 10.);
     plant = builder.AddPlant(std::move(tree));
   }
   // Creates and adds LCM publisher for visualization.
@@ -110,6 +111,11 @@ int DoMain() {
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
   command_receiver->set_name("command_receiver");
+  std::vector<int> iiwa_instances =
+      {RigidBodyTreeConstants::kFirstNonWorldModelInstanceId};
+  auto external_torque_converter =
+      base_builder->AddSystem<IiwaContactResultsToExternalTorque>(
+          tree, iiwa_instances);
   auto status_pub = base_builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
                                                                &lcm));
@@ -126,10 +132,16 @@ int DoMain() {
                         status_sender->get_state_input_port());
   base_builder->Connect(command_receiver->get_output_port(0),
                         status_sender->get_command_input_port());
+  base_builder->Connect(controller->get_output_port_control(),
+                        status_sender->get_commanded_torque_input_port());
+  base_builder->Connect(plant->torque_output_port(),
+                        status_sender->get_measured_torque_input_port());
+  base_builder->Connect(plant->contact_results_output_port(),
+                        external_torque_converter->get_input_port(0));
+  base_builder->Connect(external_torque_converter->get_output_port(0),
+                        status_sender->get_external_torque_input_port());
   base_builder->Connect(status_sender->get_output_port(0),
                         status_pub->get_input_port(0));
-  base_builder->Connect(controller->get_output_port_control(),
-                        status_sender->get_torque_commanded_input_port());
 
   if (FLAGS_visualize_frames) {
     // TODO(sam.creasey) This try/catch block is here because even

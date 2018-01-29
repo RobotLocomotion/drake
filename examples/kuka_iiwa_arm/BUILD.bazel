@@ -7,6 +7,10 @@ load(
     "drake_cc_googletest",
     "drake_example_cc_binary",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+)
 load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
@@ -49,6 +53,7 @@ drake_cc_library(
         "//drake/lcmtypes:iiwa",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/rigid_body_plant:contact_results",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -194,9 +199,13 @@ alias(
 
 drake_cc_googletest(
     name = "iiwa_lcm_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_lcm",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/systems/framework",
     ],
 )
@@ -267,6 +276,21 @@ install(
     deps = adjust_labels_for_drake_hoist([
         "//drake/examples/kuka_iiwa_arm/models:install_data",
     ]),
+)
+
+# Run the installed flavor of the kuka simulation, to make sure it can locate
+# its resources, etc.  TODO(jwnimmer-tri) Refactor installed-test phrasing to
+# be more compact, convenient, and efficient such as #7774 proposes.
+drake_py_test(
+    name = "kuka_simulation_installed_test",
+    size = "small",
+    timeout = "long",
+    srcs = ["test/kuka_simulation_installed_test.py"],
+    data = ["//:install"],
+    main = "test/kuka_simulation_installed_test.py",
+    deps = [
+        "//tools/install:install_test_helper",
+    ],
 )
 
 add_lint_tests()

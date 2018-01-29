@@ -9,15 +9,11 @@
 
 #include <pybind11/pybind11.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/type_pack.h"
 
 namespace drake {
 namespace pydrake {
-
-// This alias is intended to be part of the public API, as it follows
-// `pybind11` conventions.
-namespace py = pybind11;
-
 namespace internal {
 
 // Gets singleton for type aliases from `cpp_param`.

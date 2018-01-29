@@ -28,20 +28,18 @@ package(default_visibility = adjust_labels_for_drake_hoist([
     "//drake/bindings/pydrake:__subpackages__",
 ]))
 
-# N.B. Any common headers should be shared via a HEADER ONLY library.
-
-# Target Naming Conventions:
-# `*_py`
-#   A Python library (can be pure Python or pybind)
-#   Files: `*.py`, `*_py.cc`
-# `*_pybind`
-#   A C++ library for adding pybind-specific utilities to be consumed by C++.
-#   Files: `*_pybind.{h,cc}`
-
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(
     base_package = adjust_label_for_drake_hoist("//drake/bindings"),
+)
+
+drake_cc_library(
+    name = "pydrake_pybind",
+    hdrs = ["pydrake_pybind.h"],
+    # NOTE: We must violate IWYU and not list any Drake libraries in "deps"
+    # here because we do not want these dependencies violating ODR (at both
+    # development and install time).
 )
 
 drake_pybind_library(
@@ -57,12 +55,9 @@ drake_pybind_library(
     ],
 )
 
-# TODO(eric.cousineau): Ensure that this is not installed.
 drake_cc_library(
     name = "autodiff_types_pybind",
     hdrs = ["autodiff_types_pybind.h"],
-    # NOTE: We must violate IWYU and not list "autodiff" in "deps" here because
-    # we do not want these dependencies leaking in at install time.
 )
 
 drake_pybind_library(
@@ -203,8 +198,7 @@ drake_py_test(
 # `//:install` is run in this test to verify that once installed
 # pydrake still works. This test is implemented in a separate file from
 # common_test to be able to remove files in the sandbox without
-# interfering with other tests. This test fails when bazel is run with
-# `no_everything` because `libgurobi70.so` is not found [Issue #7283].
+# interfering with other tests.
 drake_py_test(
     name = "common_install_test",
     size = "medium",
@@ -213,7 +207,6 @@ drake_py_test(
     srcs = ["test/common_install_test.py"],
     data = ["//:install"],
     main = "test/common_install_test.py",
-    tags = ["no_everything"],
     deps = [
         ":pydrake",
         "//tools/install:install_test_helper",

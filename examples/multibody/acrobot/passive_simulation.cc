@@ -46,6 +46,9 @@ DEFINE_string(integration_scheme, "runge_kutta3",
               "Integration scheme to be used. Available options are:"
               "'runge_kutta3','implicit_euler','semi_explicit_euler'");
 
+DEFINE_double(simulation_time, 10.0,
+              "Desired duration of the simulation in seconds.");
+
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
@@ -63,7 +66,7 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  const double simulation_time = 10.0;
+  const double simulation_time = FLAGS_simulation_time;
 
   // Make the desired maximum time step a fraction of the simulation time.
   const double max_time_step = simulation_time / 1000.0;

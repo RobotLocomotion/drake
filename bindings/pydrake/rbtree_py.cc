@@ -5,17 +5,18 @@
 #include <pybind11/stl.h>
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(_rbtree_py, m) {
   m.doc() = "Bindings for the RigidBodyTree class";
 
-  using drake::AutoDiffXd;
   using drake::multibody::joints::FloatingBaseType;
   using drake::parsers::PackageMap;
   namespace sdf = drake::parsers::sdf;
@@ -97,12 +98,12 @@ PYBIND11_MODULE(_rbtree_py, m) {
       return tree.doKinematics(q, v);
     })
     .def("doKinematics", [](const RigidBodyTree<double>& tree,
-                            const VectorXAutoDiffXd& q) {
+                            const VectorX<AutoDiffXd>& q) {
       return tree.doKinematics(q);
     })
     .def("doKinematics", [](const RigidBodyTree<double>& tree,
-                            const VectorXAutoDiffXd& q,
-                            const VectorXAutoDiffXd& v) {
+                            const VectorX<AutoDiffXd>& q,
+                            const VectorX<AutoDiffXd>& v) {
       return tree.doKinematics(q, v);
     })
     .def("CalcBodyPoseInWorldFrame", [](const RigidBodyTree<double>& tree,
@@ -213,3 +214,6 @@ PYBIND11_MODULE(_rbtree_py, m) {
   m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
         &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages);
 }
+
+}  // namespace pydrake
+}  // namespace drake

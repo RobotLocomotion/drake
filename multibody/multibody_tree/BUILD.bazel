@@ -141,6 +141,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "articulated_body_inertia",
+    srcs = ["articulated_body_inertia.cc"],
+    hdrs = ["articulated_body_inertia.h"],
+    deps = [
+        ":spatial_inertia",
+        "//drake/common:default_scalars",
+        "//drake/multibody/multibody_tree/math:spatial_algebra",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -239,6 +250,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
+        ":multibody_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "articulated_body_inertia_test",
+    deps = [
+        ":articulated_body_inertia",
         ":multibody_tree",
     ],
 )

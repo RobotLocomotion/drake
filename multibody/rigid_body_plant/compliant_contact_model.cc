@@ -182,6 +182,9 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       }
     }
   }
+  if (contacts != nullptr) {
+    contacts->set_generalized_contact_force(contact_force);
+  }
   return contact_force;
 }
 
