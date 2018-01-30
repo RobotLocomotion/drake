@@ -355,7 +355,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 template <typename C>
 void UpdateNumNonlinearConstraintsAndGradients(
     const std::vector<Binding<C>>& constraint_list,
-    int* num_nonlinear_constraints, size_t* max_num_gradients) {
+    int* num_nonlinear_constraints, int* max_num_gradients) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
     int n = c->num_constraints();
@@ -373,7 +373,7 @@ template <>
 void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
     const std::vector<Binding<LinearComplementarityConstraint>>&
         constraint_list,
-    int* num_nonlinear_constraints, size_t* max_num_gradients) {
+    int* num_nonlinear_constraints, int* max_num_gradients) {
   *num_nonlinear_constraints += constraint_list.size();
   for (const auto& binding : constraint_list) {
     *max_num_gradients += binding.constraint()->M().rows();
