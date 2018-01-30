@@ -166,6 +166,11 @@ class CompliantMaterial {
     dynamic_friction_ = nullopt;
   }
 
+  static const double kDefaultYoungsModulus;
+  static const double kDefaultDissipation;
+  static const double kDefaultStaticFriction;
+  static const double kDefaultDynamicFriction;
+
  private:
   // Confirms two properties on the friction coefficient pair:
   //  1. Both values non-negative.
@@ -178,11 +183,6 @@ class CompliantMaterial {
   optional<double> dissipation_;
   optional<double> static_friction_;
   optional<double> dynamic_friction_;
-
-  static const double kDefaultYoungsModulus;
-  static const double kDefaultDissipation;
-  static const double kDefaultStaticFriction;
-  static const double kDefaultDynamicFriction;
 };
 
 }  // namespace systems
