@@ -25,6 +25,9 @@ class TestRigidBodyPlant(unittest.TestCase):
 
             # Tested in order in which they're declared in `multibody_py.cc`,
             # when able.
+            plant.set_contact_model_parameters(
+                mut.CompliantContactModelParameters())
+            plant.set_default_compliant_material(mut.CompliantMaterial())
             self.assertTrue(plant.get_rigid_body_tree() is tree)
             self.assertEquals(plant.get_num_bodies(), tree.get_num_bodies())
 
@@ -89,6 +92,78 @@ class TestRigidBodyPlant(unittest.TestCase):
             # Basic status.
             self.assertEquals(plant.is_state_discrete(), is_discrete)
             self.assertEquals(plant.get_time_step(), timestep)
+
+    def test_contact_parameters_api(self):
+        cls = mut.CompliantContactModelParameters
+        param = cls()
+        self.assertEquals(
+            param.v_stiction_tolerance, cls.kDefaultVStictionTolerance)
+        self.assertEquals(
+            param.characteristic_radius, cls.kDefaultCharacteristicRadius)
+        # Test simple mutuation.
+        param.v_stiction_tolerance *= 2
+        param.characteristic_radius *= 2
+        # Test construction styles.
+        param = cls(0.1, 0.2)
+        param = cls(v_stiction_tolerance=0.1, characteristic_radius=0.2)
+
+    def test_compliant_material_api(self):
+
+        def flat_values(material):
+            return (
+                material.youngs_modulus(),
+                material.dissipation(),
+                material.static_friction(),
+                material.dynamic_friction(),
+            )
+
+        cls = mut.CompliantMaterial
+        material = cls()
+        expected_default = (
+            cls.kDefaultYoungsModulus,
+            cls.kDefaultDissipation,
+            cls.kDefaultStaticFriction,
+            cls.kDefaultDynamicFriction,
+        )
+        self.assertEquals(flat_values(material), expected_default)
+        # Test mutation by chaining.
+        # Ensure these values and the defaults do not overlap.
+        expected = tuple(2*x for x in expected_default)
+        (material
+            .set_youngs_modulus(expected[0])
+            .set_dissipation(expected[1])
+            .set_friction(expected[2], expected[3]))
+        self.assertEquals(flat_values(material), expected)
+        # Test mutation to default.
+        material.set_youngs_modulus_to_default()
+        self.assertTrue(material.youngs_modulus_is_default())
+        material.set_dissipation_to_default()
+        self.assertTrue(material.dissipation_is_default())
+        material.set_friction_to_default()
+        self.assertTrue(material.friction_is_default())
+        # Test access with defaults.
+        material_default = cls()
+        self.assertEquals(
+            material_default.youngs_modulus(default_value=expected[0]),
+            expected[0])
+        self.assertEquals(
+            material_default.dissipation(default_value=expected[1]),
+            expected[1])
+        self.assertEquals(
+            material_default.static_friction(default_value=expected[2]),
+            expected[2])
+        self.assertEquals(
+            material_default.dynamic_friction(default_value=expected[3]),
+            expected[3])
+        # Test construction styles.
+        material = cls(
+            youngs_modulus=expected[0],
+            dissipation=expected[1],
+            static_friction=expected[2],
+            dynamic_friction=expected[3])
+        # Test basic errors.
+        with self.assertRaises(RuntimeError):
+            material.set_friction(0.3, 0.4)
 
 
 if __name__ == '__main__':
