@@ -15,7 +15,7 @@ load(
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
-    "get_drake_pybind_installs",
+    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
@@ -126,7 +126,7 @@ alias(
     actual = "//bindings/pydrake/util",
 )
 
-PYBIND_LIBRARIES = adjust_labels_for_drake_hoist([
+PY_LIBRARIES_WITH_INSTALL = adjust_labels_for_drake_hoist([
     ":autodiffutils_py",
     ":common_py",
     ":parsers_py",
@@ -147,13 +147,13 @@ install(
     targets = PY_LIBRARIES,
     py_dest = PACKAGE_INFO.py_dest,
     visibility = ["//visibility:public"],
-    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
 drake_py_library(
     name = "pydrake",
     visibility = ["//visibility:public"],
-    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
 )
 
 # Test ODR (One Definition Rule).

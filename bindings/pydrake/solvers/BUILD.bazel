@@ -6,7 +6,7 @@ load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
-    "get_drake_pybind_installs",
+    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
@@ -89,7 +89,7 @@ drake_pybind_library(
     py_deps = [":mathematicalprogram_py"],
 )
 
-PYBIND_LIBRARIES = [
+PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
     ":ik_py",
     ":ipopt_py",
@@ -103,14 +103,14 @@ PY_LIBRARIES = [
 
 drake_py_library(
     name = "solvers",
-    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
 )
 
 install(
     name = "install",
     targets = PY_LIBRARIES,
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
 drake_py_test(

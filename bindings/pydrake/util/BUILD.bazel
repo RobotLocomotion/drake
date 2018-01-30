@@ -10,7 +10,7 @@ load(
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_cc_googletest",
-    "get_drake_pybind_installs",
+    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
@@ -112,7 +112,7 @@ drake_cc_library(
     hdrs = ["drake_optional_pybind.h"],
 )
 
-PYBIND_LIBRARIES = []
+PY_LIBRARIES_WITH_INSTALL = []
 
 PY_LIBRARIES = [
     ":cpp_const_py",
@@ -126,14 +126,14 @@ PY_LIBRARIES = [
 drake_py_library(
     name = "util",
     imports = PACKAGE_INFO.py_imports,
-    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
 )
 
 install(
     name = "install",
     targets = PY_LIBRARIES,
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
 drake_cc_googletest(
