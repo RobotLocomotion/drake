@@ -283,7 +283,7 @@ PYBIND11_MODULE(_rbtree_py, m) {
 
   py::class_<Element>(m, "Element")
     .def("hasGeometry", &Element::hasGeometry)
-    .def("getGeometry", &Element::getGeometry);
+    .def("getGeometry", &Element::getGeometry, py_reference_internal);
 
   py::class_<VisualElement, Element>(m, "VisualElement");
 }
