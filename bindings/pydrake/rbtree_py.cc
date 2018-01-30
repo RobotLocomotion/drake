@@ -277,7 +277,9 @@ PYBIND11_MODULE(_rbtree_py, m) {
       return tf.matrix();
     });
 
-  py::class_<VisualElement, Element>(m, "VisualElement");
+  py::class_<VisualElement, Element>(m, "VisualElement")
+    .def("setMaterial", &VisualElement::setMaterial)
+    .def("getMaterial", &VisualElement::getMaterial);
 }
 
 }  // namespace pydrake
