@@ -3,6 +3,9 @@
 # Write user environment prerequisites for source distributions of Drake on
 # macOS.
 
+# N.B. Ensure that this is synchronized with the install instructions regarding
+# Homebrew Python in `doc/python_bindings.rst`.
+
 set -euo pipefail
 
 # We require that Bazel uses the Python installed by Homebrew.
