@@ -17,15 +17,14 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
-/// %MultibodyPlant offers a Drake system framework representation (see
-/// systems::System) for a physical system consisting of a collection of
-/// interconnected bodies.
-/// %MultibodyPlant provides the user facing API's for adding bodies, joints,
-/// force elements and constraints. It also provides the interface to register
-/// geometry with a given GeometrySystem.
-/// As a Drake System, it also provides the interfaces create and
-/// manipulate its Context as well as to perform Context dependent computational
-/// queries.
+/// %MultibodyPlant is a Drake system framework representation (see
+/// systems::System) for the model of a physical system consisting of a
+/// collection of interconnected bodies.
+/// %MultibodyPlant provides a user-facing API to:
+/// - add bodies, joints, force elements, and constraints,
+/// - register geometries to a provided GeometrySystem instance,
+/// - create and manipulate its Context,
+/// - perform Context-dependent computational queries.
 ///
 /// @section equations_of_motion System dynamics
 ///
@@ -44,8 +43,8 @@ namespace multibody_plant {
 /// num_velocities()). As a Drake System, %MultibodyPlant implements the
 /// governing equations for the multibody dynamical system in the form
 /// `ẋ = f(t, x, u)` with t being the time and u the input vector of actuation
-/// forces. For mechanical systems as modeled by %MultibodyPlant these equations
-/// are given by [Featherstone 2008, Jain 2010]: <pre>
+/// forces. The governing equations for the dynamics of a multibody system
+/// modeled with %MultibodyPlant are [Featherstone 2008, Jain 2010]: <pre>
 ///   q̇ = N(q)v
 ///   M(q)v̇ + C(q, v)v = tau                                                (1)
 /// </pre>
@@ -56,7 +55,7 @@ namespace multibody_plant {
 /// velocities, [Seth 2010]. N(q) is an `np x nv` matrix.
 /// The vector `tau ∈ ℝⁿᵛ` on the right hand side of Eq. (1) corresponds to
 /// generalized forces applied on the system. These can include externally
-/// applied body forces, constraint forces and contact forces.
+/// applied body forces, constraint forces, and contact forces.
 ///
 /// @section adding_elements Adding modeling elements
 ///
@@ -65,8 +64,8 @@ namespace multibody_plant {
 /// constraints.
 /// @endcond
 ///
-/// Clients of a %MultibodyPlant can add multibody modeling elements with the
-/// provided user facing API's:
+/// Clients of a %MultibodyPlant can add multibody elements with the following
+/// methods:
 /// - Bodies: AddRigidBody().
 /// - Joints: AddJoint().
 ///
@@ -83,7 +82,7 @@ namespace multibody_plant {
 /// - CalcInverseDynamics(): `O(n)` Newton-Euler recursive algorithm.
 /// - CalcForwardDynamics(): `O(n)` Articulated Body Inertia algorithm.
 /// - CalcPointsGeometricJacobianExpressedInWorld(): Jacobian matrix linearly
-///   relating a set of points translational velocity to the system's
+///   relating a set of points' translational velocities to the system's
 ///   generalized velocities.
 /// - Others...
 /// @endcond
@@ -131,22 +130,26 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_num_joints();
   }
 
-  /// Returns the size of the generalized positions vector `q` for this plant's
-  /// model.
+  /// Returns the size of the generalized positions vector `q` for `this` model.
   int num_positions() const { return model_->get_num_positions(); }
 
-  /// Returns the size of the generalized velocities vector `v` for this plant's
+  /// Returns the size of the generalized velocities vector `v` for `this`
   /// model.
   int num_velocities() const { return model_->get_num_velocities(); }
 
-  /// Returns the size of the state vector `x` for this plant's model.
+  /// Returns the size of the state vector `x` for `this` model. This will equal
+  /// the number of generalized positions (num_positions()) plus the number of
+  /// generalized velocities (num_velocities()).
   int num_states() const { return model_->get_num_states(); }
 
-  /// @name Methods to add new multibody elements.
+  /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
   /// joints, force elements, constraints, etc, using one of these methods.
-  /// Once a user is done adding modeling elements, the Finalize() method
-  /// **must** be called before invoking any %MultibodyPlant service.
+  /// Once a user is done adding __all__ modeling elements, the Finalize()
+  /// method **must** be called before invoking any %MultibodyPlant service to
+  /// perform computations.
+  /// An attempt to call any of these methods **after** a call to Finalize() on
+  /// the plant, will result on a std::runtime_error being thrown.
   /// See Finalize() for details.
   /// @{
 
@@ -162,24 +165,21 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///     plant.AddRigidBody("BodyName", spatial_inertia);
   /// @endcode
   ///
-  /// @throws std::logic_error if Finalize() was already called on `this` plant.
-  ///
   /// @param[in] name
   ///   A string that uniquely identifies the new body to be added to `this`
   ///   model. A std::runtime_error is thrown if a body named `name` already is
   ///   part of the model. See HasBodyNamed(), Body::get_name().
-  /// @param[in] M_BBo_E
+  /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this` model,
   ///   computed about the body frame origin `Bo` and expressed in the body
   ///   frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
-      const std::string& name, const SpatialInertia<double>& M_BBo_E) {
-    // An exception is thrown if a body named `name` was already exists.
+      const std::string& name, const SpatialInertia<double>& M_BBo_B) {
     DRAKE_THROW_UNLESS(!HasBodyNamed(name));
     const RigidBody<T>& body =
-        model_->template AddBody<RigidBody>(name, M_BBo_E);
+        model_->template AddBody<RigidBody>(name, M_BBo_B);
     body_name_to_index_[name] = body.get_index();
     return body;
   }
@@ -197,10 +197,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
   /// Refer to the Joint class's documentation for more details.
   ///
-  /// The arguments to this method `args` are forwarded to `JointType`'s
-  /// constructor. The newly created `JointType` object will be specialized on
-  /// the scalar type T of this %MultibodyPlant.
-  ///
   /// @param name
   ///   A string that uniquely identifies the new joint to be added to `this`
   ///   model. A std::runtime_error is thrown if a joint named `name` already is
@@ -211,34 +207,44 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   The fixed pose of frame F attached to the parent body, measured in
   ///   the frame P of that body. `X_PF` is an optional parameter; empty curly
   ///   braces `{}` imply that frame F **is** the same body frame P. If instead
-  ///   your intention is to make a frame F with pose `X_PF`, provide
-  ///   `Isometry3<double>::Identity()` as your input.
+  ///   your intention is to make a frame F with pose `X_PF` equal to the
+  ///   identity pose, provide `Isometry3<double>::Identity()` as your input.
   /// @param[in] child
   ///   The child body connected by the new joint.
   /// @param[in] X_BM
   ///   The fixed pose of frame M attached to the child body, measured in
   ///   the frame B of that body. `X_BM` is an optional parameter; empty curly
   ///   braces `{}` imply that frame M **is** the same body frame B. If instead
-  ///   your intention is to make a frame F with pose `X_PF`, provide
-  ///   `Isometry3<double>::Identity()` as your input.
-  /// @returns A constant reference to the new Joint just added, which will
-  ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  ///   your intention is to make a frame M with pose `X_BM` equal to the
+  ///   idenetity pose, provide `Isometry3<double>::Identity()` as your input.
+  /// @param[in] args
+  ///   Zero or more parameters provided to the constructor of the new joint. It
+  ///   must be the case that
+  ///   `JointType<T>(
+  ///   const std::string&, const Frame<T>&, const Frame<T>&, args)` is a valid
+  ///   constructor.
+  /// @tparam JointType The type of the Joint to add.
+  /// @returns A constant reference to the new joint just added, of type
+  ///   `JointType<T>` specialized on the scalar type T of `this`
+  ///   %MultibodyPlant. It will remain valid for the lifetime of `this`
+  ///   %MultibodyPlant.
   ///
   /// Example of usage:
   /// @code
   ///   MultibodyPlant<T> plant;
-  ///   // ... Code to define a parent body P and a child body B.
-  ///   const RigidBody<double>& parent_body =
-  ///     plant.AddRigidBody("ParentBodyName", SpatialInertia<double>(...));
-  ///   const RigidBody<double>& child_body =
-  ///     plant.AddRigidBody("ChildBodyName", SpatialInertia<double>(...));
+  ///   // Code to define bodies serving as the joint's parent and child bodies.
+  ///   const RigidBody<double>& body_1 =
+  ///     plant.AddRigidBody("Body1", SpatialInertia<double>(...));
+  ///   const RigidBody<double>& body_2 =
+  ///     plant.AddRigidBody("Body2", SpatialInertia<double>(...));
+  ///   // Body 1 serves as parent, Body 2 serves as child.
   ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
   ///   const RevoluteJoint<double>& elbow =
   ///     plant.AddJoint<RevoluteJoint>(
   ///       "Elbow",                /* joint name */
-  ///       model.get_world_body(), /* parent body */
+  ///       body_1,                 /* parent body */
   ///       {},                     /* frame F IS the parent body frame P */
-  ///       pendulum,               /* child body, the pendulum */
+  ///       body_2,                 /* child body, the pendulum */
   ///       X_BM,                   /* pose of frame M in the body frame B */
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
@@ -251,7 +257,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
-    // Make sure there is no other joint with the same name.
     DRAKE_THROW_UNLESS(!HasJointNamed(name));
     const JointType<T>& joint = model_->template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
@@ -259,15 +264,20 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return joint;
   }
 
-  /// Adds a new force element model of type `ForceElementType` to `this`
-  /// %MultibodyPlant.
+  /// Adds a new force element model of type `ForceElementType` to `this` model.
   /// The arguments to this method `args` are forwarded to `ForceElementType`'s
   /// constructor.
-  /// @returns A constant reference to the new ForceElement just added, which
-  ///          will remain valid for the lifetime of `this` %MultibodyPlant.
-  ///
-  /// The newly created `ForceElementType` object will be specialized on the
-  /// scalar type T of this %MultibodyTree.
+  /// @param[in] args
+  ///   Zero or more parameters provided to the constructor of the new force
+  ///   element. It must be the case that
+  ///   `JointType<T>(args)` is a valid constructor.
+  /// @tparam ForceElementType The type of the ForceElement to add.
+  /// @returns A constant reference to the new ForceElement just added, of type
+  ///   `ForceElementType<T>` specialized on the scalar type T of `this`
+  ///   %MultibodyPlant. It will remain valid for the lifetime of `this`
+  ///   %MultibodyPlant.
+  /// @see The ForceElement class's documentation for further details on how a
+  /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args) {
     return model_->template AddForceElement<ForceElementType>(
@@ -275,7 +285,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  /// @name Methods to retrieve multibody elements by name.
+  /// @name Quering if a multibody element is part of the model
+  /// These methods allow a user to query whether a given multibody element is
+  /// part of this plant's model. These queries can be performed at any time
+  /// during the lifetime of a %MultibodyPlant model, i.e. there is no
+  /// restriction on whether they must be called before or after Finalize().
+  /// That is, these queries can be performed while new multibody elements are
+  /// being added to the model.
   /// @{
 
   /// @returns `true` if a body named `name` was added to the model.
@@ -289,9 +305,20 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   bool HasJointNamed(const std::string& name) {
     return joint_name_to_index_.find(name) != joint_name_to_index_.end();
   }
+  /// @}
 
-  /// Given the string `name` that uniquely identifies a single body in `this`
-  /// model, this method returns a constant reference to that rigid body.
+  /// @name Retrieving multibody elements by name
+  /// These methods allow a user to retrieve a reference to given multibody
+  /// element by name. A std::logic_error is thrown if there is no element with
+  /// the requested name.
+  /// These queries can be performed at any time during the lifetime of a
+  /// %MultibodyPlant model, i.e. there is no restriction on whether they must
+  /// be called before or after Finalize(). That is, these queries can be
+  /// performed while new multibody elements are being added to the model.
+  /// @{
+
+  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no body with the requested name.
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
@@ -304,8 +331,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_body(it->second);
   }
 
-  /// Given the string `name` that uniquely identifies a single joint in `this`
-  /// model, this method returns a constant reference to that joint.
+  /// Returns a constant reference to the joint that is uniquely identified
+  /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no joint with the requested name.
   /// @see HasJointNamed() to query if there exists a joint in `this` model with
   /// a given specified name.
@@ -318,19 +345,25 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_joint(it->second);
   }
 
-  /// Templatized version to retrieve a joint of a specific `JointType` by its
-  /// name, which is a string that uniquely identifies a single joint in `this`
-  /// model.
-  /// @throws std::logic_error if there is no joint with the requested name.
+  /// A templated version of GetJointByName() to return a constant reference of
+  /// the specified type `JointType` in place of the base Joint class. See
+  /// GetJointByName() for details.
+  /// @tparam JointType The specific type of the Joint to be retrieved. It must
+  /// be a subclass of Joint.
+  /// @throws std::logic_error if the named joint is not of type `JointType` or
+  /// if there is no Joint with that name.
   /// @see HasJointNamed() to query if there exists a joint in `this` model with
   /// a given specified name.
   template <template<typename> class JointType>
   const JointType<T>& GetJointByName(const std::string& name) const {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
     const JointType<T>* joint =
         dynamic_cast<const JointType<T>*>(&GetJointByName(name));
     if (joint == nullptr) {
       throw std::logic_error("Joint '" + name + "' is not of type '" +
-          NiceTypeName::Get<JointType<T>>() + "'.");
+          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
+          NiceTypeName::Get(GetJointByName(name)) + "'.");
     }
     return *joint;
   }
@@ -342,24 +375,24 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
 
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
-  /// Finalize() after all multibody elements were added, and `false` otherwise.
+  /// Finalize().
   /// @see Finalize().
   bool is_finalized() const { return model_->topology_is_valid(); }
 
   /// This method must be called after all elements in the tree (joints, bodies,
-  /// force elements, constraints) were added and before any computations are
-  /// performed.
+  /// force elements, constraints, etc.) are added and before any computations
+  /// are performed.
   /// It essentially compiles all the necessary "topological information", i.e.
   /// how bodies, joints and, any other elements connect with each other, and
-  /// performs all the required pre-processing to perform computations at a
+  /// performs all the required pre-processing to enable computations at a
   /// later stage.
   ///
-  /// If the finalize stage is successful, the topology of this %MultibodyTree
-  /// is validated, meaning that the topology is up-to-date after this call.
-  /// No more multibody tree elements can be added after a call to Finalize().
+  /// If the finalize stage is successful, the topology of this %MultibodyPlant
+  /// is valid, meaning that the topology is up-to-date after this call.
+  /// No more multibody elements can be added after a call to Finalize().
   ///
-  /// @throws std::logic_error If users attempt to call this method on an
-  ///         already finalized %MultibodyTree.
+  /// @throws std::logic_error if the %MultibodyPlant has already been
+  /// finalized.
   void Finalize();
 
  private:

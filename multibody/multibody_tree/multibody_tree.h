@@ -577,35 +577,35 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
-  /// This method aborts in Debug builds when `body_index` does not correspond
-  /// to a body in this multibody tree.
+  /// @throws std::runtime_error when `body_index` does not correspond to a body
+  /// in this multibody tree.
   const Body<T>& get_body(BodyIndex body_index) const {
-    DRAKE_ASSERT(body_index < get_num_bodies());
+    DRAKE_THROW_UNLESS(body_index < get_num_bodies());
     return *owned_bodies_[body_index];
   }
 
   /// Returns a constant reference to the joint with unique index `joint_index`.
-  /// This method aborts when `joint_index` does not correspond to a joint in
-  /// this multibody tree.
+  /// @throws std::runtime_error when `joint_index` does not correspond to a
+  /// joint in this multibody tree.
   const Joint<T>& get_joint(JointIndex joint_index) const {
-    DRAKE_ASSERT(joint_index < get_num_joints());
+    DRAKE_THROW_UNLESS(joint_index < get_num_joints());
     return *owned_joints_[joint_index];
   }
 
   /// Returns a constant reference to the frame with unique index `frame_index`.
-  /// This method aborts in Debug builds when `frame_index` does not correspond
-  /// to a frame in `this` multibody tree.
+  /// @throws std::runtime_error when `frame_index` does not correspond to a
+  /// frame in `this` multibody tree.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
-    DRAKE_ASSERT(frame_index < get_num_frames());
+    DRAKE_THROW_UNLESS(frame_index < get_num_frames());
     return *frames_[frame_index];
   }
 
   /// Returns a constant reference to the mobilizer with unique index
-  /// `mobilizer_index`. This method aborts in Debug builds when
-  /// `mobilizer_index` does not correspond to a mobilizer in this multibody
-  /// tree.
+  /// `mobilizer_index`.
+  /// @throws std::runtime_error when `mobilizer_index` does not correspond to a
+  /// mobilizer in this multibody tree.
   const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
-    DRAKE_ASSERT(mobilizer_index < get_num_mobilizers());
+    DRAKE_THROW_UNLESS(mobilizer_index < get_num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
   }
 

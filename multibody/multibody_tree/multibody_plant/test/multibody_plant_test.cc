@@ -29,7 +29,10 @@ using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using systems::Context;
 using systems::ContinuousState;
 
-GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
+// This test creates a simple model for an acrobot using MultibodyPlant and
+// verifies a number of invariants such as that body and joint models were
+// properly added and the model sizes.
+GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const std::string kInvalidName = "InvalidName";
 
   const AcrobotParameters parameters;
@@ -93,6 +96,8 @@ GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
   EXPECT_THROW(plant->AddJoint<RevoluteJoint>(
       "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
                std::logic_error);
+  // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
+  // type throws an exception. We need another joint type to do so.
 }
 
 class AcrobotPlantTests : public ::testing::Test {
