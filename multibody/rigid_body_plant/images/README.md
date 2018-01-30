@@ -4,7 +4,7 @@
 
 The simplest way to create a .png from the .svg file is to use Inkscape.
 
-To install: `sudo apt-get install inkscape`
+To install: `sudo apt install inkscape`
 
 The following steps will re-create the png:
 
@@ -26,8 +26,8 @@ These python scripts use Python 2.X, matplotlib, and numpy to generate the
 
 Acquiring the dependencies in Ubuntu:
 
-- `sudo apt-get install python-matplotlib`
-- `sudo apt-get install python-numpy`
+- `sudo apt install python-matplotlib`
+- `sudo apt install python-numpy`
 
 To create the image:
 
