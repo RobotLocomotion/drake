@@ -1,11 +1,11 @@
-import numpy as np
 import os
 import unittest
 
-from pydrake import getDrakePath
-from pydrake.rbtree import RigidBodyTree, FloatingBaseType
+import numpy as np
 
+from pydrake import getDrakePath
 import pydrake.multibody.shapes as shapes
+from pydrake.rbtree import RigidBodyTree, FloatingBaseType
 
 
 class TestShapes(unittest.TestCase):
@@ -28,10 +28,12 @@ class TestShapes(unittest.TestCase):
         sphere_visual_element = visual_elements[0]
         green_material = np.array([0.3, 0.6, 0.4, 1])
         white_material = np.array([1., 1., 1., 1.])
-        self.assertLess(np.linalg.norm(sphere_visual_element.getMaterial() - green_material), 1E-4)
-        sphere_visual_element.setMaterial(white_material)
-        self.assertLess(np.linalg.norm(sphere_visual_element.getMaterial() - white_material), 1E-4)
 
+        self.assertTrue(np.allclose(sphere_visual_element.getMaterial(), 
+            green_material, atol=1e-4))
+        sphere_visual_element.setMaterial(white_material)
+        self.assertTrue(np.allclose(sphere_visual_element.getMaterial(), 
+            white_material, atol=1e-4))
 
         # Its TF should have z-component of 0.015
         local_tf = sphere_visual_element.getLocalTransform()
