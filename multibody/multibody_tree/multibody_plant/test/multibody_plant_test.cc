@@ -100,15 +100,18 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // type throws an exception. We need another joint type to do so.
 }
 
+// Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {
  public:
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     plant_ = MakeAcrobotPlant(parameters_);
-    link1_ = &plant_->GetBodyByName("Link1");
-    link2_ = &plant_->GetBodyByName("Link2");
-    shoulder_ = &plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");
-    elbow_ = &plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
+    link1_ = &plant_->GetBodyByName(parameters_.link1_name());
+    link2_ = &plant_->GetBodyByName(parameters_.link2_name());
+    shoulder_ = &plant_->GetJointByName<RevoluteJoint>(
+        parameters_.shoulder_joint_name());
+    elbow_ = &plant_->GetJointByName<RevoluteJoint>(
+        parameters_.elbow_joint_name());
 
     context_ = plant_->CreateDefaultContext();
     derivatives_ = plant_->AllocateTimeDerivatives();
@@ -170,6 +173,8 @@ class AcrobotPlantTests : public ::testing::Test {
       parameters_.g()};
 };
 
+// Verifies the correctness of MultibodyPlant::CalcTimeDerivatives() on a model
+// of an acrobot.
 TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
   // Some random tests with non-zero state:
   VerifyCalcTimeDerivatives(
