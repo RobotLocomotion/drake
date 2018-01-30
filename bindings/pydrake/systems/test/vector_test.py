@@ -28,11 +28,13 @@ class TestReference(unittest.TestCase):
         self.assertTrue(np.allclose(value, expected))
         self.assertTrue(np.allclose(value_data.get_value(), expected))
         self.assertTrue(np.allclose(value_data.get_mutable_value(), expected))
+        self.assertEqual(value_data.size(), 3)
         expected = [5., 6, 7]
         value_data.SetFromVector(expected)
         self.assertTrue(np.allclose(value, expected))
         self.assertTrue(np.allclose(value_data.get_value(), expected))
         self.assertTrue(np.allclose(value_data.get_mutable_value(), expected))
+        self.assertEqual(value_data.size(), 3)
 
 
 if __name__ == '__main__':
