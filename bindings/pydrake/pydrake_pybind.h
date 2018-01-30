@@ -147,6 +147,29 @@ const auto py_reference = py::return_value_policy::reference;
 
 /// @}
 
+// Implementation for `overload_cast_explicit`. We must use this structure so
+// that we can constrain what is inferred. Otherwise, the ambiguity confuses
+// the compiler.
+template <typename Return, typename... Args>
+struct overload_cast_impl {
+  auto operator()(Return (*func)(Args...)) const { return func; }
+
+  template <typename Class>
+  auto operator()(Return (Class::*method)(Args...)) const {
+    return method;
+  }
+
+  template <typename Class>
+  auto operator()(Return (Class::*method)(Args...) const) const {
+    return method;
+  }
+};
+
+/// Provides option to provide explicit signature when
+/// `py::overload_cast<Args...>` fails to infer the Return argument.
+template <typename Return, typename... Args>
+constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
+
 // TODO(eric.cousineau): pybind11 defaults to C++-like copies when dealing
 // with rvalues. We should wrap this into a drake-level binding, so that we
 // can default this to `py_reference` or `py_reference_internal.`
