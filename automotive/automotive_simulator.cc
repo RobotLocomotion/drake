@@ -142,6 +142,7 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
 template <typename T>
 int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
     const std::string& name, bool initial_with_s,
+    RoadPositionStrategy road_position_strategy,
     const SimpleCarState<T>& initial_state) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
@@ -155,9 +156,11 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   const int id = allocate_vehicle_number();
 
   auto mobil_planner =
-      builder_->template AddSystem<MobilPlanner<T>>(*road_, initial_with_s);
+      builder_->template AddSystem<MobilPlanner<T>>(*road_, initial_with_s,
+                                                    road_position_strategy);
   mobil_planner->set_name(name + "_mobil_planner");
-  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
+  auto idm_controller = builder_->template AddSystem<IdmController<T>>(
+      *road_, road_position_strategy);
   idm_controller->set_name(name + "_idm_controller");
 
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
@@ -239,7 +242,8 @@ template <typename T>
 int AutomotiveSimulator<T>::AddIdmControlledCar(
     const std::string& name, bool initial_with_s,
     const SimpleCarState<T>& initial_state,
-    const maliput::api::Lane* goal_lane) {
+    const maliput::api::Lane* goal_lane,
+    RoadPositionStrategy road_position_strategy) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
   DRAKE_THROW_UNLESS(goal_lane != nullptr);
@@ -254,7 +258,8 @@ int AutomotiveSimulator<T>::AddIdmControlledCar(
   CheckNameUniqueness(name);
   const int id = allocate_vehicle_number();
 
-  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
+  auto idm_controller = builder_->template AddSystem<IdmController<T>>(
+      *road_, road_position_strategy);
   idm_controller->set_name(name + "_idm_controller");
 
   const LaneDirection lane_direction(goal_lane, initial_with_s);
@@ -345,6 +350,7 @@ template <typename T>
 int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
     const std::string& name,
     const LaneDirection& initial_lane_direction,
+    RoadPositionStrategy road_position_strategy,
     const MaliputRailcarParams<T>& params,
     const MaliputRailcarState<T>& initial_state) {
   const int id = AddPriusMaliputRailcar(name, initial_lane_direction, params,
@@ -353,7 +359,8 @@ int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
       dynamic_cast<const MaliputRailcar<T>*>(vehicles_.at(id));
   DRAKE_DEMAND(railcar != nullptr);
   auto controller =
-      builder_->template AddSystem<IdmController<T>>(*road_);
+      builder_->template AddSystem<IdmController<T>>(*road_,
+                                                     road_position_strategy);
   controller->set_name(name + "_IdmController");
 
   builder_->Connect(railcar->pose_output(), controller->ego_pose_input());
