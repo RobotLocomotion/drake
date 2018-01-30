@@ -15,7 +15,7 @@ The following steps will re-create the png:
    2. In "Export area", select "Drawing"
    3. In "Bitmap size", set "pixels at" to 100.0 dpi
    4. Click [Browse|Export As] and direct it to the
-   `$DRAKE_DISTRO$/drake/multibody/rigid_body_plant/images` directory.
+   `drake/multibody/rigid_body_plant/images` directory.
    5. Use the same file name as the .svg file (e.g., image.svg --> image.png).
    6. Click the "Export" button.
 
@@ -31,7 +31,7 @@ Acquiring the dependencies in Ubuntu:
 
 To create the image:
 
-1. `cd $DRAKE_DISTRO$/drake/multibody/rigid_body_plant/images`
+1. `cd drake/multibody/rigid_body_plant/images`
 2. `python file_name.py`
 
 This will create the image `file_name.png`.
