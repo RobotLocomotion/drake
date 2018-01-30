@@ -102,25 +102,9 @@ class Constraint : public EvaluatorBase {
   int num_constraints() const { return num_outputs(); }
 
  protected:
-  virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                const double tol) const {
-    Eigen::VectorXd y(num_constraints());
-    DoEval(x, y);
-    return (y.array() >= lower_bound_.array() - tol).all() &&
-           (y.array() <= upper_bound_.array() + tol).all();
-  }
-
-  virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
-                                const double tol) const {
-    AutoDiffVecXd y(num_constraints());
-    DoEval(x, y);
-    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
-           (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
-  }
-
   /** Updates the lower bound.
    * @note if the users want to expose this method in a sub-class, do
-   * using constraint::set_bounds, as in linearconstraint.
+   * using Constraint::set_bounds, as in LinearConstraint.
    */
   template <typename Derived>
   void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
@@ -129,7 +113,7 @@ class Constraint : public EvaluatorBase {
 
   /** Updates the upper bound.
    * @note if the users want to expose this method in a sub-class, do
-   * using constraint::set_bounds, as in linearconstraint.
+   * using Constraint::set_bounds, as in LinearConstraint.
    */
   template <typename Derived>
   void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
@@ -154,6 +138,22 @@ class Constraint : public EvaluatorBase {
 
     lower_bound_ = lower_bound;
     upper_bound_ = upper_bound;
+  }
+
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                const double tol) const {
+    Eigen::VectorXd y(num_constraints());
+    DoEval(x, y);
+    return (y.array() >= lower_bound_.array() - tol).all() &&
+           (y.array() <= upper_bound_.array() + tol).all();
+  }
+
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                const double tol) const {
+    AutoDiffVecXd y(num_constraints());
+    DoEval(x, y);
+    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
+           (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
   }
 
  private:
