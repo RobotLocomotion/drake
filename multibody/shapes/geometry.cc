@@ -57,7 +57,7 @@ Shape Geometry::getShape() const { return shape; }
 
 Geometry* Geometry::clone() const { return new Geometry(*this); }
 
-void Geometry::getPoints(Matrix3Xd& points) const { points = Matrix3Xd(); printf("Went through Geometry getpoints\n"); }
+void Geometry::getPoints(Matrix3Xd& points) const { points = Matrix3Xd(); }
 
 void Geometry::getBoundingBoxPoints(Matrix3Xd& points) const {
   points = Matrix3Xd();
