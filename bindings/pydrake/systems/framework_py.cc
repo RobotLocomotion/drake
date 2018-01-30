@@ -219,7 +219,8 @@ PYBIND11_MODULE(framework, m) {
   // Value types.
   py::class_<VectorBase<T>>(m, "VectorBase")
     .def("CopyToVector", &VectorBase<T>::CopyToVector)
-    .def("SetFromVector", &VectorBase<T>::SetFromVector);
+    .def("SetFromVector", &VectorBase<T>::SetFromVector)
+    .def("size", &VectorBase<T>::size);
 
   // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<> patterns.
   py::class_<BasicVector<T>, VectorBase<T>>(m, "BasicVector")
