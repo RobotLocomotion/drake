@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -19,7 +20,7 @@ static constexpr double kEgoSPosition{10.};
 static constexpr int kLeadIndex{0};
 static constexpr int kEgoIndex{1};
 
-class IdmControllerTest : public ::testing::Test {
+class IdmControllerTest : public ::testing::TestWithParam<double> {
  protected:
   void SetUp() override {
     // Create a straight road with one lane.
@@ -31,7 +32,7 @@ class IdmControllerTest : public ::testing::Test {
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
 
     // Initialize IdmController with the road.
-    dut_.reset(new IdmController<double>(*road_));
+    dut_.reset(new IdmController<double>(*road_, this->GetParam()));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
@@ -100,7 +101,7 @@ class IdmControllerTest : public ::testing::Test {
   int acceleration_output_index_;
 };
 
-TEST_F(IdmControllerTest, Topology) {
+TEST_P(IdmControllerTest, Topology) {
   ASSERT_EQ(3, dut_->get_num_input_ports());
   const auto& ego_pose_input_descriptor =
       dut_->get_input_port(ego_pose_input_index_);
@@ -121,7 +122,7 @@ TEST_F(IdmControllerTest, Topology) {
   EXPECT_EQ(1 /* accleration output */, output_port.size());
 }
 
-TEST_F(IdmControllerTest, Output) {
+TEST_P(IdmControllerTest, Output) {
   // Define a pointer to where the BasicVector results end up.
   const auto result = output_->get_vector_data(acceleration_output_index_);
 
@@ -176,7 +177,7 @@ TEST_F(IdmControllerTest, Output) {
   EXPECT_GT(closing_accel, (*result)[0]);
 }
 
-TEST_F(IdmControllerTest, ToAutoDiff) {
+TEST_P(IdmControllerTest, ToAutoDiff) {
   SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
 
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
@@ -223,6 +224,10 @@ TEST_F(IdmControllerTest, ToAutoDiff) {
     EXPECT_EQ(0., (*result)[0].derivatives()(0));
   }));
 }
+
+// Test with memorize_road_position = {false, true}.
+INSTANTIATE_TEST_CASE_P(MemorizeRoadPosition, IdmControllerTest,
+                        testing::Values(false, true));
 
 }  // namespace
 }  // namespace automotive

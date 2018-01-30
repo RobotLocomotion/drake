@@ -22,7 +22,7 @@ constexpr double kLaneWidth{4.};                // meters
 constexpr double kEgoSpeed{10.};                // m/s
 constexpr double kEgoAccelerationCommand{-1.};  // m/s^2
 
-class MobilPlannerTest : public ::testing::Test {
+class MobilPlannerTest : public ::testing::TestWithParam<double> {
  protected:
   void InitializeDragway(int num_lanes) {
     DRAKE_ASSERT(num_lanes >= 0);
@@ -45,7 +45,8 @@ class MobilPlannerTest : public ::testing::Test {
   // travel.
   void InitializeMobilPlanner(bool initial_with_s) {
     DRAKE_DEMAND(road_ != nullptr);
-    dut_.reset(new MobilPlanner<double>(*road_, initial_with_s));
+    dut_.reset(new MobilPlanner<double>(
+        *road_, initial_with_s, this->GetParam()));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
@@ -144,7 +145,7 @@ class MobilPlannerTest : public ::testing::Test {
   int left_lane_index_{};
 };
 
-TEST_F(MobilPlannerTest, Topology) {
+TEST_P(MobilPlannerTest, Topology) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -175,7 +176,7 @@ TEST_F(MobilPlannerTest, Topology) {
 }
 
 // Tests that the parameters index getters access the correct parameter groups.
-TEST_F(MobilPlannerTest, MutableParameterAccessors) {
+TEST_P(MobilPlannerTest, MutableParameterAccessors) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -198,7 +199,7 @@ TEST_F(MobilPlannerTest, MutableParameterAccessors) {
 
 // Tests the incentive of the ego car to change lanes when tailgating a car
 // close ahead.
-TEST_F(MobilPlannerTest, IncentiveWhileTailgating) {
+TEST_P(MobilPlannerTest, IncentiveWhileTailgating) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -219,7 +220,7 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgating) {
 }
 
 // Verifies that the same results as above are obtained when `with_s = false`.
-TEST_F(MobilPlannerTest, IncentiveWhileTailgatingInBackwardLane) {
+TEST_P(MobilPlannerTest, IncentiveWhileTailgatingInBackwardLane) {
   // Arrange the ego car facing in the direction opposite to the canonical lane
   // direction.
   InitializeDragway(2 /* num_lanes */);
@@ -244,7 +245,7 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgatingInBackwardLane) {
 
 // Tests that valid results can be obtained with no cars in the road, and that
 // no exceptions are thrown.
-TEST_F(MobilPlannerTest, NoCars) {
+TEST_P(MobilPlannerTest, NoCars) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -264,7 +265,7 @@ TEST_F(MobilPlannerTest, NoCars) {
 
 // Tests the incentive of the ego car to keep its current lane when a car is far
 // ahead.
-TEST_F(MobilPlannerTest, IncentiveWhileNotTailgating) {
+TEST_P(MobilPlannerTest, IncentiveWhileNotTailgating) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -286,7 +287,7 @@ TEST_F(MobilPlannerTest, IncentiveWhileNotTailgating) {
 
 // Tests the politeness of the ego car to keep its current lane when a car is
 // far behind.
-TEST_F(MobilPlannerTest, PolitenessNoTailgator) {
+TEST_P(MobilPlannerTest, PolitenessNoTailgator) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -308,7 +309,7 @@ TEST_F(MobilPlannerTest, PolitenessNoTailgator) {
 
 // Tests the politeness of the ego car to change lanes in response to being
 // tailgated by a car close behind.
-TEST_F(MobilPlannerTest, PolitenessWithTailgator) {
+TEST_P(MobilPlannerTest, PolitenessWithTailgator) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -328,7 +329,7 @@ TEST_F(MobilPlannerTest, PolitenessWithTailgator) {
             lane_direction.lane->id());
 }
 
-TEST_F(MobilPlannerTest, ThreeLanePolitenessTestPreferLeft) {
+TEST_P(MobilPlannerTest, ThreeLanePolitenessTestPreferLeft) {
   InitializeDragway(3 /* num_lanes */);
   const int center_lane_index = 1;
   InitializeMobilPlanner(true /* initial_with_s */);
@@ -350,7 +351,7 @@ TEST_F(MobilPlannerTest, ThreeLanePolitenessTestPreferLeft) {
             lane_direction.lane->id());
 }
 
-TEST_F(MobilPlannerTest, ThreeLaneIncentiveTestPreferRight) {
+TEST_P(MobilPlannerTest, ThreeLaneIncentiveTestPreferRight) {
   InitializeDragway(3 /* num_lanes */);
   const int center_lane_index = 1;
   InitializeMobilPlanner(true /* initial_with_s */);
@@ -373,7 +374,7 @@ TEST_F(MobilPlannerTest, ThreeLaneIncentiveTestPreferRight) {
 }
 
 // Tests that MobilPlanner is failsafe to two cars side-by-side.
-TEST_F(MobilPlannerTest, SideBySideCars) {
+TEST_P(MobilPlannerTest, SideBySideCars) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
@@ -390,6 +391,10 @@ TEST_F(MobilPlannerTest, SideBySideCars) {
   EXPECT_EQ(lane_directions_[right_lane_index_].lane->id(),
             lane_direction.lane->id());
 }
+
+// Test with memorize_road_position = {false, true}.
+INSTANTIATE_TEST_CASE_P(MemorizeRoadPosition, MobilPlannerTest,
+                        testing::Values(false, true));
 
 }  // namespace
 }  // namespace automotive

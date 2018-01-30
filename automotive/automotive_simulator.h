@@ -99,11 +99,15 @@ class AutomotiveSimulator {
   /// @param initial_with_s Initial travel direction in the lane. (See
   /// MobilPlanner documentation.)
   ///
+  /// @param memorize_road_position If true, sets up MOBIL with a state that
+  /// memorizes the last-computed RoadPosition.  This saves a possibly expensive
+  /// computation, but renders it unfriendly to optimizers.
+  ///
   /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddMobilControlledSimpleCar(
-      const std::string& name, bool initial_with_s,
+      const std::string& name, bool initial_with_s, bool memorize_road_position,
       const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius.
@@ -144,11 +148,16 @@ class AutomotiveSimulator {
   /// a member of the road supplied via SetRoadGeometry(), a std::runtime_error
   /// will be thrown.
   ///
+  /// @param memorize_road_position If true, sets up IDM with a state that
+  /// memorizes the last-computed RoadPosition.  This saves a possibly expensive
+  /// computation, but renders it unfriendly to optimizers.
+  ///
   /// @return The ID of the car that was just added to the simulation.
   int AddIdmControlledCar(const std::string& name,
                           bool initial_with_s,
                           const SimpleCarState<T>& initial_state,
-                          const maliput::api::Lane* goal_lane);
+                          const maliput::api::Lane* goal_lane,
+                          bool memorize_road_position);
 
   /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
   ///
@@ -193,6 +202,10 @@ class AutomotiveSimulator {
   /// maliput::api::RoadGeometry that is added via SetRoadGeometry(). Otherwise
   /// a std::runtime_error will be thrown.
   ///
+  /// @param memorize_road_position If true, sets up IDM with a state that
+  /// memorizes the last-computed RoadPosition.  This saves a possibly expensive
+  /// computation, but renders it unfriendly to optimizers.
+  ///
   /// @param params The MaliputRailcar's parameters. This is an optional
   /// parameter. Defaults are used if this parameter is not provided.
   ///
@@ -202,6 +215,7 @@ class AutomotiveSimulator {
   /// @return The ID of the car that was just added to the simulation.
   int AddIdmControlledPriusMaliputRailcar(
       const std::string& name, const LaneDirection& initial_lane_direction,
+      bool memorize_road_position,
       const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
       const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 
