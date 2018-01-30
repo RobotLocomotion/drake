@@ -188,7 +188,21 @@ PYBIND11_MODULE(_rbtree_py, m) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getTerrainContactPoints(body, &pts, group_name);
           return pts;
-        }, py::arg("body"), py::arg("group_name")="");
+        }, py::arg("body"), py::arg("group_name")="")
+    .def("massMatrix", &RigidBodyTree<double>::massMatrix<double>)
+    .def("dynamicsBiasTerm", &RigidBodyTree<double>::dynamicsBiasTerm<double>,
+         py::arg("cache"), py::arg("external_wrenches"),
+         py::arg("include_velocity_terms") = true)
+    .def("inverseDynamics", &RigidBodyTree<double>::inverseDynamics<double>,
+         py::arg("cache"),
+         py::arg("external_wrenches"),
+         py::arg("vd"),
+         py::arg("include_velocity_terms") = true)
+    .def("frictionTorques",
+         [](const RigidBodyTree<double>* self, const VectorX<double>& v) {
+           return self->frictionTorques(v);
+         })
+    .def_readonly("B", &RigidBodyTree<double>::B);
 
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
