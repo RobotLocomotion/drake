@@ -133,6 +133,7 @@ PYBIND_LIBRARIES = adjust_labels_for_drake_hoist([
     ":rbtree_py",
     ":symbolic_py",
     "//drake/bindings/pydrake/examples",
+    "//drake/bindings/pydrake/multibody",
     "//drake/bindings/pydrake/solvers",
     "//drake/bindings/pydrake/systems",
     "//drake/bindings/pydrake/util",
