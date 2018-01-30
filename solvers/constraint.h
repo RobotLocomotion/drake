@@ -551,7 +551,9 @@ class LinearEqualityConstraint : public LinearConstraint {
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
                           const Eigen::MatrixBase<DerivedL>& new_lb,
                           const Eigen::MatrixBase<DerivedU>& new_ub) {
-    throw std::runtime_error("The user should not call this function.");
+    static_assert(
+        !std::is_same<DerivedA, DerivedA>::value,
+        "This method should not be called form `LinearEqualityConstraint`");
   }
 };
 
