@@ -144,15 +144,17 @@ def drake_pybind_library(
             visibility = visibility,
         )
 
-def get_drake_pybind_installs(targets):
-    """Gets install targets for `drake_pybind_library` targets.
+def get_drake_py_installs(targets):
+    """Gets install targets for Python targets / packages that have a sibling
+    install target.
 
     @note This does not check the targets for correctness.
     """
     return [_get_install(target) for target in targets]
 
 def _get_install(target):
-    # Gets the install target for a `drake_pybind_library` target.
+    # Gets the install target for a Python target that has a sibling install
+    # target.
     if ":" in target:
         # Append suffix to target.
         return target + "_install"
