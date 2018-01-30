@@ -157,11 +157,11 @@ class Constraint : public EvaluatorBase {
   }
 
  private:
-  void check(size_t num_constraints) {
+  void check(int num_constraints) {
     static_cast<void>(num_constraints);
-    DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
+    DRAKE_ASSERT(lower_bound_.size() == num_constraints &&
                  "Size of lower bound must match number of constraints.");
-    DRAKE_ASSERT(static_cast<size_t>(upper_bound_.size()) == num_constraints &&
+    DRAKE_ASSERT(upper_bound_.size() == num_constraints &&
                  "Size of upper bound must match number of constraints.");
   }
 
