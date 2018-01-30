@@ -4,6 +4,7 @@ load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:pybind.bzl",
+    "drake_py_all_library",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -100,17 +101,6 @@ drake_py_library(
     deps = [":module_py"],
 )
 
-drake_py_library(
-    name = "all_py",
-    deps = [
-        ":analysis_py",
-        ":drawing_py",
-        ":framework_py",
-        ":primitives_py",
-        ":sensors_py",
-    ],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":framework_py",
@@ -124,10 +114,14 @@ PY_LIBRARIES = [
     ":module_py",
 ]
 
+drake_py_all_library(
+    name = "all_py",
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
 drake_py_library(
     name = "systems",
-    imports = PACKAGE_INFO.py_imports,
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+    deps = [":all_py"],
 )
 
 install(

@@ -14,6 +14,7 @@ load(
 )
 load(
     "//tools/skylark:pybind.bzl",
+    "drake_py_all_library",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -120,12 +121,6 @@ drake_pybind_library(
     py_srcs = ["symbolic.py"],
 )
 
-# Alias sub-package.
-alias(
-    name = "util_py",
-    actual = "//bindings/pydrake/util",
-)
-
 PY_LIBRARIES_WITH_INSTALL = adjust_labels_for_drake_hoist([
     ":autodiffutils_py",
     ":common_py",
@@ -140,7 +135,22 @@ PY_LIBRARIES_WITH_INSTALL = adjust_labels_for_drake_hoist([
     "//drake/bindings/pydrake/util",
 ])
 
-PY_LIBRARIES = []
+PY_LIBRARIES = [
+    ":all_py",
+]
+
+# `all` module.
+drake_py_all_library(
+    name = "all_py",
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
+drake_py_library(
+    name = "pydrake",
+    visibility = ["//visibility:public"],
+    deps = [":all_py"],
+)
 
 install(
     name = "install",
@@ -150,10 +160,9 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_library(
-    name = "pydrake",
-    visibility = ["//visibility:public"],
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+drake_py_test(
+    name = "all_test",
+    deps = ["all_py"],
 )
 
 # Test ODR (One Definition Rule).

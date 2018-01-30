@@ -254,3 +254,18 @@ def drake_pybind_cc_googletest(
         tags = tags,
         visibility = visibility,
     )
+
+def drake_py_all_library(
+        name,
+        deps = []):
+    """Defines a roll-up `all` module, and ensures that its not included in
+    `deps`.
+    """
+    target = ":" + name
+    if target in deps:
+        deps.remove(target)
+    drake_py_library(
+        name = name,
+        srcs = ["all.py"],
+        deps = deps,
+    )
