@@ -6,16 +6,17 @@
 #include <utility>
 #include <vector>
 
+#include "drake/automotive/calc_ongoing_road_position.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/saturate.h"
 
 namespace drake {
 
 using maliput::api::GeoPosition;
+using maliput::api::GeoPositionT;
 using maliput::api::Lane;
 using maliput::api::LanePosition;
 using maliput::api::RoadGeometry;
@@ -29,9 +30,11 @@ using systems::rendering::PoseVector;
 namespace automotive {
 
 template <typename T>
-MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s)
+MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s,
+                              bool memorize_road_position)
     : road_(road),
       with_s_(initial_with_s),
+      memorize_road_position_(memorize_road_position),
       ego_pose_index_{
           this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
       ego_velocity_index_{
@@ -48,6 +51,10 @@ MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s)
   DRAKE_DEMAND(road_.junction(0)->segment(0)->num_lanes() > 0);
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
   this->DeclareNumericParameter(MobilPlannerParameters<T>());
+  if (memorize_road_position) {
+    this->DeclareAbstractState(systems::AbstractValue::Make<RoadPosition>(
+        {nullptr, LanePosition()}));
+  }
 }
 
 template <typename T>
@@ -107,9 +114,16 @@ void MobilPlanner<T>::CalcLaneDirection(const systems::Context<T>& context,
       this->template EvalInputValue<PoseBundle<T>>(context, traffic_index_);
   DRAKE_ASSERT(traffic_poses != nullptr);
 
+  // Obtain the state if we've allocated it.
+  RoadPosition ego_rp;
+  if (context.template get_state().get_abstract_state().size() != 0) {
+    DRAKE_ASSERT(context.get_num_abstract_state_groups() == 1);
+    ego_rp = context.template get_abstract_state<RoadPosition>(0);
+  }
+
   ImplCalcLaneDirection(*ego_pose, *ego_velocity, *traffic_poses,
                         *ego_accel_command, idm_params, mobil_params,
-                        lane_direction);
+                        ego_rp, lane_direction);
 }
 
 template <typename T>
@@ -118,14 +132,18 @@ void MobilPlanner<T>::ImplCalcLaneDirection(
     const PoseBundle<T>& traffic_poses, const BasicVector<T>& ego_accel_command,
     const IdmPlannerParameters<T>& idm_params,
     const MobilPlannerParameters<T>& mobil_params,
+    const RoadPosition& ego_rp,
     LaneDirection* lane_direction) const {
   DRAKE_DEMAND(idm_params.IsValid());
   DRAKE_DEMAND(mobil_params.IsValid());
 
-  const RoadPosition ego_position =
-      road_.ToRoadPosition(
-          GeoPosition::FromXyz(ego_pose.get_isometry().translation()),
-          nullptr, nullptr, nullptr);
+  RoadPosition ego_position = ego_rp;
+  if (!ego_rp.lane) {
+    const auto gp =
+        GeoPositionT<T>::FromXyz(ego_pose.get_isometry().translation());
+    ego_position =
+        road_.ToRoadPosition(gp.MakeDouble(), nullptr, nullptr, nullptr);
+  }
   // Prepare a list of (possibly nullptr) Lanes to evaluate.
   std::pair<const Lane*, const Lane*> lanes = std::make_pair(
       ego_position.lane->to_left(), ego_position.lane->to_right());
@@ -280,6 +298,29 @@ const T MobilPlanner<T>::EvaluateIdm(
 
   return IdmPlanner<T>::Evaluate(idm_params, s_dot_behind, net_distance,
                                  closing_velocity);
+}
+
+template <typename T>
+void MobilPlanner<T>::DoCalcUnrestrictedUpdate(
+    const systems::Context<T>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+    systems::State<T>* state) const {
+  DRAKE_ASSERT(context.get_num_abstract_state_groups() == 1);
+
+  // Obtain the input and state data.
+  const PoseVector<T>* const ego_pose =
+      this->template EvalVectorInput<PoseVector>(context, ego_pose_index_);
+  DRAKE_ASSERT(ego_pose != nullptr);
+
+  const FrameVelocity<T>* const ego_velocity =
+      this->template EvalVectorInput<FrameVelocity>(context,
+                                                    ego_velocity_index_);
+  DRAKE_ASSERT(ego_velocity != nullptr);
+
+  RoadPosition& rp =
+      state->template get_mutable_abstract_state<RoadPosition>(0);
+
+  CalcOngoingRoadPosition(*ego_pose, *ego_velocity, &rp);
 }
 
 // These instantiations must match the API documentation in mobil_planner.h.

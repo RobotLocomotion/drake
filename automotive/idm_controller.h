@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/Geometry>
 
@@ -8,7 +9,6 @@
 #include "drake/automotive/idm_planner.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
-#include "drake/automotive/pose_selector.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_bundle.h"
@@ -54,13 +54,20 @@ class IdmController : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmController)
 
   /// Constructor.
-  /// @param road is the pre-defined RoadGeometry.
-  explicit IdmController(const maliput::api::RoadGeometry& road);
+  /// @param road The pre-defined RoadGeometry.
+  /// @param memorize_road_position If true, declares an abstract state to which
+  /// the current RoadPosition is stored.  If false, then the system will
+  /// contain no abstract states.  Note that the memory option is for
+  /// performance speedup (at the expense of optimizer compatibility) by
+  /// preventing a potentially sizeable computation within
+  /// RoadGeometry::ToRoadPosition().
+  explicit IdmController(const maliput::api::RoadGeometry& road,
+                         bool memorize_road_position);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit IdmController(const IdmController<U>& other)
-      : IdmController<T>(other.road_) {}
+      : IdmController<T>(other.road_, other.memorize_road_position_) {}
 
   ~IdmController() override;
 
@@ -84,7 +91,13 @@ class IdmController : public systems::LeafSystem<T> {
       const systems::rendering::FrameVelocity<T>& ego_velocity,
       const systems::rendering::PoseBundle<T>& traffic_poses,
       const IdmPlannerParameters<T>& idm_params,
+      const maliput::api::RoadPosition& ego_rp,
       systems::BasicVector<T>* command) const;
+
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<T>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+      systems::State<T>* state) const override;
 
  private:
   // Allow different specializations to access each other's private data.
@@ -98,6 +111,7 @@ class IdmController : public systems::LeafSystem<T> {
                         systems::BasicVector<T>* accel_output) const;
 
   const maliput::api::RoadGeometry& road_;
+  const bool memorize_road_position_{false};
 
   // Indices for the input / output ports.
   const int ego_pose_index_{};
