@@ -55,6 +55,7 @@ drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [
         "//drake/bindings/pydrake:symbolic_types_pybind",
+        "//drake/bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
