@@ -490,12 +490,6 @@ sh_test(
     # Mitigates driver-related issues when running under `bazel test`. For more
     # information, see #7004.
     local = 1,
-    # Disable under LeakSanitizer and Valgrind Memcheck due to driver-related
-    # leaks. For more information, see #7520.
-    tags = [
-        "no_lsan",
-        "no_memcheck",
-    ],
 )
 
 drake_cc_googletest(
