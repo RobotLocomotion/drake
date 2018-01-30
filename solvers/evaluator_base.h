@@ -121,6 +121,13 @@ class EvaluatorBase {
                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       AutoDiffVecXd& y) const = 0;
 
+  // Setter for the number of outputs.
+  // This method is only meant to be called, if the sub-class structure permits
+  // to change the number of outputs. One example is LinearConstraint in
+  // solvers/Constraint.h, which can change the number of outputs, if the
+  // matrix in the linear constraint is resized.
+  void set_num_outputs(int num_outputs) { num_outputs_ = num_outputs; }
+
  private:
   int num_vars_{};
   int num_outputs_{};
