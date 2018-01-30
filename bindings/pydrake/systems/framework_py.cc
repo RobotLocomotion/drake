@@ -6,6 +6,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
+#include "drake/bindings/pydrake/util/eigen_pybind.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -17,6 +18,7 @@
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/vector_system.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -25,16 +27,155 @@ using std::vector;
 namespace drake {
 namespace pydrake {
 
+namespace {
+
+// TODO(eric.cousineau): At present, we only bind doubles.
+// In the future, we will bind more scalar types, and enable scalar
+// conversion.
+using T = double;
+
+using systems::System;
+using systems::LeafSystem;
+using systems::Context;
+using systems::VectorSystem;
+using systems::PublishEvent;
+
+class PySystem : public py::wrapper<System<T>> {
+ public:
+  using Base = py::wrapper<System<T>>;
+  using Base::Base;
+  // Expose protected methods for binding.
+  using Base::DeclareInputPort;
+};
+
+class LeafSystemPublic : public LeafSystem<T> {
+ public:
+  using Base = LeafSystem<T>;
+  using Base::Base;
+
+  // N.B. These function methods are still typed as (LeafSystem<T>::*)(...),
+  // since they are more or less visibility imports.
+  // Defining methods here won't work, as it will become
+  // (LeafSystemPublic::*)(...), since this typeid is not exposed in pybind.
+  // If needed, solution is to expose it as an intermediate type if needed.
+
+  // Expose protected methods for binding.
+  using Base::DeclareVectorOutputPort;
+  using Base::DeclarePeriodicPublish;
+  using Base::DeclareContinuousState;
+  using Base::DeclareDiscreteState;
+
+  // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
+  // this method in `PyLeafSystem`, expose the method here for direct(-ish)
+  // access.
+  // (Otherwise, we get an error about inaccessible downcasting when trying to
+  // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
+  using Base::DoPublish;
+};
+
+// Provide flexible inheritance to leverage prior binding information, per
+// documentation:
+// http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance  // NOLINT
+template <typename LeafSystemBase = LeafSystemPublic>
+class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
+ public:
+  using Base = py::wrapper<LeafSystemBase>;
+  using Base::Base;
+
+  // Trampoline virtual methods.
+  void DoPublish(
+      const Context<T>& context,
+      const vector<const PublishEvent<T>*>& events) const override {
+    // Yuck! We have to dig in and use internals :(
+    // We must ensure that pybind only sees pointers, since this method may
+    // be called from C++, and pybind will not have seen these objects yet.
+    // @see https://github.com/pybind/pybind11/issues/1241
+    // TODO(eric.cousineau): Figure out how to supply different behavior,
+    // possibly using function wrapping.
+    PYBIND11_OVERLOAD_INT(
+        void, LeafSystem<T>, "_DoPublish", &context, events);
+    // If the macro did not return, use default functionality.
+    Base::DoPublish(context, events);
+  }
+};
+
+using PyLeafSystem = PyLeafSystemBase<>;
+
+class VectorSystemPublic : public VectorSystem<T> {
+ public:
+  using Base = VectorSystem<T>;
+
+  VectorSystemPublic(int inputs, int outputs)
+      : Base(inputs, outputs) {}
+
+  using Base::EvalVectorInput;
+  using Base::GetVectorState;
+
+  // Virtual methods, for explicit bindings.
+  using Base::DoCalcVectorOutput;
+  using Base::DoCalcVectorTimeDerivatives;
+  using Base::DoCalcVectorDiscreteVariableUpdates;
+};
+
+class PyVectorSystem : public PyLeafSystemBase<VectorSystemPublic> {
+ public:
+  using Base = PyLeafSystemBase<VectorSystemPublic>;
+  using Base::Base;
+
+  void DoCalcVectorOutput(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* output) const override {
+    // WARNING: Mutating `output` will not work when T is AutoDiffXd,
+    // Expression, etc.
+    // @see https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
+    // TODO(eric.cousineau): Either wrap to have this return a value (blech),
+    // or solve the upstream issue.
+    PYBIND11_OVERLOAD_INT(
+        void, VectorSystem<T>, "_DoCalcVectorOutput",
+        // N.B. Passing `Eigen::Map<>` derived classes by reference rather than
+        // pointer to ensure conceptual clarity. pybind11 `type_caster`
+        // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
+        &context, input, state, ToEigenRef(output));
+    Base::DoCalcVectorOutput(context, input, state, output);
+  }
+
+  void DoCalcVectorTimeDerivatives(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
+    // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
+    // Expression, etc. See above.
+    PYBIND11_OVERLOAD_INT(
+        void, VectorSystem<T>, "_DoCalcVectorTimeDerivatives",
+        &context, input, state, ToEigenRef(derivatives));
+    Base::DoCalcVectorOutput(context, input, state, derivatives);
+  }
+
+  void DoCalcVectorDiscreteVariableUpdates(
+      const Context<T>& context,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+      Eigen::VectorBlock<VectorX<T>>* next_state) const override {
+    // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
+    // Expression, etc. See above.
+    PYBIND11_OVERLOAD_INT(
+        void, VectorSystem<T>, "_DoCalcVectorDiscreteVariableUpdates",
+        &context, input, state, ToEigenRef(next_state));
+    Base::DoCalcVectorDiscreteVariableUpdates(
+        context, input, state, next_state);
+  }
+};
+
+}  // namespace
+
 PYBIND11_MODULE(framework, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 
   m.doc() = "Bindings for the core Systems framework.";
-
-  // TODO(eric.cousineau): At present, we only bind doubles.
-  // In the future, we will bind more scalar types, and enable scalar
-  // conversion.
-  using T = double;
 
   // TODO(eric.cousineau): Resolve `str_py` workaround.
   auto str_py = py::eval("str");
@@ -44,14 +185,6 @@ PYBIND11_MODULE(framework, m) {
   py::enum_<PortDataType>(m, "PortDataType")
     .value("kVectorValued", kVectorValued)
     .value("kAbstractValued", kAbstractValued);
-
-  class PySystem : public py::wrapper<System<T>> {
-   public:
-    using Base = py::wrapper<System<T>>;
-    using Base::Base;
-    // Expose protected methods for binding.
-    using Base::DeclareInputPort;
-  };
 
   // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
   // knows this is abstract?
@@ -82,50 +215,6 @@ PYBIND11_MODULE(framework, m) {
           return str_py(self->GetGraphvizString());
         });
 
-  class LeafSystemPublic : public LeafSystem<T> {
-   public:
-    using Base = LeafSystem<T>;
-    using Base::Base;
-
-    // N.B. These function methods are still typed as (LeafSystem<T>::*)(...),
-    // since they are more or less visibility imports.
-    // Defining methods here won't work, as it will become
-    // (LeafSystemPublic::*)(...), since this typeid is not exposed in pybind.
-    // If needed, solution is to expose it as an intermediate type if needed.
-
-    // Expose protected methods for binding.
-    using Base::DeclareVectorOutputPort;
-    using Base::DeclarePeriodicPublish;
-    // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
-    // this method in `PyLeafSystem`, expose the method here for direct(-ish)
-    // access.
-    // (Otherwise, we get an error about inaccessible downcasting when trying to
-    // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
-    using Base::DoPublish;
-  };
-
-  class PyLeafSystem : public py::wrapper<LeafSystemPublic> {
-   public:
-    using Base = py::wrapper<LeafSystemPublic>;
-    using Base::Base;
-
-    // Trampoline virtual methods.
-    void DoPublish(
-        const Context<T>& context,
-        const vector<const PublishEvent<T>*>& events) const override {
-      // Yuck! We have to dig in and use internals :(
-      // We must ensure that pybind only sees pointers, since this method may
-      // be called from C++, and pybind will not have seen these objects yet.
-      // @see https://github.com/pybind/pybind11/issues/1241
-      // TODO(eric.cousineau): Figure out how to supply different behavior,
-      // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(
-          void, LeafSystem<T>, "_DoPublish", &context, events);
-      // If the macro did not return, use default functionality.
-      LeafSystem<T>::DoPublish(context, events);
-    }
-  };
-
   // Don't use a const-rvalue as a function handle parameter, as pybind11 wants
   // to copy it?
   // TODO(eric.cousineau): Make a helper wrapper for this; file a bug in
@@ -147,7 +236,29 @@ PYBIND11_MODULE(framework, m) {
         }, py_reference_internal)
     .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
          py::arg("period"), py::arg("offset") = 0.)
-    .def("_DoPublish", &LeafSystemPublic::DoPublish);
+    .def("_DoPublish", &LeafSystemPublic::DoPublish)
+    // Continuous state.
+    .def("_DeclareContinuousState",
+         py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
+         py::arg("num_state_variables"))
+    .def("_DeclareContinuousState",
+         py::overload_cast<int, int, int>(
+            &LeafSystemPublic::DeclareContinuousState),
+         py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
+    .def("_DeclareContinuousState",
+         py::overload_cast<const BasicVector<T>&>(
+            &LeafSystemPublic::DeclareContinuousState),
+         py::arg("model_vector"))
+    // TODO(eric.cousineau): Ideally the downstream class of `BasicVector<T>`
+    // should expose `num_q`, `num_v`, and `num_z`?
+    .def("_DeclareContinuousState",
+         py::overload_cast<const BasicVector<T>&, int, int, int>(
+            &LeafSystemPublic::DeclareContinuousState),
+         py::arg("model_vector"),
+         py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
+    // Discrete state.
+    // TODO(eric.cousineau): Should there be a `BasicVector<>` overload?
+    .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState);
 
   py::class_<Context<T>>(m, "Context")
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
@@ -224,8 +335,11 @@ PYBIND11_MODULE(framework, m) {
 
   // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<> patterns.
   py::class_<BasicVector<T>, VectorBase<T>>(m, "BasicVector")
-    .def(py::init<int>())
+    // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
+    // convert scalar-size `np.array` objects to `int` (since this is normally
+    // permitted).
     .def(py::init<VectorX<T>>())
+    .def(py::init<int>())
     .def("get_value",
         [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
           return self->get_value();
@@ -268,9 +382,33 @@ PYBIND11_MODULE(framework, m) {
 
   py::class_<DiscreteValues<T>>(m, "DiscreteValues")
     .def("num_groups", &DiscreteValues<T>::num_groups)
-    .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal);
+    .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal)
+    .def("get_vector",
+         overload_cast_explicit<const BasicVector<T>&, int>(
+            &DiscreteValues<T>::get_vector),
+         py_reference_internal, py::arg("index") = 0)
+    .def("get_mutable_vector",
+         overload_cast_explicit<BasicVector<T>&, int>(
+            &DiscreteValues<T>::get_mutable_vector),
+         py_reference_internal, py::arg("index") = 0);
 
   py::class_<AbstractValues>(m, "AbstractValues");
+
+  // Additional derivative Systems which are not glue, but do not fall under
+  // `//systems/primitives`.
+
+  // N.B. This will effectively allow derived classes of `VectorSystem` to
+  // override `LeafSystem` methods, disrespecting `final`-ity.
+  // This could be changed (see https://stackoverflow.com/a/2425785), but meh,
+  // we're already abusing Python and C++ enough.
+  py::class_<VectorSystem<T>, PyVectorSystem, LeafSystem<T>>(m, "VectorSystem")
+    .def(py::init([](int inputs, int outputs) {
+      return new PyVectorSystem(inputs, outputs);
+    }));
+    // TODO(eric.cousineau): Bind virtual methods once we provide a function
+    // wrapper to convert `Map<Derived>*` arguments.
+    // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
+    // upstream code.
 }
 
 }  // namespace pydrake
