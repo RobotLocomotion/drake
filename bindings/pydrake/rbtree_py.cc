@@ -252,14 +252,12 @@ PYBIND11_MODULE(_rbtree_py, m) {
         [](const Geometry& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getPoints(pts);
-          std::cout << "geometry pts: " << pts << std::endl;
           return pts;
         })
     .def("getBoundingBoxPoints", 
         [](const Geometry& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getBoundingBoxPoints(pts);
-          std::cout << "geometry bb pts: " << pts << std::endl;
           return pts;
         });
 
@@ -268,14 +266,12 @@ PYBIND11_MODULE(_rbtree_py, m) {
         [](const Cylinder& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getPoints(pts);
-          std::cout << "cylinder pts: " << pts << std::endl;
           return pts;
         })
     .def("getBoundingBoxPoints", 
         [](const Cylinder& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getBoundingBoxPoints(pts);
-          std::cout << "cylinder bb pts: " << pts << std::endl;
           return pts;
         });
 
@@ -283,7 +279,11 @@ PYBIND11_MODULE(_rbtree_py, m) {
 
   py::class_<Element>(m, "Element")
     .def("hasGeometry", &Element::hasGeometry)
-    .def("getGeometry", &Element::getGeometry, py_reference_internal);
+    .def("getGeometry", &Element::getGeometry, py_reference_internal)
+    .def("getLocalTransform", [](const Element& self) {
+      auto tf = self.getLocalTransform();
+      return tf.matrix();
+    });
 
   py::class_<VisualElement, Element>(m, "VisualElement");
 }
