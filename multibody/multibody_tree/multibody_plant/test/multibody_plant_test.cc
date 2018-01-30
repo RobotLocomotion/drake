@@ -30,10 +30,6 @@ using systems::Context;
 using systems::ContinuousState;
 
 GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
-  const std::string kLink1Name = "Link1";
-  const std::string kLink2Name = "Link2";
-  const std::string kShoulderJointName = "ShoulderJoint";
-  const std::string kElbowJointName = "ElbowJoint";
   const std::string kInvalidName = "InvalidName";
 
   const AcrobotParameters parameters;
@@ -54,39 +50,40 @@ GTEST_TEST(RigidBodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_states(), 4);
 
   // Query if elements exist in the model.
-  EXPECT_TRUE(plant->HasBodyNamed("Link1"));
-  EXPECT_TRUE(plant->HasBodyNamed("Link2"));
-  EXPECT_FALSE(plant->HasBodyNamed("InvalidLinkName"));
+  EXPECT_TRUE(plant->HasBodyNamed(parameters.link1_name()));
+  EXPECT_TRUE(plant->HasBodyNamed(parameters.link2_name()));
+  EXPECT_FALSE(plant->HasBodyNamed(kInvalidName));
 
-  EXPECT_TRUE(plant->HasJointNamed("ShoulderJoint"));
-  EXPECT_TRUE(plant->HasJointNamed("ElbowJoint"));
-  EXPECT_FALSE(plant->HasJointNamed("InvalidJointName"));
+  EXPECT_TRUE(plant->HasJointNamed(parameters.shoulder_joint_name()));
+  EXPECT_TRUE(plant->HasJointNamed(parameters.elbow_joint_name()));
+  EXPECT_FALSE(plant->HasJointNamed(kInvalidName));
 
   // Get links by name.
-  const Body<double>& link1 = plant->GetBodyByName(kLink1Name);
-  EXPECT_EQ(link1.get_name(), kLink1Name);
-  const Body<double>& link2 = plant->GetBodyByName(kLink2Name);
-  EXPECT_EQ(link2.get_name(), kLink2Name);
+  const Body<double>& link1 = plant->GetBodyByName(parameters.link1_name());
+  EXPECT_EQ(link1.get_name(), parameters.link1_name());
+  const Body<double>& link2 = plant->GetBodyByName(parameters.link2_name());
+  EXPECT_EQ(link2.get_name(), parameters.link2_name());
 
   // Attempting to retrieve a link that is not part of the model should throw
   // an exception.
-  EXPECT_THROW(plant->GetBodyByName("InvalidLinkName"), std::logic_error);
+  EXPECT_THROW(plant->GetBodyByName(kInvalidName), std::logic_error);
 
   // Get joints by name.
   const Joint<double>& shoulder_joint =
-      plant->GetJointByName(kShoulderJointName);
-  EXPECT_EQ(shoulder_joint.get_name(), kShoulderJointName);
-  const Joint<double>& elbow_joint = plant->GetJointByName(kElbowJointName);
-  EXPECT_EQ(elbow_joint.get_name(), kElbowJointName);
+      plant->GetJointByName(parameters.shoulder_joint_name());
+  EXPECT_EQ(shoulder_joint.get_name(), parameters.shoulder_joint_name());
+  const Joint<double>& elbow_joint =
+      plant->GetJointByName(parameters.elbow_joint_name());
+  EXPECT_EQ(elbow_joint.get_name(), parameters.elbow_joint_name());
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // Templatized version to obtain retrieve a particular known type of joint.
   const RevoluteJoint<double>& shoulder =
-      plant->GetJointByName<RevoluteJoint>(kShoulderJointName);
-  EXPECT_EQ(shoulder.get_name(), kShoulderJointName);
+      plant->GetJointByName<RevoluteJoint>(parameters.shoulder_joint_name());
+  EXPECT_EQ(shoulder.get_name(), parameters.shoulder_joint_name());
   const RevoluteJoint<double>& elbow =
-      plant->GetJointByName<RevoluteJoint>(kElbowJointName);
-  EXPECT_EQ(elbow.get_name(), kElbowJointName);
+      plant->GetJointByName<RevoluteJoint>(parameters.elbow_joint_name());
+  EXPECT_EQ(elbow.get_name(), parameters.elbow_joint_name());
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.

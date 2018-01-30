@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_system.h"
@@ -88,6 +89,16 @@ class AcrobotParameters {
   double b2() const { return b2_; }
   double g() const { return g_; }
 
+  // getters for modeling elements' names
+  const std::string& link1_name() const { return link1_name_; }
+  const std::string& link2_name() const { return link2_name_; }
+  const std::string& shoulder_joint_name() const {
+    return shoulder_joint_name_;
+  }
+  const std::string& elbow_joint_name() const {
+    return elbow_joint_name_;
+  }
+
  private:
   // Helper method for NaN initialization.
   static constexpr double nan() {
@@ -102,6 +113,12 @@ class AcrobotParameters {
       Ic1_{nan()}, Ic2_{nan()},   // In kg⋅m².
       b1_{nan()}, b2_{nan()},     // In N⋅m⋅s.
       g_{nan()};                  // In m/s².
+
+  // Modeling elements' names.
+  std::string link1_name_{"Link1"};
+  std::string link2_name_{"Link2"};
+  std::string shoulder_joint_name_{"ShoulderJoint"};
+  std::string elbow_joint_name_{"ElbowJoint"};
 };
 
 /// This method makes a MultibodyPlant model of the Acrobot - a canonical

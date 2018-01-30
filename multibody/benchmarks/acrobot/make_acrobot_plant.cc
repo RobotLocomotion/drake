@@ -26,8 +26,7 @@ using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeAcrobotPlant(
-    const AcrobotParameters& params,
-    geometry::GeometrySystem<double>* geometry_system) {
+    const AcrobotParameters& params, geometry::GeometrySystem<double>*) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   // COM's positions in each link (L1/L2) frame:
@@ -50,14 +49,16 @@ MakeAcrobotPlant(
           params.m2(), p_L2L2cm, G2_Bcm);
 
   // Add a rigid body to model each link.
-  const RigidBody<double>& link1 = plant->AddRigidBody("Link1", M1_L1o);
-  const RigidBody<double>& link2 = plant->AddRigidBody("Link2", M2_L2o);
+  const RigidBody<double>& link1 = plant->AddRigidBody(
+      params.link1_name(), M1_L1o);
+  const RigidBody<double>& link2 = plant->AddRigidBody(
+      params.link2_name(), M2_L2o);
 
   // TODO(amcastro-tri): Register geometry if a valid GeometrySystem is
   // provided.
 
   plant->AddJoint<RevoluteJoint>(
-      "ShoulderJoint",
+      params.shoulder_joint_name(),
       /* Shoulder inboard frame Si IS the the world frame W. */
       plant->get_world_body(), {},
       /* Shoulder outboard frame So IS frame L1. */
@@ -65,7 +66,7 @@ MakeAcrobotPlant(
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
   plant->AddJoint<RevoluteJoint>(
-      "ElbowJoint",
+      params.elbow_joint_name(),
       link1,
       /* Pose of the elbow inboard frame Ei in Link 1's frame. */
       Isometry3d(Translation3d(-params.l1() * Vector3d::UnitZ())),
