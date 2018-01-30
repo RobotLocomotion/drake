@@ -3394,6 +3394,7 @@ RigidBodyTree<double>::positionConstraints<double>(
 template MatrixXd
 RigidBodyTree<double>::positionConstraintsJacobian<double>(
     KinematicsCache<double> const&, bool) const;
+template Matrix<AutoDiffXd, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<double>::positionConstraintsJacobian<AutoDiffXd>(KinematicsCache<AutoDiffXd> const&, bool) const;
 
 // Explicit template instantiations for positionConstraintsJacDotTimesV.
 template VectorXd
