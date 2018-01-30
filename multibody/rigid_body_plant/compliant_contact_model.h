@@ -12,8 +12,12 @@ namespace systems {
 /// to the scale of the simulation. The values must all be _strictly_ positive.
 /// See @ref drake_contacts for details.
 struct CompliantContactModelParameters {
-  double v_stiction_tolerance{1e-2};      // 1 cm/s (in m/s).
-  double characteristic_radius{2e-4};     // 0.2 mm (in m).
+  // 1 cm/s (in m/s).
+  static const double kDefaultVStictionTolerance;
+  double v_stiction_tolerance{kDefaultVStictionTolerance};
+  // 0.2 mm (in m).
+  static const double kDefaultCharacteristicRadius;
+  double characteristic_radius{kDefaultCharacteristicRadius};
 };
 
 /// This class encapsulates the compliant contact model force computations as

@@ -14,6 +14,11 @@
 namespace drake {
 namespace systems {
 
+const double
+    CompliantContactModelParameters::kDefaultVStictionTolerance{1e-2};
+const double
+    CompliantContactModelParameters::kDefaultCharacteristicRadius{2e-4};
+
 template <typename T>
 void CompliantContactModel<T>::set_default_material(
     const CompliantMaterial& material) {
