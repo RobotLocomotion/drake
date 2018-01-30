@@ -28,13 +28,13 @@ PYBIND11_MODULE(shapes, m) {
           self.getFaces(&tris);
           return tris;
         })
-    .def("getPoints", 
+    .def("getPoints",
         [](const Geometry& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getPoints(pts);
           return pts;
         })
-    .def("getBoundingBoxPoints", 
+    .def("getBoundingBoxPoints",
         [](const Geometry& self) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getBoundingBoxPoints(pts);
@@ -62,5 +62,5 @@ PYBIND11_MODULE(shapes, m) {
     .def("getMaterial", &VisualElement::getMaterial);
 }
 
-} // namespace pydrake
-} // namespace drake
+}  // namespace pydrake
+}  // namespace drake

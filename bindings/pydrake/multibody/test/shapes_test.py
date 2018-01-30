@@ -29,11 +29,11 @@ class TestShapes(unittest.TestCase):
         green_material = np.array([0.3, 0.6, 0.4, 1])
         white_material = np.array([1., 1., 1., 1.])
 
-        self.assertTrue(np.allclose(sphere_visual_element.getMaterial(), 
-            green_material, atol=1e-4))
+        self.assertTrue(np.allclose(sphere_visual_element.getMaterial(),
+                        green_material, atol=1e-4))
         sphere_visual_element.setMaterial(white_material)
-        self.assertTrue(np.allclose(sphere_visual_element.getMaterial(), 
-            white_material, atol=1e-4))
+        self.assertTrue(np.allclose(sphere_visual_element.getMaterial(),
+                        white_material, atol=1e-4))
 
         # Its TF should have z-component of 0.015
         local_tf = sphere_visual_element.getLocalTransform()
@@ -57,6 +57,7 @@ class TestShapes(unittest.TestCase):
         self.assertFalse(sphere_geometry.hasFaces())
         with self.assertRaises(RuntimeError):
             sphere_geometry.getFaces()
+
 
 if __name__ == '__main__':
     unittest.main()
