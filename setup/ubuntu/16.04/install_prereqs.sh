@@ -155,17 +155,17 @@ dpkg_install_from_wget \
 # for more information. To rebuild IBEX, add the PPA `ppa:dreal/dreal` and then
 # run `apt source libibex-dev` to get the sources.
 dpkg_install_from_wget \
-  ibex 2.6.3 \
-  https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files/libibex-dev_2.6.3.20171215122721.git2275df8f465a9db6a42d497ca322011ff2c6f8f7~16.04_amd64.deb \
-  7d76c4450921b83971006f01b3259c75cddc178bc7f4f8766f996df7763ed2b5
+  libibex-dev 2.6.5.20180123154310.gitf618c7b296182f90a84d54936d144b87df0747b9~16.04 \
+  https://dl.bintray.com/dreal/ibex/libibex-dev_2.6.5_amd64.deb \
+  5519f6e3ec53f92dcd4c461dfb599b11d1973a57638646d42612c3cb741679dc
 
 # Install dReal. See
 # https://github.com/dreal/dreal4/blob/master/README.md#build-debian-package for
 # build instructions.
 dpkg_install_from_wget \
-  dreal 4.17.12.3 \
-  https://dl.bintray.com/dreal/dreal/dreal_4.17.12.3_amd64.deb \
-  72e878e2af14b1509b8d3a2943d7e7c824babfa755f4928cc3618e1fe85695c9
+  dreal 4.18.01.3 \
+  https://dl.bintray.com/dreal/dreal/dreal_4.18.01.3_amd64.deb \
+  dcac76d7ba183014d9db7c5d1a5a0960e2a744e11769853fde83f03af052459b
 
 # Remove deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then
