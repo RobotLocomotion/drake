@@ -27,7 +27,7 @@ class UtilTest(unittest.TestCase):
         ]
         for one_relpath in relpaths:
             self.assertTrue(".git/" not in one_relpath, one_relpath)
-            if "third_party/" in one_relpath:
+            if one_relpath.startswith("third_party/"):
                 self.assertTrue(
                     one_relpath in THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND or
                     one_relpath.startswith("."),
