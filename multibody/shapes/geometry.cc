@@ -171,7 +171,6 @@ Cylinder* Cylinder::clone() const { return new Cylinder(*this); }
 
 void Cylinder::getPoints(Matrix3Xd& points) const {
   static bool warnOnce = true;
-  printf("in cylinder getpts\n");
   if (warnOnce) {
     std::cerr
         << "Warning: DrakeShapes::Cylinder::getPoints(): "
