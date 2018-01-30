@@ -498,7 +498,7 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
   CheckBinding(binding);
   DRAKE_ASSERT(binding.constraint()->num_constraints() ==
-               binding.GetNumElements());
+               static_cast<int>(binding.GetNumElements()));
   required_capabilities_ |= kLinearConstraint;
   bbox_constraints_.push_back(binding);
   return bbox_constraints_.back();

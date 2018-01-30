@@ -118,13 +118,19 @@ class Constraint : public EvaluatorBase {
            (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
   }
 
-  /** Updates the lower bound. */
+  /** Updates the lower bound.
+   * @note if the users want to expose this method in a sub-class, do
+   * using constraint::set_bounds, as in linearconstraint.
+   */
   template <typename Derived>
   void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
     set_bounds(new_lb, upper_bound_);
   }
 
-  /** Updates the upper bound. */
+  /** Updates the upper bound.
+   * @note if the users want to expose this method in a sub-class, do
+   * using constraint::set_bounds, as in linearconstraint.
+   */
   template <typename Derived>
   void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
     set_bounds(lower_bound_, new_ub);
@@ -134,12 +140,15 @@ class Constraint : public EvaluatorBase {
    * Set the upper and lower bounds of the constraint.
    * @param lower_bound. A `num_constraints` x 1 vector.
    * @param upper_bound. A `num_constraints` x 1 vector.
+   * @note If the users want to expose this method in a sub-class, do
+   * using Constraint::set_bounds, as in LinearConstraint.
    */
   template <typename DerivedL, typename DerivedU>
   void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
                   const Eigen::MatrixBase<DerivedU>& upper_bound) {
-    if (lower_bound.rows() != upper_bound.rows() || lower_bound.cols() != 1 ||
-        upper_bound.cols() != 1 || lower_bound.rows() != num_constraints()) {
+    if (lower_bound.rows() != num_constraints() ||
+        upper_bound.rows() != num_constraints() || lower_bound.cols() != 1 ||
+        upper_bound.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions.");
     }
 
@@ -370,6 +379,10 @@ class EvaluatorConstraint : public Constraint {
                    std::forward<Args>(args)...),
         evaluator_(evaluator) {}
 
+  using Constraint::UpdateLowerBound;
+  using Constraint::UpdateUpperBound;
+  using Constraint::set_bounds;
+
  protected:
   /** Reference to the nested evaluator. */
   const EvaluatorType& evaluator() const { return *evaluator_; }
@@ -527,6 +540,18 @@ class LinearEqualityConstraint : public LinearConstraint {
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
                           const Eigen::MatrixBase<DerivedB>& beq) {
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
+  }
+
+ private:
+  /**
+   * The user should not call this function. Call UpdateCoefficients(Aeq, beq)
+   * instead.
+   */
+  template <typename DerivedA, typename DerivedL, typename DerivedU>
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
+                          const Eigen::MatrixBase<DerivedL>& new_lb,
+                          const Eigen::MatrixBase<DerivedU>& new_ub) {
+    throw std::runtime_error("The user should not call this function.");
   }
 };
 

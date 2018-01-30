@@ -169,7 +169,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
 
   const Constraint* c = wrapped->constraint;
   const int num_constraints = c->num_constraints();
-  DRAKE_ASSERT(num_constraints >= m);
+  DRAKE_ASSERT(num_constraints >= static_cast<int>(m));
   DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   AutoDiffVecXd ty(num_constraints);
