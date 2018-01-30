@@ -99,8 +99,24 @@ class Constraint : public EvaluatorBase {
   const Eigen::VectorXd& upper_bound() const { return upper_bound_; }
 
   /** Number of rows in the output constraint. */
-  // TODO(eric.cousineau): Change return type to `int`.
-  size_t num_constraints() const { return num_outputs(); }
+  int num_constraints() const { return num_outputs(); }
+
+ protected:
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                const double tol) const {
+    Eigen::VectorXd y(num_constraints());
+    DoEval(x, y);
+    return (y.array() >= lower_bound_.array() - tol).all() &&
+           (y.array() <= upper_bound_.array() + tol).all();
+  }
+
+  virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                const double tol) const {
+    AutoDiffVecXd y(num_constraints());
+    DoEval(x, y);
+    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
+           (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
+  }
 
   /** Updates the lower bound. */
   template <typename Derived>
@@ -123,30 +139,12 @@ class Constraint : public EvaluatorBase {
   void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
                   const Eigen::MatrixBase<DerivedU>& upper_bound) {
     if (lower_bound.rows() != upper_bound.rows() || lower_bound.cols() != 1 ||
-        upper_bound.cols() != 1) {
+        upper_bound.cols() != 1 || lower_bound.rows() != num_constraints()) {
       throw std::runtime_error("New constraints have invalid dimensions.");
     }
 
     lower_bound_ = lower_bound;
     upper_bound_ = upper_bound;
-    set_num_outputs(lower_bound.rows());
-  }
-
- protected:
-  virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                const double tol) const {
-    Eigen::VectorXd y(num_constraints());
-    DoEval(x, y);
-    return (y.array() >= lower_bound_.array() - tol).all() &&
-           (y.array() <= upper_bound_.array() + tol).all();
-  }
-
-  virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
-                                const double tol) const {
-    AutoDiffVecXd y(num_constraints());
-    DoEval(x, y);
-    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
-           (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
   }
 
  private:
@@ -482,8 +480,13 @@ class LinearConstraint : public Constraint {
     }
 
     A_ = new_A;
+    set_num_outputs(A_.rows());
     set_bounds(new_lb, new_ub);
   }
+
+  using Constraint::UpdateLowerBound;
+  using Constraint::UpdateUpperBound;
+  using Constraint::set_bounds;
 
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;

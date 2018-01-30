@@ -18,8 +18,8 @@ namespace drake {
 namespace solvers {
 namespace {
 std::vector<int> FindDecisionVariableIndices(
-    const MathematicalProgram &prog,
-    const Eigen::Ref<const VectorXDecisionVariable> &x) {
+    const MathematicalProgram& prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x) {
   std::vector<int> x_indices(x.rows());
   for (int i = 0; i < x.rows(); ++i) {
     x_indices[i] = prog.FindDecisionVariableIndex(x(i));
@@ -178,8 +178,7 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
     const Eigen::VectorXd& lb = linear_constraint.constraint()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
     const Eigen::MatrixXd& Ai = linear_constraint.constraint()->A();
-    for (int i = 0; i < static_cast<int>(
-        linear_constraint.constraint()->num_constraints());
+    for (int i = 0; i < linear_constraint.constraint()->num_constraints();
          ++i) {
       const bool is_ub_finite{!std::isinf(ub(i))};
       const bool is_lb_finite{!std::isinf(lb(i))};
@@ -228,7 +227,7 @@ void ParseLinearEqualityConstraint(
   // The linear equality constraint A x = b is converted to
   // A x + s = b. s in zero cone.
   for (const auto& linear_equality_constraint :
-      prog.linear_equality_constraints()) {
+       prog.linear_equality_constraints()) {
     const Eigen::SparseMatrix<double> Ai =
         linear_equality_constraint.constraint()->GetSparseMatrix();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
@@ -493,13 +492,13 @@ void SetScsProblemData(int A_row_count, int num_vars,
 
   scs_problem_data->A = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
   scs_problem_data->A->x =
-    static_cast<scs_float*>(scs_calloc(A.nonZeros(), sizeof(scs_float)));
+      static_cast<scs_float*>(scs_calloc(A.nonZeros(), sizeof(scs_float)));
 
   scs_problem_data->A->i =
-    static_cast<scs_int*>(scs_calloc(A.nonZeros(), sizeof(scs_int)));
+      static_cast<scs_int*>(scs_calloc(A.nonZeros(), sizeof(scs_int)));
 
-  scs_problem_data->A->p =
-    static_cast<scs_int*>(scs_calloc(scs_problem_data->n + 1, sizeof(scs_int)));
+  scs_problem_data->A->p = static_cast<scs_int*>(
+      scs_calloc(scs_problem_data->n + 1, sizeof(scs_int)));
 
   // TODO(hongkai.dai): should I use memcpy for the assignment in the for loop?
   for (int i = 0; i < A.nonZeros(); ++i) {

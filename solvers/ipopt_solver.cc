@@ -28,10 +28,10 @@ namespace {
 
 /// @param[out] lb Array of constraint lower bounds, parallel to @p ub
 /// @param[out] ub Array of constraint upper bounds, parallel to @p lb
-size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
+int GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
   const Eigen::VectorXd& lower_bound = c.lower_bound();
   const Eigen::VectorXd& upper_bound = c.upper_bound();
-  for (size_t i = 0; i < c.num_constraints(); i++) {
+  for (int i = 0; i < c.num_constraints(); i++) {
     lb[i] = lower_bound(i);
     ub[i] = upper_bound(i);
   }
@@ -41,8 +41,8 @@ size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
-size_t GetNumGradients(const Constraint& c, int var_count, Index* num_grad) {
-  const size_t num_constraints = c.num_constraints();
+int GetNumGradients(const Constraint& c, int var_count, Index* num_grad) {
+  const int num_constraints = c.num_constraints();
   *num_grad = num_constraints * var_count;
   return num_constraints;
 }
@@ -63,7 +63,7 @@ size_t GetGradientMatrix(
     const MathematicalProgram& prog, const Constraint& c,
     const Eigen::Ref<const VectorXDecisionVariable>& variables,
     Index constraint_idx, Index* iRow, Index* jCol) {
-  const size_t m = c.num_constraints();
+  const int m = c.num_constraints();
   size_t grad_index = 0;
 
   for (int i = 0; i < static_cast<int>(m); ++i) {
@@ -113,7 +113,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
 
   // Store the results.  Since IPOPT directly knows the bounds of the
   // constraint, we don't need to apply any bounding information here.
-  for (size_t i = 0; i < c.num_constraints(); i++) {
+  for (int i = 0; i < c.num_constraints(); i++) {
     result[i] = ty(i).value();
   }
 
@@ -121,7 +121,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // gradient array.
   size_t grad_idx = 0;
 
-  for (size_t i = 0; i < c.num_constraints(); i++) {
+  for (int i = 0; i < c.num_constraints(); i++) {
     for (int j = 0; j < variables.rows(); j++) {
       grad[grad_idx++] = ty(i).derivatives()(j);
     }
@@ -323,10 +323,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       DRAKE_ASSERT(iRow != nullptr);
       DRAKE_ASSERT(jCol != nullptr);
 
-      size_t constraint_idx = 0;  // Passed into GetGradientMatrix as
+      int constraint_idx = 0;  // Passed into GetGradientMatrix as
                                   // the starting row number for the
                                   // constraint being described.
-      size_t grad_idx = 0;        // Offset into iRow, jCol output variables.
+      int grad_idx = 0;        // Offset into iRow, jCol output variables.
                                   // Incremented by the number of triplets
                                   // populated by each call to
                                   // GetGradientMatrix.

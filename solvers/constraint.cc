@@ -111,15 +111,14 @@ bool LinearComplementarityConstraint::DoCheckSatisfied(
 
 void PositiveSemidefiniteConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
-  DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-               num_constraints() * num_constraints());
+  DRAKE_ASSERT(x.rows() == num_constraints() * num_constraints());
   Eigen::MatrixXd S(num_constraints(), num_constraints());
 
-  for (int i = 0; i < static_cast<int>(num_constraints()); ++i) {
+  for (int i = 0; i < num_constraints(); ++i) {
     S.col(i) = x.segment(i * num_constraints(), num_constraints());
   }
 
-  DRAKE_ASSERT(S.rows() == static_cast<int>(num_constraints()));
+  DRAKE_ASSERT(S.rows() == num_constraints());
 
   // This uses the lower diagonal part of S to compute the eigen values.
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen_solver(S);
