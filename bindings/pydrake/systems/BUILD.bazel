@@ -47,6 +47,7 @@ drake_pybind_library(
     name = "framework_py",
     cc_deps = [
         "//bindings/pydrake/util:drake_optional_pybind",
+        "//bindings/pydrake/util:eigen_pybind",
     ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
