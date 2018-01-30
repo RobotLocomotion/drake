@@ -261,21 +261,13 @@ PYBIND11_MODULE(_rbtree_py, m) {
           return pts;
         });
 
-  py::class_<Cylinder, Geometry>(m, "Cylinder")    
-    .def("getPoints", 
-        [](const Cylinder& self) {
-          auto pts = Eigen::Matrix3Xd(3, 0);
-          self.getPoints(pts);
-          return pts;
-        })
-    .def("getBoundingBoxPoints", 
-        [](const Cylinder& self) {
-          auto pts = Eigen::Matrix3Xd(3, 0);
-          self.getBoundingBoxPoints(pts);
-          return pts;
-        });
-
-  py::class_<Sphere, Geometry>(m, "Sphere");
+  py::class_<Box, Geometry>(m, "Box");
+  py::class_<Sphere, Geometry>(m, "Sphere")
+    .def_readonly("radius", &Sphere::radius);
+  py::class_<Cylinder, Geometry>(m, "Cylinder");
+  py::class_<Mesh, Geometry>(m, "Mesh");
+  py::class_<MeshPoints, Geometry>(m, "MeshPoints");
+  py::class_<Capsule, Geometry>(m, "Capsule");
 
   py::class_<Element>(m, "Element")
     .def("hasGeometry", &Element::hasGeometry)
