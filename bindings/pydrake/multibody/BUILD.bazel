@@ -49,15 +49,26 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "shapes_py",
+    cc_so_name = "shapes",
+    cc_srcs = ["shapes_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+    ],
+)
+
 drake_py_library(
     name = "all_py",
     deps = [
         ":rigid_body_plant_py",
+        ":shapes_py",
     ],
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":rigid_body_plant_py",
+    ":shapes_py",
 ]
 
 PY_LIBRARIES = [
