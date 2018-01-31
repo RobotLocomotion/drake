@@ -27,9 +27,9 @@ PYBIND11_MODULE(shapes, m) {
     .def("getShape", &Geometry::getShape)
     .def("hasFaces", &Geometry::hasFaces)
     .def("getFaces", [](const Geometry* self) {
-          TrianglesVector tris;
-          self->getFaces(&tris);
-          return tris;
+          TrianglesVector triangles;
+          self->getFaces(&triangles);
+          return triangles;
         })
     .def("getPoints",
         [](const Geometry* self) {
