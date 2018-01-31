@@ -255,7 +255,7 @@ drake_cc_library(
     srcs = ["context.cc"],
     hdrs = ["context.h"],
     deps = [
-        ":framework_base",
+        ":context_base",
         ":parameters",
         ":state",
         "//drake/common:default_scalars",
@@ -273,12 +273,6 @@ drake_cc_library(
         "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
-)
-
-# This header is needed for mocking up input ports in context tests.
-drake_cc_library(
-    name = "input_port_descriptor_for_test",
-    hdrs = ["input_port_descriptor.h"],
 )
 
 drake_cc_library(
@@ -573,7 +567,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
-        ":input_port_descriptor_for_test",
+        ":framework_base",
         ":leaf_context",
         "//drake/common:essential",
         "//drake/common/test_utilities:eigen_matrix_compare",

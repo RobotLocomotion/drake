@@ -299,6 +299,16 @@ class ContextBase : public internal::SystemPathnameInterface {
   // assigned ticket. Subscribe the "all input ports" tracker to this one.
   void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
 
+
+  // For input port `index`, returns the FreestandingInputPortValue if the
+  // port is freestanding, otherwise nullptr. Asserts if `index` is out of
+  // range.
+  const FreestandingInputPortValue* GetInputPortValue(
+      InputPortIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    return input_port_values_[index].get();
+  }
+
   // Records the name of the system whose context this is.
   void set_system_name(const std::string& name) { system_name_ = name; }
 
@@ -347,15 +357,6 @@ class ContextBase : public internal::SystemPathnameInterface {
     CopyInTickets(source);
     CopyInFixedInputs(source);
     // Everything else is left default-initialized.
-  }
-
-  /** For input port `index`, returns the FreestandingInputPortValue if the
-  port is freestanding, otherwise nullptr. Asserts if `index` is out of
-  range. */
-  const FreestandingInputPortValue* GetInputPortValue(
-      InputPortIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
-    return input_port_values_[index].get();
   }
 
   /** (Internal use only) */

@@ -643,11 +643,10 @@ class Diagram : public System<T> {
   /// - to an input port of this Diagram,
   /// - or not connected at all in which case we return null.
   const AbstractValue* EvalConnectedSubsystemInputPort(
-      const ContextBase& context_base,
-      const InputPortBase& iport_base) const override {
+      const Context<T>& context,
+      const InputPortDescriptor<T>& input_port) const override {
     auto& diagram_context =
-        dynamic_cast<const DiagramContext<T>&>(context_base);
-    auto& input_port = dynamic_cast<const InputPortDescriptor<T>&>(iport_base);
+        dynamic_cast<const DiagramContext<T>&>(context);
     const InputPortLocator id{input_port.get_system(), input_port.get_index()};
 
     // Find if this input port is exported (connected to an input port of this

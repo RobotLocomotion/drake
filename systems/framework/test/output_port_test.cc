@@ -19,7 +19,6 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
 namespace systems {
@@ -91,9 +90,6 @@ class LeafOutputPortTest : public ::testing::Test {
   }
 
  protected:
-  systems::ConstantVectorSource<double> source_{Vector3d(3., -3., 0.)};
-  unique_ptr<Context<double>> context_{source_.CreateDefaultContext()};
-
   // Create abstract- and vector-valued ports.
   DummySystem dummy_;
   LeafOutputPort<double> absport_general_{
@@ -101,6 +97,7 @@ class LeafOutputPortTest : public ::testing::Test {
   LeafOutputPort<double> vecport_general_{3, alloc_myvector3, calc_vector3,
                                           std::vector<DependencyTicket>{},
                                           &dummy_};
+  unique_ptr<Context<double>> context_{dummy_.CreateDefaultContext()};
 };
 
 // Helper function for testing an abstract-valued port.
@@ -153,7 +150,9 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // Create an abstract port with an allocator that returns null.
   LeafOutputPort<double> null_port{alloc_null, calc_string,
                                    std::vector<DependencyTicket>{}, &dummy_};
-  EXPECT_THROW(null_port.Allocate(*context_), std::logic_error);
+  // Creating a context for this system should fail when it tries to allocate
+  // a cache entry for null_port.
+  EXPECT_THROW(dummy_.CreateDefaultContext(), std::logic_error);
 }
 
 // Check that Debug builds catch bad output types. We can't run these tests

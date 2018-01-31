@@ -585,16 +585,6 @@ class SystemBase {
   }
 
   #ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Diagram systems must reimplement this to evaluate the
-  // input port with the given `id` in the given `context`. The subsystem having
-  // the input port must be owned by this Diagram. The default implementation
-  // just aborts.
-  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
-      const ContextBase& context, const InputPortBase& id) const {
-    unused(context, id);
-    DRAKE_ABORT_MSG("EvaluateSubsystemInputPort(): not implemented");
-  }
-
   // Accessed by Context to create trackers for System-allocated objects.
   struct TrackerInfo {
     DependencyTicket ticket;
@@ -636,7 +626,7 @@ class SystemBase {
 
   // (Internal use only) Returns a pointer to the immediately enclosing Diagram
   // if one has been set, otherwise nullptr.
-  const SystemBase* get_parent() const {
+  const SystemBase* get_parent_base() const {
     return parent_;
   }
 
