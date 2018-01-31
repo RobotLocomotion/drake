@@ -48,6 +48,7 @@ doxygen
 gdb
 git
 graphviz
+kcov-34
 libblas-dev
 libbz2-dev
 libexpat1-dev
