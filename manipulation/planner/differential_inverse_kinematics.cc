@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 
+#include "drake/solvers/scs_solver.h"
+
 namespace drake {
 namespace manipulation {
 namespace planner {
@@ -21,13 +23,8 @@ std::ostream& operator<<(std::ostream& os,
   }
 }
 
-/**
- * X_W1 = X_WErr * X_W0 <=> X_WErr = X_W1 * X_W0.inv()
- * p_err = pose1.translation() - pos0.translation()
- * R_err = pose1.linear() * pose0.linear().transpose().
- */
-Vector6<double> ComputePoseDiffInWorldFrame(const Isometry3<double>& pose0,
-                                            const Isometry3<double>& pose1) {
+Vector6<double> ComputePoseDiffInCommonFrame(const Isometry3<double>& pose0,
+                                             const Isometry3<double>& pose1) {
   Vector6<double> diff = Vector6<double>::Zero();
 
   // Linear.
@@ -39,6 +36,13 @@ Vector6<double> ComputePoseDiffInWorldFrame(const Isometry3<double>& pose0,
 
   return diff;
 }
+
+DifferentialInverseKinematicsParameters::
+    DifferentialInverseKinematicsParameters(int num_positions,
+                                            int num_velocities)
+    : num_positions_(num_positions),
+      num_velocities_(num_velocities),
+      nominal_joint_position_(VectorX<double>::Zero(num_positions)) {}
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const VectorX<double> q_current, const VectorX<double>& v_current,
@@ -87,11 +91,11 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     // used
     // to fullfil the regularization cost.
     const double uncon_v =
-	parameters.get_unconstrained_degrees_of_freedom_velocity_limit().value();
+        parameters.get_unconstrained_degrees_of_freedom_velocity_limit()
+            .value();
     for (int i = num_cart_constraints; i < num_velocities; i++) {
-      prog.AddLinearConstraint(
-          svd.matrixV().col(i).transpose(),
-          -uncon_v, uncon_v, v_next);
+      prog.AddLinearConstraint(svd.matrixV().col(i).transpose(), -uncon_v,
+                               uncon_v, v_next);
     }
   }
 
@@ -127,8 +131,18 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
         v_next);
   }
 
+  // to hongkai:
+  // so if i call prog.solve, it's calling snopt (hmmm), but the solution
+  // appears to be legit. If I force scs call, i get a warning saying 
+  // [2018-01-31 08:25:21.480] [console] [info] SCS returns code 2, with message "SCS solved inaccurate".
+  // and the end result violates a box constraint on v. 
+  // you should be able to reproduce with manipualtion/planner/differential_inverse_kinematics_test
+  //
   // Solve
-  drake::solvers::SolutionResult result = prog.Solve();
+  // drake::solvers::SolutionResult result = prog.Solve();
+  drake::solvers::ScsSolver solver;
+  auto result = solver.Solve(prog);
+  std::cout << prog.GetSolverId().value() << "\n";
 
   if (result != drake::solvers::SolutionResult::kSolutionFound) {
     return {nullopt, DifferentialInverseKinematicsStatus::kNoSolutionFound};
@@ -151,32 +165,22 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const RigidBodyFrame<double>& frame_E,
-    const Vector6<double>& V_WE,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  KinematicsCache<double> cache = robot.doKinematics(q_current, v_current);
-  return DoDifferentialInverseKinematics(robot, cache, frame_E, V_WE,
-                                         parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const RigidBodyFrame<double>& frame_E,
+    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     const Isometry3<double>& X_WE_desired,
+    const RigidBodyFrame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
-  KinematicsCache<double> cache = robot.doKinematics(q_current, v_current);
   const Isometry3<double> X_WE =
       robot.CalcFramePoseInWorldFrame(cache, frame_E);
-  const Vector6<double> V_WE = ComputePoseDiffInWorldFrame(X_WE, X_WE_desired) /
-                               parameters.get_timestep();
-  return DoDifferentialInverseKinematics(robot, cache, frame_E, V_WE,
+  const Vector6<double> V_WE_desired =
+      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
+      parameters.get_timestep();
+  return DoDifferentialInverseKinematics(robot, cache, V_WE_desired, frame_E,
                                          parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const RigidBodyFrame<double>& frame_E, const Vector6<double>& V_WE,
+    const Vector6<double>& V_WE_desired, const RigidBodyFrame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   Eigen::Isometry3d X_WE = robot.CalcFramePoseInWorldFrame(cache, frame_E);
 
@@ -188,7 +192,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   Eigen::MatrixXd J_WE_E =
       R_EW * robot.CalcFrameSpatialVelocityJacobianInWorldFrame(cache, frame_E);
 
-  Vector6<double> V_WE_E = R_EW * V_WE;
+  Vector6<double> V_WE_E = R_EW * V_WE_desired;
 
   Vector6<double> V_WE_E_scaled;
   MatrixX<double> J_WE_E_scaled{6, J_WE_E.cols()};
@@ -209,36 +213,26 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
                                          parameters);
 }
 
-DifferentialInverseKinematicsParameters::
-    DifferentialInverseKinematicsParameters(int num_positions,
-                                            int num_velocities)
-    : num_positions_(num_positions),
-      num_velocities_(num_velocities),
-      nominal_joint_position_(VectorX<double>::Zero(num_positions)) {}
-
-DifferentialInverseKinematics::DifferentialInverseKinematics(
-    std::unique_ptr<RigidBodyTree<double>> robot,
-    const std::string& end_effector_frame_name)
-    : robot_(robot),
-      frame_E_(robot_->findFrame(end_effector_frame_name)),
-      q_current_(robot_->getZeroConfiguration()),
-      v_current_(VectorX<double>::Zero(robot_->get_num_velocities())),
-      V_WE_desired_(Vector6<double>::Zero()),
-      parameters_(robot->get_num_positions(), robot->get_num_velocities()) {
-  parameters_.set_joint_position_limits(
-      {robot_->joint_limit_min, robot_->joint_limit_max});
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
+    const VectorX<double>& v_current, const Vector6<double>& V_WE_desired,
+    const RigidBodyFrame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters) {
+  KinematicsCache<double> cache = robot.doKinematics(q_current, v_current);
+  return DoDifferentialInverseKinematics(robot, cache, V_WE_desired, frame_E,
+                                         parameters);
 }
 
-DifferentialInverseKinematicsResult
-DifferentialInverseKinematics::ComputeJointVelocities(
-    const VectorX<double>& q, const VectorX<double>& v_last,
-    const Vector6<double>& V_WE, double dt) {
-  set_current_joint_position(q);
-  set_current_joint_velocity(v_last);
-  set_desired_end_effector_velocity(V_WE);
-  set_timestep(dt);
-  return Solve();
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
+    const VectorX<double>& v_current, const Isometry3<double>& X_WE_desired,
+    const RigidBodyFrame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters) {
+  KinematicsCache<double> cache = robot.doKinematics(q_current, v_current);
+  return DoDifferentialInverseKinematics(robot, cache, X_WE_desired, frame_E,
+                                         parameters);
 }
+
 }  // namespace planner
 }  // namespace manipulation
 }  // namespace drake

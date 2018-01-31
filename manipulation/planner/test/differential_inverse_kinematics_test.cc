@@ -58,18 +58,12 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         tree_->joint_limit_min, tree_->joint_limit_max};
     std::pair<VectorX<double>, VectorX<double>> v_bounds{
         -get_iiwa_max_joint_velocities(), get_iiwa_max_joint_velocities()};
-    /*
-    std::pair<VectorX<double>, VectorX<double>> vd_bounds{
-        VectorX<double>::Constant(num_velocities, -40),
-        VectorX<double>::Constant(num_velocities, 40)};
-    */
 
     params_->set_nominal_joint_position(tree_->getZeroConfiguration());
     params_->set_unconstrained_degrees_of_freedom_velocity_limit(0.6);
     params_->set_timestep(1e-3);
     params_->set_joint_position_limits(q_bounds);
     params_->set_joint_velocity_limits(v_bounds);
-    // params_->set_joint_acceleration_limits(vd_bounds);
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
@@ -82,34 +76,18 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   auto V_WE = (Vector6<double>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
   const auto& q_bounds = *(params_->get_joint_position_limits());
   const auto& v_bounds = *(params_->get_joint_velocity_limits());
-  // const auto& vd_bounds = *(params_->get_joint_acceleration_limits());
   const auto& q = cache_->getQ();
-  const auto& v = cache_->getV();
   const double dt = params_->get_timestep();
 
   const double velocity_tolerance{1e-7};
 
   DifferentialInverseKinematicsResult function_result =
-      DoDifferentialInverseKinematics(*tree_, *cache_, *frame_E_, V_WE,
+      DoDifferentialInverseKinematics(*tree_, *cache_, V_WE, *frame_E_,
                                       *params_);
   DifferentialInverseKinematicsStatus function_status{function_result.status};
   drake::log()->info("function_status = {}", function_status);
 
-  DifferentialInverseKinematics diff_ik(BuildTree(), kEndEffectorFrameName);
-  diff_ik.set_joint_velocity_limits(v_bounds);
-  // diff_ik.set_joint_acceleration_limits(vd_bounds);
-  diff_ik.set_unconstrained_degrees_of_freedom_velocity_limit(
-      params_->get_unconstrained_degrees_of_freedom_velocity_limit().value());
-  DifferentialInverseKinematicsResult object_result =
-      diff_ik.ComputeJointVelocities(q, v, V_WE, dt);
-
   ASSERT_TRUE(function_result.joint_velocities != nullopt);
-  ASSERT_TRUE(object_result.joint_velocities != nullopt);
-
-  EXPECT_TRUE(CompareMatrices(*object_result.joint_velocities,
-                              *function_result.joint_velocities,
-                              velocity_tolerance));
-
   drake::log()->info("function_result.joint_velocities = {}",
                      function_result.joint_velocities->transpose());
 
@@ -132,15 +110,10 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
               q_bounds.second(i));
     EXPECT_GE((*function_result.joint_velocities)(i), v_bounds.first(i));
     EXPECT_LE((*function_result.joint_velocities)(i), v_bounds.second(i));
-    /*
-    EXPECT_GE((*function_result.joint_velocities)(i)-v(i),
-              dt * vd_bounds.first(i) - velocity_tolerance);
-    EXPECT_LE((*function_result.joint_velocities)(i)-v(i),
-              dt * vd_bounds.second(i) + velocity_tolerance);
-    */
   }
 }
 
+/*
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
   const auto& v_bounds = *(params_->get_joint_velocity_limits());
   const auto& q = cache_->getQ();
@@ -160,8 +133,8 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     params_->set_end_effector_velocity_gain(gain_E);
 
     DifferentialInverseKinematicsResult function_result =
-        DoDifferentialInverseKinematics(*tree_, *cache_, *frame_E_,
-                                        V_WE_desired, *params_);
+        DoDifferentialInverseKinematics(*tree_, *cache_, V_WE_desired,
+                                        *frame_E_, *params_);
     std::cout << function_result.status << "\n";
     ASSERT_TRUE(function_result.joint_velocities != nullopt);
     std::cout << function_result.joint_velocities.value().transpose() << "\n";
@@ -196,6 +169,36 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
   EXPECT_TRUE(CompareMatrices(cache_->getV(), v_desired, 1e-8,
                               MatrixCompareType::absolute));
 }
+
+// Use the solver to track a fixed end effector pose.
+TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
+  Isometry3<double> X_WE_desired, X_WE;
+  X_WE = tree_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
+  X_WE_desired =
+      Eigen::Translation3d(Vector3<double>(-0.02, -0.01, -0.03)) * X_WE;
+
+  VectorX<double> q, v;
+  Vector6<double> V_WE_desired;
+  const double dt = params_->get_timestep();
+  do {
+    X_WE = tree_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
+    V_WE_desired = ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) * 10;
+
+    DifferentialInverseKinematicsResult function_result =
+        DoDifferentialInverseKinematics(*tree_, *cache_, V_WE_desired,
+                                        *frame_E_, *params_);
+
+    EXPECT_EQ(function_result.status,
+              DifferentialInverseKinematicsStatus::kSolutionFound);
+    v = function_result.joint_velocities.value();
+
+    q = cache_->getQ() + v * dt;
+    *cache_ = tree_->doKinematics(q, v);
+  } while (v.norm() > 1e-6);
+  EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
+                              MatrixCompareType::absolute));
+}
+*/
 
 }  // namespace
 }  // namespace planner

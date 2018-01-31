@@ -18,10 +18,10 @@ namespace manipulation {
 namespace planner {
 
 enum class DifferentialInverseKinematicsStatus {
-  kSolutionFound,       ///< Found the optimal solution.
-  kNoSolutionFound,     ///< Solver unable to find a solution.
-  kStuck                ///< Unable to follow the desired velocity direction
-                        /// likely due to constraints.
+  kSolutionFound,    ///< Found the optimal solution.
+  kNoSolutionFound,  ///< Solver unable to find a solution.
+  kStuck             ///< Unable to follow the desired velocity direction
+                     /// likely due to constraints.
 };
 
 std::ostream& operator<<(std::ostream& os,
@@ -32,6 +32,15 @@ struct DifferentialInverseKinematicsResult {
   DifferentialInverseKinematicsStatus status{
       DifferentialInverseKinematicsStatus::kNoSolutionFound};
 };
+
+/**
+ * Computes the pose "difference" between @p pose1 and @p pose0 s.t.
+ * the linear part equals p_C1 - p_C0, and the angular part equals
+ * R_C1 * R_C0.inv(), where p and R stand for the position and rotation parts,
+ * and C is the common frame.
+ */
+Vector6<double> ComputePoseDiffInCommonFrame(const Isometry3<double>& X_C0,
+                                             const Isometry3<double>& X_C1);
 
 /**
  * Contains parameters for differential inverse kinematics.
@@ -67,8 +76,8 @@ class DifferentialInverseKinematicsParameters {
     return gain_E_;
   }
 
-  const optional<double>&
-  get_unconstrained_degrees_of_freedom_velocity_limit() const {
+  const optional<double>& get_unconstrained_degrees_of_freedom_velocity_limit()
+      const {
     return unconstrained_degrees_of_freedom_velocity_limit_;
   }
 
@@ -141,8 +150,8 @@ class DifferentialInverseKinematicsParameters {
       const std::pair<VectorX<double>, VectorX<double>>& q_bounds) {
     DRAKE_THROW_UNLESS(q_bounds.first.size() == get_num_positions());
     DRAKE_THROW_UNLESS(q_bounds.second.size() == get_num_positions());
-    DRAKE_THROW_UNLESS((q_bounds.second.array() >=
-                        q_bounds.first.array()).all());
+    DRAKE_THROW_UNLESS(
+        (q_bounds.second.array() >= q_bounds.first.array()).all());
     q_bounds_ = q_bounds;
   }
 
@@ -158,8 +167,8 @@ class DifferentialInverseKinematicsParameters {
       const std::pair<VectorX<double>, VectorX<double>>& v_bounds) {
     DRAKE_THROW_UNLESS(v_bounds.first.size() == get_num_velocities());
     DRAKE_THROW_UNLESS(v_bounds.second.size() == get_num_velocities());
-    DRAKE_THROW_UNLESS((v_bounds.second.array() >=
-                        v_bounds.first.array()).all());
+    DRAKE_THROW_UNLESS(
+        (v_bounds.second.array() >= v_bounds.first.array()).all());
     v_bounds_ = v_bounds;
   }
 
@@ -175,8 +184,8 @@ class DifferentialInverseKinematicsParameters {
       const std::pair<VectorX<double>, VectorX<double>>& vd_bounds) {
     DRAKE_THROW_UNLESS(vd_bounds.first.size() == get_num_velocities());
     DRAKE_THROW_UNLESS(vd_bounds.second.size() == get_num_velocities());
-    DRAKE_THROW_UNLESS((vd_bounds.second.array() >=
-                        vd_bounds.first.array()).all());
+    DRAKE_THROW_UNLESS(
+        (vd_bounds.second.array() >= vd_bounds.first.array()).all());
     vd_bounds_ = vd_bounds;
   }
   /// @}
@@ -200,110 +209,26 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const RigidBodyFrame<double>& frame_E, const Vector6<double>& V_WE,
+    const Vector6<double>& V_WE_desired, const RigidBodyFrame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const RigidBodyFrame<double>& frame_E,
+    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     const Isometry3<double>& X_WE_desired,
+    const RigidBodyFrame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const RigidBodyFrame<double>& frame_E,
-    const Vector6<double>& V_WE,
+    const VectorX<double>& v_current, const Vector6<double>& V_WE_desired,
+    const RigidBodyFrame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
-class DifferentialInverseKinematics {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DifferentialInverseKinematics);
-
-  DifferentialInverseKinematics(std::unique_ptr<RigidBodyTree<double>> robot,
-                                const std::string& end_effector_frame_name);
-
-  void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
-    parameters_.set_unconstrained_degrees_of_freedom_velocity_limit(limit);
-  }
-
-  const Vector6<double>& get_end_effector_velocity_gain() const {
-    return parameters_.get_end_effector_velocity_gain();
-  }
-
-  void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
-    parameters_.set_end_effector_velocity_gain(gain_E);
-  }
-
-  const optional<std::pair<VectorX<double>, VectorX<double>>>
-  get_joint_position_limits() const {
-    return parameters_.get_joint_position_limits();
-  }
-
-  void set_joint_position_limits(
-      const std::pair<VectorX<double>, VectorX<double>>& q_bounds) {
-    parameters_.set_joint_position_limits(q_bounds);
-  }
-
-  const optional<std::pair<VectorX<double>, VectorX<double>>>&
-  get_joint_velocity_limits() const {
-    return parameters_.get_joint_position_limits();
-  }
-
-  void set_joint_velocity_limits(
-      const std::pair<VectorX<double>, VectorX<double>>& v_bounds) {
-    parameters_.set_joint_velocity_limits(v_bounds);
-  }
-
-  const optional<std::pair<VectorX<double>, VectorX<double>>>&
-  get_joint_acceleration_limits() const {
-    return parameters_.get_joint_position_limits();
-  }
-
-  void set_joint_acceleration_limits(
-      const std::pair<VectorX<double>, VectorX<double>>& vd_bounds) {
-    parameters_.set_joint_acceleration_limits(vd_bounds);
-  }
-
-  void set_current_joint_position(const VectorX<double>& q_current) {
-    DRAKE_ASSERT(q_current.size() == robot_->get_num_positions());
-    q_current_ = q_current;
-  }
-
-  void set_current_joint_velocity(const VectorX<double>& v_current) {
-    DRAKE_ASSERT(v_current.size() == robot_->get_num_velocities());
-    v_current_ = v_current;
-  }
-
-  const Vector6<double>& get_desired_end_effector_velocity() {
-    return V_WE_desired_;
-  }
-
-  void set_desired_end_effector_velocity(
-      const Vector6<double>& desired_end_effector_velocity) {
-    V_WE_desired_ = desired_end_effector_velocity;
-  }
-
-  double get_timestep() const { return parameters_.get_timestep(); }
-
-  void set_timestep(double dt) { parameters_.set_timestep(dt); }
-
-  DifferentialInverseKinematicsResult Solve() const {
-    return DoDifferentialInverseKinematics(
-        *robot_, q_current_, v_current_, *frame_E_, V_WE_desired_, parameters_);
-  }
-
-  DifferentialInverseKinematicsResult ComputeJointVelocities(
-      const VectorX<double>& q, const VectorX<double>& v_last,
-      const Vector6<double>& V_WE, double dt);
-
- private:
-  copyable_unique_ptr<RigidBodyTree<double>> robot_{};
-  std::shared_ptr<RigidBodyFrame<double>> frame_E_{};
-  VectorX<double> q_current_;
-  VectorX<double> v_current_;
-  Vector6<double> V_WE_desired_;
-  DifferentialInverseKinematicsParameters parameters_{};
-};
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
+    const VectorX<double>& v_current, const Isometry3<double>& X_WE_desired,
+    const RigidBodyFrame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters);
 
 }  // namespace planner
 }  // namespace manipulation
