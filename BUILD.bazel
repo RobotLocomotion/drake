@@ -53,6 +53,7 @@ install(
         "//drake/examples:install",
         "//drake/lcmtypes:install",
         "//drake/manipulation/models:install_data",
+        "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
     ]),
