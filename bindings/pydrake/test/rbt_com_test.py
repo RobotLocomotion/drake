@@ -92,9 +92,9 @@ class TestRBTCoM(unittest.TestCase):
         urdf_path = os.path.join(
             pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf")
 
-        tree = pydrake.rbtree.RigidBodyTree(
+        tree = RigidBodyTree(
             urdf_path,
-            floating_base_type=pydrake.rbtree.FloatingBaseType.kFixed)
+            floating_base_type=FloatingBaseType.kFixed)
 
         # "base_part2" should be a single visual element.
         base_part2 = tree.FindBody("base_part2")
