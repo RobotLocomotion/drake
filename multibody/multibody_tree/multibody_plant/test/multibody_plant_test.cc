@@ -181,14 +181,14 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
       0.5, 1.0);                /* joint's angular rates */
   VerifyCalcTimeDerivatives(
-      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0);                /* joint's angular rates */
+      M_PI / 3.0, -M_PI / 5.0,  /* joint's angles */
+      0.7, -1.0);               /* joint's angular rates */
   VerifyCalcTimeDerivatives(
-      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0);                /* joint's angular rates */
+      M_PI / 4.0, -M_PI / 3.0,  /* joint's angles */
+      -0.5, 2.0);               /* joint's angular rates */
   VerifyCalcTimeDerivatives(
-      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0);                /* joint's angular rates */
+      -M_PI, -M_PI / 2.0,       /* joint's angles */
+      -1.5, -2.5);              /* joint's angular rates */
 }
 
 }  // namespace
