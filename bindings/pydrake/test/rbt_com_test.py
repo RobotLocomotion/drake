@@ -91,6 +91,10 @@ class TestRBTCoM(unittest.TestCase):
         assert_sane(friction_torques, nonzero=False)
 
     def testRigidBodyGeometry(self):
+        # TODO(gizatt) This test is excessive for a RBT-focused binding
+        # test -- much of the functionality being tested ought to be split
+        # with `multibody/test/shapes_test.py` or trusted to be tested
+        # in C++.
         urdf_path = os.path.join(
             pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf")
 
@@ -111,14 +115,14 @@ class TestRBTCoM(unittest.TestCase):
         white_material = np.array([1., 1., 1., 1.])
 
         self.assertTrue(np.allclose(sphere_visual_element.getMaterial(),
-                        green_material, atol=1e-4))
+                        green_material))
         sphere_visual_element.setMaterial(white_material)
         self.assertTrue(np.allclose(sphere_visual_element.getMaterial(),
-                        white_material, atol=1e-4))
+                        white_material))
 
         # We expect this link TF should to have positive z-component...
         local_tf = sphere_visual_element.getLocalTransform()
-        self.assertAlmostEqual(local_tf[2, 3], 0.015, delta=1E-4)
+        self.assertAlmostEqual(local_tf[2, 3], 0.015)
 
         # ... as well as sphere geometry.
         self.assertTrue(sphere_visual_element.hasGeometry())
