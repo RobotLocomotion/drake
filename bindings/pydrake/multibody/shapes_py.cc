@@ -57,9 +57,9 @@ PYBIND11_MODULE(shapes, m) {
   py::class_<Mesh, Geometry>(m, "Mesh")
     .def(py::init<const std::string&, const std::string&>(),
          py::arg("uri"), py::arg("resolved_filename"))
-    .def_readonly("scale_", &Mesh::scale_)
-    .def_readonly("uri_", &Mesh::uri_)
-    .def_readonly("resolved_filename_", &Mesh::resolved_filename_);
+    .def_readonly("scale", &Mesh::scale_)
+    .def_readonly("uri", &Mesh::uri_)
+    .def_readonly("resolved_filename", &Mesh::resolved_filename_);
   py::class_<MeshPoints, Geometry>(m, "MeshPoints")
     .def(py::init<const Eigen::Matrix3Xd&>(),
          py::arg("points"));

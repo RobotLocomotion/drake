@@ -41,9 +41,9 @@ class TestShapes(unittest.TestCase):
             getDrakePath(), "examples/quadrotor/quadrotor_base.obj")
         obj_mesh_uri = "box_obj"
         mesh = shapes.Mesh(uri=obj_mesh_uri, resolved_filename=obj_mesh_path)
-        self.assertTrue(np.allclose(mesh.scale_, [1., 1., 1.]))
-        self.assertEqual(mesh.uri_, obj_mesh_uri)
-        self.assertEqual(mesh.resolved_filename_, obj_mesh_path)
+        self.assertTrue(np.allclose(mesh.scale, [1., 1., 1.]))
+        self.assertEqual(mesh.uri, obj_mesh_uri)
+        self.assertEqual(mesh.resolved_filename, obj_mesh_path)
 
 
 if __name__ == '__main__':
