@@ -18,9 +18,10 @@ namespace manipulation {
 namespace planner {
 
 enum class DifferentialInverseKinematicsStatus {
-  kSolutionFound,
-  kNoSolutionFound,
-  kStuck
+  kSolutionFound,       ///< Found the optimal solution.
+  kNoSolutionFound,     ///< Solver unable to find a solution.
+  kStuck                ///< Unable to follow the desired velocity direction
+                        /// likely due to constraints.
 };
 
 std::ostream& operator<<(std::ostream& os,
@@ -32,40 +33,43 @@ struct DifferentialInverseKinematicsResult {
       DifferentialInverseKinematicsStatus::kNoSolutionFound};
 };
 
+/**
+ * Contains parameters for differential inverse kinematics.
+ */
 class DifferentialInverseKinematicsParameters {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
       DifferentialInverseKinematicsParameters);
 
+  /**
+   * Constructor. Initializes the nominal joint position to zeros of size
+   * @p num_positions. Timestep is initialized to 1. The end effector gains are
+   * initialized to ones. All position and velocity gains are initialized to
+   * none.
+   * @param num_positions Number of generalized positions.
+   * @param num_velocities Number of generalized velocities.
+   */
   DifferentialInverseKinematicsParameters(int num_positions = 0,
                                           int num_velocities = 0);
+  /// @name Getters.
+  /// @{
+  double get_timestep() const { return dt_; }
 
-  double get_unconstrained_degrees_of_freedom_velocity_limit() const {
-    return unconstrained_degrees_of_freedom_velocity_limit_;
-  }
+  int get_num_positions() const { return num_positions_; }
 
-  void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
-    unconstrained_degrees_of_freedom_velocity_limit_ = limit;
-  }
+  int get_num_velocities() const { return num_velocities_; }
 
   const VectorX<double>& get_nominal_joint_position() const {
     return nominal_joint_position_;
-  }
-
-  void set_nominal_joint_position(
-      const VectorX<double>& nominal_joint_position) {
-    DRAKE_THROW_UNLESS(nominal_joint_position.size() == get_num_positions());
-    nominal_joint_position_ = nominal_joint_position;
   }
 
   const Vector6<double>& get_end_effector_velocity_gain() const {
     return gain_E_;
   }
 
-  void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
-    DRAKE_THROW_UNLESS((gain_E.array() >= 0).all() &&
-                       (gain_E.array() <= 1).all());
-    gain_E_ = gain_E;
+  const optional<double>&
+  get_unconstrained_degrees_of_freedom_velocity_limit() const {
+    return unconstrained_degrees_of_freedom_velocity_limit_;
   }
 
   const optional<std::pair<VectorX<double>, VectorX<double>>>&
@@ -73,50 +77,109 @@ class DifferentialInverseKinematicsParameters {
     return q_bounds_;
   }
 
-  void set_joint_position_limits(
-      const std::pair<VectorX<double>, VectorX<double>>& q_bounds) {
-    DRAKE_DEMAND(q_bounds.first.size() == get_num_positions());
-    DRAKE_DEMAND(q_bounds.second.size() == get_num_positions());
-    DRAKE_DEMAND((q_bounds.second.array() >= q_bounds.first.array()).all());
-    q_bounds_ = q_bounds;
-  }
-
   const optional<std::pair<VectorX<double>, VectorX<double>>>&
   get_joint_velocity_limits() const {
     return v_bounds_;
-  }
-
-  void set_joint_velocity_limits(
-      const std::pair<VectorX<double>, VectorX<double>>& v_bounds) {
-    DRAKE_DEMAND(v_bounds.first.size() == get_num_velocities());
-    DRAKE_DEMAND(v_bounds.second.size() == get_num_velocities());
-    DRAKE_DEMAND((v_bounds.second.array() >= v_bounds.first.array()).all());
-    v_bounds_ = v_bounds;
   }
 
   const optional<std::pair<VectorX<double>, VectorX<double>>>&
   get_joint_acceleration_limits() const {
     return vd_bounds_;
   }
+  /// @}
 
-  void set_joint_acceleration_limits(
-      const std::pair<VectorX<double>, VectorX<double>>& vd_bounds) {
-    DRAKE_DEMAND(vd_bounds.first.size() == get_num_velocities());
-    DRAKE_DEMAND(vd_bounds.second.size() == get_num_velocities());
-    DRAKE_DEMAND((vd_bounds.second.array() >= vd_bounds.first.array()).all());
-    vd_bounds_ = vd_bounds;
-  }
-
-  double get_timestep() const { return dt_; }
-
+  /// @name Setters.
+  /// @{
+  /**
+   * Sets timestep to @p dt.
+   * @throws if dt <= 0.
+   */
   void set_timestep(double dt) {
-    DRAKE_ASSERT(dt > 0);
+    DRAKE_THROW_UNLESS(dt > 0);
     dt_ = dt;
   }
 
-  int get_num_positions() const { return num_positions_; }
+  /**
+   * Sets the max magnitude of the velocity in the unconstrained degree of
+   * freedom to @p limit.
+   * @throws if limit < 0.
+   */
+  void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
+    DRAKE_THROW_UNLESS(limit >= 0);
+    unconstrained_degrees_of_freedom_velocity_limit_ = limit;
+  }
 
-  int get_num_velocities() const { return num_velocities_; }
+  /**
+   * Sets the nominal joint position.
+   * @throws if @p nominal_joint_position's dimension differs.
+   */
+  void set_nominal_joint_position(
+      const VectorX<double>& nominal_joint_position) {
+    DRAKE_THROW_UNLESS(nominal_joint_position.size() == get_num_positions());
+    nominal_joint_position_ = nominal_joint_position;
+  }
+
+  /**
+   * Sets the end effector gains in the body frame.
+   * @throws if any element of @p gain_E is larger than 1 or smaller than 0.
+   */
+  void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
+    DRAKE_THROW_UNLESS((gain_E.array() >= 0).all() &&
+                       (gain_E.array() <= 1).all());
+    gain_E_ = gain_E;
+  }
+
+  /**
+   * Sets the joint position limits.
+   * @param q_bounds The first element is the lower bound, and the second is
+   * the upper bound.
+   * @throws if the first or second element of @p q_bounds has the wrong
+   * dimension or any element of the second element is smaller than its
+   * corresponding part in the first element.
+   */
+  void set_joint_position_limits(
+      const std::pair<VectorX<double>, VectorX<double>>& q_bounds) {
+    DRAKE_THROW_UNLESS(q_bounds.first.size() == get_num_positions());
+    DRAKE_THROW_UNLESS(q_bounds.second.size() == get_num_positions());
+    DRAKE_THROW_UNLESS((q_bounds.second.array() >=
+                        q_bounds.first.array()).all());
+    q_bounds_ = q_bounds;
+  }
+
+  /**
+   * Sets the joint velocity limits.
+   * @param q_bounds The first element is the lower bound, and the second is
+   * the upper bound.
+   * @throws if the first or second element of @p q_bounds has the wrong
+   * dimension or any element of the second element is smaller than its
+   * corresponding part in the first element.
+   */
+  void set_joint_velocity_limits(
+      const std::pair<VectorX<double>, VectorX<double>>& v_bounds) {
+    DRAKE_THROW_UNLESS(v_bounds.first.size() == get_num_velocities());
+    DRAKE_THROW_UNLESS(v_bounds.second.size() == get_num_velocities());
+    DRAKE_THROW_UNLESS((v_bounds.second.array() >=
+                        v_bounds.first.array()).all());
+    v_bounds_ = v_bounds;
+  }
+
+  /**
+   * Sets the joint acceleration limits.
+   * @param q_bounds The first element is the lower bound, and the second is
+   * the upper bound.
+   * @throws if the first or second element of @p q_bounds has the wrong
+   * dimension or any element of the second element is smaller than its
+   * corresponding part in the first element.
+   */
+  void set_joint_acceleration_limits(
+      const std::pair<VectorX<double>, VectorX<double>>& vd_bounds) {
+    DRAKE_THROW_UNLESS(vd_bounds.first.size() == get_num_velocities());
+    DRAKE_THROW_UNLESS(vd_bounds.second.size() == get_num_velocities());
+    DRAKE_THROW_UNLESS((vd_bounds.second.array() >=
+                        vd_bounds.first.array()).all());
+    vd_bounds_ = vd_bounds;
+  }
+  /// @}
 
  private:
   int num_positions_{0};
@@ -125,8 +188,7 @@ class DifferentialInverseKinematicsParameters {
   optional<std::pair<VectorX<double>, VectorX<double>>> q_bounds_{};
   optional<std::pair<VectorX<double>, VectorX<double>>> v_bounds_{};
   optional<std::pair<VectorX<double>, VectorX<double>>> vd_bounds_{};
-  double unconstrained_degrees_of_freedom_velocity_limit_{
-      std::numeric_limits<double>::infinity()};
+  optional<double> unconstrained_degrees_of_freedom_velocity_limit_{};
   Vector6<double> gain_E_{Vector6<double>::Ones()};
   double dt_{1};
 };

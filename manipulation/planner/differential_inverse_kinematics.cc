@@ -64,10 +64,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   // Add ee vel constraint.
   const solvers::QuadraticCost* cart_cost = nullptr;
 
-  if (num_cart_constraints > 0) {
+  if (num_cart_constraints > 0 &&
+      parameters.get_unconstrained_degrees_of_freedom_velocity_limit()) {
     VectorX<double> V_dir = V.normalized();
     double V_mag = V.norm();
-    std::cout << "V_mag: " << V_mag << "\n";
 
     // Constrain the end effector motion to be in the direction of V_WE_E_dir,
     // and penalize magnitude difference from V_WE_E_mag.
@@ -86,12 +86,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     // Add constrained the unconstrained dof's velocity to be small, which is
     // used
     // to fullfil the regularization cost.
+    const double uncon_v =
+	parameters.get_unconstrained_degrees_of_freedom_velocity_limit().value();
     for (int i = num_cart_constraints; i < num_velocities; i++) {
       prog.AddLinearConstraint(
           svd.matrixV().col(i).transpose(),
-          -parameters.get_unconstrained_degrees_of_freedom_velocity_limit(),
-          parameters.get_unconstrained_degrees_of_freedom_velocity_limit(),
-          v_next);
+          -uncon_v, uncon_v, v_next);
     }
   }
 

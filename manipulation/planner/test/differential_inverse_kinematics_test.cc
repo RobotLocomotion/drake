@@ -99,7 +99,7 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   diff_ik.set_joint_velocity_limits(v_bounds);
   // diff_ik.set_joint_acceleration_limits(vd_bounds);
   diff_ik.set_unconstrained_degrees_of_freedom_velocity_limit(
-      params_->get_unconstrained_degrees_of_freedom_velocity_limit());
+      params_->get_unconstrained_degrees_of_freedom_velocity_limit().value());
   DifferentialInverseKinematicsResult object_result =
       diff_ik.ComputeJointVelocities(q, v, V_WE, dt);
 
