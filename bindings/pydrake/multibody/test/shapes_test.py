@@ -3,8 +3,8 @@ import unittest
 
 import numpy as np
 
-from pydrake import getDrakePath
-import pydrake.multibody.shapes as shapes
+import pydrake
+from pydrake.multibody import shapes
 
 
 class TestShapes(unittest.TestCase):

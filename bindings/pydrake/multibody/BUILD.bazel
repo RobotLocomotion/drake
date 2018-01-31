@@ -44,6 +44,7 @@ drake_pybind_library(
     cc_srcs = ["rigid_body_plant_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":module_py",
         "//bindings/pydrake:rbtree_py",
         "//bindings/pydrake/systems:framework_py",
     ],
@@ -54,6 +55,9 @@ drake_pybind_library(
     cc_so_name = "shapes",
     cc_srcs = ["shapes_py.cc"],
     package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
 )
 
 drake_py_library(
