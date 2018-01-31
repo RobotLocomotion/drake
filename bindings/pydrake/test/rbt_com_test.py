@@ -60,14 +60,16 @@ class TestRBTCoM(unittest.TestCase):
                 self.assertTrue(np.any(x != 0))
 
         num_q = num_v = 7
+        num_u = r.get_num_actuators()
+        self.assertEquals(num_u, 1)
         q = np.zeros(num_q)
         v = np.zeros(num_v)
         # Update kinematics.
         kinsol = r.doKinematics(q, v)
         # Sanity checks:
         # - Actuator map.
-        self.assertEquals(r.B.shape, (num_v, 1))
-        B_expected = np.zeros((num_v, 1))
+        self.assertEquals(r.B.shape, (num_v, num_u))
+        B_expected = np.zeros((num_v, num_u))
         B_expected[-1] = 1
         self.assertTrue(np.allclose(r.B, B_expected))
         # - Mass matrix.
