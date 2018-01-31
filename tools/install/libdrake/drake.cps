@@ -80,7 +80,7 @@
         "ignition-math4:ignition-math4",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
-        "optitrack:lcmtypes_optitrack-cpp",
+        "optitrack:optitrack-lcmtypes-cpp",
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
