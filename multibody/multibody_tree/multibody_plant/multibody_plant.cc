@@ -103,7 +103,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   vdot = M.ldlt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-  VectorX<T> xdot(this->num_states());
+  VectorX<T> xdot(this->num_multibody_states());
   VectorX<T> qdot(this->num_positions());
   model_->MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;

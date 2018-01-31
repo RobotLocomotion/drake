@@ -50,7 +50,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // State size.
   EXPECT_EQ(plant->num_positions(), 2);
   EXPECT_EQ(plant->num_velocities(), 2);
-  EXPECT_EQ(plant->num_states(), 4);
+  EXPECT_EQ(plant->num_multibody_states(), 4);
 
   // Query if elements exist in the model.
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link1_name()));

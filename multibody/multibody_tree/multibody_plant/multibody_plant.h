@@ -44,8 +44,8 @@ namespace multibody_plant {
 /// time and u the input vector of actuation forces. The governing equations for
 /// the dynamics of a multibody system modeled with %MultibodyPlant are
 /// [Featherstone 2008, Jain 2010]: <pre>
-///   q̇ = N(q)v
-///   M(q)v̇ + C(q, v)v = tau                                                (1)
+///          q̇ = N(q)v
+///   (1)    M(q)v̇ + C(q, v)v = tau
 /// </pre>
 /// where `M(q)` is the mass matrix of the multibody system, `C(q, v)v`
 /// corresponds to the bias term containing Coriolis and gyroscopic effects and
@@ -143,7 +143,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Notice however that the state of a %MultibodyPlant, stored in its Context,
   /// can actually contain other variables such as integrated power and discrete
   /// states.
-  int num_states() const { return model_->get_num_states(); }
+  int num_multibody_states() const { return model_->get_num_states(); }
 
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
@@ -252,8 +252,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
-  /// @throws a std::runtime_error if `this` model already contains a joint with
-  /// the given `name`. See HasJointNamed(), Joint::get_name().
+  /// @throws if `this` model already contains a joint with the given `name`.
+  /// See HasJointNamed(), Joint::get_name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
@@ -293,7 +293,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  /// @name Querying multibody elements by name
+  /// @name Querying for multibody elements by name
   /// These methods allow a user to query whether a given multibody element is
   /// part of this plant's model. These queries can be performed at any time
   /// during the lifetime of a %MultibodyPlant model, i.e. there is no
