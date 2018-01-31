@@ -111,8 +111,8 @@ class TestCustom(unittest.TestCase):
         simulator.Initialize()
         simulator.StepTo(1)
         # Ensure that we have the outputs we want.
-        state = diagram.GetMutableSubsystemState(zoh, context)
-        value = state.get_discrete_state().get_data()[0].get_value()
+        value = (diagram.GetMutableSubsystemContext(zoh, context)
+                 .get_discrete_state_vector().get_value())
         self.assertTrue(np.allclose([5, 7, 9], value))
 
     def test_leaf_system_overrides(self):
@@ -156,12 +156,10 @@ class TestCustom(unittest.TestCase):
 
             # Check values.
             state = context.get_state()
-            state_type = (
-                is_discrete and state.get_discrete_state()
-                or state.get_continuous_state())
+            x = (is_discrete and state.get_discrete_state()
+                 or state.get_continuous_state()).get_vector().get_value()
 
             x0 = [0., 0.]
-            x = state_type.get_vector().get_value()
             c = is_discrete and 2 or 1*dt
             x_expected = x0 + c*u
             self.assertTrue(np.allclose(x, x_expected))
