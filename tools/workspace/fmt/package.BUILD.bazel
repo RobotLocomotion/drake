@@ -18,19 +18,21 @@ cc_library(
     includes = ["."],
 )
 
+CMAKE_PACKAGE = "fmt"
+
 cmake_config(
-    package = "fmt",
+    package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/fmt:package-create-cps.py",
     version_file = "CMakeLists.txt",
 )
 
-install_cmake_config(package = "fmt")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
     targets = [":fmt"],
-    hdr_dest = "include/fmt",
-    hdr_strip_prefix = ["fmt"],
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE.rst"],
     deps = [":install_cmake_config"],

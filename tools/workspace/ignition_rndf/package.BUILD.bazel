@@ -176,6 +176,7 @@ install(
     workspace = CMAKE_PACKAGE,
     targets = [":libignition_rndf.so"],
     hdrs = public_headers,
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",

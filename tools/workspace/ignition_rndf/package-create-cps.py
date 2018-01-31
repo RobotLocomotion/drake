@@ -18,16 +18,16 @@ content = """
     "ignition-math4": {
       "Version": "%(ignition-math4_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/ignition-math4"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
-  "Default-Components": [ ":ignition-rndf0" ],
+  "Default-Components": [":ignition-rndf0"],
   "Components": {
     "ignition-rndf0": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libignition_rndf.so",
-      "Includes": [ "@prefix@/include" ],
-      "Requires": [ "ignition-math4:ignition-math4" ]
+      "Includes": ["@prefix@/include/ignition-rndf0"],
+      "Requires": ["ignition-math4:ignition-math4"]
     }
   }
 }
