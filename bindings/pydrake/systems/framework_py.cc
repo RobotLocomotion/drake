@@ -272,6 +272,23 @@ PYBIND11_MODULE(framework, m) {
     .def("__copy__", &Context<T>::Clone)
     .def("get_state", &Context<T>::get_state, py_reference_internal)
     .def("get_mutable_state", &Context<T>::get_mutable_state,
+         py_reference_internal)
+    // Sugar methods
+    // - Continuous.
+    .def("get_continuous_state_vector",
+         &Context<T>::get_continuous_state_vector,
+         py_reference_internal)
+    .def("get_mutable_continuous_state_vector",
+         &Context<T>::get_mutable_continuous_state_vector,
+         py_reference_internal)
+    // - Discrete.
+    .def("get_discrete_state_vector",
+         &Context<T>::get_discrete_state_vector,
+         py_reference_internal)
+    .def("get_mutable_discrete_state_vector",
+         [](Context<T>* self) -> auto& {
+           return self->get_mutable_discrete_state().get_mutable_vector();
+         },
          py_reference_internal);
 
   py::class_<LeafContext<T>, Context<T>>(m, "LeafContext");
@@ -279,10 +296,16 @@ PYBIND11_MODULE(framework, m) {
   py::class_<Diagram<T>, System<T>>(m, "Diagram")
     .def("GetMutableSubsystemState",
         [](Diagram<T>* self, const System<T>& arg1, Context<T>* arg2)
-        -> auto&& {
-          // @note Use `auto&&` to get perfect forwarding.
+        -> auto& {
           // @note Compiler does not like `py::overload_cast` with this setup?
           return self->GetMutableSubsystemState(arg1, arg2);
+        }, py_reference,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+        py::keep_alive<0, 3>())
+    .def("GetMutableSubsystemContext",
+        [](Diagram<T>* self, const System<T>& arg1, Context<T>* arg2)
+        -> auto&& {
+          return self->GetMutableSubsystemContext(arg1, arg2);
         }, py_reference,
         // Keep alive, ownership: `return` keeps `Context` alive.
         py::keep_alive<0, 3>());
