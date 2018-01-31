@@ -39,6 +39,8 @@ using systems::LeafSystem;
 using systems::Context;
 using systems::VectorSystem;
 using systems::PublishEvent;
+using systems::DiscreteUpdateEvent;
+using systems::DiscreteValues;
 
 class PySystem : public py::wrapper<System<T>> {
  public:
@@ -59,11 +61,13 @@ class LeafSystemPublic : public LeafSystem<T> {
   // (LeafSystemPublic::*)(...), since this typeid is not exposed in pybind.
   // If needed, solution is to expose it as an intermediate type if needed.
 
-  // Expose protected methods for binding.
+  // Expose protected methods for binding, no need for virtual overrides
+  // (ordered by how they are bound).
   using Base::DeclareVectorOutputPort;
   using Base::DeclarePeriodicPublish;
   using Base::DeclareContinuousState;
   using Base::DeclareDiscreteState;
+  using Base::DeclarePeriodicDiscreteUpdate;
 
   // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
   // this method in `PyLeafSystem`, expose the method here for direct(-ish)
@@ -71,6 +75,7 @@ class LeafSystemPublic : public LeafSystem<T> {
   // (Otherwise, we get an error about inaccessible downcasting when trying to
   // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
   using Base::DoPublish;
+  using Base::DoCalcDiscreteVariableUpdates;
 };
 
 // Provide flexible inheritance to leverage prior binding information, per
@@ -97,6 +102,17 @@ class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
     // If the macro did not return, use default functionality.
     Base::DoPublish(context, events);
   }
+
+  void DoCalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      const std::vector<const DiscreteUpdateEvent<T>*>& events,
+      DiscreteValues<T>* discrete_state) const override {
+    // See `DoPublish` for explanation.
+    PYBIND11_OVERLOAD_INT(
+        void, LeafSystem<T>, "_DoCalcDiscreteVariableUpdates",
+        &context, events, discrete_state);
+    Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+  }
 };
 
 using PyLeafSystem = PyLeafSystemBase<>;
@@ -117,10 +133,21 @@ class VectorSystemPublic : public VectorSystem<T> {
   using Base::DoCalcVectorDiscreteVariableUpdates;
 };
 
-class PyVectorSystem : public PyLeafSystemBase<VectorSystemPublic> {
+class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
  public:
-  using Base = PyLeafSystemBase<VectorSystemPublic>;
+  using Base = py::wrapper<VectorSystemPublic>;
   using Base::Base;
+
+  // Trampoline virtual methods.
+  void DoPublish(
+      const Context<T>& context,
+      const vector<const PublishEvent<T>*>& events) const override {
+    // Copied from above, since we cannot use `PyLeafSystemBase` due to final
+    // overrides.
+    PYBIND11_OVERLOAD_INT(
+        void, LeafSystem<T>, "_DoPublish", &context, events);
+    Base::DoPublish(context, events);
+  }
 
   void DoCalcVectorOutput(
       const Context<T>& context,
@@ -235,7 +262,7 @@ PYBIND11_MODULE(framework, m) {
           return self->DeclareVectorOutputPort(arg1, wrapped);
         }, py_reference_internal)
     .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
-         py::arg("period"), py::arg("offset") = 0.)
+         py::arg("period_sec"), py::arg("offset_sec") = 0.)
     .def("_DoPublish", &LeafSystemPublic::DoPublish)
     // Continuous state.
     .def("_DeclareContinuousState",
@@ -258,7 +285,12 @@ PYBIND11_MODULE(framework, m) {
          py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
     // Discrete state.
     // TODO(eric.cousineau): Should there be a `BasicVector<>` overload?
-    .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState);
+    .def("_DeclareDiscreteState", &LeafSystemPublic::DeclareDiscreteState)
+    .def("_DeclarePeriodicDiscreteUpdate",
+         &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
+         py::arg("period_sec"), py::arg("offset_sec") = 0.)
+    .def("_DoCalcDiscreteVariableUpdates",
+         &LeafSystemPublic::DoCalcDiscreteVariableUpdates);
 
   py::class_<Context<T>>(m, "Context")
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
@@ -313,6 +345,7 @@ PYBIND11_MODULE(framework, m) {
   // Event mechanisms.
   py::class_<Event<T>>(m, "Event");
   py::class_<PublishEvent<T>, Event<T>>(m, "PublishEvent");
+  py::class_<DiscreteUpdateEvent<T>, Event<T>>(m, "DiscreteUpdateEvent");
 
   // Glue mechanisms.
   py::class_<DiagramBuilder<T>>(m, "DiagramBuilder")

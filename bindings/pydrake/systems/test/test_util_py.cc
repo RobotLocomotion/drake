@@ -64,19 +64,37 @@ PYBIND11_MODULE(test_util, m) {
 
   // Call overrides to ensure a custom Python class can override these methods.
 
-  m.def("call_leaf_system_overrides", [](const LeafSystem<T>& system) {
-    auto context = system.AllocateContext();
-    // Call `Publish` to test `DoPublish`.
-    auto events =
-        LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-    system.Publish(*context, *events);
-  });
-
   auto clone_vector = [](const VectorBase<T>& vector) {
     auto copy = std::make_unique<BasicVector<T>>(vector.size());
     copy->SetFrom(vector);
     return copy;
   };
+
+  m.def("call_leaf_system_overrides", [clone_vector](
+      const LeafSystem<T>& system) {
+    py::dict results;
+    auto context = system.AllocateContext();
+    {
+      // Call `Publish` to test `DoPublish`.
+      auto events =
+          LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+      system.Publish(*context, *events);
+    }
+    {
+      // Call `CalcDiscreteVariableUpdates` to test
+      // `DoCalcDiscreteVariableUpdates`.
+      auto& state = context->get_mutable_discrete_state();
+      DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
+      system.CalcDiscreteVariableUpdates(*context, &state_copy);
+
+      // From t=0, return next update time for testing discrete time.
+      // If there is an abstract / unrestricted update, this assumes that
+      // `dt_discrete < dt_abstract`.
+      systems::LeafCompositeEventCollection<double> events;
+      results["discrete_next_t"] = system.CalcNextUpdateTime(*context, &events);
+    }
+    return results;
+  });
 
   m.def("call_vector_system_overrides", [clone_vector](
       const VectorSystem<T>& system, Context<T>* context,

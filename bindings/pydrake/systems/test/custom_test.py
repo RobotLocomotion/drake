@@ -121,21 +121,34 @@ class TestCustom(unittest.TestCase):
             def __init__(self):
                 LeafSystem.__init__(self)
                 self.called_publish = False
+                self.called_discrete = False
                 # Ensure we have desired overloads.
                 self._DeclarePeriodicPublish(0.1)
                 self._DeclarePeriodicPublish(0.1, 0)
                 self._DeclarePeriodicPublish(period_sec=0.1, offset_sec=0.)
+                self._DeclarePeriodicDiscreteUpdate(
+                    period_sec=0.1, offset_sec=0.)
+                self._DeclareDiscreteState(1)
 
             def _DoPublish(self, context, events):
-                # Call base `DoPublish` to ensure that we do not get
-                # recursion.
+                # Call base method to ensure we do not get recursion.
                 LeafSystem._DoPublish(self, context, events)
                 self.called_publish = True
 
+            def _DoCalcDiscreteVariableUpdates(
+                    self, context, events, discrete_state):
+                # Call base method to ensure we do not get recursion.
+                LeafSystem._DoCalcDiscreteVariableUpdates(
+                    self, context, events, discrete_state)
+                self.called_discrete = True
+
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
-        call_leaf_system_overrides(system)
+        self.assertFalse(system.called_discrete)
+        results = call_leaf_system_overrides(system)
         self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_discrete)
+        self.assertEquals(results["discrete_next_t"], 0.1)
 
     def test_vector_system_overrides(self):
         dt = 0.5
