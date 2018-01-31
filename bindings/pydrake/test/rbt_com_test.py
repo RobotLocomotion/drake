@@ -90,10 +90,11 @@ class TestRBTCoM(unittest.TestCase):
 
     def testRigidBodyGeometry(self):
         urdf_path = os.path.join(
-            getDrakePath(), "examples/pendulum/Pendulum.urdf")
+            pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf")
 
-        tree = RigidBodyTree(
-            urdf_path, floating_base_type=FloatingBaseType.kFixed)
+        tree = pydrake.rbtree.RigidBodyTree(
+            urdf_path,
+            floating_base_type=pydrake.rbtree.FloatingBaseType.kFixed)
 
         # base_part2 should be a single visual element
         base_part2 = tree.FindBody("base_part2")
