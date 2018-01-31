@@ -36,15 +36,14 @@ namespace multibody_plant {
 ///   - Unilateral constraints and contact.
 /// @endcond
 ///
-/// The state of a %MultibodyPlant `x = [q; v]` is given by its generalized
-/// positions vector `q ∈ ℝⁿᵖ` and by its generalized velocities vector
-/// `v ∈ ℝⁿᵛ` where `np` is the number of generalized positions (see
-/// num_positions()) and `nv` is the number of generalized velocities (see
-/// num_velocities()). As a Drake System, %MultibodyPlant implements the
-/// governing equations for the multibody dynamical system in the form
-/// `ẋ = f(t, x, u)` with t being the time and u the input vector of actuation
-/// forces. The governing equations for the dynamics of a multibody system
-/// modeled with %MultibodyPlant are [Featherstone 2008, Jain 2010]: <pre>
+/// The state of a multibody system `x = [q; v]` is given by its generalized
+/// positions vector q, of size `nq` (see num_positions()), and by its
+/// generalized velocities vector v, of size `nv` (see num_velocities()).
+/// As a Drake System, %MultibodyPlant implements the governing equations for a
+/// multibody dynamical system in the form `ẋ = f(t, x, u)` with t being the
+/// time and u the input vector of actuation forces. The governing equations for
+/// the dynamics of a multibody system modeled with %MultibodyPlant are
+/// [Featherstone 2008, Jain 2010]: <pre>
 ///   q̇ = N(q)v
 ///   M(q)v̇ + C(q, v)v = tau                                                (1)
 /// </pre>
@@ -52,7 +51,7 @@ namespace multibody_plant {
 /// corresponds to the bias term containing Coriolis and gyroscopic effects and
 /// `N(q)` is the kinematic coupling matrix describing the relationship between
 /// the rate of change of the generalized coordinates and the generalized
-/// velocities, [Seth 2010]. N(q) is an `np x nv` matrix.
+/// velocities, [Seth 2010]. N(q) is an `nq x nv` matrix.
 /// The vector `tau ∈ ℝⁿᵛ` on the right hand side of Eq. (1) corresponds to
 /// generalized forces applied on the system. These can include externally
 /// applied body forces, constraint forces, and contact forces.
@@ -118,7 +117,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   template<typename U>
   explicit MultibodyPlant(const MultibodyPlant<U>& other);
 
-  /// Returns the number of bodies in the model, including the "world" body.
+  /// Returns the number of bodies in the model, including the "world" body,
+  /// which is always part of the model.
   /// @see AddRigidBody().
   int num_bodies() const {
     return model_->get_num_bodies();
@@ -130,16 +130,19 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_num_joints();
   }
 
-  /// Returns the size of the generalized positions vector `q` for `this` model.
+  /// Returns the size of the generalized position vector `q` for `this` model.
   int num_positions() const { return model_->get_num_positions(); }
 
-  /// Returns the size of the generalized velocities vector `v` for `this`
-  /// model.
+  /// Returns the size of the generalized velocity vector `v` for `this` model.
   int num_velocities() const { return model_->get_num_velocities(); }
 
-  /// Returns the size of the state vector `x` for `this` model. This will equal
-  /// the number of generalized positions (num_positions()) plus the number of
-  /// generalized velocities (num_velocities()).
+  /// Returns the size of the multibody system state vector `x = [q; v]` for
+  /// `this` model. This will equal the number of generalized positions
+  /// (see num_positions()) plus the number of generalized velocities
+  /// (see num_velocities()).
+  /// Notice however that the state of a %MultibodyPlant, stored in its Context,
+  /// can actually contain other variables such as integrated power and discrete
+  /// states.
   int num_states() const { return model_->get_num_states(); }
 
   /// @name Adding new multibody elements
@@ -216,7 +219,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   the frame B of that body. `X_BM` is an optional parameter; empty curly
   ///   braces `{}` imply that frame M **is** the same body frame B. If instead
   ///   your intention is to make a frame M with pose `X_BM` equal to the
-  ///   idenetity pose, provide `Isometry3<double>::Identity()` as your input.
+  ///   identity pose, provide `Isometry3<double>::Identity()` as your input.
   /// @param[in] args
   ///   Zero or more parameters provided to the constructor of the new joint. It
   ///   must be the case that
@@ -249,6 +252,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
+  /// @throws a std::runtime_error if `this` model already contains a joint with
+  /// the given `name`. See HasJointNamed(), Joint::get_name().
+  ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
   template<template<typename> class JointType, typename... Args>
@@ -257,6 +263,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
     DRAKE_THROW_UNLESS(!HasJointNamed(name));
     const JointType<T>& joint = model_->template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
@@ -285,7 +293,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  /// @name Quering if a multibody element is part of the model
+  /// @name Querying multibody elements by name
   /// These methods allow a user to query whether a given multibody element is
   /// part of this plant's model. These queries can be performed at any time
   /// during the lifetime of a %MultibodyPlant model, i.e. there is no
@@ -308,13 +316,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @}
 
   /// @name Retrieving multibody elements by name
-  /// These methods allow a user to retrieve a reference to given multibody
-  /// element by name. A std::logic_error is thrown if there is no element with
-  /// the requested name.
+  /// These methods allow a user to retrieve a reference to a multibody element
+  /// by its name. A std::logic_error is thrown if there is no element with the
+  /// requested name.
   /// These queries can be performed at any time during the lifetime of a
   /// %MultibodyPlant model, i.e. there is no restriction on whether they must
-  /// be called before or after Finalize(). That is, these queries can be
-  /// performed while new multibody elements are being added to the model.
+  /// be called before or after Finalize(). This implies that these queries can
+  /// be performed while new multibody elements are being added to the model.
   /// @{
 
   /// Returns a constant reference to the rigid body that is uniquely identified

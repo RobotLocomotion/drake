@@ -58,7 +58,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
           context.get_continuous_state_vector()).get_value();
   const int nv = this->num_velocities();
 
-  // Allocate workspace. We might want to cash these to avoid allocations.
+  // Allocate workspace. We might want to cache these to avoid allocations.
   // Mass matrix.
   MatrixX<T> M(nv, nv);
   // Forces.
