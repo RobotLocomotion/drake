@@ -92,7 +92,43 @@ zlib1g-dev
 EOF
 )
 
+dpkg_install_from_wget() {
+  package="$1"
+  version="$2"
+  url="$3"
+  checksum="$4"
 
+  # Skip the install if we're already at the exact version.
+  installed=$(dpkg-query --showformat='${Version}\n' --show "${package}" 2>/dev/null || true)
+  if [[ "${installed}" == "${version}" ]]; then
+    echo "${package} is already at the desired version ${version}"
+    return
+  fi
+
+  # If installing our desired version would be a downgrade, ask the user first.
+  if dpkg --compare-versions "${installed}" gt "${version}"; then
+    echo "This system has ${package} version ${installed} installed."
+    echo "Drake suggests downgrading to version ${version}, our supported version."
+    read -r -p 'Do you want to downgrade? [Y/n] ' reply
+    if [[ ! "${reply}" =~ ^([yY][eE][sS]|[yY])*$ ]]; then
+      echo "Skipping ${package} ${version} installation."
+      return
+    fi
+  fi
+
+  # Download and verify.
+  tmpdeb="/tmp/${package}_${version}-amd64.deb"
+  wget -O "${tmpdeb}" "${url}"
+  if echo "${checksum} ${tmpdeb}" | sha256sum -c -; then
+    echo  # Blank line between checkout output and dpkg output.
+  else
+    die "The ${package} deb does not have the expected SHA256.  Not installing."
+  fi
+
+  # Install.
+  dpkg -i "${tmpdeb}"
+  rm "${tmpdeb}"
+}
 
 # Install Bazel.
 dpkg_install_from_wget \
