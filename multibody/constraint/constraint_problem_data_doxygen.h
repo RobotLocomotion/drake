@@ -61,13 +61,14 @@ further in @ref constraint_types.
 
 Constraints can be categorized as either bilateral or unilateral, which
 roughly can be translated to equality (e.g., c(q) = 0) or inequality
-constraints (e.g., c(q) ≥ 0). The former can be realized through the
+constraints (e.g., c(q) ≥ 0). Although the former can be realized through the
 latter using a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
 the constraint problem structure distinguishes the two types to maximize
 computational efficiency in the solution algorithms. It is assumed throughout
 this documentation that c(.) is a vector function. In general, the constraint
-functions do not maintain consistent units: the units of the iᵗʰ dimension of
-c(.) are not necessarily equivalent to the units of the jᵗʰ dimension of c(.).
+functions do not maintain consistent units: the units of the iᵗʰ constraint
+function are not necessarily equivalent to the units of the jᵗʰ dimension of
+c(.).
 
 Constraints may be posed at the position level:<pre>
 c(t;q)
@@ -79,7 +80,7 @@ or at the acceleration level:<pre>
 c(t,q,v;v̇,λ)
 </pre>
 where λ is a vector of *constraint-space forces*. Note the semicolon in these
-definitions, which separates general constraint dependencies (t,q,v) from
+definitions separates general constraint dependencies (t,q,v) from
 variables that must be determined using the constraints (v̇,λ). *The three
 constraint equations listed above can then be categorized as having
 position-level unknowns, velocity-level unknowns, or acceleration-level
