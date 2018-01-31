@@ -200,6 +200,41 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
 }
 */
 
+// Test various throw conditions.
+GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {
+  DifferentialInverseKinematicsParameters dut(1, 1);
+
+  EXPECT_THROW(dut.set_timestep(0), std::exception);
+  EXPECT_THROW(dut.set_timestep(-1), std::exception);
+  EXPECT_THROW(dut.set_unconstrained_degrees_of_freedom_velocity_limit(-0.1),
+               std::exception);
+
+  EXPECT_THROW(dut.set_nominal_joint_position(VectorX<double>(2)),
+               std::exception);
+
+  Vector6<double> gain;
+  gain << 1, 2, 3, -4, 5, 6;
+  EXPECT_THROW(dut.set_end_effector_velocity_gain(gain),
+               std::exception);
+
+  VectorX<double> l = VectorX<double>::Constant(1, 2);
+  VectorX<double> h = VectorX<double>::Constant(1, -2);
+
+  EXPECT_THROW(dut.set_joint_position_limits({l, h}),
+               std::exception);
+  EXPECT_THROW(dut.set_joint_velocity_limits({l, h}),
+               std::exception);
+  EXPECT_THROW(dut.set_joint_acceleration_limits({l, h}),
+               std::exception);
+
+  EXPECT_THROW(dut.set_joint_position_limits({VectorX<double>(2), h}),
+               std::exception);
+  EXPECT_THROW(dut.set_joint_velocity_limits({VectorX<double>(2), h}),
+               std::exception);
+  EXPECT_THROW(dut.set_joint_acceleration_limits({VectorX<double>(2), h}),
+               std::exception);
+}
+
 }  // namespace
 }  // namespace planner
 }  // namespace manipulation
