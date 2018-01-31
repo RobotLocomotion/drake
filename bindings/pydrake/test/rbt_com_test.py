@@ -96,12 +96,11 @@ class TestRBTCoM(unittest.TestCase):
             urdf_path,
             floating_base_type=pydrake.rbtree.FloatingBaseType.kFixed)
 
-        # base_part2 should be a single visual element
+        # "base_part2" should be a single visual element.
         base_part2 = tree.FindBody("base_part2")
         self.assertIsNotNone(base_part2)
         visual_elements = base_part2.get_visual_elements()
         self.assertEqual(len(visual_elements), 1)
-        self.assertIsInstance(visual_elements[0], shapes.Element)
         self.assertIsInstance(visual_elements[0], shapes.VisualElement)
 
         # It has green material by default
@@ -115,20 +114,19 @@ class TestRBTCoM(unittest.TestCase):
         self.assertTrue(np.allclose(sphere_visual_element.getMaterial(),
                         white_material, atol=1e-4))
 
-        # Its TF should have z-component of 0.015
+        # We expect this link TF should to have positive z-component...
         local_tf = sphere_visual_element.getLocalTransform()
         self.assertAlmostEqual(local_tf[2, 3], 0.015, delta=1E-4)
 
-        # It should have sphere geometry
+        # ... as well as sphere geometry.
         self.assertTrue(sphere_visual_element.hasGeometry())
         sphere_geometry = sphere_visual_element.getGeometry()
-        self.assertIsInstance(sphere_geometry, shapes.Geometry)
         self.assertIsInstance(sphere_geometry, shapes.Sphere)
         self.assertEqual(sphere_geometry.getShape(), shapes.Shape.SPHERE)
         self.assertNotEqual(sphere_geometry.getShape(), shapes.Shape.BOX)
 
         # For a sphere geometry, getPoints() should return
-        # one point at the center of the sphere
+        # one point at the center of the sphere.
         sphere_geometry_pts = sphere_geometry.getPoints()
         self.assertEqual(sphere_geometry_pts.shape, (3, 1))
         sphere_geometry_bb = sphere_geometry.getBoundingBoxPoints()

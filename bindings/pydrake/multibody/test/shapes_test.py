@@ -5,6 +5,7 @@ import numpy as np
 
 import pydrake.multibody.shapes as shapes
 
+
 class TestShapes(unittest.TestCase):
     def test_api(self):
         box_size = [1., 2., 3.]
@@ -35,6 +36,7 @@ class TestShapes(unittest.TestCase):
         pts = np.transpose(np.tile(np.array(box_size), (10, 1)))
         mesh_points = shapes.MeshPoints(pts)
         self.assertEqual(mesh_points.getPoints().shape, (3, 10))
+
 
 if __name__ == '__main__':
     unittest.main()
