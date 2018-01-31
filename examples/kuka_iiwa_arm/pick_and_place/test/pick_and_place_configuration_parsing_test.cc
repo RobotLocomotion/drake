@@ -244,6 +244,7 @@ class ConfigurationParsingTests : public ::testing::Test {
     planner_configuration_.target_dimensions = kTargetDimensions;
     planner_configuration_.num_tables = 6;
     planner_configuration_.grip_force = 42;
+    planner_configuration_.grasp_frame_translational_offset = 0.191;
   }
 
   SimulatedPlantConfiguration plant_configuration_;

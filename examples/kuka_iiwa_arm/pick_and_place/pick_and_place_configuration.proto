@@ -64,6 +64,9 @@ message PickAndPlaceTask {
     required string end_effector_name = 3;
     // The gripping force to apply (in Newtons).
     optional double grip_force = 4;
+    // The distance from the end effector link to the grasp frame
+    // (position between the fingertips of the gripper).
+    optional double grasp_frame_translational_offset = 5;
 }
 
 // Next ID: 5
