@@ -10,7 +10,6 @@
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
-#include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -344,68 +343,6 @@ class Context : public ContextBase {
     return FixInputPort(index, std::move(vec));
   }
 
-  /// (Internal use only) Evaluates and returns the value of the input port
-  /// identified by @p descriptor. If this is a fixed input port we return the
-  /// fixed value, otherwise we look at the @p evaluator. If none is provided,
-  /// we just return null. Otherwise, the @p evaluator should be the Diagram
-  /// containing the System that allocated this Context. The evaluation will be
-  /// performed in this Context's parent. It is a recursive operation that may
-  /// invoke long chains of evaluation through all the Systems that are
-  /// prerequisites to the specified port.
-  ///
-  /// Returns nullptr if the port is not connected to a value source. Aborts if
-  /// the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it.
-  const AbstractValue* EvalAbstractInput(
-      const SystemBase* evaluator, const InputPortBase& iport_base) const {
-    const FreestandingInputPortValue* port_value =
-        GetInputPortValue(iport_base.get_index());
-    if (port_value != nullptr)
-      return &port_value->get_value();  // This is a fixed input port.
-    if (!evaluator) return nullptr;
-    // Punt to the System for evaluation.
-    return evaluator->EvalConnectedSubsystemInputPort(*get_parent(),
-                                                      iport_base);
-  }
-
-  /// Evaluates and returns the vector value of the input port with the given
-  /// @p descriptor. This is a recursive operation that may invoke long chains
-  /// of evaluation through all the Systems that are prerequisite to the
-  /// specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Throws std::bad_cast if the port is not vector-valued.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalVectorInput instead.
-  const BasicVector<T>* EvalVectorInput(const SystemBase* evaluator,
-                                        const InputPortBase& iport_base) const {
-    const AbstractValue* port_value = EvalAbstractInput(evaluator, iport_base);
-    return port_value ? &port_value->GetValue<BasicVector<T>>() : nullptr;
-  }
-
-  /// Evaluates and returns the data of the input port at @p index.
-  /// This is a recursive operation that may invoke long chains of evaluation
-  /// through all the Systems that are prerequisite to the specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Throws std::bad_cast if the port does not have type V.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalInputValue instead.
-  ///
-  /// @tparam V The type of data expected.
-  template <typename V>
-  const V* EvalInputValue(
-      const SystemBase* evaluator,
-      const InputPortBase& iport_base) const {
-    const AbstractValue* port_value = EvalAbstractInput(evaluator, iport_base);
-    return port_value ? &port_value->GetValue<V>() : nullptr;
-  }
-
   // =========================================================================
   // Accessors and Mutators for Parameters.
 
@@ -557,26 +494,6 @@ class Context : public ContextBase {
     // TODO(sherm1) Fixed input copying goes here.
   }
 
-  /// Throws an exception unless the given @p descriptor matches the inputs
-  /// actually connected to this context in shape.
-  // TODO(sherm1) This can only verify fixed input ports. Use Diagram to
-  // verify connections.
-  void VerifyInputPort(const InputPortBase& descriptor) const {
-    const InputPortIndex i = descriptor.get_index();
-    const FreestandingInputPortValue* port_value = GetInputPortValue(i);
-    // If the port isn't fixed, we don't have anything else to check.
-    if (port_value == nullptr) { return; }
-    // TODO(david-german-tri, sherm1): Consider checking sampling here.
-
-    // In the vector-valued case, check the size.
-    if (descriptor.get_data_type() == kVectorValued) {
-      const BasicVector<T>& input_vector =
-          port_value->template get_vector_value<T>();
-      DRAKE_THROW_UNLESS(input_vector.size() == descriptor.size());
-    }
-    // In the abstract-valued case, there is nothing else to check.
-  }
-
   /// (Internal use only) Sets a new time and notifies time-dependent
   /// quantities that they are now invalid, as part of a given change event.
   void PropagateTimeChange(const T& time_sec, int64_t change_event) {
@@ -608,6 +525,13 @@ class Context : public ContextBase {
   /// invalidation notifications. Use get_mutable_state() instead.
   State<T>& access_mutable_state() { return do_access_mutable_state(); }
 
+  /// (Internal use only) Returns the parent %Context or `nullptr` if this is
+  /// the root %Context.
+  // Diagram builder ensures we have the same scalar type all the way up.
+  const Context<T>* get_parent() const {
+    return static_cast<const Context<T>*>(get_parent_base());
+  }
+
  protected:
   Context() = default;
 
@@ -617,7 +541,6 @@ class Context : public ContextBase {
   // Default implementation invokes the base class copy constructor and then
   // the local member copy constructors.
   Context(const Context<T>&) = default;
-
 
   /// Derived context class should return a const reference to its concrete
   /// State object.
@@ -658,11 +581,6 @@ class Context : public ContextBase {
   const StepInfo<T>& get_step_info() const { return step_info_; }
 
  private:
-  // Diagram builder ensures we have the same scalar type all the way up.
-  const Context<T>* get_parent() const {
-    return static_cast<const Context<T>*>(get_parent_base());
-  }
-
   // Current time and step information.
   StepInfo<T> step_info_;
 

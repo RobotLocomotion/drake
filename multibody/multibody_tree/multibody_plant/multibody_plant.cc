@@ -44,7 +44,7 @@ void MultibodyPlant<T>::Finalize() {
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-MultibodyPlant<T>::DoMakeContext() const {
+MultibodyPlant<T>::DoMakeLeafContext() const {
   DRAKE_THROW_UNLESS(is_finalized());
   return std::make_unique<MultibodyTreeContext<T>>(model_->get_topology());
 }

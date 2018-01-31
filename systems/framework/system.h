@@ -433,9 +433,13 @@ class System : public SystemBase {
     static_assert(
         std::is_base_of<BasicVector<T>, Vec<T>>::value,
         "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return dynamic_cast<const Vec<T>*>(context.EvalVectorInput(
-        this->get_parent(), get_input_port(port_index)));
+    const AbstractValue* abstract_value =
+        EvalAbstractInput(context, port_index);
+    if (abstract_value == nullptr) return nullptr;
+    const BasicVector<T>& basic_value =
+        abstract_value->GetValue<BasicVector<T>>();
+    const Vec<T>& value = dynamic_cast<const Vec<T>&>(basic_value);
+    return &value;
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
@@ -461,8 +465,14 @@ class System : public SystemBase {
   const AbstractValue* EvalAbstractInput(const Context<T>& context,
                                          int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalAbstractInput(this->get_parent(),
-                                     get_input_port(port_index));
+    const FreestandingInputPortValue* port_value =
+        context.GetInputPortValue(InputPortIndex(port_index));
+    if (port_value != nullptr)
+      return &port_value->get_value();  // This is a fixed input port.
+    if (get_parent() == nullptr)
+      return nullptr;  // Unconnected input port.
+    return get_parent()->EvalConnectedSubsystemInputPort(
+        *context.get_parent(), get_input_port(port_index));
   }
 
   /// Causes the abstract-valued input port with the given `port_index` to
@@ -472,9 +482,8 @@ class System : public SystemBase {
   /// @tparam V The type of data expected.
   template <typename V>
   const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.template EvalInputValue<V>(this->get_parent(),
-                                              get_input_port(port_index));
+    const AbstractValue* port_value = EvalAbstractInput(context, port_index);
+    return port_value ? &port_value->GetValue<V>() : nullptr;
   }
   //@}
 
@@ -1065,10 +1074,24 @@ class System : public SystemBase {
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
                        this->get_num_input_ports());
 
-    // Checks that the size of the input ports in the context matches the
-    // declarations made by the system.
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      context.VerifyInputPort(this->get_input_port(i));
+    DRAKE_THROW_UNLESS(context.get_num_output_ports() ==
+                       this->get_num_output_ports());
+
+    // Checks that the size of the freestanding vector input ports in the
+    // context matches the declarations made by the system.
+    for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
+      const FreestandingInputPortValue* port_value =
+          context.GetInputPortValue(i);
+      // If the port isn't fixed, we don't have anything else to check.
+      if (port_value == nullptr) continue;
+      const auto& input_port = get_input_port_base(i);
+      // In the vector-valued case, check the size.
+      if (input_port.get_data_type() == kVectorValued) {
+        const BasicVector<T1>& input_vector =
+            port_value->template get_vector_value<T1>();
+        DRAKE_THROW_UNLESS(input_vector.size() == input_port.size());
+      }
+      // In the abstract-valued case, there is nothing else to check.
     }
   }
 
@@ -1336,6 +1359,13 @@ class System : public SystemBase {
   virtual void AddTriggeredWitnessFunctionToCompositeEventCollection(
       const WitnessFunction<T>& witness_func,
       CompositeEventCollection<T>* events) const = 0;
+
+  /// (Internal use only) Returns the parent %System or `nullptr` if this is
+  /// the root %System.
+  // Diagram builder ensures we have the same scalar type all the way up.
+  const System<T>* get_parent() const {
+    return static_cast<const System<T>*>(get_parent_base());
+  }
 
   // Promote these so we don't need "this->" everywhere.
   using SystemBase::get_name;
@@ -1833,6 +1863,17 @@ class System : public SystemBase {
                                            const Eigen::VectorXd& error) const {
     unused(context);
     return error.norm();
+  }
+
+  /// (Internal use only) Diagram systems must reimplement this to evaluate the
+  /// input port in the given `context`. The subsystem having
+  /// the input port must be owned by this Diagram. The default implementation
+  /// just aborts.
+  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
+      const Context<T>& context,
+      const InputPortDescriptor<T>& input_port) const {
+    unused(context, input_port);
+    DRAKE_ABORT_MSG("EvaluateSubsystemInputPort(): not implemented");
   }
 
   //----------------------------------------------------------------------------

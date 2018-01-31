@@ -12,8 +12,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_descriptor.h"
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"
 
@@ -97,33 +97,29 @@ class LeafContextTest : public ::testing::Test {
         std::move(abstract_params)));
   }
 
-  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
-  // connected to @p context at @p index.
-  const BasicVector<double>* ReadVectorInputPort(
-      const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(InputPortIndex(index), kVectorValued,
-                                           0, nullopt, &system_);
-    return context.EvalVectorInput(nullptr, descriptor);
+  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  const BasicVector<double>* ReadVectorInputPort(const Context<double>& context,
+                                                 int index) {
+    const FreestandingInputPortValue* free_value =
+        context.GetInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_vector_value<double>() : nullptr;
   }
 
-  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
-  // connected to @p context at @p index.
+  // Reads a FreestandingInputPortValue connected to @p context at @p index.
   const std::string* ReadStringInputPort(const Context<double>& context,
                                          int index) {
-    InputPortDescriptor<double> descriptor(InputPortIndex(index),
-                                           kAbstractValued, 0, nullopt,
-                                           &system_);
-    return context.EvalInputValue<std::string>(nullptr, descriptor);
+    const FreestandingInputPortValue* free_value =
+        context.GetInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_value().GetValue<std::string>()
+                      : nullptr;
   }
 
-  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
-  // connected to @p context at @p index.
-  const AbstractValue* ReadAbstractInputPort(
-      const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(InputPortIndex(index),
-                                           kAbstractValued, 0, nullopt,
-                                           &system_);
-    return context.EvalAbstractInput(nullptr, descriptor);
+  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  const AbstractValue* ReadAbstractInputPort(const Context<double>& context,
+                                             int index) {
+    const FreestandingInputPortValue* free_value =
+        context.GetInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_value() : nullptr;
   }
 
   // Mocks up some input ports sufficient to allow us to give them fixed values.
