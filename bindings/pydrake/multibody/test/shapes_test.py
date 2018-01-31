@@ -38,7 +38,7 @@ class TestShapes(unittest.TestCase):
         self.assertEqual(mesh_points.getPoints().shape, (3, 10))
 
         obj_mesh_path = os.path.join(
-            getDrakePath(), "examples/quadrotor/quadrotor_base.obj")
+            pydrake.getDrakePath(), "examples/quadrotor/quadrotor_base.obj")
         obj_mesh_uri = "box_obj"
         mesh = shapes.Mesh(uri=obj_mesh_uri, resolved_filename=obj_mesh_path)
         self.assertTrue(np.allclose(mesh.scale, [1., 1., 1.]))
