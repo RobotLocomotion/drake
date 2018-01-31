@@ -21,6 +21,7 @@ PYBIND11_MODULE(_rbtree_py, m) {
   using drake::parsers::PackageMap;
   namespace sdf = drake::parsers::sdf;
 
+  py::module::import("pydrake.multibody.shapes");
   py::module::import("pydrake.parsers");
 
   py::enum_<FloatingBaseType>(m, "FloatingBaseType")
@@ -123,6 +124,7 @@ PYBIND11_MODULE(_rbtree_py, m) {
          py::arg("in_terms_of_qdot") = false)
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
     .def("get_num_frames", &RigidBodyTree<double>::get_num_frames)
+    .def("get_num_actuators", &RigidBodyTree<double>::get_num_actuators)
     .def("getBodyOrFrameName",
          &RigidBodyTree<double>::getBodyOrFrameName,
          py::arg("body_or_frame_id"))
@@ -210,7 +212,8 @@ PYBIND11_MODULE(_rbtree_py, m) {
   py::class_<RigidBody<double> >(m, "RigidBody")
     .def("get_name", &RigidBody<double>::get_name)
     .def("get_body_index", &RigidBody<double>::get_body_index)
-    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass);
+    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass)
+    .def("get_visual_elements", &RigidBody<double>::get_visual_elements);
 
   py::class_<RigidBodyFrame<double>,
              std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")

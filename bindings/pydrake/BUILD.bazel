@@ -87,6 +87,7 @@ drake_pybind_library(
         ":autodiffutils_py",
         ":common_py",
         ":parsers_py",
+        "//bindings/pydrake/multibody:shapes_py",
     ],
     py_srcs = ["rbtree.py"],
 )

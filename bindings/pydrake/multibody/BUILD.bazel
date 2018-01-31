@@ -44,8 +44,19 @@ drake_pybind_library(
     cc_srcs = ["rigid_body_plant_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":module_py",
         "//bindings/pydrake:rbtree_py",
         "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "shapes_py",
+    cc_so_name = "shapes",
+    cc_srcs = ["shapes_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
     ],
 )
 
@@ -53,11 +64,13 @@ drake_py_library(
     name = "all_py",
     deps = [
         ":rigid_body_plant_py",
+        ":shapes_py",
     ],
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":rigid_body_plant_py",
+    ":shapes_py",
 ]
 
 PY_LIBRARIES = [
@@ -84,6 +97,15 @@ drake_py_test(
     data = ["//examples/pendulum:models"],
     deps = [
         ":rigid_body_plant_py",
+    ],
+)
+
+drake_py_test(
+    name = "shapes_test",
+    size = "small",
+    data = ["//examples/quadrotor:models"],
+    deps = [
+        ":shapes_py",
     ],
 )
 
