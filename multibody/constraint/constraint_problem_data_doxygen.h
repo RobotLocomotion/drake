@@ -47,10 +47,10 @@ further in @ref constraint_types.
 - t ∈ ℝ   The system time variable (t ≥ 0).
 - u ∈ ℕ   The number of "generic" (non-contact related) unilateral
           constraint equations.
-- α ∈ ℝ   A non-negative scalar used to correct velocity-level constraint
-          errors (i.e., "stabilize" the velocity constraints) via an error
+- α ∈ ℝ   A non-negative scalar used to correct the time derivative of position
+          constraint errors (i.e., "stabilize" the constraints) via an error
           feedback process (Baumgarte Stabilization).
-- β ∈ ℝ   A non-negative scalar used to correct position-level constraint
+- β ∈ ℝ   A non-negative scalar used to correct position constraint
           errors via the same error feedback process (Baumgarte
           Stabilization) that uses α.
 - γ,ε ∈ ℝ Non-negative scalars used to regularize constraints.
@@ -267,10 +267,11 @@ should make it clear that GM⁻¹Gᵀ would be a scalar as well.
 
 While Catto studied a mass-spring system, these results apply to general
 multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
-time stepping scheme in Drake using @ref ConstraintSolver, one would
-use ω and ζ to correspondingly set gammaN (or gammaL) to γ and kN (kL) to ϱ/h
-times the signed constraint distance (using, e.g., signed distance for the point
-contact non-interpenetration constraint).
+time stepping scheme in Drake using
+@ref drake::multibody::constraint::ConstraintSolver "ConstraintSolver", one
+would use ω and ζ to correspondingly set gammaN (or gammaL) to γ and kN (kL) to
+ϱ/h times the signed constraint distance (using, e.g., signed distance for the
+point contact non-interpenetration constraint).
 
 <h4>Regularization at the acceleration-level</h4>
 Starting from the same stabilized and regularized spring mass system:
@@ -311,8 +312,11 @@ robotics literature, ∂c/∂q̅ is known as a *geometric Jacobian* while
 Fortunately, for constraints defined in the form c(t,q), the distinction is
 moot: the Jacobians are described completely by the equation ċ = ∂c/∂q̅⋅v +
 ∂c/∂t, where v are the generalized velocities of the system. Since the problem
-data calls for operators (see ConstraintAccelProblemData and
-ConstraintVelProblemData) that compute (∂c/∂q̅⋅v), one can simply
+data calls for operators (see
+@ref drake::multibody::constraint::ConstraintAccelProblemData
+"ConstraintAccelProblemData" and
+@ref drake::multibody::constraint::ConstraintVelProblemData
+"ConstraintVelProblemData" that compute (∂c/∂q̅⋅v), one can simply
 evaluate ċ - ∂c/∂t for a given v: no Jacobian need be formed explicitly.
 
 */
@@ -334,21 +338,20 @@ complementarity constraints are necessary (see @ref constraint_types):<pre>
 <h4>Differentiating c(.) with respect to time</h4>
 As usual, c(.) must be differentiated (with respect to time) once to use the
 contact constraint in velocity-level constraint formulation or twice to use
-it in an acceleration-level formulation. 
-Differentiating c(q) once with respect to
-time yields:<pre>
+it in an acceleration-level formulation. Differentiating c(q) once with respect
+to time yields:<pre>
 ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ);
 </pre>
 one more differentiation with respect to time yields:<pre>
-c̈(q,v,v̇) ≡ nᵀ(p̈ᵢ - p̈ⱼ) + ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ).
+c̈(q,v,v̇) ≡ nᵀ(p̈ᵢ - p̈ⱼ) + 2ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ).
 </pre>
 
 The non-negativity condition on the constraint force magnitudes (λ ≥ 0)
 keeps the contact force along the contact normal compressive, as desired.
 
 <h4>The Coulomb friction model</h4>
-Incorporating the Coulomb friction model for contact between dry surfaces
-introduces a new constraint equation:<pre>
+Incorporating the Coulomb friction model for sliding contact between dry
+surfaces introduces a new constraint equation:<pre>
 μλ = ᶜλ 
 </pre>
 where ᶜλ is the force due to Coulomb friction, μ is the (dimensionless)
@@ -415,8 +418,11 @@ constraint problem data</h4>
   - Constraint stabilization is effected through `kN`
   - Note that *neither Baumgarte Stabilization nor constraint regularization/
     softening affects the definition of c(.)'s Jacobian* operators, `N_mult` and
-    either `N_minus_muQ_transpose_mult` (ConstraintAccelProblemData) or
-    `N_transpose_mult` (ConstraintVelProblemData).
+    either `N_minus_muQ_transpose_mult` (for
+    @ref drake::multibody::constraint::ConstraintAccelProblemData
+    "ConstraintAccelProblemData") or `N_transpose_mult` (for
+    @ref drake::multibody::constraint::ConstraintAccelProblemData
+    "ConstraintVelProblemData")
 */
  
 /** @defgroup frictional_constraints Frictional constraints

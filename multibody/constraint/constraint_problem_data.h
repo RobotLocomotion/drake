@@ -23,7 +23,8 @@ namespace constraint {
 /// acceleration-level constraints.
 ///
 /// <h3>Definition of variables specific to this class</h3>
-/// (See @ref variable_definitions) for the more general set of definitions).
+/// (See @ref constraint_variable_defs) for the more general set of
+/// definitions).
 /// - s ∈ ℕ   The number of contacts at which sliding is occurring. Note
 ///           that p = s + y, where p is the number of points of contact.
 /// - y ∈ ℕ   The number of contacts at which sliding is not occurring. Note
