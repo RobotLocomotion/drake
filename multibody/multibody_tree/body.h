@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -149,6 +150,12 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// Creates a %Body with a BodyFrame associated with it.
   Body() : body_frame_(*this) {}
 
+  /// Creates a %Body named `name` with a BodyFrame associated with it.
+  explicit Body(const std::string& name) : name_(name), body_frame_(*this) {}
+
+  /// Gets the `name` associated with `this` body.
+  const std::string& get_name() const { return name_; }
+
   /// Returns the number of generalized positions q describing flexible
   /// deformations for this body. A rigid body will therefore return zero.
   virtual int get_num_flexible_positions() const = 0;
@@ -243,6 +250,11 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   BodyFrame<T>& get_mutable_body_frame() {
     return body_frame_;
   }
+
+  // A string identifying the body in its model.
+  // Within a MultibodyPlant model this string is guaranteed to be unique by
+  // MultibodyPlant's API.
+  std::string name_;
 
   // Body frame associated with this body.
   BodyFrame<T> body_frame_;
