@@ -26,12 +26,12 @@ class VisualElement : public Element {
   virtual ~VisualElement() {}
 
   /**
-  * Retrieves the element's material color, in RGBA format.
+  * Sets the element's material color, in RGBA format.
   */
   void setMaterial(const Eigen::Vector4d& material);
 
   /**
-  * Sets the element's material color, in RGBA format.
+  * Retrieves the element's material color, in RGBA format.
   */
   const Eigen::Vector4d& getMaterial() const;
 
