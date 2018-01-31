@@ -26,6 +26,8 @@ further in @ref constraint_types.
  A prodigious number of variables will be referenced throughout the discussion
  on constraints. Variables common to both acceleration-level constraints and
  velocity-level constraints will be covered in @ref constraint_variable_defs.
+
+ References for this discussion will be provided in @ref constraint_references.
 */
 
 /** @defgroup constraint_variable_defs Variable definitions
@@ -182,7 +184,7 @@ To eliminate constraint errors as quickly as possible, one will typically use
 ζ=1, implying *critical damping*, and undamped angular frequency ω₀ that is
 high enough to correct errors rapidly but low enough to avoid computational
 stiffness. Picking that parameter is currently considered to be more art
-than science (see [Ascher 1992]). Given desired ω₀ and ζ, α and β are set using
+than science (see [Ascher 1995]). Given desired ω₀ and ζ, α and β are set using
 the equations above.
 */
 
@@ -265,7 +267,7 @@ should make it clear that GM⁻¹Gᵀ would be a scalar as well.
 
 While Catto studied a mass-spring system, these results apply to general
 multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
-time stepping scheme in Drake using ConstraintSolver, one would
+time stepping scheme in Drake using @ref ConstraintSolver, one would
 use ω and ζ to correspondingly set gammaN (or gammaL) to γ and kN (kL) to ϱ/h
 times the signed constraint distance (using, e.g., signed distance for the point
 contact non-interpenetration constraint).
@@ -632,5 +634,34 @@ constraint problem data</h4>
   - Note that *neither Baumgarte Stabilization nor constraint regularization/
     softening affects the definition of c(.)'s Jacobian* operators, `L_mult` and
     `L_transpose_mult`.
-*/
 
+/** @defgroup constraint_references References
+ @ingroup constraint_overview
+
+ Sources referenced within the multibody constraint documentation.
+
+ - [Anitescu 1997]  M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid-
+   Body Contact Problems with Friction as Solvable Linear Complementarity
+   Problems. Nonlinear Dynamics, 14, pp. 231-247. 1997.
+ - [Ascher 1995]  U. Ascher, H. Chin, L. Petzold, and S. Reich. Stabilization
+   of constrained mechanical systems with DAEs and invariant manifolds. J.
+   Mech. Struct. Machines, 23, pp. 135-158. 1995.
+ - [Ascher 1998]  U. Ascher and L. Petzold. Computer Methods for Ordinary
+   Differential Equations and Differential Algebraic Equations. SIAM,
+   Philadelphia. 1998.
+ - [Baumgarte 1972]  J. Baumgarte. Stabilization of constraints and integrals of
+   motion in dynamical systems. Comp. Math. Appl. Mech. Engr., 1, pp. 1-16.
+   1972.
+ - [Catto 2011]  E. Catto. Soft Constraints: Reinventing the Spring.
+   Game Developers Conference presentation, 2011.
+ - [Cottle 1992]  R. Cottle, J-S. Pang, and R. Stone. The Linear Complementarity
+   Problem. Academic Press, Boston. 1992.
+ - [Hairer 1996]  E. Hairer and G. Wanner. Solving ordinary differential
+   equations II: stiff and differential algebraic problems, 2nd ed.
+   Springer-Verlag, Berlin. 1996.
+ - [Lacoursiere 2007]  C. Lacoursière. Ghosts and Machines: Regularized
+   Variational Methods for Interactive Simulations of Multibodies with Dry
+   Frictional Contacts. Umeå University. 2007.
+ - [Sciavicco 2000]  L. Sciavicco and B. Siciliano. Modeling and Control of
+   Robot Manipulators, 2nd ed. Springer-Verlag, London. 2000.
+ */
