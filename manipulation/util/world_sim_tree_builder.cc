@@ -77,8 +77,19 @@ int WorldSimTreeBuilder<T>::AddFloatingModelInstance(const string& model_name,
 
 template <typename T>
 int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
-    const string& model_name,
-    std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
+    const string& model_name, const string& weld_to_body_name,
+    const string& frame_name, const Eigen::Isometry3d& transform_frame_to_body,
+    const drake::multibody::joints::FloatingBaseType floating_base_type) {
+  // Create a new frame.
+  auto  weld_to_frame = std::make_shared<RigidBodyFrame<T>>(
+      frame_name, rigid_body_tree_->get_mutable_body(rigid_body_tree_->FindBodyIndex(weld_to_body_name)), transform_frame_to_body);
+  rigid_body_tree_->addFrame(weld_to_frame);
+  return AddModelInstanceToFrame(model_name, weld_to_frame, floating_base_type);
+}
+
+template <typename T>
+int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
+    const string& model_name, std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
 
