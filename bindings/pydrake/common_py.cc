@@ -30,7 +30,7 @@ PYBIND11_MODULE(_common_py, m) {
   py::register_exception_translator([](std::exception_ptr p) {
       try {
         if (p) { std::rethrow_exception(p); }
-      } catch (const detail::assertion_error& e) {
+      } catch (const drake::detail::assertion_error& e) {
         PyErr_SetString(PyExc_SystemExit, e.what());
       }
     });
