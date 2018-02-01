@@ -113,7 +113,6 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   }
 }
 
-/*
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
   const auto& v_bounds = *(params_->get_joint_velocity_limits());
   const auto& q = cache_->getQ();
@@ -135,9 +134,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     DifferentialInverseKinematicsResult function_result =
         DoDifferentialInverseKinematics(*tree_, *cache_, V_WE_desired,
                                         *frame_E_, *params_);
-    std::cout << function_result.status << "\n";
     ASSERT_TRUE(function_result.joint_velocities != nullopt);
-    std::cout << function_result.joint_velocities.value().transpose() << "\n";
 
     // Transform the resulting end effector frame's velocity into body frame.
     *cache_ = tree_->doKinematics(q, function_result.joint_velocities.value());
@@ -166,7 +163,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     v_desired(i) = std::max(v_desired(i), v_bounds.first(i));
     v_desired(i) = std::min(v_desired(i), v_bounds.second(i));
   }
-  EXPECT_TRUE(CompareMatrices(cache_->getV(), v_desired, 1e-8,
+  EXPECT_TRUE(CompareMatrices(cache_->getV(), v_desired, 1e-6,
                               MatrixCompareType::absolute));
 }
 
@@ -198,7 +195,6 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
   EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
                               MatrixCompareType::absolute));
 }
-*/
 
 // Test various throw conditions.
 GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {

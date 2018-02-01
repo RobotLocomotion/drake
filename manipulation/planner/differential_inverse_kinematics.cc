@@ -3,8 +3,6 @@
 #include <memory>
 #include <string>
 
-#include "drake/solvers/scs_solver.h"
-
 namespace drake {
 namespace manipulation {
 namespace planner {
@@ -131,18 +129,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
         v_next);
   }
 
-  // to hongkai:
-  // so if i call prog.solve, it's calling snopt (hmmm), but the solution
-  // appears to be legit. If I force scs call, i get a warning saying 
-  // [2018-01-31 08:25:21.480] [console] [info] SCS returns code 2, with message "SCS solved inaccurate".
-  // and the end result violates a box constraint on v. 
-  // you should be able to reproduce with manipualtion/planner/differential_inverse_kinematics_test
-  //
   // Solve
-  // drake::solvers::SolutionResult result = prog.Solve();
-  drake::solvers::ScsSolver solver;
-  auto result = solver.Solve(prog);
-  std::cout << prog.GetSolverId().value() << "\n";
+  drake::solvers::SolutionResult result = prog.Solve();
 
   if (result != drake::solvers::SolutionResult::kSolutionFound) {
     return {nullopt, DifferentialInverseKinematicsStatus::kNoSolutionFound};
@@ -158,7 +146,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       return {nullopt, DifferentialInverseKinematicsStatus::kStuck};
     }
   }
-  drake::log()->info("alpha = {}", prog.GetSolution(alpha).transpose());
 
   return {prog.GetSolution(v_next),
           DifferentialInverseKinematicsStatus::kSolutionFound};
