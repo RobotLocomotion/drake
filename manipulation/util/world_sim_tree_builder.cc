@@ -42,8 +42,8 @@ WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {
   //     large.
   contact_model_parameters_.v_stiction_tolerance = 0.01;  // m/s
   contact_model_parameters_.characteristic_radius = 1.0;  // m^2
-  default_contact_material_.set_youngs_modulus(20000);  // Pa
-  default_contact_material_.set_dissipation(2);  // s/m
+  default_contact_material_.set_youngs_modulus(20000);    // Pa
+  default_contact_material_.set_dissipation(2);           // s/m
   default_contact_material_.set_friction(0.9, 0.5);
 }
 
@@ -71,18 +71,21 @@ int WorldSimTreeBuilder<T>::AddFloatingModelInstance(const string& model_name,
   auto weld_to_frame = allocate_shared<RigidBodyFrame<T>>(
       aligned_allocator<RigidBodyFrame<T>>(), "world", nullptr, xyz, rpy);
 
-  return AddModelInstanceToFrame(model_name, weld_to_frame,
-                                 kQuaternion);
+  return AddModelInstanceToFrame(model_name, weld_to_frame, kQuaternion);
 }
 
 template <typename T>
 int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
     const string& model_name, const string& weld_to_body_name,
     const string& frame_name, const Eigen::Isometry3d& transform_frame_to_body,
-    const drake::multibody::joints::FloatingBaseType floating_base_type) {
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    int model_instance_id) {
   // Create a new frame.
-  auto  weld_to_frame = std::make_shared<RigidBodyFrame<T>>(
-      frame_name, rigid_body_tree_->get_mutable_body(rigid_body_tree_->FindBodyIndex(weld_to_body_name)), transform_frame_to_body);
+  auto weld_to_frame = std::make_shared<RigidBodyFrame<T>>(
+      frame_name,
+      rigid_body_tree_->get_mutable_body(rigid_body_tree_->FindBodyIndex(
+          weld_to_body_name, model_instance_id)),
+      transform_frame_to_body);
   rigid_body_tree_->addFrame(weld_to_frame);
   return AddModelInstanceToFrame(model_name, weld_to_frame, floating_base_type);
 }
@@ -105,13 +108,13 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
   DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
   if (extension == ".urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        model_map_[model_name], floating_base_type,
-        weld_to_frame, rigid_body_tree_.get());
+        model_map_[model_name], floating_base_type, weld_to_frame,
+        rigid_body_tree_.get());
 
   } else if (extension == ".sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
-        model_map_[model_name], floating_base_type,
-        weld_to_frame, rigid_body_tree_.get());
+        model_map_[model_name], floating_base_type, weld_to_frame,
+        rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
 
@@ -131,17 +134,15 @@ void WorldSimTreeBuilder<T>::AddGround() {
 
 template <typename T>
 void WorldSimTreeBuilder<T>::StoreModel(
-    const std::string& model_name,
-    const std::string& absolute_model_path) {
+    const std::string& model_name, const std::string& absolute_model_path) {
   DRAKE_DEMAND(model_map_.find(model_name) == model_map_.end());
   model_map_.insert(
       std::pair<std::string, std::string>(model_name, absolute_model_path));
 }
 
 template <typename T>
-void WorldSimTreeBuilder<T>::StoreDrakeModel(
-    const std::string& model_name,
-    const std::string& model_path) {
+void WorldSimTreeBuilder<T>::StoreDrakeModel(const std::string& model_name,
+                                             const std::string& model_path) {
   StoreModel(model_name, FindResourceOrThrow(model_path));
 }
 
