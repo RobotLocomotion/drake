@@ -93,8 +93,8 @@ void CheckNumPorts(
   EXPECT_EQ(iiwa_and_wsg_plant.get_num_input_ports(),
             num_iiwas * num_input_ports_per_iiwa +
                 num_wsgs * num_input_ports_per_wsg);
-  const int num_output_ports_per_iiwa = 3;
-  const int num_output_ports_per_wsg = 1;
+  const int num_output_ports_per_iiwa = 4;
+  const int num_output_ports_per_wsg = 2;
   const int num_output_ports_per_object = 1;
   // Every instance of IiwaAndWsgPlantWithStateEstimator has
   //  - a port for the full RigidBodyPlant state
