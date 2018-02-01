@@ -79,7 +79,7 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
   const auto& q = cache_->getQ();
   const double dt = params_->get_timestep();
 
-  const double velocity_tolerance{1e-7};
+  const double velocity_tolerance{1e-6};
 
   DifferentialInverseKinematicsResult function_result =
       DoDifferentialInverseKinematics(*tree_, *cache_, V_WE, *frame_E_,
@@ -163,7 +163,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     v_desired(i) = std::max(v_desired(i), v_bounds.first(i));
     v_desired(i) = std::min(v_desired(i), v_bounds.second(i));
   }
-  EXPECT_TRUE(CompareMatrices(cache_->getV(), v_desired, 1e-6,
+  EXPECT_TRUE(CompareMatrices(cache_->getV(), v_desired, 5e-5,
                               MatrixCompareType::absolute));
 }
 

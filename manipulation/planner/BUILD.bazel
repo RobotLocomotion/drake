@@ -74,6 +74,7 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    tags = ["snopt"],
     deps = [
         ":differential_inverse_kinematics",
         "//drake/common/test_utilities:eigen_matrix_compare",
