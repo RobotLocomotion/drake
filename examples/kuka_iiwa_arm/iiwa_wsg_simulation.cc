@@ -232,6 +232,8 @@ int DoMain() {
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_status_sender->get_input_port(0));
+  builder.Connect(model->get_output_port_wsg_measured_torque(),
+                  wsg_status_sender->get_input_port(1));
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_controller->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);

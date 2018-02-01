@@ -292,6 +292,8 @@ LcmPlant::LcmPlant(
     wsg_status_sender->set_name("wsg_status_sender" + suffix);
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_state(i),
                     wsg_status_sender->get_input_port(0));
+    builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_measured_torque(i),
+                    wsg_status_sender->get_input_port(1));
 
     // Export wsg status output port.
     output_port_wsg_status_.push_back(
