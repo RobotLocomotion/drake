@@ -50,7 +50,7 @@ scipy
 tinyxml
 tinyxml2
 vtk@8.0
-yaml-cpp
+yaml-cpp@0.6
 EOF
 )
 
