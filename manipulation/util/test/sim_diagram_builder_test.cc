@@ -225,7 +225,8 @@ GTEST_TEST(SimDiagramBuilderTest, TestAddingOneSchunkToTwoArms) {
     iiwa.push_back(tree_builder->get_model_info_for_instance(id));
   }
 
-  const Eigen::Isometry3d transform_schunk_to_iiwa_link_ee =
+  // The pose of the schunk frame `S` in the IIWA end effector body frame `E`.
+  const Eigen::Isometry3d X_ES =
       Eigen::Translation3d(Eigen::Vector3d(0.09, 0, 0)) *
       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitZ()) *
       Eigen::AngleAxisd(22.0 / 180 * M_PI, Eigen::Vector3d::UnitY()) *
@@ -236,16 +237,18 @@ GTEST_TEST(SimDiagramBuilderTest, TestAddingOneSchunkToTwoArms) {
     // [180, 22, 90], with translation[0.09, 0, 0].
     int id = tree_builder->AddModelInstanceToFrame(
         "wsg", "iiwa_link_ee", iiwa.at(i).instance_id,
-        "frame_schunk_to_iiwa_link_ee", transform_schunk_to_iiwa_link_ee,
-        drake::multibody::joints::kFixed);
+        "frame_schunk_to_iiwa_link_ee", X_ES, drake::multibody::joints::kFixed);
     wsg.push_back(tree_builder->get_model_info_for_instance(id));
   }
 
+  // iiwa_link_ee_S is a frame rigidly attached to the link iiwa_link_ee, and
+  // provides the location and orientation at which a schunk gripper should be
+  // mounted.
   for (int i = 0; i < num_wsg; ++i) {
-    auto schunk_frame = tree_builder->tree().findFrame(
-        "frame_schunk_to_iiwa_link_ee", iiwa.at(i).instance_id);
+    auto schunk_frame = tree_builder->tree().findFrame("iiwa_link_ee_S",
+                                                       iiwa.at(i).instance_id);
     EXPECT_TRUE(CompareMatrices(schunk_frame->get_transform_to_body().matrix(),
-                                transform_schunk_to_iiwa_link_ee.matrix()));
+                                X_ES.matrix()));
   }
   for (int i = num_wsg; i < num_iiwa; ++i) {
     EXPECT_THROW(tree_builder->tree().findFrame("frame_schunk_to_iiwa_link_ee",
