@@ -43,6 +43,10 @@ GTEST_TEST(ArticulatedBodyInertia, ConstructionNonTrivial) {
   // Construct from spatial inertia.
   const ArticulatedBodyInertia<double> P(M);
   EXPECT_TRUE(P.CopyToFullMatrix6().isApprox(M.CopyToFullMatrix6(), kEpsilon));
+
+  // Construct from matrix.
+  const ArticulatedBodyInertia<double> P2(M.CopyToFullMatrix6());
+  EXPECT_TRUE(P2.CopyToFullMatrix6().isApprox(M.CopyToFullMatrix6(), kEpsilon));
 }
 
 // Tests that we can correctly cast a ArticulatedBodyInertia<double> to a

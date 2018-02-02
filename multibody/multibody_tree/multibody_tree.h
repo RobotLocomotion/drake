@@ -1346,6 +1346,41 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
+  /// Computes all the quantities that are required in the final pass of the
+  /// articulated body algorithm and stores them in the articulated body cache
+  /// `abc`.
+  ///
+  /// These include:
+  /// - Articulated body inertia `P_PB_W` for each body B in the model as
+  ///   measured from the parent body P and expressed in the world frame W.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] vc
+  ///   A velocity kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] forces
+  ///   A multibody forces object. This method will abort if if the forces
+  ///   object is not compatible with `this` %MultibodyTree, see
+  ///   MultibodyForces::CheckHasRightSizeForModel().
+  /// @param[out] abc
+  ///   A pointer to a valid, non nullptr, articulated body cache. This method
+  ///   aborts if `abc` is a nullptr.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics `vc` must have been previously updated with a
+  /// call to CalcVelocityKinematicsCache().
+  void CalcArticulatedBodyCache(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const MultibodyForces<T>& forces,
+      ArticulatedBodyCache<T>* abc) const;
+
   /// @}
   // Closes "Computational methods" Doxygen section.
 

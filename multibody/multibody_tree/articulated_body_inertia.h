@@ -114,6 +114,19 @@ class ArticulatedBodyInertia {
         M_SQ_E.CopyToFullMatrix6();
   }
 
+  /// Constructs an articulated body inertia from an input matrix.
+  ///
+  /// This constructor checks for the physical validity of the resulting
+  /// %ArticulatedBodyInertia with IsPhysicallyValid() and throws a
+  /// std::runtime_error exception in the event the provided input matrix leads
+  /// to a non-physically viable articulated body inertia.
+  ///
+  /// @param[in] matrix A matrix representing the articulated body inertia.
+  explicit ArticulatedBodyInertia(const Matrix6<T>& matrix) {
+    CheckInvariants(matrix);
+    matrix_.template triangularView<Eigen::Lower>() = matrix;
+  }
+
   /// Returns a new %ArticulatedBodyInertia object templated on `Scalar` with
   /// casted values of `this` articulated body inertia.
   ///
@@ -132,6 +145,24 @@ class ArticulatedBodyInertia {
     P.matrix_.template triangularView<Eigen::Lower>() =
         matrix_.template cast<Scalar>();
     return P;
+  }
+
+  /// Performs a number of checks to verify that the input matrix is a
+  /// physically valid articulated body inertia.
+  ///
+  /// The checks performed are:
+  /// - The matrix is symmetric.
+  /// - The matrix is semi-positive definite.
+  ///
+  /// @param[in] matrix A 6x6 matrix representing this articulated body inertia.
+  bool IsPhysicallyValid(const Matrix6<T>& matrix) const {
+    // Check if the matrix is symmetric.
+    if (!(matrix - matrix.transpose()).isZero(1e-10)) return false;
+
+    // Attempt the Robust Cholesky decomposition to test if the matrix is
+    // positive semi-definite.
+    const auto ldlt = matrix.ldlt();
+    return ldlt.info() == Eigen::Success && ldlt.isPositive();
   }
 
   /// Copy to a full 6x6 matrix representation.
@@ -301,6 +332,17 @@ class ArticulatedBodyInertia {
   // All elements of the articulated body inertia matrix are initially set to
   // NaN.
   Matrix6<T> matrix_{Matrix6<T>::Constant(nan())};
+
+  // Checks that the ArticulatedBodyInertia is physically valid and throws an
+  // exception if not. This is mostly used in Debug builds to throw an
+  // appropriate exception.
+  void CheckInvariants(const Matrix6<T>& matrix) const {
+    if (!IsPhysicallyValid(matrix)) {
+      throw std::runtime_error(
+          "The resulting articulated body inertia is not physically valid. "
+              "See ArticulatedBodyInertia::IsPhysicallyValid()");
+    }
+  }
 };
 
 }  // namespace multibody
