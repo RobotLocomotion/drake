@@ -71,6 +71,7 @@ int DoMain() {
 
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       tree.get_num_positions() + tree.get_num_velocities(),
+      tree.get_num_actuators(),
       manipulation::schunk_wsg::kSchunkWsgPositionIndex,
       manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
   status_sender->set_name("status_sender");
