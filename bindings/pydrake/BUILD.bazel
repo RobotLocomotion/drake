@@ -165,6 +165,17 @@ drake_py_test(
     deps = [":all_py"],
 )
 
+# See `common_install_test` for explanation of values.
+drake_py_test(
+    name = "all_install_test",
+    size = "medium",
+    timeout = "long",
+    data = ["//:install"],
+    deps = [
+        "//tools/install:install_test_helper",
+    ],
+)
+
 # Test ODR (One Definition Rule).
 drake_pybind_library(
     name = "odr_test_module_py",

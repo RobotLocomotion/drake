@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import os
 import shutil
 import subprocess
@@ -41,7 +39,7 @@ def install(installation_folder="tmp", installed_subfolders=[],
         return None
     # If under `bazel test`, remove Bazel build artifacts, and ensure that we
     # only have install artifacts. If we removed these files under `bazel run`,
-    # then may not refresh `.runfiles`, breaking future invocations.
+    # then Bazel may not refresh `.runfiles`, breaking future invocations.
     if "TEST_TMPDIR" in os.environ:
         content_test_folder = os.listdir(os.getcwd())
         content_test_folder.remove(installation_folder)
