@@ -35,17 +35,20 @@ drake_cc_library(
     name = "multibody_tree_context",
     srcs = [
         "acceleration_kinematics_cache.cc",
+        "articulated_body_cache.cc",
         "multibody_tree_context.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "acceleration_kinematics_cache.h",
+        "articulated_body_cache.h",
         "multibody_tree_context.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
     ],
     deps = [
+        ":articulated_body_inertia",
         ":multibody_tree_topology",
         "//drake/common:autodiff",
         "//drake/multibody/multibody_tree/math:spatial_acceleration",
@@ -256,6 +259,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "articulated_body_inertia_test",
+    deps = [
+        ":articulated_body_inertia",
+        ":multibody_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "articulated_body_algorithm_test",
     deps = [
         ":articulated_body_inertia",
         ":multibody_tree",

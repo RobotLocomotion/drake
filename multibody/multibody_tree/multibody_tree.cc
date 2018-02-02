@@ -706,6 +706,45 @@ T MultibodyTree<T>::DoCalcConservativePower(
   return conservative_power;
 }
 
+template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyCache(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    const MultibodyForces<T>& forces,
+    ArticulatedBodyCache<T>* abc) const {
+  DRAKE_DEMAND(abc != nullptr);
+  DRAKE_DEMAND(forces.CheckHasRightSizeForModel(*this));
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  const VectorX<T>& generalized_forces = forces.generalized_forces();
+  const std::vector<SpatialForce<T>>& body_forces = forces.body_forces();
+
+  // TODO(bobbyluig): Eval H_PB_W from the cache.
+  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  // Perform tip-to-base recursion, skipping the world.
+  for (int depth = get_tree_height() - 1; depth > 0; depth--) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+      // Get mobilizer forces.
+      const MatrixUpTo6<T> tau_applied = node.get_mobilizer()
+          .get_generalized_forces_from_array(generalized_forces);
+      const SpatialForce<T> Fapplied_Bo_W = body_forces[body_node_index];
+
+      // Get hinge mapping matrix.
+      const MatrixUpTo6<T> H_PB_W = node.GetJacobianFromArray(H_PB_W_cache);
+
+      node.CalcArticulatedBodyCache_TipToBase(
+          mbt_context, pc, vc, H_PB_W, Fapplied_Bo_W, tau_applied, abc);
+    }
+  }
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;

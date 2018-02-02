@@ -528,7 +528,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @note This same method can be used to access arrays of generalized
   /// accelerations (v̇) and of generalized forces (τ) since they all have the
   /// same dimensions and are indexed in the same way.
-  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
+  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
+  get_generalized_forces_from_array(
       const VectorX<T>& tau_array) const {
     return get_velocities_from_array(tau_array);
   }
