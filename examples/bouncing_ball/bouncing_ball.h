@@ -12,9 +12,6 @@ namespace bouncing_ball {
 /// Dynamical representation of the idealized hybrid dynamics
 /// of a ball dropping from a height and bouncing on a surface.
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
-///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
@@ -34,29 +31,46 @@ template <typename T>
 class BouncingBall : public Ball<T> {
  public:
   /// Constructor for the BouncingBall system.
-  BouncingBall();
+  BouncingBall() {
+    signed_distance_witness_ =
+        std::make_unique<SignedDistanceWitnessFunction<T>>(*this);
+  }
 
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>& events,
-      systems::State<T>* state) const override;
+      systems::State<T>* next_state) const override {
+    systems::VectorBase<T>& next_cstate =
+        next_state->get_mutable_continuous_state().get_mutable_vector();
+
+    // Get present state.
+    const systems::VectorBase<T>& cstate =
+        context.get_continuous_state().get_vector();
+
+    // Copy the present state to the new one.
+    next_state->CopyFrom(context.get_state());
+
+    // Verify that velocity is non-positive.
+    DRAKE_DEMAND(cstate.GetAtIndex(1) <= 0.0);
+
+    // Update the velocity.
+    next_cstate.SetAtIndex(
+        1, cstate.GetAtIndex(1) * this->restitution_coef_ * -1.);
+  }
 
   void DoGetWitnessFunctions(
       const systems::Context<T>& context,
       std::vector<const systems::WitnessFunction<T>*>* witnesses)
-      const override;
+      const override {
+    witnesses->push_back(signed_distance_witness_.get());
+  }
 
-  /// Getter for the coefficient of restitution for this model.
+    /// Getter for the coefficient of restitution for this model.
   double get_restitution_coef() const { return restitution_coef_; }
 
  private:
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
 
   std::unique_ptr<SignedDistanceWitnessFunction<T>> signed_distance_witness_;
-
-  // Numerically intolerant signum function.
-  int sgn(T x) const {
-    return (T(0) < x) - (x < T(0));
-  }
 };
 
 }  // namespace bouncing_ball

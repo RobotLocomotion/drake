@@ -24,7 +24,6 @@ drake_cc_library(
     srcs = ["bouncing_ball.cc"],
     hdrs = [
         "bouncing_ball.h",
-        "bouncing_ball-inl.h",
         "signed_distance_witness.h",
     ],
     deps = [
