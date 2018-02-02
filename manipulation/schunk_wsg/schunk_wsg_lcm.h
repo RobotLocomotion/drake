@@ -51,13 +51,12 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
     return this->get_output_port(max_force_output_port_);
   }
 
-
  private:
   void OutputTarget(const systems::Context<double>& context,
                     systems::BasicVector<double>* output) const;
 
   void OutputForce(const systems::Context<double>& context,
-                    systems::BasicVector<double>* output) const;
+                   systems::BasicVector<double>* output) const;
 
   /// Latches the input port into the discrete state.
   void DoCalcDiscreteVariableUpdates(
@@ -93,8 +92,17 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 /// measured gripping force.
 class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
-  SchunkWsgStatusSender(int input_size,
+  SchunkWsgStatusSender(int input_state_size, int input_torque_size,
                         int position_index, int velocity_index);
+
+  const systems::InputPortDescriptor<double>& get_input_port_wsg_state() const {
+    return this->get_input_port(input_port_wsg_state_);
+  }
+
+  const systems::InputPortDescriptor<double>& get_input_port_measured_torque()
+      const {
+    return this->get_input_port(input_port_measured_torque_);
+  }
 
  private:
   void OutputStatus(const systems::Context<double>& context,
@@ -102,6 +110,8 @@ class SchunkWsgStatusSender : public systems::LeafSystem<double> {
 
   const int position_index_{};
   const int velocity_index_{};
+  int input_port_measured_torque_{};
+  int input_port_wsg_state_{};
 };
 
 }  // namespace schunk_wsg
