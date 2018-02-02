@@ -27,6 +27,11 @@ from pydrake.systems.test.test_util import (
     )
 
 
+def noop(*args, **kwargs):
+    # When a callback is required for an interface, but not useful for testing.
+    pass
+
+
 class CustomAdder(LeafSystem):
     # Reimplements `Adder`.
     def __init__(self, num_inputs, size):
@@ -116,11 +121,13 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(np.allclose([5, 7, 9], value))
 
     def test_leaf_system_overrides(self):
+        test = self
 
         class TrivialSystem(LeafSystem):
             def __init__(self):
                 LeafSystem.__init__(self)
                 self.called_publish = False
+                self.called_feedthrough = False
                 self.called_discrete = False
                 # Ensure we have desired overloads.
                 self._DeclarePeriodicPublish(0.1)
@@ -129,11 +136,27 @@ class TestCustom(unittest.TestCase):
                 self._DeclarePeriodicDiscreteUpdate(
                     period_sec=0.1, offset_sec=0.)
                 self._DeclareDiscreteState(1)
+                # Ensure that we have inputs / outputs to call direct
+                # feedthrough.
+                self._DeclareInputPort(PortDataType.kVectorValued, 1)
+                self._DeclareVectorOutputPort(BasicVector(1), noop)
 
             def _DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
                 LeafSystem._DoPublish(self, context, events)
                 self.called_publish = True
+
+            def _DoHasDirectFeedthrough(self, input_port, output_port):
+                # Test inputs.
+                test.assertEquals(input_port, 0)
+                test.assertEquals(output_port, 0)
+                # Call base method to ensure we do not get recursion.
+                base_return = LeafSystem._DoHasDirectFeedthrough(
+                    self, input_port, output_port)
+                test.assertTrue(base_return is None)
+                # Return custom methods.
+                self.called_feedthrough = True
+                return False
 
             def _DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state):
@@ -144,9 +167,12 @@ class TestCustom(unittest.TestCase):
 
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
+        self.assertFalse(system.called_feedthrough)
         self.assertFalse(system.called_discrete)
         results = call_leaf_system_overrides(system)
         self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_feedthrough)
+        self.assertFalse(results["has_direct_feedthrough"])
         self.assertTrue(system.called_discrete)
         self.assertEquals(results["discrete_next_t"], 0.1)
 

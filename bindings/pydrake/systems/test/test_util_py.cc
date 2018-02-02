@@ -81,6 +81,10 @@ PYBIND11_MODULE(test_util, m) {
       system.Publish(*context, *events);
     }
     {
+      // Call `HasDirectFeedthrough` to test `DoHasDirectFeedthrough`.
+      results["has_direct_feedthrough"] = system.HasDirectFeedthrough(0, 0);
+    }
+    {
       // Call `CalcDiscreteVariableUpdates` to test
       // `DoCalcDiscreteVariableUpdates`.
       auto& state = context->get_mutable_discrete_state();

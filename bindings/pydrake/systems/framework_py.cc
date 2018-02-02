@@ -75,6 +75,7 @@ class LeafSystemPublic : public LeafSystem<T> {
   // (Otherwise, we get an error about inaccessible downcasting when trying to
   // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
   using Base::DoPublish;
+  using Base::DoHasDirectFeedthrough;
   using Base::DoCalcDiscreteVariableUpdates;
 };
 
@@ -103,6 +104,15 @@ class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
     Base::DoPublish(context, events);
   }
 
+  optional<bool> DoHasDirectFeedthrough(
+      int input_port, int output_port) const override {
+    PYBIND11_OVERLOAD_INT(
+        optional<bool>, LeafSystem<T>, "_DoHasDirectFeedthrough",
+        input_port, output_port);
+    // If the macro did not return, use default functionality.
+    return Base::DoHasDirectFeedthrough(input_port, output_port);
+  }
+
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>& events,
@@ -111,6 +121,7 @@ class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
     PYBIND11_OVERLOAD_INT(
         void, LeafSystem<T>, "_DoCalcDiscreteVariableUpdates",
         &context, events, discrete_state);
+    // If the macro did not return, use default functionality.
     Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
   }
 };
@@ -143,10 +154,21 @@ class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
       const Context<T>& context,
       const vector<const PublishEvent<T>*>& events) const override {
     // Copied from above, since we cannot use `PyLeafSystemBase` due to final
-    // overrides.
+    // overrides of some methods.
+    // TODO(eric.cousineau): Make this more granular?
     PYBIND11_OVERLOAD_INT(
         void, LeafSystem<T>, "_DoPublish", &context, events);
+    // If the macro did not return, use default functionality.
     Base::DoPublish(context, events);
+  }
+
+  optional<bool> DoHasDirectFeedthrough(
+      int input_port, int output_port) const override {
+    PYBIND11_OVERLOAD_INT(
+        optional<bool>, LeafSystem<T>, "_DoHasDirectFeedthrough",
+        input_port, output_port);
+    // If the macro did not return, use default functionality.
+    return Base::DoHasDirectFeedthrough(input_port, output_port);
   }
 
   void DoCalcVectorOutput(
@@ -165,6 +187,7 @@ class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
         // pointer to ensure conceptual clarity. pybind11 `type_caster`
         // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
         &context, input, state, ToEigenRef(output));
+    // If the macro did not return, use default functionality.
     Base::DoCalcVectorOutput(context, input, state, output);
   }
 
@@ -178,6 +201,7 @@ class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
     PYBIND11_OVERLOAD_INT(
         void, VectorSystem<T>, "_DoCalcVectorTimeDerivatives",
         &context, input, state, ToEigenRef(derivatives));
+    // If the macro did not return, use default functionality.
     Base::DoCalcVectorOutput(context, input, state, derivatives);
   }
 
@@ -191,6 +215,7 @@ class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
     PYBIND11_OVERLOAD_INT(
         void, VectorSystem<T>, "_DoCalcVectorDiscreteVariableUpdates",
         &context, input, state, ToEigenRef(next_state));
+    // If the macro did not return, use default functionality.
     Base::DoCalcVectorDiscreteVariableUpdates(
         context, input, state, next_state);
   }
@@ -264,6 +289,9 @@ PYBIND11_MODULE(framework, m) {
     .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
          py::arg("period_sec"), py::arg("offset_sec") = 0.)
     .def("_DoPublish", &LeafSystemPublic::DoPublish)
+    // System attributes.
+    .def("_DoHasDirectFeedthrough",
+         &LeafSystemPublic::DoHasDirectFeedthrough)
     // Continuous state.
     .def("_DeclareContinuousState",
          py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
