@@ -165,6 +165,17 @@ drake_py_test(
     deps = [":all_py"],
 )
 
+drake_py_test(
+    name = "all_install_test",
+    size = "medium",
+    # Increase the timeout so that debug builds are successful.
+    timeout = "long",
+    data = ["//:install"],
+    deps = [
+        "//tools/install:install_test_helper",
+    ],
+)
+
 # Test ODR (One Definition Rule).
 drake_pybind_library(
     name = "odr_test_module_py",
