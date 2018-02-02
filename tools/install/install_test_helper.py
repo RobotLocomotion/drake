@@ -16,10 +16,19 @@ def install(installation_folder="tmp", installed_subfolders=[],
     in installation directory, a string containing an error message is
     returned.
     """
+    # Ensure that PWD is not a symlink.
+    pwd = os.getcwd()
+    assert not os.path.islink(pwd)
+    # Ensure that we are under `runfiles`.
+    assert os.path.dirname(pwd).endswith(".runfiles")
+    # If we are running this via `bazel run`, then `tmp` may have been left
+    # from a previous run.
+    if os.path.exists(installation_folder):
+        shutil.rmtree(installation_folder)
     os.mkdir(installation_folder)
     # Install target and its dependencies in scratch space.
     subprocess.check_call(
-        ["install",
+        ["./install",
          os.path.abspath(installation_folder)]
         )
     content_install_folder = os.listdir(installation_folder)
@@ -30,17 +39,19 @@ def install(installation_folder="tmp", installed_subfolders=[],
     # Skip the "remove Bazel build artifacts" when asked.
     if not rmdir_cwd:
         return None
-    # Remove Bazel build artifacts, and ensure that we only have install
-    # artifacts.
-    content_test_folder = os.listdir(os.getcwd())
-    content_test_folder.remove('tmp')
-    for element in content_test_folder:
-        if os.path.isdir(element):
-            shutil.rmtree(element)
-        else:
-            os.remove(element)
-    content_install_folder = os.listdir(".")
-    if content_install_folder != [installation_folder]:
-        return ("Bazel build artifact not removed in test folder: "
-                + str(content_install_folder))
+    # If under `bazel test`, remove Bazel build artifacts, and ensure that we
+    # only have install artifacts. If we removed these files under `bazel run`,
+    # then may not refresh `.runfiles`, breaking future invocations.
+    if "TEST_TMPDIR" in os.environ:
+        content_test_folder = os.listdir(os.getcwd())
+        content_test_folder.remove(installation_folder)
+        for element in content_test_folder:
+            if os.path.isdir(element):
+                shutil.rmtree(element)
+            else:
+                os.remove(element)
+        content_install_folder = os.listdir(".")
+        if content_install_folder != [installation_folder]:
+            return ("Bazel build artifact not removed in test folder: "
+                    + str(content_install_folder))
     return None
