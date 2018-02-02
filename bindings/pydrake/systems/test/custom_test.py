@@ -76,6 +76,10 @@ class CustomVectorSystem(VectorSystem):
         x_n[:] = x + 2*u
         self.has_called.append("discrete")
 
+    def _DoHasDirectFeedthrough(self, input_port, output_port):
+        self.has_called.append("feedthrough")
+        return True
+
 
 class TestCustom(unittest.TestCase):
     def _create_adder_system(self):
@@ -176,6 +180,11 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_discrete)
         self.assertEquals(results["discrete_next_t"], 0.1)
 
+        self.assertFalse(system.HasAnyDirectFeedthrough())
+        self.assertFalse(system.HasDirectFeedthrough(output_port=0))
+        self.assertFalse(
+            system.HasDirectFeedthrough(input_port=0, output_port=0))
+
     def test_vector_system_overrides(self):
         dt = 0.5
         for is_discrete in [False, True]:
@@ -188,10 +197,13 @@ class TestCustom(unittest.TestCase):
             # Dispatch virtual calls from C++.
             output = call_vector_system_overrides(
                 system, context, is_discrete, dt)
+            self.assertTrue(system.HasAnyDirectFeedthrough())
 
             # Check call order.
             update_type = is_discrete and "discrete" or "continuous"
-            assert system.has_called == [update_type, "output"]
+            self.assertEquals(
+                system.has_called,
+                [update_type, "feedthrough", "output", "feedthrough"])
 
             # Check values.
             state = context.get_state()
