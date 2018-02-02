@@ -14,12 +14,12 @@ bazel build //tools:drake_visualizer
 
 Ensure that you have built the iiwa controller with
 ```
-bazel build //drake/examples/kuka_iiwa_arm:iiwa_controller
+bazel build //examples/kuka_iiwa_arm:iiwa_controller
 ```
 
 Ensure that you have built the box rotation demo with
 ```
-bazel build //drake/examples/kuka_iiwa_arm/dev/box_rotation/...
+bazel build //examples/kuka_iiwa_arm/dev/box_rotation/...
 ```
 
 All instructions assume that you are launching from the `drake`
