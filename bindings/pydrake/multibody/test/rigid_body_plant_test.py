@@ -3,7 +3,7 @@ import os
 import unittest
 
 from pydrake import getDrakePath
-from pydrake.rbtree import RigidBodyTree, FloatingBaseType
+from pydrake.multibody.rigid_body_tree import RigidBodyTree, FloatingBaseType
 
 import pydrake.multibody.rigid_body_plant as mut
 
