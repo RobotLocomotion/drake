@@ -29,7 +29,7 @@ BouncingBall<T>::BouncingBall() {
 
 template <class T>
 void BouncingBall<T>::DoGetWitnessFunctions(
-    const systems::Context<T>& context,
+    const systems::Context<T>&,
     std::vector<const systems::WitnessFunction<T>*>* witnesses) const {
   witnesses->push_back(signed_distance_witness_.get());
 }
