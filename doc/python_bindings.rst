@@ -117,7 +117,7 @@ While this code does not:
 
     from pydrake.common import FindResourceOrThrow
     from pydrake.multibody.rigid_body_plant import RigidBodyPlant
-    from pydrake.rbtree import RigidBodyTree
+    from pydrake.multibody.rigid_body_tree import RigidBodyTree
     from pydrake.systems.analysis import Simulator
 
     tree = RigidBodyTree(

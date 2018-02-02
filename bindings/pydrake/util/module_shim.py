@@ -1,6 +1,9 @@
 import sys
 import traceback
 
+# TODO(eric.cousineau): Make autocomplete ignore `ModuleShim` attributes
+# (e.g. `install`).
+
 
 class ModuleShim(object):
     """ Provide a shim for automatically resolving extra variables.

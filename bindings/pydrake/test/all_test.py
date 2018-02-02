@@ -17,15 +17,13 @@ class TestAll(unittest.TestCase):
             "jacobian",
             "sin",
             "cos",
-            # parsers
-            "PackageMap",
-            # rbtree
-            "RigidBodyTree",
             # symbolic
             "Variable",
             "Expression",
             # multibody
+            "PackageMap",
             "RigidBodyPlant",
+            "RigidBodyTree",
             # solvers
             "MathematicalProgram",
             "LinearConstraint",
@@ -54,7 +52,7 @@ class TestAll(unittest.TestCase):
             # N.B. Synchronize this with `doc/python_bindings.rst`.
             from pydrake.common import FindResourceOrThrow
             from pydrake.multibody.rigid_body_plant import RigidBodyPlant
-            from pydrake.rbtree import RigidBodyTree
+            from pydrake.multibody.rigid_body_tree import RigidBodyTree
             from pydrake.systems.analysis import Simulator
 
             tree = RigidBodyTree(
