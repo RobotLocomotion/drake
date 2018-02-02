@@ -1,0 +1,149 @@
+<?xml version="1.0" ?>
+<robot name = "mug">
+  <material name="Black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+  <material name="Blue">
+    <color rgba="0.0 0.0 0.8 1.0"/>
+  </material>
+  <material name="Green">
+    <color rgba="0.0 0.8 0.0 1.0"/>
+  </material>
+  <material name="Grey">
+    <color rgba="0.4 0.4 0.4 1.0"/>
+  </material>
+  <material name="Orange">
+    <color rgba="1.0 0.423529411765 0.0392156862745 1.0"/>
+  </material>
+  <material name="Brown">
+    <color rgba="0.870588235294 0.811764705882 0.764705882353 1.0"/>
+  </material>
+  <material name="Tan">
+    <color rgba="0.823 0.706 0.549 1.0"/>
+  </material>
+  <material name="Red">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+  <material name="White">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+  
+  <link name = "mug">
+    <inertial>
+      <origin xyz = "0 0 0"/>
+      <mass value="0.094"/>
+      <!--This inertia is computed at the CoM frame -->
+      <inertia ixx="0.000156" ixy="0" ixz="0" iyy="0.000156" iyz="0" izz="0.00015"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <cylinder length="0.102" radius="0.0399"/>
+      </geometry>
+      <material name="Tan"/>
+    </visual>
+    <collision>
+      <!-- We use a cylinder slightly shorter than the mug as the collision 
+           geometry, together with some spheres on the bottom and top of the mug-->
+      <geometry>
+        <origin xyz = "0 0 0.01" rpy="0 0 0"/>
+        <cylinder length="0.08" radius="0.0399"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.0399 0 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.0399 0 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0.0399 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.0399 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.0283 0.0283 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.0283 0.0283 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.0283 -0.0283 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.0283 -0.0283 -0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.0399 0 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.0399 0 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0.0399 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.0399 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.0283 0.0283 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.0283 0.0283 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.0283 -0.0283 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.0283 -0.0283 0.051" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius = "1e-4"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
