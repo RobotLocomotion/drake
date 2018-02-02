@@ -6,7 +6,7 @@ load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
-    "get_drake_pybind_installs",
+    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
@@ -55,6 +55,7 @@ drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [
         "//drake/bindings/pydrake:symbolic_types_pybind",
+        "//drake/bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
@@ -88,7 +89,7 @@ drake_pybind_library(
     py_deps = [":mathematicalprogram_py"],
 )
 
-PYBIND_LIBRARIES = [
+PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
     ":ik_py",
     ":ipopt_py",
@@ -100,16 +101,24 @@ PY_LIBRARIES = [
     ":module_py",
 ]
 
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "solvers",
-    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+    deps = [":all_py"],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES,
+    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
 drake_py_test(

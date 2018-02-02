@@ -21,16 +21,15 @@ content = """
     "ignition-math4": {
       "Version": "%(ignition-math4_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/ignition-math4"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
-  "Default-Components": [ ":sdformat" ],
+  "Default-Components": [":sdformat"],
   "Components": {
     "sdformat": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libsdformat.so",
       "Includes": ["@prefix@/include"],
-      "Link-Flags": ["-ltinyxml"],
       "Requires": [
         "Boost:boost",
         "ignition-math4:ignition-math4"

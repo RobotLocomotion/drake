@@ -1,9 +1,11 @@
 To run drake-visualizer with the contact force visualization:
 
-$ cd drake-distro
-$ ./build/install/bin/drake-visualizer --script ./drake/multibody/rigid_body_plant/visualization/contact_viz.py
+$ cd drake
+$ bazel build //tools:drake_visualizer
+$ bazel-bin/tools/drake_visualizer --script ./multibody/rigid_body_plant/visualization/contact_viz.py
 
 To run drake-visualizer with the simulation and real time factor display:
 
-$ cd drake-distro
-$ ./build/install/bin/drake-visualizer --script ./drake/multibody/rigid_body_plant/visualization/show_time.py
+$ cd drake
+$ bazel build //tools:drake_visualizer
+$ bazel-bin/tools/drake_visualizer --script ./multibody/rigid_body_plant/visualization/show_time.py

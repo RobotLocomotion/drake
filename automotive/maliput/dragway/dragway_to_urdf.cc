@@ -64,7 +64,7 @@ int exec(int argc, char* argv[]) {
 
   // The following is necessary for users to know where to find the resulting
   // files when this program is executed in a sandbox. This occurs, for example
-  // when using `bazel run //drake/automotive/maliput/dragway:dragway_to_urdf`.
+  // when using `bazel run //automotive/maliput/dragway:dragway_to_urdf`.
   spruce::path my_path;
   my_path.setAsCurrent();
 

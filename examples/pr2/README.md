@@ -19,8 +19,8 @@ $ ./bazel-bin/tools/drake_visualizer
 
 2. Open another terminal and navigate to the root of the Drake distribution.
 Then, build and launch the pr2_passive_simulation, with the following commands:
-$ bazel build //drake/examples/pr2:pr2_passive_simulation 
-$ ./bazel-bin/drake/examples/pr2/pr2_passive_simulation 
+$ bazel build //examples/pr2:pr2_passive_simulation 
+$ ./bazel-bin/examples/pr2/pr2_passive_simulation 
 The seconds (relative to the simulation) that the simulation will run for can 
 be specified with the argument --simulation_sec=<seconds to simulate>. If this
 argument is not specified, then the simulation will run forever.

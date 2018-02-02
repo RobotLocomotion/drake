@@ -5,19 +5,23 @@
 #include <pybind11/stl.h>
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(_rbtree_py, m) {
   m.doc() = "Bindings for the RigidBodyTree class";
 
-  using drake::AutoDiffXd;
   using drake::multibody::joints::FloatingBaseType;
   using drake::parsers::PackageMap;
+  namespace sdf = drake::parsers::sdf;
 
+  py::module::import("pydrake.multibody.shapes");
   py::module::import("pydrake.parsers");
 
   py::enum_<FloatingBaseType>(m, "FloatingBaseType")
@@ -95,12 +99,12 @@ PYBIND11_MODULE(_rbtree_py, m) {
       return tree.doKinematics(q, v);
     })
     .def("doKinematics", [](const RigidBodyTree<double>& tree,
-                            const VectorXAutoDiffXd& q) {
+                            const VectorX<AutoDiffXd>& q) {
       return tree.doKinematics(q);
     })
     .def("doKinematics", [](const RigidBodyTree<double>& tree,
-                            const VectorXAutoDiffXd& q,
-                            const VectorXAutoDiffXd& v) {
+                            const VectorX<AutoDiffXd>& q,
+                            const VectorX<AutoDiffXd>& v) {
       return tree.doKinematics(q, v);
     })
     .def("CalcBodyPoseInWorldFrame", [](const RigidBodyTree<double>& tree,
@@ -120,6 +124,7 @@ PYBIND11_MODULE(_rbtree_py, m) {
          py::arg("in_terms_of_qdot") = false)
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
     .def("get_num_frames", &RigidBodyTree<double>::get_num_frames)
+    .def("get_num_actuators", &RigidBodyTree<double>::get_num_actuators)
     .def("getBodyOrFrameName",
          &RigidBodyTree<double>::getBodyOrFrameName,
          py::arg("body_or_frame_id"))
@@ -185,14 +190,30 @@ PYBIND11_MODULE(_rbtree_py, m) {
           auto pts = Eigen::Matrix3Xd(3, 0);
           self.getTerrainContactPoints(body, &pts, group_name);
           return pts;
-        }, py::arg("body"), py::arg("group_name")="");
+        }, py::arg("body"), py::arg("group_name")="")
+    .def("massMatrix", &RigidBodyTree<double>::massMatrix<double>)
+    .def("dynamicsBiasTerm", &RigidBodyTree<double>::dynamicsBiasTerm<double>,
+         py::arg("cache"), py::arg("external_wrenches"),
+         py::arg("include_velocity_terms") = true)
+    .def("inverseDynamics", &RigidBodyTree<double>::inverseDynamics<double>,
+         py::arg("cache"),
+         py::arg("external_wrenches"),
+         py::arg("vd"),
+         py::arg("include_velocity_terms") = true)
+    .def("frictionTorques",
+         [](const RigidBodyTree<double>* self, const VectorX<double>& v) {
+           return self->frictionTorques(v);
+         })
+    .def_readonly("B", &RigidBodyTree<double>::B);
 
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
 
   py::class_<RigidBody<double> >(m, "RigidBody")
     .def("get_name", &RigidBody<double>::get_name)
-    .def("get_body_index", &RigidBody<double>::get_body_index);
+    .def("get_body_index", &RigidBody<double>::get_body_index)
+    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass)
+    .def("get_visual_elements", &RigidBody<double>::get_visual_elements);
 
   py::class_<RigidBodyFrame<double>,
              std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
@@ -205,4 +226,11 @@ PYBIND11_MODULE(_rbtree_py, m) {
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         &drake::parsers::urdf::\
           AddModelInstanceFromUrdfStringSearchingInRosPackages);
+  m.def("AddModelInstancesFromSdfString",
+        &sdf::AddModelInstancesFromSdfString);
+  m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
+        &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages);
 }
+
+}  // namespace pydrake
+}  // namespace drake

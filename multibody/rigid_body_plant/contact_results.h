@@ -14,8 +14,10 @@ template <typename T>
 class RigidBodyPlant;
 
 /**
- A class containg the contact results (contact points and response spatial
- forces for each colliding pair of collision elements).
+ A class containing the contact results (contact points and response spatial
+ forces for each colliding pair of collision elements) as well as the sum of
+ all JᵀF for all contact, where J is the contact point Jacobian, and F is
+ the contact force.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 
@@ -47,8 +49,25 @@ class ContactResults {
   ContactInfo<T>& AddContact(drake::multibody::collision::ElementId element_a,
                              drake::multibody::collision::ElementId element_b);
 
+  /**
+   * Stores the contact forces as a force in the generalized coordinate.
+   * @param f = J^T * contact_force, where J is the stacked contact Jacobian,
+   * and contact_force is the stacked contact forces.
+   */
+  void set_generalized_contact_force(const VectorX<T>& f) {
+    generalized_contact_force_ = f;
+  }
+
+  /**
+   * Returns the stored generalized force that represents the contact forces.
+   */
+  const VectorX<T>& get_generalized_contact_force() const {
+    return generalized_contact_force_;
+  }
+
  private:
   std::vector<ContactInfo<T>> contacts_;
+  VectorX<T> generalized_contact_force_;
 };
 
 }  // namespace systems

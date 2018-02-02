@@ -173,6 +173,11 @@ int DoMain() {
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
   iiwa_status_sender->set_name("iiwa_status_sender");
 
+  std::vector<int> instance_ids = {iiwa_instance.instance_id};
+  auto external_torque_converter =
+      builder.AddSystem<IiwaContactResultsToExternalTorque>(
+          tree, instance_ids);
+
   // TODO(siyuan): Connect this to kuka_planner runner once it generates
   // reference acceleration.
   auto iiwa_zero_acceleration_source =
@@ -192,7 +197,13 @@ int DoMain() {
   builder.Connect(iiwa_command_receiver->get_output_port(0),
                   iiwa_status_sender->get_command_input_port());
   builder.Connect(model->get_output_port_computed_torque(),
-                  iiwa_status_sender->get_torque_commanded_input_port());
+                  iiwa_status_sender->get_commanded_torque_input_port());
+  builder.Connect(model->get_output_port_iiwa_measured_torque(),
+                  iiwa_status_sender->get_measured_torque_input_port());
+  builder.Connect(model->get_output_port_contact_results(),
+                  external_torque_converter->get_input_port(0));
+  builder.Connect(external_torque_converter->get_output_port(0),
+                  iiwa_status_sender->get_external_torque_input_port());
   builder.Connect(iiwa_status_sender->get_output_port(0),
                   iiwa_status_pub->get_input_port(0));
 
@@ -210,7 +221,9 @@ int DoMain() {
       manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->get_output_port_wsg_state().size(), 0, 1);
+      model->get_output_port_wsg_state().size(),
+      manipulation::schunk_wsg::kSchunkWsgPositionIndex,
+      manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
   wsg_status_sender->set_name("wsg_status_sender");
 
   builder.Connect(wsg_command_sub->get_output_port(0),
@@ -219,6 +232,8 @@ int DoMain() {
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_status_sender->get_input_port(0));
+  builder.Connect(model->get_output_port_wsg_measured_torque(),
+                  wsg_status_sender->get_input_port(1));
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_controller->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);

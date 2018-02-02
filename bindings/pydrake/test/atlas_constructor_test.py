@@ -16,6 +16,7 @@ class TestAtlasConstructor(unittest.TestCase):
         robot = rbtree.RigidBodyTree(
             model, package_map=pm,
             floating_base_type=rbtree.FloatingBaseType.kRollPitchYaw)
+        self.assertEqual(robot.get_num_actuators(), 30)
 
 
 if __name__ == '__main__':

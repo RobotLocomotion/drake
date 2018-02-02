@@ -4,9 +4,14 @@ _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
 _DEFAULT_STATIC = False
 
-def _run_pkg_config(repository_ctx, command_line):
-    """Run command_line and return its tokenized output."""
-    result = repository_ctx.execute(command_line)
+def _run_pkg_config(repository_ctx, command_line, pkg_config_paths):
+    """Run command_line with PKG_CONFIG_PATH = pkg_config_paths and return its
+    tokenized output."""
+    pkg_config_path = ":".join(pkg_config_paths)
+    result = repository_ctx.execute(command_line,
+                                    environment = {
+                                        "PKG_CONFIG_PATH": pkg_config_path,
+                                    })
     if result.return_code != 0:
         return struct(error = "error {} from {}: {}{}".format(
             result.return_code, command_line, result.stdout, result.stderr))
@@ -29,8 +34,12 @@ def setup_pkg_config_repository(repository_ctx):
             repository_ctx.os.environ["PATH"]))
     args = [tool_path, repository_ctx.attr.modname]
 
+    pkg_config_paths = getattr(repository_ctx.attr,
+                               "pkg_config_paths",
+                               [])
+
     # Check if we can find the required *.pc file of any version.
-    result = _run_pkg_config(repository_ctx, args)
+    result = _run_pkg_config(repository_ctx, args, pkg_config_paths)
     if result.error != None:
         return result
 
@@ -38,7 +47,7 @@ def setup_pkg_config_repository(repository_ctx):
     atleast_version = getattr(repository_ctx.attr, "atleast_version", "")
     if atleast_version:
         result = _run_pkg_config(repository_ctx, args + [
-            "--atleast-version", atleast_version])
+            "--atleast-version", atleast_version], pkg_config_paths)
         if result.error != None:
             return struct(error = result.error + "during version check")
 
@@ -47,7 +56,7 @@ def setup_pkg_config_repository(repository_ctx):
     libs_args = args + ["--libs"]
     if static:
         libs_args = libs_args + ["--static"]
-    result = _run_pkg_config(repository_ctx, libs_args)
+    result = _run_pkg_config(repository_ctx, libs_args, pkg_config_paths)
     if result.error != None:
         return result
     linkopts = result.tokens
@@ -75,6 +84,11 @@ def setup_pkg_config_repository(repository_ctx):
                         linkopt = "-l" + name
                         linkopts[i] = linkopt
                         break
+        # Add `-Wl,-rpath <path>` for `-L<path>`.
+        # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
+        if linkopt.startswith("-L"):
+            linkopts[i] = "-Wl,-rpath " + linkopt[2:] + " " + linkopt
+            continue
         # Switches stay put.
         if linkopt.startswith("-"):
             continue
@@ -85,7 +99,9 @@ def setup_pkg_config_repository(repository_ctx):
         linkopts[i - 1] += " " + non_switch_arg
 
     # Determine cflags; we'll split into includes and defines in a moment.
-    result = _run_pkg_config(repository_ctx, args + ["--cflags"])
+    result = _run_pkg_config(repository_ctx,
+                             args + ["--cflags"],
+                             pkg_config_paths)
     if result.error != None:
         return result
     cflags = result.tokens
@@ -181,10 +197,10 @@ pkg_config_repository = repository_rule(
         "extra_includes": attr.string_list(),
         "extra_linkopts": attr.string_list(),
         "extra_deps": attr.string_list(),
+        "pkg_config_paths": attr.string_list(),
     },
     environ = [
         "PATH",
-        "PKG_CONFIG_PATH",
     ],
     local = True,
     implementation = _impl,
@@ -226,4 +242,7 @@ Args:
     extra_includes: (Optional) Extra items to add to the library target.
     extra_linkopts: (Optional) Extra items to add to the library target.
     extra_deps: (Optional) Extra items to add to the library target.
+    pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
+                      that we ignore the enviornment variable PKG_CONFIG_PATH
+                      set by the user.
 """

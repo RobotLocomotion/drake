@@ -370,6 +370,7 @@ drake_cc_library(
     hdrs = ["type_safe_index.h"],
     deps = [
         ":essential",
+        ":hash",
         ":nice_type_name",
     ],
 )
@@ -417,11 +418,10 @@ install(
     name = "install",
     targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
-    # for putting programs into libexec and including the workspace and/or
-    # package name in the installed path.  For now, we'll just specify it
-    # manually.
-    runtime_dest = "libexec/drake/drake/common",
-    data_dest = "share/drake/drake",
+    # for programs not in bin/, and including the workspace and/or package name
+    # in the installed path.  For now, we'll just specify it manually.
+    runtime_dest = "share/drake/common",
+    data_dest = "share/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )
@@ -653,6 +653,7 @@ drake_cc_googletest(
         "test/find_resource_test_data.txt",
     ],
     deps = [
+        ":drake_path",
         ":find_resource",
     ],
 )

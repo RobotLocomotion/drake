@@ -190,12 +190,12 @@ struct SNOPTRun {
 
 // Return the number of rows in the nonlinear constraint.
 template <typename C>
-size_t SingleNonlinearConstraintSize(const C& constraint) {
+int SingleNonlinearConstraintSize(const C& constraint) {
   return constraint.num_constraints();
 }
 
 template <>
-size_t SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
+int SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint) {
   return 1;
 }
@@ -246,7 +246,7 @@ void EvaluateNonlinearConstraints(
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.constraint();
-    size_t num_constraints = SingleNonlinearConstraintSize(*c);
+    int num_constraints = SingleNonlinearConstraintSize(*c);
 
     int num_v_variables = binding.GetNumElements();
     this_x.resize(num_v_variables);
@@ -355,10 +355,10 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 template <typename C>
 void UpdateNumNonlinearConstraintsAndGradients(
     const std::vector<Binding<C>>& constraint_list,
-    size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
+    int* num_nonlinear_constraints, int* max_num_gradients) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
-    size_t n = c->num_constraints();
+    int n = c->num_constraints();
     *max_num_gradients += n * binding.GetNumElements();
     *num_nonlinear_constraints += n;
   }
@@ -373,7 +373,7 @@ template <>
 void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
     const std::vector<Binding<LinearComplementarityConstraint>>&
         constraint_list,
-    size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
+    int* num_nonlinear_constraints, int* max_num_gradients) {
   *num_nonlinear_constraints += constraint_list.size();
   for (const auto& binding : constraint_list) {
     *max_num_gradients += binding.constraint()->M().rows();
@@ -388,15 +388,15 @@ void UpdateConstraintBoundsAndGradients(
     size_t* constraint_index, size_t* grad_index) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
-    size_t n = c->num_constraints();
+    int n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       Flow[*constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[*constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
 
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
         iGfun[*grad_index] = *constraint_index + i + 1;  // row order
         jGvar[*grad_index] =
@@ -441,7 +441,7 @@ Eigen::SparseMatrix<double> LinearConstraintA(const C& constraint) {
 
 // Return the number of rows in the linear constraint
 template <typename C>
-size_t LinearConstraintSize(const C& constraint) {
+int LinearConstraintSize(const C& constraint) {
   return constraint.num_constraints();
 }
 
@@ -450,7 +450,7 @@ size_t LinearConstraintSize(const C& constraint) {
 // The linear constraint we add to the program is Mx >= -q
 // This linear constraint has the same number of rows, as matrix M.
 template <>
-size_t LinearConstraintSize<LinearComplementarityConstraint>(
+int LinearConstraintSize<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint) {
   return constraint.M().rows();
 }
@@ -489,7 +489,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
                             size_t* linear_constraint_index) {
   for (auto const& binding : linear_constraints) {
     auto const& c = binding.constraint();
-    size_t n = LinearConstraintSize(*c);
+    int n = LinearConstraintSize(*c);
 
     const Eigen::SparseMatrix<double> A_constraint = LinearConstraintA(*c);
 
@@ -503,7 +503,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
     }
 
     const auto bounds = LinearConstraintBounds(*c);
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       Flow[*constraint_index + i] =
           static_cast<snopt::doublereal>(bounds.first(i));
       Fupp[*constraint_index + i] =
@@ -565,7 +565,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
+  int num_nonlinear_constraints = 0, max_num_gradients = nx;
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
@@ -579,7 +579,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
       prog.linear_complementarity_constraints(), &num_nonlinear_constraints,
       &max_num_gradients);
 
-  size_t num_linear_constraints = 0;
+  int num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
     num_linear_constraints += binding.constraint()->num_constraints();

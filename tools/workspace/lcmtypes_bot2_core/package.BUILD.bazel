@@ -10,7 +10,6 @@ load(
 )
 load(
     "@drake//tools/workspace/lcm:lcm.bzl",
-    "lcm_c_library",
     "lcm_cc_library",
     "lcm_java_library",
     "lcm_py_library",
@@ -23,14 +22,6 @@ LCM_STRUCTS = [
     f.replace("lcmtypes/bot_core_", "").replace(".lcm", "")
     for f in LCM_SRCS
 ]
-
-lcm_c_library(
-    name = "lcmtypes_bot2_core_c",
-    includes = ["lcmtypes"],
-    lcm_package = "bot_core",
-    lcm_srcs = LCM_SRCS,
-    lcm_structs = LCM_STRUCTS,
-)
 
 lcm_cc_library(
     name = "lcmtypes_bot2_core",
@@ -75,7 +66,6 @@ install(
     workspace = CMAKE_PACKAGE,
     targets = [
         ":lcmtypes_bot2_core",
-        ":lcmtypes_bot2_core_c",
         ":lcmtypes_bot2_core_java",
         ":lcmtypes_bot2_core_py",
     ],

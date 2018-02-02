@@ -91,7 +91,7 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T>& context) {
         context.get_continuous_state_vector()).get_value();
   } else {
     x = dynamic_cast<const BasicVector<T>&>(
-        context.get_discrete_state_vector()).get_value();
+        context.get_discrete_state(0)).get_value();
   }
 
   const auto q = x.topRows(nq);

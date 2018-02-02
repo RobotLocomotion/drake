@@ -8,6 +8,7 @@
 #include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/manipulation/util/frame_pose_tracker.h"
@@ -271,7 +272,7 @@ LcmPlant::LcmPlant(
     builder.Connect(iiwa_command_receiver->get_output_port(0),
                     iiwa_status_sender->get_command_input_port());
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_computed_torque(),
-                    iiwa_status_sender->get_torque_commanded_input_port());
+                    iiwa_status_sender->get_commanded_torque_input_port());
 
     // Export iiwa status output port.
     output_port_iiwa_status_.push_back(
@@ -285,10 +286,14 @@ LcmPlant::LcmPlant(
                     iiwa_and_wsg_plant_->get_input_port_wsg_command(i));
 
     auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-        iiwa_and_wsg_plant_->get_output_port_wsg_state(i).size(), 0, 0);
+        iiwa_and_wsg_plant_->get_output_port_wsg_state(i).size(),
+        manipulation::schunk_wsg::kSchunkWsgPositionIndex,
+        manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
     wsg_status_sender->set_name("wsg_status_sender" + suffix);
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_state(i),
                     wsg_status_sender->get_input_port(0));
+    builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_measured_torque(i),
+                    wsg_status_sender->get_input_port(1));
 
     // Export wsg status output port.
     output_port_wsg_status_.push_back(

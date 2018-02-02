@@ -5,7 +5,8 @@ import shutil
 import subprocess
 
 
-def install(installation_folder="tmp", installed_subfolders=[]):
+def install(installation_folder="tmp", installed_subfolders=[],
+            rmdir_cwd=True):
     """Install into a temporary directory.
 
     Runs install script to install target in the specified temporary
@@ -26,6 +27,9 @@ def install(installation_folder="tmp", installed_subfolders=[]):
     for f in installed_subfolders:
         if f not in content_install_folder:
             return str(f) + " not found in " + str(content_install_folder)
+    # Skip the "remove Bazel build artifacts" when asked.
+    if not rmdir_cwd:
+        return None
     # Remove Bazel build artifacts, and ensure that we only have install
     # artifacts.
     content_test_folder = os.listdir(os.getcwd())

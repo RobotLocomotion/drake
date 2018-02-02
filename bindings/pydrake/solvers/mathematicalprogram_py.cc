@@ -5,41 +5,42 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_type_converter.h"
 
-namespace py = pybind11;
+using Eigen::Dynamic;
 using std::string;
+using std::vector;
 
-using drake::solvers::Binding;
-using drake::solvers::BoundingBoxConstraint;
-using drake::solvers::Constraint;
-using drake::solvers::Cost;
-using drake::solvers::EvaluatorBase;
-using drake::solvers::LinearConstraint;
-using drake::solvers::LinearCost;
-using drake::solvers::LinearEqualityConstraint;
-using drake::solvers::MathematicalProgram;
-using drake::solvers::MathematicalProgramSolverInterface;
-using drake::solvers::MatrixXDecisionVariable;
-using drake::solvers::QuadraticCost;
-using drake::solvers::SolutionResult;
-using drake::solvers::SolverId;
-using drake::solvers::SolverType;
-using drake::solvers::SolverTypeConverter;
-using drake::solvers::VectorXDecisionVariable;
-using drake::symbolic::Expression;
-using drake::symbolic::Formula;
-using drake::symbolic::Variable;
+namespace drake {
+namespace pydrake {
+
+using solvers::Binding;
+using solvers::BoundingBoxConstraint;
+using solvers::Constraint;
+using solvers::Cost;
+using solvers::EvaluatorBase;
+using solvers::LinearConstraint;
+using solvers::LinearCost;
+using solvers::LinearEqualityConstraint;
+using solvers::MathematicalProgram;
+using solvers::MathematicalProgramSolverInterface;
+using solvers::MatrixXDecisionVariable;
+using solvers::PositiveSemidefiniteConstraint;
+using solvers::QuadraticCost;
+using solvers::SolutionResult;
+using solvers::SolverId;
+using solvers::SolverType;
+using solvers::SolverTypeConverter;
+using solvers::VectorXDecisionVariable;
+using symbolic::Expression;
+using symbolic::Formula;
+using symbolic::Variable;
 
 namespace {
-// Unwrap an optional<T> for more idiomatic use in Python.  A nullopt in C++
-// becomes None in Python, and non-nullopt in C++ becomes T directly in Python.
-template <typename T>
-std::unique_ptr<T> deref_optional(const drake::optional<T>& value) {
-  return value ? std::make_unique<T>(*value) : nullptr;
-}
 
 /// Helper to adapt SolverType to SolverId.
 template <typename Value>
@@ -94,7 +95,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
     .def("solver_id", &MathematicalProgramSolverInterface::solver_id)
     .def("Solve", &MathematicalProgramSolverInterface::Solve)
     .def("solver_type", [](const MathematicalProgramSolverInterface& self) {
-        return deref_optional(SolverTypeConverter::IdToType(self.solver_id()));
+        return SolverTypeConverter::IdToType(self.solver_id());
     })
     .def("SolverName", [](const MathematicalProgramSolverInterface& self) {
         return self.solver_id().name();
@@ -144,15 +145,19 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
          py::arg("rows"),
          py::arg("name") = "b")
     .def("NewBinaryVariables",
-         static_cast<MatrixXDecisionVariable
-         (MathematicalProgram::*)(
-             int,
-             int,
-             const std::string&)
-         >(&MathematicalProgram::NewBinaryVariables),
+         py::overload_cast<int, int, const string&>(
+            &MathematicalProgram::NewBinaryVariables<Dynamic, Dynamic>),
          py::arg("rows"),
          py::arg("cols"),
          py::arg("name") = "b")
+    .def("NewSymmetricContinuousVariables",
+         // `py::overload_cast` and `overload_cast_explict` struggle with
+         // overloads that compete with templated methods.
+         [](MathematicalProgram* self, int rows, const string& name) {
+           return self->NewSymmetricContinuousVariables(rows, name);
+         },
+         py::arg("rows"),
+         py::arg("name") = "Symmetric")
     .def("AddLinearConstraint",
          static_cast<Binding<LinearConstraint>
          (MathematicalProgram::*)(
@@ -165,6 +170,11 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
          (MathematicalProgram::*)(
              const Formula&)
          >(&MathematicalProgram::AddLinearConstraint))
+    .def("AddPositiveSemidefiniteConstraint",
+         [](MathematicalProgram* self,
+            const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
+           return self->AddPositiveSemidefiniteConstraint(vars);
+         })
     .def("AddLinearCost",
          static_cast<Binding<LinearCost>
          (MathematicalProgram::*)(
@@ -183,9 +193,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
              const Expression&)
          >(&MathematicalProgram::AddQuadraticCost))
     .def("Solve", &MathematicalProgram::Solve)
-    .def("GetSolverId", [](const MathematicalProgram& prog) {
-        return deref_optional(prog.GetSolverId());
-    })
+    .def("GetSolverId", &MathematicalProgram::GetSolverId)
     .def("linear_constraints", &MathematicalProgram::linear_constraints)
     .def("linear_equality_constraints",
          &MathematicalProgram::linear_equality_constraints)
@@ -247,11 +255,17 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
              std::shared_ptr<BoundingBoxConstraint>>(
     m, "BoundingBoxConstraint");
 
+  py::class_<PositiveSemidefiniteConstraint, Constraint,
+             std::shared_ptr<PositiveSemidefiniteConstraint>>(
+    m, "PositiveSemidefiniteConstraint");
+
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
   RegisterBinding<BoundingBoxConstraint>(&m, &prog_cls,
                                          "BoundingBoxConstraint");
+  RegisterBinding<PositiveSemidefiniteConstraint>(&m, &prog_cls,
+    "PositiveSemidefiniteConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, std::shared_ptr<Cost>> cost(
@@ -271,3 +285,6 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
 }
+
+}  // namespace pydrake
+}  // namespace drake

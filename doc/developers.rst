@@ -58,6 +58,7 @@ Testing
     :maxdepth: 1
 
     unit_testing_instructions
+    downstream_testing
 
 .. See :doc:`unit_testing_instructions`
 
@@ -77,17 +78,13 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Operating System            | Build System   | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
 +=============================+================+=================+============+===================+========+
 +-----------------------------+----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.6.1  | | Clang 4.0     | OpenJDK 8  | R2017a            | 2.7.11 |
-|                             | | CMake 3.5.1  | | Clang 3.9     |            |                   |        |
-|                             | |              | | GCC 5.4       |            |                   |        |
+| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.9.0  | | Clang 4.0     | OpenJDK 8  | R2017a            | 2.7.11 |
+|                             | | CMake 3.5.1  | | GCC 5.4       |            |                   |        |
 +-----------------------------+----------------+-----------------+------------+                   +--------+
 | macOS 10.12 ("Sierra")      | | Bazel 0.6.1  | Apple Clang 9.0 | Oracle 1.8 |                   | 2.7.14 |
 +-----------------------------+ | CMake 3.10.0 |                 |            +-------------------+        |
 | macOS 10.13 ("High Sierra") |                |                 |            | R2017b            |        |
 +-----------------------------+----------------+-----------------+------------+-------------------+--------+
-
-On Ubuntu 16.04, the combination of CMake + Clang 4.0 is not yet supported,
-and the combination of Bazel + Clang 3.9 is deprecated.
 
 macOS 10.13 ("High Sierra") MATLAB support is experimental and untested in continuous
 integration.

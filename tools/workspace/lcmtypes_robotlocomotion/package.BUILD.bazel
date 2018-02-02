@@ -10,21 +10,12 @@ load(
 )
 load(
     "@drake//tools/workspace/lcm:lcm.bzl",
-    "lcm_c_library",
     "lcm_cc_library",
     "lcm_java_library",
     "lcm_py_library",
 )
 
 LCM_SRCS = glob(["lcmtypes/*.lcm"])
-
-lcm_c_library(
-    name = "lcmtypes_robotlocomotion_c",
-    includes = ["lcmtypes"],
-    lcm_package = "robotlocomotion",
-    lcm_srcs = LCM_SRCS,
-    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_c"],
-)
 
 lcm_cc_library(
     name = "lcmtypes_robotlocomotion",
@@ -66,7 +57,6 @@ install(
     workspace = CMAKE_PACKAGE,
     targets = [
         ":lcmtypes_robotlocomotion",
-        ":lcmtypes_robotlocomotion_c",
         ":lcmtypes_robotlocomotion_java",
         ":lcmtypes_robotlocomotion_py",
     ],
