@@ -101,17 +101,6 @@ drake_py_library(
     deps = [":module_py"],
 )
 
-drake_py_library(
-    name = "all_py",
-    deps = [
-        ":analysis_py",
-        ":drawing_py",
-        ":framework_py",
-        ":primitives_py",
-        ":sensors_py",
-    ],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":framework_py",
@@ -120,20 +109,26 @@ PY_LIBRARIES_WITH_INSTALL = [
 ]
 
 PY_LIBRARIES = [
-    ":all_py",
     ":drawing_py",
     ":module_py",
 ]
 
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "systems",
-    imports = PACKAGE_INFO.py_imports,
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+    deps = [":all_py"],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES,
+    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )

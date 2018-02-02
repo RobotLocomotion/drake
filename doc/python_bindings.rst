@@ -90,3 +90,39 @@ What's Available from Python
 The most up-to-date demonstrations of what can be done using ``pydrake`` are
 the ``pydrake`` unit tests themselves. You can see all of them inside the
 ``drake/bindings/python/pydrake/test`` folder in the Drake source code.
+
+There are multiple levels of modules available from ``pydrake``. If you are
+experimenting with ``pydrake`` in a REPL environment (such as IPython  or
+Jupyter), consider importing from ``pydrake.all`` to reduce the number of
+import staments.
+
+..
+    Developers: Ensure this is synchronized with
+    ``//bindings/pydrake:all_test``, specifically the test cases
+    ``test_usage_all`` and ``test_usage_no_all``.
+
+As an example, the following code uses ``pydrake.all``:
+
+.. code-block:: python
+
+    from pydrake.all import *
+
+    tree = RigidBodyTree(
+        FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
+    simulator = Simulator(RigidBodyPlant(tree))
+
+While this code does not:
+
+.. code-block:: python
+
+    from pydrake.common import FindResourceOrThrow
+    from pydrake.multibody.rigid_body_plant import RigidBodyPlant
+    from pydrake.rbtree import RigidBodyTree
+    from pydrake.systems.analysis import Simulator
+
+    tree = RigidBodyTree(
+        FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
+    simulator = Simulator(RigidBodyPlant(tree))
+
+For guidance on when to use ``pydrake.all`` when developing, please see
+``help(pydrake.all)``.

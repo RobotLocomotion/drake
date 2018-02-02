@@ -60,33 +60,29 @@ drake_pybind_library(
     ],
 )
 
-drake_py_library(
-    name = "all_py",
-    deps = [
-        ":rigid_body_plant_py",
-        ":shapes_py",
-    ],
-)
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":rigid_body_plant_py",
     ":shapes_py",
 ]
 
-PY_LIBRARIES = [
-    ":all_py",
-    ":module_py",
-]
+PY_LIBRARIES = []
 
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "multibody",
-    imports = PACKAGE_INFO.py_imports,
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+    deps = [":all_py"],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES,
+    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
