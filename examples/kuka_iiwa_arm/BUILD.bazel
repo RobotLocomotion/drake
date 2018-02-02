@@ -47,6 +47,7 @@ drake_cc_library(
     name = "iiwa_lcm",
     srcs = ["iiwa_lcm.cc"],
     hdrs = ["iiwa_lcm.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
@@ -62,6 +63,7 @@ drake_cc_library(
     name = "oracular_state_estimator",
     srcs = ["oracular_state_estimator.cc"],
     hdrs = ["oracular_state_estimator.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/framework:leaf_system",
