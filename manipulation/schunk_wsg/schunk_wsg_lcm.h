@@ -89,7 +89,8 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 
 /// Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
 /// system has one input port for the current state of the simulated
-/// WSG (probably a RigidBodyPlant).
+/// WSG (probably a RigidBodyPlant), and one optional input port for the
+/// measured gripping force.
 class SchunkWsgStatusSender : public systems::LeafSystem<double> {
  public:
   SchunkWsgStatusSender(int input_size,

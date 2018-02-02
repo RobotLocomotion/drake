@@ -82,8 +82,9 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
         base_builder->ExportOutput(iiwa_controller->get_output_port_control()));
     // Export iiwa's measured joint torque.
     output_port_iiwa_measured_torque_.push_back(
-        plant_->model_instance_torque_output_port(
-            iiwa_instances[i].instance_id).get_index());
+        base_builder->ExportOutput(
+            plant_->model_instance_torque_output_port(
+                iiwa_instances[i].instance_id)));
 
     // Sets up the WSG gripper part.
     const auto& wsg_input_port =
@@ -99,8 +100,9 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
         base_builder->ExportOutput(wsg_output_port));
     // Export wsg's measured joint torque.
     output_port_wsg_measured_torque_.push_back(
-        plant_->model_instance_torque_output_port(
-            wsg_instances[i].instance_id).get_index());
+        base_builder->ExportOutput(
+            plant_->model_instance_torque_output_port(
+                wsg_instances[i].instance_id)));
 
     // Sets up a "state estimator" for iiwa that generates
     // bot_core::robot_state_t messages.

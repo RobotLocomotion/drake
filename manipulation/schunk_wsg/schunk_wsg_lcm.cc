@@ -182,6 +182,7 @@ SchunkWsgStatusSender(int input_size,
                       int position_index, int velocity_index)
     : position_index_(position_index), velocity_index_(velocity_index) {
   this->DeclareInputPort(systems::kVectorValued, input_size);
+  this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
 }
 
@@ -192,15 +193,20 @@ void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
   status.utime = context.get_time() * 1e6;
   const systems::BasicVector<double>* state =
       this->EvalVectorInput(context, 0);
+  const systems::BasicVector<double>* force =
+      this->EvalVectorInput(context, 1);
   // The position and speed reported in this message are between the
   // two fingers rather than the position/speed of a single finger
   // (so effectively doubled).
   status.actual_position_mm = -2 * state->GetAtIndex(position_index_) * 1e3;
-  // TODO(sam.creasey) Figure out how to get the actual force from
-  // the plant so that we can populate this field.
-  status.actual_force = 0;
   status.actual_speed_mm_per_s =
       -2 * state->GetAtIndex(velocity_index_) * 1e3;
+
+  if (force) {
+    status.actual_force = -force->GetAtIndex(0);
+  } else {
+    status.actual_force = 0;
+  }
 }
 
 
