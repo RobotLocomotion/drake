@@ -13,6 +13,10 @@ class TestAll(unittest.TestCase):
             "AutoDiffXd",
             # common
             "AddResourceSearchPath",
+            # forwarddiff
+            "jacobian",
+            "sin",
+            "cos",
             # parsers
             "PackageMap",
             # rbtree
