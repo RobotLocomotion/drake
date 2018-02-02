@@ -403,6 +403,157 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
+  /// @name Context dependent/input independent computations
+  /// This section includes an assortment of computational methods that do not
+  /// depend on input ports, but depend solely on the model's context.
+  /// @{
+
+  /// Given the positions `p_BQi` for a set of points `Qi` measured and
+  /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
+  /// each point `Qi` in the set as measured and expressed in another frame A,
+  /// as a function of the generalized positions q of the model.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q of the model.
+  /// @param[in] from_frame_B
+  ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
+  ///   given.
+  /// @param[in] p_BQi
+  ///   The input positions of each point `Qi` in frame B. `p_BQi ∈ ℝ³ˣⁿᵖ` with
+  ///   `np` the number of points in the set. Each column of `p_BQi` corresponds
+  ///   to a vector in ℝ³ holding the position of one of the points in the set
+  ///   as measured and expressed in frame B.
+  /// @param[in] to_frame_A
+  ///   The frame A in which it is desired to compute the positions `p_AQi` of
+  ///   each point `Qi` in the set.
+  /// @param[out] p_AQi
+  ///   The output positions of each point `Qi` now computed as measured and
+  ///   expressed in frame A. The output `p_AQi` **must** have the same size as
+  ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
+  ///   **must** be in `ℝ³ˣⁿᵖ`.
+  ///
+  /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
+  /// method will throw a std::runtime_error exception. This method also throws
+  /// a std::runtime_error exception if `p_BQi` and `p_AQi` differ in the number
+  /// of columns.
+  void CalcPointsPositions(
+      const systems::Context<T>& context,
+      const Frame<T>& from_frame_B,
+      const Eigen::Ref<const MatrixX<T>>& p_BQi,
+      const Frame<T>& to_frame_A,
+      EigenPtr<MatrixX<T>> p_AQi) const;
+  /// @}
+
+  /// @name Methods to compute multibody Jacobians
+  /// @{
+
+  /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
+  /// B, (that is, their time derivative `ᴮd/dt(p_BQi)` in frame B is zero),
+  /// this method computes the geometric Jacobian `Jg_WQi` defined by:
+  /// <pre>
+  ///   v_WQi(q, v) = Jg_WQi(q)⋅v
+  /// </pre>
+  /// where `p_WQi` is the position vector in the world frame for each point
+  /// `Qi` in the input set, `v_WQi(q, v)` is the translational velocity of
+  /// point `Qi` in the world frame W and q and v are the vectors of generalized
+  /// position and velocity, respectively. Since the spatial velocity of each
+  /// point `Qi` is linear in the generalized velocities, the geometric
+  /// Jacobian `Jg_WQi` is a function of the generalized coordinates q only.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q.
+  /// @param[in] frame_B
+  ///   The positions `p_BQi` of each point in the input set are measured and
+  ///   expressed in this frame B and are constant (fixed) in this frame.
+  /// @param[in] p_BQi_set
+  ///   A matrix with the fixed position of a set of points `Qi` measured and
+  ///   expressed in `frame_B`.
+  ///   Each column of this matrix contains the position vector `p_BQi` for a
+  ///   point `Qi` measured and expressed in frame B. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] p_WQi_set
+  ///   The output positions of each point `Qi` now computed as measured and
+  ///   expressed in frame W. These positions are computed in the process of
+  ///   computing the geometric Jacobian `J_WQi` and therefore external storage
+  ///   must be provided.
+  ///   The output `p_WQi_set` **must** have the same size
+  ///   as the input set `p_BQi_set` or otherwise this method throws a
+  ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
+  ///   `ℝ³ˣⁿᵖ`.
+  /// @param[out] Jg_WQi
+  ///   The geometric Jacobian `Jg_WQi(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates the translational velocity
+  ///   `v_WQi` of each point `Qi` in the input set by: <pre>
+  ///     `v_WQi(q, v) = Jg_WQi(q)⋅v`
+  ///   </pre>
+  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Qi` in the same order they were given in the
+  ///   input set. Therefore `Jg_WQi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. Only if needed, the Jacobian
+  ///   matrix `J_WQi` will be resized to `3⋅np x nv`. An exception is thrown
+  ///   if `Jg_WQi` is not a valid pointer.
+  void CalcPointsGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jg_WQi) const;
+
+  /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
+  /// B, (that is, they are constant, independent of positions), this method
+  /// computes the analytical Jacobian `Ja_WQi` defined by:
+  /// <pre>
+  ///   Ja_WQi(q) = d(p_WQi(q))/dq
+  /// </pre>
+  /// where `p_WQi(q)` is the position vector in the world frame for each point
+  /// `Qi` in the input set and q is the vector of generalized positions.
+  /// The analytical Jacobian `Ja_WQi(q)` is exactly equal to the geometric
+  /// Jacobian `Jg_WQi(q)` when `q̇ = v`, see
+  /// CalcPointsGeometricJacobianExpressedInWorld().
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q.
+  /// @param[in] frame_B
+  ///   The positions `p_BQi` of each point in the input set are measured and
+  ///   expressed in this frame B and are constant (fixed) in this frame.
+  /// @param[in] p_BQi_set
+  ///   A matrix with the fixed position of a set of points `Qi` measured and
+  ///   expressed in `frame_B`.
+  ///   Each column of this matrix contains the position vector `p_BQi` for a
+  ///   point `Qi` measured and expressed in frame B. Therefore this input
+  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] p_WQi_set
+  ///   The output positions of each point `Qi` now computed as measured and
+  ///   expressed in frame W. These positions are computed in the process of
+  ///   computing the geometric Jacobian `J_WQi` and therefore external storage
+  ///   must be provided.
+  ///   The output `p_WQi_set` **must** have the same size
+  ///   as the input set `p_BQi_set` or otherwise this method throws a
+  ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
+  ///   `ℝ³ˣⁿᵖ`.
+  /// @param[out] Ja_WQi
+  ///   The analytical Jacobian `Ja_WQi(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates a differential change in the
+  ///   generalized positions `dq` to a differential change in the positions
+  ///   `p_WQi` of each point `Qi` in the input set by: <pre>
+  ///     `d(p_WQi(q)) = Ja_WQi(q)⋅dq`
+  ///   </pre>
+  ///   so that `p_WQi` is a column vector of size `3⋅np` concatenating the
+  ///   differential positions of all points `Qi` in the same order they were
+  ///   given in the input set. Therefore `Ja_WQi` is a matrix of size
+  ///   `3⋅np x nq`, with `nq` the number of generalized positions. Only if
+  ///   needed, the Jacobian matrix `Ja_WQi` will be resized to `3⋅np x nq`.
+  ///   An exception is thrown if `Ja_WQi` is not a valid pointer.
+  void CalcPointsAnalyticalJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Ja_WQi) const;
+
+  /// @}
+  // End of multibody Jacobian methods section.
+
+
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.

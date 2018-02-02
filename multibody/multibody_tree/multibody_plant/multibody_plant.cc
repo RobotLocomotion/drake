@@ -125,6 +125,70 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   // TODO(amcastro-tri): Declare output port for the state.
 }
 
+template <typename T>
+void MultibodyPlant<T>::CalcPointsPositions(
+    const systems::Context<T>& context,
+    const Frame<T>& from_frame_B,
+    const Eigen::Ref<const MatrixX<T>>& p_BQi,
+    const Frame<T>& to_frame_A,
+    EigenPtr<MatrixX<T>> p_AQi) const {
+  DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi != nullptr);
+  const int num_points = p_BQi.cols();
+  if (p_AQi->rows() != 3 || p_AQi->cols() != num_points) {
+    p_AQi->resize(3, num_points);
+  }
+  model_->CalcPointsPositions(context, from_frame_B, p_BQi, to_frame_A, p_AQi);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcPointsGeometricJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jg_WQi) const {
+  DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
+  const int num_points = p_BQi_set.cols();
+  DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
+  DRAKE_THROW_UNLESS(Jg_WQi != nullptr);
+
+  // Ensure p_WQi_set has the right size and resize, only if needed.
+  if (p_WQi_set->rows() != 3 || p_WQi_set->cols() != num_points) {
+    p_WQi_set->resize(3, num_points);
+  }
+
+  // Ensure Jg_WQi has the right size and resize, only if needed.
+  if (Jg_WQi->rows() != 3 * num_points || Jg_WQi->cols() != num_velocities()) {
+    Jg_WQi->resize(3 * num_points, num_velocities());
+  }
+
+  model_->CalcPointsGeometricJacobianExpressedInWorld(
+      context, frame_B, p_BQi_set, p_WQi_set, Jg_WQi);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Ja_WQi) const {
+  DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
+  const int num_points = p_BQi_set.cols();
+  DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
+  DRAKE_THROW_UNLESS(Ja_WQi != nullptr);
+
+  // Ensure p_WQi_set has the right size and resize, only if needed.
+  if (p_WQi_set->rows() != 3 || p_WQi_set->cols() != num_points) {
+    p_WQi_set->resize(3, num_points);
+  }
+
+  // Ensure Ja_WQi has the right size and resize, only if needed.
+  if (Ja_WQi->rows() != 3 * num_points || Ja_WQi->cols() != num_positions()) {
+    Ja_WQi->resize(3 * num_points, num_positions());
+  }
+
+  //model_->CalcPointsAnalyticalJacobianExpressedInWorld(
+    //  context, frame_B, p_BQi_set, p_WQi_set, Ja_WQi);
+}
+
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
