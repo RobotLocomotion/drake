@@ -65,7 +65,9 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":shapes_py",
 ]
 
-PY_LIBRARIES = []
+PY_LIBRARIES = [
+    ":module_py",
+]
 
 # Symbol roll-up (for user ease).
 drake_py_library(
