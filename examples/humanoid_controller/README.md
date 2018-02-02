@@ -29,15 +29,15 @@ To run the demo: (assuming in drake's root directory)
 
 2. Start the controller before the simulator:
 
-    `$ ./bazel-bin/drake/examples/humanoid_controller/valkyrie_balancing_demo`
+    `$ ./bazel-bin/examples/humanoid_controller/valkyrie_balancing_demo`
 
 3. Start the simulator:
 
-    `$ ./bazel-bin/drake/examples/valkyrie/valkyrie_simulation`
+    `$ ./bazel-bin/examples/valkyrie/valkyrie_simulation`
 
 4. Execute a dummy manipulation plan:
 
-    `$ ./bazel-bin/drake/examples/humanoid_controller/send_manipulation_plan_demo -r_shy_offset -1`
+    `$ ./bazel-bin/examples/humanoid_controller/send_manipulation_plan_demo -r_shy_offset -1`
 
 Note that you can repeatedly send new plans, the controller will start executing
 the new plan as soon as it receives it.

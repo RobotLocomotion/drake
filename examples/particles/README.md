@@ -13,7 +13,7 @@ This is a demo that creates a very simple system of a 1-DOF particle, moving at 
 To build this demo, from Drake's repository root path just run:
 
 ```
-bazel build drake/examples/particles/uniformly_accelerated_particle_demo
+bazel build examples/particles/uniformly_accelerated_particle_demo
 ```
 
 ### How do I run it?
@@ -21,5 +21,5 @@ bazel build drake/examples/particles/uniformly_accelerated_particle_demo
 To run this demo, from Drake's repository root just run:
 
 ```
-bazel run drake/examples/particles:uniformly_accelerated_particle_demo -- [-initial_position 0.0] [-initial_velocity 0.0] [-acceleration 1.0] [-simulation_time +inf] [-realtime_rate 1.0]
+bazel run examples/particles:uniformly_accelerated_particle_demo -- [-initial_position 0.0] [-initial_velocity 0.0] [-acceleration 1.0] [-simulation_time +inf] [-realtime_rate 1.0]
 ```

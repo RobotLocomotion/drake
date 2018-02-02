@@ -40,7 +40,7 @@ Binding<Cost> ParseCost(const symbolic::Expression& e);
 namespace detail {
 
 // From Drake git sha 24452c1:
-// //drake/solvers/mathematical_program.h:739
+// drake/solvers/mathematical_program.h:739
 // libstdc++ 4.9 evaluates
 // `std::is_convertible<std::unique_ptr<Unrelated>,
 // std::shared_ptr<Constraint>>::value`

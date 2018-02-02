@@ -14,7 +14,7 @@ specifiable.
 The executable `dragway_to_urdf` allows one create a URDF representation of a
 dragway. To run `dragway_to_urdf`, execute:
 
-    bazel run //drake/automotive/maliput/dragway:dragway_to_urdf -- \
+    bazel run //automotive/maliput/dragway:dragway_to_urdf -- \
           --dirpath=[dirpath] \
           --file_name_root=[file name root] \
           --lane_width=[lane width] \
@@ -24,7 +24,7 @@ dragway. To run `dragway_to_urdf`, execute:
 
 For an explanation on what the above-mentioned parameters mean, execute:
 
-    bazel run //drake/automotive/maliput/dragway:dragway_to_urdf -- --help
+    bazel run //automotive/maliput/dragway:dragway_to_urdf -- --help
 
 One the above command is executed, the following files should exist:
 
