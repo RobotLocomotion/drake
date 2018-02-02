@@ -24,6 +24,7 @@ from __future__ import absolute_import
 from . import getDrakePath
 from .autodiffutils import *
 from .common import *
+from .forwarddiff import *
 from .symbolic import *
 
 # Submodules.
