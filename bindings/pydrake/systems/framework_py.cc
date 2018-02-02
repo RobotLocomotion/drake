@@ -157,7 +157,7 @@ class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
     // overrides of some methods.
     // TODO(eric.cousineau): Make this more granular?
     PYBIND11_OVERLOAD_INT(
-        void, LeafSystem<T>, "_DoPublish", &context, events);
+        void, VectorSystem<T>, "_DoPublish", &context, events);
     // If the macro did not return, use default functionality.
     Base::DoPublish(context, events);
   }
@@ -165,7 +165,7 @@ class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
   optional<bool> DoHasDirectFeedthrough(
       int input_port, int output_port) const override {
     PYBIND11_OVERLOAD_INT(
-        optional<bool>, LeafSystem<T>, "_DoHasDirectFeedthrough",
+        optional<bool>, VectorSystem<T>, "_DoHasDirectFeedthrough",
         input_port, output_port);
     // If the macro did not return, use default functionality.
     return Base::DoHasDirectFeedthrough(input_port, output_port);
@@ -248,6 +248,15 @@ PYBIND11_MODULE(framework, m) {
     .def(
         "_DeclareInputPort", &PySystem::DeclareInputPort, py_reference_internal,
         py::arg("type"), py::arg("size"), py::arg("random_type") = nullopt)
+    // - Feedthrough.
+    .def("HasAnyDirectFeedthrough", &System<T>::HasAnyDirectFeedthrough)
+    .def("HasDirectFeedthrough",
+         overload_cast_explicit<bool, int>(&System<T>::HasDirectFeedthrough),
+         py::arg("output_port"))
+    .def("HasDirectFeedthrough",
+         overload_cast_explicit<bool, int, int>(
+             &System<T>::HasDirectFeedthrough),
+         py::arg("input_port"), py::arg("output_port"))
     // Context.
     .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
     .def("AllocateOutput", &System<T>::AllocateOutput)
