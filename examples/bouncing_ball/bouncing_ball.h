@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/examples/bouncing_ball/ball.h"
+#include "drake/examples/bouncing_ball/signed_distance_witness.h"
 
 namespace drake {
 namespace bouncing_ball {
@@ -35,34 +36,22 @@ class BouncingBall : public Ball<T> {
   /// Constructor for the BouncingBall system.
   BouncingBall();
 
-  void DoCalcNextUpdateTime(const systems::Context<T>& context,
-      systems::CompositeEventCollection<T>* events, T* time) const override;
-
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>& events,
       systems::State<T>* state) const override;
 
-  /// TODO(jadecastro): This is a prototype implementation to be overridden from
-  /// the system API, pending further discussions.
-  ///
-  /// Evaluate the guard function associated with the system in a particular
-  /// mode. If the EvalGuard returns a non-positive value, then the hybrid
-  /// system is allowed to make a transition from the `pre` mode to `post` mode.
-  T EvalGuard(const systems::Context<T>& context) const;
-
-  /// TODO(jadecastro): This is a prototype implementation to be overridden from
-  /// the system API, pending further discussions.
-  ///
-  /// Performs a reset mapping that occurs if and only if a mode transition
-  /// (discrete jump) has been made. It does so by mutating the context so that,
-  /// by default, the reset mapping is the identity mapping.
-  void PerformReset(systems::Context<T>* context) const;
+  void DoGetWitnessFunctions(
+      const systems::Context<T>& context,
+      std::vector<const systems::WitnessFunction<T>*>* witnesses)
+      const override;
 
   /// Getter for the coefficient of restitution for this model.
   double get_restitution_coef() const { return restitution_coef_; }
 
  private:
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
+
+  std::unique_ptr<SignedDistanceWitnessFunction<T>> signed_distance_witness_;
 
   // Numerically intolerant signum function.
   int sgn(T x) const {
