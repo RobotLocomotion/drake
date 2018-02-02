@@ -235,9 +235,9 @@ GTEST_TEST(SimDiagramBuilderTest, TestAddingOneSchunkToTwoArms) {
     // The transformation from schunk to iiwa ee link has roll-pitch-yaw angle
     // [180, 22, 90], with translation[0.09, 0, 0].
     int id = tree_builder->AddModelInstanceToFrame(
-        "wsg", "iiwa_link_ee", "frame_schunk_to_iiwa_link_ee",
-        transform_schunk_to_iiwa_link_ee, drake::multibody::joints::kFixed,
-        iiwa.at(i).instance_id);
+        "wsg", "iiwa_link_ee", iiwa.at(i).instance_id,
+        "frame_schunk_to_iiwa_link_ee", transform_schunk_to_iiwa_link_ee,
+        drake::multibody::joints::kFixed);
     wsg.push_back(tree_builder->get_model_info_for_instance(id));
   }
 
@@ -245,7 +245,7 @@ GTEST_TEST(SimDiagramBuilderTest, TestAddingOneSchunkToTwoArms) {
     auto schunk_frame = tree_builder->tree().findFrame(
         "frame_schunk_to_iiwa_link_ee", iiwa.at(i).instance_id);
     EXPECT_TRUE(CompareMatrices(schunk_frame->get_transform_to_body().matrix(),
-              transform_schunk_to_iiwa_link_ee.matrix()));
+                                transform_schunk_to_iiwa_link_ee.matrix()));
   }
   for (int i = num_wsg; i < num_iiwa; ++i) {
     EXPECT_THROW(tree_builder->tree().findFrame("frame_schunk_to_iiwa_link_ee",

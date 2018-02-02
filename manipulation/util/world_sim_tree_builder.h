@@ -69,7 +69,7 @@ class WorldSimTreeBuilder {
           drake::multibody::joints::kFixed);
 
   /// Adds a model instance specified by its model name, @p model_name, to the
-  /// `RigidBodyTree` being built. The model instance is connected to the
+  /// `RigidBodyTree` being built. The model instance is connected to
   /// a new frame constructed within this function. This new frame will be
   /// welded to a body of name @p weld_to_body_name, with a transformation to
   /// this body as @p transform frame_to_body. The new frame is named @p
@@ -77,15 +77,15 @@ class WorldSimTreeBuilder {
   /// type @p floating_base_type. The model name must have been previously
   /// loaded via a call to StoreModel().
   /// The function will search for the body with name @p weld_to_body_name, on
-  /// the model with @p model_instance_id.
+  /// the model with ID @p weld_to_body_model_instance_id.
   ///
   /// @return model_instance_id of the object that is added.
   int AddModelInstanceToFrame(
       const std::string& model_name, const std::string& weld_to_body_name,
+      int weld_to_body_model_instance_id,
       const std::string& frame_name,
       const Eigen::Isometry3d& transform_frame_to_body,
-      const drake::multibody::joints::FloatingBaseType floating_base_type,
-      int model_instance_id);
+      const drake::multibody::joints::FloatingBaseType floating_base_type);
 
   /// Adds a flat terrain to the simulation.
   void AddGround();
