@@ -51,8 +51,8 @@ class RotationMatrix {
 #endif
   }
 
-  /// Makes the %RotationMatrix `R_AB` associated with rotating frame B relative
-  /// to frame A by an angle `theta` about unit vector `Ax = Bx` as shown below.
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   /// @param[in] theta radian measure of rotation angle about Ax.
   /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
   /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
@@ -66,8 +66,8 @@ class RotationMatrix {
     return RotationMatrix(math::XRotation(theta));
   }
 
-  /// Makes the %RotationMatrix `R_AB` associated with rotating frame B relative
-  /// to frame A by an angle `theta` about unit vector `Ay = By` as shown below.
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Ay = By`.
   /// @param[in] theta radian measure of rotation angle about Ay.
   /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
   /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
@@ -81,8 +81,8 @@ class RotationMatrix {
     return RotationMatrix(math::YRotation(theta));
   }
 
-  /// Makes the %RotationMatrix `R_AB` associated with rotating frame B relative
-  /// to frame A by an angle `theta` about unit vector `Az = Bz` as shown below.
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
   /// @param[in] theta radian measure of rotation angle about Az.
   /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
   /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
@@ -98,8 +98,9 @@ class RotationMatrix {
 
   /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
   /// "yaw-pitch-roll" angles `[q(0), q(1), q(2)]`, which is equivalent to a
-  /// Space-fixed X-Y-Z rotation by roll-pitch-yaw angles `[q(2), q(1), q(0)]`.
-  /// @param[in] q radian measures of three angles, namely yaw, pitch, and roll.
+  /// Space-fixed (extrinsic) X-Y-Z rotation by "roll-pitch-yaw angles"
+  /// `[q(2), q(1), q(0)]`.
+  /// @param[in] ypr radian measures of three angles [yaw, pitch, roll].
   /// @note Denoting yaw `y = q(0)`, pitch `p = q(1)`, roll `r = q(2)`, this
   /// method returns a rotation matrix `R_AD` equal to the matrix multiplication
   /// shown below.
@@ -110,7 +111,7 @@ class RotationMatrix {
   ///      =       R_AB          *        R_BC          *        R_CD
   /// ```
   /// One way to visualize this rotation sequence is by introducing intermediate
-  /// frames B and C (A and D are real frames, B and C are not).
+  /// frames B and C (useful constructs to understand this rotation sequence).
   /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
   /// Then D is subjected to successive right-handed rotations relative to A.
   /// @li 1st rotation R_AB: Frames B, C, D collectively (as if welded together)
@@ -119,15 +120,16 @@ class RotationMatrix {
   /// by a pitch angle `p` about `By = Cy`.
   /// @li 3rd rotation R_CD: %Frame D rotates relative to frame C by a roll
   /// angle `r` about `Cx = Dx`.
-  static RotationMatrix<T> MakeRotationMatrixBodyZYX(const Vector3<T>& q) {
-    const Vector3<T> roll_pitch_yaw(q(2), q(1), q(0));
-    return RotationMatrix(math::rpy2rotmat(roll_pitch_yaw));
+  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+  static RotationMatrix<T> MakeRotationMatrixBodyZYX(const Vector3<T>& ypr) {
+    const Vector3<T> roll_pitch_yaw(ypr(2), ypr(1), ypr(0));
+    return RotationMatrix<T>::MakeRotationMatrixSpaceXYZ(roll_pitch_yaw);
   }
 
   /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
   /// "roll-pitch-yaw" angles `[q(0), q(1), q(2)]`, which is equivalent to a
   /// Body-fixed Z-Y-X rotation by "yaw-pitch-roll" angles `[q(2), q(1), q(0)]`.
-  /// @param[in] q radian measures of three angles, namely roll, pitch, and yaw.
+  /// @param[in] rpy radian measures of three angles [roll, pitch, yaw].
   /// @note Denoting roll `r = q(0)`, pitch `p = q(1)`, yaw `y = q(2)`, this
   /// method returns a rotation matrix `R_AD` equal to the matrix multiplication
   /// shown below.
@@ -138,7 +140,7 @@ class RotationMatrix {
   ///      =       R_AB          *        R_BC          *        R_CD
   /// ```
   /// One way to visualize this rotation sequence is by introducing intermediate
-  /// frames B and C (A and D are real frames, B and C are not).
+  /// frames B and C (useful constructs to understand this rotation sequence).
   /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
   /// Then D is subjected to successive right-handed rotations relative to A.
   /// @li 1st rotation R_CD: %Frame D rotates relative to frames C, B, A by a
@@ -147,8 +149,9 @@ class RotationMatrix {
   /// rotate relative to frame B by a pitch angle `p` about `Cy = By`.
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
-  static RotationMatrix<T> MakeRotationMatrixSpaceXYZ(const Vector3<T>& q) {
-    return RotationMatrix(math::rpy2rotmat(q));
+  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+  static RotationMatrix<T> MakeRotationMatrixSpaceXYZ(const Vector3<T>& rpy) {
+    return RotationMatrix(math::rpy2rotmat(rpy));
   }
 
   /// Creates a %RotationMatrix templatized on a scalar type U from a
