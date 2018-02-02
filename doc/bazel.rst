@@ -89,7 +89,7 @@ Cheat sheet for operating on specific portions of the project::
   bazel test --config=asan common:polynomial_test      # Run one test under AddressSanitizer.
   bazel test --config=kcov common:polynomial_test      # Run one test under kcov (see instructions below).
   bazel build -c dbg common:polynomial_test && \
-    gdb ../bazel-bin/drake/common/polynomial_test      # Run one test under gdb.
+    gdb bazel-bin/common/polynomial_test               # Run one test under gdb.
 
   bazel test --config lint //...                       # Only run style checks; don't build or test anything else.
 
@@ -110,8 +110,8 @@ file, so we have implemented a workaround in Drake, ``--config=apple_debug``.
 This config turns off sandboxing, which allows a ``genrule`` to access the
 ``.o`` files and process them into a ``.dSYM``.  Use as follows::
 
-  bazel build --config=apple_debug drake/path/to/my:binary_or_test_dsym
-  lldb ./bazel-bin/drake/path/to/my/binary_or_test
+  bazel build --config=apple_debug path/to/my:binary_or_test_dsym
+  lldb ./bazel-bin/path/to/my/binary_or_test
 
 For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
