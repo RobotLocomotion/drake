@@ -522,25 +522,6 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     return get_mutable_velocities_from_array(tau_array);
   }
 
-  /// Returns a const Eigen expression of the vector of generalized velocities
-  /// for `this` mobilizer from a vector of generalized velocities for the
-  /// entire MultibodyTree model.
-  /// @note This same method can be used to access arrays of generalized
-  /// accelerations (v̇) and of generalized forces (τ) since they all have the
-  /// same dimensions and are indexed in the same way.
-  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
-  get_generalized_forces_from_array(
-      const VectorX<T>& tau_array) const {
-    return get_velocities_from_array(tau_array);
-  }
-
-  /// Mutable version of get_velocities_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
-  get_mutable_generalized_forces_from_array(
-      Eigen::Ref<VectorX<T>> tau_array) const {
-    return get_mutable_velocities_from_array(tau_array);
-  }
-
   /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   /// be created. This method is mostly intended to be called by
   /// MultibodyTree::CloneToScalar(). Most users should not call this clone

@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer_impl.h"
@@ -29,7 +31,6 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   FeatherstoneMobilizer(const Frame<T>& inboard_frame_F,
                         const Frame<T>& outboard_frame_M) :
       MobilizerImpl<T, 2, 2>(inboard_frame_F, outboard_frame_M) {
-    H_FM_ = Matrix6X<T>(6, 2);
     H_FM_ << 1, 0,
              0, 0,
              0, 0,
@@ -46,14 +47,16 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
 
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const override {
-    const auto& q = this->get_positions(context);
     Isometry3<T> X_FM = Isometry3<T>::Identity();
 
-    Vector3<T> axis_linear = H_FM_.template block<3, 1>(0, 0);
-    X_FM.linear() = Eigen::AngleAxis<T>(q[0], axis_linear).toRotationMatrix();
+    const Vector3<T> axis_rotation_F = rotation_axis();
+    const T rotation = get_rotation(context);
+    X_FM.linear() = Eigen::AngleAxis<T>(
+        rotation, axis_rotation_F).toRotationMatrix();
 
-    Vector3<T> axis_translation = H_FM_.template block<3, 1>(3, 1);
-    X_FM.translation() = q[1] * axis_translation;
+    const Vector3<T> axis_translation_F = translation_axis();
+    const T translation = get_translation(context);
+    X_FM.translation() = translation * axis_translation_F;
 
     return X_FM;
   }
@@ -61,23 +64,22 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override {
-    SpatialVelocity<T> V_FM;
-    V_FM.get_coeffs() = H_FM_ * v;
-    return V_FM;
+    DRAKE_ASSERT(v.size() == kNv);
+    return SpatialVelocity<T>(H_FM_ * v);
   }
 
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override {
-    SpatialAcceleration<T> A_FM;
-    A_FM.get_coeffs() = H_FM_ * vdot;
-    return A_FM;
+    DRAKE_ASSERT(vdot.size() == kNv);
+    return SpatialAcceleration<T>(H_FM_ * vdot);
   }
 
   void ProjectSpatialForce(
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override {
+    DRAKE_ASSERT(tau.size() == kNv);
     tau = H_FM_.transpose() * F_Mo_F.get_coeffs();
   }
 
@@ -85,6 +87,9 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override {
+    DRAKE_ASSERT(v.size() == kNv);
+    DRAKE_ASSERT(qdot != nullptr);
+    DRAKE_ASSERT(qdot->size() == kNq);
     *qdot = v;
   }
 
@@ -92,6 +97,9 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const override {
+    DRAKE_ASSERT(qdot.size() == kNq);
+    DRAKE_ASSERT(v != nullptr);
+    DRAKE_ASSERT(v->size() == kNv);
     *v = qdot;
   }
 
@@ -118,7 +126,29 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
  private:
-  Matrix6X<T> H_FM_;
+  const Vector3<T> rotation_axis() const {
+    return H_FM_.template block<3, 1>(0, 0);
+  }
+
+  const Vector3<T> translation_axis() const {
+    return H_FM_.template block<3, 1>(3, 1);
+  }
+
+  const T get_rotation(const MultibodyTreeContext<T>& context) const {
+    const auto& q = this->get_positions(context);
+    return q[0];
+  }
+
+  const T get_translation(const MultibodyTreeContext<T>& context) const {
+    const auto& q = this->get_positions(context);
+    return q[1];
+  }
+
+  typedef MobilizerImpl<T, 2, 2> MobilizerBase;
+  using MobilizerBase::kNq;
+  using MobilizerBase::kNv;
+
+  Eigen::Matrix<T, 6, kNv> H_FM_;
 };
 
 // An articulated body inertia from Example 7.1, Pages 123 - 124 of
@@ -136,35 +166,32 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
 GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   // Create box (B).
   const double Lx = 0.4, Ly = 1.0, Lz = 1.0;
-  const UnitInertia<double> I_box = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
+  const UnitInertia<double> G_Bcm = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
   const double mass_box = 2.0;
-  const SpatialInertia<double> M_box(mass_box, Vector3d::Zero(), I_box);
+  const SpatialInertia<double> M_Bcm(mass_box, Vector3d::Zero(), G_Bcm);
 
   // Create cylinder (C) in box.
+  // Note that the unit inertia of the cylinder is taken about the x-axis.
   const double r = 0.2, L = 0.3;
   const double Ix = r * r / 2;
   const double Iy = (3 * r * r + L * L) / 12;
-  const UnitInertia<double> I_cylinder = UnitInertia<double>(Ix, Iy, Iy);
+  const UnitInertia<double> G_Ccm = UnitInertia<double>(Ix, Iy, Iy);
   const double mass_cylinder = 0.8;
-  const SpatialInertia<double> M_cylinder(
-      mass_cylinder, Vector3d::Zero(), I_cylinder);
+  const SpatialInertia<double> M_Ccm(mass_cylinder, Vector3d::Zero(), G_Ccm);
 
   // Create model.
   MultibodyTree<double> model;
 
   // Add box body and fixed mobilizer.
-  const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_box);
-  const Frame<double>& world_inboard_frame = model.get_world_frame();
-  const Frame<double>& box_outboard_frame = box_link.get_body_frame();
-  model.AddMobilizer(std::make_unique<SpaceXYZMobilizer<double>>(
-      world_inboard_frame, box_outboard_frame));
+  const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_Bcm);
+  const Frame<double>& world_frame = model.get_world_frame();
+  const Frame<double>& box_frame = box_link.get_body_frame();
+  model.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
 
   // Add cylinder body and Featherstone mobilizer.
-  const RigidBody<double>& cylinder_link = model.AddBody<RigidBody>(M_cylinder);
-  const Frame<double>& box_inboard_frame = box_link.get_body_frame();
-  const Frame<double>& cylinder_outboard_frame = cylinder_link.get_body_frame();
-  model.AddMobilizer(std::make_unique<FeatherstoneMobilizer<double>>(
-      box_inboard_frame, cylinder_outboard_frame));
+  const RigidBody<double>& cylinder_link = model.AddBody<RigidBody>(M_Ccm);
+  const Frame<double>& cylinder_frame = cylinder_link.get_body_frame();
+  model.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);
 
   // Finalize model.
   model.Finalize();
@@ -187,7 +214,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   model.CalcArticulatedBodyCache(*context, pc, vc, forces, &abc);
 
   // Get expected projected articulated body inertia of cylinder.
-  const Matrix6<double> M_cylinder_mat = M_cylinder.CopyToFullMatrix6();
+  const Matrix6<double> M_cylinder_mat = M_Ccm.CopyToFullMatrix6();
   Matrix6<double> P_BC_W_expected_mat = Matrix6<double>::Zero();
   P_BC_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
   P_BC_W_expected_mat(2, 2) = M_cylinder_mat(2, 2);
@@ -198,7 +225,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_BC_W_expected =
       ArticulatedBodyInertia<double>(P_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_BC_W_actual =
-      abc.get_P_PB_W(BodyNodeIndex(2));
+      abc.get_P_PB_W(cylinder_link.get_node_index());
   EXPECT_TRUE(P_BC_W_expected.CopyToFullMatrix6().isApprox(
       P_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -213,7 +240,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
       ArticulatedBodyInertia<double>(P_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
-      abc.get_P_PB_W(BodyNodeIndex(1));
+      abc.get_P_PB_W(box_link.get_node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
       P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
 }

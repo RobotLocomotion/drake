@@ -732,7 +732,7 @@ void MultibodyTree<T>::CalcArticulatedBodyCache(
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       // Get mobilizer forces.
-      const MatrixUpTo6<T> tau_applied = node.get_mobilizer()
+      const VectorUpTo6<T> tau_applied = node.get_mobilizer()
           .get_generalized_forces_from_array(generalized_forces);
       const SpatialForce<T> Fapplied_Bo_W = body_forces[body_node_index];
 

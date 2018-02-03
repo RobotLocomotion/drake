@@ -901,9 +901,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   void CalcArticulatedBodyCache_TipToBase(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
+      const VelocityKinematicsCache<T>& /* vc */,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      const SpatialForce<T>& Fapplied_Bo_W,
+      const SpatialForce<T>& /* Fapplied_Bo_W */,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       ArticulatedBodyCache<T>* abc) const {
     DRAKE_ASSERT(topology_.body != world_index());
