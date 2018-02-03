@@ -84,6 +84,62 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "initial_value_problem",
+    srcs = [
+        "initial_value_problem.cc",
+    ],
+    hdrs = [
+        "initial_value_problem.h",
+        "initial_value_problem-inl.h",
+    ],
+    deps = [
+        ":runge_kutta3_integrator",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:context",
+        "//drake/systems/framework:continuous_state",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/framework:vector",
+        "//drake/systems/framework:parameters",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_initial_value_problem",
+    srcs = [
+        "scalar_initial_value_problem.cc",
+    ],
+    hdrs = [
+        "scalar_initial_value_problem.h",
+        "scalar_initial_value_problem-inl.h",
+    ],
+    deps = [
+        ":initial_value_problem",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:vector",
+        "//drake/systems/framework:parameters",
+    ],
+)
+
+drake_cc_library(
+    name = "primitive_function",
+    srcs = [
+        "primitive_function.cc",
+    ],
+    hdrs = [
+        "primitive_function.h",
+        "primitive_function-inl.h",
+    ],
+    deps = [
+        ":scalar_initial_value_problem",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:parameters",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
@@ -147,6 +203,30 @@ drake_cc_googletest(
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "primitive_function_test",
+    size = "small",
+    deps = [
+        ":primitive_function",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scalar_initial_value_problem_test",
+    size = "small",
+    deps = [
+        ":scalar_initial_value_problem",
+    ],
+)
+
+drake_cc_googletest(
+    name = "initial_value_problem_test",
+    size = "small",
+    deps = [
+        ":initial_value_problem",
     ],
 )
 
