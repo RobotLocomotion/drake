@@ -1351,8 +1351,8 @@ class MultibodyTree {
   /// `abc`.
   ///
   /// These include:
-  /// - Articulated body inertia `P_PB_W` for each body B in the model as
-  ///   measured from the parent body P and expressed in the world frame W.
+  /// - Articulated body inertia `P⁺_PB_W` for each body B in the model as felt
+  ///   by the inboard (or parent) body P, expressed in the world frame W.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
