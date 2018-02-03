@@ -101,14 +101,14 @@ int DoMain() {
   command_pub->set_name("command_pub");
 
   // Connect subscribers to input ports.
-  builder.Connect(plan_sub->get_output_port(0),
+  builder.Connect(plan_sub->get_output_port(),
                   plan_interpolator->get_input_port_iiwa_plan());
-  builder.Connect(status_sub->get_output_port(0),
+  builder.Connect(status_sub->get_output_port(),
                   plan_interpolator->get_input_port_iiwa_status());
 
   // Connect publisher to output port.
   builder.Connect(plan_interpolator->get_output_port_iiwa_command(),
-                  command_pub->get_input_port(0));
+                  command_pub->get_input_port());
 
   auto diagram = builder.Build();
 

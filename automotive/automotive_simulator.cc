@@ -449,7 +449,7 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
       std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
   auto publisher =  builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  builder_->Connect(system.state_output(), publisher->get_input_port(0));
+  builder_->Connect(system.state_output(), publisher->get_input_port());
 }
 
 template <typename T>
@@ -462,7 +462,7 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  builder_->Connect(system.state_output(), publisher->get_input_port(0));
+  builder_->Connect(system.state_output(), publisher->get_input_port());
 }
 
 template <typename T>
@@ -475,7 +475,7 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
+  builder_->Connect(system.raw_pose_output(), publisher->get_input_port());
 }
 
 template <typename T>
@@ -554,7 +554,7 @@ void AutomotiveSimulator<T>::Build() {
                                                    lcm_.get()));
     builder_->Connect(
         bundle_to_draw_->get_output_port(0),
-        lcm_publisher_->get_input_port(0));
+        lcm_publisher_->get_input_port());
   }
   pose_bundle_output_port_ =
       builder_->ExportOutput(aggregator_->get_output_port(0));
