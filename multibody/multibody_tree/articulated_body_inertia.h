@@ -116,14 +116,14 @@ class ArticulatedBodyInertia {
 
   /// Constructs an articulated body inertia from an input matrix.
   ///
-  /// This constructor checks for the physical validity of the resulting
-  /// %ArticulatedBodyInertia with IsPhysicallyValid() and throws a
+  /// In Debug, this constructor checks for the physical validity of the
+  /// resulting %ArticulatedBodyInertia with IsPhysicallyValid() and throws a
   /// std::runtime_error exception in the event the provided input matrix leads
   /// to a non-physically viable articulated body inertia.
   ///
   /// @param[in] matrix A matrix representing the articulated body inertia.
   explicit ArticulatedBodyInertia(const Matrix6<T>& matrix) {
-    CheckInvariants(matrix);
+    DRAKE_ASSERT_VOID(CheckInvariants(matrix));
     matrix_.template triangularView<Eigen::Lower>() = matrix;
   }
 

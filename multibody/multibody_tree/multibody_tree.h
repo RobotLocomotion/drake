@@ -1368,7 +1368,7 @@ class MultibodyTree {
   ///   MultibodyForces::CheckHasRightSizeForModel().
   /// @param[out] abc
   ///   A pointer to a valid, non nullptr, articulated body cache. This method
-  ///   aborts if `abc` is a nullptr.
+  ///   throws an exception if `abc` is a nullptr.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().

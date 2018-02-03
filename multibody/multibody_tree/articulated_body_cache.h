@@ -67,7 +67,7 @@ class ArticulatedBodyCache {
   int num_nodes_{0};
 
   // Pools.
-  ABI_PoolType P_PB_W_{};
+  ABI_PoolType P_PB_W_{};  // Indexed by BodyNodeIndex.
 };
 
 }  // namespace multibody
