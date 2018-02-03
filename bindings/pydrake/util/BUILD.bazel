@@ -60,7 +60,10 @@ drake_py_library(
 
 drake_cc_library(
     name = "eigen_pybind",
-    hdrs = ["eigen_pybind.h"],
+    hdrs = [
+        "eigen_geometry_pybind.h",
+        "eigen_pybind.h",
+    ],
     deps = ["//bindings/pydrake:pydrake_pybind"],
 )
 

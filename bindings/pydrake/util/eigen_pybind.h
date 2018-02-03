@@ -3,6 +3,8 @@
 #include <Eigen/Dense>
 #include <pybind11/eigen.h>
 
+#include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
+
 namespace drake {
 namespace pydrake {
 

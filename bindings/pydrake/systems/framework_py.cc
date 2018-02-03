@@ -433,6 +433,8 @@ PYBIND11_MODULE(framework, m) {
     // permitted).
     .def(py::init<VectorX<T>>())
     .def(py::init<int>())
+    .def("Clone", &BasicVector<T>::Clone)
+    .def("__copy__", &BasicVector<T>::Clone)
     .def("get_value",
         [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
           return self->get_value();
