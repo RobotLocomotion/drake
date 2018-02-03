@@ -933,9 +933,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // where P_BCᵢb_W is the articulated body inertia of the child body Cᵢ as
     // measured from body frame B and shifted to the origin of body frame B.
     //
-    // From P_B_W, we can obtain P_PB_W by projecting the articulated body
+    // From P_B_W, we can obtain P⁺_PB_W by projecting the articulated body
     // inertia for this node across its mobilizer.
-    //   P_PB_W = (I - P_B_W H_PB_W (H_PB_Wᵀ P_B_W H_PB_W)⁻¹ H_PB_Wᵀ) P_B_W (2)
+    //   P⁺_PB_W = (I - P_B_W H_PB_W (H_PB_Wᵀ P_B_W H_PB_W)⁻¹ H_PB_Wᵀ)
+    //               P_B_W                                                  (2)
     // where H_PB_W is the hinge mapping matrix.
     //
     // A few quantities are required in the second pass. We write them out
@@ -947,7 +948,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //
     // Given the articulated body hinge inertia and Kalman gain, we can simplify
     // the equation in (2).
-    //   P_PB_W = (I - g_PB_W H_PB_Wᵀ) P_B_W                                (5)
+    //   P⁺_PB_W = (I - g_PB_W H_PB_Wᵀ) P_B_W                               (5)
 
     // Body for this node.
     const Body<T>& body_B = get_body();
@@ -974,14 +975,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const Vector3<T> p_CoBo_B = -X_BC.translation();
       const Vector3<T> p_CoBo_W = R_WB * p_CoBo_B;
 
-      // Pull P_BC_W from cache (which is P_PB_W for child).
-      const ArticulatedBodyInertia<T>& P_BC_W = child->get_P_PB_W(*abc);
+      // Pull P⁺_BC_W from cache (which is P⁺_PB_W for child).
+      const ArticulatedBodyInertia<T>& PPlus_BC_W = child->get_PPlus_PB_W(*abc);
 
-      // Shift P_BC_W to P_BCb_W.
-      const ArticulatedBodyInertia<T> P_BCb_W = P_BC_W.Shift(p_CoBo_W);
+      // Shift P⁺_BC_W to P⁺_BCb_W.
+      const ArticulatedBodyInertia<T> PPlus_BCb_W = PPlus_BC_W.Shift(p_CoBo_W);
 
-      // Add P_BCb_W contribution to articulated body inertia.
-      P_B_W += P_BCb_W;
+      // Add P⁺_BCb_W contribution to articulated body inertia.
+      P_B_W += PPlus_BCb_W;
     }
 
     // Get the number of columns of H_PB_W.
@@ -1007,9 +1008,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Compute the Kalman gain, g_PB_W, using (4).
     const MatrixUpTo6<T> g_PB_W = P_B_W * H_PB_W * Dinv_PB_W;
 
-    // Project P_B_W using (5) to obtain P_PB_W, the articulated body inertia of
-    // this body B as seen from body P and expressed in frame W.
-    get_mutable_P_PB_W(abc) = ArticulatedBodyInertia<T>(
+    // Project P_B_W using (5) to obtain P⁺_PB_W, the articulated body inertia
+    // of this body B as felt by body P and expressed in frame W.
+    get_mutable_PPlus_PB_W(abc) = ArticulatedBodyInertia<T>(
         (Matrix6<T>::Identity() - g_PB_W * H_PB_W.transpose()) * P_B_W);
   }
 
@@ -1174,18 +1175,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // =========================================================================
   // ArticulatedBodyCache Accessors and Mutators.
 
-  /// Returns a const reference to the articulated body inertia `P_PB_W` of the
-  /// body B associated with node `body_node_index` in the parent node's body
-  /// frame P, expressed in the world frame W.
-  const ArticulatedBodyInertia<T>& get_P_PB_W(
+  /// Returns a const reference to the articulated body inertia `P⁺_PB_W` of
+  /// the body B associated with node `body_node_index` as felt by the parent
+  /// node's body P, expressed in the world frame W.
+  const ArticulatedBodyInertia<T>& get_PPlus_PB_W(
       const ArticulatedBodyCache<T>& abc) const {
-    return abc.get_P_PB_W(topology_.index);
+    return abc.get_PPlus_PB_W(topology_.index);
   }
 
-  /// Mutable version of get_P_PB_W().
-  ArticulatedBodyInertia<T>& get_mutable_P_PB_W(
+  /// Mutable version of get_PPlus_PB_W().
+  ArticulatedBodyInertia<T>& get_mutable_PPlus_PB_W(
       ArticulatedBodyCache<T>* abc) const {
-    return abc->get_mutable_P_PB_W(topology_.index);
+    return abc->get_mutable_PPlus_PB_W(topology_.index);
   }
 
   // =========================================================================

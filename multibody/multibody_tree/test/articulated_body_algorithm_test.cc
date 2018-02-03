@@ -225,7 +225,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_BC_W_expected =
       ArticulatedBodyInertia<double>(P_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_BC_W_actual =
-      abc.get_P_PB_W(cylinder_link.get_node_index());
+      abc.get_PPlus_PB_W(cylinder_link.get_node_index());
   EXPECT_TRUE(P_BC_W_expected.CopyToFullMatrix6().isApprox(
       P_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -240,7 +240,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
       ArticulatedBodyInertia<double>(P_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
-      abc.get_P_PB_W(box_link.get_node_index());
+      abc.get_PPlus_PB_W(box_link.get_node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
       P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
