@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
@@ -533,58 +534,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
       EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jg_WQi) const;
-
-  /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
-  /// B, (that is, they are constant, independent of positions), this method
-  /// computes the analytical Jacobian `Ja_WQi` defined by:
-  /// <pre>
-  ///   Ja_WQi(q) = d(p_WQi(q))/dq
-  /// </pre>
-  /// where `p_WQi(q)` is the position vector in the world frame for each point
-  /// `Qi` in the input set and q is the vector of generalized positions.
-  /// The analytical Jacobian `Ja_WQi(q)` is exactly equal to the geometric
-  /// Jacobian `Jg_WQi(q)` when `q̇ = v`, see
-  /// CalcPointsGeometricJacobianExpressedInWorld().
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model. It stores
-  ///   the generalized positions q.
-  /// @param[in] frame_B
-  ///   The positions `p_BQi` of each point in the input set are measured and
-  ///   expressed in this frame B and are constant (fixed) in this frame.
-  /// @param[in] p_BQi_set
-  ///   A matrix with the fixed position of a set of points `Qi` measured and
-  ///   expressed in `frame_B`.
-  ///   Each column of this matrix contains the position vector `p_BQi` for a
-  ///   point `Qi` measured and expressed in frame B. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WQi_set
-  ///   The output positions of each point `Qi` now computed as measured and
-  ///   expressed in frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WQi` and therefore external storage
-  ///   must be provided.
-  ///   The output `p_WQi_set` **must** have the same size
-  ///   as the input set `p_BQi_set` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
-  ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Ja_WQi
-  ///   The analytical Jacobian `Ja_WQi(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates a differential change in the
-  ///   generalized positions `dq` to a differential change in the positions
-  ///   `p_WQi` of each point `Qi` in the input set by: <pre>
-  ///     `d(p_WQi(q)) = Ja_WQi(q)⋅dq`
-  ///   </pre>
-  ///   so that `p_WQi` is a column vector of size `3⋅np` concatenating the
-  ///   differential positions of all points `Qi` in the same order they were
-  ///   given in the input set. Therefore `Ja_WQi` is a matrix of size
-  ///   `3⋅np x nq`, with `nq` the number of generalized positions. Only if
-  ///   needed, the Jacobian matrix `Ja_WQi` will be resized to `3⋅np x nq`.
-  ///   An exception is thrown if `Ja_WQi` is not a valid pointer.
-  void CalcPointsAnalyticalJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Ja_WQi) const;
-
   /// @}
   // End of multibody Jacobian methods section.
 

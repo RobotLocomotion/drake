@@ -236,7 +236,7 @@ class KukaIiwaPlantTests : public ::testing::Test {
     Vector3<T> p_NG;
     plant_on_T.CalcPointsPositions(
         context_on_T, linkG_on_T.get_body_frame(),
-        Vector3<T>::Zero(), // position in frame G
+        Vector3<T>::Zero(),  // position in frame G
         plant_on_T.get_world_body().get_body_frame(), &p_NG);
     return p_NG;
   }
@@ -309,7 +309,6 @@ TEST_F(KukaIiwaPlantTests, GeometricJacobian) {
   v << vA, vB, vC, vD, vE, vF, vG;
 
   // Zero generalized positions and velocities.
-  //plant_->SetDefaultContext(context_.get());
   int angle_index = 0;
   for (const RevoluteJoint<double>* joint : joints_) {
     joint->set_angle(context_.get(), q[angle_index]);

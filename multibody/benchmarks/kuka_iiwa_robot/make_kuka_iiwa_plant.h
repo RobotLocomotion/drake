@@ -13,6 +13,8 @@ namespace multibody {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
 
+namespace internal {
+
 template <typename T>
 class KukaIiwaPlantBuilder {
  public:
@@ -89,21 +91,15 @@ class KukaIiwaPlantBuilder {
   // Earth's gravitational acceleration.
   double gravity_{9.81};
 };
+}  // namespace internal
 
-/// This method makes a MultibodyPlant model of the Acrobot - a canonical
-/// underactuated system as described in <a
-/// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
-/// of Underactuated Robotics</a>.
-///
-/// @param[in] default_parameters
-///   Default parameters of the model set at construction. These parameters
-///   include masses, link lengths, rotational inertias, etc. Refer to the
-///   documentation of AcrobotParameters for further details.
-/// @param[out] geometry_system
-///   If a GeometrySystem is provided with this argument, this factory method
-///   will register the new multibody plant to be a source for that geometry
-///   system and it will also register geometry for visualization.
-///   If this argument is omitted, no geometry will be registered.
+/// This method makes a MultibodyPlant model for a Kuka Iiwa arm as specified
+/// in the file kuka_iiwa_robot.urdf contained in this same directory.
+/// Links can be accessed by their name "iiwa_link_1" (base) through
+/// "iiwa_link_7" (end effector). The "world" body can be accessed with
+/// MultibodyPlant::get_world_body().
+/// Joints can be accessed by their name "iiwa_joint_1" (from the base) through
+/// "iiwa_joint_7" (to the end effector).
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeKukaIiwaPlant();
 

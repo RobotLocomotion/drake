@@ -40,6 +40,8 @@ Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
   return X_AB;
 }
 
+namespace internal {
+
 template <typename T>
 const RevoluteJoint<T>&
 KukaIiwaPlantBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
@@ -156,10 +158,10 @@ unique_ptr<MultibodyPlant<T>> KukaIiwaPlantBuilder<T>::Build() const {
   plant->Finalize();
   return plant;
 }
-
+}  // namespace internal
 
 unique_ptr<MultibodyPlant<double>> MakeKukaIiwaPlant() {
-  KukaIiwaPlantBuilder<double> builder;
+  internal::KukaIiwaPlantBuilder<double> builder;
   return builder.Build();
 }
 
