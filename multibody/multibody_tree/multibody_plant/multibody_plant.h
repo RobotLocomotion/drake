@@ -403,6 +403,39 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
+  /// @name Kinematic computations
+  /// @{
+
+  void CalcAllBodyPosesInWorld(
+      const systems::Context<T>& context,
+      std::vector<Isometry3<T>>* X_WB) const {
+    DRAKE_DEMAND(X_WB != nullptr);
+    if (static_cast<int>(X_WB->size()) != num_bodies()) {
+      X_WB->resize(num_bodies(), Isometry3<T>::Identity());
+    }
+    // TODO(amcastro-tri): Eval this from the context.
+    PositionKinematicsCache<T> pc(model_->get_topology());
+    model_->CalcPositionKinematicsCache(context, &pc);
+    model_->CalcAllBodyPosesInWorld(context, pc, X_WB);
+  }
+
+  void CalcAllBodySpatialVelocitiesInWorld(
+      const systems::Context<T>& context,
+      std::vector<SpatialVelocity<T>>* V_WB) const {
+    DRAKE_DEMAND(V_WB != nullptr);
+    if (static_cast<int>(V_WB->size()) != num_bodies()) {
+      V_WB->resize(num_bodies(), SpatialVelocity<T>::Zero());
+    }
+    // TODO(amcastro-tri): Eval these from the context.
+    PositionKinematicsCache<T> pc(model_->get_topology());
+    VelocityKinematicsCache<T> vc(model_->get_topology());
+    model_->CalcPositionKinematicsCache(context, &pc);
+    model_->CalcVelocityKinematicsCache(context, pc, &vc);
+    model_->CalcAllBodySpatialVelocitiesInWorld(
+        context, pc, vc, V_WB);
+  }
+  /// @}
+
   /// @name Context dependent/input independent computations
   /// This section includes an assortment of computational methods that do not
   /// depend on input ports, but depend solely on the model's context.

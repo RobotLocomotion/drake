@@ -29,10 +29,12 @@ MultibodyPlant<T>::MultibodyPlant() :
 template<typename T>
 template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
-  DRAKE_THROW_UNLESS(!is_finalized());
+  DRAKE_THROW_UNLESS(other.is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
   body_name_to_index_ = other.body_name_to_index_;
   joint_name_to_index_ = other.joint_name_to_index_;
+  DeclareStateAndPorts();
+  // TODO(amcastro-tri): Declare GeometrySystem ports.
 }
 
 template<typename T>
@@ -134,10 +136,7 @@ void MultibodyPlant<T>::CalcPointsPositions(
     EigenPtr<MatrixX<T>> p_AQi) const {
   DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi != nullptr);
-  const int num_points = p_BQi.cols();
-  if (p_AQi->rows() != 3 || p_AQi->cols() != num_points) {
-    p_AQi->resize(3, num_points);
-  }
+  DRAKE_THROW_UNLESS(p_AQi->rows() == 3 && p_AQi->cols() == p_BQi.cols());
   model_->CalcPointsPositions(context, from_frame_B, p_BQi, to_frame_A, p_AQi);
 }
 
@@ -149,18 +148,11 @@ void MultibodyPlant<T>::CalcPointsGeometricJacobianExpressedInWorld(
   DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
   const int num_points = p_BQi_set.cols();
   DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
+  DRAKE_THROW_UNLESS(p_WQi_set->rows() == 3);
+  DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
   DRAKE_THROW_UNLESS(Jg_WQi != nullptr);
-
-  // Ensure p_WQi_set has the right size and resize, only if needed.
-  if (p_WQi_set->rows() != 3 || p_WQi_set->cols() != num_points) {
-    p_WQi_set->resize(3, num_points);
-  }
-
-  // Ensure Jg_WQi has the right size and resize, only if needed.
-  if (Jg_WQi->rows() != 3 * num_points || Jg_WQi->cols() != num_velocities()) {
-    Jg_WQi->resize(3 * num_points, num_velocities());
-  }
-
+  DRAKE_THROW_UNLESS(Jg_WQi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Jg_WQi->cols() == num_velocities());
   model_->CalcPointsGeometricJacobianExpressedInWorld(
       context, frame_B, p_BQi_set, p_WQi_set, Jg_WQi);
 }
