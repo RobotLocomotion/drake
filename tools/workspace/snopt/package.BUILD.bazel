@@ -1,0 +1,138 @@
+# -*- python -*-
+
+# Copied from RobotLocomotion/snopt/BUILD.
+
+package(default_visibility = ["//visibility:public"])
+
+alias(
+    name = "snopt_c",
+    actual = "//csrc:snopt_c",
+)
+
+alias(
+    name = "snopt_cpp",
+    actual = "//cppsrc:snopt_cpp",
+)
+
+# Copied from RobotLocomotion/snopt/csrc/BUILD.
+
+cc_library(
+    name = "snopt_c",
+    srcs = glob(
+        ["*.c"],
+        exclude = ["dummy.c"],
+    ),
+    hdrs = glob(["*.hh"]),
+    copts = [
+        "-w",
+    ],
+    linkopts = ["-lm"],
+    # Link statically so that Fortran MAIN__ resolution works on gcc.
+    linkstatic = 1,
+    # By convention, SNOPT header #includes are not fully qualified.
+    strip_include_prefix = "/csrc",
+    visibility = ["//visibility:public"],
+    deps = ["//libf2c"],
+    # Always link the entirety of SNOPT.
+    alwayslink = 1,
+)
+
+# Copied from RobotLocomotion/snopt/libf2c/BUILD.
+
+cc_binary(
+    name = "arithchk",
+    srcs = ["arithchk.c"],
+    copts = [
+        "-w",
+        "-DNO_FPINIT",
+    ],
+    linkopts = ["-lm"],
+)
+
+genrule(
+    name = "arith",
+    srcs = [],
+    outs = ["arith.h"],
+    cmd = "$(location :arithchk) > $(@)",
+    tools = [":arithchk"],
+)
+
+genrule(
+    name = "f2c",
+    srcs = ["f2c.h0"],
+    outs = ["f2c.h"],
+    cmd = "cp $< $(@)",
+)
+
+genrule(
+    name = "sysdep1",
+    srcs = ["sysdep1.h0"],
+    outs = ["sysdep1.h"],
+    cmd = "cp $< $(@)",
+)
+
+genrule(
+    name = "signal1",
+    srcs = ["signal1.h0"],
+    outs = ["signal1.h"],
+    cmd = "cp $< $(@)",
+)
+
+genrule(
+    name = "math",
+    srcs = ["math.h0"],
+    outs = ["f2math.h"],
+    cmd = "cp $< $(@)",
+)
+
+filegroup(
+    name = "generated_headers",
+    srcs = [
+        "arith.h",
+        "f2c.h",
+        "f2math.h",
+        "signal1.h",
+        "sysdep1.h",
+    ],
+)
+
+filegroup(
+    name = "generated_public_headers",
+    srcs = ["f2c.h"],
+)
+
+# Replace main.c, which causes tests that link to SNOPT to erroneously pass.
+genrule(
+    name = "main_",
+    outs = ["main_.c"],
+    cmd = "echo \"int xargc; char **xargv;\" > $(@)",
+)
+
+cc_library(
+    name = "libf2c",
+    srcs = [":main_"] + glob(
+        [
+            "*.c",
+            "*.h",
+        ],
+        # Exclude optional sources and generator tools from the glob.
+        exclude = [
+            "main.c",
+            "pow_qq.c",
+            "qbitbits.c",
+            "qbitshft.c",
+            "*64*.c",
+            "arithchk.c",
+        ],
+    ),
+    hdrs = [":generated_headers"],
+    copts = [
+        "-DSkip_f2c_Undefs",
+        "-w",
+    ],
+    # Link statically so that Fortran MAIN__ resolution works on gcc.
+    linkstatic = 1,
+    # By convention, SNOPT header #includes are not fully qualified.
+    strip_include_prefix = "/libf2c",
+    visibility = ["//visibility:public"],
+)
