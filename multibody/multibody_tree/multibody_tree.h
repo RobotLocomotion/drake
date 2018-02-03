@@ -774,31 +774,6 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const;
 
-  void CalcAllBodyPosesInWorld(
-      const systems::Context<T> &context,
-      const PositionKinematicsCache<T>& pc,
-      std::vector<Isometry3<T>>* X_WB) const {
-    DRAKE_DEMAND(X_WB != nullptr);
-    DRAKE_DEMAND(static_cast<int>(X_WB->size()) == get_num_bodies());
-    // Collect results ordered by BodyIndex.
-    for (const auto& body : owned_bodies_) {
-      X_WB->at(body->get_index()) = pc.get_X_WB(body->get_node_index());
-    }
-  }
-
-  void CalcAllBodySpatialVelocitiesInWorld(
-      const systems::Context<T> &context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialVelocity<T>>* V_WB) const {
-    DRAKE_DEMAND(V_WB != nullptr);
-    DRAKE_DEMAND(static_cast<int>(V_WB->size()) == get_num_bodies());
-    // Collect results ordered by BodyIndex.
-    for (const auto& body : owned_bodies_) {
-      V_WB->at(body->get_index()) = vc.get_V_WB(body->get_node_index());
-    }
-  }
-
   /// Given the state of `this` %MultibodyTree in `context` and a known vector
   /// of generalized accelerations `vdot`, this method computes the
   /// set of generalized forces `tau` that would need to be applied at each

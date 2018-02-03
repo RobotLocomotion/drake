@@ -138,7 +138,11 @@ void MultibodyPlant<T>::CalcAllBodyPosesInWorld(
   // TODO(amcastro-tri): Eval this from the context.
   PositionKinematicsCache<T> pc(model_->get_topology());
   model_->CalcPositionKinematicsCache(context, &pc);
-  model_->CalcAllBodyPosesInWorld(context, pc, X_WB);
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index =
+        model_->get_body(body_index).get_node_index();
+    X_WB->at(body_index) = pc.get_X_WB(node_index);
+  }
 }
 
 template <typename T>
@@ -154,8 +158,11 @@ void MultibodyPlant<T>::CalcAllBodySpatialVelocitiesInWorld(
   VelocityKinematicsCache<T> vc(model_->get_topology());
   model_->CalcPositionKinematicsCache(context, &pc);
   model_->CalcVelocityKinematicsCache(context, pc, &vc);
-  model_->CalcAllBodySpatialVelocitiesInWorld(
-      context, pc, vc, V_WB);
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index =
+        model_->get_body(body_index).get_node_index();
+    V_WB->at(body_index) = vc.get_V_WB(node_index);
+  }
 }
 
 template <typename T>
