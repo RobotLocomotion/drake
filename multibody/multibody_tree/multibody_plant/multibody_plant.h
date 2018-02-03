@@ -406,40 +406,37 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @name Kinematic computations
   /// @{
 
+  /// Computes the world pose `X_WB(q)` of each body B in the model as a
+  /// function of the generalized positions q stored in `context`.
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the generalized
+  ///   positions q of the model.
+  /// @param[out] X_WB
+  ///   On output this vector will contain the pose of each body in the model
+  ///   ordered by BodyIndex. The index of a body in the model can be obtained
+  ///   with Body::get_index(). This method throws an exception if `X_WB` is
+  ///   `nullptr`. Vector `X_WB` is resized when needed to have size
+  ///   num_bodies().
   void CalcAllBodyPosesInWorld(
       const systems::Context<T>& context,
-      std::vector<Isometry3<T>>* X_WB) const {
-    DRAKE_DEMAND(X_WB != nullptr);
-    if (static_cast<int>(X_WB->size()) != num_bodies()) {
-      X_WB->resize(num_bodies(), Isometry3<T>::Identity());
-    }
-    // TODO(amcastro-tri): Eval this from the context.
-    PositionKinematicsCache<T> pc(model_->get_topology());
-    model_->CalcPositionKinematicsCache(context, &pc);
-    model_->CalcAllBodyPosesInWorld(context, pc, X_WB);
-  }
+      std::vector<Isometry3<T>>* X_WB) const;
 
+  /// Computes the spatial velocity `V_WB(q, v)` of each body B in the model,
+  /// measured and expressed in the world frame W. The body spatial velocities
+  /// are a function of the generalized positions q and generalized velocities
+  /// v, both stored in `context`.
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the generalized
+  ///   positions q and velocities v of the model.
+  /// @param[out] V_WB
+  ///   On output this vector will contain the spatial velocity of each body in
+  ///   the model ordered by BodyIndex. The index of a body in the model can be
+  ///   obtained with Body::get_index(). This method throws an exception if
+  ///   `V_WB` is `nullptr`. Vector `V_WB` is resized when needed to have size
+  ///   num_bodies().
   void CalcAllBodySpatialVelocitiesInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialVelocity<T>>* V_WB) const {
-    DRAKE_DEMAND(V_WB != nullptr);
-    if (static_cast<int>(V_WB->size()) != num_bodies()) {
-      V_WB->resize(num_bodies(), SpatialVelocity<T>::Zero());
-    }
-    // TODO(amcastro-tri): Eval these from the context.
-    PositionKinematicsCache<T> pc(model_->get_topology());
-    VelocityKinematicsCache<T> vc(model_->get_topology());
-    model_->CalcPositionKinematicsCache(context, &pc);
-    model_->CalcVelocityKinematicsCache(context, pc, &vc);
-    model_->CalcAllBodySpatialVelocitiesInWorld(
-        context, pc, vc, V_WB);
-  }
-  /// @}
-
-  /// @name Context dependent/input independent computations
-  /// This section includes an assortment of computational methods that do not
-  /// depend on input ports, but depend solely on the model's context.
-  /// @{
+      std::vector<SpatialVelocity<T>>* V_WB) const;
 
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
   /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
@@ -447,8 +444,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// as a function of the generalized positions q of the model.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model. It stores
-  ///   the generalized positions q of the model.
+  ///   The context containing the state of the model. It stores the generalized
+  ///   positions q of the model.
   /// @param[in] from_frame_B
   ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
   ///   given.
@@ -463,13 +460,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @param[out] p_AQi
   ///   The output positions of each point `Qi` now computed as measured and
   ///   expressed in frame A. The output `p_AQi` **must** have the same size as
-  ///   the input `p_BQi` or otherwise this method aborts. That is `p_AQi`
-  ///   **must** be in `ℝ³ˣⁿᵖ`.
+  ///   the input `p_BQi` or otherwise this method throws an exception.
+  ///   That is `p_AQi` **must** be in `ℝ³ˣⁿᵖ`.
   ///
-  /// @note Both `p_BQi` and `p_AQi` must have three rows. Otherwise this
-  /// method will throw a std::runtime_error exception. This method also throws
-  /// a std::runtime_error exception if `p_BQi` and `p_AQi` differ in the number
-  /// of columns.
+  /// @throws if either `p_BQi` or `p_AQi` does not have three rows (since these
+  /// are meant to be row vectors of 3D vectors).
+  /// @throws if `p_BQi` and `p_AQi` differ in the number of columns (the number
+  /// of points in the input set).
   void CalcPointsPositions(
       const systems::Context<T>& context,
       const Frame<T>& from_frame_B,
@@ -495,8 +492,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Jacobian `Jg_WQi` is a function of the generalized coordinates q only.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model. It stores
-  ///   the generalized positions q.
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
   /// @param[in] frame_B
   ///   The positions `p_BQi` of each point in the input set are measured and
   ///   expressed in this frame B and are constant (fixed) in this frame.
@@ -527,6 +524,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   the number of generalized velocities. Only if needed, the Jacobian
   ///   matrix `J_WQi` will be resized to `3⋅np x nv`. An exception is thrown
   ///   if `Jg_WQi` is not a valid pointer.
+  ///
+  /// @throws an exception if the output `p_WQi_set` is nullptr or does not have
+  /// the same size as the input array `p_BQi_set`.
+  /// @throws an exception if `Jg_WQi` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jg_WQi` for details.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,

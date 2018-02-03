@@ -128,6 +128,37 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcAllBodyPosesInWorld(
+    const systems::Context<T>& context,
+    std::vector<Isometry3<T>>* X_WB) const {
+  DRAKE_THROW_UNLESS(X_WB != nullptr);
+  if (static_cast<int>(X_WB->size()) != num_bodies()) {
+    X_WB->resize(num_bodies(), Isometry3<T>::Identity());
+  }
+  // TODO(amcastro-tri): Eval this from the context.
+  PositionKinematicsCache<T> pc(model_->get_topology());
+  model_->CalcPositionKinematicsCache(context, &pc);
+  model_->CalcAllBodyPosesInWorld(context, pc, X_WB);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAllBodySpatialVelocitiesInWorld(
+    const systems::Context<T>& context,
+    std::vector<SpatialVelocity<T>>* V_WB) const {
+  DRAKE_DEMAND(V_WB != nullptr);
+  if (static_cast<int>(V_WB->size()) != num_bodies()) {
+    V_WB->resize(num_bodies(), SpatialVelocity<T>::Zero());
+  }
+  // TODO(amcastro-tri): Eval these from the context.
+  PositionKinematicsCache<T> pc(model_->get_topology());
+  VelocityKinematicsCache<T> vc(model_->get_topology());
+  model_->CalcPositionKinematicsCache(context, &pc);
+  model_->CalcVelocityKinematicsCache(context, pc, &vc);
+  model_->CalcAllBodySpatialVelocitiesInWorld(
+      context, pc, vc, V_WB);
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcPointsPositions(
     const systems::Context<T>& context,
     const Frame<T>& from_frame_B,
