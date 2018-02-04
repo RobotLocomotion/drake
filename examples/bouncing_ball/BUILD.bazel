@@ -15,7 +15,6 @@ drake_cc_library(
     deps = [
         "//drake/common:default_scalars",
         "//drake/common:essential",
-        "//drake/systems/framework:leaf_system",
     ],
 )
 
@@ -27,9 +26,9 @@ drake_cc_library(
         "signed_distance_witness.h",
     ],
     deps = [
-        ":ball",
         "//drake/common:default_scalars",
         "//drake/common:essential",
+        "//drake/systems/framework:leaf_system",
     ],
 )
 

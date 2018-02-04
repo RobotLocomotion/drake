@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "drake/examples/bouncing_ball/ball.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/bouncing_ball/signed_distance_witness.h"
 
 namespace drake {
@@ -16,8 +16,6 @@ namespace bouncing_ball {
 /// - double
 /// - AutoDiffXd
 ///
-/// To use other specific scalar types see bouncing_ball-inl.h.
-///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// They are already available to link against in the containing library.
@@ -28,12 +26,53 @@ namespace bouncing_ball {
 /// Outputs: vertical position (state index 0) and velocity (state index 1) in
 /// units of m and m/s, respectively.
 template <typename T>
-class BouncingBall : public Ball<T> {
+class BouncingBall : public systems::LeafSystem<T> {
  public:
   /// Constructor for the BouncingBall system.
   BouncingBall() {
+    this->DeclareContinuousState(1, 1, 0);
+    this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+                                  &BouncingBall::CopyStateOut);
+
+    // Create the witness function.
     signed_distance_witness_ =
         std::make_unique<SignedDistanceWitnessFunction<T>>(*this);
+  }
+
+  /// Gets the signed acceleration due to gravity. Since initial positions
+  /// correspond to heights, acceleration should be negative.
+  double get_gravitational_acceleration() const { return -9.81; }
+
+    /// Getter for the coefficient of restitution for this model.
+  double get_restitution_coef() const { return restitution_coef_; }
+
+ private:
+  void CopyStateOut(const systems::Context<T>& context,
+                    systems::BasicVector<T>* output) const {
+    output->get_mutable_value() =
+        context.get_continuous_state().CopyToVector();
+  }
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override {
+    // Obtain the state.
+    const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+
+    // Obtain the structure we need to write into.
+    DRAKE_ASSERT(derivatives != nullptr);
+    systems::VectorBase<T>& new_derivatives = derivatives->get_mutable_vector();
+
+    new_derivatives.SetAtIndex(0, state.GetAtIndex(1));
+    new_derivatives.SetAtIndex(1, T(get_gravitational_acceleration()));
+  }
+
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    Vector2<T> x0;
+    x0 << 10.0, 0.0;  // initial state values.
+    state->get_mutable_continuous_state().SetFromVector(x0);
   }
 
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
@@ -64,10 +103,6 @@ class BouncingBall : public Ball<T> {
     witnesses->push_back(signed_distance_witness_.get());
   }
 
-    /// Getter for the coefficient of restitution for this model.
-  double get_restitution_coef() const { return restitution_coef_; }
-
- private:
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
 
   std::unique_ptr<SignedDistanceWitnessFunction<T>> signed_distance_witness_;
