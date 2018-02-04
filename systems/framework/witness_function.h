@@ -146,13 +146,26 @@ class WitnessFunction {
     }
   }
 
+  /// Sets the event.
+  template <class EventType>
+  void set_event(std::unique_ptr<EventType> e) {
+    event_ = std::move(e);
+  }
+
+  /// Gets the event 
+  Event<T>* get_event() const { return event_.get(); }
 
  protected:
-  /// Derived classes will override this function to add the appropriate event
+  /// Derived classes can override this function to add the appropriate event
   /// that will be dispatched when this witness function triggers. Example
   /// events are publish, perform a discrete variable update, and performing an
   /// unrestricted update. @p events is guaranteed to be non-null on entry.
-  virtual void DoAddEvent(CompositeEventCollection<T>* events) const = 0;
+  /// The default implementation does get_event()->add_to_composite(events),
+  /// if get_event() is not null.
+  virtual void DoAddEvent(CompositeEventCollection<T>* events) const {
+    if (event_)
+      event_->add_to_composite(events);
+  }
 
   /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
@@ -168,6 +181,9 @@ class WitnessFunction {
 
   // Direction(s) under which this witness function triggers.
   WitnessFunctionDirection dir_type_;
+
+  // Unique pointer to the event.
+  std::unique_ptr<Event<T>> event_;
 };
 
 }  // namespace systems
