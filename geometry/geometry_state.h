@@ -277,39 +277,6 @@ class GeometryState {
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
 
-  /** Removes all frames and geometry registered from the identified source.
-   The source remains registered and further frames and geometry can be
-   registered on it.
-   @param source_id     The identifier for the source to clear.
-   @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source. */
-  void ClearSource(SourceId source_id);
-
-  /** Removes the given frame from the the indicated source's frames. All
-   registered geometries connected to this frame will also be removed from the
-   world.
-   @param source_id     The identifier for the owner geometry source.
-   @param frame_id      The identifier of the frame to remove.
-   @throws std::logic_error  1. If the `source_id` does _not_ map to a
-                             registered source, or
-                             2. the `frame_id` does not map to a valid frame, or
-                             3. the `frame_id` maps to a frame that does not
-                             belong to the indicated source. */
-  void RemoveFrame(SourceId source_id, FrameId frame_id);
-
-  /** Removes the given geometry from the the indicated source's geometries. Any
-   geometry that was hung from the indicated geometry will _also_ be removed.
-   @param source_id     The identifier for the owner geometry source.
-   @param geometry_id   The identifier of the geometry to remove (can be dynamic
-                        or anchored).
-   @throws std::logic_error  1. If the `source_id` does _not_ map to a
-                             registered source, or
-                             2. the `geometry_id` does not map to a valid
-                             geometry, or
-                             3. the `geometry_id` maps to a geometry that does
-                             not belong to the indicated source. */
-  void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
-
   //@}
 
   /** @name       Relationship queries
@@ -472,61 +439,6 @@ class GeometryState {
   // Gets the source id for the given frame id. Throws std::logic_error if the
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
-
-  // The origin from where an invocation of RemoveFrameUnchecked was called.
-  // The origin changes the work that is required.
-  enum class RemoveFrameOrigin {
-    kSource,     // Invoked by ClearSource().
-    kFrame,      // Invoked by RemoveFrame().
-    kRecurse     // Invoked by recursive call in RemoveGeometryUnchecked.
-  };
-
-  // Performs the work necessary to remove the identified frame from
-  // GeometryWorld. The amount of work depends on the context from which this
-  // method is invoked:
-  //
-  //  - ClearSource(): ClearSource() deletes *all* frames and geometries.
-  //    It explicitly iterates through the frames (regardless of hierarchy).
-  //    Thus, recursion is unnecessary, removal from parent references is
-  //    likewise unnecessary (and actually wrong).
-  //  - RemoveFrame(): A specific frame (and its corresponding hierarchy) is
-  //    being removed. In addition to recursively removing all child frames,
-  //    it must also remove this id from the source and its parent frame.
-  //  - RemoveFrameUnchecked(): This is the recursive call; it's parent
-  //    is already slated for removal, so parent references can be left alone,
-  //    but recursion is necessary.
-  void RemoveFrameUnchecked(FrameId frame_id, RemoveFrameOrigin caller);
-
-  // The origin from where an invocation of RemoveGeometryUnchecked was called.
-  // The origin changes the work that is required.
-  enum class RemoveGeometryOrigin {
-    kFrame,      // Invoked by RemoveFrame().
-    kGeometry,   // Invoked by RemoveGeometry().
-    kRecurse     // Invoked by recursive call in RemoveGeometryUnchecked.
-  };
-
-  // Performs the work necessary to remove the identified geometry from
-  // GeometryWorld. The amount of work depends on the context from which this
-  // method is invoked:
-  //
-  //  - RemoveFrame(): RemoveFrame() deletes *all* geometry attached to the
-  //    frame. It explicitly iterates through those geometries. Thus,
-  //    recursion is unnecessary, removal from parent references is likewise
-  //    unnecessary (and actually wrong).
-  //  - RemoveGeometry(): A specific geometry (and its corresponding
-  //    hierarchy) is being removed. In addition to recursively removing all
-  //    child geometries, it must also remove this geometry id from its parent
-  //    frame and, if it exists, its parent geometry.
-  //   - RemoveGeometryUnchecked(): This is the recursive call; it's parent
-  //    is already slated for removal, so parent references can be left alone.
-  // @throws std::logic_error if `geometry_id` is not in `geometries_`.
-  void RemoveGeometryUnchecked(GeometryId geometry_id,
-                               RemoveGeometryOrigin caller);
-
-  // Removes anchored geometry indicated by the id. No checking of source is
-  // required.
-  // @throws std::logic_error if `geometry_id` is not in `anchored_geometries_`.
-  void RemoveAnchoredGeometryUnchecked(GeometryId geometry_id);
 
   // Recursively updates the frame and geometry _pose_ information for the tree
   // rooted at the given frame, whose parent's pose in the world frame is given

@@ -200,25 +200,6 @@ GeometryId GeometrySystem<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
-void GeometrySystem<T>::ClearSource(SourceId source_id) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  initial_state_->ClearSource(source_id);
-}
-
-template <typename T>
-void GeometrySystem<T>::RemoveFrame(SourceId source_id, FrameId frame_id) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  initial_state_->RemoveFrame(source_id, frame_id);
-}
-
-template <typename T>
-void GeometrySystem<T>::RemoveGeometry(SourceId source_id,
-                                       GeometryId geometry_id) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  initial_state_->RemoveGeometry(source_id, geometry_id);
-}
-
-template <typename T>
 void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
