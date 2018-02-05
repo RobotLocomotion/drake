@@ -54,7 +54,7 @@ bool MixedIntegerBranchAndBoundNode::IsRoot() const {
   return parent_ == nullptr;
 }
 
-// Replaces the variables bound with the constraint with new variables.
+// Replaces the variables bound with the constraint or cost with new variables.
 template <typename Constraint>
 Binding<Constraint> ReplaceBoundVariables(
     const Binding<Constraint>& binding,
@@ -163,7 +163,8 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   // TODO(hongkai.dai): Make sure that all constraints stored in
   // MathematicalProgram are added. In the future, if we add more constraint
   // type to MathematicalProgram, we need to add that constraint to new_prog
-  // here as well.
+  // here as well. One solution is to add a method in MatheticalProgram, to get
+  // all costs and constraints.
   AddVectorOfConstraintsToProgram(prog.generic_constraints(),
                                   map_old_vars_to_new_vars, &new_prog);
   AddVectorOfConstraintsToProgram(prog.linear_constraints(),
@@ -227,8 +228,7 @@ void MixedIntegerBranchAndBoundNode::CheckOptimalSolutionIsIntegral() {
           "yet, or the problem is infeasible, unbounded, or encountered"
           "numerical errors during solve.");
     }
-    const double integral_tol = 1E-3;
-    if (binary_var_val > integral_tol && binary_var_val < 1 - integral_tol) {
+    if (binary_var_val > integral_tol_ && binary_var_val < 1 - integral_tol_) {
       optimal_solution_is_integral_ = OptimalSolutionIsIntegral::kFalse;
       return;
     }
@@ -258,10 +258,10 @@ bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
   DRAKE_ABORT();
 }
 
-bool IsVariableInList(const std::list<symbolic::Variable>& binary_variable_list,
-                      const symbolic::Variable& binary_variable) {
-  for (const auto& var : binary_variable_list) {
-    if (var.equal_to(binary_variable)) {
+bool IsVariableInList(const std::list<symbolic::Variable>& variable_list,
+                      const symbolic::Variable& variable) {
+  for (const auto& var : variable_list) {
+    if (var.equal_to(variable)) {
       return true;
     }
   }
@@ -269,10 +269,11 @@ bool IsVariableInList(const std::list<symbolic::Variable>& binary_variable_list,
 }
 
 void MixedIntegerBranchAndBoundNode::FixBinaryVariable(
-    const symbolic::Variable& binary_variable, int binary_value) {
-  DRAKE_ASSERT(binary_value == 0 || binary_value == 1);
+    const symbolic::Variable& binary_variable, bool binary_value) {
   // Add constraint y == 0 or y == 1.
-  prog_->AddBoundingBoxConstraint(binary_value, binary_value, binary_variable);
+  prog_->AddBoundingBoxConstraint(static_cast<double>(binary_value),
+                                  static_cast<double>(binary_value),
+                                  binary_variable);
   // Remove binary_variable from remaining_binary_variables_
   bool found_binary_variable = false;
   for (auto it = remaining_binary_variables_.begin();
@@ -355,7 +356,7 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
   // If the optimal solution to the root node is not integral, do some
   // post-processing on the non-integral solution, and try to find an integral
   // solution of the MIP (but not necessarily optimal).
-  // This is done here (rather than when the rot node is solved in the
+  // This is done here (rather than when the root node is solved in the
   // constructor), because the strategy to search for the integral
   // solution can be specified after the constructor call.
   if (root_->solution_result() == SolutionResult::kSolutionFound &&

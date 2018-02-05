@@ -15,19 +15,19 @@ namespace solvers {
  * The whole branch-and-bound tree solves the mixed-integer problem
  * min f(x)         (1)
  * s.t g(x) ≤ 0
- *     y ∈ {0, 1}
- * where the binary variables y are a subset of the decision variables x.
+ *     z ∈ {0, 1}
+ * where the binary variables z are a subset of the decision variables x.
  * In this node, we will fix some binary variables to either 0 and 1, and relax
  * the rest of the binary variables to continuous variables between 0 and 1.
  * Namely we will solve the following problem with all variables being
  * continuous
  * min f(x)         (2)
  * s.t g(x) ≤ 0
- *     y₀ = b₀
- *     0 ≤ y₁ ≤ 1
- * where y₀, y₁ is a partition of the original binary variables y. y₀ is the
- * fixed binary variables, y₁ is the relaxed binary variables. b₀ is a vector
- * containing the assigned values of the fixed binary variables y₀, b₀ only
+ *     z₀ = b₀
+ *     0 ≤ z₁ ≤ 1
+ * where z₀, z₁ is a partition of the original binary variables z. z₀ is the
+ * fixed binary variables, z₁ is the relaxed binary variables. b₀ is a vector
+ * containing the assigned values of the fixed binary variables z₀, b₀ only
  * contains value either 0 or 1.
  *
  * Each node is created from its parent node, by fixing one binary variable to
@@ -41,14 +41,14 @@ class MixedIntegerBranchAndBoundNode {
    * For the mixed-integer optimization program
    * min f(x)         (1)
    * s.t g(x) ≤ 0
-   *     y ∈ {0, 1}
+   *     z ∈ {0, 1}
    * we will construct a root node for this mixed-integer program. In the root
    * node, it enforces all the costs and constraints in the original program,
-   * except the binary constraint y ∈ {0, 1}. Instead, it enforces the relaxed
-   * constraint to 0 ≤ y ≤ 1. So the root node contains the program
+   * except the binary constraint z ∈ {0, 1}. Instead, it enforces the relaxed
+   * constraint to 0 ≤ z ≤ 1. So the root node contains the program
    * min f(x)         (2)
    * s.t g(x) ≤ 0
-   *     0 ≤ y ≤ 1
+   *     0 ≤ z ≤ 1
    * This optimization program is solved during the node construction.
    * @param prog The mixed-integer optimization program (1) in the
    * documentation above.
@@ -69,7 +69,7 @@ class MixedIntegerBranchAndBoundNode {
   ConstructRootNode(const MathematicalProgram& prog, const SolverId& solver_id);
 
   /**
-   * Branches on `binary_variable`, and creates two child nodes. In the left
+   * Branches on @p binary_variable, and creates two child nodes. In the left
    * child node, the binary variable is fixed to 0. In the right node, the
    * binary variable is fixed to 1. Solves the optimization program in each
    * child node.
@@ -152,33 +152,37 @@ class MixedIntegerBranchAndBoundNode {
    */
   bool optimal_solution_is_integral() const;
 
- private:
   /**
-   * Constructs an empty node. Clone the input mathematical program to this
-   * node. The child and the parent nodes are all nullptr.
-   * @param prog The optimization program whose binary variable constraints are
-   * all relaxed to 0 ≤ y ≤ 1.
-   * @param binary_variables The list of binary variables in the mixed-integer
-   * problem.
+   * If the solution to a binary variable is either less than integral_tol or
+   * larger than 1 - integral_tol, then we regard the solution to be binary.
+   * This method set this tolerance.
    */
+  void set_integral_tolerance(double integral_tol) {
+    integral_tol_ = integral_tol;
+  }
+
+ private:
+  // Constructs an empty node. Clone the input mathematical program to this
+  // node. The child and the parent nodes are all nullptr.
+  // @param prog The optimization program whose binary variable constraints are
+  // all relaxed to 0 ≤ z ≤ 1.
+  // @param binary_variables The list of binary variables in the mixed-integer
+  // problem.
   MixedIntegerBranchAndBoundNode(
       const MathematicalProgram& prog,
       const std::list<symbolic::Variable>& binary_variables,
       const SolverId& solver_id);
 
-  /**
-   * Fix a binary variable to a binary value. Add a constraint y = 0 or y = 1 to
-   * the optimization program. Remove this binary variable from the
-   * remaining_binary_variables_ list; set the binary_var_ and
-   * binary_var_value_.
-   */
+  // Fix a binary variable to a binary value. Add a constraint z = 0 or z = 1 to
+  // the optimization program. Remove this binary variable from the
+  // remaining_binary_variables_ list; set the binary_var_ and
+  // binary_var_value_.
   void FixBinaryVariable(const symbolic::Variable& binary_variable,
-                         int binary_value);
+                         bool binary_value);
 
-  /** Check if the optimal solution to the program in this node satisfies all
-   * integral constraints.
-   * Only call this function AFTER the program is solved.
-   */
+  // Check if the optimal solution to the program in this node satisfies all
+  // integral constraints.
+  // Only call this function AFTER the program is solved.
   void CheckOptimalSolutionIsIntegral();
 
   enum class OptimalSolutionIsIntegral {
@@ -218,14 +222,18 @@ class MixedIntegerBranchAndBoundNode {
   OptimalSolutionIsIntegral optimal_solution_is_integral_;
 
   SolverId solver_id_;
+
+  // If the solution to a binary variable is either less than integral_tol or
+  // larger than 1 - integral_tol, then we regard the solution to be binary.
+  double integral_tol_{1E-5};
 };
 
 /**
  * Given a mixed-integer optimization problem (MIP) (or more accurately, mixed
  * binary problem), solve this problem through branch-and-bound process. We will
  * first replace all the binary variables with continuous variables, and relax
- * the integral constraint on the binary variables y ∈ {0, 1} with continuous
- * constraints 0 ≤ y ≤ 1. In the subsequent steps, at each node of the tree,
+ * the integral constraint on the binary variables z ∈ {0, 1} with continuous
+ * constraints 0 ≤ z ≤ 1. In the subsequent steps, at each node of the tree,
  * we will fix some binary variables to either 0 or 1, and solve the rest of
  * the variables.
  * Notice that we will create a new set of variables in the branch-and-bound
@@ -389,6 +397,13 @@ class MixedIntegerBranchAndBound {
    * Set the user-defined method to pick the branching node. This method is
    * used if the user calls
    * SetNodeSelectionMethod(NodeSelectionMethod::kUserDefined)
+   * For example, if the user has defined a function LeftMostNode that would
+   * return the left-most unfathomed node in the tree, then the user could do
+   * <pre>
+   * MixedIntegerBranchAndBound bnb(...);
+   * bnb.SetNodeSelectionMethod(MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
+   * bnb.SetUserDefinedNodeSelectionFunction(LeftMostNode);
+   * </pre>
    */
   void SetUserDefinedNodeSelectionFunction(NodeSelectFun fun) {
     node_selection_userfun_ = fun;
@@ -411,6 +426,21 @@ class MixedIntegerBranchAndBound {
    * Set the user-defined method to pick the branching variable. This method is
    * used if the user calls
    * SetVariableSelectionMethod(VariableSelectionMethod::kUserDefined).
+   * For example, if the user has defined a function FirstVariable, that would
+   * return the first un-fixed binary variable in this branch as
+   * <pre>
+   * SymbolicVariable* FirstVariable(const MixedIntegerBranchAndBoundNode& node)
+   * {
+   *   ...
+   * }
+   * </pre>
+   * The user can then set the branch-and-bound to use this function to select
+   * the branching variable as
+   * <pre>
+   * MixedIntegerBranchAndBound bnb;
+   * bnb.SetVariableSelectionMethod(MixedIntegerBranchAndBound:VariableSelectionMethod::kUserDefined);
+   * bnb.SetUserDefinedVariableSelectionFunction(FirstVariable);
+   * </pre>
    */
   void SetUserDefinedVariableSelectionFunction(VariableSelectFun fun) {
     variable_selection_userfun_ = fun;
@@ -436,12 +466,6 @@ class MixedIntegerBranchAndBound {
    * this project.
    */
   const MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }
-
-  /**
-   * Setter for the root node. Note that this is aliased for the lifetime of
-   * this object.
-   */
-  MixedIntegerBranchAndBoundNode* mutable_root() { return root_.get(); }
 
   /** Getter for the best upper bound. */
   double best_upper_bound() const { return best_upper_bound_; }

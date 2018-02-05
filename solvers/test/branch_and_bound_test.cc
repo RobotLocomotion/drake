@@ -40,6 +40,8 @@ class MixedIntegerBranchAndBoundTester {
     return bnb_->BranchAndUpdate(node, branching_variable);
   }
 
+  MixedIntegerBranchAndBoundNode* mutable_root() { return bnb_->root_.get(); }
+
  private:
   std::unique_ptr<MixedIntegerBranchAndBound> bnb_;
 };
@@ -500,7 +502,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
   VectorDecisionVariable<4> x = dut.bnb()->root()->prog()->decision_variables();
 
-  dut.bnb()->mutable_root()->Branch(x(0));
+  dut.mutable_root()->Branch(x(0));
   // Both left and right children have integral optimal solution. Both nodes are
   // fathomed.
   EXPECT_TRUE(
@@ -508,7 +510,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
-  dut.bnb()->mutable_root()->Branch(x(2));
+  dut.mutable_root()->Branch(x(2));
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
   EXPECT_TRUE(
@@ -529,7 +531,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
   // The optimal cost is -4.9.
   EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
 
-  dut.bnb()->mutable_root()->Branch(x(0));
+  dut.mutable_root()->Branch(x(0));
   // The left node is infeasible, thus fathomed.
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
@@ -537,7 +539,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
-  dut.bnb()->mutable_root()->Branch(x(2));
+  dut.mutable_root()->Branch(x(2));
   // The solution to the left node is integral, with optimal cost 23.0 / 6.0.
   // The node is fathomed.
   EXPECT_TRUE(
@@ -547,7 +549,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
-  dut.bnb()->mutable_root()->Branch(x(4));
+  dut.mutable_root()->Branch(x(4));
   // Neither the left nor the right child nodes has integral solution.
   // Neither of the nodes is fathomed.
   EXPECT_FALSE(
@@ -566,13 +568,13 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed3) {
 
   EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
 
-  dut.bnb()->mutable_root()->Branch(x(0));
+  dut.mutable_root()->Branch(x(0));
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
-  dut.bnb()->mutable_root()->mutable_left_child()->Branch(x(2));
+  dut.mutable_root()->mutable_left_child()->Branch(x(2));
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
@@ -580,7 +582,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed3) {
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
       *(dut.bnb()->root()->left_child()->right_child())));
 
-  dut.bnb()->mutable_root()->mutable_right_child()->Branch(x(2));
+  dut.mutable_root()->mutable_right_child()->Branch(x(2));
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
       *(dut.bnb()->root()->right_child()->left_child())));
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
@@ -601,13 +603,13 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed4) {
 
   EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
 
-  dut.bnb()->mutable_root()->Branch(x(3));
+  dut.mutable_root()->Branch(x(3));
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
-  dut.bnb()->mutable_root()->Branch(x(4));
+  dut.mutable_root()->Branch(x(4));
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
   EXPECT_TRUE(
@@ -630,10 +632,10 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode1) {
   // The left node has optimal cost 23.0 / 6.0, the right node has optimal cost
   // -4.9
   // Also the left node is fathomed.
-  dut.bnb()->mutable_root()->Branch(x(2));
+  dut.mutable_root()->Branch(x(2));
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
 
-  dut.bnb()->mutable_root()->Branch(x(4));
+  dut.mutable_root()->Branch(x(4));
   // The left node has optimal cost -4.9, the right node has optimal cost -47.0
   // / 30
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->left_child());
@@ -650,14 +652,14 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingNode2) {
       MixedIntegerBranchAndBound::NodeSelectionMethod::kDepthFirst);
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
 
-  dut.bnb()->mutable_root()->Branch(x(2));
+  dut.mutable_root()->Branch(x(2));
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
 
-  dut.bnb()->mutable_root()->Branch(x(4));
+  dut.mutable_root()->Branch(x(4));
   EXPECT_TRUE(dut.PickBranchingNode() == dut.bnb()->root()->left_child() ||
               dut.PickBranchingNode() == dut.bnb()->root()->right_child());
 
-  dut.bnb()->mutable_root()->mutable_left_child()->Branch(x(0));
+  dut.mutable_root()->mutable_left_child()->Branch(x(0));
   // root->left->left is infeasible, root->left->right has integral solution.
   // The only non-fathomed leaf node is root->right
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
@@ -679,7 +681,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestPickBranchingVariable1) {
   EXPECT_TRUE(dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(2)) ||
               dut.PickBranchingVariable(*(dut.bnb()->root()))->equal_to(x(4)));
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root(), x(0));
+  dut.BranchAndUpdate(dut.mutable_root(), x(0));
   // The optimization at root->left is infeasible.
   dut.bnb()->SetVariableSelectionMethod(
       MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
@@ -722,7 +724,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
 
   VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root(), x(2));
+  dut.BranchAndUpdate(dut.mutable_root(), x(2));
   // The left node has optimal cost 23.0 / 6.0. with integral solution (1, 2 /
   // 3, 0, 1, 1,)
   // The right node has optimal cost -4.9, with non-integral solution (0.7, 1,
@@ -736,7 +738,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate2) {
   EXPECT_TRUE(CompareMatrices(dut.bnb()->solutions().begin()->second,
                               x_expected, tol, MatrixCompareType::absolute));
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root(), x(4));
+  dut.BranchAndUpdate(dut.mutable_root(), x(4));
   // The left node has optimal cost -4.9, with non-integral solution (0.7, 1, 1,
   // 1.4, 0).
   // The right node has optimal cost -47/30, with  non-integral solution (0.2,
@@ -757,7 +759,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
   const VectorDecisionVariable<4> x =
       dut.bnb()->root()->prog()->decision_variables();
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root(), x(0));
+  dut.BranchAndUpdate(dut.mutable_root(), x(0));
   // Both left and right childs are unbounded.
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
             std::numeric_limits<double>::infinity());
@@ -767,7 +769,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root()->mutable_left_child(), x(2));
+  dut.BranchAndUpdate(dut.mutable_root()->mutable_left_child(), x(2));
   // Both root->l->l and root->l->r are unbounded.
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
             std::numeric_limits<double>::infinity());
@@ -779,7 +781,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
       *(dut.bnb()->root()->left_child()->right_child())));
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root()->mutable_right_child(), x(2));
+  dut.BranchAndUpdate(dut.mutable_root()->mutable_right_child(), x(2));
   // Both root->r->l and root->r->r are unbounded.
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
             std::numeric_limits<double>::infinity());
@@ -800,13 +802,13 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate4) {
   const VectorDecisionVariable<5> x =
       dut.bnb()->root()->prog()->decision_variables();
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root(), x(3));
+  dut.BranchAndUpdate(dut.mutable_root(), x(3));
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
             std::numeric_limits<double>::infinity());
   EXPECT_EQ(dut.bnb()->best_lower_bound(),
             std::numeric_limits<double>::infinity());
 
-  dut.BranchAndUpdate(dut.bnb()->mutable_root(), x(4));
+  dut.BranchAndUpdate(dut.mutable_root(), x(4));
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
             std::numeric_limits<double>::infinity());
   EXPECT_EQ(dut.bnb()->best_lower_bound(),
@@ -1012,7 +1014,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution1) {
   //     x ≥ 0
   //     y are binary variables.
   // This formulation is obtained by using the special ordered set constraint
-  // with yᵢbeing the indicator binary variable that the point is on the line
+  // with yᵢ being the indicator binary variable that the point is on the line
   // segment PᵢPᵢ₊₁
   // The optimal solution is x = (0, 0, 1/3, 2/3, 0), y = (0, 0, 1, 0), with
   // optimal cost 8/3.
@@ -1065,7 +1067,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
   //     x ≥ 0
   //     y are binary variables.
   // This formulation is obtained by using the special ordered set constraint
-  // with yᵢbeing the indicator binary variable that the point is on the line
+  // with yᵢ being the indicator binary variable that the point is on the line
   // segment PᵢPᵢ₊₁
   // The optimal solution is x = (0, 0.65, 0.35, 0), y = (0, 1, 0), with optimal
   // cost 0.025
