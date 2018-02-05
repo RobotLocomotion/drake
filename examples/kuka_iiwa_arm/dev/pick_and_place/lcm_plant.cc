@@ -55,10 +55,9 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
       "table",
       "drake/examples/kuka_iiwa_arm/models/table/"
       "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreDrakeModel(
-      "wsg",
-      "drake/manipulation/models/wsg_50_description"
-      "/sdf/schunk_wsg_50_ball_contact.sdf");
+  tree_builder->StoreDrakeModel("wsg",
+                                "drake/manipulation/models/wsg_50_description"
+                                "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   tree_builder->AddGround();
 
@@ -287,13 +286,14 @@ LcmPlant::LcmPlant(
 
     auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
         iiwa_and_wsg_plant_->get_output_port_wsg_state(i).size(),
+        iiwa_and_wsg_plant_->get_output_port_wsg_measured_torque(i).size(),
         manipulation::schunk_wsg::kSchunkWsgPositionIndex,
         manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
     wsg_status_sender->set_name("wsg_status_sender" + suffix);
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_state(i),
-                    wsg_status_sender->get_input_port(0));
+                    wsg_status_sender->get_input_port_wsg_state());
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_measured_torque(i),
-                    wsg_status_sender->get_input_port(1));
+                    wsg_status_sender->get_input_port_measured_torque());
 
     // Export wsg status output port.
     output_port_wsg_status_.push_back(

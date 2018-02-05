@@ -49,7 +49,8 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
   for (int i = 0; i < num_wsg; ++i) {
     // Adds a wsg gripper
     int id = tree_builder->AddModelInstanceToFrame(
-        "wsg", tree_builder->tree().findFrame("iiwa_frame_ee",
+        "wsg",
+        tree_builder->tree().findFrame("iiwa_frame_ee",
                                        iiwa->at(i).instance_id),
         drake::multibody::joints::kFixed);
     wsg->push_back(tree_builder->get_model_info_for_instance(id));
@@ -93,8 +94,8 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   for (const auto& info : iiwa_info) {
     auto single_arm = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFile(
-        info.absolute_model_path, multibody::joints::kFixed,
-        info.world_offset, single_arm.get());
+        info.absolute_model_path, multibody::joints::kFixed, info.world_offset,
+        single_arm.get());
 
     auto controller = builder.template AddController<
         systems::controllers::InverseDynamicsController<double>>(
@@ -193,6 +194,67 @@ GTEST_TEST(SimDiagramBuilderTest, TestAddVisualizerWithoutPlant) {
   SimDiagramBuilder<double> builder;
   drake::lcm::DrakeLcm lcm;
   EXPECT_DEATH(builder.AddVisualizer(&lcm), ".*");
+}
+
+// Tests that if we have two IIWA arms in the diagram, and we add a schunk
+// gripper to one of the arm, then the other arm should not have the gripper.
+GTEST_TEST(SimDiagramBuilderTest, TestAddingOneSchunkToTwoArms) {
+  auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
+
+  // Adds models to the simulation builder. Instances of these models can be
+  // subsequently added to the world.
+  tree_builder->StoreDrakeModel(
+      "iiwa",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf");
+  tree_builder->StoreDrakeModel(
+      "wsg",
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+
+  std::vector<ModelInstanceInfo<double>> iiwa;
+  std::vector<ModelInstanceInfo<double>> wsg;
+
+  const int num_iiwa = 2;
+  const int num_wsg = 1;
+  DRAKE_ASSERT(num_iiwa >= num_wsg);
+
+  for (int i = 0; i < num_iiwa; ++i) {
+    // Adds an iiwa arm
+    int id =
+        tree_builder->AddFixedModelInstance("iiwa", Vector3<double>(i, 0, 0));
+    iiwa.push_back(tree_builder->get_model_info_for_instance(id));
+  }
+
+  // The pose of the schunk frame `S` in the IIWA end effector body frame `E`.
+  const Eigen::Isometry3d X_ES =
+      Eigen::Translation3d(Eigen::Vector3d(0.09, 0, 0)) *
+      Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(22.0 / 180 * M_PI, Eigen::Vector3d::UnitY()) *
+      Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+  for (int i = 0; i < num_wsg; ++i) {
+    // Adds a wsg gripper
+    // The transformation from schunk to iiwa ee link has roll-pitch-yaw angle
+    // [180, 22, 90], with translation[0.09, 0, 0].
+    int id = tree_builder->AddModelInstanceToFrame(
+        "wsg", "iiwa_link_ee", iiwa.at(i).instance_id, "iiwa_link_ee_S", X_ES,
+        drake::multibody::joints::kFixed);
+    wsg.push_back(tree_builder->get_model_info_for_instance(id));
+  }
+
+  // iiwa_link_ee_S is a frame rigidly attached to the link iiwa_link_ee, and
+  // provides the location and orientation at which a schunk gripper should be
+  // mounted.
+  for (int i = 0; i < num_wsg; ++i) {
+    auto schunk_frame = tree_builder->tree().findFrame("iiwa_link_ee_S",
+                                                       iiwa.at(i).instance_id);
+    EXPECT_TRUE(CompareMatrices(schunk_frame->get_transform_to_body().matrix(),
+                                X_ES.matrix()));
+  }
+  for (int i = num_wsg; i < num_iiwa; ++i) {
+    EXPECT_THROW(tree_builder->tree().findFrame("frame_schunk_to_iiwa_link_ee",
+                                                iiwa.at(i).instance_id),
+                 std::logic_error);
+  }
 }
 
 }  // namespace

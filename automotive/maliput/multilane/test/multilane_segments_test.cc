@@ -16,6 +16,7 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+namespace {
 
 const double kLinearTolerance = 1e-6;
 const double kAngularTolerance = 1e-6;
@@ -70,6 +71,7 @@ GTEST_TEST(MultilaneSegmentsTest, MultipleLanes) {
                                         kZeroTolerance));
 }
 
+}  // namespace
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake
