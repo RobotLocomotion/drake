@@ -49,6 +49,7 @@ libxml2
 libxt6
 libyaml-cpp0.5v5
 openjdk-8-jre
+python
 python-lxml
 python-numpy
 python-scipy
