@@ -52,6 +52,11 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
 
     # For cpplint, require a top-level config file.  By default, also apply
     # configs from the current directory and test sub-directory when present.
+    # Note that this purposefully uses the _invoking workspace's_ top-level
+    # config file (`//:CPPLINT.cfg`), not Drake's `@drake//:CPPLINT.cfg`.
+    # (Projects that want their own config can place a CPPLINT.cfg in their
+    # root package.  Projects that want to use exactly the Drake defaults can
+    # alias Drake's config file into their top-level BUILD.bazel file.)
     cpplint_cfg = ["//:CPPLINT.cfg"] + native.glob([
         'CPPLINT.cfg',
         'test/CPPLINT.cfg',
@@ -71,10 +76,10 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     # Additional Drake lint.
     native.py_test(
         name = name + "_drake_lint",
-        srcs = ["//tools/lint:drakelint"],
+        srcs = ["@drake//tools/lint:drakelint"],
         data = data + source_labels,
         args = source_filenames,
-        main = "//tools/lint:drakelint.py",
+        main = "@drake//tools/lint:drakelint.py",
         size = size,
         tags = tags,
     )

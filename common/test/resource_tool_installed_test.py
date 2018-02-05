@@ -22,8 +22,8 @@ class TestResourceTool(unittest.TestCase):
              ])
 
         # Create a resource in the temporary directory.
-        os.makedirs("tmp/share/drake/drake/common/test")
-        with open("tmp/share/drake/drake/common/test/tmp_resource", "w") as f:
+        os.makedirs("tmp/share/drake/common/test")
+        with open("tmp/share/drake/common/test/tmp_resource", "w") as f:
             f.write("tmp_resource")
 
         # Remove the un-installed copy, so we _know_ it won't be used.
@@ -38,7 +38,7 @@ class TestResourceTool(unittest.TestCase):
 
         # Cross-check the resource root environment variable name.
         env_name = "DRAKE_RESOURCE_ROOT"
-        resource_tool = "tmp/libexec/drake/drake/common/resource_tool"
+        resource_tool = "tmp/share/drake/common/resource_tool"
         output_name = subprocess.check_output(
             [resource_tool,
              "--print_resource_root_environment_variable_name",
@@ -48,7 +48,7 @@ class TestResourceTool(unittest.TestCase):
 
         # Use the installed resource_tool to find a resource.
         tool_env = dict(os.environ)
-        tool_env[env_name] = "tmp/share/drake"
+        tool_env[env_name] = "tmp/share"
         absolute_path = subprocess.check_output(
             [resource_tool,
              "--print_resource_path",
@@ -65,7 +65,7 @@ class TestResourceTool(unittest.TestCase):
              "--print_resource_path",
              "drake/common/test/tmp_resource",
              "--add_resource_search_path",
-             "tmp/share/drake",
+             "tmp/share",
              ],
             ).strip()
         with open(absolute_path, 'r') as data:

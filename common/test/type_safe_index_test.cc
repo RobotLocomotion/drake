@@ -3,7 +3,10 @@
 #include <limits>
 #include <regex>
 #include <sstream>
+#include <string>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -485,6 +488,35 @@ GTEST_TEST(TypeSafeIndex, ConstructorAvailability) {
   EXPECT_TRUE((has_constructor<AIndex, int>()));
   EXPECT_TRUE((has_constructor<AIndex, size_t>()));
   EXPECT_TRUE((has_constructor<AIndex, int64_t>()));
+}
+
+// Confirms that type safe indexes are configured to serve as key and/or values
+// within std::unordered_map
+GTEST_TEST(TypeSafeIndex, CompatibleWithUnorderedMap) {
+  std::unordered_map<AIndex, std::string> indexes;
+  AIndex a1(1), a2(2), a3(3);
+  std::string s1("hello"), s2("unordered"), s3("map");
+  indexes.emplace(a1, s1);
+  indexes.emplace(a2, s2);
+  EXPECT_EQ(indexes.find(a3), indexes.end());
+  EXPECT_NE(indexes.find(a2), indexes.end());
+  EXPECT_NE(indexes.find(a1), indexes.end());
+  indexes[a3] = s3;
+  EXPECT_NE(indexes.find(a3), indexes.end());
+}
+
+// Confirms that type safe indexes are configured to serve as values
+// within std::unordered_set
+GTEST_TEST(TypeSafeIndex, CompatibleWithUnorderedSet) {
+  std::unordered_set<AIndex> indexes;
+  AIndex a1(1), a2(2), a3(3);
+
+  indexes.emplace(a1);
+  indexes.insert(a2);
+  EXPECT_EQ(indexes.size(), 2);
+  EXPECT_EQ(indexes.find(a3), indexes.end());
+  EXPECT_NE(indexes.find(a1), indexes.end());
+  EXPECT_NE(indexes.find(a2), indexes.end());
 }
 
 }  // namespace

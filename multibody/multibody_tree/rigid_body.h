@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -59,6 +60,18 @@ class RigidBody : public Body<T> {
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
   explicit RigidBody(const SpatialInertia<double> M_BBo_B);
+
+  /// Constructs a %RigidBody named `body_name` with the given default
+  /// SpatialInertia.
+  ///
+  /// @param[in] body_name
+  ///   A name associated with `this` body.
+  /// @param[in] M_BBo_B
+  ///   Spatial inertia of `this` body B about the frame's origin `Bo` and
+  ///   expressed in the body frame B.
+  /// @note See @ref multibody_spatial_inertia for details on the monogram
+  /// notation used for spatial inertia quantities.
+  RigidBody(const std::string& body_name, const SpatialInertia<double> M_BBo_B);
 
   /// There are no flexible degrees of freedom associated with a rigid body and
   /// therefore this method returns zero. By definition, a rigid body has no

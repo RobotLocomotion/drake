@@ -1,13 +1,13 @@
 import os
 import unittest
 
-from tools.lint.util import find_all_sources
+from drake.tools.lint.util import find_all_sources
 
 
 class UtilTest(unittest.TestCase):
 
     def test_find(self):
-        workspace_dir, relpaths = find_all_sources()
+        workspace_dir, relpaths = find_all_sources("drake")
 
         # Sanity-check workspace_dir.
         self.assertGreater(len(workspace_dir), 10)
@@ -27,7 +27,7 @@ class UtilTest(unittest.TestCase):
         ]
         for one_relpath in relpaths:
             self.assertTrue(".git/" not in one_relpath, one_relpath)
-            if "third_party/" in one_relpath:
+            if one_relpath.startswith("third_party/"):
                 self.assertTrue(
                     one_relpath in THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND or
                     one_relpath.startswith("."),

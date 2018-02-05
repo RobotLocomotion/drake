@@ -200,59 +200,13 @@ def lcm_cc_library(
     # We report the computed output filenames for use by calling code.
     return struct(hdrs = outs)
 
-def lcm_c_library(
-        name,
-        lcm_srcs,
-        lcm_package,
-        lcm_structs = None,
-        aggregate_hdr = "AUTO",
-        aggregate_hdr_strip_prefix = ["**/include/"],
-        includes = [],
-        **kwargs):
-    """Declares a cc_library on message C structs generated from ``*.lcm``
-    files.
-
-    The required ``lcm_srcs`` :obj:`list` parameter specifies the ``*.lcm``
-    source files. All ``lcm_srcs`` must reside in the same subdirectory.
-
-    The standard parameters (``lcm_srcs``, ``lcm_package``, ``lcm_structs``,
-    ``aggregate_hdr_strip_prefix``) are documented in :func:`lcm_cc_library`.
-    The ``aggregate_hdr`` parameter default value is ``AUTO``.
-    """
-    outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".h")
-
-    _lcm_library_gen(
-        name = name + "_lcm_library_gen",
-        language = "c",
-        lcm_srcs = lcm_srcs,
-        lcm_package = lcm_package,
-        outs = outs.hdrs + outs.srcs)
-
-    hdrs = outs.hdrs
-    if aggregate_hdr:
-        hdrs += _lcm_aggregate_hdr(
-            lcm_package,
-            name,
-            aggregate_hdr,
-            outs.hdrs,
-            "h",
-            aggregate_hdr_strip_prefix)
-
-    deps = depset(kwargs.pop('deps', [])) | ["@lcm"]
-    includes = depset(includes) | ["."]
-    native.cc_library(
-        name = name,
-        srcs = outs.srcs,
-        hdrs = hdrs,
-        deps = deps,
-        includes = includes,
-        **kwargs)
-
 def lcm_py_library(
         name,
+        imports = None,
         lcm_srcs = None,
         lcm_package = None,
         lcm_structs = None,
+        add_current_package_to_imports = True,
         **kwargs):
     """Declares a py_library on message classes generated from `*.lcm` files.
 
@@ -262,6 +216,14 @@ def lcm_py_library(
     This library has an ${lcm_package}/__init__.py, which means that this macro
     should only be used once for a given lcm_package in a given subdirectory.
     (Bazel will fail-fast with a "duplicate file" error if this is violated.)
+
+    The add_current_package_to_imports argument controls whether or not this
+    library adds an `imports = ["."]` attribute so that `from ${lcm_package}
+    import ${lcm_src}` will work in Python code (as opposed to needing to
+    prefix import statements with the bazel package name).  It is True by
+    default, but can be set to False if a package needs its own manually-
+    written __init__.py handling, or if the current bazel package should
+    not be imported by default.
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -276,7 +238,8 @@ def lcm_py_library(
         lcm_package = lcm_package,
         outs = outs)
 
-    imports = depset(kwargs.pop('imports', [])) | ["."]
+    if add_current_package_to_imports:
+        imports = depset(imports or []) | ["."]
     native.py_library(
         name = name,
         srcs = outs,

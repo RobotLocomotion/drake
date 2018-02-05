@@ -186,6 +186,20 @@ class TestMathematicalProgram(unittest.TestCase):
                 self.assertAlmostEqual(xval[i, j], 2 * i + j)
                 self.assertEqual(xval[i, j], prog.GetSolution(x[i, j]))
 
+    def test_sdp(self):
+        prog = mp.MathematicalProgram()
+        S = prog.NewSymmetricContinuousVariables(3, "S")
+        prog.AddLinearConstraint(S[0, 1] >= 1)
+        prog.AddPositiveSemidefiniteConstraint(S)
+        prog.AddLinearCost(np.trace(S))
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        S = prog.GetSolution(S)
+        eigs = np.linalg.eigvals(S)
+        tol = 1e-8
+        self.assertTrue(np.all(eigs >= -tol))
+        self.assertTrue(S[0, 1] >= -tol)
+
 
 if __name__ == '__main__':
     unittest.main()

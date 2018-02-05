@@ -322,6 +322,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
  private:
   void AppendBounds(const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     DRAKE_ASSERT(lb.size() == ub.size());
+    set_num_outputs(num_constraints() + lb.rows());
     int prev_size = lower_bound().size();
     Eigen::VectorXd new_lb(prev_size + lb.size());
     Eigen::VectorXd new_ub(prev_size + ub.size());

@@ -168,8 +168,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   const Constraint* c = wrapped->constraint;
-  const size_t num_constraints = c->num_constraints();
-  DRAKE_ASSERT(num_constraints >= m);
+  const int num_constraints = c->num_constraints();
+  DRAKE_ASSERT(num_constraints >= static_cast<int>(m));
   DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   AutoDiffVecXd ty(num_constraints);
@@ -180,7 +180,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   const Eigen::VectorXd& lower_bound = c->lower_bound();
   const Eigen::VectorXd& upper_bound = c->upper_bound();
   size_t result_idx = 0;
-  for (size_t i = 0; i < num_constraints; i++) {
+  for (int i = 0; i < num_constraints; i++) {
     if (!wrapped->active_constraints.count(i)) {
       continue;
     }
@@ -210,7 +210,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
       v_index[i] =
           wrapped->prog->FindDecisionVariableIndex((*wrapped->vars)(i));
     }
-    for (size_t i = 0; i < num_constraints; i++) {
+    for (int i = 0; i < num_constraints; i++) {
       if (!wrapped->active_constraints.count(i)) {
         continue;
       }

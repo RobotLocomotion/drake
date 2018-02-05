@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -399,12 +400,17 @@ class System {
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value as an %Eigen expression.
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns the
+  /// port's value as an %Eigen expression. Throws an exception if the input
+  /// port is not connected.
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
     const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
-    DRAKE_ASSERT(input_vector != nullptr);
+    if (input_vector == nullptr) {
+      throw std::logic_error(
+          "System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is not connected.");
+    }
     DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).size());
     return input_vector->get_value();
   }

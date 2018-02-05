@@ -34,6 +34,14 @@ alias(
     actual = "@com_google_protobuf//:protobuf_python",
 )
 
+# Drake's top-level module; all drake_py_stuff rules add this to deps.
+# (We use py_library here because drake_py_library would be circular.)
+# This file should NOT be installed (see commits in __init__.py).
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+)
+
 install(
     name = "install",
     docs = ["LICENSE.TXT"],
@@ -45,6 +53,7 @@ install(
         "//drake/examples:install",
         "//drake/lcmtypes:install",
         "//drake/manipulation/models:install_data",
+        "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
     ]),

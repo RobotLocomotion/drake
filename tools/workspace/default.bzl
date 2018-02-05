@@ -1,63 +1,62 @@
 # -*- python -*-
 
-load("@drake//tools/workspace/blas:package.bzl", "blas_repository")
-load("@drake//tools/workspace/boost:package.bzl", "boost_repository")
-load("@drake//tools/workspace/buildifier:package.bzl", "buildifier_repository")
-load("@drake//tools/workspace/bullet:package.bzl", "bullet_repository")
-load("@drake//tools/workspace/ccd:package.bzl", "ccd_repository")
-load("@drake//tools/workspace/com_google_protobuf:package.bzl", "com_google_protobuf_repository")  # noqa
-load("@drake//tools/workspace/com_jidesoft_jide_oss:package.bzl", "com_jidesoft_jide_oss_repository")  # noqa
-load("@drake//tools/workspace/commons_io:package.bzl", "commons_io_repository")
-load("@drake//tools/workspace/drake_visualizer:package.bzl", "drake_visualizer_repository")  # noqa
-load("@drake//tools/workspace/dreal:package.bzl", "dreal_repository")
-load("@drake//tools/workspace/eigen:package.bzl", "eigen_repository")
-load("@drake//tools/workspace/expat:package.bzl", "expat_repository")
-load("@drake//tools/workspace/fcl:package.bzl", "fcl_repository")
-load("@drake//tools/workspace/fmt:package.bzl", "fmt_repository")
-load("@drake//tools/workspace/gflags:package.bzl", "gflags_repository")
-load("@drake//tools/workspace/glew:package.bzl", "glew_repository")
-load("@drake//tools/workspace/glib:package.bzl", "glib_repository")
-load("@drake//tools/workspace/gtest:package.bzl", "gtest_repository")
-load("@drake//tools/workspace/gthread:package.bzl", "gthread_repository")
-load("@drake//tools/workspace/gurobi:package.bzl", "gurobi_repository")
-load("@drake//tools/workspace/ibex:package.bzl", "ibex_repository")
-load("@drake//tools/workspace/ignition_math:package.bzl", "ignition_math_repository")  # noqa
-load("@drake//tools/workspace/ignition_rndf:package.bzl", "ignition_rndf_repository")  # noqa
-load("@drake//tools/workspace/ipopt:package.bzl", "ipopt_repository")
-load("@drake//tools/workspace/lapack:package.bzl", "lapack_repository")
-load("@drake//tools/workspace/lcm:package.bzl", "lcm_repository")
-load("@drake//tools/workspace/lcmtypes_bot2_core:package.bzl", "lcmtypes_bot2_core_repository")  # noqa
-load("@drake//tools/workspace/lcmtypes_robotlocomotion:package.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
-load("@drake//tools/workspace/liblz4:package.bzl", "liblz4_repository")
-load("@drake//tools/workspace/libpng:package.bzl", "libpng_repository")
-load("@drake//tools/workspace/libprotobuf:package.bzl", "libprotobuf_repository")  # noqa
-load("@drake//tools/workspace/mosek:package.bzl", "mosek_repository")
-load("@drake//tools/workspace/net_sf_jchart2d:package.bzl", "net_sf_jchart2d_repository")  # noqa
-load("@drake//tools/workspace/nlopt:package.bzl", "nlopt_repository")
-load("@drake//tools/workspace/numpy:package.bzl", "numpy_repository")
-load("@drake//tools/workspace/octomap:package.bzl", "octomap_repository")
-load("@drake//tools/workspace/optitrack_driver:package.bzl", "optitrack_driver_repository")  # noqa
-load("@drake//tools/workspace/org_apache_xmlgraphics_commons:package.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
-load("@drake//tools/workspace/protoc:package.bzl", "protoc_repository")
-load("@drake//tools/workspace/pybind11:package.bzl", "pybind11_repository")
-load("@drake//tools/workspace/pycodestyle:package.bzl", "pycodestyle_repository")  # noqa
-load("@drake//tools/workspace/pycps:package.bzl", "pycps_repository")
-load("@drake//tools/workspace/python:package.bzl", "python_repository")
-load("@drake//tools/workspace/scs:package.bzl", "scs_repository")
-load("@drake//tools/workspace/sdformat:package.bzl", "sdformat_repository")
-load("@drake//tools/workspace/semantic_version:package.bzl", "semantic_version_repository")  # noqa
-load("@drake//tools/workspace/snopt:package.bzl", "snopt_repository")
-load("@drake//tools/workspace/spdlog:package.bzl", "spdlog_repository")
-load("@drake//tools/workspace/spruce:package.bzl", "spruce_repository")
-load("@drake//tools/workspace/stx:package.bzl", "stx_repository")
-load("@drake//tools/workspace/styleguide:package.bzl", "styleguide_repository")
-load("@drake//tools/workspace/tinydir:package.bzl", "tinydir_repository")
-load("@drake//tools/workspace/tinyobjloader:package.bzl", "tinyobjloader_repository")  # noqa
-load("@drake//tools/workspace/tinyxml2:package.bzl", "tinyxml2_repository")
-load("@drake//tools/workspace/tinyxml:package.bzl", "tinyxml_repository")
-load("@drake//tools/workspace/vtk:package.bzl", "vtk_repository")
-load("@drake//tools/workspace/yaml_cpp:package.bzl", "yaml_cpp_repository")
-load("@drake//tools/workspace/zlib:package.bzl", "zlib_repository")
+load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
+load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")
+load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
+load("@drake//tools/workspace/bullet:repository.bzl", "bullet_repository")
+load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
+load("@drake//tools/workspace/com_google_protobuf:repository.bzl", "com_google_protobuf_repository")  # noqa
+load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
+load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
+load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
+load("@drake//tools/workspace/dreal:repository.bzl", "dreal_repository")
+load("@drake//tools/workspace/eigen:repository.bzl", "eigen_repository")
+load("@drake//tools/workspace/expat:repository.bzl", "expat_repository")
+load("@drake//tools/workspace/fcl:repository.bzl", "fcl_repository")
+load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
+load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
+load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
+load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
+load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
+load("@drake//tools/workspace/gthread:repository.bzl", "gthread_repository")
+load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
+load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
+load("@drake//tools/workspace/ignition_rndf:repository.bzl", "ignition_rndf_repository")  # noqa
+load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
+load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
+load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
+load("@drake//tools/workspace/lcmtypes_bot2_core:repository.bzl", "lcmtypes_bot2_core_repository")  # noqa
+load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
+load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
+load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
+load("@drake//tools/workspace/libprotobuf:repository.bzl", "libprotobuf_repository")  # noqa
+load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
+load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
+load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
+load("@drake//tools/workspace/numpy:repository.bzl", "numpy_repository")
+load("@drake//tools/workspace/octomap:repository.bzl", "octomap_repository")
+load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
+load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
+load("@drake//tools/workspace/protoc:repository.bzl", "protoc_repository")
+load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
+load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
+load("@drake//tools/workspace/pycps:repository.bzl", "pycps_repository")
+load("@drake//tools/workspace/python:repository.bzl", "python_repository")
+load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
+load("@drake//tools/workspace/sdformat:repository.bzl", "sdformat_repository")
+load("@drake//tools/workspace/semantic_version:repository.bzl", "semantic_version_repository")  # noqa
+load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
+load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
+load("@drake//tools/workspace/spruce:repository.bzl", "spruce_repository")
+load("@drake//tools/workspace/stx:repository.bzl", "stx_repository")
+load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
+load("@drake//tools/workspace/tinydir:repository.bzl", "tinydir_repository")
+load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
+load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
+load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
+load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
+load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
+load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
 def add_default_repositories(excludes = []):
     """Declares workspace repositories for all externals needed by drake (other
@@ -109,8 +108,6 @@ def add_default_repositories(excludes = []):
         gthread_repository(name = "gthread")
     if "gurobi" not in excludes:
         gurobi_repository(name = "gurobi")
-    if "ibex" not in excludes:
-        ibex_repository(name = "ibex")
     if "ignition_math" not in excludes:
         ignition_math_repository(name = "ignition_math")
     if "ignition_rndf" not in excludes:

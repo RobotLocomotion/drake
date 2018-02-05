@@ -84,6 +84,7 @@ def drake_pybind_library(
         C++ dependencies.
         At present, these should be libraries that will not cause ODR
         conflicts (generally, header-only).
+        By default, this includes `pydrake_pybind`.
     @param cc_so_name (optional)
         Shared object name. By default, this is `_${name}`, so that the C++
         code can be then imported in a more controlled fashion in Python.
@@ -114,7 +115,9 @@ def drake_pybind_library(
     _drake_pybind_cc_binary(
         name = cc_so_name,
         srcs = cc_srcs,
-        deps = cc_deps,
+        deps = cc_deps + [
+            "//bindings/pydrake:pydrake_pybind",
+        ],
         testonly = testonly,
         visibility = visibility,
     )
@@ -141,15 +144,17 @@ def drake_pybind_library(
             visibility = visibility,
         )
 
-def get_drake_pybind_installs(targets):
-    """Gets install targets for `drake_pybind_library` targets.
+def get_drake_py_installs(targets):
+    """Gets install targets for Python targets / packages that have a sibling
+    install target.
 
     @note This does not check the targets for correctness.
     """
     return [_get_install(target) for target in targets]
 
 def _get_install(target):
-    # Gets the install target for a `drake_pybind_library` target.
+    # Gets the install target for a Python target that has a sibling install
+    # target.
     if ":" in target:
         # Append suffix to target.
         return target + "_install"
@@ -217,6 +222,7 @@ def drake_pybind_cc_googletest(
         name = cc_name,
         srcs = cc_srcs,
         deps = cc_deps + [
+            "//bindings/pydrake:pydrake_pybind",
             "//tools/install/libdrake:drake_shared_library",
             "@pybind11",
         ],

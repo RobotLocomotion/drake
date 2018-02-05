@@ -6,12 +6,18 @@
 #include "drake/multibody/shapes/element.h"
 
 namespace DrakeShapes {
+
 class VisualElement : public Element {
  public:
   explicit VisualElement(const Eigen::Isometry3d& T_element_to_local)
       : Element(T_element_to_local),
         material(Eigen::Vector4d(0.7, 0.7, 0.7, 1)) {}
 
+  /**
+   * Constructs a geometry at a specified transform with
+   * a given material (i.e. a color specified as a 4-vector
+   * of RGBA, each on [0, 1]).
+   */
   VisualElement(const Geometry& geometry,
                 const Eigen::Isometry3d& T_element_to_local,
                 const Eigen::Vector4d& material_in)
@@ -19,8 +25,14 @@ class VisualElement : public Element {
 
   virtual ~VisualElement() {}
 
+  /**
+  * Sets the element's material color, in RGBA format.
+  */
   void setMaterial(const Eigen::Vector4d& material);
 
+  /**
+  * Retrieves the element's material color, in RGBA format.
+  */
   const Eigen::Vector4d& getMaterial() const;
 
  protected:

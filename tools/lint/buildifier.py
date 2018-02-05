@@ -11,8 +11,8 @@ import subprocess
 import sys
 from subprocess import Popen, PIPE, STDOUT
 
-from tools.lint.find_data import find_data
-from tools.lint.util import find_all_sources
+from drake.tools.lint.find_data import find_data
+from drake.tools.lint.util import find_all_sources
 
 # These match data=[] in our BUILD.bazel file.
 _BUILDIFIER = "external/buildifier/buildifier"
@@ -47,9 +47,9 @@ def _help(command):
     return process.returncode
 
 
-def _find_buildifier_sources():
+def _find_buildifier_sources(workspace_name):
     """Return a list of all filenames to be covered by buildifier."""
-    workspace, sources_relpath = find_all_sources()
+    workspace, sources_relpath = find_all_sources(workspace_name)
     exact_filenames = ["BUILD", "WORKSPACE"]
     extensions = ["bazel", "bzl", "BUILD"]
     return [
@@ -76,7 +76,7 @@ def _passes_check_mode(args):
         raise e
 
 
-def main():
+def main(workspace_name="drake"):
     # Slice out our overlay command-line argument "--all".
     argv = sys.argv[1:]
     find_all = False
@@ -100,7 +100,7 @@ def main():
         print("ERROR: no input files; did you want '--all'?")
         return 1
     if find_all:
-        found = _find_buildifier_sources()
+        found = _find_buildifier_sources(workspace_name)
         if len(found) == 0:
             print("ERROR: '--all' could not find anything")
             return 1

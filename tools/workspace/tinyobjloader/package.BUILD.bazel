@@ -2,9 +2,7 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
 )
 
 package(
@@ -13,30 +11,14 @@ package(
 
 cc_library(
     name = "tinyobjloader",
-    srcs = [
-        "tiny_obj_loader.cc",
-    ],
-    hdrs = [
-        "tiny_obj_loader.h",
-    ],
+    srcs = ["tiny_obj_loader.cc"],
+    hdrs = ["tiny_obj_loader.h"],
+    copts = ["-fvisibility=hidden"],
     includes = ["."],
-    linkstatic = 0,
+    linkstatic = 1,
 )
-
-cmake_config(
-    package = "tinyobjloader",
-    script = "@drake//tools/workspace/tinyobjloader:package-create-cps.py",
-    version_file = "CMakeLists.txt",
-)
-
-# Creates rule :install_cmake_config.
-install_cmake_config(package = "tinyobjloader")
 
 install(
     name = "install",
-    targets = [":tinyobjloader"],
-    hdr_dest = "include/tinyobjloader",
-    guess_hdrs = "PACKAGE",
     docs = ["LICENSE"],
-    deps = [":install_cmake_config"],
 )

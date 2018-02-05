@@ -7,6 +7,10 @@ load(
     "drake_cc_googletest",
     "drake_example_cc_binary",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+)
 load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
@@ -49,6 +53,7 @@ drake_cc_library(
         "//drake/lcmtypes:iiwa",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/rigid_body_plant:contact_results",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -103,6 +108,9 @@ drake_example_cc_binary(
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",
     ],
+    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
+    # causes timeouts in kcov.
+    tags = ["no_kcov"],
     test_rule_args = ["--simulation_sec=0.01"],
     # Flaky because LCM self-test can fail (PR #7311)
     test_rule_flaky = 1,
@@ -123,6 +131,9 @@ drake_example_cc_binary(
         ":models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
+    # causes timeouts in kcov.
+    tags = ["no_kcov"],
     test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
     # Flaky because LCM self-test can fail (PR #7311)
     test_rule_flaky = 1,
@@ -188,9 +199,13 @@ alias(
 
 drake_cc_googletest(
     name = "iiwa_lcm_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_lcm",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/systems/framework",
     ],
 )
@@ -226,6 +241,9 @@ sh_test(
     ],
     # Flaky because LCM self-test can fail (PR #7311)
     flaky = 1,
+    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
+    # causes timeouts in kcov.
+    tags = ["no_kcov"],
 )
 
 # This examples needs to be install for external projects such as Spartan.
@@ -258,6 +276,21 @@ install(
     deps = adjust_labels_for_drake_hoist([
         "//drake/examples/kuka_iiwa_arm/models:install_data",
     ]),
+)
+
+# Run the installed flavor of the kuka simulation, to make sure it can locate
+# its resources, etc.  TODO(jwnimmer-tri) Refactor installed-test phrasing to
+# be more compact, convenient, and efficient such as #7774 proposes.
+drake_py_test(
+    name = "kuka_simulation_installed_test",
+    size = "small",
+    timeout = "long",
+    srcs = ["test/kuka_simulation_installed_test.py"],
+    data = ["//:install"],
+    main = "test/kuka_simulation_installed_test.py",
+    deps = [
+        "//tools/install:install_test_helper",
+    ],
 )
 
 add_lint_tests()

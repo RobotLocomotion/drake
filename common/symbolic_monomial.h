@@ -67,21 +67,20 @@ class Monomial {
    */
   double Evaluate(const Environment& env) const;
 
-  /** Substitutes using a given environment @p env. The substitution result is
-   * of type pair<double, Monomial>. The first component (: double) represents
-   * the coefficient part while the second component represents the remaining
-   * parts of the Monomial which was not substituted. Note that users are
-   * allowed to provide a partial environment.
+  /** Partially evaluates using a given environment @p env. The evaluation
+   * result is of type pair<double, Monomial>. The first component (: double)
+   * represents the coefficient part while the second component represents the
+   * remaining parts of the Monomial which was not evaluated.
    *
-   * Example 1. Substitution with a fully-specified environment
-   *     (x^3*y^2).Substitute({{x, 2}, {y, 3}})
-   *   = (2^3 * 3^2 = 8 * 9 = 72, Monomial{} = 1).
+   * Example 1. Evaluate with a fully-specified environment
+   *     (x³*y²).EvaluatePartial({{x, 2}, {y, 3}})
+   *   = (2³ * 3² = 8 * 9 = 72, Monomial{} = 1).
    *
-   * Example 1. Substitution with a partial environment
-   *     (x^3*y^2).Substitute({{x, 2}})
-   *   = (2^3 = 8, y^2).
+   * Example 2. Evaluate with a partial environment
+   *     (x³*y²).EvaluatePartial({{x, 2}})
+   *   = (2³ = 8, y²).
    */
-  std::pair<double, Monomial> Substitute(const Environment& env) const;
+  std::pair<double, Monomial> EvaluatePartial(const Environment& env) const;
 
   /** Returns a symbolic expression representing this monomial. */
   Expression ToExpression() const;

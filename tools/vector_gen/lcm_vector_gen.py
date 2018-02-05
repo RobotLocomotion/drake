@@ -6,6 +6,7 @@ import argparse
 import collections
 import os
 import subprocess
+import yaml
 
 import google.protobuf.text_format
 
@@ -628,21 +629,17 @@ def generate_code(
                                                       field['doc']), 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
-    # Run clang-format over all C++ files.
-    for one_filename in cxx_names:
-        # The clang-format tool has no way to specify a config file, other than
-        # putting a dotfile somehwere in a parent dir of the target.  Because
-        # our output is in genfiles but the dotfile is in runfiles, we won't
-        # automatically find it.  We'll resolve that by temporarily symlinking
-        # the dotfile into place.
-        dotfile = find_data(".clang-format")
-        temp_dotfile = os.path.join(
-            os.path.dirname(one_filename), ".clang-format")
-        assert not os.path.exists(temp_dotfile)
-        os.symlink(dotfile, temp_dotfile)
-        subprocess.check_call([
-            get_clang_format_path(), "--style=file", "-i", one_filename])
-        os.unlink(temp_dotfile)
+    if cxx_names:
+        # Run clang-format over all C++ files.  Inserting a .clang-format
+        # settings file is problematic when formatting within bazel-genfiles,
+        # so instead we pass its contents on the command line.
+        with open(find_data(".clang-format"), "r") as f:
+            yaml_data = yaml.load(f, Loader=yaml.Loader)
+            style = str(yaml_data)
+            # For some reason, clang-format really wants lowercase booleans.
+            style = style.replace("False", "false").replace("True", "true")
+        subprocess.check_call(
+            [get_clang_format_path(), "--style=" + style, "-i"] + cxx_names)
 
 
 def generate_all_code(srcs, outs):

@@ -21,7 +21,7 @@ from pydrake.systems.framework import (
 from pydrake.systems.primitives import (
     Adder,
     )
-from pydrake.systems.test.lifetime_test_util import (
+from pydrake.systems.test.test_util import (
     DeleteListenerSystem,
     DeleteListenerVector,
     )
@@ -58,9 +58,16 @@ class TestLifetime(unittest.TestCase):
         self.assertFalse(info.deleted)
         # Delete the diagram. Should be dead.
         del diagram
-        # WARNING
-        self.assertTrue(info.deleted)
+        # Using `py::keep_alive`, `system` will keep `builder` alive after
+        # `.AddSystem` is called, and `builder` will keep `diagram` alive after
+        # `.Build` is called.
+        # Transitively, `system` will keep `builder` alive (as its old owner)
+        # and `diagram` (as its new owner, which is kept alive by `builder`).
+        self.assertFalse(info.deleted)
         self.assertTrue(system is not None)
+        del system
+        # Upon removing this reference, everything should be cleared up.
+        self.assertTrue(info.deleted)
 
     def test_ownership_multiple_containers(self):
         info = Info()
@@ -84,6 +91,13 @@ class TestLifetime(unittest.TestCase):
         # Simulator does not own the system.
         self.assertFalse(info.deleted)
         self.assertTrue(system is not None)
+        # Now ensure that having a system be alive will keep
+        # the system alive (using `py::keep_alive`).
+        simulator = Simulator(system)
+        del system
+        self.assertFalse(info.deleted)
+        del simulator
+        self.assertTrue(info.deleted)
 
     def test_ownership_vector(self):
         system = Adder(1, 1)
@@ -92,9 +106,14 @@ class TestLifetime(unittest.TestCase):
         vector = DeleteListenerVector(info.record_deletion)
         context.FixInputPort(0, vector)
         del context
-        # WARNING
-        self.assertTrue(info.deleted)
+        # Same as above applications, using `py::keep_alive`.
+        self.assertFalse(info.deleted)
         self.assertTrue(vector is not None)
+        # Ensure that we do not get segfault behavior when accessing / mutating
+        # the values.
+        self.assertTrue(np.allclose(vector.get_value(), [0.]))
+        vector.get_mutable_value()[:] = [10.]
+        self.assertTrue(np.allclose(vector.get_value(), [10.]))
 
 
 assert __name__ == '__main__'

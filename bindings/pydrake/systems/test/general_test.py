@@ -40,6 +40,8 @@ class TestGeneral(unittest.TestCase):
         # Create simulator with basic constructor.
         simulator = Simulator(system)
         simulator.Initialize()
+        simulator.set_target_realtime_rate(0)
+        simulator.set_publish_every_time_step(True)
         self.assertTrue(simulator.get_context() is
                         simulator.get_mutable_context())
         check_output(simulator.get_context())
@@ -105,12 +107,10 @@ class TestGeneral(unittest.TestCase):
         context.FixInputPort(2, input2)
 
         # Initialize integrator states.
-        def get_mutable_continuous_state(system):
-            return (diagram.GetMutableSubsystemState(system, context)
-                           .get_mutable_continuous_state())
-
-        integrator_xc = get_mutable_continuous_state(integrator)
-        integrator_xc.get_mutable_vector().SetFromVector([0, 1, 2])
+        integrator_xc = (
+            diagram.GetMutableSubsystemState(integrator, context)
+                   .get_mutable_continuous_state().get_vector())
+        integrator_xc.SetFromVector([0, 1, 2])
 
         simulator.Initialize()
 
@@ -130,8 +130,7 @@ class TestGeneral(unittest.TestCase):
         for i, context_i in enumerate(context_log):
             t = times[i]
             self.assertEqual(context_i.get_time(), t)
-            xc = (context_i.get_state().get_continuous_state()
-                           .get_vector().CopyToVector())
+            xc = context_i.get_continuous_state_vector().CopyToVector()
             xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial) +
                            xc_initial)
             print("xc[t = {}] = {}".format(t, xc))
