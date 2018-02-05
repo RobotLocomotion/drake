@@ -265,13 +265,16 @@ drake_java_binary(
     ],
 )
 
+CMAKE_PACKAGE = "lcm"
+
 cmake_config(
-    package = "lcm",
+    package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/lcm:package-create-cps.py",
     version_file = "lcm/lcm_version.h",
 )
 
-install_cmake_config(package = "lcm")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install_files(
     name = "install_extra_cmake",
@@ -305,6 +308,7 @@ install(
     ],
     py_strip_prefix = ["lcm-python"],
     hdrs = LCM_PUBLIC_HEADERS,
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     docs = [
         "AUTHORS",
         "COPYING",
