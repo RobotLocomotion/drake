@@ -53,7 +53,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
   ///   A vector containing the generalized forces due to this gravity field
   ///   force element. The generalized forces are consistent with the vector of
   ///   generalized velocities `v` for the parent MultibodyTree model so that
-  ///   the inner product `v⋅tau_g` corresponds to the power carried out by the
+  ///   the inner product `v⋅tau_g` corresponds to the power applied by the
   ///   gravity forces on the mechanical system. That is, `v⋅tau_g > 0`
   ///   corresponds to potential energy going into the system, as either
   ///   mechanical kinetic energy, some other potential energy, or heat, and
