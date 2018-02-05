@@ -12,6 +12,11 @@ cc_library(
     ],
     linkopts = ["-lm"],
     # Link statically so that Fortran MAIN__ resolution works on gcc.
+    # It's also important to link statically because Drake's binary releases
+    # are allowed to redistribute SNOPT only if SNOPT is not distributed as a
+    # stand-alone package -- that users cannot use the SNOPT code separately,
+    # but rather only through Drake's interfaces.  A shared library of SNOPT
+    # would not meet those criteria.
     linkstatic = 1,
     # By convention, SNOPT header #includes are not fully qualified.
     strip_include_prefix = "csrc",
