@@ -43,6 +43,8 @@ class FormatterBase(object):
             self._original_lines = list(readlines)
         self._working_lines = list(self._original_lines)
         self._check_rep()
+        if any(["\r" in line for line in self._working_lines]):
+            raise Exception("DOS newlines are not supported")
 
     def _check_rep(self):
         assert self._filename
