@@ -22,6 +22,7 @@
 namespace drake {
 namespace maliput {
 namespace rndf {
+namespace {
 
 // Angular tolerance will be used to match the angle values from the orientation
 // matrices.
@@ -377,6 +378,7 @@ GTEST_TEST(RNDFSplineLanesTest, TwoFlatLineLanesBoundChecks) {
                                         kVeryExact));
 }
 
+}  // namespace
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake
