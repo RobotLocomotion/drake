@@ -1,28 +1,12 @@
 # -*- python -*-
 
-# Copied from RobotLocomotion/snopt/BUILD.
-
-package(default_visibility = ["//visibility:public"])
-
-alias(
-    name = "snopt_c",
-    actual = "//csrc:snopt_c",
-)
-
-alias(
-    name = "snopt_cpp",
-    actual = "//cppsrc:snopt_cpp",
-)
-
-# Copied from RobotLocomotion/snopt/csrc/BUILD.
-
 cc_library(
     name = "snopt_c",
     srcs = glob(
-        ["*.c"],
-        exclude = ["dummy.c"],
+        ["csrc/*.c"],
+        exclude = ["csrc/dummy.c"],
     ),
-    hdrs = glob(["*.hh"]),
+    hdrs = glob(["csrc/*.hh"]),
     copts = [
         "-w",
     ],
@@ -30,18 +14,21 @@ cc_library(
     # Link statically so that Fortran MAIN__ resolution works on gcc.
     linkstatic = 1,
     # By convention, SNOPT header #includes are not fully qualified.
-    strip_include_prefix = "/csrc",
+    strip_include_prefix = "csrc",
     visibility = ["//visibility:public"],
-    deps = ["//libf2c"],
+    deps = [":libf2c"],
     # Always link the entirety of SNOPT.
     alwayslink = 1,
 )
 
-# Copied from RobotLocomotion/snopt/libf2c/BUILD.
+# Different revisions of SNOPT have this folder in different places.
+# TODO(jwnimmer-tri) Use a different value here, depending on what's needed for
+# a specific version of snopt.
+_LIBF2C = "libf2c/"
 
 cc_binary(
     name = "arithchk",
-    srcs = ["arithchk.c"],
+    srcs = [_LIBF2C + "arithchk.c"],
     copts = [
         "-w",
         "-DNO_FPINIT",
@@ -52,59 +39,59 @@ cc_binary(
 genrule(
     name = "arith",
     srcs = [],
-    outs = ["arith.h"],
+    outs = [_LIBF2C + "arith.h"],
     cmd = "$(location :arithchk) > $(@)",
     tools = [":arithchk"],
 )
 
 genrule(
     name = "f2c",
-    srcs = ["f2c.h0"],
-    outs = ["f2c.h"],
+    srcs = [_LIBF2C + "f2c.h0"],
+    outs = [_LIBF2C + "f2c.h"],
     cmd = "cp $< $(@)",
 )
 
 genrule(
     name = "sysdep1",
-    srcs = ["sysdep1.h0"],
-    outs = ["sysdep1.h"],
+    srcs = [_LIBF2C + "sysdep1.h0"],
+    outs = [_LIBF2C + "sysdep1.h"],
     cmd = "cp $< $(@)",
 )
 
 genrule(
     name = "signal1",
-    srcs = ["signal1.h0"],
-    outs = ["signal1.h"],
+    srcs = [_LIBF2C + "signal1.h0"],
+    outs = [_LIBF2C + "signal1.h"],
     cmd = "cp $< $(@)",
 )
 
 genrule(
     name = "math",
-    srcs = ["math.h0"],
-    outs = ["f2math.h"],
+    srcs = [_LIBF2C + "math.h0"],
+    outs = [_LIBF2C + "f2math.h"],
     cmd = "cp $< $(@)",
 )
 
 filegroup(
     name = "generated_headers",
     srcs = [
-        "arith.h",
-        "f2c.h",
-        "f2math.h",
-        "signal1.h",
-        "sysdep1.h",
+        _LIBF2C + "arith.h",
+        _LIBF2C + "f2c.h",
+        _LIBF2C + "f2math.h",
+        _LIBF2C + "signal1.h",
+        _LIBF2C + "sysdep1.h",
     ],
 )
 
 filegroup(
     name = "generated_public_headers",
-    srcs = ["f2c.h"],
+    srcs = [_LIBF2C + "f2c.h"],
 )
 
 # Replace main.c, which causes tests that link to SNOPT to erroneously pass.
 genrule(
     name = "main_",
-    outs = ["main_.c"],
+    outs = [_LIBF2C + "main_.c"],
     cmd = "echo \"int xargc; char **xargv;\" > $(@)",
 )
 
@@ -112,17 +99,17 @@ cc_library(
     name = "libf2c",
     srcs = [":main_"] + glob(
         [
-            "*.c",
-            "*.h",
+            _LIBF2C + "*.c",
+            _LIBF2C + "*.h",
         ],
         # Exclude optional sources and generator tools from the glob.
         exclude = [
-            "main.c",
-            "pow_qq.c",
-            "qbitbits.c",
-            "qbitshft.c",
-            "*64*.c",
-            "arithchk.c",
+            _LIBF2C + "main.c",
+            _LIBF2C + "pow_qq.c",
+            _LIBF2C + "qbitbits.c",
+            _LIBF2C + "qbitshft.c",
+            _LIBF2C + "*64*.c",
+            _LIBF2C + "arithchk.c",
         ],
     ),
     hdrs = [":generated_headers"],
@@ -133,6 +120,6 @@ cc_library(
     # Link statically so that Fortran MAIN__ resolution works on gcc.
     linkstatic = 1,
     # By convention, SNOPT header #includes are not fully qualified.
-    strip_include_prefix = "/libf2c",
+    strip_include_prefix = _LIBF2C,
     visibility = ["//visibility:public"],
 )
