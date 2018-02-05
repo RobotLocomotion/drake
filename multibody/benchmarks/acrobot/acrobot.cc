@@ -89,7 +89,12 @@ Vector2<T> Acrobot<T>::CalcGravityVector(
   Vector2<T> tau_g;
   tau_g(0) = g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
   tau_g(1) = g_ * m2_ * lc2_ * s12;
-  return tau_g;
+
+  // Unlike http://underactuated.mit.edu/underactuated.html?chapter=3, we define
+  // tau_g(q) to be on the right hand side of the equations of motion, that is,
+  // Mv̇ + C(q, v)v = tau_g(q).
+  // Therefore we invert the sign before returning.
+  return -tau_g;
 }
 
 template <typename T>

@@ -38,9 +38,10 @@ class UniformGravityFieldElement : public ForceElement<T> {
   /// Computes the generalized forces `tau_g(q)` due to `this` gravity field
   /// element as a function of the generalized positions `q` stored in the input
   /// `context`, for the multibody model to which `this` element belongs.
-  /// `tau_g(q)` is defined such that it appears on the left hand side of the
-  /// equations of motion, like so: <pre>
-  ///   Mv̇ + C(q, v)v + tau_g(q) = tau_app
+  /// `tau_g(q)` is defined such that it appears on the right hand side of the
+  /// equations of motion together with any other generalized forces, like so:
+  /// <pre>
+  ///   Mv̇ + C(q, v)v = tau_g(q) + tau_app
   /// </pre>
   /// where `tau_app` includes any other generalized forces applied on the
   /// system.
@@ -52,8 +53,11 @@ class UniformGravityFieldElement : public ForceElement<T> {
   ///   A vector containing the generalized forces due to this gravity field
   ///   force element. The generalized forces are consistent with the vector of
   ///   generalized velocities `v` for the parent MultibodyTree model so that
-  ///   the inner product `v⋅tau_g` corresponds to the work carried out by the
-  ///   gravity forces.
+  ///   the inner product `v⋅tau_g` corresponds to the power carried out by the
+  ///   gravity forces on the mechanical system. That is, `v⋅tau_g > 0`
+  ///   corresponds to potential energy going into the system, as either
+  ///   mechanical kinetic energy, some other potential energy, or heat, and
+  ///   therefore to a decrease of potential energy.
   VectorX<T> CalcGravityGeneralizedForces(
       const systems::Context<T>& context) const;
 

@@ -687,8 +687,8 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcInverseDynamics(
         *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
-    // The result from inverse dynamics must be tau_g(q) as in our benchmark.
-    EXPECT_TRUE(tau.isApprox(tau_g_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
 
     // Now try using the same arrays for input/output (input data
     // Fapplied_Bo_W_array will get overwritten through the output argument).
@@ -696,8 +696,8 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcInverseDynamics(
         *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
-    // The result from inverse dynamics must be tau_g(q) as in our benchmark.
-    EXPECT_TRUE(tau.isApprox(tau_g_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
 
     // Compute the system's potential energy:
     const double V_expected =

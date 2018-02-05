@@ -46,9 +46,12 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
 
   // Compute inverse dynamics with zero generalized velocities and zero
   // generalized accelerations. Since inverse dynamics computes:
-  // tau_g = M(q)v̇ + C(q, v)v - ∑ J_WBᵀ(q) Fgrav_Bo_W
-  // with v = 0 and vdot = 0 we get:
-  // tau_g(q) = - ∑ J_WBᵀ(q) Fgrav_Bo_W, which is exactly the result we want.
+  // ID(q, v, v̇)  = M(q)v̇ + C(q, v)v - ∑ J_WBᵀ(q) Fgrav_Bo_W
+  // with v = 0 and v̇ = 0 we get:
+  // ID(q, v, v̇) = - ∑ J_WBᵀ(q) Fgrav_Bo_W = -tau_g(q), which is the negative of
+  // the generalized forces due to gravity.
+  // TODO(amcastro-tri): Replace this inverse dynamics implementation by a JᵀF
+  // operator implementation, which would be more efficient.
   model.CalcInverseDynamics(
       context, pc, vc, /* state */
       VectorX<T>::Zero(model.get_num_velocities()), /* vdot = 0 */
@@ -56,7 +59,7 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
       forces.body_forces(), forces.generalized_forces(),
       &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
       &tau_g /* Output, the generalized forces. */);
-  return tau_g;
+  return -tau_g;
 }
 
 template <typename T>
