@@ -42,22 +42,23 @@ template <typename DerivedA, typename DerivedB>
     for (int jj = 0; jj < m1.cols(); jj++) {
       // First handle the corner cases of positive infinity, negative infinity,
       // and NaN
-      bool both_positive_infinity =
+      const auto both_positive_infinity =
           m1(ii, jj) == std::numeric_limits<double>::infinity() &&
           m2(ii, jj) == std::numeric_limits<double>::infinity();
 
-      bool both_negative_infinity =
+      const auto both_negative_infinity =
           m1(ii, jj) == -std::numeric_limits<double>::infinity() &&
           m2(ii, jj) == -std::numeric_limits<double>::infinity();
 
-      bool both_nan = std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj));
+      using std::isnan;
+      const auto both_nan = isnan(m1(ii, jj)) && isnan(m2(ii, jj));
 
       if (both_positive_infinity || both_negative_infinity || both_nan)
         continue;
 
       // Check for case where one value is NaN and the other is not
-      if ((std::isnan(m1(ii, jj)) && !std::isnan(m2(ii, jj))) ||
-          (!std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj)))) {
+      if ((isnan(m1(ii, jj)) && !isnan(m2(ii, jj))) ||
+          (!isnan(m1(ii, jj)) && isnan(m2(ii, jj)))) {
         return ::testing::AssertionFailure() << "NaN missmatch at (" << ii
                                              << ", " << jj << "):\nm1 =\n"
                                              << m1 << "\nm2 =\n"
@@ -66,7 +67,8 @@ template <typename DerivedA, typename DerivedB>
 
       // Determine whether the difference between the two matrices is less than
       // the tolerance.
-      double delta = std::abs(m1(ii, jj) - m2(ii, jj));
+      using std::abs;
+      const auto delta = abs(m1(ii, jj) - m2(ii, jj));
 
       if (compare_type == MatrixCompareType::absolute) {
         // Perform comparison using absolute tolerance.
@@ -84,8 +86,10 @@ template <typename DerivedA, typename DerivedB>
       } else {
         // Perform comparison using relative tolerance, see:
         // http://realtimecollisiondetection.net/blog/?p=89
-        double max_value = std::max(std::abs(m1(ii, jj)), std::abs(m2(ii, jj)));
-        double relative_tolerance = tolerance * std::max(1.0, max_value);
+        using std::max;
+        const auto max_value = max(abs(m1(ii, jj)), abs(m2(ii, jj)));
+        const auto relative_tolerance =
+            tolerance * max(decltype(max_value){1}, max_value);
 
         if (delta > relative_tolerance) {
           return ::testing::AssertionFailure()
