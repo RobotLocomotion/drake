@@ -1,5 +1,5 @@
 """
-Provides a roll-up of all user-visible symbols in `pydrake`.
+Provides a roll-up of all user-visible modules and symbols in `pydrake`.
 
 Things to note:
 *   The `.all` modules in `pydrake` are intended as convenient end-user
