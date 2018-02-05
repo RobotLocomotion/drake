@@ -7,6 +7,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -99,6 +100,48 @@ class ProximityEngine {
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG);
+
+
+  //----------------------------------------------------------------------------
+  /** @name                Collision Queries
+
+   These queries detect _collisions_ between geometry. Two geometries collide
+   if they overlap each other and are not explicitly excluded through
+   @ref collision_filter_concepts "collision filtering". These algorithms find
+   those colliding cases, characterize them, and report the essential
+   characteristics of that collision.  */
+
+  //@{
+
+  // NOTE: This maps to Model::ComputeMaximumDepthCollisionPoints().
+  /** Computes the penetrations across all pairs of geometries in the world.
+   Only reports results for _penetrating_ geometries; if two geometries are
+   separated, there will be no result for that pair.
+
+   The penetrations are characterized by pairs of points (providing some measure
+   of the penetration "depth" of the two objects -- but _not_ the overlapping
+   volume.
+
+   @cond
+   // TODO(SeanCurtis-TRI): Once collision filtering is supported, pull this
+   // *out* of the cond tag.
+   This method is affected by collision filtering; geometry pairs that
+   have been filtered will not produce contacts, even if their collision
+   geometry is penetrating.
+   @endcond
+
+   @param[in]   dynamic_map   A map from geometry _index_ to the corresponding
+                              global geometry identifier for dynamic geometries.
+   @param[in]   anchored_map  A map from geometry _index_ to the corresponding
+                              global geometry identifier for anchored
+                              geometries.
+   @returns A vector populated with all detected penetrations characterized as
+            point pairs. */
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
+      const std::vector<GeometryId>& dynamic_map,
+      const std::vector<GeometryId>& anchored_map) const;
+
+  //@}
 
  private:
   ////////////////////////////////////////////////////////////////////////////
