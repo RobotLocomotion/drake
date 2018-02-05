@@ -20,7 +20,8 @@ namespace constraint {
 /// the second time derivative of such constraint equations (i.e., c̈(q,v,v̇))
 /// yields a far more manageable Index-1 DAE, again with regard to computation.
 /// This structure stores problem data for computing dynamics under such
-/// acceleration-level constraints.
+/// constraints and others (nonholonomic constraints, Coulomb friction
+/// constraints, etc.)
 ///
 /// <h3>Definition of variables specific to this class</h3>
 /// (See @ref constraint_variable_defs) for the more general set of

@@ -34,14 +34,15 @@ further in @ref constraint_types.
 @ingroup constraint_overview
 - b ∈ ℕ   The number of bilateral constraint equations.
 - k ∈ ℕ   The number of edges in a polygonal approximation to a friction
-           cone. Note that k = 2r.
+           cone. Note that k = 2r (where r is defined immediately below).
 - r ∈ ℕ   *Half* the number of edges in a polygonal approximation to a
           friction cone. Note that k = 2r.
 - p ∈ ℕ   The number of non-interpenetration constraint equations
 - n ∈ ℕ   The dimension of the system generalized velocity / force.
 - n' ∈ ℕ  The dimension of the system generalized coordinates.
-- v ∈ ℝⁿ  The generalized velocity vector of the system, which is equivalent
-          to the time derivative of the system quasi-coordinates.
+- v ∈ ℝⁿ  The system's generalized velocity vector, which is a linear
+          transformation of the time derivative of the system's generalized
+          coordinates.
 - q ∈ ℝⁿ' The generalized coordinate vector of the system. n' is at least
            as large as n.
 - t ∈ ℝ   The system time variable (t ≥ 0).
@@ -59,16 +60,15 @@ further in @ref constraint_types.
 /** @defgroup constraint_types Constraint types
 @ingroup constraint_overview
 
-Constraints can be categorized as either bilateral or unilateral, which
-roughly can be translated to equality (e.g., c(q) = 0) or inequality
-constraints (e.g., c(q) ≥ 0). Although the former can be realized through the
-latter using a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
-the constraint problem structure distinguishes the two types to maximize
-computational efficiency in the solution algorithms. It is assumed throughout
-this documentation that c(.) is a vector function. In general, the constraint
-functions do not maintain consistent units: the units of the iᵗʰ constraint
-function are not necessarily equivalent to the units of the jᵗʰ dimension of
-c(.).
+Constraints can be categorized as either bilateral ("two-sided" constraints,
+e.g., c(q) = 0) or unilateral ("one-sided" constraints, e.g., c(q) ≥ 0).
+Although the former can be realized through the latter using a pair of
+inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0; the constraint problem structure
+distinguishes the two types to maximize computational efficiency in the solution
+algorithms. It is assumed throughout this documentation that c(.) is a vector
+function. In general, the constraint functions do not maintain consistent units:
+the units of the iᵗʰ constraint function are not necessarily equivalent to the
+units of the jᵗʰ dimension of c(.).
 
 Constraints may be posed at the position level:<pre>
 c(t;q)
@@ -259,7 +259,7 @@ the formula:<pre>
 ϱ = hm̂ω²γ
 </pre>
 where m̂ is the *effective inertia* of the constraint and is determined
-by 1/(GM⁻¹Gᵀ), where G ≡ ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the
+by 1/(GM⁻¹Gᵀ), where G = ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the
 constraint function with respect to the quasi-coordinates (see
 @ref quasi_coordinates; equivalently, G maps generalized velocities to the time
 derivative of the constraints, i.e., ċ) and M is the generalized inertia matrix.
@@ -270,7 +270,12 @@ While Catto studied a mass-spring system, these results apply to general
 multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
 time stepping scheme in Drake using
 @ref drake::multibody::constraint::ConstraintSolver "ConstraintSolver", one
-would use ω and ζ to correspondingly set gammaN (or gammaL) to γ and kN (kL) to
+would use ω and ζ to correspondingly set
+@ref drake::multibody::constraint::ConstraintVelProblemData::gammaN "gammaN" (or
+@ref drake::multibody::constraint::ConstraintVelProblemData::gammaL "gammaL")
+to γ and
+@ref drake::multibody::constraint::ConstraintVelProblemData::kN "kN"
+(@ref drake::multibody::constraint::ConstraintVelProblemData::kL "kL") to
 ϱ/h times the signed constraint distance (using, e.g., signed distance for the
 point contact non-interpenetration constraint).
 
@@ -330,7 +335,7 @@ assume that at a certain configuration of the two bodies, ᶜq, the two
 points are coincident at a single location in space,
 p(ᶜq). To constrain the motion of pᵢ and pⱼ to the contact
 surface as the bodies move, one can introduce the constraint
-c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the common surface normal
+c(q) = n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the common surface normal
 expressed in the world frame. c(q) is a unilateral constraint, meaning that
 complementarity constraints are necessary (see @ref constraint_types):<pre>
 0 ≤ c  ⊥  λ ≥ 0
@@ -341,10 +346,10 @@ As usual, c(.) must be differentiated (with respect to time) once to use the
 contact constraint in velocity-level constraint formulation or twice to use
 it in an acceleration-level formulation. Differentiating c(q) once with respect
 to time yields:<pre>
-ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ);
+ċ(q,v) = nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ);
 </pre>
 one more differentiation with respect to time yields:<pre>
-c̈(q,v,v̇) ≡ nᵀ(p̈ᵢ - p̈ⱼ) + 2ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ).
+c̈(q,v,v̇) = nᵀ(p̈ᵢ - p̈ⱼ) + 2ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ).
 </pre>
 
 The non-negativity condition on the constraint force magnitudes (λ ≥ 0)
@@ -452,22 +457,22 @@ plane and pᵢ, pⱼ ∈ ℝ³ represent a point of contact between bodies i and
 The non-sliding constraints can be categorized into kinematic constraints on
 tangential motion and frictional force constraints. Such a grouping for a 3D
 contact is provided below:<pre>
-(0) ⁰g ≡ μ⋅fᴺ - ||fˢ fᵗ|| ≥ 0
-(1) ¹g ≡ ((p̈ᵢ - p̈ⱼ)ᵀbₛ) = 0
-(2) ²g ≡ ((p̈ᵢ - p̈ⱼ)ᵀbₜ) = 0
+(0) ⁰g = μ⋅fᴺ - ||fˢ fᵗ|| ≥ 0
+(1) ¹g = ((p̈ᵢ - p̈ⱼ)ᵀbₛ) = 0
+(2) ²g = ((p̈ᵢ - p̈ⱼ)ᵀbₜ) = 0
 </pre>
 where μ is the coefficient of "static" friction, fᴺ is the magnitude of the
 force applied along the contact normal, and fˢ and fᵗ are scalars
 corresponding to the frictional forces applied along the basis vectors.
 Since nonlinear equations are typically challenging to solve, ⁰g and ¹g
 are often transformed to linear approximations:<pre>
-(0')     g̅₀ ≡ μ⋅fᴺ - 1ᵀfᵇ
-(1')     g̅₁ ≡ (p̈ᵢ - p̈ⱼ)ᵀb₁
+(0')     g̅₀ = μ⋅fᴺ - 1ᵀfᵇ
+(1')     g̅₁ = (p̈ᵢ - p̈ⱼ)ᵀb₁
 ...
-(r')     g̅ᵣ ≡ (p̈ᵢ - p̈ⱼ)ᵀbᵣ
-(r+1') g̅ᵣ₊₁ ≡ -(p̈ᵢ - p̈ⱼ)ᵀb₁
+(r')     g̅ᵣ = (p̈ᵢ - p̈ⱼ)ᵀbᵣ
+(r+1') g̅ᵣ₊₁ = -(p̈ᵢ - p̈ⱼ)ᵀb₁
 ...
-(k')     g̅k ≡ -(p̈ᵢ - p̈ⱼ)ᵀbᵣ
+(k')     g̅k = -(p̈ᵢ - p̈ⱼ)ᵀbᵣ
 </pre>
 where b₁,...,bᵣ ∈ ℝ³ (k = 2r) are a set of spanning vectors in the contact
 tangent plane (the more vectors, the better the approximation to the
@@ -479,13 +484,13 @@ vectors. Equations 0'-k' cannot generally be satisfied simultaneously:
 maximizing fᵇ (i.e., fᵇ = μ⋅fᴺ) may be insufficient to keep the relative
 tangential acceleration at the point of contact zero. Accordingly, we
 transform Equations 0'-k' to the following:<pre>
-(0*)     c₀ ≡ μ⋅fᴺ - 1ᵀfᵇ
-(1*)     c₁ ≡ (p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
+(0*)     c₀ = μ⋅fᴺ - 1ᵀfᵇ
+(1*)     c₁ = (p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
 ...
-(r*)     cᵣ ≡ (p̈ᵢ - p̈ⱼ)ᵀbᵣ - Λ
-(r+1*) cᵣ₊₁ ≡ -(p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
+(r*)     cᵣ = (p̈ᵢ - p̈ⱼ)ᵀbᵣ - Λ
+(r+1*) cᵣ₊₁ = -(p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
 ...
-(k*)     cₖ ≡ -(p̈ᵢ - p̈ⱼ)ᵀbᵣ - Λ
+(k*)     cₖ = -(p̈ᵢ - p̈ⱼ)ᵀbᵣ - Λ
 </pre>
 which lead to the following complementarity conditions:<pre>
 0 ≤ c₀    ⊥      Λ ≥ 0
@@ -510,13 +515,13 @@ vice versa, during impact. The constraints now act to maximize negative work in
 the contact tangent plane [Anitescu 1997]. Reflecting this change at the
 velocity level, Equations (0*)-(k*) are modified to: 
 <pre>
-(0⁺)     c₀ ≡ μ⋅fᴺ - 1ᵀfᵇ
-(1⁺)     c₁ ≡ (ṗᵢ - ṗⱼ)ᵀb₁ - Λ
+(0⁺)     c₀ = μ⋅fᴺ - 1ᵀfᵇ
+(1⁺)     c₁ = (ṗᵢ - ṗⱼ)ᵀb₁ - Λ
 ...
-(r⁺)     cᵣ ≡ (ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
-(r+1⁺) cᵣ₊₁ ≡ -(ṗᵢ - ṗⱼ)ᵀb₁ - Λ
+(r⁺)     cᵣ = (ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
+(r+1⁺) cᵣ₊₁ = -(ṗᵢ - ṗⱼ)ᵀb₁ - Λ
 ...
-(k⁺)     cₖ ≡ -(ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
+(k⁺)     cₖ = -(ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
 </pre>
 fᴺ and fᵇ now reflect impulsive forces, and, similarly, Λ now corresponds to
 residual tangential velocity post-impact. The remainder of the discussion in
@@ -553,7 +558,7 @@ constraints, which are constraints posable as c(t, q). An example such holonomic
 constraint function is the transmission (gearing) constraint:<pre>
 qᵢ - rqⱼ = 0
 </pre> where
-c(q) ≡ qᵢ - rqⱼ
+c(q) = qᵢ - rqⱼ
 </pre>
 and where `r` is the gear ratio (for simplicity, this equation does not
 incorporate a constant angular offset between the rotational joints).
@@ -580,7 +585,7 @@ such unilateral holonomic constraint function is a joint range-of-motion
 limit:<pre>
 0 ≤ c(q)  ⊥  λᵢ ≥ 0
 </pre> where
-c(q) ≡ qᵢ.
+c(q) = qᵢ.
 </pre>
 This limit range of motion limit requires joint qᵢ to be non-negative.
 The force limit (λᵢ ≥ 0) requires the applied force to also be non-negative
