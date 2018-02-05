@@ -97,13 +97,11 @@ class RotationMatrix {
   }
 
   /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
-  /// "yaw-pitch-roll" angles `[q(0), q(1), q(2)]`, which is equivalent to a
-  /// Space-fixed (extrinsic) X-Y-Z rotation by "roll-pitch-yaw angles"
-  /// `[q(2), q(1), q(0)]`.
+  /// "yaw-pitch-roll" angles `[y, p, r]`, which is equivalent to a Space-fixed
+  /// (extrinsic) X-Y-Z rotation by "roll-pitch-yaw angles" `[r, p, y]`.
   /// @param[in] ypr radian measures of three angles [yaw, pitch, roll].
-  /// @note Denoting yaw `y = q(0)`, pitch `p = q(1)`, roll `r = q(2)`, this
-  /// method returns a rotation matrix `R_AD` equal to the matrix multiplication
-  /// shown below.
+  /// @note Denoting yaw `y`, pitch `p`, roll `r`, this method returns a
+  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
   /// ```
   ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
   /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
@@ -127,12 +125,11 @@ class RotationMatrix {
   }
 
   /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
-  /// "roll-pitch-yaw" angles `[q(0), q(1), q(2)]`, which is equivalent to a
-  /// Body-fixed Z-Y-X rotation by "yaw-pitch-roll" angles `[q(2), q(1), q(0)]`.
+  /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
+  /// (intrinsic) Z-Y-X rotation by "yaw-pitch-roll" angles `[y, p, r]`.
   /// @param[in] rpy radian measures of three angles [roll, pitch, yaw].
-  /// @note Denoting roll `r = q(0)`, pitch `p = q(1)`, yaw `y = q(2)`, this
-  /// method returns a rotation matrix `R_AD` equal to the matrix multiplication
-  /// shown below.
+  /// @note Denoting roll `r`, pitch `p`, yaw `y`, this method returns a
+  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
   /// ```
   ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
   /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
