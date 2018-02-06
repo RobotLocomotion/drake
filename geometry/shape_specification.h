@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <typeindex>
 
 #include "drake/common/drake_assert.h"
@@ -137,6 +138,30 @@ class HalfSpace final : public Shape {
                                     const Vector3<double>& r_FP);
 };
 
+// TODO(SeanCurtis-TRI): Update documentation when the level of support for
+// meshes extends to collision/rendering.
+/** Limited support for meshes. Meshes declared as such will _not_ serve in
+ proximity queries or rendering queries. However, they _will_ be propagated
+ to drake_visualizer. The mesh is dispatched to drake visualizer via the
+ filename. The mesh is _not_ parsed/loaded by Drake. */
+class Mesh final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
+
+  /** Constructs a mesh specification from the mesh file located at the given
+   _absolute_ file path. Optionally uniformly scaled by the given scale factor.
+   */
+  explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
+
+  const std::string& filename() const { return filename_; }
+  double scale() const { return scale_; }
+
+ private:
+  // NOTE: Cannot be const to support default copy/move semantics.
+  std::string filename_;
+  double scale_;
+};
+
 /** The interface for converting shape descriptions to real shapes. Any entity
  that consumes shape descriptions _must_ implement this interface.
 
@@ -193,6 +218,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
   virtual void ImplementGeometry(const HalfSpace& half_space,
                                  void* user_data) = 0;
+  virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
 };
 
 template <typename S>

@@ -1,8 +1,10 @@
 #include "drake/examples/geometry_world/solar_system.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
+#include "drake/common/find_resource.h"
 #include "drake/geometry/frame_id_vector.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
@@ -23,6 +25,7 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
 using geometry::GeometrySystem;
+using geometry::Mesh;
 using geometry::SourceId;
 using geometry::Sphere;
 using systems::BasicVector;
@@ -205,11 +208,29 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
 
   // The geometry is displaced from the Mars _frame_ so that it orbits.
   const double kMarsOrbitRadius = 5.0;
+  const double kMarsSize = 0.24;
   Isometry3<double> mars_pose = Isometry3<double>::Identity();
   mars_pose.translation() << kMarsOrbitRadius, 0, -orrery_bottom;
   geometry_system->RegisterGeometry(
       source_id_, planet_id,
-      make_unique<GeometryInstance>(mars_pose, make_unique<Sphere>(0.24f)));
+      make_unique<GeometryInstance>(mars_pose, make_unique<Sphere>(kMarsSize)));
+
+  auto resource_result =
+      FindResource("drake/examples/geometry_world/planet_rings.obj");
+  if (resource_result.get_absolute_path()) {
+    const std::string path_to_rings = *resource_result.get_absolute_path();
+    Vector3<double> axis = Vector3<double>(1, 1, 1) / sqrt(3);
+    Isometry3<double> rings_pose(AngleAxis<double>(M_PI / 3, axis));
+    geometry_system->RegisterGeometry(
+        source_id_, planet_id,
+        make_unique<GeometryInstance>(
+            mars_pose * rings_pose,
+            make_unique<Mesh>(path_to_rings, kMarsSize)));
+  } else {
+    drake::log()->warn("Unable to find rings obj file; no rings loaded. {}",
+                       *resource_result.get_error_message());
+  }
+
   // Mars's orrery arm.
   MakeArm(source_id_, planet_id, kMarsOrbitRadius, -orrery_bottom, pipe_radius,
           geometry_system);
