@@ -56,14 +56,17 @@ class TestGeneral(unittest.TestCase):
         simulator.StepTo(1)
 
     def test_copy(self):
-        # Copy a context using `copy` or `clone`.
+        # Copy a context using `deepcopy` or `clone`.
         system = ConstantVectorSource([1])
         context = system.CreateDefaultContext()
-        context_2 = copy.copy(context)
-        self.assertNotEquals(context, context_2)
-        context_3 = context.Clone()
-        self.assertNotEquals(context, context_3)
-        # TODO(eric.cousineau): Check more properties.
+        context_copies = [
+            copy.copy(context),
+            copy.deepcopy(context),
+            context.Clone(),
+        ]
+        # TODO(eric.cousineau): Compare copies.
+        for context_copy in context_copies:
+            self.assertTrue(context_copy is not context)
 
     def test_diagram_simulation(self):
         # Similar to: //systems/framework:diagram_test, ExampleDiagram
@@ -107,12 +110,10 @@ class TestGeneral(unittest.TestCase):
         context.FixInputPort(2, input2)
 
         # Initialize integrator states.
-        def get_mutable_continuous_state(system):
-            return (diagram.GetMutableSubsystemState(system, context)
-                           .get_mutable_continuous_state())
-
-        integrator_xc = get_mutable_continuous_state(integrator)
-        integrator_xc.get_mutable_vector().SetFromVector([0, 1, 2])
+        integrator_xc = (
+            diagram.GetMutableSubsystemState(integrator, context)
+                   .get_mutable_continuous_state().get_vector())
+        integrator_xc.SetFromVector([0, 1, 2])
 
         simulator.Initialize()
 
@@ -132,8 +133,7 @@ class TestGeneral(unittest.TestCase):
         for i, context_i in enumerate(context_log):
             t = times[i]
             self.assertEqual(context_i.get_time(), t)
-            xc = (context_i.get_state().get_continuous_state()
-                           .get_vector().CopyToVector())
+            xc = context_i.get_continuous_state_vector().CopyToVector()
             xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial) +
                            xc_initial)
             print("xc[t = {}] = {}".format(t, xc))

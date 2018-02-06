@@ -1,6 +1,6 @@
 import unittest
 
-from tools.lint.formatter import FormatterBase, IncludeFormatter
+from drake.tools.lint.formatter import FormatterBase, IncludeFormatter
 
 
 class TestFormatterBase(unittest.TestCase):
@@ -57,6 +57,13 @@ class TestFormatterBase(unittest.TestCase):
             dut.get_format_ranges(), [[0], [4, 5], [10]])
         self.assertEqual(
             dut.get_non_format_ranges(), [[1, 2, 3], [6, 7, 8, 9]])
+
+    def test_dos(self):
+        original_lines = [
+            '#include "line0"\r\n',
+        ]
+        with self.assertRaisesRegexp(Exception, "DOS newline"):
+            FormatterBase("filename.cc", readlines=original_lines)
 
 
 class TestIncludeFormatter(unittest.TestCase):

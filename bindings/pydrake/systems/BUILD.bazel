@@ -5,8 +5,12 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
-    "get_drake_pybind_installs",
+    "get_drake_py_installs",
     "get_pybind_package_info",
+)
+load(
+    "//tools:drake.bzl",
+    "drake_cc_library",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -43,16 +47,26 @@ drake_py_library(
     ],
 )
 
+# N.B. Any C++ libraries that include this must include `cpp_template_py`.
+drake_cc_library(
+    name = "systems_pybind",
+    hdrs = ["systems_pybind.h"],
+    deps = ["//bindings/pydrake/util:cpp_template_pybind"],
+)
+
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
+        "//bindings/pydrake/util:eigen_pybind",
     ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/util:cpp_template_py",
     ],
 )
 
@@ -100,18 +114,7 @@ drake_py_library(
     deps = [":module_py"],
 )
 
-drake_py_library(
-    name = "all_py",
-    deps = [
-        ":analysis_py",
-        ":drawing_py",
-        ":framework_py",
-        ":primitives_py",
-        ":sensors_py",
-    ],
-)
-
-PYBIND_LIBRARIES = [
+PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":framework_py",
     ":primitives_py",
@@ -119,22 +122,28 @@ PYBIND_LIBRARIES = [
 ]
 
 PY_LIBRARIES = [
-    ":all_py",
     ":drawing_py",
     ":module_py",
 ]
 
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "systems",
-    imports = PACKAGE_INFO.py_imports,
-    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+    deps = [":all_py"],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES,
+    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
 drake_py_test(
@@ -160,15 +169,19 @@ drake_py_binary(
 )
 
 drake_pybind_library(
-    name = "test_util",
+    name = "test_util_py",
     testonly = 1,
     add_install = False,
+    cc_deps = [
+        ":systems_pybind",
+    ],
     cc_so_name = "test/test_util",
     cc_srcs = ["test/test_util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":primitives_py",
+        "//bindings/pydrake/util:cpp_template_py",
     ],
 )
 
@@ -178,7 +191,7 @@ drake_py_test(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
-        ":test_util",
+        ":test_util_py",
     ],
 )
 
@@ -189,15 +202,16 @@ drake_py_test(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
-        ":test_util",
+        ":test_util_py",
     ],
 )
 
 drake_py_test(
-    name = "vector_test",
+    name = "value_test",
     size = "small",
     deps = [
         ":framework_py",
+        ":test_util_py",
     ],
 )
 

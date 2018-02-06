@@ -222,6 +222,7 @@ int DoMain() {
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
       model->get_output_port_wsg_state().size(),
+      model->get_output_port_wsg_measured_torque().size(),
       manipulation::schunk_wsg::kSchunkWsgPositionIndex,
       manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
   wsg_status_sender->set_name("wsg_status_sender");
@@ -231,7 +232,9 @@ int DoMain() {
   builder.Connect(wsg_controller->get_output_port(0),
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_status_sender->get_input_port(0));
+                  wsg_status_sender->get_input_port_wsg_state());
+  builder.Connect(model->get_output_port_wsg_measured_torque(),
+                  wsg_status_sender->get_input_port_measured_torque());
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_controller->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);

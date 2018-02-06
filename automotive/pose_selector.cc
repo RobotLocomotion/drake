@@ -127,6 +127,7 @@ ClosestPose<T> PoseSelector<T>::FindSingleClosestPose(
 
 template <typename T>
 T PoseSelector<T>::GetSigmaVelocity(const RoadOdometry<T>& road_odometry) {
+  DRAKE_THROW_UNLESS(road_odometry.lane != nullptr);
   DRAKE_DEMAND(IsWithinLane(road_odometry.pos, road_odometry.lane));
   const LanePosition& lane_pos =
       LanePosition(ExtractDoubleOrThrow(road_odometry.pos.s()),

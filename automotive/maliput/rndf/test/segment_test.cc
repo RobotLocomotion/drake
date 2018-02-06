@@ -11,6 +11,7 @@
 namespace drake {
 namespace maliput {
 namespace rndf {
+namespace {
 
 // The following tolerances are very strict as they are not used to compute
 // anything in the following tests. However, we need them for the RoadGeometry
@@ -50,6 +51,7 @@ GTEST_TEST(RNDFSegmentTest, MetadataLane) {
   EXPECT_THROW(s1->lane(3), std::runtime_error);
 }
 
+}  // namespace
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake

@@ -7,6 +7,10 @@ load(
     "drake_cc_googletest",
     "drake_example_cc_binary",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+)
 load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
@@ -43,6 +47,8 @@ drake_cc_library(
     name = "iiwa_lcm",
     srcs = ["iiwa_lcm.cc"],
     hdrs = ["iiwa_lcm.h"],
+    # TODO(hongkai.dai): move this package to manipulation folder.
+    visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
@@ -58,6 +64,7 @@ drake_cc_library(
     name = "oracular_state_estimator",
     srcs = ["oracular_state_estimator.cc"],
     hdrs = ["oracular_state_estimator.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/framework:leaf_system",
@@ -72,6 +79,8 @@ drake_cc_library(
     hdrs = [
         "lcm_plan_interpolator.h",
     ],
+    # TODO(hongkai.dai): move this package to manipulation folder.
+    visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -272,6 +281,21 @@ install(
     deps = adjust_labels_for_drake_hoist([
         "//drake/examples/kuka_iiwa_arm/models:install_data",
     ]),
+)
+
+# Run the installed flavor of the kuka simulation, to make sure it can locate
+# its resources, etc.  TODO(jwnimmer-tri) Refactor installed-test phrasing to
+# be more compact, convenient, and efficient such as #7774 proposes.
+drake_py_test(
+    name = "kuka_simulation_installed_test",
+    size = "small",
+    timeout = "long",
+    srcs = ["test/kuka_simulation_installed_test.py"],
+    data = ["//:install"],
+    main = "test/kuka_simulation_installed_test.py",
+    deps = [
+        "//tools/install:install_test_helper",
+    ],
 )
 
 add_lint_tests()

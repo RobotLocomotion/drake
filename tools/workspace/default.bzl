@@ -17,10 +17,10 @@ load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
+load("@drake//tools/workspace/godotengine:repository.bzl", "godotengine_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gthread:repository.bzl", "gthread_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
-load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
 load("@drake//tools/workspace/ignition_rndf:repository.bzl", "ignition_rndf_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
@@ -103,14 +103,14 @@ def add_default_repositories(excludes = []):
         glew_repository(name = "glew")
     if "glib" not in excludes:
         glib_repository(name = "glib")
+    if "godotengine" not in excludes:
+        godotengine_repository(name = "godotengine")
     if "gtest" not in excludes:
         gtest_repository(name = "gtest")
     if "gthread" not in excludes:
         gthread_repository(name = "gthread")
     if "gurobi" not in excludes:
         gurobi_repository(name = "gurobi")
-    if "ibex" not in excludes:
-        ibex_repository(name = "ibex")
     if "ignition_math" not in excludes:
         ignition_math_repository(name = "ignition_math")
     if "ignition_rndf" not in excludes:

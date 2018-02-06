@@ -21,7 +21,7 @@ void trigger_an_assertion_failure() {
 }  // namespace
 
 PYBIND11_MODULE(_common_py, m) {
-  m.doc() = "Bindings for //drake/common:common";
+  m.doc() = "Bindings for //common:common";
 
   // Turn DRAKE_ASSERT and DRAKE_DEMAND exceptions into native SystemExit.
   // Admittedly, it's unusual for a python library like pydrake to raise
@@ -30,7 +30,7 @@ PYBIND11_MODULE(_common_py, m) {
   py::register_exception_translator([](std::exception_ptr p) {
       try {
         if (p) { std::rethrow_exception(p); }
-      } catch (const detail::assertion_error& e) {
+      } catch (const drake::detail::assertion_error& e) {
         PyErr_SetString(PyExc_SystemExit, e.what());
       }
     });

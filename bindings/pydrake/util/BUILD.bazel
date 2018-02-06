@@ -10,7 +10,7 @@ load(
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_cc_googletest",
-    "get_drake_pybind_installs",
+    "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
@@ -58,6 +58,12 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
+drake_cc_library(
+    name = "eigen_pybind",
+    hdrs = ["eigen_pybind.h"],
+    deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
 # ODR does not matter, because the singleton will be stored in Python.
 drake_cc_library(
     name = "cpp_param_pybind",
@@ -98,14 +104,24 @@ drake_cc_library(
     ],
 )
 
+drake_py_library(
+    name = "cpp_const_py",
+    srcs = ["cpp_const.py"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/third_party:wrapt_py",
+    ],
+)
+
 drake_cc_library(
     name = "drake_optional_pybind",
     hdrs = ["drake_optional_pybind.h"],
 )
 
-PYBIND_LIBRARIES = []
+PY_LIBRARIES_WITH_INSTALL = []
 
 PY_LIBRARIES = [
+    ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
     ":module_py",
@@ -116,14 +132,14 @@ PY_LIBRARIES = [
 drake_py_library(
     name = "util",
     imports = PACKAGE_INFO.py_imports,
-    deps = PYBIND_LIBRARIES + PY_LIBRARIES,
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
 )
 
 install(
     name = "install",
     targets = PY_LIBRARIES,
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_pybind_installs(PYBIND_LIBRARIES),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
 drake_cc_googletest(
@@ -157,6 +173,13 @@ drake_py_test(
     srcs = ["test/module_shim_test.py"],
     deps = [
         ":module_shim_example",
+    ],
+)
+
+drake_py_test(
+    name = "cpp_const_test",
+    deps = [
+        ":cpp_const_py",
     ],
 )
 

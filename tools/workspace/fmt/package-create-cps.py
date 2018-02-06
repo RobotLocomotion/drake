@@ -11,16 +11,16 @@ content = """
   "Description": "Small, safe and fast formatting library",
   "License": "BSD-2-Clause",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
-  "Default-Components": [ ":fmt" ],
+  "Default-Components": [":fmt"],
   "Components": {
     "fmt-header-only": {
       "Type": "interface",
-      "Includes": [ "@prefix@/include" ]
+      "Includes": ["@prefix@/include/fmt"]
     },
     "fmt": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libfmt.so",
-      "Requires": [ ":fmt-header-only" ]
+      "Requires": [":fmt-header-only"]
     }
   }
 }

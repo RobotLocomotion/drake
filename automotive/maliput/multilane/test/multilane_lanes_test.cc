@@ -19,6 +19,7 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+namespace {
 
 const double kLinearTolerance = 1e-6;
 const double kAngularTolerance = 1e-6;
@@ -503,7 +504,6 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
 }
 
 
-namespace {
 api::LanePosition IntegrateTrivially(const api::Lane* lane,
                                      const api::LanePosition& lp_initial,
                                      const api::IsoLaneVelocity& velocity,
@@ -518,7 +518,6 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
   }
   return lp_current;
 }
-}  // namespace
 
 
 TEST_P(MultilaneLanesParamTest, HillIntegration) {
@@ -1007,6 +1006,7 @@ TEST_F(MultilaneMultipleLanesTest, MultipleArcLanes) {
   }
 }
 
+}  // namespace
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake

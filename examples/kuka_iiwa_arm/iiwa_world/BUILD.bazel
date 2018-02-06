@@ -10,6 +10,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 drake_cc_library(
+    # TODO(hongkai.dai): move this package to manipulation folder.
     name = "iiwa_wsg_diagram_factory",
     srcs = [
         "iiwa_wsg_diagram_factory.cc",
@@ -17,9 +18,7 @@ drake_cc_library(
     hdrs = [
         "iiwa_wsg_diagram_factory.h",
     ],
-    visibility = adjust_labels_for_drake_hoist([
-        "//drake/examples/kuka_iiwa_arm:__subpackages__",
-    ]),
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:oracular_state_estimator",

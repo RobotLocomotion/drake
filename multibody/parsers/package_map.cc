@@ -165,10 +165,11 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   const string model_dir = spruce_path.root();
 
   // Bail out if the model file is not part of Drake.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const string drake_path = GetDrakePath();
-#pragma GCC diagnostic pop
+  const optional<string> maybe_drake_path = MaybeGetDrakePath();
+  if (!maybe_drake_path) {
+    return;
+  }
+  const string& drake_path = *maybe_drake_path;
   auto iter = std::mismatch(drake_path.begin(), drake_path.end(),
                             model_dir.begin());
   if (iter.first != drake_path.end()) {

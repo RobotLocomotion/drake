@@ -197,6 +197,7 @@ install(
     workspace = CMAKE_PACKAGE,
     targets = [":libignition_math.so"],
     hdrs = public_headers,
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",

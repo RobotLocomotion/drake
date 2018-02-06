@@ -55,10 +55,12 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_binary(
     name = "valkyrie_pd_ff_controller",
-    srcs = ["valkyrie_pd_ff_controller.cc"],
-    hdrs = ["valkyrie_pd_ff_controller.h"],
+    srcs = [
+        "valkyrie_pd_ff_controller.cc",
+        "valkyrie_pd_ff_controller.h",
+    ],
     data = [":models"],
     deps = [
         ":robot_state_decoder",

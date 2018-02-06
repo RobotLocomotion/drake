@@ -915,7 +915,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
   const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
   const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
   const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
@@ -936,7 +936,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   ASSERT_TRUE(is_dynamic_castable<BoundingBoxConstraint>(binding.constraint()));
   const shared_ptr<BoundingBoxConstraint> constraint_ptr{
       static_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
@@ -993,7 +993,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   const auto binding = prog.AddLinearConstraint(M_e, M_lb, M_ub);
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 5u);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
@@ -1515,7 +1515,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
   const auto binding = prog.AddLinearConstraint(M_f.array());
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 5u);
+  EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();

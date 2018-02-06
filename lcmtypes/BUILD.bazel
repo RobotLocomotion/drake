@@ -282,6 +282,7 @@ drake_lcm_cc_library(
 
 drake_lcm_py_library(
     name = "lcmtypes_py",
+    add_current_package_to_imports = False,  # Use //:module_py instead.
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
     deps = [

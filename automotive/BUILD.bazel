@@ -133,13 +133,12 @@ drake_cc_library(
     srcs = ["idm_controller.cc"],
     hdrs = ["idm_controller.h"],
     deps = [
+        ":calc_ongoing_road_position",
         ":generated_vectors",
         ":idm_planner",
         ":pose_selector",
-        ":road_odometry",
         "//drake/automotive/maliput/api",
         "//drake/common:default_scalars",
-        "//drake/common:extract_double",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
@@ -187,6 +186,7 @@ drake_cc_library(
     srcs = ["mobil_planner.cc"],
     hdrs = ["mobil_planner.h"],
     deps = [
+        ":calc_ongoing_road_position",
         ":generated_vectors",
         ":idm_planner",
         ":lane_direction",
@@ -194,7 +194,6 @@ drake_cc_library(
         ":road_odometry",
         "//drake/automotive/maliput/api",
         "//drake/common:cond",
-        "//drake/common:symbolic",
         "//drake/math:saturate",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_bundle",
@@ -324,6 +323,22 @@ drake_cc_library(
     hdrs = ["simple_powertrain.h"],
     deps = [
         "//drake/systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_library(
+    name = "calc_ongoing_road_position",
+    srcs = ["calc_ongoing_road_position.cc"],
+    hdrs = ["calc_ongoing_road_position.h"],
+    visibility = [],
+    deps = [
+        ":pose_selector",
+        "//drake/automotive/maliput/api",
+        "//drake/common:autodiff",
+        "//drake/common:default_scalars",
+        "//drake/common:symbolic",
+        "//drake/systems/rendering:frame_velocity",
+        "//drake/systems/rendering:pose_vector",
     ],
 )
 
@@ -554,7 +569,9 @@ drake_cc_googletest(
     name = "idm_controller_test",
     deps = [
         "//drake/automotive:idm_controller",
+        "//drake/automotive:monolane_onramp_merge",
         "//drake/automotive/maliput/dragway",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework/test_utilities:scalar_conversion",
     ],
 )
@@ -574,6 +591,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:mobil_planner",
         "//drake/automotive/maliput/dragway",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -641,6 +659,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "calc_ongoing_road_position_test",
+    deps = [
+        "//drake/automotive:calc_ongoing_road_position",
+        "//drake/automotive:monolane_onramp_merge",
+        "//drake/automotive/maliput/dragway",
+        "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "trajectory_car_test",
     deps = [
         "//drake/automotive:autodiff_test_utilities",
@@ -664,6 +693,16 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/trajectory_optimization:direct_collocation",
     ],
+)
+
+sh_test(
+    name = "demo_dry_run_test",
+    srcs = ["test/demo_test.sh"],
+    args = [
+        "--driving_command_gui_names=alpha,beta",
+        "--dry-run",
+    ],
+    data = [":demo"],
 )
 
 add_lint_tests()

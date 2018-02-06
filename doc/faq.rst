@@ -67,7 +67,7 @@ Why do OpenGL-based VTK targets run with ``bazel test`` sometimes fail on Linux?
 
 **Symptom**: While the binary works with ``bazel run``, when you run a test using ``bazel test``, such as::
 
-    $ bazel test //drake/systems/sensors:rgbd_camera_test
+    $ bazel test //systems/sensors:rgbd_camera_test
 
 you encounter a slew of errors from VTK / OpenGL::
 
@@ -97,7 +97,7 @@ As an example, in ``drake/systems/sensors/BUILD``::
 
 If this does not work, then try running the test in Bazel without sandboxing::
 
-    $ bazel test --spawn_strategy=standalone //drake/systems/sensors:rgbd_camera_test
+    $ bazel test --spawn_strategy=standalone //systems/sensors:rgbd_camera_test
 
 Please note that you can possibly add ``--spawn_strategy=standalone`` to your ``~/.bazelrc``, but be aware that this means your development machine
 may have a different environment than other development machines when running the test.

@@ -2,18 +2,20 @@
 ---
 # distances are meters; angles are degrees.
 maliput_multilane_builder:
-  id: ring
-  lane_bounds: [-3, 3]
-  driveable_bounds: [-8, 8]
+  id: "ring"
+  lane_width: 6
   elevation_bounds: [0, 5]
-  position_precision: .01
-  orientation_precision: 0.5
+  linear_tolerance: .01
+  angular_tolerance: 0.5
+  right_shoulder: 5
+  left_shoulder: 5
   points:
     start:
       xypoint: [50, 0, 90]  # x,y, heading
-      zpoint: [0, 0, -30, 0]  # z, zdot, theta (superelevation), thetadot
+      zpoint: [0, 0, -30, 0]  # z, z_dot, theta (superelevation), theta_dot
   connections:
     0:
-      start: "points.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.start.forward"]
       arc: [50, 360]
-      explicit_end: "points.start"
+      explicit_end: ["ref", "points.start.forward"]

@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -50,6 +51,106 @@ class RotationMatrix {
 #endif
   }
 
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
+  /// @param[in] theta radian measure of rotation angle about Ax.
+  /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
+  /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
+  /// a right-handed rotation relative to A by an angle `theta` about `Ax = Bx`.
+  /// ```
+  ///        ⎡ 1       0                 0  ⎤
+  /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
+  ///        ⎣ 0   sin(theta)    cos(theta) ⎦
+  /// ```
+  static RotationMatrix<T> MakeRotationMatrixX(const T& theta) {
+    return RotationMatrix(math::XRotation(theta));
+  }
+
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Ay = By`.
+  /// @param[in] theta radian measure of rotation angle about Ay.
+  /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
+  /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
+  /// a right-handed rotation relative to A by an angle `theta` about `Ay = By`.
+  /// ```
+  ///        ⎡  cos(theta)   0   sin(theta) ⎤
+  /// R_AB = ⎢          0    1           0  ⎥
+  ///        ⎣ -sin(theta)   0   cos(theta) ⎦
+  /// ```
+  static RotationMatrix<T> MakeRotationMatrixY(const T& theta) {
+    return RotationMatrix(math::YRotation(theta));
+  }
+
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
+  /// @param[in] theta radian measure of rotation angle about Az.
+  /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
+  /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
+  /// a right-handed rotation relative to A by an angle `theta` about `Az = Bz`.
+  /// ```
+  ///        ⎡ cos(theta)  -sin(theta)   0 ⎤
+  /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
+  ///        ⎣         0            0    1 ⎦
+  /// ```
+  static RotationMatrix<T> MakeRotationMatrixZ(const T& theta) {
+    return RotationMatrix(math::ZRotation(theta));
+  }
+
+  /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
+  /// "yaw-pitch-roll" angles `[y, p, r]`, which is equivalent to a Space-fixed
+  /// (extrinsic) X-Y-Z rotation by "roll-pitch-yaw angles" `[r, p, y]`.
+  /// @param[in] ypr radian measures of three angles [yaw, pitch, roll].
+  /// @note Denoting yaw `y`, pitch `p`, roll `r`, this method returns a
+  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
+  /// ```
+  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
+  /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
+  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
+  ///      =       R_AB          *        R_BC          *        R_CD
+  /// ```
+  /// One way to visualize this rotation sequence is by introducing intermediate
+  /// frames B and C (useful constructs to understand this rotation sequence).
+  /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
+  /// Then D is subjected to successive right-handed rotations relative to A.
+  /// @li 1st rotation R_AB: Frames B, C, D collectively (as if welded together)
+  /// rotate relative to frame A by a yaw angle `y` about `Az = Bz`.
+  /// @li 2nd rotation R_BC: Frames C, D collectively rotate relative to frame B
+  /// by a pitch angle `p` about `By = Cy`.
+  /// @li 3rd rotation R_CD: %Frame D rotates relative to frame C by a roll
+  /// angle `r` about `Cx = Dx`.
+  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+  static RotationMatrix<T> MakeRotationMatrixBodyZYX(const Vector3<T>& ypr) {
+    const Vector3<T> roll_pitch_yaw(ypr(2), ypr(1), ypr(0));
+    return RotationMatrix<T>::MakeRotationMatrixSpaceXYZ(roll_pitch_yaw);
+  }
+
+  /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
+  /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
+  /// (intrinsic) Z-Y-X rotation by "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @param[in] rpy radian measures of three angles [roll, pitch, yaw].
+  /// @note Denoting roll `r`, pitch `p`, yaw `y`, this method returns a
+  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
+  /// ```
+  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
+  /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
+  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
+  ///      =       R_AB          *        R_BC          *        R_CD
+  /// ```
+  /// One way to visualize this rotation sequence is by introducing intermediate
+  /// frames B and C (useful constructs to understand this rotation sequence).
+  /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
+  /// Then D is subjected to successive right-handed rotations relative to A.
+  /// @li 1st rotation R_CD: %Frame D rotates relative to frames C, B, A by a
+  /// roll angle `r` about `Dx = Cx`.  D and C are no longer aligned.
+  /// @li 2nd rotation R_BC: Frames D, C (collectively -- as if welded together)
+  /// rotate relative to frame B by a pitch angle `p` about `Cy = By`.
+  /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
+  /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
+  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+  static RotationMatrix<T> MakeRotationMatrixSpaceXYZ(const Vector3<T>& rpy) {
+    return RotationMatrix(math::rpy2rotmat(rpy));
+  }
+
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```
@@ -85,9 +186,9 @@ class RotationMatrix {
     return kIdentity.access();
   }
 
-  /// Calculates R_BA = R_AB⁻¹, the inverse (transpose) of this %RotationMatrix.
-  /// @retval R_BA = R_AB⁻¹, the inverse (transpose) of this %RotationMatrix.
-  /// @note For a valid rotation matrix R_BA = R_AB⁻¹ = R_ABᵀ.
+  /// Forms `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
+  /// @retval `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
+  /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
   // @internal This method's name was chosen to mimic Eigen's inverse().
   RotationMatrix<T> inverse() const {
     return RotationMatrix<T>(R_AB_.transpose());
@@ -201,6 +302,15 @@ class RotationMatrix {
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
   bool IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
+  }
+
+  /// Compares each element of `this` to the corresponding element of `other`
+  /// to check if they are exactly the same.
+  /// @param[in] other %RotationMatrix to compare to `this`.
+  /// @returns true if each element of `this` is exactly equal to the
+  /// corresponding element in `other`.
+  bool IsExactlyEqualTo(const RotationMatrix<T>& other) const {
+    return matrix() == other.matrix();
   }
 
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute

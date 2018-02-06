@@ -3,7 +3,7 @@
 """Launch the `automotive_demo` simulation with the following supporting
 applications:
 
- * steering_command_driver.py for interactive input
+ * steering_command_driver for interactive input
  * drake-visualizer to see things move
  * lcm-spy to see LCM traffic of state and visualization
  * lcm-logger to capture LCM activity to disk
@@ -63,10 +63,6 @@ class Launcher(object):
         """Launch a process to be managed with the group. If no label is
         supplied, a label is synthesized from the supplied command line.
         """
-        if self.dry_run:
-            print ' '.join(command)
-            return
-
         if label is None:
             label = os.path.basename(command[0])
         if not os.path.exists(command[0]):
@@ -75,6 +71,10 @@ class Launcher(object):
             sys.stdout.flush()
             subprocess.call(["/usr/bin/find", "-L", "."])
             raise RuntimeError(command[0] + " not found")
+
+        if self.dry_run:
+            print ' '.join(command)
+            return
 
         # Create a new execution environment by copying the current one, but
         # making sure to use the C locale, so that obj meshes are properly
@@ -193,10 +193,10 @@ def wait_for_lcm_message_on_channel(channel):
 
 
 def main():
-    demo_path = "drake/automotive/automotive_demo"
-    steering_command_driver_path = "drake/automotive/steering_command_driver"
+    demo_path = "automotive/automotive_demo"
+    steering_command_driver_path = "automotive/steering_command_driver"
     drake_visualizer_path = "tools/drake_visualizer"
-    lcm_spy_path = "drake/automotive/lcm-spy"
+    lcm_spy_path = "automotive/lcm-spy"
     lcm_logger_path = "external/lcm/lcm-logger"
 
     parser = argparse.ArgumentParser(
