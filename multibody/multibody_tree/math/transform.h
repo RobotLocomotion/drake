@@ -68,6 +68,25 @@ class Transform {
   explicit Transform(const Isometry3<T>& pose) :
       Transform(RotationMatrix<T>(pose.linear()), pose.translation()) {}
 
+  /// Creates a %Transform templatized on a scalar type U from a
+  /// %Transform templatized on scalar type T.  For example,
+  /// ```
+  /// Transform<double> source = Transform<double>::Identity();
+  /// Transform<AutoDiffXd> foo = source.cast<AutoDiffXd>();
+  /// ```
+  /// @tparam U Scalar type on which the returned %Transform is templated.
+  /// @note `Transform<From>::cast<To>()` creates a new `Transform<To>` from a
+  /// `Transform<From>` but only if type `To` is constructible from type `From`.
+  /// This cast method works in accordance with Eigen's cast method for Eigen's
+  /// objects that underlie this %Transform.  For example, Eigen currently
+  /// allows cast from type double to AutoDiffXd, but not vice-versa.
+  template <typename U>
+  Transform<U> cast() const {
+    const RotationMatrix<U> R = R_AB_.template cast<U>();
+    const Vector3<U> p = p_AoBo_A_.template cast<U>();
+    return Transform<U>(R, p);
+  }
+
   /// Returns the identity %Transform (which corresponds to coincident frames).
   /// @returns the %Transform that corresponds to aligning the two frames so
   /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
@@ -231,6 +250,12 @@ class Transform {
   }
 
  private:
+  // Make Transform<U> templatized on any typename U be a friend of a %Transform
+  // templatized on any other typename T. This is needed for the method
+  // Transform<T>::cast<U>() to be able to use the required private constructor.
+  template <typename U>
+  friend class Transform;
+
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   RotationMatrix<T> R_AB_;
 
