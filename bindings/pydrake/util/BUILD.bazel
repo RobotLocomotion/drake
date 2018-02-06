@@ -10,6 +10,7 @@ load(
 load(
     "//tools/skylark:pybind.bzl",
     "drake_pybind_cc_googletest",
+    "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
@@ -62,6 +63,21 @@ drake_cc_library(
     name = "eigen_pybind",
     hdrs = ["eigen_pybind.h"],
     deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
+drake_cc_library(
+    name = "eigen_geometry_pybind",
+    hdrs = ["eigen_geometry_pybind.h"],
+    deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
+drake_pybind_library(
+    name = "eigen_geometry_py",
+    cc_deps = [":eigen_geometry_pybind"],
+    cc_so_name = "eigen_geometry",
+    cc_srcs = ["eigen_geometry_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":module_py"],
 )
 
 # ODR does not matter, because the singleton will be stored in Python.
@@ -118,7 +134,9 @@ drake_cc_library(
     hdrs = ["drake_optional_pybind.h"],
 )
 
-PY_LIBRARIES_WITH_INSTALL = []
+PY_LIBRARIES_WITH_INSTALL = [
+    ":eigen_geometry_py",
+]
 
 PY_LIBRARIES = [
     ":cpp_const_py",
@@ -128,16 +146,23 @@ PY_LIBRARIES = [
     ":module_shim_py",
 ]
 
-# Package target.
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "util",
     imports = PACKAGE_INFO.py_imports,
-    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+    deps = [":all_py"],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES,
+    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
@@ -210,6 +235,24 @@ drake_pybind_cc_googletest(
         "//common:nice_type_name",
     ],
     py_deps = [":cpp_template_py"],
+)
+
+drake_pybind_library(
+    name = "eigen_geometry_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [":eigen_geometry_pybind"],
+    cc_so_name = "test/eigen_geometry_test_util",
+    cc_srcs = ["test/eigen_geometry_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_test(
+    name = "eigen_geometry_test",
+    deps = [
+        ":eigen_geometry_py",
+        ":eigen_geometry_test_util_py",
+    ],
 )
 
 add_lint_tests()
