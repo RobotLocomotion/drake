@@ -2,7 +2,6 @@
 
 /// @file
 /// Provides pybind11 `type_caster`s for Eigen geometric types.
-/// N.B. This uses Drake's coordinate conventions.
 /// N.B. This uses some of pybind's coding conventions.
 ///
 /// See http://pybind11.readthedocs.io/en/stable/advanced/cast/custom.html for
