@@ -279,7 +279,7 @@ struct is_eigen_nonvector_of
 /// void bar(Eigen::MatrixXd* M) {
 ///   DRAKE_THROW_UNLESS(M != nullptr);
 ///   // In this case this method only works with 4x3 matrices.
-///   if (M->rows() !=4 && M->cols() != 3) {
+///   if (M->rows() != 4 && M->cols() != 3) {
 ///     M->resize(4, 3);
 ///   }
 ///   (*M)(0, 0) = 0;
