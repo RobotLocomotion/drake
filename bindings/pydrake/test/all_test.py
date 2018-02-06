@@ -82,6 +82,8 @@ class TestAll(unittest.TestCase):
             "Simulator",
             # - primitives
             "Adder",
+            # - rendering
+            "PoseVector",
             # - sensors
             "Image",
             # util
