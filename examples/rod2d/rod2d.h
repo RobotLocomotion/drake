@@ -8,6 +8,7 @@
 #include "drake/examples/rod2d/normal_accel_witness.h"
 #include "drake/examples/rod2d/normal_force_witness.h"
 #include "drake/examples/rod2d/normal_vel_witness.h"
+#include "drake/examples/rod2d/rod2d_endpoint.h"
 #include "drake/examples/rod2d/signed_distance_witness.h"
 #include "drake/examples/rod2d/sliding_witness.h"
 #include "drake/examples/rod2d/sticking_friction_forces_slack_witness.h"

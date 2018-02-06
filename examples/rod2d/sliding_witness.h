@@ -23,13 +23,13 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
 
   SlidingWitness(
       const Rod2D<T>& rod,
-      int contact_index,
+      RodEndpoint endpoint,
       bool pos_direction,
       double sliding_velocity_threshold) :
       Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kCrossesZero,
-          contact_index) {
+          endpoint) {
     std::ostringstream oss;
     oss << "Sliding ";
     if (pos_direction) {
@@ -37,7 +37,7 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
     } else {
       oss << "-";
     }
-    oss << " (" << contact_index << ")";
+    oss << " (" << endpoint << ")";
     this->set_name(oss.str());
     positive_ = pos_direction;
     velocity_threshold_ = sliding_velocity_threshold;

@@ -2,7 +2,6 @@
 
 #include <sstream>
 
-#include "drake/examples/rod2d/rod2d.h"
 #include "drake/examples/rod2d/rod2d_witness_function.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/context.h"
@@ -18,13 +17,13 @@ class NormalAccelWitness : public Rod2dWitnessFunction<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NormalAccelWitness)
 
-  NormalAccelWitness(const Rod2D<T>& rod, int contact_index) :
+  NormalAccelWitness(const Rod2D<T>& rod, RodEndpoint endpoint) :
       Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kPositiveThenNonPositive,
-          contact_index) {
+          endpoint) {
     std::ostringstream oss;
-    oss << "NormalAccel (" << contact_index << ")";
+    oss << "NormalAccel (" << endpoint << ")";
     this->set_name(oss.str());
     solver_ = &rod.solver_;
   }

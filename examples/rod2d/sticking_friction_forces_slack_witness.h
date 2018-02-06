@@ -18,13 +18,13 @@ class StickingFrictionForcesSlackWitness : public Rod2dWitnessFunction<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StickingFrictionForcesSlackWitness)
 
-  StickingFrictionForcesSlackWitness(const Rod2D<T>& rod, int contact_index) :
-      Rod2dWitnessFunction<T>(
+  StickingFrictionForcesSlackWitness(const Rod2D<T>& rod, RodEndpoint endpoint)
+      : Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kPositiveThenNonPositive,
-          contact_index) {
+          endpoint) {
     std::ostringstream oss;
-    oss << "StickingFrictionForcesSlack (" << contact_index << ")";
+    oss << "StickingFrictionForcesSlack (" << endpoint << ")";
     this->set_name(oss.str());
     solver_ = &rod.solver_;
   }

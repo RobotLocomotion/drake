@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/examples/rod2d/rod2d.h"
+#include "drake/examples/rod2d/rod2d_endpoint.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/context.h"
@@ -21,13 +21,13 @@ template <class T>
 class Rod2dWitnessFunction : public systems::WitnessFunction<T> {
  public:
   /// Constructs the witness function for the given rod with specified witness
-  /// function direction and contact index.
+  /// function direction and endpoint to be tracked.
   Rod2dWitnessFunction(const Rod2D<T>& rod,
-                     systems::WitnessFunctionDirection dir,
-                     int contact_index) :
+                       systems::WitnessFunctionDirection dir,
+                       RodEndpoint endpoint) :
       systems::WitnessFunction<T>(rod, dir),
       rod_(rod),
-      contact_index_(contact_index) {
+      endpoint_(endpoint) {
     event_ = std::make_unique<systems::UnrestrictedUpdateEvent<T>>(
       systems::Event<T>::TriggerType::kWitness);
   }
@@ -42,8 +42,8 @@ class Rod2dWitnessFunction : public systems::WitnessFunction<T> {
   /// Gets the rod.
   const Rod2D<T>& get_rod() const { return rod_; }
 
-  /// Gets the index of the contact candidate for this witness function.
-  int get_contact_index() const { return contact_index_; }
+  /// Gets the endpoint that this witness function tracks.
+  int get_endpoint() const { return endpoint_; }
 
   /// The types of witness function.
   enum class WitnessType {
@@ -79,14 +79,14 @@ class Rod2dWitnessFunction : public systems::WitnessFunction<T> {
     event_->add_to_composite(events);
   }
 
-  /// Unique pointer to the event.
+  // Unique pointer to the event.
   std::unique_ptr<systems::UnrestrictedUpdateEvent<T>> event_;
 
-  /// Reference to the rod system.
+  // Reference to the rod system.
   const Rod2D<T>& rod_;
 
-  /// Index of the contact point that this witness function applies to.
-  int contact_index_{-1};
+  // The endpoint of the rod that this witness function tracks.
+  RodEndpoint endpoint_{kInvalid};
 
   /// Whether the witness function is used to track state changes.
   bool active_{true};
