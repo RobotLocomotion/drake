@@ -53,8 +53,7 @@ class DifferentialInverseKinematicsParameters {
   /**
    * Constructor. Initializes the nominal joint position to zeros of size
    * @p num_positions. Timestep is initialized to 1. The end effector gains are
-   * initialized to ones. All position and velocity gains are initialized to
-   * none.
+   * initialized to ones. All constraints are initialized to nullopt.
    * @param num_positions Number of generalized positions.
    * @param num_velocities Number of generalized velocities.
    */
@@ -202,31 +201,74 @@ class DifferentialInverseKinematicsParameters {
   double dt_{1};
 };
 
+/**
+ * Computes a generalized velocity v, s.t. J * v has the same direction as
+ * V, and the difference between |V| and |J * v| is minimized while all
+ * constraints in @p parameters are satisfied as well. If the problem is
+ * redundant, a secondary objective to minimize |q_current + v * dt - q_nominal|
+ * is added to the problem. It is possible that the solver is unable to find
+ * such a generalized velocity while not violating the constraints, in which
+ * case, status will be set to kStuck in the returned
+ * DifferentialInverseKinematicsResult.
+ * @param q_current The current generalized position.
+ * @param v_current The current generalized position.
+ * @param V Desired spatial velocity. It must have the same number of rows as
+ * @p J.
+ * @param J Geometric Jacobian. It must have the same number of rows as @p V.
+ * J * v need to represent the same spatial velocity as @p V.
+ * @param parameters Collection of various problem specific constraints and
+ * constants.
+ * @return If the solver successfully finds a solution, joint_velocities will
+ * be set to v, otherwise it will be nullopt.
+ */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const VectorX<double> q_current, const VectorX<double>& v_current,
     const VectorX<double>& V, const MatrixX<double>& J,
     const DifferentialInverseKinematicsParameters& parameters);
 
+/**
+ * A wrapper over
+ * DoDifferentialInverseKinematics(q_current, v_current, V, J, params)
+ * that tracks frame E's spatial velocity.
+ * q_current and v_current are taken from @p cache. V is computed by first
+ * transforming @p V_WE to V_WE_E, then taking the element-wise product between
+ * V_WE_E and the gains in @p parameters, and only selecting the non zero
+ * elements. J is computed similarly.
+ * @param robot Kinematic tree.
+ * @param cache Kinematic cache build from the current generalized position and
+ * velocity.
+ * @param V_WE_desired Desired world frame spatial velocity of @p frame_E.
+ * @param frame_E End effector frame.
+ * @param parameters Collection of various problem specific constraints and
+ * constants.
+ * @return If the solver successfully finds a solution, joint_velocities will
+ * be set to v, otherwise it will be nullopt.
+ */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     const Vector6<double>& V_WE_desired, const RigidBodyFrame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
+/**
+ * A wrapper over
+ * DoDifferentialInverseKinematics(robot, cache, V_WE_desired, frame_E, params)
+ * that tracks frame E's pose in the world frame.
+ * q_current and v_current are taken from @p cache. V_WE is computed by
+ * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
+ * from @p cache, and dt is taken from @p parameters.
+ * @param robot Robot model.
+ * @param cache KinematiCache built from the current generalized position and
+ * velocity.
+ * @param X_WE_desired Desired pose of @p frame_E in the world frame.
+ * @param frame_E End effector frame.
+ * @param parameters Collection of various problem specific constraints and
+ * constants.
+ * @return If the solver successfully finds a solution, joint_velocities will
+ * be set to v, otherwise it will be nullopt.
+ */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     const Isometry3<double>& X_WE_desired,
-    const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters);
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const Vector6<double>& V_WE_desired,
-    const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters);
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const Isometry3<double>& X_WE_desired,
     const RigidBodyFrame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 

@@ -78,16 +78,16 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     A.topRightCorner(num_cart_constraints, 1) = -V_dir;
     prog.AddLinearEqualityConstraint(
         A, VectorX<double>::Zero(num_cart_constraints), {v_next, alpha});
-    cart_cost = prog.AddQuadraticErrorCost(drake::Vector1<double>(100),
-                                           drake::Vector1<double>(V_mag), alpha)
-                    .constraint()
-                    .get();
+    const double kCartesianTrackingWeight = 100;
+    cart_cost =
+        prog.AddQuadraticErrorCost(Vector1<double>(kCartesianTrackingWeight),
+                                   Vector1<double>(V_mag), alpha)
+            .constraint().get();
 
     Eigen::JacobiSVD<MatrixX<double>> svd(J, Eigen::ComputeFullV);
 
     // Add constrained the unconstrained dof's velocity to be small, which is
-    // used
-    // to fullfil the regularization cost.
+    // used to fulfil the regularization cost.
     const double uncon_v =
         parameters.get_unconstrained_degrees_of_freedom_velocity_limit()
             .value();
@@ -139,8 +139,12 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   if (num_cart_constraints) {
     Eigen::VectorXd cost(1);
     cart_cost->Eval(prog.GetSolution(alpha), cost);
-    // Not tracking the desired vel norm, and computed vel is small.
-    if (cost(0) > 5 && prog.GetSolution(alpha)[0] <= 1e-2) {
+    const double kMaxTrackingError = 5;
+    const double kMinEndEffectorVel = 1e-2;
+    if (cost(0) >  kMaxTrackingError &&
+        prog.GetSolution(alpha)[0] <= kMinEndEffectorVel) {
+      // Not tracking the desired vel norm (large tracking error) and the
+      // computed vel is small.
       drake::log()->info("v_next = {}", prog.GetSolution(v_next).transpose());
       drake::log()->info("alpha = {}", prog.GetSolution(alpha).transpose());
       return {nullopt, DifferentialInverseKinematicsStatus::kStuck};
@@ -197,26 +201,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   VectorX<double> V = V_WE_E_scaled.head(num_cart_constraints);
 
   return DoDifferentialInverseKinematics(cache.getQ(), cache.getV(), V, J,
-                                         parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const Vector6<double>& V_WE_desired,
-    const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  KinematicsCache<double> cache = robot.doKinematics(q_current, v_current);
-  return DoDifferentialInverseKinematics(robot, cache, V_WE_desired, frame_E,
-                                         parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const VectorX<double>& q_current,
-    const VectorX<double>& v_current, const Isometry3<double>& X_WE_desired,
-    const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  KinematicsCache<double> cache = robot.doKinematics(q_current, v_current);
-  return DoDifferentialInverseKinematics(robot, cache, X_WE_desired, frame_E,
                                          parameters);
 }
 

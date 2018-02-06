@@ -178,11 +178,8 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
   Vector6<double> V_WE_desired;
   const double dt = params_->get_timestep();
   do {
-    X_WE = tree_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
-    V_WE_desired = ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) * 10;
-
     DifferentialInverseKinematicsResult function_result =
-        DoDifferentialInverseKinematics(*tree_, *cache_, V_WE_desired,
+        DoDifferentialInverseKinematics(*tree_, *cache_, X_WE_desired,
                                         *frame_E_, *params_);
 
     EXPECT_EQ(function_result.status,
@@ -192,6 +189,7 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
     q = cache_->getQ() + v * dt;
     *cache_ = tree_->doKinematics(q, v);
   } while (v.norm() > 1e-6);
+  X_WE = tree_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
   EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
                               MatrixCompareType::absolute));
 }
