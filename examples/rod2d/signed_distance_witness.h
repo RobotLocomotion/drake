@@ -18,7 +18,7 @@ class SignedDistanceWitness : public Rod2dWitnessFunction<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignedDistanceWitness)
 
-  SignedDistanceWitness(const Rod2D<T>* rod, int contact_index) :
+  SignedDistanceWitness(const Rod2D<T>& rod, int contact_index) :
       Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kCrossesZero,

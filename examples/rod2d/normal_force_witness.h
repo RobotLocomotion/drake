@@ -19,7 +19,7 @@ class NormalForceWitness : public Rod2dWitnessFunction<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NormalForceWitness)
 
-  NormalForceWitness(const Rod2D<T>* rod, int contact_index) :
+  NormalForceWitness(const Rod2D<T>& rod, int contact_index) :
       Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kPositiveThenNonPositive,
@@ -27,7 +27,7 @@ class NormalForceWitness : public Rod2dWitnessFunction<T> {
     std::ostringstream oss;
     oss << "NormalForce (" << contact_index << ")";
     this->set_name(oss.str());
-    solver_ = &rod->solver_;
+    solver_ = &rod.solver_;
   }
 
   typename Rod2dWitnessFunction<T>::WitnessType

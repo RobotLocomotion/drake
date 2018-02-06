@@ -33,7 +33,6 @@ drake_cc_binary(
         "//drake/systems/analysis",
         "//drake/systems/framework",
         "//drake/systems/lcm",
-        "//drake/systems/primitives",
         "//drake/systems/rendering:drake_visualizer_client",
         "//drake/systems/rendering:pose_aggregator",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
@@ -76,7 +75,6 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/constraint:constraint_solver",
         "//drake/systems/analysis",
-        "//drake/systems/framework",
     ],
 )
 
