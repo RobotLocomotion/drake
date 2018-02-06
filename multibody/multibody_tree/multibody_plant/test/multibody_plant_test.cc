@@ -203,7 +203,7 @@ class KukaIiwaPlantTests : public ::testing::Test {
     plant_ = MakeKukaIiwaPlant();
 
     // Keep pointers to the modeling elements.
-    linkG_ = &plant_->GetBodyByName("iiwa_link_7");
+    end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
     joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
     joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
     joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
@@ -225,7 +225,7 @@ class KukaIiwaPlantTests : public ::testing::Test {
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
     plant_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
-    return V_WB_array[linkG_->get_index()].translational();
+    return V_WB_array[end_effector_link_->get_index()].translational();
   }
 
   template <typename T>
@@ -247,7 +247,7 @@ class KukaIiwaPlantTests : public ::testing::Test {
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
   // Non-owning pointer to the end effector link:
-  const Body<double>* linkG_{nullptr};
+  const Body<double>* end_effector_link_{nullptr};
   // Non-owning pointers to the joints:
   std::vector<const RevoluteJoint<double>*> joints_;
 
@@ -349,7 +349,7 @@ TEST_F(KukaIiwaPlantTests, GeometricJacobian) {
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
   plant_->CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, linkG_->get_body_frame(),
+      *context_, end_effector_link_->get_body_frame(),
       Vector3<double>::Zero(), &p_NG, &Jg_NG);
 
   // Verify the computed Jacobian matches the one obtained using automatic
@@ -362,7 +362,9 @@ TEST_F(KukaIiwaPlantTests, GeometricJacobian) {
   EXPECT_TRUE(CompareMatrices(J_NG_times_v, v_NG,
                               kTolerance, MatrixCompareType::relative));
 
-  // Verify that CalcPointsPositions() computes the same value of p_NG.
+  // Verify that MultibodyPlant::CalcPointsPositions() computes the same value
+  // of p_NG. Even both code paths resolve to CalcPointsPositions(), here we
+  // call this method explicitly to provide unit testing for this API.
   Vector3<double> p2_NG = CalcEndEffectorPosition(*plant_, *context_);
   EXPECT_TRUE(CompareMatrices(p2_NG, p_NG,
                               kTolerance, MatrixCompareType::relative));

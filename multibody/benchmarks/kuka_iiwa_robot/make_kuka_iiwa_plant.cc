@@ -67,7 +67,6 @@ unique_ptr<MultibodyPlant<T>> KukaIiwaPlantBuilder<T>::Build() const {
   // Create a mostly empty MultibodyTree (it has a built-in "world" body).
   // Newtonian reference frame (linkN) is the world body.
   auto plant = make_unique<MultibodyPlant<T>>();
-  const Body<T>& linkN = plant->get_world_body();
 
   // Create SpatialInertia for each link in this robot. M_Bo_B designates a
   // rigid body B's spatial inertia about Bo (B's origin), expressed in B.
@@ -109,44 +108,45 @@ unique_ptr<MultibodyPlant<T>> KukaIiwaPlantBuilder<T>::Build() const {
   // second and third arguments in the following method, namely with SpaceXYZ
   // angles and a position vector. Alternately, frame An is regarded as
   // coincident with linkA.
+  const Body<T>& linkN = plant->get_world_body();
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_1",
-      linkN, Vector3d(0, 0, 0), Vector3d(0, 0, 0.1575),
+      linkN, joint_1_rpy_, joint_1_xyz_,
       linkA, Eigen::Vector3d::UnitZ(), plant.get());
 
   // Create a revolute joint between linkA and linkB.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_2",
-      linkA, Vector3d(M_PI_2, 0, M_PI), Vector3d(0, 0, 0.2025),
+      linkA, joint_2_rpy_, joint_2_xyz_,
       linkB, Eigen::Vector3d::UnitZ(), plant.get());
 
   // Create a revolute joint between linkB and linkC.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_3",
-      linkB, Vector3d(M_PI_2, 0, M_PI), Vector3d(0, 0.2045, 0),
+      linkB, joint_3_rpy_, joint_3_xyz_,
       linkC, Eigen::Vector3d::UnitZ(), plant.get());
 
   // Create a revolute joint between linkB and linkC.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_4",
-      linkC, Vector3d(M_PI_2, 0, 0), Vector3d(0, 0, 0.2155),
+      linkC, joint_4_rpy_, joint_4_xyz_,
       linkD, Eigen::Vector3d::UnitZ(), plant.get());
 
   // Create a revolute joint between linkD and linkE.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_5",
-      linkD, Vector3d(-M_PI_2, M_PI, 0), Vector3d(0, 0.1845, 0),
+      linkD, joint_5_rpy_, joint_5_xyz_,
       linkE, Eigen::Vector3d::UnitZ(), plant.get());
   // Create a revolute joint between linkE and linkF.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_6",
-      linkE, Vector3d(M_PI_2, 0, 0), Vector3d(0, 0, 0.2155),
+      linkE, joint_6_rpy_, joint_6_xyz_,
       linkF, Eigen::Vector3d::UnitZ(), plant.get());
 
   // Create a revolute joint between linkE and linkF.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_7",
-      linkF, Vector3d(-M_PI_2, M_PI, 0), Vector3d(0, 0.081, 0),
+      linkF, joint_7_rpy_, joint_7_xyz_,
       linkG, Eigen::Vector3d::UnitZ(), plant.get());
 
   // Add force element for a constant gravity pointing downwards, that is, in

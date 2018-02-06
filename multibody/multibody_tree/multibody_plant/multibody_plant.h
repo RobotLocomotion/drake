@@ -481,16 +481,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
   /// B, (that is, their time derivative `ᴮd/dt(p_BQi)` in frame B is zero),
-  /// this method computes the geometric Jacobian `Jg_WQi` defined by:
+  /// this method computes the geometric Jacobian `Jv_WQi` defined by:
   /// <pre>
-  ///   v_WQi(q, v) = Jg_WQi(q)⋅v
+  ///   v_WQi(q, v) = Jv_WQi(q)⋅v
   /// </pre>
   /// where `p_WQi` is the position vector in the world frame for each point
   /// `Qi` in the input set, `v_WQi(q, v)` is the translational velocity of
   /// point `Qi` in the world frame W and q and v are the vectors of generalized
   /// position and velocity, respectively. Since the spatial velocity of each
   /// point `Qi` is linear in the generalized velocities, the geometric
-  /// Jacobian `Jg_WQi` is a function of the generalized coordinates q only.
+  /// Jacobian `Jv_WQi` is a function of the generalized coordinates q only.
   ///
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
@@ -513,27 +513,27 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   as the input set `p_BQi_set` or otherwise this method throws a
   ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
   ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jg_WQi
-  ///   The geometric Jacobian `Jg_WQi(q)`, function of the generalized
+  /// @param[out] Jv_WQi
+  ///   The geometric Jacobian `Jv_WQi(q)`, function of the generalized
   ///   positions q only. This Jacobian relates the translational velocity
   ///   `v_WQi` of each point `Qi` in the input set by: <pre>
-  ///     `v_WQi(q, v) = Jg_WQi(q)⋅v`
+  ///     `v_WQi(q, v) = Jv_WQi(q)⋅v`
   ///   </pre>
   ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
   ///   velocity of all points `Qi` in the same order they were given in the
-  ///   input set. Therefore `Jg_WQi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   input set. Therefore `Jv_WQi` is a matrix of size `3⋅np x nv`, with `nv`
   ///   the number of generalized velocities. Only if needed, the Jacobian
   ///   matrix `J_WQi` will be resized to `3⋅np x nv`. An exception is thrown
-  ///   if `Jg_WQi` is not a valid pointer.
+  ///   if `Jv_WQi` is not a valid pointer.
   ///
   /// @throws an exception if the output `p_WQi_set` is nullptr or does not have
   /// the same size as the input array `p_BQi_set`.
-  /// @throws an exception if `Jg_WQi` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jg_WQi` for details.
+  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WQi` for details.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jg_WQi) const;
+      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
   /// @}
   // End of multibody Jacobian methods section.
 
