@@ -92,6 +92,8 @@ TEST_F(BouncingBallTest, Simulate) {
   const double accuracy = 1e-4;
 
   // Prepare to integrate.
+  // TODO(edrumwri): Update the code below when accuracy is settable purely
+  // from the context.
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
       &simulator.get_mutable_context());
@@ -115,8 +117,8 @@ TEST_F(BouncingBallTest, Simulate) {
   const double tol = 200 * accuracy;
   double height, velocity;
   std::tie(height, velocity) = CalcClosedFormHeightAndVelocity(
-                                    dut_->get_gravitational_acceleration(),
-                                    dut_->get_restitution_coef(), x0, t_final);
+      dut_->get_gravitational_acceleration(),
+      dut_->get_restitution_coef(), x0, t_final);
   EXPECT_NEAR(xc.GetAtIndex(0), height, tol);
   EXPECT_NEAR(xc.GetAtIndex(1), velocity, tol);
 }

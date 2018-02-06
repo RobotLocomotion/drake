@@ -321,7 +321,7 @@ class LeafSystem : public System<T> {
       CompositeEventCollection<T>* events) const final {
     DRAKE_DEMAND(this == &witness_func.get_system());
     DRAKE_DEMAND(events);
-    witness_func.AddEvent(events);
+    witness_func.AddEventToCollection(events);
   }
 
   /// Computes the next update time based on the configured periodic events, for

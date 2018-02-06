@@ -3,8 +3,9 @@
 #include <memory>
 #include <vector>
 
+#include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/examples/bouncing_ball/signed_distance_witness.h"
+#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace bouncing_ball {
@@ -28,15 +29,17 @@ namespace bouncing_ball {
 template <typename T>
 class BouncingBall : public systems::LeafSystem<T> {
  public:
-  /// Constructor for the BouncingBall system.
   BouncingBall() {
+    // Two state variables: x and v.
     this->DeclareContinuousState(1, 1, 0);
+
+    // The state of the system is output.
     this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
                                   &BouncingBall::CopyStateOut);
 
     // Create the witness function.
     signed_distance_witness_ =
-        std::make_unique<SignedDistanceWitnessFunction<T>>(*this);
+        std::make_unique<SignedDistanceWitnessFunction>(*this);
   }
 
   /// Gets the signed acceleration due to gravity. Since initial positions
@@ -47,6 +50,31 @@ class BouncingBall : public systems::LeafSystem<T> {
   double get_restitution_coef() const { return restitution_coef_; }
 
  private:
+  // A witness function to determine when the bouncing ball crosses the
+  // boundary x = 0 from x > 0. Note that the witness function only triggers
+  // when the signed distance is positive at the left hand side of an interval
+  // (via WitnessFunctionDirection::kPositiveThenNonPositive). An "unrestricted
+  // update" event is necessary to change the velocity of the system
+  // discontinuously.
+  class SignedDistanceWitnessFunction : public systems::WitnessFunction<T> {
+   public:
+    explicit SignedDistanceWitnessFunction(const systems::System<T>& system) :
+        systems::WitnessFunction<T>(
+            system,
+            systems::WitnessFunctionDirection::kPositiveThenNonPositive,
+            std::make_unique<systems::UnrestrictedUpdateEvent<T>>(
+                systems::Event<T>::TriggerType::kWitness)) {}
+    ~SignedDistanceWitnessFunction() override {}
+
+   private:
+    // Returns the signed distance of the witness function from the halfspace
+    // boundary.
+    T DoEvaluate(const systems::Context<T>& context) const override {
+      const systems::VectorBase<T>& xc = context.get_continuous_state_vector();
+      return xc.GetAtIndex(0);
+    }
+  };
+
   void CopyStateOut(const systems::Context<T>& context,
                     systems::BasicVector<T>* output) const {
     output->get_mutable_value() =
@@ -63,7 +91,10 @@ class BouncingBall : public systems::LeafSystem<T> {
     DRAKE_ASSERT(derivatives != nullptr);
     systems::VectorBase<T>& new_derivatives = derivatives->get_mutable_vector();
 
+    // Time derivative of position (state index 0) is velocity.
     new_derivatives.SetAtIndex(0, state.GetAtIndex(1));
+
+    // Time derivative of velocity (state index 1) is acceleration.
     new_derivatives.SetAtIndex(1, T(get_gravitational_acceleration()));
   }
 
@@ -75,6 +106,9 @@ class BouncingBall : public systems::LeafSystem<T> {
     state->get_mutable_continuous_state().SetFromVector(x0);
   }
 
+  // Updates the velocity discontinuously to reverse direction. This method
+  // is called by the Simulator when the signed distance witness function
+  // triggers.
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>& events,
       systems::State<T>* next_state) const override {
@@ -96,6 +130,8 @@ class BouncingBall : public systems::LeafSystem<T> {
         1, cstate.GetAtIndex(1) * this->restitution_coef_ * -1.);
   }
 
+  // The signed distance witness function is always active and, hence, always
+  // returned.
   void DoGetWitnessFunctions(
       const systems::Context<T>& context,
       std::vector<const systems::WitnessFunction<T>*>* witnesses)
@@ -105,7 +141,8 @@ class BouncingBall : public systems::LeafSystem<T> {
 
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
 
-  std::unique_ptr<SignedDistanceWitnessFunction<T>> signed_distance_witness_;
+  // The system stores its witness function internally.
+  std::unique_ptr<SignedDistanceWitnessFunction> signed_distance_witness_;
 };
 
 }  // namespace bouncing_ball

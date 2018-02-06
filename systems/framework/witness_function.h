@@ -92,10 +92,22 @@ class WitnessFunction {
 
   virtual ~WitnessFunction() {}
 
-  /// Constructs the witness function with the given direction type.
+  /// Constructs the witness function with the given direction type and no
+  /// event type.
   WitnessFunction(const System<T>& system,
                   const WitnessFunctionDirection& dtype) :
                   system_(system), dir_type_(dtype) {}
+
+  /// Constructs the witness function with the given direction type and a 
+  /// unique pointer to the event that is to be dispatched when this witness
+  /// function triggers. 
+  template <class EventType>
+  WitnessFunction(const System<T>& system,
+                  const WitnessFunctionDirection& dtype,
+                  std::unique_ptr<EventType> e) :
+                  system_(system), dir_type_(dtype) {
+    event_ = std::move(e);
+  }
 
   /// Gets the name of this witness function (used primarily for logging and
   /// debugging).
@@ -104,11 +116,13 @@ class WitnessFunction {
   /// Sets the name of this witness function.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Adds the appropriate event that will be dispatched when this witness
-  /// function triggers.
-  void AddEvent(CompositeEventCollection<T>* events) const {
+  /// Adds get_event() to the appropriate dispatch collection when this witness
+  /// function triggers. This function is to be called by
+  /// @ref drake::systems::analysis::Simulator "Simulator" - users should not
+  /// call it.
+  void AddEventToCollection(CompositeEventCollection<T>* events) const {
     DRAKE_DEMAND(events);
-    DoAddEvent(events);
+    DoAddEventToCollection(events);
   }
 
   /// Gets the direction(s) under which this witness function triggers.
@@ -146,23 +160,31 @@ class WitnessFunction {
     }
   }
 
-  /// Sets the event.
+  /// Sets the event that will be dispatched when the witness function
+  /// triggers. If @p e is null, no event will be dispatched.
   template <class EventType>
   void set_event(std::unique_ptr<EventType> e) {
     event_ = std::move(e);
   }
 
-  /// Gets the event 
-  Event<T>* get_event() const { return event_.get(); }
+  /// Gets the event that will be dispatched when the witness function
+  /// triggers. A null pointer indicates that no event will be dispatched.
+  const Event<T>* get_event() const { return event_.get(); }
+
+  /// Gets a mutable pointer to the event that will occur when the witness
+  /// function triggers.
+  Event<T>* get_mutable_event() { return event_.get(); }
 
  protected:
   /// Derived classes can override this function to add the appropriate event
-  /// that will be dispatched when this witness function triggers. Example
-  /// events are publish, perform a discrete variable update, and performing an
-  /// unrestricted update. @p events is guaranteed to be non-null on entry.
-  /// The default implementation does get_event()->add_to_composite(events),
-  /// if get_event() is not null.
-  virtual void DoAddEvent(CompositeEventCollection<T>* events) const {
+  /// (returned by `get_event()`) to the appropriate dispatch collection when
+  /// the witness function triggers. Example events are publish, performing a
+  /// discrete variable update, and performing an unrestricted update.
+  /// @p events is guaranteed to be non-null on entry. The default
+  /// implementation does `get_event()->add_to_composite(events)` (but only if
+  /// `get_event()` is not null).
+  virtual void DoAddEventToCollection(CompositeEventCollection<T>* events)
+      const {
     if (event_)
       event_->add_to_composite(events);
   }
