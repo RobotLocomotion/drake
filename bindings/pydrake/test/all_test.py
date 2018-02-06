@@ -31,6 +31,8 @@ class TestAll(unittest.TestCase):
             "BasicVector",
             "LeafSystem",
             "Simulator",
+            # util
+            "Quaternion",
         )
         # Ensure each symbol is exposed as globals from the above import
         # statement.

@@ -33,4 +33,4 @@ from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *
 # - Do not include `third_party`.
-# - Do not include `util`.
+from .util.all import *
