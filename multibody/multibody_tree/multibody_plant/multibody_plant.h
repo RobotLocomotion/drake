@@ -426,6 +426,14 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  // Helper method to Eval() position kinematics cached in the context.
+  const PositionKinematicsCache<T>& EvalPositionKinematics(
+      const systems::Context<T>& context) const;
+
+  // Helper method to Eval() velocity kinematics cached in the context.
+  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
+      const systems::Context<T>& context) const;
+
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
