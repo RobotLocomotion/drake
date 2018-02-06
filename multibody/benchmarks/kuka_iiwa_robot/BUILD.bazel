@@ -21,6 +21,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "make_kuka_iiwa_plant",
+    srcs = [
+        "make_kuka_iiwa_plant.cc",
+    ],
+    hdrs = [
+        "make_kuka_iiwa_plant.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree/multibody_plant",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(

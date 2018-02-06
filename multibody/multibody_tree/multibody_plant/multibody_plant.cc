@@ -29,10 +29,12 @@ MultibodyPlant<T>::MultibodyPlant() :
 template<typename T>
 template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
-  DRAKE_THROW_UNLESS(!is_finalized());
+  DRAKE_THROW_UNLESS(other.is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
   body_name_to_index_ = other.body_name_to_index_;
   joint_name_to_index_ = other.joint_name_to_index_;
+  DeclareStateAndPorts();
+  // TODO(amcastro-tri): Declare GeometrySystem ports.
 }
 
 template<typename T>
@@ -123,6 +125,74 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   // TODO(amcastro-tri): Declare input ports for actuators.
 
   // TODO(amcastro-tri): Declare output port for the state.
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAllBodyPosesInWorld(
+    const systems::Context<T>& context,
+    std::vector<Isometry3<T>>* X_WB) const {
+  DRAKE_THROW_UNLESS(X_WB != nullptr);
+  if (static_cast<int>(X_WB->size()) != num_bodies()) {
+    X_WB->resize(num_bodies(), Isometry3<T>::Identity());
+  }
+  // TODO(amcastro-tri): Eval this from the context.
+  PositionKinematicsCache<T> pc(model_->get_topology());
+  model_->CalcPositionKinematicsCache(context, &pc);
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index =
+        model_->get_body(body_index).get_node_index();
+    X_WB->at(body_index) = pc.get_X_WB(node_index);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcAllBodySpatialVelocitiesInWorld(
+    const systems::Context<T>& context,
+    std::vector<SpatialVelocity<T>>* V_WB) const {
+  DRAKE_DEMAND(V_WB != nullptr);
+  if (static_cast<int>(V_WB->size()) != num_bodies()) {
+    V_WB->resize(num_bodies(), SpatialVelocity<T>::Zero());
+  }
+  // TODO(amcastro-tri): Eval these from the context.
+  PositionKinematicsCache<T> pc(model_->get_topology());
+  VelocityKinematicsCache<T> vc(model_->get_topology());
+  model_->CalcPositionKinematicsCache(context, &pc);
+  model_->CalcVelocityKinematicsCache(context, pc, &vc);
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index =
+        model_->get_body(body_index).get_node_index();
+    V_WB->at(body_index) = vc.get_V_WB(node_index);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcPointsPositions(
+    const systems::Context<T>& context,
+    const Frame<T>& from_frame_B,
+    const Eigen::Ref<const MatrixX<T>>& p_BQi,
+    const Frame<T>& to_frame_A,
+    EigenPtr<MatrixX<T>> p_AQi) const {
+  DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
+  DRAKE_THROW_UNLESS(p_AQi != nullptr);
+  DRAKE_THROW_UNLESS(p_AQi->rows() == 3 && p_AQi->cols() == p_BQi.cols());
+  model_->CalcPointsPositions(context, from_frame_B, p_BQi, to_frame_A, p_AQi);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcPointsGeometricJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jg_WQi) const {
+  DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
+  const int num_points = p_BQi_set.cols();
+  DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
+  DRAKE_THROW_UNLESS(p_WQi_set->rows() == 3);
+  DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
+  DRAKE_THROW_UNLESS(Jg_WQi != nullptr);
+  DRAKE_THROW_UNLESS(Jg_WQi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Jg_WQi->cols() == num_velocities());
+  model_->CalcPointsGeometricJacobianExpressedInWorld(
+      context, frame_B, p_BQi_set, p_WQi_set, Jg_WQi);
 }
 
 }  // namespace multibody_plant
