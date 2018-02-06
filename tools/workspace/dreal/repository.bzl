@@ -14,7 +14,16 @@ def dreal_repository(name, modname = "dreal", **kwargs):
                           # sync with the ones in
                           # `setup/ubuntu/16.04/install_prereqs.sh` script.
                           pkg_config_paths = [
+                              # For Ubuntu:
                               "/opt/dreal/4.18.01.3/lib/pkgconfig",
                               "/opt/libibex/2.6.5/share/pkgconfig",
+                              # For macOS, we enumerate its complete dependency
+                              # information here so that homebrew can find all
+                              # it needs:
+                              "/usr/local/opt/dreal/lib/pkgconfig",
+                              "/usr/local/opt/ibex@2.6.5/share/pkgconfig",
+                              "/usr/local/opt/clp/lib/pkgconfig",
+                              "/usr/local/opt/coinutils/lib/pkgconfig",
+                              "/usr/local/opt/nlopt/lib/pkgconfig",
                           ],
                           **kwargs)
