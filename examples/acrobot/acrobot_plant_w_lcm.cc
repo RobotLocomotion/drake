@@ -62,7 +62,7 @@ int DoMain() {
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_u>(channel_u, &lcm));
   auto command_receiver = builder.AddSystem<AcrobotCommandReceiver>();
-  builder.Connect(command_sub->get_output_port(0),
+  builder.Connect(command_sub->get_output_port(),
                   command_receiver->get_input_port(0));
 
   // Creates state sender and publisher.
@@ -70,7 +70,7 @@ int DoMain() {
       systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_x>(channel_x, &lcm));
   auto state_sender = builder.AddSystem<AcrobotStateSender>();
   builder.Connect(state_sender->get_output_port(0),
-                  state_pub->get_input_port(0));
+                  state_pub->get_input_port());
 
   // Connects plant to command receiver and state sender.
   builder.Connect(command_receiver->get_output_port(0),

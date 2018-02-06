@@ -182,11 +182,11 @@ int main() {
 
   builder.Connect(
       image_to_lcm_image_array->image_array_t_msg_output_port(),
-      image_array_lcm_publisher->get_input_port(0));
+      image_array_lcm_publisher->get_input_port());
 
   builder.Connect(
       rgbd_camera->camera_base_pose_output_port(),
-      pose_lcm_publisher->get_input_port(0));
+      pose_lcm_publisher->get_input_port());
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

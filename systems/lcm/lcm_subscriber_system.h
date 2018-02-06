@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -125,6 +127,21 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * @pre this system is using a vector-valued port (not abstract-valued).
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
+
+  /// Returns the sole output port.
+  const OutputPort<double>& get_output_port() const {
+    DRAKE_THROW_UNLESS(this->get_num_output_ports() == 1);
+    return LeafSystem<double>::get_output_port(0);
+  }
+
+  DRAKE_DEPRECATED("Don't use the indexed overload; use the no-arg overload.")
+  const OutputPort<double>& get_output_port(int index) const {
+    DRAKE_THROW_UNLESS(index == 0);
+    return get_output_port();
+  }
+
+  // This system has no input ports.
+  void get_input_port(int) = delete;
 
   /**
    * Blocks the caller until @p old_message_count is different from the
