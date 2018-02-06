@@ -98,7 +98,7 @@ class BouncingBall : public systems::LeafSystem<T> {
     new_derivatives.SetAtIndex(1, T(get_gravitational_acceleration()));
   }
 
-  void SetDefaultState(const systems::Context<T>& context,
+  void SetDefaultState(const systems::Context<T>&,
                        systems::State<T>* state) const override {
     DRAKE_DEMAND(state != nullptr);
     Vector2<T> x0;
@@ -110,7 +110,7 @@ class BouncingBall : public systems::LeafSystem<T> {
   // is called by the Simulator when the signed distance witness function
   // triggers.
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
-      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>& events,
+      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
       systems::State<T>* next_state) const override {
     systems::VectorBase<T>& next_cstate =
         next_state->get_mutable_continuous_state().get_mutable_vector();
@@ -133,7 +133,7 @@ class BouncingBall : public systems::LeafSystem<T> {
   // The signed distance witness function is always active and, hence, always
   // returned.
   void DoGetWitnessFunctions(
-      const systems::Context<T>& context,
+      const systems::Context<T>&,
       std::vector<const systems::WitnessFunction<T>*>* witnesses)
       const override {
     witnesses->push_back(signed_distance_witness_.get());
