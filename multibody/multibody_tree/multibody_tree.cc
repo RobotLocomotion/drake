@@ -654,6 +654,79 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
+    EigenPtr<MatrixX<T>> Jg_WF) const {
+  DRAKE_THROW_UNLESS(Jg_WF != nullptr);
+  DRAKE_THROW_UNLESS(Jg_WF->rows() == 6);
+  DRAKE_THROW_UNLESS(Jg_WF->cols() == get_num_velocities());
+
+  // Body to which frame B is attached to:
+  const Body<T>& body_B = frame_B.get_body();
+
+  // Compute kinematic path from body B to the world:
+  std::vector<BodyNodeIndex> path_to_world;
+  topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
+
+  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
+  PositionKinematicsCache<T> pc(this->get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+
+  // TODO(amcastro-tri): Eval H_PB_W from the cache.
+  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  // Compute the position of F's origin in the world frame.
+  Vector3<T> p_WoFo_W;
+  CalcPointsPositions(context,
+                      frame_B, p_BoFo_B,             /* From frame B */
+                      get_world_frame(), &p_WoFo_W);  /* To world frame W */
+
+  // Performs a scan of all bodies in the kinematic path from the world to
+  // body_B, computing each node's contribution to Jg_WF.
+  // Skip the world (ilevel = 0).
+  for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
+    BodyNodeIndex body_node_index = path_to_world[ilevel];
+    const BodyNode<T>& node = *body_nodes_[body_node_index];
+    const BodyNodeTopology& node_topology = node.get_topology();
+    const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
+    const int num_velocities = node_topology.num_mobilizer_velocities;
+
+    // Across-node Jacobian.
+    Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+        node.GetJacobianFromArray(H_PB_W_cache);
+
+    // Output block corresponding to mobilities in the current node.
+    // This correspond to the geometric Jacobian to compute the spatial velocity
+    // of frame Bf (frame B shifted to Fo) measured in the inboard body frame P
+    // and expressed in world. That is, V_PBf_W = J_PBf_W * v(B), with v(B) the
+    // mobilities that correspond to the current node.
+    auto J_PBf_W = Jg_WF->block(0, start_index_in_v, 6, num_velocities);
+
+    // Position of this node's body Bi in the world W.
+    const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();
+
+    // Position of origin Fo measured from Bi, expressed in the world W.
+    const Vector3<T> p_BiFo_W = p_WoFo_W - p_WBi;
+
+    // Mutable aliases to Hw_PBf_W and Hv_PBf_W. Hw (Hv) denotes the
+    // rotational (translational) components of the full geometric Jacobian.
+    auto Hw_PBf_W = J_PBf_W.template topRows<3>();
+    auto Hv_PBf_W = J_PBf_W.template bottomRows<3>();
+
+    // Aliases to angular and translational components in H_PB_W:
+    const auto Hw_PB_W = H_PB_W.template topRows<3>();
+    const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
+
+    // Now "shift" (See SpatialVelocity::Shift()) H_PB_W to H_PBf_W.
+    // We do it by shifting one column at a time:
+    Hw_PBf_W = Hw_PB_W;  // angular component statys the same.
+    Hv_PBf_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BiFo_W);
+  }  // body_node_index
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.

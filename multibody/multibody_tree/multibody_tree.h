@@ -1053,7 +1053,27 @@ class MultibodyTree {
       const Frame<T>& to_frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const;
 
-  /// @name Methods to compute multibody Jacobians.
+#if 0
+  /// Given the pose `X_BF` of a frame F measured in a frame B, this method
+  /// computes the pose `X_WF` of this frame F in the world frame W. That is, it
+  /// computes: `X_WF = X_WB * X_BF`.
+  Isometry3<T> CalcFramePoseInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B,
+      const Isometry3<T>& X_BF) const;
+
+  /// Given the position `p_BoFo_B` measured and expressed in a frame B,
+  /// this method computes the spatial velocity `V_WF` of frame F in the world
+  /// frame W. In other words, this method performs a rigid _shift_ of the
+  /// spatial velocity `V_WB` of frame B as: V_WF = V_WB.Shift(p_BoFo_W), see
+  /// SpatialVelocity::Shift().
+  SpatialVelocity<T> CalcFrameSpatialVelocityInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoFo_B) const;
+#endif
+
+  /// @name Methods to compute multibody Jacobians
   /// @{
 
   /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
@@ -1106,6 +1126,29 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
       EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const;
+
+  /// @param[out] Jg_WF
+  ///   The geometric Jacobian `Jv_WFi(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates the spatial velocity `V_WFi` of
+  ///   the i-th frame `Fi` in the input set by: <pre>
+  ///     `V_WFi(q, v) = Jv_WFi(q)⋅v`
+  ///   </pre>
+  ///   so that `V_WFi` is a column vector of size `6⋅np` concatenating the
+  ///   spatial velocity of all frames `Fi` in the same order they were given in
+  ///   the input set. That is, the spatial velocity of the i-th frame can be
+  ///   accessed with `V_WFi.segment<6>(i * 6)`, where the first three
+  ///   components correspond to the angular velocity `w_WFi` of frame `Fi` in
+  ///   the world frame W and the last three components correspond to the
+  ///   translational velocity `v_WFio` of `Fi`'s origin in the world frame.
+  ///   Therefore `J_WFi` is a matrix of size `6⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WFi` **must**
+  ///   have size `6⋅np x nv` or this method throws an exception.
+  ///
+  /// @throws if `J_WFi` is nullptr or if it is not of size `6⋅np x nv`.
+  void CalcFrameGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
+      EigenPtr<MatrixX<T>> Jg_WF) const;
 
   /// @}
   // End of multibody Jacobian methods section.
