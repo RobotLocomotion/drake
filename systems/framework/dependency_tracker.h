@@ -29,27 +29,32 @@ class DependencyGraph;  // defined below
 //                             DEPENDENCY TRACKER
 //==============================================================================
 /** Manages value interdependencies for a particular value or set of values in
-a Context. Provides notifications of changes to the managed value to downstream
-subscribers, and may invalidate an associated cache entry. The "managed value"
-can be a source like time or state, or a cached computation. Each
-%DependencyTracker ("tracker" for short) manages dependencies for a value or
-group of related values upon which some downstream computations may depend, and
-maintains lists of downstream dependents (subscribers) and upstream
-prerequisites. An optional CacheEntryValue may be registered with a tracker for
-marking the managed cache value out of date when one of its prerequisites has
-changed.
+a Context.
+
+A %DependencyTracker ("tracker" for short) provides notifications of changes to
+the managed value to downstream subscribers, and may invalidate an associated
+cache entry. The "managed value" can be a source like time or state, or a cached
+computation. A particular tracker is selected using a DependencyTicket
+("ticket") which provides very fast access to the tracker. The ticket is used by
+both the System and Context as a way to identify dependencies, while trackers
+exist only in the Context.
+
+Each %DependencyTracker manages dependencies for a value, or group of related
+values, upon which some downstream computations may depend, and maintains lists
+of downstream dependents (subscribers) and upstream prerequisites. An optional
+CacheEntryValue may be registered with a tracker for marking the managed cache
+value out of date when one of its prerequisites has changed.
 
 A single %DependencyTracker can represent interdependencies within its
 subcontext, and to and from other subcontexts within the same containing Context
 tree. Trackers are always owned by a DependencyGraph that is part of a
-particular subcontext. They should not be created except under the careful
-supervision of their owning DependencyGraph, which has helpful methods for that
-purpose.
+particular subcontext, and should always be created through methods of
+DependencyGraph; don't construct them directly yourself.
 
 %DependencyTracker objects within a Context are nodes in a directed acylic graph
 formed by "is-prerequisite-of" edges leading from source values (like time,
 state, parameters, and input ports) to dependent cached computations and output
-ports. A %DependencyTracker maintains lists of both its downstream subscribers,
+ports. A %DependencyTracker maintains lists of both its downstream subscribers
 and its upstream prerequisites. The entries in both lists are pointers to other
 %DependencyTrackers. That requires special handling when cloning a Context,
 since the internal pointers in the source must be replaced by their
@@ -77,19 +82,24 @@ trackers and some hypothetical cache entry trackers.
                 (a₁)--➚
 </pre>
 The parenthesized nodes are %DependencyTrackers for the indicated values, and
-the directed edges can be read as "is-prerequisite-of" or "determines".
-(Reversed edges would read "subscribes-to" or "depends-on".) Downstream
-computations may subscribe to any of the individual or grouped nodes. */
+a directed edge `(a)->(b)` can be read as "a is-prerequisite-of b" or
+"a determines b". The graph also maintains reverse-direction edges (not shown).
+A reversed edge `(a)<-(b)` could be read as "b subscribes-to a" or
+"b depends-on a".)
+
+Downstream computations may subscribe to any of the individual or grouped
+nodes. */
 
 // Implementation notes:
 // Invalidation operations occur very frequently at run time and must execute
-// very fast. Simultaneous changes (like time and state) should be grouped
-// to avoid unnecessary invalidation passes. Also, care must be
-// taken to avoid unnecessary repeated invalidations of the same subgraph
-// during invalidations; that is handled by generating a unique "change event"
+// very fast. To make invalidation an O(N) operation, it is essential to avoid
+// unnecessary repeated invalidations of the same subgraph during an
+// invalidation sweep. That is handled via a unique "change event"
 // serial number that is stored in a tracker when it is first invalidated.
 // Encountering a node with a matching change event number terminates that
-// branch of an invalidation sweep using that change event.
+// branch of an invalidation sweep using that change event. Calling code can
+// improve performance further by grouping simultaneous changes (say time and
+// state) together into a single change event.
 //
 // Lots of things can go wrong so we maintain lots of redundant information here
 // and check it religiously in Debug builds, less so in Release builds.
@@ -98,44 +108,36 @@ computations may subscribe to any of the individual or grouped nodes. */
 // trackers within the same complete Context tree, not necessarily limited to
 // trackers within the same subcontext that owns the tracker. There is also
 // a pointer to the containing Context's system pathname service for use in
-// logging and error messages. These pointers provide
-// great performance but makes these things hard to clone because the pointers
-// have to be fixed up to point to corresponding entries in the new copy.
+// logging and error messages. These pointers provide great performance but
+// make these things hard to clone because the pointers have to be set to
+// point to corresponding entries in the new copy.
 //
 // DependencyTrackers for cache entries have to invalidate the associated cache
 // value when notified of prerequisite changes. That simply sets a bool to
 // `false` in the CacheEntryValue object. It is faster and cleaner to do that
-// unconditionally so we have a static dummy CacheEntryValue available for all
-// non-cache DependencyTrackers to invalidate.
+// unconditionally, and with inline code, so we have a static dummy
+// CacheEntryValue available for all non-cache DependencyTrackers to invalidate,
+// and make the definition of the cache invalidation method visible here rather
+// than use an abstract interface to it.
 
 class DependencyTracker {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DependencyTracker)
 
+  /** (Internal use only) */
   using PointerMap = std::unordered_map<const DependencyTracker*,
                                         const DependencyTracker*>;
 
-  /** (Internal use only) Constructs a tracker with a given ticket number,
-  a human-readable description and an optional CacheEntryValue object that
-  should be marked out-of-date when a prerequisite changes. The description
-  should be of the associated value only, like "input port 3"; don't include
-  "tracker". This constructor is only for use by DependencyGraph, and the
-  system pathname service of the owning subcontext must be supplied here and
-  be non-null. */
-  DependencyTracker(DependencyTicket ticket, std::string description,
-                    const internal::SystemPathnameInterface* owning_subcontext,
-                    CacheEntryValue* cache_value)
-      : ticket_(ticket),
-        description_(std::move(description)),
-        owning_subcontext_(owning_subcontext),
-        cache_value_(cache_value ? cache_value : &dummy_cache_value_) {
-    SPDLOG_DEBUG(
-        log(), "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
-        description_, cache_value ? "with" : "without", size_t(cache_value),
-        cache_value
-            ? " cache entry " + std::to_string(cache_value->cache_index())
-            : "");
-  }
+  /** Returns the human-readable description for this tracker. */
+  const std::string& description() const { return description_; }
+
+  /** Returns the description, preceded by the full pathname of the subsystem
+  associated with the owning subcontext. */
+  std::string GetPathDescription() const;
+
+  /** Returns the DependencyTicket for this %DependencyTracker in its containing
+  DependencyGraph. The ticket is unique within the containing subcontext. */
+  DependencyTicket ticket() const { return ticket_; }
 
   /** Notifies `this` %DependencyTracker that its managed value was directly
   modified or made available for mutable access. That is, this is the
@@ -145,6 +147,10 @@ class DependencyTracker {
   change. A unique `change_event` should have been obtained from the owning
   Context and supplied here. */
   void NoteValueChange(int64_t change_event) const;
+
+  /** @name              Prerequisites and subscribers
+  These methods deal with dependencies associated with this tracker. */
+  //@{
 
   /** Subscribes `this` tracker to an upstream prerequisite's tracker. The
   upstream tracker will keep a const pointer back to `this` tracker in its
@@ -169,13 +175,6 @@ class DependencyTracker {
   only allowed if the subscriber has already removed the dependency on this
   tracker from its prerequisite list. */
   void RemoveDownstreamSubscriber(const DependencyTracker& subscriber);
-
-  /** Returns the human-readable description for this tracker. */
-  const std::string& description() const { return description_; }
-
-  /** Returns the description, preceded by the full pathname of the subsystem
-  associated with the owning subcontext. */
-  std::string GetPathDescription() const;
 
   /** Returns `true` if the given prerequisite is already listed here. This is
   slow and should not be used in performance-sensitive code. */
@@ -204,6 +203,12 @@ class DependencyTracker {
   const std::vector<const DependencyTracker*>& subscribers() const {
     return subscribers_;
   }
+  //@}
+
+  /** @name                     Runtime statistics
+  These methods track runtime operations and are useful for debugging and for
+  performance analysis. **/
+  //@{
 
   /** Returns the total number of notifications received by this tracker.
   This is the sum of managed-value notifications and prerequisite notifications
@@ -235,30 +240,52 @@ class DependencyTracker {
   int64_t num_prerequisite_change_events() const {
     return num_prerequisite_notifications_received_;
   }
+  //@}
 
-  /** Returns the ticket number for this DependencyTracker in its containing
-  DependencyGraph. */
-  DependencyTicket ticket() const { return ticket_; }
+ private:
+  friend class DependencyGraph;
 
-  /** Assumes `this` tracker is a recent clone containing no pointers, sets
-  the pointers here to addresses corresponding to those in the source tracker,
-  with the help of the given map. It is a fatal error if any needed pointer is
-  not present in the map. */
+  // (Private because trackers should only be created by DependencyGraph.)
+  // Constructs a tracker with a given ticket number, a human-readable
+  // description and an optional CacheEntryValue object that should be marked
+  // out-of-date when a prerequisite changes. The description should be of the
+  // associated value only, like "input port 3"; don't include "tracker". The
+  // system pathname service of the owning subcontext must be supplied here and
+  // be non-null.
+  DependencyTracker(DependencyTicket ticket, std::string description,
+                    const internal::SystemPathnameInterface* owning_subcontext,
+                    CacheEntryValue* cache_value)
+      : ticket_(ticket),
+        description_(std::move(description)),
+        owning_subcontext_(owning_subcontext),
+        cache_value_(cache_value ? cache_value : &dummy_cache_value_) {
+    SPDLOG_DEBUG(
+        log(), "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
+        description_, cache_value ? "with" : "without", size_t(cache_value),
+        cache_value
+        ? " cache entry " + std::to_string(cache_value->cache_index())
+        : "");
+  }
+
+  // Assumes `this` tracker is a recent clone containing no pointers, sets
+  // the pointers here to addresses corresponding to those in the source
+  // tracker, with the help of the given map. It is a fatal error if any needed
+  // pointer is not present in the map.
   void RepairTrackerPointers(
       const DependencyTracker& source,
       const DependencyTracker::PointerMap& tracker_map,
       const internal::SystemPathnameInterface* owning_subcontext, Cache* cache);
 
-  /** Copies the current tracker but with all pointers set to null. */
+  // Copies the current tracker but with all pointers set to null.
   std::unique_ptr<DependencyTracker> CloneWithoutPointers() const {
-    auto clone = std::make_unique<DependencyTracker>(
-        ticket(), description(), nullptr, nullptr);
+    // Can't use make_unique here because constructor is private.
+    std::unique_ptr<DependencyTracker> clone(
+        new DependencyTracker(ticket(), description(), nullptr, nullptr));
     clone->SetSizesAndNullPointers(*this);
     return clone;
   }
 
- private:
-  // As part of a cloning operation, makes sizes match and set internal
+  // As part of a cloning operation, makes sizes match and sets internal
   // pointers to null.
   void SetSizesAndNullPointers(const DependencyTracker& source) {
     cache_value_ = nullptr;
@@ -298,10 +325,10 @@ class DependencyTracker {
   std::string description_;
 
   // Pointer to the system name service of the owning subcontext.
-  const internal::SystemPathnameInterface* owning_subcontext_{};
+  const internal::SystemPathnameInterface* owning_subcontext_{nullptr};
 
   // Points to the dummy_cache_value below if we're not told otherwise.
-  CacheEntryValue* cache_value_{};
+  CacheEntryValue* cache_value_{nullptr};
 
   std::vector<const DependencyTracker*> subscribers_;
   std::vector<const DependencyTracker*> prerequisites_;
@@ -316,6 +343,10 @@ class DependencyTracker {
   mutable int64_t num_ignored_notifications_{0};
   mutable int64_t num_downstream_notifications_sent_{0};
 
+  // Trackers that are not associated with a cache entry point to this dummy
+  // entry so we don't have to do that conditionally.
+  // TODO(sherm1) Move to Cache instead which can provide an unused cache
+  // entry as a service.
   static CacheEntryValue dummy_cache_value_;
 };
 
@@ -377,9 +408,9 @@ class DependencyGraph {
       CacheEntryValue* cache_value = nullptr) {
     DRAKE_DEMAND(!has_tracker(known_ticket));
     if (known_ticket >= num_trackers()) graph_.resize(known_ticket + 1);
-    graph_[known_ticket] = std::make_unique<DependencyTracker>(
-        known_ticket, std::move(description), owning_subcontext_,
-        cache_value);
+    // Can't use make_unique here because constructor is private.
+    graph_[known_ticket].reset(new DependencyTracker(
+        known_ticket, std::move(description), owning_subcontext_, cache_value));
     return *graph_[known_ticket];
   }
 
@@ -421,9 +452,11 @@ class DependencyGraph {
 
   /** (Internal use only) Copy constructor partially duplicates the source
   %DependencyGraph object, with identical structure to the source but
-  with all internal pointers set to null. These must be set properly in a later
-  pass to reference corresponding elements of the new Context. This should
-  only be invoked by Context code as part of copying an entire Context tree.
+  with all internal pointers set to null. These must be set properly using
+  RepairTrackerPointers() once all the old-to-new pointer mappings have been
+  determined _for the whole Context_, not just the containing subcontext. This
+  should only be invoked by Context code as part of copying an entire Context
+  tree.
   @see AppendToTrackerPointerMap(), RepairTrackerPointers() */
   DependencyGraph(const DependencyGraph& source) {
     graph_.reserve(source.num_trackers());
@@ -435,21 +468,23 @@ class DependencyGraph {
     }
   }
 
-  /** Create a mapping from the memory addresses of the trackers contained
-  here to the corresponding ones in `clone`, which must have exactly the same
-  number of trackers. The mapping is appended to the supplied map, which
-  must not be null. */
+  /** (Internal use only) Create a mapping from the memory addresses of the
+  trackers contained here to the corresponding ones in `clone`, which must have
+  exactly the same number of trackers. The mapping is appended to the supplied
+  map, which must not be null. */
   void AppendToTrackerPointerMap(
       const DependencyGraph& clone,
       DependencyTracker::PointerMap* tracker_map) const;
 
-  /** Assumes `this` %DependencyGraph is a recent clone whose trackers do not
-  yet contain subscriber and prerequisite pointers and sets the local pointers
-  to point to the `source`-corresponding trackers in the new owning context,
-  the appropriate cache entry values in the new cache, and to the system name
-  providing service of the new owning Context for logging and error reporting.
-  The supplied map should map source pointers to their corresponding trackers.
-  It is an error if any old pointer we encounter is not present in the map. */
+  /** (Internal use only) Assumes `this` %DependencyGraph is a recent clone
+  whose trackers do not yet contain subscriber and prerequisite pointers and
+  sets the local pointers to point to the `source`-corresponding trackers in the
+  new owning context, the appropriate cache entry values in the new cache, and
+  to the system name providing service of the new owning Context for logging and
+  error reporting. The supplied map should map source pointers to their
+  corresponding trackers. It is a fatal error if any old pointer we encounter is
+  not present in the map; that would indicate a bug in the Context cloning
+  code. */
   void RepairTrackerPointers(
       const DependencyGraph& source,
       const DependencyTracker::PointerMap& tracker_map,

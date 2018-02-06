@@ -24,6 +24,8 @@ class ContextBase : public internal::SystemPathnameInterface {
  public:
   /** @name  Does not allow move or assignment; copy is protected. */
   /** @{ */
+  // Copy constructor is used only to facilitate implementation of Clone()
+  // in derived classes.
   ContextBase(ContextBase&&) = delete;
   ContextBase& operator=(const ContextBase&) = delete;
   ContextBase& operator=(ContextBase&&) = delete;
@@ -117,7 +119,7 @@ class ContextBase : public internal::SystemPathnameInterface {
 
   /** Returns a const reference to the collection of value trackers within
   this subcontext. Together these form the dependency subgraph for the values
-  in this subcontext, plus edges leading to neighboring trackers.  */
+  in this subcontext, plus edges leading to neighboring trackers. */
   const DependencyGraph& get_dependency_graph() const {
     return graph_;
   }
@@ -410,9 +412,10 @@ class ContextBase : public internal::SystemPathnameInterface {
   // Fills in the dependency graph with the ubiquitous trackers.
   void CreateWellKnownTrackers();
 
-  // Given a new context `clone` with the same structure as this one, create a
-  // mapping of all tracker memory addresses from `this` to `clone`. The mapping
-  // is flat, not hierarchical, because dependencies may cross levels.
+  // Given a new context `clone` with the same dependency graph as this one,
+  // create a mapping of all tracker memory addresses from `this` to `clone`.
+  // The mapping is flat, not hierarchical, because dependencies may cross
+  // levels.
   void BuildTrackerPointerMap(
       const ContextBase& clone,
       DependencyTracker::PointerMap* tracker_map) const {
