@@ -104,6 +104,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rigid_body_tree_multiple_shooting_test",
+    data = [
+        "//drake/examples/simple_four_bar:models",
+    ],
     deps = [
         ":rigid_body_tree_multiple_shooting",
         "//drake/common:find_resource",
