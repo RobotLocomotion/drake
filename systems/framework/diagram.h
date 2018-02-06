@@ -798,8 +798,8 @@ class Diagram : public System<T>,
 
   /// For the subsystem associated with @p witness_func, gets its mutable
   /// sub composite event collection from @p events, and passes it to
-  /// @p witness_func's AddEvent method. Aborts if the subsystem is not part of
-  /// this Diagram.
+  /// @p witness_func's AddEventToCollection method. Aborts if the subsystem is
+  /// not part of this Diagram.
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       const WitnessFunction<T>& witness_func,
       CompositeEventCollection<T>* events) const final {
@@ -807,7 +807,7 @@ class Diagram : public System<T>,
     const System<T>& subsystem = witness_func.get_system();
     CompositeEventCollection<T>& subevents =
         GetMutableSubsystemCompositeEventCollection(subsystem, events);
-    witness_func.AddEvent(&subevents);
+    witness_func.AddEventToCollection(&subevents);
   }
 
   /// Provides witness functions of subsystems that are active at the beginning

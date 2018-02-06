@@ -22,17 +22,12 @@ class LogisticWitness : public systems::WitnessFunction<T> {
  public:
   ~LogisticWitness() override {}
   explicit LogisticWitness(const LogisticSystem<T>& system) :
-    systems::WitnessFunction<T>(
+    WitnessFunction<T>(
         system,
-        systems::WitnessFunctionDirection::kCrossesZero) {
-  }
+        WitnessFunctionDirection::kCrossesZero,
+        std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness)) {}
 
  protected:
-  void DoAddEvent(systems::CompositeEventCollection<T>* events) const override {
-    events->add_publish_event(
-        std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness));
-  }
-
   // The witness function is simply the state value itself.
   T DoEvaluate(const Context<T>& context) const override {
     return context.get_continuous_state()[0];

@@ -26,7 +26,10 @@ class ClockWitness : public WitnessFunction<T> {
       double trigger_time,
       const System<T>& system,
       const WitnessFunctionDirection& dir_type) :
-        WitnessFunction<T>(system, dir_type),
+        WitnessFunction<T>(
+            system,
+            dir_type,
+            std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness)),
         trigger_time_(trigger_time) {
   }
 
@@ -37,11 +40,6 @@ class ClockWitness : public WitnessFunction<T> {
   // The witness function is the time value itself plus the offset value.
   T DoEvaluate(const Context<T>& context) const override {
     return context.get_time() - trigger_time_;
-  }
-
-  void DoAddEvent(CompositeEventCollection<T>* events) const override {
-    events->add_publish_event(std::make_unique<PublishEvent<T>>(
-        Event<T>::TriggerType::kWitness));
   }
 
  private:

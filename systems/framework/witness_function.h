@@ -100,7 +100,8 @@ class WitnessFunction {
 
   /// Constructs the witness function with the given direction type and a 
   /// unique pointer to the event that is to be dispatched when this witness
-  /// function triggers. 
+  /// function triggers. Example events are publish, discrete variable update,
+  /// unrestricted update events.
   template <class EventType>
   WitnessFunction(const System<T>& system,
                   const WitnessFunctionDirection& dtype,
@@ -176,10 +177,9 @@ class WitnessFunction {
   Event<T>* get_mutable_event() { return event_.get(); }
 
  protected:
-  /// Derived classes can override this function to add the appropriate event
-  /// (returned by `get_event()`) to the appropriate dispatch collection when
-  /// the witness function triggers. Example events are publish, performing a
-  /// discrete variable update, and performing an unrestricted update.
+  /// Derived classes can override this function to modify the event (via
+  /// `get_mutable_event()`) before it is added to the appropriate dispatch
+  /// collection when the witness function triggers.
   /// @p events is guaranteed to be non-null on entry. The default
   /// implementation does `get_event()->add_to_composite(events)` (but only if
   /// `get_event()` is not null).
