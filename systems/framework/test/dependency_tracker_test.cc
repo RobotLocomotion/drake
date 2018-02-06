@@ -25,7 +25,6 @@ class MyContextBase : public ContextBase {
  public:
   MyContextBase() {}
   MyContextBase(const MyContextBase&) = default;
-  using ContextBase::get_mutable_dependency_graph;
  private:
   MyContextBase* DoCloneWithoutPointers() const final {
     return new MyContextBase(*this);
@@ -39,9 +38,9 @@ class MySystemBase : public SystemBase {
   std::unique_ptr<ContextBase> DoMakeContext() const override {
     return std::make_unique<MyContextBase>();
   }
-  // Dummies. We're not going to call these.
-  void DoAcquireContextResources(ContextBase*) const override {}
-  void DoCheckValidContext(const ContextBase&) const override {}
+
+  void DoAcquireContextResources(ContextBase*) const final {}
+  void DoCheckValidContext(const ContextBase&) const final {}
 };
 
 // Normally the dependency trackers are allocated automatically by the
@@ -130,6 +129,7 @@ TEST_F(HandBuiltDependencies, Notify) {
       entry0_->get_mutable_cache_entry_value(context_);
   EXPECT_FALSE(entry0_->is_up_to_date(context_));
   EXPECT_FALSE(value.is_up_to_date());
+  // set_value() sets the up-to-date flag.
   value.set_value(1125);
   EXPECT_TRUE(value.is_up_to_date());
   EXPECT_TRUE(entry0_->is_up_to_date(context_));

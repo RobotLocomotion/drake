@@ -106,8 +106,11 @@ void ContextBase::CreateWellKnownTrackers() {
       DependencyTicket(internal::kAllInputPortsTicket), "u");
 
   // Allocate the "all sources" tracker. The complete list of known sources
-  // is t,a,x,p, and u. Cache entries are not included separately because they
-  // must ultimately depend on these same sources.
+  // is t,a,x,p, and u. Note that cache entries are not included. Under normal
+  // operation that doesn't matter because cache entries are invalidated only
+  // when one of these source values changes. Any computation that has
+  // declared "all sources" dependence will also have been invalidated for the
+  // same reason so doesn't need to explicitly list cache entries.
   auto& everything_tracker = trackers.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllSourcesTicket), "all sources");
   everything_tracker.SubscribeToPrerequisite(&time_tracker);
@@ -116,19 +119,32 @@ void ContextBase::CreateWellKnownTrackers() {
   everything_tracker.SubscribeToPrerequisite(&p_tracker);
   everything_tracker.SubscribeToPrerequisite(&u_tracker);
 
+  // Allocate kinematics trackers to provide a level of abstraction from the
+  // specific state variables that are use to represent configuration and
+  // rate of change of configuration. For example, a kinematics cache entry
+  // should depend on configuration regardless of whether we use continuous or
+  // discrete variables. And it should be possible to switch between continuous
+  // and discrete representations without having to change the specified
+  // dependency, which remains "configuration" either way.
+
+  // Should track changes to configuration regardless of how represented. The
+  // default is that the continuous "q" variables represent the configuration.
   auto& configuration_tracker = trackers.CreateNewDependencyTracker(
       DependencyTicket(internal::kConfigurationTicket), "configuration");
   // This default subscription must be changed if configuration is not
   // represented by q in this System.
   configuration_tracker.SubscribeToPrerequisite(&q_tracker);
 
+  // Should track changes to configuration time rate of change (i.e., velocity)
+  // regardless of how represented. The default is that the continuous "v"
+  // variables represent the configuration rate of change.
   auto& velocity_tracker = trackers.CreateNewDependencyTracker(
-      DependencyTicket(internal::kVelocityTicket), "velocity");
+  DependencyTicket(internal::kVelocityTicket), "velocity");
   // This default subscription must be changed if velocity is not
   // represented by v in this System.
   velocity_tracker.SubscribeToPrerequisite(&v_tracker);
 
-  // This tracks configuration & velocity regardless of their source.
+  // This tracks configuration & velocity regardless of how represented.
   auto& kinematics_tracker = trackers.CreateNewDependencyTracker(
       DependencyTicket(internal::kKinematicsTicket), "kinematics");
   kinematics_tracker.SubscribeToPrerequisite(&configuration_tracker);

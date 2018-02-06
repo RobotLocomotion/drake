@@ -16,6 +16,19 @@ namespace systems {
 // the same meaning in both class hierarchies. A System and its Context always
 // have parallel internal structure.
 
+/** Identifies a particular source value or computation for purposes of
+declaring and managing dependencies. Unique only within a given subsystem
+and its corresponding subcontext. */
+// This is presented as an id to end users but is implemented internally as
+// a typed integer index for fast access into the std::vector of dependency
+// trackers. That's why it is named differently than the other "indexes".
+using DependencyTicket = TypeSafeIndex<class DependencyTag>;
+
+/** Serves as a unique identifier for a particular CacheEntry in a System and
+the corresponding CacheEntryValue in that System's Context. This is an index
+providing extremely fast constant-time access to both. */
+using CacheIndex = TypeSafeIndex<class CacheTag>;
+
 /** Serves as a local index for a child subsystem within a parent
 Diagram, or a child subcontext within a parent DiagramContext. A subsystem and
 its matching subcontext have the same %SubsystemIndex. Unique only
@@ -29,16 +42,6 @@ using InputPortIndex = TypeSafeIndex<class InputPortTag>;
 /** Serves as the local index for the output ports of a given System. The
 indexes used by a subsystem and its corresponding subcontext are the same. */
 using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
-
-/** Serves as a local index of a DependencyTracker within a particular
-subcontext, providing fast access to that tracker. Unique only within a given
-subcontext. */
-using DependencyTicket = TypeSafeIndex<class DependencyTrackerTag>;
-
-/** Serves as a unique identifier of a particular CacheEntry in a System and the
-corresponding CacheEntryValue in that System's Context. This is an index
-providing extremely fast constant-time access to both. */
-using CacheIndex = TypeSafeIndex<class CacheValueTag>;
 
 using DiscreteStateIndex = TypeSafeIndex<class DiscreteStateTag>;
 using AbstractStateIndex = TypeSafeIndex<class AbstractStateTag>;
