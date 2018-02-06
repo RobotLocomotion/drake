@@ -70,7 +70,7 @@ void GeneralizedConstraintForceEvaluator::DoEval(
  */
 
 DirectTranscriptionConstraint::DirectTranscriptionConstraint(
-    const RigidBodyTree<double>& tree, 
+    const RigidBodyTree<double>& tree,
     std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>> kinematics_helper,
     std::unique_ptr<GeneralizedConstraintForceEvaluator>
         generalized_constraint_force_evaluator)
