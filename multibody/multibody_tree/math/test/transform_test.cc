@@ -117,7 +117,7 @@ GTEST_TEST(Transform, Matrix44) {
   const RotationMatrix<double> R = GetRotationMatrixB();
   const Vector3<double> p(4, 5, 6);
   const Transform<double> X(R, p);
-  const Matrix4<double> Y = X.GetAsMatrix();
+  const Matrix4<double> Y = X.GetAsMatrix4();
   const Matrix3d m = R.matrix();
 
   EXPECT_EQ(Y(0, 0), m(0, 0));
@@ -287,14 +287,10 @@ GTEST_TEST(Transform, CastFromDoubleToAutoDiffXd) {
   const Vector3d p_double(-5, 3, 9);
   const Transform<double> T_double(R_double, p_double);
   const Transform<AutoDiffXd> T_autodiff = T_double.cast<AutoDiffXd>();
-  // const Transform<AutoDiffXd> T_autodiff = Transform<AutoDiffXd>::Identity();
 
-  // To avoid a (perhaps) tautological test, do not just use an Eigen cast() to
-  // the Matrix3 that underlies the RotationMatrix class -- i.e., avoid just
-  // comparing m_autodiff.cast<double>() with m_double.
-  // Instead, check element-by-element equality as follows.
-  const Matrix4<double>& m_double = T_double.GetAsMatrix();
-  const Matrix4<AutoDiffXd>& m_autodiff = T_autodiff.GetAsMatrix();
+  // To avoid a (perhaps) tautological test, check element-by-element equality.
+  const Matrix4<double>& m_double = T_double.GetAsMatrix4();
+  const Matrix4<AutoDiffXd>& m_autodiff = T_autodiff.GetAsMatrix4();
   for (int i = 0;  i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       const double mij_double = m_double(i, j);

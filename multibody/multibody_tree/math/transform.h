@@ -123,7 +123,7 @@ class Transform {
   ///  │                │
   ///  │   0      1     │
   ///  └                ┘
-  Matrix4<T> GetAsMatrix() const {
+  Matrix4<T> GetAsMatrix4() const {
     Matrix4<T> pose;
     pose.topLeftCorner(3, 3) = rotation().matrix();
     pose.topLeftCorner(3, 3) = rotation().matrix();
