@@ -1,5 +1,6 @@
 #include "drake/systems/framework/value.h"
 
+#include <functional>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -286,6 +287,28 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
       dynamic_cast<PrintInterface*>(cloned.get());
   ASSERT_NE(nullptr, printable_erased);
   EXPECT_EQ("5,6", printable_erased->print());
+}
+
+// Confirms that we can store a (copy-constructible and copy-assignable)
+// std::reference_wrapper object within an AbstractValue.
+GTEST_TEST(ValueTest, CompatibleWithStdReferenceWrapper) {
+  using mutable_reference_to_string_type = std::reference_wrapper<std::string>;
+  // std::reference_wrapper<T> is a class that emulates a reference to an
+  // element of type T, but which can be copied (it is both copy-constructible
+  // and copy-assignable).
+  std::string foo("foo");
+  auto value_reference_to_foo = AbstractValue::Make(std::ref(foo));
+  auto reference_to_foo =
+      value_reference_to_foo->GetValue<mutable_reference_to_string_type>();
+  // Verifies we can access to the original value stored in foo.
+  EXPECT_EQ(reference_to_foo.get(), "foo");
+
+  // Verifies we are referencing the original object memory location.
+  EXPECT_EQ(&reference_to_foo.get(), &foo);
+
+  reference_to_foo.get() = "bar";
+  // Verifies we did modify the original object.
+  EXPECT_EQ(foo, "bar");
 }
 
 }  // namespace
