@@ -128,9 +128,9 @@ void DirectTranscriptionConstraint::DoEval(
   // By using backward Euler integration, the constraint is
   // qᵣ - qₗ = q̇ᵣ*h
   // Mᵣ(vᵣ - vₗ) = (B*uᵣ + Jᵣᵀ*λᵣ -c(qᵣ, vᵣ))h
-  // We assume here q̇ᵣ = vᵣ
-  const auto qdot_r =
-      RigidBodyTree<double>::GetVelocityToQDotMapping(kinsol) * v_r;
+  const MatrixX<AutoDiffXd> map_v_to_qdot =
+      RigidBodyTree<double>::GetVelocityToQDotMapping(kinsol);
+  const AutoDiffVecXd qdot_r = map_v_to_qdot * v_r;
   // TODO(hongkai.dai): Project qdot_r to the constraint manifold (for example,
   // if q contains unit quaternion, and we need to project this backward Euler
   // integration on the unit quaternion manifold.)
