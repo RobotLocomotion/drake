@@ -815,6 +815,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:geometric_transform",
     ],
 )
