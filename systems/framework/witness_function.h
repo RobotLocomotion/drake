@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -98,7 +99,7 @@ class WitnessFunction {
                   const WitnessFunctionDirection& dtype) :
                   system_(system), dir_type_(dtype) {}
 
-  /// Constructs the witness function with the given direction type and a 
+  /// Constructs the witness function with the given direction type and a
   /// unique pointer to the event that is to be dispatched when this witness
   /// function triggers. Example events are publish, discrete variable update,
   /// unrestricted update events.
