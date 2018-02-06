@@ -6,8 +6,10 @@ from pydrake.all import *
 
 
 class TestAll(unittest.TestCase):
-    def test_symbols(self):
-        # Subset of symbols.
+    def test_symbols_subset(self):
+        """Tests a subset of symbols provided by `drake.all`. At least one
+        symbol per submodule should be included.
+        """
         expected_symbols = (
             # autodiffutils
             "AutoDiffXd",
@@ -21,16 +23,40 @@ class TestAll(unittest.TestCase):
             "Variable",
             "Expression",
             # multibody
+            # - parsers
             "PackageMap",
+            # - rigid_body_plant
             "RigidBodyPlant",
+            # - rigid_body_tree
             "RigidBodyTree",
+            # - shapes
+            # TODO(eric.cousineau): Avoid collision with `collision.Element`.
+            # Import modules, since these names are generic.
+            "Element",
             # solvers
+            # - gurobi
+            "GurobiSolver",
+            # - ik
+            "IKResults",
+            # - ipopt
+            "IppotSolver",
+            # - mathematicalprogram
             "MathematicalProgram",
-            "LinearConstraint",
+            # - mosek
+            "MosekSolver",
             # systems
+            # - framework
             "BasicVector",
             "LeafSystem",
+            # - analysis
             "Simulator",
+            # - primitives
+            "Adder",
+            # - sensors
+            "Image",
+            # util
+            "Isometry3",
+            "Quaternion",
         )
         # Ensure each symbol is exposed as globals from the above import
         # statement.
