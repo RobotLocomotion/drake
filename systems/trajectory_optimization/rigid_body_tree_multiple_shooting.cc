@@ -129,8 +129,12 @@ void DirectTranscriptionConstraint::DoEval(
   // qᵣ - qₗ = q̇ᵣ*h
   // Mᵣ(vᵣ - vₗ) = (B*uᵣ + Jᵣᵀ*λᵣ -c(qᵣ, vᵣ))h
   // We assume here q̇ᵣ = vᵣ
-  // TODO(hongkai.dai): compute qdot_r from q_r and v_r.
-  y.head(num_positions_) = q_r - q_l - v_r * h;
+  const auto qdot_r =
+      RigidBodyTree<double>::GetVelocityToQDotMapping(kinsol) * v_r;
+  // TODO(hongkai.dai): Project qdot_r to the constraint manifold (for example,
+  // if q contains unit quaternion, and we need to project this backward Euler
+  // integration on the unit quaternion manifold.)
+  y.head(num_positions_) = q_r - q_l - qdot_r * h;
 
   const auto M = tree_->massMatrix(kinsol);
 
