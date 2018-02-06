@@ -15,6 +15,19 @@ namespace drake {
 namespace pydrake {
 namespace pysystems {
 
+/// Binds `Clone` and Pythonic `__copy__` and `__deepcopy__` for a class.
+template <typename PyClass>
+void DefClone(PyClass* ppy_class) {
+  using Class = typename PyClass::type;
+  PyClass& py_class = *ppy_class;
+  py_class
+    .def("Clone", &Class::Clone)
+    .def("__copy__", &Class::Clone)
+    .def("__deepcopy__", [](const Class* self, py::dict /* memo */) {
+      return self->Clone();
+    });
+}
+
 /// Defines an instantiation of `pydrake.systems.framework.Value[...]`. This is
 /// only meant to bind `Value<T>` (or specializations thereof).
 /// @prereq `T` must have already been exposed to `pybind11`.
