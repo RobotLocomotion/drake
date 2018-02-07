@@ -25,6 +25,8 @@ Arguments:
     version: The version of Python headers and libraries to be found.
 """
 
+load("@drake//tools/workspace:os.bzl", "determine_os")
+
 def _impl(repository_ctx):
     python_config = repository_ctx.which("python{}-config".format(
         repository_ctx.attr.version))
@@ -62,7 +64,17 @@ def _impl(repository_ctx):
     if result.return_code != 0:
         fail("Could NOT determine Python linkopts", attr = result.stderr)
 
-    linkopts = result.stdout.strip().split(" ")
+    ldflags = result.stdout.strip()
+
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
+    if os_result.is_macos:
+        ldflags = ldflags.replace("-lpython{}".format(
+            repository_ctx.attr.version), "-undefined dynamic_lookup")
+
+    linkopts = ldflags.split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
     for i in reversed(range(len(linkopts))):
