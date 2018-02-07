@@ -6,6 +6,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
+#include "drake/bindings/pydrake/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
 #include "drake/systems/framework/abstract_values.h"
@@ -237,11 +238,21 @@ PYBIND11_MODULE(framework, m) {
   // TODO(eric.cousineau): Resolve `str_py` workaround.
   auto str_py = py::eval("str");
 
-  m.attr("kAutoSize") = kAutoSize;
+  BindTypeSafeIndex<DependencyTicket>(m, "DependencyTicket");
+  BindTypeSafeIndex<CacheIndex>(m, "CacheIndex");
+  BindTypeSafeIndex<SubsystemIndex>(m, "SubsystemIndex");
+  BindTypeSafeIndex<InputPortIndex>(m, "InputPortIndex");
+  BindTypeSafeIndex<OutputPortIndex>(m, "OutputPortIndex");
+  BindTypeSafeIndex<DiscreteStateIndex>(m, "DiscreteStateIndex");
+  BindTypeSafeIndex<AbstractStateIndex>(m, "AbstractStateIndex");
+  BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
+  BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
 
   py::enum_<PortDataType>(m, "PortDataType")
     .value("kVectorValued", kVectorValued)
     .value("kAbstractValued", kAbstractValued);
+
+  m.attr("kAutoSize") = kAutoSize;
 
   // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
   // knows this is abstract?
