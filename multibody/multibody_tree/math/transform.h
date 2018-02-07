@@ -116,8 +116,8 @@ class Transform {
   /// origin) expressed in frame A.  In monogram notation p is denoted p_AoBo_A.
   void set_translation(const Vector3<T>& p) { p_AoBo_A_ = p; }
 
-  /// Returns the 4x4 matrix associated with a %Transform.
-  /// @returns the 4x4 matrix associated with a %Transform, i.e., returns
+  /// Returns the 4x4 matrix associated with this %Transform.
+  /// @return the 4x4 matrix associated with this %Transform, i.e., returns X_AB
   ///  ┌                ┐
   ///  │ R_AB  p_AoBo_A │
   ///  │                │
@@ -125,7 +125,6 @@ class Transform {
   ///  └                ┘
   Matrix4<T> GetAsMatrix4() const {
     Matrix4<T> pose;
-    pose.topLeftCorner(3, 3) = rotation().matrix();
     pose.topLeftCorner(3, 3) = rotation().matrix();
     pose.topRightCorner(3, 1) = translation();
     pose.row(3) = Vector4<T>(0, 0, 0, 1);
