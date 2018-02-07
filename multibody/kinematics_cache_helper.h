@@ -13,6 +13,11 @@ namespace plants {
 template <typename Scalar>
 class KinematicsCacheHelper {
  public:
+  /**
+   * Construct a cache for a tree.
+   * @param tree tree is aliased and needs to live for the lifetime of the
+   * object.
+   */
   explicit KinematicsCacheHelper(const RigidBodyTree<double>& tree);
 
   KinematicsCache<Scalar>& UpdateKinematics(
@@ -26,26 +31,26 @@ class KinematicsCacheHelper {
 };
 
 /**
- * Stores and updates the kinematics cache for the rigid body tree. 
+ * Stores and updates the kinematics cache for the rigid body tree.
  */
 template <typename Scalar>
 class KinematicsCacheWithVHelper {
  public:
-  explicit KinematicsCacheWithVHelper(const RigidBodyTree<double>& tree)
-      : tree_{&tree}, kinsol_(tree.CreateKinematicsCacheWithType<Scalar>()) {
-    last_q_.resize(0);
-    last_v_.resize(0);
-  }
+  /**
+   * Construct a cache for a tree.
+   * The kinematics information includes the pose and spatial velocity, w.r.t
+   * q, v. And Jdotv is computed.
+   * @param tree tree is aliased and needs to live for the lifetime of the
+   * object.
+   */
+  explicit KinematicsCacheWithVHelper(const RigidBodyTree<double>& tree);
 
   KinematicsCache<Scalar>& UpdateKinematics(
-      const Eigen::Ref<const VectorX<Scalar>>& q) {
-    if (q.size() != last_q_.size() || q != last_q_) {
-      last_q_ = q;
-      kinsol_.initialize(q, last_v_);
-      tree_->doKinematics(kinsol_, true);  // compute Jdotv
-    }
-    return kinsol_;
-  }
+      const Eigen::Ref<const VectorX<Scalar>>& q);
+
+  KinematicsCache<Scalar>& UpdateKinematics(
+      const Eigen::Ref<const VectorX<Scalar>>& q,
+      const Eigen::Ref<const VectorX<Scalar>>& v);
 
  private:
   const RigidBodyTree<double>* tree_;
@@ -56,4 +61,3 @@ class KinematicsCacheWithVHelper {
 }  // namespace plants
 }  // namespace systems
 }  // namespace drake
-
