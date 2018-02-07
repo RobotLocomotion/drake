@@ -590,6 +590,18 @@ class Rod2D : public systems::LeafSystem<T> {
   // Output ports.
   const systems::OutputPort<T>* pose_output_port_{nullptr};
   const systems::OutputPort<T>* state_output_port_{nullptr};
+
+  // Witness functions: one for each endpoint.
+  std::unique_ptr<NormalAccelWitness<T>> normal_accel_witnesses_[2];
+  std::unique_ptr<NormalForceWitness<T>> normal_force_witnesses_[2];
+  std::unique_ptr<NormalVelWitness<T>> normal_vel_witnesses_[2];
+  std::unique_ptr<SignedDistanceWitness<T>> signed_distance_witnesses_[2];
+  std::unique_ptr<StickingFrictionForcesSlackWitness<T>>
+      sticking_friction_forces_slack_witnesses_[2];
+
+  // Witnesses for detecting sliding along +/- x-axis, respectively.
+  std::unique_ptr<SlidingWitness<T>> pos_sliding_witnesses_[2];
+  std::unique_ptr<SlidingWitness<T>> neg_sliding_witnesses_[2];
 };
 
 }  // namespace rod2d

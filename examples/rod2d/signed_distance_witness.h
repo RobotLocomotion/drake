@@ -18,7 +18,7 @@ class SignedDistanceWitness : public Rod2dWitnessFunction<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignedDistanceWitness)
 
-  SignedDistanceWitness(const Rod2D<T>& rod, RodEndpoint endpoint) :
+  SignedDistanceWitness(const Rod2D<T>* rod, RodEndpoint endpoint) :
       Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kCrossesZero,
@@ -26,11 +26,6 @@ class SignedDistanceWitness : public Rod2dWitnessFunction<T> {
     std::ostringstream oss;
     oss << "SignedDistance (" << endpoint << ")";
     this->set_name(oss.str());
-  }
-
-  typename Rod2dWitnessFunction<T>::WitnessType
-      get_witness_function_type() const override {
-    return Rod2dWitnessFunction<T>::WitnessType::kSignedDistance;
   }
 
  private:

@@ -22,10 +22,9 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SlidingWitness)
 
   SlidingWitness(
-      const Rod2D<T>& rod,
+      const Rod2D<T>* rod,
       RodEndpoint endpoint,
-      bool pos_direction,
-      double sliding_velocity_threshold) :
+      bool pos_direction) :
       Rod2dWitnessFunction<T>(
           rod,
           systems::WitnessFunctionDirection::kCrossesZero,
@@ -40,12 +39,6 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
     oss << " (" << endpoint << ")";
     this->set_name(oss.str());
     positive_ = pos_direction;
-    velocity_threshold_ = sliding_velocity_threshold;
-  }
-
-  typename Rod2dWitnessFunction<T>::WitnessType
-      get_witness_function_type() const override {
-    return Rod2dWitnessFunction<T>::WitnessType::kSlidingWitness;
   }
 
  private:
@@ -60,10 +53,6 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
   // sufficiently positive. Otherwise, it triggers when the sliding velocity
   // is sufficiently negative.
   bool positive_{false};
-
-  // The contact is only to be considered as properly sliding once this
-  // threshold has been met.
-  double velocity_threshold_{10 * std::numeric_limits<double>::epsilon()};
 };
 
 }  // namespace rod2d
