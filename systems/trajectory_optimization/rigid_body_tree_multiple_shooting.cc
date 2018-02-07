@@ -17,9 +17,10 @@ namespace trajectory_optimization {
 GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(
     const RigidBodyTree<double>& tree, int num_lambda,
     std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>> kinematics_helper)
-    : EvaluatorBase(tree.get_num_velocities(),
-                    tree.get_num_positions() + num_lambda,
-                    "generalized constraint force"),
+    : EvaluatorBase(
+          tree.get_num_velocities(),
+          tree.get_num_positions() + tree.get_num_velocities() + num_lambda,
+          "generalized constraint force"),
       tree_{&tree},
       num_lambda_(num_lambda),
       kinematics_helper_{kinematics_helper} {}
@@ -34,20 +35,19 @@ void GeneralizedConstraintForceEvaluator::DoEval(
 void GeneralizedConstraintForceEvaluator::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
   // x contains q and λ
-  DRAKE_ASSERT(x.rows() == tree_->get_num_positions() + num_lambda_);
+  DRAKE_ASSERT(x.rows() == num_vars());
   const auto q = x.head(tree_->get_num_positions());
+  const auto v =
+      x.segment(tree_->get_num_positions(), tree_->get_num_velocities());
   const auto lambda = x.tail(num_lambda_);
 
-  auto kinsol = kinematics_helper_->UpdateKinematics(q);
+  auto kinsol = kinematics_helper_->UpdateKinematics(q, v);
   const auto J_position_constraint =
       tree_->positionConstraintsJacobian(kinsol, false);
   const int num_position_constraint_lambda = tree_->getNumPositionConstraints();
   const auto position_constraint_lambda =
       lambda.head(num_position_constraint_lambda);
   y = J_position_constraint.transpose() * position_constraint_lambda;
-  // If there are more constraint, such as foot above the ground, then you
-  // should compute the Jacobian of the foot toe, multiply the transpose of
-  // this Jacobian with the ground contact force, and add the product to y.
 }
 
 /**
@@ -144,10 +144,10 @@ void DirectTranscriptionConstraint::DoEval(
   const auto c = tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
 
   // Compute Jᵀλ
-  AutoDiffVecXd q_lambda(num_positions_ + num_lambda_);
-  q_lambda << q_r, lambda_r;
+  AutoDiffVecXd q_v_lambda(num_positions_ + num_velocities_ + num_lambda_);
+  q_v_lambda << q_r, v_r, lambda_r;
   AutoDiffVecXd generalized_constraint_force(num_velocities_);
-  generalized_constraint_force_evaluator_->Eval(q_lambda,
+  generalized_constraint_force_evaluator_->Eval(q_v_lambda,
                                                 generalized_constraint_force);
 
   y.tail(num_velocities_) =
@@ -172,9 +172,9 @@ RigidBodyTreeMultipleShooting::RigidBodyTreeMultipleShooting(
   // For each knot, we will need to impose a transcription/collocation
   // constraint. Each of these constraints require us caching some
   // kinematics info.
-  kinematics_with_v_helpers_.resize(num_time_samples);
+  kinematics_cache_with_v_helpers_.resize(num_time_samples);
   for (int i = 0; i < num_time_samples; ++i) {
-    kinematics_with_v_helpers_[i] =
+    kinematics_cache_with_v_helpers_[i] =
         std::make_shared<KinematicsCacheWithVHelper<AutoDiffXd>>(*tree_);
   }
 
@@ -191,14 +191,20 @@ RigidBodyTreeMultipleShooting::RigidBodyTreeMultipleShooting(
   DoAddCollocationOrTranscriptionConstraint();
 }
 
+std::unique_ptr<GeneralizedConstraintForceEvaluator>
+RigidBodyTreeMultipleShooting::DoConstructGeneralizedConstraintForceEvaluator(
+    int index) const {
+  return std::make_unique<GeneralizedConstraintForceEvaluator>(
+      *tree_, num_lambdas_[index], kinematics_cache_with_v_helpers_[index]);
+}
+
 void RigidBodyTreeMultipleShooting::
     DoAddCollocationOrTranscriptionConstraint() {
   for (int i = 0; i < N() - 1; ++i) {
     auto generalized_constraint_force_evaluator =
-        std::make_unique<GeneralizedConstraintForceEvaluator>(
-            *tree_, num_lambdas_[i + 1], kinematics_with_v_helpers_[i + 1]);
+        DoConstructGeneralizedConstraintForceEvaluator(i + 1);
     auto transcription_cnstr = std::make_shared<DirectTranscriptionConstraint>(
-        *tree_, kinematics_with_v_helpers_[i + 1],
+        *tree_, kinematics_cache_with_v_helpers_[i + 1],
         std::move(generalized_constraint_force_evaluator));
     AddConstraint(transcription_cnstr,
                   transcription_cnstr->CompositeEvalInput(
