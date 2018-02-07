@@ -43,9 +43,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlant(parameters);
 
   // MakeAcrobotPlant() has already called Finalize() on the new acrobot plant.
-  // Therefore attempting to call this method again will throw an exception.
-  // Verify this.
-  EXPECT_THROW(plant->Finalize(), std::logic_error);
+  // Therefore another call to Finalize() results in a no-op.
+  EXPECT_NO_THROW(plant->Finalize());
 
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(plant->num_bodies(), 3);
@@ -110,6 +109,8 @@ class AcrobotPlantTests : public ::testing::Test {
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     plant_ = MakeAcrobotPlant(parameters_);
+    ASSERT_TRUE(plant_->is_finalized());
+
     link1_ = &plant_->GetBodyByName(parameters_.link1_name());
     link2_ = &plant_->GetBodyByName(parameters_.link2_name());
     shoulder_ = &plant_->GetJointByName<RevoluteJoint>(
@@ -201,6 +202,7 @@ class KukaIiwaPlantTests : public ::testing::Test {
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     plant_ = MakeKukaIiwaPlant();
+    ASSERT_TRUE(plant_->is_finalized());
 
     // Keep pointers to the modeling elements.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
@@ -232,10 +234,11 @@ class KukaIiwaPlantTests : public ::testing::Test {
   Vector3<T> CalcEndEffectorPosition(
       const MultibodyPlant<T>& plant_on_T,
       const Context<T>& context_on_T) const {
-    const Body<T>& linkG_on_T = plant_on_T.GetBodyByName("iiwa_link_7");
+    const Body<T>& end_effector_link_on_T =
+        plant_on_T.model().get_variant(*end_effector_link_);
     Vector3<T> p_NG;
     plant_on_T.CalcPointsPositions(
-        context_on_T, linkG_on_T.get_body_frame(),
+        context_on_T, end_effector_link_on_T.get_body_frame(),
         Vector3<T>::Zero(),  // position in frame G
         plant_on_T.get_world_body().get_body_frame(), &p_NG);
     return p_NG;

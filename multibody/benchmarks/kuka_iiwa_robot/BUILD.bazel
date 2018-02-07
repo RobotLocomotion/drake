@@ -22,6 +22,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "make_kuka_iiwa_model",
+    srcs = [
+        "make_kuka_iiwa_model.cc",
+    ],
+    hdrs = [
+        "make_kuka_iiwa_model.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree",
+    ],
+)
+
+drake_cc_library(
     name = "make_kuka_iiwa_plant",
     srcs = [
         "make_kuka_iiwa_plant.cc",
@@ -31,7 +46,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//drake/math:geometric_transform",
+        ":make_kuka_iiwa_model",
         "//drake/multibody/multibody_tree/multibody_plant",
     ],
 )

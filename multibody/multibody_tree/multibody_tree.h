@@ -160,6 +160,36 @@ class MultibodyTree {
     return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
   }
 
+  /// Creates a rigid body model with the provided name and spatial inertia.
+  /// This method returns a constant reference to the body just added, which
+  /// will remain valid for the lifetime of `this` %MultibodyPlant.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyPlant<T> plant;
+  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   const RigidBody<T>& body =
+  ///     plant.AddRigidBody("BodyName", spatial_inertia);
+  /// @endcode
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new body to be added to `this`
+  ///   model. A std::runtime_error is thrown if a body named `name` already is
+  ///   part of the model. See HasBodyNamed(), Body::get_name().
+  /// @param[in] M_BBo_B
+  ///   The SpatialInertia of the new rigid body to be added to `this` model,
+  ///   computed about the body frame origin `Bo` and expressed in the body
+  ///   frame B.
+  /// @returns A constant reference to the new RigidBody just added, which will
+  ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  const RigidBody<T>& AddRigidBody(
+      const std::string& name, const SpatialInertia<double>& M_BBo_B) {
+    DRAKE_THROW_UNLESS(!HasBodyNamed(name));
+    const RigidBody<T>& body = this->template AddBody<RigidBody>(name, M_BBo_B);
+    body_name_to_index_[name] = body.get_index();
+    return body;
+  }
+
   /// Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns
   /// a constant reference to the frame just added, which will remain valid for
   /// the lifetime of `this` %MultibodyTree.
@@ -498,11 +528,13 @@ class MultibodyTree {
       frame_on_child = &child.get_body_frame();
     }
 
-    return AddJoint(
+    const JointType<T>& joint = AddJoint(
         std::make_unique<JointType<T>>(
             name,
             *frame_on_parent, *frame_on_child,
             std::forward<Args>(args)...));
+    joint_name_to_index_[name] = joint.get_index();
+    return joint;
   }
   /// @}
   // Closes Doxygen section.
@@ -608,6 +640,90 @@ class MultibodyTree {
     DRAKE_THROW_UNLESS(mobilizer_index < get_num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
   }
+
+  /// @name Querying for multibody elements by name
+  /// These methods allow a user to query whether a given multibody element is
+  /// part of `this` model. These queries can be performed at any time during
+  /// the lifetime of a %MultibodyTree model, i.e. there is no restriction on
+  /// whether they must be called before or after Finalize(). That is, these
+  /// queries can be performed while new multibody elements are being added to
+  /// the model.
+  /// @{
+
+  /// @returns `true` if a body named `name` was added to the model.
+  /// @see AddRigidBody().
+  bool HasBodyNamed(const std::string& name) {
+    return body_name_to_index_.find(name) != body_name_to_index_.end();
+  }
+
+  /// @returns `true` if a joint named `name` was added to the model.
+  /// @see AddJoint().
+  bool HasJointNamed(const std::string& name) {
+    return joint_name_to_index_.find(name) != joint_name_to_index_.end();
+  }
+  /// @}
+
+  /// @name Retrieving multibody elements by name
+  /// These methods allow a user to retrieve a reference to a multibody element
+  /// by its name. A std::logic_error is thrown if there is no element with the
+  /// requested name.
+  /// These queries can be performed at any time during the lifetime of a
+  /// %MultibodyTree model, i.e. there is no restriction on whether they must
+  /// be called before or after Finalize(). This implies that these queries can
+  /// be performed while new multibody elements are being added to the model.
+  /// @{
+
+  /// Returns a constant reference to the body that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @see HasBodyNamed() to query if there exists a body in `this` model with a
+  /// given specified name.
+  const Body<T>& GetBodyByName(const std::string& name) const {
+    auto it = body_name_to_index_.find(name);
+    if (it == body_name_to_index_.end()) {
+      throw std::logic_error("There is no body named '" + name +
+          "' in the model.");
+    }
+    return get_body(it->second);
+  }
+
+  /// Returns a constant reference to the joint that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no joint with the requested name.
+  /// @see HasJointNamed() to query if there exists a joint in `this` model with
+  /// a given specified name.
+  const Joint<T>& GetJointByName(const std::string& name) const {
+    auto it = joint_name_to_index_.find(name);
+    if (it == joint_name_to_index_.end()) {
+      throw std::logic_error("There is no joint named '" + name +
+          "' in the model.");
+    }
+    return get_joint(it->second);
+  }
+
+  /// A templated version of GetJointByName() to return a constant reference of
+  /// the specified type `JointType` in place of the base Joint class. See
+  /// GetJointByName() for details.
+  /// @tparam JointType The specific type of the Joint to be retrieved. It must
+  /// be a subclass of Joint.
+  /// @throws std::logic_error if the named joint is not of type `JointType` or
+  /// if there is no Joint with that name.
+  /// @see HasJointNamed() to query if there exists a joint in `this` model with
+  /// a given specified name.
+  template <template<typename> class JointType>
+  const JointType<T>& GetJointByName(const std::string& name) const {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+    const JointType<T>* joint =
+        dynamic_cast<const JointType<T>*>(&GetJointByName(name));
+    if (joint == nullptr) {
+      throw std::logic_error("Joint '" + name + "' is not of type '" +
+          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
+          NiceTypeName::Get(GetJointByName(name)) + "'.");
+    }
+    return *joint;
+  }
+  /// @}
 
   /// Returns `true` if this %MultibodyTree was finalized with Finalize() after
   /// all multibody elements were added, and `false` otherwise.
@@ -1324,6 +1440,9 @@ class MultibodyTree {
     // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
+    tree_clone->body_name_to_index_ = this->body_name_to_index_;
+    tree_clone->joint_name_to_index_ = this->joint_name_to_index_;
+
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().
     tree_clone->FinalizeInternals();
@@ -1590,6 +1709,12 @@ class MultibodyTree {
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.
   std::vector<const Frame<T>*> frames_;
+
+  // Map used to find body indexes by their unique body name.
+  std::unordered_map<std::string, BodyIndex> body_name_to_index_;
+
+  // Map used to find joint indexes by their joint name.
+  std::unordered_map<std::string, JointIndex> joint_name_to_index_;
 
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes

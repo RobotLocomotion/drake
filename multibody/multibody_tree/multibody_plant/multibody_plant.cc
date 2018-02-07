@@ -24,7 +24,21 @@ template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::multibody::multibody_plant::MultibodyPlant>()) {
+  // TODO(amcastro-tri): when caching and MultibodyCacheEvaluatorInterface land
+  // the line below should read:
+  // model_ = std::make_unique<MultibodyTree<T>>(this);
   model_ = std::make_unique<MultibodyTree<T>>();
+}
+
+template<typename T>
+MultibodyPlant<T>::MultibodyPlant(std::unique_ptr<MultibodyTree<T>> model) :
+    systems::LeafSystem<T>(systems::SystemTypeTag<
+        drake::multibody::multibody_plant::MultibodyPlant>()) {
+  DRAKE_THROW_UNLESS(model != nullptr);
+  model_ = std::move(model);
+  // TODO(amcastro-tri): Introduce MultibodyCacheEvaluatorInterface and add a
+  // call model_->set_evaluator(this); so that we can use system's caching with
+  // no cyclic dependencies.
 }
 
 template<typename T>
@@ -32,18 +46,19 @@ template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
   DRAKE_THROW_UNLESS(other.is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
-  body_name_to_index_ = other.body_name_to_index_;
-  joint_name_to_index_ = other.joint_name_to_index_;
-  DeclareStateAndPorts();
-  // TODO(amcastro-tri): Declare GeometrySystem ports.
+  Finalize();
 }
 
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
-  model_->Finalize();
+  if (is_finalized()) return;  // no-op.
+  // The MultibodyTree model could have been finalized if coming through
+  // as a constructor argument.
+  if (!model_->topology_is_valid()) model_->Finalize();
   DeclareStateAndPorts();
   // TODO(amcastro-tri): Declare GeometrySystem ports.
   DeclareCacheEntries();
+  plant_is_finalized_ = true;
 }
 
 template<typename T>
@@ -114,7 +129,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 template<typename T>
 void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
-  DRAKE_DEMAND(this->is_finalized());
+  DRAKE_DEMAND(model().topology_is_valid());
 
   this->DeclareContinuousState(
       BasicVector<T>(model_->get_num_states()),
@@ -196,6 +211,7 @@ void MultibodyPlant<T>::CalcPointsGeometricJacobianExpressedInWorld(
 
 template<typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
+  DRAKE_DEMAND(model().topology_is_valid());
   // TODO(amcastro-tri): User proper System::Declare() infrastructure to
   // declare cache entries when that lands.
   pc_ = std::make_unique<PositionKinematicsCache<T>>(model_->get_topology());

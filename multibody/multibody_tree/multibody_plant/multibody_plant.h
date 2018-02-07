@@ -114,6 +114,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Therefore, right after creation, num_bodies() returns one.
   MultibodyPlant();
 
+  /// Constructor that takes ownership of the provided MultibodyTree `model`.
+  /// The input `model` does not necessarily need to be finalized with
+  /// MultibodyTree::Finalize() and users could eventually keep adding modeling
+  /// elements if so they wanted through MultibodPlant's user facing API.
+  /// @throws an exception if `model` is nullptr.
+  explicit MultibodyPlant(std::unique_ptr<MultibodyTree<T>> model);
+
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template<typename U>
   explicit MultibodyPlant(const MultibodyPlant<U>& other);
@@ -145,6 +152,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// can actually contain other variables such as integrated power and discrete
   /// states.
   int num_multibody_states() const { return model_->get_num_states(); }
+
+  /// Returns a constant reference to the underlying MultibodyTree model for
+  /// `this` plant.
+  const MultibodyTree<T>& model() const {
+    DRAKE_ASSERT(model_ != nullptr);
+    return *model_;
+  }
 
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
@@ -181,11 +195,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    DRAKE_THROW_UNLESS(!HasBodyNamed(name));
-    const RigidBody<T>& body =
-        model_->template AddBody<RigidBody>(name, M_BBo_B);
-    body_name_to_index_[name] = body.get_index();
-    return body;
+    return mutable_model().AddRigidBody(name, M_BBo_B);
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
@@ -264,13 +274,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    DRAKE_THROW_UNLESS(!HasJointNamed(name));
-    const JointType<T>& joint = model_->template AddJoint<JointType>(
+    return mutable_model().template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
-    joint_name_to_index_[name] = joint.get_index();
-    return joint;
   }
 
   /// Adds a new force element model of type `ForceElementType` to `this` model.
@@ -289,7 +294,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args) {
-    return model_->template AddForceElement<ForceElementType>(
+    return mutable_model().template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
   /// @}
@@ -306,13 +311,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @returns `true` if a body named `name` was added to the model.
   /// @see AddRigidBody().
   bool HasBodyNamed(const std::string& name) {
-    return body_name_to_index_.find(name) != body_name_to_index_.end();
+    return model_->HasBodyNamed(name);
   }
 
   /// @returns `true` if a joint named `name` was added to the model.
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) {
-    return joint_name_to_index_.find(name) != joint_name_to_index_.end();
+    return model_->HasJointNamed(name);
   }
   /// @}
 
@@ -332,12 +337,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
   const Body<T>& GetBodyByName(const std::string& name) const {
-    auto it = body_name_to_index_.find(name);
-    if (it == body_name_to_index_.end()) {
-      throw std::logic_error("There is no body named '" + name +
-          "' in the model.");
-    }
-    return model_->get_body(it->second);
+    return model_->GetBodyByName(name);
   }
 
   /// Returns a constant reference to the joint that is uniquely identified
@@ -346,12 +346,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see HasJointNamed() to query if there exists a joint in `this` model with
   /// a given specified name.
   const Joint<T>& GetJointByName(const std::string& name) const {
-    auto it = joint_name_to_index_.find(name);
-    if (it == joint_name_to_index_.end()) {
-      throw std::logic_error("There is no joint named '" + name +
-          "' in the model.");
-    }
-    return model_->get_joint(it->second);
+    return model_->GetJointByName(name);
   }
 
   /// A templated version of GetJointByName() to return a constant reference of
@@ -365,16 +360,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// a given specified name.
   template <template<typename> class JointType>
   const JointType<T>& GetJointByName(const std::string& name) const {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    const JointType<T>* joint =
-        dynamic_cast<const JointType<T>*>(&GetJointByName(name));
-    if (joint == nullptr) {
-      throw std::logic_error("Joint '" + name + "' is not of type '" +
-          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
-          NiceTypeName::Get(GetJointByName(name)) + "'.");
-    }
-    return *joint;
+    return model_->template GetJointByName<JointType>(name);
   }
   /// @}
 
@@ -386,7 +372,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
   /// @see Finalize().
-  bool is_finalized() const { return model_->topology_is_valid(); }
+  bool is_finalized() const { return plant_is_finalized_; }
 
   /// This method must be called after all elements in the tree (joints, bodies,
   /// force elements, constraints, etc.) are added and before any computations
@@ -400,8 +386,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// is valid, meaning that the topology is up-to-date after this call.
   /// No more multibody elements can be added after a call to Finalize().
   ///
-  /// @throws std::logic_error if the %MultibodyPlant has already been
-  /// finalized.
+  /// @note No-op on already finalized plants.
   void Finalize();
 
   /// @name Kinematic computations
@@ -549,6 +534,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return false;
   }
 
+  MultibodyTree<T>& mutable_model() {
+    DRAKE_ASSERT(model_ != nullptr);
+    return *model_;
+  }
+
   // Helper method to declare state and ports after Finalize().
   void DeclareStateAndPorts();
 
@@ -575,11 +565,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
-  // Map used to find body indexes by their unique body name.
-  std::unordered_map<std::string, BodyIndex> body_name_to_index_;
-
-  // Map used to find joint indexes by their joint name.
-  std::unordered_map<std::string, JointIndex> joint_name_to_index_;
+  // `true` if Finalized() was called on this plant.
+  bool plant_is_finalized_{false};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
