@@ -107,6 +107,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "rendering_py",
+    cc_deps = [
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
+    cc_so_name = "rendering",
+    cc_srcs = ["rendering_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
@@ -118,6 +133,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":framework_py",
     ":primitives_py",
+    ":rendering_py",
     ":sensors_py",
 ]
 
@@ -220,6 +236,14 @@ drake_py_test(
     size = "small",
     deps = [
         ":sensors_py",
+    ],
+)
+
+drake_py_test(
+    name = "rendering_test",
+    size = "small",
+    deps = [
+        ":rendering_py",
     ],
 )
 
