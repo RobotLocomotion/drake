@@ -73,6 +73,8 @@ To check this:
         add the following to ~/.bash_profile:
           export PATH="/usr/local/opt/python/libexec/bin:$PATH"
 
+    Once you have done this, if you would like to use ``jupyter`` then be sure to install it via ``pip install jupyter`` (*not* via Homebrew) to ensure that it uses the correct Python interpreter. 
+    
     ..
         Developers: Ensure this is synchronized with the steps in
         ``install_prereqs_user_environment.sh``.
