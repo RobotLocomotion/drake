@@ -1,5 +1,15 @@
 # -*- python -*-
 
+config_setting(
+    name = "debug",
+    values = {"compilation_mode": "dbg"},
+)
+
+# Drake's binary releases are allowed to redistribute SNOPT only if SNOPT is
+# not redistributed as a stand-alone package -- users must not use the SNOPT
+# code on its own, but rather only through Drake's interfaces.  To that end,
+# we (1) always link SNOPT statically, (2) use hidden symbol visibility, and
+# (3) strip its symbols in release mode.
 cc_library(
     name = "snopt_c",
     srcs = glob(
@@ -9,14 +19,17 @@ cc_library(
     hdrs = glob(["csrc/*.hh"]),
     copts = [
         "-w",
+        # Hide symbols per note (2) above.
+        "-fvisibility=hidden",
     ],
-    linkopts = ["-lm"],
-    # Link statically so that Fortran MAIN__ resolution works on gcc.
-    # It's also important to link statically because Drake's binary releases
-    # are allowed to redistribute SNOPT only if SNOPT is not distributed as a
-    # stand-alone package -- that users cannot use the SNOPT code separately,
-    # but rather only through Drake's interfaces.  A shared library of SNOPT
-    # would not meet those criteria.
+    linkopts = [
+        "-lm",
+    ] + select({
+        ":debug": [],
+        # Strip symbols in release mode per note (3) above.
+        "//conditions:default": ["-s"],
+    }),
+    # Link statically per note (1) above.
     linkstatic = 1,
     # By convention, SNOPT header #includes are not fully qualified.
     strip_include_prefix = "csrc",
