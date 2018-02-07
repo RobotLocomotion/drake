@@ -89,13 +89,13 @@ class BouncingBall : public systems::LeafSystem<T> {
 
     // Obtain the structure we need to write into.
     DRAKE_ASSERT(derivatives != nullptr);
-    systems::VectorBase<T>& new_derivatives = derivatives->get_mutable_vector();
+    systems::VectorBase<T>& derivatives_vec = derivatives->get_mutable_vector();
 
     // Time derivative of position (state index 0) is velocity.
-    new_derivatives.SetAtIndex(0, state.GetAtIndex(1));
+    derivatives_vec.SetAtIndex(0, state.GetAtIndex(1));
 
     // Time derivative of velocity (state index 1) is acceleration.
-    new_derivatives.SetAtIndex(1, T(get_gravitational_acceleration()));
+    derivatives_vec.SetAtIndex(1, T(get_gravitational_acceleration()));
   }
 
   void SetDefaultState(const systems::Context<T>&,
