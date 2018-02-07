@@ -7,8 +7,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -20,12 +22,14 @@ namespace multibody_plant {
 namespace {
 
 using Eigen::Matrix2d;
+using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaPlant;
 using systems::Context;
 using systems::ContinuousState;
 
@@ -189,6 +193,201 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
   VerifyCalcTimeDerivatives(
       -M_PI, -M_PI / 2.0,       /* joint's angles */
       -1.5, -2.5);              /* joint's angular rates */
+}
+
+// Fixture to perform a number of computational tests on a KUKA Iiwa model.
+class KukaIiwaPlantTests : public ::testing::Test {
+ public:
+  // Creates MultibodyPlant for an acrobot model.
+  void SetUp() override {
+    plant_ = MakeKukaIiwaPlant();
+
+    // Keep pointers to the modeling elements.
+    end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
+    joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
+    joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
+    joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
+    joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_4"));
+    joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_5"));
+    joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_6"));
+    joints_.push_back(&plant_->GetJointByName<RevoluteJoint>("iiwa_joint_7"));
+
+    context_ = plant_->CreateDefaultContext();
+
+    // Scalar-convert the plant and create a default context for it.
+    plant_autodiff_ = systems::System<double>::ToAutoDiffXd(*plant_);
+    context_autodiff_ = plant_autodiff_->CreateDefaultContext();
+  }
+
+  template <typename T>
+  Vector3<T> CalcEndEffectorVelocity(
+      const MultibodyPlant<T>& plant_on_T,
+      const Context<T>& context_on_T) const {
+    std::vector<SpatialVelocity<T>> V_WB_array;
+    plant_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    return V_WB_array[end_effector_link_->get_index()].translational();
+  }
+
+  template <typename T>
+  Vector3<T> CalcEndEffectorPosition(
+      const MultibodyPlant<T>& plant_on_T,
+      const Context<T>& context_on_T) const {
+    const Body<T>& linkG_on_T = plant_on_T.GetBodyByName("iiwa_link_7");
+    Vector3<T> p_NG;
+    plant_on_T.CalcPointsPositions(
+        context_on_T, linkG_on_T.get_body_frame(),
+        Vector3<T>::Zero(),  // position in frame G
+        plant_on_T.get_world_body().get_body_frame(), &p_NG);
+    return p_NG;
+  }
+
+ protected:
+  // The model plant:
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  // Workspace including context and derivatives vector:
+  std::unique_ptr<Context<double>> context_;
+  // Non-owning pointer to the end effector link:
+  const Body<double>* end_effector_link_{nullptr};
+  // Non-owning pointers to the joints:
+  std::vector<const RevoluteJoint<double>*> joints_;
+
+  // AutoDiffXd model to compute automatic derivatives:
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
+  std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
+};
+
+// This test is used to verify the correctness of the method
+// MultibodyPlant::CalcPointsGeometricJacobianExpressedInWorld().
+// The test computes the end effector geometric Jacobian Jg_NG (in the
+// Newtonian, world, frame N) using two methods:
+// 1. Calling MultibodyPlant::CalcPointsGeometricJacobianExpressedInWorld().
+// 2. Using AutoDiffXd to compute the partial derivative of v_NG(q, v) with
+//    respect to v.
+// By comparing the two results we verify the correctness of the MultibodyTree
+// implementation.
+// In addition, we are testing methods:
+// - MultibodyPlant::CalcPointsPositions()
+// - MultibodyPlant::CalcAllBodySpatialVelocitiesInWorld()
+TEST_F(KukaIiwaPlantTests, GeometricJacobian) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = plant_->num_positions();
+  const int kNumStates = plant_->num_multibody_states();
+
+  ASSERT_EQ(kNumPositions, 7);
+
+  ASSERT_EQ(plant_autodiff_->num_positions(), kNumPositions);
+  ASSERT_EQ(plant_autodiff_->num_multibody_states(), kNumStates);
+
+  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // motions.
+  const double q30 = M_PI / 6, q60 = M_PI / 3;
+  const double qA = q60;
+  const double qB = q30;
+  const double qC = q60;
+  const double qD = q30;
+  const double qE = q60;
+  const double qF = q30;
+  const double qG = q60;
+  VectorX<double> q(kNumPositions);
+  q << qA, qB, qC, qD, qE, qF, qG;
+
+  // A non-zero set of values for the joint's velocities.
+  const double vA = 0.1;
+  const double vB = 0.2;
+  const double vC = 0.3;
+  const double vD = 0.4;
+  const double vE = 0.5;
+  const double vF = 0.6;
+  const double vG = 0.7;
+  VectorX<double> v(kNumPositions);
+  v << vA, vB, vC, vD, vE, vF, vG;
+
+  // Zero generalized positions and velocities.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Compute the value of the end effector's velocity using <double>.
+  Vector3<double> v_NG = CalcEndEffectorVelocity(*plant_, *context_);
+
+  context_autodiff_->SetTimeStateAndParametersFrom(*context_);
+
+  // Initialize v_autodiff to have values v and so that it is the independent
+  // variable of the problem.
+  VectorX<AutoDiffXd> v_autodiff(kNumPositions);
+  math::initializeAutoDiff(v, v_autodiff);
+  context_autodiff_->get_mutable_continuous_state().
+      get_mutable_generalized_velocity().SetFromVector(v_autodiff);
+
+  const Vector3<AutoDiffXd> v_NG_autodiff =
+      CalcEndEffectorVelocity(*plant_autodiff_, *context_autodiff_);
+
+  const Vector3<double> v_NG_value = math::autoDiffToValueMatrix(v_NG_autodiff);
+  const MatrixX<double> v_NG_derivs =
+      math::autoDiffToGradientMatrix(v_NG_autodiff);
+
+  // Values obtained with <AutoDiffXd> should match those computed with
+  // <double>.
+  EXPECT_TRUE(CompareMatrices(v_NG_value, v_NG,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Some sanity checks on the expected sizes of the derivatives.
+  EXPECT_EQ(v_NG_derivs.rows(), 3);
+  EXPECT_EQ(v_NG_derivs.cols(), kNumPositions);
+
+  Vector3<double> p_NG;
+  Matrix3X<double> Jg_NG(3, plant_->num_velocities());
+  // The end effector (G) Jacobian is computed by asking the Jacobian for a
+  // point P with position p_GP = 0 in the G frame.
+  plant_->CalcPointsGeometricJacobianExpressedInWorld(
+      *context_, end_effector_link_->get_body_frame(),
+      Vector3<double>::Zero(), &p_NG, &Jg_NG);
+
+  // Verify the computed Jacobian matches the one obtained using automatic
+  // differentiation.
+  EXPECT_TRUE(CompareMatrices(Jg_NG, v_NG_derivs,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify that v_NG = Jg_NG * v:
+  const Vector3<double> J_NG_times_v = Jg_NG * v;
+  EXPECT_TRUE(CompareMatrices(J_NG_times_v, v_NG,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify that MultibodyPlant::CalcPointsPositions() computes the same value
+  // of p_NG. Even both code paths resolve to CalcPointsPositions(), here we
+  // call this method explicitly to provide unit testing for this API.
+  Vector3<double> p2_NG = CalcEndEffectorPosition(*plant_, *context_);
+  EXPECT_TRUE(CompareMatrices(p2_NG, p_NG,
+                              kTolerance, MatrixCompareType::relative));
+
+  // The derivative with respect to time should equal v_NG.
+  const VectorX<AutoDiffXd> q_autodiff =
+      // For reasons beyond my understanding, we need to pass MatrixXd to
+      // math::initializeAutoDiffGivenGradientMatrix().
+      math::initializeAutoDiffGivenGradientMatrix(MatrixXd(q), MatrixXd(v));
+  v_autodiff = v.cast<AutoDiffXd>();
+  context_autodiff_->get_mutable_continuous_state().
+      get_mutable_generalized_position().SetFromVector(q_autodiff);
+  context_autodiff_->get_mutable_continuous_state().
+      get_mutable_generalized_velocity().SetFromVector(v_autodiff);
+
+  Vector3<AutoDiffXd> p_NG_autodiff = CalcEndEffectorPosition(
+      *plant_autodiff_, *context_autodiff_);
+  Vector3<double> p_NG_derivs(
+      p_NG_autodiff[0].derivatives()[0],
+      p_NG_autodiff[1].derivatives()[0],
+      p_NG_autodiff[2].derivatives()[0]);
+  EXPECT_TRUE(CompareMatrices(p_NG_derivs, v_NG,
+                              kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace
