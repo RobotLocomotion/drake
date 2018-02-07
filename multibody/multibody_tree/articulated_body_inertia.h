@@ -124,8 +124,8 @@ class ArticulatedBodyInertia {
   ///
   /// @param[in] matrix A matrix representing the articulated body inertia.
   ///
-  /// @warning Even in Debug, no check is made to ensure that the input matrix
-  ///          is symmetric.
+  /// @throws an exception in Debug builds if IsPhysicallyValid() for `this`
+  /// inertia is `false`.
   explicit ArticulatedBodyInertia(const Matrix6<T>& matrix) {
     matrix_.template triangularView<Eigen::Lower>() = matrix;
     DRAKE_ASSERT_VOID(CheckInvariants());

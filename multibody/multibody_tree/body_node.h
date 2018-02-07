@@ -1200,9 +1200,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // =========================================================================
   // ArticulatedBodyCache Accessors and Mutators.
 
-  /// Returns a const reference to the articulated body inertia `Pplus_PB_W` of
-  /// the body B associated with node `body_node_index` as felt by the parent
-  /// node's body P, expressed in the world frame W.
+  /// Returns a const reference to the articulated body inertia `Pplus_PB_W` for
+  /// the articulated body subsystem formed by all bodies outboard from body B,
+  /// projected across its inboard mobilizer to frame P, about point Bo, and
+  /// expressed in the world frame W.
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
       const ArticulatedBodyCache<T>& abc) const {
     return abc.get_Pplus_PB_W(topology_.index);

@@ -216,30 +216,30 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Get expected projected articulated body inertia of cylinder.
   const Matrix6<double> M_cylinder_mat = M_Ccm.CopyToFullMatrix6();
-  Matrix6<double> P_BC_W_expected_mat = Matrix6<double>::Zero();
-  P_BC_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
-  P_BC_W_expected_mat(2, 2) = M_cylinder_mat(2, 2);
-  P_BC_W_expected_mat(3, 3) = mass_cylinder;
-  P_BC_W_expected_mat(5, 5) = mass_cylinder;
+  Matrix6<double> Pplus_BC_W_expected_mat = Matrix6<double>::Zero();
+  Pplus_BC_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
+  Pplus_BC_W_expected_mat(2, 2) = M_cylinder_mat(2, 2);
+  Pplus_BC_W_expected_mat(3, 3) = mass_cylinder;
+  Pplus_BC_W_expected_mat(5, 5) = mass_cylinder;
 
   // Compare results.
-  const ArticulatedBodyInertia<double>& P_BC_W_expected =
-      ArticulatedBodyInertia<double>(P_BC_W_expected_mat);
+  const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
+      ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_BC_W_actual =
       abc.get_Pplus_PB_W(cylinder_link.get_node_index());
-  EXPECT_TRUE(P_BC_W_expected.CopyToFullMatrix6().isApprox(
+  EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
       P_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
   // Get expected projected articulated body inertia of the articulated body
   // consisting of the box and cylinder.
-  Matrix6<double> P_WB_W_expected_mat = Matrix6<double>::Zero();
-  P_WB_W_expected_mat(3, 3) = mass_box + mass_cylinder;
-  P_WB_W_expected_mat(4, 4) = mass_box;
-  P_WB_W_expected_mat(5, 5) = mass_box + mass_cylinder;
+  Matrix6<double> Pplus_WB_W_expected_mat = Matrix6<double>::Zero();
+  Pplus_WB_W_expected_mat(3, 3) = mass_box + mass_cylinder;
+  Pplus_WB_W_expected_mat(4, 4) = mass_box;
+  Pplus_WB_W_expected_mat(5, 5) = mass_box + mass_cylinder;
 
   // Compare results.
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
-      ArticulatedBodyInertia<double>(P_WB_W_expected_mat);
+      ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
       abc.get_Pplus_PB_W(box_link.get_node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(

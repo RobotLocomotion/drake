@@ -15,8 +15,9 @@ namespace multibody {
 /// articulated body algorithm.
 ///
 /// Articulated body cache entries include:
-/// - Articulated body inertia `Pplus_PB_W` for each body B in the model as
-///   felt by the inboard (or parent) body P, expressed in the world frame W.
+/// - Articulated body inertia `Pplus_PB_W` for the articulated body subsystem
+///   formed by all bodies outboard from body B, projected across its inboard
+///   mobilizer to frame P, about point Bo, and expressed in the world frame W.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
