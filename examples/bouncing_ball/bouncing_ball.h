@@ -46,7 +46,7 @@ class BouncingBall : public systems::LeafSystem<T> {
   /// correspond to heights, acceleration should be negative.
   double get_gravitational_acceleration() const { return -9.81; }
 
-    /// Getter for the coefficient of restitution for this model.
+  /// Getter for the coefficient of restitution for this model.
   double get_restitution_coef() const { return restitution_coef_; }
 
  private:
