@@ -19,7 +19,7 @@ namespace systems {
 /** Identifies a particular source value or computation for purposes of
 declaring and managing dependencies. Unique only within a given subsystem
 and its corresponding subcontext. */
-// This is presented as an id to end users but is implemented internally as
+// This is presented as an ID to end users but is implemented internally as
 // a typed integer index for fast access into the std::vector of dependency
 // trackers. That's why it is named differently than the other "indexes".
 using DependencyTicket = TypeSafeIndex<class DependencyTag>;
@@ -43,12 +43,21 @@ using InputPortIndex = TypeSafeIndex<class InputPortTag>;
 indexes used by a subsystem and its corresponding subcontext are the same. */
 using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
 
+/** Serves as the local index for discrete state groups within a given System
+and its corresponding Context. */
 using DiscreteStateIndex = TypeSafeIndex<class DiscreteStateTag>;
-using AbstractStateIndex = TypeSafeIndex<class AbstractStateTag>;
-using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
-using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
 
-constexpr int kAutoSize = -1;
+/** Serves as the local index for abstract state variables within a given System
+and its corresponding Context. */
+using AbstractStateIndex = TypeSafeIndex<class AbstractStateTag>;
+
+/** Serves as the local index for numeric parameter groups within a given System
+and its corresponding Context. */
+using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
+
+/** Serves as the local index for abstract parameters within a given System
+and its corresponding Context. */
+using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
 
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
@@ -56,6 +65,11 @@ typedef enum {
   kVectorValued = 0,
   kAbstractValued = 1,
 } PortDataType;
+
+/** Port type indicating a vector value whose size is not prespecified but
+rather depends on what it is connected to (not yet implemented). */
+// TODO(sherm1) Implement this.
+constexpr int kAutoSize = -1;
 
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {
