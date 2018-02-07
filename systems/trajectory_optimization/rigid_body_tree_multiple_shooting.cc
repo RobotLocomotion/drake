@@ -22,8 +22,7 @@ GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(
           tree.get_num_positions() + tree.get_num_velocities() + num_lambda,
           "generalized constraint force"),
       tree_{&tree},
-      num_lambda_(num_lambda),
-      kinematics_helper_{kinematics_helper} {}
+      num_lambda_(num_lambda) {}
 
 void GeneralizedConstraintForceEvaluator::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
@@ -34,20 +33,20 @@ void GeneralizedConstraintForceEvaluator::DoEval(
 
 void GeneralizedConstraintForceEvaluator::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
-  // x contains q and λ
+  // x contains q, v and λ
   DRAKE_ASSERT(x.rows() == num_vars());
   const auto q = x.head(tree_->get_num_positions());
   const auto v =
       x.segment(tree_->get_num_positions(), tree_->get_num_velocities());
   const auto lambda = x.tail(num_lambda_);
 
-  auto kinsol = kinematics_helper_->UpdateKinematics(q, v);
-  const auto J_position_constraint =
-      tree_->positionConstraintsJacobian(kinsol, false);
-  const int num_position_constraint_lambda = tree_->getNumPositionConstraints();
-  const auto position_constraint_lambda =
-      lambda.head(num_position_constraint_lambda);
-  y = J_position_constraint.transpose() * position_constraint_lambda;
+  const auto J = EvalConstraintJacobian(q, v);
+  y = J.transpose() * lambda;
+}
+
+MatrixX<AutoDiffXd> PositionConstraintForceEvaluator::EvalConstraintJacobian(const Eigen::Ref<const AutoDiffVecXd>& q, const Eigen::Ref<const AutoDiffVecXd>& v) const {
+  auto kinsol = kinematics_cache_helper_->UpdateKinematics(q, tree_);
+  return tree_->positionConstraintsJacobian(kinsol);
 }
 
 /**
@@ -68,16 +67,12 @@ void GeneralizedConstraintForceEvaluator::DoEval(
  * c(qᵣ, vᵣ): The Coriolis, gravity and centripedal force on the right knot.
  * h: The duration between the left and right knot.
  */
-
 DirectTranscriptionConstraint::DirectTranscriptionConstraint(
     const RigidBodyTree<double>& tree,
-    std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>> kinematics_helper,
-    std::unique_ptr<GeneralizedConstraintForceEvaluator>
-        generalized_constraint_force_evaluator)
+    std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>> kinematics_helper)
     : Constraint(tree.get_num_positions() + tree.get_num_velocities(),
                  1 + 2 * tree.get_num_positions() +
-                     2 * tree.get_num_velocities() + tree.get_num_actuators() +
-                     generalized_constraint_force_evaluator->num_lambda(),
+                     2 * tree.get_num_velocities() + tree.get_num_actuators(),
                  Eigen::VectorXd::Zero(tree.get_num_positions() +
                                        tree.get_num_velocities()),
                  Eigen::VectorXd::Zero(tree.get_num_positions() +
@@ -86,11 +81,14 @@ DirectTranscriptionConstraint::DirectTranscriptionConstraint(
       num_positions_{tree.get_num_positions()},
       num_velocities_{tree.get_num_velocities()},
       num_actuators_{tree.get_num_actuators()},
-      num_lambda_{generalized_constraint_force_evaluator->num_lambda()},
-      kinematics_helper1_{kinematics_helper},
-      generalized_constraint_force_evaluator_(
-          std::move(generalized_constraint_force_evaluator)) {
-  DRAKE_THROW_UNLESS(num_positions_ == num_velocities_);
+      num_lambda_{0},
+      kinematics_helper1_{kinematics_helper} {}
+
+void DirectTranscriptionConstraint::AddGeneralizedConstraintForceEvaluator(
+    std::unique_ptr<GeneralizedConstraintForceEvaluator> evaluator) {
+  generalized_constraint_force_evaluators_.push_back(std::move(evaluator));
+  set_num_vars(num_vars() + evaluator->num_lambda());
+  num_lambda_ += evaluator->num_lambda();
 }
 
 void DirectTranscriptionConstraint::DoEval(
@@ -144,16 +142,26 @@ void DirectTranscriptionConstraint::DoEval(
   const auto c = tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
 
   // Compute Jᵀλ
-  AutoDiffVecXd q_v_lambda(num_positions_ + num_velocities_ + num_lambda_);
-  q_v_lambda << q_r, v_r, lambda_r;
-  AutoDiffVecXd generalized_constraint_force(num_velocities_);
-  generalized_constraint_force_evaluator_->Eval(q_v_lambda,
-                                                generalized_constraint_force);
+  AutoDiffVecXd total_generalized_constraint_force(num_velocities_);
+  total_generalized_constraint_force.setZero();
+  int lambda_count = 0;
+  for (const auto& evaluator : generalized_constraint_force_evaluators_) {
+    AutoDiffVecXd q_v_lambda(num_positions_ + num_velocities_ +
+                             evaluator->num_lambda());
+    q_v_lambda << q_r, v_r,
+        lambda_r.segment(lambda_count, evaluator->num_lambda());
+    AutoDiffVecXd generalized_constraint_force(num_velocities_);
+    evaluator->Eval(q_v_lambda, generalized_constraint_force);
+    total_generalized_constraint_force += generalized_constraint_force;
+    lambda_count += evaluator->num_lambda();
+  }
 
   y.tail(num_velocities_) =
-      M * (v_r - v_l) - (tree_->B * u_r + generalized_constraint_force - c) * h;
+      M * (v_r - v_l) -
+      (tree_->B * u_r + total_generalized_constraint_force - c) * h;
 }
 
+/*
 RigidBodyTreeMultipleShooting::RigidBodyTreeMultipleShooting(
     const RigidBodyTree<double>& tree, const std::vector<int>& num_lambdas,
     int num_time_samples, double minimum_timestep, double maximum_timestep)
@@ -251,7 +259,7 @@ RigidBodyTreeMultipleShooting::ReconstructInputTrajectory() const {
   }
   return PiecewisePolynomialTrajectory(
       PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs));
-}
+}*/
 
 }  // namespace trajectory_optimization
 }  // namespace systems

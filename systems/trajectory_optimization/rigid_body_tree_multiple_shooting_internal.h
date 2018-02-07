@@ -34,6 +34,15 @@ class GeneralizedConstraintForceEvaluator;
  * right knot.
  * c(qᵣ, vᵣ): The Coriolis, gravity and centripedal force on the right knot.
  * h: The duration between the left and right knot.
+ * Note that the robot might have many generalized constraint forces, such as
+ * loop joint forces, ground contact forces, joint limit forces, etc. These
+ * generalized constraint forces are additive, namely if the loop joint forces
+ * are Jₗₒₒₚᵀ*λₗₒₒₚ, and the joint constraint forces are Jⱼₒᵢₙₜᵀ*λⱼₒᵢₙₜ, then
+ * the total generalized constraint forces from both the loop joint are the
+ * joint limits are ther sum Jₗₒₒₚᵀ*λₗₒₒₚ + Jⱼₒᵢₙₜᵀ*λⱼₒᵢₙₜ
+ * So we will store a vector of GeneralizedConstraintForceEvaluator in this
+ * class, each representing one term of generalized constraint force, and we
+ * will evaluate each one of them to obtain the summed constraint forces.
  */
 class DirectTranscriptionConstraint : public solvers::Constraint {
  public:
@@ -49,11 +58,29 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
    */
   DirectTranscriptionConstraint(
       const RigidBodyTree<double>& tree,
-      std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>> kinematics_helper,
-      std::unique_ptr<GeneralizedConstraintForceEvaluator>
-          generalized_constraint_force_evaluator);
+      std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>>
+          kinematics_helper);
 
   ~DirectTranscriptionConstraint() override = default;
+
+  /**
+   * Adds a GeneralizedConstraintForceEvaluator.
+   * Note that by adding a new generalized constraint force evaluator, it also
+   * increases DirectTranscriptionConstraint::num_vars() by
+   * evaluator.num_lambda(). Namely the last evaluator.num_lambda() variables
+   * bounded with this DirectTranscriptionConstraint, is going to be used to
+   * compute the generalized constraint force in this @p evaluator.
+   * @param evaluator This will evaluate a generalized constraint force. If the
+   * user has evaluator1 that computes the loop joint force, and evaluator2 that
+   * computes the contact force from the foot toe, then the user can call this
+   * function for twice
+   * AddGeneralizedConstraintForceEvaluator(evaluator1);
+   * AddGeneralizedConstraintForceEvaluator(evaluator2);
+   * The user doesn't have to create one evaluator, that computes the summation
+   * of all generalized constraint forces.
+   */
+  void AddGeneralizedConstraintForceEvaluator(
+      std::unique_ptr<GeneralizedConstraintForceEvaluator> evaluator);
 
   template <typename Scalar, typename DerivedQL, typename DerivedVL,
             typename DerivedQR, typename DerivedVR, typename DerivedUR,
@@ -94,12 +121,13 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   const int num_positions_;
   const int num_velocities_;
   const int num_actuators_;
-  const int num_lambda_;
+  int num_lambda_;
   // Stores the kinematics cache at the right knot point.
   mutable std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>>
       kinematics_helper1_;
-  std::unique_ptr<GeneralizedConstraintForceEvaluator>
-      generalized_constraint_force_evaluator_;
+  // Stores the GeneralizedConstraintForceEvaluator
+  std::vector<std::unique_ptr<GeneralizedConstraintForceEvaluator>>
+      generalized_constraint_force_evaluators_;
 };
 }  // namespace trajectory_optimization
 }  // namespace systems
