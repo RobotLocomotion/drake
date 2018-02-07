@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <typeindex>
 
 #include "drake/common/drake_assert.h"
@@ -122,9 +123,9 @@ class HalfSpace final : public Shape {
 
   HalfSpace();
 
-  /** Given a plane `normal_F` and a point on the plane `X_FP`, both expressed
-   in frame F, creates the transform `X_FC` from the half-space's canonical
-   space to frame F.
+  /** Given a plane `normal_F` and a position vector to a point on the plane
+   `p_FP`, both expressed in frame F, creates the transform `X_FC` from the
+   half-space's canonical space to frame F.
    @param normal_F  A vector perpendicular to the half-space's plane boundary
                     expressed in frame F. It must be a non-zero vector but need
                     not be unit length.
@@ -135,6 +136,30 @@ class HalfSpace final : public Shape {
                             ‖normal_F‖₂ < ε). */
   static Isometry3<double> MakePose(const Vector3<double>& normal_F,
                                     const Vector3<double>& r_FP);
+};
+
+// TODO(SeanCurtis-TRI): Update documentation when the level of support for
+// meshes extends to collision/rendering.
+/** Limited support for meshes. Meshes declared as such will _not_ serve in
+ proximity queries or rendering queries. However, they _will_ be propagated
+ to drake_visualizer. The mesh is dispatched to drake visualizer via the
+ filename. The mesh is _not_ parsed/loaded by Drake. */
+class Mesh final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
+
+  /** Constructs a mesh specification from the mesh file located at the given
+   _absolute_ file path. Optionally uniformly scaled by the given scale factor.
+   */
+  explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
+
+  const std::string& filename() const { return filename_; }
+  double scale() const { return scale_; }
+
+ private:
+  // NOTE: Cannot be const to support default copy/move semantics.
+  std::string filename_;
+  double scale_;
 };
 
 /** The interface for converting shape descriptions to real shapes. Any entity
@@ -193,6 +218,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
   virtual void ImplementGeometry(const HalfSpace& half_space,
                                  void* user_data) = 0;
+  virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
 };
 
 template <typename S>

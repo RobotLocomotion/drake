@@ -44,7 +44,9 @@ drake_cc_library(
     name = "solar_system",
     srcs = ["solar_system.cc"],
     hdrs = ["solar_system.h"],
+    data = ["planet_rings.obj"],
     deps = [
+        "//drake/common",
         "//drake/geometry:geometry_ids",
         "//drake/geometry:geometry_system",
         "//drake/math:geometric_transform",
