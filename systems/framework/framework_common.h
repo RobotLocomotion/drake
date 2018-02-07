@@ -17,6 +17,16 @@ within a given subsystem or subcontext. */
 // TODO(sherm1) Use this.
 using SubsystemIndex = TypeSafeIndex<class SubsystemIndexTag>;
 
+/** Serves as a local index of a DependencyTracker within a particular
+subcontext, providing fast access to that tracker. Unique only within a given
+subcontext. */
+using DependencyTicket = TypeSafeIndex<class DependencyTrackerTag>;
+
+/** Serves as a unique identifier of a particular CacheEntry in a System and the
+corresponding CacheEntryValue in that System's Context. This is an index
+providing extremely fast constant-time access to both. */
+using CacheIndex = TypeSafeIndex<class CacheValueTag>;
+
 constexpr int kAutoSize = -1;
 
 /** All system ports are either vectors of Eigen scalars, or black-box

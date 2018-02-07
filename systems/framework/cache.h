@@ -4,16 +4,65 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
+#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
+
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(sherm1) Stubbed for now just so we can test DependencyTracker. Please
+// don't review this stub.
+class CacheEntryValue {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CacheEntryValue)
+
+  CacheEntryValue(CacheIndex index, DependencyTicket ticket,
+                  std::string description,
+                  std::unique_ptr<AbstractValue> initial_value)
+      : description_(std::move(description)),
+        cache_index_(index),
+        value_(std::move(initial_value)),
+        ticket_(ticket) {
+    DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
+  }
+
+  template <typename V>
+  void set_value(const V& new_value) {
+    value_->SetValue<V>(new_value);
+    set_is_up_to_date(true);
+  }
+
+  const std::string& description() const { return description_; }
+  bool is_up_to_date() const { return is_up_to_date_; }
+  CacheIndex cache_index() const {return cache_index_;}
+  DependencyTicket ticket() const {return ticket_;}
+  void set_is_up_to_date(bool up_to_date) { is_up_to_date_ = up_to_date; }
+
+  explicit CacheEntryValue(bool not_used)
+      : description_("DUMMY"), value_(AbstractValue::Make<int>(0)) {
+    unused(not_used);
+  }
+
+ private:
+  std::string description_;
+  CacheIndex cache_index_;
+  copyable_unique_ptr<AbstractValue> value_;
+  bool is_up_to_date_{false};
+  DependencyTicket ticket_;
+};
+#endif
+
+// TODO(sherm1) The rest of this code is obsolete and not related to the
+// caching system -- please ignore.
 
 typedef int CacheTicket;
 
