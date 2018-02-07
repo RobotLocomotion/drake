@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/math/cross_product.h"
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
@@ -155,11 +156,23 @@ class ArticulatedBodyInertia {
   ///
   /// The checks performed are:
   ///   - The matrix is semi-positive definite.
-  bool IsPhysicallyValid() const {
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value, bool>::type
+  IsPhysicallyValid() const {
     // Attempt the Robust Cholesky decomposition to test if the matrix is
     // positive semi-definite.
     const auto ldlt = matrix_.template selfadjointView<Eigen::Lower>().ldlt();
     return ldlt.info() == Eigen::Success && ldlt.isPositive();
+  }
+
+  /// IsPhysicallyValid() for non-numeric scalar types is not supported.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value, bool>::type
+  IsPhysicallyValid() const {
+    throw std::logic_error(
+        "IsPhysicallyValid() is only supported for numeric types. It is not "
+        "supported for type '" + NiceTypeName::Get<T>() + "'.");
+    return false;  // Return something so that the compiler doesn't complain.
   }
 
   /// Copy to a full 6x6 matrix representation.

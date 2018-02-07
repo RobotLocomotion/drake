@@ -151,6 +151,8 @@ drake_cc_library(
     deps = [
         ":spatial_inertia",
         "//drake/common:default_scalars",
+        "//drake/common:nice_type_name",
+        "//drake/common:symbolic",
         "//drake/multibody/multibody_tree/math:spatial_algebra",
     ],
 )

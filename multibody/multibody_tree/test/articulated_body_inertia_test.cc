@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -179,6 +180,17 @@ GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
   // right are the same as operating directly on the the matrix.
   EXPECT_TRUE((H2.transpose() * P_matrix * H2).isApprox(
       H2.transpose() * P * H2, kEpsilon));
+}
+
+// Tests support (though limited) for symbolic::Expression.
+GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
+  // IsPhysicallyValid() supported for numeric types.
+  ArticulatedBodyInertia<double> Pd;
+  EXPECT_NO_THROW(Pd.IsPhysicallyValid());
+
+  // IsPhysicallyValid() not supported for non-numeric types.
+  ArticulatedBodyInertia<symbolic::Expression> Ps;
+  EXPECT_ANY_THROW(Ps.IsPhysicallyValid());
 }
 
 }  // namespace
