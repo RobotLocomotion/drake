@@ -1,0 +1,266 @@
+#include "drake/systems/trajectory_optimization/rigid_body_tree_multiple_shooting.h"
+
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/systems/trajectory_optimization/rigid_body_tree_multiple_shooting_internal.h"
+
+namespace drake {
+namespace systems {
+namespace trajectory_optimization {
+
+// This evaluator computes the generalized constraint force Jᵀλ.
+GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(
+    const RigidBodyTree<double>& tree, int num_lambda,
+    std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>> kinematics_helper)
+    : EvaluatorBase(
+          tree.get_num_velocities(),
+          tree.get_num_positions() + tree.get_num_velocities() + num_lambda,
+          "generalized constraint force"),
+      tree_{&tree},
+      num_lambda_(num_lambda) {}
+
+void GeneralizedConstraintForceEvaluator::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+  AutoDiffVecXd y_t;
+  Eval(math::initializeAutoDiff(x), y_t);
+  y = math::autoDiffToValueMatrix(y_t);
+}
+
+void GeneralizedConstraintForceEvaluator::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
+  // x contains q, v and λ
+  DRAKE_ASSERT(x.rows() == num_vars());
+  const auto q = x.head(tree_->get_num_positions());
+  const auto v =
+      x.segment(tree_->get_num_positions(), tree_->get_num_velocities());
+  const auto lambda = x.tail(num_lambda_);
+
+  const auto J = EvalConstraintJacobian(q, v);
+  y = J.transpose() * lambda;
+}
+
+MatrixX<AutoDiffXd> PositionConstraintForceEvaluator::EvalConstraintJacobian(const Eigen::Ref<const AutoDiffVecXd>& q, const Eigen::Ref<const AutoDiffVecXd>& v) const {
+  auto kinsol = kinematics_cache_helper_->UpdateKinematics(q, tree_);
+  return tree_->positionConstraintsJacobian(kinsol);
+}
+
+/**
+ * Implements the constraint for the backward Euler integration
+ * <pre>
+ * qᵣ - qₗ = q̇ᵣ*h
+ * Mᵣ(vᵣ - vₗ) = (B*uᵣ + Jᵣᵀ*λᵣ -c(qᵣ, vᵣ))h
+ * </pre>
+ * where
+ * qᵣ: The generalized position on the right knot.
+ * qₗ: The generalized position on the left knot.
+ * vᵣ: The generalized velocity on the right knot.
+ * vₗ: The generalized velocity on the left knot.
+ * uᵣ: The actuator input on the right knot.
+ * Mᵣ: The inertia matrix computed from qᵣ.
+ * λᵣ: The constraint force (e.g., contact force, joint limit force, etc) on the
+ * right knot.
+ * c(qᵣ, vᵣ): The Coriolis, gravity and centripedal force on the right knot.
+ * h: The duration between the left and right knot.
+ */
+DirectTranscriptionConstraint::DirectTranscriptionConstraint(
+    const RigidBodyTree<double>& tree,
+    std::shared_ptr<KinematicsCacheWithVHelper<AutoDiffXd>> kinematics_helper)
+    : Constraint(tree.get_num_positions() + tree.get_num_velocities(),
+                 1 + 2 * tree.get_num_positions() +
+                     2 * tree.get_num_velocities() + tree.get_num_actuators(),
+                 Eigen::VectorXd::Zero(tree.get_num_positions() +
+                                       tree.get_num_velocities()),
+                 Eigen::VectorXd::Zero(tree.get_num_positions() +
+                                       tree.get_num_velocities())),
+      tree_(&tree),
+      num_positions_{tree.get_num_positions()},
+      num_velocities_{tree.get_num_velocities()},
+      num_actuators_{tree.get_num_actuators()},
+      num_lambda_{0},
+      kinematics_helper1_{kinematics_helper} {}
+
+void DirectTranscriptionConstraint::AddGeneralizedConstraintForceEvaluator(
+    std::unique_ptr<GeneralizedConstraintForceEvaluator> evaluator) {
+  generalized_constraint_force_evaluators_.push_back(std::move(evaluator));
+  set_num_vars(num_vars() + evaluator->num_lambda());
+  num_lambda_ += evaluator->num_lambda();
+}
+
+void DirectTranscriptionConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
+  AutoDiffVecXd y_t;
+  Eval(math::initializeAutoDiff(x), y_t);
+  y = math::autoDiffToValueMatrix(y_t);
+}
+
+void DirectTranscriptionConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
+  DRAKE_ASSERT(x.size() == num_vars());
+
+  int x_count = 0;
+  // A lambda expression to take num_element entreis from x, in a certain
+  // order.
+  auto x_segment = [x, &x_count](int num_element) {
+    x_count += num_element;
+    return x.segment(x_count - num_element, num_element);
+  };
+
+  const AutoDiffXd h = x(0);
+  x_count++;
+  const AutoDiffVecXd q_l = x_segment(num_positions_);
+  const AutoDiffVecXd v_l = x_segment(num_velocities_);
+  const AutoDiffVecXd q_r = x_segment(num_positions_);
+  const AutoDiffVecXd v_r = x_segment(num_velocities_);
+  const AutoDiffVecXd u_r = x_segment(num_actuators_);
+  const AutoDiffVecXd lambda_r = x_segment(num_lambda_);
+
+  auto kinsol = kinematics_helper1_->UpdateKinematics(q_r, v_r);
+
+  y.resize(num_constraints());
+
+  // By using backward Euler integration, the constraint is
+  // qᵣ - qₗ = q̇ᵣ*h
+  // Mᵣ(vᵣ - vₗ) = (B*uᵣ + Jᵣᵀ*λᵣ -c(qᵣ, vᵣ))h
+  const MatrixX<AutoDiffXd> map_v_to_qdot =
+      RigidBodyTree<double>::GetVelocityToQDotMapping(kinsol);
+  const AutoDiffVecXd qdot_r = map_v_to_qdot * v_r;
+  // TODO(hongkai.dai): Project qdot_r to the constraint manifold (for example,
+  // if q contains unit quaternion, and we need to project this backward Euler
+  // integration on the unit quaternion manifold.)
+  y.head(num_positions_) = q_r - q_l - qdot_r * h;
+
+  const auto M = tree_->massMatrix(kinsol);
+
+  // Compute the Coriolis force, centripedal force, etc.
+  const typename RigidBodyTree<AutoDiffXd>::BodyToWrenchMap
+      no_external_wrenches;
+  const auto c = tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
+
+  // Compute Jᵀλ
+  AutoDiffVecXd total_generalized_constraint_force(num_velocities_);
+  total_generalized_constraint_force.setZero();
+  int lambda_count = 0;
+  for (const auto& evaluator : generalized_constraint_force_evaluators_) {
+    AutoDiffVecXd q_v_lambda(num_positions_ + num_velocities_ +
+                             evaluator->num_lambda());
+    q_v_lambda << q_r, v_r,
+        lambda_r.segment(lambda_count, evaluator->num_lambda());
+    AutoDiffVecXd generalized_constraint_force(num_velocities_);
+    evaluator->Eval(q_v_lambda, generalized_constraint_force);
+    total_generalized_constraint_force += generalized_constraint_force;
+    lambda_count += evaluator->num_lambda();
+  }
+
+  y.tail(num_velocities_) =
+      M * (v_r - v_l) -
+      (tree_->B * u_r + total_generalized_constraint_force - c) * h;
+}
+
+/*
+RigidBodyTreeMultipleShooting::RigidBodyTreeMultipleShooting(
+    const RigidBodyTree<double>& tree, const std::vector<int>& num_lambdas,
+    int num_time_samples, double minimum_timestep, double maximum_timestep)
+    : MultipleShooting(tree.get_num_actuators(),
+                       tree.get_num_positions() + tree.get_num_velocities(),
+                       num_time_samples, minimum_timestep, maximum_timestep),
+      tree_{&tree},
+      num_positions_{tree.get_num_positions()},
+      num_velocities_{tree.get_num_velocities()},
+      num_lambdas_{num_lambdas} {
+  if (static_cast<int>(num_lambdas.size()) != num_time_samples) {
+    std::ostringstream oss;
+    oss << "lambda should be a vector of size " << num_time_samples << "\n";
+    throw std::runtime_error(oss.str());
+  }
+  // For each knot, we will need to impose a transcription/collocation
+  // constraint. Each of these constraints require us caching some
+  // kinematics info.
+  kinematics_cache_with_v_helpers_.resize(num_time_samples);
+  for (int i = 0; i < num_time_samples; ++i) {
+    kinematics_cache_with_v_helpers_[i] =
+        std::make_shared<KinematicsCacheWithVHelper<AutoDiffXd>>(*tree_);
+  }
+
+  q_vars_.resize(num_positions_, N());
+  v_vars_.resize(num_velocities_, N());
+  lambda_vars_.resize(N());
+  for (int i = 0; i < N(); ++i) {
+    q_vars_.col(i) = x_vars().segment(num_states() * i, num_positions_);
+    v_vars_.col(i) =
+        x_vars().segment(num_states() * i + num_positions_, num_velocities_);
+    const std::string lambda_name = "lambda[" + std::to_string(i) + "]";
+    lambda_vars_[i] = NewContinuousVariables(num_lambdas_[i], lambda_name);
+  }
+  DoAddCollocationOrTranscriptionConstraint();
+}
+
+std::unique_ptr<GeneralizedConstraintForceEvaluator>
+RigidBodyTreeMultipleShooting::DoConstructGeneralizedConstraintForceEvaluator(
+    int index) const {
+  return std::make_unique<GeneralizedConstraintForceEvaluator>(
+      *tree_, num_lambdas_[index], kinematics_cache_with_v_helpers_[index]);
+}
+
+void RigidBodyTreeMultipleShooting::
+    DoAddCollocationOrTranscriptionConstraint() {
+  for (int i = 0; i < N() - 1; ++i) {
+    auto generalized_constraint_force_evaluator =
+        DoConstructGeneralizedConstraintForceEvaluator(i + 1);
+    auto transcription_cnstr = std::make_shared<DirectTranscriptionConstraint>(
+        *tree_, kinematics_cache_with_v_helpers_[i + 1],
+        std::move(generalized_constraint_force_evaluator));
+    AddConstraint(transcription_cnstr,
+                  transcription_cnstr->CompositeEvalInput(
+                      h_vars()(i), q_vars_.col(i), v_vars_.col(i),
+                      q_vars_.col(i + 1), v_vars_.col(i + 1),
+                      u_vars().segment((i + 1) * num_inputs(), num_inputs()),
+                      lambda_vars_[i + 1]));
+  }
+}
+
+void RigidBodyTreeMultipleShooting::DoAddRunningCost(
+    const symbolic::Expression& g) {
+  // Add the running cost ∫ g(t, x, u)
+  // We discretize this continuous integration as
+  // sum_{i = 0, ..., N - 2} h_i * g_{i+1}
+  for (int i = 0; i < N() - 2; ++i) {
+    AddCost(SubstitutePlaceholderVariables(g * h_vars()(i), i + 1));
+  }
+}
+
+PiecewisePolynomialTrajectory
+RigidBodyTreeMultipleShooting::ReconstructStateTrajectory() const {
+  Eigen::VectorXd times = GetSampleTimes();
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> states(N());
+
+  for (int i = 0; i < N(); ++i) {
+    times_vec[i] = times(i);
+    states[i] = GetSolution(state(i));
+  }
+  return PiecewisePolynomialTrajectory(
+      PiecewisePolynomial<double>::FirstOrderHold(times_vec, states));
+}
+
+PiecewisePolynomialTrajectory
+RigidBodyTreeMultipleShooting::ReconstructInputTrajectory() const {
+  Eigen::VectorXd times = GetSampleTimes();
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> inputs(N());
+
+  for (int i = 0; i < N(); ++i) {
+    times_vec[i] = times(i);
+    inputs[i] = GetSolution(input(i));
+  }
+  return PiecewisePolynomialTrajectory(
+      PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs));
+}*/
+
+}  // namespace trajectory_optimization
+}  // namespace systems
+}  // namespace drake

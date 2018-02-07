@@ -128,6 +128,15 @@ class EvaluatorBase {
   // matrix in the linear constraint is resized.
   void set_num_outputs(int num_outputs) { num_outputs_ = num_outputs; }
 
+  // Setter for the number of variables.
+  // This method is only meant to be called, if the sub-class structure permits
+  // to change the number of variables. One example is
+  // DirectTranscriptionConstraint in
+  // systems/trajectory_optimization/rigid_body_tree_multiple_shooting_internal.h,
+  // which can change the number of variables, by adding more
+  // evaluators to compute the generalized constraint forces.
+  void set_num_vars(int num_vars) { num_vars_ = num_vars; }
+
  private:
   int num_vars_{};
   int num_outputs_{};

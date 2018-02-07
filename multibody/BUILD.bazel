@@ -58,6 +58,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "kinematics_cache_helper",
+    srcs = [
+        "kinematics_cache_helper.cc",
+    ],
+    hdrs = [
+        "kinematics_cache_helper.h",
+    ],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
     name = "inverse_kinematics",
     srcs = [
         "constraint_wrappers.cc",
@@ -78,6 +91,7 @@ drake_cc_library(
     ],
     deps = [
         ":approximate_ik",
+        ":kinematics_cache_helper",
         ":rigid_body_constraint",
         ":rigid_body_tree",
         "//drake/common:unused",
