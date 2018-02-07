@@ -10,6 +10,8 @@ namespace systems {
 // the same meaning in both class hierarchies. A System and its Context always
 // have parallel internal structure.
 
+// TODO(sherm1) Reveal these when they are used.
+#ifndef DRAKE_DOXYGEN_CXX
 /** Identifies a particular source value or computation for purposes of
 declaring and managing dependencies. Unique only within a given subsystem
 and its corresponding subcontext. */
@@ -52,6 +54,7 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 /** Serves as the local index for abstract parameters within a given System
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
+#endif
 
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
