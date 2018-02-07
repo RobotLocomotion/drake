@@ -1,5 +1,6 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 
+#include "drake/common/default_scalars.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -159,12 +160,10 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
 }
 }  // namespace internal
 
-unique_ptr<MultibodyTree<double>> MakeKukaIiwaModel() {
-  internal::KukaIiwaModelBuilder<double> builder;
-  return builder.Build();
-}
-
 }  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::benchmarks::kuka_iiwa_robot::internal::KukaIiwaModelBuilder);
