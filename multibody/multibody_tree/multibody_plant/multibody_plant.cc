@@ -24,41 +24,24 @@ template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::multibody::multibody_plant::MultibodyPlant>()) {
-  // TODO(amcastro-tri): when caching and MultibodyCacheEvaluatorInterface land
-  // the line below should read:
-  // model_ = std::make_unique<MultibodyTree<T>>(this);
   model_ = std::make_unique<MultibodyTree<T>>();
-}
-
-template<typename T>
-MultibodyPlant<T>::MultibodyPlant(std::unique_ptr<MultibodyTree<T>> model) :
-    systems::LeafSystem<T>(systems::SystemTypeTag<
-        drake::multibody::multibody_plant::MultibodyPlant>()) {
-  DRAKE_THROW_UNLESS(model != nullptr);
-  model_ = std::move(model);
-  // TODO(amcastro-tri): Introduce MultibodyCacheEvaluatorInterface and add a
-  // call model_->set_evaluator(this); so that we can use system's caching with
-  // no cyclic dependencies.
 }
 
 template<typename T>
 template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
-  DRAKE_THROW_UNLESS(other.is_finalized());
+  DRAKE_THROW_UNLESS(!is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
-  Finalize();
+  body_name_to_index_ = other.body_name_to_index_;
+  joint_name_to_index_ = other.joint_name_to_index_;
 }
 
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
-  if (is_finalized()) return;  // no-op.
-  // The MultibodyTree model could have been finalized if coming through
-  // as a constructor argument.
-  if (!model_->topology_is_valid()) model_->Finalize();
+  model_->Finalize();
   DeclareStateAndPorts();
   // TODO(amcastro-tri): Declare GeometrySystem ports.
   DeclareCacheEntries();
-  plant_is_finalized_ = true;
 }
 
 template<typename T>
@@ -129,7 +112,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 template<typename T>
 void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
-  DRAKE_DEMAND(model().topology_is_valid());
+  DRAKE_DEMAND(this->is_finalized());
 
   this->DeclareContinuousState(
       BasicVector<T>(model_->get_num_states()),
@@ -141,77 +124,8 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   // TODO(amcastro-tri): Declare output port for the state.
 }
 
-template <typename T>
-void MultibodyPlant<T>::CalcAllBodyPosesInWorld(
-    const systems::Context<T>& context,
-    std::vector<Isometry3<T>>* X_WB) const {
-  DRAKE_THROW_UNLESS(X_WB != nullptr);
-  if (static_cast<int>(X_WB->size()) != num_bodies()) {
-    X_WB->resize(num_bodies(), Isometry3<T>::Identity());
-  }
-  // TODO(amcastro-tri): Eval this from the context.
-  PositionKinematicsCache<T> pc(model_->get_topology());
-  model_->CalcPositionKinematicsCache(context, &pc);
-  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index =
-        model_->get_body(body_index).get_node_index();
-    X_WB->at(body_index) = pc.get_X_WB(node_index);
-  }
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcAllBodySpatialVelocitiesInWorld(
-    const systems::Context<T>& context,
-    std::vector<SpatialVelocity<T>>* V_WB) const {
-  DRAKE_DEMAND(V_WB != nullptr);
-  if (static_cast<int>(V_WB->size()) != num_bodies()) {
-    V_WB->resize(num_bodies(), SpatialVelocity<T>::Zero());
-  }
-  // TODO(amcastro-tri): Eval these from the context.
-  PositionKinematicsCache<T> pc(model_->get_topology());
-  VelocityKinematicsCache<T> vc(model_->get_topology());
-  model_->CalcPositionKinematicsCache(context, &pc);
-  model_->CalcVelocityKinematicsCache(context, pc, &vc);
-  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index =
-        model_->get_body(body_index).get_node_index();
-    V_WB->at(body_index) = vc.get_V_WB(node_index);
-  }
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcPointsPositions(
-    const systems::Context<T>& context,
-    const Frame<T>& from_frame_B,
-    const Eigen::Ref<const MatrixX<T>>& p_BQi,
-    const Frame<T>& to_frame_A,
-    EigenPtr<MatrixX<T>> p_AQi) const {
-  DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
-  DRAKE_THROW_UNLESS(p_AQi != nullptr);
-  DRAKE_THROW_UNLESS(p_AQi->rows() == 3 && p_AQi->cols() == p_BQi.cols());
-  model_->CalcPointsPositions(context, from_frame_B, p_BQi, to_frame_A, p_AQi);
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcPointsGeometricJacobianExpressedInWorld(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const {
-  DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
-  const int num_points = p_BQi_set.cols();
-  DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
-  DRAKE_THROW_UNLESS(p_WQi_set->rows() == 3);
-  DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
-  DRAKE_THROW_UNLESS(Jv_WQi != nullptr);
-  DRAKE_THROW_UNLESS(Jv_WQi->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(Jv_WQi->cols() == num_velocities());
-  model_->CalcPointsGeometricJacobianExpressedInWorld(
-      context, frame_B, p_BQi_set, p_WQi_set, Jv_WQi);
-}
-
 template<typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
-  DRAKE_DEMAND(model().topology_is_valid());
   // TODO(amcastro-tri): User proper System::Declare() infrastructure to
   // declare cache entries when that lands.
   pc_ = std::make_unique<PositionKinematicsCache<T>>(model_->get_topology());
