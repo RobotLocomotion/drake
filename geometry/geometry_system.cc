@@ -330,9 +330,7 @@ void GeometrySystem<T>::FullPoseUpdate(
     }
   }
 
-  // TODO(SeanCurtis-TRI): Propagate changes to the geometry engine.
-  // Again, this will change significantly when caching becomes available.
-
+  mutable_state.FinalizePoseUpdate();
   // TODO(SeanCurtis-TRI): Add velocity as appropriate.
 }
 

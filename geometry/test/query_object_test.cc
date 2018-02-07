@@ -100,6 +100,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Enumerate *all* queries to confirm they throw the proper exception.
   EXPECT_DEFAULT_ERROR(default_object->GetFrameId(GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object->GetSourceName(SourceId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object->ComputePointPairPenetration());
 
 #undef EXPECT_DEFAULT_ERROR
 }

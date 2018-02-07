@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -15,6 +16,7 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/proximity_engine.h"
 
 namespace drake {
 namespace geometry {
@@ -319,7 +321,26 @@ class GeometryState {
 
   //@}
 
-  /** Scalar conversion */
+  //----------------------------------------------------------------------------
+  /** @name                Collision Queries
+
+   These queries detect _collisions_ between geometry. Two geometries collide
+   if they overlap each other and are not explicitly excluded through
+   @ref collision_filter_concepts "collision filtering". These algorithms find
+   those colliding cases, characterize them, and report the essential
+   characteristics of that collision.  */
+  //@{
+
+  /** See QueryObject::ComputePointPairPenetration() for documentation. */
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+      const {
+    return geometry_engine_->ComputePointPairPenetration(
+        geometry_index_id_map_, anchored_geometry_index_id_map_);
+  }
+
+  //@}
+
+  /** @name Scalar conversion */
   //@{
 
   /** Returns a deep copy of this state using the AutoDiffXd scalar with all
@@ -349,7 +370,8 @@ class GeometryState {
         geometry_index_id_map_(source.geometry_index_id_map_),
         anchored_geometry_index_id_map_(source.anchored_geometry_index_id_map_),
         X_FG_(source.X_FG_),
-        pose_index_to_frame_map_(source.pose_index_to_frame_map_) {
+        pose_index_to_frame_map_(source.pose_index_to_frame_map_),
+        geometry_engine_(std::move(source.geometry_engine_->ToAutoDiff())) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we *can*
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
     auto convert = [](const std::vector<Isometry3<U>>& s,
@@ -397,6 +419,10 @@ class GeometryState {
   //                           ids or matching size.
   void ValidateFramePoses(const FrameIdVector& ids,
                           const FramePoseVector<T>& poses) const;
+
+  // Method that performs any final book-keeping/updating on the state after
+  // _all_ of the stat's frames have had their poses updated.
+  void FinalizePoseUpdate() { geometry_engine_->UpdateWorldPoses(X_WG_); }
 
   // A const range iterator through the keys of an unordered map.
   template <typename K, typename V>
@@ -556,6 +582,15 @@ class GeometryState {
   // In other words, it is the full evaluation of the kinematic chain from
   // frame i to the world frame.
   std::vector<Isometry3<T>> X_WF_;
+
+  // The underlying geometry engine. The topology of the engine does *not*
+  // change with respect to time. But its values do. This straddles the two
+  // worlds, maintaining its own persistent topological state and derived
+  // time-dependent state. This *could* be constructed from scratch at each
+  // evaluation based on the previous data, but its internal data structures
+  // rely on temporal coherency to speed up the calculations. Thus we persist
+  // and copy it.
+  copyable_unique_ptr<internal::ProximityEngine<T>> geometry_engine_;
 };
 }  // namespace geometry
 }  // namespace drake
