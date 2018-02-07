@@ -95,7 +95,7 @@ class WitnessFunction {
 
   /// Constructs the witness function with the given direction type and no
   /// event type.
-  WitnessFunction(const System<T>& system,
+  WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype) :
                   system_(system), dir_type_(dtype) {}
 
@@ -104,7 +104,7 @@ class WitnessFunction {
   /// function triggers. Example events are publish, discrete variable update,
   /// unrestricted update events.
   template <class EventType>
-  WitnessFunction(const System<T>& system,
+  WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype,
                   std::unique_ptr<EventType> e) :
                   system_(system), dir_type_(dtype) {
@@ -134,7 +134,7 @@ class WitnessFunction {
   T Evaluate(const Context<T>& context) const;
 
   /// Gets a reference to the System used by this witness function.
-  const System<T>& get_system() const { return system_; }
+  const System<T>& get_system() const { return *system_; }
 
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
@@ -200,7 +200,7 @@ class WitnessFunction {
 
  private:
   // A reference to the system.
-  const System<T>& system_;
+  const System<T>* system_{nullptr};
 
   // Direction(s) under which this witness function triggers.
   WitnessFunctionDirection dir_type_;

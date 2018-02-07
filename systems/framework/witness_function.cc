@@ -8,7 +8,7 @@ namespace systems {
 
 template <class T>
 T WitnessFunction<T>::Evaluate(const Context<T>& context) const {
-  DRAKE_ASSERT_VOID(system_.CheckValidContext(context));
+  DRAKE_ASSERT_VOID(system_->CheckValidContext(context));
   return DoEvaluate(context);
 }
 

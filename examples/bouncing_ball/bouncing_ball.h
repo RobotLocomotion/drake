@@ -39,7 +39,7 @@ class BouncingBall : public systems::LeafSystem<T> {
 
     // Create the witness function.
     signed_distance_witness_ =
-        std::make_unique<SignedDistanceWitnessFunction>(*this);
+        std::make_unique<SignedDistanceWitnessFunction>(this);
   }
 
   /// Gets the signed acceleration due to gravity. Since initial positions
@@ -58,7 +58,7 @@ class BouncingBall : public systems::LeafSystem<T> {
   // discontinuously.
   class SignedDistanceWitnessFunction : public systems::WitnessFunction<T> {
    public:
-    explicit SignedDistanceWitnessFunction(const systems::System<T>& system) :
+    explicit SignedDistanceWitnessFunction(const systems::System<T>* system) :
         systems::WitnessFunction<T>(
             system,
             systems::WitnessFunctionDirection::kPositiveThenNonPositive,

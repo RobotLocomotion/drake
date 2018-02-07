@@ -24,7 +24,7 @@ class ClockWitness : public WitnessFunction<T> {
 
   explicit ClockWitness(
       double trigger_time,
-      const System<T>& system,
+      const System<T>* system,
       const WitnessFunctionDirection& dir_type) :
         WitnessFunction<T>(
             system,
@@ -55,7 +55,7 @@ class StatelessSystem final : public LeafSystem<T> {
 
   StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
       : LeafSystem<T>(SystemTypeTag<analysis_test::StatelessSystem>{}) {
-    witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
+    witness_ = std::make_unique<ClockWitness<T>>(offset, this, dir_type);
   }
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.

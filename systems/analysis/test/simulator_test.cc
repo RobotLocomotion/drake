@@ -150,8 +150,8 @@ class CompositeSystem : public LogisticSystem {
   CompositeSystem(double k, double alpha, double nu, double trigger_time) :
       LogisticSystem(k, alpha, nu) {
     this->DeclareContinuousState(1);
-    logistic_witness_ = std::make_unique<LogisticWitness>(*this);
-    clock_witness_ = std::make_unique<ClockWitness>(trigger_time, *this,
+    logistic_witness_ = std::make_unique<LogisticWitness>(this);
+    clock_witness_ = std::make_unique<ClockWitness>(trigger_time, this,
                           WitnessFunctionDirection::kCrossesZero);
   }
 
@@ -175,8 +175,8 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
 
   explicit TwoWitnessStatelessSystem(double off1, double off2) {
     const auto dir_type = WitnessFunctionDirection::kCrossesZero;
-    witness1_ = std::make_unique<ClockWitness>(off1, *this, dir_type);
-    witness2_ = std::make_unique<ClockWitness>(off2, *this, dir_type);
+    witness1_ = std::make_unique<ClockWitness>(off1, this, dir_type);
+    witness2_ = std::make_unique<ClockWitness>(off2, this, dir_type);
   }
 
   void set_publish_callback(

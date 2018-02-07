@@ -21,7 +21,7 @@ template <class T>
 class LogisticWitness : public systems::WitnessFunction<T> {
  public:
   ~LogisticWitness() override {}
-  explicit LogisticWitness(const LogisticSystem<T>& system) :
+  explicit LogisticWitness(const LogisticSystem<T>* system) :
     WitnessFunction<T>(
         system,
         WitnessFunctionDirection::kCrossesZero,
@@ -46,7 +46,7 @@ class LogisticSystem : public LeafSystem<T> {
   LogisticSystem(double k, double alpha, double nu) : k_(k), alpha_(alpha),
       nu_(nu) {
     this->DeclareContinuousState(1);
-    witness_ = std::make_unique<LogisticWitness<T>>(*this);
+    witness_ = std::make_unique<LogisticWitness<T>>(this);
   }
 
   void set_publish_callback(
