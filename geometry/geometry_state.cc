@@ -7,8 +7,10 @@
 #include <utility>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/proximity_engine.h"
 
 namespace drake {
 namespace geometry {
@@ -93,7 +95,8 @@ std::string get_missing_id_message<GeometryId>(const GeometryId& key) {
 //-----------------------------------------------------------------------------
 
 template <typename T>
-GeometryState<T>::GeometryState() {}
+GeometryState<T>::GeometryState()
+    : geometry_engine_(make_unique<internal::ProximityEngine<T>>()) {}
 
 template <typename T>
 bool GeometryState<T>::source_is_registered(SourceId source_id) const {
@@ -255,9 +258,9 @@ GeometryId GeometryState<T>::RegisterGeometry(
   });
   geometry_index_id_map_.push_back(geometry_id);
 
-  // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the
-  // geometry engine, storing the engine index it actually stores.
-  GeometryIndex engine_index(X_FG_.size());
+  // Pass the geometry to the engine.
+  GeometryIndex engine_index =
+      geometry_engine_->AddDynamicGeometry(geometry->shape());
 
   // Configure topology.
   frames_[frame_id].add_child(geometry_id);
@@ -343,13 +346,9 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
 
   set.emplace(geometry_id);
 
-  // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the
-  // geometry engine, storing the engine index it actually stores.
-  AnchoredGeometryIndex engine_index(anchored_geometry_index_id_map_.size());
-
-  // Note: This test will be more meaningful when the engine is included at this
-  // enforces an invariant between *two* structures rather than being a
-  // simple tautology.
+  // Pass the geometry to the engine.
+  auto engine_index = geometry_engine_->AddAnchoredGeometry(geometry->shape(),
+                                                            geometry->pose());
   DRAKE_ASSERT(static_cast<int>(anchored_geometry_index_id_map_.size()) ==
                engine_index);
   anchored_geometry_index_id_map_.push_back(geometry_id);
@@ -496,10 +495,11 @@ void GeometryState<T>::UpdatePosesRecursively(
   }
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class GeometryState<double>;
-template class GeometryState<AutoDiffXd>;
-
 }  // namespace geometry
 }  // namespace drake
 
+// TODO(SeanCurtis-TRI): Currently assumes that "non-symbolic" implies
+// AutoDiffXd. Update things appropriately when more non-symbolic scalars
+// are available.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::geometry::GeometryState)
