@@ -23,6 +23,7 @@ drake_cc_library(
         ":shape_specification",
         "//drake/common",
         "//drake/common:default_scalars",
+        "//drake/geometry/query_results:penetration_as_point_pair",
         "@fcl",
     ],
 )
