@@ -28,7 +28,9 @@ namespace solar_system {
  different arbitrary plane (illustrating transform compositions).
  - Mars orbits the sun at a farther distance on a plane that is tilted off of
  the xy-plane. Its moon (Phobos) orbits around Mars on a plane parallel to
- Mars's orbital plane.
+ Mars's orbital plane, but in the opposite direction.
+ - Mars has been given an arbitrary set of rings posed askew. The rings are
+ declared as a child of mars's geometry.
 
  This system illustrates the following features:
 
@@ -49,14 +51,15 @@ namespace solar_system {
 
     Frame Symbol | Meaning
     :-----------:|:--------------------
-        X_SE     | Earth's frame (centered on the sun) (X_SE == X_SM)
-        X_SM     | Mar's frame (centered on the sun)
-        X_EL     | Luna's frame (centered on the Earth)
-        X_MP     | Phobos's frame (centered on Mars)
+        X_SE     | Earth's frame (centered below the sun)
+        X_SM     | Mar's frame (centered below the sun, farther than X_SE)
+        X_EL     | Luna's frame (centered on the Earth's geometry) (X_EL = X_EG)
+        X_MP     | Phobos's frame (centered on Mars) (X_MP = X_MGm)
         X_EG     | The fixed offset of Earth's geometry from X_SE (at Earth's orbit radius).
         X_LG     | The fixed offset of Luna's geometry from X_EL (at Luna's orbit radius).
-        X_MG     | The fixed offset of Mars's geometry from X_SM (at Mars's orbit radius).
+        X_MGm    | The fixed offset of Mars's geometry from X_SM (at Mars's orbit radius).
         X_PG     | The fixed offset of Phobos's geometry from X_MP (at Phobos's orbit radius).
+        X_GmGr   | The pose of mars's rings relative to mars's planet geometry (not shown in diagram).
 
 ```
     X_EG X_LG                            X_MG X_PG
@@ -66,9 +69,10 @@ namespace solar_system {
 X_EL →├───┘       │  S  │           X_MP → ├───┘
       │            ╲▁▁▁╱                   │
       │              │                     │
-      └──────────────┴─────────────────────┘
+      └──────────────┤ ← X_SE              │
+                     └─────────────────────┘
                      ↑
-                     X_SE, X_SM
+                    X_SM
 ```
 
  @tparam T The vector element type, which must be a valid Eigen scalar.
