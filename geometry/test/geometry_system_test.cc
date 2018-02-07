@@ -244,27 +244,6 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
       std::logic_error,
       "The call to RegisterAnchoredGeometry is invalid; a context has already "
       "been allocated.");
-
-  // Clearing a source.
-  EXPECT_ERROR_MESSAGE(
-      system_.ClearSource(id),
-      std::logic_error,
-      "The call to ClearSource is invalid; a context has already been "
-      "allocated.");
-
-  // Removing a frame.
-  EXPECT_ERROR_MESSAGE(
-      system_.RemoveFrame(id, FrameId::get_new_id()),
-      std::logic_error,
-      "The call to RemoveFrame is invalid; a context has already been "
-      "allocated.");
-
-  // Removing a geometry.
-  EXPECT_ERROR_MESSAGE(
-      system_.RemoveGeometry(id, GeometryId::get_new_id()),
-      std::logic_error,
-      "The call to RemoveGeometry is invalid; a context has already been "
-      "allocated.");
 }
 
 // Confirms that the direct feedthrough logic is correct -- there is total
@@ -360,10 +339,9 @@ TEST_F(GeometrySystemTest, TransmogrifyContext) {
   ASSERT_NE(geo_context_ad, nullptr);
   // If the anchored geometry were not ported over, this would throw an
   // exception.
-  EXPECT_NO_THROW(
-      geo_context_ad->get_mutable_geometry_state().RemoveGeometry(s_id, g_id));
-  EXPECT_THROW(geo_context_ad->get_mutable_geometry_state().RemoveGeometry(
-                   s_id, GeometryId::get_new_id()),
+  EXPECT_TRUE(geo_context_ad->get_geometry_state().BelongsToSource(g_id, s_id));
+  EXPECT_THROW(geo_context_ad->get_geometry_state().BelongsToSource(
+                   GeometryId::get_new_id(), s_id),
                std::logic_error);
 }
 

@@ -81,7 +81,7 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
           VectorX<double>::Zero(plant_->actuator_command_input_port().size()));
   constant_zero_source->set_name("zero");
 
-  builder_.Connect(lcm_subscriber_->get_output_port(0),
+  builder_.Connect(lcm_subscriber_->get_output_port(),
                    xdot_hack_->get_input_port());
   builder_.Connect(xdot_hack_->get_output_port(),
                    accelerometer_->get_plant_state_derivative_input_port());

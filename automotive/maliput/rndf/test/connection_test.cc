@@ -12,6 +12,7 @@
 namespace drake {
 namespace maliput {
 namespace rndf {
+namespace {
 
 // Checks Connection's constructor constraints that may throw exceptions.
 GTEST_TEST(RNDFBuilderTest, ConnectionConstructorTest) {
@@ -130,6 +131,7 @@ GTEST_TEST(RNDFBuilderTest, ConnectionWaypointTest) {
   EXPECT_EQ(connection.waypoints()[4].id().Z(), id_at_the_end.Z());
 }
 
+}  // namespace
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake

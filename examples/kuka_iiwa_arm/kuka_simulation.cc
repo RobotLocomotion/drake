@@ -124,7 +124,7 @@ int DoMain() {
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>(num_joints);
   status_sender->set_name("status_sender");
 
-  base_builder->Connect(command_sub->get_output_port(0),
+  base_builder->Connect(command_sub->get_output_port(),
                         command_receiver->get_input_port(0));
   base_builder->Connect(command_receiver->get_output_port(0),
                         controller->get_input_port_desired_state());
@@ -141,7 +141,7 @@ int DoMain() {
   base_builder->Connect(external_torque_converter->get_output_port(0),
                         status_sender->get_external_torque_input_port());
   base_builder->Connect(status_sender->get_output_port(0),
-                        status_pub->get_input_port(0));
+                        status_pub->get_input_port());
 
   if (FLAGS_visualize_frames) {
     // TODO(sam.creasey) This try/catch block is here because even

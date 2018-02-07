@@ -10,6 +10,25 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "proximity_engine",
+    srcs = [
+        "proximity_engine.cc",
+    ],
+    hdrs = [
+        "proximity_engine.h",
+    ],
+    deps = [
+        ":geometry_ids",
+        ":geometry_index",
+        ":shape_specification",
+        "//drake/common",
+        "//drake/common:default_scalars",
+        "//drake/geometry/query_results:penetration_as_point_pair",
+        "@fcl",
+    ],
+)
+
+drake_cc_library(
     name = "frame_kinematics",
     srcs = [
         "frame_id_vector.cc",
@@ -84,6 +103,7 @@ drake_cc_library(
         ":geometry_instance",
         ":internal_frame",
         ":internal_geometry",
+        ":proximity_engine",
     ],
 )
 
@@ -159,6 +179,14 @@ drake_cc_library(
 )
 
 # -----------------------------------------------------
+
+drake_cc_googletest(
+    name = "proximity_engine_test",
+    deps = [
+        ":proximity_engine",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "frame_id_vector_test",

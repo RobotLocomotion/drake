@@ -1,0 +1,168 @@
+# -*- python -*-
+
+# Compile a tool that knows how to emit the version*.gen.h files.
+py_binary(
+    name = "update_version",
+    srcs = [
+        "compat.py",
+        "methods.py",
+        "version.py",
+        "@drake//tools/workspace/godotengine:main_update_version.py",
+    ],
+    main = "@drake//tools/workspace/godotengine:main_update_version.py",
+)
+
+# Run the tool that knows how to emit the version*.gen.h files.
+genrule(
+    name = "update_version_genrule",
+    outs = [
+        "core/version_generated.gen.h",
+        "core/version_hash.gen.h",
+    ],
+    cmd = "$(location :update_version) $(OUTS)",
+    tools = [":update_version"],
+)
+
+# Compile a tool that knows how to emit method_bind*.gen.inc files.
+py_binary(
+    name = "make_binders",
+    srcs = [
+        "core/make_binders.py",
+        "@drake//tools/workspace/godotengine:main_make_binders.py",
+    ],
+    main = "@drake//tools/workspace/godotengine:main_make_binders.py",
+)
+
+# Run the tool that knows how to emit method_bind*.gen.inc files.
+genrule(
+    name = "make_binders_genrule",
+    outs = [
+        "core/method_bind.gen.inc",
+        "core/method_bind_ext.gen.inc",
+    ],
+    cmd = "$(location :make_binders) $(OUTS)",
+    tools = [":make_binders"],
+)
+
+# Upstream's GLSL files.
+_GLSLS = glob(["drivers/gles3/shaders/*.glsl"])
+
+# The header files that will be generated.
+_GLSLS_GEN_H = [x + ".gen.h" for x in _GLSLS]
+
+# Compile a tool that knows how to emit *.glsl.gen.h files.
+py_binary(
+    name = "build_gles3_headers",
+    srcs = [
+        "compat.py",
+        "methods.py",
+        "@drake//tools/workspace/godotengine:main_build_gles3_headers.py",
+    ],
+    main = "@drake//tools/workspace/godotengine:main_build_gles3_headers.py",
+)
+
+# Run the tool that knows how to emit *.glsl.gen.h files.
+genrule(
+    name = "build_gles3_headers_genrule",
+    srcs = ["drivers/gles3/shader_gles3.h"] + _GLSLS,
+    outs = _GLSLS_GEN_H,
+    cmd = "$(location :build_gles3_headers) $(SRCS) $(OUTS)",
+    tools = [":build_gles3_headers"],
+)
+
+# Make the generated files #include-able.
+cc_library(
+    name = "generated_headers",
+    hdrs = [
+        "core/version_generated.gen.h",
+        "core/version_hash.gen.h",
+    ] + _GLSLS_GEN_H,
+    includes = [
+        ".",
+        "core",
+    ],
+    textual_hdrs = [
+        "core/method_bind.gen.inc",
+        "core/method_bind_ext.gen.inc",
+    ],
+)
+
+# The packages that we want.  Use "/**" to also glob their subpackages.
+_PACKAGES = [
+    "core/**",
+    "drivers",
+    "drivers/gl_context",
+    "drivers/gles3",
+    "drivers/png",
+    "scene/**",
+    "servers/**",
+    "thirdparty/glad/**",
+    "thirdparty/minizip/**",
+    "thirdparty/misc/**",
+    "thirdparty/zstd/**",
+]
+
+# Compile a library with everything from Godot that we need.
+cc_library(
+    name = "godotengine",
+    srcs = glob([
+        x + "/*.cpp"
+        for x in _PACKAGES
+    ] + [
+        x + "/*.c"
+        for x in _PACKAGES
+    ] + [
+        "drivers/unix/dir_access_unix.cpp",
+        "drivers/unix/file_access_unix.cpp",
+        "editor/**/*.h",
+        "platform/**/*.h",
+        "platform/**/globals/global_defaults.cpp",
+    ]),
+    hdrs = glob([
+        x + "/*.h"
+        for x in _PACKAGES
+    ] + [
+        x + "/*.inc"
+        for x in _PACKAGES
+    ] + [
+        "drivers/unix/**/*.h",
+    ]),
+    copts = [
+        "-Wno-c++11-narrowing",
+        "-w",
+    ],
+    defines = [
+        "GLAD_ENABLED",
+        "GLES_OVER_GL",
+        "UNIX_ENABLED",
+        "ZSTD_STATIC_LINKING_ONLY",
+    ],
+    includes = [
+        ".",
+        "core",
+        "core/bind",
+        "core/helper",
+        "core/io",
+        "core/math",
+        "core/os",
+        "drivers",
+        "drivers/gles3",
+        "platform/x11",
+        "thirdparty/glad",
+        "thirdparty/zstd",
+        "thirdparty/zstd/common",
+    ],
+    linkopts = select({
+        "@drake//tools/cc_toolchain:linux": ["-ldl"],
+        "//conditions:default": [],
+    }),
+    textual_hdrs = glob([
+        "**/*.xpm",
+    ]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "generated_headers",
+        "@libpng",
+        "@zlib",
+    ],
+)

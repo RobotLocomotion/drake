@@ -27,7 +27,7 @@ install_cmake_config(
 install(
     name = "install",
     targets = [":stx"],
-    hdr_dest = "include/stx",
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
     docs = ["@drake//tools/workspace/stx:LICENSE"],

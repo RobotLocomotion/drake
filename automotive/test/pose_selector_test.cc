@@ -562,10 +562,17 @@ TEST_F(PoseSelectorDragwayTest, IdenticalSValues) {
 TEST_F(PoseSelectorDragwayTest, TestGetSigmaVelocity) {
   MakeDragway(1 /* num lanes */, kDragwayLaneLength);
 
-  const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
-
-  RoadPosition position(lane, maliput::api::LanePosition(0., 0., 0.));
+  // Provide GetSigmaVelocity() with a null Lane.
+  RoadPosition null_rp(nullptr, maliput::api::LanePosition(0., 0., 0.));
   FrameVelocity<double> velocity{};
+
+  // Expect it to throw.
+  EXPECT_THROW(PoseSelector<double>::GetSigmaVelocity({null_rp, velocity}),
+               std::runtime_error);
+
+  // Set a valid lane.
+  const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
+  RoadPosition position(lane, maliput::api::LanePosition(0., 0., 0.));
 
   // Expect the s-velocity to be zero.
   double sigma_v = PoseSelector<double>::GetSigmaVelocity({position, velocity});

@@ -89,6 +89,14 @@ TYPED_TEST(LanePositionTest, ComponentSetters) {
   CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(99.), T(2.3), T(42.));
 }
 
+TYPED_TEST(LanePositionTest, MakeDouble) {
+  // Check that double conversion preserves the values.
+  using T = TypeParam;
+  LanePositionT<T> dut(T(0.1), T(0.2), T(0.3));
+
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut.MakeDouble(), 0.1, 0.2, 0.3);
+}
+
 #undef CHECK_ALL_LANE_POSITION_ACCESSORS
 
 // TODO(jadecastro) Use CompareMatrices() to implement the
@@ -160,6 +168,14 @@ TYPED_TEST(GeoPositionTest, ComponentSetters) {
 
   dut.set_z(T(42.));
   CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(99.), T(2.3), T(42.));
+}
+
+TYPED_TEST(GeoPositionTest, MakeDouble) {
+  // Check that double conversion preserves the values.
+  using T = TypeParam;
+  GeoPositionT<T> dut(T(0.1), T(0.2), T(0.3));
+
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut.MakeDouble(), 0.1, 0.2, 0.3);
 }
 
 #undef CHECK_ALL_GEO_POSITION_ACCESSORS

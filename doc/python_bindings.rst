@@ -91,38 +91,52 @@ The most up-to-date demonstrations of what can be done using ``pydrake`` are
 the ``pydrake`` unit tests themselves. You can see all of them inside the
 ``drake/bindings/python/pydrake/test`` folder in the Drake source code.
 
-There are multiple levels of modules available from ``pydrake``. If you are
-experimenting with ``pydrake`` in a REPL environment (such as IPython  or
-Jupyter), consider importing from ``pydrake.all`` to reduce the number of
-import staments.
+Here's an example snippet of code from ``pydrake``:
 
 ..
-    Developers: Ensure this is synchronized with
-    ``//bindings/pydrake:all_test``, specifically the test cases
-    ``test_usage_all`` and ``test_usage_no_all``.
-
-As an example, the following code uses ``pydrake.all``:
-
-.. code-block:: python
-
-    from pydrake.all import *
-
-    tree = RigidBodyTree(
-        FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-    simulator = Simulator(RigidBodyPlant(tree))
-
-While this code does not:
+    Developers: Ensure these snippets are synchronized with
+    ``//bindings/pydrake:all_test``
 
 .. code-block:: python
 
     from pydrake.common import FindResourceOrThrow
     from pydrake.multibody.rigid_body_plant import RigidBodyPlant
-    from pydrake.rbtree import RigidBodyTree
+    from pydrake.multibody.rigid_body_tree import RigidBodyTree
     from pydrake.systems.analysis import Simulator
 
     tree = RigidBodyTree(
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
     simulator = Simulator(RigidBodyPlant(tree))
 
-For guidance on when to use ``pydrake.all`` when developing, please see
-``help(pydrake.all)``.
+If you are prototyping code in a REPL environment (such as IPython / Jupyter)
+and to reduce the number of import statements, consider using ``pydrake.all`` to
+import a subset of symbols from a flattened namespace or import all modules
+automatically. If you are writing non-prototype code, avoid using
+``pydrake.all``; for more details, see ``help(pydrake.all)``.
+
+In all cases, try to avoid using ``from pydrake.all import *``, as it may
+introduce symbol collisions that are difficiult to debug.
+
+An example of importing symbols directly from ``pydrake.all``:
+
+.. code-block:: python
+
+    from pydrake.all import (
+        FindResourceOrThrow, RigidBodyPlant, RigidBodyTree, Simulator)
+
+    tree = RigidBodyTree(
+        FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
+    simulator = Simulator(RigidBodyPlant(tree))
+
+An alternative is to use ``pydrake.all`` to import all modules, but then
+explicity refer to each symbol:
+
+.. code-block:: python
+
+    import pydrake.all
+
+    tree = pydrake.multibody.rigid_body_tree.RigidBodyTree(
+        pydrake.common.FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
+    simulator = pydrake.systems.analysis.Simulator(
+        pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))

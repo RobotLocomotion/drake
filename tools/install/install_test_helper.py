@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import os
 import shutil
 import subprocess
@@ -16,6 +14,8 @@ def install(installation_folder="tmp", installed_subfolders=[],
     in installation directory, a string containing an error message is
     returned.
     """
+    assert "TEST_TMPDIR" in os.environ, (
+        "This may only be run from within `bazel test`")
     os.mkdir(installation_folder)
     # Install target and its dependencies in scratch space.
     subprocess.check_call(
@@ -33,7 +33,7 @@ def install(installation_folder="tmp", installed_subfolders=[],
     # Remove Bazel build artifacts, and ensure that we only have install
     # artifacts.
     content_test_folder = os.listdir(os.getcwd())
-    content_test_folder.remove('tmp')
+    content_test_folder.remove(installation_folder)
     for element in content_test_folder:
         if os.path.isdir(element):
             shutil.rmtree(element)

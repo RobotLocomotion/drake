@@ -101,7 +101,7 @@ class Sinusoid : public systems::LeafSystem<double> {
 class SchunkWsgLiftTest : public ::testing::TestWithParam<bool> {
  protected:
 
-  // Finds the single end-effector from a RigidBodyTree and returns it. Aborts 
+  // Finds the single end-effector from a RigidBodyTree and returns it. Aborts
   // if there is more than one end-effector or more than one base link.
   RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {
     // There should only be one base body.
@@ -224,7 +224,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   // trajectory or sinusoid) consist of an output and the time derivative of
   // that output. The PID controller requires the positional desireds to be
   // grouped together and the velocity desireds to also be grouped together;
-  // the control diagram uses demultiplexers and multiplexers for this purpose. 
+  // the control diagram uses demultiplexers and multiplexers for this purpose.
 
   // Build a trajectory and PID controller for the lifting joint.
   const auto& input_port =
@@ -232,7 +232,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   const auto& output_port =
       plant->model_instance_state_output_port(lifter_instance_id);
 
-  // Get the number of controllers. 
+  // Get the number of controllers.
   const int num_PID_controllers = plant->get_num_actuators() - 1;
 
   // Constants chosen arbitrarily.
@@ -365,7 +365,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   builder.Connect(plant->contact_results_output_port(),
                   contact_viz.get_input_port(0));
   builder.Connect(contact_viz.get_output_port(0),
-                  contact_results_publisher.get_input_port(0));
+                  contact_results_publisher.get_input_port());
 
   const int plant_output_port = builder.ExportOutput(plant->get_output_port(0));
 
@@ -410,7 +410,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Note: the RK2 is used instead of the RK3 here because error control
   // with our current models is yielding much slower running times without
-  // discernible improvements in accuracy. 
+  // discernible improvements in accuracy.
   const double dt = 1e-4;
   simulator.reset_integrator<RungeKutta2Integrator<double>>(
       *model, dt, &context);

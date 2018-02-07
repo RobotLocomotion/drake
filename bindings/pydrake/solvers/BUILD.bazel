@@ -39,12 +39,13 @@ drake_py_library(
     ],
 )
 
+# TODO(eric.cousineau): Move this into `multibody`.
 drake_pybind_library(
     name = "ik_py",
     cc_srcs = ["ik_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//drake/bindings/pydrake:rbtree_py",
+        "//drake/bindings/pydrake/multibody:rigid_body_tree_py",
     ],
     py_srcs = ["ik.py"],
 )

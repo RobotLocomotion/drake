@@ -12,12 +12,12 @@ content = """
   "Description": "Math classes and functions for robot applications",
   "License": "Apache-2.0",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
-  "Default-Components": [ ":ignition-math4" ],
+  "Default-Components": [":ignition-math4"],
   "Components": {
     "ignition-math4": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libignition_math.so",
-      "Includes": [ "@prefix@/include" ]
+      "Includes": ["@prefix@/include/ignition-math4"]
     }
   },
   "X-CMake-Variables": {

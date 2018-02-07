@@ -21,11 +21,11 @@ content = """
   "Components": {
     "lcm-coretypes": {
       "Type": "interface",
-      "Includes": ["@prefix@/include"]
+      "Includes": ["@prefix@/include/lcm"]
     },
     "lcm": {
       "Type": "dylib",
-      "Includes": ["@prefix@/include"],
+      "Includes": ["@prefix@/include/lcm"],
       "Location": "@prefix@/lib/liblcm.so",
       "Requires": [":lcm-coretypes"]
     },

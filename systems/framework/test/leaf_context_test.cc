@@ -175,8 +175,8 @@ TEST_F(LeafContextTest, GetNumDiscreteStateGroups) {
   EXPECT_EQ(2, context_.get_num_discrete_state_groups());
 }
 
-TEST_F(LeafContextTest, GetNumAbstractStateGroups) {
-  EXPECT_EQ(1, context_.get_num_abstract_state_groups());
+TEST_F(LeafContextTest, GetNumAbstractStates) {
+  EXPECT_EQ(1, context_.get_num_abstract_states());
 }
 
 TEST_F(LeafContextTest, IsStateless) {

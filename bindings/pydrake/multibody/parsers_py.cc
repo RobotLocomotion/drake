@@ -12,7 +12,7 @@ PYBIND11_MODULE(parsers, m) {
   m.doc() = "Tools for loading robots from various files";
 
   py::class_<PackageMap>(m, "PackageMap")
-    .def(py::init<>(), py::return_value_policy::reference)
+    .def(py::init<>())
     .def("Add", &PackageMap::Add)
     .def("Contains", &PackageMap::Contains)
     .def("size", &PackageMap::size)

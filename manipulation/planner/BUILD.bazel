@@ -24,6 +24,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "differential_inverse_kinematics",
+    srcs = ["differential_inverse_kinematics.cc"],
+    hdrs = ["differential_inverse_kinematics.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "robot_plan_interpolator",
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
@@ -54,6 +65,21 @@ drake_cc_googletest(
     deps = [
         ":constraint_relaxing_ik",
         "//drake/common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_test",
+    size = "medium",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = ["snopt"],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/manipulation/util:world_sim_tree_builder",
     ],
 )
 

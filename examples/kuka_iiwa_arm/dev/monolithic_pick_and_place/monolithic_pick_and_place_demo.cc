@@ -70,7 +70,7 @@ int DoMain(void) {
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm));
   builder.Connect(plant->get_output_port_contact_results(),
-                  contact_results_publisher->get_input_port(0));
+                  contact_results_publisher->get_input_port());
   contact_results_publisher->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Add visualizer.

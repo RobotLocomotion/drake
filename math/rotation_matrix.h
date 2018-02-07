@@ -193,7 +193,7 @@ Matrix3<T> XRotation(const T& theta) {
   Matrix3<T> R;
   using std::sin;
   using std::cos;
-  const double c = cos(theta), s = sin(theta);
+  const T c = cos(theta), s = sin(theta);
   // clang-format off
   R << 1, 0,  0,
        0, c, -s,
@@ -209,7 +209,7 @@ Matrix3<T> YRotation(const T& theta) {
   Matrix3<T> R;
   using std::sin;
   using std::cos;
-  const double c = cos(theta), s = sin(theta);
+  const T c = cos(theta), s = sin(theta);
   // clang-format off
   R <<  c, 0, s,
         0, 1, 0,
@@ -225,7 +225,7 @@ Matrix3<T> ZRotation(const T& theta) {
   Matrix3<T> R;
   using std::sin;
   using std::cos;
-  const double c = cos(theta), s = sin(theta);
+  const T c = cos(theta), s = sin(theta);
   // clang-format off
   R << c, -s, 0,
        s,  c, 0,

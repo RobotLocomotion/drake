@@ -11,6 +11,7 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+namespace {
 
 class MultilaneArcRoadCurveTest : public ::testing::Test {
  protected:
@@ -650,6 +651,7 @@ TEST_F(MultilaneArcRoadCurveTest, Orientation) {
   }
 }
 
+}  // namespace
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake

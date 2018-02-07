@@ -39,14 +39,40 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "parsers_py",
+    cc_so_name = "parsers",
+    cc_srcs = ["parsers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
     name = "rigid_body_plant_py",
     cc_so_name = "rigid_body_plant",
     cc_srcs = ["rigid_body_plant_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake:rbtree_py",
+        ":rigid_body_tree_py",
         "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "rigid_body_tree_py",
+    cc_deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
+    ],
+    cc_so_name = "rigid_body_tree",
+    cc_srcs = ["rigid_body_tree_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":parsers_py",
+        ":shapes_py",
+        "//bindings/pydrake:autodiffutils_py",
     ],
 )
 
@@ -61,11 +87,15 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":parsers_py",
     ":rigid_body_plant_py",
+    ":rigid_body_tree_py",
     ":shapes_py",
 ]
 
-PY_LIBRARIES = []
+PY_LIBRARIES = [
+    ":module_py",
+]
 
 # Symbol roll-up (for user ease).
 drake_py_library(
@@ -102,6 +132,30 @@ drake_py_test(
     data = ["//examples/quadrotor:models"],
     deps = [
         ":shapes_py",
+    ],
+)
+
+drake_py_test(
+    name = "rigid_body_tree_test",
+    size = "small",
+    data = [
+        "//drake/examples/atlas:models",
+        "//drake/examples/pendulum:models",
+    ],
+    deps = [":rigid_body_tree_py"],
+)
+
+drake_py_test(
+    name = "parsers_test",
+    size = "small",
+    data = [
+        "//drake/examples/acrobot:models",
+        "//drake/examples/atlas:models",
+        "//drake/examples/pr2:models",
+    ],
+    deps = [
+        ":parsers_py",
+        ":rigid_body_tree_py",
     ],
 )
 
