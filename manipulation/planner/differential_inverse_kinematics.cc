@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 
+#include "drake/solvers/snopt_solver.h"
+
 namespace drake {
 namespace manipulation {
 namespace planner {
@@ -131,7 +133,11 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   }
 
   // Solve
-  drake::solvers::SolutionResult result = prog.Solve();
+  // TODO(siyuan.feng): Switch this to a accurate open source QP solver when we
+  // have it.
+  solvers::SnoptSolver snopt;
+  DRAKE_THROW_UNLESS(snopt.available());
+  solvers::SolutionResult result = snopt.Solve(prog);
 
   if (result != drake::solvers::SolutionResult::kSolutionFound) {
     return {nullopt, DifferentialInverseKinematicsStatus::kNoSolutionFound};
