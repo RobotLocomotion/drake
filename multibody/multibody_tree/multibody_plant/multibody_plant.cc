@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -40,6 +41,7 @@ void MultibodyPlant<T>::Finalize() {
   model_->Finalize();
   DeclareStateAndPorts();
   // TODO(amcastro-tri): Declare GeometrySystem ports.
+  DeclareCacheEntries();
 }
 
 template<typename T>
@@ -123,23 +125,28 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
 }
 
 template<typename T>
+void MultibodyPlant<T>::DeclareCacheEntries() {
+  // TODO(amcastro-tri): User proper System::Declare() infrastructure to
+  // declare cache entries when that lands.
+  pc_ = std::make_unique<PositionKinematicsCache<T>>(model_->get_topology());
+  vc_ = std::make_unique<VelocityKinematicsCache<T>>(model_->get_topology());
+}
+
+template<typename T>
 const PositionKinematicsCache<T>& MultibodyPlant<T>::EvalPositionKinematics(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  static never_destroyed<PositionKinematicsCache<T>> pc(model_->get_topology());
-  model_->CalcPositionKinematicsCache(context, &pc.access());
-  return pc.access();
+  model_->CalcPositionKinematicsCache(context, pc_.get());
+  return *pc_;
 }
 
 template<typename T>
 const VelocityKinematicsCache<T>& MultibodyPlant<T>::EvalVelocityKinematics(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
-  static never_destroyed<PositionKinematicsCache<T>> pc(model_->get_topology());
-  static never_destroyed<VelocityKinematicsCache<T>> vc(model_->get_topology());
-  model_->CalcPositionKinematicsCache(context, &pc.access());
-  model_->CalcVelocityKinematicsCache(context, pc.access(), &vc.access());
-  return vc.access();
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  model_->CalcVelocityKinematicsCache(context, pc, vc_.get());
+  return *vc_;
 }
 
 }  // namespace multibody_plant

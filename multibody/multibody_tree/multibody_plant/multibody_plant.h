@@ -426,6 +426,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  // Helper method to declare cache entries to be allocated in the context.
+  void DeclareCacheEntries();
+
   // Helper method to Eval() position kinematics cached in the context.
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const;
@@ -442,6 +445,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // Map used to find joint indexes by their joint name.
   std::unordered_map<std::string, JointIndex> joint_name_to_index_;
+
+  // Temporary solution for fake cache entries to help statbilize the API.
+  // TODO(amcastro-tri): Remove these when caching lands.
+  std::unique_ptr<PositionKinematicsCache<T>> pc_;
+  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
 
 }  // namespace multibody_plant
