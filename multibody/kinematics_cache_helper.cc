@@ -37,6 +37,9 @@ KinematicsCacheWithVHelper<Scalar>::KinematicsCacheWithVHelper(
 template <typename Scalar>
 KinematicsCache<Scalar>& KinematicsCacheWithVHelper<Scalar>::UpdateKinematics(
     const Eigen::Ref<const VectorX<Scalar>>& q) {
+  if (last_v_.rows() == 0) {
+    throw std::runtime_error("last_v_ is not set yet.");
+  }
   return UpdateKinematics(q, last_v_);
 }
 

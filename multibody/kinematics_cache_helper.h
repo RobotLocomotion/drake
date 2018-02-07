@@ -45,6 +45,24 @@ class KinematicsCacheWithVHelper {
    */
   explicit KinematicsCacheWithVHelper(const RigidBodyTree<double>& tree);
 
+  /**
+   * Only updates the position q, but leave velocity v unchanged as the last
+   * velocity passed in.
+   * @throw a runtime_error if last_v_ is unset.
+   * Note that by updating only q, KinematicsCacheWithVHelper behaves similarly
+   * to KinematicsCachHelper, without updating v. The reason we provide this
+   * functionality is that it is possible that we might need to evaluate
+   * some kinematic result both with and without v, for example in manipulator
+   * equation
+   * Mv̇+c = Bu + Jᵀλ
+   * The coriolis term c requires kinematics information with both q and v,
+   * while the Jacobian J might only need the position q. To avoid providing
+   * two helpers for this evaluator, one with v and one without, we can choose
+   * to provide a single helper with both q and v, and update only q when
+   * computing the Jacobian J. This trick avoids the redundant computation for
+   * calling doKinematics for twice, if we were to use two kinematics cache
+   * helpers, one with v and the other without.
+   */
   KinematicsCache<Scalar>& UpdateKinematics(
       const Eigen::Ref<const VectorX<Scalar>>& q);
 
