@@ -95,8 +95,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "type_safe_index_py_h",
-    hdrs = ["type_safe_index_py.h"],
+    name = "type_safe_index_pybind_h",
+    hdrs = ["type_safe_index_pybind.h"],
     visibility = ["//bindings/pydrake:__subpackages__"],
 )
 
