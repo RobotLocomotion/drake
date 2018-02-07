@@ -31,6 +31,17 @@ FrameId QueryObject<T>::GetFrameId(GeometryId geometry_id) const {
   return context_->get_geometry_state().GetFrameId(geometry_id);
 }
 
+template <typename T>
+std::vector<PenetrationAsPointPair<double>>
+QueryObject<T>::ComputePointPairPenetration() const {
+  ThrowIfDefault();
+
+  // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
+  system_->FullPoseUpdate(*context_);
+  const GeometryState<T>& state = context_->get_geometry_state();
+  return state.ComputePointPairPenetration();
+}
+
 }  // namespace geometry
 }  // namespace drake
 

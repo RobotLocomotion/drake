@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -15,9 +16,54 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/proximity_engine.h"
 
 namespace drake {
 namespace geometry {
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+
+// A const range iterator through the keys of an unordered map.
+template <typename K, typename V>
+class MapKeyRange {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MapKeyRange)
+
+  class ConstIterator {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstIterator)
+
+    const K& operator*() const { return itr_->first; }
+    const ConstIterator& operator++() {
+      ++itr_;
+      return *this;
+    }
+    bool operator!=(const ConstIterator& other) { return itr_ != other.itr_; }
+
+   private:
+    explicit ConstIterator(
+        typename std::unordered_map<K, V>::const_iterator itr)
+        : itr_(itr) {}
+
+   private:
+    typename std::unordered_map<K, V>::const_iterator itr_;
+    friend class MapKeyRange;
+  };
+
+  explicit MapKeyRange(const std::unordered_map<K, V>* map)
+      : map_(map) {
+    DRAKE_DEMAND(map);
+  }
+  ConstIterator begin() const { return ConstIterator(map_->cbegin()); }
+  ConstIterator end() const { return ConstIterator(map_->cend()); }
+
+ private:
+  const std::unordered_map<K, V>* map_;
+};
+
+}  // namespace internal
+#endif
 
 class GeometryFrame;
 
@@ -53,13 +99,10 @@ class GeometryState {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
 
- private:
-  template <typename K, typename V> class MapKeyRange;
-
  public:
   /** An object that represents the range of FrameId values in the state. It
    is used in range-based for loops to iterate through registered frames. */
-  using FrameIdRange = MapKeyRange<FrameId, internal::InternalFrame>;
+  using FrameIdRange = internal::MapKeyRange<FrameId, internal::InternalFrame>;
 
   /** Default constructor. */
   GeometryState();
@@ -319,7 +362,26 @@ class GeometryState {
 
   //@}
 
-  /** Scalar conversion */
+  //----------------------------------------------------------------------------
+  /** @name                Collision Queries
+
+   These queries detect _collisions_ between geometry. Two geometries collide
+   if they overlap each other and are not explicitly excluded through
+   @ref collision_filter_concepts "collision filtering". These algorithms find
+   those colliding cases, characterize them, and report the essential
+   characteristics of that collision.  */
+  //@{
+
+  /** See QueryObject::ComputePointPairPenetration() for documentation. */
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+      const {
+    return geometry_engine_->ComputePointPairPenetration(
+        geometry_index_id_map_, anchored_geometry_index_id_map_);
+  }
+
+  //@}
+
+  /** @name Scalar conversion */
   //@{
 
   /** Returns a deep copy of this state using the AutoDiffXd scalar with all
@@ -336,7 +398,7 @@ class GeometryState {
   friend class GeometryState;
 
   // Conversion constructor. In the initial implementation, this is only
-  // intended to be used to clone an AutoDiff instance from a double instance.
+  // intended to be used to clone an AutoDiffXd instance from a double instance.
   template <typename U>
   GeometryState(const GeometryState<U>& source)
       : source_frame_id_map_(source.source_frame_id_map_),
@@ -349,7 +411,8 @@ class GeometryState {
         geometry_index_id_map_(source.geometry_index_id_map_),
         anchored_geometry_index_id_map_(source.anchored_geometry_index_id_map_),
         X_FG_(source.X_FG_),
-        pose_index_to_frame_map_(source.pose_index_to_frame_map_) {
+        pose_index_to_frame_map_(source.pose_index_to_frame_map_),
+        geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we *can*
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
     auto convert = [](const std::vector<Isometry3<U>>& s,
@@ -398,43 +461,9 @@ class GeometryState {
   void ValidateFramePoses(const FrameIdVector& ids,
                           const FramePoseVector<T>& poses) const;
 
-  // A const range iterator through the keys of an unordered map.
-  template <typename K, typename V>
-  class MapKeyRange {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MapKeyRange)
-
-    class ConstIterator {
-     public:
-      DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstIterator)
-
-      const K& operator*() const { return itr_->first; }
-      const ConstIterator& operator++() {
-        ++itr_;
-        return *this;
-      }
-      bool operator!=(const ConstIterator& other) { return itr_ != other.itr_; }
-
-     private:
-      explicit ConstIterator(
-          typename std::unordered_map<K, V>::const_iterator itr)
-          : itr_(itr) {}
-
-     private:
-      typename std::unordered_map<K, V>::const_iterator itr_;
-      friend class MapKeyRange;
-    };
-
-    explicit MapKeyRange(const std::unordered_map<K, V>* map)
-        : map_(map) {
-      DRAKE_DEMAND(map);
-    }
-    ConstIterator begin() const { return ConstIterator(map_->cbegin()); }
-    ConstIterator end() const { return ConstIterator(map_->cend()); }
-
-   private:
-    const std::unordered_map<K, V>* map_;
-  };
+  // Method that performs any final book-keeping/updating on the state after
+  // _all_ of the state's frames have had their poses updated.
+  void FinalizePoseUpdate() { geometry_engine_->UpdateWorldPoses(X_WG_); }
 
   // Gets the source id for the given frame id. Throws std::logic_error if the
   // frame belongs to no registered source.
@@ -556,6 +585,15 @@ class GeometryState {
   // In other words, it is the full evaluation of the kinematic chain from
   // frame i to the world frame.
   std::vector<Isometry3<T>> X_WF_;
+
+  // The underlying geometry engine. The topology of the engine does *not*
+  // change with respect to time. But its values do. This straddles the two
+  // worlds, maintaining its own persistent topological state and derived
+  // time-dependent state. This *could* be constructed from scratch at each
+  // evaluation based on the previous data, but its internal data structures
+  // rely on temporal coherency to speed up the calculations. Thus we persist
+  // and copy it.
+  copyable_unique_ptr<internal::ProximityEngine<T>> geometry_engine_;
 };
 }  // namespace geometry
 }  // namespace drake

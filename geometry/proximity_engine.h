@@ -62,7 +62,7 @@ class ProximityEngine {
   /** Returns an independent copy of this engine templated on the AutoDiffXd
    scalar type. If the engine is already an AutoDiffXd engine, it is equivalent
    to using the copy constructor to create a duplicate on the heap. */
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ToAutoDiff() const;
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ToAutoDiffXd() const;
 
   /** @name Topology management */
   //@{

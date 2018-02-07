@@ -534,6 +534,7 @@ ProximityEngine<T>::ProximityEngine(const ProximityEngine<T>& other)
 template <typename T>
 ProximityEngine<T>& ProximityEngine<T>::operator=(
     const ProximityEngine<T>& other) {
+  if (this == &other) return *this;
   if (impl_) delete impl_;
   impl_ = new ProximityEngine<T>::Impl(*other.impl_);
   return *this;
@@ -548,6 +549,7 @@ ProximityEngine<T>::ProximityEngine(ProximityEngine<T>&& other) noexcept
 template <typename T>
 ProximityEngine<T>& ProximityEngine<T>::operator=(
     ProximityEngine<T>&& other) noexcept {
+  if (this == &other) return *this;
   if (impl_) delete impl_;
   impl_ = std::move(other.impl_);
   other.impl_ = new ProximityEngine<T>::Impl();
@@ -581,7 +583,7 @@ int ProximityEngine<T>::num_anchored() const {
 }
 
 template <typename T>
-std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiff()
+std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
     const {
   return unique_ptr<ProximityEngine<AutoDiffXd>>(
       new ProximityEngine<AutoDiffXd>(impl_->ToAutoDiff().release()));
