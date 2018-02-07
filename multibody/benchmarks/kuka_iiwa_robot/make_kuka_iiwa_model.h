@@ -27,7 +27,7 @@ class KukaIiwaModelBuilder {
   ///   The model's acceleration of gravity. `gravity > 0` means the gravity
   ///   field is directed opposite the world upward z-unit vector (i.e.
   ///   downwards).
-  KukaIiwaModelBuilder(double gravity) : gravity_(gravity) {}
+  explicit KukaIiwaModelBuilder(double gravity) : gravity_(gravity) {}
 
   /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   /// The robot is constructed with 7 revolute joints.

@@ -4,6 +4,7 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -1709,6 +1710,9 @@ class MultibodyTree {
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.
   std::vector<const Frame<T>*> frames_;
+
+  // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
+  // since they are not templated on <T>.
 
   // Map used to find body indexes by their unique body name.
   std::unordered_map<std::string, BodyIndex> body_name_to_index_;

@@ -160,10 +160,10 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
 }
 }  // namespace internal
 
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class internal::KukaIiwaModelBuilder);
+
 }  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::benchmarks::kuka_iiwa_robot::internal::KukaIiwaModelBuilder);
