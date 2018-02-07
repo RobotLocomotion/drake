@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -40,6 +41,7 @@ void MultibodyPlant<T>::Finalize() {
   model_->Finalize();
   DeclareStateAndPorts();
   // TODO(amcastro-tri): Declare GeometrySystem ports.
+  DeclareCacheEntries();
 }
 
 template<typename T>
@@ -68,11 +70,8 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
-  // TODO(amcastro-tri): Eval() these from the context.
-  PositionKinematicsCache<T> pc(model_->get_topology());
-  VelocityKinematicsCache<T> vc(model_->get_topology());
-  model_->CalcPositionKinematicsCache(context, &pc);
-  model_->CalcVelocityKinematicsCache(context, pc, &vc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
   // Compute forces applied through force elements. This effectively resets
   // the forces to zero and adds in contributions due to force elements.
@@ -123,6 +122,31 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   // TODO(amcastro-tri): Declare input ports for actuators.
 
   // TODO(amcastro-tri): Declare output port for the state.
+}
+
+template<typename T>
+void MultibodyPlant<T>::DeclareCacheEntries() {
+  // TODO(amcastro-tri): User proper System::Declare() infrastructure to
+  // declare cache entries when that lands.
+  pc_ = std::make_unique<PositionKinematicsCache<T>>(model_->get_topology());
+  vc_ = std::make_unique<VelocityKinematicsCache<T>>(model_->get_topology());
+}
+
+template<typename T>
+const PositionKinematicsCache<T>& MultibodyPlant<T>::EvalPositionKinematics(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
+  model_->CalcPositionKinematicsCache(context, pc_.get());
+  return *pc_;
+}
+
+template<typename T>
+const VelocityKinematicsCache<T>& MultibodyPlant<T>::EvalVelocityKinematics(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Replace Calc() for an actual Eval() when caching lands.
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  model_->CalcVelocityKinematicsCache(context, pc, vc_.get());
+  return *vc_;
 }
 
 }  // namespace multibody_plant
