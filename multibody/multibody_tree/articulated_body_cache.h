@@ -15,8 +15,8 @@ namespace multibody {
 /// articulated body algorithm.
 ///
 /// Articulated body cache entries include:
-/// - Articulated body inertia `P⁺_PB_W` for each body B in the model as felt by
-///   the inboard (or parent) body P, expressed in the world frame W.
+/// - Articulated body inertia `Pplus_PB_W` for each body B in the model as
+///   felt by the inboard (or parent) body P, expressed in the world frame W.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
@@ -38,20 +38,20 @@ class ArticulatedBodyCache {
     Allocate();
   }
 
-  /// Returns a const reference to the articulated body inertia `P⁺_PB_W` of
+  /// Returns a const reference to the articulated body inertia `Pplus_PB_W` of
   /// the body B associated with node `body_node_index` as felt by the parent
   /// node's body P, expressed in the world frame W.
-  const ArticulatedBodyInertia<T>& get_PPlus_PB_W(
+  const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
       BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return PPlus_PB_W_[body_node_index];
+    return Pplus_PB_W_[body_node_index];
   }
 
-  /// Mutable version of get_PPlus_PB_W().
-  ArticulatedBodyInertia<T>& get_mutable_PPlus_PB_W(
+  /// Mutable version of get_Pplus_PB_W().
+  ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
       BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return PPlus_PB_W_[body_node_index];
+    return Pplus_PB_W_[body_node_index];
   }
 
  private:
@@ -60,14 +60,14 @@ class ArticulatedBodyCache {
 
   // Allocates resources for this articulated body cache.
   void Allocate() {
-    PPlus_PB_W_.resize(num_nodes_);
+    Pplus_PB_W_.resize(num_nodes_);
   }
 
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
 
   // Pools.
-  ABI_PoolType PPlus_PB_W_{};  // Indexed by BodyNodeIndex.
+  ABI_PoolType Pplus_PB_W_{};  // Indexed by BodyNodeIndex.
 };
 
 }  // namespace multibody

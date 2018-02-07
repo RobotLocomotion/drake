@@ -104,17 +104,6 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
  protected:
-  template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const {
-    const Frame<ToScalar>& inboard_frame_clone =
-        tree_clone.get_variant(this->get_inboard_frame());
-    const Frame<ToScalar>& outboard_frame_clone =
-        tree_clone.get_variant(this->get_outboard_frame());
-    return std::make_unique<FeatherstoneMobilizer<ToScalar>>(
-        inboard_frame_clone, outboard_frame_clone);
-  }
-
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override {
     return TemplatedDoCloneToScalar(tree_clone);
@@ -126,6 +115,8 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
  private:
+  typedef MobilizerImpl<T, 2, 2> MobilizerBase;
+
   const Vector3<T> rotation_axis() const {
     return H_FM_.template block<3, 1>(0, 0);
   }
@@ -144,7 +135,17 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     return q[1];
   }
 
-  typedef MobilizerImpl<T, 2, 2> MobilizerBase;
+  template <typename ToScalar>
+  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const {
+    const Frame<ToScalar>& inboard_frame_clone =
+        tree_clone.get_variant(this->get_inboard_frame());
+    const Frame<ToScalar>& outboard_frame_clone =
+        tree_clone.get_variant(this->get_outboard_frame());
+    return std::make_unique<FeatherstoneMobilizer<ToScalar>>(
+        inboard_frame_clone, outboard_frame_clone);
+  }
+
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 
@@ -225,7 +226,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_BC_W_expected =
       ArticulatedBodyInertia<double>(P_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_BC_W_actual =
-      abc.get_PPlus_PB_W(cylinder_link.get_node_index());
+      abc.get_Pplus_PB_W(cylinder_link.get_node_index());
   EXPECT_TRUE(P_BC_W_expected.CopyToFullMatrix6().isApprox(
       P_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -240,7 +241,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
       ArticulatedBodyInertia<double>(P_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
-      abc.get_PPlus_PB_W(box_link.get_node_index());
+      abc.get_Pplus_PB_W(box_link.get_node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
       P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
 }

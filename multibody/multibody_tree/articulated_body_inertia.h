@@ -122,9 +122,12 @@ class ArticulatedBodyInertia {
   /// to a non-physically viable articulated body inertia.
   ///
   /// @param[in] matrix A matrix representing the articulated body inertia.
+  ///
+  /// @warning Even in Debug, no check is made to ensure that the input matrix
+  ///          is symmetric.
   explicit ArticulatedBodyInertia(const Matrix6<T>& matrix) {
-    DRAKE_ASSERT_VOID(CheckInvariants(matrix));
     matrix_.template triangularView<Eigen::Lower>() = matrix;
+    DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
   /// Returns a new %ArticulatedBodyInertia object templated on `Scalar` with
@@ -147,21 +150,15 @@ class ArticulatedBodyInertia {
     return P;
   }
 
-  /// Performs a number of checks to verify that the input matrix is a
-  /// physically valid articulated body inertia.
+  /// Performs a number of checks to verify that this is a physically valid
+  /// articulated body inertia.
   ///
   /// The checks performed are:
-  /// - The matrix is symmetric.
-  /// - The matrix is semi-positive definite.
-  ///
-  /// @param[in] matrix A 6x6 matrix representing this articulated body inertia.
-  bool IsPhysicallyValid(const Matrix6<T>& matrix) const {
-    // Check if the matrix is symmetric.
-    if (!(matrix - matrix.transpose()).isZero(1e-10)) return false;
-
+  ///   - The matrix is semi-positive definite.
+  bool IsPhysicallyValid() const {
     // Attempt the Robust Cholesky decomposition to test if the matrix is
     // positive semi-definite.
-    const auto ldlt = matrix.ldlt();
+    const auto ldlt = matrix_.template selfadjointView<Eigen::Lower>().ldlt();
     return ldlt.info() == Eigen::Success && ldlt.isPositive();
   }
 
@@ -336,8 +333,8 @@ class ArticulatedBodyInertia {
   // Checks that the ArticulatedBodyInertia is physically valid and throws an
   // exception if not. This is mostly used in Debug builds to throw an
   // appropriate exception.
-  void CheckInvariants(const Matrix6<T>& matrix) const {
-    if (!IsPhysicallyValid(matrix)) {
+  void CheckInvariants() const {
+    if (!IsPhysicallyValid()) {
       throw std::runtime_error(
           "The resulting articulated body inertia is not physically valid. "
               "See ArticulatedBodyInertia::IsPhysicallyValid()");

@@ -145,7 +145,7 @@ GTEST_TEST(ArticulatedBodyInertia, PlusEqualOperator) {
 
 // Test the times equal for operator for multiplying on the left and right
 // by arbitrary Eigen matrices of valid sizes.
-GTEST_TEST(ArticulatedBodyInertia, TimesEqualOperator) {
+GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
   // Spatial inertia for a cube C.
   double Lx = 1.0, Ly = 1.0, Lz = 1.0;  // Cube's lengths.
   double mass = 1.0;  // Cube's mass

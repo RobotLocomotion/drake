@@ -866,10 +866,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// this node's articulated body quantities that depend on both generalized
   /// positions and generalized velocities.
   ///
-  /// This method aborts in Debug builds when:
-  /// - Called on the _root_ node.
-  /// - `abc` is nullptr.
-  ///
   /// @param[in] context
   ///   The context with the state of the MultibodyTree model.
   /// @param[in] pc
@@ -898,6 +894,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @pre CalcArticulatedBodyCache_TipToBase() must have already been
   /// called for all the child nodes of `this` node (and, by recursive
   /// precondition, all successor nodes in the tree.)
+  ///
+  /// @throws when called on the _root_ node, `abc` is nullptr, or the size
+  ///         of `tau_applied` does not match the number of velocities for
+  ///         this node's mobilizer.
   void CalcArticulatedBodyCache_TipToBase(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -906,9 +906,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const SpatialForce<T>& /* Fapplied_Bo_W */,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       ArticulatedBodyCache<T>* abc) const {
-    DRAKE_ASSERT(topology_.body != world_index());
-    DRAKE_ASSERT(abc != nullptr);
-    DRAKE_DEMAND(tau_applied.size() == get_num_mobilizer_velocites());
+    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(abc != nullptr);
+    DRAKE_THROW_UNLESS(tau_applied.size() == get_num_mobilizer_velocites());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -918,6 +918,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //    not to be confused with the articulated body inertia, which is also
     //    named P.
     //  - C within a loop over children, one of body B's children.
+    //  - P_B_W for the articulated body inertia of body B, about Bo, and
+    //    expressed in world frame W.
+    //  - Pplus_PB_W for the same articulated body inertia P_B_W but projected
+    //    across B's inboard mobilizer to frame P so that instead of
+    //    F_Bo_W = P_B_W A_WB + z_Bo_W, we can write
+    //    F_Bo_W = Pplus_PB_W Aplus_WP + zplus_Bo_W.
+    //  - Φ(p_PQ) for Jain's rigid body transformation operator. In code,
+    //    V_MQ = Φᵀ(p_PQ) V_MP is equivalent to V_MP.Shift(p_PQ).
     //
     // The goal is to populate the articulated body cache with values necessary
     // for computing generalized accelerations in the second pass of the
@@ -927,16 +935,19 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //
     // We compute the articulated inertia of the current body by summing
     // contributions from all its children with its own spatial inertia. Note
-    // that Φ is the is the rigid body shift operator as defined in [Jain 2010].
-    //   P_B_W = Σᵢ(Φ(p_BCᵢ_W) P_BCᵢ_W Φ(p_BCᵢ_W)ᵀ) + M_B_W
-    //         = Σᵢ(P_BCᵢb_W) + M_B_W                                       (1)
-    // where P_BCᵢb_W is the articulated body inertia of the child body Cᵢ as
-    // measured from body frame B and shifted to the origin of body frame B.
+    // that Φ is the is the rigid body shift operator as defined in [Jain 2010]
+    // (Φ(P, Q) in Jain's book corresponds to Φ(p_PQ) in the notation used
+    // here).
+    //   P_B_W = Σᵢ(Φ(p_BCᵢ_W) Pplus_BCᵢ_W Φ(p_BCᵢ_W)ᵀ) + M_B_W
+    //         = Σᵢ(Pplus_BCᵢb_W) + M_B_W                                   (1)
+    // where Pplus_BCᵢb_W is the articulated body inertia of the child body Cᵢ,
+    // projected across its inboard mobilizer to frame B, shifted to frame B,
+    // and expressed in the world frame W.
     //
-    // From P_B_W, we can obtain P⁺_PB_W by projecting the articulated body
+    // From P_B_W, we can obtain Pplus_PB_W by projecting the articulated body
     // inertia for this node across its mobilizer.
-    //   P⁺_PB_W = (I - P_B_W H_PB_W (H_PB_Wᵀ P_B_W H_PB_W)⁻¹ H_PB_Wᵀ)
-    //               P_B_W                                                  (2)
+    //   Pplus_PB_W = (I - P_B_W H_PB_W (H_PB_Wᵀ P_B_W H_PB_W)⁻¹ H_PB_Wᵀ)
+    //                  P_B_W                                               (2)
     // where H_PB_W is the hinge mapping matrix.
     //
     // A few quantities are required in the second pass. We write them out
@@ -946,9 +957,21 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // where D_PB_W is the articulated body hinge inertia and g_PB_W is the
     // Kalman gain.
     //
+    // In order to reduce the number of computations, we can save the common
+    // factor HTxP = H_PB_Wᵀ P_B_W. We then can write:
+    //   D_PB_W = HTxP H_PB_W                                               (5)
+    // and for g,
+    //   g_PB_Wᵀ = (D_PB_W⁻¹)ᵀ H_PB_Wᵀ P_B_Wᵀ
+    //           = (D_PB_Wᵀ)⁻¹ H_PB_Wᵀ P_B_W
+    //           = D_PB_W⁻¹ HTxP                                            (6)
+    // where we used the fact that both D and P are symmetric. Notice in the
+    // last expression for g_PB_Wᵀ we are reusing the common factor HTxP.
+    //
     // Given the articulated body hinge inertia and Kalman gain, we can simplify
     // the equation in (2).
-    //   P⁺_PB_W = (I - g_PB_W H_PB_Wᵀ) P_B_W                               (5)
+    //   Pplus_PB_W = (I - g_PB_W H_PB_Wᵀ) P_B_W
+    //              = P_B_W - g_PB_W H_PB_Wᵀ P_B_W
+    //              = P_B_W - g_PB_W * HTxP                                 (7)
 
     // Body for this node.
     const Body<T>& body_B = get_body();
@@ -975,43 +998,45 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const Vector3<T> p_CoBo_B = -X_BC.translation();
       const Vector3<T> p_CoBo_W = R_WB * p_CoBo_B;
 
-      // Pull P⁺_BC_W from cache (which is P⁺_PB_W for child).
-      const ArticulatedBodyInertia<T>& PPlus_BC_W = child->get_PPlus_PB_W(*abc);
+      // Pull Pplus_BC_W from cache (which is Pplus_PB_W for child).
+      const ArticulatedBodyInertia<T>& Pplus_BC_W = child->get_Pplus_PB_W(*abc);
 
-      // Shift P⁺_BC_W to P⁺_BCb_W.
-      const ArticulatedBodyInertia<T> PPlus_BCb_W = PPlus_BC_W.Shift(p_CoBo_W);
+      // Shift Pplus_BC_W to Pplus_BCb_W.
+      const ArticulatedBodyInertia<T> Pplus_BCb_W = Pplus_BC_W.Shift(p_CoBo_W);
 
-      // Add P⁺_BCb_W contribution to articulated body inertia.
-      P_B_W += PPlus_BCb_W;
+      // Add Pplus_BCb_W contribution to articulated body inertia.
+      P_B_W += Pplus_BCb_W;
     }
 
-    // Get the number of columns of H_PB_W.
-    const int nc = static_cast<const int>(H_PB_W.cols());
+    // Get the number of mobilizer velocities (number of columns of H_PB_W).
+    const int nv = get_num_mobilizer_velocites();
 
-    // Compute the articulated body hinge inertia, D_PB_W, using (3).
-    MatrixUpTo6<T> D_PB_W(nc, nc);
-    D_PB_W.template triangularView<Eigen::Lower>() =
-        H_PB_W.transpose() * P_B_W * H_PB_W;
+    // Compute common term HTxP.
+    const MatrixUpTo6<T> HTxP = H_PB_W.transpose() * P_B_W;
 
-    // Compute Dinv_PB_W = D_PB_W⁻¹.
+    // Compute the articulated body hinge inertia, D_PB_W, using (5).
+    MatrixUpTo6<T> D_PB_W(nv, nv);
+    D_PB_W.template triangularView<Eigen::Lower>() = HTxP * H_PB_W;
+
+    // Compute the LDLT factorization of D_PB_W as ldlt_D_PB_W.
     // TODO(bobbyluig): Test performance against inverse().
-    MatrixUpTo6<T> Dinv_PB_W = D_PB_W.template selfadjointView<Eigen::Lower>()
-        .ldlt().solve(MatrixUpTo6<T>::Identity(nc, nc));
+    const auto ldlt_D_PB_W =
+        D_PB_W.template selfadjointView<Eigen::Lower>().ldlt();
 
     // Ensure that D_PB_W is not singular.
     // Singularity means that a non-physical hinge mapping matrix was used or
     // that this articulated body inertia has some non-physical quantities
     // (such as zero moment of inertia along an axis which the hinge mapping
     // matrix permits motion).
-    DRAKE_DEMAND(Dinv_PB_W.allFinite());
+    DRAKE_DEMAND(ldlt_D_PB_W.info() == Eigen::Success);
 
-    // Compute the Kalman gain, g_PB_W, using (4).
-    const MatrixUpTo6<T> g_PB_W = P_B_W * H_PB_W * Dinv_PB_W;
+    // Compute the Kalman gain, g_PB_W, using (6).
+    const MatrixUpTo6<T> g_PB_W = ldlt_D_PB_W.solve(HTxP).transpose();
 
-    // Project P_B_W using (5) to obtain P⁺_PB_W, the articulated body inertia
-    // of this body B as felt by body P and expressed in frame W.
-    get_mutable_PPlus_PB_W(abc) = ArticulatedBodyInertia<T>(
-        (Matrix6<T>::Identity() - g_PB_W * H_PB_W.transpose()) * P_B_W);
+    // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
+    // inertia of this body B as felt by body P and expressed in frame W.
+    get_mutable_Pplus_PB_W(abc) = ArticulatedBodyInertia<T>(
+        P_B_W.CopyToFullMatrix6()- g_PB_W * HTxP);
   }
 
  protected:
@@ -1175,18 +1200,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // =========================================================================
   // ArticulatedBodyCache Accessors and Mutators.
 
-  /// Returns a const reference to the articulated body inertia `P⁺_PB_W` of
+  /// Returns a const reference to the articulated body inertia `Pplus_PB_W` of
   /// the body B associated with node `body_node_index` as felt by the parent
   /// node's body P, expressed in the world frame W.
-  const ArticulatedBodyInertia<T>& get_PPlus_PB_W(
+  const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
       const ArticulatedBodyCache<T>& abc) const {
-    return abc.get_PPlus_PB_W(topology_.index);
+    return abc.get_Pplus_PB_W(topology_.index);
   }
 
-  /// Mutable version of get_PPlus_PB_W().
-  ArticulatedBodyInertia<T>& get_mutable_PPlus_PB_W(
+  /// Mutable version of get_Pplus_PB_W().
+  ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
       ArticulatedBodyCache<T>* abc) const {
-    return abc->get_mutable_PPlus_PB_W(topology_.index);
+    return abc->get_mutable_Pplus_PB_W(topology_.index);
   }
 
   // =========================================================================
