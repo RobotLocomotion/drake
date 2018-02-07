@@ -10,7 +10,8 @@ namespace kuka_iiwa_robot {
 using drake::multibody::multibody_plant::MultibodyPlant;
 
 std::unique_ptr<MultibodyPlant<double>> MakeKukaIiwaPlant() {
-  auto plant = std::make_unique<MultibodyPlant<double>>(MakeKukaIiwaModel());
+  auto plant = std::make_unique<MultibodyPlant<double>>(
+      MakeKukaIiwaModel<double>(9.81));
   // Communicate the plant that state, ports and other system specifications can
   // be declared.
   plant->Finalize();
