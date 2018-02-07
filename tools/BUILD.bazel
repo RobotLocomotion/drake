@@ -20,6 +20,7 @@ py_binary(
         "//drake/bindings/pydrake",
         "//drake/lcmtypes:lcmtypes_py",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
+        "@drake_visualizer//:drake_visualizer_python_deps",
     ]),
 )
 
