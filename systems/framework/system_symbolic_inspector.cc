@@ -152,7 +152,7 @@ bool SystemSymbolicInspector::IsAbstract(
 
   // If there is any abstract state or parameters, we cannot do sparsity
   // analysis of this Context.
-  if (context.get_num_abstract_state_groups() > 0) {
+  if (context.get_num_abstract_states() > 0) {
     return true;
   }
   if (context.num_abstract_parameters() > 0) {
