@@ -20,9 +20,9 @@ drake_cc_library(
     srcs = ["maliput_types_compare.cc"],
     hdrs = ["maliput_types_compare.h"],
     deps = [
-        "//drake/automotive/maliput/api",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
+        "//automotive/maliput/api",
+        "//common:essential",
+        "//math:geometric_transform",
         "@gtest//:without_main",
     ],
 )
