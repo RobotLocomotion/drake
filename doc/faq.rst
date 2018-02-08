@@ -126,3 +126,37 @@ The fix is to change the compiler CMake is using. One way to do this is to set t
 .. [#dual_abi] https://stackoverflow.com/q/36159238/7829525
 .. [#binary_install] :ref:`binary-installation`
 .. [#update_alt] https://askubuntu.com/a/26500/692420
+
+.. _faq_apt_upgrade:
+
+Why do I get errors with ``install_prereqs.sh`` after having run ``apt upgrade; apt dist-upgrade``?
+===================================================================================================
+
+**Symptom**: You have a fresh install of Ubuntu 16.04 (Xenial), and have run ``sudo apt upgrade; sudo apt dist-upgrade``.
+When you try to run ``install_prereqs.sh`` from Drake, you get errors such as::
+
+    Some packages could not be installed. This may mean that you have
+    requested an impossible situation or if you are using the unstable
+    distribution that some required packages have not yet been created
+    or been moved out of Incoming.
+    The following information may help to resolve the situation:
+
+    The following packages have unmet dependencies:
+     coinor-libipopt1v5 : Depends: libmumps-seq-4.10.0 but it is not going to be installed
+     dreal : Depends: coinor-libclp-dev but it is not going to be installed
+     libboost-all-dev : Depends: libboost-date-time-dev but it is not going to be installed
+                        Depends: libboost-filesystem-dev but it is not going to be installed
+    ...
+    E: Unable to correct problems, you have held broken packages.
+    The Drake source distribution prerequisite setup script has experienced an error on line 15 while running the command source "${BASH_SOURCE%/*}/install_prereqs_binary_distribution.sh"
+
+**Solution**: Most likely, you should have more source lists enabled.
+In the ``Software & Updates`` application:
+
+*   Under the ``Ubuntu Software`` tab, ensure that ``main``, ``universe``,
+    ``restricted``, and ``multiverse`` are enabled.
+*   Under the ``Updates`` tab, ensure ``xenial-security`` and
+    ``security-updates`` are enabled.
+
+See `this comment in #7991 <https://github.com/RobotLocomotion/drake/issues/7991#issuecomment-364144295>`_
+for more information.
