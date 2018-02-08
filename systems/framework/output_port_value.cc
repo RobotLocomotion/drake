@@ -5,6 +5,8 @@
 namespace drake {
 namespace systems {
 
+OutputPortValue::~OutputPortValue() {}
+
 std::unique_ptr<OutputPortValue> OutputPortValue::Clone() const {
   if (data_ != nullptr) {
     return std::make_unique<OutputPortValue>(data_->Clone());

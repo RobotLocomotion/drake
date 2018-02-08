@@ -46,7 +46,7 @@ class OutputPortValue {
   explicit OutputPortValue(std::unique_ptr<Value<T>> data)
       : OutputPortValue(std::unique_ptr<AbstractValue>(data.release())) {}
 
-  virtual ~OutputPortValue() = default;
+  virtual ~OutputPortValue();
 
   /// Returns the abstract value in this port.
   const AbstractValue* get_abstract_data() const { return data_.get(); }

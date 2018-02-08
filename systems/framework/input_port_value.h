@@ -28,7 +28,7 @@ class InputPortValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortValue)
 
-  virtual ~InputPortValue() = default;
+  virtual ~InputPortValue();
 
   /// Returns true if this InputPortValue is not in control of its own data.
   virtual bool requires_evaluation() const = 0;
