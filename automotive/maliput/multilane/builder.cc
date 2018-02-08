@@ -18,7 +18,8 @@ namespace multilane {
 
 Builder::Builder(double lane_width, const api::HBounds& elevation_bounds,
                  double linear_tolerance, double angular_tolerance)
-    : lane_width_(lane_width),
+    : BuilderBase(),
+      lane_width_(lane_width),
       elevation_bounds_(elevation_bounds),
       linear_tolerance_(linear_tolerance),
       angular_tolerance_(angular_tolerance) {
@@ -232,7 +233,6 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   return std::move(road_geometry);
 }
-
 
 }  // namespace multilane
 }  // namespace maliput
