@@ -346,8 +346,8 @@ class RotationMatrix {
   /// left-handed (M is a "reflection").  `quality_factor` = -0.8 means M
   /// relates a right-handed basis to a left-handed basis and when A multiplies
   /// a unit vector, a vector of magnitude as small as 0.8 may result.
-  /// @returns proper orthonormal matrix R that is close to M.
-  /// @throws exception std::logic_error if M fails IsValid(M).
+  /// @returns proper orthonormal matrix R that is closest to M.
+  /// @throws exception std::logic_error if R fails IsValid(R).
   // @internal This function is not generated for symbolic Expression.
   // @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
