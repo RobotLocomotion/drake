@@ -254,19 +254,6 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
 }
 
-// Tests that items can be stored and retrieved in the cache, even when
-// the LeafContext is const.
-TEST_F(LeafContextTest, SetAndGetCache) {
-  const LeafContext<double>& ctx = context_;
-  CacheTicket ticket = ctx.CreateCacheEntry({});
-  ctx.InitCachedValue(ticket, PackValue(42));
-  const AbstractValue* value = ctx.GetCachedValue(ticket);
-  EXPECT_EQ(42, UnpackIntValue(value));
-
-  ctx.SetCachedValue<int>(ticket, 43);
-  EXPECT_EQ(43, UnpackIntValue(ctx.GetCachedValue(ticket)));
-}
-
 TEST_F(LeafContextTest, Clone) {
   std::unique_ptr<Context<double>> clone = context_.Clone();
   // Verify that the time was copied.
