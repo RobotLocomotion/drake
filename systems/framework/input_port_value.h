@@ -68,9 +68,6 @@ class DependentInputPortValue : public InputPortValue {
   /// outlive this %DependentInputPortValue object.
   explicit DependentInputPortValue(OutputPortValue* output_port_value);
 
-  /// Disconnects from the output port.
-  ~DependentInputPortValue() override = default;
-
   /// A %DependentInputPortValue must be evaluated in a Context, because it does
   /// not control its own data.
   bool requires_evaluation() const override { return true; }
@@ -94,8 +91,6 @@ class FreestandingInputPortValue : public InputPortValue {
   /// Constructs an abstract-valued %FreestandingInputPortValue from a value
   /// of arbitrary type. Takes ownership of @p data.
   explicit FreestandingInputPortValue(std::unique_ptr<AbstractValue> data);
-
-  ~FreestandingInputPortValue() override = default;
 
   /// A %FreestandingInputPortValue does not require evaluation, because it
   /// controls its own data.
