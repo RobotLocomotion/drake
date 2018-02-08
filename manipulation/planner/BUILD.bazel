@@ -74,7 +74,12 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = ["snopt"],
+    # TODO(siyuan.feng) This needs to be switched over to a accurate open
+    # source QP sovler when we have one. Snopt is chosen here because it
+    # is fast enough most of the time, and to minimize licensing issues.
+    tags = [
+        "snopt",
+    ],
     deps = [
         ":differential_inverse_kinematics",
         "//drake/common/test_utilities:eigen_matrix_compare",
