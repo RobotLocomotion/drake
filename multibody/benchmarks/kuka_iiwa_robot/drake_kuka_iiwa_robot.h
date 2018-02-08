@@ -66,7 +66,8 @@ class DrakeKukaIIwaRobot {
   /// to this constructor, it means the gravity vector is directed opposite the
   /// world upward z-unit vector (which is correct -- gravity is downward).
   explicit DrakeKukaIIwaRobot(double gravity) {
-    model_ = MakeKukaIiwaModel<T>(gravity);
+    model_ = MakeKukaIiwaModel<T>(
+        true /* finalized model */, gravity /* acceleration of gravity */);
 
     linkN_ = &(model_->get_world_body());
 

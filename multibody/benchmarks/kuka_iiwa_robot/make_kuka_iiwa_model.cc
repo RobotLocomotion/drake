@@ -155,7 +155,7 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
   model->template AddForceElement<UniformGravityFieldElement>(gravity_vector);
 
   // Finalize() stage sets the topology (model is built).
-  model->Finalize();
+  if (finalize_model_) model->Finalize();
   return model;
 }
 }  // namespace internal

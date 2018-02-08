@@ -185,7 +185,11 @@ class MultibodyTree {
   ///          remain valid for the lifetime of `this` %MultibodyTree.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    DRAKE_THROW_UNLESS(!HasBodyNamed(name));
+    if (HasBodyNamed(name)) {
+      throw std::logic_error(
+          "This model already contains a body named '" + name + "'. " +
+          "Body names must be unique within a given model.");
+    }
     const RigidBody<T>& body = this->template AddBody<RigidBody>(name, M_BBo_B);
     body_name_to_index_[name] = body.get_index();
     return body;
@@ -504,6 +508,9 @@ class MultibodyTree {
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
+  /// @throws if `this` model already contains a joint with the given `name`.
+  /// See HasJointNamed(), Joint::get_name().
+  ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
   template<template<typename> class JointType, typename... Args>
@@ -514,6 +521,11 @@ class MultibodyTree {
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
+    if (HasJointNamed(name)) {
+      throw std::logic_error(
+          "This model already contains a joint named '" + name + "'. " +
+          "Joint names must be unique within a given model.");
+    }
 
     const Frame<T>* frame_on_parent;
     if (X_PF) {

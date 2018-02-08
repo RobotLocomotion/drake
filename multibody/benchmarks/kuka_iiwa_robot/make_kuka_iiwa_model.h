@@ -23,11 +23,17 @@ class KukaIiwaModelBuilder {
   /// Instantiate a builder to make a MultibodyTree model of the KUKA iiwa arm
   /// as specified in this class' documentation.
   /// The world z-unit vector is vertically upward.
+  /// @param[in] finalize_model
+///   If `true`, the model is finalized with MultibodyTree::Finalize().
+///   A non-finalized model can be requested if adding more multibody elements
+///   is desired.
   /// @param[in] gravity
   ///   The model's acceleration of gravity. `gravity > 0` means the gravity
   ///   field is directed opposite the world upward z-unit vector (i.e.
   ///   downwards).
-  explicit KukaIiwaModelBuilder(double gravity) : gravity_(gravity) {}
+  KukaIiwaModelBuilder(bool finalize_model, double gravity) :
+      gravity_(gravity),
+      finalize_model_(finalize_model) {}
 
   /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   /// The robot is constructed with 7 revolute joints.
@@ -125,6 +131,9 @@ class KukaIiwaModelBuilder {
 
   // Earth's default gravitational acceleration, in m/s².
   double gravity_{9.81};
+
+  // Flag indicating if MultibodyTree::Finalize() will be called on the model.
+  bool finalize_model_;
 };
 }  // namespace internal
 
@@ -137,9 +146,16 @@ class KukaIiwaModelBuilder {
 /// "iiwa_joint_7" (to the end effector).
 /// The new MultibodyTree model is finalized by MultibodyTree::Finalize() and
 /// therefore no more modeling elements can be added.
+/// @param[in] finalize_model
+///   If `true`, the model is finalized with MultibodyTree::Finalize().
+///   A non-finalized model can be requested if adding more multibody elements
+///   is desired.
+/// @param[in] gravity
+///   The value of the acceleration of gravity, in m/s².
 template <typename T>
-std::unique_ptr<MultibodyTree<T>> MakeKukaIiwaModel(double gravity) {
-  internal::KukaIiwaModelBuilder<T> builder(gravity);
+std::unique_ptr<MultibodyTree<T>> MakeKukaIiwaModel(
+    bool finalize_model = true, double gravity = 9.81) {
+  internal::KukaIiwaModelBuilder<T> builder(finalize_model, gravity);
   return builder.Build();
 }
 

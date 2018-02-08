@@ -8,6 +8,7 @@
 
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
 
 namespace drake {
 namespace multibody {
@@ -37,12 +38,40 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
       "iiwa_joint_6",
       "iiwa_joint_7"};
 
+  // Create a non-finalized model of the arm so that we can test adding more
+  // elements to it.
   std::unique_ptr<MultibodyTree<double>> model =
-      MakeKukaIiwaModel<double>(9.81);
+      MakeKukaIiwaModel<double>(false /* non-finalized model. */);
 
-  // MakeKukaIiwaModel() has already called Finalize() on the new kuka model.
-  // Therefore its topology is valid.
-  EXPECT_TRUE(model->topology_is_valid());
+  // Verify the model was not finalized.
+  EXPECT_FALSE(model->topology_is_valid());
+
+  // Attempt to add a body having the same name as a body already part of the
+  // model. This is not allowed and an exception should be thrown.
+  EXPECT_ERROR_MESSAGE(
+      model->AddRigidBody("iiwa_link_5", SpatialInertia<double>()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "This model already contains a body named 'iiwa_link_5'. "
+      "Body names must be unique within a given model.");
+
+  // Attempt to add a joint having the same name as a joint already part of the
+  // model. This is not allowed and an exception should be thrown.
+  EXPECT_ERROR_MESSAGE(
+      model->AddJoint<RevoluteJoint>(
+          "iiwa_joint_4",
+          /* Dummy frame definitions. Not relevant for this test. */
+          model->get_world_body(), {},
+          model->get_world_body(), {},
+          Vector3<double>::UnitZ()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "This model already contains a joint named 'iiwa_joint_4'. "
+      "Joint names must be unique within a given model.");
+
+  // Now we tested we cannot add body or joints with an existing name, finalize
+  // the model.
+  EXPECT_NO_THROW(model->Finalize());
 
   // Another call to Finalize() is not allowed.
   EXPECT_THROW(model->Finalize(), std::logic_error);
@@ -57,22 +86,14 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   EXPECT_EQ(model->get_num_states(), 14);
 
   // Query if elements exist in the model.
-  EXPECT_TRUE(model->HasBodyNamed("iiwa_link_1"));
-  EXPECT_TRUE(model->HasBodyNamed("iiwa_link_2"));
-  EXPECT_TRUE(model->HasBodyNamed("iiwa_link_3"));
-  EXPECT_TRUE(model->HasBodyNamed("iiwa_link_4"));
-  EXPECT_TRUE(model->HasBodyNamed("iiwa_link_5"));
-  EXPECT_TRUE(model->HasBodyNamed("iiwa_link_6"));
-  EXPECT_TRUE(model->HasBodyNamed("iiwa_link_7"));
+  for (const std::string link_name : kLinkNames) {
+    EXPECT_TRUE(model->HasBodyNamed(link_name));
+  }
   EXPECT_FALSE(model->HasBodyNamed(kInvalidName));
 
-  EXPECT_TRUE(model->HasJointNamed("iiwa_joint_1"));
-  EXPECT_TRUE(model->HasJointNamed("iiwa_joint_2"));
-  EXPECT_TRUE(model->HasJointNamed("iiwa_joint_3"));
-  EXPECT_TRUE(model->HasJointNamed("iiwa_joint_4"));
-  EXPECT_TRUE(model->HasJointNamed("iiwa_joint_5"));
-  EXPECT_TRUE(model->HasJointNamed("iiwa_joint_6"));
-  EXPECT_TRUE(model->HasJointNamed("iiwa_joint_7"));
+  for (const std::string joint_name : kJointNames) {
+    EXPECT_TRUE(model->HasJointNamed(joint_name));
+  }
   EXPECT_FALSE(model->HasJointNamed(kInvalidName));
 
   // Get links by name.
@@ -80,17 +101,18 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
     const Body<double>& link = model->GetBodyByName(link_name);
     EXPECT_EQ(link.get_name(), link_name);
   }
-
-  // Attempting to retrieve a link that is not part of the model should throw
-  // an exception.
-  EXPECT_THROW(model->GetBodyByName(kInvalidName), std::logic_error);
+  EXPECT_ERROR_MESSAGE(
+      model->GetBodyByName(kInvalidName), std::logic_error,
+      "There is no body named '.*' in the model.");
 
   // Get joints by name.
   for (const std::string joint_name : kJointNames) {
     const Joint<double>& joint = model->GetJointByName(joint_name);
     EXPECT_EQ(joint.get_name(), joint_name);
   }
-  EXPECT_THROW(model->GetJointByName(kInvalidName), std::logic_error);
+  EXPECT_ERROR_MESSAGE(
+      model->GetJointByName(kInvalidName), std::logic_error,
+      "There is no joint named '.*' in the model.");
 
   // Templatized version to obtain retrieve a particular known type of joint.
   for (const std::string joint_name : kJointNames) {
@@ -98,8 +120,9 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
         model->GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_EQ(joint.get_name(), joint_name);
   }
-  EXPECT_THROW(model->GetJointByName<RevoluteJoint>(kInvalidName),
-               std::logic_error);
+  EXPECT_ERROR_MESSAGE(
+      model->GetJointByName<RevoluteJoint>(kInvalidName), std::logic_error,
+      "There is no joint named '.*' in the model.");
 }
 
 }  // namespace
