@@ -653,13 +653,13 @@ class MultibodyTree {
 
   /// @returns `true` if a body named `name` was added to the model.
   /// @see AddRigidBody().
-  bool HasBodyNamed(const std::string& name) {
+  bool HasBodyNamed(const std::string& name) const {
     return body_name_to_index_.find(name) != body_name_to_index_.end();
   }
 
   /// @returns `true` if a joint named `name` was added to the model.
   /// @see AddJoint().
-  bool HasJointNamed(const std::string& name) {
+  bool HasJointNamed(const std::string& name) const {
     return joint_name_to_index_.find(name) != joint_name_to_index_.end();
   }
   /// @}
