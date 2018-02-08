@@ -180,7 +180,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    return model_->AddRigidBody(name, M_BBo_B);
+    DRAKE_THROW_UNLESS(!HasBodyNamed(name));
+    const RigidBody<T>& body =
+        model_->template AddBody<RigidBody>(name, M_BBo_B);
+    body_name_to_index_[name] = body.get_index();
+    return body;
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
@@ -259,8 +263,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
-    return model_->template AddJoint<JointType>(
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+    DRAKE_THROW_UNLESS(!HasJointNamed(name));
+    const JointType<T>& joint = model_->template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
+    joint_name_to_index_[name] = joint.get_index();
+    return joint;
   }
 
   /// Adds a new force element model of type `ForceElementType` to `this` model.
@@ -295,14 +304,14 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// @returns `true` if a body named `name` was added to the model.
   /// @see AddRigidBody().
-  bool HasBodyNamed(const std::string& name) const {
-    return model_->HasBodyNamed(name);
+  bool HasBodyNamed(const std::string& name) {
+    return body_name_to_index_.find(name) != body_name_to_index_.end();
   }
 
   /// @returns `true` if a joint named `name` was added to the model.
   /// @see AddJoint().
-  bool HasJointNamed(const std::string& name) const {
-    return model_->HasJointNamed(name);
+  bool HasJointNamed(const std::string& name) {
+    return joint_name_to_index_.find(name) != joint_name_to_index_.end();
   }
   /// @}
 
@@ -322,7 +331,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
   const Body<T>& GetBodyByName(const std::string& name) const {
-    return model_->GetBodyByName(name);
+    auto it = body_name_to_index_.find(name);
+    if (it == body_name_to_index_.end()) {
+      throw std::logic_error("There is no body named '" + name +
+          "' in the model.");
+    }
+    return model_->get_body(it->second);
   }
 
   /// Returns a constant reference to the joint that is uniquely identified
@@ -331,7 +345,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see HasJointNamed() to query if there exists a joint in `this` model with
   /// a given specified name.
   const Joint<T>& GetJointByName(const std::string& name) const {
-    return model_->GetJointByName(name);
+    auto it = joint_name_to_index_.find(name);
+    if (it == joint_name_to_index_.end()) {
+      throw std::logic_error("There is no joint named '" + name +
+          "' in the model.");
+    }
+    return model_->get_joint(it->second);
   }
 
   /// A templated version of GetJointByName() to return a constant reference of
@@ -345,7 +364,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// a given specified name.
   template <template<typename> class JointType>
   const JointType<T>& GetJointByName(const std::string& name) const {
-    return model_->template GetJointByName<JointType>(name);
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+    const JointType<T>* joint =
+        dynamic_cast<const JointType<T>*>(&GetJointByName(name));
+    if (joint == nullptr) {
+      throw std::logic_error("Joint '" + name + "' is not of type '" +
+          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
+          NiceTypeName::Get(GetJointByName(name)) + "'.");
+    }
+    return *joint;
   }
   /// @}
 
@@ -411,6 +439,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
+
+  // Map used to find body indexes by their unique body name.
+  std::unordered_map<std::string, BodyIndex> body_name_to_index_;
+
+  // Map used to find joint indexes by their joint name.
+  std::unordered_map<std::string, JointIndex> joint_name_to_index_;
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
