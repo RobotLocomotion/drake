@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -17,7 +18,7 @@ using Eigen::Vector4d;
 GTEST_TEST(MyVectorTest, Construction) {
   // Default constructor leaves memory uninitialized so don't peek.
   MyVector3d default_vector;
-  EXPECT_TRUE(dynamic_cast<BasicVector<double>*>(&default_vector) != nullptr);
+  EXPECT_TRUE(is_dynamic_castable<BasicVector<double>>(&default_vector));
   EXPECT_EQ(default_vector.size(), 3);
 
   Vector4d fixed_size4(1., 2., 3., 4.);
@@ -28,6 +29,12 @@ GTEST_TEST(MyVectorTest, Construction) {
 
   MyVector4d from_variable_size(variable_size4);
   EXPECT_EQ(from_variable_size.get_value(), fixed_size4);
+}
+
+// Misuse of the test utility is an abort-able infraction.
+GTEST_TEST(MyVectorTest, DeathOnBadSize) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  Vector4d fixed_size4(1., 2., 3., 4.);
 
   // This won't compile since there is no constructor with mismatched sizes.
   // MyVector3d from_4(fixed_size4);
