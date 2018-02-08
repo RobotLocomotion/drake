@@ -41,18 +41,6 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "kuka_iiwa_robot_jacobian_test",
-    size = "small",
-    deps = [
-        ":kuka_iiwa_robot_library",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:gradient",
-        "//drake/math:jacobian",
-        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
-    ],
-)
-
-drake_cc_googletest(
     name = "kuka_iiwa_robot_kinematics_test",
     size = "small",
     deps = [
