@@ -46,6 +46,7 @@ cc_library(
     ]),
     includes = ["octomap/include"],
     linkstatic = 1,
+    copts = ["-fvisibility=hidden"],
     deps = [":octomath"],
 )
 
