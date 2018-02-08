@@ -34,9 +34,11 @@ const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
 
 GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
   // Define a serpentine road with multiple segments and branches.
-  std::unique_ptr<multilane::Builder> rb(new multilane::Builder(
-      2. * kWidth, HBounds(0., kHeight), 0.01, /* linear tolerance */
-      0.01 * M_PI /* angular tolerance */));
+  auto rb = std::make_unique<multilane::Builder>();
+  rb->set_lane_width(2. * kWidth);
+  rb->set_elevation_bounds(HBounds(0., kHeight));
+  rb->set_linear_tolerance(0.01);
+  rb->set_angular_tolerance(0.01 * M_PI);
 
   // Initialize the road from the origin.
   const multilane::EndpointXy kOriginXy{0., 0., 0.};
@@ -208,9 +210,11 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   // ongoing lanes.  This tests the pathological case when a `hint` is provided
   // in a topologically isolated lane, so the code returns the default road
   // position given by the hint.
-  std::unique_ptr<multilane::Builder> rb(new multilane::Builder(
-      2. * kWidth, HBounds(0., kHeight), 0.01, /* linear tolerance */
-      0.01 * M_PI /* angular tolerance */));
+  auto rb = std::make_unique<multilane::Builder>();
+  rb->set_lane_width(2. * kWidth);
+  rb->set_elevation_bounds(HBounds(0., kHeight));
+  rb->set_linear_tolerance(0.01);
+  rb->set_angular_tolerance(0.01 * M_PI);
 
   // Initialize the road from the origin.
   const multilane::EndpointXy kOriginXy0{0., 0., 0.};

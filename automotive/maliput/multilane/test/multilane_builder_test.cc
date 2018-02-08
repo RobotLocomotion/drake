@@ -22,6 +22,55 @@ namespace {
 //                   road surface is continuous, off the centerline, at the
 //                   branch-point where two connections connect
 
+GTEST_TEST(MultilaneBuilderTest, DefaultConstructor) {
+  Builder builder;
+  EXPECT_EQ(builder.get_lane_width(), 0.);
+  EXPECT_TRUE(
+      api::test::IsHBoundsClose(builder.get_elevation_bounds(), {0., 0.}, 0.));
+  EXPECT_EQ(builder.get_linear_tolerance(), 0.);
+  EXPECT_EQ(builder.get_angular_tolerance(), 0.);
+}
+
+GTEST_TEST(MultilaneBuilderTest, ParameterConstructor) {
+  const double kLaneWidth = 4.;
+  const api::HBounds kElevationBounds(0., 5.);
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
+  Builder builder(kLaneWidth, kElevationBounds, kLinearTolerance,
+                  kAngularTolerance);
+  EXPECT_EQ(builder.get_lane_width(), kLaneWidth);
+  EXPECT_TRUE(api::test::IsHBoundsClose(builder.get_elevation_bounds(),
+                                        kElevationBounds, 0.));
+  EXPECT_EQ(builder.get_linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(builder.get_angular_tolerance(), kAngularTolerance);
+}
+
+GTEST_TEST(MultilaneBuilderTest, Setters) {
+  const double kLaneWidth = 4.;
+  const api::HBounds kElevationBounds(0., 5.);
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
+  Builder builder;
+
+  EXPECT_EQ(builder.get_lane_width(), 0.);
+  builder.set_lane_width(kLaneWidth);
+  EXPECT_EQ(builder.get_lane_width(), kLaneWidth);
+
+  EXPECT_TRUE(
+      api::test::IsHBoundsClose(builder.get_elevation_bounds(), {0., 0.}, 0.));
+  builder.set_elevation_bounds(kElevationBounds);
+  EXPECT_TRUE(api::test::IsHBoundsClose(builder.get_elevation_bounds(),
+                                        kElevationBounds, 0.));
+
+  EXPECT_EQ(builder.get_linear_tolerance(), 0.);
+  builder.set_linear_tolerance(kLinearTolerance);
+  EXPECT_EQ(builder.get_linear_tolerance(), kLinearTolerance);
+
+  EXPECT_EQ(builder.get_angular_tolerance(), 0.);
+  builder.set_angular_tolerance(kAngularTolerance);
+  EXPECT_EQ(builder.get_angular_tolerance(), kAngularTolerance);
+}
+
 GTEST_TEST(MultilaneBuilderTest, Fig8) {
   const double kLaneWidth = 4.;
   const double kLeftShoulder = 2.;

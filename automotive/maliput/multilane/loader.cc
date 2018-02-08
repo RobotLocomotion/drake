@@ -163,7 +163,7 @@ EndpointZ ResolveEndpointZReference(const YAML::Node& end_node) {
 // connections").
 const Connection* MaybeMakeConnection(
     std::string id, const YAML::Node& node,
-    const std::map<std::string, Endpoint>& xyz_catalog, Builder* builder,
+    const std::map<std::string, Endpoint>& xyz_catalog, BuilderBase* builder,
     double default_left_shoulder, double default_right_shoulder) {
   DRAKE_DEMAND(node.IsMap());
   // "lanes" is required.
@@ -244,7 +244,8 @@ const Connection* MaybeMakeConnection(
 // "connections" node. "points" map node contains the description of reference
 // Endpoints and "connections" describes the Connections. If provided, "groups"
 // map node will contain sequences of Groups to join Connections.
-std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
+std::unique_ptr<const api::RoadGeometry> BuildFrom(BuilderBase* builder,
+                                                   const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
   YAML::Node mmb = node["maliput_multilane_builder"];
   DRAKE_DEMAND(mmb.IsMap());
@@ -256,9 +257,11 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
   const double default_right_shoulder = mmb["right_shoulder"].as<double>();
   DRAKE_DEMAND(default_right_shoulder >= 0.);
 
-  Builder builder(lane_width, h_bounds(mmb["elevation_bounds"]),
-                  mmb["linear_tolerance"].as<double>(),
-                  deg_to_rad(mmb["angular_tolerance"].as<double>()));
+  builder->set_lane_width(lane_width);
+  builder->set_elevation_bounds(h_bounds(mmb["elevation_bounds"]));
+  builder->set_linear_tolerance(mmb["linear_tolerance"].as<double>());
+  builder->set_angular_tolerance(
+      deg_to_rad(mmb["angular_tolerance"].as<double>()));
 
   drake::log()->debug("loading points !");
   YAML::Node points = mmb["points"];
@@ -296,7 +299,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
     for (const auto& r : raw_connections) {
       std::string id = r.first;
       const Connection* conn =
-          MaybeMakeConnection(id, r.second, xyz_catalog, &builder,
+          MaybeMakeConnection(id, r.second, xyz_catalog, builder,
                               default_left_shoulder, default_right_shoulder);
       if (!conn) {
         drake::log()->debug("...skipping '{}'", id);
@@ -327,7 +330,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
     for (const auto& g : groups) {
       const std::string gid = g.first.as<std::string>();
       drake::log()->debug("   create group '{}'", gid);
-      Group* group = builder.MakeGroup(gid);
+      Group* group = builder->MakeGroup(gid);
 
       YAML::Node cids_node = g.second;
       DRAKE_DEMAND(cids_node.IsSequence());
@@ -339,19 +342,21 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
     }
   }
   drake::log()->debug("building road geometry {}", mmb["id"].Scalar());
-  return builder.Build(api::RoadGeometryId{mmb["id"].Scalar()});
+  return builder->Build(api::RoadGeometryId{mmb["id"].Scalar()});
 }
 
 }  // namespace
 
-
-std::unique_ptr<const api::RoadGeometry> Load(const std::string& input) {
-  return BuildFrom(YAML::Load(input));
+std::unique_ptr<const api::RoadGeometry> Load(BuilderBase* builder,
+                                              const std::string& input) {
+  DRAKE_DEMAND(builder != nullptr);
+  return BuildFrom(builder, YAML::Load(input));
 }
 
-
-std::unique_ptr<const api::RoadGeometry> LoadFile(const std::string& filename) {
-  return BuildFrom(YAML::LoadFile(filename));
+std::unique_ptr<const api::RoadGeometry> LoadFile(BuilderBase* builder,
+                                                  const std::string& filename) {
+  DRAKE_DEMAND(builder != nullptr);
+  return BuildFrom(builder, YAML::LoadFile(filename));
 }
 
 }  // namespace multilane

@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 
+#include "drake/automotive/maliput/multilane/builder.h"
+
 namespace drake {
 namespace maliput {
 
@@ -15,11 +17,12 @@ namespace multilane {
 /// @file
 /// Loader for serialized multilane road networks.
 ///
-/// The serialization is a fairly straightforward mapping of the Builder
+/// The serialization is a fairly straightforward mapping of the BuilderBase
 /// interface onto YAML. See (TBD) for more detail of the format.
 ///
 /// The basic idea is, however:
-///  - general parameters (i.e., as supplied to Builder constructor)
+///  - general parameters (i.e., lane_width, elevation bounds, linear and
+///    angular tolerance)
 ///  - a collection of named 'points', which are specifications of explicitly
 ///    named Endpoints
 ///  - a collection of named 'connections', whose start Endpoints are specified
@@ -35,11 +38,19 @@ namespace multilane {
 /// must bottom out in explicitly-named Endpoints.
 // TODO(maddog@tri.global)  Describe complete format somewhere.
 
-/// Loads the input string as a maliput_multilane_builder document.
-std::unique_ptr<const api::RoadGeometry> Load(const std::string& input);
+/// Loads the `input` string as a maliput_multilane_builder document using the
+/// provided `builder`.
+///
+/// @throws std::runtime_error When `builder` is nullptr.
+std::unique_ptr<const api::RoadGeometry> Load(BuilderBase* builder,
+                                              const std::string& input);
 
-/// Loads the named file as a maliput_multilane_builder document.
-std::unique_ptr<const api::RoadGeometry> LoadFile(const std::string& filename);
+/// Loads the named file as a maliput_multilane_builder document using the
+/// provided `builder`.
+///
+/// @throws std::runtime_error When `builder` is nullptr.
+std::unique_ptr<const api::RoadGeometry> LoadFile(BuilderBase* builder,
+                                                  const std::string& filename);
 
 }  // namespace multilane
 }  // namespace maliput
