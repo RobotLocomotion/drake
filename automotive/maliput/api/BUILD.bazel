@@ -18,6 +18,7 @@ drake_cc_library(
         "lane.h",
         "lane_data.h",
         "road_geometry.h",
+        "rules/right_of_way_rule.h",
         "segment.h",
         "type_specific_identifier.h",
     ],
@@ -47,6 +48,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "type_specific_identifier_test",
+    deps = [
+        ":api",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rules_test",
     deps = [
         ":api",
     ],
