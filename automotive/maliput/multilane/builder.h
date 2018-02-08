@@ -5,7 +5,6 @@
 #include <memory>
 #include <string>
 #include <tuple>
-#include <unordered_set>
 #include <vector>
 
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -17,7 +16,104 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+
 class RoadGeometry;
+
+/// Defines a builder interface for multilane. It is used for testing purposes
+/// only, and derived code should instantiate Builder objects.
+class BuilderBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BuilderBase)
+
+  BuilderBase() = default;
+
+  virtual ~BuilderBase() = default;
+
+  /// Gets `lane_width` value.
+  virtual double get_lane_width() const = 0;
+
+  /// Gets `elevation_bounds` value.
+  virtual const api::HBounds& get_elevation_bounds() const = 0;
+
+  /// Gets `linear_tolerance` value.
+  virtual double get_linear_tolerance() const = 0;
+
+  /// Gets `angular_tolerance` value.
+  virtual double get_angular_tolerance() const = 0;
+
+  /// Connects `start` to an end-point linearly displaced from `start`.
+  /// `length` specifies the length of displacement (in the direction of the
+  /// heading of `start`). `z_end` specifies the elevation characteristics at
+  /// the end-point.
+  /// `r0` is the distance from the reference curve to the first Lane
+  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
+  /// distances added to the extents of the Segment after the first and last
+  /// Lanes positions are determined.
+  virtual const Connection* Connect(const std::string& id, int num_lanes,
+                                    double r0, double left_shoulder,
+                                    double right_shoulder,
+                                    const Endpoint& start, double length,
+                                    const EndpointZ& z_end) = 0;
+
+  /// Connects `start` to an end-point displaced from `start` via an arc.
+  /// `arc` specifies the shape of the arc. `z_end` specifies the elevation
+  /// characteristics at the end-point.
+  /// `r0` is the distance from the reference curve to the first Lane
+  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
+  /// distances added to the extents of the Segment after the first and last
+  /// Lanes positions are determined.
+  virtual const Connection* Connect(const std::string& id, int num_lanes,
+                                    double r0, double left_shoulder,
+                                    double right_shoulder,
+                                    const Endpoint& start, const ArcOffset& arc,
+                                    const EndpointZ& z_end) = 0;
+
+  /// Sets the default branch for one end of a connection.
+  ///
+  /// The default branch for the `in_end` of connection `in` at Lane
+  /// `in_lane_index`will set to be `out_end` of connection `out` at Lane
+  /// `out_lane_index`. The specified connections must actually be joined at the
+  /// specified ends (i.e., the Endpoint's for those ends must be coincident and
+  /// (anti)parallel within the tolerances for the Builder).
+  virtual void SetDefaultBranch(const Connection* in, int in_lane_index,
+                                api::LaneEnd::Which in_end,
+                                const Connection* out, int out_lane_index,
+                                api::LaneEnd::Which out_end) = 0;
+
+  /// Creates a new empty connection group with ID string `id`.
+  virtual Group* MakeGroup(const std::string& id) = 0;
+
+  /// Creates a new connection group with ID `id`, populated with the
+  /// given `connections`.
+  virtual Group* MakeGroup(
+      const std::string& id,
+      const std::vector<const Connection*>& connections) = 0;
+
+  /// Produces a RoadGeometry, with the ID `id`.
+  virtual std::unique_ptr<const api::RoadGeometry> Build(
+      const api::RoadGeometryId& id) const = 0;
+};
+
+/// Factory interface to construct BuilderBase instances.
+///
+/// Defined for testing purposes, and production code must use BuilderFactory
+/// objects.
+class BuilderFactoryBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BuilderFactoryBase)
+
+  BuilderFactoryBase() = default;
+
+  virtual ~BuilderFactoryBase() = default;
+
+  /// Creates a BuilderBase instance.
+  ///
+  /// `lane_width`, `elevation_bounds`, `linear_tolerance` and
+  /// `angular_tolerance` are BuilderBase properties.
+  virtual std::unique_ptr<BuilderBase> Make(
+      double lane_width, const api::HBounds& elevation_bounds,
+      double linear_tolerance, double angular_tolerance) const = 0;
+};
 
 /// Convenient builder class which makes it easy to construct a multilane road
 /// network.
@@ -55,7 +151,7 @@ class RoadGeometry;
 ///
 /// Note: 'lane_index' is the index in the Segment, and 'branch_point_index' is
 /// is the index in the RoadGeometry.
-class Builder {
+class Builder : public BuilderBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Builder)
 
@@ -73,53 +169,42 @@ class Builder {
   Builder(double lane_width, const api::HBounds& elevation_bounds,
           double linear_tolerance, double angular_tolerance);
 
-  /// Connects `start` to an end-point linearly displaced from `start`.
-  /// `length` specifies the length of displacement (in the direction of the
-  /// heading of `start`). `z_end` specifies the elevation characteristics at
-  /// the end-point.
-  /// `r0` is the distance from the reference curve to the first Lane
-  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
-  /// distances added to the extents of the Segment after the first and last
-  /// Lanes positions are determined.
+  /// Gets `lane_width` value.
+  double get_lane_width() const override { return lane_width_; }
+
+  /// Gets `elevation_bounds` value.
+  const api::HBounds& get_elevation_bounds() const override {
+    return elevation_bounds_;
+  }
+
+  /// Gets `linear_tolerance` value.
+  double get_linear_tolerance() const override { return linear_tolerance_; }
+
+  /// Gets `angular_tolerance` value.
+  double get_angular_tolerance() const override { return angular_tolerance_; }
+
   const Connection* Connect(const std::string& id, int num_lanes, double r0,
                             double left_shoulder, double right_shoulder,
                             const Endpoint& start, double length,
-                            const EndpointZ& z_end);
+                            const EndpointZ& z_end) override;
 
-  /// Connects `start` to an end-point displaced from `start` via an arc.
-  /// `arc` specifies the shape of the arc. `z_end` specifies the elevation
-  /// characteristics at the end-point.
-  /// `r0` is the distance from the reference curve to the first Lane
-  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
-  /// distances added to the extents of the Segment after the first and last
-  /// Lanes positions are determined.
   const Connection* Connect(const std::string& id, int num_lanes, double r0,
                             double left_shoulder, double right_shoulder,
                             const Endpoint& start, const ArcOffset& arc,
-                            const EndpointZ& z_end);
+                            const EndpointZ& z_end) override;
 
-  /// Sets the default branch for one end of a connection.
-  ///
-  /// The default branch for the `in_end` of connection `in` at Lane
-  /// `in_lane_index`will set to be `out_end` of connection `out` at Lane
-  /// `out_lane_index`. The specified connections must actually be joined at the
-  /// specified ends (i.e., the Endpoint's for those ends must be coincident and
-  /// (anti)parallel within the tolerances for the Builder).
   void SetDefaultBranch(const Connection* in, int in_lane_index,
                         const api::LaneEnd::Which in_end, const Connection* out,
-                        int out_lane_index, const api::LaneEnd::Which out_end);
+                        int out_lane_index,
+                        const api::LaneEnd::Which out_end) override;
 
-  /// Creates a new empty connection group with ID string `id`.
-  Group* MakeGroup(const std::string& id);
+  Group* MakeGroup(const std::string& id) override;
 
-  /// Creates a new connection group with ID `id`, populated with the
-  /// given `connections`.
   Group* MakeGroup(const std::string& id,
-                   const std::vector<const Connection*>& connections);
+                   const std::vector<const Connection*>& connections) override;
 
-  /// Produces a RoadGeometry, with the ID `id`.
   std::unique_ptr<const api::RoadGeometry> Build(
-      const api::RoadGeometryId& id) const;
+      const api::RoadGeometryId& id) const override;
 
  private:
   // EndpointFuzzyOrder is an arbitrary strict complete ordering of Endpoints
@@ -210,13 +295,29 @@ class Builder {
       RoadGeometry* rg,
       std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* bp_map) const;
 
-  const double lane_width_{};
-  const api::HBounds elevation_bounds_;
-  const double linear_tolerance_{};
-  const double angular_tolerance_{};
+  double lane_width_{};
+  api::HBounds elevation_bounds_;
+  double linear_tolerance_{};
+  double angular_tolerance_{};
   std::vector<std::unique_ptr<Connection>> connections_;
   std::vector<DefaultBranch> default_branches_;
   std::vector<std::unique_ptr<Group>> groups_;
+};
+
+/// Implements a BuilderFactoryBase to construct Builder objects.
+class BuilderFactory : public BuilderFactoryBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BuilderFactory)
+
+  BuilderFactory() = default;
+
+  std::unique_ptr<BuilderBase> Make(double lane_width,
+                                    const api::HBounds& elevation_bounds,
+                                    double linear_tolerance,
+                                    double angular_tolerance) const override {
+    return std::make_unique<Builder>(lane_width, elevation_bounds,
+                                     linear_tolerance, angular_tolerance);
+  }
 };
 
 }  // namespace multilane
