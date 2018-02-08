@@ -348,6 +348,10 @@ class RotationMatrix {
   /// a unit vector, a vector of magnitude as small as 0.8 may result.
   /// @returns proper orthonormal matrix R that is closest to M.
   /// @throws exception std::logic_error if R fails IsValid(R).
+  ///
+  /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
+  /// Engineering and Computer Science, Massachusetts Institute of Technology"
+  /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
   // @internal This function is not generated for symbolic Expression.
   // @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
