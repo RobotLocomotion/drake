@@ -609,7 +609,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 
   // The scale factor for witness isolation. This should be a reasonable
   // default that allows witness isolation accuracy to be commensurate with
-  // integrator accuracy for most systems. 
+  // integrator accuracy for most systems.
   const double iso_scale_factor = 0.01;
 
   // TODO(edrumwri): Acquire characteristic time properly from the system
