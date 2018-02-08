@@ -19,6 +19,7 @@ py_binary(
     deps = adjust_labels_for_drake_hoist([
         "//drake/bindings/pydrake",
         "//drake/lcmtypes:lcmtypes_py",
+        "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ]),
 )
