@@ -2,38 +2,23 @@
 """
 
 import os
-import shutil
 import subprocess
-import sys
 import unittest
-
-
-# Set on command-line to the location of common/install.
-_install_exe = None
+import install_test_helper
 
 
 class TestResourceTool(unittest.TestCase):
     def test_install_and_run(self):
         # Install into a temporary directory.
-        os.mkdir("tmp")
-        subprocess.check_call(
-            [_install_exe,
-             os.path.abspath("tmp"),
-             ])
+        result = install_test_helper.install("tmp", ["libexec"])
+        self.assertEqual(None, result)
 
         # Create a resource in the temporary directory.
         os.makedirs("tmp/share/drake/common/test")
         with open("tmp/share/drake/common/test/tmp_resource", "w") as f:
             f.write("tmp_resource")
 
-        # Remove the un-installed copy, so we _know_ it won't be used.
-        content_test_folder = os.listdir(os.getcwd())
-        content_test_folder.remove("tmp")
-        for element in content_test_folder:
-            if os.path.isdir(element):
-                shutil.rmtree(element)
-            else:
-                os.remove(element)
+        # Verify un-installed copy was removed, so we _know_ it won't be used.
         self.assertEqual(os.listdir(os.getcwd()), ["tmp"])
 
         # Cross-check the resource root environment variable name.
@@ -73,5 +58,4 @@ class TestResourceTool(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    _install_exe = sys.argv.pop(1)
     unittest.main()

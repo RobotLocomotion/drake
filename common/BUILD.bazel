@@ -982,12 +982,7 @@ drake_py_test(
 drake_py_test(
     name = "resource_tool_installed_test",
     srcs = ["test/resource_tool_installed_test.py"],
-    args = [
-        "$(location :install)",
-    ],
-    data = [
-        ":install",
-    ],
+    deps = ["//tools/install:install_test_helper"],
 )
 
 # TODO(jwnimmer-tri) These tests are currently missing...
