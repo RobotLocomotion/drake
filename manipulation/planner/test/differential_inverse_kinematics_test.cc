@@ -151,7 +151,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     for (int j = 0; j < 6; j++) {
       // For the constrained dof, the velocity should match.
       if (gain_E(j) > 0) {
-        EXPECT_NEAR(V_WE_E(j), V_WE_E_desired(j), 1e-4);
+        EXPECT_NEAR(V_WE_E(j), V_WE_E_desired(j), 5e-3);
       }
     }
   }
