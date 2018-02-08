@@ -152,6 +152,7 @@ drake_cc_googletest(
     deps = [
         ":loader",
         "//automotive/maliput/api/test_utilities",
+        "//automotive/maliput/multilane/test_utilities",
     ],
 )
 
