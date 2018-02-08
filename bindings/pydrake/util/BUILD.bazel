@@ -134,6 +134,11 @@ drake_cc_library(
     hdrs = ["drake_optional_pybind.h"],
 )
 
+drake_cc_library(
+    name = "type_safe_index_pybind",
+    hdrs = ["type_safe_index_pybind.h"],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
@@ -252,6 +257,14 @@ drake_py_test(
     deps = [
         ":eigen_geometry_py",
         ":eigen_geometry_test_util_py",
+    ],
+)
+
+drake_pybind_cc_googletest(
+    name = "type_safe_index_pybind_test",
+    cc_deps = [
+        ":type_safe_index_pybind",
+        "//common:nice_type_name",
     ],
 )
 
