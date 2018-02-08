@@ -488,6 +488,12 @@ class MultibodyTree {
   ///   braces `{}` imply that frame M **is** the same body frame B. If instead
   ///   your intention is to make a frame F with pose `X_PF`, provide
   ///   `Isometry3<double>::Identity()` as your input.
+  /// @tparam JointType
+  ///   The type of the new joint to add, which must be a subclass of Joint.
+  /// @returns A constant reference to the new joint just added, of type
+  ///   `JointType<T>` specialized on the scalar type T of `this`
+  ///   %MultibodyTree. It will remain valid for the lifetime of `this`
+  ///   %MultibodyTree.
   ///
   /// Example of usage:
   /// @code

@@ -225,6 +225,7 @@ def drake_pybind_cc_googletest(
             "//bindings/pydrake:pydrake_pybind",
             "//tools/install/libdrake:drake_shared_library",
             "@pybind11",
+            "@python//:python_direct_link",
         ],
         # Add 'manual', because we only want to run it with Python present.
         tags = ["manual"],

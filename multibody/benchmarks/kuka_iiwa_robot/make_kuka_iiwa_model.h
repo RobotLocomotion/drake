@@ -24,9 +24,9 @@ class KukaIiwaModelBuilder {
   /// as specified in this class' documentation.
   /// The world z-unit vector is vertically upward.
   /// @param[in] finalize_model
-///   If `true`, the model is finalized with MultibodyTree::Finalize().
-///   A non-finalized model can be requested if adding more multibody elements
-///   is desired.
+  ///   If `true`, the model is finalized with MultibodyTree::Finalize().
+  ///   A non-finalized model can be requested if adding more multibody elements
+  ///   is desired.
   /// @param[in] gravity
   ///   The model's acceleration of gravity. `gravity > 0` means the gravity
   ///   field is directed opposite the world upward z-unit vector (i.e.

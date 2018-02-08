@@ -402,6 +402,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_half_space, user_data);
   }
 
+  void ImplementGeometry(const Mesh&, void* user_data) override {
+    // TODO(SeanCurtis-TRI): Replace this with a legitimate fcl mesh. This
+    // assumes that a zero-radius sphere has no interesting interactions with
+    // other meshes. However, it *does* increase the collision space. :(
+    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);
+    TakeShapeOwnership(fcl_sphere, user_data);
+  }
+
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
       const std::vector<GeometryId>& dynamic_map,
       const std::vector<GeometryId>& anchored_map) const {

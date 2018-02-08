@@ -1,12 +1,12 @@
 #pragma once
 
-// Remove this duplication once #8003 is addressed.
+// TODO(amcastro-tri): Remove this duplication once #8003 is addressed.
 
 #include <regex>
 
 // Helper macro for "expecting" an exception but *also* testing the error
 // message against the provided regular expression.
-#define EXPECT_ERROR_MESSAGE(expression, exception, reg_exp) \
+#define DRAKE_EXPECT_ERROR_MESSAGE(expression, exception, reg_exp) \
 try { \
   expression; \
   GTEST_NONFATAL_FAILURE_("\t" #expression " failed to throw " #exception); \

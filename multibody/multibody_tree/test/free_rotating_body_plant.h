@@ -75,7 +75,7 @@ class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
  private:
   // Override of context construction so that we can delegate it to
   // MultibodyTree.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,

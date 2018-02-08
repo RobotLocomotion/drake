@@ -29,6 +29,11 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
     received_user_data_ = data;
     half_space_made_ = true;
   }
+  void ImplementGeometry(const Mesh&, void*) override {
+    // TODO(SeanCurtis-TRI): Provide body when meshes are meaningfully
+    // supported.
+    EXPECT_TRUE(false) << "Don't test Meshes until they are fully supported";
+  }
   void Reset() {
     sphere_made_ = false;
     half_space_made_ = false;
