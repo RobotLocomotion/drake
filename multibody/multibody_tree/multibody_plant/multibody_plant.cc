@@ -30,7 +30,7 @@ MultibodyPlant<T>::MultibodyPlant() :
 template<typename T>
 template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
-  DRAKE_THROW_UNLESS(!is_finalized());
+  DRAKE_THROW_UNLESS(other.is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
 }
 

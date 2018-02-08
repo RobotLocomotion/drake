@@ -1,5 +1,7 @@
 #pragma once
 
+// Remove this duplication once #8003 is addressed.
+
 #include <regex>
 
 // Helper macro for "expecting" an exception but *also* testing the error

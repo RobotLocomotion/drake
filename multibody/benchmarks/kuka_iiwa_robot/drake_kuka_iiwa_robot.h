@@ -126,7 +126,6 @@ class DrakeKukaIIwaRobot {
     // velocity, and acceleration caches with specified values for testing.
     PositionKinematicsCache<T> pc(model_->get_topology());
     VelocityKinematicsCache<T> vc(model_->get_topology());
-    AccelerationKinematicsCache<T> ac(model_->get_topology());
 
     // Retrieve end-effector pose from position kinematics cache.
     model_->CalcPositionKinematicsCache(*context_, &pc);
