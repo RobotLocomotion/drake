@@ -40,6 +40,11 @@
       "Hints": ["@prefix@/lib/cmake/optitrack"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "osqp": {
+      "Version": "0.2.1",
+      "Hints": ["@prefix@/lib/cmake/osqp"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "Protobuf": {
       "Version": "2.6.1",
       "X-CMake-Find-Args": ["MODULE"]

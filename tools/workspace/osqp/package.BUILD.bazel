@@ -1,0 +1,86 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Generates glob_opts.h based on the defines= we want in Drake.
+cmake_configure_file(
+    name = "glob_opts",
+    src = "configure/glob_opts.h.in",
+    out = "include/glob_opts.h",
+    cmakelists = [
+        "CMakeLists.txt",
+        "configure/cmake/FindPythonModule.cmake",
+        "configure/cmake/Utils.cmake",
+    ],
+    defines = [
+        "IS_LINUX",
+        "IS_MAC",
+        "PRINTING",
+        "PROFILING",
+        "CTRLC",
+        "DLONG",
+        "ENABLE_MKL_PARDISO",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "osqp",
+    srcs = glob([
+        "lin_sys/*.c",
+        "lin_sys/*.h",
+        "lin_sys/direct/pardiso/*.c",
+        "lin_sys/direct/pardiso/*.h",
+        "lin_sys/direct/suitesparse/*.c",
+        "lin_sys/direct/suitesparse/*.h",
+        "lin_sys/direct/suitesparse/amd/src/*.c",
+        "lin_sys/direct/suitesparse/amd/include/*.h",
+        "lin_sys/direct/suitesparse/ldl/src/*.c",
+        "lin_sys/direct/suitesparse/ldl/include/*.h",
+        "include/*.h",
+        "src/*.c",
+    ]),
+    hdrs = glob([
+        "include/*.h",
+    ]),
+    includes = [
+        "include",
+        "lin_sys/direct/suitesparse/amd/include",
+    ],
+)
+
+CMAKE_PACKAGE = "osqp"
+
+cmake_config(
+    package = CMAKE_PACKAGE,
+    script = "@drake//tools/workspace/osqp:package-create-cps.py",
+    version_file = "CMakeLists.txt",
+)
+
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
+
+install(
+    name = "install",
+    targets = [":osqp"],
+    hdr_dest = "include/" + CMAKE_PACKAGE,
+    guess_hdrs = "PACKAGE",
+    docs = [
+        "LICENSE",
+    ],
+    deps = [":install_cmake_config"],
+)
+
