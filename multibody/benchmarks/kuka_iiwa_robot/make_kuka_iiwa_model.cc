@@ -49,7 +49,7 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
     const Body<T>& A,
     const Vector3<double>& q123A, const Vector3<double>& xyzA,
     const Body<T>& B, const Vector3<double>& revolute_unit_vector,
-    MultibodyTree<T>* plant) {
+    MultibodyTree<T>* model) {
   // Create transform from inboard body A to mobilizer inboard frame Ab.
   const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
                                                  xyzA);
@@ -58,7 +58,7 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
   const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),
                                                  Vector3d(0, 0, 0));
 
-  return plant->template AddJoint<RevoluteJoint>(
+  return model->template AddJoint<RevoluteJoint>(
       joint_name, A, X_AAb, B, X_BBa, revolute_unit_vector);
 }
 
@@ -66,7 +66,7 @@ template <typename T>
 unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
   // Create a mostly empty MultibodyTree (it has a built-in "world" body).
   // Newtonian reference frame (linkN) is the world body.
-  auto plant = make_unique<MultibodyTree<T>>();
+  auto model = make_unique<MultibodyTree<T>>();
 
   // Create SpatialInertia for each link in this robot. M_Bo_B designates a
   // rigid body B's spatial inertia about Bo (B's origin), expressed in B.
@@ -93,13 +93,13 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
                                                      I_GGcm_G_);
 
   // Add this robot's seven links.
-  const RigidBody<T>& linkA = plant->AddRigidBody("iiwa_link_1", M_AAo_A);
-  const RigidBody<T>& linkB = plant->AddRigidBody("iiwa_link_2", M_BBo_B);
-  const RigidBody<T>& linkC = plant->AddRigidBody("iiwa_link_3", M_CCo_C);
-  const RigidBody<T>& linkD = plant->AddRigidBody("iiwa_link_4", M_DDo_D);
-  const RigidBody<T>& linkE = plant->AddRigidBody("iiwa_link_5", M_EEo_E);
-  const RigidBody<T>& linkF = plant->AddRigidBody("iiwa_link_6", M_FFo_F);
-  const RigidBody<T>& linkG = plant->AddRigidBody("iiwa_link_7", M_GGo_G);
+  const RigidBody<T>& linkA = model->AddRigidBody("iiwa_link_1", M_AAo_A);
+  const RigidBody<T>& linkB = model->AddRigidBody("iiwa_link_2", M_BBo_B);
+  const RigidBody<T>& linkC = model->AddRigidBody("iiwa_link_3", M_CCo_C);
+  const RigidBody<T>& linkD = model->AddRigidBody("iiwa_link_4", M_DDo_D);
+  const RigidBody<T>& linkE = model->AddRigidBody("iiwa_link_5", M_EEo_E);
+  const RigidBody<T>& linkF = model->AddRigidBody("iiwa_link_6", M_FFo_F);
+  const RigidBody<T>& linkG = model->AddRigidBody("iiwa_link_7", M_GGo_G);
 
   // Create a revolute joint between linkN (Newtonian frame/world) and linkA
   // using two joint-frames, namely "Na" and "An".  The "inboard frame" Na is
@@ -108,55 +108,55 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
   // second and third arguments in the following method, namely with SpaceXYZ
   // angles and a position vector. Alternately, frame An is regarded as
   // coincident with linkA.
-  const Body<T>& linkN = plant->get_world_body();
+  const Body<T>& linkN = model->get_world_body();
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_1",
       linkN, joint_1_rpy_, joint_1_xyz_,
-      linkA, Eigen::Vector3d::UnitZ(), plant.get());
+      linkA, Eigen::Vector3d::UnitZ(), model.get());
 
   // Create a revolute joint between linkA and linkB.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_2",
       linkA, joint_2_rpy_, joint_2_xyz_,
-      linkB, Eigen::Vector3d::UnitZ(), plant.get());
+      linkB, Eigen::Vector3d::UnitZ(), model.get());
 
   // Create a revolute joint between linkB and linkC.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_3",
       linkB, joint_3_rpy_, joint_3_xyz_,
-      linkC, Eigen::Vector3d::UnitZ(), plant.get());
+      linkC, Eigen::Vector3d::UnitZ(), model.get());
 
   // Create a revolute joint between linkB and linkC.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_4",
       linkC, joint_4_rpy_, joint_4_xyz_,
-      linkD, Eigen::Vector3d::UnitZ(), plant.get());
+      linkD, Eigen::Vector3d::UnitZ(), model.get());
 
   // Create a revolute joint between linkD and linkE.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_5",
       linkD, joint_5_rpy_, joint_5_xyz_,
-      linkE, Eigen::Vector3d::UnitZ(), plant.get());
+      linkE, Eigen::Vector3d::UnitZ(), model.get());
   // Create a revolute joint between linkE and linkF.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_6",
       linkE, joint_6_rpy_, joint_6_xyz_,
-      linkF, Eigen::Vector3d::UnitZ(), plant.get());
+      linkF, Eigen::Vector3d::UnitZ(), model.get());
 
   // Create a revolute joint between linkE and linkF.
   AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_7",
       linkF, joint_7_rpy_, joint_7_xyz_,
-      linkG, Eigen::Vector3d::UnitZ(), plant.get());
+      linkG, Eigen::Vector3d::UnitZ(), model.get());
 
   // Add force element for a constant gravity pointing downwards, that is, in
   // the negative z-axis direction.
   const Eigen::Vector3d gravity_vector = -gravity_ * Eigen::Vector3d::UnitZ();
-  plant->template AddForceElement<UniformGravityFieldElement>(gravity_vector);
+  model->template AddForceElement<UniformGravityFieldElement>(gravity_vector);
 
   // Finalize() stage sets the topology (model is built).
-  plant->Finalize();
-  return plant;
+  model->Finalize();
+  return model;
 }
 }  // namespace internal
 

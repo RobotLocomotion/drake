@@ -163,14 +163,14 @@ class MultibodyTree {
 
   /// Creates a rigid body model with the provided name and spatial inertia.
   /// This method returns a constant reference to the body just added, which
-  /// will remain valid for the lifetime of `this` %MultibodyPlant.
+  /// will remain valid for the lifetime of `this` %MultibodyTree.
   ///
   /// Example of usage:
   /// @code
-  ///   MultibodyPlant<T> plant;
+  ///   MultibodyTree<T> model;
   ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
   ///   const RigidBody<T>& body =
-  ///     plant.AddRigidBody("BodyName", spatial_inertia);
+  ///     model.AddRigidBody("BodyName", spatial_inertia);
   /// @endcode
   ///
   /// @param[in] name
@@ -182,7 +182,7 @@ class MultibodyTree {
   ///   computed about the body frame origin `Bo` and expressed in the body
   ///   frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
-  ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  ///          remain valid for the lifetime of `this` %MultibodyTree.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
     DRAKE_THROW_UNLESS(!HasBodyNamed(name));

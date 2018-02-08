@@ -18,7 +18,7 @@ using multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
 
 // This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
 // multibody elements by name or get exceptions accordingly.
-GTEST_TEST(MultibodyPlant, RetrieveNamedElements) {
+GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   const std::string kInvalidName = "InvalidName";
   const std::vector<std::string> kLinkNames = {
       "iiwa_link_1",
