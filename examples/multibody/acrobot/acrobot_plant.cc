@@ -311,7 +311,7 @@ void AcrobotPlant<T>::RegisterGeometry(
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-AcrobotPlant<T>::DoMakeContext() const {
+AcrobotPlant<T>::DoMakeLeafContext() const {
   return std::make_unique<MultibodyTreeContext<T>>(model_->get_topology());
 }
 

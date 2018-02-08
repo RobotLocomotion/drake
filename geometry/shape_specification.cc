@@ -1,5 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
+#include "drake/common/text_logging.h"
+
 namespace drake {
 namespace geometry {
 
@@ -56,5 +58,13 @@ Isometry3<double> HalfSpace::MakePose(const Vector3<double>& normal_F,
   X_FC.translation() = z_axis_W.dot(r_FP) * z_axis_W;
   return X_FC;
 }
+
+Mesh::Mesh(const std::string& absolute_filename, double scale)
+    : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
+  // TODO(SeanCurtis-TRI): Remove this when meshes are properly supported.
+  drake::log()->warn("Meshes are only supported for drake_visualizer ({})",
+                     filename_);
+}
+
 }  // namespace geometry
 }  // namespace drake

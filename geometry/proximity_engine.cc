@@ -103,6 +103,95 @@ class EncodedData {
   uintptr_t data_{};
 };
 
+// Struct for use in SingleCollisionCallback(). Contains the collision request
+// and accumulates results in a drake::multibody::collision::PointPair vector.
+struct CollisionData {
+  CollisionData(const std::vector<GeometryId>* dynamic_map_in,
+                const std::vector<GeometryId>* anchored_map_in)
+      : dynamic_map(*dynamic_map_in), anchored_map(*anchored_map_in) {}
+  // Maps so the penetration call back can map from engine index to geometry id.
+  const std::vector<GeometryId>& dynamic_map;
+  const std::vector<GeometryId>& anchored_map;
+
+  // Collision request
+  fcl::CollisionRequestd request;
+
+  // Vector of distance results
+  std::vector<PenetrationAsPointPair<double>>* contacts{};
+};
+
+// Callback function for FCL's collide() function for retrieving a *single*
+// contact.
+bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
+                             fcl::CollisionObjectd* fcl_object_B_ptr,
+                             void* callback_data) {
+  // NOTE: Although this function *takes* non-const pointers to satisfy the
+  // fcl api, it should not exploit the non-constness to modify the collision
+  // objects. We insure this by immediately assigning to a const version and
+  // not directly using the provided parameters.
+  const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
+  const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
+
+  // TODO(SeanCurtis-TRI): Introduce collision filtering here.
+  const bool is_filtered = false;
+
+  if (!is_filtered) {
+    // Unpack the callback data
+    auto& collision_data = *static_cast<CollisionData*>(callback_data);
+    const fcl::CollisionRequestd& request = collision_data.request;
+    const std::vector<GeometryId> dynamic_map = collision_data.dynamic_map;
+    const std::vector<GeometryId> anchored_map = collision_data.anchored_map;
+
+    // This callback only works for a single contact, this confirms a request
+    // hasn't been made for more contacts.
+    DRAKE_ASSERT(request.num_max_contacts == 1);
+    fcl::CollisionResultd result;
+
+    // Perform nearphase collision detection
+    fcl::collide(&fcl_object_A, &fcl_object_B, request, result);
+
+    // Process the contact points
+    if (result.isCollision()) {
+      // NOTE: This assumes that the request is configured to use a single
+      // contact.
+      const fcl::Contactd& contact = result.getContact(0);
+      //  By convention, Drake requires the contact normal to point out of B and
+      //  into A. FCL uses the opposite convention.
+      Vector3d drake_normal = -contact.normal;
+
+      // Signed distance is negative when penetration depth is positive.
+      double depth = contact.penetration_depth;
+
+      // FCL returns a single contact point, but PenetrationAsPointPair expects
+      // two, one on the surface of body A (Ac) and one on the surface of body B
+      // (Bc). Choose points along the line defined by the contact point and
+      // normal, equidistant to the contact point. Recall that signed_distance
+      // is strictly non-positive, so signed_distance * drake_normal points out
+      // of A and into B.
+      const Vector3d p_WAc{contact.pos - 0.5 * depth * drake_normal};
+      const Vector3d p_WBc{contact.pos + 0.5 * depth * drake_normal};
+
+      PenetrationAsPointPair<double> penetration;
+      penetration.depth = depth;
+      // The engine doesn't know geometry ids; it returns engine indices. The
+      // caller must map engine indices to geometry ids.
+      penetration.id_A =
+          EncodedData(fcl_object_A).id(dynamic_map, anchored_map);
+      penetration.id_B =
+          EncodedData(fcl_object_B).id(dynamic_map, anchored_map);
+      penetration.p_WCa = p_WAc;
+      penetration.p_WCb = p_WBc;
+      penetration.nhat_BA_W = drake_normal;
+      collision_data.contacts->emplace_back(std::move(penetration));
+    }
+  }
+
+  // Returning true would tell the broadphase manager to terminate early. Since
+  // we want to find all the collisions present in the model's current
+  // configuration, we return false.
+  return false;
+}
+
 // Returns a copy of the given fcl collision geometry; throws an exception for
 // unsupported collision geometry types. This supplements the *missing* cloning
 // functionality in FCL. Issue has been submitted to FCL:
@@ -313,6 +402,36 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_half_space, user_data);
   }
 
+  void ImplementGeometry(const Mesh&, void* user_data) override {
+    // TODO(SeanCurtis-TRI): Replace this with a legitimate fcl mesh. This
+    // assumes that a zero-radius sphere has no interesting interactions with
+    // other meshes. However, it *does* increase the collision space. :(
+    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);
+    TakeShapeOwnership(fcl_sphere, user_data);
+  }
+
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
+      const std::vector<GeometryId>& dynamic_map,
+      const std::vector<GeometryId>& anchored_map) const {
+    std::vector<PenetrationAsPointPair<double>> contacts;
+    CollisionData collision_data{&dynamic_map, &anchored_map};
+    collision_data.contacts = &contacts;
+    collision_data.request.num_max_contacts = 1;
+    collision_data.request.enable_contact = true;
+    dynamic_tree_.collide(&collision_data, SingleCollisionCallback);
+    // NOTE: The interface to DynamicAABBTreeCollisionManager::collide
+    // requires the input collision manager pointer to be *non* const.
+    // As of 02/06/2018, it appears the only opportunity for modification
+    // of the AABB tree (and its contents) occurs in the callback provided.
+    // See the definition of SingleCollisionCallback above to see that no
+    // modification takes place.
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &collision_data, SingleCollisionCallback);
+    return contacts;
+  }
+
   // Testing utilities
 
   bool IsDeepCopy(const Impl& other) const {
@@ -473,6 +592,15 @@ void ProximityEngine<T>::UpdateWorldPoses(
     const std::vector<Isometry3<T>>& X_WG) {
   impl_->UpdateWorldPoses(X_WG);
 }
+
+template <typename T>
+std::vector<PenetrationAsPointPair<double>>
+ProximityEngine<T>::ComputePointPairPenetration(
+    const std::vector<GeometryId>& dynamic_map,
+    const std::vector<GeometryId>& anchored_map) const {
+  return impl_->ComputePointPairPenetration(dynamic_map, anchored_map);
+}
+
 // Testing utilities
 
 template <typename T>

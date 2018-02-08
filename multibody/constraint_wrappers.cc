@@ -4,25 +4,6 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-template <typename T>
-KinematicsCacheHelper<T>::KinematicsCacheHelper(
-    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies)
-    : kinsol_(RigidBodyTree<T>::CreateKinematicsCacheFromBodiesVector(bodies)) {
-}
-
-template <typename Scalar>
-KinematicsCache<Scalar>& KinematicsCacheHelper<Scalar>::UpdateKinematics(
-    const Eigen::Ref<const Eigen::VectorXd>& q,
-    const RigidBodyTree<double>* tree) {
-  if ((q.size() != last_q_.size()) || (q != last_q_) || (tree != last_tree_)) {
-    last_q_ = q;
-    last_tree_ = tree;
-    kinsol_.initialize(q);
-    tree->doKinematics(kinsol_);
-  }
-  return kinsol_;
-}
-
 SingleTimeKinematicConstraintWrapper::SingleTimeKinematicConstraintWrapper(
     const SingleTimeKinematicConstraint* rigid_body_constraint,
     KinematicsCacheHelper<double>* kin_helper)
@@ -100,8 +81,6 @@ void QuasiStaticConstraintWrapper::DoEval(
       y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class KinematicsCacheHelper<double>;
 
 }  // namespace plants
 }  // namespace systems
