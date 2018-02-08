@@ -607,9 +607,10 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   // TODO(edrumwri): Add ability to disable witness time isolation through
   // a Simulator setting.
 
-  // The scale factor for witness isolation.
-  // TODO(edrumwri): Consider making this user-settable.
-  const double iso_scale_factor = 1.0;
+  // The scale factor for witness isolation. This should be a reasonable
+  // default that allows witness isolation accuracy to be commensurate with
+  // integrator accuracy for most systems. 
+  const double iso_scale_factor = 0.01;
 
   // TODO(edrumwri): Acquire characteristic time properly from the system
   //                 (i.e., modify the System to provide this value).

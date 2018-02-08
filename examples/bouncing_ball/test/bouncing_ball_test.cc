@@ -141,6 +141,13 @@ TEST_F(BouncingBallTest, Accessors) {
 }
 
 TEST_F(BouncingBallTest, Simulate) {
+  // Small errors from time-of-impact isolation tolerances propagate for this
+  // particular instance of the problem (with restitution coefficient of 1).
+  // Drake's integrators control local (truncation) rather than global
+  // (i.e., solution to the initial value problem) error. This means that the
+  // number of digits of precision obtained will not be equal to the digits of
+  // precision requested (via the accuracy setting) for longer running times
+  // than t_final = 10.0.
   const double t_final = 10.0;
   const double x0 = 1.0;
   const double v0 = 0.0;
@@ -169,7 +176,7 @@ TEST_F(BouncingBallTest, Simulate) {
 
   // Check against closed form solution for the bouncing ball. We anticipate
   // some small integration error.
-  const double tol = 200 * accuracy;
+  const double tol = accuracy;
   double height, velocity;
   std::tie(height, velocity) = CalcClosedFormHeightAndVelocity(
       dut_->get_gravitational_acceleration(),
