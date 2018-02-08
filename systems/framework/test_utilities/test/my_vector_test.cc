@@ -32,7 +32,7 @@ GTEST_TEST(MyVectorTest, Construction) {
 }
 
 // Misuse of the test utility is an abort-able infraction.
-GTEST_TEST(MyVectorTest, DeathOnBadSize) {
+GTEST_TEST(MyVectorDeathTest, DeathOnBadSize) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   Vector4d fixed_size4(1., 2., 3., 4.);
 
