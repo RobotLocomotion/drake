@@ -11,7 +11,8 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 apt update
-apt install --no-install-recommends apt-transport-https wget
+apt install wget  # We want the recommended packages to allow validation of the key below.
+apt install --no-install-recommends apt-transport-https
 
 wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
 echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu xenial main' > /etc/apt/sources.list.d/drake.list
