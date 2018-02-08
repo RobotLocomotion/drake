@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
@@ -16,17 +17,18 @@ namespace rules {
 /// flows take turns traversing regions of the road network.
 ///
 /// Each rule instance comprises:
-/// * a controlled-zone, which specifies a contiguous longitudinal lane-wise
-///   section of the road network to which the instance applies;
-/// * a type which indicates the right-of-way semantics for a vehicle
-///   traversing the controlled-zone.
+/// * a controlled_zone (a LaneSRoute) which specifies a contiguous
+///   longitudinal lane-wise section of the road network to which the
+///   instance applies;
+/// * a type (a Type) which indicates the right-of-way semantics for a vehicle
+///   traversing the controlled_zone.
 /// The type may be "dynamic", in which the semantic state is delegated to
 /// an RightOfWayStateProvider agent, linked by this rule's Id.
 ///
 /// A RightOfWayRule instance determines whether or not a vehicle is
-/// allowed to enter the controlled-zone.  Having entered, vehicles
-/// should not stop within a controlled-zone, and thus should not
-/// enter a the controlled-zone if traffic conditions may cause them
+/// allowed to enter the controlled_zone.  Having entered, vehicles
+/// should not stop within a controlled_zone, and thus should not
+/// enter the controlled_zone if traffic conditions may cause them
 /// to stop within the zone.
 class RightOfWayRule {
  public:
@@ -67,22 +69,29 @@ class RightOfWayRule {
                           ///  proceed if safe;
   };
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RightOfWayRule)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RightOfWayRule);
 
-  RightOfWayRule(const Id& id, Type type) : id_(id), type_(type) {}
+  /// Constructs a RightOfWayRule.
+  ///
+  /// @param id the unique ID of this rule (in the RoadRulebook)
+  /// @param controlled_zone LaneSRoute to which this rule applies
+  /// @param type the static semantics of this rule
+  RightOfWayRule(const Id& id,
+                 const LaneSRoute& controlled_zone, Type type)
+      : id_(id), controlled_zone_(controlled_zone), type_(type) {}
 
   /// Returns the persistent identifier.
   Id id() const { return id_; }
 
-  // TODO(maddog@tri.global)  Define controlled_zone accessor.
+  /// Returns the rule's controlled zone.
+  const LaneSRoute& controlled_zone() const { return controlled_zone_; }
 
-  /// Return the static rule semantic.
+  /// Returns the static rule semantic.
   Type type() const { return type_; }
 
  private:
   Id id_;
-  // TODO(maddog@tri.global)  Define controlled_zone as
-  //                          LaneRoute controlled_zone_;
+  LaneSRoute controlled_zone_;
   Type type_{};
   // TODO(maddog) Add bool field for "stopping is excluded in zone"?
 };
@@ -96,13 +105,14 @@ class RightOfWayStateProvider {
 
   virtual ~RightOfWayStateProvider() = default;
 
-  /// Return the current state of the RightOfWayRule identified by `id`.
+  /// Returns the current state of the RightOfWayRule identified by `id`.
   ///
   /// Throws an exception if `id` is unrecognized, which should be the
   /// case if no such rule exists or if the rule has only static semantics.
   // TODO(maddog@tri.global)  Better to throw exception or return an optional?
   RightOfWayRule::DynamicState GetState(const RightOfWayRule::Id& id) const {
-    return DoGetState(id); }
+    return DoGetState(id);
+  }
 
  protected:
   RightOfWayStateProvider() = default;
