@@ -48,7 +48,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
 
   // Attempt to add a body having the same name as a body already part of the
   // model. This is not allowed and an exception should be thrown.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_ERROR_MESSAGE(
       model->AddRigidBody("iiwa_link_5", SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
@@ -57,7 +57,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
 
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_ERROR_MESSAGE(
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
           /* Dummy frame definitions. Not relevant for this test. */
@@ -101,7 +101,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
     const Body<double>& link = model->GetBodyByName(link_name);
     EXPECT_EQ(link.get_name(), link_name);
   }
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_ERROR_MESSAGE(
       model->GetBodyByName(kInvalidName), std::logic_error,
       "There is no body named '.*' in the model.");
 
@@ -110,7 +110,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
     const Joint<double>& joint = model->GetJointByName(joint_name);
     EXPECT_EQ(joint.get_name(), joint_name);
   }
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_ERROR_MESSAGE(
       model->GetJointByName(kInvalidName), std::logic_error,
       "There is no joint named '.*' in the model.");
 
@@ -120,7 +120,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
         model->GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_EQ(joint.get_name(), joint_name);
   }
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_ERROR_MESSAGE(
       model->GetJointByName<RevoluteJoint>(kInvalidName), std::logic_error,
       "There is no joint named '.*' in the model.");
 }
