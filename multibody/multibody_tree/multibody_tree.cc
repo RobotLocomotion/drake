@@ -187,36 +187,6 @@ void MultibodyTree<T>::SetDefaultState(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcAllBodyPosesInWorld(
-    const systems::Context<T>& context,
-    std::vector<Isometry3<T>>* X_WB) const {
-  DRAKE_THROW_UNLESS(X_WB != nullptr);
-  if (static_cast<int>(X_WB->size()) != get_num_bodies()) {
-    X_WB->resize(get_num_bodies(), Isometry3<T>::Identity());
-  }
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index = get_body(body_index).get_node_index();
-    X_WB->at(body_index) = pc.get_X_WB(node_index);
-  }
-}
-
-template <typename T>
-void MultibodyTree<T>::CalcAllBodySpatialVelocitiesInWorld(
-    const systems::Context<T>& context,
-    std::vector<SpatialVelocity<T>>* V_WB) const {
-  DRAKE_THROW_UNLESS(V_WB != nullptr);
-  if (static_cast<int>(V_WB->size()) != get_num_bodies()) {
-    V_WB->resize(get_num_bodies(), SpatialVelocity<T>::Zero());
-  }
-  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index = get_body(body_index).get_node_index();
-    V_WB->at(body_index) = vc.get_V_WB(node_index);
-  }
-}
-
-template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
     const systems::Context<T>& context,
     PositionKinematicsCache<T>* pc) const {
