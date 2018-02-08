@@ -44,9 +44,9 @@ cc_library(
     hdrs = glob([
         "octomap/include/octomap/*.h*",
     ]),
+    copts = ["-fvisibility=hidden"],
     includes = ["octomap/include"],
     linkstatic = 1,
-    copts = ["-fvisibility=hidden"],
     deps = [":octomath"],
 )
 
