@@ -21,6 +21,8 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SlidingWitness)
 
+  /// Constructs the sliding witness function to track the specified rod
+  /// endpoint for either 
   SlidingWitness(
       const Rod2D<T>* rod,
       RodEndpoint endpoint,
