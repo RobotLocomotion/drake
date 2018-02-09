@@ -860,10 +860,10 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const;
 
-  ///  Given the positions `p_BQi` for a set of points `Qi` measured and
-  ///  expressed in a frame B, this method computes the positions `p_AQi(q)` of
-  ///  each point `Qi` in the set as measured and expressed in another frame A,
-  ///  as a function of the generalized positions q of the model.
+  /// Given the positions `p_BQi` for a set of points `Qi` measured and
+  /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
+  /// each point `Qi` in the set as measured and expressed in another frame A,
+  /// as a function of the generalized positions q of the model.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores
