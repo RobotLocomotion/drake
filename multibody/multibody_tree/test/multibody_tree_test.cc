@@ -191,10 +191,10 @@ class KukaIiwaModelTests : public ::testing::Test {
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
       const MatrixX<T>& p_EPi,
-      MatrixX<T>* p_WPi, MatrixX<T>* J_WPi) const {
+      MatrixX<T>* p_WPi, MatrixX<T>* Jv_WPi) const {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
     model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.get_body_frame(), p_EPi, p_WPi, J_WPi);
+        context_on_T, linkG_on_T.get_body_frame(), p_EPi, p_WPi, Jv_WPi);
   }
 
  protected:
@@ -347,7 +347,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
 }
 
 // Given a set of points Pi attached to the end effector frame G, this test
-// computes the analytic Jacobian J_WPi of these points using two methods:
+// computes the analytic Jacobian Jq_WPi of these points using two methods:
 // 1. Since for the Kuka iiwa arm v = q̇, the analytic Jacobian equals the
 //    geometric Jacobian and we compute it with MultibodyTree's implementation.
 // 2. We compute the analytic Jacobian by direct differentiation with respect to
@@ -385,12 +385,12 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   p_EPi.col(1) << 0.2, 0.3, -0.15;
 
   MatrixX<double> p_WPi(3, kNumPoints);
-  MatrixX<double> J_WPi(3 * kNumPoints, kNumPositions);
+  MatrixX<double> Jq_WPi(3 * kNumPoints, kNumPositions);
 
-  // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian equals the
-  // geometric Jacobian.
+  // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian Jq_WPi equals the
+  // geometric Jacobian Jv_Wpi.
   CalcPointsOnEndEffectorGeometricJacobian(
-      *model_, *context_, p_EPi, &p_WPi, &J_WPi);
+      *model_, *context_, p_EPi, &p_WPi, &Jq_WPi);
 
   // Alternatively, compute the analytic Jacobian by taking the gradient of
   // the positions p_WPi(q) with respect to the generalized positions. We do
@@ -405,11 +405,11 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
 
   const MatrixX<AutoDiffXd> p_EPi_autodiff = p_EPi;
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
-  MatrixX<AutoDiffXd> J_WPi_autodiff(3 * kNumPoints, kNumPositions);
+  MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
 
   CalcPointsOnEndEffectorGeometricJacobian(
       *model_autodiff_, *context_autodiff_,
-      p_EPi_autodiff, &p_WPi_autodiff, &J_WPi_autodiff);
+      p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
 
   // Extract values and derivatives:
   const Matrix3X<double> p_WPi_value =
@@ -426,10 +426,10 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   EXPECT_EQ(p_WPi_derivs.rows(), 3 * kNumPoints);
   EXPECT_EQ(p_WPi_derivs.cols(), kNumPositions);
 
-  // Verify the computed Jacobian J_WPi matches the one obtained using
+  // Verify the computed Jacobian Jq_WPi matches the one obtained using
   // automatic differentiation.
   // In this case analytic and geometric Jacobians are equal since v = q.
-  EXPECT_TRUE(CompareMatrices(J_WPi, p_WPi_derivs,
+  EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
                               kTolerance, MatrixCompareType::relative));
 }
 

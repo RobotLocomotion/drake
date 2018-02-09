@@ -903,20 +903,20 @@ class MultibodyTree {
 
   /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
   /// B, (that is, their time derivative `ᴮd/dt(p_BQi)` in frame B is zero),
-  /// this method computes the geometric Jacobian `J_WQi` defined by:
+  /// this method computes the geometric Jacobian `Jv_WQi` defined by:
   /// <pre>
-  ///   J_WQi(q) = d(v_WQi(q, v))/dv
+  ///   v_WQi(q, v) = Jv_WQi(q)⋅v
   /// </pre>
   /// where `p_WQi` is the position vector in the world frame for each point
-  /// `Qi` in the input set, `v_WQi` is the translational velocity of point `Qi`
-  /// in the world frame W and v is the vector of generalized velocities. Since
-  /// the spatial velocity of each point `Qi` is linear in the generalized
-  /// velocities, the geometric Jacobian `J_WQi` is a function of the
-  /// generalized coordinates q only.
+  /// `Qi` in the input set, `v_WQi(q, v)` is the translational velocity of
+  /// point `Qi` in the world frame W and q and v are the vectors of generalized
+  /// position and velocity, respectively. Since the spatial velocity of each
+  /// point `Qi` is linear in the generalized velocities, the geometric
+  /// Jacobian `Jv_WQi` is a function of the generalized coordinates q only.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model. It stores
-  ///   the generalized positions q.
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
   /// @param[in] frame_B
   ///   The positions `p_BQi` of each point in the input set are measured and
   ///   expressed in this frame B and are constant (fixed) in this frame.
@@ -935,11 +935,11 @@ class MultibodyTree {
   ///   as the input set `p_BQi_set` or otherwise this method throws a
   ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
   ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] J_WQi
-  ///   The geometric Jacobian `J_WQi(q)`, function of the generalized positions
-  ///   q only. This Jacobian relates the translational velocity `v_WQi` of
-  ///   each point `Qi` in the input set by: <pre>
-  ///     `v_WQi(q, v) = J_WQi(q)⋅v`
+  /// @param[out] Jv_WQi
+  ///   The geometric Jacobian `Jv_WQi(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates the translational velocity
+  ///   `v_WQi` of each point `Qi` in the input set by: <pre>
+  ///     `v_WQi(q, v) = Jv_WQi(q)⋅v`
   ///   </pre>
   ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
   ///   velocity of all points `Qi` in the same order they were given in the
@@ -947,10 +947,15 @@ class MultibodyTree {
   ///   the number of generalized velocities. On input, matrix `J_WQi` **must**
   ///   have size `3⋅np x nv` or this method throws a std::runtime_error
   ///   exception.
+  ///
+  /// @throws an exception if the output `p_WQi_set` is nullptr or does not have
+  /// the same size as the input array `p_BQi_set`.
+  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WQi` for details.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const;
+      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
 
   /// @}
   // End of multibody Jacobian methods section.

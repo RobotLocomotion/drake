@@ -622,14 +622,14 @@ template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const {
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const {
   DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
   const int num_points = p_BQi_set.cols();
   DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
   DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
-  DRAKE_THROW_UNLESS(J_WQi != nullptr);
-  DRAKE_THROW_UNLESS(J_WQi->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(J_WQi->cols() == get_num_velocities());
+  DRAKE_THROW_UNLESS(Jv_WQi != nullptr);
+  DRAKE_THROW_UNLESS(Jv_WQi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Jv_WQi->cols() == get_num_velocities());
 
   // Body to which frame B is attached to:
   const Body<T>& body_B = frame_B.get_body();
@@ -651,8 +651,8 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
                       get_world_frame(), p_WQi_set); /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from body_B to the
-  // world computing each node's contribution to J_WQi.
-  const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
+  // world computing each node's contribution to Jv_WQi.
+  const int Jnrows = 3 * num_points;  // Number of rows in Jv_WQi.
   // Skip the world (ilevel = 0).
   for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
     BodyNodeIndex body_node_index = path_to_world[ilevel];
@@ -664,7 +664,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     // Across-node Jacobian.
     Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
         node.GetJacobianFromArray(H_PB_W_cache);
-    auto J_PBq_W = J_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
+    auto J_PBq_W = Jv_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
 
     // Position of this node's body Bi in the world W.
     const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();
