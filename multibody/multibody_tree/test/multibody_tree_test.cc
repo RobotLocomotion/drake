@@ -167,6 +167,17 @@ class KukaIiwaModelTests : public ::testing::Test {
     return V_WB_array[end_effector_link_->get_index()].translational();
   }
 
+  // Computes spatial velocity `V_WE` of the end effector frame E in the world
+  // frame W.
+  template <typename T>
+  SpatialVelocity<T> CalcEndEffectorSpatialVelocity(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T) const {
+    std::vector<SpatialVelocity<T>> V_WB_array;
+    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    return V_WB_array[end_effector_link_->get_index()];
+  }
+
   // Computes p_WEo, the position of the end effector frame's origin Eo.
   template <typename T>
   Vector3<T> CalcEndEffectorPosition(
@@ -431,6 +442,71 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   // In this case analytic and geometric Jacobians are equal since v = q.
   EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
                               kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = model_->get_num_positions();
+  const int kNumStates = model_->get_num_states();
+
+  ASSERT_EQ(kNumPositions, 7);
+
+  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+
+  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // motions.
+  const double q30 = M_PI / 6, q60 = M_PI / 3;
+  const double qA = q60;
+  const double qB = q30;
+  const double qC = q60;
+  const double qD = q30;
+  const double qE = q60;
+  const double qF = q30;
+  const double qG = q60;
+  VectorX<double> q(kNumPositions);
+  q << qA, qB, qC, qD, qE, qF, qG;
+
+  // A non-zero set of values for the joint's velocities.
+  const double vA = 0.1;
+  const double vB = 0.2;
+  const double vC = 0.3;
+  const double vD = 0.4;
+  const double vE = 0.5;
+  const double vF = 0.6;
+  const double vG = 0.7;
+  VectorX<double> v(kNumPositions);
+  v << vA, vB, vC, vD, vE, vF, vG;
+
+  // Zero generalized positions and velocities.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Compute the value of the end effector's spatial velocity using <double>.
+  SpatialVelocity<double> V_WE =
+      CalcEndEffectorSpatialVelocity(*model_, *context_);
+
+  Vector3<double> p_WE;
+  MatrixX<double> Jv_WE(6, model_->get_num_velocities());
+  // The end effector (E) Jacobian is computed by asking the Jacobian for a
+  // point P with position p_EP = 0 in the E frame.
+  model_->CalcFrameGeometricJacobianExpressedInWorld(
+      *context_,
+      end_effector_link_->get_body_frame(), Vector3<double>::Zero(), &Jv_WE);
+
+  // Verify that V_WE = Jv_WE * v:
+  const SpatialVelocity<double> Jv_WE_times_v(Jv_WE * v);
+  EXPECT_TRUE(Jv_WE_times_v.IsApprox(V_WE, kTolerance));
 }
 
 }  // namespace
