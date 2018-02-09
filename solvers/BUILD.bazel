@@ -769,6 +769,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "dreal_solver_test",
     tags = [
+        # Disable under LSan due to memory leak in IBEX.
+        "no_lsan",
         # For most of floating-point operations, Valgrind only supports the
         # IEEE default mode (round to nearest) while dReal uses to +infinity
         # and to -infinity rounding modes intensively to maintain conservative
