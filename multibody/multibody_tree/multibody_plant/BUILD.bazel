@@ -34,7 +34,6 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/benchmarks/acrobot",
         "//drake/multibody/benchmarks/acrobot:make_acrobot_plant",
-        "//drake/multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_plant",
     ],
 )
 

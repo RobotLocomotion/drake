@@ -4,7 +4,6 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
