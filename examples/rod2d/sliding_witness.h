@@ -22,7 +22,9 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SlidingWitness)
 
   /// Constructs the sliding witness function to track the specified rod
-  /// endpoint for either 
+  /// endpoint for checking sliding velocities along the positive x-axis
+  /// (`pos_direction = true`) or along the negative x-axis
+  /// (`pos_direction = false`).
   SlidingWitness(
       const Rod2D<T>* rod,
       RodEndpoint endpoint,
@@ -51,9 +53,9 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
     return 0;
   }
 
-  // If 'true', witness function triggers when the sliding velocity is
-  // sufficiently positive. Otherwise, it triggers when the sliding velocity
-  // is sufficiently negative.
+  // If 'true', witness function triggers when the sliding velocity has
+  // sufficient magnitude along the positive x-axis. Otherwise, it triggers when
+  // the sliding velocity has sufficient magnitude along the negative x-axis.
   bool positive_{false};
 };
 

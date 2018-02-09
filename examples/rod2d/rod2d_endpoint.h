@@ -12,5 +12,5 @@ enum RodEndpoint {
 };
 
 }  // namespace rod2d
-}  // namespcae examples
+}  // namespace examples
 }  // namespace drake
