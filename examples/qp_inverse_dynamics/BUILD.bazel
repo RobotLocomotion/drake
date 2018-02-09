@@ -13,8 +13,8 @@ drake_cc_library(
     srcs = ["manipulator_move_joint_plan_eval_system.cc"],
     hdrs = ["manipulator_move_joint_plan_eval_system.h"],
     deps = [
-        "//drake/lcmtypes:plan_eval_debug_info",
-        "//drake/systems/controllers/plan_eval:plan_eval_base_system",
+        "//lcmtypes:plan_eval_debug_info",
+        "//systems/controllers/plan_eval:plan_eval_base_system",
     ],
 )
 
@@ -24,12 +24,12 @@ drake_cc_library(
     hdrs = ["manipulator_joint_space_controller.h"],
     deps = [
         ":manipulator_move_joint_plan_eval_system",
-        "//drake/multibody/parsers",
-        "//drake/systems/controllers:state_feedback_controller_interface",
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
-        "//drake/systems/controllers/qp_inverse_dynamics:robot_kinematic_state_translator_system",  # noqa
-        "//drake/systems/framework",
+        "//multibody/parsers",
+        "//systems/controllers:state_feedback_controller_interface",
+        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
+        "//systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
+        "//systems/controllers/qp_inverse_dynamics:robot_kinematic_state_translator_system",  # noqa
+        "//systems/framework",
     ],
 )
 
@@ -39,20 +39,20 @@ drake_cc_googletest(
     name = "manipulator_joint_space_controller_test",
     srcs = ["test/manipulator_joint_space_controller_test.cc"],
     data = [
-        "//drake/manipulation/models/iiwa_description:models",
-        "//drake/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
-        "//drake/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
+        "//manipulation/models/iiwa_description:models",
+        "//systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
+        "//systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
     ],
     tags = gurobi_test_tags(),
     deps = [
         ":manipulator_joint_space_controller",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:constant_vector_source",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+        "//systems/analysis:simulator",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 

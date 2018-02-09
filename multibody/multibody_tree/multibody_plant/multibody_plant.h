@@ -181,11 +181,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    DRAKE_THROW_UNLESS(!HasBodyNamed(name));
-    const RigidBody<T>& body =
-        model_->template AddBody<RigidBody>(name, M_BBo_B);
-    body_name_to_index_[name] = body.get_index();
-    return body;
+    return model_->AddRigidBody(name, M_BBo_B);
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
@@ -264,13 +260,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    DRAKE_THROW_UNLESS(!HasJointNamed(name));
-    const JointType<T>& joint = model_->template AddJoint<JointType>(
+    return model_->template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
-    joint_name_to_index_[name] = joint.get_index();
-    return joint;
   }
 
   /// Adds a new force element model of type `ForceElementType` to `this` model.
@@ -305,14 +296,14 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// @returns `true` if a body named `name` was added to the model.
   /// @see AddRigidBody().
-  bool HasBodyNamed(const std::string& name) {
-    return body_name_to_index_.find(name) != body_name_to_index_.end();
+  bool HasBodyNamed(const std::string& name) const {
+    return model_->HasBodyNamed(name);
   }
 
   /// @returns `true` if a joint named `name` was added to the model.
   /// @see AddJoint().
-  bool HasJointNamed(const std::string& name) {
-    return joint_name_to_index_.find(name) != joint_name_to_index_.end();
+  bool HasJointNamed(const std::string& name) const {
+    return model_->HasJointNamed(name);
   }
   /// @}
 
@@ -332,12 +323,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
   const Body<T>& GetBodyByName(const std::string& name) const {
-    auto it = body_name_to_index_.find(name);
-    if (it == body_name_to_index_.end()) {
-      throw std::logic_error("There is no body named '" + name +
-          "' in the model.");
-    }
-    return model_->get_body(it->second);
+    return model_->GetBodyByName(name);
   }
 
   /// Returns a constant reference to the joint that is uniquely identified
@@ -346,12 +332,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see HasJointNamed() to query if there exists a joint in `this` model with
   /// a given specified name.
   const Joint<T>& GetJointByName(const std::string& name) const {
-    auto it = joint_name_to_index_.find(name);
-    if (it == joint_name_to_index_.end()) {
-      throw std::logic_error("There is no joint named '" + name +
-          "' in the model.");
-    }
-    return model_->get_joint(it->second);
+    return model_->GetJointByName(name);
   }
 
   /// A templated version of GetJointByName() to return a constant reference of
@@ -365,16 +346,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// a given specified name.
   template <template<typename> class JointType>
   const JointType<T>& GetJointByName(const std::string& name) const {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    const JointType<T>* joint =
-        dynamic_cast<const JointType<T>*>(&GetJointByName(name));
-    if (joint == nullptr) {
-      throw std::logic_error("Joint '" + name + "' is not of type '" +
-          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
-          NiceTypeName::Get(GetJointByName(name)) + "'.");
-    }
-    return *joint;
+    return model_->template GetJointByName<JointType>(name);
   }
   /// @}
 
@@ -404,140 +376,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
-  /// @name Kinematic computations
-  /// @{
-
-  /// Computes the world pose `X_WB(q)` of each body B in the model as a
-  /// function of the generalized positions q stored in `context`.
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the generalized
-  ///   positions q of the model.
-  /// @param[out] X_WB
-  ///   On output this vector will contain the pose of each body in the model
-  ///   ordered by BodyIndex. The index of a body in the model can be obtained
-  ///   with Body::get_index(). This method throws an exception if `X_WB` is
-  ///   `nullptr`. Vector `X_WB` is resized when needed to have size
-  ///   num_bodies().
-  void CalcAllBodyPosesInWorld(
-      const systems::Context<T>& context,
-      std::vector<Isometry3<T>>* X_WB) const;
-
-  /// Computes the spatial velocity `V_WB(q, v)` of each body B in the model,
-  /// measured and expressed in the world frame W. The body spatial velocities
-  /// are a function of the generalized positions q and generalized velocities
-  /// v, both stored in `context`.
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the generalized
-  ///   positions q and velocities v of the model.
-  /// @param[out] V_WB
-  ///   On output this vector will contain the spatial velocity of each body in
-  ///   the model ordered by BodyIndex. The index of a body in the model can be
-  ///   obtained with Body::get_index(). This method throws an exception if
-  ///   `V_WB` is `nullptr`. Vector `V_WB` is resized when needed to have size
-  ///   num_bodies().
-  void CalcAllBodySpatialVelocitiesInWorld(
-      const systems::Context<T>& context,
-      std::vector<SpatialVelocity<T>>* V_WB) const;
-
-  /// Given the positions `p_BQi` for a set of points `Qi` measured and
-  /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
-  /// each point `Qi` in the set as measured and expressed in another frame A,
-  /// as a function of the generalized positions q of the model.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the generalized
-  ///   positions q of the model.
-  /// @param[in] from_frame_B
-  ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
-  ///   given.
-  /// @param[in] p_BQi
-  ///   The input positions of each point `Qi` in frame B. `p_BQi ∈ ℝ³ˣⁿᵖ` with
-  ///   `np` the number of points in the set. Each column of `p_BQi` corresponds
-  ///   to a vector in ℝ³ holding the position of one of the points in the set
-  ///   as measured and expressed in frame B.
-  /// @param[in] to_frame_A
-  ///   The frame A in which it is desired to compute the positions `p_AQi` of
-  ///   each point `Qi` in the set.
-  /// @param[out] p_AQi
-  ///   The output positions of each point `Qi` now computed as measured and
-  ///   expressed in frame A. The output `p_AQi` **must** have the same size as
-  ///   the input `p_BQi` or otherwise this method throws an exception.
-  ///   That is `p_AQi` **must** be in `ℝ³ˣⁿᵖ`.
-  ///
-  /// @throws if either `p_BQi` or `p_AQi` does not have three rows (since these
-  /// are meant to be row vectors of 3D vectors).
-  /// @throws if `p_BQi` and `p_AQi` differ in the number of columns (the number
-  /// of points in the input set).
-  void CalcPointsPositions(
-      const systems::Context<T>& context,
-      const Frame<T>& from_frame_B,
-      const Eigen::Ref<const MatrixX<T>>& p_BQi,
-      const Frame<T>& to_frame_A,
-      EigenPtr<MatrixX<T>> p_AQi) const;
-  /// @}
-
-  /// @name Methods to compute multibody Jacobians
-  /// @{
-
-  /// Given a set of points `Qi` with fixed position vectors `p_BQi` in a frame
-  /// B, (that is, their time derivative `ᴮd/dt(p_BQi)` in frame B is zero),
-  /// this method computes the geometric Jacobian `Jv_WQi` defined by:
-  /// <pre>
-  ///   v_WQi(q, v) = Jv_WQi(q)⋅v
-  /// </pre>
-  /// where `p_WQi` is the position vector in the world frame for each point
-  /// `Qi` in the input set, `v_WQi(q, v)` is the translational velocity of
-  /// point `Qi` in the world frame W and q and v are the vectors of generalized
-  /// position and velocity, respectively. Since the spatial velocity of each
-  /// point `Qi` is linear in the generalized velocities, the geometric
-  /// Jacobian `Jv_WQi` is a function of the generalized coordinates q only.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] frame_B
-  ///   The positions `p_BQi` of each point in the input set are measured and
-  ///   expressed in this frame B and are constant (fixed) in this frame.
-  /// @param[in] p_BQi_set
-  ///   A matrix with the fixed position of a set of points `Qi` measured and
-  ///   expressed in `frame_B`.
-  ///   Each column of this matrix contains the position vector `p_BQi` for a
-  ///   point `Qi` measured and expressed in frame B. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_WQi_set
-  ///   The output positions of each point `Qi` now computed as measured and
-  ///   expressed in frame W. These positions are computed in the process of
-  ///   computing the geometric Jacobian `J_WQi` and therefore external storage
-  ///   must be provided.
-  ///   The output `p_WQi_set` **must** have the same size
-  ///   as the input set `p_BQi_set` or otherwise this method throws a
-  ///   std::runtime_error exception. That is `p_WQi_set` **must** be in
-  ///   `ℝ³ˣⁿᵖ`.
-  /// @param[out] Jv_WQi
-  ///   The geometric Jacobian `Jv_WQi(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates the translational velocity
-  ///   `v_WQi` of each point `Qi` in the input set by: <pre>
-  ///     `v_WQi(q, v) = Jv_WQi(q)⋅v`
-  ///   </pre>
-  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `Qi` in the same order they were given in the
-  ///   input set. Therefore `Jv_WQi` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. Only if needed, the Jacobian
-  ///   matrix `J_WQi` will be resized to `3⋅np x nv`. An exception is thrown
-  ///   if `Jv_WQi` is not a valid pointer.
-  ///
-  /// @throws an exception if the output `p_WQi_set` is nullptr or does not have
-  /// the same size as the input array `p_BQi_set`.
-  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
-  /// appropriate size, see documentation for `Jv_WQi` for details.
-  void CalcPointsGeometricJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-      EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
-  /// @}
-  // End of multibody Jacobian methods section.
-
-
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -554,21 +392,31 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // This override gives System::AllocateContext() the chance to create a more
   // specialized context type, in this case, a MultibodyTreeContext.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
 
   // Implements the system dynamics according to this class's documentation.
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  // Helper method to declare cache entries to be allocated in the context.
+  void DeclareCacheEntries();
+
+  // Helper method to Eval() position kinematics cached in the context.
+  const PositionKinematicsCache<T>& EvalPositionKinematics(
+      const systems::Context<T>& context) const;
+
+  // Helper method to Eval() velocity kinematics cached in the context.
+  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
+      const systems::Context<T>& context) const;
+
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
-  // Map used to find body indexes by their unique body name.
-  std::unordered_map<std::string, BodyIndex> body_name_to_index_;
-
-  // Map used to find joint indexes by their joint name.
-  std::unordered_map<std::string, JointIndex> joint_name_to_index_;
+  // Temporary solution for fake cache entries to help statbilize the API.
+  // TODO(amcastro-tri): Remove these when caching lands.
+  std::unique_ptr<PositionKinematicsCache<T>> pc_;
+  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
 
 }  // namespace multibody_plant

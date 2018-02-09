@@ -18,7 +18,7 @@ drake_cc_library(
         "traffic_light.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 

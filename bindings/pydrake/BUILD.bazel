@@ -18,21 +18,14 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
 
-package(default_visibility = adjust_labels_for_drake_hoist([
-    "//drake/bindings/pydrake:__subpackages__",
-]))
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
-PACKAGE_INFO = get_pybind_package_info(
-    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
+PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
 drake_cc_library(
     name = "pydrake_pybind",
@@ -107,17 +100,17 @@ drake_pybind_library(
     py_srcs = ["symbolic.py"],
 )
 
-PY_LIBRARIES_WITH_INSTALL = adjust_labels_for_drake_hoist([
+PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":common_py",
     ":symbolic_py",
-    "//drake/bindings/pydrake/examples",
-    "//drake/bindings/pydrake/multibody",
-    "//drake/bindings/pydrake/solvers",
-    "//drake/bindings/pydrake/systems",
-    "//drake/bindings/pydrake/third_party",
-    "//drake/bindings/pydrake/util",
-])
+    "//bindings/pydrake/examples",
+    "//bindings/pydrake/multibody",
+    "//bindings/pydrake/solvers",
+    "//bindings/pydrake/systems",
+    "//bindings/pydrake/third_party",
+    "//bindings/pydrake/util",
+]
 
 PY_LIBRARIES = [
     ":backwards_compatibility_py",
@@ -189,7 +182,7 @@ drake_py_test(
     name = "common_test",
     size = "small",
     srcs = ["test/common_test.py"],
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     main = "test/common_test.py",
     deps = [":common_py"],
 )

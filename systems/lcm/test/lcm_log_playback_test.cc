@@ -145,9 +145,9 @@ void CheckLog() {
   auto printer0 = builder.AddSystem<DummySys>();
   auto printer1 = builder.AddSystem<DummySys>();
   auto printer2 = builder.AddSystem<DummySys>();
-  builder.Connect(sub0->get_output_port(0), printer0->get_input_port(0));
-  builder.Connect(sub1->get_output_port(0), printer1->get_input_port(0));
-  builder.Connect(sub2->get_output_port(0), printer2->get_input_port(0));
+  builder.Connect(sub0->get_output_port(), printer0->get_input_port(0));
+  builder.Connect(sub1->get_output_port(), printer1->get_input_port(0));
+  builder.Connect(sub2->get_output_port(), printer2->get_input_port(0));
 
   auto diagram = builder.Build();
 

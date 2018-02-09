@@ -1,5 +1,5 @@
 """
-Provides a roll-up of all user-visible symbols in `pydrake`.
+Provides a roll-up of all user-visible modules and symbols in `pydrake`.
 
 Things to note:
 *   The `.all` modules in `pydrake` are intended as convenient end-user
@@ -28,9 +28,9 @@ from .forwarddiff import *
 from .symbolic import *
 
 # Submodules.
-# - Do not inclue `examples`.
+# - `examples` does not offer public Drake symbols.
 from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *
-# - Do not include `third_party`.
-# - Do not include `util`.
+# - `third_party` does not offer public Drake symbols.
+from .util.all import *

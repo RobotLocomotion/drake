@@ -260,11 +260,30 @@ struct is_eigen_nonvector_of
 /// }
 /// // Note that, call sites should be changed to:
 /// foo(&M);
-
+///
 /// // We need tmp to avoid taking the address of a temporary object such as the
 /// // return value of .block().
 /// auto tmp = M.block(0, 0, 2, 2);
 /// foo(&tmp);
+/// @endcode
+///
+/// Notice that methods taking an EigenPtr can mutate the entries of a matrix as
+/// in method `foo()` in the example code above, but cannot change its size.
+/// This is because `operator*` and `operator->` return an `Eigen::Ref<T>`
+/// object and only plain matrices/arrays can be resized and not expressions.
+/// This **is** the desired behavior, since resizing the block of a matrix or
+/// even a more general expression should not be allowed. If you do want to be
+/// able to resize a mutable matrix argument, then you must pass it as a
+/// `Matrix<T>*`, like so:
+/// @code
+/// void bar(Eigen::MatrixXd* M) {
+///   DRAKE_THROW_UNLESS(M != nullptr);
+///   // In this case this method only works with 4x3 matrices.
+///   if (M->rows() != 4 && M->cols() != 3) {
+///     M->resize(4, 3);
+///   }
+///   (*M)(0, 0) = 0;
+/// }
 /// @endcode
 ///
 /// @note This class provides a way to avoid the `const_cast` hack introduced in

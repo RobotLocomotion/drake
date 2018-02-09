@@ -117,7 +117,7 @@ GTEST_TEST(Transform, Matrix44) {
   const RotationMatrix<double> R = GetRotationMatrixB();
   const Vector3<double> p(4, 5, 6);
   const Transform<double> X(R, p);
-  const Matrix4<double> Y = X.GetAsMatrix();
+  const Matrix4<double> Y = X.GetAsMatrix4();
   const Matrix3d m = R.matrix();
 
   EXPECT_EQ(Y(0, 0), m(0, 0));
@@ -277,6 +277,28 @@ GTEST_TEST(Transform, OperatorMultiplyByPositionVector) {
 
   // Check accuracy of translation calculations.
   EXPECT_TRUE(p_CoQ_C.isApprox(p_CoQ_C_expected, 32 * kEpsilon));
+}
+
+// Test Transform cast method from double to AutoDiffXd.
+GTEST_TEST(Transform, CastFromDoubleToAutoDiffXd) {
+  const Vector3d yaw_pitch_roll(0.2, 0.3, 0.4);
+  const RotationMatrix<double> R_double =
+      RotationMatrix<double>::MakeRotationMatrixBodyZYX(yaw_pitch_roll);
+  const Vector3d p_double(-5, 3, 9);
+  const Transform<double> T_double(R_double, p_double);
+  const Transform<AutoDiffXd> T_autodiff = T_double.cast<AutoDiffXd>();
+
+  // To avoid a (perhaps) tautological test, check element-by-element equality.
+  const Matrix4<double>& m_double = T_double.GetAsMatrix4();
+  const Matrix4<AutoDiffXd>& m_autodiff = T_autodiff.GetAsMatrix4();
+  for (int i = 0;  i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      const double mij_double = m_double(i, j);
+      const AutoDiffXd& mij_autodiff = m_autodiff(i, j);
+      EXPECT_EQ(mij_autodiff.value(), mij_double);
+      EXPECT_EQ(mij_autodiff.derivatives().size(), 0);
+    }
+  }
 }
 
 }  // namespace

@@ -100,6 +100,9 @@ void MultibodyTree<T>::FinalizeInternals() {
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     CreateBodyNode(body_node_index);
   }
+
+  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
+  AllocateFakeCacheEntries();
 }
 
 template <typename T>
@@ -452,10 +455,7 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
   DRAKE_DEMAND(H != nullptr);
   DRAKE_DEMAND(H->rows() == get_num_velocities());
   DRAKE_DEMAND(H->cols() == get_num_velocities());
-
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   DoCalcMassMatrixViaInverseDynamics(context, pc, H);
 }
 
@@ -492,14 +492,8 @@ void MultibodyTree<T>::CalcBiasTerm(
   DRAKE_DEMAND(Cv != nullptr);
   DRAKE_DEMAND(Cv->rows() == get_num_velocities());
   DRAKE_DEMAND(Cv->cols() == 1);
-
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
-  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
-  VelocityKinematicsCache<T> vc(get_topology());
-  CalcVelocityKinematicsCache(context, pc, &vc);
-
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   DoCalcBiasTerm(context, pc, vc, Cv);
 }
 
@@ -525,9 +519,7 @@ template <typename T>
 Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
     const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const {
-  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
-  PositionKinematicsCache<T> pc(this->get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Isometry3<T>& X_WA =
       pc.get_X_WB(to_frame_A.get_body().get_node_index());
   const Isometry3<T>& X_WB =
@@ -602,9 +594,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   std::vector<BodyNodeIndex> path_to_world;
   topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
 
-  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
-  PositionKinematicsCache<T> pc(this->get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // TODO(amcastro-tri): Eval H_PB_W from the cache.
   std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
@@ -729,9 +719,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   return DoCalcPotentialEnergy(context, pc);
 }
 
@@ -753,12 +741,8 @@ T MultibodyTree<T>::DoCalcPotentialEnergy(
 template <typename T>
 T MultibodyTree<T>::CalcConservativePower(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
-  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
-  VelocityKinematicsCache<T> vc(get_topology());
-  CalcVelocityKinematicsCache(context, pc, &vc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   return DoCalcConservativePower(context, pc, vc);
 }
 
@@ -777,6 +761,32 @@ T MultibodyTree<T>::DoCalcConservativePower(
         force_element->CalcConservativePower(mbt_context, pc, vc);
   }
   return conservative_power;
+}
+
+template<typename T>
+void MultibodyTree<T>::AllocateFakeCacheEntries() {
+  // Temporary hack before MultibodyCachingEvaluoatorInterface lands.
+  pc_ = std::make_unique<PositionKinematicsCache<T>>(get_topology());
+  vc_ = std::make_unique<VelocityKinematicsCache<T>>(get_topology());
+}
+
+template<typename T>
+const PositionKinematicsCache<T>& MultibodyTree<T>::EvalPositionKinematics(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Replace by cache_evaluator_->EvalPositionKinematics()
+  // when MultibodyCachingEvaluatorInterface lands.
+  CalcPositionKinematicsCache(context, pc_.get());
+  return *pc_;
+}
+
+template<typename T>
+const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Replace by cache_evaluator_->EvalVelocityKinematics()
+  // when MultibodyCachingEvaluatorInterface lands.
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  CalcVelocityKinematicsCache(context, pc, vc_.get());
+  return *vc_;
 }
 
 // Explicitly instantiates on the most common scalar types.

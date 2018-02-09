@@ -1354,7 +1354,7 @@ class CustomContext : public LeafContext<T> {};
 template <typename T>
 class CustomContextSystem : public LeafSystem<T> {
  protected:
-  std::unique_ptr<LeafContext<T>> DoMakeContext() const override {
+  std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const override {
     return std::make_unique<CustomContext<T>>();
   }
 };

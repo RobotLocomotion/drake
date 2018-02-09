@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
+#include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -45,6 +46,7 @@ using systems::DiscreteUpdateEvent;
 using systems::DiscreteValues;
 
 using pysystems::AddValueInstantiation;
+using pysystems::DefClone;
 
 class PySystem : public py::wrapper<System<T>> {
  public:
@@ -242,6 +244,16 @@ PYBIND11_MODULE(framework, m) {
     .value("kVectorValued", kVectorValued)
     .value("kAbstractValued", kAbstractValued);
 
+  BindTypeSafeIndex<DependencyTicket>(m, "DependencyTicket");
+  BindTypeSafeIndex<CacheIndex>(m, "CacheIndex");
+  BindTypeSafeIndex<SubsystemIndex>(m, "SubsystemIndex");
+  BindTypeSafeIndex<InputPortIndex>(m, "InputPortIndex");
+  BindTypeSafeIndex<OutputPortIndex>(m, "OutputPortIndex");
+  BindTypeSafeIndex<DiscreteStateIndex>(m, "DiscreteStateIndex");
+  BindTypeSafeIndex<AbstractStateIndex>(m, "AbstractStateIndex");
+  BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
+  BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
+
   // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
   // knows this is abstract?
   py::class_<System<T>, PySystem>(m, "System")
@@ -434,7 +446,9 @@ PYBIND11_MODULE(framework, m) {
     .def("size", &VectorBase<T>::size);
 
   // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<> patterns.
-  py::class_<BasicVector<T>, VectorBase<T>>(m, "BasicVector")
+  py::class_<BasicVector<T>, VectorBase<T>> basic_vector(m, "BasicVector");
+  DefClone(&basic_vector);
+  basic_vector
     // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
     // convert scalar-size `np.array` objects to `int` (since this is normally
     // permitted).
@@ -467,12 +481,8 @@ PYBIND11_MODULE(framework, m) {
   };
 
   py::class_<AbstractValue> abstract_value(m, "AbstractValue");
+  DefClone(&abstract_value);
   abstract_value
-    .def("Clone", &AbstractValue::Clone)
-    .def("__copy__", &AbstractValue::Clone)
-    .def("__deepcopy__", [](const AbstractValue* self, py::dict /* memo */) {
-      return self->Clone();
-    })
     // Only bind the exception variant, `SetFromOrThrow`, for use in Python.
     // Otherwise, a user could encounter undefind behavior via `SetFrom`.
     .def("SetFrom", &AbstractValue::SetFromOrThrow)

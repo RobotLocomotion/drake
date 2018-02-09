@@ -81,7 +81,7 @@ int DoMain(void) {
   builder.Connect(plant->get_output_port_contact_results(),
                   contact_viz->get_input_port(0));
   builder.Connect(contact_viz->get_output_port(0),
-                  contact_results_publisher->get_input_port(0));
+                  contact_results_publisher->get_input_port());
   contact_results_publisher->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Publish the mock Optitrack data over LCM.
@@ -90,7 +90,7 @@ int DoMain(void) {
           "OPTITRACK_FRAMES", &lcm));
   optitrack_pub->set_publish_period(kIiwaLcmStatusPeriod);
   builder.Connect(plant->get_output_port_optitrack_frame(),
-                  optitrack_pub->get_input_port(0));
+                  optitrack_pub->get_input_port());
 
   // Add LCM subscribers/publishers for the iiwa arms.
   const int num_iiwa{plant->num_iiwa()};
@@ -102,7 +102,7 @@ int DoMain(void) {
         systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
             "IIWA_COMMAND" + suffix, &lcm));
     iiwa_command_sub->set_name("iiwa_command_subscriber" + suffix);
-    builder.Connect(iiwa_command_sub->get_output_port(0),
+    builder.Connect(iiwa_command_sub->get_output_port(),
                     plant->get_input_port_iiwa_command(i));
 
     auto iiwa_status_pub = builder.AddSystem(
@@ -111,7 +111,7 @@ int DoMain(void) {
     iiwa_status_pub->set_name("iiwa_status_publisher" + suffix);
     iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
     builder.Connect(plant->get_output_port_iiwa_status(i),
-                    iiwa_status_pub->get_input_port(0));
+                    iiwa_status_pub->get_input_port());
   }
 
   // Add LCM subscribers/publishers for the Schunk grippers.
@@ -124,13 +124,13 @@ int DoMain(void) {
         systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
             "SCHUNK_WSG_STATUS" + suffix, &lcm));
     builder.Connect(plant->get_output_port_wsg_status(i),
-                    wsg_status_pub->get_input_port(0));
+                    wsg_status_pub->get_input_port());
     wsg_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
     auto wsg_command_sub = builder.AddSystem(
         systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
             "SCHUNK_WSG_COMMAND" + suffix, &lcm));
-    builder.Connect(wsg_command_sub->get_output_port(0),
+    builder.Connect(wsg_command_sub->get_output_port(),
                     plant->get_input_port_wsg_command(i));
   }
 

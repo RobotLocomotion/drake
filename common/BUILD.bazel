@@ -13,7 +13,6 @@ load(
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -203,7 +202,7 @@ drake_cc_library(
         ":hash",
         ":number_traits",
         ":polynomial",
-        "//drake/math:matrix_util",
+        "//math:matrix_util",
     ],
 )
 
@@ -232,9 +231,7 @@ drake_cc_library(
 
 # Miscellaneous utilities.
 
-DRAKE_RESOURCE_SENTINEL = adjust_label_for_drake_hoist(
-    "//drake:.drake-find_resource-sentinel",
-)
+DRAKE_RESOURCE_SENTINEL = "//:.drake-find_resource-sentinel"
 
 drake_cc_library(
     name = "is_less_than_comparable",
@@ -469,7 +466,7 @@ drake_cc_googletest(
         ":autodiff",
         ":essential",
         ":extract_double",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -576,7 +573,7 @@ drake_cc_googletest(
     name = "copyable_unique_ptr_test",
     deps = [
         ":copyable_unique_ptr",
-        "//drake/common/test_utilities:is_dynamic_castable",
+        "//common/test_utilities:is_dynamic_castable",
     ],
 )
 
@@ -692,7 +689,7 @@ drake_cc_googletest(
     name = "autodiffxd_make_coherent_test",
     deps = [
         ":autodiffxd_make_coherent",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -701,7 +698,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -725,8 +722,8 @@ drake_cc_googletest(
     name = "polynomial_test",
     deps = [
         ":essential",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:random_polynomial_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:random_polynomial_matrix",
     ],
 )
 
@@ -760,7 +757,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -769,8 +766,8 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:is_memcpy_movable",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:is_memcpy_movable",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -779,7 +776,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -788,7 +785,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -797,7 +794,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -806,7 +803,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -815,7 +812,8 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/math:geometric_transform",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
@@ -833,7 +831,7 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -842,7 +840,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -851,7 +849,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -860,7 +858,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -869,8 +867,8 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:is_memcpy_movable",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:is_memcpy_movable",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -879,7 +877,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -888,8 +886,8 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
-        "//drake/common/test_utilities:is_memcpy_movable",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:is_memcpy_movable",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -974,7 +972,7 @@ drake_py_test(
     data = [
         "test/resource_tool_test_data.txt",
         ":resource_tool",
-        "//drake/examples/pendulum:models",
+        "//examples/pendulum:models",
     ],
 )
 

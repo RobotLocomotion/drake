@@ -111,7 +111,7 @@ void Xtion::BuildDiagram(lcm::DrakeLcm* lcm, bool add_lcm_publisher,
     image_lcm_pub->set_publish_period(period_);
 
     builder.Connect(image_to_lcm_message->image_array_t_msg_output_port(),
-                    image_lcm_pub->get_input_port(0));
+                    image_lcm_pub->get_input_port());
   }
 
   if (add_frame_visualizer) {
