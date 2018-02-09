@@ -156,6 +156,37 @@ class KukaIiwaModelTests : public ::testing::Test {
     context_autodiff_ = model_autodiff_->CreateDefaultContext();
   }
 
+  // Gets an arm state to an arbitrary configuration in which joint angles and
+  // rates are non-zero.
+  void GetArbitraryNonZeroConfiguration(
+      VectorX<double>* q, VectorX<double>* v) {
+    const int kNumPositions = model_->get_num_positions();
+    q->resize(kNumPositions);
+    v->resize(kNumPositions);  // q and v have the same dimension for kuka.
+
+    // A set of values for the joint's angles chosen mainly to avoid in-plane
+    // motions.
+    const double q30 = M_PI / 6, q60 = M_PI / 3;
+    const double qA = q60;
+    const double qB = q30;
+    const double qC = q60;
+    const double qD = q30;
+    const double qE = q60;
+    const double qF = q30;
+    const double qG = q60;
+    *q << qA, qB, qC, qD, qE, qF, qG;
+
+    // A non-zero set of values for the joint's velocities.
+    const double vA = 0.1;
+    const double vB = 0.2;
+    const double vC = 0.3;
+    const double vD = 0.4;
+    const double vE = 0.5;
+    const double vF = 0.6;
+    const double vG = 0.7;
+    *v << vA, vB, vC, vD, vE, vF, vG;
+  }
+
   // Computes the translational velocity `v_WE` of the end effector frame E in
   // the world frame W.
   template <typename T>
@@ -253,27 +284,8 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  const double q30 = M_PI / 6, q60 = M_PI / 3;
-  const double qA = q60;
-  const double qB = q30;
-  const double qC = q60;
-  const double qD = q30;
-  const double qE = q60;
-  const double qF = q30;
-  const double qG = q60;
-  VectorX<double> q(kNumPositions);
-  q << qA, qB, qC, qD, qE, qF, qG;
-
-  // A non-zero set of values for the joint's velocities.
-  const double vA = 0.1;
-  const double vB = 0.2;
-  const double vC = 0.3;
-  const double vD = 0.4;
-  const double vE = 0.5;
-  const double vF = 0.6;
-  const double vG = 0.7;
-  VectorX<double> v(kNumPositions);
-  v << vA, vB, vC, vD, vE, vF, vG;
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);;
 
   // Zero generalized positions and velocities.
   int angle_index = 0;
@@ -374,16 +386,8 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  const double q30 = M_PI / 6, q60 = M_PI / 3;
-  const double qA = q60;
-  const double qB = q30;
-  const double qC = q60;
-  const double qD = q30;
-  const double qE = q60;
-  const double qF = q30;
-  const double qG = q60;
-  VectorX<double> q0(kNumPositions);
-  q0 << qA, qB, qC, qD, qE, qF, qG;
+  VectorX<double> q0, v0;  // v0 will not be used in this test.
+  GetArbitraryNonZeroConfiguration(&q0, &v0);
 
   context_->get_mutable_continuous_state().
       get_mutable_generalized_position().SetFromVector(q0);
@@ -462,27 +466,8 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  const double q30 = M_PI / 6, q60 = M_PI / 3;
-  const double qA = q60;
-  const double qB = q30;
-  const double qC = q60;
-  const double qD = q30;
-  const double qE = q60;
-  const double qF = q30;
-  const double qG = q60;
-  VectorX<double> q(kNumPositions);
-  q << qA, qB, qC, qD, qE, qF, qG;
-
-  // A non-zero set of values for the joint's velocities.
-  const double vA = 0.1;
-  const double vB = 0.2;
-  const double vC = 0.3;
-  const double vD = 0.4;
-  const double vE = 0.5;
-  const double vF = 0.6;
-  const double vG = 0.7;
-  VectorX<double> v(kNumPositions);
-  v << vA, vB, vC, vD, vE, vF, vG;
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
 
   // Zero generalized positions and velocities.
   int angle_index = 0;
