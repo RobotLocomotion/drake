@@ -385,6 +385,10 @@ class Simulator {
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
+  // The vector of active witness functions. A null pointer indicates that the
+  // vector needs to be reconstructed.
+  std::unique_ptr<std::vector<const WitnessFunction<T>*>> witness_functions_;
+
   // Per step events that are to be handled on every "major time step" (i.e.,
   // every successful completion of a step). This collection is set within
   // Initialize().
@@ -474,6 +478,9 @@ void Simulator<T>::HandleUnrestrictedUpdate(
     State<T>& x = context_->get_mutable_state();
     x.CopyFrom(*unrestricted_updates_);
     ++num_unrestricted_updates_;
+
+    // Mark the witness function vector as needing to be redetermined.
+    witness_functions_.reset();
   }
 }
 
@@ -769,10 +776,14 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   const T t0 = context.get_time();
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
 
-  // Get the set of witness functions active at the current time.
+  // Get the set of witness functions active at the current state.
   const System<T>& system = get_system();
-  std::vector<const WitnessFunction<T>*> witness_functions;
-  system.GetWitnessFunctions(context, &witness_functions);
+  if (!witness_functions_) {
+    witness_functions_ = std::make_unique<
+        std::vector<const WitnessFunction<T>*>>();
+    system.GetWitnessFunctions(context, witness_functions_.get());
+  }
+  const auto& witness_functions = *witness_functions_;
 
   // Evaluate the witness functions.
   w0_.resize(witness_functions.size());
