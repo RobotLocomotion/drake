@@ -133,9 +133,9 @@ dpkg_install_from_wget() {
 
 # Install Bazel.
 dpkg_install_from_wget \
-  bazel 0.9.0 \
-  https://github.com/bazelbuild/bazel/releases/download/0.9.0/bazel_0.9.0-linux-x86_64.deb \
-  a600454ec218bffd1a1cea0f5bb511031081d23c4de15bfde674164dc2f9cd7f
+  bazel 0.10.0 \
+  https://github.com/bazelbuild/bazel/releases/download/0.10.0/bazel_0.10.0-linux-x86_64.deb \
+  88ee7742c4697f98bf5d3e50f5d791c5b771acd252feba34785bf79e88c699f6
 
 # Remove a deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then
