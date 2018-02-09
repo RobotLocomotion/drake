@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "drake/common/symbolic.h"
@@ -103,11 +104,14 @@ class WitnessFunction {
   /// unique pointer to the event that is to be dispatched when this witness
   /// function triggers. Example events are publish, discrete variable update,
   /// unrestricted update events.
+  /// @tparam EventType a class derived from Event<T>
   template <class EventType>
   WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype,
                   std::unique_ptr<EventType> e) :
                   system_(system), dir_type_(dtype) {
+    static_assert(std::is_base_of<Event<T>, EventType>::value,
+        "EventType must be a descentdant of Event");
     event_ = std::move(e);
   }
 
