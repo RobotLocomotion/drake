@@ -328,21 +328,28 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
 
+  // Given an approximate rotation matrix M, finds the orthonormal matrix R
+  // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
+  // with a Frobenius norm).  Hence, this method creates an orthonormal matrix R
+
   /// Given an approximate rotation matrix M, finds the %RotationMatrix R
-  /// closest to M.  Closest is measured with a matrix-2 norm.  Hence, this
-  /// method creates a %RotationMatrix R from a 3x3 matrix M by minimizing
-  /// `‖R - M‖₂` (the matrix-2 norm of (R-M)) subject to `R * Rᵀ = I`, where I
-  /// is the 3x3 identity matrix.  For this problem, closest can also be
-  /// measured by forming the orthonormal matrix R whose elements minimize the
-  /// double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²` where `i = 1:3, j = 1:3`.
-  /// The square-root of this double-summation is called the Frobenius norm.
+  /// closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
+  /// with a Frobenius norm).  Hence, this method creates a %RotationMatrix R
+  /// from a 3x3 matrix M by minimizing `‖R - M‖₂` (the matrix-2 norm of (R-M))
+  /// subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
+  /// problem, closeness can also be measured by forming the orthonormal matrix
+  /// R whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
+  /// where `i = 1:3, j = 1:3`. The square-root of this double-summation is
+  /// called the Frobenius norm.
   /// @param[in] M a 3x3 matrix.
   /// @param[out] quality_factor.  The quality of M as a rotation matrix.
   /// `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
   /// that when M multiplies a unit vector (magnitude 1), a vector of magnitude
   /// as large as 1.25 may result.  `quality_factor` = 0.8 means that when M
   /// multiplies a unit vector, a vector of magnitude as small as 0.8 may
-  /// result.
+  /// result.  `quality_factor` = 0 means M is singular, so at least one of the
+  /// bases related by matrix M does not span 3D space (when M multiples a unit
+  /// vector, a vector of magnitude as small as 0 may result).
   /// @returns proper orthonormal matrix R that is closest to M.
   /// @throws exception std::logic_error if R fails IsValid(R).
   /// @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
@@ -438,13 +445,14 @@ class RotationMatrix {
   }
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
-  // closest to M.  Closest is measured with a matrix-2 norm.  Hence, this
-  // method creates an orthonormal matrix R from a 3x3 matrix M by minimizing
-  // `‖R - M‖₂` (the matrix-2 norm of (R-M)) subject to `R * Rᵀ = I`, where I
-  // is the 3x3 identity matrix.  For this problem, closest can also be
-  // measured by forming the orthonormal matrix R whose elements minimize the
-  // double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²` where `i = 1:3, j = 1:3`.
-  // The square-root of this double-summation is called the Frobenius norm.
+  // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
+  // with a Frobenius norm).  Hence, this method creates an orthonormal matrix R
+  // from a 3x3 matrix M by minimizing `‖R - M‖₂` (the matrix-2 norm of (R-M))
+  // subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
+  // problem, closeness can also be measured by forming the orthonormal matrix R
+  // whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
+  // where `i = 1:3, j = 1:3`. The square-root of this double-summation is
+  // called the Frobenius norm.
   // @param[in] M a 3x3 matrix.
   // @param[out] quality_factor.  The quality of M as a rotation matrix.
   // `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
@@ -454,6 +462,9 @@ class RotationMatrix {
   // left-handed (M is a "reflection").  `quality_factor` = -0.8 means M
   // relates a right-handed basis to a left-handed basis and when M multiplies
   // a unit vector, a vector of magnitude as small as 0.8 may result.
+  // `quality_factor` = 0 means M is singular, so at least one of the bases
+  // related by matrix M does not span 3D space (when M multiples a unit vector,
+  // a vector of magnitude as small as 0 may result).
   // @return orthonormal matrix R that is closest to M (note det(R) may be -1).
   // @note The SVD part of this algorithm can be derived as a modification of
   // section 3.2 in http://haralick.org/conferences/pose_estimation.pdf.
