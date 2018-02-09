@@ -46,13 +46,8 @@ incorporates `PEP 257 -- Docstring Conventions
 <https://www.python.org/dev/peps/pep-0257/>`_, Drake follows its
 recommendations as well.
 
-In addition, Drake recommends use of ``pylint`` for automatic error
-checking. See :ref:`tools for complying with coding style <code-style-tools>`
-for full guidance.
-
-Sadly ``pylint`` does not check all the conditions enumerated by
-PEP 8. Therefore, Drake recommends the use of ``pep8.py`` as well. See
-:ref:`tools for complying with coding style <code-style-tools>` for details.`
+See :ref:`tools for complying with coding style <code-style-tools>` for details
+about the automated style checks.
 
 .. _code-style-guide-python-clarifications:
 
