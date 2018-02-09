@@ -18,21 +18,14 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
 
-package(default_visibility = adjust_labels_for_drake_hoist([
-    "//drake/bindings/pydrake:__subpackages__",
-]))
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
-PACKAGE_INFO = get_pybind_package_info(
-    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
+PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
 # @note Symbols are NOT imported directly into
 # `__init__.py` to simplify dependency management, meaning that
