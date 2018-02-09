@@ -60,6 +60,7 @@ drake_pybind_library(
         ":systems_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
+        "//bindings/pydrake/util:type_safe_index_pybind",
     ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],

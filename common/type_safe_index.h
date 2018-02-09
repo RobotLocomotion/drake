@@ -160,7 +160,7 @@ class TypeSafeIndex {
 
   /// Disallow construction from another index type.
   template <typename U>
-  TypeSafeIndex( const TypeSafeIndex<U>& idx) = delete;
+  TypeSafeIndex(const TypeSafeIndex<U>& idx) = delete;
 
   TypeSafeIndex(const TypeSafeIndex&) = default;
 
