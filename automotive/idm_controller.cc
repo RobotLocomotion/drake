@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/automotive/pose_selector.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 
@@ -27,22 +26,24 @@ static constexpr int kIdmParamsIndex{0};
 
 template <typename T>
 IdmController<T>::IdmController(const RoadGeometry& road,
+                                ScanStrategy path_or_branches,
                                 RoadPositionStrategy road_position_strategy,
                                 double period_sec)
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<automotive::IdmController>{}),
       road_(road),
+      path_or_branches_(path_or_branches),
       road_position_strategy_(road_position_strategy),
       period_sec_(period_sec),
-      ego_pose_index_{
-          this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
-      ego_velocity_index_{
-          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
-      traffic_index_{this->DeclareAbstractInputPort().get_index()},
-      acceleration_index_{
+      ego_pose_index_(
+          this->DeclareVectorInputPort(PoseVector<T>()).get_index()),
+      ego_velocity_index_(
+          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()),
+      traffic_index_(this->DeclareAbstractInputPort().get_index()),
+      acceleration_index_(
           this->DeclareVectorOutputPort(systems::BasicVector<T>(1),
                                         &IdmController::CalcAcceleration)
-              .get_index()} {
+              .get_index()) {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
   // TODO(jadecastro) It is possible to replace the following AbstractState with
   // a caching sceme once #4364 lands, preventing the need to use abstract
@@ -134,7 +135,8 @@ void IdmController<T>::ImplCalcAcceleration(
   // Find the single closest car ahead.
   const ClosestPose<T> lead_car_pose = PoseSelector<T>::FindSingleClosestPose(
       ego_position.lane, ego_pose, traffic_poses,
-      idm_params.scan_ahead_distance(), AheadOrBehind::kAhead);
+      idm_params.scan_ahead_distance(), AheadOrBehind::kAhead,
+      path_or_branches_);
   const T headway_distance = lead_car_pose.distance;
 
   const LanePositionT<T> lane_position(T(ego_position.pos.s()),
