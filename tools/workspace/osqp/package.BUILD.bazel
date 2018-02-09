@@ -20,17 +20,13 @@ cmake_configure_file(
     name = "glob_opts",
     src = "configure/glob_opts.h.in",
     out = "include/glob_opts.h",
-    cmakelists = [
-        "CMakeLists.txt",
-        "configure/cmake/FindPythonModule.cmake",
-        "configure/cmake/Utils.cmake",
-    ],
+    # TODO(hongkai.dai): defines IS_LINUX or IS_MAC depending on the machine type.
     defines = [
         "IS_LINUX",
-        "IS_MAC",
         "PRINTING",
         "PROFILING",
         "CTRLC",
+	"DFLOAT",
         "DLONG",
         "ENABLE_MKL_PARDISO",
     ],
@@ -55,10 +51,14 @@ cc_library(
     ]),
     hdrs = glob([
         "include/*.h",
-    ]),
+    ]) + ["include/glob_opts.h"],
     includes = [
         "include",
+        "lin_sys",
+        "lin_sys/direct/pardiso",
+        "lin_sys/direct/suitesparse",
         "lin_sys/direct/suitesparse/amd/include",
+        "lin_sys/direct/suitesparse/ldl/include",
     ],
 )
 

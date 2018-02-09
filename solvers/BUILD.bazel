@@ -617,6 +617,30 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "osqp_solver",
+    srcs = select({
+        "//tools:no_osqp": [
+            "no_osqp.cc",
+            "osqp_solver_common.cc",
+        ],
+        "//conditions:default": [
+            "osqp_solver.cc",
+            "osqp_solver_common.cc",
+        ],
+    }),
+    hdrs = ["osqp_solver.h"],
+    deps = select({
+        "//conditions:default": adjust_labels_for_drake_hoist([
+            ":mathematical_program_api",
+            "@osqp",
+        ]),
+        "//tools:no_osqp": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
+drake_cc_library(
     name = "scs_solver",
     srcs = select({
         "//conditions:default": [
