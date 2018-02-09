@@ -18,6 +18,7 @@ py_binary(
     deps = [
         "//bindings/pydrake",
         "//lcmtypes:lcmtypes_py",
+        "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],
 )

@@ -19,21 +19,14 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
 
-package(default_visibility = adjust_labels_for_drake_hoist([
-    "//drake/bindings/pydrake:__subpackages__",
-]))
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
-PACKAGE_INFO = get_pybind_package_info(
-    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
+PACKAGE_INFO = get_pybind_package_info("//bindings")
 
 drake_cc_library(
     name = "type_pack",
@@ -132,6 +125,11 @@ drake_py_library(
 drake_cc_library(
     name = "drake_optional_pybind",
     hdrs = ["drake_optional_pybind.h"],
+)
+
+drake_cc_library(
+    name = "type_safe_index_pybind",
+    hdrs = ["type_safe_index_pybind.h"],
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
@@ -252,6 +250,14 @@ drake_py_test(
     deps = [
         ":eigen_geometry_py",
         ":eigen_geometry_test_util_py",
+    ],
+)
+
+drake_pybind_cc_googletest(
+    name = "type_safe_index_pybind_test",
+    cc_deps = [
+        ":type_safe_index_pybind",
+        "//common:nice_type_name",
     ],
 )
 

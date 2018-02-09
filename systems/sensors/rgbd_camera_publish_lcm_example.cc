@@ -49,7 +49,7 @@ bool ValidateDir(const char* flagname, const std::string& dir) {
 DEFINE_bool(lookup, true,
             "If true, RgbdCamera faces a direction normal to the "
             "terrain plane.");
-DEFINE_bool(show_window, true,
+DEFINE_bool(show_window, RenderingConfig::kDefaultShowWindow,
             "If true, RgbdCamera opens windows for displaying rendering "
             "context.");
 DEFINE_double(duration, 5., "Total duration of the simulation in secondes.");

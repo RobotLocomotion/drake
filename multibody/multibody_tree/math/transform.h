@@ -125,8 +125,8 @@ class Transform {
   ///  └                ┘
   Matrix4<T> GetAsMatrix4() const {
     Matrix4<T> pose;
-    pose.topLeftCorner(3, 3) = rotation().matrix();
-    pose.topRightCorner(3, 1) = translation();
+    pose.template topLeftCorner<3, 3>() = rotation().matrix();
+    pose.template topRightCorner<3, 1>() = translation();
     pose.row(3) = Vector4<T>(0, 0, 0, 1);
     return pose;
   }

@@ -1711,6 +1711,18 @@ class MultibodyTree {
     return *joint_variant;
   }
 
+  // Helper method to Eval() position kinematics cached in the context.
+  const PositionKinematicsCache<T>& EvalPositionKinematics(
+      const systems::Context<T>& context) const;
+
+  // Helper method to Eval() velocity kinematics cached in the context.
+  const VelocityKinematicsCache<T>& EvalVelocityKinematics(
+      const systems::Context<T>& context) const;
+
+  // Helper method to allocate fake cache entries.
+  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
+  void AllocateFakeCacheEntries();
+
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckHasRightSizeForModel().
@@ -1744,6 +1756,11 @@ class MultibodyTree {
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
 
   MultibodyTreeTopology topology_;
+
+  // Temporary solution for fake cache entries to help statbilize the API.
+  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
+  std::unique_ptr<PositionKinematicsCache<T>> pc_;
+  std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
 
 }  // namespace multibody
