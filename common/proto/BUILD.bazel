@@ -12,7 +12,6 @@ load(
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "HAS_MOVED_6996")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,7 +35,7 @@ drake_cc_library(
     hdrs = ["call_matlab.h"],
     deps = [
         ":matlab_rpc",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -55,7 +54,7 @@ drake_cc_library(
     hdrs = ["call_python.h"],
     deps = [
         ":call_matlab",
-        "//drake/common:copyable_unique_ptr",
+        "//common:copyable_unique_ptr",
     ],
 )
 
@@ -77,7 +76,7 @@ py_binary(
         # TODO(jwnimmer-tri) We should use a project-wide solution so that
         # Drake's import paths are consistent without having to use weird
         # spellings such as this one.
-        "@drake//common/proto:call_python_client" if HAS_MOVED_6996 else ":call_python_client",  # noqa
+        "@drake//common/proto:call_python_client",
     ],
 )
 
@@ -143,7 +142,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":protobuf",
-        "//drake/common",
+        "//common",
     ],
 )
 

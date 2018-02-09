@@ -14,7 +14,7 @@ drake_cc_library(
     srcs = ["point_cloud_flags.cc"],
     hdrs = ["point_cloud_flags.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -24,7 +24,7 @@ drake_cc_library(
     hdrs = ["point_cloud.h"],
     deps = [
         ":point_cloud_flags",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -41,7 +41,7 @@ drake_cc_googletest(
     srcs = ["test/point_cloud_test.cc"],
     deps = [
         ":point_cloud",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

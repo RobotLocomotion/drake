@@ -138,7 +138,7 @@ TEST_P(IdmControllerTest, Topology) {
 // state are correctly made.
 TEST_P(IdmControllerTest, UnrestrictedUpdate) {
   if (cache_or_search_ == RoadPositionStrategy::kCache) {
-    EXPECT_EQ(1, context_->get_num_abstract_state_groups());
+    EXPECT_EQ(1, context_->get_num_abstract_states());
 
     SetDefaultPoses(10. /* ego_speed */, 0. /* s_offset */, -5. /* rel_sdot */);
 

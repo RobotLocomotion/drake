@@ -118,7 +118,7 @@ class LeafSystem : public System<T> {
   /// @endcond
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
-    std::unique_ptr<LeafContext<T>> context = DoMakeContext();
+    std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
@@ -303,7 +303,7 @@ class LeafSystem : public System<T> {
   // classes do *not* add new data members. If that changes, e.g., with the
   // advent of the cache, this documentation should be changed to include the
   // initialization of the sub-class's *unique* data members.
-  virtual std::unique_ptr<LeafContext<T>> DoMakeContext() const {
+  virtual std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const {
     return std::make_unique<LeafContext<T>>();
   }
 

@@ -43,7 +43,7 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
   const auto model_context = model_->CreateDefaultContext();
   DRAKE_DEMAND(model_context->get_num_discrete_state_groups() == 1);
   DRAKE_DEMAND(model_context->get_continuous_state().size() == 0);
-  DRAKE_DEMAND(model_context->get_num_abstract_state_groups() == 0);
+  DRAKE_DEMAND(model_context->get_num_abstract_states() == 0);
   DRAKE_DEMAND(model_->get_num_input_ports() == 1);
   DRAKE_DEMAND(model_->get_num_output_ports() == 1);
 

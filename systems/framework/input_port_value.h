@@ -9,7 +9,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
-#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/value.h"
 
@@ -25,16 +24,11 @@ namespace systems {
 ///   an output port of another System, or
 /// - FreestandingInputPortValue, meaning the value source is an independent
 ///   object contained internally.
-class InputPortValue : public detail::OutputPortListenerInterface {
+class InputPortValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortValue)
 
-  ~InputPortValue() override;
-
-  /// Returns a positive number that increases monotonically, and changes
-  /// whenever the data on this port changes, according to the source of
-  /// that data.
-  virtual int64_t get_version() const = 0;
+  virtual ~InputPortValue();
 
   /// Returns true if this InputPortValue is not in control of its own data.
   virtual bool requires_evaluation() const = 0;
@@ -55,24 +49,10 @@ class InputPortValue : public detail::OutputPortListenerInterface {
     return get_output_port_value()->get_vector_data<T>();
   }
 
-  /// Registers @p callback to be called whenever the value source on which this
-  /// %InputPortValue depends. The callback should invalidate data that depends
-  /// on the value of this port, but should not do any substantive computation.
-  void set_invalidation_callback(std::function<void()> callback) {
-    invalidation_callback_ = callback;
-  }
-
-  /// Receives notification that the value source on which this %InputPortValue
-  /// depends has changed, and calls the invalidation callback.
-  void Invalidate() override;
-
  protected:
   InputPortValue() {}
 
   virtual const OutputPortValue* get_output_port_value() const = 0;
-
- private:
-  std::function<void()> invalidation_callback_ = nullptr;
 };
 
 /// A %DependentInputPortValue wraps a pointer to an OutputPortValue associated
@@ -87,17 +67,6 @@ class DependentInputPortValue : public InputPortValue {
   /// @p output_port_value, which must not be nullptr. The OutputPortValue must
   /// outlive this %DependentInputPortValue object.
   explicit DependentInputPortValue(OutputPortValue* output_port_value);
-
-  /// Disconnects from the output port.
-  ~DependentInputPortValue() override;
-
-  /// Sets the associated OutputPortValue to nullptr.
-  void Disconnect() override;
-
-  /// Returns the value version of the connected output port.
-  int64_t get_version() const override {
-    return output_port_value_->get_version();
-  }
 
   /// A %DependentInputPortValue must be evaluated in a Context, because it does
   /// not control its own data.
@@ -122,14 +91,6 @@ class FreestandingInputPortValue : public InputPortValue {
   /// Constructs an abstract-valued %FreestandingInputPortValue from a value
   /// of arbitrary type. Takes ownership of @p data.
   explicit FreestandingInputPortValue(std::unique_ptr<AbstractValue> data);
-
-  ~FreestandingInputPortValue() override;
-
-  /// Returns a positive and monotonically increasing number that is guaranteed
-  /// to change whenever GetMutableVectorData is called.
-  int64_t get_version() const override {
-    return output_port_value_.get_version();
-  }
 
   /// A %FreestandingInputPortValue does not require evaluation, because it
   /// controls its own data.
@@ -164,10 +125,6 @@ class FreestandingInputPortValue : public InputPortValue {
   BasicVector<T>* GetMutableVectorData() {
     return output_port_value_.GetMutableVectorData<T>();
   }
-
-  /// Does nothing. A %FreestandingInputPortValue wraps its own OutputPortValue,
-  /// so there is no need to handle destruction of an output port.
-  void Disconnect() override {}
 
  protected:
   const OutputPortValue* get_output_port_value() const override {

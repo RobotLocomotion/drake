@@ -520,11 +520,9 @@ def generate_code(
         # name after "external" will vary depending on what name the workspace
         # gave us, so we can't hard-code it to "drake".)
         cxx_include_path = "/".join(cxx_include_path.split("/")[2:])
-    # TODO(#6996) Do this unconditionally once #6996 shuffle is finished.
-    if not cxx_include_path.startswith("drake/"):
-        # TODO(jwnimmer-tri) For use outside of Drake, this include_prefix
-        # should probably be configurable, instead of hard-coded here.
-        cxx_include_path = "drake/" + cxx_include_path
+    # TODO(jwnimmer-tri) For use outside of Drake, this include_prefix should
+    # probably be configurable, instead of hard-coded here.
+    cxx_include_path = "drake/" + cxx_include_path
     snake, _ = os.path.splitext(os.path.basename(named_vector_filename))
     screaming_snake = snake.upper()
     camel = "".join([x.capitalize() for x in snake.split("_")])

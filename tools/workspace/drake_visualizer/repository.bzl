@@ -61,6 +61,17 @@ def _impl(repository_ctx):
     repository_ctx.download_and_extract(urls, root_path, sha256 = sha256)
 
     file_content = """
+py_library(
+    name = "drake_visualizer_python_deps",
+    deps = [
+        "@lcm//:lcm-python",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
+        # TODO(eric.cousineau): Expose VTK Python libraries here for Linux.
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "drake_visualizer",
     srcs = glob([
@@ -74,9 +85,7 @@ filegroup(
         "share/doc/director/LICENSE.txt",
     ],
     data = [
-        "@lcm//:lcm-python",
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+        ":drake_visualizer_python_deps",
         "@vtk",
     ],
     visibility = ["//visibility:public"],

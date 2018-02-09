@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 from __future__ import print_function
 
@@ -62,6 +62,15 @@ class TestValue(unittest.TestCase):
                 # Ensure we can construct from size.
                 value_data = BasicVector(n)
                 self.assertEquals(value_data.size(), n)
+                # Ensure we can clone.
+                value_copies = [
+                    value_data.Clone(),
+                    copy.copy(value_data),
+                    copy.deepcopy(value_data),
+                ]
+                for value_copy in value_copies:
+                    self.assertTrue(value_copy is not value_data)
+                    self.assertEquals(value_data.size(), n)
 
     def test_abstract_value_copyable(self):
         expected = "Hello world"

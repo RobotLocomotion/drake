@@ -9,7 +9,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
@@ -59,41 +58,16 @@ class OutputPortValue {
     return &data_->GetValue<BasicVector<T>>();
   }
 
-  /// Returns a positive and monotonically increasing number that is guaranteed
-  /// to change whenever GetMutableVectorData is called.
-  int64_t get_version() const { return version_; }
-
-  /// Registers @p dependent to receive invalidation notifications whenever this
-  /// port's version number is incremented.
-  void add_dependent(detail::OutputPortListenerInterface* dependent) {
-    dependents_.insert(dependent);
-  }
-
-  /// Unregisters @p dependent from invalidation notifications.
-  void remove_dependent(detail::OutputPortListenerInterface* dependent) {
-    dependents_.erase(dependent);
-  }
-
-  /// Returns a pointer to the data inside this %OutputPortValue, and updates
-  /// the version so that Contexts depending on this %OutputPortValue know to
-  /// invalidate their caches. Callers MUST NOT write on the returned pointer if
-  /// there is any possibility this %OutputPortValue has been accessed since the
-  /// last time GetMutableData() was called.
+  /// Returns a pointer to the data inside this %OutputPortValue.
   AbstractValue* GetMutableData() {
-    InvalidateAndIncrement();
     return data_.get();
   }
 
-  /// Returns a pointer to the data inside this %OutputPortValue, and updates
-  /// the version so that Contexts depending on this %OutputPortValue know to
-  /// invalidate their caches. Callers MUST NOT write on the returned pointer if
-  /// there is any possibility this %OutputPortValue has been accessed since the
-  /// last time GetMutableVectorData() was called.
+  /// Returns a pointer to the data inside this %OutputPortValue.
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
   template <typename T>
   BasicVector<T>* GetMutableVectorData() {
-    InvalidateAndIncrement();
     return &data_->GetMutableValue<BasicVector<T>>();
   }
 
@@ -102,23 +76,14 @@ class OutputPortValue {
   std::unique_ptr<OutputPortValue> Clone() const;
 
  private:
-  void InvalidateAndIncrement();
-
   // The port data.
   std::unique_ptr<AbstractValue> data_;
-
-  // The list of consumers that should be notified when the value on this
-  // output port changes.
-  std::set<detail::OutputPortListenerInterface*> dependents_;
-
-  int64_t version_ = 0;
 };
 
 /// An abstract base class template for the values of the output ports of
 /// a System.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
-// TODO(sherm1) Output ports should be separated, see issue #2890.
 template <typename T>
 class SystemOutput {
  public:

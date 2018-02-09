@@ -10,6 +10,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/kinematics_cache_helper.h"
 #include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
@@ -17,25 +18,6 @@
 namespace drake {
 namespace systems {
 namespace plants {
-
-/// Helper class to avoid recalculating a kinematics cache which is
-/// going to be used repeatedly by multiple other classes.
-template <typename Scalar>
-class KinematicsCacheHelper {
- public:
-  explicit KinematicsCacheHelper(
-      const std::vector<std::unique_ptr<RigidBody<Scalar>>>& bodies);
-
-  KinematicsCache<Scalar>& UpdateKinematics(
-      const Eigen::Ref<const Eigen::VectorXd>& q,
-      const RigidBodyTree<double>* tree);
-
- private:
-  Eigen::VectorXd last_q_;
-  const RigidBodyTree<double>* last_tree_;
-  KinematicsCache<Scalar> kinsol_;
-};
-
 class SingleTimeKinematicConstraintWrapper : public drake::solvers::Constraint {
  public:
   /// All pointers are aliased for the lifetime of the wrapper.

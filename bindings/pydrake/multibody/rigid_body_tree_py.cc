@@ -10,6 +10,7 @@
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 
 namespace drake {
 namespace pydrake {
@@ -231,7 +232,12 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   m.def("AddModelInstancesFromSdfString",
         &sdf::AddModelInstancesFromSdfString);
   m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
-        &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages);
+        &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages),
+  m.def("AddFlatTerrainToWorld",
+        &drake::multibody::AddFlatTerrainToWorld,
+        py::arg("tree"),
+        py::arg("box_size") = 1000,
+        py::arg("box_depth") = 10);
 }
 
 }  // namespace pydrake

@@ -15,9 +15,9 @@ drake_cc_library(
         "drakeUtil.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
-        "//drake/math:gradient",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//math:gradient",
     ],
 )
 
@@ -27,7 +27,7 @@ drake_cc_library(
     hdrs = ["lcmUtil.h"],
     deps = [
         ":util",
-        "//drake/math:geometric_transform",
+        "//math:geometric_transform",
         "@eigen",
         "@lcmtypes_bot2_core",
     ],
@@ -40,7 +40,7 @@ drake_cc_googletest(
     srcs = ["test/testDrakeGeometryUtil.cpp"],
     deps = [
         ":util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -49,9 +49,9 @@ drake_cc_googletest(
     srcs = ["test/testLCMUtil.cpp"],
     deps = [
         ":lcm_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:random_polynomial_matrix",
-        "//drake/common/trajectories:random_piecewise_polynomial",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:random_polynomial_matrix",
+        "//common/trajectories:random_piecewise_polynomial",
     ],
 )
 

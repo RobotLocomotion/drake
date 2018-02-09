@@ -24,8 +24,16 @@ card drivers such as nouveau and intel. Should you need to build inside of
 another base image (FROM line in the Dockerfile), they are available `here
 <https://hub.docker.com/explore/>`_. 
 
-Note: This docker image is provided as an experimental feature and is not
-presently covered by continuous integration.
+.. note::
+
+  This docker image is provided as an experimental feature and is not
+  presently covered by continuous integration.
+
+  However, there are downstream usages of Drake within a Docker container:
+
+  * `Underactuated Robotics Drake Docker Instructions <http://underactuated.csail.mit.edu/Spring2018/install_drake_docker.html>`_,
+    used by many students across all nooks and crannies of Windows, Mac, Linux.
+  * `Spartan's Docker Build <https://github.com/RobotLocomotion/spartan/blob/master/setup/docker/README.md>`_
 
 .. _docker_getting_started:
 
@@ -63,7 +71,7 @@ Building
 
 Clone the Drake source code as described in :ref:`Getting Drake<getting_drake>`. 
 
-The the following build commands will copy the full <drake-distro> directory
+The the following build commands will copy the full <drake> directory
 from your host machine into the Docker container where it may be built and run.
 
 Nvidia
@@ -72,7 +80,7 @@ When using the Nvidia proprietary drivers:
 
 ::
 
-  $ cd <drake-distro>
+  $ cd <drake>
   $ docker build -t drake -f setup/docker/Dockerfile.ubuntu16.04.nvidia .
 
 Open Source
@@ -81,22 +89,11 @@ When using open source video drivers (nouveau, intel, ...):
 
 ::
 
-  $ cd <drake-distro>
+  $ cd <drake>
   $ docker build -t drake -f setup/docker/Dockerfile.ubuntu16.04.opensource .
 
-If successful
-
-::
-
-  $ docker images
-
-should show an image named drake and 
-
-::
-
-  $ docker ps
-
-will show any running Docker containers on your system.
+If successful, ``docker images`` should show an image named drake and
+``docker ps`` will show any running Docker containers on your system.
 
 .. _docker_running:
 
@@ -116,7 +113,7 @@ where you can run commands such as:
 
 ::
 
-  $ cd /drake-distro
+  $ cd /drake
   $ bazel build //...
   $ bazel test //...
 
@@ -159,55 +156,25 @@ To install nvidia-docker on Ubuntu 16.04:
 The default command defined behavior will start the Drake visualizer and run 
 the bowling ball simulation.
 
-Walking through this command::
+Walking through this command:
 
-  $ xhost +local
-  
-will allow access for non-network connections to your local X server and pass
-the necessary X11 parameters for graphical display of programs within the Docker
-container.::
-
-  docker-nvidia
-
-is an Nvidia plugin that couples with the proprietary Nvidia drivers and gives
-access to advanced features like CUDA.
-
-The::
-
-  -i
-
-switch assigns a tty for interactive text connections within
-the console.::
-
-  --rm
-
-will clean up after the image, omit this to allow the container's file system to
-persist.::
-
-  -e DISPLAY
-
-Forwards your host DISPLAY environment variable to the Docker container.::
-
-  -e QT_X11_NO_MITSHM=1
-
-specifies to not use the MIT magic cookie.::
-
-  -v /tmp/.X11-unix:/tmp/.X11-unix
-
-shares the host .X11 interface with the Docker container as a volume.::
-
-  --privileged
-
-is only needed on selinux systems.::
-
-  -t drake
-
-provides the Docker container name and::
-
-  $ xhost -local:root
-
-removes the permission given earlier for local non-network connections to X.
-
+* ``xhost +local`` will allow access for non-network connections to your local
+  X server and pass the necessary X11 parameters for graphical display of
+  programs within the Docker container.
+* ``docker-nvidia`` is an Nvidia plugin that couples with the proprietary
+  Nvidia drivers and gives access to advanced features like CUDA.
+* ``-i`` assigns a tty for interactive text connections within the console.
+* ``--rm`` will clean up after the image, omit this to allow the container's
+  file system to persist.
+* ``-e DISPLAY`` forwards your host DISPLAY environment variable to the Docker
+  container.
+* ``-e QT_X11_NO_MITSHM=1`` specifies to not use the MIT magic cookie.
+* ``-v /tmp/.X11-unix:/tmp/.X11-unix`` shares the host .X11 interface with the
+  Docker container as a volume.
+* ``--privileged`` is only needed on selinux systems.
+* ``-t drake`` provides the Docker container name, and
+* ```xhost -local:root`` removes the permission given earlier for local
+  non-network connections to X.
 
 See the `Docker Run Reference
 <https://docs.docker.com/engine/reference/run/>`_. For more information on
@@ -225,7 +192,7 @@ where you may want to try various demonstrations, e.g.:
 
 ::
  
-  $ cd /drake-distro
+  $ cd /drake
   $ bazel run //drake/examples/contact_model:bowling_ball
   $ bazel run //drake/examples/kuka_iiwa_arm:kuka_simulation
   $ bazel run //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
@@ -253,10 +220,11 @@ Sharing Files Between Host and Docker:
 
 It is possible to interactively develop and compile within the Docker container.
 Several options exist for retaining code altered or generated within the
-Docker image. `Docker cp
-<https://docs.docker.com/engine/reference/commandline/cp/>`_ can be used
-to copy files into and out of a running image. 
-`-v <https://docs.docker.com/engine/tutorials/dockervolumes/#locate-a-volume>`_
-can be used to mount a host directory inside the Docker image at the expense
-of file system isolation. Or you can use git commands interactively inside the
-container to push code changes directly to a repository. 
+Docker image:
+
+* `docker cp <https://docs.docker.com/engine/reference/commandline/cp/>`_ can
+  be used to copy files into and out of a running image.
+* `-v, --volume <https://docs.docker.com/storage/volumes/#choose-the--v-or-mount-flag>`_
+  can be used to mount a host directory inside the Docker image at the expense
+  of file system isolation. Or you can use git commands interactively inside the
+  container to push code changes directly to a repository.

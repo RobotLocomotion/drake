@@ -49,11 +49,11 @@ drake_cc_library(
         "segment.h",
     ],
     deps = [
-        "//drake/automotive/maliput/api",
-        "//drake/common:essential",
-        "//drake/common:unused",
-        "//drake/math:geometric_transform",
-        "//drake/math:saturate",
+        "//automotive/maliput/api",
+        "//common:essential",
+        "//common:unused",
+        "//math:geometric_transform",
+        "//math:saturate",
     ],
 )
 
@@ -98,7 +98,7 @@ drake_cc_googletest(
     srcs = ["test/multilane_arc_road_curve_test.cc"],
     deps = [
         ":lanes",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -108,8 +108,8 @@ drake_cc_googletest(
     srcs = ["test/multilane_builder_test.cc"],
     deps = [
         ":builder",
-        "//drake/automotive/maliput/api/test_utilities",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//automotive/maliput/api/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -119,8 +119,8 @@ drake_cc_googletest(
     srcs = ["test/multilane_connection_test.cc"],
     deps = [
         ":builder",
-        "//drake/automotive/maliput/multilane/test_utilities",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//automotive/maliput/multilane/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -130,8 +130,8 @@ drake_cc_googletest(
     srcs = ["test/multilane_lanes_test.cc"],
     deps = [
         ":lanes",
-        "//drake/automotive/maliput/api/test_utilities",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//automotive/maliput/api/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -141,7 +141,7 @@ drake_cc_googletest(
     srcs = ["test/multilane_line_road_curve_test.cc"],
     deps = [
         ":lanes",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -151,7 +151,7 @@ drake_cc_googletest(
     srcs = ["test/multilane_loader_test.cc"],
     deps = [
         ":loader",
-        "//drake/automotive/maliput/api/test_utilities",
+        "//automotive/maliput/api/test_utilities",
     ],
 )
 
@@ -161,7 +161,7 @@ drake_cc_googletest(
     srcs = ["test/multilane_road_geometry_test.cc"],
     deps = [
         ":builder",
-        "//drake/automotive/maliput/api/test_utilities",
+        "//automotive/maliput/api/test_utilities",
     ],
 )
 
@@ -171,8 +171,8 @@ drake_cc_googletest(
     srcs = ["test/multilane_segments_test.cc"],
     deps = [
         ":lanes",
-        "//drake/automotive/maliput/api/test_utilities:maliput_types_compare",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//automotive/maliput/api/test_utilities:maliput_types_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -182,7 +182,7 @@ drake_cc_binary(
     srcs = ["test/yaml_load.cc"],
     deps = [
         ":loader",
-        "//drake/common:text_logging_gflags",
+        "//common:text_logging_gflags",
     ],
 )
 

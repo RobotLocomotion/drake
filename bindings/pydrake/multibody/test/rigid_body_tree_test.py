@@ -7,7 +7,11 @@ import unittest
 import pydrake
 from pydrake.forwarddiff import jacobian
 from pydrake.multibody.parsers import PackageMap
-from pydrake.multibody.rigid_body_tree import RigidBodyTree, FloatingBaseType
+from pydrake.multibody.rigid_body_tree import (
+    AddFlatTerrainToWorld,
+    RigidBodyTree,
+    FloatingBaseType
+    )
 import pydrake.multibody.shapes as shapes
 
 
@@ -70,6 +74,13 @@ class TestRigidBodyTree(unittest.TestCase):
             [-1, 0, 0, 0],
             [0, 0, 0, 1]])
         self.assertTrue(np.allclose(T, T_expected))
+
+    def test_flat_terrain(self):
+        tree = RigidBodyTree(os.path.join(
+            pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf"))
+
+        # Test that AddFlatTerrainToWorld is spelled correctly.
+        AddFlatTerrainToWorld(tree)
 
     def test_kinematics_com_api(self):
         tree = RigidBodyTree(os.path.join(

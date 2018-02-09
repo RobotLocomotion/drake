@@ -127,7 +127,14 @@ using is_copyable_unique_ptr_compatible =
    - The `Base` class's Clone() implementation does not invoke the `Derived`
    class's implementation of a suitable virtual method.
 
- @internal For future developers:
+ @warning One important difference between unique_ptr and %copyable_unique_ptr
+ is that a unique_ptr can be declared on a forward-declared class type. The
+ %copyable_unique_ptr _cannot_. The class must be fully defined so that the
+ %copyable_unique_ptr is able to determine if the type meets the requirements
+ (i.e., public copy constructible or cloneable).
+
+ <!--
+ For future developers:
    - the copyability of a base class does *not* imply anything about the
    copyability of a derived class. In other words, `copyable_unique_ptr<Base>`
    can be compilable while `copyable_unique_ptr<Derived>` is not.
@@ -135,6 +142,7 @@ using is_copyable_unique_ptr_compatible =
    this copies "correctly" (such that the copy contains an instance of
    `Derived`), this does _not_ imply that `copyable_unique_ptr<Derived>` is
    compilable.
+ -->
 
  @see is_copyable_unique_ptr_compatible
  @tparam T   The type of the contained object, which *must* be

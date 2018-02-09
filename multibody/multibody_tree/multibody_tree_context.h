@@ -45,7 +45,6 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
       systems::LeafContext<T>(), topology_(topology) {
     using systems::AbstractValue;
     using systems::BasicVector;
-    using systems::CacheTicket;
     using systems::Context;
     using systems::ContinuousState;
     using systems::LeafContext;

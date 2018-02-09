@@ -32,8 +32,8 @@ drake_cc_library(
     deps = [
         ":builder",
         ":lanes",
-        "//drake/automotive/maliput/api",
-        "//drake/common",
+        "//automotive/maliput/api",
+        "//common",
         "@ignition_math",
         "@ignition_rndf",
     ],
@@ -53,11 +53,11 @@ drake_cc_library(
     ],
     deps = [
         ":lanes",
-        "//drake/automotive/maliput/api",
-        "//drake/common:essential",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/math:geometric_transform",
-        "//drake/math:saturate",
+        "//automotive/maliput/api",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:geometric_transform",
+        "//math:saturate",
         "@ignition_math",
         "@ignition_rndf",
     ],
@@ -84,11 +84,11 @@ drake_cc_library(
         "spline_lane.h",
     ],
     deps = [
-        "//drake/automotive/maliput/api",
-        "//drake/common:essential",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/math:geometric_transform",
-        "//drake/math:saturate",
+        "//automotive/maliput/api",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:geometric_transform",
+        "//math:saturate",
         "@ignition_math",
     ],
 )
@@ -110,7 +110,7 @@ drake_cc_binary(
     test_rule_size = "small",
     deps = [
         ":loader",
-        "//drake/common:text_logging_gflags",
+        "//common:text_logging_gflags",
     ],
 )
 
@@ -118,7 +118,7 @@ drake_cc_googletest(
     name = "connection_test",
     deps = [
         ":builder",
-        "//drake/automotive/maliput/rndf/test_utilities",
+        "//automotive/maliput/rndf/test_utilities",
         "@ignition_math",
         "@ignition_rndf",
     ],
@@ -128,7 +128,7 @@ drake_cc_googletest(
     name = "directed_waypoint_test",
     deps = [
         ":builder",
-        "//drake/automotive/maliput/rndf/test_utilities",
+        "//automotive/maliput/rndf/test_utilities",
         "@ignition_math",
         "@ignition_rndf",
     ],
@@ -138,7 +138,7 @@ drake_cc_googletest(
     name = "builder_test",
     deps = [
         ":builder",
-        "//drake/automotive/maliput/api/test_utilities",
+        "//automotive/maliput/api/test_utilities",
     ],
 )
 
@@ -156,9 +156,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":loader",
-        "//drake/automotive/maliput/api",
-        "//drake/automotive/maliput/api/test_utilities",
-        "//drake/common:find_resource",
+        "//automotive/maliput/api",
+        "//automotive/maliput/api/test_utilities",
+        "//common:find_resource",
     ],
 )
 
@@ -194,7 +194,7 @@ drake_cc_googletest(
     name = "spline_lane_test",
     deps = [
         ":lanes",
-        "//drake/automotive/maliput/api/test_utilities",
+        "//automotive/maliput/api/test_utilities",
     ],
 )
 
@@ -202,7 +202,7 @@ drake_cc_googletest(
     name = "spline_helpers_test",
     deps = [
         ":lanes",
-        "//drake/automotive/maliput/rndf/test_utilities",
+        "//automotive/maliput/rndf/test_utilities",
     ],
 )
 

@@ -17,15 +17,9 @@ class FreestandingInputPortVectorTest : public ::testing::Test {
     vec->get_mutable_value() << 5, 6;
     port_value_.reset(new FreestandingInputPortValue(
         std::make_unique<Value<BasicVector<double>>>(std::move(vec))));
-    port_value_->set_invalidation_callback(
-        std::bind(&FreestandingInputPortVectorTest::Invalidate, this));
   }
 
   std::unique_ptr<FreestandingInputPortValue> port_value_;
-  int64_t latest_version_ = -1;
-
- private:
-  void Invalidate() { latest_version_ = port_value_->get_version(); }
 };
 
 TEST_F(FreestandingInputPortVectorTest, Access) {
@@ -38,13 +32,9 @@ TEST_F(FreestandingInputPortVectorTest, Access) {
 // Tests that changes to the vector data are propagated to the input port
 // that wraps it.
 TEST_F(FreestandingInputPortVectorTest, Mutation) {
-  EXPECT_EQ(0, port_value_->get_version());
   port_value_->template GetMutableVectorData<double>()->get_mutable_value()
       << 7,
       8;
-
-  // Check that the version number was incremented.
-  EXPECT_EQ(1, port_value_->get_version());
 
   // Check that the vector contents changed.
   VectorX<double> expected(2);
@@ -58,15 +48,9 @@ class FreestandingInputPortAbstractValueTest : public ::testing::Test {
   void SetUp() override {
     auto value = std::make_unique<Value<std::string>>("foo");
     port_value_.reset(new FreestandingInputPortValue(std::move(value)));
-    port_value_->set_invalidation_callback(
-        std::bind(&FreestandingInputPortAbstractValueTest::Invalidate, this));
   }
 
   std::unique_ptr<FreestandingInputPortValue> port_value_;
-  int64_t latest_version_ = -1;
-
- private:
-  void Invalidate() { latest_version_ = port_value_->get_version(); }
 };
 
 TEST_F(FreestandingInputPortAbstractValueTest, Access) {
@@ -76,11 +60,7 @@ TEST_F(FreestandingInputPortAbstractValueTest, Access) {
 // Tests that changes to the vector data are propagated to the input port
 // that wraps it.
 TEST_F(FreestandingInputPortAbstractValueTest, Mutation) {
-  EXPECT_EQ(0, port_value_->get_version());
   port_value_->GetMutableData()->GetMutableValue<std::string>() = "bar";
-
-  // Check that the version number was incremented.
-  EXPECT_EQ(1, port_value_->get_version());
 
   // Check that the contents changed.
   EXPECT_EQ("bar", port_value_->get_abstract_data()->GetValue<std::string>());
@@ -94,16 +74,10 @@ class DependentInputPortTest : public ::testing::Test {
     output_port_value_.reset(new OutputPortValue(std::move(vec)));
     input_port_value_.reset(
         new DependentInputPortValue(output_port_value_.get()));
-    input_port_value_->set_invalidation_callback(
-        std::bind(&DependentInputPortTest::Invalidate, this));
   }
 
   std::unique_ptr<OutputPortValue> output_port_value_;
   std::unique_ptr<DependentInputPortValue> input_port_value_;
-  int64_t latest_version_ = -1;
-
- private:
-  void Invalidate() { latest_version_ = input_port_value_->get_version(); }
 };
 
 TEST_F(DependentInputPortTest, Access) {
@@ -116,17 +90,10 @@ TEST_F(DependentInputPortTest, Access) {
 // Tests that changes on the output port are propagated to the input port that
 // is connected to it.
 TEST_F(DependentInputPortTest, Mutation) {
-  EXPECT_EQ(0, input_port_value_->get_version());
   output_port_value_->template GetMutableVectorData<double>()
           ->get_mutable_value()
       << 7,
       8;
-
-  // Check that the version number was incremented.
-  EXPECT_EQ(1, input_port_value_->get_version());
-
-  // Check that the invalidation callback was called.
-  EXPECT_EQ(1, latest_version_);
 
   // Check that the vector contents changed.
   VectorX<double> expected(2);

@@ -68,6 +68,25 @@ class Transform {
   explicit Transform(const Isometry3<T>& pose) :
       Transform(RotationMatrix<T>(pose.linear()), pose.translation()) {}
 
+  /// Creates a %Transform templatized on a scalar type U from a
+  /// %Transform templatized on scalar type T.  For example,
+  /// ```
+  /// Transform<double> source = Transform<double>::Identity();
+  /// Transform<AutoDiffXd> foo = source.cast<AutoDiffXd>();
+  /// ```
+  /// @tparam U Scalar type on which the returned %Transform is templated.
+  /// @note `Transform<From>::cast<To>()` creates a new `Transform<To>` from a
+  /// `Transform<From>` but only if type `To` is constructible from type `From`.
+  /// This cast method works in accordance with Eigen's cast method for Eigen's
+  /// objects that underlie this %Transform.  For example, Eigen currently
+  /// allows cast from type double to AutoDiffXd, but not vice-versa.
+  template <typename U>
+  Transform<U> cast() const {
+    const RotationMatrix<U> R = R_AB_.template cast<U>();
+    const Vector3<U> p = p_AoBo_A_.template cast<U>();
+    return Transform<U>(R, p);
+  }
+
   /// Returns the identity %Transform (which corresponds to coincident frames).
   /// @returns the %Transform that corresponds to aligning the two frames so
   /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
@@ -97,18 +116,17 @@ class Transform {
   /// origin) expressed in frame A.  In monogram notation p is denoted p_AoBo_A.
   void set_translation(const Vector3<T>& p) { p_AoBo_A_ = p; }
 
-  /// Returns the 4x4 matrix associated with a %Transform.
-  /// @returns the 4x4 matrix associated with a %Transform, i.e., returns
+  /// Returns the 4x4 matrix associated with this %Transform.
+  /// @return the 4x4 matrix associated with this %Transform, i.e., returns X_AB
   ///  ┌                ┐
   ///  │ R_AB  p_AoBo_A │
   ///  │                │
   ///  │   0      1     │
   ///  └                ┘
-  Matrix4<T> GetAsMatrix() const {
+  Matrix4<T> GetAsMatrix4() const {
     Matrix4<T> pose;
-    pose.topLeftCorner(3, 3) = rotation().matrix();
-    pose.topLeftCorner(3, 3) = rotation().matrix();
-    pose.topRightCorner(3, 1) = translation();
+    pose.template topLeftCorner<3, 3>() = rotation().matrix();
+    pose.template topRightCorner<3, 1>() = translation();
     pose.row(3) = Vector4<T>(0, 0, 0, 1);
     return pose;
   }
@@ -231,6 +249,12 @@ class Transform {
   }
 
  private:
+  // Make Transform<U> templatized on any typename U be a friend of a %Transform
+  // templatized on any other typename T. This is needed for the method
+  // Transform<T>::cast<U>() to be able to use the required private constructor.
+  template <typename U>
+  friend class Transform;
+
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   RotationMatrix<T> R_AB_;
 

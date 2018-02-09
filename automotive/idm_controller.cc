@@ -104,7 +104,7 @@ void IdmController<T>::CalcAcceleration(
   // Obtain the state if we've allocated it.
   RoadPosition ego_rp;
   if (context.template get_state().get_abstract_state().size() != 0) {
-    DRAKE_ASSERT(context.get_num_abstract_state_groups() == 1);
+    DRAKE_ASSERT(context.get_num_abstract_states() == 1);
     ego_rp = context.template get_abstract_state<RoadPosition>(0);
   }
 
@@ -164,7 +164,7 @@ void IdmController<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
     systems::State<T>* state) const {
-  DRAKE_ASSERT(context.get_num_abstract_state_groups() == 1);
+  DRAKE_ASSERT(context.get_num_abstract_states() == 1);
 
   // Obtain the input and state data.
   const PoseVector<T>* const ego_pose =

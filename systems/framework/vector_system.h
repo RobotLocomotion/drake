@@ -64,7 +64,7 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_DEMAND(result->get_num_input_ports() <= 1);
 
     // At most one of either continuous xor discrete state.
-    DRAKE_THROW_UNLESS(result->get_num_abstract_state_groups() == 0);
+    DRAKE_THROW_UNLESS(result->get_num_abstract_states() == 0);
     const int continuous_size = result->get_continuous_state().size();
     const int num_discrete_groups = result->get_num_discrete_state_groups();
     DRAKE_DEMAND(continuous_size >= 0);
@@ -128,7 +128,7 @@ class VectorSystem : public LeafSystem<T> {
   Eigen::VectorBlock<const VectorX<T>> GetVectorState(
       const Context<T>& context) const {
     // Obtain the block form of xc or xd.
-    DRAKE_ASSERT(context.get_num_abstract_state_groups() == 0);
+    DRAKE_ASSERT(context.get_num_abstract_states() == 0);
     const BasicVector<T>* state_vector{};
     if (context.get_num_discrete_state_groups() == 0) {
       const VectorBase<T>& vector_base = context.get_continuous_state_vector();

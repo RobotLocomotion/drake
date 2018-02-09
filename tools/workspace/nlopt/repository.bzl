@@ -5,5 +5,13 @@ load(
     "pkg_config_repository",
 )
 
-def nlopt_repository(name, modname = "nlopt", **kwargs):
-    pkg_config_repository(name = name, modname = modname, **kwargs)
+def nlopt_repository(
+        name,
+        modname = "nlopt",
+        pkg_config_paths = ["/usr/local/opt/nlopt/lib/pkgconfig"],
+        **kwargs):
+    pkg_config_repository(
+        name = name,
+        modname = modname,
+        pkg_config_paths = pkg_config_paths,
+        **kwargs)

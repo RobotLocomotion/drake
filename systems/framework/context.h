@@ -63,7 +63,7 @@ class Context {
   bool is_stateless() const {
     const int nxc = get_continuous_state().size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxa = get_num_abstract_state_groups();
+    const int nxa = get_num_abstract_states();
     return nxc == 0 && nxd == 0 && nxa == 0;
   }
 
@@ -72,7 +72,7 @@ class Context {
   bool has_only_continuous_state() const {
     const int nxc = get_continuous_state().size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxa = get_num_abstract_state_groups();
+    const int nxa = get_num_abstract_states();
     return nxc > 0 && nxd == 0 && nxa == 0;
   }
 
@@ -81,7 +81,7 @@ class Context {
   bool has_only_discrete_state() const {
     const int nxc = get_continuous_state().size();
     const int nxd = get_num_discrete_state_groups();
-    const int nxa = get_num_abstract_state_groups();
+    const int nxa = get_num_abstract_states();
     return nxd > 0 && nxc == 0 && nxa == 0;
   }
 
@@ -89,7 +89,7 @@ class Context {
   /// were muxed).
   /// @throws std::runtime_error if the system contains any abstract state.
   int get_num_total_states() const {
-    DRAKE_THROW_UNLESS(get_num_abstract_state_groups() == 0);
+    DRAKE_THROW_UNLESS(get_num_abstract_states() == 0);
     int count = get_continuous_state().size();
     for (int i = 0; i < get_num_discrete_state_groups(); i++)
       count += get_discrete_state(i).size();
@@ -166,7 +166,7 @@ class Context {
   }
 
   /// Returns the number of elements in the abstract state.
-  int get_num_abstract_state_groups() const {
+  int get_num_abstract_states() const {
     return get_state().get_abstract_state().size();
   }
 

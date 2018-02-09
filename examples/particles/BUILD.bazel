@@ -20,9 +20,9 @@ drake_cc_library(
         "utilities.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/primitives:matrix_gain",
+        "//common:essential",
+        "//systems/framework:leaf_system",
+        "//systems/primitives:matrix_gain",
     ],
 )
 
@@ -36,13 +36,13 @@ drake_cc_binary(
     ],
     deps = [
         ":particles",
-        "//drake/common:find_resource",
-        "//drake/common:text_logging_gflags",
-        "//drake/lcm",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis",
-        "//drake/systems/primitives:constant_vector_source",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//lcm",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 

@@ -32,7 +32,7 @@ drake_cc_library(
     srcs = ["atlas_command_translator_system.cc"],
     hdrs = ["atlas_command_translator_system.h"],
     deps = [
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
+        "//systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
     ],
 )
 
@@ -41,11 +41,11 @@ drake_cc_library(
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody:rigid_body_tree_alias_groups",
-        "//drake/systems/controllers:side",
-        "//drake/systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa
+        "//common:essential",
+        "//multibody:rigid_body_tree",
+        "//multibody:rigid_body_tree_alias_groups",
+        "//systems/controllers:side",
+        "//systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa
     ],
 )
 
@@ -54,8 +54,8 @@ drake_cc_library(
     srcs = ["humanoid_plan_eval_system.cc"],
     hdrs = ["humanoid_plan_eval_system.h"],
     deps = [
-        "//drake/examples/humanoid_controller/dev:humanoid_manipulation_plan",
-        "//drake/systems/controllers/plan_eval:plan_eval_base_system",
+        "//examples/humanoid_controller/dev:humanoid_manipulation_plan",
+        "//systems/controllers/plan_eval:plan_eval_base_system",
     ],
 )
 
@@ -65,10 +65,10 @@ drake_cc_library(
     hdrs = ["humanoid_status_translator_system.h"],
     deps = [
         ":humanoid_status",
-        "//drake/manipulation/util:robot_state_msg_translator",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
-        "//drake/systems/framework:leaf_system",
+        "//manipulation/util:robot_state_msg_translator",
+        "//multibody:rigid_body_tree",
+        "//systems/controllers/qp_inverse_dynamics:lcm_utils",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -79,11 +79,11 @@ drake_cc_library(
         ":atlas_command_translator_system",
         ":humanoid_plan_eval_system",
         ":humanoid_status_translator_system",
-        "//drake/lcm",
-        "//drake/multibody/parsers",
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
-        "//drake/systems/framework",
-        "//drake/systems/lcm",
+        "//lcm",
+        "//multibody/parsers",
+        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
+        "//systems/framework",
+        "//systems/lcm",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -94,14 +94,14 @@ drake_cc_binary(
         "send_manipulation_plan_demo.cc",
     ],
     data = [
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     deps = [
-        "//drake/common:find_resource",
-        "//drake/examples/valkyrie:valkyrie_constants",
-        "//drake/manipulation/util:robot_state_msg_translator",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//examples/valkyrie:valkyrie_constants",
+        "//manipulation/util:robot_state_msg_translator",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
         "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
@@ -116,14 +116,14 @@ drake_cc_binary(
     data = [
         ":config/valkyrie.alias_groups",
         ":config/valkyrie.id_controller_config",
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
         ":humanoid_controller",
-        "//drake/common:find_resource",
-        "//drake/examples/valkyrie:valkyrie_constants",
-        "//drake/systems/lcm:lcm_driven_loop",
+        "//common:find_resource",
+        "//examples/valkyrie:valkyrie_constants",
+        "//systems/lcm:lcm_driven_loop",
     ],
 )
 
@@ -133,14 +133,14 @@ drake_cc_googletest(
     name = "atlas_command_translator_system_test",
     srcs = ["test/atlas_command_translator_system_test.cc"],
     data = [
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     deps = [
         ":atlas_command_translator_system",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+        "//systems/framework",
     ],
 )
 
@@ -150,22 +150,22 @@ drake_cc_googletest(
     data = [
         ":config/valkyrie.alias_groups",
         ":config/valkyrie.id_controller_config",
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
         ":humanoid_plan_eval_system",
         ":humanoid_status",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/examples/valkyrie:valkyrie_constants",
-        "//drake/multibody/parsers",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
-        "//drake/systems/framework",
-        "//drake/systems/primitives:constant_value_source",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/valkyrie:valkyrie_constants",
+        "//multibody/parsers",
+        "//systems/analysis:simulator",
+        "//systems/controllers:setpoint",
+        "//systems/controllers/qp_inverse_dynamics:param_parser",
+        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
+        "//systems/framework",
+        "//systems/primitives:constant_value_source",
     ],
 )
 

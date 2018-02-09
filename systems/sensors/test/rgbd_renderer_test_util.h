@@ -104,7 +104,7 @@ class RgbdRendererTest : public ::testing::Test {
   const double kZNear = 0.5;
   const double kZFar = 5.;
   const double kFovY = M_PI_4;
-  const bool kShowWindow = false;
+  const bool kShowWindow = RenderingConfig::kDefaultShowWindow;
 
   // The following tolerance is used due to a precision difference between
   // Ubuntu Linux and Mac OSX.
