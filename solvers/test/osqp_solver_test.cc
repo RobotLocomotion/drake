@@ -64,6 +64,47 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
     TestQPonUnitBallExample(solver);
   }
 }
+
+GTEST_TEST(QuadraticProgramTest, TestUnbounded) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  prog.AddQuadraticCost(x(0) * x(0) + x(1));
+
+  OsqpSolver solver;
+  // The program is unbounded.
+  if (solver.available()) {
+    const SolutionResult result = solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+  }
+
+  // Add a constraint
+  prog.AddLinearConstraint(x(0) + 2 * x(2) == 2);
+  prog.AddLinearConstraint(x(0) >= 0);
+  if (solver.available()) {
+    const SolutionResult result = solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+  }
 }
+
+GTEST_TEST(QuadraticProgramTest, TestInfeasible) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
+  prog.AddLinearConstraint(x(0) + 2 * x(1) == 2);
+  prog.AddBoundingBoxConstraint(1, 2, x(0));
+  prog.AddBoundingBoxConstraint(2, 3, x(1));
+
+  OsqpSolver solver;
+  // The program is infeasible.
+  if (solver.available()) {
+    const SolutionResult result = solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+    EXPECT_EQ(prog.GetOptimalCost(),
+              MathematicalProgram::kGlobalInfeasibleCost);
+  }
+}
+}  // namespace test
 }  // namespace solvers
 }  // namespace drake

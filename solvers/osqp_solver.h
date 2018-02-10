@@ -13,7 +13,8 @@ class OsqpSolver : public MathematicalProgramSolverInterface {
   OsqpSolver() = default;
   ~OsqpSolver() override = default;
 
-  // This solver is implemented in various pieces depending on if Osqp was available during compilation.
+  // This solver is implemented in various pieces depending on if Osqp was
+  // available during compilation.
   bool available() const override;
 
   SolutionResult Solve(MathematicalProgram& prog) const override;

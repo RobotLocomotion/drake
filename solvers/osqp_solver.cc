@@ -66,26 +66,25 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
   }
 }
 
-void ParseAllLinearConstraints(const MathematicalProgram& prog,
-                               Eigen::SparseMatrix<c_float>* A,
-                               std::vector<c_float>* l,
-                               std::vector<c_float>* u) {
-  l->clear();
-  u->clear();
-  std::vector<Eigen::Triplet<c_float>> A_triplets;
-
-  int num_A_rows = 0;
+// Will call this function to parse both LinearConstraint and
+// LinearEqualityConstraint
+template <typename C>
+void ParseLinearConstraints(const MathematicalProgram& prog,
+                            const std::vector<Binding<C>>& linear_constraints,
+                            std::vector<Eigen::Triplet<c_float>>* A_triplets,
+                            std::vector<c_float>* l, std::vector<c_float>* u,
+                            int* num_A_rows) {
   // Loop over the linear constraints, stack them to get l, u and A.
-  for (const auto& constraint : prog.GetAllLinearConstraints()) {
+  for (const auto& constraint : linear_constraints) {
     const std::vector<int> x_indices =
         prog.FindDecisionVariableIndices(constraint.variables());
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(constraint.constraint()->A());
     // Append constraint.A to osqp A.
     for (const auto& Ai_triplet : Ai_triplets) {
-      A_triplets.emplace_back(num_A_rows + Ai_triplet.row(),
-                              x_indices[Ai_triplet.col()],
-                              static_cast<c_float>(Ai_triplet.value()));
+      A_triplets->emplace_back(*num_A_rows + Ai_triplet.row(),
+                               x_indices[Ai_triplet.col()],
+                               static_cast<c_float>(Ai_triplet.value()));
     }
     const int num_Ai_rows = constraint.constraint()->num_constraints();
     l->reserve(l->size() + num_Ai_rows);
@@ -96,8 +95,49 @@ void ParseAllLinearConstraints(const MathematicalProgram& prog,
       u->push_back(
           static_cast<c_float>(constraint.constraint()->upper_bound()(i)));
     }
-    num_A_rows += num_Ai_rows;
+    *num_A_rows += num_Ai_rows;
   }
+}
+
+void ParseBoundingBoxConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<c_float>>* A_triplets, std::vector<c_float>* l,
+    std::vector<c_float>* u, int* num_A_rows) {
+  // Loop over the linear constraints, stack them to get l, u and A.
+  for (const auto& constraint : prog.bounding_box_constraints()) {
+    // Append constraint.A to osqp A.
+    for (int i = 0; i < static_cast<int>(constraint.GetNumElements()); ++i) {
+      A_triplets->emplace_back(
+          *num_A_rows + i,
+          prog.FindDecisionVariableIndex(constraint.variables()(i)),
+          static_cast<c_float>(1));
+    }
+    const int num_Ai_rows = constraint.constraint()->num_constraints();
+    l->reserve(l->size() + num_Ai_rows);
+    u->reserve(u->size() + num_Ai_rows);
+    for (int i = 0; i < num_Ai_rows; ++i) {
+      l->push_back(
+          static_cast<c_float>(constraint.constraint()->lower_bound()(i)));
+      u->push_back(
+          static_cast<c_float>(constraint.constraint()->upper_bound()(i)));
+    }
+    *num_A_rows += num_Ai_rows;
+  }
+}
+
+void ParseAllLinearConstraints(const MathematicalProgram& prog,
+                               Eigen::SparseMatrix<c_float>* A,
+                               std::vector<c_float>* l,
+                               std::vector<c_float>* u) {
+  std::vector<Eigen::Triplet<c_float>> A_triplets;
+  l->clear();
+  u->clear();
+  int num_A_rows = 0;
+  ParseLinearConstraints(prog, prog.linear_constraints(), &A_triplets, l, u,
+                         &num_A_rows);
+  ParseLinearConstraints(prog, prog.linear_equality_constraints(), &A_triplets,
+                         l, u, &num_A_rows);
+  ParseBoundingBoxConstraints(prog, &A_triplets, l, u, &num_A_rows);
   A->resize(num_A_rows, prog.num_vars());
   A->setFromTriplets(A_triplets.begin(), A_triplets.end());
 }
@@ -122,6 +162,26 @@ csc* EigenSparseToCSC(const Eigen::SparseMatrix<c_float>& mat) {
   }
   return csc_matrix(mat.rows(), mat.cols(), mat.nonZeros(), values,
                     inner_indices, outer_indices);
+}
+
+template <typename T1, typename T2>
+void SetOsqpSolverSetting(const std::map<std::string, T1>& options, const std::string& option_name, T2* osqp_setting_field) {
+  const auto it = options.find(option_name);
+  if (it != options.end()) {
+    *osqp_setting_field = it->second;
+  }
+}
+
+void SetOsqpSolverSettings(MathematicalProgram& prog, OSQPSettings* settings) {
+  const std::map<std::string, double>& options_double = prog.GetSolverOptionsDouble(OsqpSolver::id());
+  const std::map<std::string, int>& options_int= prog.GetSolverOptionsInt(OsqpSolver::id());
+  // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
+  SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
+  SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
+  SetOsqpSolverSetting(options_int, "scaling", &(settings->scaling));
+  SetOsqpSolverSetting(options_int, "max_iter", &(settings->max_iter));
+  SetOsqpSolverSetting(options_int, "polish_refine_iter", &(settings->polish_refine_iter));
+  SetOsqpSolverSetting(options_int, "verbose", &(settings->verbose));
 }
 }  // namespace
 
@@ -167,10 +227,28 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   data->l = l.data();
   data->u = u.data();
 
+  std::cout << "n: " << data->n << " m: " << data->m << std::endl;
+  std::cout <<"P->i:\n";
+  for (int i = 0; i < data->P->nzmax; ++i) {
+    std::cout << data->P->i[i] << " ";
+  }
+  std::cout << "\n";
+  std::cout <<"P->x:\n";
+  for (int i = 0; i < data->P->nzmax; ++i) {
+    std::cout << data->P->x[i] << " ";
+  }
+  std::cout << "\n";
+  std::cout <<"P->p:\n";
+  for (int i = 0; i < data->n + 1; ++i) {
+    std::cout << data->P->p[i] << " ";
+  }
+  std::cout << "\n";
+
   // Define Solver settings as default
   set_default_settings(settings);
   // Default polish to true, to get an accurate solution.
   // TODO(hongkai.dai): add a setter so that we can turn off polishing.
+  SetOsqpSolverSettings(prog, settings);
   settings->polish = true;
 
   // Setup workspace

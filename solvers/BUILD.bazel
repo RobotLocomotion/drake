@@ -1030,8 +1030,8 @@ drake_cc_googletest(
     name = "osqp_solver_test",
     deps = [
         ":mathematical_program",
-        ":osqp_solver",
         ":mathematical_program_test_util",
+        ":osqp_solver",
         ":quadratic_program_examples",
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
