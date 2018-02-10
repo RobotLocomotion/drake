@@ -291,10 +291,10 @@ class MathematicalProgram {
 
   /// The optimal cost is +∞ when the problem is globally infeasible.
   static constexpr double kGlobalInfeasibleCost =
-    std::numeric_limits<double>::infinity();
+      std::numeric_limits<double>::infinity();
   /// The optimal cost is -∞ when the problem is unbounded.
   static constexpr double kUnboundedCost =
-    -std::numeric_limits<double>::infinity();
+      -std::numeric_limits<double>::infinity();
 
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
@@ -2241,6 +2241,17 @@ class MathematicalProgram {
    * this function throws a runtime error.}
    */
   int FindDecisionVariableIndex(const symbolic::Variable& var) const;
+
+  /**
+   * Returns the indices of the decision variables. Internally the solvers
+   * thinks all variables are stored in an array, and it acceses each individual
+   * variable using its index. This index is used when adding constraints
+   * and costs for each solver.
+   * @pre{@p vars are decision variables in the mathematical program, otherwise
+   * this function throws a runtime error.}
+   */
+  std::vector<int> FindDecisionVariableIndices(
+      const Eigen::Ref<const VectorXDecisionVariable>& vars) const;
 
   /**
    * Gets the solution of an Eigen matrix of decision variables.

@@ -159,6 +159,7 @@ drake_cc_library(
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
+        ":osqp_solver",
         ":scs_solver",
         ":snopt_solver",
         ":solver_id",
@@ -632,6 +633,7 @@ drake_cc_library(
     deps = select({
         "//conditions:default": adjust_labels_for_drake_hoist([
             ":mathematical_program_api",
+            "//drake/math:eigen_sparse_triplet",
             "@osqp",
         ]),
         "//tools:no_osqp": [
@@ -1021,6 +1023,17 @@ drake_cc_googletest(
         ":rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "osqp_solver_test",
+    deps = [
+        ":mathematical_program",
+        ":osqp_solver",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

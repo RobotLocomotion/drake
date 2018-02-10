@@ -1,9 +1,130 @@
 #include "drake/solvers/osqp_solver.h"
 
+#include <vector>
+
 #include "osqp.h"
+
+#include "drake/math/eigen_sparse_triplet.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
+namespace {
+void ParseQuadraticCosts(const MathematicalProgram& prog,
+                         Eigen::SparseMatrix<c_float>* P,
+                         std::vector<c_float>* q, double* constant_cost_term) {
+  DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
+
+  // Loop through each quadratic costs in prog, and compute the Hessiagn matrix
+  // P, the linear cost q, and the constant cost term.
+  std::vector<Eigen::Triplet<c_float>> P_triplets;
+  for (const auto& quadratic_cost : prog.quadratic_costs()) {
+    const VectorXDecisionVariable& x = quadratic_cost.variables();
+    // x_indices are the indices of the variables x (the variables bound with
+    // this quadratic cost) in the program decision variables.
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
+
+    // Add quadratic_cost.Q to the Hessian P.
+    const std::vector<Eigen::Triplet<double>> Qi_triplets =
+        math::SparseMatrixToTriplets(quadratic_cost.constraint()->Q());
+    P_triplets.reserve(P_triplets.size() + Qi_triplets.size());
+    for (int i = 0; i < static_cast<int>(Qi_triplets.size()); ++i) {
+      P_triplets.emplace_back(x_indices[Qi_triplets[i].row()],
+                              x_indices[Qi_triplets[i].col()],
+                              static_cast<c_float>(Qi_triplets[i].value()));
+    }
+
+    // Add quadratic_cost.b to the linear cost term q
+    for (int i = 0; i < x.rows(); ++i) {
+      q->at(x_indices[i]) += quadratic_cost.constraint()->b()(i);
+    }
+
+    // Add quadratic_cost.c to constant term
+    *constant_cost_term += quadratic_cost.constraint()->c();
+  }
+  P->resize(prog.num_vars(), prog.num_vars());
+  P->setFromTriplets(P_triplets.begin(), P_triplets.end());
+}
+
+void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
+                      double* constant_cost_term) {
+  // Add the linear costs to the osqp cost.
+  DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
+
+  // Loop over the linear costs stored inside prog
+  for (const auto& linear_cost : prog.linear_costs()) {
+    for (int i = 0; i < static_cast<int>(linear_cost.GetNumElements()); ++i) {
+      // Append the linear cost term to q
+      if (linear_cost.constraint()->a()(i) != 0) {
+        const int x_index =
+            prog.FindDecisionVariableIndex(linear_cost.variables()(i));
+        q->at(x_index) += linear_cost.constraint()->a()(i);
+      }
+    }
+    // Add the constant cost term to constant_cost_term
+    *constant_cost_term += linear_cost.constraint()->b();
+  }
+}
+
+void ParseAllLinearConstraints(const MathematicalProgram& prog,
+                               Eigen::SparseMatrix<c_float>* A,
+                               std::vector<c_float>* l,
+                               std::vector<c_float>* u) {
+  l->clear();
+  u->clear();
+  std::vector<Eigen::Triplet<c_float>> A_triplets;
+
+  int num_A_rows = 0;
+  // Loop over the linear constraints, stack them to get l, u and A.
+  for (const auto& constraint : prog.GetAllLinearConstraints()) {
+    const std::vector<int> x_indices =
+        prog.FindDecisionVariableIndices(constraint.variables());
+    const std::vector<Eigen::Triplet<double>> Ai_triplets =
+        math::SparseMatrixToTriplets(constraint.constraint()->A());
+    // Append constraint.A to osqp A.
+    for (const auto& Ai_triplet : Ai_triplets) {
+      A_triplets.emplace_back(num_A_rows + Ai_triplet.row(),
+                              x_indices[Ai_triplet.col()],
+                              static_cast<c_float>(Ai_triplet.value()));
+    }
+    const int num_Ai_rows = constraint.constraint()->num_constraints();
+    l->reserve(l->size() + num_Ai_rows);
+    u->reserve(u->size() + num_Ai_rows);
+    for (int i = 0; i < num_Ai_rows; ++i) {
+      l->push_back(
+          static_cast<c_float>(constraint.constraint()->lower_bound()(i)));
+      u->push_back(
+          static_cast<c_float>(constraint.constraint()->upper_bound()(i)));
+    }
+    num_A_rows += num_Ai_rows;
+  }
+  A->resize(num_A_rows, prog.num_vars());
+  A->setFromTriplets(A_triplets.begin(), A_triplets.end());
+}
+
+// Convert an Eigen::SparseMatrix to csc_matrix, to be used by osqp.
+// Make sure the input Eigen sparse matrix is compressed, by calling
+// makeCompressed() function.
+csc* EigenSparseToCSC(const Eigen::SparseMatrix<c_float>& mat) {
+  // A csc matrix is in the compressed column major.
+  c_float* values =
+      static_cast<c_float*>(c_malloc(sizeof(c_float) * mat.nonZeros()));
+  c_int* inner_indices =
+      static_cast<c_int*>(c_malloc(sizeof(c_int) * mat.nonZeros()));
+  c_int* outer_indices =
+      static_cast<c_int*>(c_malloc(sizeof(c_int) * (mat.cols() + 1)));
+  for (int i = 0; i < mat.nonZeros(); ++i) {
+    values[i] = *(mat.valuePtr() + i);
+    inner_indices[i] = static_cast<c_int>(*(mat.innerIndexPtr() + i));
+  }
+  for (int i = 0; i < mat.cols() + 1; ++i) {
+    outer_indices[i] = static_cast<c_int>(*(mat.outerIndexPtr() + i));
+  }
+  return csc_matrix(mat.rows(), mat.cols(), mat.nonZeros(), values,
+                    inner_indices, outer_indices);
+}
+}  // namespace
+
 bool OsqpSolver::available() const { return true; }
 
 SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
@@ -11,19 +132,100 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
   // OSQP is written in C, so this function will be in C style.
-  
+
   // Problem settings
-  OSQPSettings* settings = static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
+  OSQPSettings* settings =
+      static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
 
   // OSQP structures
   OSQPWorkspace* work;  // Workspace
+
+  // Get the cost for the QP.
+  Eigen::SparseMatrix<c_float> P_sparse;
+  std::vector<c_float> q(prog.num_vars(), 0);
+  double constant_cost_term{0};
+
+  ParseQuadraticCosts(prog, &P_sparse, &q, &constant_cost_term);
+  ParseLinearCosts(prog, &q, &constant_cost_term);
+
+  // Parse the linear constraints
+  Eigen::SparseMatrix<c_float> A_sparse;
+  std::vector<c_float> l, u;
+  ParseAllLinearConstraints(prog, &A_sparse, &l, &u);
+
+  // Now pass the constraint and cost to osqp data.
   OSQPData* data;  // OSQPData
-  
+
   // Populate data
   data = static_cast<OSQPData*>(c_malloc(sizeof(OSQPData)));
 
+  data->n = prog.num_vars();
+  data->m = A_sparse.rows();
+  data->P = EigenSparseToCSC(P_sparse);
+  data->q = q.data();
+  data->A = EigenSparseToCSC(A_sparse);
+  data->l = l.data();
+  data->u = u.data();
 
-  return SolutionResult::kSolutionFound;
+  // Define Solver settings as default
+  set_default_settings(settings);
+  // Default polish to true, to get an accurate solution.
+  // TODO(hongkai.dai): add a setter so that we can turn off polishing.
+  settings->polish = true;
+
+  // Setup workspace
+  work = osqp_setup(data, settings);
+
+  // Solve Problem
+  c_int osqp_exitflag = osqp_solve(work);
+  if (osqp_exitflag) {
+    return SolutionResult::kInvalidInput;
+  }
+
+  SolutionResult solution_result;
+  switch (work->info->status_val) {
+    case OSQP_SOLVED:
+    case OSQP_SOLVED_INACCURATE: {
+      const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
+          work->solution->x, prog.num_vars());
+      prog.SetDecisionVariableValues(osqp_sol.cast<double>());
+      prog.SetOptimalCost(work->info->obj_val + constant_cost_term);
+      solution_result = SolutionResult::kSolutionFound;
+      break;
+    }
+    case OSQP_PRIMAL_INFEASIBLE:
+    case OSQP_PRIMAL_INFEASIBLE_INACCURATE: {
+      solution_result = SolutionResult::kInfeasibleConstraints;
+      prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+      break;
+    }
+    case OSQP_DUAL_INFEASIBLE:
+    case OSQP_DUAL_INFEASIBLE_INACCURATE: {
+      solution_result = SolutionResult::kDualInfeasible;
+      break;
+    }
+    case OSQP_MAX_ITER_REACHED: {
+      solution_result = SolutionResult::kIterationLimit;
+      break;
+    }
+    default: { solution_result = SolutionResult::kUnknownError; }
+  }
+
+  // Clean workspace
+  osqp_cleanup(work);
+  c_free(data->P->x);
+  c_free(data->P->i);
+  c_free(data->P->p);
+  c_free(data->P);
+  c_free(data->A->x);
+  c_free(data->A->i);
+  c_free(data->A->p);
+  c_free(data->A);
+  c_free(data);
+  c_free(settings);
+
+  prog.SetSolverId(id());
+  return solution_result;
 }
 }  // namespace solvers
 }  // namespace drake

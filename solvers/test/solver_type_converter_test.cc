@@ -30,6 +30,8 @@ optional<SolverType> successor(optional<SolverType> solver_type) {
     case SolverType::kMosek:
       return SolverType::kNlopt;
     case SolverType::kNlopt:
+      return SolverType::kOsqp;
+    case SolverType::kOsqp:
       return SolverType::kScs;
     case SolverType::kScs:
       return SolverType::kSnopt;
