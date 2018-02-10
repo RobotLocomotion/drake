@@ -75,6 +75,11 @@ class BarycentricMesh {
   /// @param point is set to the num_inputs-by-1 location of the mesh point.
   void get_mesh_point(int index, EigenPtr<Eigen::VectorXd> point) const;
 
+  /// Returns the position of a mesh point in the input space referenced by its
+  /// scalar index to @p point.
+  /// @param index must be in [0, get_num_mesh_points).
+  VectorX<T> get_mesh_point(int index) const;
+
   /// Writes the mesh indices used for interpolation to @p mesh_indices, and the
   /// interpolating coefficients to @p weights.  Inputs that are outside the
   /// bounding box of the input_grid are interpolated as though they were
@@ -107,6 +112,10 @@ class BarycentricMesh {
   void Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
             const Eigen::Ref<const VectorX<T>>& input,
             EigenPtr<VectorX<T>> output) const;
+
+  /// Returns the function evaluated at @p input.
+  VectorX<T> Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
+                  const Eigen::Ref<const VectorX<T>>& input) const;
 
   /// Evaluates @p vector_func at all input mesh points and extracts the mesh
   /// value matrix that should be used to approximate the function with this

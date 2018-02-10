@@ -41,6 +41,9 @@ GTEST_TEST(BarycentricTest, GetMeshPoints) {
   EXPECT_TRUE(CompareMatrices(point, Vector3d{0, 2, 4}));
   bary.get_mesh_point(3, &point);
   EXPECT_TRUE(CompareMatrices(point, Vector3d{1, 2, 4}));
+
+  // Test the alternative call signature.
+  EXPECT_TRUE(CompareMatrices(bary.get_mesh_point(0), Vector3d{0, 2, 3}));
 }
 
 GTEST_TEST(BarycentricTest, EvalWeights) {
@@ -121,6 +124,9 @@ GTEST_TEST(BarycentricTest, EvalTest) {
   mesh(0, 2) = 10.;
   bary.Eval(mesh, Vector2d{.25, .75}, &value);
   EXPECT_NEAR(value[0], 6.25, 1e-8);
+
+  // Test the alternative call signature.
+  EXPECT_NEAR(bary.Eval(mesh, Vector2d{.25, .75})[0], 6.25, 1e-8);
 }
 
 GTEST_TEST(BarycentricTest, MultidimensionalOutput) {

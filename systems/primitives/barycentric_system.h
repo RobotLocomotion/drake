@@ -42,6 +42,12 @@ class BarycentricMeshSystem : public VectorSystem<T> {
     DRAKE_DEMAND(output_values_.cols() == mesh_.get_num_mesh_points());
   }
 
+  /// Returns a reference to the mesh.
+  const math::BarycentricMesh<T>& get_mesh() const { return mesh_; }
+
+  /// Returns a reference to the output values.
+  const MatrixX<T>& get_output_values() const { return output_values_; }
+
  protected:
   /// Evaluates the BarycentricMesh at the input and writes it to the output.
   virtual void DoCalcVectorOutput(
