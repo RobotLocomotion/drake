@@ -60,7 +60,7 @@ GTEST_TEST(SolverId, RoundTrip) {
   }
 
   // This should track the number of SolverType values, if we add any.
-  EXPECT_EQ(iterations, 10);
+  EXPECT_EQ(iterations, 11);
 }
 
 }  // namespace
