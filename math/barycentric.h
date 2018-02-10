@@ -46,7 +46,7 @@ class BarycentricMesh {
   // parameters and a feature matrix.
 
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BarycentricMesh);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BarycentricMesh);
 
   /// The mesh is represented by a std::set (to ensure uniqueness and provide
   /// logarithmic lookups) of coordinates in each input dimension. Note: The
@@ -108,9 +108,21 @@ class BarycentricMesh {
             const Eigen::Ref<const VectorX<T>>& input,
             EigenPtr<VectorX<T>> output) const;
 
+  /// Evaluates @p vector_func at all input mesh points and extracts the mesh
+  /// value matrix that should be used to approximate the function with this
+  /// barycentric interpolation.
+  ///
+  /// Example usages:
+  ///  MatrixXd mesh_values = bary.MeshValuesFrom(
+  ///    [](const auto& x) { return Vector1d(std::sin(x[0])); });
+  ///
+  MatrixX<T> MeshValuesFrom(
+      const std::function<VectorX<T>(const Eigen::Ref<const VectorX<T>>&)>&
+          vector_func) const;
+
  private:
-  const MeshGrid input_grid_;  // Specifies the location of the mesh points in
-                               // the input space.
+  MeshGrid input_grid_;  // Specifies the location of the mesh points in
+                         // the input space.
   std::vector<int> stride_;  // The number of elements to skip to arrive at the
                              // next value (per input dimension)
   int num_interpolants_{1};  // The number of points used in any interpolation.

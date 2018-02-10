@@ -153,6 +153,28 @@ void BarycentricMesh<T>::Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
   }
 }
 
+template <typename T>
+MatrixX<T> BarycentricMesh<T>::MeshValuesFrom(
+    const std::function<VectorX<T>(const Eigen::Ref<const VectorX<T>>&)>&
+        vector_func) const {
+  VectorX<T> sample(get_input_size());
+  const int N = get_num_mesh_points();
+
+  // Call it once to determine the size of the output and initialize memory.
+  get_mesh_point(0, &sample);
+  VectorX<T> value = vector_func(sample);
+  MatrixX<T> mesh_values(value.rows(), N);
+  mesh_values.col(0) = value;
+
+  // Now loop through all of the other points.
+  for (int i = 1; i < N; i++) {
+    get_mesh_point(i, &sample);
+    mesh_values.col(i) = vector_func(sample);
+  }
+
+  return mesh_values;
+}
+
 }  // namespace math
 }  // namespace drake
 
