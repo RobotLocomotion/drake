@@ -55,6 +55,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "barycentric_system",
+    srcs = ["barycentric_system.cc"],
+    hdrs = ["barycentric_system.h"],
+    deps = [
+        "//drake/math:barycentric",
+        "//drake/systems/framework:vector_system",
+    ],
+)
+
+drake_cc_library(
     name = "constant_value_source",
     srcs = ["constant_value_source.cc"],
     hdrs = [
@@ -303,6 +313,16 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "barycentric_system_test",
+    deps = [
+        ":barycentric_system",
+        ":matrix_gain",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
     ],
 )
 

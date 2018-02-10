@@ -1,5 +1,6 @@
 #include "drake/math/barycentric.h"
 
+#include <cmath>
 #include <memory>
 #include <set>
 #include <vector>
@@ -137,6 +138,45 @@ GTEST_TEST(BarycentricTest, MultidimensionalOutput) {
   EXPECT_TRUE(CompareMatrices(value, Vector2d{2.25, 6.25}, 1e-8));
   bary.Eval(mesh, Vector2d{.25, .75}, &value);
   EXPECT_TRUE(CompareMatrices(value, Vector2d{2.75, 6.75}, 1e-8));
+}
+
+Vector1d my_sine(const Eigen::Ref<const Vector1d>& x) {
+  return Vector1d(std::sin(x[0]));
+}
+
+// Build a BarycentricMesh from a function pointer.
+GTEST_TEST(BarycentricTest, FromVectorFunc) {
+  BarycentricMesh<double>::Coordinates x_values{0, .1, .2, 5, 204};
+
+  BarycentricMesh<double> bary({x_values});
+
+  MatrixXd mesh_values = bary.MeshValuesFrom(&my_sine);
+
+  // Check that it evaluates correctly on the grid (the interpolation is
+  // verified with the other tests).
+  Vector1d y_value;
+  for (const auto& x : x_values) {
+    bary.Eval(mesh_values, Vector1d(x), &y_value);
+    EXPECT_EQ(y_value[0], std::sin(x));
+  }
+}
+
+// Build a BarycentricMesh from a lambda expression.
+GTEST_TEST(BarycentricTest, FromLambda) {
+  BarycentricMesh<double>::Coordinates x_values{0, .1, .2, 5, 204};
+
+  BarycentricMesh<double> bary({x_values});
+
+  MatrixXd mesh_values = bary.MeshValuesFrom(
+      [](const auto& x) { return Vector1d(std::sin(x[0])); });
+
+  // Check that it evaluates correctly on the grid (the interpolation is
+  // verified with the other tests).
+  Vector1d y_value;
+  for (const auto& x : x_values) {
+    bary.Eval(mesh_values, Vector1d(x), &y_value);
+    EXPECT_EQ(y_value[0], std::sin(x));
+  }
 }
 
 }  // namespace
