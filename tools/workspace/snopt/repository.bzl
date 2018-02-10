@@ -1,16 +1,19 @@
 # -*- python -*-
 
+def _execute(repo_ctx, mnemonic, *command):
+    # Run the command, with fail() a non-zero returncode.
+    result = repo_ctx.execute(*command)
+    if result.return_code:
+        fail("Repository rule @{} error {} during {} operation: {}".format(
+            repo_ctx.name, result.return_code, mnemonic,
+            repr(result.stdout + result.stderr),
+        ))
+
 def _run_git(repo_ctx, *args):
     # Runs the git operation named in *args.  We use "--git-dir" to prevent git
     # from looking in parent directories to find the repository.  We only ever
     # want it to look where we've told it.
-    result = repo_ctx.execute(["git", "--git-dir=.git"] + list(args))
-    if result.return_code:
-        fail('Repository rule @{} error {} during git operation: {}'.format(
-            repo_ctx.name,
-            result.return_code,
-            repr(result.stdout + result.stderr),
-        ))
+    _execute(repo_ctx, "git", ["git", "--git-dir=.git"] + list(args))
 
 def _git_clone(
         repo_ctx,
@@ -34,32 +37,43 @@ def _git_clone(
     _run_git(repo_ctx, "reset", "--hard", commit)
 
 def _impl(repo_ctx):
-    # Download the snopt sources from an access-controlled git repository.
-    # We'll use git operations directly (and not the github_archive helper)
-    # because github_archive does not (yet, easily) support authentication.
-    #
-    # TODO(#7240) Allow additional configuration to allow Drake developers and
-    # users to choose archives other than git to provide the SNOPT source code.
-    # This is why the current implementation here uses a repository_rule,
-    # instead of simply calling Bazel's built-in new_git_repository.  Once we
-    # need that additional configuration, we'll no longer be able to re-use
-    # Bazel's git helpers.
-    _git_clone(
-        repo_ctx,
-        remote = repo_ctx.attr.remote,
-        commit = repo_ctx.attr.commit,
-    )
+    snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
+    if not snopt_path:
+        # Download the snopt sources from an access-controlled git repository.
+        # We'll use git operations directly (and not the github_archive helper)
+        # because github_archive does not (yet, easily) support authentication.
+        #
+        # If a user wishes to use a different protocol that ssh for the remote,
+        # note that we will respect their config file, so they can configure
+        # the protocol without changing the attributes of the repository_rule.
+        # For example:
+        # git config --global url.https://github.com/.insteadOf git@github.com:
+        _git_clone(
+            repo_ctx,
+            remote = repo_ctx.attr.remote,
+            commit = repo_ctx.attr.commit,
+        )
+    else:
+        # TODO(jwnimmer-tri) Perhaps in the future we should allow SNOPT_PATH
+        # to also refer to the *.zip format of the download, and/or an already-
+        # unpacked source archive directory.
+        if not (snopt_path.startswith("/") and snopt_path.endswith(".tar.gz")):
+            fail("SNOPT_PATH of '{}' is malformed".format(snopt_path))
+        if not repo_ctx.path(snopt_path).exists:
+            fail("SNOPT_PATH of '{}' does not exist".format(snopt_path))
+        _execute(repo_ctx, "tar", [
+            "tar", "--gunzip", "--extract",
+            "--file", repo_ctx.path(snopt_path).realpath,
+            "--strip-components=1",
+        ])
     if repo_ctx.attr.use_drake_build_rules:
         # Disable any files that came from the upstream snopt source archive.
-        result = repo_ctx.execute(["bash", "-c", """
-            set -ex
+        _execute(repo_ctx, "find-and-mv", ["bash", "-c", """
+            set -euxo pipefail
             find . -name BUILD -print0 -o -name BUILD.bazel -print0 |
                 xargs -t -n1 -0 -I{} \
                 mv {} {}.upstream-ignored
         """])
-        if result.return_code:
-            fail("Error {} during {}".format(
-                result.return_code, result.stdout + result.stderr))
         # Link Drake's BUILD file into the snopt workspace.
         repo_ctx.symlink(
             Label("@drake//tools/workspace/snopt:package.BUILD.bazel"),
@@ -71,6 +85,7 @@ snopt_repository = repository_rule(
         "commit": attr.string(default = "0f475624131c9ca4d5624e74c3f8273ccc926f9b"),  # noqa
         "use_drake_build_rules": attr.bool(default = True),
     },
+    environ = ["SNOPT_PATH"],
     local = False,
     implementation = _impl,
 )
