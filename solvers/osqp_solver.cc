@@ -66,6 +66,17 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
   }
 }
 
+// OSQP defines its own infinity in osqp/include/glob_opts.h.
+c_float ConvertInfinity(double val) {
+  if (std::isinf(val)) {
+    if (val > 0) {
+      return OSQP_INFTY;
+    }
+    return -OSQP_INFTY;
+  }
+  return static_cast<c_float>(val);
+}
+
 // Will call this function to parse both LinearConstraint and
 // LinearEqualityConstraint
 template <typename C>
@@ -90,10 +101,8 @@ void ParseLinearConstraints(const MathematicalProgram& prog,
     l->reserve(l->size() + num_Ai_rows);
     u->reserve(u->size() + num_Ai_rows);
     for (int i = 0; i < num_Ai_rows; ++i) {
-      l->push_back(
-          static_cast<c_float>(constraint.constraint()->lower_bound()(i)));
-      u->push_back(
-          static_cast<c_float>(constraint.constraint()->upper_bound()(i)));
+      l->push_back(ConvertInfinity(constraint.constraint()->lower_bound()(i)));
+      u->push_back(ConvertInfinity(constraint.constraint()->upper_bound()(i)));
     }
     *num_A_rows += num_Ai_rows;
   }
@@ -116,10 +125,8 @@ void ParseBoundingBoxConstraints(
     l->reserve(l->size() + num_Ai_rows);
     u->reserve(u->size() + num_Ai_rows);
     for (int i = 0; i < num_Ai_rows; ++i) {
-      l->push_back(
-          static_cast<c_float>(constraint.constraint()->lower_bound()(i)));
-      u->push_back(
-          static_cast<c_float>(constraint.constraint()->upper_bound()(i)));
+      l->push_back(ConvertInfinity(constraint.constraint()->lower_bound()(i)));
+      u->push_back(ConvertInfinity(constraint.constraint()->upper_bound()(i)));
     }
     *num_A_rows += num_Ai_rows;
   }
@@ -165,7 +172,9 @@ csc* EigenSparseToCSC(const Eigen::SparseMatrix<c_float>& mat) {
 }
 
 template <typename T1, typename T2>
-void SetOsqpSolverSetting(const std::map<std::string, T1>& options, const std::string& option_name, T2* osqp_setting_field) {
+void SetOsqpSolverSetting(const std::map<std::string, T1>& options,
+                          const std::string& option_name,
+                          T2* osqp_setting_field) {
   const auto it = options.find(option_name);
   if (it != options.end()) {
     *osqp_setting_field = it->second;
@@ -173,14 +182,17 @@ void SetOsqpSolverSetting(const std::map<std::string, T1>& options, const std::s
 }
 
 void SetOsqpSolverSettings(MathematicalProgram& prog, OSQPSettings* settings) {
-  const std::map<std::string, double>& options_double = prog.GetSolverOptionsDouble(OsqpSolver::id());
-  const std::map<std::string, int>& options_int= prog.GetSolverOptionsInt(OsqpSolver::id());
+  const std::map<std::string, double>& options_double =
+      prog.GetSolverOptionsDouble(OsqpSolver::id());
+  const std::map<std::string, int>& options_int =
+      prog.GetSolverOptionsInt(OsqpSolver::id());
   // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
   SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
   SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
   SetOsqpSolverSetting(options_int, "scaling", &(settings->scaling));
   SetOsqpSolverSetting(options_int, "max_iter", &(settings->max_iter));
-  SetOsqpSolverSetting(options_int, "polish_refine_iter", &(settings->polish_refine_iter));
+  SetOsqpSolverSetting(options_int, "polish_refine_iter",
+                       &(settings->polish_refine_iter));
   SetOsqpSolverSetting(options_int, "verbose", &(settings->verbose));
 }
 }  // namespace
@@ -226,23 +238,6 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   data->A = EigenSparseToCSC(A_sparse);
   data->l = l.data();
   data->u = u.data();
-
-  std::cout << "n: " << data->n << " m: " << data->m << std::endl;
-  std::cout <<"P->i:\n";
-  for (int i = 0; i < data->P->nzmax; ++i) {
-    std::cout << data->P->i[i] << " ";
-  }
-  std::cout << "\n";
-  std::cout <<"P->x:\n";
-  for (int i = 0; i < data->P->nzmax; ++i) {
-    std::cout << data->P->x[i] << " ";
-  }
-  std::cout << "\n";
-  std::cout <<"P->p:\n";
-  for (int i = 0; i < data->n + 1; ++i) {
-    std::cout << data->P->p[i] << " ";
-  }
-  std::cout << "\n";
 
   // Define Solver settings as default
   set_default_settings(settings);

@@ -93,8 +93,8 @@ GTEST_TEST(QuadraticProgramTest, TestInfeasible) {
 
   prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
   prog.AddLinearConstraint(x(0) + 2 * x(1) == 2);
-  prog.AddBoundingBoxConstraint(1, 2, x(0));
-  prog.AddBoundingBoxConstraint(2, 3, x(1));
+  prog.AddLinearConstraint(x(0) >= 1);
+  prog.AddLinearConstraint(x(1) >= 2);
 
   OsqpSolver solver;
   // The program is infeasible.
