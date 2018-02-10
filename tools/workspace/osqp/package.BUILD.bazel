@@ -20,13 +20,14 @@ cmake_configure_file(
     name = "glob_opts",
     src = "configure/glob_opts.h.in",
     out = "include/glob_opts.h",
-    # TODO(hongkai.dai): defines IS_LINUX or IS_MAC depending on the machine type.
+    # TODO(hongkai.dai): defines IS_LINUX or IS_MAC depending on the machine
+    # type.
     defines = [
         "IS_LINUX",
         "PRINTING",
         "PROFILING",
         "CTRLC",
-	"DFLOAT",
+        "DFLOAT",
         "DLONG",
         "ENABLE_MKL_PARDISO",
     ],
@@ -83,4 +84,3 @@ install(
     ],
     deps = [":install_cmake_config"],
 )
-
