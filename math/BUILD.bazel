@@ -17,6 +17,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "barycentric",
+    srcs = ["barycentric.cc"],
+    hdrs = ["barycentric.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "continuous_algebraic_riccati_equation",
     srcs = ["continuous_algebraic_riccati_equation.cc"],
     hdrs = ["continuous_algebraic_riccati_equation.h"],
@@ -190,6 +199,14 @@ drake_cc_googletest(
     deps = [
         ":autodiff",
         ":gradient",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "barycentric_test",
+    deps = [
+        ":barycentric",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
