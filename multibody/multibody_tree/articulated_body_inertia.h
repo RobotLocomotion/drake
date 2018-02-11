@@ -123,6 +123,7 @@ class ArticulatedBodyInertia {
   /// to a non-physically viable articulated body inertia.
   ///
   /// @param[in] matrix A matrix representing the articulated body inertia.
+  ///                   Only the lower triangular region is used.
   ///
   /// @throws an exception in Debug builds if IsPhysicallyValid() for `this`
   /// inertia is `false`.
@@ -155,7 +156,7 @@ class ArticulatedBodyInertia {
   /// articulated body inertia.
   ///
   /// The checks performed are:
-  ///   - The matrix is semi-positive definite.
+  ///   - The matrix is positive semi-definite.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value, bool>::type
   IsPhysicallyValid() const {
