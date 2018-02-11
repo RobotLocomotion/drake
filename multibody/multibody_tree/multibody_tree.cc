@@ -65,6 +65,20 @@ void MultibodyTree<T>::AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
 }
 
 template <typename T>
+const QuaternionFloatingMobilizer<T>&
+MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
+    const Body<T>& body) const {
+  DRAKE_DEMAND(body.get_index() != world_index());
+  const BodyTopology& body_topology = get_topology().get_body(body.get_index());
+  const QuaternionFloatingMobilizer<T>* mobilizer =
+      dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
+          &get_mobilizer(body_topology.inboard_mobilizer));
+  // TODO: just do an if and throw with nice message.
+  DRAKE_THROW_UNLESS(mobilizer != nullptr);
+  return *mobilizer;
+}
+
+template <typename T>
 void MultibodyTree<T>::FinalizeTopology() {
   // If the topology is valid it means that this MultibodyTree was already
   // finalized. Re-compilation is not allowed.

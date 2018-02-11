@@ -31,7 +31,7 @@ MakeBouncingBallPlant(double radius, double mass, const Vector3<double>& gravity
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
   SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
 
-  const RigidBody<double>& ball = plant->AddRigidBody("Sphere", M_Bcm);
+  const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_Bcm);
 
   if (geometry_system != nullptr) {
     Vector3<double> normal_W(0, 0, 1);

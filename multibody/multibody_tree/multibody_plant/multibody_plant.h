@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
+#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -390,6 +391,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_world_body();
   }
 
+  const MultibodyTree<T>& model() const { return *model_; }
+
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
   /// @see Finalize().
@@ -433,6 +436,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void DoMapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      systems::VectorBase<T>* generalized_velocity) const override;
+
+  void DoMapVelocityToQDot(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      systems::VectorBase<T>* qdot) const override;
 
   // Helper method to declare cache entries to be allocated in the context.
   void DeclareCacheEntries();

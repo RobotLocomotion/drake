@@ -41,6 +41,10 @@ using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
 
+#include <iostream>
+//#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
+#define PRINT_VARn(a) (void)a;
+
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
@@ -72,8 +76,7 @@ void MultibodyPlant<T>::RegisterGeometry(
         geometry_system->RegisterFrame(
             source_id_.value(),
             GeometryFrame(
-                // TODO: add body names!!
-                "Body" + std::to_string(body.get_index()),
+                body.get_name(),
                 /* Initial pose ??? */
                 Isometry3<double>::Identity()));
   }
@@ -148,6 +151,8 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
+  PRINT_VARn(M);
+
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
   // as output arrays. This means that both the array of applied body forces and
   // the array of applied generalized forces get overwritten on output. This is
@@ -165,7 +170,11 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
       &tau_array);
 
+  PRINT_VARn(tau_array.transpose());
+
   vdot = M.ldlt().solve(-tau_array);
+
+  PRINT_VARn(vdot.transpose());
 
   auto v = x.bottomRows(nv);
   VectorX<T> xdot(this->num_multibody_states());
@@ -173,6 +182,40 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   model_->MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
   derivatives->SetFromVector(xdot);
+}
+
+template<typename T>
+void MultibodyPlant<T>::DoMapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    systems::VectorBase<T>* generalized_velocity) const {
+  const int nq = model_->get_num_positions();
+  const int nv = model_->get_num_velocities();
+
+  DRAKE_ASSERT(qdot.size() == nq);
+  DRAKE_DEMAND(generalized_velocity != nullptr);
+  DRAKE_DEMAND(generalized_velocity->size() == nv);
+
+  VectorX<T> v(nv);
+  model_->MapQDotToVelocity(context, qdot, &v);
+  generalized_velocity->SetFromVector(v);
+}
+
+template<typename T>
+void MultibodyPlant<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+    systems::VectorBase<T>* positions_derivative) const {
+  const int nq = model_->get_num_positions();
+  const int nv = model_->get_num_velocities();
+
+  DRAKE_ASSERT(generalized_velocity.size() == nv);
+  DRAKE_DEMAND(positions_derivative != nullptr);
+  DRAKE_DEMAND(positions_derivative->size() == nq);
+
+  VectorX<T> qdot(nq);
+  model_->MapVelocityToQDot(context, generalized_velocity, &qdot);
+  positions_derivative->SetFromVector(qdot);
 }
 
 template<typename T>
@@ -254,6 +297,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const BodyIndex body_index = it.first;
     const Body<T>& body = model_->get_body(body_index);
     pose_data[pose_index++] = pc.get_X_WB(body.get_node_index());
+    PRINT_VARn(pc.get_X_WB(body.get_node_index()).matrix());
   }
 }
 
