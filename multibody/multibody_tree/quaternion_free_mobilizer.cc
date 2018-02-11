@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/quaternion_mobilizer.h"
+#include "drake/multibody/multibody_tree/quaternion_free_mobilizer.h"
 
 #include <memory>
 #include <stdexcept>
@@ -13,7 +13,7 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-Quaternion<T> BallMobilizer<T>::get_quaternion(
+Quaternion<T> QuaternionFreeMobilizer<T>::get_quaternion(
     const systems::Context<T>& context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
@@ -26,7 +26,7 @@ Quaternion<T> BallMobilizer<T>::get_quaternion(
 }
 
 template <typename T>
-const BallMobilizer<T>& BallMobilizer<T>::set_quaternion(
+const QuaternionFreeMobilizer<T>& QuaternionFreeMobilizer<T>::set_quaternion(
     systems::Context<T>* context, const Quaternion<T>& q_FM) const {
   DRAKE_DEMAND(context != nullptr);
   set_quaternion(*context, &context->get_mutable_state(), q_FM);
@@ -45,7 +45,7 @@ const BallMobilizer<T>& BallMobilizer<T>::set_quaternion(
 }
 
 template <typename T>
-const BallMobilizer<T>& BallMobilizer<T>::set_quaternion(
+const QuaternionFreeMobilizer<T>& QuaternionFreeMobilizer<T>::set_quaternion(
     const systems::Context<T>& context,
     systems::State<T>* state,
     const Quaternion<T>& q_FM) const {
@@ -61,7 +61,7 @@ const BallMobilizer<T>& BallMobilizer<T>::set_quaternion(
 }
 
 template <typename T>
-const BallMobilizer<T>& BallMobilizer<T>::SetFromRotationMatrix(
+const QuaternionFreeMobilizer<T>& QuaternionFreeMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const Matrix3<T>& R_FM) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
@@ -77,7 +77,7 @@ const BallMobilizer<T>& BallMobilizer<T>::SetFromRotationMatrix(
 }
 
 template <typename T>
-Vector3<T> BallMobilizer<T>::get_angular_velocity(
+Vector3<T> QuaternionFreeMobilizer<T>::get_angular_velocity(
     const systems::Context<T> &context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
@@ -85,7 +85,7 @@ Vector3<T> BallMobilizer<T>::get_angular_velocity(
 }
 
 template <typename T>
-const BallMobilizer<T>& BallMobilizer<T>::set_angular_velocity(
+const QuaternionFreeMobilizer<T>& QuaternionFreeMobilizer<T>::set_angular_velocity(
     systems::Context<T> *context, const Vector3<T>& w_FM) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
@@ -96,14 +96,14 @@ const BallMobilizer<T>& BallMobilizer<T>::set_angular_velocity(
 }
 
 template <typename T>
-void BallMobilizer<T>::set_zero_state(const systems::Context<T>& context,
+void QuaternionFreeMobilizer<T>::set_zero_state(const systems::Context<T>& context,
                                       systems::State<T>* state) const {
   set_quaternion(context, state, Quaternion<T>::Identity());
   this->get_mutable_velocities(state).setZero();
 }
 
 template <typename T>
-Isometry3<T> BallMobilizer<T>::CalcAcrossMobilizerTransform(
+Isometry3<T> QuaternionFreeMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -113,7 +113,7 @@ Isometry3<T> BallMobilizer<T>::CalcAcrossMobilizerTransform(
 }
 
 template <typename T>
-SpatialVelocity<T> BallMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
+SpatialVelocity<T> QuaternionFreeMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -122,7 +122,7 @@ SpatialVelocity<T> BallMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 
 template <typename T>
 SpatialAcceleration<T>
-BallMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
+QuaternionFreeMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
@@ -130,7 +130,7 @@ BallMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 }
 
 template <typename T>
-void BallMobilizer<T>::ProjectSpatialForce(
+void QuaternionFreeMobilizer<T>::ProjectSpatialForce(
     const MultibodyTreeContext<T>&,
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
@@ -139,7 +139,7 @@ void BallMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcLMatrix(
+Eigen::Matrix<T, 4, 3> QuaternionFreeMobilizer<T>::CalcLMatrix(
     const Quaternion<T>& q_FM) {
   // See Eq. 5 in Section 9.2 of Paul's book, for the time derivative of the
   // vector component of the quaternion (Euler parameters):
@@ -169,14 +169,14 @@ Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcLMatrix(
 };
 
 template <typename T>
-Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcNMatrix(
+Eigen::Matrix<T, 4, 3> QuaternionFreeMobilizer<T>::CalcNMatrix(
     const Quaternion<T>& q_FM) {
   return CalcLMatrix(
       {q_FM.w() / 2.0, q_FM.x() / 2.0, q_FM.y() / 2.0, q_FM.z() / 2.0});
 };
 
 template <typename T>
-Eigen::Matrix<T, 3, 4> BallMobilizer<T>::CalcNtransposeMatrix(
+Eigen::Matrix<T, 3, 4> QuaternionFreeMobilizer<T>::CalcNtransposeMatrix(
     const Quaternion<T>& q_FM) {
   return CalcLMatrix(
       {2.0 * q_FM.w(), 2.0 * q_FM.x(), 2.0 * q_FM.y(), 2.0 * q_FM.z()}).
@@ -184,7 +184,7 @@ Eigen::Matrix<T, 3, 4> BallMobilizer<T>::CalcNtransposeMatrix(
 };
 
 template <typename T>
-void BallMobilizer<T>::MapVelocityToQDot(
+void QuaternionFreeMobilizer<T>::MapVelocityToQDot(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
@@ -196,7 +196,7 @@ void BallMobilizer<T>::MapVelocityToQDot(
 }
 
 template <typename T>
-void BallMobilizer<T>::MapQDotToVelocity(
+void QuaternionFreeMobilizer<T>::MapQDotToVelocity(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
@@ -210,31 +210,31 @@ void BallMobilizer<T>::MapQDotToVelocity(
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
-BallMobilizer<T>::TemplatedDoCloneToScalar(
+QuaternionFreeMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
       tree_clone.get_variant(this->get_inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_variant(this->get_outboard_frame());
-  return std::make_unique<BallMobilizer<ToScalar>>(
+  return std::make_unique<QuaternionFreeMobilizer<ToScalar>>(
       inboard_frame_clone, outboard_frame_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> BallMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<double>> QuaternionFreeMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>> BallMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<AutoDiffXd>> QuaternionFreeMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class BallMobilizer<double>;
-template class BallMobilizer<AutoDiffXd>;
+template class QuaternionFreeMobilizer<double>;
+template class QuaternionFreeMobilizer<AutoDiffXd>;
 
 }  // namespace multibody
 }  // namespace drake

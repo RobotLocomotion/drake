@@ -38,11 +38,11 @@ namespace multibody {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
+class QuaternionFreeMobilizer final : public MobilizerImpl<T, 4, 3> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BallMobilizer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFreeMobilizer)
 
-  /// Constructor for a %BallMobilizer between the inboard frame F
+  /// Constructor for a %QuaternionFreeMobilizer between the inboard frame F
   /// `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
   /// single rotational degree of freedom about axis `axis_F` expressed in the
   /// inboard frame F.
@@ -53,7 +53,7 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
   /// within machine precision.
   /// @throws std::runtime_error if the provided rotational axis is not a unit
   /// vector.
-  BallMobilizer(const Frame<T>& inboard_frame_F,
+  QuaternionFreeMobilizer(const Frame<T>& inboard_frame_F,
                 const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
@@ -65,10 +65,10 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
   /// @returns q_FM
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
 
-  const BallMobilizer<T>& set_quaternion(systems::Context<T>* context,
+  const QuaternionFreeMobilizer<T>& set_quaternion(systems::Context<T>* context,
                                          const Quaternion<T>& q_FM) const;
 
-  const BallMobilizer<T>& set_quaternion(
+  const QuaternionFreeMobilizer<T>& set_quaternion(
       const systems::Context<T>& context,
       systems::State<T>* state,
       const Quaternion<T>& q_FM) const;
@@ -81,7 +81,7 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
   ///                    belongs to.
   /// @param[in] angle The desired angle in radians.
   /// @returns a constant reference to `this` mobilizer.
-  const BallMobilizer<T>& SetFromRotationMatrix(
+  const QuaternionFreeMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const Matrix3<T>& R_FM) const;
 
   /// Gets the rate of change, in radians per second, of `this` mobilizer's
@@ -101,7 +101,7 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
   /// @param[in] theta_dot The desired rate of change of `this` mobilizer's
   /// angle in radians per second.
   /// @returns a constant reference to `this` mobilizer.
-  const BallMobilizer<T>& set_angular_velocity(
+  const QuaternionFreeMobilizer<T>& set_angular_velocity(
       systems::Context<T> *context, const Vector3<T>& w_FM) const;
 
   /// Sets `state` to store a zero angle and angular rate.
