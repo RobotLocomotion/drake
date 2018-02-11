@@ -76,7 +76,7 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
       double tol = 3E-3;
       if (prog_.GetSolverId() == OsqpSolver::id()) {
         // OSQP can solve linear program, but it is likely to fail in polishing,
-        // thus the solution is less accurate. 
+        // thus the solution is less accurate.
         tol = 3E-3;
       }
       EXPECT_NEAR(prog_.GetSolution(operand_result), operand_result_expected,
