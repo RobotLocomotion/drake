@@ -20,7 +20,8 @@ std::unique_ptr<internal::BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
 #define EXPLICITLY_INSTANTIATE_IMPLS(T) \
 template class MobilizerImpl<T, 1, 1>; \
 template class MobilizerImpl<T, 3, 3>; \
-template class MobilizerImpl<T, 4, 3>;
+template class MobilizerImpl<T, 4, 3>; \
+template class MobilizerImpl<T, 7, 6>;
 
 // Explicitly instantiates on the most common scalar types.
 EXPLICITLY_INSTANTIATE_IMPLS(double);

@@ -26,6 +26,18 @@ Quaternion<T> QuaternionFloatingMobilizer<T>::get_quaternion(
 }
 
 template <typename T>
+Vector3<T> QuaternionFloatingMobilizer<T>::get_position(
+    const systems::Context<T>& context) const {
+  const MultibodyTreeContext<T>& mbt_context =
+      this->GetMultibodyTreeContextOrThrow(context);
+  auto q = this->get_positions(mbt_context);
+  DRAKE_ASSERT(q.size() == kNq);
+  // QuaternionFloatingMobilizer stores the positions after the quaternion
+  // orientation.
+  return Vector3<T>(q[4], q[5], q[6]);
+}
+
+template <typename T>
 const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_quaternion(
     systems::Context<T>* context, const Quaternion<T>& q_FM) const {
   DRAKE_DEMAND(context != nullptr);
@@ -61,6 +73,26 @@ const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_quater
 }
 
 template <typename T>
+const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_position(
+    systems::Context<T>* context, const Vector3<T>& p_FM) const {
+  DRAKE_DEMAND(context != nullptr);
+  set_position(*context, &context->get_mutable_state(), p_FM);
+  return *this;
+}
+
+template <typename T>
+const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_position(
+    const systems::Context<T>& context,
+    systems::State<T>* state,
+    const Vector3<T>& p_FM) const {
+  DRAKE_DEMAND(state != nullptr);
+  auto q = this->get_mutable_positions(state);
+  DRAKE_ASSERT(q.size() == kNq);
+  q.template tail<3>() = p_FM;  // elements 4, 5, 6.
+  return *this;
+}
+
+template <typename T>
 const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const Matrix3<T>& R_FM) const {
   MultibodyTreeContext<T>& mbt_context =
@@ -72,7 +104,7 @@ const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::SetFromRot
   // Quaternion<T> quat(v4[0], v4[1], v4[2], v4[3]);
   // Note: Notice that here we assume the ordering imposed by rotmat2quat, i.e.
   // q[0] is the "real" part and q[1:3] is the "imaginary" part.
-  q = v4;
+  q.template head<4>() = v4;
   return *this;
 }
 
@@ -81,7 +113,7 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_angular_velocity(
     const systems::Context<T> &context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
-  return this->get_velocities(mbt_context);
+  return this->get_velocities(mbt_context).template head<3>();
 }
 
 template <typename T>
@@ -91,7 +123,27 @@ const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angula
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto v = this->get_mutable_velocities(&mbt_context);
   DRAKE_ASSERT(v.size() == kNv);
-  v = w_FM;
+  v.template head<3>() = w_FM;
+  return *this;
+}
+
+template <typename T>
+Vector3<T> QuaternionFloatingMobilizer<T>::get_translational_velocity(
+    const systems::Context<T> &context) const {
+  const MultibodyTreeContext<T>& mbt_context =
+      this->GetMultibodyTreeContextOrThrow(context);
+  return this->get_velocities(mbt_context).template tail<3>();
+}
+
+template <typename T>
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_translational_velocity(
+    systems::Context<T>* context, const Vector3<T>& v_FM) const {
+  MultibodyTreeContext<T>& mbt_context =
+      this->GetMutableMultibodyTreeContextOrThrow(context);
+  auto v = this->get_mutable_velocities(&mbt_context);
+  DRAKE_ASSERT(v.size() == kNv);
+  v.template tail<3>() = v_FM;
   return *this;
 }
 
@@ -99,6 +151,7 @@ template <typename T>
 void QuaternionFloatingMobilizer<T>::set_zero_state(const systems::Context<T>& context,
                                       systems::State<T>* state) const {
   set_quaternion(context, state, Quaternion<T>::Identity());
+  set_position(context, state, Vector3<T>::Zero());
   this->get_mutable_velocities(state).setZero();
 }
 
@@ -108,16 +161,18 @@ Isometry3<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
   Isometry3<T> X_FM = Isometry3<T>::Identity();
-  X_FM.linear() = math::quat2rotmat(q);
+  X_FM.linear() = math::quat2rotmat(q.template head<4>());  // R_FM
+  X_FM.translation() = q.template tail<3>();  // p_FM
   return X_FM;
 }
 
 template <typename T>
 SpatialVelocity<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>&,
+    const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(v, Vector3<T>::Zero());
+  return SpatialVelocity<T>(get_angular_velocity(context),
+                            get_translational_velocity(context));
 }
 
 template <typename T>
@@ -126,7 +181,9 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  return SpatialAcceleration<T>(vdot, Vector3<T>::Zero());
+  const auto& alpha_FM = vdot.template head<3>();
+  const auto& a_FM = vdot.template tail<3>();
+  return SpatialAcceleration<T>(alpha_FM, a_FM);
 }
 
 template <typename T>
@@ -135,7 +192,7 @@ void QuaternionFloatingMobilizer<T>::ProjectSpatialForce(
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau = F_Mo_F.rotational();
+  tau = F_Mo_F.get_coeffs();
 }
 
 template <typename T>
@@ -169,18 +226,27 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
 };
 
 template <typename T>
-Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcNMatrix(
+Eigen::Matrix<T, 7, 6> QuaternionFloatingMobilizer<T>::CalcNMatrix(
     const Quaternion<T>& q_FM) {
-  return CalcLMatrix(
+  const Eigen::Matrix<T, 4, 3> L = CalcLMatrix(
       {q_FM.w() / 2.0, q_FM.x() / 2.0, q_FM.y() / 2.0, q_FM.z() / 2.0});
+  Eigen::Matrix<T, 7, 6> N = Eigen::Matrix<T, 7, 6>::Zero();
+  N.template topLeftCorner<4, 3>() = L;
+  N.template bottomRightCorner<3, 3>() = Matrix3<T>::Identity();
+  return N;
 };
 
 template <typename T>
-Eigen::Matrix<T, 3, 4> QuaternionFloatingMobilizer<T>::CalcNtransposeMatrix(
+Eigen::Matrix<T, 6, 7> QuaternionFloatingMobilizer<T>::CalcNtransposeMatrix(
     const Quaternion<T>& q_FM) {
-  return CalcLMatrix(
-      {2.0 * q_FM.w(), 2.0 * q_FM.x(), 2.0 * q_FM.y(), 2.0 * q_FM.z()}).
-      transpose();
+  const Eigen::Matrix<T, 3, 4> LT =
+      CalcLMatrix(
+          {2.0 * q_FM.w(), 2.0 * q_FM.x(), 2.0 * q_FM.y(), 2.0 * q_FM.z()}).
+          transpose();
+  Eigen::Matrix<T, 6, 7> Nplus = Eigen::Matrix<T, 6, 7>::Zero();
+  Nplus.template topLeftCorner<3, 4>() = LT;
+  Nplus.template bottomRightCorner<3, 3>() = Matrix3<T>::Identity();
+  return Nplus;
 };
 
 template <typename T>

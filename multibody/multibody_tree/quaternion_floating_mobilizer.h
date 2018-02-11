@@ -38,7 +38,7 @@ namespace multibody {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 4, 3> {
+class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer)
 
@@ -65,6 +65,9 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 4, 3> {
   /// @returns q_FM
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
 
+  /// @returns p_FM
+  Vector3<T> get_position(const systems::Context<T>& context) const;
+
   const QuaternionFloatingMobilizer<T>& set_quaternion(systems::Context<T>* context,
                                          const Quaternion<T>& q_FM) const;
 
@@ -72,6 +75,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 4, 3> {
       const systems::Context<T>& context,
       systems::State<T>* state,
       const Quaternion<T>& q_FM) const;
+
+  const QuaternionFloatingMobilizer<T>& set_position(
+      systems::Context<T>* context, const Vector3<T>& p_FM) const;
+
+  const QuaternionFloatingMobilizer<T>& set_position(
+      const systems::Context<T>& context,
+      systems::State<T>* state,
+      const Vector3<T>& p_FM) const;
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
   /// rotation angle of `this` mobilizer equals `angle`.
@@ -103,6 +114,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 4, 3> {
   /// @returns a constant reference to `this` mobilizer.
   const QuaternionFloatingMobilizer<T>& set_angular_velocity(
       systems::Context<T> *context, const Vector3<T>& w_FM) const;
+
+  Vector3<T> get_translational_velocity(
+      const systems::Context<T> &context) const;
+
+  const QuaternionFloatingMobilizer<T>& set_translational_velocity(
+      systems::Context<T> *context, const Vector3<T>& v_FM) const;
 
   /// Sets `state` to store a zero angle and angular rate.
   void set_zero_state(const systems::Context<T>& context,
@@ -176,7 +193,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 4, 3> {
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 4, 3> MobilizerBase;
+  typedef MobilizerImpl<T, 7, 6> MobilizerBase;
   // Bring the handy number of position and velocities MobilizerImpl enums into
   // this class' scope. This is useful when writing mathematical expressions
   // with fixed-sized vectors since we can do things like Vector<T, nq>.
@@ -187,8 +204,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 4, 3> {
   using MobilizerBase::kNv;
 
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
-  static Eigen::Matrix<T, 4, 3> CalcNMatrix(const Quaternion<T>& q);
-  static Eigen::Matrix<T, 3, 4> CalcNtransposeMatrix(const Quaternion<T>& q);
+  static Eigen::Matrix<T, 7, 6> CalcNMatrix(const Quaternion<T>& q);
+  static Eigen::Matrix<T, 6, 7> CalcNtransposeMatrix(const Quaternion<T>& q);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
