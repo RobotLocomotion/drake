@@ -5,6 +5,10 @@
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
+#include <iostream>
+//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+#define PRINT_VARn(a) (void)a;
+
 namespace drake {
 namespace multibody {
 namespace multibody_tree {
@@ -76,6 +80,8 @@ void FloatingBodyPlant<T>::DoCalcTimeDerivatives(
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
+  PRINT_VARn("DoCalcTimeDerivatives()");
+
   const int nq = model_.get_num_positions();
   const int nv = model_.get_num_velocities();
 
@@ -93,11 +99,17 @@ void FloatingBodyPlant<T>::DoCalcTimeDerivatives(
 
   // Check if M is symmetric.
   const T err_sym = (M - M.transpose()).norm();
+
+  PRINT_VARn(M);
+  PRINT_VARn(err_sym);
+
   DRAKE_DEMAND(err_sym < 10 * std::numeric_limits<double>::epsilon());
 
 
   PositionKinematicsCache<T> pc(model_.get_topology());
   VelocityKinematicsCache<T> vc(model_.get_topology());
+  model_.CalcPositionKinematicsCache(context, &pc);
+  model_.CalcVelocityKinematicsCache(context, pc, &vc);
   model_.CalcForceElementsContribution(context, pc, vc, &forces);
 
   // With vdot = 0, this computes:
@@ -111,13 +123,20 @@ void FloatingBodyPlant<T>::DoCalcTimeDerivatives(
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
       &tau_array);
 
+  PRINT_VARn(tau_array.transpose());
+
   vdot = M.ldlt().solve(-tau_array);
+
+  PRINT_VARn(vdot.transpose());
 
   auto v = x.bottomRows(nv);
   VectorX<T> xdot(model_.get_num_states());
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
+
+  PRINT_VARn(xdot.transpose());
+
   derivatives->SetFromVector(xdot);
 }
 
@@ -129,12 +148,19 @@ void FloatingBodyPlant<T>::DoMapQDotToVelocity(
   const int nq = model_.get_num_positions();
   const int nv = model_.get_num_velocities();
 
+
+  PRINT_VARn("DoMapQDotToVelocity()");
+
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
   DRAKE_DEMAND(generalized_velocity->size() == nv);
 
   VectorX<T> v(nv);
   model_.MapQDotToVelocity(context, qdot, &v);
+
+  PRINT_VARn(qdot.transpose());
+  PRINT_VARn(v.transpose());
+
   generalized_velocity->SetFromVector(v);
 }
 
@@ -146,12 +172,18 @@ void FloatingBodyPlant<T>::DoMapVelocityToQDot(
   const int nq = model_.get_num_positions();
   const int nv = model_.get_num_velocities();
 
+  PRINT_VARn("DoMapVelocityToQDot()");
+
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);
   DRAKE_DEMAND(positions_derivative->size() == nq);
 
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, generalized_velocity, &qdot);
+
+  PRINT_VARn(generalized_velocity.transpose());
+  PRINT_VARn(qdot.transpose());
+
   positions_derivative->SetFromVector(qdot);
 }
 
@@ -170,6 +202,12 @@ template<typename T>
 Vector3<T> FloatingBodyPlant<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
   return mobilizer_->get_angular_velocity(context);
+}
+
+template<typename T>
+Vector3<T> FloatingBodyPlant<T>::get_translational_velocity(
+    const systems::Context<T>& context) const {
+  return mobilizer_->get_translational_velocity(context);
 }
 
 template<typename T>

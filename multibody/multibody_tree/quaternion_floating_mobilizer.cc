@@ -204,11 +204,11 @@ Isometry3<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(get_angular_velocity(context),
-                            get_translational_velocity(context));
+  return SpatialVelocity<T>(v.template head<3>(),   // w_FM
+                            v.template tail<3>());  // v_FM
 }
 
 template <typename T>

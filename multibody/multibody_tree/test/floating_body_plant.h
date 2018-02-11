@@ -57,6 +57,8 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
   /// in the world frame W.
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
+  Vector3<T> get_translational_velocity(const systems::Context<T>& context) const;
+
   /// Stores in `context` the value of the angular velocity `w_WB` of the body
   /// in the world frame W.
   void set_angular_velocity(

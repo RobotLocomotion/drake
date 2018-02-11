@@ -197,6 +197,20 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "floating_body_test",
+    size = "small",
+    srcs = [
+        "test/floating_body_test.cc",
+    ],
+    deps = [
+        ":floating_body_plant",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/free_body",
+        "//drake/systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "tree_from_mobilizers_test",
     # Presently times out in valgrind + debug with default size, "small".
     size = "medium",
