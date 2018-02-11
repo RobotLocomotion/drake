@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_context.h"
+#include "drake/geometry/query_results/penetration_as_point_pair.h"
 
 namespace drake {
 namespace geometry {
@@ -81,6 +82,34 @@ class QueryObject {
    @throws  std::runtime_error if the %QueryObject is in default configuration.
    @throws  std::logic_error if the geometry id is invalid. */
   FrameId GetFrameId(GeometryId geometry_id) const;
+
+  //@}
+
+  //----------------------------------------------------------------------------
+  /** @name                Collision Queries
+
+   These queries detect _collisions_ between geometry. Two geometries collide
+   if they overlap each other and are not explicitly excluded through
+   @ref collision_filter_concepts "collision filtering". These algorithms find
+   those colliding cases, characterize them, and report the essential
+   characteristics of that collision.  */
+  //@{
+
+  /** Computes the penetrations across all pairs of geometries in the world.
+   Only reports results for _penetrating_ geometries; if two geometries are
+   separated, there will be no result for that pair. Pairs of _anchored_
+   geometry are also not reported. The penetration between two geometries is
+   characterized as a point pair (see PenetrationAsPointPair).
+
+   @internal This method is affected by collision filtering; element pairs that
+   have been filtered will not produce contacts, even if their collision
+   geometry is penetrating.
+   TODO(SeanCurtis-TRI): THis isn't true yet.
+
+   @returns A vector populated with all detected penetrations characterized as
+            point pairs. */
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+      const;
 
   //@}
 
