@@ -11,6 +11,7 @@ namespace internal {
 template class BodyNodeImpl<T, 1, 1>; \
 template class BodyNodeImpl<T, 2, 2>; \
 template class BodyNodeImpl<T, 3, 3>; \
+template class BodyNodeImpl<T, 4, 3>; \
 template class BodyNodeImpl<T, 4, 4>; \
 template class BodyNodeImpl<T, 5, 5>; \
 template class BodyNodeImpl<T, 6, 6>; \

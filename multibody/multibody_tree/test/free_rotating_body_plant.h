@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/quaternion_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -38,7 +39,7 @@ class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
   ///   revolution of the body.
   /// @param J
   ///   rotational inertia about the axis of revolution of the body.
-  FreeRotatingBodyPlant(double I, double J);
+  FreeRotatingBodyPlant(double I, double J, bool with_quaternion = false);
 
   /// Scalar-converting copy constructor.
   template <typename U>
@@ -98,7 +99,9 @@ class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
   double J_{0};
   MultibodyTree<T> model_;
   const RigidBody<T>* body_{nullptr};
-  const SpaceXYZMobilizer<T>* mobilizer_{nullptr};
+  bool with_quaternion_{false};
+  const SpaceXYZMobilizer<T>* space_xyx_mobilizer_{nullptr};
+  const QuaternionMobilizer<T>* quaternion_mobilizer_{nullptr};
 };
 
 }  // namespace test
