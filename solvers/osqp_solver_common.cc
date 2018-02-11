@@ -4,6 +4,9 @@
 
 #include "drake/common/never_destroyed.h"
 
+// This file contains implementations that are common to both the available and
+// unavailable flavor of this class.
+
 namespace drake {
 namespace solvers {
 
