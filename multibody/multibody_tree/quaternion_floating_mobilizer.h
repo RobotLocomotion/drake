@@ -115,13 +115,22 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   const QuaternionFloatingMobilizer<T>& set_angular_velocity(
       systems::Context<T> *context, const Vector3<T>& w_FM) const;
 
+  const QuaternionFloatingMobilizer<T>& set_angular_velocity(
+      const systems::Context<T>&, const Vector3<T>& w_FM,
+      systems::State<T>* state) const;
+
   Vector3<T> get_translational_velocity(
       const systems::Context<T> &context) const;
 
   const QuaternionFloatingMobilizer<T>& set_translational_velocity(
       systems::Context<T> *context, const Vector3<T>& v_FM) const;
 
-  /// Sets `state` to store a zero angle and angular rate.
+  const QuaternionFloatingMobilizer<T>& set_translational_velocity(
+      const systems::Context<T>&, const Vector3<T>& v_FM,
+      systems::State<T>* state) const;
+
+
+    /// Sets `state` to store a zero angle and angular rate.
   void set_zero_state(const systems::Context<T>& context,
                       systems::State<T>* state) const override;
 

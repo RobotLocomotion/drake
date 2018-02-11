@@ -118,6 +118,23 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_angular_velocity(
 
 template <typename T>
 const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angular_velocity(
+    systems::Context<T>* context, const Vector3<T>& w_FM) const {
+  return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
+}
+
+template <typename T>
+const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angular_velocity(
+    const systems::Context<T>&, const Vector3<T>& w_FM,
+    systems::State<T>* state) const {
+  auto v = this->get_mutable_velocities(state);
+  DRAKE_ASSERT(v.size() == kNv);
+  v.template head<3>() = w_FM;
+  return *this;
+}
+
+#if 0
+template <typename T>
+const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angular_velocity(
     systems::Context<T> *context, const Vector3<T>& w_FM) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
@@ -126,6 +143,7 @@ const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angula
   v.template head<3>() = w_FM;
   return *this;
 }
+#endif
 
 template <typename T>
 Vector3<T> QuaternionFloatingMobilizer<T>::get_translational_velocity(
@@ -135,6 +153,23 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_translational_velocity(
   return this->get_velocities(mbt_context).template tail<3>();
 }
 
+template <typename T>
+const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_translational_velocity(
+    systems::Context<T>* context, const Vector3<T>& v_FM) const {
+  return set_angular_velocity(*context, v_FM, &context->get_mutable_state());
+}
+
+template <typename T>
+const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_translational_velocity(
+    const systems::Context<T>&, const Vector3<T>& v_FM,
+    systems::State<T>* state) const {
+  auto v = this->get_mutable_velocities(state);
+  DRAKE_ASSERT(v.size() == kNv);
+  v.template tail<3>() = v_FM;
+  return *this;
+}
+
+#if 0
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_translational_velocity(
@@ -146,6 +181,7 @@ QuaternionFloatingMobilizer<T>::set_translational_velocity(
   v.template tail<3>() = v_FM;
   return *this;
 }
+#endif
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::set_zero_state(const systems::Context<T>& context,
