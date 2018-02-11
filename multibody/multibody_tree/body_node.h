@@ -1028,7 +1028,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // that this articulated body inertia has some non-physical quantities
     // (such as zero moment of inertia along an axis which the hinge mapping
     // matrix permits motion).
-    DRAKE_DEMAND(ldlt_D_PB_W.info() == Eigen::Success);
+    if (ldlt_D_PB_W.info() != Eigen::Success) {
+      std::stringstream message;
+      message << "Encountered singular articulated body hinge inertia "
+              << "for body node index " << topology_.index << ". "
+              << "Please ensure that this body has non-zero inertia "
+              << "along all axes of motion.";
+      throw std::runtime_error(message.str());
+    }
 
     // Compute the Kalman gain, g_PB_W, using (6).
     const MatrixUpTo6<T> g_PB_W = ldlt_D_PB_W.solve(HTxP).transpose();

@@ -1353,8 +1353,7 @@ class MultibodyTree {
   /// These include:
   /// - Articulated body inertia `Pplus_PB_W` for the articulated body subsystem
   ///   formed by all bodies outboard from body B, projected across its inboard
-  ///   mobilizer to frame P, about point Bo, and expressed in the world
-  ///   frame W.
+  ///   mobilizer, about point Bo, and expressed in the world frame W.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
@@ -1373,9 +1372,9 @@ class MultibodyTree {
   ///   throws an exception if `abc` is a nullptr.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
+  /// call to CalcPositionKinematicsCache() using the same `context`  .
   /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
+  /// call to CalcVelocityKinematicsCache() using the same `context`.
   void CalcArticulatedBodyCache(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
