@@ -105,6 +105,28 @@ GTEST_TEST(QuadraticProgramTest, TestInfeasible) {
               MathematicalProgram::kGlobalInfeasibleCost);
   }
 }
+
+GTEST_TEST(LinearProgramTest, TestUnbounded) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddLinearCost(x(0) + x(1));
+
+  // This problem is unbounded.
+  OsqpSolver solver;
+  if (solver.available()) {
+    const SolutionResult result = solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+  }
+
+  // Add some constraint, the program is still unbounded.
+  prog.AddLinearConstraint(x(0) >= 1);
+  prog.AddLinearConstraint(x(1) <= 2);
+  if (solver.available()) {
+    const SolutionResult result = solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
