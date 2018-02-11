@@ -555,8 +555,13 @@ class MultibodyTree {
     joint_name_to_index_[name] = joint.get_index();
     return joint;
   }
+
+  // This method adds a QuaternionFreeMobilizer to all bodies that do not have
+  // a mobilizer. The mobilizer is between each body and the world.
+  void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
+
   /// @}
-  // Closes Doxygen section.
+  // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
   /// Returns the number of Frame objects in the MultibodyTree.
   /// Frames include body frames associated with each of the bodies in

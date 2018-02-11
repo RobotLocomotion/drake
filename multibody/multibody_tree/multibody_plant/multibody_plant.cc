@@ -5,10 +5,31 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
+#include "drake/geometry/frame_id_vector.h"
+#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_instance.h"
 
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
+
+using Eigen::Isometry3d;
+using Eigen::Translation3d;
+using Eigen::Vector3d;
+
+using geometry::Cylinder;
+using geometry::FrameId;
+using geometry::FrameIdVector;
+using geometry::FramePoseVector;
+using geometry::GeometryFrame;
+using geometry::GeometryInstance;
+using geometry::GeometrySystem;
+using geometry::SourceId;
+using geometry::Sphere;
+using systems::InputPortDescriptor;
+using systems::OutputPort;
+using systems::State;
 
 using drake::multibody::MultibodyForces;
 using drake::multibody::MultibodyTree;
@@ -35,10 +56,57 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
 }
 
 template<typename T>
+void MultibodyPlant<T>::RegisterGeometry(
+    const Body<T>& body,
+    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    geometry::GeometrySystem<double>* geometry_system) {
+  DRAKE_THROW_UNLESS(!this->is_finalized());
+
+  // If not already done, register with the provided geometry system.
+  if (!geometry_source_is_registered())
+    source_id_ = geometry_system->RegisterSource("MultibodyPlant");
+
+  // If not already done, register a frame for this body.
+  if (!body_has_registered_frame(body)) {
+    body_index_to_frame_id_[body.get_index()] =
+        geometry_system->RegisterFrame(
+            source_id_.value(),
+            GeometryFrame(
+                // TODO: add body names!!
+                "Body" + std::to_string(body.get_index()),
+                /* Initial pose ??? */
+                Isometry3<double>::Identity()));
+  }
+
+  // Register geometry in the body frame.
+  geometry_system->RegisterGeometry(
+      source_id_.value(), body_index_to_frame_id_[body.get_index()],
+      std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
+}
+
+template<typename T>
+void MultibodyPlant<T>::RegisterAnchoredGeometry(
+    const Isometry3<double>& X_WG, const geometry::Shape& shape,
+    geometry::GeometrySystem<double>* geometry_system) {
+  DRAKE_THROW_UNLESS(!this->is_finalized());
+
+  // If not already done, register with the provided geometry system.
+  if (!geometry_source_is_registered())
+    source_id_ = geometry_system->RegisterSource("MultibodyPlant");
+
+  geometry_system->RegisterAnchoredGeometry(
+      source_id_.value(),
+      std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
+}
+
+template<typename T>
 void MultibodyPlant<T>::Finalize() {
+  model_->AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
   model_->Finalize();
   DeclareStateAndPorts();
-  // TODO(amcastro-tri): Declare GeometrySystem ports.
+  // Only declare ports to communicate with a GeometrySystem if the plant is
+  // provided with a valid source id.
+  if (source_id_) DeclareGeometrySystemPorts();
   DeclareCacheEntries();
 }
 
@@ -120,6 +188,89 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   // TODO(amcastro-tri): Declare input ports for actuators.
 
   // TODO(amcastro-tri): Declare output port for the state.
+}
+
+template<typename T>
+void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
+  geometry_id_port_ =
+      this->DeclareAbstractOutputPort(
+          &MultibodyPlant::AllocateFrameIdOutput,
+          &MultibodyPlant::CalcFrameIdOutput).get_index();
+  geometry_pose_port_ =
+      this->DeclareAbstractOutputPort(
+          &MultibodyPlant::AllocateFramePoseOutput,
+          &MultibodyPlant::CalcFramePoseOutput).get_index();
+}
+
+template <typename T>
+FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
+    const Context<T>&) const {
+  DRAKE_DEMAND(source_id_ != nullopt);
+  // User must be done adding elements to the model.
+  DRAKE_DEMAND(model_->topology_is_valid());
+  FrameIdVector ids(source_id_.value());
+  // Add a frame for the one single body in this model.
+  // ids are ordered by body index. This must be consistent with the order in
+  // which CalcFramePoseOutput() places the poses in its output.
+  // Not all bodies need go have geometry.
+  for (auto it : body_index_to_frame_id_)
+    ids.AddFrameId(it.second);
+  return ids;
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcFrameIdOutput(
+    const Context<T>&, FrameIdVector*) const {
+  // Just a sanity check.
+  DRAKE_DEMAND(source_id_ != nullopt);
+  // NOTE: This only needs to do work if the topology changes. This system makes
+  // no topology changes.
+}
+
+template <typename T>
+FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
+    const Context<T>&) const {
+  DRAKE_DEMAND(source_id_ != nullopt);
+  FramePoseVector<T> poses(source_id_.value());
+  // Only the pose for bodies for which geometry has been regiestered needs to
+  // be placed in the output.
+  const int num_bodies_with_geometry = body_index_to_frame_id_.size();
+  poses.mutable_vector().resize(num_bodies_with_geometry);
+  return poses;
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcFramePoseOutput(
+    const Context<T>& context, FramePoseVector<T>* poses) const {
+  DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == (num_bodies() - 1));
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+
+  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
+  // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
+  // lands.
+  int pose_index = 0;
+  for (const auto it : body_index_to_frame_id_) {
+    const BodyIndex body_index = it.first;
+    const Body<T>& body = model_->get_body(body_index);
+    pose_data[pose_index++] = pc.get_X_WB(body.get_node_index());
+  }
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
+const {
+  DRAKE_THROW_UNLESS(is_finalized());
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  return systems::System<T>::get_output_port(geometry_id_port_);
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
+const {
+  DRAKE_THROW_UNLESS(is_finalized());
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
 template<typename T>

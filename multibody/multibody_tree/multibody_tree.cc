@@ -9,6 +9,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
+#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
@@ -44,6 +45,23 @@ template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
   world_body_ = &AddBody<RigidBody>(SpatialInertia<double>());
+}
+
+template <typename T>
+void MultibodyTree<T>::AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
+  // Do not call on not finalized tree, thought it should be a no-op in that
+  // case?
+  DRAKE_DEMAND(!topology_is_valid());
+  // Skip the world.
+  for (BodyIndex body_index(1); body_index < get_num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const BodyTopology& body_topology =
+        get_topology().get_body(body.get_index());
+    if (!body_topology.inboard_mobilizer.is_valid()) {
+      this->template AddMobilizer<QuaternionFloatingMobilizer>(
+          get_world_body().get_body_frame(), body.get_body_frame());
+    }
+  }
 }
 
 template <typename T>
