@@ -184,10 +184,27 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const double L = 1.5;
   const double I_perp = (3.0 * r * r + L * L) / 12.0;
   const double I_axial = r * r / 2.0;
-  const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
-  UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+  const UnitInertia<double> Gz_expected(I_perp, I_perp, I_axial);
+  // Compute the unit of inertia for a cylinder oriented along the z-axis
+  // (the default).
+  UnitInertia<double> Gz =
+      UnitInertia<double>::SolidCylinder(r, L);
+  EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(
+      Gz_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Compute the unit of inertia for a cylinder oriented along the x-axis.
+  const UnitInertia<double> Gx =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitX());
+  const UnitInertia<double> Gx_expected(I_axial, I_perp, I_perp);
+  EXPECT_TRUE(Gx.CopyToFullMatrix3().isApprox(
+      Gx_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Compute the unit of inertia for a cylinder oriented along the y-axis.
+  const UnitInertia<double> Gy =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitY());
+  const UnitInertia<double> Gy_expected(I_perp, I_axial, I_perp);
+  EXPECT_TRUE(Gy.CopyToFullMatrix3().isApprox(
+      Gy_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder
