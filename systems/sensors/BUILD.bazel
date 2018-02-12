@@ -86,6 +86,7 @@ drake_cc_library(
     deps = [
         "//drake/common:essential",
         "//drake/common:reinit_after_move",
+        "//drake/common:symbolic",
     ],
 )
 

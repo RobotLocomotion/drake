@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "drake/common/symbolic.h"
+
 namespace drake {
 namespace systems {
 namespace sensors {
@@ -13,6 +15,7 @@ namespace sensors {
 ///   - I: int
 ///   - U: unsigned int
 ///   - F: float
+///   - E: symbolic::Expression
 enum class PixelType {
   /// The pixel format used by ImageRgb8U.
   kRgb8U = 0,
@@ -30,8 +33,9 @@ enum class PixelType {
   kDepth32F,
   /// The pixel format used by ImageLabel16I.
   kLabel16I,
+  /// The pixel format representing symbolic::Expression.
+  kExpr1E,
 };
-
 
 /// The enum class to be used to express semantic meaning of pixels.
 /// This also expresses the order of channels in a pixel if the pixel has
@@ -51,6 +55,8 @@ enum class PixelFormat {
   kDepth,
   /// The pixel format used for all the labe images.
   kLabel,
+  /// The pixel format used for all the symbolic images.
+  kExpr,
 };
 
 /// Traits class for Image.
@@ -111,6 +117,13 @@ struct ImageTraits<PixelType::kGrey8U> {
   typedef uint8_t ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kGrey;
+};
+
+template <>
+struct ImageTraits<PixelType::kExpr1E> {
+  typedef symbolic::Expression ChannelType;
+  static constexpr int kNumChannels = 1;
+  static constexpr PixelFormat kPixelFormat = PixelFormat::kExpr;
 };
 
 }  // namespace sensors
