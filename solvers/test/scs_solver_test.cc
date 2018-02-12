@@ -42,7 +42,7 @@ GTEST_TEST(LinearProgramTest, Test0) {
 
   // The accuracy of SCS is not high, so we choose 1E-2 here, 10x the
   // epsilon defined in SCS.
-  const double tol{1E-2};
+  const double tol{1E-5};
   // Now add the constraint x(0) <= 5. The problem is
   // min x(0) + 2x(1)
   // s.t x(0) + x(1) = 2
@@ -131,7 +131,7 @@ GTEST_TEST(LinearProgramTest, Test2) {
 
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    const double tol{1E-2};
+    const double tol{2E-5};
     const SolutionResult sol_result = scs_solver.Solve(prog);
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
     EXPECT_NEAR(prog.GetOptimalCost(), 8, tol);
@@ -174,7 +174,7 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
     // SCS is inaccurate, choose a large tolerance.
-    SolveAndCheckSolution(scs_solver, 1.3e-3);
+    SolveAndCheckSolution(scs_solver, 1e-5);
   }
 }
 
@@ -185,7 +185,7 @@ TEST_P(TestQPasSOCP, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
     // SCS is inaccurate, choose a large tolerance.
-    SolveAndCheckSolution(scs_solver, 2E-4);
+    SolveAndCheckSolution(scs_solver, 1E-5);
   }
 }
 
@@ -196,7 +196,7 @@ TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
     // SCS is inaccurate, choose a large tolerance.
-    SolveAndCheckSolution(scs_solver, 2E-3);
+    SolveAndCheckSolution(scs_solver, 1E-5);
   }
 }
 
