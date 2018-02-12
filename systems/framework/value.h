@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
@@ -9,6 +10,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/is_cloneable.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 namespace systems {
@@ -114,6 +116,10 @@ class AbstractValue {
   /// Like SetFrom, but throws on mismatched types even in Release builds.
   virtual void SetFromOrThrow(const AbstractValue& other) = 0;
 
+  /// Returns a human-readable name for the underlying type T. This may be
+  /// slow but is useful for error messages.
+  virtual std::string GetNiceTypeName() const = 0;
+
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, std::bad_cast will be
@@ -130,6 +136,15 @@ class AbstractValue {
   template <typename T>
   const T& GetValueOrThrow() const {
     return DownCastOrThrow<T>()->get_value();
+  }
+
+  /// Like GetValue, but quietly fails to return a value on mismatched types,
+  /// even in Release builds.
+  template <typename T>
+  const T* GetValueIfPossible() const {
+    const Value<T>* value = dynamic_cast<const Value<T>*>(this);
+    if (value == nullptr) return nullptr;
+    return &value->get_value();
   }
 
   /// Returns the value wrapped in this AbstractValue, which must be of
@@ -318,6 +333,10 @@ class Value : public AbstractValue {
 
   void SetFromOrThrow(const AbstractValue& other) override {
     value_ = Traits::to_storage(other.GetValueOrThrow<T>());
+  }
+
+  std::string GetNiceTypeName() const override {
+    return NiceTypeName::Get<T>();
   }
 
   /// Returns a const reference to the stored value.

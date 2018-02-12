@@ -148,12 +148,38 @@ TYPED_TEST(TypedValueTest, Make) {
   EXPECT_EQ(42, abstract_value->template GetValue<T>());
 }
 
+GTEST_TEST(ValueTest, NiceTypeName) {
+  auto double_value = AbstractValue::Make<double>(3.);
+  auto string_value = AbstractValue::Make<std::string>("hello");
+
+  EXPECT_EQ(double_value->GetNiceTypeName(), "double");
+  EXPECT_EQ(string_value->GetNiceTypeName(), "std::string");
+}
+
+// Check that GetValueIfPossible() returns nullptr for wrong-type requests,
+// and returns the correct value for right-type requests.
+GTEST_TEST(ValueTest, GetValueIfPossible) {
+  auto double_value = AbstractValue::Make<double>(3.);
+  auto string_value = AbstractValue::Make<std::string>("hello");
+  
+  EXPECT_EQ(double_value->GetValueIfPossible<std::string>(), nullptr);
+  EXPECT_EQ(string_value->GetValueIfPossible<double>(), nullptr);
+
+  ASSERT_NE(double_value->GetValueIfPossible<double>(), nullptr);
+  EXPECT_EQ(*double_value->GetValueIfPossible<double>(), 3.);
+
+  ASSERT_NE(string_value->GetValueIfPossible<std::string>(), nullptr);
+  EXPECT_EQ(*string_value->GetValueIfPossible<std::string>(), "hello");
+}
+
 TYPED_TEST(TypedValueTest, Access) {
   using T = TypeParam;
   Value<T> value(3);
   const AbstractValue& erased = value;
   EXPECT_EQ(3, erased.GetValue<T>());
   EXPECT_EQ(3, erased.GetValueOrThrow<T>());
+  ASSERT_NE(erased.GetValueIfPossible<T>(), nullptr);
+  EXPECT_EQ(3, *erased.GetValueIfPossible<T>());
 }
 
 TYPED_TEST(TypedValueTest, Clone) {
