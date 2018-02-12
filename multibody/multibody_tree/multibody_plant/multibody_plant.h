@@ -420,6 +420,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     contact_penalty_stiffness_ = k;
   }
 
+  void set_contact_penalty_damping(double d) {
+    contact_penalty_damping_ = d;
+  }
+
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -526,6 +530,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // Rigid contact constraint parameters.
   double contact_penalty_stiffness_{0};
+  double contact_penalty_damping_{0};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

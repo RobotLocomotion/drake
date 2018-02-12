@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/math/random_rotation.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -36,6 +37,7 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
+using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::GeometrySystem;
 using geometry::SourceId;
@@ -57,10 +59,10 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  const double simulation_time = 5.0;
+  const double simulation_time = 20.00;
 
   // Make the desired maximum time step a fraction of the simulation time.
-  const double max_time_step = simulation_time / 1000.0;
+  const double max_time_step = 1e-4;
 
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
@@ -72,11 +74,18 @@ int do_main() {
   const double g = 9.81;        // m/s^2
   const double z0 = 0.3;        // Initial height.
 
+  const double penetration_length = 0.001;
+  const double stiffness = mass * g / penetration_length;  // static equilibrium (under estimation)
+  const double omega = sqrt(stiffness / mass);  // frequency
+  const double damping_ratio = 1.0;  // not realy, but should be close.
+  const double damping = damping_ratio * (1.0/omega)/penetration_length; // Approx critically damped.
+
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeBouncingBallPlant(
           radius, mass, -g * Vector3d::UnitZ(), &geometry_system));
   const MultibodyTree<double>& model = plant.model();
-  plant.set_contact_penalty_stiffness(mass * g / 0.001);
+  plant.set_contact_penalty_stiffness(stiffness);
+  plant.set_contact_penalty_damping(damping);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
@@ -123,12 +132,35 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
+#if 0
   const QuaternionFloatingMobilizer<double>& ball_mobilizer =
       model.GetFreeBodyMobilizerOrThrow(plant.GetBodyByName("Ball"));
 
   // Set initial angles. Velocities are left to the default zero values.
-  model.SetDefaultContext(&plant_context);
   ball_mobilizer.set_position(&plant_context, Vector3d(0, 0, z0));
+#endif
+
+  auto set_position = [&](
+      const std::string& body_name, const Vector3d& p_WB) {
+    const QuaternionFloatingMobilizer<double>& ball_mobilizer =
+        model.GetFreeBodyMobilizerOrThrow(plant.GetBodyByName(body_name));
+    ball_mobilizer.set_position(&plant_context, p_WB);
+  };
+
+  auto set_orientation = [&](
+      const std::string& body_name, const Matrix3d& R_WB) {
+    const QuaternionFloatingMobilizer<double>& ball_mobilizer =
+        model.GetFreeBodyMobilizerOrThrow(plant.GetBodyByName(body_name));
+    ball_mobilizer.SetFromRotationMatrix(&plant_context, R_WB);
+  };
+
+  // Set at height z0 with random orientation.
+  std::mt19937 generator(41);
+  std::uniform_real_distribution<double> uniform(-1.0, 1.0);
+  model.SetDefaultContext(&plant_context);
+  set_position("Ball", Vector3d(0.0, 0.0, z0));
+  Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
+  set_orientation("Ball", R_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 

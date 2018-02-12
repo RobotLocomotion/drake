@@ -38,6 +38,7 @@ drake_cc_binary(
         ":make_objects_falling",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
+        "//math:geometric_transform",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",

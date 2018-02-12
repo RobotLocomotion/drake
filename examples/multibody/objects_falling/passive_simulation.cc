@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/math/random_rotation.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -36,6 +37,8 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
+using Eigen::Matrix3d;
+using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using geometry::GeometrySystem;
 using geometry::SourceId;
@@ -57,7 +60,7 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  const double simulation_time = 10.00;
+  const double simulation_time = 30.00;
 
   // Make the desired maximum time step a fraction of the simulation time.
   const double max_time_step = 1e-4; //simulation_time / 1000.0;
@@ -80,7 +83,15 @@ int do_main() {
           nballs, ncylinders,
           &geometry_system));
   const MultibodyTree<double>& model = plant.model();
-  plant.set_contact_penalty_stiffness(mass * g / 0.001);
+
+  const double penetration_length = 0.00001;
+  const double stiffness = mass * g / penetration_length;  // static equilibrium (under estimation)
+  const double omega = sqrt(stiffness / mass);  // frequency
+  const double damping_ratio = 1.0;  // not realy, but should be close.
+  const double damping = damping_ratio * (1.0/omega)/penetration_length; // Approx critically damped.
+  plant.set_contact_penalty_stiffness(stiffness);
+  plant.set_contact_penalty_damping(damping);
+  //plant.set_contact_penalty_damping(0.0);
 
   //DRAKE_DEMAND(plant.num_velocities() == 6);
   //DRAKE_DEMAND(plant.num_positions() == 7);
@@ -137,6 +148,13 @@ int do_main() {
     ball_mobilizer.set_position(&plant_context, p_WB);
   };
 
+  auto set_orientation = [&](
+      const std::string& body_name, const Matrix3d& R_WB) {
+    const QuaternionFloatingMobilizer<double>& ball_mobilizer =
+        model.GetFreeBodyMobilizerOrThrow(plant.GetBodyByName(body_name));
+    ball_mobilizer.SetFromRotationMatrix(&plant_context, R_WB);
+  };
+
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   const double DeltaZ = 0.12;  // separate objects by DeltaZ
@@ -155,6 +173,8 @@ int do_main() {
     set_position(name, Vector3d(radius * uniform(generator) * z/z0,
                                 radius * uniform(generator) * z/z0,
                                 z));
+    Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
+    set_orientation(name, R_WB);
     z += DeltaZ;
   }
 

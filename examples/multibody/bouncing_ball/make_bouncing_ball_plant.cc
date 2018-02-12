@@ -46,7 +46,8 @@ MakeBouncingBallPlant(double radius, double mass, const Vector3<double>& gravity
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         Isometry3d::Identity(),
-        Sphere(radius), geometry_system);
+        Cylinder(radius, 4*radius), geometry_system);
+        //Sphere(radius), geometry_system);
   }
 
   // Gravity acting in the -z direction.
