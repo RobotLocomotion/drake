@@ -169,16 +169,15 @@ template <typename T>
 FrameIdVector RigidBodyPlantBridge<T>::AllocateFrameIdOutput(
     const MyContext&) const {
   DRAKE_DEMAND(source_id_.is_valid());
-  FrameIdVector ids(source_id_);
-  ids.AddFrameIds(body_ids_);
+  FrameIdVector ids(source_id_, body_ids_);
   return ids;
 }
 
 template <typename T>
-void RigidBodyPlantBridge<T>::CalcFrameIdOutput(const MyContext&,
-                                                FrameIdVector*) const {
-  // NOTE: The assumption is that once created, the *contents* of the rigid body
-  // tree is unchanging; so calc doesn't need to do anything.
+void RigidBodyPlantBridge<T>::CalcFrameIdOutput(
+    const MyContext&, FrameIdVector* frame_ids) const {
+  DRAKE_DEMAND(source_id_.is_valid());
+  *frame_ids = FrameIdVector(source_id_, body_ids_);
 }
 
 // Explicitly instantiates on the most common scalar types.
