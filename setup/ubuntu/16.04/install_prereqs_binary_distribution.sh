@@ -21,7 +21,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 build-essential
 cmake
 coinor-libipopt1v5
-dreal=4.18.01.3
+dreal=4.18.02.2
 libblas3
 libboost-all-dev
 libexpat1
