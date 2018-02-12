@@ -15,12 +15,8 @@ content = """
   "Components": {
     "fmt-header-only": {
       "Type": "interface",
+      "Definitions": ["FMT_HEADER_ONLY=1"],
       "Includes": ["@prefix@/include/fmt"]
-    },
-    "fmt": {
-      "Type": "dylib",
-      "Location": "@prefix@/lib/libfmt.so",
-      "Requires": [":fmt-header-only"]
     }
   }
 }

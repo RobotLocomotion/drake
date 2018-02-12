@@ -30,7 +30,7 @@ content = """
         "HAVE_SPDLOG",
         "SPDLOG_FMT_EXTERNAL"
       ],
-      "Requires": ["fmt:fmt"]
+      "Requires": ["fmt:fmt-header-only"]
     }
   }
 }
