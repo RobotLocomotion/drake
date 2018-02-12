@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
+//#include <Eigen/SparseCholesky>
 #include <memory>
 #include <vector>
 
@@ -44,8 +45,10 @@ using systems::BasicVector;
 using systems::Context;
 
 #include <iostream>
+//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 //#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
 #define PRINT_VARn(a) (void)a;
+#define PRINT_VAR(a) (void)a;
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
@@ -182,6 +185,16 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   vdot = M.ldlt().solve(-tau_array);
 
+  // Compile time error: "The SparseCholesky module has nothing to offer in MPL2 only mode"
+  // You need to include: #include <Eigen/SparseCholesky>
+#if 0
+  const auto& Ms = M.sparseView();
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<T>, Eigen::Lower> solver;
+  solver.compute(Ms);
+  DRAKE_DEMAND(solver.info() == Eigen::Success);
+  vdot = solver.solve(-tau_array);
+#endif
+
   PRINT_VARn(vdot.transpose());
 
   auto v = x.bottomRows(nv);
@@ -204,6 +217,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
+  PRINT_VAR(penetrations.size());
   if (penetrations.size() > 0) {
     for (const auto& penetration : penetrations) {
       // NOTE: for now assume this MBP is the only system connected to GS.
@@ -242,7 +256,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
         // Spatial force on body A at Ao, expressed in W.
         const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-        F_BBo_W_array->at(bodyA_index) = F_AAo_W;
+        F_BBo_W_array->at(bodyA_index) += F_AAo_W;
       }
 
       if (bodyB_index != world_index()) {
@@ -250,7 +264,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
         const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
         // Spatial force on body B at Bo, expressed in W.
         const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-        F_BBo_W_array->at(bodyB_index) = F_BBo_W;
+        F_BBo_W_array->at(bodyB_index) += F_BBo_W;
       }
     }
   }  // if (penetrations.size() > 0)
