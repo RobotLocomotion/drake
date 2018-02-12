@@ -396,39 +396,30 @@ class MixedIntegerBranchAndBound {
   /**
    * Set the user-defined method to pick the branching node. This method is
    * used if the user calls
-   * SetNodeSelectionMethod(NodeSelectionMethod::kUserDefined)
+   * SetNodeSelectionMethod(NodeSelectionMethod::kUserDefined).
+   *
    * For example, if the user has defined a function LeftMostNode that would
    * return the left-most unfathomed node in the tree, then the user could do
-   * <pre>
+   * \code{.cc}
    * MixedIntegerBranchAndBoundNode* LeftMostNodeInSubTree(
    *     const MixedIntegerBranchAndBound& branch_and_bound,
    *     const MixedIntegerBranchAndBoundNode& subtree_root) {
-   *   // Find the left most leaf node that is not fathomed.
-   *   if (subtree_root.IsLeaf()) {
-   *     if (branch_and_bound.IsLeafNodeFathomed(subtree_root)) {
-   *       return nullptr;
-   *     } else {
-   *       return const_cast<MixedIntegerBranchAndBoundNode*>(&subtree_root);
-   *     }
-   *   } else {
-   *     auto left_most_node_left_tree =
-   *         LeftMostNodeInSubTree(branch_and_bound,
-   * *(subtree_root.left_child()));
-   *     if (!left_most_node_left_tree) {
-   *       return LeftMostNodeInSubTree(branch_and_bound,
-   *                                    *(subtree_root.right_child()));
-   *     }
-   *     return left_most_node_left_tree;
-   *   }
+   *   // Starting from the subtree root, find the left most leaf node that is
+   * not fathomed.
+   *   blah
    * }
    *
    * MixedIntegerBranchAndBound bnb(...);
    * bnb.SetNodeSelectionMethod(MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
+   * // Use a lambda function as the NodeSelectionFun
    * bnb->SetUserDefinedNodeSelectionFunction([](
    *     const MixedIntegerBranchAndBound& branch_and_bound) {
    *   return LeftMostNodeInSubTree(branch_and_bound,
    * *(branch_and_bound.root()));
-   * </pre>
+   * \endcode
+   * A more detailed example can be found in
+   * solvers/test/branch_and_bount_test.cc
+   * in TestSetUserDefinedNodeSelectionFunction.
    * @note The user defined function should pick an un-fathomed leaf node for
    * branching. @throw a runtime error if the node is not a leaf node, or it is
    * fathomed.
@@ -454,21 +445,23 @@ class MixedIntegerBranchAndBound {
    * Set the user-defined method to pick the branching variable. This method is
    * used if the user calls
    * SetVariableSelectionMethod(VariableSelectionMethod::kUserDefined).
+   *
    * For example, if the user has defined a function FirstVariable, that would
    * return the first un-fixed binary variable in this branch as
-   * <pre>
+   * \code{.cc}
    * SymbolicVariable* FirstVariable(const MixedIntegerBranchAndBoundNode& node)
    * {
    *   return node.remaining_binary_variables().begin();
    * }
-   * </pre>
+   * \endcode
    * The user can then set the branch-and-bound to use this function to select
    * the branching variable as
-   * <pre>
+   * \code{.cc}
    * MixedIntegerBranchAndBound bnb(...);
    * bnb.SetVariableSelectionMethod(MixedIntegerBranchAndBound:VariableSelectionMethod::kUserDefined);
+   * // Set VariableSelectFun by using a function pointer.
    * bnb.SetUserDefinedVariableSelectionFunction(FirstVariable);
-   * </pre>
+   * \endcode
    */
   void SetUserDefinedVariableSelectionFunction(VariableSelectFun fun) {
     variable_selection_userfun_ = fun;
