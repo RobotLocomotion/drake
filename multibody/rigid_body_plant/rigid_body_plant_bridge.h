@@ -11,7 +11,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace geometry {
+namespace systems {
 
 /** This class provides backwards compatibility between the old
  @ref systems::RigidBodyPlant "RigidBodyPlant" and the new GeometrySystem. It
@@ -93,11 +93,11 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
    have its ports connected to the *same* geometry system and the RigidBodyPlant
    which owns the rigid body tree.   */
   RigidBodyPlantBridge(const RigidBodyTree<T>* rigid_body_tree,
-                       GeometrySystem<T>* geometry_system);
+                       geometry::GeometrySystem<T>* geometry_system);
 
   ~RigidBodyPlantBridge() override {}
 
-  SourceId source_id() const { return source_id_; }
+  geometry::SourceId source_id() const { return source_id_; }
 
   const systems::OutputPort<T>& geometry_id_output_port() const;
   const systems::OutputPort<T>& geometry_pose_output_port() const;
@@ -107,7 +107,7 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
  private:
   // Registers `this` system's tree's bodies and geometries  to the given
   // geometry system.
-  void RegisterTree(GeometrySystem<T>* geometry_system);
+  void RegisterTree(geometry::GeometrySystem<T>* geometry_system);
 
   // This is nothing _but_ direct-feedthrough.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
@@ -115,29 +115,31 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   }
 
   // Allocate the frame pose set output port value.
-  FramePoseVector<T> AllocateFramePoseOutput(const MyContext& context) const;
+  geometry::FramePoseVector<T> AllocateFramePoseOutput(
+      const MyContext& context) const;
 
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const MyContext& context,
-                           FramePoseVector<T>* poses) const;
+                           geometry::FramePoseVector<T>* poses) const;
 
   // Allocate the id output.
-  FrameIdVector AllocateFrameIdOutput(const MyContext& context) const;
+  geometry::FrameIdVector AllocateFrameIdOutput(const MyContext& context) const;
   // Calculate the id output.
-  void CalcFrameIdOutput(const MyContext& context, FrameIdVector* id_set) const;
+  void CalcFrameIdOutput(const MyContext& context,
+                         geometry::FrameIdVector* id_set) const;
 
   // The tree used to populate GeometrySystem and evaluate body kinematics.
   const RigidBodyTree<T>& tree_{};
 
   // This system's source id with GeometrySystem.
-  SourceId source_id_;
+  geometry::SourceId source_id_;
 
   // Port handles
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
 
   // Registered data
-  std::vector<FrameId> body_ids_;
+  std::vector<geometry::FrameId> body_ids_;
 };
-}  // namespace geometry
+}  // namespace systems
 }  // namespace drake

@@ -32,7 +32,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/geometry/rigid_body_plant_bridge.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -144,7 +144,7 @@ int main() {
   geometry_system->set_name("geometry_system");
 
   auto rbt_gs_bridge =
-      builder.AddSystem<geometry::RigidBodyPlantBridge<double>>(
+      builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
           &tree, geometry_system);
 
   DrakeLcm lcm;

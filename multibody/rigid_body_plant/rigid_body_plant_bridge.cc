@@ -1,4 +1,4 @@
-#include "drake/geometry/rigid_body_plant_bridge.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h"
 
 #include <memory>
 #include <utility>
@@ -11,14 +11,18 @@
 #include "drake/systems/framework/framework_common.h"
 
 namespace drake {
-namespace geometry {
+namespace systems {
 
-using systems::BasicVector;
-using systems::LeafSystem;
-using systems::OutputPort;
-using systems::InputPortDescriptor;
-using systems::SystemTypeTag;
-using systems::kVectorValued;
+using geometry::Cylinder;
+using geometry::FrameId;
+using geometry::FrameIdVector;
+using geometry::FramePoseVector;
+using geometry::GeometryFrame;
+using geometry::GeometryInstance;
+using geometry::GeometrySystem;
+using geometry::Mesh;
+using geometry::Shape;
+using geometry::Sphere;
 
 template <typename T>
 RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
@@ -177,9 +181,9 @@ void RigidBodyPlantBridge<T>::CalcFrameIdOutput(const MyContext&,
   // tree is unchanging; so calc doesn't need to do anything.
 }
 
-}  // namespace geometry
+}  // namespace systems
 }  // namespace drake
 
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::geometry::RigidBodyPlantBridge)
+    class ::drake::systems::RigidBodyPlantBridge)
