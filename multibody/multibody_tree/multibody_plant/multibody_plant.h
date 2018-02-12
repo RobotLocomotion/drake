@@ -416,6 +416,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
+  void set_contact_penalty_stiffness(double k) {
+    contact_penalty_stiffness_ = k;
+  }
+
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -508,6 +512,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
   std::unordered_map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
+
+  std::unordered_map<geometry::GeometryId, BodyIndex> geometry_id_to_body_index_;
 
   // Map provided at construction that tells how bodies (referenced by name),
   // map to frame ids.

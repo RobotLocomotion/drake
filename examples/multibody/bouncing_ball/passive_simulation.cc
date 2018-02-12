@@ -57,7 +57,7 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  const double simulation_time = 0.25;
+  const double simulation_time = 5.0;
 
   // Make the desired maximum time step a fraction of the simulation time.
   const double max_time_step = simulation_time / 1000.0;
@@ -76,6 +76,7 @@ int do_main() {
       *builder.AddSystem(MakeBouncingBallPlant(
           radius, mass, -g * Vector3d::UnitZ(), &geometry_system));
   const MultibodyTree<double>& model = plant.model();
+  plant.set_contact_penalty_stiffness(mass * g / 0.001);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);

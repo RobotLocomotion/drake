@@ -23,8 +23,10 @@ using geometry::FrameId;
 using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
+using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::GeometrySystem;
+using geometry::PenetrationAsPointPair;
 using geometry::SourceId;
 using geometry::Sphere;
 using systems::InputPortDescriptor;
@@ -82,9 +84,10 @@ void MultibodyPlant<T>::RegisterGeometry(
   }
 
   // Register geometry in the body frame.
-  geometry_system->RegisterGeometry(
+  GeometryId geometry_id = geometry_system->RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.get_index()],
       std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
+  geometry_id_to_body_index_[geometry_id] = body.get_index();
 }
 
 template<typename T>
@@ -97,9 +100,10 @@ void MultibodyPlant<T>::RegisterAnchoredGeometry(
   if (!geometry_source_is_registered())
     source_id_ = geometry_system->RegisterSource("MultibodyPlant");
 
-  geometry_system->RegisterAnchoredGeometry(
+  GeometryId geometry_id = geometry_system->RegisterAnchoredGeometry(
       source_id_.value(),
       std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
+  geometry_id_to_body_index_[geometry_id] = world_index();
 }
 
 template<typename T>
@@ -188,34 +192,76 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
+template<>
+void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
+    const systems::Context<double>& context,
+    const PositionKinematicsCache<double>& pc, const VelocityKinematicsCache<double>& vc,
+    std::vector<SpatialForce<double>>* F_BBo_W_array) const {
+  const geometry::QueryObject<double>& query_object =
+      this->EvalAbstractInput(context, geometry_query_port_)
+          ->template GetValue<geometry::QueryObject<double>>();
+  (void) query_object;
+
+  std::vector<PenetrationAsPointPair<double>> penetrations =
+      query_object.ComputePointPairPenetration();
+  if (penetrations.size() > 0) {
+    for (const auto& penetration : penetrations) {
+      // NOTE: for now assume this MBP is the only system connected to GS.
+      BodyIndex bodyA_index = geometry_id_to_body_index_.at(penetration.id_A);
+      BodyIndex bodyB_index = geometry_id_to_body_index_.at(penetration.id_B);
+
+      BodyNodeIndex bodyA_node_index =
+          model().get_body(bodyA_index).get_node_index();
+      BodyNodeIndex bodyB_node_index =
+          model().get_body(bodyB_index).get_node_index();
+
+      // Penetration depth, > 0 during penetration.
+      const double& x = penetration.depth;
+      const Vector3<double>& nhat_AB_W = penetration.nhat_BA_W;
+      const Vector3<double>& p_WCa = penetration.p_WCa;
+      const Vector3<double>& p_WCb = penetration.p_WCb;
+
+      // Contact point C.
+      const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
+
+      // Penetration rate, > 0 implies increasing penetration.
+      //const T& xdot = -state.zdot();
+      //fC = k_ * x * (1.0 + d_ * xdot);
+
+      // Magnitude of the normal force on body A at contact point C.
+      const double fn_AC = contact_penalty_stiffness_ * x;
+
+      if (fn_AC <= 0) continue;  // Continue with next point.
+
+      // Spatial force on body A at C, expressed in the world frame W.
+      const SpatialForce<double> F_AC_W(Vector3<double>::Zero(), fn_AC * nhat_AB_W);
+
+      if (bodyA_index != world_index()) {
+        const Vector3<double>& p_WAo = pc.get_X_WB(bodyA_node_index).translation();
+        const Vector3<double>& p_CoAo_W = p_WAo - p_WC;
+
+        // Spatial force on body A at Ao, expressed in W.
+        const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
+        F_BBo_W_array->at(bodyA_index) = F_AAo_W;
+      }
+
+      if (bodyB_index != world_index()) {
+        const Vector3<double>& p_WBo = pc.get_X_WB(bodyB_node_index).translation();
+        const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
+        // Spatial force on body B at Bo, expressed in W.
+        const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
+        F_BBo_W_array->at(bodyB_index) = F_BBo_W;
+      }
+    }
+  }  // if (penetrations.size() > 0)
+}
+
 template<typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc, const VelocityKinematicsCache<T>& vc,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
-  const geometry::QueryObject<T>& query_object =
-      this->template EvalAbstractInput(context, geometry_query_port_)
-          ->template GetValue<geometry::QueryObject<T>>();
-  (void) query_object;
-#if 0
-  std::vector<PenetrationAsPointPair<T>> penetrations =
-      query_object.ComputePointPairPenetration();
-  T fC = 0;  // the contact force
-  if (penetrations.size() > 0) {
-    for (const auto& penetration : penetrations) {
-      if (penetration.id_A == ball_id_ || penetration.id_B == ball_id_) {
-        // Penetration depth, > 0 during penetration.
-        const T& x = penetration.depth;
-        // Penetration rate, > 0 implies increasing penetration.
-        const T& xdot = -state.zdot();
-
-        fC = k_ * x * (1.0 + d_ * xdot);
-      }
-    }
-  }
-  derivative_vector.set_z(state.zdot());
-  const T fN = max(0.0, fC);
-#endif
+  DRAKE_ABORT_MSG("Only <double> is supported.");
 }
 
 template<typename T>
