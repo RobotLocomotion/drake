@@ -29,7 +29,7 @@ libgflags-dev
 libgl1-mesa-glx
 libglib2.0-0
 libhdf5-10
-libibex-dev=2.6.5.20180209164127.gite0cbec9fa9f56026a42f23e41da0d27a82ea46c9~16.04
+libibex-dev=2.6.5.20180211084215.gitd1419538b4d818ed1cf21a01896bc5eaae5d1d57~16.04
 libjpeg8
 libjsoncpp1
 liblapack3
