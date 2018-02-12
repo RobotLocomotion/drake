@@ -38,8 +38,7 @@ GTEST_TEST(GeneralizedConstraintForceEvaluatorTest, TestEval) {
   // Set lambda to some arbitrary number.
   const Eigen::VectorXd lambda =
       Eigen::VectorXd::LinSpaced(evaluator.num_lambda(), -3, 3);
-  Eigen::VectorXd x(q.rows() + v.rows() + lambda.rows());
-  x << q, v, lambda;
+  const Eigen::VectorXd x = evaluator.CompositeEvalInputVector(q, v, lambda);
   const auto tx = math::initializeAutoDiff(x);
   AutoDiffVecXd ty;
   evaluator.Eval(tx, ty);
