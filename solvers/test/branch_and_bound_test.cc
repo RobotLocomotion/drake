@@ -47,29 +47,29 @@ class MixedIntegerBranchAndBoundTester {
 };
 
 namespace {
- // Construct a mixed-integer linear program
- // min x₀ + 2x₁ - 3x₃ + 1
- // s.t x₀ + x₁ + 2x₃ = 2
- //     x₁ - 3.1x₂ ≥ 1
- //     x₂ + 1.2x₃ - x₀ ≤ 5
- //     x₀ , x₂ are binary
- // At the root node, the optimizer should obtain an integral solution. So the
- // root node does not need to branch.
- // The optimal solution is (0, 1, 0, 0.5), the optimal cost is 1.5
- std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram1() {
-   auto prog = std::make_unique<MathematicalProgram>();
-   VectorDecisionVariable<4> x;
-   x(0) = symbolic::Variable("x0", symbolic::Variable::Type::BINARY);
-   x(1) = symbolic::Variable("x1", symbolic::Variable::Type::CONTINUOUS);
-   x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
-   x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
-   prog->AddDecisionVariables(x);
-   prog->AddCost(x(0) + 2 * x(1) - 3 * x(3) + 1);
-   prog->AddLinearEqualityConstraint(x(0) + x(1) + 2 * x(3) == 2);
-   prog->AddLinearConstraint(x(1) - 3.1 * x(2) >= 1);
-   prog->AddLinearConstraint(x(2) + 1.2 * x(3) - x(0) <= 5);
-   return prog;
- }
+// Construct a mixed-integer linear program
+// min x₀ + 2x₁ - 3x₃ + 1
+// s.t x₀ + x₁ + 2x₃ = 2
+//     x₁ - 3.1x₂ ≥ 1
+//     x₂ + 1.2x₃ - x₀ ≤ 5
+//     x₀ , x₂ are binary
+// At the root node, the optimizer should obtain an integral solution. So the
+// root node does not need to branch.
+// The optimal solution is (0, 1, 0, 0.5), the optimal cost is 1.5
+std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram1() {
+  auto prog = std::make_unique<MathematicalProgram>();
+  VectorDecisionVariable<4> x;
+  x(0) = symbolic::Variable("x0", symbolic::Variable::Type::BINARY);
+  x(1) = symbolic::Variable("x1", symbolic::Variable::Type::CONTINUOUS);
+  x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
+  x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
+  prog->AddDecisionVariables(x);
+  prog->AddCost(x(0) + 2 * x(1) - 3 * x(3) + 1);
+  prog->AddLinearEqualityConstraint(x(0) + x(1) + 2 * x(3) == 2);
+  prog->AddLinearConstraint(x(1) - 3.1 * x(2) >= 1);
+  prog->AddLinearConstraint(x(2) + 1.2 * x(3) - x(0) <= 5);
+  return prog;
+}
 
 // Construct the problem data for the mixed-integer linear program
 // min x₀ + 2x₁ - 3x₂ - 4x₃ + 4.5x₄ + 1
