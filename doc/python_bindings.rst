@@ -142,3 +142,11 @@ explicity refer to each symbol:
             "drake/examples/pendulum/Pendulum.urdf"))
     simulator = pydrake.systems.analysis.Simulator(
         pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
+
+For Developers
+==============
+
+If you are developing Python bindings, please see the Doxygen page for
+`Python Bindings <http://drake.mit.edu/doxygen_cxx/python_bindings.html>`_.
+This provides information on programming conventions as well as tips for
+debugging.
