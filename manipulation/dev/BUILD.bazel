@@ -56,33 +56,6 @@ drake_cc_binary(
     ],
 )
 
-
-drake_cc_binary(
-    name = "rod2d_time_stepping_quaternion",
-    testonly = 1,
-    srcs = [
-        "rod2d_time_stepping_quaternion.cc",
-    ],
-    data = [":models"],
-    deps = [
-        ":quasistatic_system",
-        "//drake/common",
-        "//drake/common:find_resource",
-        "//drake/lcm",
-        "//drake/manipulation/util:world_sim_tree_builder",
-        "//drake/math:geometric_transform",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:diagram",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:matrix_gain",
-        "//drake/systems/primitives:signal_logger",
-    ],
-)
-
 drake_cc_binary(
     name = "quasistatic_iiwa_pick_and_place_demo",
     testonly = 1,
