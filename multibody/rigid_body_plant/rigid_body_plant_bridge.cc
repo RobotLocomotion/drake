@@ -3,7 +3,6 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -182,9 +181,8 @@ void RigidBodyPlantBridge<T>::CalcFrameIdOutput(const MyContext&,
   // tree is unchanging; so calc doesn't need to do anything.
 }
 
+// Explicitly instantiates on the most common scalar types.
+template class RigidBodyPlantBridge<double>;
+
 }  // namespace systems
 }  // namespace drake
-
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::RigidBodyPlantBridge)
