@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <vector>
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -15,12 +17,12 @@ using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
-using drake::solvers::VectorXDecisionVariable;
-using drake::solvers::MathematicalProgram;
-using systems::BasicVector;
-using drake::solvers::LinearEqualityConstraint;
 using drake::solvers::LinearConstraint;
+using drake::solvers::LinearEqualityConstraint;
+using drake::solvers::MathematicalProgram;
 using drake::solvers::QuadraticCost;
+using drake::solvers::VectorXDecisionVariable;
+using systems::BasicVector;
 
 class QuasistaticSystem : public drake::systems::LeafSystem<double> {
  public:
@@ -135,9 +137,9 @@ class QuasistaticSystem : public drake::systems::LeafSystem<double> {
   std::vector<int> idx_q_;
 
   int n1_;  // = nu_ + na_  dimension of discrete state q = [qu; qa]
-  int nd_; // defined in QuasistaticSystem::UpdateNs()
-  int n2_; //defined in QuasistaticSystem::UpdateNs()
-  int n_;  // number of decision variables in the MIQP
+  int nd_;  // defined in QuasistaticSystem::UpdateNs()
+  int n2_;  // defined in QuasistaticSystem::UpdateNs()
+  int n_;   // number of decision variables in the MIQP
 
   // rigid body tree for model
   std::unique_ptr<RigidBodyTreed> tree_ = std::make_unique<RigidBodyTreed>();

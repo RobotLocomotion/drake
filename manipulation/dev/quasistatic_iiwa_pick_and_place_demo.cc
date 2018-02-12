@@ -1,5 +1,4 @@
 #include <fstream>
-#include "drake/manipulation/dev/quasistatic_system.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/proto/call_matlab.h"

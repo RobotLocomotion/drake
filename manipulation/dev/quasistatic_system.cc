@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
+#include <map>
 #include "drake/math/quaternion.h"
 #include "drake/systems/controllers/controlUtil.h"
 
@@ -38,7 +39,7 @@ bool IsInStlVector(T element, const std::vector<T>& v) {
 }
 
 template <typename T>
-T MaxStlVector(std::vector<T>& v) {
+T MaxStlVector(const std::vector<T>& v) {
   auto result = std::max_element(v.begin(), v.end());
   return *result;
 }
@@ -47,8 +48,8 @@ T MaxStlVector(std::vector<T>& v) {
  * indices are into the rigidbodytree containing these bodies.
  */
 std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(
-    const RigidBodyTreed* const tree, const std::vector<int>& idx_body,
-    bool is_position, std::map<int, std::vector<int>>& fixed_body_dofs) {
+    const RigidBodyTreed *const tree, const std::vector<int> &idx_body,
+    bool is_position, std::map<int, std::vector<int>> *fixed_body_dofs) {
   std::vector<int> idx_q;
   for (auto i : idx_body) {
     int start = 0;
@@ -61,7 +62,7 @@ std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(
       size = tree->get_body(i).getJoint().get_num_velocities();
     }
     for (int j = 0; j < size; j++) {
-      if (!IsInStlVector<int>(j, fixed_body_dofs[i]))
+      if (!IsInStlVector<int>(j, (*fixed_body_dofs)[i]))
         idx_q.push_back(start + j);
     }
   }
@@ -90,7 +91,7 @@ QuasistaticSystem::QuasistaticSystem(
   if (!solver_.available()) {
     throw std::runtime_error("Gurobi solver not available.");
   }
-};
+}
 
 void QuasistaticSystem::Initialize() {
   nq_tree_ = tree_->get_num_positions();
@@ -100,7 +101,7 @@ void QuasistaticSystem::Initialize() {
   is_base_quaternion_ = false;
   if (tree_->get_body(idx_base_).getJoint().get_num_positions() == 7) {
     is_base_quaternion_ = true;
-  };
+  }
 
   // checks if idx_base is an element of idx_unactuated_bodies.
   DRAKE_ASSERT(IsInStlVector(idx_base_, idx_unactuated_bodies_));
@@ -129,19 +130,19 @@ void QuasistaticSystem::Initialize() {
   // create idx_qu_
   idx_qu_.clear();
   idx_qu_ = GetPositionOrVelocityIndicesOfBodiesFromRBT(
-      tree_.get(), idx_unactuated_bodies_, true, fixed_body_positions);
+      tree_.get(), idx_unactuated_bodies_, true, &fixed_body_positions);
 
   // assuming that the first body in idx_unactuated_bodies is the base link of
   // the unactuated rigid body mechanism.
   DRAKE_ASSERT(idx_base_ == idx_unactuated_bodies_[0]);
   // create idx_vu_
   idx_vu_ = GetPositionOrVelocityIndicesOfBodiesFromRBT(
-      tree_.get(), idx_unactuated_bodies_, false, fixed_body_velocities);
+      tree_.get(), idx_unactuated_bodies_, false, &fixed_body_velocities);
 
   // create idx_qa_
   idx_qa_.clear();
   idx_qa_ = GetPositionOrVelocityIndicesOfBodiesFromRBT(
-      tree_.get(), idx_actuated_bodies, true, fixed_actuated_body_positions);
+      tree_.get(), idx_actuated_bodies, true, &fixed_actuated_body_positions);
 
   // get contact information
   int nc_actuated = 0;  // number of collision elements of actauted bodies

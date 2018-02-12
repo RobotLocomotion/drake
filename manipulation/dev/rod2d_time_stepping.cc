@@ -29,7 +29,7 @@ namespace drake {
 namespace manipulation {
 namespace rod2d {
 
-std::string kUrdfPath = "drake/manipulation/dev/rod2d.urdf";
+const char* kUrdfPath = "drake/manipulation/dev/rod2d.urdf";
 
 class Rod2DTimeStepping : public manipulation::QuasistaticSystem {
  public:
@@ -115,13 +115,6 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
 
   Wn = Jn.transpose().block(1, 0, 6, nc_);
   Wf = Jf.transpose().block(1, 0, 6, nd_);
-  /*
-  cout << "Wn\n" << Wn << endl;
-  cout << "Wf\n" << Wf << endl;
-  cout << "Jn\n" << Jn << endl;
-  cout << "Jf\n" << Jf << endl;
-  cout << "phi\n" << phi << endl;
-  */
 }
 
 int do_main(int argc, char* argv[]) {
@@ -137,7 +130,6 @@ int do_main(int argc, char* argv[]) {
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
 
   // Figure out the index of each joint.
-  // TODO: Is there a better way to do this?
   cout << "number of states: " << tree->get_num_positions() << endl;
   for (int i = 0; i < tree->get_num_positions(); i++) {
     cout << "position name " << i << ": " << tree->get_position_name(i) << endl;
@@ -208,7 +200,7 @@ int do_main(int argc, char* argv[]) {
   cout << "done stepping" << endl;
 
   // test if the final system state is reasonable.
-  VectorXd q_final_expected(7);  //[x,y,qa,theta, zeros(4,1)]
+  VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(4,1)]
   q_final_expected << 1, 0.0117, 1.01, 0.01, 0, 0, 0;
 
   const double error =
