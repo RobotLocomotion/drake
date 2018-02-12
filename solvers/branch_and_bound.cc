@@ -162,9 +162,9 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   // Now add all the constraints in prog to new_prog.
   // TODO(hongkai.dai): Make sure that all constraints stored in
   // MathematicalProgram are added. In the future, if we add more constraint
-  // type to MathematicalProgram, we need to add that constraint to new_prog
-  // here as well. One solution is to add a method in MatheticalProgram, to get
-  // all costs and constraints.
+  // types to MathematicalProgram, we need to add these constraints to new_prog
+  // here as well. One solution is to add a method in MathematicalProgram, to
+  // get all costs and constraints.
   AddVectorOfConstraintsToProgram(prog.generic_constraints(),
                                   map_old_vars_to_new_vars, &new_prog);
   AddVectorOfConstraintsToProgram(prog.linear_constraints(),
@@ -368,6 +368,8 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
     // Found a branching node, branch on this node. If no branching node is
     // found, then every leaf node is fathomed, the branch-and-bound process
     // should terminate.
+    // TODO(hongkai.dai) We might need to have a function that picks the
+    // branching node together with the branching variable simultaneously.
     const symbolic::Variable* branching_variable =
         PickBranchingVariable(*branching_node);
     BranchAndUpdate(branching_node, *branching_variable);
@@ -456,7 +458,12 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
     }
     case NodeSelectionMethod::kUserDefined: {
       if (node_selection_userfun_) {
-        return node_selection_userfun_(*root_);
+        auto node = node_selection_userfun_(*this);
+        if (!node->IsLeaf() || IsLeafNodeFathomed(*node)) {
+          throw std::runtime_error(
+              "The user should pick an un-fathomed leaf node for branching.");
+        }
+        return node_selection_userfun_(*this);
       } else {
         throw std::runtime_error(
             "The user defined function should not be null, call "
@@ -555,41 +562,7 @@ double BestLowerBoundInSubTree(
                : right_best_lower_bound;
   }
 }
-}  // namespace
 
-MixedIntegerBranchAndBoundNode*
-MixedIntegerBranchAndBound::PickMinLowerBoundNode() const {
-  return PickMinLowerBoundNodeInSubTree(*this, *root_);
-}
-
-MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
-    const {
-  // The deepest node has the largest number of fixed binary variables.
-  return PickDepthFirstNodeInSubTree(*this, *root_);
-}
-
-const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
-    const MixedIntegerBranchAndBoundNode& node) const {
-  switch (variable_selection_method_) {
-    case VariableSelectionMethod::kMostAmbivalent:
-      return PickMostAmbivalentAsBranchingVariable(node);
-    case VariableSelectionMethod::kLeastAmbivalent:
-      return PickLeastAmbivalentAsBranchingVariable(node);
-    case VariableSelectionMethod::kUserDefined:
-      if (variable_selection_userfun_) {
-        return variable_selection_userfun_(node);
-      }
-      throw std::runtime_error(
-          "The user defined function cannot be null. Call "
-          "SetUserDefinedVariableSelectionFunction to provide the user-defined "
-          "function for selecting the branching variable.");
-  }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
-}
-
-namespace {
 const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node,
     MixedIntegerBranchAndBound::VariableSelectionMethod
@@ -626,20 +599,36 @@ const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
 }
 }  // namespace
 
-const symbolic::Variable*
-MixedIntegerBranchAndBound::PickMostAmbivalentAsBranchingVariable(
-    const MixedIntegerBranchAndBoundNode& node) const {
-  return PickMostOrLeastAmbivalentAsBranchingVariable(
-      node,
-      MixedIntegerBranchAndBound::VariableSelectionMethod::kMostAmbivalent);
+MixedIntegerBranchAndBoundNode*
+MixedIntegerBranchAndBound::PickMinLowerBoundNode() const {
+  return PickMinLowerBoundNodeInSubTree(*this, *root_);
 }
 
-const symbolic::Variable*
-MixedIntegerBranchAndBound::PickLeastAmbivalentAsBranchingVariable(
+MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
+    const {
+  // The deepest node has the largest number of fixed binary variables.
+  return PickDepthFirstNodeInSubTree(*this, *root_);
+}
+
+const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
     const MixedIntegerBranchAndBoundNode& node) const {
-  return PickMostOrLeastAmbivalentAsBranchingVariable(
-      node,
-      MixedIntegerBranchAndBound::VariableSelectionMethod::kLeastAmbivalent);
+  switch (variable_selection_method_) {
+    case VariableSelectionMethod::kMostAmbivalent:
+    case VariableSelectionMethod::kLeastAmbivalent:
+      return PickMostOrLeastAmbivalentAsBranchingVariable(
+          node, variable_selection_method_);
+    case VariableSelectionMethod::kUserDefined:
+      if (variable_selection_userfun_) {
+        return variable_selection_userfun_(node);
+      }
+      throw std::runtime_error(
+          "The user defined function cannot be null. Call "
+          "SetUserDefinedVariableSelectionFunction to provide the user-defined "
+          "function for selecting the branching variable.");
+  }
+  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
+  // Werror=return-type, if we do not have it here.
+  DRAKE_ABORT();
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(

@@ -47,29 +47,29 @@ class MixedIntegerBranchAndBoundTester {
 };
 
 namespace {
-// Construct a mixed-integer linear program
-// min x₀ + 2x₁ - 3x₃ + 1
-// s.t x₀ + x₁ + 2x₃ = 2
-//     x₁ - 3.1x₂ ≥ 1
-//     x₂ + 1.2x₃ - x₀ ≤ 5
-//     x₀ , x₂ are binary
-// At the root node, the optimizer should obtain an integral solution. So the
-// root node does not need to branch.
-// The optimal solution is (0, 1, 0, 0.5), the optimal cost is 1.5
-std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram1() {
-  auto prog = std::make_unique<MathematicalProgram>();
-  VectorDecisionVariable<4> x;
-  x(0) = symbolic::Variable("x0", symbolic::Variable::Type::BINARY);
-  x(1) = symbolic::Variable("x1", symbolic::Variable::Type::CONTINUOUS);
-  x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
-  x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
-  prog->AddDecisionVariables(x);
-  prog->AddCost(x(0) + 2 * x(1) - 3 * x(3) + 1);
-  prog->AddLinearEqualityConstraint(x(0) + x(1) + 2 * x(3) == 2);
-  prog->AddLinearConstraint(x(1) - 3.1 * x(2) >= 1);
-  prog->AddLinearConstraint(x(2) + 1.2 * x(3) - x(0) <= 5);
-  return prog;
-}
+ // Construct a mixed-integer linear program
+ // min x₀ + 2x₁ - 3x₃ + 1
+ // s.t x₀ + x₁ + 2x₃ = 2
+ //     x₁ - 3.1x₂ ≥ 1
+ //     x₂ + 1.2x₃ - x₀ ≤ 5
+ //     x₀ , x₂ are binary
+ // At the root node, the optimizer should obtain an integral solution. So the
+ // root node does not need to branch.
+ // The optimal solution is (0, 1, 0, 0.5), the optimal cost is 1.5
+ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram1() {
+   auto prog = std::make_unique<MathematicalProgram>();
+   VectorDecisionVariable<4> x;
+   x(0) = symbolic::Variable("x0", symbolic::Variable::Type::BINARY);
+   x(1) = symbolic::Variable("x1", symbolic::Variable::Type::CONTINUOUS);
+   x(2) = symbolic::Variable("x2", symbolic::Variable::Type::BINARY);
+   x(3) = symbolic::Variable("x3", symbolic::Variable::Type::CONTINUOUS);
+   prog->AddDecisionVariables(x);
+   prog->AddCost(x(0) + 2 * x(1) - 3 * x(3) + 1);
+   prog->AddLinearEqualityConstraint(x(0) + x(1) + 2 * x(3) == 2);
+   prog->AddLinearConstraint(x(1) - 3.1 * x(2) >= 1);
+   prog->AddLinearConstraint(x(2) + 1.2 * x(3) - x(0) <= 5);
+   return prog;
+ }
 
 // Construct the problem data for the mixed-integer linear program
 // min x₀ + 2x₁ - 3x₂ - 4x₃ + 4.5x₄ + 1
@@ -132,7 +132,7 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram3() {
 //     y₀, y₁ are binary
 //     x₀, x₁, x₂ ≥ 0
 // This formulation is obtained by using the special ordered set constraint
-// with yᵢbeing the indicator binary variable that the point is on the line
+// with yᵢ being the indicator binary variable that the point is on the line
 // segment PᵢPᵢ₊₁
 std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram4() {
   auto prog = std::make_unique<MathematicalProgram>();
@@ -163,9 +163,9 @@ void CheckNewRootNode(
 }
 
 void CheckNodeSolution(const MixedIntegerBranchAndBoundNode& node,
-                   const Eigen::Ref<const VectorXDecisionVariable>& x,
-                   const Eigen::Ref<const Eigen::VectorXd>& x_expected,
-                   double optimal_cost, double tol = 1E-4) {
+                       const Eigen::Ref<const VectorXDecisionVariable>& x,
+                       const Eigen::Ref<const Eigen::VectorXd>& x_expected,
+                       double optimal_cost, double tol = 1E-4) {
   const SolutionResult result = node.solution_result();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_TRUE(CompareMatrices(node.prog()->GetSolution(x), x_expected, tol,
@@ -1107,6 +1107,68 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
       CheckAllIntegralSolution(bnb, xy, integral_solutions, tol);
     }
   }
+}
+
+MixedIntegerBranchAndBoundNode* LeftMostNodeInSubTree(
+    const MixedIntegerBranchAndBound& branch_and_bound,
+    const MixedIntegerBranchAndBoundNode& subtree_root) {
+  // Find the left most leaf node that is not fathomed.
+  if (subtree_root.IsLeaf()) {
+    if (branch_and_bound.IsLeafNodeFathomed(subtree_root)) {
+      return nullptr;
+    } else {
+      return const_cast<MixedIntegerBranchAndBoundNode*>(&subtree_root);
+    }
+  } else {
+    auto left_most_node_left_tree =
+        LeftMostNodeInSubTree(branch_and_bound, *(subtree_root.left_child()));
+    if (!left_most_node_left_tree) {
+      return LeftMostNodeInSubTree(branch_and_bound,
+                                   *(subtree_root.right_child()));
+    }
+    return left_most_node_left_tree;
+  }
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest,
+           TestSetUserDefinedNodeSelectionFunction) {
+  // Test setting user defined node selection function.
+  // Here we set to choose the left-most unfathomed node.
+
+  auto prog = ConstructMathematicalProgram2();
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
+
+  dut.bnb()->SetNodeSelectionMethod(
+      MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
+  dut.bnb()->SetUserDefinedNodeSelectionFunction([](
+      const MixedIntegerBranchAndBound& branch_and_bound) {
+    return LeftMostNodeInSubTree(branch_and_bound, *(branch_and_bound.root()));
+  });
+
+  // There is only one root node, so bnb has to pick the root node.
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
+
+  VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
+
+  dut.BranchAndUpdate(dut.mutable_root(), x(2));
+  // root->left has integral solution, so it is fathomed.
+  // root->right has non-integral solution, so it is not fathomed.
+  EXPECT_TRUE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  // The left-most un-fathomed node is root->right.
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->right_child());
+
+  dut.BranchAndUpdate(dut.mutable_root(), x(4));
+  // root->left has non-integral solution, so it is not fathomed.
+  // root->right has non-integral solution, so it is not fathomed.
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
+  EXPECT_FALSE(
+      dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
+  // The left-most un-fathomed node is root->left.
+  EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->left_child());
 }
 }  // namespace
 }  // namespace solvers

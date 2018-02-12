@@ -23,12 +23,12 @@ namespace solvers {
  * continuous
  * min f(x)         (2)
  * s.t g(x) ≤ 0
- *     z₀ = b₀
- *     0 ≤ z₁ ≤ 1
- * where z₀, z₁ is a partition of the original binary variables z. z₀ is the
- * fixed binary variables, z₁ is the relaxed binary variables. b₀ is a vector
- * containing the assigned values of the fixed binary variables z₀, b₀ only
- * contains value either 0 or 1.
+ *     z_fixed = b_fixed
+ *     0 ≤ z_relaxed ≤ 1
+ * where z_fixed, z_relaxed is a partition of the original binary variables z.
+ * z_fixed is the fixed binary variables, z_relaxed is the relaxed binary
+ * variables. b_fixed is a vector containing the assigned values of the fixed
+ * binary variables z_fixed, b_fixed only contains value either 0 or 1.
  *
  * Each node is created from its parent node, by fixing one binary variable to
  * either 0 or 1.
@@ -265,7 +265,7 @@ class MixedIntegerBranchAndBound {
    * or a branching variable.
    */
   using NodeSelectFun = std::function<MixedIntegerBranchAndBoundNode*(
-      const MixedIntegerBranchAndBoundNode&)>;
+      const MixedIntegerBranchAndBound&)>;
   using VariableSelectFun = std::function<const symbolic::Variable*(
       const MixedIntegerBranchAndBoundNode&)>;
 
@@ -400,10 +400,38 @@ class MixedIntegerBranchAndBound {
    * For example, if the user has defined a function LeftMostNode that would
    * return the left-most unfathomed node in the tree, then the user could do
    * <pre>
+   * MixedIntegerBranchAndBoundNode* LeftMostNodeInSubTree(
+   *     const MixedIntegerBranchAndBound& branch_and_bound,
+   *     const MixedIntegerBranchAndBoundNode& subtree_root) {
+   *   // Find the left most leaf node that is not fathomed.
+   *   if (subtree_root.IsLeaf()) {
+   *     if (branch_and_bound.IsLeafNodeFathomed(subtree_root)) {
+   *       return nullptr;
+   *     } else {
+   *       return const_cast<MixedIntegerBranchAndBoundNode*>(&subtree_root);
+   *     }
+   *   } else {
+   *     auto left_most_node_left_tree =
+   *         LeftMostNodeInSubTree(branch_and_bound,
+   * *(subtree_root.left_child()));
+   *     if (!left_most_node_left_tree) {
+   *       return LeftMostNodeInSubTree(branch_and_bound,
+   *                                    *(subtree_root.right_child()));
+   *     }
+   *     return left_most_node_left_tree;
+   *   }
+   * }
+   *
    * MixedIntegerBranchAndBound bnb(...);
    * bnb.SetNodeSelectionMethod(MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
-   * bnb.SetUserDefinedNodeSelectionFunction(LeftMostNode);
+   * bnb->SetUserDefinedNodeSelectionFunction([](
+   *     const MixedIntegerBranchAndBound& branch_and_bound) {
+   *   return LeftMostNodeInSubTree(branch_and_bound,
+   * *(branch_and_bound.root()));
    * </pre>
+   * @note The user defined function should pick an un-fathomed leaf node for
+   * branching. @throw a runtime error if the node is not a leaf node, or it is
+   * fathomed.
    */
   void SetUserDefinedNodeSelectionFunction(NodeSelectFun fun) {
     node_selection_userfun_ = fun;
@@ -431,13 +459,13 @@ class MixedIntegerBranchAndBound {
    * <pre>
    * SymbolicVariable* FirstVariable(const MixedIntegerBranchAndBoundNode& node)
    * {
-   *   ...
+   *   return node.remaining_binary_variables().begin();
    * }
    * </pre>
    * The user can then set the branch-and-bound to use this function to select
    * the branching variable as
    * <pre>
-   * MixedIntegerBranchAndBound bnb;
+   * MixedIntegerBranchAndBound bnb(...);
    * bnb.SetVariableSelectionMethod(MixedIntegerBranchAndBound:VariableSelectionMethod::kUserDefined);
    * bnb.SetUserDefinedVariableSelectionFunction(FirstVariable);
    * </pre>
@@ -528,20 +556,6 @@ class MixedIntegerBranchAndBound {
       const MixedIntegerBranchAndBoundNode& node) const;
 
   /**
-   * Pick the most ambivalent one as the branching variable, namely the binary
-   * variable whose value is closest to 0.5.
-   */
-  const symbolic::Variable* PickMostAmbivalentAsBranchingVariable(
-      const MixedIntegerBranchAndBoundNode& node) const;
-
-  /**
-   * Pick the least ambivalent one as the branching variable, namely the binary
-   * variable whose value is closet to 0 or 1.
-   */
-  const symbolic::Variable* PickLeastAmbivalentAsBranchingVariable(
-      const MixedIntegerBranchAndBoundNode& node) const;
-
-  /**
    * Branch on a node, solves the optimization, and update the best lower and
    * upper bounds.
    * @param node. The node to be branched.
@@ -569,6 +583,8 @@ class MixedIntegerBranchAndBound {
    * Search for an integral solution satisfying all the constraints in this
    * node, together with the integral constraints in the original mixed-integer
    * program.
+   * @note This method will change the data field such as solutions_ and/or
+   * best_upper_bound_, if an integral solution is found.
    */
   void SearchIntegralSolution(const MixedIntegerBranchAndBoundNode& node);
 
