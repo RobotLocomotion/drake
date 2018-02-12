@@ -374,6 +374,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return source_id_;
   }
 
+  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
+
   /// Returns the output port of frame id's used to communicate poses to a
   /// GeometrySystem. It throws a std::out_of_range exception if this system was
   /// not registered with a GeometrySystem.
@@ -436,6 +438,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void CalcAndAddContactForcesByPenaltyMethod(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -506,8 +514,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
 
   // Port handles for geometry:
+  int geometry_query_port_{-1};
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
+
+  // Rigid contact constraint parameters.
+  double contact_penalty_stiffness_{0};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

@@ -101,6 +101,8 @@ int do_main() {
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(plant.get_source_id().value()));
+  builder.Connect(geometry_system.get_query_output_port(),
+                  plant.get_geometry_query_input_port());
 
   builder.Connect(geometry_system.get_pose_bundle_output_port(),
                   converter.get_input_port(0));

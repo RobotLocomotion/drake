@@ -163,6 +163,10 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
+
+  // Compute contact forces on each body by penalty method.
+  CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
+
   model_->CalcInverseDynamics(
       context, pc, vc, vdot,
       F_BBo_W_array, tau_array,
@@ -182,6 +186,36 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   model_->MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
   derivatives->SetFromVector(xdot);
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc, const VelocityKinematicsCache<T>& vc,
+    std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  const geometry::QueryObject<T>& query_object =
+      this->template EvalAbstractInput(context, geometry_query_port_)
+          ->template GetValue<geometry::QueryObject<T>>();
+  (void) query_object;
+#if 0
+  std::vector<PenetrationAsPointPair<T>> penetrations =
+      query_object.ComputePointPairPenetration();
+  T fC = 0;  // the contact force
+  if (penetrations.size() > 0) {
+    for (const auto& penetration : penetrations) {
+      if (penetration.id_A == ball_id_ || penetration.id_B == ball_id_) {
+        // Penetration depth, > 0 during penetration.
+        const T& x = penetration.depth;
+        // Penetration rate, > 0 implies increasing penetration.
+        const T& xdot = -state.zdot();
+
+        fC = k_ * x * (1.0 + d_ * xdot);
+      }
+    }
+  }
+  derivative_vector.set_z(state.zdot());
+  const T fN = max(0.0, fC);
+#endif
 }
 
 template<typename T>
@@ -235,6 +269,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
 
 template<typename T>
 void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
+  geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
   geometry_id_port_ =
       this->DeclareAbstractOutputPort(
           &MultibodyPlant::AllocateFrameIdOutput,
@@ -299,6 +334,12 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     pose_data[pose_index++] = pc.get_X_WB(body.get_node_index());
     PRINT_VARn(pc.get_X_WB(body.get_node_index()).matrix());
   }
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>&
+MultibodyPlant<T>::get_geometry_query_input_port() const {
+  return systems::System<T>::get_input_port(geometry_query_port_);
 }
 
 template <typename T>
