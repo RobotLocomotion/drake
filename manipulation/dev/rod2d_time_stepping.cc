@@ -117,7 +117,7 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
   Wf = Jf.transpose().block(1, 0, 6, nd_);
 }
 
-int do_main(int argc, char* argv[]) {
+int do_main() {
   systems::DiagramBuilder<double> builder;
 
   // Initialize Rod2D quasistatic system.
@@ -229,6 +229,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace manipulation
 }  // namespace drake
 
-int main(int argc, char* argv[]) {
-  return drake::manipulation::rod2d::do_main(argc, argv);
+int main() {
+  return drake::manipulation::rod2d::do_main();
 }

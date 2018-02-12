@@ -1,8 +1,8 @@
 #include "drake/manipulation/dev/quasistatic_system.h"
 #include <algorithm>
 #include <limits>
-#include <vector>
 #include <map>
+#include <vector>
 #include "drake/math/quaternion.h"
 #include "drake/systems/controllers/controlUtil.h"
 
@@ -48,8 +48,8 @@ T MaxStlVector(const std::vector<T>& v) {
  * indices are into the rigidbodytree containing these bodies.
  */
 std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(
-    const RigidBodyTreed *const tree, const std::vector<int> &idx_body,
-    bool is_position, std::map<int, std::vector<int>> *fixed_body_dofs) {
+    const RigidBodyTreed* const tree, const std::vector<int>& idx_body,
+    bool is_position, std::map<int, std::vector<int>>* fixed_body_dofs) {
   std::vector<int> idx_q;
   for (auto i : idx_body) {
     int start = 0;
@@ -657,7 +657,6 @@ void QuasistaticSystem::StepForward(const MatrixXd& Wn, const MatrixXd& Wf,
   // Wn * lambda_n + Wf * lambda_f == -f *period_sec_
   force_balance_->UpdateCoefficients(
       (MatrixXd(n_vu_, nc_ + nd_) << Wn, Wf).finished(), -f * period_sec_);
-
 
   // lower bound on contact forces (impulses) by adding springs.
   // This is the mechanically correct way to lower bound normal forces, but
