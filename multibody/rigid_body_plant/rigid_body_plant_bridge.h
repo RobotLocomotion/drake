@@ -33,16 +33,31 @@ namespace systems {
   %MeshPoints | .         | .      | .
   %Plane      | V         | V      | .
   %Sphere     | V         | V      | .
-<h4>Table: Level of Support. Indication of what types of shapes are read from
- the RigidBodyTree, what their origin is (collision or visual) and how they are
- used in GeometrySystem roles.</h4>
+ <h4>Table: Level of Support. Indication of what types of shapes (rows) are read
+ from the RigidBodyTree, the role they played in the RigidBodyTree, collision or
+ visual, (cell values "C", "V", or ".") and how they are used in GeometrySystem
+ roles (columns).</h4>
 
- Geometry can play two roles in a RigidBody: collision and visualization.
- The entry value indicates which RigidBody geometry role is used.
+ The table maps a geometry instance in RigidBodyTree to the effect it has in
+ GeometrySystem. Things of particular note:
 
-    - C : Collision geometry used
-    - V : Visual geometry used (but without material values)
-    - . : No geometry used, shapes of this type are *ignored*
+ 1. %Box, %Capsule, and %MeshPoints are not supported at all. If found in the
+    RigidBodyTree, as visual _or_ collision elements, they will be ignored.
+ 2. Collision elements are all completely ignored (no cell has the value "C").
+    For those shapes that *are* supported, only the visual elements are
+    included.
+ 3. The implication of the previous point is that for those shapes that are
+    supported by the proximity queries, the _visual_ geometry will be used and
+    not the declared collision geometry.
+ 4. Meshes are passed on to drake visualizer, but do not contribute to any
+    queries.
+
+ A RigidBody can have "visual" elements and "collision" elements. Which one is
+ read and used in GeometrySystem is indicated by the cell value:
+
+    - C : Collision element's geometry is used
+    - V : Visual element's geometry is used (but without material values)
+    - . : No geometry is used, shapes of this type are *ignored*
 
  The columns indicate the GeometrySystem roles.
    - Proximity: The shape is used in proximity queries (e.g., penetration,
@@ -51,10 +66,6 @@ namespace systems {
    - Render:    The shape is used in rendering queries (i.e., RGB images,
                 depth images, label images, etc.)
 
-
- @warning In the current version, collision geometry is ignored. So, if you
- perform penetration queries, you will be performing them on the visual
- elements.
 
  <H3>Distinction between anchored and dynamic geometry</H3>
 
@@ -129,7 +140,7 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
                          geometry::FrameIdVector* id_set) const;
 
   // The tree used to populate GeometrySystem and evaluate body kinematics.
-  const RigidBodyTree<T>& tree_{};
+  const RigidBodyTree<T>* const tree_{nullptr};
 
   // This system's source id with GeometrySystem.
   geometry::SourceId source_id_;

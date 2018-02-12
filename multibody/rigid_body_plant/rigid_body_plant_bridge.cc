@@ -27,7 +27,8 @@ using geometry::Sphere;
 template <typename T>
 RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
     const RigidBodyTree<T>* tree, GeometrySystem<T>* geometry_system)
-    : tree_(*tree) {
+    : tree_(tree) {
+  DRAKE_THROW_UNLESS(tree_ != nullptr);
   DRAKE_THROW_UNLESS(geometry_system != nullptr);
   source_id_ = geometry_system->RegisterSource(this->get_name());
 
@@ -76,11 +77,11 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
   // will be reported.
 
   // Load *dynamic* geometry
-  const int body_count = static_cast<int>(tree_.bodies.size());
+  const int body_count = static_cast<int>(tree_->bodies.size());
   if (body_count > 1) {  // more than just the world.
     body_ids_.reserve(body_count - 1);
     for (int i = 1; i < body_count; ++i) {
-      const RigidBody<T>& body = *tree_.bodies[i];
+      const RigidBody<T>& body = *tree_->bodies[i];
       FrameId body_id = geometry_system->RegisterFrame(
           source_id_,
           GeometryFrame(body.get_name(), Isometry3<double>::Identity(),
@@ -150,18 +151,18 @@ void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
   const BasicVector<T>& input_vector = *this->EvalVectorInput(context, 0);
   // Obtains the generalized positions from vector_base.
   const VectorX<T> q = input_vector.CopyToVector().head(
-      tree_.get_num_positions());
+      tree_->get_num_positions());
 
   // Computes the poses of each body.
-  KinematicsCache<T> cache = tree_.doKinematics(q);
+  KinematicsCache<T> cache = tree_->doKinematics(q);
 
   // Saves the poses of each body in the frame pose vector
   // NOTE: Body 0 is the world; we skip it.
   // TODO(SeanCurtis-TRI): When I start skipping rigidly fixed bodies, modify
   // this loop to account for them.
   const int world_body = 0;
-  for (size_t i = 1; i < tree_.bodies.size(); ++i) {
-    pose_data[i - 1] = tree_.relativeTransform(cache, world_body, i);
+  for (size_t i = 1; i < tree_->bodies.size(); ++i) {
+    pose_data[i - 1] = tree_->relativeTransform(cache, world_body, i);
   }
 }
 
