@@ -190,8 +190,28 @@ See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 SNOPT 7.2
 ---------
 
+Drake provides two mechanisms to include the SNOPT sources.  One mechanism is
+to provide your own SNOPT source archive.  The other mechanism is via access to
+a private RobotLocomotion git repository.
+
+Using your own source archive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Download the SNOPT sources from the distributor in ``.tar.gz`` format (e.g.,
+   named ``snopt7.5-1.4.tar.gz``).
+2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.5-1.4.tar.gz``
+
+Using the RobotLocomotion git repository
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
 2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
+
+The build will attempt to use this mechanism anytime SNOPT is enabled and a
+source archive has not been specified.
+
+Test the build (for either mechanism)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To confirm that your setup was successful, run the tests that require SNOPT.
 
