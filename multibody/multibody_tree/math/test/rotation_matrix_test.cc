@@ -260,25 +260,35 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   Matrix3d m;
   m << 1, 0.1, 0.1, -0.2, 1.0, 0.1, 0.5, 0.6, 0.8;
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
-  RotationMatrix<double> R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  double quality_factor;
+  RotationMatrix<double> R =
+      RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [1.405049, 1.061152, 0.4688222]
+  EXPECT_TRUE(std::abs(quality_factor - 0.4688222) < 1E-5);
 
   m << 1, 2, 3, 4, 5, 6, 7, 8, -10;
-  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [14.61524, 9.498744, 0.4105846]
+  EXPECT_TRUE(std::abs(quality_factor - 14.61524) < 1E-5);
 
   m << 1E-7, 2, 3, 4, 5, 6, 7, 8, -1E6;
-  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [1000000, 6.597777, 1.21254]
+  EXPECT_TRUE(std::abs(quality_factor - 1000000) < 1E-1);
 
   m << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [0, 0, 0]
+  EXPECT_TRUE(std::abs(quality_factor - 0) < 1E-13);
 
   m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
-  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m),
-               std::logic_error);
+  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
+               &quality_factor), std::logic_error);
 }
 
 // Test RotationMatrix cast method from double to AutoDiffXd.

@@ -15,6 +15,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dynamic_programming",
+    srcs = ["dynamic_programming.cc"],
+    hdrs = ["dynamic_programming.h"],
+    deps = [
+        "//drake/common:essential",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:barycentric_system",
+    ],
+)
+
+drake_cc_library(
     name = "inverse_dynamics",
     srcs = ["inverse_dynamics.cc"],
     hdrs = ["inverse_dynamics.h"],
@@ -220,6 +232,18 @@ drake_cc_library(
     hdrs = ["test/zmp_test_util.h"],
     deps = [
         ":zmp_planner",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dynamic_programming_test",
+    deps = [
+        ":dynamic_programming",
+        ":linear_quadratic_regulator",
+        "//drake/common/proto:call_matlab",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/primitives:integrator",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 

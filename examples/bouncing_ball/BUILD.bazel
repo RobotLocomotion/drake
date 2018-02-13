@@ -13,9 +13,9 @@ drake_cc_library(
         "ball-inl.h",
     ],
     deps = [
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-        "//drake/systems/framework:leaf_system",
+        "//common:default_scalars",
+        "//common:essential",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -28,8 +28,8 @@ drake_cc_library(
     ],
     deps = [
         ":ball",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -46,7 +46,7 @@ drake_cc_googletest(
     name = "bouncing_ball_test",
     deps = [
         ":bouncing_ball",
-        "//drake/systems/analysis",
+        "//systems/analysis",
     ],
 )
 

@@ -11,7 +11,7 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 apt update
-apt install --no-install-recommends apt-transport-https wget
+apt install --no-install-recommends apt-transport-https ca-certificates wget
 
 wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
 echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu xenial main' > /etc/apt/sources.list.d/drake.list
@@ -21,7 +21,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 build-essential
 cmake
 coinor-libipopt1v5
-dreal=4.18.01.3
+dreal=4.18.02.2
 libblas3
 libboost-all-dev
 libexpat1
@@ -29,7 +29,7 @@ libgflags-dev
 libgl1-mesa-glx
 libglib2.0-0
 libhdf5-10
-libibex-dev=2.6.5.20180123154310.gitf618c7b296182f90a84d54936d144b87df0747b9~16.04
+libibex-dev=2.6.5.20180211084215.gitd1419538b4d818ed1cf21a01896bc5eaae5d1d57~16.04
 libjpeg8
 libjsoncpp1
 liblapack3
