@@ -41,6 +41,9 @@ using ImageLabel16I = Image<PixelType::kLabel16I>;
 /// The type for greyscale image where the channel has the type of uint8_t.
 using ImageGrey8U = Image<PixelType::kGrey8U>;
 
+/// The type for symbolic image where the channel has the type of
+/// symbolic::Expression.
+using ImageExpr = Image<PixelType::kExpr>;
 
 /// Simple data format for Image. For the complex calculation with the image,
 /// consider converting this to other libaries' Matrix data format, i.e.,
