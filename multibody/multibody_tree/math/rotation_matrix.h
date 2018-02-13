@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <limits>
 
 #include <Eigen/Dense>
@@ -10,8 +11,6 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
-#include "drake/math/roll_pitch_yaw.h"
-#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -66,7 +65,16 @@ class RotationMatrix {
   ///        ⎣ 0   sin(theta)    cos(theta) ⎦
   /// ```
   static RotationMatrix<T> MakeRotationMatrixX(const T& theta) {
-    return RotationMatrix(math::XRotation(theta));
+      Matrix3<T> R;
+      using std::sin;
+      using std::cos;
+      const T c = cos(theta), s = sin(theta);
+      // clang-format off
+      R << 1,  0,  0,
+           0,  c, -s,
+           0,  s,  c;
+      // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -81,7 +89,16 @@ class RotationMatrix {
   ///        ⎣ -sin(theta)   0   cos(theta) ⎦
   /// ```
   static RotationMatrix<T> MakeRotationMatrixY(const T& theta) {
-    return RotationMatrix(math::YRotation(theta));
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R <<  c,  0,  s,
+          0,  1,  0,
+         -s,  0,  c;
+    // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -96,7 +113,16 @@ class RotationMatrix {
   ///        ⎣         0            0    1 ⎦
   /// ```
   static RotationMatrix<T> MakeRotationMatrixZ(const T& theta) {
-    return RotationMatrix(math::ZRotation(theta));
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R << c, -s,  0,
+         s,  c,  0,
+         0,  0,  1;
+    // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
@@ -155,7 +181,18 @@ class RotationMatrix {
   /// Note: B and A are no longer aligned.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   static RotationMatrix<T> MakeRotationMatrixSpaceXYZ(const Vector3<T>& rpy) {
-    return RotationMatrix(math::rpy2rotmat(rpy));
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c0 = cos(rpy(0)), s0 = sin(rpy(0));
+    const T c1 = cos(rpy(1)), s1 = sin(rpy(1));
+    const T c2 = cos(rpy(2)), s2 = sin(rpy(2));
+    // clang-format off
+    R << c2 * c1,  c2 * s1 * s0 - s2 * c0,  c2 * s1 * c0 + s2 * s0,
+         s2 * c1,  s2 * s1 * s0 + c2 * c0,  s2 * s1 * c0 - c2 * s0,
+        -s1,            c1 * s0,                 c1 * c0;
+    // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Creates a %RotationMatrix templatized on a scalar type U from a
