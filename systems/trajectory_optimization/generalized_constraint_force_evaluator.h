@@ -11,8 +11,7 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 /** This evaluator computes the generalized constraint force Jᵀλ.
- * where the Jacobian J can depend on both generalized position q and
- * generalized velocity v.
+ * where the Jacobian J can depend on generalized position q
  */
 class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
  public:
@@ -31,27 +30,24 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   const RigidBodyTree<double>* tree() const { return tree_; }
 
   /**
-   * Composite the input `x` to the Eval function, given q, v, and λ.
+   * Composite the input `x` to the Eval function, given q and λ.
    * This is a helper function, so that the user does not need to remember the
-   * order of q, v, and λ in the input `x`.
+   * order of q and λ in the input `x`.
    */
-  template <typename DerivedQ, typename DerivedV, typename DerivedLambda>
+  template <typename DerivedQ, typename DerivedLambda>
   typename std::enable_if<
       is_eigen_vector_of<DerivedQ, typename DerivedQ::Scalar>::value &&
-          is_eigen_vector_of<DerivedV, typename DerivedQ::Scalar>::value &&
           is_eigen_vector_of<DerivedLambda, typename DerivedQ::Scalar>::value,
       Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1>>::type
   CompositeEvalInputVector(
       const Eigen::MatrixBase<DerivedQ>& q,
-      const Eigen::MatrixBase<DerivedV>& v,
       const Eigen::MatrixBase<DerivedLambda>& lambda) const {
     using Scalar = typename DerivedQ::Scalar;
     DRAKE_ASSERT(q.rows() == tree_->get_num_positions());
-    DRAKE_ASSERT(v.rows() == tree_->get_num_velocities());
     DRAKE_ASSERT(lambda.rows() == num_lambda_);
-    typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(q.rows() + v.rows() +
+    typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(q.rows() +
                                                         lambda.rows());
-    x << q, v, lambda;
+    x << q, lambda;
     return x;
   }
 
@@ -67,8 +63,7 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   // Computes the Jacobian J so as to evaluate the generalized constraint force
   // Jᵀλ.
   virtual MatrixX<AutoDiffXd> EvalConstraintJacobian(
-      const Eigen::Ref<const AutoDiffVecXd>& q,
-      const Eigen::Ref<const AutoDiffVecXd>& v) const = 0;
+      const Eigen::Ref<const AutoDiffVecXd>& q) const = 0;
 
  private:
   const RigidBodyTree<double>* tree_;
@@ -92,7 +87,7 @@ class PositionConstraintForceEvaluator
    */
   PositionConstraintForceEvaluator(
       const RigidBodyTree<double>& tree,
-      std::shared_ptr<plants::KinematicsCacheWithVHelper<AutoDiffXd>>
+      std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
           kinematics_cache_helper)
       : GeneralizedConstraintForceEvaluator(tree,
                                             tree.getNumPositionConstraints()),
@@ -100,11 +95,10 @@ class PositionConstraintForceEvaluator
 
  protected:
   MatrixX<AutoDiffXd> EvalConstraintJacobian(
-      const Eigen::Ref<const AutoDiffVecXd>& q,
-      const Eigen::Ref<const AutoDiffVecXd>& v) const override;
+      const Eigen::Ref<const AutoDiffVecXd>& q) const override;
 
  private:
-  mutable std::shared_ptr<plants::KinematicsCacheWithVHelper<AutoDiffXd>>
+  mutable std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
       kinematics_cache_helper_;
 };
 
@@ -132,8 +126,7 @@ class JointLimitConstraintForceEvaluator
 
  protected:
   MatrixX<AutoDiffXd> EvalConstraintJacobian(
-      const Eigen::Ref<const AutoDiffVecXd>& q,
-      const Eigen::Ref<const AutoDiffVecXd>& v) const override;
+      const Eigen::Ref<const AutoDiffVecXd>& q) const override;
 
  private:
   const int joint_velocity_index_;

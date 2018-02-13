@@ -26,19 +26,17 @@ GTEST_TEST(GeneralizedConstraintForceEvaluatorTest, TestEval) {
   auto tree = ConstructFourBarTree();
 
   auto cache_helper =
-      std::make_shared<plants::KinematicsCacheWithVHelper<AutoDiffXd>>(*tree);
+      std::make_shared<plants::KinematicsCacheHelper<AutoDiffXd>>(*tree);
 
   PositionConstraintForceEvaluator evaluator(*tree, cache_helper);
 
   // Set q to some arbitrary number.
   const Eigen::VectorXd q =
       Eigen::VectorXd::LinSpaced(tree->get_num_positions(), 1, 5);
-  const Eigen::VectorXd v =
-      Eigen::VectorXd::LinSpaced(tree->get_num_velocities(), 0, 2);
   // Set lambda to some arbitrary number.
   const Eigen::VectorXd lambda =
       Eigen::VectorXd::LinSpaced(evaluator.num_lambda(), -3, 3);
-  const Eigen::VectorXd x = evaluator.CompositeEvalInputVector(q, v, lambda);
+  const Eigen::VectorXd x = evaluator.CompositeEvalInputVector(q, lambda);
   const auto tx = math::initializeAutoDiff(x);
   AutoDiffVecXd ty;
   evaluator.Eval(tx, ty);

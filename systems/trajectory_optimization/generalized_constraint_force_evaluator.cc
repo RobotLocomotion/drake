@@ -29,18 +29,15 @@ void GeneralizedConstraintForceEvaluator::DoEval(
   // x contains q, v and λ
   DRAKE_ASSERT(x.rows() == num_vars());
   const auto q = x.head(tree_->get_num_positions());
-  const auto v =
-      x.segment(tree_->get_num_positions(), tree_->get_num_velocities());
   const auto lambda = x.tail(num_lambda_);
 
-  const auto J = EvalConstraintJacobian(q, v);
+  const auto J = EvalConstraintJacobian(q);
   y = J.transpose() * lambda;
 }
 
 MatrixX<AutoDiffXd> PositionConstraintForceEvaluator::EvalConstraintJacobian(
-    const Eigen::Ref<const AutoDiffVecXd>& q,
-    const Eigen::Ref<const AutoDiffVecXd>& v) const {
-  auto kinsol = kinematics_cache_helper_->UpdateKinematics(q, v);
+    const Eigen::Ref<const AutoDiffVecXd>& q) const {
+  auto kinsol = kinematics_cache_helper_->UpdateKinematics(q, tree());
   return tree()->positionConstraintsJacobian(kinsol);
 }
 
@@ -50,12 +47,10 @@ JointLimitConstraintForceEvaluator::JointLimitConstraintForceEvaluator(
       joint_velocity_index_(joint_velocity_index) {}
 
 MatrixX<AutoDiffXd> JointLimitConstraintForceEvaluator::EvalConstraintJacobian(
-    const Eigen::Ref<const AutoDiffVecXd>& q,
-    const Eigen::Ref<const AutoDiffVecXd>& v) const {
-  // q and v are unused here, since the Jacobian is a constant, that does
-  // not depends on q or v.
+    const Eigen::Ref<const AutoDiffVecXd>& q) const {
+  // q is unused here, since the Jacobian is a constant, that does not depends
+  // on q.
   unused(q);
-  unused(v);
   Eigen::MatrixXd J(2, tree()->get_num_velocities());
   J.setZero();
   J(LowerLimitForceIndexInLambda(), joint_velocity_index_) = 1;
