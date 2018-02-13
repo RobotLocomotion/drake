@@ -201,6 +201,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "branch_and_bound",
+    srcs = ["branch_and_bound.cc"],
+    hdrs = ["branch_and_bound.h"],
+    deps = [
+        ":mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "non_convex_optimization_util",
     srcs = ["non_convex_optimization_util.cc"],
     hdrs = ["non_convex_optimization_util.h"],
@@ -686,6 +695,17 @@ drake_cc_googletest(
         ":binding",
         ":constraint",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "branch_and_bound_test",
+    tags = gurobi_test_tags(),
+    deps = [
+        ":branch_and_bound",
+        ":mathematical_program_test_util",
+        ":mixed_integer_optimization_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

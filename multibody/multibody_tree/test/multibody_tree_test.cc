@@ -6,16 +6,23 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/continuous_state.h"
 
 namespace drake {
 namespace multibody {
 namespace multibody_model {
 namespace {
 
+using Eigen::MatrixXd;
 using multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
+using systems::Context;
+using systems::ContinuousState;
 
 // This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
 // multibody elements by name or get exceptions accordingly.
@@ -123,6 +130,307 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   DRAKE_EXPECT_ERROR_MESSAGE(
       model->GetJointByName<RevoluteJoint>(kInvalidName), std::logic_error,
       "There is no joint named '.*' in the model.");
+}
+
+// Fixture to perform a number of computational tests on a KUKA Iiwa model.
+class KukaIiwaModelTests : public ::testing::Test {
+ public:
+  /// Creates MultibodyTree for a KUKA Iiwa robot arm.
+  void SetUp() override {
+    model_ = MakeKukaIiwaModel<double>();
+
+    // Keep pointers to the modeling elements.
+    end_effector_link_ = &model_->GetBodyByName("iiwa_link_7");
+    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
+    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
+    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
+    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_4"));
+    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_5"));
+    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_6"));
+    joints_.push_back(&model_->GetJointByName<RevoluteJoint>("iiwa_joint_7"));
+
+    context_ = model_->CreateDefaultContext();
+
+    // Scalar-convert the model and create a default context for it.
+    model_autodiff_ = model_->ToAutoDiffXd();
+    context_autodiff_ = model_autodiff_->CreateDefaultContext();
+  }
+
+  // Computes the translational velocity `v_WE` of the end effector frame E in
+  // the world frame W.
+  template <typename T>
+  Vector3<T> CalcEndEffectorVelocity(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T) const {
+    std::vector<SpatialVelocity<T>> V_WB_array;
+    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    return V_WB_array[end_effector_link_->get_index()].translational();
+  }
+
+  // Computes p_WEo, the position of the end effector frame's origin Eo.
+  template <typename T>
+  Vector3<T> CalcEndEffectorPosition(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T) const {
+    const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
+    Vector3<T> p_WE;
+    model_on_T.CalcPointsPositions(
+        context_on_T, linkG_on_T.get_body_frame(),
+        Vector3<T>::Zero(),  // position in frame G
+        model_on_T.get_world_body().get_body_frame(), &p_WE);
+    return p_WE;
+  }
+
+  // Computes the geometric Jacobian Jv_WPi for a set of points Pi moving with
+  // the end effector frame E, given their (fixed) position p_WPi in the end
+  // effector frame.
+  // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
+  // details.
+  template <typename T>
+  void CalcPointsOnEndEffectorGeometricJacobian(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T,
+      const MatrixX<T>& p_EPi,
+      MatrixX<T>* p_WPi, MatrixX<T>* Jv_WPi) const {
+    const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
+    model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
+        context_on_T, linkG_on_T.get_body_frame(), p_EPi, p_WPi, Jv_WPi);
+  }
+
+ protected:
+  // The model plant:
+  std::unique_ptr<MultibodyTree<double>> model_;
+  // Workspace including context and derivatives vector:
+  std::unique_ptr<Context<double>> context_;
+  // Non-owning pointer to the end effector link:
+  const Body<double>* end_effector_link_{nullptr};
+  // Non-owning pointers to the joints:
+  std::vector<const RevoluteJoint<double>*> joints_;
+
+  // AutoDiffXd model to compute automatic derivatives:
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff_;
+  std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
+};
+
+// This test is used to verify the correctness of the method
+// MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
+// The test computes the end effector geometric Jacobian Jv_WE (in the world
+// frame W) using two methods:
+// 1. Calling MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
+// 2. Using AutoDiffXd to compute the partial derivative of v_WE(q, v) with
+//    respect to v.
+// By comparing the two results we verify the correctness of the MultibodyTree
+// implementation.
+// In addition, we are testing methods:
+// - MultibodyTree::CalcPointsPositions()
+// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+TEST_F(KukaIiwaModelTests, GeometricJacobian) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = model_->get_num_positions();
+  const int kNumStates = model_->get_num_states();
+
+  ASSERT_EQ(kNumPositions, 7);
+
+  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+
+  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // motions.
+  const double q30 = M_PI / 6, q60 = M_PI / 3;
+  const double qA = q60;
+  const double qB = q30;
+  const double qC = q60;
+  const double qD = q30;
+  const double qE = q60;
+  const double qF = q30;
+  const double qG = q60;
+  VectorX<double> q(kNumPositions);
+  q << qA, qB, qC, qD, qE, qF, qG;
+
+  // A non-zero set of values for the joint's velocities.
+  const double vA = 0.1;
+  const double vB = 0.2;
+  const double vC = 0.3;
+  const double vD = 0.4;
+  const double vE = 0.5;
+  const double vF = 0.6;
+  const double vG = 0.7;
+  VectorX<double> v(kNumPositions);
+  v << vA, vB, vC, vD, vE, vF, vG;
+
+  // Zero generalized positions and velocities.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Compute the value of the end effector's velocity using <double>.
+  Vector3<double> v_WE = CalcEndEffectorVelocity(*model_, *context_);
+
+  context_autodiff_->SetTimeStateAndParametersFrom(*context_);
+
+  // Initialize v_autodiff to have values v and so that it is the independent
+  // variable of the problem.
+  VectorX<AutoDiffXd> v_autodiff(kNumPositions);
+  math::initializeAutoDiff(v, v_autodiff);
+  context_autodiff_->get_mutable_continuous_state().
+      get_mutable_generalized_velocity().SetFromVector(v_autodiff);
+
+  const Vector3<AutoDiffXd> v_WE_autodiff =
+      CalcEndEffectorVelocity(*model_autodiff_, *context_autodiff_);
+
+  const Vector3<double> v_WE_value = math::autoDiffToValueMatrix(v_WE_autodiff);
+  const MatrixX<double> v_WE_derivs =
+      math::autoDiffToGradientMatrix(v_WE_autodiff);
+
+  // Values obtained with <AutoDiffXd> should match those computed with
+  // <double>.
+  EXPECT_TRUE(CompareMatrices(v_WE_value, v_WE,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Some sanity checks on the expected sizes of the derivatives.
+  EXPECT_EQ(v_WE_derivs.rows(), 3);
+  EXPECT_EQ(v_WE_derivs.cols(), kNumPositions);
+
+  Vector3<double> p_WE;
+  Matrix3X<double> Jv_WE(3, model_->get_num_velocities());
+  // The end effector (G) Jacobian is computed by asking the Jacobian for a
+  // point P with position p_GP = 0 in the G frame.
+  model_->CalcPointsGeometricJacobianExpressedInWorld(
+      *context_, end_effector_link_->get_body_frame(),
+      Vector3<double>::Zero(), &p_WE, &Jv_WE);
+
+  // Verify the computed Jacobian matches the one obtained using automatic
+  // differentiation.
+  EXPECT_TRUE(CompareMatrices(Jv_WE, v_WE_derivs,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify that v_WE = Jv_WE * v:
+  const Vector3<double> Jv_WE_times_v = Jv_WE * v;
+  EXPECT_TRUE(CompareMatrices(Jv_WE_times_v, v_WE,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify that MultibodyTree::CalcPointsPositions() computes the same value
+  // of p_WE. Even both code paths resolve to CalcPointsPositions(), here we
+  // call this method explicitly to provide unit testing for this API.
+  Vector3<double> p2_WE = CalcEndEffectorPosition(*model_, *context_);
+  EXPECT_TRUE(CompareMatrices(p2_WE, p_WE,
+                              kTolerance, MatrixCompareType::relative));
+
+  // The derivative with respect to time should equal v_WE.
+  const VectorX<AutoDiffXd> q_autodiff =
+      // For reasons beyond my understanding, we need to pass MatrixXd to
+      // math::initializeAutoDiffGivenGradientMatrix().
+      math::initializeAutoDiffGivenGradientMatrix(MatrixXd(q), MatrixXd(v));
+  v_autodiff = v.cast<AutoDiffXd>();
+  context_autodiff_->get_mutable_continuous_state().
+      get_mutable_generalized_position().SetFromVector(q_autodiff);
+  context_autodiff_->get_mutable_continuous_state().
+      get_mutable_generalized_velocity().SetFromVector(v_autodiff);
+
+  Vector3<AutoDiffXd> p_WE_autodiff = CalcEndEffectorPosition(
+      *model_autodiff_, *context_autodiff_);
+  Vector3<double> p_WE_derivs(
+      p_WE_autodiff[0].derivatives()[0],
+      p_WE_autodiff[1].derivatives()[0],
+      p_WE_autodiff[2].derivatives()[0]);
+  EXPECT_TRUE(CompareMatrices(p_WE_derivs, v_WE,
+                              kTolerance, MatrixCompareType::relative));
+}
+
+// Given a set of points Pi attached to the end effector frame G, this test
+// computes the analytic Jacobian Jq_WPi of these points using two methods:
+// 1. Since for the Kuka iiwa arm v = q̇, the analytic Jacobian equals the
+//    geometric Jacobian and we compute it with MultibodyTree's implementation.
+// 2. We compute the analytic Jacobian by direct differentiation with respect to
+//    q using AutoDiffXd.
+// We then verify MultibodyTree's implementation by comparing the results from
+// both methods.
+TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = 7;
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // motions.
+  const double q30 = M_PI / 6, q60 = M_PI / 3;
+  const double qA = q60;
+  const double qB = q30;
+  const double qC = q60;
+  const double qD = q30;
+  const double qE = q60;
+  const double qF = q30;
+  const double qG = q60;
+  VectorX<double> q0(kNumPositions);
+  q0 << qA, qB, qC, qD, qE, qF, qG;
+
+  context_->get_mutable_continuous_state().
+      get_mutable_generalized_position().SetFromVector(q0);
+
+  // A set of points Pi attached to the end effector, thus we a fixed position
+  // in its frame G.
+  const int kNumPoints = 2;  // The set stores 2 points.
+  MatrixX<double> p_EPi(3, kNumPoints);
+  p_EPi.col(0) << 0.1, -0.05, 0.02;
+  p_EPi.col(1) << 0.2, 0.3, -0.15;
+
+  MatrixX<double> p_WPi(3, kNumPoints);
+  MatrixX<double> Jq_WPi(3 * kNumPoints, kNumPositions);
+
+  // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian Jq_WPi equals the
+  // geometric Jacobian Jv_Wpi.
+  CalcPointsOnEndEffectorGeometricJacobian(
+      *model_, *context_, p_EPi, &p_WPi, &Jq_WPi);
+
+  // Alternatively, compute the analytic Jacobian by taking the gradient of
+  // the positions p_WPi(q) with respect to the generalized positions. We do
+  // that with the steps below.
+
+  // Initialize q to have values qvalue and so that it is the independent
+  // variable of the problem.
+  VectorX<AutoDiffXd> q_autodiff(kNumPositions);
+  math::initializeAutoDiff(q0, q_autodiff);
+  context_autodiff_->get_mutable_continuous_state().
+      get_mutable_generalized_position().SetFromVector(q_autodiff);
+
+  const MatrixX<AutoDiffXd> p_EPi_autodiff = p_EPi;
+  MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
+  MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
+
+  CalcPointsOnEndEffectorGeometricJacobian(
+      *model_autodiff_, *context_autodiff_,
+      p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
+
+  // Extract values and derivatives:
+  const Matrix3X<double> p_WPi_value =
+      math::autoDiffToValueMatrix(p_WPi_autodiff);
+  const MatrixX<double> p_WPi_derivs =
+      math::autoDiffToGradientMatrix(p_WPi_autodiff);
+
+  // Some sanity checks:
+  // Values obtained with <AutoDiffXd> should match those computed with
+  // <double>.
+  EXPECT_TRUE(CompareMatrices(p_WPi_value, p_WPi,
+                              kTolerance, MatrixCompareType::relative));
+  // Sizes of the derivatives.
+  EXPECT_EQ(p_WPi_derivs.rows(), 3 * kNumPoints);
+  EXPECT_EQ(p_WPi_derivs.cols(), kNumPositions);
+
+  // Verify the computed Jacobian Jq_WPi matches the one obtained using
+  // automatic differentiation.
+  // In this case analytic and geometric Jacobians are equal since v = q.
+  EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
+                              kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

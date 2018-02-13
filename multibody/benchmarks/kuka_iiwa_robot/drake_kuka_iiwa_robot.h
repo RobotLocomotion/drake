@@ -144,60 +144,6 @@ class DrakeKukaIIwaRobot {
     return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
   }
 
-  /// Given a set of points `Pi` with position vectors `p_GPi` in the end
-  /// effector frame G, this method computes the geometric Jacobian `J_NGpi`,
-  /// in the Newtonian (world) frame N defined by:
-  /// <pre>
-  ///   J_NGpi(q) = d(v_NGpi(q, v))/dv
-  /// </pre>
-  /// where `v_NGpi` is the translational velocity of point `Pi` in the world
-  /// frame N as it moves with the end effector G and v is the vector of
-  /// generalized velocities. Since the velocity of each point `Pi` is linear
-  /// in the generalized velocities, the geometric Jacobian `J_NGpi` is a
-  /// function of the generalized coordinates q only.
-  ///
-  /// The position of each point `Pi` in the set is specified by its (fixed)
-  /// position `p_GPi` in the end effector frame G.
-  ///
-  /// @param[in] q
-  ///   The vector of generalized positions.
-  /// @param[in] p_GPi
-  ///   A matrix with the fixed position of a set of points `Pi` measured and
-  ///   expressed in the end effector frame G.
-  ///   Each column of this matrix contains the position vector `p_GPi` for a
-  ///   point `Pi` measured and expressed in frame G. Therefore this input
-  ///   matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
-  /// @param[out] p_NGpi
-  ///   The output positions of each point `Pi` now computed as measured and
-  ///   expressed in the world frame N.
-  ///   The output `p_NGpi` **must** have the same size as the input set
-  ///   `p_GPi` or otherwise this method throws a std::runtime_error exception.
-  ///   That is `p_NGpi` **must** be in `ℝ³ˣⁿᵖ`.
-  /// @param[out] J_NGpi
-  ///   The geometric Jacobian, function of the generalized positions
-  ///   q only. This Jacobian relates the translational velocity `v_NGpi` of
-  ///   each point `Qi` in the input set in solidary motion with frame G by:
-  ///   <pre>
-  ///     `v_NGpi(q, v) = J_NGpi(q)⋅v`
-  ///   </pre>
-  ///   so that `v_NGpi` is a column vector of size `3⋅np` concatenating the
-  ///   velocity of all points `Pi` in the same order they were given in the
-  ///   input set. Therefore `J_NGpi` is a matrix of size `3⋅np x nv`, with `nv`
-  ///   the number of generalized velocities. On input, matrix `J_NGpi` **must**
-  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
-  ///   exception.
-  void CalcPointsOnEndEffectorGeometricJacobian(
-      const Eigen::Ref<const VectorX<T>>& q,
-      const Eigen::Ref<const MatrixX<T>>& p_GPi,
-      EigenPtr<MatrixX<T>> p_NGpi, EigenPtr<MatrixX<T>> J_NGpi) {
-    // Both, p_NGpi and J_NGpi are functions of the generalized positions q,
-    // only. Therefore we arbitrarily set v = 0.
-    const VectorX<T> v = VectorX<T>::Zero(7);
-    SetJointAnglesAnd1stDerivatives(q.data(), v.data());
-    model_->CalcPointsGeometricJacobianExpressedInWorld(
-        *context_, linkG_->get_body_frame(), p_GPi, p_NGpi, J_NGpi);
-  }
-
   /// This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
   /// robot, from known joint angles and their 1st and 2nd time-derivatives.
   ///

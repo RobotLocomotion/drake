@@ -187,6 +187,36 @@ void MultibodyTree<T>::SetDefaultState(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcAllBodyPosesInWorld(
+    const systems::Context<T>& context,
+    std::vector<Isometry3<T>>* X_WB) const {
+  DRAKE_THROW_UNLESS(X_WB != nullptr);
+  if (static_cast<int>(X_WB->size()) != get_num_bodies()) {
+    X_WB->resize(get_num_bodies(), Isometry3<T>::Identity());
+  }
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index = get_body(body_index).get_node_index();
+    X_WB->at(body_index) = pc.get_X_WB(node_index);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcAllBodySpatialVelocitiesInWorld(
+    const systems::Context<T>& context,
+    std::vector<SpatialVelocity<T>>* V_WB) const {
+  DRAKE_THROW_UNLESS(V_WB != nullptr);
+  if (static_cast<int>(V_WB->size()) != get_num_bodies()) {
+    V_WB->resize(get_num_bodies(), SpatialVelocity<T>::Zero());
+  }
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index = get_body(body_index).get_node_index();
+    V_WB->at(body_index) = vc.get_V_WB(node_index);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
     const systems::Context<T>& context,
     PositionKinematicsCache<T>* pc) const {
@@ -518,28 +548,28 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 template <typename T>
 Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
-    const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const {
+    const Frame<T>& frame_A, const Frame<T>& frame_B) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Isometry3<T>& X_WA =
-      pc.get_X_WB(to_frame_A.get_body().get_node_index());
+      pc.get_X_WB(frame_A.get_body().get_node_index());
   const Isometry3<T>& X_WB =
-      pc.get_X_WB(from_frame_B.get_body().get_node_index());
+      pc.get_X_WB(frame_B.get_body().get_node_index());
   return X_WA.inverse() * X_WB;
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcPointsPositions(
     const systems::Context<T>& context,
-    const Frame<T>& from_frame_B,
+    const Frame<T>& frame_B,
     const Eigen::Ref<const MatrixX<T>>& p_BQi,
-    const Frame<T>& to_frame_A,
+    const Frame<T>& frame_A,
     EigenPtr<MatrixX<T>> p_AQi) const {
   DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi != nullptr);
   DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
   const Isometry3<T> X_AB =
-      CalcRelativeTransform(context, to_frame_A, from_frame_B);
+      CalcRelativeTransform(context, frame_A, frame_B);
   // We demanded above that these matrices have three rows. Therefore we tell
   // Eigen so.
   p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
@@ -578,14 +608,14 @@ template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const {
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const {
   DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
   const int num_points = p_BQi_set.cols();
   DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
   DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
-  DRAKE_THROW_UNLESS(J_WQi != nullptr);
-  DRAKE_THROW_UNLESS(J_WQi->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(J_WQi->cols() == get_num_velocities());
+  DRAKE_THROW_UNLESS(Jv_WQi != nullptr);
+  DRAKE_THROW_UNLESS(Jv_WQi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Jv_WQi->cols() == get_num_velocities());
 
   // Body to which frame B is attached to:
   const Body<T>& body_B = frame_B.get_body();
@@ -605,8 +635,8 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
                       get_world_frame(), p_WQi_set); /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from body_B to the
-  // world computing each node's contribution to J_WQi.
-  const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
+  // world computing each node's contribution to Jv_WQi.
+  const int Jnrows = 3 * num_points;  // Number of rows in Jv_WQi.
   // Skip the world (ilevel = 0).
   for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
     BodyNodeIndex body_node_index = path_to_world[ilevel];
@@ -618,7 +648,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     // Across-node Jacobian.
     Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
         node.GetJacobianFromArray(H_PB_W_cache);
-    auto J_PBq_W = J_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
+    auto J_PBq_W = Jv_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
 
     // Position of this node's body Bi in the world W.
     const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();

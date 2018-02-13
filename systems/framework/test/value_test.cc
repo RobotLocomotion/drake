@@ -148,12 +148,38 @@ TYPED_TEST(TypedValueTest, Make) {
   EXPECT_EQ(42, abstract_value->template GetValue<T>());
 }
 
+GTEST_TEST(ValueTest, NiceTypeName) {
+  auto double_value = AbstractValue::Make<double>(3.);
+  auto string_value = AbstractValue::Make<std::string>("hello");
+
+  EXPECT_EQ(double_value->GetNiceTypeName(), "double");
+  EXPECT_EQ(string_value->GetNiceTypeName(), "std::string");
+}
+
+// Check that MaybeGetValue() returns nullptr for wrong-type requests,
+// and returns the correct value for right-type requests.
+GTEST_TEST(ValueTest, MaybeGetValue) {
+  auto double_value = AbstractValue::Make<double>(3.);
+  auto string_value = AbstractValue::Make<std::string>("hello");
+
+  EXPECT_EQ(double_value->MaybeGetValue<std::string>(), nullptr);
+  EXPECT_EQ(string_value->MaybeGetValue<double>(), nullptr);
+
+  ASSERT_NE(double_value->MaybeGetValue<double>(), nullptr);
+  EXPECT_EQ(*double_value->MaybeGetValue<double>(), 3.);
+
+  ASSERT_NE(string_value->MaybeGetValue<std::string>(), nullptr);
+  EXPECT_EQ(*string_value->MaybeGetValue<std::string>(), "hello");
+}
+
 TYPED_TEST(TypedValueTest, Access) {
   using T = TypeParam;
   Value<T> value(3);
   const AbstractValue& erased = value;
   EXPECT_EQ(3, erased.GetValue<T>());
   EXPECT_EQ(3, erased.GetValueOrThrow<T>());
+  ASSERT_NE(erased.MaybeGetValue<T>(), nullptr);
+  EXPECT_EQ(3, *erased.MaybeGetValue<T>());
 }
 
 TYPED_TEST(TypedValueTest, Clone) {
@@ -184,10 +210,10 @@ TYPED_TEST(TypedValueTest, BadCast) {
   using T = TypeParam;
   Value<double> value(4);
   AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetValueOrThrow<T>(), std::bad_cast);
-  EXPECT_THROW(erased.GetMutableValueOrThrow<T>(), std::bad_cast);
-  EXPECT_THROW(erased.SetValueOrThrow<T>(T{3}), std::bad_cast);
-  EXPECT_THROW(erased.SetFromOrThrow(Value<T>(2)), std::bad_cast);
+  EXPECT_THROW(erased.GetValueOrThrow<T>(), std::logic_error);
+  EXPECT_THROW(erased.GetMutableValueOrThrow<T>(), std::logic_error);
+  EXPECT_THROW(erased.SetValueOrThrow<T>(T{3}), std::logic_error);
+  EXPECT_THROW(erased.SetFromOrThrow(Value<T>(2)), std::logic_error);
 }
 
 class PrintInterface {
@@ -236,12 +262,12 @@ class SubclassOfPoint : public Point {
 };
 
 // Tests that attempting to unerase an AbstractValue to a parent class of the
-// original class throws std::bad_cast.
+// original class throws std::logic_error.
 GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
   SubclassOfPoint point;
   Value<SubclassOfPoint> value(point);
   AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetMutableValueOrThrow<Point>(), std::bad_cast);
+  EXPECT_THROW(erased.GetMutableValueOrThrow<Point>(), std::logic_error);
 }
 
 // A child class of Value<T> that requires T to satisfy PrintInterface, and
