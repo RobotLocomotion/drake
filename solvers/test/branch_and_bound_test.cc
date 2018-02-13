@@ -1,5 +1,7 @@
 #include "drake/solvers/branch_and_bound.h"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -158,7 +160,15 @@ void CheckNewRootNode(
   // None of the binary variables are fixed.
   EXPECT_TRUE(root.fixed_binary_variable().is_dummy());
   EXPECT_EQ(root.fixed_binary_value(), -1);
-  EXPECT_EQ(root.remaining_binary_variables(), binary_vars_expected);
+  // Expect root.remaining_binary_variables() equal to binary_vars_expected.
+  EXPECT_EQ(root.remaining_binary_variables().size(),
+            binary_vars_expected.size());
+  EXPECT_TRUE(std::equal(
+      root.remaining_binary_variables().begin(),
+      root.remaining_binary_variables().end(), binary_vars_expected.begin(),
+      [](const symbolic::Variable& v1, const symbolic::Variable& v2) {
+        return v1.equal_to(v2);
+      }));
   EXPECT_TRUE(root.IsLeaf());
 }
 
