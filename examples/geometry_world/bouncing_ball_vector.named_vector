@@ -1,4 +1,4 @@
-namespace: "drake::examples::bouncing_ball"
+namespace: "drake::examples::geometry_world::bouncing_ball"
 
 element {
     name: "z"

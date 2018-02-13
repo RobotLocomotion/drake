@@ -11,9 +11,11 @@ def dreal_repository(
         # Since dReal and its dependency IBEX are installed under
         # `/opt/<package_name>/<version_number>/`, it is necessary to keep the
         # following versions in sync with the ones in
-        # `setup/ubuntu/16.04/install_prereqs.sh` script.
+        # `setup/ubuntu/16.04/install_prereqs_binary_distribution.sh` script.
         pkg_config_paths = [
+            # TODO(soonho-tri): Remove the following line.
             "/opt/dreal/4.18.01.3/lib/pkgconfig",
+            "/opt/dreal/4.18.02.2/lib/pkgconfig",
             "/opt/libibex/2.6.5/share/pkgconfig",
             "/usr/local/opt/clp/lib/pkgconfig",
             "/usr/local/opt/coinutils/lib/pkgconfig",

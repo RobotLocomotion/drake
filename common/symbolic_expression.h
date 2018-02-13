@@ -626,6 +626,21 @@ get_base_to_exponent_map_in_multiplication(const Expression& e);
  */
 const std::string& get_uninterpreted_function_name(const Expression& e);
 
+/** Returns the conditional formula in the if-then-else expression @p e.
+ * @pre @p e is an if-then-else expression.
+ */
+const Formula& get_conditional_formula(const Expression& e);
+
+/** Returns the 'then' expression in the if-then-else expression @p e.
+ * @pre @p e is an if-then-else expression.
+ */
+const Expression& get_then_expression(const Expression& e);
+
+/** Returns the 'else' expression in the if-then-else expression @p e.
+ * @pre @p e is an if-then-else expression.
+ */
+const Expression& get_else_expression(const Expression& e);
+
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<

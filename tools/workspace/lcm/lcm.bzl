@@ -207,6 +207,7 @@ def lcm_py_library(
         lcm_package = None,
         lcm_structs = None,
         add_current_package_to_imports = True,
+        extra_srcs = [],
         **kwargs):
     """Declares a py_library on message classes generated from `*.lcm` files.
 
@@ -223,7 +224,8 @@ def lcm_py_library(
     prefix import statements with the bazel package name).  It is True by
     default, but can be set to False if a package needs its own manually-
     written __init__.py handling, or if the current bazel package should
-    not be imported by default.
+    not be imported by default. Additional sources can be added via
+    `extra_srcs`.
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -242,7 +244,7 @@ def lcm_py_library(
         imports = depset(imports or []) | ["."]
     native.py_library(
         name = name,
-        srcs = outs,
+        srcs = outs + extra_srcs,
         imports = imports,
         **kwargs)
 

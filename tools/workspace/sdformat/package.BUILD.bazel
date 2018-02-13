@@ -125,7 +125,10 @@ cc_binary(
         "src/urdf/urdf_world/types.h",
         "src/urdf/urdf_world/world.h",
     ],
-    copts = ["-w"],
+    copts = [
+        "-fvisibility-inlines-hidden",
+        "-w",
+    ],
     data = SDFORMAT_DATA,
     includes = SDFORMAT_PUBLIC_INCLUDES + [
         # We use the vendored version of urdfdom embedded in sdformat; we need
