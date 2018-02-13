@@ -849,16 +849,16 @@ class MultibodyTree {
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores
   ///   the generalized positions q of the model.
-  /// @param[in] to_frame_A
+  /// @param[in] frame_A
   ///   The target frame A in the computed relative transform `X_AB`.
-  /// @param[in] from_frame_B
+  /// @param[in] frame_B
   ///   The source frame B in the computed relative transform `X_AB`.
   /// @retval X_AB
   ///   The relative transform from frame B to frame A, such that
   ///   `p_AQ = X_AB⋅p_BQ`.
   Isometry3<T> CalcRelativeTransform(
       const systems::Context<T>& context,
-      const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const;
+      const Frame<T>& frame_A, const Frame<T>& frame_B) const;
 
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
   /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
@@ -868,7 +868,7 @@ class MultibodyTree {
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores
   ///   the generalized positions q of the model.
-  /// @param[in] from_frame_B
+  /// @param[in] frame_B
   ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
   ///   given.
   /// @param[in] p_BQi
@@ -876,7 +876,7 @@ class MultibodyTree {
   ///   `np` the number of points in the set. Each column of `p_BQi` corresponds
   ///   to a vector in ℝ³ holding the position of one of the points in the set
   ///   as measured and expressed in frame B.
-  /// @param[in] to_frame_A
+  /// @param[in] frame_A
   ///   The frame A in which it is desired to compute the positions `p_AQi` of
   ///   each point `Qi` in the set.
   /// @param[out] p_AQi
@@ -891,9 +891,9 @@ class MultibodyTree {
   /// of columns.
   void CalcPointsPositions(
       const systems::Context<T>& context,
-      const Frame<T>& from_frame_B,
+      const Frame<T>& frame_B,
       const Eigen::Ref<const MatrixX<T>>& p_BQi,
-      const Frame<T>& to_frame_A,
+      const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const;
   /// @}
   // End of "Kinematic computations" section.

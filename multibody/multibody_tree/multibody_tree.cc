@@ -560,30 +560,30 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 template <typename T>
 Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
-    const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const {
+    const Frame<T>& frame_A, const Frame<T>& frame_B) const {
   // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
   PositionKinematicsCache<T> pc(this->get_topology());
   CalcPositionKinematicsCache(context, &pc);
   const Isometry3<T>& X_WA =
-      pc.get_X_WB(to_frame_A.get_body().get_node_index());
+      pc.get_X_WB(frame_A.get_body().get_node_index());
   const Isometry3<T>& X_WB =
-      pc.get_X_WB(from_frame_B.get_body().get_node_index());
+      pc.get_X_WB(frame_B.get_body().get_node_index());
   return X_WA.inverse() * X_WB;
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcPointsPositions(
     const systems::Context<T>& context,
-    const Frame<T>& from_frame_B,
+    const Frame<T>& frame_B,
     const Eigen::Ref<const MatrixX<T>>& p_BQi,
-    const Frame<T>& to_frame_A,
+    const Frame<T>& frame_A,
     EigenPtr<MatrixX<T>> p_AQi) const {
   DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi != nullptr);
   DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
   const Isometry3<T> X_AB =
-      CalcRelativeTransform(context, to_frame_A, from_frame_B);
+      CalcRelativeTransform(context, frame_A, frame_B);
   // We demanded above that these matrices have three rows. Therefore we tell
   // Eigen so.
   p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
