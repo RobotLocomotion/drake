@@ -306,8 +306,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(origin_id, dynamic_id, &copy_engine);
 
-  // Test AutoDiff converted engine
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine = engine_.ToAutoDiff();
+  // Test AutoDiffXd converted engine
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
   ExpectPenetration(origin_id, dynamic_id, ad_engine.get());
 }
 
@@ -339,8 +340,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   ProximityEngine<double> copy_engine(engine_);
   ExpectPenetration(origin_id, collide_id, &copy_engine);
 
-  // Test AutoDiff converted engine
-  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine = engine_.ToAutoDiff();
+  // Test AutoDiffXd converted engine
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
 }
 

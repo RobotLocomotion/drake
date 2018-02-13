@@ -123,19 +123,21 @@ class HalfSpace final : public Shape {
 
   HalfSpace();
 
-  /** Given a plane `normal_F` and a position vector to a point on the plane
-   `p_FP`, both expressed in frame F, creates the transform `X_FC` from the
-   half-space's canonical space to frame F.
-   @param normal_F  A vector perpendicular to the half-space's plane boundary
-                    expressed in frame F. It must be a non-zero vector but need
-                    not be unit length.
-   @param r_FP      A point lying on the half-space's plane boundary measured
+  /** Creates the pose of a canonical half space in frame F.
+   The half space's normal is aligned to the positive z-axis of its canonical
+   frame C. Given the measure of that axis in frame F (Cz_F) and a position
+   vector to a point on the plane expressed in the same frame, `p_FC`, creates
+   the pose of the half space in frame F: `X_FC`.
+   @param Cz_F      The positive z-axis of the canonical frame expressed in
+                    frame F. It must be a non-zero vector but need not be unit
+                    length.
+   @param p_FC      A point lying on the half-space's boundary measured
                     and expressed in frame F.
    @retval `X_FC`   The pose of the canonical half-space in frame F.
    @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
                             ‖normal_F‖₂ < ε). */
-  static Isometry3<double> MakePose(const Vector3<double>& normal_F,
-                                    const Vector3<double>& r_FP);
+  static Isometry3<double> MakePose(const Vector3<double>& Cz_F,
+                                    const Vector3<double>& p_FC);
 };
 
 // TODO(SeanCurtis-TRI): Update documentation when the level of support for
