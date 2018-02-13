@@ -13,8 +13,8 @@
 /// warning that can indicate if something has changed in the system such that
 /// the final system no longer reproduces the expected baseline behavior.
 
-#include <queue>
 #include <memory>
+#include <queue>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
@@ -24,8 +24,9 @@
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h"
+#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
@@ -38,10 +39,10 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/demultiplexer.h"
-#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
 namespace drake {
@@ -189,7 +190,9 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
           timestep);
   plant->set_name("plant");
 
-  ASSERT_EQ(plant->get_num_actuators(), 3);
+  ASSERT_GE(plant->get_num_actuators(gripper_instance_id),
+            manipulation::schunk_wsg::kSchunkWsgNumActuators);
+  ASSERT_GE(plant->get_num_actuators(lifter_instance_id), 1);
   ASSERT_EQ(plant->get_num_model_instances(), 3);
 
   // Arbitrary contact parameters.
@@ -234,7 +237,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
       plant->model_instance_state_output_port(lifter_instance_id);
 
   // Get the number of controllers.
-  const int num_PID_controllers = plant->get_num_actuators() - 1;
+  const int num_PID_controllers = plant->get_num_actuators(lifter_instance_id);
 
   // Constants chosen arbitrarily.
   const auto kp = VectorX<double>::Ones(num_PID_controllers) * 300.0;
@@ -328,21 +331,29 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   // PID controllers.
   builder.Connect(mux->get_output_port(0), pid_ports.state_input_port);
 
-  // Create a trajectory for grip force.
+  // Create a trajectory for gripper position.
   // Settle the grip by the time the lift starts.
   std::vector<double> grip_breaks{0., kLiftStart - 0.1, kLiftStart};
   std::vector<Eigen::MatrixXd> grip_knots;
-  grip_knots.push_back(Vector1d(0));
-  grip_knots.push_back(Vector1d(0));
-  grip_knots.push_back(Vector1d(40));
+  grip_knots.push_back(Vector1d(0.0));
+  grip_knots.push_back(Vector1d(0.0));
+  grip_knots.push_back(Vector1d(40.0));
   PiecewisePolynomialTrajectory grip_trajectory(
       PiecewisePolynomial<double>::FirstOrderHold(grip_breaks, grip_knots));
-  auto grip_source =
+  auto grip_force_source =
       builder.AddSystem<systems::TrajectorySource>(grip_trajectory);
-  grip_source->set_name("grip_source");
-  builder.Connect(grip_source->get_output_port(),
-                  plant->model_instance_actuator_command_input_port(
-                      gripper_instance_id));
+  grip_force_source->set_name("grip_force_source");
+  auto wsg_controller =
+      builder.AddSystem<manipulation::schunk_wsg::SchunkWsgPlainController>(
+          manipulation::schunk_wsg::ControlMode::kForce);
+  wsg_controller->set_name("wsg_controller");
+  builder.Connect(grip_force_source->get_output_port(),
+                  wsg_controller->get_feed_forward_force_input_port());
+  builder.Connect(
+      wsg_controller->get_output_port(0),
+      plant->model_instance_actuator_command_input_port(gripper_instance_id));
+  builder.Connect(plant->model_instance_state_output_port(gripper_instance_id),
+                  wsg_controller->get_state_input_port());
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.
@@ -379,6 +390,13 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   // Set up the model and simulator and set their starting state.
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
   systems::Simulator<double> simulator(*model);
+
+  // Fix the gripper max force.
+  model
+      ->GetMutableSubsystemContext(*wsg_controller,
+                                   &simulator.get_mutable_context())
+      .FixInputPort(wsg_controller->get_max_force_input_port().get_index(),
+                    BasicVector<double>::Make({100}) /*max force*/);
 
   const RigidBodyTreed& tree = plant->get_rigid_body_tree();
 

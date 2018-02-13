@@ -53,10 +53,7 @@ VectorX<T> GetSchunkWsgOpenPosition() {
   // clang-format off
   return (VectorX<T>(kSchunkWsgNumPositions) <<
       -0.0550667,
-       0.009759,
-       1.27982,
-       0.0550667,
-       0.009759) .finished();
+       0.0550667) .finished();
   // clang-format on
 }
 

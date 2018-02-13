@@ -15,8 +15,7 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-SchunkWsgPlainController::SchunkWsgPlainController(
-    ControlMode control_mode) {
+SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode) {
   systems::DiagramBuilder<double> builder;
 
   // Set up desired control state, x_d, signal.
@@ -24,8 +23,8 @@ SchunkWsgPlainController::SchunkWsgPlainController(
 
   // The mean finger position should be zero.
   auto desired_mean_finger_state =
-    builder.AddSystem<systems::ConstantVectorSource<double>>(
-        Vector2<double>::Zero());
+      builder.AddSystem<systems::ConstantVectorSource<double>>(
+          Vector2<double>::Zero());
   switch (control_mode) {
     case ControlMode::kPosition:
     case ControlMode::kPositionAndForce: {
@@ -46,7 +45,7 @@ SchunkWsgPlainController::SchunkWsgPlainController(
       //
       //   [q_tilde_0, q_tilde_0, v_tilde_0, v_tilde_1]
       //
-      // We now construct a matrix gain block to swap the order of th elements.
+      // We now construct a matrix gain block to swap the order of the elements.
       Matrix4<double> D;
       // clang-format off
       D << 1, 0, 0, 0,
@@ -58,7 +57,7 @@ SchunkWsgPlainController::SchunkWsgPlainController(
           builder.AddSystem<systems::MatrixGain<double>>(D);
 
       builder.Connect(concatenate_desired_states->get_output_port(0),
-          convert_to_x_tilde_desired->get_input_port());
+                      convert_to_x_tilde_desired->get_input_port());
 
       x_d_port = &convert_to_x_tilde_desired->get_output_port();
     } break;
@@ -101,7 +100,7 @@ SchunkWsgPlainController::SchunkWsgPlainController(
               wsg_kp, wsg_ki, wsg_kd);
 
       builder.Connect(convert_to_x_tilde->get_output_port(),
-          wsg_controller->get_input_port_estimated_state());
+                      wsg_controller->get_input_port_estimated_state());
       builder.Connect(*x_d_port,
                       wsg_controller->get_input_port_desired_state());
 
@@ -138,7 +137,7 @@ SchunkWsgPlainController::SchunkWsgPlainController(
               wsg_kp, wsg_ki, wsg_kd);
 
       builder.Connect(convert_to_x_tilde->get_output_port(),
-          wsg_controller->get_input_port_estimated_state());
+                      wsg_controller->get_input_port_estimated_state());
       builder.Connect(*x_d_port,
                       wsg_controller->get_input_port_desired_state());
 
@@ -151,12 +150,16 @@ SchunkWsgPlainController::SchunkWsgPlainController(
       auto adder = builder.AddSystem<systems::Adder<double>>(2, 2);
       builder.Connect(convert_to_u->get_output_port(),
                       adder->get_input_port(0));
+      auto convert_feed_forward_force_to_u =
+          builder.AddSystem<systems::MatrixGain<double>>(
+              (MatrixX<double>(2, 1) << 0.5, -0.4).finished());
+      builder.Connect(convert_feed_forward_force_to_u->get_output_port(),
+                      adder->get_input_port(1));
       feed_forward_force_input_port_ =
-          builder.ExportInput(adder->get_input_port(1));
+          builder.ExportInput(convert_feed_forward_force_to_u->get_input_port());
       u_port = &adder->get_output_port();
     } break;
   }
-
 
   // Add the saturation block.
   // Create a gain block to negate the max force (to produce a minimum

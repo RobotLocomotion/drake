@@ -13,13 +13,9 @@ enum class ControlMode {
   kPositionAndForce = 2,
 };
 
-/// This class implements a controller for a Schunk WSG gripper.  It
-/// has two input ports which receive lcmt_schunk_wsg_command messages
-/// and the current state, and an output port which emits the target
-/// force for the actuated finger.  The internal implementation
-/// consists of a PID controller (which controls the target position
-/// from the command message) combined with a saturation block (which
-/// applies the force control from the command message).
+/// This class implements a controller for a Schunk WSG gripper as a
+/// `systems::Diagram`. The composition of this diagram is determined by the
+/// ControlMode specified for the controller.
 class SchunkWsgPlainController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPlainController)
