@@ -558,9 +558,9 @@ void QuasistaticSystem::DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
 }
 
 Eigen::VectorXd QuasistaticSystem::CalcExternalGeneralizedForce(
-    const KinematicsCache<double> &cache) const {
+    KinematicsCache<double> *const cache) const {
   RigidBodyTree<double>::BodyToWrenchMap f_ext;
-  auto g = tree_->dynamicsBiasTerm(cache, f_ext, false);
+  auto g = tree_->dynamicsBiasTerm(*cache, f_ext, false);
 
   Eigen::VectorXd f(n_vu_);
   for (int i = 0; i < n_vu_; i++) {
@@ -776,7 +776,7 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
   U.diagonal().setConstant(mu_);
 
   MatrixXd E = CalcE();
-  VectorXd f = CalcExternalGeneralizedForce(cache);
+  VectorXd f = CalcExternalGeneralizedForce(&cache);
   f /= f.norm();  // normalize f, which generally makes kBigM smaller.
 
   // cout << "E\n" << E << endl;

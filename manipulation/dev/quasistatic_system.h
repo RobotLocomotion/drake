@@ -78,7 +78,7 @@ class QuasistaticSystem : public drake::systems::LeafSystem<double> {
                                          VectorXd *const phi_ptr) const;
   virtual MatrixXd CalcE() const;
   virtual VectorXd CalcExternalGeneralizedForce(
-      const KinematicsCache<double> &cache) const;
+      KinematicsCache<double> *const cache) const;
 
   void CopyStateOut(const drake::systems::Context<double>& context,
                     drake::systems::BasicVector<double>* output) const {
