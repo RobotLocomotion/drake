@@ -418,7 +418,7 @@ class MixedIntegerBranchAndBound {
    * *(branch_and_bound.root()));
    * \endcode
    * A more detailed example can be found in
-   * solvers/test/branch_and_bount_test.cc
+   * solvers/test/branch_and_bound_test.cc
    * in TestSetUserDefinedNodeSelectionFunction.
    * @note The user defined function should pick an un-fathomed leaf node for
    * branching. @throw a runtime error if the node is not a leaf node, or it is
