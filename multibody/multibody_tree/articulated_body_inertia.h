@@ -122,12 +122,14 @@ class ArticulatedBodyInertia {
   /// std::runtime_error exception in the event the provided input matrix leads
   /// to a non-physically viable articulated body inertia.
   ///
-  /// @param[in] matrix A matrix representing the articulated body inertia.
-  ///                   Only the lower triangular region is used.
+  /// @param[in] matrix A matrix or matrix expression representing the
+  ///                   articulated body inertia. Only the lower triangular
+  ///                   region is used and the strictly upper part is ignored.
   ///
   /// @throws an exception in Debug builds if IsPhysicallyValid() for `this`
   /// inertia is `false`.
-  explicit ArticulatedBodyInertia(const Matrix6<T>& matrix) {
+  template <typename Derived>
+  explicit ArticulatedBodyInertia(const Eigen::MatrixBase<Derived>& matrix) {
     matrix_.template triangularView<Eigen::Lower>() = matrix;
     DRAKE_ASSERT_VOID(CheckInvariants());
   }

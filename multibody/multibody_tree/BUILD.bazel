@@ -35,14 +35,14 @@ drake_cc_library(
     name = "multibody_tree_context",
     srcs = [
         "acceleration_kinematics_cache.cc",
-        "articulated_body_cache.cc",
+        "articulated_body_inertia_cache.cc",
         "multibody_tree_context.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "acceleration_kinematics_cache.h",
-        "articulated_body_cache.h",
+        "articulated_body_inertia_cache.h",
         "multibody_tree_context.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
