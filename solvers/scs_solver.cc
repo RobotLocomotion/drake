@@ -6,9 +6,9 @@
 // scs.h should be included before linsys/amatrix.h, since amatrix.h uses types
 // scs_float, scs_int, etc, defined in scs.h
 #include <scs.h>
-#include "include/cones.h"
-#include "include/linalg.h"
-#include "include/util.h"
+#include <cones.h>
+#include <linalg.h>
+#include <util.h>
 #include "linsys/amatrix.h"
 // clang-format on
 
@@ -515,7 +515,7 @@ void SetScsProblemData(int A_row_count, int num_vars,
   // Set the parameters to default values.
   scs_problem_data->stgs =
       static_cast<ScsSettings*>(scs_calloc(1, sizeof(ScsSettings)));
-  SCS(set_default_settings)(scs_problem_data);
+  scs_set_default_settings(scs_problem_data);
 }
 }  // namespace
 
@@ -648,8 +648,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   }
 
   // Free allocated memory
-  SCS(free_data)(scs_problem_data, cone);
-  SCS(free_sol)(scs_sol);
+  scs_free_data(scs_problem_data, cone);
+  scs_free_sol(scs_sol);
 
   prog.SetSolverId(id());
   return sol_result;
