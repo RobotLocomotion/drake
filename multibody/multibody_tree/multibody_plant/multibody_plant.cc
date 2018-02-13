@@ -65,7 +65,28 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
 }
 
 template<typename T>
-void MultibodyPlant<T>::RegisterGeometry(
+void MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body,
+    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    geometry::GeometrySystem<double>* geometry_system) {
+  DRAKE_THROW_UNLESS(!this->is_finalized());
+  GeometryId id = RegisterGeometry(body, X_BG, shape, geometry_system);
+  geometry_id_to_visual_index_[id] =
+      static_cast<int>(geometry_id_to_visual_index_.size());
+}
+
+template<typename T>
+void MultibodyPlant<T>::RegisterAnchoredVisualGeometry(
+    const Isometry3<double>& X_WG, const geometry::Shape& shape,
+    geometry::GeometrySystem<double>* geometry_system) {
+  DRAKE_THROW_UNLESS(!this->is_finalized());
+  GeometryId id = RegisterAnchoredGeometry(X_WG, shape, geometry_system);
+  geometry_id_to_visual_index_[id] =
+      static_cast<int>(geometry_id_to_visual_index_.size());
+}
+
+template<typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
@@ -91,10 +112,11 @@ void MultibodyPlant<T>::RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.get_index()],
       std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
   geometry_id_to_body_index_[geometry_id] = body.get_index();
+  return geometry_id;
 }
 
 template<typename T>
-void MultibodyPlant<T>::RegisterAnchoredGeometry(
+geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
   DRAKE_THROW_UNLESS(!this->is_finalized());
@@ -107,11 +129,11 @@ void MultibodyPlant<T>::RegisterAnchoredGeometry(
       source_id_.value(),
       std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
   geometry_id_to_body_index_[geometry_id] = world_index();
+  return geometry_id;
 }
 
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
-  model_->AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
   model_->Finalize();
   DeclareStateAndPorts();
   // Only declare ports to communicate with a GeometrySystem if the plant is
@@ -210,6 +232,8 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<double>& context,
     const PositionKinematicsCache<double>& pc, const VelocityKinematicsCache<double>& vc,
     std::vector<SpatialForce<double>>* F_BBo_W_array) const {
+  if (get_num_collision_geometries() == 0) return;
+
   const geometry::QueryObject<double>& query_object =
       this->EvalAbstractInput(context, geometry_query_port_)
           ->template GetValue<geometry::QueryObject<double>>();
@@ -220,6 +244,15 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
   PRINT_VAR(penetrations.size());
   if (penetrations.size() > 0) {
     for (const auto& penetration : penetrations) {
+      const GeometryId geometryA_id = penetration.id_A;
+      const GeometryId geometryB_id = penetration.id_B;
+
+      // TODO(amcastro-tri): Request GeometrySystem to do this filtering for us
+      // when that capability lands.
+      if (!is_collision_geometry(geometryA_id) ||
+          !is_collision_geometry(geometryB_id))
+        continue;
+
       // NOTE: for now assume this MBP is the only system connected to GS.
       BodyIndex bodyA_index = geometry_id_to_body_index_.at(penetration.id_A);
       BodyIndex bodyB_index = geometry_id_to_body_index_.at(penetration.id_B);

@@ -74,7 +74,9 @@ class AcrobotParameters {
       Ic2_(Ic2),
       b1_(b1),
       b2_(b2),
-      g_(g) {}
+      g_(g),
+      r1_{0.05},
+      r2_{0.05} {}
 
   // getters for robot parameters
   double m1() const { return m1_; }
@@ -88,6 +90,8 @@ class AcrobotParameters {
   double b1() const { return b1_; }
   double b2() const { return b2_; }
   double g() const { return g_; }
+  double r1() const { return r1_; }
+  double r2() const { return r2_; }
 
   // getters for modeling elements' names
   const std::string& link1_name() const { return link1_name_; }
@@ -113,6 +117,8 @@ class AcrobotParameters {
       Ic1_{nan()}, Ic2_{nan()},   // In kg⋅m².
       b1_{nan()}, b2_{nan()},     // In N⋅m⋅s.
       g_{nan()};                  // In m/s².
+  // Additional parameters used for visualization.
+  double r1_{nan()}, r2_{nan()};  // In meters.
 
   // Modeling elements' names.
   std::string link1_name_{"Link1"};

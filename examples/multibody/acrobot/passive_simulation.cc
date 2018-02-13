@@ -9,6 +9,8 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
@@ -20,6 +22,21 @@
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
+
+using geometry::GeometrySystem;
+using geometry::SourceId;
+using lcm::DrakeLcm;
+using multibody::benchmarks::acrobot::AcrobotParameters;
+using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using multibody::multibody_plant::MultibodyPlant;
+using multibody::RevoluteJoint;
+using systems::ImplicitEulerIntegrator;
+using systems::lcm::LcmPublisherSystem;
+using systems::lcm::Serializer;
+using systems::rendering::PoseBundleToDrawMessage;
+using systems::RungeKutta3Integrator;
+using systems::SemiExplicitEulerIntegrator;
+
 namespace examples {
 namespace multibody {
 namespace acrobot {
@@ -35,16 +52,6 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
-
-using geometry::GeometrySystem;
-using geometry::SourceId;
-using lcm::DrakeLcm;
-using systems::ImplicitEulerIntegrator;
-using systems::lcm::LcmPublisherSystem;
-using systems::lcm::Serializer;
-using systems::rendering::PoseBundleToDrawMessage;
-using systems::RungeKutta3Integrator;
-using systems::SemiExplicitEulerIntegrator;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -62,16 +69,21 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  AcrobotPlant<double>& acrobot =
-      *builder.AddSystem<AcrobotPlant>(&geometry_system);
-  acrobot.set_name("Acrobot");
+  const AcrobotParameters acrobot_parameters; 
+  const MultibodyPlant<double>& acrobot =
+      *builder.AddSystem(
+          MakeAcrobotPlant(acrobot_parameters, &geometry_system));
+  
+  //AcrobotPlant<double>& acrobot =
+    //  *builder.AddSystem<AcrobotPlant>(&geometry_system);
+  //acrobot.set_name("Acrobot");
 
   // A constant source for a zero applied torque at the elbow joint.
-  double applied_torque(0.0);
-  auto torque_source =
-      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
-  torque_source->set_name("Applied Torque");
-  builder.Connect(torque_source->get_output_port(), acrobot.get_input_port());
+  //double applied_torque(0.0);
+  //auto torque_source =
+  //    builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
+  //torque_source->set_name("Applied Torque");
+  //builder.Connect(torque_source->get_output_port(), acrobot.get_input_port());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
@@ -88,11 +100,11 @@ int do_main() {
   DRAKE_DEMAND(!!acrobot.get_source_id());
 
   builder.Connect(
-      acrobot.get_geometry_id_output_port(),
+      acrobot.get_geometry_ids_output_port(),
       geometry_system.get_source_frame_id_port(
           acrobot.get_source_id().value()));
   builder.Connect(
-      acrobot.get_geometry_pose_output_port(),
+      acrobot.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(acrobot.get_source_id().value()));
 
   builder.Connect(geometry_system.get_pose_bundle_output_port(),
@@ -114,8 +126,14 @@ int do_main() {
       diagram->GetMutableSubsystemContext(acrobot, diagram_context.get());
 
   // Set initial angles. Velocities are left to the default zero values.
-  acrobot.shoulder().set_angle(&acrobot_context, 1.0);
-  acrobot.elbow().set_angle(&acrobot_context, 1.0);
+  const RevoluteJoint<double>& shoulder =
+      acrobot.GetJointByName<RevoluteJoint>(
+          acrobot_parameters.shoulder_joint_name());
+  const RevoluteJoint<double>& elbow =
+      acrobot.GetJointByName<RevoluteJoint>(
+          acrobot_parameters.elbow_joint_name());
+  shoulder.set_angle(&acrobot_context, 1.0);
+  elbow.set_angle(&acrobot_context, 1.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 

@@ -35,6 +35,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/geometry:geometry_system",
         "//drake/multibody/benchmarks/acrobot",
         "//drake/multibody/benchmarks/acrobot:make_acrobot_plant",
     ],

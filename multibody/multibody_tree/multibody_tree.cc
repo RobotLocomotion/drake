@@ -50,7 +50,7 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
-void MultibodyTree<T>::AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
+void MultibodyTree<T>:: AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
   // Do not call on not finalized tree, thought it should be a no-op in that
   // case?
   DRAKE_DEMAND(!topology_is_valid());
@@ -156,6 +156,10 @@ void MultibodyTree<T>::Finalize() {
   for (auto& joint : owned_joints_) {
     internal::JointImplementationBuilder<T>::Build(joint.get(), this);
   }
+  // It is VERY important to add quaternions if needed only AFTER joints had a
+  // chance to get implemented with mobilizers. Therefore, do not change this
+  // order!
+  AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
   FinalizeTopology();
   FinalizeInternals();
 }

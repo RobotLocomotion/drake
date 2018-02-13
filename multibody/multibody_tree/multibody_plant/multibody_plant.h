@@ -351,19 +351,56 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  /// @name Registering geometry
+  /// @name Registering geometry for visualization
+  // TODO(amcastro-tri): When GS supports it, provide argument to specify
+  // visual properties.
   /// @{
+
+  void RegisterVisualGeometry(
+      const Body<T>& body,
+      const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      geometry::GeometrySystem<double>* geometry_system);
+
+  void RegisterAnchoredVisualGeometry(
+      const Isometry3<double>& X_WG, const geometry::Shape& shape,
+      geometry::GeometrySystem<double>* geometry_system);
+
+  bool is_visual_geometry(geometry::GeometryId id) const {
+    return geometry_id_to_visual_index_.find(id) !=
+        geometry_id_to_visual_index_.end();
+  }
+
+  int get_num_visual_geometries() const {
+    return geometry_id_to_visual_index_.size();
+  }
+
+  int get_visual_geometry_index(geometry::GeometryId id) const {
+    auto it = geometry_id_to_visual_index_.find(id);
+    if (it != geometry_id_to_visual_index_.end()) {
+      return it->second;
+    }
+    return -1;
+  }
+
+  bool is_collision_geometry(geometry::GeometryId id) const {
+    return geometry_id_to_collision_index_.find(id) !=
+        geometry_id_to_collision_index_.end();
+  }
+
+  int get_num_collision_geometries() const {
+    return geometry_id_to_collision_index_.size();
+  }
 
   /// Register geometry for `body`.
   /// 1. If not done yet, register this plant as a source for the given GS.
   /// 2. Register frame for this body if not already done so.
   /// 3. Register geomtery for the corresponding FrameId.
-  void RegisterGeometry(
+  geometry::GeometryId RegisterGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<double>* geometry_system);
 
-  void RegisterAnchoredGeometry(
+  geometry::GeometryId RegisterAnchoredGeometry(
       const Isometry3<double>& X_WG, const geometry::Shape& shape,
       geometry::GeometrySystem<double>* geometry_system);
 
@@ -422,6 +459,14 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   void set_contact_penalty_damping(double d) {
     contact_penalty_damping_ = d;
+  }
+
+  /// Sets the state in `context` so that generalized positions and velocities
+  /// are zero.
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    model_->SetDefaultState(context, state);
   }
 
  private:
@@ -522,6 +567,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Map provided at construction that tells how bodies (referenced by name),
   // map to frame ids.
   std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
+
+  std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
+
+  std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
 
   // Port handles for geometry:
   int geometry_query_port_{-1};

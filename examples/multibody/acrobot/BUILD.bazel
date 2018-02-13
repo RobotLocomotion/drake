@@ -52,6 +52,7 @@ drake_cc_binary(
         ":acrobot_plant",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",
