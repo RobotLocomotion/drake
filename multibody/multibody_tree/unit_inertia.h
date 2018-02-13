@@ -271,14 +271,37 @@ class UnitInertia : public RotationalInertia<T> {
     return SolidBox(L, L, L);
   }
 
-  /// Computes the unit inertia for a unit-mass cylinder of uniform density
-  /// oriented along the z-axis computed about its center.
-  /// @param[in] r The radius of the cylinder.
-  /// @param[in] L The length of the cylinder.
-  static UnitInertia<T> SolidCylinder(const T& r, const T& L) {
-    const T Iz = r * r / T(2);
-    const T Ix = (T(3) * r * r + L * L) / T(12);
-    return UnitInertia(Ix, Ix, Iz);
+  /// Computes the unit inertia for a unit-mass cylinder B, of uniform density,
+  /// having its axis of revolution along input vector `b_E`. The resulting unit
+  /// inertia is computed about the cylinder's center of mass `Bcm` and is
+  /// expressed in the same frame E as the input axis of revolution `b_E`.
+  ///
+  /// @param[in] r The radius of the cylinder, it must be non-negative.
+  /// @param[in] L The length of the cylinder, it must be non-negative.
+  /// @param[in] b_E
+  ///   Vector defining the axis of revolution of the cylinder, expressed in a
+  ///   frame E. `b_E` can have a norm different from one; however, it will be
+  ///   normalized before using it. Therefore its norm is ignored and only its
+  ///   direction is used. It defaults to `Vector3<T>::UnitZ()`.
+  /// @retval G_Bcm_E
+  ///   The unit inertia for a solid cylinder B, of uniform density, with axis
+  ///   of revolution along `b_E`, computed about the cylinder's center of mass
+  ///   `Bcm`, and expressed in the same frame E as the input axis of rotation
+  ///   `b_E`.
+  ///
+  /// @throws std::runtime_error
+  ///   - Radius r is negative.
+  ///   - Length L is negative.
+  ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
+  ///     machine epsilon.
+  static UnitInertia<T> SolidCylinder(
+      const T& r, const T& L, const Vector3<T>& b_E = Vector3<T>::UnitZ()) {
+    DRAKE_THROW_UNLESS(r >= 0);
+    DRAKE_THROW_UNLESS(L >= 0);
+    DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
+    const T J = r * r / T(2);
+    const T K = (T(3) * r * r + L * L) / T(12);
+    return AxiallySymmetric(J, K, b_E);
   }
 
   /// Computes the unit inertia for a unit-mass cylinder of uniform density
@@ -308,7 +331,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// where `Id` is the identity matrix and ⊗ denotes the tensor product
   /// operator. See Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
   ///
-  /// This method aborts if:
+  /// @throws std::runtime_error
   ///   - J is negative. J can be zero.
   ///   - K is negative. K can be zero.
   ///   - J ≤ 2 * K, this corresponds to the triangle inequality, see
@@ -333,11 +356,11 @@ class UnitInertia : public RotationalInertia<T> {
   ///   expressed in the same frame E as the input unit vector `b_E`.
   static UnitInertia<T> AxiallySymmetric(
       const T& J, const T& K, const Vector3<T>& b_E) {
-    DRAKE_DEMAND(J >= 0.0);
-    DRAKE_DEMAND(K >= 0.0);
+    DRAKE_THROW_UNLESS(J >= 0.0);
+    DRAKE_THROW_UNLESS(K >= 0.0);
     // The triangle inequalities for this case reduce to J <= 2*K:
-    DRAKE_DEMAND(J <= 2.0 * K);
-    DRAKE_DEMAND(b_E.norm() > std::numeric_limits<double>::epsilon());
+    DRAKE_THROW_UNLESS(J <= 2.0 * K);
+    DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
     // Normalize b_E before using it. Only direction matters:
     Vector3<T> bhat_E = b_E.normalized();
     Matrix3<T> G_matrix =
