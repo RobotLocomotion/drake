@@ -373,7 +373,7 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
   // solution can be specified after the constructor call.
   if (root_->solution_result() == SolutionResult::kSolutionFound &&
       !root_->optimal_solution_is_integral()) {
-    SearchIntegralSolution(*root_);
+    SearchIntegralSolutionByRounding(*root_);
   }
   MixedIntegerBranchAndBoundNode* branching_node = PickBranchingNode();
   while (branching_node) {
@@ -580,39 +580,6 @@ double BestLowerBoundInSubTree(
                ? left_best_lower_bound
                : right_best_lower_bound;
   }
-}
-}  // namespace
-
-MixedIntegerBranchAndBoundNode*
-MixedIntegerBranchAndBound::PickMinLowerBoundNode() const {
-  return PickMinLowerBoundNodeInSubTree(*this, *root_);
-}
-
-MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickDepthFirstNode()
-    const {
-  // The deepest node has the largest number of fixed binary variables.
-  return PickDepthFirstNodeInSubTree(*this, *root_);
-}
-
-const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
-    const MixedIntegerBranchAndBoundNode& node) const {
-  switch (variable_selection_method_) {
-    case VariableSelectionMethod::kMostAmbivalent:
-      return PickMostAmbivalentAsBranchingVariable(node);
-    case VariableSelectionMethod::kLeastAmbivalent:
-      return PickLeastAmbivalentAsBranchingVariable(node);
-    case VariableSelectionMethod::kUserDefined:
-      if (variable_selection_userfun_ != nullptr) {
-        return variable_selection_userfun_(node);
-      }
-      throw std::runtime_error(
-          "The user defined function cannot be null. Call "
-          "SetUserDefinedVariableSelectionFunction to provide the user-defined "
-          "function for selecting the branching variable.");
-  }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
 }
 
 const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(

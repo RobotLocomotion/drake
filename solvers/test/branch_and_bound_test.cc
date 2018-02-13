@@ -42,6 +42,8 @@ class MixedIntegerBranchAndBoundTester {
     return bnb_->BranchAndUpdate(node, branching_variable);
   }
 
+  MixedIntegerBranchAndBoundNode* mutable_root() { return bnb_->root_.get(); }
+
   void SearchIntegralSolutionByRounding(
       const MixedIntegerBranchAndBoundNode& node) {
     bnb_->SearchIntegralSolutionByRounding(node);
