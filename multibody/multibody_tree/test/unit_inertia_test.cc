@@ -6,6 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -19,6 +20,7 @@ using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::NumTraits;
+using Eigen::Quaterniond;
 using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -205,6 +207,21 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const UnitInertia<double> Gy_expected(I_perp, I_axial, I_perp);
   EXPECT_TRUE(Gy.CopyToFullMatrix3().isApprox(
       Gy_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Compute the unit of inertia for a cylinder oriented along a non-unit,
+  // non-axial vector.
+  const Vector3d v(1.0, 2.0, 3.0);
+  const UnitInertia<double> Gv =
+      UnitInertia<double>::SolidCylinder(r, L, v);
+  // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
+  // Zz = zhat.
+  const Matrix3d R_ZV =
+      Quaterniond::FromTwoVectors(Vector3d::UnitZ(), v).toRotationMatrix();
+  // Generate expected solution by computing it in the V frame and re-expressing
+  // in the Z frame.
+  const UnitInertia<double> Gv_expected = Gz.ReExpress(R_ZV);
+  EXPECT_TRUE(Gv.CopyToFullMatrix3().isApprox(
+      Gv_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder

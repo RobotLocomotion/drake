@@ -299,9 +299,9 @@ class UnitInertia : public RotationalInertia<T> {
     DRAKE_THROW_UNLESS(r >= 0);
     DRAKE_THROW_UNLESS(L >= 0);
     DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
-    const T Iz = r * r / T(2);
-    const T Ix = (T(3) * r * r + L * L) / T(12);
-    return AxiallySymmetric(Iz, Ix, b_E);
+    const T J = r * r / T(2);
+    const T K = (T(3) * r * r + L * L) / T(12);
+    return AxiallySymmetric(J, K, b_E);
   }
 
   /// Computes the unit inertia for a unit-mass cylinder of uniform density
