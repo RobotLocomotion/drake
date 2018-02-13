@@ -194,9 +194,7 @@ void MultibodyTree<T>::CalcAllBodyPosesInWorld(
   if (static_cast<int>(X_WB->size()) != get_num_bodies()) {
     X_WB->resize(get_num_bodies(), Isometry3<T>::Identity());
   }
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
     const BodyNodeIndex node_index = get_body(body_index).get_node_index();
     X_WB->at(body_index) = pc.get_X_WB(node_index);
@@ -211,11 +209,7 @@ void MultibodyTree<T>::CalcAllBodySpatialVelocitiesInWorld(
   if (static_cast<int>(V_WB->size()) != get_num_bodies()) {
     V_WB->resize(get_num_bodies(), SpatialVelocity<T>::Zero());
   }
-  // TODO(amcastro-tri): Eval these when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  VelocityKinematicsCache<T> vc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
-  CalcVelocityKinematicsCache(context, pc, &vc);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
     const BodyNodeIndex node_index = get_body(body_index).get_node_index();
     V_WB->at(body_index) = vc.get_V_WB(node_index);
