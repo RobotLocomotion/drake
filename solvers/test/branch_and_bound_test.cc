@@ -1122,7 +1122,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
       CheckAllIntegralSolution(bnb, xy, integral_solutions, tol);
     }
   }
-} 
+}
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding2) {
   // Test the node callback to search an integral solution by rounding the
@@ -1163,10 +1163,13 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding3) {
   auto prog = ConstructMathematicalProgram3();
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   // The solution to the root node is unbounded. If we fix the binary variables
-  // and search for the continuous variables, the new program is still unbounded.
+  // and search for the continuous variables, the new program is still
+  // unbounded.
   dut.SearchIntegralSolutionByRounding(*(dut.bnb()->root()));
-  EXPECT_EQ(dut.bnb()->best_upper_bound(), std::numeric_limits<double>::infinity());
-  EXPECT_EQ(dut.bnb()->best_lower_bound(), -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_upper_bound(),
+            std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_lower_bound(),
+            -std::numeric_limits<double>::infinity());
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding4) {
@@ -1175,12 +1178,13 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding4) {
   // Test on prog4.
   auto prog = ConstructMathematicalProgram4();
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
-  // The optimal solution to the root node is (1/3, 1/3, 1/3, 2/3, 1/3), with 
+  // The optimal solution to the root node is (1/3, 1/3, 1/3, 2/3, 1/3), with
   // optimal cost 4/3. We will add the constraint y₀ = 1, y₁ = 0, and solve for
   // the continuous variable x. The new problem is infeasible.
   dut.SearchIntegralSolutionByRounding(*(dut.bnb()->root()));
   const double tol{1E-5};
-  EXPECT_EQ(dut.bnb()->best_upper_bound(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.bnb()->best_upper_bound(),
+            std::numeric_limits<double>::infinity());
   // This best lower bound is unchanged, after we search for the integral
   // solution, since the new program is infeasible.
   EXPECT_NEAR(dut.bnb()->best_lower_bound(), 4.0 / 3, tol);

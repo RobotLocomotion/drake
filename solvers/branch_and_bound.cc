@@ -699,13 +699,40 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
 
 void MixedIntegerBranchAndBound::UpdateIntegralSolution(
     const Eigen::Ref<const Eigen::VectorXd>& solution, double cost) {
-  solutions_.emplace(cost, solution);
-  if (static_cast<int>(solutions_.size()) > max_num_solutions_) {
-    auto it = solutions_.end();
-    --it;
-    solutions_.erase(it);
+  // First make sure that this solution has not been found before. The solution
+  // could be found already when we search the integral solution in each node
+  // by rounding the un-fixed binary variables, or by some user callback
+  // procedure.
+  bool found_match = false;
+  const double tol{1E-6};
+  for (const auto& cost_solution : solutions_) {
+    // The same solution should have the same cost, up to some numerical
+    // tolerance.
+    if (std::abs(cost_solution.first - cost) < tol) {
+      bool found_match_i = true;  // If solution matches with cost_solution;
+      for (int i = 0; i < root_->prog()->num_vars(); ++i) {
+        if (std::abs(solution(i) - cost_solution.second(i)) > tol) {
+          found_match_i = false;
+          break;
+        }
+      }
+      if (found_match_i) {
+        found_match = true;
+      }
+    }
+    if (found_match) {
+      break;
+    }
   }
-  best_upper_bound_ = std::min(best_upper_bound_, solutions_.begin()->first);
+  if (!found_match) {
+    solutions_.emplace(cost, solution);
+    if (static_cast<int>(solutions_.size()) > max_num_solutions_) {
+      auto it = solutions_.end();
+      --it;
+      solutions_.erase(it);
+    }
+    best_upper_bound_ = std::min(best_upper_bound_, solutions_.begin()->first);
+  }
 }
 
 bool MixedIntegerBranchAndBound::HasConverged() const {
