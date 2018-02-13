@@ -91,6 +91,37 @@ GTEST_TEST(FittedValueIterationTest, PeriodicBoundary) {
   EXPECT_TRUE(CompareMatrices(solution.second, J_expected, 1e-8));
 }
 
+// Plot in Matlab.  (Costs little here and is very useful for any future
+// debugging).
+void visualization_callback(int iteration, const math::BarycentricMesh<double>&
+state_mesh, const Eigen::RowVectorXd& cost_to_go) {
+  Eigen::VectorXd Qbins(state_mesh.get_input_grid()[0].size());
+  Eigen::VectorXd Qdotbins(state_mesh.get_input_grid()[1].size());
+
+  Eigen::MatrixXd J(Qdotbins.size(), Qbins.size());
+
+  int i = 0;
+  for (const double q : state_mesh.get_input_grid()[0]) {
+    Qbins(i) = q;
+    int j = 0;
+    for (const double qdot : state_mesh.get_input_grid()[1]) {
+      Qdotbins(j) = qdot;
+      const Eigen::Vector2d x{q, qdot};
+      J(j, i) = state_mesh.Eval(cost_to_go, x)[0];
+      j++;
+    }
+    i++;
+  }
+
+  using common::CallMatlab;
+  CallMatlab("surf", Qbins, Qdotbins, J);
+  auto str = common::CallMatlabSingleOutput("sprintf", "iteration %d",
+                                            iteration);
+  CallMatlab("title", str);
+  CallMatlab("pause");
+}
+
+
 // Linear quadratic regulator for the double integrator.
 // q̈ = u,  g(x,u) = x'Qx + u'Ru.
 // Note: we only expect the numerical solution to be very approximate, due to
@@ -130,8 +161,11 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
 
   const double timestep = .01;
 
+  auto options = DynamicProgrammingOptions();
+  options.visualization_callback = visualization_callback;
+
   auto solution = FittedValueIteration(&simulator, cost_function, state_grid,
-                                   input_grid, timestep);
+                                   input_grid, timestep, options);
 
   // Note: Compare against continuous time solution, even though we are solving
   // a discretized version.  Confirmed in MATLAB (due to #8034) that cost-to-go
@@ -142,35 +176,6 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
   auto optimal = LinearQuadraticRegulator(A, B, Q, Vector1d(R));
 
   math::BarycentricMesh<double> state_mesh(state_grid);
-
-  {  // Plot in Matlab.  (Costs little here and is very useful for any future
-     // debugging).
-    using common::CallMatlab;
-    Eigen::VectorXd Qbins(state_grid[0].size());
-    Eigen::VectorXd Qdotbins(state_grid[1].size());
-    Eigen::MatrixXd J(state_grid[1].size(), state_grid[0].size());
-    Eigen::MatrixXd Jstar(state_grid[1].size(), state_grid[0].size());
-
-    int i = 0;
-    for (const double q : state_grid[0]) {
-      Qbins(i) = q;
-      int j = 0;
-      for (const double qdot : state_grid[1]) {
-        Qdotbins(j) = qdot;
-        const Eigen::Vector2d x{q, qdot};
-        J(j, i) = state_mesh.Eval(solution.second, x)[0];
-        Jstar(j, i) = x.dot(optimal.S * x);
-        j++;
-      }
-      i++;
-    }
-
-    CallMatlab("figure", 1);
-    CallMatlab("subplot", 1, 2, 1);
-    CallMatlab("surf", Qbins, Qdotbins, J);
-    CallMatlab("subplot", 1, 2, 2);
-    CallMatlab("surf", Qbins, Qdotbins, Jstar);
-  }
 
   for (double q = -2.5; q <= 2.5; q += 1.) {
     for (double qdot = -3.5; qdot <= 3.5; qdot += 1.) {
