@@ -6,9 +6,7 @@ load(
 )
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
 )
 
 package(
