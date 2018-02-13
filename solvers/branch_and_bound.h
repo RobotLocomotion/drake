@@ -484,7 +484,7 @@ class MixedIntegerBranchAndBound {
 
   /**
    * Getter for the root node. Note that this is aliased for the lifetime of
-   * this project.
+   * this object.
    */
   const MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }
 
