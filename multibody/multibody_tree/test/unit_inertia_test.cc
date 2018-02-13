@@ -6,7 +6,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"

@@ -134,12 +134,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "unit_inertia",
-    testonly = 1,
     srcs = ["unit_inertia.cc"],
     hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
-        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
