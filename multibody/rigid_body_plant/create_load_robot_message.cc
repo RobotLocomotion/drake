@@ -22,9 +22,10 @@ lcmt_viewer_load_robot CreateLoadRobotMessage(
       link.geom.push_back(MakeGeometryData(element));
     }
     if (add_collisions) {
-      link.num_geom += body->get_collision_elements().size();
-      for (const auto& element : body->get_collision_elements()) {
-        link.geom.push_back(MakeGeometryData(element));
+      link.num_geom += body->get_num_collision_elements();
+      for (auto iter = body->collision_elements_begin();
+           iter != body->collision_elements_end(); ++iter) {
+        link.geom.push_back(MakeGeometryData(*iter));
       }
     }
     load_message.link.push_back(link);
