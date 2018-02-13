@@ -107,6 +107,7 @@ FittedValueIteration(
   Eigen::RowVectorXi Pi(num_states);
 
   double max_diff = std::numeric_limits<double>::infinity();
+  int iteration = 0;
   while (max_diff > options.convergence_tol) {
     for (int state = 0; state < num_states; state++) {
       Jnext(state) = std::numeric_limits<double>::infinity();
@@ -128,6 +129,10 @@ FittedValueIteration(
     }
     max_diff = (J - Jnext).lpNorm<Eigen::Infinity>();
     J = Jnext;
+    iteration++;
+    if (options.visualization_callback) {
+      options.visualization_callback(iteration, state_mesh, J);
+    }
   }
 
   // Create the policy.
