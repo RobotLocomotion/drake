@@ -19,7 +19,9 @@ namespace multibody {
 namespace multibody_model {
 namespace {
 
+using Eigen::Isometry3d;
 using Eigen::MatrixXd;
+using Eigen::Vector3d;
 using multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
 using systems::Context;
 using systems::ContinuousState;
@@ -477,21 +479,36 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
     angle_index++;
   }
 
-  // Compute the value of the end effector's spatial velocity using <double>.
-  SpatialVelocity<double> V_WE =
-      CalcEndEffectorSpatialVelocity(*model_, *context_);
+  // Spatial velocity of the end effector.
+  const SpatialVelocity<double>& V_WE =
+      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
-  Vector3<double> p_WE;
-  MatrixX<double> Jv_WE(6, model_->get_num_velocities());
-  // The end effector (E) Jacobian is computed by asking the Jacobian for a
-  // point P with position p_EP = 0 in the E frame.
+  // Pose of the end effector.
+  const Isometry3d& X_WE =
+      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+
+  // Position of a frame F measured and expressed in frame E.
+  const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);  // p_EoFo for short.
+  // Express this same last vector in the world frame.
+  const Vector3d p_EoFo_W = X_WE.linear() * p_EoFo_E;
+
+  // The spatial velocity of a frame F moving with E can be obtained by
+  // "shifting" the spatial velocity of frame E from Eo to Fo.
+  // That is, frame F has the spatial velocity of a frame Ef obtained by
+  // "shifting" from E by an offset p_EoFo.
+  const SpatialVelocity<double> V_WEf = V_WE.Shift(p_EoFo_W);
+
+  MatrixX<double> Jv_WF(6, model_->get_num_velocities());
+  // Compute the Jacobina Jv_WF for that relate the generalized velocities with
+  // the spatial velocity of frame F.
   model_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_,
-      end_effector_link_->get_body_frame(), Vector3<double>::Zero(), &Jv_WE);
+      end_effector_link_->get_body_frame(), p_EoFo_E, &Jv_WF);
 
-  // Verify that V_WE = Jv_WE * v:
-  const SpatialVelocity<double> Jv_WE_times_v(Jv_WE * v);
-  EXPECT_TRUE(Jv_WE_times_v.IsApprox(V_WE, kTolerance));
+  // Verify that V_WEf = Jv_WF * v:
+  const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
+
+  EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
 }  // namespace

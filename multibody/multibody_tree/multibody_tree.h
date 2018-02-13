@@ -896,25 +896,17 @@ class MultibodyTree {
       const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const;
 
-#if 0
   /// Given the pose `X_BF` of a frame F measured in a frame B, this method
   /// computes the pose `X_WF` of this frame F in the world frame W. That is, it
   /// computes: `X_WF = X_WB * X_BF`.
-  Isometry3<T> CalcFramePoseInWorld(
+  const Isometry3<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B,
-      const Isometry3<T>& X_BF) const;
+      const Body<T>& body_B) const;
 
-  /// Given the position `p_BoFo_B` measured and expressed in a frame B,
-  /// this method computes the spatial velocity `V_WF` of frame F in the world
-  /// frame W. In other words, this method performs a rigid _shift_ of the
-  /// spatial velocity `V_WB` of frame B as: V_WF = V_WB.Shift(p_BoFo_W), see
-  /// SpatialVelocity::Shift().
-  SpatialVelocity<T> CalcFrameSpatialVelocityInWorld(
+  const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_B,
-      const Eigen::Ref<const Vector3<T>>& p_BoFo_B) const;
-#endif
+      const Body<T>& body_B) const;
+
   /// @}
   // End of "Kinematic computations" section.
 

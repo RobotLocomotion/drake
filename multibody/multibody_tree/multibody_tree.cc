@@ -576,6 +576,20 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+const Isometry3<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
+    const systems::Context<T>& context,
+    const Body<T>& body_B) const {
+  return EvalPositionKinematics(context).get_X_WB(body_B.get_node_index());
+}
+
+template <typename T>
+const SpatialVelocity<T>& MultibodyTree<T>::EvalBodySpatialVelocityInWorld(
+    const systems::Context<T>& context,
+    const Body<T>& body_B) const {
+  return EvalVelocityKinematics(context).get_V_WB(body_B.get_node_index());
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
