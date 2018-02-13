@@ -8,7 +8,9 @@ cc_library(
     name = "spruce",
     srcs = ["spruce.cc"],
     hdrs = ["spruce.hh"],
+    copts = ["-fvisibility=hidden"],
     includes = ["."],
+    linkstatic = 1,
 )
 
 # We do not install the header file (its a private dependency), but we still
