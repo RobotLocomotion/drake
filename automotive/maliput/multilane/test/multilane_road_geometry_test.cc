@@ -12,6 +12,7 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+namespace {
 
 using api::RBounds;
 using api::HBounds;
@@ -247,6 +248,7 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   EXPECT_GT(distance, 0.);
 }
 
+}  // namespace
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake

@@ -3,7 +3,11 @@
 
 """
 Finds local system Python headers and libraries using python-config and
-makes them available to be used as a C/C++ dependency.
+makes them available to be used as a C/C++ dependency. On macOS, Python
+libraries should not typically be directly linked, so the :python target passes
+the "-undefined dynamic_lookup" linker flag, however in the rare cases that
+this would cause an undefined symbol error, a :python_direct_link target is
+provided. On Linux, these targets are identical.
 
 Example:
     WORKSPACE:
@@ -24,6 +28,8 @@ Arguments:
     name: A unique name for this rule.
     version: The version of Python headers and libraries to be found.
 """
+
+load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
     python_config = repository_ctx.which("python{}-config".format(
@@ -69,15 +75,42 @@ def _impl(repository_ctx):
         if not linkopts[i].startswith("-"):
             linkopts[i - 1] += " " + linkopts.pop(i)
 
-    file_content = """
+    linkopts_direct_link = list(linkopts)
+
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
+    if os_result.is_macos:
+        for i in reversed(range(len(linkopts))):
+            if linkopts[i].find("python{}".format(
+                    repository_ctx.attr.version)) != -1:
+                linkopts.pop(i)
+        linkopts = ["-undefined dynamic_lookup"] + linkopts
+
+    file_content = """# -*- python -*-
+
 cc_library(
-    name = "python",
+    name = "python_headers",
     hdrs = glob(["include/**"]),
     includes = {},
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "python",
     linkopts = {},
+    deps = [":python_headers"],
     visibility = ["//visibility:public"],
 )
-    """.format(includes, linkopts)
+
+cc_library(
+    name = "python_direct_link",
+    linkopts = {},
+    deps = [":python_headers"],
+    visibility = ["//visibility:public"],
+)
+    """.format(includes, linkopts, linkopts_direct_link)
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 

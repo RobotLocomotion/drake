@@ -512,9 +512,9 @@ class Diagram : public System<T>,
     // Evaluate the derivatives of each constituent system.
     for (int i = 0; i < n; ++i) {
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      ContinuousState<T>* subderivatives =
+      ContinuousState<T>& subderivatives =
           diagram_derivatives->get_mutable_substate(i);
-      registered_systems_[i]->CalcTimeDerivatives(subcontext, subderivatives);
+      registered_systems_[i]->CalcTimeDerivatives(subcontext, &subderivatives);
     }
   }
 
@@ -529,7 +529,7 @@ class Diagram : public System<T>,
         dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
     DRAKE_DEMAND(diagram_derivatives != nullptr);
     const int i = GetSystemIndexOrAbort(subsystem);
-    return diagram_derivatives->get_substate(i);
+    return &diagram_derivatives->get_substate(i);
   }
 
   /// Returns a constant reference to the subcontext that corresponds to the
@@ -829,9 +829,8 @@ class Diagram : public System<T>,
 
     // Modify the pointer to the event data to point to the sub-system
     // continuous states.
-    const int subsystem_index = GetSystemIndexOrAbort(&subsystem);
-    data->xc0 = diagram_xc0->get_substate(subsystem_index);
-    data->xcf = diagram_xcf->get_substate(subsystem_index);
+    data->xc0 = DoGetTargetSystemContinuousState(subsystem, diagram_xc0);
+    data->xcf = DoGetTargetSystemContinuousState(subsystem, diagram_xcf);
 
     // Add the event to the collection.
     event->add_to_composite(&subevents);
@@ -899,6 +898,21 @@ class Diagram : public System<T>,
         target_system, state,
         &System<T>::DoGetMutableTargetSystemState,
         &DiagramState<T>::get_mutable_substate);
+  }
+
+  /// Returns a pointer to const state if @p target_system is a subsystem
+  /// of this, nullptr is returned otherwise.
+  const ContinuousState<T>* DoGetTargetSystemContinuousState(
+      const System<T>& target_system,
+      const ContinuousState<T>* xc) const final {
+    if (&target_system == this)
+      return xc;
+
+    return GetSubsystemStuff<const ContinuousState<T>,
+                             const DiagramContinuousState<T>>(
+        target_system, xc,
+        &System<T>::DoGetTargetSystemContinuousState,
+        &DiagramContinuousState<T>::get_substate);
   }
 
   /// Returns a pointer to const state if @p target_system is a subsystem

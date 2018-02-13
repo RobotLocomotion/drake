@@ -200,25 +200,6 @@ GeometryId GeometrySystem<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
-void GeometrySystem<T>::ClearSource(SourceId source_id) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  initial_state_->ClearSource(source_id);
-}
-
-template <typename T>
-void GeometrySystem<T>::RemoveFrame(SourceId source_id, FrameId frame_id) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  initial_state_->RemoveFrame(source_id, frame_id);
-}
-
-template <typename T>
-void GeometrySystem<T>::RemoveGeometry(SourceId source_id,
-                                       GeometryId geometry_id) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  initial_state_->RemoveGeometry(source_id, geometry_id);
-}
-
-template <typename T>
 void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
@@ -349,14 +330,12 @@ void GeometrySystem<T>::FullPoseUpdate(
     }
   }
 
-  // TODO(SeanCurtis-TRI): Propagate changes to the geometry engine.
-  // Again, this will change significantly when caching becomes available.
-
+  mutable_state.FinalizePoseUpdate();
   // TODO(SeanCurtis-TRI): Add velocity as appropriate.
 }
 
 template <typename T>
-std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeContext() const {
+std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeLeafContext() const {
   // Disallow further geometry source additions.
   initial_state_ = nullptr;
   DRAKE_ASSERT(geometry_state_index_ >= 0);

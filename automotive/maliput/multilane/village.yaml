@@ -2,12 +2,13 @@
 ---
 # distances are meters; angles are degrees.
 maliput_multilane_builder:
-  id: maliput_village
-  lane_bounds: [-2, 2]
-  driveable_bounds: [-4, 4]
+  id: "maliput_village"
+  lane_width: 4
+  right_shoulder: 2
+  left_shoulder: 2
   elevation_bounds: [0, 5]
-  position_precision: .01
-  orientation_precision: 0.5
+  linear_tolerance: .01
+  angular_tolerance: 0.5
   points:
     A-St_wend:
       xypoint: [-50, 60, 0]
@@ -36,297 +37,364 @@ maliput_multilane_builder:
   connections:
     # Main Streets
     A-St_blk1:
-      start: "points.A-St_wend"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.A-St_wend.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     A-St_isY:
-      start: "connections.A-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_blk1.end.ref.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     A-St_blk2:
-      start: "connections.A-St_isY.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_isY.end.ref.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
 
     B-St_isX:
-      start: "points.B-St_wend"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.B-St_wend.forward"]
       length: 20
-      z_end: [5, 0, 0, 0]
+      z_end: ["ref", [5, 0, 0, 0]]
     B-St_blk1:
-      start: "connections.B-St_isX.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_isX.end.ref.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     B-St_isY:
-      start: "connections.B-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk1.end.ref.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     B-St_blk2:
-      start: "connections.B-St_isY.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_isY.end.ref.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     B-St_isZ:
-      start: "connections.B-St_blk2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk2.end.ref.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
 
     C-St_blk1:
-      start: "points.C-St_wend"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.C-St_wend.forward"]
       length: 40
-      z_end: [5, 0, 0, 0]
+      z_end: ["ref", [5, 0, 0, 0]]
     C-St_isY:
-      start: "connections.C-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_blk1.end.ref.forward"]
       length: 20
-      z_end: [5, 0, 0, 0]
+      z_end: ["ref", [5, 0, 0, 0]]
     C-St_blk2:
-      start: "connections.C-St_isY.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_isY.end.ref.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
 
     X-Ave_blk1:
-      start: "points.X-Ave_nend"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.X-Ave_nend.forward"]
       length: 40
-      z_end: [5, 0, 0, 0]
+      z_end: ["ref", [5, 0, 0, 0]]
     X-Ave_isB:
-      start: "connections.X-Ave_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.X-Ave_blk1.end.ref.forward"]
       length: 20
-      z_end: [5, 0, 0, 0]
+      z_end: ["ref", [5, 0, 0, 0]]
     X-Ave_blk2:
-      start: "connections.X-Ave_isB.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.X-Ave_isB.end.ref.forward"]
       length: 40
-      z_end: [7, 0, 0, 0]
+      z_end: ["ref", [7, 0, 0, 0]]
 
     Y-Ave_isA:
-      start: "points.Y-Ave_nend"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.Y-Ave_nend.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Y-Ave_blk1:
-      start: "connections.Y-Ave_isA.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Y-Ave_isA.end.ref.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Y-Ave_isB:
-      start: "connections.Y-Ave_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Y-Ave_blk1.end.ref.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Y-Ave_blk2:
-      start: "connections.Y-Ave_isB.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Y-Ave_isB.end.ref.forward"]
       length: 40
-      z_end: [5, 0, 0, 0]
+      z_end: ["ref", [5, 0, 0, 0]]
     Y-Ave_isC:
-      start: "connections.Y-Ave_blk2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Y-Ave_blk2.end.ref.forward"]
       length: 20
-      z_end: [5, 0, 0, 0]
+      z_end: ["ref", [5, 0, 0, 0]]
 
     Z-Ave_blk1:
-      start: "points.Z-Ave_nend"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.Z-Ave_nend.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Z-Ave_isB:
-      start: "connections.Z-Ave_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Z-Ave_blk1.end.ref.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Z-Ave_blk2:
-      start: "connections.Z-Ave_isB.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Z-Ave_isB.end.ref.forward"]
       length: 40
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
 
     # The Expressway
     Express_N1:
-      start: "points.Express_s0"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.Express_s0.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_N2:
-      start: "connections.Express_N1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_N1.end.ref.forward"]
       length: 120
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_NE_a:
-      start: "connections.Express_N2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_N2.end.ref.forward"]
       arc: [60, -45]
-      z_end: [0, 0, 20, 0]
+      z_end: ["ref", [0, 0, 20, 0]]
     Express_NE_b:
-      start: "connections.Express_NE_a.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_NE_a.end.ref.forward"]
       arc: [60, -45]
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_E:
-      start: "connections.Express_NE_b.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_NE_b.end.ref.forward"]
       length: 120
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_ES_a:
-      start: "connections.Express_E.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_E.end.ref.forward"]
       arc: [60, -45]
-      z_end: [0, 0, 20, 0]
+      z_end: ["ref", [0, 0, 20, 0]]
     Express_ES_b:
-      start: "connections.Express_ES_a.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_ES_a.end.ref.forward"]
       arc: [60, -45]
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_S1:
-      start: "connections.Express_ES_b.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_ES_b.end.ref.forward"]
       length: 120
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_S2:
-      start: "connections.Express_S1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_S1.end.ref.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_SW_a:
-      start: "connections.Express_S2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_S2.end.ref.forward"]
       arc: [60, -45]
-      z_end: [0, 0, 20, 0]
+      z_end: ["ref", [0, 0, 20, 0]]
     Express_SW_b:
-      start: "connections.Express_SW_a.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_SW_a.end.ref.forward"]
       arc: [60, -45]
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_W_a:
-      start: "connections.Express_SW_b.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_SW_b.end.ref.forward"]
       length: 100
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_W_b:
-      start: "connections.Express_W_a.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_W_a.end.ref.forward"]
       length: 20
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_WN_a:
-      start: "connections.Express_W_b.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_W_b.end.ref.forward"]
       arc: [60, -45]
-      z_end: [0, 0, 20, 0]
+      z_end: ["ref", [0, 0, 20, 0]]
     Express_WN_b:
-      start: "connections.Express_WN_a.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_WN_a.end.ref.forward"]
       arc: [60, -45]
-      explicit_end: "connections.Express_N1.start"
+      explicit_end: ["ref", "connections.Express_N1.start.ref.forward"]
 
     Express_NRamp:
-      start: "connections.Express_N2.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_N2.start.ref.forward"]
       arc: [50, -90]
-      explicit_end: "connections.Y-Ave_isA.start"
+      explicit_end: ["ref", "connections.Y-Ave_isA.start.ref.forward"]
 
     Express_ERamp:
-      start: "connections.Express_NE_b.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_NE_b.end.ref.forward"]
       arc: [60, -90]
-      explicit_end: "reverse connections.B-St_isZ.end"
+      explicit_end: ["ref", "connections.B-St_isZ.end.ref.reverse"]
 
     Express_SRamp_a:
-      start: "connections.Y-Ave_isC.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Y-Ave_isC.end.ref.forward"]
       arc: [50, -60]
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_SRamp_b:
-      start: "connections.Express_SRamp_a.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_SRamp_a.end.ref.forward"]
       arc: [50, -30]
-      explicit_end: "connections.Express_S2.start"
+      explicit_end: ["ref", "connections.Express_S2.start.ref.forward"]
 
     Express_WRamp_a:
-      start: "reverse connections.B-St_isX.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_isX.start.ref.reverse"]
       arc: [60, -60]
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     Express_WRamp_b:
-      start: "connections.Express_WRamp_a.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.Express_WRamp_a.end.ref.forward"]
       arc: [60, -30]
-      explicit_end: "connections.Express_WN_a.start"
+      explicit_end: ["ref", "connections.Express_WN_a.start.ref.forward"]
 
 
     # Intersection connections
     A1-X1:
-      start: "reverse connections.A-St_blk1.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_blk1.start.ref.reverse"]
       arc: [10, 90]
-      explicit_end: "connections.X-Ave_blk1.start"
+      explicit_end: ["ref", "connections.X-Ave_blk1.start.ref.forward"]
 
     A1-YR:
-      start: "connections.A-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_blk1.end.ref.forward"]
       arc: [10, 90]
-      explicit_end: "reverse connections.Y-Ave_isA.start"
+      explicit_end: ["ref", "connections.Y-Ave_isA.start.ref.reverse"]
     A2-YR:
-      start: "reverse connections.A-St_blk2.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_blk2.start.ref.reverse"]
       arc: [10, -90]
-      explicit_end: "reverse connections.Y-Ave_isA.start"
+      explicit_end: ["ref", "connections.Y-Ave_isA.start.ref.reverse"]
     A1-Y1:
-      start: "connections.A-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_blk1.end.ref.forward"]
       arc: [10, -90]
-      explicit_end: "connections.Y-Ave_blk1.start"
+      explicit_end: ["ref", "connections.Y-Ave_blk1.start.ref.forward"]
     A2-Y1:
-      start: "reverse connections.A-St_blk2.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_blk2.start.ref.reverse"]
       arc: [10, 90]
-      explicit_end: "connections.Y-Ave_blk1.start"
+      explicit_end: ["ref", "connections.Y-Ave_blk1.start.ref.forward"]
 
     A2-Z1:
-      start: "connections.A-St_blk2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.A-St_blk2.end.ref.forward"]
       arc: [10, -90]
-      explicit_end: "connections.Z-Ave_blk1.start"
+      explicit_end: ["ref", "connections.Z-Ave_blk1.start.ref.forward"]
 
 
     B1-X1:
-      start: "reverse connections.B-St_blk1.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk1.start.ref.reverse"]
       arc: [10, -90]
-      explicit_end: "reverse connections.X-Ave_blk1.end"
+      explicit_end: ["ref", "connections.X-Ave_blk1.end.ref.reverse"]
     B1-X2:
-      start: "reverse connections.B-St_blk1.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk1.start.ref.reverse"]
       arc: [10, 90]
-      explicit_end: "connections.X-Ave_blk2.start"
+      explicit_end: ["ref", "connections.X-Ave_blk2.start.ref.forward"]
     BR-X1:
-      start: "connections.B-St_isX.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_isX.start.ref.forward"]
       arc: [10, 90]
-      explicit_end: "reverse connections.X-Ave_blk1.end"
+      explicit_end: ["ref", "connections.X-Ave_blk1.end.ref.reverse"]
     BR-X2:
-      start: "connections.B-St_isX.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_isX.start.ref.forward"]
       arc: [10, -90]
-      explicit_end: "connections.X-Ave_blk2.start"
+      explicit_end: ["ref", "connections.X-Ave_blk2.start.ref.forward"]
 
     B1-Y1:
-      start: "connections.B-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk1.end.ref.forward"]
       arc: [10, 90]
-      explicit_end: "reverse connections.Y-Ave_blk1.end"
+      explicit_end: ["ref", "connections.Y-Ave_blk1.end.ref.reverse"]
     B1-Y2:
-      start: "connections.B-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk1.end.ref.forward"]
       arc: [10, -90]
-      explicit_end: "connections.Y-Ave_blk2.start"
+      explicit_end: ["ref", "connections.Y-Ave_blk2.start.ref.forward"]
     B2-Y1:
-      start: "reverse connections.B-St_blk2.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk2.start.ref.forward"]
       arc: [10, -90]
-      explicit_end: "reverse connections.Y-Ave_blk1.end"
+      explicit_end: ["ref", "connections.Y-Ave_blk1.end.ref.reverse"]
     B2-Y2:
-      start: "reverse connections.B-St_blk2.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk2.start.ref.reverse"]
       arc: [10, 90]
-      explicit_end: "connections.Y-Ave_blk2.start"
+      explicit_end: ["ref", "connections.Y-Ave_blk2.start.ref.forward"]
 
     B2-Z1:
-      start: "connections.B-St_blk2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk2.end.ref.forward"]
       arc: [10, 90]
-      explicit_end: "reverse connections.Z-Ave_blk1.end"
+      explicit_end: ["ref", "connections.Z-Ave_blk1.end.ref.reverse"]
     B2-Z2:
-      start: "connections.B-St_blk2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_blk2.end.ref.forward"]
       arc: [10, -90]
-      explicit_end: "connections.Z-Ave_blk2.start"
+      explicit_end: ["ref", "connections.Z-Ave_blk2.start.ref.forward"]
     BR-Z1:
-      start: "reverse connections.B-St_isZ.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_isZ.end.ref.reverse"]
       arc: [10, -90]
-      explicit_end: "reverse connections.Z-Ave_blk1.end"
+      explicit_end: ["ref", "connections.Z-Ave_blk1.end.ref.reverse"]
     BR-Z2:
-      start: "reverse connections.B-St_isZ.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.B-St_isZ.end.ref.reverse"]
       arc: [10, 90]
-      explicit_end: "connections.Z-Ave_blk2.start"
+      explicit_end: ["ref", "connections.Z-Ave_blk2.start.ref.forward"]
 
 
     C1-X2:
-      start: "reverse connections.C-St_blk1.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_blk1.start.ref.reverse"]
       arc: [10, -90]
-      explicit_end: "connections.X-Ave_blk2.end"
+      explicit_end: ["ref", "connections.X-Ave_blk2.end.ref.forward"]
 
     C1-Y2:
-      start: "connections.C-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_blk1.end.ref.forward"]
       arc: [10, 90]
-      explicit_end: "reverse connections.Y-Ave_blk2.end"
+      explicit_end: ["ref", "connections.Y-Ave_blk2.end.ref.reverse"]
     C2-Y2:
-      start: "reverse connections.C-St_blk2.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_blk2.start.ref.reverse"]
       arc: [10, -90]
-      explicit_end: "reverse connections.Y-Ave_blk2.end"
+      explicit_end: ["ref", "connections.Y-Ave_blk2.end.ref.reverse"]
     C1-YR:
-      start: "connections.C-St_blk1.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_blk1.end.ref.forward"]
       arc: [10, -90]
-      explicit_end: "connections.Y-Ave_isC.end"
+      explicit_end: ["ref", "connections.Y-Ave_isC.end.ref.forward"]
     C2-YR:
-      start: "reverse connections.C-St_blk2.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_blk2.start.ref.reverse"]
       arc: [10, 90]
-      explicit_end: "connections.Y-Ave_isC.end"
+      explicit_end: ["ref", "connections.Y-Ave_isC.end.ref.forward"]
 
     C2-Z2:
-      start: "connections.C-St_blk2.end"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.C-St_blk2.end.ref.forward"]
       arc: [10, 90]
-      explicit_end: "reverse connections.Z-Ave_blk2.end"
+      explicit_end: ["ref", "connections.Z-Ave_blk2.end.ref.reverse"]
 
   groups:
     A12-YR1: [A-St_isY, Y-Ave_isA, A1-YR, A2-YR, A1-Y1, A2-Y1]

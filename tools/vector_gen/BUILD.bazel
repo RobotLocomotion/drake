@@ -85,8 +85,8 @@ drake_cc_googletest(
     name = "sample_test",
     deps = [
         ":sample",
-        "//drake/common:autodiff",
-        "//drake/common:symbolic",
+        "//common:autodiff",
+        "//common:symbolic",
     ],
 )
 
@@ -94,7 +94,7 @@ drake_cc_googletest(
     name = "sample_translator_test",
     deps = [
         ":sample_translator",
-        "//drake/common/test_utilities",
+        "//common/test_utilities",
     ],
 )
 

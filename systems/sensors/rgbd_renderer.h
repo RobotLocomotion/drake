@@ -17,6 +17,8 @@ namespace sensors {
 
 /// Common configurations of rendering systems.
 struct RenderingConfig {
+  // TODO(eric.cousineau): Define all default values be defined here to
+  // minimize duplication.
   /// The width of the image to be rendered in pixels.
   const int width;
   /// The height of the image to be rendered in pixels.
@@ -34,7 +36,9 @@ struct RenderingConfig {
   /// A flag for showing visible windows for RGB and label images.  If this is
   /// false, offscreen rendering is executed. This is useful for debugging
   /// purposes.
-  const bool show_window;
+  const bool show_window{kDefaultShowWindow};
+  /// Default value for `show_window`.
+  static constexpr bool kDefaultShowWindow{false};
 };
 
 

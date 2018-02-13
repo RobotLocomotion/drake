@@ -9,20 +9,20 @@
       "X-CMake-Find-Args": ["CONFIG"]
     }
   },
-  "Default-Components": [":lcmtypes_optitrack-cpp"],
+  "Default-Components": [":optitrack-lcmtypes-cpp"],
   "Components": {
-    "lcmtypes_optitrack-cpp": {
+    "optitrack-client": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/optitrack_client"
+    },
+    "optitrack-lcmtypes-cpp": {
       "Type": "interface",
       "Includes": ["@prefix@/include/lcmtypes"]
     },
-    "lcmtypes_optitrack-java": {
+    "optitrack-lcmtypes-java": {
       "Type": "jar",
       "Location": "@prefix@/share/java/lcmtypes_optitrack.jar",
       "Requires": ["lcm:lcm-java"]
-    },
-    "optitrack_client": {
-      "Type": "exe",
-      "Location": "@prefix@/bin/optitrack_client"
     }
   }
 }

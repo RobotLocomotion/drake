@@ -58,27 +58,6 @@ GTEST_TEST(FindResourceTest, NotFound) {
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
 }
 
-// Create an empty file with the given filename.
-void Touch(const std::string& filename) {
-  std::ofstream(filename.c_str(), std::ios::out).close();
-}
-
-GTEST_TEST(FindResourceTest, AlternativeDirectory) {
-  // Test `AddResourceSearchPath()` and `GetResourceSearchPaths()` by creating
-  // an empty file in a scratch directory with a sentinel file. Bazel tests are
-  // run in a scratch directory, so we don't need to remove anything manually.
-  const std::string test_directory = "find_resource_test_scratch";
-  const std::string candidate_filename = "drake/candidate.ext";
-  spruce::dir::mkdir(test_directory);
-  spruce::dir::mkdir(test_directory + "/drake");
-  Touch(test_directory + "/drake/.drake-find_resource-sentinel");
-  Touch(test_directory + "/" + candidate_filename);
-  AddResourceSearchPath(test_directory);
-  EXPECT_TRUE(!GetResourceSearchPaths().empty());
-  EXPECT_EQ(GetResourceSearchPaths()[0], test_directory);
-  EXPECT_NO_THROW(drake::FindResourceOrThrow(candidate_filename));
-}
-
 GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   const string relpath = "drake/common/test/find_resource_test_data.txt";
   const auto& result = FindResource(relpath);
@@ -113,6 +92,40 @@ GTEST_TEST(GetDrakePathTest, BasicTest) {
   const auto& result = MaybeGetDrakePath();
   ASSERT_TRUE(result);
   EXPECT_GT(result->length(), 5);
+}
+
+GTEST_TEST(GetDrakePathTest, PathIncludesDrake) {
+  // Tests that the path returned includes the root of drake.
+  const auto& result = MaybeGetDrakePath();
+  ASSERT_TRUE(result);
+  const spruce::path expected(*result +
+                              "/common/test/find_resource_test_data.txt");
+  EXPECT_TRUE(expected.exists());
+}
+
+// Create an empty file with the given filename.
+void Touch(const std::string& filename) {
+  std::ofstream(filename.c_str(), std::ios::out).close();
+}
+
+// NOTE: This test modifies the result of calls to GetDrakePath() and variants.
+// However, it does *not* clean up the modifications. As such, it must run
+// *last*. Relying on execution order being alphabetical, we make sure it is
+// in the last test suite and the last test case (with the ZZZ_ prefix).
+GTEST_TEST(ZZZ_FindResourceTest, ZZZ_AlternativeDirectory) {
+  // Test `AddResourceSearchPath()` and `GetResourceSearchPaths()` by creating
+  // an empty file in a scratch directory with a sentinel file. Bazel tests are
+  // run in a scratch directory, so we don't need to remove anything manually.
+  const std::string test_directory = "find_resource_test_scratch";
+  const std::string candidate_filename = "drake/candidate.ext";
+  spruce::dir::mkdir(test_directory);
+  spruce::dir::mkdir(test_directory + "/drake");
+  Touch(test_directory + "/drake/.drake-find_resource-sentinel");
+  Touch(test_directory + "/" + candidate_filename);
+  AddResourceSearchPath(test_directory);
+  EXPECT_TRUE(!GetResourceSearchPaths().empty());
+  EXPECT_EQ(GetResourceSearchPaths()[0], test_directory);
+  EXPECT_NO_THROW(drake::FindResourceOrThrow(candidate_filename));
 }
 
 }  // namespace

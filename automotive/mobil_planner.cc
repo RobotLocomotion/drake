@@ -10,7 +10,6 @@
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/saturate.h"
 
 namespace drake {
@@ -29,9 +28,12 @@ using systems::rendering::PoseVector;
 namespace automotive {
 
 template <typename T>
-MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s)
+MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s,
+                              RoadPositionStrategy road_position_strategy,
+                              double period_sec)
     : road_(road),
       with_s_(initial_with_s),
+      road_position_strategy_(road_position_strategy),
       ego_pose_index_{
           this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
       ego_velocity_index_{
@@ -48,6 +50,14 @@ MobilPlanner<T>::MobilPlanner(const RoadGeometry& road, bool initial_with_s)
   DRAKE_DEMAND(road_.junction(0)->segment(0)->num_lanes() > 0);
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
   this->DeclareNumericParameter(MobilPlannerParameters<T>());
+  // TODO(jadecastro) It is possible to replace the following AbstractState with
+  // a caching sceme once #4364 lands, preventing the need to use abstract
+  // states and periodic sampling time.
+  if (road_position_strategy == RoadPositionStrategy::kCache) {
+    this->DeclareAbstractState(systems::AbstractValue::Make<RoadPosition>(
+        RoadPosition()));
+    this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
+  }
 }
 
 template <typename T>
@@ -107,9 +117,16 @@ void MobilPlanner<T>::CalcLaneDirection(const systems::Context<T>& context,
       this->template EvalInputValue<PoseBundle<T>>(context, traffic_index_);
   DRAKE_ASSERT(traffic_poses != nullptr);
 
+  // Obtain the state if we've allocated it.
+  RoadPosition ego_rp;
+  if (context.template get_state().get_abstract_state().size() != 0) {
+    DRAKE_ASSERT(context.get_num_abstract_states() == 1);
+    ego_rp = context.template get_abstract_state<RoadPosition>(0);
+  }
+
   ImplCalcLaneDirection(*ego_pose, *ego_velocity, *traffic_poses,
                         *ego_accel_command, idm_params, mobil_params,
-                        lane_direction);
+                        ego_rp, lane_direction);
 }
 
 template <typename T>
@@ -118,23 +135,27 @@ void MobilPlanner<T>::ImplCalcLaneDirection(
     const PoseBundle<T>& traffic_poses, const BasicVector<T>& ego_accel_command,
     const IdmPlannerParameters<T>& idm_params,
     const MobilPlannerParameters<T>& mobil_params,
+    const RoadPosition& ego_rp,
     LaneDirection* lane_direction) const {
   DRAKE_DEMAND(idm_params.IsValid());
   DRAKE_DEMAND(mobil_params.IsValid());
 
-  const RoadPosition ego_position =
-      road_.ToRoadPosition(
-          GeoPosition::FromXyz(ego_pose.get_isometry().translation()),
-          nullptr, nullptr, nullptr);
+  RoadPosition ego_position = ego_rp;
+  if (!ego_rp.lane) {
+    const auto gp = GeoPosition::FromXyz(ego_pose.get_isometry().translation());
+    ego_position = road_.ToRoadPosition(gp, nullptr, nullptr, nullptr);
+  }
   // Prepare a list of (possibly nullptr) Lanes to evaluate.
   std::pair<const Lane*, const Lane*> lanes = std::make_pair(
       ego_position.lane->to_left(), ego_position.lane->to_right());
 
   const Lane* lane = ego_position.lane;
   if (lanes.first != nullptr || lanes.second != nullptr) {
+    const ClosestPose<T> ego_closest_pose(
+        RoadOdometry<T>(ego_position, ego_velocity), 0.);
     const std::pair<T, T> incentives =
-        ComputeIncentives(lanes, idm_params, mobil_params, ego_pose,
-                          ego_velocity, traffic_poses, ego_accel_command[0]);
+        ComputeIncentives(lanes, idm_params, mobil_params, ego_closest_pose,
+                          ego_pose, traffic_poses, ego_accel_command[0]);
     // Switch to the lane with the highest incentive score greater than zero,
     // staying in the same lane if under the threshold.
     const T threshold = mobil_params.threshold();
@@ -153,27 +174,21 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
     const std::pair<const Lane*, const Lane*> lanes,
     const IdmPlannerParameters<T>& idm_params,
     const MobilPlannerParameters<T>& mobil_params,
-    const PoseVector<T>& ego_pose, const FrameVelocity<T>& ego_velocity,
+    const ClosestPose<T>& ego_closest_pose, const PoseVector<T>& ego_pose,
     const PoseBundle<T>& traffic_poses, const T& ego_acceleration) const {
   // Initially disincentivize both neighboring lane options.  N.B. The first and
   // second elements correspond to the left and right lanes, respectively.
   std::pair<T, T> incentives(-kDefaultLargeAccel, -kDefaultLargeAccel);
 
-  const RoadPosition ego_position =
-      road_.ToRoadPosition(
-          GeoPosition::FromXyz(ego_pose.get_isometry().translation()),
-          nullptr, nullptr, nullptr);
-  DRAKE_DEMAND(ego_position.lane != nullptr);
+  DRAKE_DEMAND(ego_closest_pose.odometry.lane != nullptr);
   const ClosestPoses current_closest_poses = PoseSelector<T>::FindClosestPair(
-      ego_position.lane, ego_pose, traffic_poses,
-      idm_params.scan_ahead_distance());
+      ego_closest_pose.odometry.lane, ego_pose, traffic_poses,
+      idm_params.scan_ahead_distance(), ScanStrategy::kPath);
   // Construct ClosestPose containers for the leading, trailing, and ego car.
   const ClosestPose<T>& leading_closest_pose =
       current_closest_poses.at(AheadOrBehind::kAhead);
   const ClosestPose<T>& trailing_closest_pose =
       current_closest_poses.at(AheadOrBehind::kBehind);
-  const ClosestPose<T> ego_closest_pose(
-      RoadOdometry<T>(ego_position, ego_velocity), 0.);
 
   // Current acceleration of the trailing car.
   const T trailing_this_old_accel =
@@ -187,7 +202,8 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   // Compute the incentive for the left lane.
   if (lanes.first != nullptr) {
     const ClosestPoses left_closest_poses = PoseSelector<T>::FindClosestPair(
-        lanes.first, ego_pose, traffic_poses, idm_params.scan_ahead_distance());
+        lanes.first, ego_pose, traffic_poses, idm_params.scan_ahead_distance(),
+        ScanStrategy::kPath);
     ComputeIncentiveOutOfLane(idm_params, mobil_params, left_closest_poses,
                               ego_closest_pose, ego_acceleration,
                               trailing_delta_accel_this, &incentives.first);
@@ -196,7 +212,8 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   if (lanes.second != nullptr) {
     const ClosestPoses right_closest_poses =
         PoseSelector<T>::FindClosestPair(lanes.second, ego_pose, traffic_poses,
-                                         idm_params.scan_ahead_distance());
+                                         idm_params.scan_ahead_distance(),
+                                         ScanStrategy::kPath);
     ComputeIncentiveOutOfLane(idm_params, mobil_params, right_closest_poses,
                               ego_closest_pose, ego_acceleration,
                               trailing_delta_accel_this, &incentives.second);
@@ -280,6 +297,29 @@ const T MobilPlanner<T>::EvaluateIdm(
 
   return IdmPlanner<T>::Evaluate(idm_params, s_dot_behind, net_distance,
                                  closing_velocity);
+}
+
+template <typename T>
+void MobilPlanner<T>::DoCalcUnrestrictedUpdate(
+    const systems::Context<T>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+    systems::State<T>* state) const {
+  DRAKE_ASSERT(context.get_num_abstract_states() == 1);
+
+  // Obtain the input and state data.
+  const PoseVector<T>* const ego_pose =
+      this->template EvalVectorInput<PoseVector>(context, ego_pose_index_);
+  DRAKE_ASSERT(ego_pose != nullptr);
+
+  const FrameVelocity<T>* const ego_velocity =
+      this->template EvalVectorInput<FrameVelocity>(context,
+                                                    ego_velocity_index_);
+  DRAKE_ASSERT(ego_velocity != nullptr);
+
+  RoadPosition& rp =
+      state->template get_mutable_abstract_state<RoadPosition>(0);
+
+  CalcOngoingRoadPosition(*ego_pose, *ego_velocity, road_, &rp);
 }
 
 // These instantiations must match the API documentation in mobil_planner.h.

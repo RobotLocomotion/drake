@@ -606,21 +606,6 @@ TEST_F(GeometryStateTest, AddFrameWithDuplicateId) {
       "Registering frame with an id that has already been registered: \\d+");
 }
 
-// Tests the valid removal of an existing frame (and its attached geometry).
-TEST_F(GeometryStateTest, RemoveFrame) {
-  SourceId s_id = SetUpSingleSourceTree();
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount);
-  EXPECT_EQ(geometry_state_.get_num_geometries(), kFrameCount * kGeometryCount);
-
-  geometry_state_.RemoveFrame(s_id, frames_[0]);
-
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount - 1);
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            (kFrameCount -1)* kGeometryCount);
-  ExpectSourceDoesNotHaveFrame(s_id, frames_[0]);
-  EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), frames_.size() - 1);
-}
-
 // Tests the frame iterator, confirming that it iterates through all frames.
 TEST_F(GeometryStateTest, FrameIdRange) {
   SetUpSingleSourceTree();
@@ -631,67 +616,6 @@ TEST_F(GeometryStateTest, FrameIdRange) {
   }
   // There shouldn't be any left over.
   EXPECT_EQ(all_frames.size(), 0);
-}
-
-// Tests the removal of a frame that has other frames hanging on it.
-TEST_F(GeometryStateTest, RemoveFrameTree) {
-  SourceId s_id = SetUpSingleSourceTree();
-  FrameId fid = geometry_state_.RegisterFrame(s_id, frames_[0], *frame_);
-  EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), frames_.size() + 1);
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount + 1);
-
-  geometry_state_.RemoveFrame(s_id, frames_[0]);
-
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount - 1);
-  ExpectSourceDoesNotHaveFrame(s_id, frames_[0]);
-  ExpectSourceDoesNotHaveFrame(s_id, fid);
-  // We've deleted a newly added frame and a default frame, the total number of
-  // frame poses should be original - 1.
-  EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), frames_.size() - 1);
-}
-
-// Tests the removal of a frame whose parent is *not* the world frame.
-TEST_F(GeometryStateTest, RemoveFrameLeaf) {
-  SourceId s_id = SetUpSingleSourceTree();
-  FrameId fid = geometry_state_.RegisterFrame(s_id, frames_[0], *frame_.get());
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount + 1);
-  EXPECT_TRUE(gs_tester_.get_frames().at(frames_[0]).has_child(fid));
-  EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), frames_.size() + 1);
-
-  geometry_state_.RemoveFrame(s_id, fid);
-
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount);
-  ExpectSourceDoesNotHaveFrame(s_id, fid);
-  EXPECT_FALSE(gs_tester_.get_frames().at(frames_[0]).has_child(fid));
-  // We deleted the frame we just added. We should be back to the original
-  // number of frame poses.
-  EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), frames_.size());
-}
-
-// Tests the response to invalid invocations of RemoveFrame.
-TEST_F(GeometryStateTest, RemoveFrameInvalid) {
-  SourceId s_id = SetUpSingleSourceTree();
-
-  // Case: Valid source, invalid frame.
-  EXPECT_ERROR_MESSAGE(geometry_state_.RemoveFrame(s_id, FrameId::get_new_id()),
-                       std::logic_error,
-                       "Referenced frame \\d+ has not been registered.");
-
-  // Case: Invalid source, valid frame.
-  EXPECT_ERROR_MESSAGE(
-      geometry_state_.RemoveFrame(SourceId::get_new_id(), frames_[0]),
-      std::logic_error,
-      "Referenced geometry source \\d+ is not registered.");
-
-  // Case: Valid source and frame, but frame does _not_ belong to source.
-  SourceId s_id2 = geometry_state_.RegisterNewSource("new_source");
-  FrameId frame_id = geometry_state_.RegisterFrame(s_id2, *frame_.get());
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount + 1);
-  EXPECT_ERROR_MESSAGE(
-      geometry_state_.RemoveFrame(s_id, frame_id),
-      std::logic_error,
-      "Trying to remove frame \\d+ from source \\d+.+the frame doesn't "
-      "belong.+");
 }
 
 // Tests registration of geometry on valid source and frame. This relies on the
@@ -828,178 +752,6 @@ TEST_F(GeometryStateTest, RegisterNullGeometryonGeometry) {
       "Registering null geometry to geometry \\d+, on source \\d+.");
 }
 
-// Tests the RemoveGeometry functionality.
-TEST_F(GeometryStateTest, RemoveGeometry) {
-  SourceId s_id = SetUpSingleSourceTree();
-  // The geometry to remove, its parent frame, and its engine index.
-  GeometryId g_id = geometries_[0];
-  FrameId f_id = frames_[0];
-  auto engine_index = gs_tester_.get_geometries().at(g_id).get_engine_index();
-  // Confirm that the first geometry belongs to the first frame.
-  ASSERT_EQ(geometry_state_.GetFrameId(g_id), f_id);
-  EXPECT_EQ(geometry_state_.get_num_geometries(), kFrameCount * kGeometryCount);
-  EXPECT_TRUE(CompareMatrices(
-      gs_tester_.get_geometry_frame_poses().at(engine_index).matrix(),
-      X_FG_[0].matrix()));
-
-  geometry_state_.RemoveGeometry(s_id, g_id);
-
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            kFrameCount * kGeometryCount - 1);
-  EXPECT_EQ(gs_tester_.get_geometry_world_poses().size(),
-            geometries_.size() - 1);
-  EXPECT_EQ(gs_tester_.get_geometry_frame_poses().size(),
-            geometries_.size() - 1);
-
-  EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
-  EXPECT_EQ(gs_tester_.get_geometries().find(g_id),
-            gs_tester_.get_geometries().end());
-
-  // Based on the logic of the geometry engine stub, the last geometry id should
-  // now be the first. Also, values that are keyed on the engine index should
-  // also have moved, e.g., X_FG_.
-  GeometryId last_geometry_id = geometries_[geometries_.size() - 1];
-  const auto& last_geometry =
-      gs_tester_.get_geometries().at(last_geometry_id);
-  EXPECT_EQ(last_geometry.get_engine_index(), 0);
-  EXPECT_EQ(gs_tester_.get_geometry_index_id_map()[0], last_geometry_id);
-
-  // The pose in *frame* should also have moved.
-  EXPECT_TRUE(CompareMatrices(
-      gs_tester_.get_geometry_frame_poses().at(engine_index).matrix(),
-      X_FG_.back().matrix()));
-}
-
-// Tests the RemoveGeometry functionality in which the geometry removed has
-// geometry children.
-TEST_F(GeometryStateTest, RemoveGeometryTree) {
-  SourceId s_id = SetUpSingleSourceTree();
-  // The geometry to remove, its parent frame, and its engine index.
-  GeometryId root_id = geometries_[0];
-  FrameId f_id = frames_[0];
-  auto engine_index =
-      gs_tester_.get_geometries().at(root_id).get_engine_index();
-  // Confirm that the first geometry belongs to the first frame.
-  ASSERT_EQ(geometry_state_.GetFrameId(root_id), f_id);
-  // Hang geometry from the first geometry.
-  GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
-      s_id, root_id,
-      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
-                                    unique_ptr<Shape>(new Sphere(1))));
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            kFrameCount * kGeometryCount + 1);
-  EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
-  EXPECT_EQ(gs_tester_.get_geometries().at(g_id).get_engine_index(),
-            geometries_.size());
-
-  geometry_state_.RemoveGeometry(s_id, root_id);
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            kFrameCount * kGeometryCount - 1);
-  EXPECT_EQ(gs_tester_.get_geometry_world_poses().size(),
-            geometries_.size() - 1);
-  EXPECT_EQ(gs_tester_.get_geometry_frame_poses().size(),
-            geometries_.size() - 1);
-
-  const auto& frame = gs_tester_.get_frames().at(f_id);
-  EXPECT_FALSE(frame.has_child(root_id));
-  EXPECT_FALSE(frame.has_child(g_id));
-  EXPECT_EQ(gs_tester_.get_geometries().find(root_id),
-            gs_tester_.get_geometries().end());
-  EXPECT_EQ(gs_tester_.get_geometries().find(g_id),
-            gs_tester_.get_geometries().end());
-
-  // The place-holder geometry engine moves geometries around to maintain a
-  // compact distribution of engine indices. It moves the last geometry into the
-  // newly cleared slot. GeometryState's RemoveGeometry algorithm does a bottom-
-  // up recursive removal. So, the leaf and then the parent gets deleted. In
-  // this case, the leaf (as the most recently added geometry) already has the
-  // largest engine index (it is last) and simply gets truncated. The parent
-  // however, has engine index 0. So, when it is removed, the current last
-  // geometry is moved into its slot -- that would be the last geometry added
-  // in SetUpSingleSourceTree(). So, check for correct engine index rewiring
-  // and correct X_FG_ value.
-  GeometryId last_geometry_id = geometries_[geometries_.size() - 1];
-  const auto& last_geometry =
-      gs_tester_.get_geometries().at(last_geometry_id);
-  EXPECT_EQ(last_geometry.get_engine_index(), 0);
-  EXPECT_EQ(gs_tester_.get_geometry_index_id_map()[0], last_geometry_id);
-  EXPECT_TRUE(CompareMatrices(
-      gs_tester_.get_geometry_frame_poses().at(engine_index).matrix(),
-      X_FG_.back().matrix()));
-}
-
-// Tests the RemoveGeometry functionality in which the geometry is a child of
-// another geometry.
-TEST_F(GeometryStateTest, RemoveChildLeaf) {
-  SourceId s_id = SetUpSingleSourceTree();
-  // The geometry parent and frame to which it belongs.
-  GeometryId parent_id = geometries_[0];
-  FrameId frame_id = frames_[0];
-  // Confirm that the first geometry belongs to the first frame.
-  ASSERT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
-  // Hang geometry from the first geometry.
-  GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
-      s_id, parent_id,
-      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
-                                    unique_ptr<Shape>(new Sphere(1))));
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            kFrameCount * kGeometryCount + 1);
-  EXPECT_EQ(geometry_state_.GetFrameId(g_id), frame_id);
-
-  geometry_state_.RemoveGeometry(s_id, g_id);
-
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            kFrameCount * kGeometryCount);
-  EXPECT_EQ(gs_tester_.get_geometry_world_poses().size(), geometries_.size());
-  EXPECT_EQ(gs_tester_.get_geometry_frame_poses().size(), geometries_.size());
-  EXPECT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
-
-  EXPECT_FALSE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
-  EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(parent_id));
-  EXPECT_FALSE(gs_tester_.get_geometries().at(parent_id).has_child(g_id));
-
-  // The geometry we deleted is the *last*; the engine indices of all other
-  // geometries should be unchanged.
-  for (size_t i = 0; i < geometries_.size(); ++i) {
-    EXPECT_EQ(gs_tester_.get_geometry_index_id_map().at(i),
-              geometries_[i]);
-  }
-}
-
-// Tests the response to invalid use of RemoveGeometry.
-TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
-  SourceId s_id = SetUpSingleSourceTree();
-
-  // Case: Invalid source id, valid geometry id.
-  EXPECT_ERROR_MESSAGE(
-      geometry_state_.RemoveGeometry(SourceId::get_new_id(),
-                                     geometries_[0]),
-      std::logic_error,
-      "Referenced geometry source \\d+ is not registered.");
-
-  // Case: Invalid geometry id, valid source id.
-  EXPECT_ERROR_MESSAGE(
-      geometry_state_.RemoveGeometry(s_id, GeometryId::get_new_id()),
-      std::logic_error,
-      "Referenced geometry \\d+ has not been registered.");
-
-  // Case: Valid geometry and source, but geometry belongs to different source.
-  SourceId s_id2 = geometry_state_.RegisterNewSource("new_source");
-  FrameId frame_id = geometry_state_.RegisterFrame(s_id2, *frame_);
-  EXPECT_EQ(geometry_state_.get_num_frames(), kFrameCount + 1);
-  GeometryId g_id = geometry_state_.RegisterGeometry(
-      s_id2, frame_id,
-      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
-                                    unique_ptr<Shape>(new Sphere(1))));
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            kFrameCount * kGeometryCount + 1);
-  EXPECT_ERROR_MESSAGE(
-      geometry_state_.RemoveGeometry(s_id, g_id),
-      std::logic_error,
-      "Trying to remove geometry \\d+ from source \\d+.+geometry doesn't "
-          "belong.+");
-}
-
 // Tests the registration of anchored geometry.
 TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   SourceId s_id = NewSource("new source");
@@ -1045,44 +797,6 @@ TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
                                                move(instance)),
       std::logic_error,
       "Registering null anchored geometry on source \\d+.");
-}
-
-// Tests removal of anchored geometry.
-TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
-  SourceId s_id = SetUpSingleSourceTree();
-  Vector3<double> normal{0, 1, 0};
-  Vector3<double> point{1, 1, 1};
-  auto anchored_id_1 = geometry_state_.RegisterAnchoredGeometry(
-      s_id, make_unique<GeometryInstance>(HalfSpace::MakePose(normal, point),
-                                          make_unique<HalfSpace>()));
-  auto anchored_id_2 = geometry_state_.RegisterAnchoredGeometry(
-      s_id, make_unique<GeometryInstance>(
-                HalfSpace::MakePose(Vector3<double>{1, 0, 0},
-                                    Vector3<double>{-1, 0, 0}),
-                make_unique<HalfSpace>()));
-  // Confirm conditions of having added two anchored geometries.
-  EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id_1, s_id));
-  EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id_2, s_id));
-  // Confirm engine indices are in the expected orders.
-  const auto& anchored_geometries = gs_tester_.get_anchored_geometries();
-  EXPECT_EQ(anchored_geometries.at(anchored_id_1).get_engine_index(), 0);
-  EXPECT_EQ(anchored_geometries.at(anchored_id_2).get_engine_index(), 1);
-  const auto& index_to_id_map = gs_tester_.get_anchored_geometry_index_id_map();
-  EXPECT_EQ(index_to_id_map.at(0), anchored_id_1);
-  EXPECT_EQ(index_to_id_map.at(1), anchored_id_2);
-  EXPECT_EQ(geometry_state_.get_num_anchored_geometries(), 2);
-
-  // Performs tested action.
-  geometry_state_.RemoveGeometry(s_id, anchored_id_1);
-
-  // Expected results: 1 remaining geometry. Geometry's engine index has moved
-  // to zero. NOTE: These expectations are predicated on an underlying engine
-  // that is actually shuffling last geometry into the gap (vis-à-vis engine
-  // index values). If the engine behavior changes, this test may fail.
-  EXPECT_EQ(geometry_state_.get_num_anchored_geometries(), 1);
-  EXPECT_EQ(index_to_id_map.size(), 1u);
-  EXPECT_EQ(anchored_geometries.at(anchored_id_2).get_engine_index(), 0);
-  EXPECT_EQ(index_to_id_map.at(0), anchored_id_2);
 }
 
 // Confirms the behavior for requesting geometry poses with a bad geometry
@@ -1173,19 +887,6 @@ TEST_F(GeometryStateTest, GetFrameIdFromBadId) {
   EXPECT_ERROR_MESSAGE(geometry_state_.GetFrameId(GeometryId::get_new_id()),
                        std::logic_error,
                        "Referenced geometry \\d+ has not been registered.");
-}
-
-// This tests that clearing a source eliminates all of its geometry and frames,
-// leaving the source registered.
-TEST_F(GeometryStateTest, ClearSourceData) {
-  EXPECT_ERROR_MESSAGE(geometry_state_.ClearSource(SourceId::get_new_id()),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
-
-  SourceId s_id = SetUpSingleSourceTree();
-  geometry_state_.ClearSource(s_id);
-  EXPECT_TRUE(geometry_state_.source_is_registered(s_id));
-  AssertSingleTreeCleared();
 }
 
 // Tests the validation of the set of ids provided.

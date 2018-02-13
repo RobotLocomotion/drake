@@ -5,8 +5,10 @@
 #include <pybind11/stl.h>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
+#include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -21,6 +23,7 @@
 #include "drake/systems/framework/vector_system.h"
 
 using std::make_unique;
+using std::string;
 using std::unique_ptr;
 using std::vector;
 
@@ -41,6 +44,9 @@ using systems::VectorSystem;
 using systems::PublishEvent;
 using systems::DiscreteUpdateEvent;
 using systems::DiscreteValues;
+
+using pysystems::AddValueInstantiation;
+using pysystems::DefClone;
 
 class PySystem : public py::wrapper<System<T>> {
  public:
@@ -238,6 +244,16 @@ PYBIND11_MODULE(framework, m) {
     .value("kVectorValued", kVectorValued)
     .value("kAbstractValued", kAbstractValued);
 
+  BindTypeSafeIndex<DependencyTicket>(m, "DependencyTicket");
+  BindTypeSafeIndex<CacheIndex>(m, "CacheIndex");
+  BindTypeSafeIndex<SubsystemIndex>(m, "SubsystemIndex");
+  BindTypeSafeIndex<InputPortIndex>(m, "InputPortIndex");
+  BindTypeSafeIndex<OutputPortIndex>(m, "OutputPortIndex");
+  BindTypeSafeIndex<DiscreteStateIndex>(m, "DiscreteStateIndex");
+  BindTypeSafeIndex<AbstractStateIndex>(m, "AbstractStateIndex");
+  BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
+  BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
+
   // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
   // knows this is abstract?
   py::class_<System<T>, PySystem>(m, "System")
@@ -339,6 +355,9 @@ PYBIND11_MODULE(framework, m) {
     .def("get_time", &Context<T>::get_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
+    .def("__deepcopy__", [](const Context<T>* self, py::dict /* memo */) {
+      return self->Clone();
+    })
     .def("get_state", &Context<T>::get_state, py_reference_internal)
     .def("get_mutable_state", &Context<T>::get_mutable_state,
          py_reference_internal)
@@ -427,7 +446,9 @@ PYBIND11_MODULE(framework, m) {
     .def("size", &VectorBase<T>::size);
 
   // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<> patterns.
-  py::class_<BasicVector<T>, VectorBase<T>>(m, "BasicVector")
+  py::class_<BasicVector<T>, VectorBase<T>> basic_vector(m, "BasicVector");
+  DefClone(&basic_vector);
+  basic_vector
     // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
     // convert scalar-size `np.array` objects to `int` (since this is normally
     // permitted).
@@ -446,11 +467,67 @@ PYBIND11_MODULE(framework, m) {
 
   py::class_<Subvector<T>, VectorBase<T>>(m, "Subvector");
 
-  // TODO(eric.cousineau): Interfacing with the C++ abstract value types may be
-  // a tad challenging. This should be more straightforward once
-  // scalar-type conversion is supported, as the template-exposure mechanisms
-  // should be relatively similar.
-  py::class_<AbstractValue>(m, "AbstractValue");
+  // `AddValueInstantiation` will define methods specific to `T` for
+  // `Value<T>`. Since Python is nominally dynamic, these methods are
+  // effectively "virtual".
+  auto abstract_stub = [](const std::string& method) {
+    return [method](const AbstractValue* self, py::args, py::kwargs) {
+      string type_name = NiceTypeName::Get(*self);
+      throw std::runtime_error(
+          "This derived class of `AbstractValue`, `" + type_name + "`, " +
+          "is not exposed to pybind11, so `" + method + "` cannot be " +
+          "called. See `AddValueInstantiation` for how to bind it.");
+    };
+  };
+
+  py::class_<AbstractValue> abstract_value(m, "AbstractValue");
+  DefClone(&abstract_value);
+  abstract_value
+    // Only bind the exception variant, `SetFromOrThrow`, for use in Python.
+    // Otherwise, a user could encounter undefind behavior via `SetFrom`.
+    .def("SetFrom", &AbstractValue::SetFromOrThrow)
+    .def("get_value", abstract_stub("get_value"))
+    .def("get_mutable_value", abstract_stub("get_mutable_value"))
+    .def("set_value", abstract_stub("set_value"));
+
+  // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
+  AddValueInstantiation<string>(m);
+
+  // Add `Value[object]` instantiation.
+  // N.B. If any code explicitly uses `Value<py::object>` for whatever reason,
+  // then this should turn into a specialization of `Value<>`, rather than an
+  // extension.
+  class PyObjectValue : public Value<py::object> {
+   public:
+    using Base = Value<py::object>;
+    using Base::Base;
+    // Override `Value<py::object>::Clone()` to perform a deep copy on the
+    // object.
+    std::unique_ptr<AbstractValue> Clone() const override {
+      py::object py_copy = py::module::import("copy").attr("deepcopy");
+      return std::make_unique<PyObjectValue>(py_copy(get_value()));
+    }
+  };
+  AddValueInstantiation<py::object, PyObjectValue>(m);
+
+  py::object py_type_func = py::eval("type");
+  py::object py_object_type = py::eval("object");
+  // `Value` was defined by the first call to `AddValueInstantiation`.
+  py::object py_value_template = m.attr("Value");
+  abstract_value.def_static(
+      "Make",
+      [py_type_func, py_value_template, py_object_type](py::object value) {
+        // Try to infer type from the object. If that does not work, just return
+        // `Value[object]`.
+        py::object py_type = py_type_func(value);
+        py::tuple py_result =
+            py_value_template.attr("get_instantiation")(py_type, false);
+        py::object py_value_class = py_result[0];
+        if (py_value_class.is_none()) {
+          py_value_class = py_value_template[py_object_type];
+        }
+        return py_value_class(value);
+      });
 
   // Parameters.
   // TODO(eric.cousineau): Fill this out.

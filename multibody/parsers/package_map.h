@@ -51,9 +51,9 @@ class PackageMap {
   /// paths.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
-  /// Crawls up the directory tree from @p model_file to `drake-distro/drake`
+  /// Crawls up the directory tree from @p model_file to `drake`
   /// searching for `package.xml` files. Adds the packages described by these
-  /// `package.xml` files. If @p model_file is not in `drake-distro/drake`, this
+  /// `package.xml` files. If @p model_file is not in `drake`, this
   /// method returns without doing anything.
   ///
   /// @param[in] model_file The model file whose directory is the start of the

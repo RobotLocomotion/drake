@@ -12,20 +12,46 @@
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
+// TODO(#7984) The SNOPT includes we use below are from an older f2c-based
+// implementation.  SNOPT has since switched to wrapping using F90 per the
+// publicly-available `snopt-interface` headers.  We should consider using that
+// header instead, which would remove a bunch of the odd #include and #define
+// statements from the below.
+
+// Put SNOPT's and F2C's typedefs into their own namespace.
+namespace snopt {
+extern "C" {
+
+// Include F2C's typedefs but revert its leaky defines.
+#include <f2c.h>
+#undef qbit_clear
+#undef qbit_set
+#undef TRUE_
+#undef FALSE_
+#undef Extern
+#undef VOID
+#undef abs
+#undef dabs
+#undef min
+#undef max
+#undef dmin
+#undef dmax
+#undef bit_test
+#undef bit_clear
+#undef bit_set
+
+// Include SNOPT's function declarations.
+#include <cexamples/snopt.h>
+#ifdef SNOPT_HAS_SNFILEWRAPPER
+#include <cexamples/snfilewrapper.h>
+#endif
+
+}  // extern C
+}  // namespace snopt
+
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-
-namespace snopt {
-// Needs to include snopt.hh BEFORE snfilewrapper.hh, otherwise compiler does
-// not work.
-// clang-format wants to switch the order of this inclusion, which causes
-// compiler failure.
-// clang-format off
-#include "snopt.hh"
-#include "snfilewrapper.hh"
-// clang-format on
-}
 
 // todo(sammy-tri) :  implement sparsity inside each cost/constraint
 // todo(sammy-tri) :  handle snopt options
@@ -152,19 +178,23 @@ struct SNOPTRun {
   snopt::integer iPrint = -1;
   snopt::integer iSumm = -1;
 
-  snopt::integer snSeti(std::string const& opt, snopt::integer val) {
+  // The `opt` is non-const, because snopt wants a non-const char*.
+  snopt::integer snSeti(std::string opt, snopt::integer val) {
+    DRAKE_DEMAND(!opt.empty());
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
-    snopt::snseti_(opt.c_str(), &val, &iPrint, &iSumm, &err, D.cw.data(),
+    snopt::snseti_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
                    &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
                    opt_len, 8 * D.lencw);
     return err;
   }
 
-  snopt::integer snSetr(std::string const& opt, snopt::doublereal val) {
+  // The `opt` is non-const, because snopt wants a non-const char*.
+  snopt::integer snSetr(std::string opt, snopt::doublereal val) {
+    DRAKE_DEMAND(!opt.empty());
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
-    snopt::snsetr_(opt.c_str(), &val, &iPrint, &iSumm, &err, D.cw.data(),
+    snopt::snsetr_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
                    &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
                    opt_len, 8 * D.lencw);
     return err;
@@ -701,7 +731,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   snopt::integer info;
   snopt::snopta_(
-      &Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob, snopt_userfun,
+      &Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob,
+      reinterpret_cast<snopt::U_fp>(&snopt_userfun),
       iAfun, jAvar, &lenA, &lenA, A, iGfun, jGvar, &lenG, &lenG, xlow, xupp,
       xnames, Flow, Fupp, Fnames, x, xstate, xmul, F, Fstate, Fmul, &info,
       &mincw, &miniw, &minrw, &nS, &nInf, &sInf,

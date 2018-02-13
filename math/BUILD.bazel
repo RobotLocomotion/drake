@@ -10,9 +10,18 @@ drake_cc_library(
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:unused",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "barycentric",
+    srcs = ["barycentric.cc"],
+    hdrs = ["barycentric.h"],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -21,8 +30,8 @@ drake_cc_library(
     srcs = ["continuous_algebraic_riccati_equation.cc"],
     hdrs = ["continuous_algebraic_riccati_equation.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:is_approx_equal_abstol",
+        "//common:essential",
+        "//common:is_approx_equal_abstol",
     ],
 )
 
@@ -32,8 +41,8 @@ drake_cc_library(
     hdrs = ["discrete_algebraic_riccati_equation.h"],
     deps = [
         ":autodiff",
-        "//drake/common:essential",
-        "//drake/common:is_approx_equal_abstol",
+        "//common:essential",
+        "//common:is_approx_equal_abstol",
     ],
 )
 
@@ -57,8 +66,8 @@ drake_cc_library(
         "rotation_matrix.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:is_approx_equal_abstol",
+        "//common:essential",
+        "//common:is_approx_equal_abstol",
     ],
 )
 
@@ -67,7 +76,7 @@ drake_cc_library(
     srcs = ["orthonormal_basis.cc"],
     hdrs = ["orthonormal_basis.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -79,7 +88,7 @@ drake_cc_library(
         "cross_product.h",
     ],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -101,7 +110,7 @@ drake_cc_library(
     deps = [
         ":autodiff",
         ":vector3_util",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -110,8 +119,8 @@ drake_cc_library(
     srcs = ["matrix_util.cc"],
     hdrs = ["matrix_util.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:number_traits",
+        "//common:essential",
+        "//common:number_traits",
     ],
 )
 
@@ -120,7 +129,7 @@ drake_cc_library(
     srcs = ["eigen_sparse_triplet.cc"],
     hdrs = ["eigen_sparse_triplet.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -137,7 +146,7 @@ drake_cc_library(
     hdrs = ["expmap.h"],
     deps = [
         ":gradient",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -146,7 +155,7 @@ drake_cc_library(
     srcs = ["gray_code.cc"],
     hdrs = ["gray_code.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
         "@eigen",
     ],
 )
@@ -156,8 +165,8 @@ drake_cc_library(
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:essential",
+        "//common:autodiff",
+        "//common:essential",
     ],
 )
 
@@ -166,7 +175,7 @@ drake_cc_library(
     srcs = ["quadratic_form.cc"],
     hdrs = ["quadratic_form.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
         "@eigen",
     ],
 )
@@ -176,10 +185,10 @@ drake_cc_library(
     srcs = [],
     hdrs = ["saturate.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
         # TODO(jwnimmer-tri) Remove once cond() no longer requires it.
-        "//drake/common:autodiff",
-        "//drake/common:cond",
+        "//common:autodiff",
+        "//common:cond",
     ],
 )
 
@@ -190,7 +199,15 @@ drake_cc_googletest(
     deps = [
         ":autodiff",
         ":gradient",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "barycentric_test",
+    deps = [
+        ":barycentric",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -198,7 +215,7 @@ drake_cc_googletest(
     name = "continuous_algebraic_riccati_equation_test",
     deps = [
         ":continuous_algebraic_riccati_equation",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -206,7 +223,7 @@ drake_cc_googletest(
     name = "cross_product_test",
     deps = [
         ":vector3_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -214,7 +231,7 @@ drake_cc_googletest(
     name = "convert_time_derivative_test",
     deps = [
         ":vector3_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -222,7 +239,7 @@ drake_cc_googletest(
     name = "discrete_algebraic_riccati_equation_test",
     deps = [
         ":discrete_algebraic_riccati_equation",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -230,7 +247,7 @@ drake_cc_googletest(
     name = "evenly_distributed_pts_on_sphere_test",
     deps = [
         ":evenly_distributed_pts_on_sphere",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -238,7 +255,7 @@ drake_cc_googletest(
     name = "expmap_test",
     deps = [
         ":expmap",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -246,7 +263,7 @@ drake_cc_googletest(
     name = "eigen_sparse_triplet_test",
     deps = [
         ":eigen_sparse_triplet",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -255,7 +272,7 @@ drake_cc_googletest(
     deps = [
         ":gradient",
         ":jacobian",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -263,7 +280,7 @@ drake_cc_googletest(
     name = "gradient_util_test",
     deps = [
         ":gradient",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -271,7 +288,7 @@ drake_cc_googletest(
     name = "gray_code_test",
     deps = [
         ":gray_code",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -279,8 +296,8 @@ drake_cc_googletest(
     name = "matrix_util_test",
     deps = [
         ":matrix_util",
-        "//drake/common:symbolic",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -288,7 +305,7 @@ drake_cc_googletest(
     name = "normalize_vector_test",
     deps = [
         ":gradient",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -296,7 +313,7 @@ drake_cc_googletest(
     name = "orthonormal_basis_test",
     deps = [
         ":orthonormal_basis",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -304,7 +321,7 @@ drake_cc_googletest(
     name = "quadratic_form_test",
     deps = [
         ":quadratic_form",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -312,8 +329,8 @@ drake_cc_googletest(
     name = "quaternion_test",
     deps = [
         ":geometric_transform",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
     ],
 )
 
@@ -321,7 +338,7 @@ drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":geometric_transform",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -330,7 +347,7 @@ drake_cc_googletest(
     deps = [
         ":geometric_transform",
         ":gradient",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -338,8 +355,8 @@ drake_cc_googletest(
     name = "saturate_test",
     deps = [
         ":saturate",
-        "//drake/common:autodiff",
-        "//drake/common:symbolic",
+        "//common:autodiff",
+        "//common:symbolic",
     ],
 )
 

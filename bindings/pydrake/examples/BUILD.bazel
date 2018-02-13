@@ -14,21 +14,14 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
 
-package(default_visibility = adjust_labels_for_drake_hoist([
-    "//drake/bindings/pydrake:__subpackages__",
-]))
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
-PACKAGE_INFO = get_pybind_package_info(
-    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
+PACKAGE_INFO = get_pybind_package_info("//bindings")
 
 # @note Symbols are NOT imported directly into
 # `__init__.py` to simplify dependency management, meaning that
@@ -39,14 +32,14 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//drake/bindings/pydrake:common_py",
+        "//bindings/pydrake:common_py",
     ],
 )
 
 drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
-        "//drake/examples/pendulum:pendulum_plant",
+        "//examples/pendulum:pendulum_plant",
     ],
     cc_so_name = "pendulum",
     cc_srcs = ["pendulum_py.cc"],
@@ -82,7 +75,7 @@ drake_py_test(
     size = "small",
     deps = [
         ":pendulum_py",
-        "//drake/bindings/pydrake/systems",
+        "//bindings/pydrake/systems",
     ],
 )
 

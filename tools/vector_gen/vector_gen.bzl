@@ -117,8 +117,8 @@ def drake_cc_vector_gen_library(
         srcs = outs.srcs,
         hdrs = outs.hdrs,
         deps = deps + [
-            "//drake/systems/framework:vector",
-            "//drake/common:essential",
+            "//systems/framework:vector",
+            "//common:essential",
         ],
         **kwargs)
 
@@ -145,8 +145,8 @@ def drake_cc_vector_gen_translator_library(
         srcs = outs.srcs,
         hdrs = outs.hdrs,
         deps = deps + [
-            "//drake/common:essential",
-            "//drake/systems/lcm:translator",
+            "//common:essential",
+            "//systems/lcm:translator",
         ],
         **kwargs)
 

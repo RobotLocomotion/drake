@@ -9,26 +9,23 @@ load(
     "get_pybind_package_info",
 )
 load(
+    "//tools:drake.bzl",
+    "drake_cc_library",
+)
+load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
 )
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
 
-package(default_visibility = adjust_labels_for_drake_hoist([
-    "//drake/bindings/pydrake:__subpackages__",
-]))
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
-PACKAGE_INFO = get_pybind_package_info(
-    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
+PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
 # @note Symbols are NOT imported directly into
 # `__init__.py` to simplify dependency management, meaning that
@@ -43,17 +40,27 @@ drake_py_library(
     ],
 )
 
+# N.B. Any C++ libraries that include this must include `cpp_template_py`.
+drake_cc_library(
+    name = "systems_pybind",
+    hdrs = ["systems_pybind.h"],
+    deps = ["//bindings/pydrake/util:cpp_template_pybind"],
+)
+
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
+        "//bindings/pydrake/util:type_safe_index_pybind",
     ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/util:cpp_template_py",
     ],
 )
 
@@ -94,6 +101,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "rendering_py",
+    cc_deps = [
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
+    cc_so_name = "rendering",
+    cc_srcs = ["rendering_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
@@ -105,6 +127,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":framework_py",
     ":primitives_py",
+    ":rendering_py",
     ":sensors_py",
 ]
 
@@ -156,15 +179,19 @@ drake_py_binary(
 )
 
 drake_pybind_library(
-    name = "test_util",
+    name = "test_util_py",
     testonly = 1,
     add_install = False,
+    cc_deps = [
+        ":systems_pybind",
+    ],
     cc_so_name = "test/test_util",
     cc_srcs = ["test/test_util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":primitives_py",
+        "//bindings/pydrake/util:cpp_template_py",
     ],
 )
 
@@ -174,7 +201,7 @@ drake_py_test(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
-        ":test_util",
+        ":test_util_py",
     ],
 )
 
@@ -185,15 +212,16 @@ drake_py_test(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
-        ":test_util",
+        ":test_util_py",
     ],
 )
 
 drake_py_test(
-    name = "vector_test",
+    name = "value_test",
     size = "small",
     deps = [
         ":framework_py",
+        ":test_util_py",
     ],
 )
 
@@ -202,6 +230,14 @@ drake_py_test(
     size = "small",
     deps = [
         ":sensors_py",
+    ],
+)
+
+drake_py_test(
+    name = "rendering_test",
+    size = "small",
+    deps = [
+        ":rendering_py",
     ],
 )
 

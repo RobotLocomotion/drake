@@ -64,7 +64,7 @@ libnetcdf-cxx-legacy-dev
 libnetcdf-dev
 libnlopt-dev
 libogg-dev
-libpng-dev
+libpng12-dev
 libqt5opengl5-dev
 libqt5x11extras5-dev
 libtheora-dev

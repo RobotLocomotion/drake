@@ -27,7 +27,6 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":leaf_system",
-        ":output_port_listener_interface",
         ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
@@ -74,6 +73,7 @@ drake_cc_library(
         "//drake/common:copyable_unique_ptr",
         "//drake/common:essential",
         "//drake/common:is_cloneable",
+        "//drake/common:nice_type_name",
     ],
 )
 
@@ -209,21 +209,10 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "output_port_listener_interface",
-    srcs = ["output_port_listener_interface.cc"],
-    hdrs = ["output_port_listener_interface.h"],
-    deps = [
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "output_port_value",
     srcs = ["output_port_value.cc"],
     hdrs = ["output_port_value.h"],
     deps = [
-        ":output_port_listener_interface",
         ":value",
         ":value_checker",
         ":vector",

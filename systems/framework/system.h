@@ -179,13 +179,13 @@ class System {
     // not change.
     const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_states();
 
     SetDefaultState(*context, &context->get_mutable_state());
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -236,13 +236,13 @@ class System {
     // not change.
     const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_states();
 
     SetRandomState(*context, &context->get_mutable_state(), generator);
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -875,6 +875,15 @@ class System {
   virtual const State<T>* DoGetTargetSystemState(const System<T>& target_system,
                                                  const State<T>* state) const {
     if (&target_system == this) return state;
+    return nullptr;
+  }
+
+  /// Returns @p xc if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
+  virtual const ContinuousState<T>* DoGetTargetSystemContinuousState(
+      const System<T>& target_system,
+      const ContinuousState<T>* xc) const {
+    if (&target_system == this) return xc;
     return nullptr;
   }
 
