@@ -18,9 +18,11 @@ const int kPortIndex = 0;
 
 DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
                                  drake::lcm::DrakeLcmInterface* lcm,
-                                 bool enable_playback)
+                                 bool enable_playback,
+                                 bool add_collisions)
     : lcm_(lcm),
-      load_message_(multibody::CreateLoadRobotMessage<double>(tree)),
+      load_message_(multibody::CreateLoadRobotMessage<double>(
+          tree, add_collisions)),
       draw_message_translator_(tree) {
   set_name("drake_visualizer");
   const int vector_size = tree.get_num_positions() + tree.get_num_velocities();

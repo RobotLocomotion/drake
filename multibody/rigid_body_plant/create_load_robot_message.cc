@@ -10,7 +10,7 @@ namespace multibody {
 
 template <typename T>
 lcmt_viewer_load_robot CreateLoadRobotMessage(
-    const RigidBodyTree<double>& tree) {
+    const RigidBodyTree<double>& tree, bool add_collisions) {
   lcmt_viewer_load_robot load_message;
   load_message.num_links = tree.bodies.size();
   for (const auto& body : tree.bodies) {
@@ -18,8 +18,14 @@ lcmt_viewer_load_robot CreateLoadRobotMessage(
     link.name = body->get_name();
     link.robot_num = body->get_model_instance_id();
     link.num_geom = body->get_visual_elements().size();
-    for (const auto& visual_element : body->get_visual_elements()) {
-      link.geom.push_back(MakeGeometryData(visual_element));
+    for (const auto& element : body->get_visual_elements()) {
+      link.geom.push_back(MakeGeometryData(element));
+    }
+    if (add_collisions) {
+      link.num_geom += body->get_collision_elements().size();
+      for (const auto& element : body->get_collision_elements()) {
+        link.geom.push_back(MakeGeometryData(element));
+      }
     }
     load_message.link.push_back(link);
   }
