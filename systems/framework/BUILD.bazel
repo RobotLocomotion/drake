@@ -11,8 +11,9 @@ drake_cc_library(
     srcs = [],
     deps = [
         ":abstract_values",
-        ":cache",
+        ":cache_and_dependency_tracker",
         ":context",
+        ":context_base",
         ":continuous_state",
         ":diagram",
         ":diagram_builder",
@@ -27,6 +28,7 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":leaf_system",
+        ":model_values",
         ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
@@ -86,16 +88,6 @@ drake_cc_library(
         ":value",
         "//drake/common:essential",
         "//drake/common:nice_type_name",
-    ],
-)
-
-drake_cc_library(
-    name = "cache",
-    srcs = ["cache.cc"],
-    hdrs = ["cache.h"],
-    deps = [
-        ":value",
-        "//drake/common:essential",
     ],
 )
 
@@ -193,6 +185,41 @@ drake_cc_library(
     ],
 )
 
+# Cache and dependencies are coupled because dependency trackers need inline
+# access to cache entries in order to invalidate them very, very fast.
+drake_cc_library(
+    name = "cache_and_dependency_tracker",
+    srcs = [
+        "cache.cc",
+        "dependency_tracker.cc",
+    ],
+    hdrs = [
+        "cache.h",
+        "dependency_tracker.h",
+    ],
+    deps = [
+        ":framework_common",
+        ":value",
+        "//drake/common:copyable_unique_ptr",
+        "//drake/common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "context_base",
+    srcs = [
+        "context_base.cc",
+    ],
+    hdrs = [
+        "context_base.h",
+    ],
+    deps = [
+        ":cache_and_dependency_tracker",
+        "//drake/common:default_scalars",
+        "//drake/common:essential",
+    ],
+)
+
 drake_cc_library(
     name = "input_port_descriptor",
     srcs = [
@@ -262,7 +289,7 @@ drake_cc_library(
     srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
     deps = [
-        ":cache",
+        ":cache_and_dependency_tracker",
         ":context",
         ":parameters",
         ":vector",
@@ -284,7 +311,6 @@ drake_cc_library(
         "witness_function.h",
     ],
     deps = [
-        ":cache",
         ":context",
         ":event_collection",
         ":framework_common",
@@ -393,7 +419,6 @@ drake_cc_library(
     srcs = ["diagram.cc"],
     hdrs = ["diagram.h"],
     deps = [
-        ":cache",
         ":diagram_context",
         ":system",
         "//drake/common:default_scalars",
@@ -474,7 +499,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cache_test",
     deps = [
-        ":cache",
+        ":cache_and_dependency_tracker",
         "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
     ],
@@ -538,6 +563,14 @@ drake_cc_googletest(
     deps = [
         ":discrete_values",
         "//drake/common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dependency_tracker_test",
+    deps = [
+        ":context_base",
+        "//drake/common",
     ],
 )
 
