@@ -33,7 +33,7 @@ MakeObjectsFallingPlant(
   DRAKE_THROW_UNLESS(geometry_system != nullptr);
 
   double theta = M_PI / 6;  // each plane forms this angle with the x-y plane.
-  int nplanes = 3;
+  int nplanes = 6;
 
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
@@ -41,6 +41,17 @@ MakeObjectsFallingPlant(
   // Projection aligned with xhat, at theta from x-y plane.
   Matrix3d R = AngleAxisd(2.0 * M_PI / nplanes, Vector3d::UnitZ()).matrix();
   Vector3d n1 = Vector3d(cos(theta), 0, sin(theta));
+  Vector3d ni = n1;
+  for (int i = 0; i < nplanes; ++i) {
+    Vector3<double> point_W(0, 0, -0.2);
+    plant->RegisterAnchoredGeometry(
+        HalfSpace::MakePose(ni, point_W), HalfSpace(), geometry_system);
+    ni = R * ni;
+  }
+  plant->RegisterAnchoredGeometry(
+      HalfSpace::MakePose(Vector3<double>::UnitZ(), Vector3<double>::Zero()),
+      HalfSpace(), geometry_system);
+#if 0
   Vector3d n2 = R * n1;
   Vector3d n3 = R * n2;
   Vector3<double> point_W(0, 0, 0);
@@ -50,6 +61,7 @@ MakeObjectsFallingPlant(
       HalfSpace::MakePose(n2, point_W), HalfSpace(), geometry_system);
   plant->RegisterAnchoredGeometry(
       HalfSpace::MakePose(n3, point_W), HalfSpace(), geometry_system);
+#endif
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
   SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
