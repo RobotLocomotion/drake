@@ -65,6 +65,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override {
     DRAKE_ASSERT(v.size() == kNv);
+    // Note that Hdot * v = 0 for this mobilizer.
     return SpatialVelocity<T>(H_FM_ * v);
   }
 
@@ -174,9 +175,10 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   // Create cylinder (C) in box.
   // Note that the unit inertia of the cylinder is taken about the x-axis.
   const double r = 0.2, L = 0.3;
-  const double Ix = r * r / 2;
-  const double Iy = (3 * r * r + L * L) / 12;
-  const UnitInertia<double> G_Ccm = UnitInertia<double>(Ix, Iy, Iy);
+  Eigen::Matrix3d R_XZ =
+      Eigen::AngleAxisd(M_PI_2, Vector3<double>::UnitY()).toRotationMatrix();
+  const UnitInertia<double> G_Ccm =
+      UnitInertia<double>::SolidCylinder(r, L).ReExpress(R_XZ);
   const double mass_cylinder = 0.8;
   const SpatialInertia<double> M_Ccm(mass_cylinder, Vector3d::Zero(), G_Ccm);
 
@@ -202,17 +204,11 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Update cache.
   PositionKinematicsCache<double> pc(model.get_topology());
-  VelocityKinematicsCache<double> vc(model.get_topology());
   model.CalcPositionKinematicsCache(*context, &pc);
-  model.CalcVelocityKinematicsCache(*context, pc, &vc);
-
-  // No forces.
-  MultibodyForces<double> forces = MultibodyForces<double>(model);
-  forces.SetZero();
 
   // Compute articulated body cache.
-  ArticulatedBodyCache<double> abc(model.get_topology());
-  model.CalcArticulatedBodyCache(*context, pc, vc, forces, &abc);
+  ArticulatedBodyInertiaCache<double> abc(model.get_topology());
+  model.CalcArticulatedBodyInertiaCache(*context, pc,  &abc);
 
   // Get expected projected articulated body inertia of cylinder.
   const Matrix6<double> M_cylinder_mat = M_Ccm.CopyToFullMatrix6();

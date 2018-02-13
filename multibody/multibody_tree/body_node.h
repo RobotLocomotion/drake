@@ -7,7 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/articulated_body_cache.h"
+#include "drake/multibody/multibody_tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
@@ -863,52 +863,35 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// This method is used by MultibodyTree within a tip-to-base loop to compute
-  /// this node's articulated body quantities that depend on both generalized
-  /// positions and generalized velocities.
+  /// this node's articulated body inertia quantities that depend only on the
+  /// generalized positions.
   ///
   /// @param[in] context
   ///   The context with the state of the MultibodyTree model.
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] vc
-  ///   An already updated velocity kinematics cache in sync with `context`.
   /// @param[in] H_PB_W
   ///   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
   ///   of this node's body B in its parent node body P, expressed in the world
   ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
   ///   by `V_PB_W = H_PB_W⋅v_B`.
-  /// @param[in] Fapplied_Bo_W
-  ///   Externally applied spatial force on this node's body B at the body's
-  ///   frame origin `Bo`, expressed in the world frame.
-  /// @param[in] tau_applied
-  ///   Externally applied generalized force at this node's mobilizer. It must
-  ///   have a size equal to the number of generalized velocities for this
-  ///   node's mobilizer, see get_num_mobilizer_velocites().
   /// @param[out] abc
   ///   A pointer to a valid, non nullptr, articulated body cache.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics cache `vc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcVelocityKinematicsCache().
-  /// @pre CalcArticulatedBodyCache_TipToBase() must have already been
+  /// @pre CalcArticulatedBodyInertiaCache_TipToBase() must have already been
   /// called for all the child nodes of `this` node (and, by recursive
   /// precondition, all successor nodes in the tree.)
   ///
-  /// @throws when called on the _root_ node, `abc` is nullptr, or the size
-  ///         of `tau_applied` does not match the number of velocities for
-  ///         this node's mobilizer.
-  void CalcArticulatedBodyCache_TipToBase(
+  /// @throws when called on the _root_ node or `abc` is nullptr.
+  void CalcArticulatedBodyInertiaCache_TipToBase(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& /* vc */,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      const SpatialForce<T>& /* Fapplied_Bo_W */,
-      const Eigen::Ref<const VectorX<T>>& tau_applied,
-      ArticulatedBodyCache<T>* abc) const {
+      ArticulatedBodyInertiaCache<T>* abc) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abc != nullptr);
-    DRAKE_THROW_UNLESS(tau_applied.size() == get_num_mobilizer_velocites());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -952,18 +935,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //
     // A few quantities are required in the second pass. We write them out
     // explicitly so we can cache them and simplify the expression for P_PB_W.
-    //   D_PB_W = H_PB_Wᵀ P_B_W H_PB_W                                      (3)
-    //   g_PB_W = P_B_W H_PB_W D_PB_W⁻¹                                     (4)
-    // where D_PB_W is the articulated body hinge inertia and g_PB_W is the
+    //   D_B = H_PB_Wᵀ P_B_W H_PB_W                                         (3)
+    //   g_PB_W = P_B_W H_PB_W D_B⁻¹                                        (4)
+    // where D_B is the articulated body hinge inertia and g_PB_W is the
     // Kalman gain.
     //
     // In order to reduce the number of computations, we can save the common
     // factor HTxP = H_PB_Wᵀ P_B_W. We then can write:
-    //   D_PB_W = HTxP H_PB_W                                               (5)
+    //   D_B = HTxP H_PB_W                                                  (5)
     // and for g,
-    //   g_PB_Wᵀ = (D_PB_W⁻¹)ᵀ H_PB_Wᵀ P_B_Wᵀ
-    //           = (D_PB_Wᵀ)⁻¹ H_PB_Wᵀ P_B_W
-    //           = D_PB_W⁻¹ HTxP                                            (6)
+    //   g_PB_Wᵀ = (D_B⁻¹)ᵀ H_PB_Wᵀ P_B_Wᵀ
+    //           = (D_Bᵀ)⁻¹ H_PB_Wᵀ P_B_W
+    //           = D_B⁻¹ HTxP                                               (6)
     // where we used the fact that both D and P are symmetric. Notice in the
     // last expression for g_PB_Wᵀ we are reusing the common factor HTxP.
     //
@@ -1014,21 +997,21 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Compute common term HTxP.
     const MatrixUpTo6<T> HTxP = H_PB_W.transpose() * P_B_W;
 
-    // Compute the articulated body hinge inertia, D_PB_W, using (5).
-    MatrixUpTo6<T> D_PB_W(nv, nv);
-    D_PB_W.template triangularView<Eigen::Lower>() = HTxP * H_PB_W;
+    // Compute the articulated body hinge inertia, D_B, using (5).
+    MatrixUpTo6<T> D_B(nv, nv);
+    D_B.template triangularView<Eigen::Lower>() = HTxP * H_PB_W;
 
-    // Compute the LDLT factorization of D_PB_W as ldlt_D_PB_W.
+    // Compute the LDLT factorization of D_B as ldlt_D_B.
     // TODO(bobbyluig): Test performance against inverse().
-    const auto ldlt_D_PB_W =
-        D_PB_W.template selfadjointView<Eigen::Lower>().ldlt();
+    const auto ldlt_D_B =
+        D_B.template selfadjointView<Eigen::Lower>().ldlt();
 
-    // Ensure that D_PB_W is not singular.
+    // Ensure that D_B is not singular.
     // Singularity means that a non-physical hinge mapping matrix was used or
     // that this articulated body inertia has some non-physical quantities
     // (such as zero moment of inertia along an axis which the hinge mapping
     // matrix permits motion).
-    if (ldlt_D_PB_W.info() != Eigen::Success) {
+    if (ldlt_D_B.info() != Eigen::Success) {
       std::stringstream message;
       message << "Encountered singular articulated body hinge inertia "
               << "for body node index " << topology_.index << ". "
@@ -1038,7 +1021,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     }
 
     // Compute the Kalman gain, g_PB_W, using (6).
-    const MatrixUpTo6<T> g_PB_W = ldlt_D_PB_W.solve(HTxP).transpose();
+    const MatrixUpTo6<T> g_PB_W = ldlt_D_B.solve(HTxP).transpose();
 
     // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
     // inertia of this body B as felt by body P and expressed in frame W.
@@ -1205,20 +1188,20 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   // =========================================================================
-  // ArticulatedBodyCache Accessors and Mutators.
+  // ArticulatedBodyInertiaCache Accessors and Mutators.
 
   /// Returns a const reference to the articulated body inertia `Pplus_PB_W` for
   /// the articulated body subsystem formed by all bodies outboard from body B,
   /// projected across its inboard mobilizer to frame P, about point Bo, and
   /// expressed in the world frame W.
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
-      const ArticulatedBodyCache<T>& abc) const {
+      const ArticulatedBodyInertiaCache<T>& abc) const {
     return abc.get_Pplus_PB_W(topology_.index);
   }
 
   /// Mutable version of get_Pplus_PB_W().
   ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
-      ArticulatedBodyCache<T>* abc) const {
+      ArticulatedBodyInertiaCache<T>* abc) const {
     return abc->get_mutable_Pplus_PB_W(topology_.index);
   }
 

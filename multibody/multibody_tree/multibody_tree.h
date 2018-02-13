@@ -1360,27 +1360,16 @@ class MultibodyTree {
   /// @param[in] pc
   ///   A position kinematics cache object already updated to be in sync with
   ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] forces
-  ///   A multibody forces object. This method will abort if if the forces
-  ///   object is not compatible with `this` %MultibodyTree, see
-  ///   MultibodyForces::CheckHasRightSizeForModel().
   /// @param[out] abc
   ///   A pointer to a valid, non nullptr, articulated body cache. This method
   ///   throws an exception if `abc` is a nullptr.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache() using the same `context`  .
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache() using the same `context`.
-  void CalcArticulatedBodyCache(
+  void CalcArticulatedBodyInertiaCache(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const MultibodyForces<T>& forces,
-      ArticulatedBodyCache<T>* abc) const;
+      ArticulatedBodyInertiaCache<T>* abc) const;
 
   /// @}
   // Closes "Computational methods" Doxygen section.
