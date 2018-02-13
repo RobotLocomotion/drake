@@ -151,7 +151,8 @@ void AddMaliputRailcar(int num_cars, bool idm_controlled, int initial_s_offset,
     if (idm_controlled) {
       simulator->AddIdmControlledPriusMaliputRailcar(
           "IdmControlledMaliputRailcar" + std::to_string(i),
-          LaneDirection(lane), RoadPositionStrategy::kExhaustiveSearch,
+          LaneDirection(lane), ScanStrategy::kPath,
+          RoadPositionStrategy::kExhaustiveSearch,
           0. /* time period (unused) */, params, state);
     } else {
       simulator->AddPriusMaliputRailcar("MaliputRailcar" + std::to_string(i),
@@ -239,7 +240,8 @@ void AddVehicles(RoadNetworkType road_network_type,
       state.set_x(x_offset);
       state.set_y(y_offset);
       simulator->AddMobilControlledSimpleCar(
-          name, true /* with_s */, RoadPositionStrategy::kExhaustiveSearch,
+          name, true /* with_s */, ScanStrategy::kPath,
+          RoadPositionStrategy::kExhaustiveSearch,
           0. /* time period (unused) */, state);
     }
 

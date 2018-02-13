@@ -10,6 +10,7 @@
 #include "drake/automotive/idm_planner.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/pose_selector.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_bundle.h"
@@ -56,18 +57,24 @@ class IdmController : public systems::LeafSystem<T> {
 
   /// Constructor.
   /// @param road The pre-defined RoadGeometry.
+  /// @param path_or_branches If ScanStrategy::kBranches, performs IDM
+  /// computations using vehicles detected in confluent branches; if
+  /// ScanStrategy::kPath, limits to vehicles on the default path.  See
+  /// documentation for PoseSelector::FindSingleClosestPose().
   /// @param road_position_strategy Determines whether or not to cache
   /// RoadPosition. See `calc_ongoing_road_position.h`.
   /// @param period_sec The update period to use if road_position_strategy ==
   /// RoadPositionStrategy::kCache.
   IdmController(const maliput::api::RoadGeometry& road,
+                ScanStrategy path_or_branches,
                 RoadPositionStrategy road_position_strategy,
                 double period_sec);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit IdmController(const IdmController<U>& other)
-      : IdmController<T>(other.road_, other.road_position_strategy_,
+      : IdmController<T>(other.road_, other.path_or_branches_,
+                         other.road_position_strategy_,
                          other.period_sec_) {}
 
   ~IdmController() override;
@@ -112,6 +119,7 @@ class IdmController : public systems::LeafSystem<T> {
                         systems::BasicVector<T>* accel_output) const;
 
   const maliput::api::RoadGeometry& road_;
+  const ScanStrategy path_or_branches_{};
   const RoadPositionStrategy road_position_strategy_{};
   const double period_sec_{};
 
