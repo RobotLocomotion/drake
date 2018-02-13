@@ -23,6 +23,11 @@ class ProximityEngineTester {
 
 namespace {
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+
+using Eigen::AngleAxisd;
+using Eigen::Vector3d;
 using Eigen::Translation3d;
 using std::move;
 
@@ -342,6 +347,166 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   // Test AutoDiff converted engine
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine = engine_.ToAutoDiff();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
+}
+
+class CylinderVsHalfPlantPenetrationTest : public ::testing::Test {
+ protected:
+  // Moves the dynamic sphere to either a penetrating or non-penetrating
+  // position. The sphere is indicated by its engine `index` which belongs to
+  // the given `source_id`. If `is_colliding` is true, the sphere is placed in
+  // a colliding configuration.
+  //
+  // Non-colliding state
+  //       y           x = free_x_
+  //        │          │
+  //       *│*         o o
+  //    *   │   *   o       o
+  //   *    │    * o         o
+  // ──*────┼────*─o─────────o───────── x
+  //   *    │    * o         o
+  //    *   │   *   o       o
+  //       *│*         o o
+  //
+  // Colliding state
+  //       y       x = colliding_x_
+  //        │      │
+  //       *│*    o o
+  //    *   │  o*      o
+  //   *    │ o  *      o
+  // ──*────┼─o──*──────o────────────── x
+  //   *    │ o  *      o
+  //    *   │  o*      o
+  //       *│*    o o
+  void MoveDynamicSphere(int index, bool is_colliding) {
+    std::vector<Isometry3<double>> poses(engine_.num_dynamic(),
+                                         Isometry3<double>::Identity());
+    const double z_pos = is_colliding ? colliding_z_ : free_z_;
+    poses[index] = Isometry3<double>(Translation3d{0, 0, z_pos});
+    engine_.UpdateWorldPoses(poses);
+  }
+
+  // Compute penetration and confirm that a single penetration with the expected
+  // properties was found. Provide the engine indices of the sphere located at
+  // the origin and the sphere positioned to be in collision.
+  void ExpectPenetration(GeometryId half_space, GeometryId cylinder) {
+    std::vector<PenetrationAsPointPair<double>> results =
+        engine_.ComputePointPairPenetration(dynamic_map_, anchored_map_);
+    EXPECT_EQ(results.size(), 1);
+    const PenetrationAsPointPair<double> penetration = results[0];
+
+    // There are no guarantees as to the ordering of which element is A and
+    // which is B. This test enforces an order for validation.
+
+    // First confirm membership
+    EXPECT_TRUE((penetration.id_A == half_space &&
+        penetration.id_B == cylinder) ||
+        (penetration.id_A == cylinder &&
+            penetration.id_B == half_space));
+
+    // Assume A => half_space and b => cylinder
+    // NOTE: In this current version, penetration is only reported in double.
+    PenetrationAsPointPair<double> expected;
+    expected.id_A = half_space;
+    expected.id_B = cylinder;
+    expected.depth = length_/2.0 - colliding_z_;
+    expected.p_WCa = Vector3<double>{0, 0, 0};
+    expected.p_WCb = Vector3<double>{0, 0, colliding_z_ - length_/2};
+    expected.nhat_BA_W = -Vector3<double>::UnitZ();
+
+    // Reverse if previous order assumption is false
+    if (penetration.id_A == cylinder) {
+      Vector3<double> temp;
+      // Swap the indices
+      expected.id_A = cylinder;
+      expected.id_B = half_space;
+      // Swap the points
+      temp = expected.p_WCa;
+      expected.p_WCa = expected.p_WCb;
+      expected.p_WCb = temp;
+      // Reverse the normal
+      expected.nhat_BA_W = -expected.nhat_BA_W;
+      // Penetration depth is same either way; do nothing.
+    }
+
+    EXPECT_EQ(penetration.id_A, expected.id_A);
+    EXPECT_EQ(penetration.id_B, expected.id_B);
+    EXPECT_EQ(penetration.depth, expected.depth);
+    EXPECT_TRUE(CompareMatrices(penetration.p_WCa, expected.p_WCa, 1e-13,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(penetration.p_WCb, expected.p_WCb, 1e-13,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(penetration.nhat_BA_W, expected.nhat_BA_W,
+                                1e-13, MatrixCompareType::absolute));
+  }
+
+  // Compute penetration and confirm that none were found.
+  void ExpectNoPenetration(ProximityEngine<double>* engine = nullptr) {
+    std::vector<PenetrationAsPointPair<double>> results =
+        engine_.ComputePointPairPenetration(dynamic_map_, anchored_map_);
+    EXPECT_EQ(results.size(), 0);
+  }
+  
+  ProximityEngine<double> engine_;
+  std::vector<GeometryId> dynamic_map_;   // Ordered by GeometryIndex
+  std::vector<GeometryId> anchored_map_;  // Ordered by AnchoredGeometryIndex
+  const double radius_{0.05};
+  const double length_{4 * radius_};
+  const Cylinder cylinder_{radius_, length_};
+  const HalfSpace half_space_;
+  const double free_z_{0.3};
+  const double colliding_z_{0.049};
+};
+
+TEST_F(CylinderVsHalfPlantPenetrationTest, PenetrationTest) {
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+  // Set up anchored geometry
+  Isometry3<double> pose =
+      HalfSpace::MakePose(Vector3d::UnitZ() /*normal*/,
+                          Vector3d::Zero() /*point*/);
+  AnchoredGeometryIndex anchored_index =
+      engine_.AddAnchoredGeometry(half_space_, pose);
+  GeometryId half_space_geometry_id = GeometryId::get_new_id();
+  anchored_map_.push_back(half_space_geometry_id);
+  EXPECT_EQ(anchored_index, 0);
+
+  // Set up dynamic geometry
+  GeometryIndex dynamic_index = engine_.AddDynamicGeometry(cylinder_);
+  GeometryId cylinder_geometry_id = GeometryId::get_new_id();
+  dynamic_map_.push_back(cylinder_geometry_id);
+  EXPECT_EQ(dynamic_index, 0);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  std::vector<Isometry3<double>> poses(
+      engine_.num_dynamic(), Isometry3<double>::Identity());
+  std::vector<PenetrationAsPointPair<double>> results;
+
+  // Non-colliding case
+  poses[dynamic_index] = Isometry3<double>(Translation3d{0, 0, free_z_});
+  engine_.UpdateWorldPoses(poses);
+  results = engine_.ComputePointPairPenetration(dynamic_map_, anchored_map_);
+  EXPECT_EQ(results.size(), 0);
+
+  // Colliding case
+  poses[dynamic_index] = Isometry3<double>(Translation3d{0, 0, colliding_z_});
+  engine_.UpdateWorldPoses(poses);
+  results = engine_.ComputePointPairPenetration(dynamic_map_, anchored_map_);
+  EXPECT_EQ(results.size(), 1);
+  EXPECT_NEAR(results[0].depth, 0.051, kTolerance);
+  PRINT_VAR(results[0].depth);
+
+  // Rotate cylinder 180 degrees about its center.
+  // Exactly as the previous case but cylinder is rotated 180 degrees, results
+  // should not change.
+  poses[dynamic_index].linear() = AngleAxisd(M_PI, Vector3d::UnitX()).matrix();
+  poses[dynamic_index].translation() = Vector3d(0, 0, colliding_z_);
+  engine_.UpdateWorldPoses(poses);
+  results = engine_.ComputePointPairPenetration(dynamic_map_, anchored_map_);
+  EXPECT_EQ(results.size(), 1);
+  // We expect the same result since the cylinder was only rotated 180 degrees
+  // about (presumably) its center.
+  EXPECT_NEAR(results[0].depth, 0.051, kTolerance);
+  PRINT_VAR(results[0].depth);
 }
 
 }  // namespace
