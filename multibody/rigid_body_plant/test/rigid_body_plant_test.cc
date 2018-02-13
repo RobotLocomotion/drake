@@ -325,9 +325,8 @@ TEST_P(KukaArmTest, EvalOutput) {
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
   desired_angles << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15;
-  for (int i = 0; i < kNumPositions_; ++i) {
-    kuka_plant_->set_position(context_.get(), i, desired_angles[i]);
-  }
+  kuka_plant_->SetModelInstancePositions(context_.get(), kModelInstanceId,
+                                        desired_angles);
   VectorXd desired_state(kNumStates_);
   desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
   auto x = kuka_plant_->GetStateVector(*context_);

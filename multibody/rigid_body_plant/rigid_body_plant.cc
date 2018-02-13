@@ -276,6 +276,30 @@ void RigidBodyPlant<T>::set_position(Context<T>* context, int position_index,
 }
 
 template <typename T>
+void RigidBodyPlant<T>::SetModelInstancePositions(
+    Context<T>* context, int model_instance_id,
+    const Eigen::Ref<const VectorX<T>> positions) const {
+  DRAKE_ASSERT(context != nullptr);
+  const int num_positions = positions.size();
+  std::vector<const RigidBody<T>*> model_instance_bodies =
+      this->get_rigid_body_tree().FindModelInstanceBodies(model_instance_id);
+  std::vector<int> position_indices;
+  position_indices.reserve(num_positions);
+  for (const RigidBody<T>* body : model_instance_bodies) {
+    const int joint_num_positions = body->getJoint().get_num_positions();
+    const int position_start_index = body->get_position_start_index();
+    for (int i = 0; i < joint_num_positions; ++i) {
+      position_indices.push_back(position_start_index + i);
+    }
+  }
+  DRAKE_THROW_UNLESS(static_cast<int>(position_indices.size()) ==
+                     num_positions);
+  for (int i = 0; i < num_positions; ++i) {
+    set_position(context, position_indices[i], positions(i));
+  }
+}
+
+template <typename T>
 void RigidBodyPlant<T>::set_velocity(Context<T>* context, int velocity_index,
                                      T velocity) const {
   DRAKE_ASSERT(context != nullptr);
