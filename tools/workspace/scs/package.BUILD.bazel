@@ -31,8 +31,11 @@ cc_binary(
         "linsys/direct/**/*.h",
         "src/*.c",
     ]),
-    defines = ["LAPACK_LIB_FOUND=1"],
-    includes = ["include"],
+    defines = ["USE_LAPACK=1"],
+    includes = [
+        "include",
+        "linsys",
+    ],
     linkopts = select({
         ":darwin": ["-framework Accelerate"],
         ":linux": ["-lrt"],
@@ -53,7 +56,7 @@ cc_library(
     name = "scsdir",
     srcs = [":libscsdir.so"],
     hdrs = SCS_HDRS,
-    defines = ["LAPACK_LIB_FOUND=1"],
+    defines = ["USE_LAPACK=1"],
     includes = ["include"],
 )
 
