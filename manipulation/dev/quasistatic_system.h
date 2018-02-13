@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -51,25 +52,33 @@ class QuasistaticSystem : public drake::systems::LeafSystem<double> {
       const KinematicsCache<double>& cache) const;
   VectorXd getRigidBodyTreePositionsFromQuasistaticSystemStates(
       const VectorXd q_quasistatic_system) const;
-  void CalcJf(const KinematicsCache<double>& cache, const MatrixXd& Jf_half,
-              MatrixXd& Jf) const;
-  void CalcWnWfJnJfPhi(const KinematicsCache<double>& cache, MatrixXd& Wn,
-                       MatrixXd& Wf, MatrixXd& Jn, MatrixXd& Jf,
-                       VectorXd& phi) const;
-  void DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache, MatrixXd& Wn,
-                         MatrixXd& Wf, MatrixXd& Jn, MatrixXd& Jf,
-                         VectorXd& phi) const;
+  void CalcJf(const KinematicsCache<double> &cache, const MatrixXd &Jf_half,
+              MatrixXd *const Jf_ptr) const;
+  void CalcWnWfJnJfPhi(const KinematicsCache<double> &cache,
+                       MatrixXd *const Wn_ptr,
+                       MatrixXd *const Wf_ptr,
+                       MatrixXd *const Jn_ptr,
+                       MatrixXd *const Jf_ptr,
+                       VectorXd *const phi_ptr) const;
+  void DoCalcWnWfJnJfPhi(const KinematicsCache<double> &cache,
+                         MatrixXd *const Wn_ptr,
+                         MatrixXd *const Wf_ptr,
+                         MatrixXd *const Jn_ptr,
+                         MatrixXd *const Jf_ptr,
+                         VectorXd *const phi_ptr) const;
   double CalcBigM(const double max_impulse, const double max_delta_q,
                   const double max_delta_gamma, const MatrixXd& Jn,
                   const MatrixXd& Jf, const VectorXd& phi, const MatrixXd& E,
                   const MatrixXd& U, const VectorXd qa_dot_d) const;
-  virtual void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double>& cache,
-                                         MatrixXd& Wn, MatrixXd& Wf,
-                                         MatrixXd& Jn, MatrixXd& Jf,
-                                         VectorXd& phi) const;
+  virtual void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double> &cache,
+                                         MatrixXd *const Wn_ptr,
+                                         MatrixXd *const Wf_ptr,
+                                         MatrixXd *const Jn_ptr,
+                                         MatrixXd *const Jf_ptr,
+                                         VectorXd *const phi_ptr) const;
   virtual MatrixXd CalcE() const;
   virtual VectorXd CalcExternalGeneralizedForce(
-      KinematicsCache<double>& cache) const;
+      const KinematicsCache<double> &cache) const;
 
   void CopyStateOut(const drake::systems::Context<double>& context,
                     drake::systems::BasicVector<double>* output) const {

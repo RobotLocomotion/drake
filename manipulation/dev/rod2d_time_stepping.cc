@@ -1,4 +1,5 @@
 #include <fstream>
+
 #include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/dev/quasistatic_system.h"
@@ -37,9 +38,12 @@ class Rod2DTimeStepping : public manipulation::QuasistaticSystem {
                     const double mu = 0.6, const double kBigM = 1);
 
  private:
-  void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double>& cache,
-                                 MatrixXd& Wn, MatrixXd& Wf, MatrixXd& Jn,
-                                 MatrixXd& Jf, VectorXd& phi) const override;
+  void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double> &cache,
+                                 MatrixXd *const Wn_ptr,
+                                 MatrixXd *const Wf_ptr,
+                                 MatrixXd *const Jn_ptr,
+                                 MatrixXd *const Jf_ptr,
+                                 VectorXd *const phi_ptr) const override;
 
   const double r_ = 0.01;
   const double l_ = 0.5;
@@ -71,8 +75,19 @@ Rod2DTimeStepping::Rod2DTimeStepping(const double period_sec,
 }
 
 void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
-    const KinematicsCache<double>& cache, MatrixXd& Wn, MatrixXd& Wf,
-    MatrixXd& Jn, MatrixXd& Jf, VectorXd& phi) const {
+    const KinematicsCache<double> &cache,
+    MatrixXd *const Wn_ptr,
+    MatrixXd *const Wf_ptr,
+    MatrixXd *const Jn_ptr,
+    MatrixXd *const Jf_ptr,
+    VectorXd *const phi_ptr) const {
+
+  MatrixXd & Wn = *Wn_ptr;
+  MatrixXd & Wf = *Wf_ptr;
+  MatrixXd & Jn = *Jn_ptr;
+  MatrixXd & Jf = *Jf_ptr;
+  VectorXd & phi = *phi_ptr;
+
   const int nq_tree = tree_->get_num_positions();
   auto q = getQuasistaticSystemStatesFromRigidBodyTreePositions(cache);
   const double qa_l = q(0);

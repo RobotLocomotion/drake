@@ -7,7 +7,6 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -28,8 +27,6 @@ drake_cc_library(
         "//drake/systems/framework:leaf_system",
     ],
 )
-
-
 
 drake_cc_binary(
     name = "rod2d_time_stepping",
@@ -61,9 +58,9 @@ drake_cc_binary(
     testonly = 1,
     srcs = ["quasistatic_iiwa_pick_and_place_demo.cc"],
     data = [
-        ":models",
         ":double_dumbbell_for_pick_up.sdf",
         ":dumbbell_for_pick_up.sdf",
+        ":models",
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",
@@ -92,6 +89,6 @@ drake_cc_binary(
     ],
 )
 
-
 install_data()
+
 add_lint_tests()

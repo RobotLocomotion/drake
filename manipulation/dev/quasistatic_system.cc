@@ -1,8 +1,10 @@
 #include "drake/manipulation/dev/quasistatic_system.h"
+
 #include <algorithm>
 #include <limits>
 #include <map>
 #include <vector>
+
 #include "drake/math/quaternion.h"
 #include "drake/systems/controllers/controlUtil.h"
 
@@ -403,26 +405,32 @@ QuasistaticSystem::decision_variables_output() const {
 }
 
 void QuasistaticSystem::DoCalcWnWfJnJfPhiAnalytic(
-    const KinematicsCache<double>& cache, MatrixXd& Wn, MatrixXd& Wf,
-    MatrixXd& Jn, MatrixXd& Jf, VectorXd& phi) const {
+    const KinematicsCache<double>& cache, MatrixXd* const Wn_ptr,
+    MatrixXd* const Wf_ptr, MatrixXd* const Jn_ptr, MatrixXd* const Jf_ptr,
+    VectorXd* const phi_ptr) const {
+  static_cast<void>(cache);
   DRAKE_ABORT_MSG(
       "Analytic expressions for Wn, Wf, Jn, Jf and phi are not "
       "available.");
 }
 
 void QuasistaticSystem::CalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
-                                        MatrixXd& Wn, MatrixXd& Wf,
-                                        MatrixXd& Jn, MatrixXd& Jf,
-                                        VectorXd& phi) const {
+                                        MatrixXd* const Wn_ptr,
+                                        MatrixXd* const Wf_ptr,
+                                        MatrixXd* const Jn_ptr,
+                                        MatrixXd* const Jf_ptr,
+                                        VectorXd* const phi_ptr) const {
   if (!is_analytic_) {
-    DoCalcWnWfJnJfPhi(cache, Wn, Wf, Jn, Jf, phi);
+    DoCalcWnWfJnJfPhi(cache, Wn_ptr, Wf_ptr, Jn_ptr, Jf_ptr, phi_ptr);
   } else {
-    DoCalcWnWfJnJfPhiAnalytic(cache, Wn, Wf, Jn, Jf, phi);
+    DoCalcWnWfJnJfPhiAnalytic(cache, Wn_ptr, Wf_ptr, Jn_ptr, Jf_ptr, phi_ptr);
   }
 }
 
 void QuasistaticSystem::CalcJf(const KinematicsCache<double>& cache,
-                               const MatrixXd& Jf_half, MatrixXd& Jf) const {
+                               const MatrixXd& Jf_half,
+                               MatrixXd* const Jf_ptr) const {
+  MatrixXd& Jf = *Jf_ptr;
   Jf.resize(nd_, Jf_half.cols());
   int first_J = 0;
   for (int i = 0; i < nc_; i++) {
@@ -439,9 +447,16 @@ void QuasistaticSystem::CalcJf(const KinematicsCache<double>& cache,
 }
 
 void QuasistaticSystem::DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
-                                          MatrixXd& Wn, MatrixXd& Wf,
-                                          MatrixXd& Jn, MatrixXd& Jf,
-                                          VectorXd& phi) const {
+                                          MatrixXd* const Wn_ptr,
+                                          MatrixXd* const Wf_ptr,
+                                          MatrixXd* const Jn_ptr,
+                                          MatrixXd* const Jf_ptr,
+                                          VectorXd* const phi_ptr) const {
+  MatrixXd& Wn = *Wn_ptr;
+  MatrixXd& Wf = *Wf_ptr;
+  MatrixXd& Jn = *Jn_ptr;
+  VectorXd& phi = *phi_ptr;
+
   const int nq_tree = tree_->get_num_positions();
   const int nv_tree = tree_->get_num_velocities();
 
@@ -452,17 +467,7 @@ void QuasistaticSystem::DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
   std::vector<int> bodyB_idx;
   tree_->collisionDetect(cache, phi_all, normals, xA, xB, bodyA_idx, bodyB_idx);
 
-  //  cout << "phi\n" << phi_all << endl;
-  //  cout << "xA\n" << xA << endl;
-  //  cout << "xB\n" << xB << endl;
-  //  cout << "bodyA_idx.size(): " << bodyA_idx.size() << endl;
-  //  cout << "bodyA_idx: ";
-  //  print_stl_vector(bodyA_idx);
-  //  cout << "bodyB_idx.size(): " << bodyB_idx.size() << endl;
-  //  cout << "bodyB_idx: ";
-  //  print_stl_vector(bodyB_idx);
-
-  // D and flip_sign are used to compute Jn and Jf
+  // D and flip_sign are used to compute Jn and Jf.
   std::vector<Matrix3kd> D;
 
   // compute Wn and Wf
@@ -484,9 +489,6 @@ void QuasistaticSystem::DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
       }
     }
   }
-  //  cout << "idx_relevant_contact: ";
-  //  std::sort(idx_relevant_contact.begin(), idx_relevant_contact.end());
-  //  print_stl_vector<int>(idx_relevant_contact);
 
   // Compute Jn, Jf and Wn, Wf
   Wn.resize(n_vu_, nc_);
@@ -503,14 +505,11 @@ void QuasistaticSystem::DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
   Jn.resize(nc, nq_tree);
   phi.resize(nc_);
   Jf_half.resize(nc * 2, nq_tree);
-  // cout << "J rows " <<  J.rows() << " J cols " << J.cols() << endl;
-  // print_stl_vector(idx_relevant_contact);
 
-  ///////////////////////////////////////////////////////////////////////
   MatrixXd Jv = J * tree_->GetVelocityToQDotMapping(cache);
   DRAKE_ASSERT(Jv.cols() == 3 * nc);
   DRAKE_ASSERT(Jv.rows() == nv_tree);
-  /////////////////////////////////////////////////////////////////////////
+
   int idx_first = 0;
   int idx_tangent = 0;
   for (int i = 0; i < nc; i++) {
@@ -530,7 +529,6 @@ void QuasistaticSystem::DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
     Jf_half.block(idx_first, 0, 2, nq_tree) =
         D[i].transpose() * J.block(idx * 3, 0, 3, nq_tree);
 
-    // shape(Wf_columnns) = nv_tree, 2
     int n_tangents_half_count;
     if (is_contact_2d_[i]) {
       n_tangents_half_count = 1;
@@ -555,16 +553,12 @@ void QuasistaticSystem::DoCalcWnWfJnJfPhi(const KinematicsCache<double>& cache,
     idx_first += 2;
     idx_tangent += 2 * n_tangents_half_count;
   }
-  //  cout << "Jf_half_transpose\n" << Jf_half.transpose() << endl;
-  //  cout << "Wf\n" << Wf << endl;
-  //  cout << "Jn_transpose\n" << Jn.transpose() << endl;
-  //  cout << "Wn\n" << Wn << endl;
 
-  CalcJf(cache, Jf_half, Jf);
+  CalcJf(cache, Jf_half, Jf_ptr);
 }
 
 Eigen::VectorXd QuasistaticSystem::CalcExternalGeneralizedForce(
-    KinematicsCache<double>& cache) const {
+    const KinematicsCache<double> &cache) const {
   RigidBodyTree<double>::BodyToWrenchMap f_ext;
   auto g = tree_->dynamicsBiasTerm(cache, f_ext, false);
 
@@ -775,7 +769,7 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
 
   MatrixXd Jn, Jf, Wn, Wf;
   VectorXd phi;
-  CalcWnWfJnJfPhi(cache, Wn, Wf, Jn, Jf, phi);
+  CalcWnWfJnJfPhi(cache, &Wn, &Wf, &Jn, &Jf, &phi);
 
   MatrixXd U(nc_, nc_);
   U.setZero();
@@ -811,18 +805,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
     delta_qu_value(i) = delta_q_value(idx_qu_in_q_[i]);
   }
 
-  // print MIQP solutions
-  //  cout << "starting a new cylce!#########################################\n"
-  //       << flush;
-  //  cout << "gravity * h:\n" << f * period_sec_ << endl;
-  //  cout << "delta_q:\n" << delta_q_value << endl;
-  //  cout << "lambda_n\n" << lambda_n_value << endl << flush;
-  //  cout << "z_n\n" << z_n_value << endl << flush;
-  //  cout << "lambda_f\n" << lambda_f_value << endl << flush;
-  //  cout << "z_f\n" << z_f_value << endl << flush;
-  //  cout << "gamma\n" << gamma_value << endl << flush;
-  //  cout << "z_gamma\n" << z_gamma_value << endl << flush;
-
   // second QP to minimize kinetic energy
   if (is_using_kinetic_energy_minimizing_QP_) {
     drake::solvers::MathematicalProgram prog_QP;
@@ -847,11 +829,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
       for (int j = 0; j < nu_; j++) {
         Jnu_row(0, j) = Jn(i, idx_qu_[j]);
       }
-      /*
-      cout << "contact " << i << " has contact force " << lambda_n_value(i)
-           << endl
-           << flush;
-      */
       // if contact force == 0
       if (z_n_value(i) > 0.5) {
         // cout << "added phi(i)^{l+1} >= 0\n" << flush;
@@ -863,13 +840,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
         prog_QP.AddLinearConstraint(Jnu_row * delta_qu_QP +
                                         Jna_times_delta_qa.segment(i, 1) ==
                                     -phi.segment(i, 1));
-        /*
-        cout << "added phi(i)^{l+1} == 0\n" << flush;
-        cout << "Jnu_row\n" << Jnu_row << endl << flush;
-        cout << "Jna_times_delta_qa\n" << Jna_times_delta_qa(i) << endl <<
-        flush;
-        cout << "phi(i)\n" << phi(i) << endl << flush;
-         */
         const int tangent_vector_half_count = nf_(i) / 2;
         MatrixXd Jfu_half(tangent_vector_half_count, nu_);
         MatrixXd Jfu(nf_(i), nu_);
@@ -882,13 +852,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
             Jfa_times_delta_qa.segment(idx_fi0, nf_(i));
         // if contact i is not sliding
         if (z_gamma_value(i) > 0.5) {
-          /*
-          cout << "added constraints for non-sliding\n" << flush;
-          cout << "Jfu_half\n" << Jfu_half << endl << flush;
-          cout << "Jfa_times_delta_qa_i\n"
-               << Jfa_times_delta_qa_i << endl
-               << flush;
-               */
           prog_QP.AddLinearConstraint(
               Jfu_half * delta_qu_QP ==
               -Jfa_times_delta_qa_i.segment(0, tangent_vector_half_count));
@@ -897,7 +860,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
           // if contact i is sliding
           // 1. if lambda_f_ij <= M, the sliding velocity opposite to d_ij
           // must be positive.
-          // cout << "added constraints for sliding\n" << flush;
 
           std::vector<int> non_zero_friction_idx;
           int non_zero_friction_count = 0;
@@ -914,10 +876,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
               non_zero_friction_idx.push_back(j);
             }
           }
-          /*
-          cout << "non_zero_friction_count " << non_zero_friction_count << "/"
-               << nf_(i) << endl;
-               */
           // 2. if there are friction forces in two adjacent directions, the
           // corresponding sliding velocities in those directions must be
           // equal.
@@ -954,11 +912,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
                                           delta_phi_f_ij_opposite);
 
             } else if (non_zero_friction_count == 2) {
-              /*
-              cout << "added constraints for sliding in more than 1
-              direction.\n"
-                   << flush;
-              */
               DRAKE_DEMAND(non_zero_friction_count == 2);
               VectorX<symbolic::Expression> lhs(1);
               VectorX<symbolic::Expression> rhs(1);
@@ -974,27 +927,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
                     Jfu_row2 * delta_qu_QP;
               prog_QP.AddLinearConstraint(lhs == rhs);
             }
-            /*
-            if (non_zero_friction_count > 1) {
-              cout << "added constraints for sliding in more than 1
-              direction.\n"
-                   << flush;
-              DRAKE_DEMAND(non_zero_friction_count == 2);
-              VectorX<symbolic::Expression> lhs(1);
-              VectorX<symbolic::Expression> rhs(1);
-              int j1 = non_zero_friction_idx[0];
-              int j2 = non_zero_friction_idx[1];
-              MatrixXd Jfu_row1(1, nu_);
-              MatrixXd Jfu_row2(1, nu_);
-              Jfu_row1 = Jfu.row(j1);
-              Jfu_row2 = Jfu.row(j2);
-              lhs = Jfa_times_delta_qa.segment(idx_fi0 + j1, 1) +
-                    Jfu_row1 * delta_qu_QP;
-              rhs = Jfa_times_delta_qa.segment(idx_fi0 + j2, 1) +
-                    Jfu_row2 * delta_qu_QP;
-              prog_QP.AddLinearConstraint(lhs == rhs);
-            }
-            */
           }
         }
       }
@@ -1017,19 +949,12 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
     // solve QP
     prog_QP.SetSolverId(solvers::GurobiSolver::id());
     prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
-    // prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "FeasibilityTol",
-    // 100*kEpsilon);
 
     const auto result_QP = prog_QP.Solve();
 
     // get QP solution
-    // DRAKE_DEMAND(result_QP == drake::solvers::kSolutionFound);
     auto delta_qu_QP_value = prog_QP.GetSolution(delta_qu_QP);
-    /*
-    cout << "\nresult QP\n" << result_QP << endl;
-    cout << "delta_qu_QP\n" << delta_qu_QP_value << endl << flush;
-    cout << "delta_qu_MIQP\n" << delta_qu_value << endl << endl << flush;
-    */
+
     // replace qu in the MIQP solution with the QP solution
     if (result_QP == drake::solvers::kSolutionFound) {
       for (int i = 0; i < nu_; i++) {
@@ -1052,7 +977,7 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
   (*lambda_f_start_) = lambda_f_value;
   (*z_f_start_) = z_f_value;
 
-  // calculate "intended penetration"
+  // calculate "hypothetical penetration"
   *phi_bar_ = phi;
   VectorXd delta_q_bar(n1_);
   delta_q_bar = delta_q_value;
@@ -1063,10 +988,6 @@ void QuasistaticSystem::DoCalcDiscreteVariableUpdates(
     *phi_bar_ += Jn.col(idx_q_[i]) * delta_q_bar(i);
   }
 
-  // cout << "phi_bar\n" << *phi_bar_ << endl;
-
-  // TODO(pang): this is another hack that only works when the translation DOFs
-  // of the base body of the unactuated mechanism are not constrained.
   // Normalize quaternion if there is one.
   if (is_base_quaternion_) {
     Eigen::Vector4d qw;

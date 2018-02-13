@@ -1,4 +1,5 @@
 #include <fstream>
+
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/proto/call_matlab.h"
@@ -203,10 +204,10 @@ IiwaPickUpDumbbell::IiwaPickUpDumbbell(const double period_sec, const double mu,
 }
 
 int do_main(int argc, char* argv[]) {
-  // command line arguments
-  double t_final = 4.0;
+  // parse command line arguments
+  double t_final = 12.0;
   double BigM = 1;
-  double time_step = 0.02;
+  double time_step = 0.01;
   if (argc > 1) {
     t_final = std::stod(argv[1]);
   }
@@ -217,9 +218,10 @@ int do_main(int argc, char* argv[]) {
     time_step = std::stod(argv[3]);
   }
 
+  // Loads model into a RigidBodyTree.
   auto tree = BuildSimWorld();
 
-  // understanding the model
+  // Prints information about the model.
   VectorXd q_iiwa(7);
   q_iiwa << 0, 0, 0, -M_PI / 2, 0, 0, 0;
   VectorXd q_gripper(2);
@@ -248,9 +250,7 @@ int do_main(int argc, char* argv[]) {
   VectorXd phi;
   Eigen::Matrix3Xd normals, xA, xB;
   std::vector<int> bodyA_idx;
-  // bodyA_idx.push_back(0);
   std::vector<int> bodyB_idx;
-  // bodyA_idx.push_back(1);
   cout << "collision? ";
   cout << tree->collisionDetect(cache, phi, normals, xA, xB, bodyA_idx,
                                 bodyB_idx)
@@ -365,13 +365,6 @@ int do_main(int argc, char* argv[]) {
   s2 << log_decision_variables->data() << endl;
   s2.close();
 
-  // cout << "TIME" << endl;
-  // cout << log_state->sample_times() << std::flush << endl;
-  // cout << log_decision_variables->sample_times() << std::flush << endl;
-
-//  while (true) {
-//    publisher->ReplayCachedSimulation();
-//  }
 
   return 0;
 }
