@@ -244,7 +244,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/estimators:kalman_filter",
     "//drake/systems/estimators:luenberger_observer",
     "//drake/systems/framework:abstract_values",
-    "//drake/systems/framework:cache",
+    "//drake/systems/framework:cache_and_dependency_tracker",
     "//drake/systems/framework:context",
     "//drake/systems/framework:continuous_state",
     "//drake/systems/framework:diagram",
