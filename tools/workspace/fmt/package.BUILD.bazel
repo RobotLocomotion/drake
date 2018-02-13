@@ -11,11 +11,23 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+FMT_HDRS = glob(["fmt/*.h"])
+
+FMT_INCLUDES = ["."]
+
+cc_binary(
+    name = "libfmt.so",
+    srcs = glob(["fmt/*.cc"]) + FMT_HDRS,
+    includes = FMT_INCLUDES,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+)
+
 cc_library(
     name = "fmt",
-    srcs = glob(["fmt/*.cc"]),
-    hdrs = glob(["fmt/*.h"]),
-    includes = ["."],
+    srcs = ["libfmt.so"],
+    hdrs = FMT_HDRS,
+    includes = FMT_INCLUDES,
 )
 
 CMAKE_PACKAGE = "fmt"
@@ -31,7 +43,8 @@ install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
-    targets = [":fmt"],
+    targets = [":libfmt.so"],
+    hdrs = FMT_HDRS,
     hdr_dest = "include/" + CMAKE_PACKAGE,
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE.rst"],
