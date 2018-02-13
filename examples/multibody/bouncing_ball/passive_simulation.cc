@@ -37,6 +37,7 @@ DEFINE_string(integration_scheme, "runge_kutta3",
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
+using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::GeometrySystem;
@@ -160,6 +161,7 @@ int do_main() {
   model.SetDefaultContext(&plant_context);
   set_position("Ball", Vector3d(0.0, 0.0, z0));
   Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
+  //set_orientation("Ball", R_WB * AngleAxisd(M_PI, Vector3d::UnitX()).matrix());
   set_orientation("Ball", R_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
