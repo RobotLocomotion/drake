@@ -11,17 +11,19 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 /** This evaluator computes the generalized constraint force Jᵀλ.
- * where the Jacobian J can depend on generalized position q
+ * where the Jacobian J can depend on generalized position q and/or other
+ * variables.
  */
 class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
  public:
   /**
    * Constructor.
    * @param tree Note this object is aliased for the lifetime of @p tree.
+   * @param num_vars Number of variables, including λ.
    * @param num_lambda λ is a num_lambda x 1 vector.
    */
   GeneralizedConstraintForceEvaluator(const RigidBodyTree<double>& tree,
-                                      int num_lambda);
+                                      int num_vars, int num_lambda);
 
   /** Getter for num_lambda. */
   int num_lambda() const { return num_lambda_; }
@@ -30,28 +32,39 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   const RigidBodyTree<double>* tree() const { return tree_; }
 
   /**
-   * Composite the input `x` to the Eval function, given q and λ.
-   * This is a helper function, so that the user does not need to remember the
-   * order of q and λ in the input `x`.
+   * Composite the input `x` to the Eval function, given λ and the part of x
+   * that is not in λ.
+   * This is a helper function, so that the user does not need to remember which
+   * part of x corresponds to λ, and which part corresponds to non-λ.
    */
-  template <typename DerivedQ, typename DerivedLambda>
+  template <typename DerivedNonLambda, typename DerivedLambda>
   typename std::enable_if<
-      is_eigen_vector_of<DerivedQ, typename DerivedQ::Scalar>::value &&
-          is_eigen_vector_of<DerivedLambda, typename DerivedQ::Scalar>::value,
-      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1>>::type
+      is_eigen_vector_of<DerivedNonLambda,
+                         typename DerivedLambda::Scalar>::value &&
+          is_eigen_vector<DerivedLambda>::value,
+      Eigen::Matrix<typename DerivedLambda::Scalar, Eigen::Dynamic, 1>>::type
   CompositeEvalInputVector(
-      const Eigen::MatrixBase<DerivedQ>& q,
+      const Eigen::MatrixBase<DerivedNonLambda>& non_lambda,
       const Eigen::MatrixBase<DerivedLambda>& lambda) const {
-    using Scalar = typename DerivedQ::Scalar;
-    DRAKE_ASSERT(q.rows() == tree_->get_num_positions());
+    using Scalar = typename DerivedLambda::Scalar;
+    DRAKE_ASSERT(non_lambda.rows() == num_vars() - num_lambda_);
     DRAKE_ASSERT(lambda.rows() == num_lambda_);
-    typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(q.rows() +
-                                                        lambda.rows());
-    x << q, lambda;
+    typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(num_vars());
+    x << non_lambda, lambda;
     return x;
   }
 
  protected:
+  template <typename Derived>
+  auto GetLambda(const Eigen::MatrixBase<Derived>& x) const {
+    return x.tail(num_lambda_);
+  }
+
+  template <typename Derived>
+  auto GetNonLambda(const Eigen::MatrixBase<Derived>& x) const {
+    return x.head(num_vars() - num_lambda_);
+  }
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               Eigen::VectorXd& y) const override;
@@ -63,7 +76,7 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   // Computes the Jacobian J so as to evaluate the generalized constraint force
   // Jᵀλ.
   virtual MatrixX<AutoDiffXd> EvalConstraintJacobian(
-      const Eigen::Ref<const AutoDiffVecXd>& q) const = 0;
+      const Eigen::Ref<const AutoDiffVecXd>& x) const = 0;
 
  private:
   const RigidBodyTree<double>* tree_;
@@ -88,10 +101,7 @@ class PositionConstraintForceEvaluator
   PositionConstraintForceEvaluator(
       const RigidBodyTree<double>& tree,
       std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
-          kinematics_cache_helper)
-      : GeneralizedConstraintForceEvaluator(tree,
-                                            tree.getNumPositionConstraints()),
-        kinematics_cache_helper_(kinematics_cache_helper) {}
+          kinematics_cache_helper);
 
  protected:
   MatrixX<AutoDiffXd> EvalConstraintJacobian(

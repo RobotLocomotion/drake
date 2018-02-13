@@ -9,11 +9,9 @@ using plants::KinematicsCacheWithVHelper;
 
 // This evaluator computes the generalized constraint force Jᵀλ.
 GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(
-    const RigidBodyTree<double>& tree, int num_lambda)
-    : EvaluatorBase(
-          tree.get_num_velocities(),
-          tree.get_num_positions() + num_lambda,
-          "generalized constraint force"),
+    const RigidBodyTree<double>& tree, int num_vars, int num_lambda)
+    : EvaluatorBase(tree.get_num_velocities(), num_vars,
+                    "generalized constraint force"),
       tree_{&tree},
       num_lambda_(num_lambda) {}
 
@@ -29,21 +27,32 @@ void GeneralizedConstraintForceEvaluator::DoEval(
   // x contains q, v and λ
   DRAKE_ASSERT(x.rows() == num_vars());
   const auto q = x.head(tree_->get_num_positions());
-  const auto lambda = x.tail(num_lambda_);
+  const auto lambda = GetLambda(x);
 
   const auto J = EvalConstraintJacobian(q);
   y = J.transpose() * lambda;
 }
 
+PositionConstraintForceEvaluator::PositionConstraintForceEvaluator(
+    const RigidBodyTree<double>& tree,
+    std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
+        kinematics_cache_helper)
+    : GeneralizedConstraintForceEvaluator(
+          tree, tree.get_num_positions() + tree.getNumPositionConstraints(),
+          tree.getNumPositionConstraints()),
+      kinematics_cache_helper_(kinematics_cache_helper) {}
+
 MatrixX<AutoDiffXd> PositionConstraintForceEvaluator::EvalConstraintJacobian(
-    const Eigen::Ref<const AutoDiffVecXd>& q) const {
+    const Eigen::Ref<const AutoDiffVecXd>& x) const {
+  const auto& q = x.head(tree()->get_num_positions());
   auto kinsol = kinematics_cache_helper_->UpdateKinematics(q, tree());
   return tree()->positionConstraintsJacobian(kinsol);
 }
 
 JointLimitConstraintForceEvaluator::JointLimitConstraintForceEvaluator(
     const RigidBodyTree<double>& tree, int joint_velocity_index)
-    : GeneralizedConstraintForceEvaluator(tree, 2),
+    : GeneralizedConstraintForceEvaluator(tree, tree.get_num_positions() + 2,
+                                          2),
       joint_velocity_index_(joint_velocity_index) {}
 
 MatrixX<AutoDiffXd> JointLimitConstraintForceEvaluator::EvalConstraintJacobian(
