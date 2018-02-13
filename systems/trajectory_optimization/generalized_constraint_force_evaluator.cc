@@ -12,7 +12,7 @@ GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(
     const RigidBodyTree<double>& tree, int num_lambda)
     : EvaluatorBase(
           tree.get_num_velocities(),
-          tree.get_num_positions() + tree.get_num_velocities() + num_lambda,
+          tree.get_num_positions() + num_lambda,
           "generalized constraint force"),
       tree_{&tree},
       num_lambda_(num_lambda) {}
