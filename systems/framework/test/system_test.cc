@@ -105,7 +105,7 @@ class TestSystem : public System<double> {
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<double>&,
+      Event<double>*,
       CompositeEventCollection<double>*) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
@@ -204,9 +204,9 @@ class TestSystem : public System<double> {
         UnrestrictedUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
-  std::map<Event<double>::PeriodicAttribute,
+  std::map<PeriodicEventData,
       std::vector<const Event<double>*>,
-      PeriodicAttributeComparator<double>>
+      PeriodicEventDataComparator>
       DoGetPeriodicEvents() const override {
     return {};
   }
@@ -441,7 +441,7 @@ class ValueIOTestSystem : public System<T> {
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>&,
+      Event<T>*,
       CompositeEventCollection<T>*) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
@@ -556,8 +556,8 @@ class ValueIOTestSystem : public System<T> {
         UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   }
 
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
     return {};
   }
 };

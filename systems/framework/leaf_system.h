@@ -42,7 +42,7 @@ namespace leaf_system_detail {
 // Returns the next sample time for the given @p attribute.
 template <typename T>
 static T GetNextSampleTime(
-    const typename Event<T>::PeriodicAttribute& attribute,
+    const PeriodicEventData& attribute,
     const T& current_time_sec) {
   const double period = attribute.period_sec;
   DRAKE_ASSERT(period > 0);
@@ -317,11 +317,14 @@ class LeafSystem : public System<T> {
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>& witness_func,
+      Event<T>* event,
       CompositeEventCollection<T>* events) const final {
-    DRAKE_DEMAND(this == &witness_func.get_system());
+    DRAKE_DEMAND(event);
+    DRAKE_DEMAND(event->get_event_data());
+    DRAKE_DEMAND(dynamic_cast<const WitnessTriggeredEventData<T>*>(
+        event->get_event_data()));
     DRAKE_DEMAND(events);
-    witness_func.AddEventToCollection(events);
+    event->add_to_composite(events);
   }
 
   /// Computes the next update time based on the configured periodic events, for
@@ -601,12 +604,11 @@ class LeafSystem : public System<T> {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
                   "EventType must be a subclass of Event<T>.");
     EventType event(Event<T>::TriggerType::kPeriodic);
-    typename Event<T>::PeriodicAttribute attribute;
-    attribute.period_sec = period_sec;
-    attribute.offset_sec = offset_sec;
-    event.set_attribute(
-        AbstractValue::Make<typename Event<T>::PeriodicAttribute>(attribute));
-    periodic_events_.push_back(std::make_pair(attribute, event.Clone()));
+    PeriodicEventData periodic_data;
+    periodic_data.period_sec = period_sec;
+    periodic_data.offset_sec = offset_sec;
+    event.set_event_data(std::make_unique<PeriodicEventData>(periodic_data));
+    periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
   }
 
   /// Declares that this System has a simple, fixed-period event specified by
@@ -627,10 +629,10 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
       const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPeriodic);
-    typename Event<T>::PeriodicAttribute attribute;
-    attribute.period_sec = period_sec;
-    attribute.offset_sec = offset_sec;
-    periodic_events_.push_back(std::make_pair(attribute, event.Clone()));
+    PeriodicEventData periodic_data;
+    periodic_data.period_sec = period_sec;
+    periodic_data.offset_sec = offset_sec;
+    periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
   }
 
   /// Declares a periodic discrete update event with period = @p period_sec and
@@ -1252,10 +1254,10 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
-    std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-        PeriodicAttributeComparator<T>> periodic_events_map;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+    std::map<PeriodicEventData, std::vector<const Event<T>*>,
+        PeriodicEventDataComparator> periodic_events_map;
     for (const auto& i : periodic_events_) {
       periodic_events_map[i.first].push_back(i.second.get());
     }
@@ -1355,6 +1357,7 @@ class LeafSystem : public System<T> {
       return;
     }
 
+    /*
     // Find the minimum next sample time across all registered events, and
     // the set of registered events that will occur at that time.
     std::vector<const Event<T1>*> next_events;
@@ -1364,6 +1367,23 @@ class LeafSystem : public System<T> {
       const Event<T>* const event = event_pair.second.get();
       const T1 t = leaf_system_detail::GetNextSampleTime(
           attribute, context.get_time());
+      if (t < min_time) {
+        min_time = t;
+        next_events = {event};
+      } else if (t == min_time) {
+        next_events.push_back(event);
+      }
+    }
+*/
+    // Find the minimum next sample time across all registered events, and
+    // the set of registered events that will occur at that time.
+    std::vector<const Event<T1>*> next_events;
+    for (const auto& event_pair : periodic_events_) {
+      const PeriodicEventData& event_data =
+          event_pair.first;
+      const Event<T>* const event = event_pair.second.get();
+      const T1 t = leaf_system_detail::GetNextSampleTime(
+          event_data, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -1462,7 +1482,7 @@ class LeafSystem : public System<T> {
   }
 
   // Periodic Update or Publish events registered on this system.
-  std::vector<std::pair<typename Event<T>::PeriodicAttribute,
+  std::vector<std::pair<PeriodicEventData,
                         std::unique_ptr<Event<T>>>>
       periodic_events_;
 

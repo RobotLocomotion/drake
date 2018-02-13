@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -399,6 +400,14 @@ class Simulator {
 
   // Pre-allocated temporaries for states from unrestricted updates.
   std::unique_ptr<State<T>> unrestricted_updates_;
+
+  // Pre-allocated temporary for ContinuousState passed to event handlers after
+  // witness function triggering.
+  std::unique_ptr<ContinuousState<T>> event_handler_xc_;
+
+  // Mapping of witness functions to pre-allocated events.
+  std::unordered_map<const WitnessFunction<T>*, std::unique_ptr<Event<T>>>
+      witness_function_events_;
 };
 
 template <typename T>
@@ -425,6 +434,9 @@ Simulator<T>::Simulator(const System<T>& system,
   // (which will then be transferred back to system state).
   discrete_updates_ = system_.AllocateDiscreteVariables();
   unrestricted_updates_ = context_->CloneState();
+
+  // Allocate the necessary temporary for witness-based event handling.
+  event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
 template <typename T>
@@ -822,12 +834,38 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
                              &triggered_witnesses_);
 
+    // Store the state at x0 in the temporary context.
+    event_handler_xc_->SetFromVector(x0);
+
     // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->get_name(), context.get_time());
+
+      // Skip witness functions that have no associated event.
+      if (!fn->get_event())
+        continue;
+
+      // Get the event object that corresponds to this witness function. If
+      // there is none, create it.
+      auto& event = witness_function_events_[fn];
+      if (!event) {
+        event = fn->get_event()->Clone();
+        event->set_event_data(std::unique_ptr<WitnessTriggeredEventData<T>>(
+            new WitnessTriggeredEventData<T>));
+      }
+
+      // Populate the event data.
+      auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
+          event->get_mutable_event_data());
+      event_data->triggered_witness = fn;
+      event_data->t0 = t0;
+      event_data->tf = tf;
+      event_data->xc0 = event_handler_xc_.get();
+      event_data->xcf = &context_->get_continuous_state();
       system.AddTriggeredWitnessFunctionToCompositeEventCollection(
-          *fn, events);
+          event.get(),
+          events);
     }
 
     // Indicate a "sample time was hit" if at least one witness function

@@ -5,10 +5,14 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
+
+template <class T>
+class WitnessFunction;
 
 // Forward declaration of the event container classes.
 // -- Containers for homogeneous events.
@@ -22,6 +26,86 @@ template <typename T>
 class CompositeEventCollection;
 template <typename T>
 class LeafCompositeEventCollection;
+
+/**
+ * Base class for storing trigger-specific data to be passed to event handlers.
+ */
+class EventData {
+ public:
+  virtual ~EventData() {}
+  virtual std::unique_ptr<EventData> Clone() const {
+    return std::unique_ptr<EventData>(DoClone());
+  }
+
+ protected:
+  virtual EventData* DoClone() const = 0;
+};
+
+/**
+ * A token describing an event that recurs on a fixed period. The events are
+ * triggered at time = offset_sec + i * period_sec, where i is a non-negative
+ * integer.
+ */
+class PeriodicEventData : public EventData {
+ public:
+  /**
+   * The period with which this event should recur.
+   */
+  double period_sec{0.0};
+  /**
+   * The time after zero when this event should first occur.
+   */
+  double offset_sec{0.0};
+
+ private:
+  EventData* DoClone() const override {
+    PeriodicEventData* clone = new PeriodicEventData;
+    clone->period_sec = period_sec;
+    clone->offset_sec = offset_sec;
+    return clone;
+  }
+};
+
+/**
+ * Class for storing data from a witness function triggering to be passed
+ * to event handlers. A witness function isolates the time to a (typically
+ * small) window during which the witness function crosses zero. The time at
+ * state at both sides of this window are passed to the event handler so that
+ * the system can precisely determine the reason that the witness function
+ * triggered.
+ */
+template <class T>
+class WitnessTriggeredEventData : public EventData {
+ public:
+  /// The witness function that triggered the event handler.
+  const WitnessFunction<T>* triggered_witness{nullptr};
+
+  /// The time at the left end of the window. Default is -1 (which notes that
+  /// the value is invalid).
+  T t0{-1};
+
+  /// The time at the right end of the window. Note that `tf` must be larger
+  /// than `t0`.
+  T tf{-1};
+
+  /// A pointer to the continuous state at the left end of the isolation window.
+  const ContinuousState<T>* xc0{nullptr};
+
+  /// A pointer to the continuous state at the right end of the isolation
+  /// window.
+  const ContinuousState<T>* xcf{nullptr};
+
+ private:
+  EventData* DoClone() const override {
+    WitnessTriggeredEventData<T>* clone = new WitnessTriggeredEventData;
+    clone->triggered_witness = triggered_witness;
+    clone->t0 = t0;
+    clone->tf = tf;
+    clone->xc0 = xc0;
+    clone->xcf = xcf;
+    return clone;
+  }
+};
 
 /**
  * Abstract base class that represents an event. The base event contains two
@@ -73,7 +157,7 @@ class Event {
     /**
      * This type indicates that an associated event is triggered by the system
      * proceeding to a time t ∈ {tᵢ = t₀ + p * i} for some period p, time
-     * offset t₀, and i is a non-negative integer. @see PeriodicAttribute.
+     * offset t₀, and i is a non-negative integer. @see PeriodicEventData.
      * Periodic events are commonly created in System::CalcNextUpdateTime().
      */
     kPeriodic,
@@ -104,20 +188,8 @@ class Event {
   };
 
   /**
-   * A token describing an event that recurs on a fixed period. The events are
-   * triggered at time = offset_sec + i * period_sec, where i is a non-negative
-   * integer.
+   * An object passed
    */
-  struct PeriodicAttribute {
-    /**
-     * The period with which this event should recur.
-     */
-    double period_sec{0.0};
-    /**
-     * The time after zero when this event should first occur.
-     */
-    double offset_sec{0.0};
-  };
 
   virtual ~Event() {}
 
@@ -134,35 +206,29 @@ class Event {
   TriggerType get_trigger_type() const { return trigger_type_; }
 
   /**
-   * Returns true if this event has an associated attribute.
+   * Returns true if this event has associated data.
    */
-  bool has_attribute() const { return attribute_ != nullptr; }
+  bool has_event_data() const { return event_data_ != nullptr; }
 
   /**
-   * Returns a const pointer to the AbstractValue attribute. The returned value
-   * can be nullptr, which means this event does not have an associated
-   * attribute.
+   * Returns a const pointer to the event data. The returned value
+   * can be nullptr, which means this event does not have any associated
+   * data.
    */
-  const AbstractValue* get_attribute() const { return attribute_.get(); }
+  const EventData* get_event_data() const { return event_data_.get(); }
 
   /**
-   * Returns a const reference to the underlying attribute.
-   *
-   * @throws std::logic_error if there is no underlying attribute.
-   * @throws std::bad_cast if @tparam DataType does not match the underlying
-   *         attribute type.
+   * Returns a mutable pointer to the event data. The returned value
+   * can be nullptr, which means this event does not have any associated
+   * data.
    */
-  template <typename DataType>
-  const DataType& get_attribute() const {
-    if (attribute_ == nullptr) throw std::logic_error("Data is null.");
-    return attribute_->GetValueOrThrow<DataType>();
-  }
+  EventData* get_mutable_event_data() { return event_data_.get(); }
 
   /**
-   * Sets and transfers the ownership of @p attribute.
+   * Sets and transfers the ownership of @p data.
    */
-  void set_attribute(std::unique_ptr<AbstractValue> attribute) {
-    attribute_ = std::move(attribute);
+  void set_event_data(std::unique_ptr<EventData> data) {
+    event_data_ = std::move(data);
   }
 
   /**
@@ -173,8 +239,8 @@ class Event {
 
  protected:
   Event(const Event& other) : trigger_type_(other.trigger_type_) {
-    if (other.attribute_ != nullptr)
-      set_attribute(other.attribute_->Clone());
+    if (other.event_data_ != nullptr)
+      set_event_data(other.event_data_->Clone());
   }
 
   /**
@@ -191,15 +257,14 @@ class Event {
 
  private:
   const TriggerType trigger_type_;
-  std::unique_ptr<AbstractValue> attribute_{nullptr};
+  std::unique_ptr<EventData> event_data_{nullptr};
 };
 
-/// Structure for comparing two PeriodicAttributes for use in a map container,
-/// using an arbitrary comparison method.
-template <class T>
-struct PeriodicAttributeComparator {
-  bool operator()(const typename Event<T>::PeriodicAttribute& a,
-    const typename Event<T>::PeriodicAttribute& b) const {
+/// Structure for comparing two PeriodicEventData objects for use in a map
+/// container, using an arbitrary comparison method.
+struct PeriodicEventDataComparator {
+  bool operator()(const PeriodicEventData& a,
+    const PeriodicEventData& b) const {
       if (a.period_sec == b.period_sec)
         return a.offset_sec < b.offset_sec;
       return a.period_sec < b.period_sec;

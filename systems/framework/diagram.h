@@ -18,7 +18,9 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
+#include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
@@ -801,13 +803,38 @@ class Diagram : public System<T>,
   /// @p witness_func's AddEventToCollection method. Aborts if the subsystem is
   /// not part of this Diagram.
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>& witness_func,
+      Event<T>* event,
       CompositeEventCollection<T>* events) const final {
     DRAKE_DEMAND(events);
-    const System<T>& subsystem = witness_func.get_system();
+    DRAKE_DEMAND(event);
+    DRAKE_DEMAND(event->get_event_data());
+
+    // Get the event data- it will need to be modified.
+    auto data = dynamic_cast<WitnessTriggeredEventData<T>*>(
+        event->get_mutable_event_data());
+    DRAKE_DEMAND(data);
+
+    // Get the vector of events corresponding to the subsystem.
+    const System<T>& subsystem = data->triggered_witness->get_system();
     CompositeEventCollection<T>& subevents =
         GetMutableSubsystemCompositeEventCollection(subsystem, events);
-    witness_func.AddEventToCollection(&subevents);
+
+    // Get the continuous states at both window endpoints.
+    auto diagram_xc0 = dynamic_cast<const DiagramContinuousState<T>*>(
+        data->xc0);
+    DRAKE_DEMAND(diagram_xc0 != nullptr);
+    auto diagram_xcf = dynamic_cast<const DiagramContinuousState<T>*>(
+        data->xcf);
+    DRAKE_DEMAND(diagram_xcf != nullptr);
+
+    // Modify the pointer to the event data to point to the sub-system
+    // continuous states.
+    const int subsystem_index = GetSystemIndexOrAbort(&subsystem);
+    data->xc0 = diagram_xc0->get_substate(subsystem_index);
+    data->xcf = diagram_xcf->get_substate(subsystem_index);
+
+    // Add the event to the collection.
+    event->add_to_composite(&subevents);
   }
 
   /// Provides witness functions of subsystems that are active at the beginning
@@ -1364,11 +1391,11 @@ class Diagram : public System<T>,
     }
   }
 
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
-    std::map<typename Event<T>::PeriodicAttribute,
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+    std::map<PeriodicEventData,
         std::vector<const Event<T>*>,
-        PeriodicAttributeComparator<T>> periodic_events_map;
+        PeriodicEventDataComparator> periodic_events_map;
 
     for (int i = 0; i < num_subsystems(); ++i) {
       auto sub_map = registered_systems_[i]->GetPeriodicEvents();

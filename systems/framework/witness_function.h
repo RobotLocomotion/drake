@@ -122,15 +122,6 @@ class WitnessFunction {
   /// Sets the name of this witness function.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Adds get_event() to the appropriate dispatch collection when this witness
-  /// function triggers. This function is to be called by
-  /// @ref drake::systems::analysis::Simulator "Simulator" - users should not
-  /// call it.
-  void AddEventToCollection(CompositeEventCollection<T>* events) const {
-    DRAKE_DEMAND(events);
-    DoAddEventToCollection(events);
-  }
-
   /// Gets the direction(s) under which this witness function triggers.
   WitnessFunctionDirection get_dir_type() const { return dir_type_; }
 
@@ -182,18 +173,6 @@ class WitnessFunction {
   Event<T>* get_mutable_event() { return event_.get(); }
 
  protected:
-  /// Derived classes can override this function to modify the event (via
-  /// `get_mutable_event()`) before it is added to the appropriate dispatch
-  /// collection when the witness function triggers.
-  /// @p events is guaranteed to be non-null on entry. The default
-  /// implementation does `get_event()->add_to_composite(events)` (but only if
-  /// `get_event()` is not null).
-  virtual void DoAddEventToCollection(CompositeEventCollection<T>* events)
-      const {
-    if (event_)
-      event_->add_to_composite(events);
-  }
-
   /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
   /// @param context an already-validated Context
