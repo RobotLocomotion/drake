@@ -212,7 +212,7 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
     // osqp can fail in polishing step, such that the accuracy cannot reach
     // 1E-6.
     const double tol =
-        prog.GetSolverId() == solvers::OsqpSolver::id() ? 3E-6 : 1E-6;
+        prog.GetSolverId() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
     EXPECT_TRUE(
         CompareMatrices(prog.GetSolution(prog.state(i)), state_value, tol));
   }

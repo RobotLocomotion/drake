@@ -39,8 +39,8 @@ cmake_configure_file(
     visibility = ["//visibility:private"],
 )
 
-cc_library(
-    name = "osqp",
+cc_binary(
+    name = "libosqp.so",
     srcs = glob([
         "lin_sys/*.c",
         "lin_sys/*.h",
@@ -54,9 +54,6 @@ cc_library(
         "lin_sys/direct/suitesparse/ldl/include/*.h",
         "include/*.h",
         "src/*.c",
-    ]),
-    hdrs = glob([
-        "include/*.h",
     ]) + ["include/glob_opts.h"],
     includes = [
         "include",
@@ -66,26 +63,28 @@ cc_library(
         "lin_sys/direct/suitesparse/amd/include",
         "lin_sys/direct/suitesparse/ldl/include",
     ],
+    linkshared = 1,
+    visibility = ["//visibility:private"],
 )
 
-CMAKE_PACKAGE = "osqp"
-
-cmake_config(
-    package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/osqp:package-create-cps.py",
-    version_file = "CMakeLists.txt",
+cc_library(
+    name = "osqp",
+    srcs = [":libosqp.so"],
+    hdrs = glob([
+        "include/*.h",
+    ]) + ["include/glob_opts.h"],
+    includes = [
+        "include",
+    ],
 )
-
-# Creates rule :install_cmake_config.
-install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
-    targets = [":osqp"],
-    hdr_dest = "include/" + CMAKE_PACKAGE,
-    guess_hdrs = "PACKAGE",
+    targets = [":libosqp.so"],
     docs = [
         "LICENSE",
+        "lin_sys/direct/suitesparse/ldl/LICENSE",
+        "lin_sys/direct/suitesparse/amd/LICENSE",
     ],
-    deps = [":install_cmake_config"],
+    doc_strip_prefix = ["lin_sys/direct/suitesparse"],
 )
