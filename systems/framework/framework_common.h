@@ -1,5 +1,11 @@
 #pragma once
 
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "drake/common/drake_assert.h"
 #include "drake/common/type_safe_index.h"
 
 namespace drake {
@@ -10,8 +16,6 @@ namespace systems {
 // the same meaning in both class hierarchies. A System and its Context always
 // have parallel internal structure.
 
-// TODO(sherm1) Reveal these when they are used.
-#ifndef DRAKE_DOXYGEN_CXX
 /** Identifies a particular source value or computation for purposes of
 declaring and managing dependencies. Unique only within a given subsystem
 and its corresponding subcontext. */
@@ -54,7 +58,6 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 /** Serves as the local index for abstract parameters within a given System
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
-#endif
 
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
@@ -67,6 +70,42 @@ typedef enum {
 rather depends on what it is connected to (not yet implemented). */
 // TODO(sherm1) Implement this.
 constexpr int kAutoSize = -1;
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+
+/** Any class that can provide a System name and (for Diagrams) a subsystem
+path name should implement this interface. This is used by System and Context
+so that contained objects can provide helpful error messages and log
+diagnostics that identify the offending object within a diagram. (Diagram
+Systems and their Contexts have identical substructure.) Providing
+this as an separate interface allows us to avoid circular dependencies between
+the containers and their contained objects. */
+class SystemPathnameInterface {
+ public:
+  virtual ~SystemPathnameInterface() = default;
+
+  /** Returns the simple name of this subsystem, with no path separators. */
+  virtual std::string GetSystemName() const = 0;
+
+  /** Returns the full path name of this subsystem, starting at the root
+  of the containing Diagram, with path name separators between segments. */
+  virtual std::string GetSystemPathname() const = 0;
+};
+
+/** These dependency ticket numbers are common to all systems and contexts so
+are defined here. Actual ticket objects are created from these integers.
+Ticket numbers for conditionally-allocated objects like ports and cache
+entries are allocated beginning with kNextAvailableTicket defined below. */
+enum WellKnownTicketNumbers {
+  kNothingTicket        =  0,
+  kTimeTicket           =  1,
+  // TODO(sherm1) Add in the rest of the well-known tickets here.
+  kNextAvailableTicket  = kTimeTicket+1
+};
+
+}  // namespace internal
+#endif
 
 }  // namespace systems
 }  // namespace drake
