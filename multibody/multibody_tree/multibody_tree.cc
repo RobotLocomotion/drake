@@ -18,6 +18,8 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
+#define MBT_THROW_IF_NOT_FINALIZED ThrowIfNotFinalized(__FUNCTION__);
+
 namespace internal {
 template <typename T>
 class JointImplementationBuilder {
@@ -579,6 +581,8 @@ template <typename T>
 const Isometry3<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
+  MBT_THROW_IF_NOT_FINALIZED
+  body_B.HasThisParentTreeOrThrow(this);
   return EvalPositionKinematics(context).get_X_WB(body_B.get_node_index());
 }
 
@@ -586,6 +590,8 @@ template <typename T>
 const SpatialVelocity<T>& MultibodyTree<T>::EvalBodySpatialVelocityInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
+  MBT_THROW_IF_NOT_FINALIZED
+  body_B.HasThisParentTreeOrThrow(this);
   return EvalVelocityKinematics(context).get_V_WB(body_B.get_node_index());
 }
 
@@ -831,6 +837,16 @@ const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   CalcVelocityKinematicsCache(context, pc, vc_.get());
   return *vc_;
+}
+
+template <typename T>
+void MultibodyTree<T>::ThrowIfNotFinalized(
+    const char* source_method) const {
+  if (!topology_is_valid()) {
+    throw std::logic_error(
+        "The call to '" + std::string(source_method) + "' is invalid; "
+        " You must call Finalize() first. ");
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.

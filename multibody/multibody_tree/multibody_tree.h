@@ -896,13 +896,28 @@ class MultibodyTree {
       const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const;
 
-  /// Given the pose `X_BF` of a frame F measured in a frame B, this method
-  /// computes the pose `X_WF` of this frame F in the world frame W. That is, it
-  /// computes: `X_WF = X_WB * X_BF`.
+  /// Evaluate the pose `X_WB` of a body B in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the %MultibodyTree model.
+  /// @param[in] body_B
+  ///   The body B for which the pose is requested.
+  /// @returns X_WB
+  ///   The pose of body frame B in the world frame W.
+  /// @throws if Finalize() was not called on `this` model or if `body_B` does
+  /// not belong to this model.
   const Isometry3<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
 
+  /// Evaluate the spatial velocity `V_WB` of a body B in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the %MultibodyTree model.
+  /// @param[in] body_B
+  ///   The body B for which the spatial velocity is requested.
+  /// @returns V_WB
+  ///   The spatial velocity of body frame B in the world frame W.
+  /// @throws if Finalize() was not called on `this` model or if `body_B` does
+  /// not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
@@ -1588,6 +1603,11 @@ class MultibodyTree {
   // This method will throw a std::logic_error if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
+
+  // Helper method for throwing an exception if Finalize() has not been called
+  // on this MultibodyTree model. The invoking method should pass it's name so
+  // that the error message can include that detail.
+  void ThrowIfNotFinalized(const char* source_method) const;
 
   // Computes the cache entry associated with the geometric Jacobian H_PB_W for
   // each node.
