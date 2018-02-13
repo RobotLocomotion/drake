@@ -40,6 +40,7 @@ drake_cc_binary(
         "//geometry:geometry_visualization",
         "//math:geometric_transform",
         "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:runge_kutta2_integrator",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",
         "//systems/analysis:simulator",

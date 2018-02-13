@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -32,7 +33,7 @@ DEFINE_double(target_realtime_rate, 1.0,
 
 DEFINE_string(integration_scheme, "runge_kutta3",
               "Integration scheme to be used. Available options are:"
-              "'runge_kutta3','implicit_euler','semi_explicit_euler'");
+              "'runge_kutta2','runge_kutta3','implicit_euler','semi_explicit_euler'");
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
@@ -50,6 +51,7 @@ using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
 using drake::systems::rendering::PoseBundleToDrawMessage;
+using drake::systems::RungeKutta2Integrator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
 
@@ -63,7 +65,7 @@ int do_main() {
   const double simulation_time = 30.00;
 
   // Make the desired maximum time step a fraction of the simulation time.
-  const double max_time_step = 1e-4; //simulation_time / 1000.0;
+  const double max_time_step = 1e-3; //simulation_time / 1000.0;
 
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
@@ -84,10 +86,10 @@ int do_main() {
           &geometry_system));
   const MultibodyTree<double>& model = plant.model();
 
-  const double penetration_length = 0.00001;
+  const double penetration_length = 0.001;
   const double stiffness = mass * g / penetration_length;  // static equilibrium (under estimation)
   const double omega = sqrt(stiffness / mass);  // frequency
-  const double damping_ratio = 1.0;  // not realy, but should be close.
+  const double damping_ratio = 0.5;  // not realy, but should be close.
   const double damping = damping_ratio * (1.0/omega)/penetration_length; // Approx critically damped.
   plant.set_contact_penalty_stiffness(stiffness);
   plant.set_contact_penalty_damping(damping);
@@ -197,6 +199,10 @@ int do_main() {
     integrator =
         simulator.reset_integrator<RungeKutta3Integrator<double>>(
             *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "runge_kutta2") {
+    integrator =
+        simulator.reset_integrator<RungeKutta2Integrator<double>>(
+            *diagram, max_time_step, &simulator.get_mutable_context());
   } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
     integrator =
         simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
@@ -218,7 +224,8 @@ int do_main() {
   simulator.StepTo(simulation_time);
 
   // Some sanity checks:
-  if (FLAGS_integration_scheme == "semi_explicit_euler") {
+  if (FLAGS_integration_scheme == "semi_explicit_euler" ||
+      FLAGS_integration_scheme == "runge_kutta2") {
     DRAKE_DEMAND(integrator->get_fixed_step_mode() == true);
   }
 
