@@ -139,7 +139,10 @@ cc_binary(
         "src/Waypoint.cc",
         "src/Zone.cc",
     ] + public_headers,
-    copts = ["-w"],
+    copts = [
+        "-fvisibility-inlines-hidden",
+        "-w",
+    ],
     includes = ["include"],
     linkshared = 1,
     visibility = [],

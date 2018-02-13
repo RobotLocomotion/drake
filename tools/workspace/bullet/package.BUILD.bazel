@@ -12,7 +12,10 @@ package(default_visibility = ["//visibility:public"])
 
 # Note that this is only a portion of Bullet.
 
-BULLET_COPTS = ["-Wno-all"]
+BULLET_COPTS = [
+    "-fvisibility-inlines-hidden",
+    "-Wno-all",
+]
 
 BULLET_INCLUDES = ["src"]
 

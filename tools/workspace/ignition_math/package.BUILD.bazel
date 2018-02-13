@@ -168,6 +168,7 @@ cc_binary(
         "src/Temperature.cc",
         "src/Vector3Stats.cc",
     ] + private_headers + public_headers,
+    copts = ["-fvisibility-inlines-hidden"],
     includes = ["include"],
     linkshared = 1,
     visibility = [],
