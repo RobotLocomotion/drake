@@ -20,7 +20,8 @@ class SchunkWsgPlainController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPlainController)
   explicit SchunkWsgPlainController(
-      ControlMode control_mode = ControlMode::kPosition);
+      ControlMode control_mode = ControlMode::kPosition,
+      bool limit_force = false);
 
   const systems::InputPortDescriptor<double>& get_desired_state_input_port()
       const {

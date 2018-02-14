@@ -15,7 +15,8 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode) {
+SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
+                                                   bool limit_force) {
   systems::DiagramBuilder<double> builder;
 
   // Set up desired control state, x_d, signal.
@@ -161,30 +162,34 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode) {
     } break;
   }
 
-  // Add the saturation block.
-  // Create a gain block to negate the max force (to produce a minimum
-  // force).
-  auto max_force_passthrough =
-      builder.AddSystem<systems::PassThrough<double>>(1);
-  max_force_input_port_ =
-      builder.ExportInput(max_force_passthrough->get_input_port());
-  auto positive_gain = builder.AddSystem<systems::MatrixGain<double>>(
-      MatrixX<double>::Ones(2, 1));
-  auto negative_gain = builder.AddSystem<systems::MatrixGain<double>>(
-      -MatrixX<double>::Ones(2, 1));
-  builder.Connect(max_force_passthrough->get_output_port(),
-                  positive_gain->get_input_port());
-  builder.Connect(max_force_passthrough->get_output_port(),
-                  negative_gain->get_input_port());
+  if (limit_force) {
+    // Add the saturation block.
+    // Create a gain block to negate the max force (to produce a minimum
+    // force).
+    auto max_force_passthrough =
+        builder.AddSystem<systems::PassThrough<double>>(1);
+    max_force_input_port_ =
+        builder.ExportInput(max_force_passthrough->get_input_port());
+    auto positive_gain = builder.AddSystem<systems::MatrixGain<double>>(
+        MatrixX<double>::Ones(2, 1));
+    auto negative_gain = builder.AddSystem<systems::MatrixGain<double>>(
+        -MatrixX<double>::Ones(2, 1));
+    builder.Connect(max_force_passthrough->get_output_port(),
+                    positive_gain->get_input_port());
+    builder.Connect(max_force_passthrough->get_output_port(),
+                    negative_gain->get_input_port());
 
-  auto saturation = builder.AddSystem<systems::Saturation<double>>(2);
+    auto saturation = builder.AddSystem<systems::Saturation<double>>(2);
 
-  builder.Connect(*u_port, saturation->get_input_port());
-  builder.Connect(positive_gain->get_output_port(),
-                  saturation->get_max_value_port());
-  builder.Connect(negative_gain->get_output_port(),
-                  saturation->get_min_value_port());
-  builder.ExportOutput(saturation->get_output_port());
+    builder.Connect(*u_port, saturation->get_input_port());
+    builder.Connect(positive_gain->get_output_port(),
+                    saturation->get_max_value_port());
+    builder.Connect(negative_gain->get_output_port(),
+                    saturation->get_min_value_port());
+    builder.ExportOutput(saturation->get_output_port());
+  } else {
+    builder.ExportOutput(*u_port);
+  }
   builder.BuildInto(this);
 }
 
