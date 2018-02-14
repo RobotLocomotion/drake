@@ -421,6 +421,12 @@ void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhiAnalytic(
     MatrixX<Scalar>* const Wf_ptr, MatrixX<Scalar>* const Jn_ptr,
     MatrixX<Scalar>* const Jf_ptr, VectorX<Scalar>* const phi_ptr) const {
   static_cast<void>(cache);
+  static_cast<void>(Wn_ptr);
+  static_cast<void>(Wn_ptr);
+  static_cast<void>(Wf_ptr);
+  static_cast<void>(Jn_ptr);
+  static_cast<void>(Jf_ptr);
+  static_cast<void>(phi_ptr);
   DRAKE_ABORT_MSG(
       "Analytic expressions for Wn, Wf, Jn, Jf and phi are not "
       "available.");
