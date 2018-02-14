@@ -197,8 +197,7 @@ const std::vector<bool> IiwaPickUpDumbbell::is_contact_2d = {
 
 IiwaPickUpDumbbell::IiwaPickUpDumbbell(const double period_sec, const double mu,
                                        const double kBigM)
-    : QuasistaticSystem(period_sec, idx_unactuated_bodies, idx_base, {}, {},
-                        is_contact_2d, mu, kBigM) {
+    : QuasistaticSystem(<#initializer#>) {
   tree_ = BuildSimWorld();
   Initialize();
 }

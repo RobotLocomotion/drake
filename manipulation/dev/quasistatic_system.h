@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -13,82 +14,81 @@
 namespace drake {
 namespace manipulation {
 
-using Eigen::Matrix;
-using Eigen::Matrix3Xd;
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using Eigen::VectorXi;
-using drake::solvers::LinearConstraint;
-using drake::solvers::LinearEqualityConstraint;
-using drake::solvers::MathematicalProgram;
-using drake::solvers::QuadraticCost;
-using drake::solvers::VectorXDecisionVariable;
-using systems::BasicVector;
+struct QuasistaticSystemOptions {
+  double period_sec{0.01};
+  std::vector<int> idx_unactuated_bodies{};
+  int idx_base;  // base body (has a floating joint to the world) of
+  // the unactuated rigid body mechanism.
+  std::vector<int> fixed_base_positions{};
+  std::vector<int> fixed_base_velocities{};
+  std::vector<bool> is_contact_2d{};
+  double mu{1};  // coefficent of friction for all contacts
+  double kBigM{1};
+  bool is_analytic{false};
+  bool is_using_kinetic_energy_minimizing_QP{false};
+};
 
-class QuasistaticSystem : public drake::systems::LeafSystem<double> {
+template <class Scalar>
+class QuasistaticSystem : public systems::LeafSystem<Scalar> {
  public:
-  QuasistaticSystem(
-      const double period_sec, const std::vector<int>& idx_unactuated_bodies,
-      const int idx_base,  // base body (has a floating joint to the world) of
-      // the unactuated rigid body mechanism.
-      const std::vector<int>& fixed_base_positions = {},
-      const std::vector<int>& fixed_base_velocities = {},
-      const std::vector<bool>& is_contact_2d = {},
-      const double mu = 1,  // coefficent of friction for all contacts
-      const double kBigM = 1, const bool is_analytic = false,
-      const bool is_using_kinetic_energy_minimizing_QP = true);
+  explicit QuasistaticSystem(const QuasistaticSystemOptions& options);
 
-  void Initialize();
-  const systems::OutputPort<double>& state_output() const;
-  const systems::OutputPort<double>& decision_variables_output() const;
+  const systems::OutputPort<Scalar>& state_output() const;
+  const systems::OutputPort<Scalar>& decision_variables_output() const;
+  double get_period_sec() { return period_sec_; }
 
  protected:
+  void Initialize();
   void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<double>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
-      drake::systems::DiscreteValues<double>* discrete_state) const override;
+      const systems::Context<Scalar>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<Scalar>*>&,
+      systems::DiscreteValues<Scalar>* discrete_state) const override;
+  VectorX<Scalar> GetQuasistaticSystemStatesFromRigidBodyTreePositions(
+      const KinematicsCache<Scalar>& cache) const;
+  VectorX<Scalar> GetRigidBodyTreePositionsFromQuasistaticSystemStates(
+      const Eigen::Ref<const VectorX<Scalar>>& q_quasistatic_system) const;
+  void CalcJf(const KinematicsCache<Scalar>& cache,
+              const Eigen::Ref<const MatrixX<Scalar>>& Jf_half,
+              MatrixX<Scalar>* const Jf_ptr) const;
+  void CalcWnWfJnJfPhi(const KinematicsCache<Scalar>& cache,
+                       MatrixX<Scalar>* const Wn_ptr,
+                       MatrixX<Scalar>* const Wf_ptr,
+                       MatrixX<Scalar>* const Jn_ptr,
+                       MatrixX<Scalar>* const Jf_ptr,
+                       VectorX<Scalar>* const phi_ptr) const;
+  void DoCalcWnWfJnJfPhi(const KinematicsCache<Scalar>& cache,
+                         MatrixX<Scalar>* const Wn_ptr,
+                         MatrixX<Scalar>* const Wf_ptr,
+                         MatrixX<Scalar>* const Jn_ptr,
+                         MatrixX<Scalar>* const Jf_ptr,
+                         VectorX<Scalar>* const phi_ptr) const;
+  Scalar CalcBigM(Scalar max_impulse, Scalar max_delta_q,
+                  Scalar max_gamma,
+                  const Eigen::Ref<const MatrixX<Scalar>> &Jn,
+                  const Eigen::Ref<const MatrixX<Scalar>> &Jf,
+                  const Eigen::Ref<const VectorX<Scalar>> &phi,
+                  const Eigen::Ref<const MatrixX<Scalar>> &E,
+                  const Eigen::Ref<const MatrixX<Scalar>> &U,
+                  const Eigen::Ref<const VectorX<Scalar>> &qa_dot_d) const;
+  virtual void DoCalcWnWfJnJfPhiAnalytic(
+      const KinematicsCache<Scalar>& cache,
+      MatrixX<Scalar>* const Wn_ptr,
+      MatrixX<Scalar>* const Wf_ptr,
+      MatrixX<Scalar>* const Jn_ptr,
+      MatrixX<Scalar>* const Jf_ptr,
+      VectorX<Scalar>* const phi_ptr) const;
+  MatrixX<Scalar> CalcE() const;
+  VectorX<Scalar> CalcExternalGeneralizedForce(
+       KinematicsCache<Scalar> *const cache) const;
 
-  VectorXd getQuasistaticSystemStatesFromRigidBodyTreePositions(
-      const KinematicsCache<double>& cache) const;
-  VectorXd getRigidBodyTreePositionsFromQuasistaticSystemStates(
-      const VectorXd q_quasistatic_system) const;
-  void CalcJf(const KinematicsCache<double> &cache, const MatrixXd &Jf_half,
-              MatrixXd *const Jf_ptr) const;
-  void CalcWnWfJnJfPhi(const KinematicsCache<double> &cache,
-                       MatrixXd *const Wn_ptr,
-                       MatrixXd *const Wf_ptr,
-                       MatrixXd *const Jn_ptr,
-                       MatrixXd *const Jf_ptr,
-                       VectorXd *const phi_ptr) const;
-  void DoCalcWnWfJnJfPhi(const KinematicsCache<double> &cache,
-                         MatrixXd *const Wn_ptr,
-                         MatrixXd *const Wf_ptr,
-                         MatrixXd *const Jn_ptr,
-                         MatrixXd *const Jf_ptr,
-                         VectorXd *const phi_ptr) const;
-  double CalcBigM(const double max_impulse, const double max_delta_q,
-                  const double max_delta_gamma, const MatrixXd& Jn,
-                  const MatrixXd& Jf, const VectorXd& phi, const MatrixXd& E,
-                  const MatrixXd& U, const VectorXd qa_dot_d) const;
-  virtual void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double> &cache,
-                                         MatrixXd *const Wn_ptr,
-                                         MatrixXd *const Wf_ptr,
-                                         MatrixXd *const Jn_ptr,
-                                         MatrixXd *const Jf_ptr,
-                                         VectorXd *const phi_ptr) const;
-  virtual MatrixXd CalcE() const;
-  virtual VectorXd CalcExternalGeneralizedForce(
-      KinematicsCache<double> *const cache) const;
-
-  void CopyStateOut(const drake::systems::Context<double>& context,
-                    drake::systems::BasicVector<double>* output) const {
-    output->SetFromVector(getRigidBodyTreePositionsFromQuasistaticSystemStates(
+  void CopyStateOut(const systems::Context<Scalar>& context,
+                    systems::BasicVector<Scalar>* output) const {
+    output->SetFromVector(GetRigidBodyTreePositionsFromQuasistaticSystemStates(
         context.get_discrete_state(0).CopyToVector().head(n1_)));
   }
 
-  void CopyDecisionVariablesOut(
-      const drake::systems::Context<double>& context,
-      drake::systems::BasicVector<double>* output) const {
+  void CopyDecisionVariablesOut(const systems::Context<Scalar>& context,
+                                systems::BasicVector<Scalar>* output) const {
     output->SetFromVector(
         context.get_discrete_state(0).CopyToVector().segment(n1_, n_));
   }
@@ -121,12 +121,12 @@ class QuasistaticSystem : public drake::systems::LeafSystem<double> {
   const bool is_analytic_;
   const bool is_using_kinetic_energy_minimizing_QP_;
 
-  int nu_{0};    // number of underactuated DOFs, dim(qu).
-  int n_vu_{0};  // number of underactuated velocities.
-  int na_{0};    // number of actuated DOFs (inputs), dim(qa)
-  int nc_;       // number of contacts.
-  int nq_tree_;  // number of positions in RBT
-  VectorXi nf_;  // nubmer of vectors spanning each friction cone
+  int nu_{0};           // number of underactuated DOFs, dim(qu).
+  int n_vu_{0};         // number of underactuated velocities.
+  int na_{0};           // number of actuated DOFs (inputs), dim(qa)
+  int nc_;              // number of contacts.
+  int nq_tree_;         // number of positions in RBT
+  Eigen::VectorXi nf_;  // nubmer of vectors spanning each friction cone
 
   // indices of actuated states in increasing order.
   std::vector<int> idx_qa_;
@@ -151,7 +151,8 @@ class QuasistaticSystem : public drake::systems::LeafSystem<double> {
   int n_;   // number of decision variables in the MIQP
 
   // rigid body tree for model
-  std::unique_ptr<RigidBodyTreed> tree_ = std::make_unique<RigidBodyTreed>();
+  std::unique_ptr<RigidBodyTree<Scalar>> tree_ =
+      std::make_unique<RigidBodyTree<Scalar>>();
 
  private:
   void UpdateNs() {
@@ -174,49 +175,56 @@ class QuasistaticSystem : public drake::systems::LeafSystem<double> {
   }
 
   // initial guesses
-  std::unique_ptr<VectorXd> lambda_n_start_ = std::make_unique<VectorXd>();
-  std::unique_ptr<VectorXd> lambda_f_start_ = std::make_unique<VectorXd>();
-  std::unique_ptr<VectorXd> gamma_start_ = std::make_unique<VectorXd>();
-  std::unique_ptr<VectorXd> z_n_start_ = std::make_unique<VectorXd>();
-  std::unique_ptr<VectorXd> z_f_start_ = std::make_unique<VectorXd>();
-  std::unique_ptr<VectorXd> z_gamma_start_ = std::make_unique<VectorXd>();
+  std::unique_ptr<drake::VectorX<Scalar>> lambda_n_start_ =
+      std::make_unique<drake::VectorX<Scalar>>();
+  std::unique_ptr<drake::VectorX<Scalar>> lambda_f_start_ =
+      std::make_unique<drake::VectorX<Scalar>>();
+  std::unique_ptr<drake::VectorX<Scalar>> gamma_start_ =
+      std::make_unique<drake::VectorX<Scalar>>();
+  std::unique_ptr<drake::VectorX<Scalar>> z_n_start_ =
+      std::make_unique<drake::VectorX<Scalar>>();
+  std::unique_ptr<drake::VectorX<Scalar>> z_f_start_ =
+      std::make_unique<drake::VectorX<Scalar>>();
+  std::unique_ptr<drake::VectorX<Scalar>> z_gamma_start_ =
+      std::make_unique<drake::VectorX<Scalar>>();
 
   // "hypothetical penetration"
-  std::unique_ptr<VectorXd> phi_bar_ = std::make_unique<VectorXd>();
+  std::unique_ptr<drake::VectorX<Scalar>> phi_bar_ =
+      std::make_unique<drake::VectorX<Scalar>>();
 
   // MIQP program
-  std::unique_ptr<MathematicalProgram> prog_;
-  drake::solvers::GurobiSolver solver_;
+  std::unique_ptr<solvers::MathematicalProgram> prog_;
+  solvers::GurobiSolver solver_;
 
-  VectorXDecisionVariable delta_q_;
-  VectorXDecisionVariable lambda_n_;
-  VectorXDecisionVariable lambda_f_;
-  VectorXDecisionVariable gamma_;
-  VectorXDecisionVariable z_n_;
-  VectorXDecisionVariable z_f_;
-  VectorXDecisionVariable z_gamma_;
+  solvers::VectorXDecisionVariable delta_q_;
+  solvers::VectorXDecisionVariable lambda_n_;
+  solvers::VectorXDecisionVariable lambda_f_;
+  solvers::VectorXDecisionVariable gamma_;
+  solvers::VectorXDecisionVariable z_n_;
+  solvers::VectorXDecisionVariable z_f_;
+  solvers::VectorXDecisionVariable z_gamma_;
 
-  LinearConstraint* bounds_delta_q_{nullptr};
-  LinearConstraint* bounds_gamma_{nullptr};
-  LinearConstraint* bounds_lambda_n_{nullptr};
-  LinearConstraint* bounds_lambda_f_{nullptr};
-
-  LinearEqualityConstraint* force_balance_{nullptr};
-
-  LinearConstraint* non_penetration_{nullptr};
-  LinearConstraint* coulomb_friction1_{nullptr};
-  LinearConstraint* coulomb_friction2_{nullptr};
-  LinearConstraint* non_penetration_complementary_{nullptr};
-  LinearConstraint* coulomb_friction1_complementary_{nullptr};
-  LinearConstraint* coulomb_friction2_complementary_{nullptr};
-  LinearConstraint* decision_variables_complementary_{nullptr};
+  solvers::LinearConstraint* bounds_delta_q_{nullptr};
+  solvers::LinearConstraint* bounds_gamma_{nullptr};
+  solvers::LinearConstraint* bounds_lambda_n_{nullptr};
+  solvers::LinearConstraint* bounds_lambda_f_{nullptr};
+  solvers::LinearEqualityConstraint* force_balance_{nullptr};
+  solvers::LinearConstraint* non_penetration_{nullptr};
+  solvers::LinearConstraint* coulomb_friction1_{nullptr};
+  solvers::LinearConstraint* coulomb_friction2_{nullptr};
+  solvers::LinearConstraint* non_penetration_complementary_{nullptr};
+  solvers::LinearConstraint* coulomb_friction1_complementary_{nullptr};
+  solvers::LinearConstraint* coulomb_friction2_complementary_{nullptr};
+  solvers::LinearConstraint* decision_variables_complementary_{nullptr};
 
   solvers::QuadraticCost* objective_{nullptr};
 
-  void StepForward(const MatrixXd& Wn, const MatrixXd& Wf, const MatrixXd& Jn,
-                   const MatrixXd& Jf, const MatrixXd& U, const MatrixXd& E,
-                   const VectorXd& phi, const VectorXd& f,
-                   const VectorXd& qa_dot_d) const;
+  void StepForward(
+      const drake::MatrixX<Scalar>& Wn, const drake::MatrixX<Scalar>& Wf,
+      const drake::MatrixX<Scalar>& Jn, const drake::MatrixX<Scalar>& Jf,
+      const drake::MatrixX<Scalar>& U, const drake::MatrixX<Scalar>& E,
+      const drake::VectorX<Scalar>& phi, const drake::VectorX<Scalar>& f,
+      const drake::VectorX<Scalar>& qa_dot_d) const;
 };
 
 }  // namespace manipulation

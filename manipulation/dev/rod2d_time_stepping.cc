@@ -32,10 +32,9 @@ namespace rod2d {
 
 const char* kUrdfPath = "drake/manipulation/dev/rod2d.urdf";
 
-class Rod2DTimeStepping : public manipulation::QuasistaticSystem {
+class Rod2DTimeStepping : public manipulation::QuasistaticSystem<double> {
  public:
-  Rod2DTimeStepping(const double period_sec, const bool is_analytic,
-                    const double mu = 0.6, const double kBigM = 1);
+  Rod2DTimeStepping();
 
  private:
   void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double> &cache,
@@ -48,27 +47,24 @@ class Rod2DTimeStepping : public manipulation::QuasistaticSystem {
   const double r_ = 0.01;
   const double l_ = 0.5;
 
-  static const std::vector<int> fixed_base_positions;
-  static const std::vector<int> fixed_base_velocities;
-  static const std::vector<int> idx_unactuated_bodies;
-  static const std::vector<bool> is_contact_2d;
-  static const int idx_base;
+  static QuasistaticSystemOptions InitializeOptions();
 };
 
-// definition of static varaibles.
-const std::vector<int> Rod2DTimeStepping::fixed_base_positions = {3};   // roll
-const std::vector<int> Rod2DTimeStepping::fixed_base_velocities = {3};  // roll
-const std::vector<int> Rod2DTimeStepping::idx_unactuated_bodies = {3};  // rod
-const int Rod2DTimeStepping::idx_base = 3;
-const std::vector<bool> Rod2DTimeStepping::is_contact_2d = {false, false, true,
-                                                            true};
+QuasistaticSystemOptions Rod2DTimeStepping::InitializeOptions() {
+  QuasistaticSystemOptions options;
+  options.period_sec = 0.05;
+  options.idx_unactuated_bodies = {3};
+  options.idx_base = 3;
+  options.fixed_base_positions = {3};
+  options.fixed_base_velocities = {3};
+  options.is_contact_2d = {false, false, true, true};
+  options.mu = 0.6;
+  return options;
+}
 
-Rod2DTimeStepping::Rod2DTimeStepping(const double period_sec,
-                                     const bool is_analytic, const double mu,
-                                     const double kBigM)
-    : QuasistaticSystem(period_sec, idx_unactuated_bodies, idx_base,
-                        fixed_base_positions, fixed_base_velocities,
-                        is_contact_2d, mu, kBigM, is_analytic) {
+
+Rod2DTimeStepping::Rod2DTimeStepping()
+    : QuasistaticSystem(InitializeOptions()) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree_.get());
   Initialize();
@@ -89,7 +85,7 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
   VectorXd & phi = *phi_ptr;
 
   const int nq_tree = tree_->get_num_positions();
-  auto q = getQuasistaticSystemStatesFromRigidBodyTreePositions(cache);
+  auto q = GetQuasistaticSystemStatesFromRigidBodyTreePositions(cache);
   const double qa_l = q(0);
   const double yc = q(2);
   const double zc = q(3);
@@ -136,9 +132,7 @@ int do_main() {
   systems::DiagramBuilder<double> builder;
 
   // Initialize Rod2D quasistatic system.
-  const double h = 0.05;  // time step
-  const bool is_analytic = false;
-  auto rod2d = builder.AddSystem<Rod2DTimeStepping>(h, is_analytic);
+  auto rod2d = builder.AddSystem<Rod2DTimeStepping>();
   // Initrialize RigidBodyTree from rod2d.urdf.
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -159,7 +153,6 @@ int do_main() {
   const int n_states = tree->get_num_positions() + tree->get_num_velocities();
   MatrixXd D(n_states, n1);
   D.setIdentity();
-  // cout << "D\n" << D << endl;
   // Last four rows correspond to velocity and are set to zero because
   // drake_visualizer ignores them anyway.
   auto gain = builder.AddSystem<systems::MatrixGain>(D);
@@ -209,9 +202,10 @@ int do_main() {
   x0.SetAtIndex(5, M_PI / 6);  // yaw
 
   simulator.set_target_realtime_rate(1);
+  const double h = rod2d->get_period_sec();
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
-  simulator.StepTo(h * 150);
+  simulator.StepTo(7.5);
   cout << "done stepping" << endl;
 
   // test if the final system state is reasonable.
@@ -226,16 +220,6 @@ int do_main() {
   cout << "error: " << error << endl;
   DRAKE_DEMAND(error < 1e-3);
 
-  // write log to a file
-
-  // std::ofstream s;
-  // s.open("log.txt");
-  // cout << "DATA" << endl;
-  // cout << log_state->data() << endl;
-
-  // cout << "TIME" << endl;
-  // cout << log_state->sample_times() << endl;
-  // s.close();
 
   return 0;
 }
