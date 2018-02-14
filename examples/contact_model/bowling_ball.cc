@@ -76,8 +76,6 @@ DEFINE_string(simulation_type, "compliant", "The type of simulation to use: "
 DEFINE_double(dt, 1e-3, "The step size to use for "
               "'simulation_type=timestepping' (ignored for "
               "'simulation_type=compliant'");
-// This facilitates running a binary in Clion's debugger.
-DEFINE_bool(gtest_color, false, "Ignored");
 
 // Bowling ball rolled down a conceptual lane to strike pins.
 int main() {
