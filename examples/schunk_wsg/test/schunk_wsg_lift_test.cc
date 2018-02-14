@@ -345,7 +345,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   grip_force_source->set_name("grip_force_source");
   auto wsg_controller =
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgPlainController>(
-          manipulation::schunk_wsg::ControlMode::kForce);
+          manipulation::schunk_wsg::ControlMode::kForce, false /*limit_force*/);
   wsg_controller->set_name("wsg_controller");
   builder.Connect(grip_force_source->get_output_port(),
                   wsg_controller->get_feed_forward_force_input_port());
@@ -391,15 +391,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
   systems::Simulator<double> simulator(*model);
 
-  // Fix the gripper max force.
-  model
-      ->GetMutableSubsystemContext(*wsg_controller,
-                                   &simulator.get_mutable_context())
-      .FixInputPort(wsg_controller->get_max_force_input_port().get_index(),
-                    BasicVector<double>::Make({100}) /*max force*/);
-
   const RigidBodyTreed& tree = plant->get_rigid_body_tree();
-
   Context<double>& context = simulator.get_mutable_context();
 
   // Open the gripper.
