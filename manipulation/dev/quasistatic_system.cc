@@ -24,14 +24,6 @@ using std::sin;
 const double kInfinity = std::numeric_limits<double>::infinity();
 
 template <typename T>
-void print_stl_vector(const std::vector<T>& v) {
-  for (const T& i : v) {
-    cout << i << " ";
-  }
-  cout << endl;
-}
-
-template <typename T>
 bool IsInStlVector(T element, const std::vector<T>& v) {
   bool result = false;
   for (auto i : v) {
@@ -221,21 +213,6 @@ void QuasistaticSystem<Scalar>::Initialize() {
   } else {
     DRAKE_ASSERT(nu_ == n_vu_);
   }
-
-  cout << "idx_body_unactuated\n";
-  print_stl_vector(idx_unactuated_bodies_);
-  cout << "idx_body_actuated\n";
-  print_stl_vector(idx_actuated_bodies);
-  cout << "idx_qu:\n";
-  print_stl_vector(idx_qu_);
-  cout << "idx_vu:\n";
-  print_stl_vector(idx_vu_);
-  cout << "idx_qa:\n";
-  print_stl_vector(idx_qa_);
-  cout << "idx_qa_in_q\n";
-  print_stl_vector(idx_qa_in_q_);
-  cout << "idx_qu_in_q\n";
-  print_stl_vector(idx_qu_in_q_);
 
   // initialize mathematical program
   prog_.reset(new solvers::MathematicalProgram());
@@ -681,22 +658,13 @@ void QuasistaticSystem<Scalar>::StepForward(
       (MatrixX<Scalar>(n_vu_, nc_ + nd_) << Wn, Wf).finished(),
       -f * period_sec_);
 
-  // lower bound on contact forces (impulses) by adding springs.
-  // This is the mechanically correct way to lower bound normal forces, but
-  // it seems to be numerically bad.
-  /*
-  const Scalar K = 1e4;
-  prog.AddLinearConstraint(
-      (MatrixX<Scalar>(nc_, nu_ + nc_) << -Jn_q.leftCols(nu_),
-       -1 / K * MatrixX<Scalar>::Identity(nc_, nc_))
-          .finished(),
-      -VectorX<Scalar>::Constant(nc_, std::numeric_limits<Scalar>::infinity()),
-      phi + Jn_q.rightCols(na_) * qa_dot_d, {delta_q.head(nu_), lambda_n});
-  */
+  // Lower bound on contact forces (impulses) can be added by adding
+  // "springs" at contact points. This is the mechanically correct way to
+  // lower bound normal forces, but it seems to be numerically bad.
 
-  // lower bound on contact forces (impulses) by looking at
+  // Instead, lower bounds are added by looking at
   // "hypothetical penetration" from the previous time step. Less elegant but
-  // numerically more stable.
+  // numerically better.
   const Scalar kEpsilon = 1e-6;
   VectorX<Scalar> lb_lambda_n(nc_);
   lb_lambda_n.setZero();
@@ -812,7 +780,6 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
   VectorX<Scalar> f = CalcExternalGeneralizedForce(&cache);
   f /= f.norm();  // normalize f, which generally makes kBigM smaller.
 
-  // cout << "E\n" << E << endl;
   DRAKE_DEMAND(Wn.rows() == n_vu_);
   DRAKE_DEMAND(Wn.cols() == nc_);
   DRAKE_DEMAND(Wf.rows() == n_vu_);
