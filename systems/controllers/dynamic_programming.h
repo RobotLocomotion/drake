@@ -32,7 +32,15 @@ struct DynamicProgrammingOptions {
   /// threshold.
   double convergence_tol = 1e-4;
 
-  // TODO(russt): Add visualization callback
+  /// If callable, this method is invoked during each major iteration of the
+  /// dynamic programming algorithm, in order to facilitate e.g. graphical
+  /// inspection/debugging of the results.  Note: the first call happens at
+  /// iteration 1 (after the value iteration has run once), not zero.
+  std::function<void(int iteration,
+                     const math::BarycentricMesh<double>& state_mesh,
+                     const Eigen::RowVectorXd& cost_to_go,
+                     const Eigen::MatrixXd& policy)>
+      visualization_callback{nullptr};
 };
 
 /// Implements Fitted Value Iteration on a (triangulated) Barycentric Mesh,
@@ -75,8 +83,7 @@ FittedValueIteration(
     // as integrator params, etc.
     const std::function<double(const Context<double>& context)>& cost_function,
     const math::BarycentricMesh<double>::MeshGrid& state_grid,
-    const math::BarycentricMesh<double>::MeshGrid& input_grid,
-    double timestep,
+    const math::BarycentricMesh<double>::MeshGrid& input_grid, double timestep,
     const DynamicProgrammingOptions& options = DynamicProgrammingOptions());
 
 // TODO(russt): Handle the specific case where system is control affine and the

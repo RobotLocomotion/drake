@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/text_logging.h"
+#include "drake/math/wrap_to.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
@@ -16,8 +17,8 @@ FittedValueIteration(
     Simulator<double>* simulator,
     const std::function<double(const Context<double>& context)>& cost_function,
     const math::BarycentricMesh<double>::MeshGrid& state_grid,
-    const math::BarycentricMesh<double>::MeshGrid& input_grid,
-    double timestep, const DynamicProgrammingOptions& options) {
+    const math::BarycentricMesh<double>::MeshGrid& input_grid, double timestep,
+    const DynamicProgrammingOptions& options) {
   // TODO(russt): handle discrete state.
   const auto& system = simulator->get_system();
   auto& context = simulator->get_mutable_context();
@@ -87,10 +88,9 @@ FittedValueIteration(
 
         for (int dim :
              options.state_indices_with_periodic_boundary_conditions) {
-          const double lower = *state_grid[dim].begin();
-          const double upper = *state_grid[dim].rbegin();
-          state_vec[dim] =
-              std::fmod(state_vec[dim] - lower, upper - lower) + lower;
+          const double low = *state_grid[dim].begin();
+          const double high = *state_grid[dim].rbegin();
+          state_vec[dim] = math::wrap_to(state_vec[dim], low, high);
         }
 
         state_mesh.EvalBarycentricWeights(state_vec, &Tind_tmp, &T_tmp);
@@ -104,39 +104,42 @@ FittedValueIteration(
   // Perform value iteration loop.
   Eigen::RowVectorXd J = Eigen::RowVectorXd::Zero(num_states);
   Eigen::RowVectorXd Jnext(num_states);
-  Eigen::RowVectorXi Pi(num_states);
+  Eigen::MatrixXd Pi(input_mesh.get_input_size(), num_states);
 
   double max_diff = std::numeric_limits<double>::infinity();
+  int iteration = 0;
   while (max_diff > options.convergence_tol) {
     for (int state = 0; state < num_states; state++) {
       Jnext(state) = std::numeric_limits<double>::infinity();
 
+      int best_input = 0;
       for (int input = 0; input < num_inputs; input++) {
         // Q(x,u) = g(x,u) + γ J(f(x,u)).
         double Q = cost[input](state);
         for (int index = 0; index < num_state_indices; index++) {
           Q += options.discount_factor * T[input](index, state) *
-                    J(Tind[input](index, state));
+               J(Tind[input](index, state));
         }
         // Cost-to-go: J = minᵤ Q(x,u).
         // Policy:  π(x) = argminᵤ Q(x,u).
         if (Q < Jnext(state)) {
           Jnext(state) = Q;
-          Pi(state) = input;
+          best_input = input;
         }
       }
+      Pi.col(state) = input_mesh.get_mesh_point(best_input);
     }
     max_diff = (J - Jnext).lpNorm<Eigen::Infinity>();
     J = Jnext;
+    iteration++;
+    if (options.visualization_callback) {
+      options.visualization_callback(iteration, state_mesh, J, Pi);
+    }
   }
 
   // Create the policy.
-  Eigen::MatrixXd policy_values(input_mesh.get_input_size(), num_states);
-  for (int state = 0; state < num_states; state++) {
-    policy_values.col(state) = input_mesh.get_mesh_point(Pi(state));
-  }
-  auto policy = std::make_unique<BarycentricMeshSystem<double>>(state_mesh,
-                                                                policy_values);
+  auto policy = std::make_unique<BarycentricMeshSystem<double>>(state_mesh, Pi);
+
   return std::make_pair(std::move(policy), J);
 }
 
