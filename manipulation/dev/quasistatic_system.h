@@ -53,7 +53,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   // Jn: Jacobian corresponding to normal velocities.
   // Jf: Jacobian corresponding to tangent velocities.
   // phi: vector of signed distance functions for all contact pairs.
-  
+
   void CalcJf(const KinematicsCache<Scalar>& cache,
               const Eigen::Ref<const MatrixX<Scalar>>& Jf_half,
               MatrixX<Scalar>* const Jf_ptr) const;
