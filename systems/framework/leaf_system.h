@@ -44,9 +44,9 @@ template <typename T>
 static T GetNextSampleTime(
     const PeriodicEventData& attribute,
     const T& current_time_sec) {
-  const double period = attribute.period_sec;
+  const double period = attribute.period_sec();
   DRAKE_ASSERT(period > 0);
-  const double offset = attribute.offset_sec;
+  const double offset = attribute.offset_sec();
   DRAKE_ASSERT(offset >= 0);
 
   // If the first sample time hasn't arrived yet, then that is the next
@@ -605,8 +605,8 @@ class LeafSystem : public System<T> {
                   "EventType must be a subclass of Event<T>.");
     EventType event(Event<T>::TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
-    periodic_data.period_sec = period_sec;
-    periodic_data.offset_sec = offset_sec;
+    periodic_data.set_period_sec(period_sec);
+    periodic_data.set_offset_sec(offset_sec);
     event.set_event_data(std::make_unique<PeriodicEventData>(periodic_data));
     periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
   }
@@ -630,8 +630,8 @@ class LeafSystem : public System<T> {
       const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPeriodic);
     PeriodicEventData periodic_data;
-    periodic_data.period_sec = period_sec;
-    periodic_data.offset_sec = offset_sec;
+    periodic_data.set_period_sec(period_sec);
+    periodic_data.set_offset_sec(offset_sec);
     periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
   }
 

@@ -42,8 +42,8 @@ class TestSystem : public LeafSystem<T> {
     optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
-    EXPECT_EQ(periodic_attr.value().period_sec, period);
-    EXPECT_EQ(periodic_attr.value().offset_sec, offset);
+    EXPECT_EQ(periodic_attr.value().period_sec(), period);
+    EXPECT_EQ(periodic_attr.value().offset_sec(), offset);
   }
 
   void AddPeriodicUpdate(double period) {
@@ -52,8 +52,8 @@ class TestSystem : public LeafSystem<T> {
     optional<PeriodicEventData> periodic_attr =
        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
-    EXPECT_EQ(periodic_attr.value().period_sec, period);
-    EXPECT_EQ(periodic_attr.value().offset_sec, offset);
+    EXPECT_EQ(periodic_attr.value().period_sec(), period);
+    EXPECT_EQ(periodic_attr.value().offset_sec(), offset);
   }
 
   void AddPeriodicUpdate(double period, double offset) {

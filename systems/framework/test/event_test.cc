@@ -11,17 +11,17 @@ GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
 
   // Create two periodic event data objects.
   PeriodicEventData d1, d2;
-  d1.period_sec = 0;
-  d1.offset_sec = 0;
-  d2.period_sec = 0;
-  d2.offset_sec = 1;
+  d1.set_period_sec(0);
+  d1.set_offset_sec(0);
+  d2.set_period_sec(0);
+  d2.set_offset_sec(1);
 
   // Case 1: both period_sec's equal (d1's offset is less than d2's).
   EXPECT_TRUE(comparator(d1, d2));
 
   // Case 2: d1's period is greater than d2's period (but d2's offset is
   // greater than d1's offset).
-  d1.period_sec = 1e-8;
+  d1.set_period_sec(1e-8);
   EXPECT_FALSE(comparator(d1, d2));
 
   // Case 3: d1's period is less than d2's period (but d2's offset is

@@ -815,22 +815,22 @@ class Diagram : public System<T>,
     DRAKE_DEMAND(data);
 
     // Get the vector of events corresponding to the subsystem.
-    const System<T>& subsystem = data->triggered_witness->get_system();
+    const System<T>& subsystem = data->triggered_witness()->get_system();
     CompositeEventCollection<T>& subevents =
         GetMutableSubsystemCompositeEventCollection(subsystem, events);
 
     // Get the continuous states at both window endpoints.
     auto diagram_xc0 = dynamic_cast<const DiagramContinuousState<T>*>(
-        data->xc0);
+        data->xc0());
     DRAKE_DEMAND(diagram_xc0 != nullptr);
     auto diagram_xcf = dynamic_cast<const DiagramContinuousState<T>*>(
-        data->xcf);
+        data->xcf());
     DRAKE_DEMAND(diagram_xcf != nullptr);
 
     // Modify the pointer to the event data to point to the sub-system
     // continuous states.
-    data->xc0 = DoGetTargetSystemContinuousState(subsystem, diagram_xc0);
-    data->xcf = DoGetTargetSystemContinuousState(subsystem, diagram_xcf);
+    data->set_xc0(DoGetTargetSystemContinuousState(subsystem, diagram_xc0));
+    data->set_xcf(DoGetTargetSystemContinuousState(subsystem, diagram_xcf));
 
     // Add the event to the collection.
     event->add_to_composite(&subevents);

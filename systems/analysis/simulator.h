@@ -851,6 +851,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
       auto& event = witness_function_events_[fn];
       if (!event) {
         event = fn->get_event()->Clone();
+        event->set_trigger_type(Event<T>::TriggerType::kWitness);
         event->set_event_data(std::unique_ptr<WitnessTriggeredEventData<T>>(
             new WitnessTriggeredEventData<T>));
       }
@@ -858,11 +859,11 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
       // Populate the event data.
       auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
           event->get_mutable_event_data());
-      event_data->triggered_witness = fn;
-      event_data->t0 = t0;
-      event_data->tf = tf;
-      event_data->xc0 = event_handler_xc_.get();
-      event_data->xcf = &context_->get_continuous_state();
+      event_data->set_triggered_witness(fn);
+      event_data->set_t0(t0);
+      event_data->set_tf(tf);
+      event_data->set_xc0(event_handler_xc_.get());
+      event_data->set_xcf(&context_->get_continuous_state());
       system.AddTriggeredWitnessFunctionToCompositeEventCollection(
           event.get(),
           events);

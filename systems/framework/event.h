@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -48,28 +49,34 @@ class EventData {
  */
 class PeriodicEventData : public EventData {
  public:
-  /**
-   * The period with which this event should recur.
-   */
-  double period_sec{0.0};
-  /**
-   * The time after zero when this event should first occur.
-   */
-  double offset_sec{0.0};
+  /// Gets the period with which this event should recur.
+  double period_sec() const { return period_sec_; }
+
+  /// Sets the period with which this event should recur.
+  void set_period_sec(double period_sec) { period_sec_ = period_sec; }
+
+  /// Gets the time after zero when this event should first occur.
+  double offset_sec() const { return offset_sec_; }
+
+  /// Sets the time after zero when this event should first occur.
+  void set_offset_sec(double offset_sec) { offset_sec_ = offset_sec; }
 
  private:
   EventData* DoClone() const override {
     PeriodicEventData* clone = new PeriodicEventData;
-    clone->period_sec = period_sec;
-    clone->offset_sec = offset_sec;
+    clone->period_sec_ = period_sec_;
+    clone->offset_sec_ = offset_sec_;
     return clone;
   }
+
+  double period_sec_{0.0};
+  double offset_sec_{0.0};
 };
 
 /**
  * Class for storing data from a witness function triggering to be passed
  * to event handlers. A witness function isolates the time to a (typically
- * small) window during which the witness function crosses zero. The time at
+ * small) window during which the witness function crosses zero. The time and
  * state at both sides of this window are passed to the event handler so that
  * the system can precisely determine the reason that the witness function
  * triggered.
@@ -77,34 +84,62 @@ class PeriodicEventData : public EventData {
 template <class T>
 class WitnessTriggeredEventData : public EventData {
  public:
-  /// The witness function that triggered the event handler.
-  const WitnessFunction<T>* triggered_witness{nullptr};
+  /// Gets the witness function that triggered the event handler.
+  const WitnessFunction<T>* triggered_witness() const {
+    return triggered_witness_; }
 
-  /// The time at the left end of the window. Default is -1 (which notes that
-  /// the value is invalid).
-  T t0{-1};
+  /// Sets the witness function that triggered the event handler.
+  void set_triggered_witness(const WitnessFunction<T>* triggered_witness) {
+    triggered_witness_ = triggered_witness; }
 
-  /// The time at the right end of the window. Note that `tf` must be larger
-  /// than `t0`.
-  T tf{-1};
+  /// Gets the time at the left end of the window. Default is NaN (which
+  /// indicates that the value is invalid).
+  const T& t0() const { return t0_; }
 
-  /// A pointer to the continuous state at the left end of the isolation window.
-  const ContinuousState<T>* xc0{nullptr};
+  /// Sets the time at the left end of the window. Note that `t0` should be
+  /// smaller than `tf` after both values are set.
+  void set_t0(const T& t0) { t0_ = t0; }
 
-  /// A pointer to the continuous state at the right end of the isolation
+  /// Gets the time at the right end of the window. Default is NaN (which
+  /// indicates that the value is invalid).
+  const T& tf() const { return tf_; }
+
+  /// Sets the time at the right end of the window. Note that `tf` should be
+  /// larger than `t0` after both values are set.
+  void set_tf(const T& tf) { tf_ = tf; }
+
+  /// Gets a pointer to the continuous state at the left end of the isolation
   /// window.
-  const ContinuousState<T>* xcf{nullptr};
+  const ContinuousState<T>* xc0() const { return xc0_; }
+
+  /// Sets a pointer to the continuous state at the left end of the isolation
+  /// window.
+  void set_xc0(const ContinuousState<T>* xc0) { xc0_ = xc0; }
+
+  /// Gets a pointer to the continuous state at the right end of the isolation
+  /// window.
+  const ContinuousState<T>* xcf() const { return xcf_; }
+
+  /// Sets a pointer to the continuous state at the right end of the isolation
+  /// window.
+  void set_xcf(const ContinuousState<T>* xcf) { xcf_ = xcf; }
 
  private:
   EventData* DoClone() const override {
     WitnessTriggeredEventData<T>* clone = new WitnessTriggeredEventData;
-    clone->triggered_witness = triggered_witness;
-    clone->t0 = t0;
-    clone->tf = tf;
-    clone->xc0 = xc0;
-    clone->xcf = xcf;
+    clone->triggered_witness_ = triggered_witness_;
+    clone->t0_ = t0_;
+    clone->tf_ = tf_;
+    clone->xc0_ = xc0_;
+    clone->xcf_ = xcf_;
     return clone;
   }
+
+  const WitnessFunction<T>* triggered_witness_{nullptr};
+  T t0_{std::numeric_limits<double>::quiet_NaN()};
+  T tf_{std::numeric_limits<double>::quiet_NaN()};
+  const ContinuousState<T>* xc0_{nullptr};
+  const ContinuousState<T>* xcf_{nullptr};
 };
 
 /**
@@ -120,6 +155,8 @@ class WitnessTriggeredEventData : public EventData {
 template <typename T>
 class Event {
  public:
+  /// Constructs an Event with no trigger type and no event data.
+  Event() { trigger_type_ = TriggerType::kUnknown; }
   void operator=(const Event&) = delete;
   Event(Event&&) = delete;
   void operator=(Event&&) = delete;
@@ -224,12 +261,17 @@ class Event {
    */
   EventData* get_mutable_event_data() { return event_data_.get(); }
 
-  /**
-   * Sets and transfers the ownership of @p data.
-   */
+  // Note: Users should not be calling this.
+  #if !defined(DRAKE_DOXYGEN_CXX)
+  // Sets the trigger type.
+  void set_trigger_type(const TriggerType trigger_type) {
+    trigger_type_ = trigger_type; }
+
+  // Sets and transfers the ownership of @p data.
   void set_event_data(std::unique_ptr<EventData> data) {
     event_data_ = std::move(data);
   }
+  #endif
 
   /**
    * Adds `this` event to the event collection @p events. See derived
@@ -243,10 +285,11 @@ class Event {
       set_event_data(other.event_data_->Clone());
   }
 
-  /**
-   * Constructs an Event with the specified @p trigger.
-   */
+  // Note: Users should not be calling this.
+  #if !defined(DRAKE_DOXYGEN_CXX)
+  /// Constructs an Event with the specified @p trigger.
   explicit Event(const TriggerType& trigger) : trigger_type_(trigger) {}
+  #endif
 
   /**
    * Derived classes must implement this method to clone themselves. Any
@@ -256,7 +299,7 @@ class Event {
   virtual Event* DoClone() const = 0;
 
  private:
-  const TriggerType trigger_type_;
+  TriggerType trigger_type_;
   std::unique_ptr<EventData> event_data_{nullptr};
 };
 
@@ -265,9 +308,9 @@ class Event {
 struct PeriodicEventDataComparator {
   bool operator()(const PeriodicEventData& a,
     const PeriodicEventData& b) const {
-      if (a.period_sec == b.period_sec)
-        return a.offset_sec < b.offset_sec;
-      return a.period_sec < b.period_sec;
+      if (a.period_sec() == b.period_sec())
+        return a.offset_sec() < b.offset_sec();
+      return a.period_sec() < b.period_sec();
   }
 };
 
@@ -290,20 +333,23 @@ class PublishEvent final : public Event<T> {
   typedef std::function<void(const Context<T>&, const PublishEvent<T>&)>
       PublishCallback;
 
-  /**
-   * Makes a PublishEvent with @p trigger_type, no optional data, and
-   * callback function @p callback, which can be null.
-   */
+  /// Makes a PublishEvent with no trigger type, no event data, and
+  /// no specified callback function.
+  PublishEvent() : Event<T>() {}
+
+  // Note: Users should not be calling these.
+  #if !defined(DRAKE_DOXYGEN_CXX)
+  // Makes a PublishEvent with `trigger_type`, no event data, and
+  // callback function `callback`, which can be null.
   PublishEvent(const typename Event<T>::TriggerType& trigger_type,
                PublishCallback callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
-  /**
-   * Makes a PublishEvent with @p trigger_type, no optional data, and
-   * no specified callback function.
-   */
+  // Makes a PublishEvent with `trigger_type`, no event data, and
+  // no specified callback function.
   explicit PublishEvent(const typename Event<T>::TriggerType& trigger_type)
       : Event<T>(trigger_type) {}
+  #endif
 
   /**
    * Assuming that @p events is not null, this function makes a deep copy of
@@ -355,22 +401,25 @@ class DiscreteUpdateEvent final : public Event<T> {
                              DiscreteValues<T>*)>
       DiscreteUpdateCallback;
 
-  /**
-   * Makes a DiscreteUpdateEvent with @p trigger_type with no optional data and
-   * the callback function @p callback.
-   * @p callback can be null.
-   */
+  /// Makes a DiscreteUpdateEvent with no trigger type, no event data, and
+  /// no specified callback function.
+  DiscreteUpdateEvent() : Event<T>() {}
+
+  // Note: Users should not be calling these.
+  #if !defined(DRAKE_DOXYGEN_CXX)
+  // Makes a DiscreteUpdateEvent with `trigger_type` with no event data and
+  // the callback function `callback`.
+  // `callback` can be null.
   DiscreteUpdateEvent(const typename Event<T>::TriggerType& trigger_type,
                       DiscreteUpdateCallback callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
-  /**
-   * Makes a DiscreteUpdateEvent with @p trigger_type with no optional data and
-   * no specified callback function.
-   */
+  // Makes a DiscreteUpdateEvent with @p trigger_type with no event data and
+  // no specified callback function.
   explicit DiscreteUpdateEvent(
       const typename Event<T>::TriggerType& trigger_type)
       : DiscreteUpdateEvent(trigger_type, nullptr) {}
+  #endif
 
   /**
    * Assuming that @p events is not null, this function makes a deep copy of
@@ -425,21 +474,24 @@ class UnrestrictedUpdateEvent final : public Event<T> {
                              const UnrestrictedUpdateEvent<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
 
-  /**
-   * Makes an UnrestrictedUpdateEvent with @p trigger_type and callback function
-   * @p callback. @p callback can be null.
-   */
+  /// Makes an UnrestrictedUpdateEvent with no trigger type, no event data, and
+  /// no specified callback function.
+  UnrestrictedUpdateEvent() : Event<T>() {}
+
+  // Note: Users should not be calling these.
+  #if !defined(DRAKE_DOXYGEN_CXX)
+  // Makes an UnrestrictedUpdateEvent with `trigger_type` and callback function
+  // `callback`. `callback` can be null.
   UnrestrictedUpdateEvent(const typename Event<T>::TriggerType& trigger_type,
                           UnrestrictedUpdateCallback callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
-  /**
-   * Makes an UnrestrictedUpateEvent with @p trigger_type, no optional data, and
-   * no callback function.
-   */
+  // Makes an UnrestrictedUpateEvent with @p trigger_type, no optional data, and
+  // no callback function.
   explicit UnrestrictedUpdateEvent(
       const typename Event<T>::TriggerType& trigger_type)
       : UnrestrictedUpdateEvent(trigger_type, nullptr) {}
+  #endif
 
   /**
    * Assuming that @p events is not null, this function makes a deep copy of

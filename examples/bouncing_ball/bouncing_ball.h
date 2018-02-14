@@ -30,7 +30,7 @@ template <typename T>
 class BouncingBall : public systems::LeafSystem<T> {
  public:
   BouncingBall() {
-    // Two state variables: x and v.
+    // Two state variables: q and v.
     this->DeclareContinuousState(1, 1, 0);
 
     // The state of the system is output.
@@ -51,7 +51,7 @@ class BouncingBall : public systems::LeafSystem<T> {
 
  private:
   // A witness function to determine when the bouncing ball crosses the
-  // boundary x = 0 from x > 0. Note that the witness function only triggers
+  // boundary q = 0 from q > 0. Note that the witness function only triggers
   // when the signed distance is positive at the left hand side of an interval
   // (via WitnessFunctionDirection::kPositiveThenNonPositive). An "unrestricted
   // update" event is necessary to change the velocity of the system
@@ -62,8 +62,7 @@ class BouncingBall : public systems::LeafSystem<T> {
         systems::WitnessFunction<T>(
             system,
             systems::WitnessFunctionDirection::kPositiveThenNonPositive,
-            std::make_unique<systems::UnrestrictedUpdateEvent<T>>(
-                systems::Event<T>::TriggerType::kWitness)) {}
+            std::make_unique<systems::UnrestrictedUpdateEvent<T>>()) {}
     ~SignedDistanceWitnessFunction() override {}
 
    private:
@@ -127,7 +126,7 @@ class BouncingBall : public systems::LeafSystem<T> {
 
     // Update the velocity.
     next_cstate.SetAtIndex(
-        1, cstate.GetAtIndex(1) * this->restitution_coef_ * -1.);
+        1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
   }
 
   // The signed distance witness function is always active and, hence, always

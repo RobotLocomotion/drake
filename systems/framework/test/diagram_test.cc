@@ -155,8 +155,8 @@ class EmptySystemDiagram : public Diagram<double> {
 };
 
 void CheckPeriodAndOffset(const PeriodicEventData& data) {
-  EXPECT_EQ(data.period_sec, 1.125);
-  EXPECT_EQ(data.offset_sec, 2.25);
+  EXPECT_EQ(data.period_sec(), 1.125);
+  EXPECT_EQ(data.offset_sec(), 2.25);
 }
 
 // Tests whether the diagram exhibits the correct behavior for
