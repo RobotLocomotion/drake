@@ -192,6 +192,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "wrap_to",
+    srcs = [],
+    hdrs = ["wrap_to.h"],
+    deps = [
+        "//common:double",
+        "//common:essential",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -357,6 +367,13 @@ drake_cc_googletest(
         ":saturate",
         "//common:autodiff",
         "//common:symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wrap_to_test",
+    deps = [
+        ":wrap_to",
     ],
 )
 
