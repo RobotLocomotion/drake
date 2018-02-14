@@ -7,6 +7,9 @@
 ///
 /// When a plan is received, it will immediately begin executing that
 /// plan on the arm (replacing any plan in progress).
+///
+/// If a stop message is received, it will immediately discard the
+/// current plan and wait until a new plan is received.
 
 #include <iostream>
 #include <memory>
@@ -40,6 +43,7 @@ namespace {
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
+const char* const kLcmStopChannel = "STOP";
 const int kNumJoints = 7;
 
 typedef PiecewisePolynomial<double> PPType;
@@ -56,6 +60,8 @@ class RobotPlanRunner {
                     &RobotPlanRunner::HandleStatus, this);
     lcm_.subscribe(kLcmPlanChannel,
                     &RobotPlanRunner::HandlePlan, this);
+    lcm_.subscribe(kLcmStopChannel,
+                    &RobotPlanRunner::HandleStop, this);
   }
 
   void Run() {
@@ -95,6 +101,15 @@ class RobotPlanRunner {
 
         for (int joint = 0; joint < kNumJoints; joint++) {
           iiwa_command.joint_position[joint] = desired_next(joint);
+        }
+
+        if (stop_plan_) {
+          // Stop the robot from continuing the current plan and
+          // reset plan_ until it receives another one.
+          std::cout << "Stopping." << std::endl;
+          stop_plan_ = false;
+          plan_.reset();
+          continue;
         }
 
         lcm_.publish(kLcmCommandChannel, &iiwa_command);
@@ -159,11 +174,18 @@ class RobotPlanRunner {
     ++plan_number_;
   }
 
+  void HandleStop(const lcm::ReceiveBuffer*, const std::string&,
+                    const robotlocomotion::robot_plan_t*) {
+    std::cout << "Received stop command. Discarding plan" << std::endl;
+    stop_plan_ = true;
+  }
+
   lcm::LCM lcm_;
   const RigidBodyTree<double>& tree_;
   int plan_number_{};
   std::unique_ptr<PiecewisePolynomialTrajectory> plan_;
   lcmt_iiwa_status iiwa_status_;
+  bool stop_plan_{false};
 };
 
 int do_main() {
