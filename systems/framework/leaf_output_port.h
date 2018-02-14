@@ -133,11 +133,11 @@ class LeafOutputPort : public OutputPort<T> {
       const Context<T>& context) const final;
 
   // Invokes the supplied calculation function if present, otherwise complains.
-  void DoCalc(const Context<T>& context, AbstractValue* value) const final;
+  void DoEvaluate(const Context<T>& context, AbstractValue* value) const final;
 
   // Currently just invokes the supplied evaluation function if present,
   // otherwise complains.
-  // TODO(sherm1) Generate this automatically using the cache & DoCalc().
+  // TODO(sherm1) Generate this automatically using the cache & DoEvaluate().
   const AbstractValue& DoEval(const Context<T>& context) const final;
 
   AllocCallback alloc_function_;

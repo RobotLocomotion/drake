@@ -1354,10 +1354,10 @@ class System {
   }
 
   /// Evaluates a witness function at the given context.
-  T EvaluateWitness(const Context<T>& context,
-                    const WitnessFunction<T>& witness_func) const {
+  T CalcWitnessValue(const Context<T>& context,
+                     const WitnessFunction<T>& witness_func) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    return DoEvaluateWitness(context, witness_func);
+    return DoCalcWitnessValue(context, witness_func);
   }
 
   /// Add `event` to `events` due to a witness function triggering. `events`
@@ -1385,8 +1385,9 @@ class System {
  protected:
   /// Derived classes will implement this method to evaluate a witness function
   /// at the given context.
-  virtual T DoEvaluateWitness(const Context<T>& context,
-                              const WitnessFunction<T>& witness_func) const = 0;
+  virtual T DoCalcWitnessValue(
+      const Context<T>& context,
+      const WitnessFunction<T>& witness_func) const = 0;
 
   /// Derived classes can override this method to provide witness functions
   /// active at the beginning of a continuous time interval. The default

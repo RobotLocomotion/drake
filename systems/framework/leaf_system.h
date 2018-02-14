@@ -310,10 +310,10 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Implementations of System<T> methods.
 
-  T DoEvaluateWitness(const Context<T>& context,
-                      const WitnessFunction<T>& witness_func) const final {
+  T DoCalcWitnessValue(const Context<T>& context,
+                       const WitnessFunction<T>& witness_func) const final {
     DRAKE_DEMAND(this == &witness_func.get_system());
-    return witness_func.Evaluate(context);
+    return witness_func.CalcWitnessValue(context);
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
@@ -1357,24 +1357,6 @@ class LeafSystem : public System<T> {
       return;
     }
 
-    /*
-    // Find the minimum next sample time across all registered events, and
-    // the set of registered events that will occur at that time.
-    std::vector<const Event<T1>*> next_events;
-    for (const auto& event_pair : periodic_events_) {
-      const typename Event<T1>::PeriodicAttribute& attribute =
-          event_pair.first;
-      const Event<T>* const event = event_pair.second.get();
-      const T1 t = leaf_system_detail::GetNextSampleTime(
-          attribute, context.get_time());
-      if (t < min_time) {
-        min_time = t;
-        next_events = {event};
-      } else if (t == min_time) {
-        next_events.push_back(event);
-      }
-    }
-*/
     // Find the minimum next sample time across all registered events, and
     // the set of registered events that will occur at that time.
     std::vector<const Event<T1>*> next_events;

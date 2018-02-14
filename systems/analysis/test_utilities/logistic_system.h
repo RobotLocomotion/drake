@@ -29,7 +29,7 @@ class LogisticWitness : public systems::WitnessFunction<T> {
 
  protected:
   // The witness function is simply the state value itself.
-  T DoEvaluate(const Context<T>& context) const override {
+  T DoCalcWitnessValue(const Context<T>& context) const override {
     return context.get_continuous_state()[0];
   }
 };

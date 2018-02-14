@@ -344,9 +344,9 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
     // Simulate to dt.
     simulator.StepTo(dt);
 
-    // Evaluate the witness function.
+    // CalcWitnessValue the witness function.
     context.set_time(publish_time);
-    double new_eval = witness.front()->Evaluate(context);
+    double new_eval = witness.front()->CalcWitnessValue(context);
 
     // Verify that the new evaluation is closer to zero than the old one.
     EXPECT_LT(new_eval, eval);
@@ -374,9 +374,9 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
     system.GetWitnessFunctions(context, &witnesses);
     DRAKE_DEMAND(witnesses.size() == 2);
 
-    // Evaluate them.
-    double clock_eval = witnesses.front()->Evaluate(context);
-    double logistic_eval = witnesses.back()->Evaluate(context);
+    // CalcWitnessValue them.
+    double clock_eval = witnesses.front()->CalcWitnessValue(context);
+    double logistic_eval = witnesses.back()->CalcWitnessValue(context);
 
     // Store the one that evaluates closest to zero.
     if (std::abs(clock_eval) < std::abs(logistic_eval)) {
@@ -434,9 +434,9 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
     system.GetWitnessFunctions(context, &witnesses);
     DRAKE_DEMAND(witnesses.size() == 2);
 
-    // Evaluate them.
-    double w1 = witnesses.front()->Evaluate(context);
-    double w2 = witnesses.back()->Evaluate(context);
+    // CalcWitnessValue them.
+    double w1 = witnesses.front()->CalcWitnessValue(context);
+    double w2 = witnesses.back()->CalcWitnessValue(context);
 
     // Verify both are equivalent.
     EXPECT_EQ(w1, w2);

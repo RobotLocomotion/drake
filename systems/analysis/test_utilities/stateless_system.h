@@ -38,7 +38,7 @@ class ClockWitness : public WitnessFunction<T> {
 
  protected:
   // The witness function is the time value itself plus the offset value.
-  T DoEvaluate(const Context<T>& context) const override {
+  T DoCalcWitnessValue(const Context<T>& context) const override {
     return context.get_time() - trigger_time_;
   }
 

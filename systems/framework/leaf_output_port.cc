@@ -58,12 +58,12 @@ std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
 }
 
 template <typename T>
-void LeafOutputPort<T>::DoCalc(const Context<T>& context,
+void LeafOutputPort<T>::DoEvaluate(const Context<T>& context,
                                AbstractValue* value) const {
   if (calc_function_) {
     calc_function_(context, value);
   } else {
-    throw std::logic_error("LeafOutputPort::DoCalc(): " +
+    throw std::logic_error("LeafOutputPort::DoCalcWitnessValue(): " +
                            this->GetPortIdString() +
                            " had no calculation function available.");
   }

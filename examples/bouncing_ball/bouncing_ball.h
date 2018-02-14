@@ -68,7 +68,7 @@ class BouncingBall : public systems::LeafSystem<T> {
    private:
     // Returns the signed distance of the witness function from the halfspace
     // boundary.
-    T DoEvaluate(const systems::Context<T>& context) const override {
+    T DoCalcWitnessValue(const systems::Context<T>& context) const override {
       const systems::VectorBase<T>& xc = context.get_continuous_state_vector();
       return xc.GetAtIndex(0);
     }

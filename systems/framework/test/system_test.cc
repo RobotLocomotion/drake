@@ -98,8 +98,8 @@ class TestSystem : public System<double> {
     return updated_numbers_;
   }
 
-  double DoEvaluateWitness(const Context<double>&,
-                           const WitnessFunction<double>&) const override {
+  double DoCalcWitnessValue(const Context<double>&,
+                            const WitnessFunction<double>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }
@@ -434,8 +434,8 @@ class ValueIOTestSystem : public System<T> {
 
   ~ValueIOTestSystem() override {}
 
-  T DoEvaluateWitness(const Context<T>&,
-                      const WitnessFunction<T>&) const override {
+  T DoCalcWitnessValue(const Context<T>&,
+                       const WitnessFunction<T>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }

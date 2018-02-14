@@ -64,12 +64,13 @@ enum class WitnessFunctionDirection {
 ///                         0   if w(t₀, x(t₀)) = 0 or
 ///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) > 0
 /// </pre>
-/// where `x(tₑ)` for some `tₑ ≥ t₀` is the solution to the ODE or DAE initial
-/// value problem `ẋ = f(t, x)` for initial condition `x(t₀) = x₀` at time `tₑ`.
-/// We wish for the witness function to trigger if the trigger function
-/// evaluates to one. The trigger function can be further modified, if desired,
-/// to incorporate the constraint that the witness function should trigger only
-/// when crossing from positive values to negative values, or vice versa.
+/// where `x(tₑ)` indicates the solution to the ODE or DAE initial value problem
+/// `ẋ = f(t, x)` for initial condition `x(t₀) = x₀` and arbitrary desired end
+/// time `tₑ`. We wish for the witness function to trigger if the trigger
+/// function evaluates to one. The trigger function can be further modified, if
+/// desired, to incorporate the constraint that the witness function should
+/// trigger only when crossing from positive values to negative values, or vice
+/// versa.
 ///
 /// A good witness function should not cross zero repeatedly over a small
 /// interval of time (relative to the maximum designated integration step size)
@@ -94,24 +95,30 @@ class WitnessFunction {
 
   virtual ~WitnessFunction() {}
 
-  /// Constructs the witness function with the given direction type and no
-  /// event type.
+  /// Constructs the witness function with the pointer to the given non-null
+  /// System, with the given direction type, and with no event type.
+  /// @warning the pointer to the System must be valid as long or longer than
+  /// the lifetime of the witness function.
   WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype) :
-                  system_(system), dir_type_(dtype) {}
+                  system_(system), dir_type_(dtype) { DRAKE_DEMAND(system); }
 
-  /// Constructs the witness function with the given direction type and a
-  /// unique pointer to the event that is to be dispatched when this witness
-  /// function triggers. Example events are publish, discrete variable update,
-  /// unrestricted update events.
+  /// Constructs the witness function with the pointer to the given non-null
+  /// System, with the given direction type, and with a unique pointer to the
+  /// event that is to be dispatched when this witness function triggers.
+  /// Example events are publish, discrete variable update, unrestricted update
+  /// events.
   /// @tparam EventType a class derived from Event<T>
+  /// @warning the pointer to the System must be valid as long or longer than
+  /// the lifetime of the witness function.
   template <class EventType>
   WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype,
                   std::unique_ptr<EventType> e) :
                   system_(system), dir_type_(dtype) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
-        "EventType must be a descentdant of Event");
+        "EventType must be a descendant of Event");
+    DRAKE_DEMAND(system);
     event_ = std::move(e);
   }
 
@@ -126,7 +133,7 @@ class WitnessFunction {
   WitnessFunctionDirection get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
-  T Evaluate(const Context<T>& context) const;
+  T CalcWitnessValue(const Context <T>& context) const;
 
   /// Gets a reference to the System used by this witness function.
   const System<T>& get_system() const { return *system_; }
@@ -176,7 +183,7 @@ class WitnessFunction {
   /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
   /// @param context an already-validated Context
-  virtual T DoEvaluate(const Context<T>& context) const = 0;
+  virtual T DoCalcWitnessValue(const Context <T>& context) const = 0;
 
   // The name of this witness function.
   std::string name_;

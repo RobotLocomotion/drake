@@ -87,7 +87,8 @@ class DiagramOutputPort : public OutputPort<T> {
     return source_output_port_->Allocate(subcontext);
   }
 
-  void DoCalc(const Context<T>& context, AbstractValue* value) const final {
+  void DoEvaluate(
+      const Context<T>& context, AbstractValue* value) const final {
     const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Calc(subcontext, value);
   }
@@ -791,17 +792,19 @@ class Diagram : public System<T>,
   /// from @p context, passes the subcontext to @p witness_func' Evaulate
   /// method and returns the result. Aborts if the subsystem is not part of
   /// this Diagram.
-  T DoEvaluateWitness(const Context<T>& context,
-                      const WitnessFunction<T>& witness_func) const final {
+  T DoCalcWitnessValue(const Context<T>& context,
+                       const WitnessFunction<T>& witness_func) const final {
     const System<T>& system = witness_func.get_system();
     const Context<T>& subcontext = GetSubsystemContext(system, context);
-    return witness_func.Evaluate(subcontext);
+    return witness_func.CalcWitnessValue(subcontext);
   }
 
-  /// For the subsystem associated with @p witness_func, gets its mutable
-  /// sub composite event collection from @p events, and passes it to
-  /// @p witness_func's AddEventToCollection method. Aborts if the subsystem is
-  /// not part of this Diagram.
+  /// For the subsystem associated with `witness_func`, gets its mutable
+  /// sub composite event collection from `events`, and passes it to
+  /// `witness_func`'s AddEventToCollection method. This method also modifies
+  /// `event` by updating the pointers to "diagram" continuous state to point to
+  /// the ContinuousState pointers for the associated subsystem instead. Aborts
+  /// if the subsystem is not part of this Diagram.
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<T>* event,
       CompositeEventCollection<T>* events) const final {

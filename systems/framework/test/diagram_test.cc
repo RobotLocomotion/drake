@@ -441,7 +441,7 @@ TEST_F(DiagramTest, Witness) {
   EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
       wf.front()));
 
-  EXPECT_LT(diagram_->EvaluateWitness(*context_, *wf.front()), 0);
+  EXPECT_LT(diagram_->CalcWitnessValue(*context_, *wf.front()), 0);
 }
 
 // Tests that the diagram exports the correct topology.
@@ -1455,7 +1455,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
 
     // Verify that no periodic discrete updates are registered.
-    PeriodicEventData attr;
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
   }
 
@@ -1941,7 +1940,6 @@ class MyEventTestSystem : public LeafSystem<double> {
       DeclarePeriodicPublish(p);
 
       // Verify that no periodic discrete updates are registered.
-      PeriodicEventData attr;
       EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
     } else {
       DeclarePerStepEvent<PublishEvent<double>>(

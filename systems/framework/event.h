@@ -33,6 +33,8 @@ class LeafCompositeEventCollection;
  */
 class EventData {
  public:
+  EventData() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventData);
   virtual ~EventData() {}
   virtual std::unique_ptr<EventData> Clone() const {
     return std::unique_ptr<EventData>(DoClone());
@@ -49,6 +51,9 @@ class EventData {
  */
 class PeriodicEventData : public EventData {
  public:
+  PeriodicEventData() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PeriodicEventData);
+
   /// Gets the period with which this event should recur.
   double period_sec() const { return period_sec_; }
 
@@ -84,6 +89,9 @@ class PeriodicEventData : public EventData {
 template <class T>
 class WitnessTriggeredEventData : public EventData {
  public:
+  WitnessTriggeredEventData() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
+
   /// Gets the witness function that triggered the event handler.
   const WitnessFunction<T>* triggered_witness() const {
     return triggered_witness_; }
