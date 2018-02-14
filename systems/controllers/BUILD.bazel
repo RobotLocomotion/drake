@@ -20,6 +20,7 @@ drake_cc_library(
     hdrs = ["dynamic_programming.h"],
     deps = [
         "//drake/common:essential",
+        "//drake/math:wrap_to",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
         "//drake/systems/primitives:barycentric_system",

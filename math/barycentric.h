@@ -59,6 +59,7 @@ class BarycentricMesh {
   explicit BarycentricMesh(MeshGrid input_grid);
 
   // Accessor methods.
+  const MeshGrid& get_input_grid() const { return input_grid_; }
   int get_input_size() const { return input_grid_.size(); }
   int get_num_mesh_points() const {
     int num_mesh_points = 1;

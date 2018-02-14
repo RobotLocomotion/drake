@@ -30,6 +30,7 @@ GTEST_TEST(BarycentricTest, GetMeshPoints) {
                                 {3.0, 4.0}}};
 
   EXPECT_EQ(bary.get_input_size(), kNumInputs);
+  EXPECT_EQ(*(bary.get_input_grid()[2].rbegin()), 4.0);
   EXPECT_EQ(bary.get_num_mesh_points(), 4);
 
   Vector3d point;
