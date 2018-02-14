@@ -472,9 +472,11 @@ void MultibodyTree<T>::MapVelocityToQDot(
   DRAKE_DEMAND(qdot->size() == get_num_positions());
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  VectorUpTo6<T> qdot_mobilizer;
+  const int kMaxQdot = 7;
+  Eigen::Matrix<T, kMaxQdot, 1> qdot_mobilizer;
   for (const auto& mobilizer : owned_mobilizers_) {
     const auto v_mobilizer = mobilizer->get_velocities_from_array(v);
+    DRAKE_DEMAND(mobilizer->get_num_positions() <= kMaxQdot);
     qdot_mobilizer.resize(mobilizer->get_num_positions());
     mobilizer->MapVelocityToQDot(mbt_context, v_mobilizer, &qdot_mobilizer);
     mobilizer->get_mutable_positions_from_array(qdot) = qdot_mobilizer;

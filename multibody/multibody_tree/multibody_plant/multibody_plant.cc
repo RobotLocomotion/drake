@@ -45,10 +45,10 @@ using systems::BasicVector;
 using systems::Context;
 
 #include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 //#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
 #define PRINT_VARn(a) (void)a;
-//#define PRINT_VAR(a) (void)a;
+#define PRINT_VAR(a) (void)a;
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :

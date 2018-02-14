@@ -39,6 +39,7 @@ drake_cc_binary(
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
         "//math:geometric_transform",
+        "//systems/analysis:fixed_step_implicit_euler_integrator",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta2_integrator",
         "//systems/analysis:runge_kutta3_integrator",
