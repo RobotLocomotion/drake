@@ -49,25 +49,25 @@ enum class WitnessFunctionDirection {
 /// determine both the time of impact for rigid bodies and their states at that
 /// time of impact.
 ///
-/// Precision in the definition of the witness function is necessary, because we
-/// want the witness function to trigger only once if, for example,
-/// `w(t₀, x(t₀)) ≠ 0`, `w(t₁, x(t₁)) = 0`, and `w(t₂, x(t₂)) ≠ 0`, for some
-/// t₂ > t₁. In other words, if the witness function is evaluated over the
-/// intervals [t₀, t₁] and [t₁, t₂], meaning that the zero occurs precisely at
-/// an interval endpoint, the witness function should trigger once. Similarly,
-/// the witness function should trigger exactly once if `w(t₀, x(t₀)) ≠ 0`,
-/// `w(t*, x(t*)) = 0`,
-/// and `w(t₁, x(t₁)) = 0`. We can define the trigger condition formally over
-/// interval `[t₀, t₁]` using the function:<pre>
+/// The following discussion will denote the solution to the ODE or DAE initial
+/// value problem `ẋ = f(t, x)` at arbitrary desired end time `tₑ` as `x(tₑ)`
+/// for initial condition `x(t₀) = x₀`. Precision in the definition of the
+/// witness function is necessary, because we want the witness function to
+/// trigger only once if, for example, `w(t₀, x(t₀)) ≠ 0`, `w(t₁, x(t₁)) = 0`,
+/// and `w(t₂, x(t₂)) ≠ 0`, for some t₂ > t₁. In other words, if the witness
+/// function is evaluated over the intervals [t₀, t₁] and [t₁, t₂], meaning that
+/// the zero occurs precisely at an interval endpoint, the witness function
+/// should trigger once. Similarly, the witness function should trigger exactly
+/// once if `w(t₀, x(t₀)) ≠ 0`, `w(t*, x(t*)) = 0`, and `w(t₁, x(t₁)) = 0`. We
+/// can define the trigger condition formally over interval `[t₀, t₁]` using the
+/// function:<pre>
 /// T(w, t₀, x(t₀), t₁) =   1   if w(t₀, x(t₀)) ≠ 0 and
 ///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) ≤ 0
 ///                         0   if w(t₀, x(t₀)) = 0 or
 ///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) > 0
 /// </pre>
-/// where `x(tₑ)` indicates the solution to the ODE or DAE initial value problem
-/// `ẋ = f(t, x)` for initial condition `x(t₀) = x₀` and arbitrary desired end
-/// time `tₑ`. We wish for the witness function to trigger if the trigger
-/// function evaluates to one. The trigger function can be further modified, if
+/// We wish for the witness function to trigger if the trigger function
+/// evaluates to one. The trigger function can be further modified, if
 /// desired, to incorporate the constraint that the witness function should
 /// trigger only when crossing from positive values to negative values, or vice
 /// versa.
