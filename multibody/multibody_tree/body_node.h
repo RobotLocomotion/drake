@@ -940,6 +940,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // where D_B is the articulated body hinge inertia and g_PB_W is the
     // Kalman gain.
     //
+    // With D_B, it is possible to view equation (2) in another manner. D_B
+    // relates mobility-space forces to mobility-space accelerations. We can
+    // view Pplus_PB_W as subtracting the mobilizer space inertia that
+    // results from expanding D_B into an articulated body inertia from B's
+    // articulated body inertia.
+    //
     // In order to reduce the number of computations, we can save the common
     // factor HTxP = H_PB_Wᵀ P_B_W. We then can write:
     //   D_B = HTxP H_PB_W                                                  (5)
@@ -1025,6 +1031,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
     // inertia of this body B as felt by body P and expressed in frame W.
+    // TODO(bobbyluig): Only compute lower-triangular region.
     get_mutable_Pplus_PB_W(abc) = ArticulatedBodyInertia<T>(
         P_B_W.CopyToFullMatrix6()- g_PB_W * HTxP);
   }

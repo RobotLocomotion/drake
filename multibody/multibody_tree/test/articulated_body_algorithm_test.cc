@@ -45,6 +45,17 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     this->set_default_zero_state(context, state);
   }
 
+  const FeatherstoneMobilizer<T>& set_angles(
+      systems::Context<T>* context,
+      const Vector2<T>& angles) const {
+    MultibodyTreeContext<T>& mbt_context =
+        this->GetMutableMultibodyTreeContextOrThrow(context);
+    auto q = this->get_mutable_positions(&mbt_context);
+    DRAKE_ASSERT(q.size() == kNq);
+    q = angles;
+    return *this;
+  }
+
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const override {
     Isometry3<T> X_FM = Isometry3<T>::Identity();
@@ -65,7 +76,6 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override {
     DRAKE_ASSERT(v.size() == kNv);
-    // Note that Hdot * v = 0 for this mobilizer.
     return SpatialVelocity<T>(H_FM_ * v);
   }
 
@@ -73,6 +83,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override {
     DRAKE_ASSERT(vdot.size() == kNv);
+    // Note that Hdot * v = 0 for this mobilizer.
     return SpatialAcceleration<T>(H_FM_ * vdot);
   }
 
@@ -175,17 +186,15 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   // Create cylinder (C) in box.
   // Note that the unit inertia of the cylinder is taken about the x-axis.
   const double r = 0.2, L = 0.3;
-  Eigen::Matrix3d R_XZ =
-      Eigen::AngleAxisd(M_PI_2, Vector3<double>::UnitY()).toRotationMatrix();
   const UnitInertia<double> G_Ccm =
-      UnitInertia<double>::SolidCylinder(r, L).ReExpress(R_XZ);
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitX());
   const double mass_cylinder = 0.8;
   const SpatialInertia<double> M_Ccm(mass_cylinder, Vector3d::Zero(), G_Ccm);
 
   // Create model.
   MultibodyTree<double> model;
 
-  // Add box body and fixed mobilizer.
+  // Add box body and SpaceXYZ mobilizer.
   const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_Bcm);
   const Frame<double>& world_frame = model.get_world_frame();
   const Frame<double>& box_frame = box_link.get_body_frame();
@@ -211,7 +220,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   model.CalcArticulatedBodyInertiaCache(*context, pc,  &abc);
 
   // Get expected projected articulated body inertia of cylinder.
-  const Matrix6<double> M_cylinder_mat = M_Ccm.CopyToFullMatrix6();
+  Matrix6<double> M_cylinder_mat = M_Ccm.CopyToFullMatrix6();
   Matrix6<double> Pplus_BC_W_expected_mat = Matrix6<double>::Zero();
   Pplus_BC_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
   Pplus_BC_W_expected_mat(2, 2) = M_cylinder_mat(2, 2);
@@ -221,10 +230,10 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   // Compare results.
   const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
       ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
-  const ArticulatedBodyInertia<double>& P_BC_W_actual =
+  const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
       abc.get_Pplus_PB_W(cylinder_link.get_node_index());
   EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
-      P_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
+      Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
   // Get expected projected articulated body inertia of the articulated body
   // consisting of the box and cylinder.
@@ -232,6 +241,110 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   Pplus_WB_W_expected_mat(3, 3) = mass_box + mass_cylinder;
   Pplus_WB_W_expected_mat(4, 4) = mass_box;
   Pplus_WB_W_expected_mat(5, 5) = mass_box + mass_cylinder;
+
+  // Compare results.
+  const ArticulatedBodyInertia<double>& P_WB_W_expected =
+      ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
+  const ArticulatedBodyInertia<double>& P_WB_W_actual =
+      abc.get_Pplus_PB_W(box_link.get_node_index());
+  EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
+      P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
+}
+
+// A similar test to FeatherstoneExample. The main difference is that this
+// test uses non-zero generalized positions and a non-square box.
+GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
+  // Create box (B).
+  const double Lx = 0.5, Ly = 1.2, Lz = 1.6;
+  const UnitInertia<double> G_Bcm = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
+  const double mass_box = 2.4;
+  const SpatialInertia<double> M_Bcm(mass_box, Vector3d::Zero(), G_Bcm);
+
+  // Create cylinder (C) in box.
+  // Note that the unit inertia of the cylinder is taken about the x-axis.
+  const double r = 0.3, L = 0.3;
+  const UnitInertia<double> G_Ccm =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitX());
+  const double mass_cylinder = 0.6;
+  const SpatialInertia<double> M_Ccm(mass_cylinder, Vector3d::Zero(), G_Ccm);
+
+  // Create model.
+  MultibodyTree<double> model;
+
+  // Add box body and SpaceXYZ mobilizer.
+  const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_Bcm);
+  const Frame<double>& world_frame = model.get_world_frame();
+  const Frame<double>& box_frame = box_link.get_body_frame();
+  const SpaceXYZMobilizer<double>& WB_mobilizer =
+      model.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
+
+  // Add cylinder body and Featherstone mobilizer.
+  const RigidBody<double>& cylinder_link = model.AddBody<RigidBody>(M_Ccm);
+  const Frame<double>& cylinder_frame = cylinder_link.get_body_frame();
+  const FeatherstoneMobilizer<double>& BC_mobilizer =
+    model.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);
+
+  // Finalize model.
+  model.Finalize();
+
+  // Create context.
+  std::unique_ptr<Context<double>> context = model.CreateDefaultContext();
+
+  // State of mobilizer connecting the world and box.
+  Vector3d q_WB;
+  q_WB << 0.0, -M_PI_2, 0.0;
+  WB_mobilizer.set_angles(context.get(), q_WB);
+
+  // State of the mobilizer connecting the box and cylinder.
+  Vector2<double> q_BC;
+  q_BC << M_PI_4, 0.2;
+  BC_mobilizer.set_angles(context.get(), q_BC);
+
+  // Update cache.
+  PositionKinematicsCache<double> pc(model.get_topology());
+  model.CalcPositionKinematicsCache(*context, &pc);
+
+  // Compute articulated body cache.
+  ArticulatedBodyInertiaCache<double> abc(model.get_topology());
+  model.CalcArticulatedBodyInertiaCache(*context, pc,  &abc);
+
+  // Rotate the spatial inertia about the y-axis to match the rotation of
+  // q_WB.
+  Eigen::Matrix3d R_ZX =
+      Eigen::AngleAxisd(-M_PI_2, Vector3d::UnitY()).toRotationMatrix();
+  Matrix6<double> M_cylinder_mat = M_Ccm.ReExpress(R_ZX).CopyToFullMatrix6();
+
+  // Get expected projected articulated body inertia of cylinder.
+  Matrix6<double> Pplus_BC_W_expected_mat = Matrix6<double>::Zero();
+  Pplus_BC_W_expected_mat(0, 0) = M_cylinder_mat(0, 0);
+  Pplus_BC_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
+  Pplus_BC_W_expected_mat(3, 3) = mass_cylinder;
+  Pplus_BC_W_expected_mat(5, 5) = mass_cylinder;
+
+  // Compare results.
+  const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
+      ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
+  const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
+      abc.get_Pplus_PB_W(cylinder_link.get_node_index());
+  EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
+      Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
+
+  // H_WB_W does not change with q.
+  Eigen::Matrix<double, 6, 3> H_WB_W = Eigen::Matrix<double, 6, 3>::Zero();
+  H_WB_W.block<3, 3>(0, 0) = Matrix3<double>::Identity();
+
+  // The articulated body inertia of the box is the sum of the rotated spatial
+  // inertia of B and the shifted Pplus_BC_W.
+  const Matrix6<double> P_B_W =
+      Pplus_BC_W_expected.Shift(Vector3d(0.0, -0.2, 0.0)).CopyToFullMatrix6()
+          + M_Bcm.ReExpress(R_ZX).CopyToFullMatrix6();
+
+  // Get expected projected articulated body inertia of the articulated body
+  // consisting of the box and cylinder.
+  Matrix6<double> Pplus_WB_W_expected_mat =
+      (Matrix6<double>::Identity() - P_B_W * H_WB_W
+          * (H_WB_W.transpose() * P_B_W * H_WB_W).inverse()
+          * H_WB_W.transpose()) * P_B_W;
 
   // Compare results.
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
