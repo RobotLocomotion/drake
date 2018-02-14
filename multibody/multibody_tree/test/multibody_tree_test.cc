@@ -142,7 +142,7 @@ class KukaIiwaModelTests : public ::testing::Test {
  public:
   /// Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    model_ = MakeKukaIiwaModel<double>();
+    model_ = MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_);
 
     // Keep pointers to the modeling elements.
     end_effector_link_ = &model_->GetBodyByName("iiwa_link_7");
