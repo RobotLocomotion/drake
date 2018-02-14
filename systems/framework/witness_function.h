@@ -97,6 +97,12 @@ class WitnessFunction {
 
   /// Constructs the witness function with the pointer to the given non-null
   /// System, with the given direction type, and with no event type.
+  /// @note Constructing a witness function with no corresponding event forces
+  ///       Simulator's integration of an ODE to halt at the witness isolation
+  ///       time. For example, isolating a function's minimum or maximum values
+  ///       can be realized with a witness that triggers on a sign change of
+  ///       the function's time derivative, ensuring that the actual extreme
+  ///       value is present in the discretized trajectory.
   /// @warning the pointer to the System must be valid as long or longer than
   /// the lifetime of the witness function.
   WitnessFunction(const System<T>* system,

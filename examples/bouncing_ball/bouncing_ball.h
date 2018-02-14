@@ -124,7 +124,13 @@ class BouncingBall : public systems::LeafSystem<T> {
     // Verify that velocity is non-positive.
     DRAKE_DEMAND(cstate.GetAtIndex(1) <= 0.0);
 
-    // Update the velocity.
+    // Update the velocity using Newtonian restitution (note that Newtonian
+    // restitution can lead to unphysical energy gains, as described in
+    // [Stronge 1991]). For this reason, other impact models are generally
+    // preferable.
+    //
+    // [Stronge 1991]  W. J. Stronge. Unraveling paradoxical theories for rigid
+    //                 body collisions. J. Appl. Mech., 58:1049-1055, 1991.
     next_cstate.SetAtIndex(
         1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
   }

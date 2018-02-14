@@ -58,7 +58,7 @@ std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
 }
 
 template <typename T>
-void LeafOutputPort<T>::DoEvaluate(const Context<T>& context,
+void LeafOutputPort<T>::DoCalc(const Context<T>& context,
                                AbstractValue* value) const {
   if (calc_function_) {
     calc_function_(context, value);

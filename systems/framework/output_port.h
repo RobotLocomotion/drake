@@ -145,14 +145,14 @@ class OutputPort {
   @param value   A pointer that has already be validated as non-null and
                  pointing to an object of the right type to hold a value of
                  this output port. */
-  virtual void DoEvaluate(const Context<T>& context,
-                          AbstractValue* value) const = 0;
+  virtual void DoCalc(const Context<T>& context,
+                      AbstractValue* value) const = 0;
 
   /** A concrete %OutputPort must provide access to the current value of this
   output port stored within the given Context. If the value is already up to
   date with respect to its prerequisites in `context`, no computation should be
   performed. Otherwise, the implementation should arrange for the value to be
-  computed, typically but not necessarily by invoking DoCalcWitnessValue().
+  computed, typically but not necessarily by invoking DoCalc().
   @param context A Context that has already been validated as compatible with
                  the System whose output port this is. */
   virtual const AbstractValue& DoEval(const Context<T>& context) const = 0;

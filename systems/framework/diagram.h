@@ -87,7 +87,7 @@ class DiagramOutputPort : public OutputPort<T> {
     return source_output_port_->Allocate(subcontext);
   }
 
-  void DoEvaluate(
+  void DoCalc(
       const Context<T>& context, AbstractValue* value) const final {
     const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Calc(subcontext, value);

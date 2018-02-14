@@ -94,11 +94,13 @@ class WitnessTriggeredEventData : public EventData {
 
   /// Gets the witness function that triggered the event handler.
   const WitnessFunction<T>* triggered_witness() const {
-    return triggered_witness_; }
+    return triggered_witness_;
+  }
 
   /// Sets the witness function that triggered the event handler.
   void set_triggered_witness(const WitnessFunction<T>* triggered_witness) {
-    triggered_witness_ = triggered_witness; }
+    triggered_witness_ = triggered_witness;
+  }
 
   /// Gets the time at the left end of the window. Default is NaN (which
   /// indicates that the value is invalid).

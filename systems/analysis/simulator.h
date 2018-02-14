@@ -841,9 +841,9 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
                              &triggered_witnesses_);
 
-    // Store the state at x0 in the temporary context. We only do this if there
-    // are triggered witnesses (even though `witness_triggered` is `true`, the
-    // witness might not have actually triggered after isolation).
+    // Store the state at x0 in the temporary continuous state. We only do this
+    // if there are triggered witnesses (even though `witness_triggered` is
+    // `true`, the witness might not have actually triggered after isolation).
     if (!triggered_witnesses_.empty())
       event_handler_xc_->SetFromVector(x0);
 

@@ -133,7 +133,7 @@ class LeafOutputPort : public OutputPort<T> {
       const Context<T>& context) const final;
 
   // Invokes the supplied calculation function if present, otherwise complains.
-  void DoEvaluate(const Context<T>& context, AbstractValue* value) const final;
+  void DoCalc(const Context<T>& context, AbstractValue* value) const final;
 
   // Currently just invokes the supplied evaluation function if present,
   // otherwise complains.
