@@ -22,11 +22,11 @@ def _find_libdrake_components():
     query_string = ' '.join([
         'kind("cc_library",'
         'visible("//tools/install/libdrake:libdrake.so",'
-        '"//drake/..."))',
-        'except("//drake/examples/...")'
-        'except(attr("testonly", "1", "//drake/..."))'
-        'except("//drake/lcmtypes/...")'
-        'except("//drake:*")'
+        '"//..."))',
+        'except("//examples/...")'
+        'except(attr("testonly", "1", "//..."))'
+        'except("//lcmtypes/...")'
+        'except("//:*")'
     ])
     command = ["bazel", "query", query_string]
     components = [x for x in subprocess.check_output(command).split('\n') if x]
