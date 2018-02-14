@@ -186,6 +186,8 @@ class Connection {
 
   /// Constructs a line-segment connection.
   ///
+  /// Connection's ID is `id`.
+  ///
   /// Segment's reference curve begins at `start` and extends on the plane
   /// z=0 `line_length` distance with `start.xy().heading()` heading angle.
   /// `end_z` will be used to build elevation and superelevation information of
@@ -208,6 +210,8 @@ class Connection {
 
   /// Constructs an arc-segment connection.
   ///
+  /// Connection's ID is `id`.
+  ///
   /// Segment's reference curve begins at `start` and extends on the plane z=0
   /// with `arc_offset.radius()` and angle span of `arc_offset.d_theta()`.
   /// `end_z` will be used to build elevation and superelevation information of
@@ -228,6 +232,67 @@ class Connection {
   Connection(const std::string& id, const Endpoint& start,
              const EndpointZ& end_z, int num_lanes, double r0,
              double lane_width, double left_shoulder, double right_shoulder,
+             const ArcOffset& arc_offset);
+
+  /// Constructs a line-segment connection.
+  ///
+  /// Connection's ID is `id`.
+  ///
+  /// Segment's reference curve begins at `r_ref` lateral distance from the
+  /// `lane_ref_index` lane and extends on the plane z=0 `line_length` distance
+  /// with `start.xy().heading()` heading angle. `start_lane_index` lane will
+  /// begin at `start`. `end_z` is the end EndpointZ information of
+  /// `end_lane_index` lane. Both start and end lane information is used to
+  /// compute the reference curve by translating coordinates and elevation and
+  /// superelevation information of the road.
+  ///
+  /// `line_length` must be non negative.
+  ///
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// Each lane's width will be `lane_width`, which should be greater or equal
+  /// to zero.
+  ///
+  /// `start_lane_index`, `end_lane_index` and `lane_ref_index` must be smaller
+  /// than `num_lanes` and non negative.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
+  Connection(const std::string& id, const Endpoint& start, int start_lane_index,
+             const EndpointZ& end_z, int end_lane_index, int num_lanes,
+             double r_ref, int lane_ref_index, double lane_width,
+             double left_shoulder, double right_shoulder, double line_length);
+
+  /// Constructs an arc-segment connection.
+  ///
+  /// Connection's ID is `id`.
+  ///
+  /// Segment's reference curve begins at `r_ref` lateral distance from the
+  /// `lane_ref_index` lane and extends on the plane z=0 with
+  /// `arc_offset.radius()` and angle span of `arc_offset.d_theta()`.
+  /// `start_lane_index` lane will begin at `start`. `end_z` is the end
+  /// EndpointZ information of `end_lane_index` lane. Both start and end lane
+  /// information is used to compute the reference curve by translating
+  /// coordinates and elevation and superelevation information of the road.
+  ///
+  /// `arc_offset.radius()` must be positive. `arc_offset.d_theta()` > 0
+  /// indicates a counterclockwise arc from `start` with initial heading angle
+  /// `start.heading()`.
+  ///
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// Each lane's width will be `lane_width`, which should be greater or equal
+  /// to zero.
+  ///
+  /// `start_lane_index`, `end_lane_index` and `lane_ref_index` must be smaller
+  /// than `num_lanes` and non negative.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
+  Connection(const std::string& id, const Endpoint& start, int start_lane_index,
+             const EndpointZ& end_z, int end_lane_index, int num_lanes,
+             double r_ref, int lane_ref_index, double lane_width,
+             double left_shoulder, double right_shoulder,
              const ArcOffset& arc_offset);
 
   /// Returns the geometric type of the path.
@@ -305,7 +370,7 @@ class Connection {
  private:
   const Type type_{};
   const std::string id_;
-  const Endpoint start_{};
+  Endpoint start_{};
   Endpoint end_{};
   const int num_lanes_{};
   const double r0_{};
@@ -316,13 +381,13 @@ class Connection {
   const double r_max_{};
   std::unique_ptr<RoadCurve> road_curve_;
   // Bits specific to type_ == kLine:
-  double line_length_{};
+  const double line_length_{};
   // Bits specific to type_ == kArc:
-  double radius_{};
-  double d_theta_{};
-  double theta0_{};
-  double cx_{};
-  double cy_{};
+  const double radius_{};
+  const double d_theta_{};
+  const double theta0_{};
+  const double cx_{};
+  const double cy_{};
 };
 
 /// A group of Connections.
