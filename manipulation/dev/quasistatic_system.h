@@ -47,6 +47,13 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
       const KinematicsCache<Scalar>& cache) const;
   VectorX<Scalar> GetRigidBodyTreePositionsFromQuasistaticSystemStates(
       const Eigen::Ref<const VectorX<Scalar>>& q_quasistatic_system) const;
+
+  // Wn: wrench matrix corresponding to normal forces (lambda_n).
+  // Wf: wrench matrix corresponding to friction forces (lambda_f).
+  // Jn: Jacobian corresponding to normal velocities.
+  // Jf: Jacobian corresponding to tangent velocities.
+  // phi: vector of signed distance functions for all contact pairs.
+  
   void CalcJf(const KinematicsCache<Scalar>& cache,
               const Eigen::Ref<const MatrixX<Scalar>>& Jf_half,
               MatrixX<Scalar>* const Jf_ptr) const;
