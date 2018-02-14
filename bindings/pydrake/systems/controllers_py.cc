@@ -36,7 +36,7 @@ PYBIND11_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
 
-  py::module::import("pydrake.math");
+  py::module::import("pydrake._math");
   py::module::import("pydrake.systems.primitives");
 
   py::class_<DynamicProgrammingOptions>(m, "DynamicProgrammingOptions")
