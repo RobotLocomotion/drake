@@ -697,10 +697,10 @@ template <typename T>
 void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
-    EigenPtr<MatrixX<T>> Jg_WF) const {
-  DRAKE_THROW_UNLESS(Jg_WF != nullptr);
-  DRAKE_THROW_UNLESS(Jg_WF->rows() == 6);
-  DRAKE_THROW_UNLESS(Jg_WF->cols() == get_num_velocities());
+    EigenPtr<MatrixX<T>> Jv_WF) const {
+  DRAKE_THROW_UNLESS(Jv_WF != nullptr);
+  DRAKE_THROW_UNLESS(Jv_WF->rows() == 6);
+  DRAKE_THROW_UNLESS(Jv_WF->cols() == get_num_velocities());
 
   // Body to which frame B is attached to:
   const Body<T>& body_B = frame_B.get_body();
@@ -709,9 +709,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   std::vector<BodyNodeIndex> path_to_world;
   topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
 
-  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
-  PositionKinematicsCache<T> pc(this->get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // TODO(amcastro-tri): Eval H_PB_W from the cache.
   std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
@@ -724,7 +722,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
                       get_world_frame(), &p_WoFo_W);  /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from the world to
-  // body_B, computing each node's contribution to Jg_WF.
+  // body_B, computing each node's contribution to Jv_WF.
   // Skip the world (ilevel = 0).
   for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
     BodyNodeIndex body_node_index = path_to_world[ilevel];
@@ -742,7 +740,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
     // of frame Bf (frame B shifted to Fo) measured in the inboard body frame P
     // and expressed in world. That is, V_PBf_W = J_PBf_W * v(B), with v(B) the
     // mobilities that correspond to the current node.
-    auto J_PBf_W = Jg_WF->block(0, start_index_in_v, 6, num_velocities);
+    auto J_PBf_W = Jv_WF->block(0, start_index_in_v, 6, num_velocities);
 
     // Position of this node's body Bi in the world W.
     const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();

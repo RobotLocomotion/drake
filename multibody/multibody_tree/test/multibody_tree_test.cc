@@ -8,6 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
@@ -19,12 +20,14 @@ namespace multibody {
 namespace multibody_model {
 namespace {
 
+using drake::multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
+using drake::multibody::benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
+using drake::multibody::multibody_tree::test_utilities::SpatialKinematicsPVA;
+using drake::systems::Context;
+using drake::systems::ContinuousState;
 using Eigen::Isometry3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
-using multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
-using systems::Context;
-using systems::ContinuousState;
 
 // This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
 // multibody elements by name or get exceptions accordingly.
@@ -242,6 +245,8 @@ class KukaIiwaModelTests : public ::testing::Test {
   }
 
  protected:
+  // Acceleration of gravity:
+  const double gravity_{9.81};
   // The model plant:
   std::unique_ptr<MultibodyTree<double>> model_;
   // Workspace including context and derivatives vector:
@@ -254,6 +259,9 @@ class KukaIiwaModelTests : public ::testing::Test {
   // AutoDiffXd model to compute automatic derivatives:
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff_;
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
+
+  // And independent benchmarking set of solutions.
+  const MGKukaIIwaRobot<double> benchmark_{gravity_};
 };
 
 // This test is used to verify the correctness of the method
@@ -450,6 +458,45 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set joint angles and rates.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Spatial velocity of the end effector.
+  const SpatialVelocity<double>& V_WE =
+      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+
+  // Pose of the end effector in the world frame.
+  const Isometry3<double>& X_WE =
+      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+
+  // Independent benchmark solution.
+  const SpatialKinematicsPVA<double> MG_kinematics =
+      benchmark_.CalcEndEffectorKinematics(
+          q, v, VectorX<double>::Zero(7) /* vdot */);
+  const SpatialVelocity<double>& V_WE_benchmark =
+      MG_kinematics.spatial_velocity();
+  const Isometry3<double>& X_WE_benchmark = MG_kinematics.transform();
+
+  // Compare against benchmark.
+  EXPECT_TRUE(V_WE.IsApprox(V_WE_benchmark, kTolerance));
+  EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_benchmark.matrix(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
 TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = model_->get_num_positions();
@@ -471,7 +518,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   VectorX<double> q, v;
   GetArbitraryNonZeroConfiguration(&q, &v);
 
-  // Zero generalized positions and velocities.
+  // Set joint angles and rates.
   int angle_index = 0;
   for (const RevoluteJoint<double>* joint : joints_) {
     joint->set_angle(context_.get(), q[angle_index]);
