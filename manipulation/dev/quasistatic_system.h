@@ -54,8 +54,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   // Jf: Jacobian corresponding to tangent velocities.
   // phi: vector of signed distance functions for all contact pairs.
 
-  void CalcJf(const KinematicsCache<Scalar>& cache,
-              const Eigen::Ref<const MatrixX<Scalar>>& Jf_half,
+  void CalcJf(const Eigen::Ref<const MatrixX<Scalar>>& Jf_half,
               MatrixX<Scalar>* const Jf_ptr) const;
   void CalcWnWfJnJfPhi(const KinematicsCache<Scalar>& cache,
                        MatrixX<Scalar>* const Wn_ptr,
@@ -69,24 +68,20 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
                          MatrixX<Scalar>* const Jn_ptr,
                          MatrixX<Scalar>* const Jf_ptr,
                          VectorX<Scalar>* const phi_ptr) const;
-  Scalar CalcBigM(Scalar max_impulse, Scalar max_delta_q,
-                  Scalar max_gamma,
-                  const Eigen::Ref<const MatrixX<Scalar>> &Jn,
-                  const Eigen::Ref<const MatrixX<Scalar>> &Jf,
-                  const Eigen::Ref<const VectorX<Scalar>> &phi,
-                  const Eigen::Ref<const MatrixX<Scalar>> &E,
-                  const Eigen::Ref<const MatrixX<Scalar>> &U,
-                  const Eigen::Ref<const VectorX<Scalar>> &qa_dot_d) const;
-  virtual void DoCalcWnWfJnJfPhiAnalytic(
-      const KinematicsCache<Scalar>& cache,
-      MatrixX<Scalar>* const Wn_ptr,
-      MatrixX<Scalar>* const Wf_ptr,
-      MatrixX<Scalar>* const Jn_ptr,
-      MatrixX<Scalar>* const Jf_ptr,
-      VectorX<Scalar>* const phi_ptr) const;
+  Scalar CalcBigM(Scalar max_impulse, Scalar max_delta_q, Scalar max_gamma,
+                  const Eigen::Ref<const MatrixX<Scalar>>& Jn,
+                  const Eigen::Ref<const MatrixX<Scalar>>& Jf,
+                  const Eigen::Ref<const VectorX<Scalar>>& phi,
+                  const Eigen::Ref<const VectorX<Scalar>>& qa_dot_d) const;
+  virtual void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<Scalar>& cache,
+                                         MatrixX<Scalar>* const Wn_ptr,
+                                         MatrixX<Scalar>* const Wf_ptr,
+                                         MatrixX<Scalar>* const Jn_ptr,
+                                         MatrixX<Scalar>* const Jf_ptr,
+                                         VectorX<Scalar>* const phi_ptr) const;
   MatrixX<Scalar> CalcE() const;
   VectorX<Scalar> CalcExternalGeneralizedForce(
-       KinematicsCache<Scalar> *const cache) const;
+      KinematicsCache<Scalar>* const cache) const;
 
   void CopyStateOut(const systems::Context<Scalar>& context,
                     systems::BasicVector<Scalar>* output) const {

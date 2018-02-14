@@ -423,7 +423,6 @@ void QuasistaticSystem<Scalar>::CalcWnWfJnJfPhi(
 
 template <class Scalar>
 void QuasistaticSystem<Scalar>::CalcJf(
-    const KinematicsCache<Scalar>& cache,
     const Eigen::Ref<const MatrixX<Scalar>>& Jf_half,
     MatrixX<Scalar>* const Jf_ptr) const {
   MatrixX<Scalar>& Jf = *Jf_ptr;
@@ -549,7 +548,7 @@ void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhi(
     idx_tangent += 2 * n_tangents_half_count;
   }
 
-  CalcJf(cache, Jf_half, Jf_ptr);
+  CalcJf(Jf_half, Jf_ptr);
 }
 
 template <class Scalar>
@@ -571,8 +570,6 @@ Scalar QuasistaticSystem<Scalar>::CalcBigM(
     const Eigen::Ref<const MatrixX<Scalar>>& Jn,
     const Eigen::Ref<const MatrixX<Scalar>>& Jf,
     const Eigen::Ref<const VectorX<Scalar>>& phi,
-    const Eigen::Ref<const MatrixX<Scalar>>& E,
-    const Eigen::Ref<const MatrixX<Scalar>>& U,
     const Eigen::Ref<const VectorX<Scalar>>& qa_dot_d) const {
   // finding a good BigM using interval arithmetic.
   std::vector<Scalar> max_of_normal_constraints;
@@ -631,7 +628,7 @@ void QuasistaticSystem<Scalar>::StepForward(
 
   // cacluate big M
   const Scalar kBigM = CalcBigM(max_impulse, max_delta_q, max_gamma, Jn, Jf,
-                                phi, E, U, qa_dot_d);
+                                phi, qa_dot_d);
 
   // find columns of Jn and Jq corresponding to q.
   MatrixX<Scalar> Jn_q(nc_, n1_);
@@ -1031,7 +1028,6 @@ QuasistaticSystem<double>::GetRigidBodyTreePositionsFromQuasistaticSystemStates(
     const Eigen::Ref<const VectorX<double>>& q_quasistatic_system) const;
 
 template void QuasistaticSystem<double>::CalcJf(
-    const KinematicsCache<double>& cache,
     const Eigen::Ref<const MatrixX<double>>& Jf_half,
     MatrixX<double>* const Jf_ptr) const;
 
@@ -1050,8 +1046,6 @@ template double QuasistaticSystem<double>::CalcBigM(
     const Eigen::Ref<const MatrixX<double>>& Jn,
     const Eigen::Ref<const MatrixX<double>>& Jf,
     const Eigen::Ref<const VectorX<double>>& phi,
-    const Eigen::Ref<const MatrixX<double>>& E,
-    const Eigen::Ref<const MatrixX<double>>& U,
     const Eigen::Ref<const VectorX<double>>& qa_dot_d) const;
 
 template void QuasistaticSystem<double>::DoCalcWnWfJnJfPhiAnalytic(
