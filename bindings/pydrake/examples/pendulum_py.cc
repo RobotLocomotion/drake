@@ -19,6 +19,8 @@ PYBIND11_MODULE(pendulum, m) {
 
   m.doc() = "Bindings for the Pendulum example.";
 
+  py::module::import("pydrake.systems.framework");
+
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
   // conversion.
