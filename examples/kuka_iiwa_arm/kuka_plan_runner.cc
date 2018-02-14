@@ -106,7 +106,7 @@ class RobotPlanRunner {
         if (stop_plan_) {
           // Stop the robot from continuing the current plan and
           // reset plan_ until it receives another one.
-          std::cout << "Stopping." << std::endl;
+          std::cout << "Stopping current plan." << std::endl;
           stop_plan_ = false;
           plan_.reset();
           continue;
@@ -176,7 +176,7 @@ class RobotPlanRunner {
 
   void HandleStop(const lcm::ReceiveBuffer*, const std::string&,
                     const robotlocomotion::robot_plan_t*) {
-    std::cout << "Received stop command. Discarding plan" << std::endl;
+    std::cout << "Received stop command. Discarding plan." << std::endl;
     stop_plan_ = true;
   }
 
