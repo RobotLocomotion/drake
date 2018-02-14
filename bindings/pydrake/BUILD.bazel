@@ -81,6 +81,16 @@ drake_py_library(
     ],
 )
 
+drake_pybind_library(
+    name = "math_py",
+    cc_so_name = "math",
+    cc_srcs = ["math_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
+    ],
+)
+
 # TODO(eric.cousineau): Make private.
 drake_cc_library(
     name = "symbolic_types_pybind",
@@ -103,6 +113,7 @@ drake_pybind_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":common_py",
+    ":math_py",
     ":symbolic_py",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/multibody",
@@ -208,6 +219,22 @@ drake_py_test(
     srcs = ["test/forward_diff_test.py"],
     main = "test/forward_diff_test.py",
     deps = [":autodiffutils_py"],
+)
+
+drake_py_test(
+    # Note the non-standard name due to #8041.
+    name = "test/math_test",
+    size = "small",
+    srcs = ["test/math_test.py"],
+    main = "test/math_test.py",
+    deps = [
+        ":math_py",
+    ],
+)
+
+alias(
+    name = "math_test",
+    actual = "test/math_test",
 )
 
 drake_py_test(
