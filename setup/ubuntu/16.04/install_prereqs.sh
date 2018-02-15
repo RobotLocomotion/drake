@@ -137,10 +137,5 @@ dpkg_install_from_wget \
   https://github.com/bazelbuild/bazel/releases/download/0.10.1/bazel_0.10.1-linux-x86_64.deb \
   28a9e614226ed4ac96ed4e9c0ddc59df2e8eadcfb11e0539c0e5aaead6c1ff2d
 
-# Remove a deb that we used to generate and install, but no longer need.
-if [ -L /usr/lib/ccache/bazel ]; then
-  apt purge ccache-bazel-wrapper
-fi
-
 trap : EXIT  # Disable exit reporting.
 echo 'install_prereqs: success'
