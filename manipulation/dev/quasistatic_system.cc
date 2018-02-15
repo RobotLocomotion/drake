@@ -153,7 +153,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
       is_contact_2d_.push_back(false);
     }
   } else {
-    DRAKE_ASSERT(is_contact_2d_.size() == nc_);
+    DRAKE_ASSERT(static_cast<int>(is_contact_2d_.size()) == nc_);
   }
   cout << "nc_: " << nc_ << endl;
   UpdateNs();

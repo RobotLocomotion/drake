@@ -35,7 +35,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
 
   const systems::OutputPort<Scalar>& state_output() const;
   const systems::OutputPort<Scalar>& decision_variables_output() const;
-  double get_period_sec() { return period_sec_; }
+  double get_period_sec() const { return period_sec_; }
 
  protected:
   void Initialize();
