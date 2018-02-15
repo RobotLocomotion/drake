@@ -14,10 +14,13 @@ exports_files(
 # (the only piece drake_visualizer needs).  Note that the installed version of
 # drake-visualizer *does* use the installed (full) version of pydrake -- this
 # is development-sandbox-only stub.
+# Unfortunately, we cannot constrain the visibility of this target to
+# `//tools:drake_visualizer.impl` because this creates a dependency cycle.
 py_library(
     name = "stub_pydrake",
     srcs = ["stub/pydrake/__init__.py"],
     visibility = ["//tools:__pkg__"],
+    imports = ["stub"],
 )
 
 add_lint_tests()

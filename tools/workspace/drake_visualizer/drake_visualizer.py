@@ -18,27 +18,16 @@ assert runfiles_dir, (
     "This must be called by a script generated using the " +
     "`drake_runfiles_binary` macro.")
 
-# Stub out pydrake (refer to our ./BUILD.bazel comments for rationale).
-#
-# We add it to PYTHONPATH within the script, rather than `imports = ["stub"]`
-# on the stub py_library, to avoid any other target accidentally pulling in the
-# stubbed pydrake onto its PYTHONPATH.  Only the visualizer, when launched via
-# this wrapper script, should employ the stub.
-stub_relpath = "tools/workspace/drake_visualizer/stub"
-if os.path.exists(os.path.join(runfiles_dir, "external/drake")):
-    # This is for bazel run @drake//tools:drake_visualizer.
-    prepend_path('PYTHONPATH', "external/drake/" + stub_relpath)
-else:
-    # This is for bazel run //tools:drake_visualizer.
-    prepend_path('PYTHONPATH', stub_relpath)
-
-# Don't use DRAKE_RESOURCE_ROOT; the stub getDrakePath should always win.  This
-# also placates the drake-visualizer logic that puts it into Director mode when
-# DRAKE_RESOURCE_ROOT is set (thus requiring more than just getDrakePath).
-try:
-    del os.environ["DRAKE_RESOURCE_ROOT"]
-except KeyError:
-    pass
+import pydrake
+if getattr(pydrake, '_is_stub', False):
+    # Don't use DRAKE_RESOURCE_ROOT; the stub getDrakePath should always win.
+    # This also placates the drake-visualizer logic that puts it into Director
+    # mode when DRAKE_RESOURCE_ROOT is set (thus requiring more than just
+    # getDrakePath).
+    try:
+        del os.environ["DRAKE_RESOURCE_ROOT"]
+    except KeyError:
+        pass
 
 # TODO(eric.cousineau): Remove these shims if we can teach Bazel how to handle
 # these on its own.
