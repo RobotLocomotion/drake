@@ -1,4 +1,4 @@
-#include "drake/manipulation/schunk_wsg/schunk_wsg_force_controller.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_low_level_controller.h"
 
 #include <vector>
 
@@ -16,7 +16,7 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-SchunkWsgForceController::SchunkWsgForceController() {
+SchunkWsgLowLevelController::SchunkWsgLowLevelController() {
   systems::DiagramBuilder<double> builder;
 
   auto estimated_state_passthrough =

@@ -12,10 +12,10 @@ namespace schunk_wsg {
 /// This class implements a controller for a Schunk WSG gripper as a
 /// `systems::Diagram`. The composition of this diagram is determined by the
 /// ControlMode specified for the controller.
-class SchunkWsgForceController : public systems::Diagram<double> {
+class SchunkWsgLowLevelController : public systems::Diagram<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgForceController)
-  explicit SchunkWsgForceController();
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgLowLevelController)
+  explicit SchunkWsgLowLevelController();
 
   const systems::InputPortDescriptor<double>&
   get_commanded_grip_force_input_port() const {

@@ -25,7 +25,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
-#include "drake/manipulation/schunk_wsg/schunk_wsg_force_controller.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_low_level_controller.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
@@ -344,7 +344,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
       builder.AddSystem<systems::TrajectorySource>(grip_trajectory);
   grip_force_source->set_name("grip_force_source");
   auto wsg_controller =
-      builder.AddSystem<manipulation::schunk_wsg::SchunkWsgForceController>();
+      builder.AddSystem<manipulation::schunk_wsg::SchunkWsgLowLevelController>();
   wsg_controller->set_name("wsg_controller");
   builder.Connect(grip_force_source->get_output_port(),
                   wsg_controller->get_commanded_grip_force_input_port());
