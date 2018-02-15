@@ -34,7 +34,8 @@ RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
   // Declare the tree's pose input port -- don't need the index, it is always 0.
   const int vector_size =
       tree->get_num_positions() + tree->get_num_velocities();
-  this->DeclareInputPort(kVectorValued, vector_size);
+  plant_state_port_ =
+      this->DeclareInputPort(kVectorValued, vector_size).get_index();
 
   geometry_id_port_ = this->DeclareAbstractOutputPort(
                               &RigidBodyPlantBridge::AllocateFrameIdOutput,
@@ -48,21 +49,20 @@ RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
 }
 
 template <typename T>
-const OutputPort<T>& RigidBodyPlantBridge<T>::geometry_id_output_port()
-    const {
-  return systems::System<T>::get_output_port(geometry_id_port_);
+const OutputPort<T>& RigidBodyPlantBridge<T>::geometry_id_output_port() const {
+  return this->get_output_port(geometry_id_port_);
 }
 
 template <typename T>
 const OutputPort<T>& RigidBodyPlantBridge<T>::geometry_pose_output_port()
     const {
-  return systems::System<T>::get_output_port(geometry_pose_port_);
+  return this->get_output_port(geometry_pose_port_);
 }
 
 template <typename T>
 const InputPortDescriptor<T>&
 RigidBodyPlantBridge<T>::rigid_body_plant_state_input_port() const {
-  return this->get_input_port(0);
+  return this->get_input_port(plant_state_port_);
 }
 
 template <typename T>

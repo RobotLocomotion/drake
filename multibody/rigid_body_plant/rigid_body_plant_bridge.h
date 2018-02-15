@@ -24,6 +24,21 @@ namespace systems {
 
  <H3>What geometry types are read and what roles can they be used for?</H3>
 
+ A RigidBody can have "visual" elements and "collision" elements. Which one is
+ read and used in GeometrySystem is indicated by the cell value (in the table
+ below):
+
+    - C : Collision element's geometry is used
+    - V : Visual element's geometry is used (but without material values)
+    - . : No geometry is used, shapes of this type are *ignored*
+
+ The columns of the table indicate the GeometrySystem roles.
+   - Proximity: The shape is used in proximity queries (e.g., penetration,
+                distance, ray-casting, etc.)
+   - Visual:    The shape is displayed in drake_visualizer.
+   - Render:    The shape is used in rendering queries (i.e., RGB images,
+                depth images, label images, etc.)
+
   %Shape      | Proximity | Visual | Render
   ------------|:---------:|:------:|:------:
   %Box        | .         | .      | .
@@ -51,21 +66,6 @@ namespace systems {
     not the declared collision geometry.
  4. Meshes are passed on to drake visualizer, but do not contribute to any
     queries.
-
- A RigidBody can have "visual" elements and "collision" elements. Which one is
- read and used in GeometrySystem is indicated by the cell value:
-
-    - C : Collision element's geometry is used
-    - V : Visual element's geometry is used (but without material values)
-    - . : No geometry is used, shapes of this type are *ignored*
-
- The columns indicate the GeometrySystem roles.
-   - Proximity: The shape is used in proximity queries (e.g., penetration,
-                distance, ray-casting, etc.)
-   - Visual:    The shape is displayed in drake_visualizer.
-   - Render:    The shape is used in rendering queries (i.e., RGB images,
-                depth images, label images, etc.)
-
 
  <H3>Distinction between anchored and dynamic geometry</H3>
 
@@ -102,7 +102,10 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   /** Constructor; reads the bodies and geometries in the rigid body tree and
    registers them with the given geometry system. Ultimately, this system must
    have its ports connected to the *same* geometry system and the RigidBodyPlant
-   which owns the rigid body tree.   */
+   which owns the rigid body tree.
+
+   `rigid_body_tree` is aliased internally; its life span must be longer than
+   this. */
   RigidBodyPlantBridge(const RigidBodyTree<T>* rigid_body_tree,
                        geometry::GeometrySystem<T>* geometry_system);
 
@@ -116,7 +119,7 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
       const;
 
  private:
-  // Registers `this` system's tree's bodies and geometries  to the given
+  // Registers `this` system's tree's bodies and geometries to the given
   // geometry system.
   void RegisterTree(geometry::GeometrySystem<T>* geometry_system);
 
@@ -148,6 +151,7 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   // Port handles
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
+  int plant_state_port_{-1};
 
   // Registered data
   std::vector<geometry::FrameId> body_ids_;
