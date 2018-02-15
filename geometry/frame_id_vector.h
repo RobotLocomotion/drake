@@ -19,7 +19,7 @@ namespace geometry {
 
 /** Represents an _ordered_ set of frame identifiers. Instances of this class
  work in conjunction with instances of FramePoseVector and FrameVelocityVector
- to communicate frame kinematics to GeometryWorld and GeometrySystem. Considered
+ to communicate frame kinematics to GeometrySystem. Considered
  together, they represent a "struct-of-arrays" paradigm. The iᵗʰ value in the
  %FrameIdVector is the frame identifier whose position is specified by
  the iᵗʰ value in the corresponding FramePoseVector (and analogously for the
@@ -28,12 +28,12 @@ namespace geometry {
  The geometry source can use arbitrary logic to define the _order_ of the ids.
  However, all frames registered by the source must be included. Omitting a
  registered frame id is considered an error (and will cause an exception
- when GeometryWorld/GeometrySystem evaluates the data.
+ when GeometrySystem evaluates the data.
 
  @internal In future iterations, this will be relaxed to allow only
  communicating kinematics for frames that have _changed_. But in the initial
  version, this requirement is in place for pedagogical purposes to help users
- use GeometryWorld/GeometrySystem correctly. */
+ use GeometrySystem correctly. */
 class FrameIdVector {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameIdVector)
