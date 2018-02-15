@@ -347,12 +347,12 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgForceController>();
   wsg_controller->set_name("wsg_controller");
   builder.Connect(grip_force_source->get_output_port(),
-                  wsg_controller->get_feed_forward_force_input_port());
+                  wsg_controller->get_commanded_grip_force_input_port());
   builder.Connect(
-      wsg_controller->get_output_port(0),
+      wsg_controller->get_comanded_joint_force_output_port(),
       plant->model_instance_actuator_command_input_port(gripper_instance_id));
   builder.Connect(plant->model_instance_state_output_port(gripper_instance_id),
-                  wsg_controller->get_state_input_port());
+                  wsg_controller->get_estimated_joint_state_input_port());
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.

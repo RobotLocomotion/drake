@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -18,6 +19,12 @@ namespace schunk_wsg {
 SchunkWsgForceController::SchunkWsgForceController() {
   systems::DiagramBuilder<double> builder;
 
+  auto estimated_state_passthrough =
+      builder.AddSystem<systems::PassThrough<double>>(kSchunkWsgNumPositions +
+                                                      kSchunkWsgNumVelocities);
+  estimated_joint_state_input_port_ =
+      builder.ExportInput(estimated_state_passthrough->get_input_port());
+
   // The mean finger position should be zero.
   auto desired_mean_finger_state =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
@@ -25,18 +32,25 @@ SchunkWsgForceController::SchunkWsgForceController() {
 
   // Add the PID controller.
   // Set up the control signal, u.
-  MatrixX<double> J_q{1, 2};
-  J_q << 0.5, 0.5;
-  MatrixX<double> J_x{2, 4};
-  J_x << J_q, MatrixX<double>::Zero(1, 2), MatrixX<double>::Zero(1, 2), J_q;
+  MatrixX<double> mean_finger_position_jacobian{1, 2};
+  mean_finger_position_jacobian << 0.5, 0.5;
+  MatrixX<double> mean_finger_state_jacobian{2, 4};
+  mean_finger_state_jacobian << mean_finger_position_jacobian,
+      MatrixX<double>::Zero(1, 2), MatrixX<double>::Zero(1, 2),
+      mean_finger_position_jacobian;
 
-  auto convert_to_x_tilde = builder.AddSystem<systems::MatrixGain<double>>(J_x);
-  estimated_state_input_port_ =
-      builder.ExportInput(convert_to_x_tilde->get_input_port());
+  auto convert_to_x_tilde = builder.AddSystem<systems::MatrixGain<double>>(
+      mean_finger_state_jacobian);
+  builder.Connect(estimated_state_passthrough->get_output_port(),
+                  convert_to_x_tilde->get_input_port());
 
-  const Eigen::VectorXd wsg_kp = Eigen::VectorXd::Constant(J_q.rows(), 2000.0);
-  const Eigen::VectorXd wsg_ki = Eigen::VectorXd::Constant(J_q.rows(), 0.0);
-  const Eigen::VectorXd wsg_kd = Eigen::VectorXd::Constant(J_q.rows(), 5.0);
+  const int num_pid_positions = mean_finger_position_jacobian.rows();
+  const Eigen::VectorXd wsg_kp =
+      Eigen::VectorXd::Constant(num_pid_positions, 2000.0);
+  const Eigen::VectorXd wsg_ki =
+      Eigen::VectorXd::Constant(num_pid_positions, 0.0);
+  const Eigen::VectorXd wsg_kd =
+      Eigen::VectorXd::Constant(num_pid_positions, 5.0);
 
   auto wsg_controller =
       builder.AddSystem<systems::controllers::PidController<double>>(
@@ -49,8 +63,8 @@ SchunkWsgForceController::SchunkWsgForceController() {
 
   // The PID controller outputs u_tilde. Add a matrix gain block to convert
   // to u.
-  auto convert_to_u =
-      builder.AddSystem<systems::MatrixGain<double>>(J_q.transpose());
+  auto convert_to_u = builder.AddSystem<systems::MatrixGain<double>>(
+      mean_finger_position_jacobian.transpose());
   builder.Connect(wsg_controller->get_output_port_control(),
                   convert_to_u->get_input_port());
   auto adder = builder.AddSystem<systems::Adder<double>>(2, 2);
@@ -60,9 +74,25 @@ SchunkWsgForceController::SchunkWsgForceController() {
           (MatrixX<double>(2, 1) << 0.5, -0.4).finished());
   builder.Connect(convert_feed_forward_force_to_u->get_output_port(),
                   adder->get_input_port(1));
-  feed_forward_force_input_port_ =
+  commanded_grip_force_input_port_ =
       builder.ExportInput(convert_feed_forward_force_to_u->get_input_port());
-  builder.ExportOutput(adder->get_output_port());
+  commanded_joint_force_output_port_ =
+      builder.ExportOutput(adder->get_output_port());
+
+  // Set up the estimated grip state output.
+  MatrixX<double> grip_position_jacobian{1, 2};
+  grip_position_jacobian << 0.5, -0.5;
+  MatrixX<double> grip_state_jacobian{2, 4};
+  grip_state_jacobian << grip_position_jacobian, MatrixX<double>::Zero(1, 2),
+      MatrixX<double>::Zero(1, 2), grip_position_jacobian;
+
+  auto convert_to_grip_state =
+      builder.AddSystem<systems::MatrixGain<double>>(grip_state_jacobian);
+  builder.Connect(estimated_state_passthrough->get_output_port(),
+                  convert_to_grip_state->get_input_port());
+  estimated_grip_state_output_port_ =
+      builder.ExportOutput(convert_to_grip_state->get_output_port());
+
   builder.BuildInto(this);
 }
 
