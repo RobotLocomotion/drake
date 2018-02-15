@@ -11,7 +11,9 @@ drake_cc_library(
     srcs = [],
     deps = [
         ":abstract_values",
+        ":cache_and_dependency_tracker",
         ":context",
+        ":context_base",
         ":continuous_state",
         ":diagram",
         ":diagram_builder",
@@ -26,6 +28,7 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":leaf_system",
+        ":model_values",
         ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
@@ -185,7 +188,7 @@ drake_cc_library(
 # Cache and dependencies are coupled because dependency trackers need inline
 # access to cache entries in order to invalidate them very, very fast.
 drake_cc_library(
-    name = "cache_and_dependencies",
+    name = "cache_and_dependency_tracker",
     srcs = [
         "cache.cc",
         "dependency_tracker.cc",
@@ -211,7 +214,7 @@ drake_cc_library(
         "context_base.h",
     ],
     deps = [
-        ":cache_and_dependencies",
+        ":cache_and_dependency_tracker",
         "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
@@ -286,7 +289,7 @@ drake_cc_library(
     srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
     deps = [
-        ":cache_and_dependencies",
+        ":cache_and_dependency_tracker",
         ":context",
         ":parameters",
         ":vector",
@@ -496,7 +499,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cache_test",
     deps = [
-        ":cache_and_dependencies",
+        ":cache_and_dependency_tracker",
         "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
     ],

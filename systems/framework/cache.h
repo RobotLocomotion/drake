@@ -4,18 +4,17 @@
 Declares CacheEntryValue and Cache, which is the container for cache entry
 values. */
 
-#include <cstddef>
+// TODO(sherm1) Re-review this file in its entirety when the cache stubs are
+// replaced with real code in a subsequent PR.
+
 #include <memory>
 #include <string>
-#include <typeindex>
-#include <typeinfo>
 #include <utility>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/type_safe_index.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
@@ -24,9 +23,17 @@ namespace drake {
 namespace systems {
 
 class DependencyGraph;
-class CacheEntry;
 
 // TODO(sherm1) Stubbed for testing DependencyTracker; do not review.
+
+// These are stubs for the two classes that comprise the cache:
+// - CacheEntryValue representing a single cache entry and storing its
+//                   abtract value and "up-to-date" indicator.
+// - Cache the container for CacheEntryValues
+//
+// Note that a Cache is local to a particular Context; that is, when there is
+// a diagram, each Context within it has its own Cache object.
+#ifndef DRAKE_DOXYGEN_CXX  // Hide from Doxygen for now.
 class CacheEntryValue {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CacheEntryValue)
@@ -61,7 +68,6 @@ class CacheEntryValue {
 
   void set_is_up_to_date(bool up_to_date) { is_up_to_date_flag_ = up_to_date; }
 
-#ifndef DRAKE_DOXYGEN_CXX
   // (Internal use only) Constructs an empty CacheEntryValue with description
   // "DUMMY" and a meaningless value. Used only as a default destination for
   // non-cache DependencyTracker invalidations.
@@ -69,7 +75,6 @@ class CacheEntryValue {
       : description_("DUMMY"), value_(AbstractValue::Make<int>(0)) {
     unused(not_used);
   }
-#endif
 
  private:
   std::string description_;
@@ -86,6 +91,14 @@ class Cache {
 
   Cache() = default;
 
+  // Allocates a new CacheEntryValue and corresponding DependencyTracker using
+  // the given CacheIndex and DependencyTicket number. The CacheEntryValue
+  // object is owned by this Cache and the returned reference remains valid
+  // if other cache entry values are created. The created DependencyTracker
+  // object is owned by the given DependencyGraph, which must be owned by
+  // the same Context that owns this Cache. The graph must already contain
+  // trackers for the indicated prerequisites. The new tracker will retain a
+  // pointer to the created CacheEntryValue for invalidation purposes.
   CacheEntryValue& CreateNewCacheEntryValue(
       CacheIndex index, DependencyTicket ticket,
       const std::string& description,
@@ -102,6 +115,7 @@ class Cache {
  private:
   std::vector<copyable_unique_ptr<CacheEntryValue>> store_;
 };
+#endif  // Hiding from Doxygen.
 
 }  // namespace systems
 }  // namespace drake
