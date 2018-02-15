@@ -103,15 +103,6 @@ class RobotPlanRunner {
           iiwa_command.joint_position[joint] = desired_next(joint);
         }
 
-        if (stop_plan_) {
-          // Stop the robot from continuing the current plan and
-          // reset plan_ until it receives another one.
-          std::cout << "Stopping current plan." << std::endl;
-          stop_plan_ = false;
-          plan_.reset();
-          continue;
-        }
-
         lcm_.publish(kLcmCommandChannel, &iiwa_command);
       }
     }
@@ -177,7 +168,7 @@ class RobotPlanRunner {
   void HandleStop(const lcm::ReceiveBuffer*, const std::string&,
                     const robotlocomotion::robot_plan_t*) {
     std::cout << "Received stop command. Discarding plan." << std::endl;
-    stop_plan_ = true;
+    plan_.reset();
   }
 
   lcm::LCM lcm_;
@@ -185,7 +176,6 @@ class RobotPlanRunner {
   int plan_number_{};
   std::unique_ptr<PiecewisePolynomialTrajectory> plan_;
   lcmt_iiwa_status iiwa_status_;
-  bool stop_plan_{false};
 };
 
 int do_main() {
