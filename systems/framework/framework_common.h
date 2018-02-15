@@ -29,6 +29,9 @@ the corresponding CacheEntryValue in that System's Context. This is an index
 providing extremely fast constant-time access to both. */
 using CacheIndex = TypeSafeIndex<class CacheTag>;
 
+// TODO(sherm1) Reveal these when they are used.
+#ifndef DRAKE_DOXYGEN_CXX
+
 /** Serves as a local index for a child subsystem within a parent
 Diagram, or a child subcontext within a parent DiagramContext. A subsystem and
 its matching subcontext have the same %SubsystemIndex. Unique only
@@ -58,6 +61,7 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 /** Serves as the local index for abstract parameters within a given System
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
+#endif
 
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
@@ -79,7 +83,7 @@ path name should implement this interface. This is used by System and Context
 so that contained objects can provide helpful error messages and log
 diagnostics that identify the offending object within a diagram. (Diagram
 Systems and their Contexts have identical substructure.) Providing
-this as an separate interface allows us to avoid circular dependencies between
+this as a separate interface allows us to avoid circular dependencies between
 the containers and their contained objects. */
 class SystemPathnameInterface {
  public:
@@ -101,7 +105,7 @@ enum WellKnownTicketNumbers {
   kNothingTicket        =  0,
   kTimeTicket           =  1,
   // TODO(sherm1) Add in the rest of the well-known tickets here.
-  kNextAvailableTicket  = kTimeTicket+1
+  kNextAvailableTicket  = kTimeTicket + 1
 };
 
 }  // namespace internal

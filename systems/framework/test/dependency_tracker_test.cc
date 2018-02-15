@@ -7,19 +7,20 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/text_logging.h"
 #include "drake/systems/framework/context_base.h"
 
-// Tests the DependencyTracker and DependencyGraph classes. These are
-// intimately tied to the CacheEntryValue class in order to be able invalidate
+// Tests the DependencyTracker and DependencyGraph classes. These are intimately
+// tied to the CacheEntryValue class in order to be able to invalidate
 // cache entries with inline code for speed. We're not testing CacheEntryValue
 // here but use it to check that DependencyTracker propagates invalidations
 // to cache entries correctly.
 //
-// We go through some contortions here to avoid dependence on SystemBase. We do
-// depend on ContextBase so we can use the contained dependency graph and cache
-// objects, and test the cloning operation which has several steps that
-// ContextBase understands how to exercise.
+// Although DependencyTracker code has no direct dependence on higher-level
+// Context code, for this test we do require ContextBase so we can use the
+// DependencyGraph and Cache objects it contains, and so we can test the cloning
+// operation which requires several steps that ContextBase understands how to
+// exercise (cloning of a DependencyGraph is always initiated as part of
+// cloning a Context).
 
 namespace drake {
 namespace systems {
@@ -39,11 +40,19 @@ class MyContextBase : public ContextBase {
 // Normally the dependency trackers are allocated automatically by the
 // System framework. Here we try to use as little of the framework as possible
 // and cobble together the following dependency graph by hand:
-//   time, upstream1, upstream2: independent
-//   middle1: upstream1, upstream2
-//   downstream1: upstream1, middle1
-//   downstream2: middle1
-//   entry0: time, middle1, downstream2
+//
+//     +-----------+                    +---------------+
+//     | upstream1 +--------+-----------> downstream1   |
+//     +-----------+        |       +--->               |
+//                          |       |   +---------------+
+//     +-----------+   +----v----+  |   +---------------+
+//     | upstream2 +---> middle1 +--+---> downstream2   +--+
+//     +-----------+   +----+----+      +---------------+  |  +-----------+
+//                          |                              +-->           |
+//     +-----------+        +--------------------------------->  entry0   |
+//     |  time     +------------------------------------------>           |
+//     +-----------+                                          +-----------+
+// 
 // entry0 is a cache entry so we expect invalidation; the others are just
 // trackers with no associated values.
 class HandBuiltDependencies : public ::testing::Test {
@@ -80,13 +89,6 @@ class HandBuiltDependencies : public ::testing::Test {
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(time_ticket_);
   }
-
-  // Turn on logging before anything else happens.
-  bool logging_enabled_ = []() {
-    // log()->set_level(spdlog::level::trace);
-    // log()->flush_on(spdlog::level::trace);
-    return true;
-  }();
 
   std::unique_ptr<MyContextBase> context_ptr_ =
       std::make_unique<MyContextBase>();
