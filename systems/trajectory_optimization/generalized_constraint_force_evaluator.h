@@ -87,65 +87,6 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   const RigidBodyTree<double>* tree_;
   const int lambda_size_;
 };
-
-/**
- * Evaluates the generalized constraint force from
- * RigidBodyTree::positionConstraint.
- * Loop joint constraint is a position constraint.
- */
-class PositionConstraintForceEvaluator
-    : public GeneralizedConstraintForceEvaluator {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositionConstraintForceEvaluator)
-
-  /**
-   * @param kinematics_cache_helper. The helper class to update the kinematics
-   * cache. The kinematics cache is useful when computing the Jacobian of the
-   * position constraint.
-   */
-  PositionConstraintForceEvaluator(
-      const RigidBodyTree<double>& tree,
-      std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
-          kinematics_cache_helper);
-
- protected:
-  MatrixX<AutoDiffXd> EvalConstraintJacobian(
-      const Eigen::Ref<const AutoDiffVecXd>& q) const override;
-
- private:
-  mutable std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
-      kinematics_cache_helper_;
-};
-
-/**
- * Evaluates the joint limit constraint force.
- * For a single joint (revolute or prismatic), whose index in the velocity
- * vector is i, its joint limit force has the form
- * [0, 0, ..., 0, -λᵤ+λₗ, 0, ... ,0], that only the i'th entry is non-zero.
- * where λᵤ / λₗ are the joint limit force from upper / lower limit
- * respectively. We assume that both λᵤ and λₗ are non-negative.
- */
-class JointLimitConstraintForceEvaluator
-    : public GeneralizedConstraintForceEvaluator {
- public:
-  JointLimitConstraintForceEvaluator(const RigidBodyTree<double>& tree,
-                                     int joint_velocity_index);
-
-  /**
-   * The constraint force λ contains both the joint upper limit force λᵤ, and
-   * the joint lower limit force λₗ. The following two method returns the
-   * indices of λᵤ / λₗ in λ.
-   */
-  static constexpr int UpperLimitForceIndexInLambda() { return 0; }
-  static constexpr int LowerLimitForceIndexInLambda() { return 1; }
-
- protected:
-  MatrixX<AutoDiffXd> EvalConstraintJacobian(
-      const Eigen::Ref<const AutoDiffVecXd>& x) const override;
-
- private:
-  const int joint_velocity_index_;
-};
 }  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

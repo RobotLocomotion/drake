@@ -31,39 +31,6 @@ void GeneralizedConstraintForceEvaluator::DoEval(
   const auto J = EvalConstraintJacobian(x);
   y = J.transpose() * lambda;
 }
-
-PositionConstraintForceEvaluator::PositionConstraintForceEvaluator(
-    const RigidBodyTree<double>& tree,
-    std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
-        kinematics_cache_helper)
-    : GeneralizedConstraintForceEvaluator(
-          tree, tree.get_num_positions() + tree.getNumPositionConstraints(),
-          tree.getNumPositionConstraints()),
-      kinematics_cache_helper_(kinematics_cache_helper) {}
-
-MatrixX<AutoDiffXd> PositionConstraintForceEvaluator::EvalConstraintJacobian(
-    const Eigen::Ref<const AutoDiffVecXd>& x) const {
-  const auto& q = x.head(tree()->get_num_positions());
-  auto kinsol = kinematics_cache_helper_->UpdateKinematics(q, tree());
-  return tree()->positionConstraintsJacobian(kinsol);
-}
-
-JointLimitConstraintForceEvaluator::JointLimitConstraintForceEvaluator(
-    const RigidBodyTree<double>& tree, int joint_velocity_index)
-    : GeneralizedConstraintForceEvaluator(tree, 2, 2),
-      joint_velocity_index_(joint_velocity_index) {}
-
-MatrixX<AutoDiffXd> JointLimitConstraintForceEvaluator::EvalConstraintJacobian(
-    const Eigen::Ref<const AutoDiffVecXd>& x) const {
-  // x is unused here, since the Jacobian is a constant, that does not depends
-  // on x.
-  unused(x);
-  Eigen::Matrix2Xd J(2, tree()->get_num_velocities());
-  J.setZero();
-  J(LowerLimitForceIndexInLambda(), joint_velocity_index_) = 1;
-  J(UpperLimitForceIndexInLambda(), joint_velocity_index_) = -1;
-  return J.cast<AutoDiffXd>();
-}
 }  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake
