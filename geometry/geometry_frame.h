@@ -9,11 +9,11 @@
 namespace drake {
 namespace geometry {
 
-/** This simple class carries the definition of a frame used by GeometryWorld.
- To register moving frames with GeometryWorld (see
- GeometryWorld::RegisterFrame), a geometry source (see
- GeometryWorld::RegisterNewSource) instantiates a frame and passes ownership
- over to GeometryWorld.
+/** This simple class carries the definition of a frame used in the
+ GeometrySystem. To register moving frames with GeometrySystem (see
+ GeometrySystem::RegisterFrame()), a geometry source (see
+ GeometrySystem::RegisterSource()) instantiates a frame and passes ownership
+ over to GeometrySystem.
 
  A frame is defined by three pieces of information:
     - the name, which must be unique within a single geometry source,
@@ -27,7 +27,7 @@ namespace geometry {
  instance id defined by the RigidBodyTree and used again in automotive to
  serve as unique car identifiers.
 
- @see GeometryWorld */
+ @see GeometrySystem */
 class GeometryFrame {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryFrame)

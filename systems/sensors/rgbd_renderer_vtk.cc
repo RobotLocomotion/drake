@@ -42,9 +42,9 @@
 // ModuleInitVtkRenderingOpenGL2.
 VTK_AUTOINIT_DECLARE(vtkRenderingOpenGL2)
 
-// TODO(kunimatsu-tri) Refactor RgbdRenderer with GeometryWorld when it's ready,
-// so that other VTK dependent sensor simulators can share the world without
-// duplicating it.
+// TODO(kunimatsu-tri) Refactor RgbdRenderer with GeometrySystem when it's
+// ready, so that other VTK dependent sensor simulators can share the world
+// without duplicating it.
 
 namespace drake {
 namespace systems {
