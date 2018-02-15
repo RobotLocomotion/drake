@@ -52,7 +52,7 @@ class MyContextBase : public ContextBase {
 //     +-----------+        +--------------------------------->  entry0   |
 //     |  time     +------------------------------------------>           |
 //     +-----------+                                          +-----------+
-// 
+//
 // entry0 is a cache entry so we expect invalidation; the others are just
 // trackers with no associated values.
 class HandBuiltDependencies : public ::testing::Test {
