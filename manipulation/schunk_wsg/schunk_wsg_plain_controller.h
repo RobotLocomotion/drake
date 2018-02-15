@@ -22,22 +22,11 @@ class SchunkWsgPlainController
       public systems::controllers::StateFeedbackControllerInterface<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPlainController)
-  explicit SchunkWsgPlainController(
-      ControlMode control_mode = ControlMode::kPosition,
-      bool limit_force = false);
+  explicit SchunkWsgPlainController();
 
   const systems::InputPortDescriptor<double>& get_desired_state_input_port()
       const {
     return this->get_input_port(desired_state_input_port_);
-  }
-
-  const systems::InputPortDescriptor<double>&
-  get_feed_forward_force_input_port() const {
-    return this->get_input_port(feed_forward_force_input_port_);
-  }
-
-  const systems::InputPortDescriptor<double>& get_state_input_port() const {
-    return this->get_input_port(state_input_port_);
   }
 
   const systems::InputPortDescriptor<double>& get_max_force_input_port() const {
@@ -47,12 +36,12 @@ class SchunkWsgPlainController
   // Implement StateFeedbackControllerInterface
   virtual const systems::InputPortDescriptor<double>&
   get_input_port_estimated_state() const override {
-    return get_state_input_port();
+    return this->get_input_port(estimated_state_input_port_);
   }
 
   virtual const systems::InputPortDescriptor<double>&
   get_input_port_desired_state() const override {
-    return get_desired_state_input_port();
+    return this->get_input_port(desired_state_input_port_);
   }
 
   virtual const systems::OutputPort<double>& get_output_port_control() const override {
@@ -60,9 +49,8 @@ class SchunkWsgPlainController
   }
 
  private:
+  int estimated_state_input_port_{-1};
   int desired_state_input_port_{-1};
-  int feed_forward_force_input_port_{-1};
-  int state_input_port_{-1};
   int max_force_input_port_{-1};
 };
 
