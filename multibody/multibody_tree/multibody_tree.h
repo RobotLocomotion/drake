@@ -1351,9 +1351,9 @@ class MultibodyTree {
   /// `abc`.
   ///
   /// These include:
-  /// - Articulated body inertia `Pplus_PB_W` for the articulated body subsystem
-  ///   formed by all bodies outboard from body B, projected across its inboard
-  ///   mobilizer, about point Bo, and expressed in the world frame W.
+  /// - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
+  ///   articulated body inertia of parent body P as though it were inertialess,
+  ///   but taken about Bo and expressed in W.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.

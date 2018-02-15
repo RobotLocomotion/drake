@@ -15,14 +15,9 @@ namespace multibody {
 /// articulated body algorithm.
 ///
 /// Articulated body inertia cache entries include:
-/// - Articulated body inertia `Pplus_PB_W` for the articulated body subsystem
-///   formed by all bodies outboard from body B, projected across its inboard
-///   mobilizer, about point Bo, and expressed in the world frame W.
-///
-/// @note Another way to view `Pplus_PB_W` is to replace the parent body P with
-///       a massless, inertialess, 0-size body Z that is connected by the same
-///       inboard joint at Bo. The ordinary articulated body inertia `P_ZB_W`
-///       of body Z about point Bo is the same as the quantity `Pplus_PB_W`.
+/// - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
+///   articulated body inertia of parent body P as though it were inertialess,
+///   but taken about Bo and expressed in W.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
@@ -44,9 +39,9 @@ class ArticulatedBodyInertiaCache {
     Allocate();
   }
 
-  /// Articulated body inertia `Pplus_PB_W` for the articulated body subsystem
-  /// formed by all bodies outboard from body B, projected across its inboard
-  /// mobilizer, about point Bo, and expressed in the world frame W.
+  /// Articulated body inertia `Pplus_PB_W`, which can be thought of as the
+  /// articulated body inertia of parent body P as though it were inertialess,
+  /// but taken about Bo and expressed in W.
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
       BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);

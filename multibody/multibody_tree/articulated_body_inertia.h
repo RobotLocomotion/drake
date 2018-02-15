@@ -162,10 +162,11 @@ class ArticulatedBodyInertia {
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value, bool>::type
   IsPhysicallyValid() const {
-    // Attempt the Robust Cholesky decomposition to test if the matrix is
-    // positive semi-definite.
-    const auto ldlt = matrix_.template selfadjointView<Eigen::Lower>().ldlt();
-    return ldlt.info() == Eigen::Success && ldlt.isPositive();
+    // Get the eigenvalues of the matrix and see if they are all greater than or
+    // equal to zero with some tolerance for floating point errors.
+    const auto eigvals =
+        matrix_.template selfadjointView<Eigen::Lower>().eigenvalues();
+    return (eigvals.array() > -1e-10).all();
   }
 
   /// IsPhysicallyValid() for non-numeric scalar types is not supported.

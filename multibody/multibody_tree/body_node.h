@@ -906,7 +906,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //  - Pplus_PB_W for the same articulated body inertia P_B_W but projected
     //    across B's inboard mobilizer to frame P so that instead of
     //    F_Bo_W = P_B_W A_WB + z_Bo_W, we can write
-    //    F_Bo_W = Pplus_PB_W Aplus_WP + zplus_Bo_W.
+    //    F_Bo_W = Pplus_PB_W Aplus_WP + zplus_Bo_W where Aplus_WP is defined
+    //    in Section 6.2.2, Page 101 of [Jain 2010] and zplus_Bo_W is defined
+    //    in Section 6.3, Page 108 of [Jain 2010].
     //  - Φ(p_PQ) for Jain's rigid body transformation operator. In code,
     //    V_MQ = Φᵀ(p_PQ) V_MP is equivalent to V_MP.Shift(p_PQ).
     //
@@ -1197,10 +1199,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // =========================================================================
   // ArticulatedBodyInertiaCache Accessors and Mutators.
 
-  /// Returns a const reference to the articulated body inertia `Pplus_PB_W` for
-  /// the articulated body subsystem formed by all bodies outboard from body B,
-  /// projected across its inboard mobilizer to frame P, about point Bo, and
-  /// expressed in the world frame W.
+  /// Returns a const reference to the articulated body inertia `Pplus_PB_W`,
+  /// which can be thought of as the articulated body inertia of parent body P
+  /// as though it were inertialess, but taken about Bo and expressed in W.
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
       const ArticulatedBodyInertiaCache<T>& abc) const {
     return abc.get_Pplus_PB_W(topology_.index);
