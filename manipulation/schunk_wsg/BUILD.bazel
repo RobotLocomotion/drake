@@ -73,13 +73,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "schunk_wsg_position_controller",
+    srcs = ["schunk_wsg_position_controller.cc"],
+    hdrs = ["schunk_wsg_position_controller.h"],
+    deps = [
+        ":schunk_wsg_force_controller",
+    ],
+)
+
+drake_cc_library(
     name = "schunk_wsg_controller",
     srcs = ["schunk_wsg_controller.cc"],
     hdrs = ["schunk_wsg_controller.h"],
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_lcm",
-        ":schunk_wsg_plain_controller",
+        ":schunk_wsg_position_controller",
         "//drake/common:essential",
         "//drake/systems/framework:diagram",
         "//drake/systems/framework:diagram_builder",
