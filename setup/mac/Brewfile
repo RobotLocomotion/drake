@@ -1,0 +1,14 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+tap 'robotlocomotion/director'
+
+brew 'bash-completion'
+brew 'bazel'
+brew 'clang-format'
+brew 'diffstat'
+brew 'doxygen'
+brew 'graphviz'
+brew 'kcov'
+brew 'patchutils'
+brew 'pkg-config'
