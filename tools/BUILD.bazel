@@ -16,8 +16,8 @@ py_binary(
     visibility = ["//visibility:private"],
     # Python libraries to import.
     deps = [
-        "//bindings/pydrake",
         "//lcmtypes:lcmtypes_py",
+        "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],
