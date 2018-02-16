@@ -9,9 +9,25 @@ namespace manipulation {
 namespace schunk_wsg {
 ;
 
-/// This class implements a controller for a Schunk WSG gripper as a
-/// `systems::Diagram`. The composition of this diagram is determined by the
-/// ControlMode specified for the controller.
+/** This system coordinates the fingers of a parallel-jaw gripper.
+ *                                 ┌──────────────┐
+ *    commanded                    │JointState    │                estimated
+ *    grip force ────────┐      ┌─▶│ToGripState   ├──────────────▶ grip state
+ *                       │      │  └──────────────┘
+ *                       │      │  ┌─────────────┐
+ *                       │      │  │GripForce    │     ┌─────┐
+ *                       └────────▶│ToJointForce ├────▶│     │
+ *                              │  └─────────────┘     │     │
+ *                    ┌───────┐ │                      │     │
+ *    estimated       │Pass   │ │  ┌─────────────┐     │Adder├───▶ commanded
+ *    joint state ───▶│Through├─┴─▶│             │     │     │     joint force
+ *                    └───────┘    │             │     │     │
+ *                ┌───────────┐    │PidController├────▶│     │
+ *                │DesiredMean│    │             │     └─────┘
+ *                │Finger     ├───▶│             │
+ *                │Position   │    └─────────────┘
+ *                └───────────┘
+ */
 class SchunkWsgLowLevelController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgLowLevelController)
