@@ -8,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_low_level_controller.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -76,7 +77,14 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
           input);
   source->set_name("source");
-  builder.Connect(source->get_output_port(), schunk->get_input_port(0));
+  const auto low_level_controller = builder.template AddSystem<
+      manipulation::schunk_wsg::SchunkWsgLowLevelController<double>>();
+  builder.Connect(source->get_output_port(),
+                  low_level_controller->get_input_port_commanded_grip_force());
+  builder.Connect(schunk->state_output_port(),
+                  low_level_controller->get_input_port_estimated_joint_state());
+  builder.Connect(low_level_controller->get_output_port_commanded_joint_force(),
+                  schunk->actuator_command_input_port());
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.

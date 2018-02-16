@@ -37,7 +37,7 @@ namespace schunk_wsg {
 namespace {
 
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
-using manipulation::schunk_wsg::SchunkWsgController;
+using manipulation::schunk_wsg::LcmSchunkWsgController;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -60,7 +60,7 @@ int DoMain() {
           "SCHUNK_WSG_COMMAND", &lcm));
   command_sub->set_name("command_subscriber");
 
-  auto wsg_controller = builder.AddSystem<SchunkWsgController>();
+  auto wsg_controller = builder.AddSystem<LcmSchunkWsgController>();
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(

@@ -11,6 +11,7 @@ namespace schunk_wsg {
  * When attached to a plant with two degrees-of-freedom (position of each
  * finger), the resulting combined system acts like a plant with a single
  * degree-of-freeedom (gripper width).
+ *
  * ```
  *                                 ┌──────────────┐
  * commanded                       │JointState    │                estimated

@@ -10,6 +10,7 @@ namespace schunk_wsg {
 
 /* This class implements a PID controller for the distance between the fingers
  * of a parallel-jaw gripper.
+ *
  * ```
  *                 ┌─────────────────────────────────────────────────┐
  *                 │                                                 │

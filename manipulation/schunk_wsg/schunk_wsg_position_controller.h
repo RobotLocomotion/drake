@@ -12,6 +12,7 @@ namespace schunk_wsg {
 /**
  * This class implements a force-limited PID controller for a single degree of
  * freedom gripper.
+ *
  * ```
  *                    ┌─────────────┐            ┌──────────┐
  * estimated state ──▶│             │ ┌─────────▶│          │
@@ -67,6 +68,3 @@ class SchunkWsgPositionController
 }  // namespace schunk_wsg
 }  // namespace manipulation
 }  // namespace drake
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::manipulation::schunk_wsg::SchunkWsgPositionController);

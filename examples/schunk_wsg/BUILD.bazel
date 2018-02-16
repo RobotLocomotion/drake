@@ -91,6 +91,7 @@ drake_cc_googletest(
     deps = [
         ":simulated_schunk_wsg_system",
         "//lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_low_level_controller",
         "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",

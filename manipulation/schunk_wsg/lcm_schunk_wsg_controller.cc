@@ -22,7 +22,7 @@ LcmSchunkWsgController::LcmSchunkWsgController() {
           kSchunkWsgPositionIndex);
 
   // Add the LCM-free controller.
-  auto wsg_controller = builder.AddSystem<SchunkWsgController>();
+  auto wsg_controller = builder.AddSystem<SchunkWsgController<double>>();
 
   // Export the inputs.
   command_input_port_ =
