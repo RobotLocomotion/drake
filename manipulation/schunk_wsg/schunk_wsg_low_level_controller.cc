@@ -70,9 +70,9 @@ SchunkWsgLowLevelController<T>::SchunkWsgLowLevelController(
   // clang-format on
 
   // Add the PID controller.
-  const Vector1<double> kp{2000.0};
-  const Vector1<double> ki{0.0};
-  const Vector1<double> kd{5.0};
+  const Vector1d kp{2000.0};
+  const Vector1d ki{0.0};
+  const Vector1d kd{5.0};
 
   const auto pid_controller =
       builder.template AddSystem<systems::controllers::PidController<T>>(
