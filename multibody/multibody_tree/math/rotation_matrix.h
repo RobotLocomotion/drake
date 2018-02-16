@@ -372,8 +372,8 @@ class RotationMatrix {
   /// subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
   /// problem, closeness can also be measured by forming the orthonormal matrix
   /// R whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
-  /// `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I` The square-root of this
-  /// double-summation is called the Frobenius norm.
+  /// where `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of
+  /// this double-summation is called the Frobenius norm.
   /// @param[in] M a 3x3 matrix.
   /// @param[out] quality_factor.  The quality of M as a rotation matrix.
   /// `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
@@ -401,7 +401,7 @@ class RotationMatrix {
   // @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
   static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M, double* quality_factor = NULL) {
+  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
     const Matrix3<S> M_orthonormalized =
         ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
     ThrowIfNotValid(M_orthonormalized);
@@ -484,8 +484,8 @@ class RotationMatrix {
   // subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
   // problem, closeness can also be measured by forming the orthonormal matrix R
   // whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
-  // `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of this
-  // double-summation is called the Frobenius norm.
+  // where `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of
+  // this double-summation is called the Frobenius norm.
   // @param[in] M a 3x3 matrix.
   // @param[out] quality_factor.  The quality of M as a rotation matrix.
   // `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
@@ -515,10 +515,10 @@ class RotationMatrix {
   // https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
   template <typename Derived>
   static Matrix3<typename Derived::Scalar> ProjectMatrix3ToOrthonormalMatrix3(
-      const Eigen::MatrixBase<Derived>& M, double* quality_factor) {
+      const Eigen::MatrixBase<Derived>& M, T* quality_factor) {
     DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
     const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
-    if (quality_factor) {
+    if (quality_factor != nullptr) {
       // Singular values are always non-negative and sorted in decreasing order.
       const auto singular_values = svd.singularValues();
       const T s_max = singular_values(0);  // maximum singular value.
@@ -526,7 +526,7 @@ class RotationMatrix {
       const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
       const T det = M.determinant();
       const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
-      *quality_factor = ExtractDoubleOrThrow(s_f) * sign_det;
+      *quality_factor = s_f * sign_det;
     }
     return svd.matrixU() * svd.matrixV().transpose();
   }
