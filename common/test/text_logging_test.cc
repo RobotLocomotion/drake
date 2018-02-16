@@ -15,9 +15,7 @@ class Streamable {
   }
 };
 
-// Call each API function and macro to ensure that all of them compile; the
-// cmake script will cause this to be compiled in both spdlog and non-spdlog
-// modes.
+// Call each API function and macro to ensure that all of them compile.
 GTEST_TEST(TextLoggingTest, SmokeTest) {
   Streamable obj;
   drake::log()->trace("drake::log()->trace test: {} {}", "OK", obj);
