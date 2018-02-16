@@ -1,6 +1,6 @@
 #include "drake/systems/framework/context_base.h"
 
-#include "drake/common/unused.h"
+#include <string>
 
 namespace drake {
 namespace systems {
@@ -12,7 +12,7 @@ std::string ContextBase::GetSystemPathname() const {
 
 // Set up trackers for independent sources: time, accuracy, state, parameters,
 // and input ports.
-void ContextBase::CreateWellKnownTrackers() {
+void ContextBase::CreateBuiltInTrackers() {
   DependencyGraph& trackers = graph_;
   // This is the dummy "tracker" used for constants and anything else that has
   // no dependencies on any Context source. Ignoring return value.
@@ -23,7 +23,7 @@ void ContextBase::CreateWellKnownTrackers() {
   trackers.CreateNewDependencyTracker(
       DependencyTicket(internal::kTimeTicket), "t");
 
-  // TODO(sherm1) Add the rest of the well-known tickets here.
+  // TODO(sherm1) Add the rest of the built-in tickets here.
 }
 
 }  // namespace systems

@@ -101,10 +101,10 @@ class SystemPathnameInterface {
 are defined here. Actual ticket objects are created from these integers.
 Ticket numbers for conditionally-allocated objects like ports and cache
 entries are allocated beginning with kNextAvailableTicket defined below. */
-enum WellKnownTicketNumbers {
+enum BuiltInTicketNumbers {
   kNothingTicket        =  0,
   kTimeTicket           =  1,
-  // TODO(sherm1) Add in the rest of the well-known tickets here.
+  // TODO(sherm1) Add in the rest of the built-in tickets here.
   kNextAvailableTicket  = kTimeTicket + 1
 };
 

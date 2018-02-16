@@ -1,17 +1,10 @@
 #pragma once
 
-#include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
-#include "drake/common/drake_copyable.h"
-#include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -95,12 +88,12 @@ class ContextBase : public internal::SystemPathnameInterface {
 
  protected:
   /** Default constructor creates an empty Context but initializes all the
-  well-known dependency trackers that are the same in every System (like time,
+  built-in dependency trackers that are the same in every System (like time,
   q, all states, all inputs, etc.). We can't allocate trackers for individual
   discrete & abstract states, parameters, or input ports since we don't yet
   know how many there are. */
   ContextBase() : graph_(this) {
-    CreateWellKnownTrackers();
+    CreateBuiltInTrackers();
   }
 
   /** Copy constructor takes care of base class data members, but _does not_ fix
@@ -124,8 +117,9 @@ class ContextBase : public internal::SystemPathnameInterface {
   virtual ContextBase* DoCloneWithoutPointers() const = 0;
 
  private:
-  // Fills in the dependency graph with the ubiquitous trackers.
-  void CreateWellKnownTrackers();
+  // Fills in the dependency graph with the built-in trackers that are common
+  // to every Context (and every System).
+  void CreateBuiltInTrackers();
 
   // Given a new context `clone` with the same dependency graph as this one,
   // create a mapping of all tracker memory addresses from `this` to `clone`.
