@@ -1,9 +1,6 @@
 #include "drake/systems/framework/dependency_tracker.h"
 
 #include <algorithm>
-#include <utility>
-
-using std::pair;
 
 namespace drake {
 namespace systems {
@@ -16,14 +13,14 @@ CacheEntryValue DependencyTracker::dummy_cache_value_(true);
 // that things have changed. Update statistics.
 void DependencyTracker::NoteValueChange(int64_t change_event) const {
   DRAKE_ASSERT(change_event > 0);
-  SPDLOG_DEBUG(log(), "Tracker '{}' value change event {} ...",
-               GetPathDescription(), change_event);
+  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' value change event {} ...",
+                     GetPathDescription(), change_event);
 
   ++num_value_change_notifications_received_;
   if (last_change_event_ == change_event) {
     ++num_ignored_notifications_;
-    SPDLOG_DEBUG(log(),
-                 "... ignoring repeated notification same change event.");
+    DRAKE_SPDLOG_DEBUG(log(),
+                       "... ignoring repeated notification same change event.");
     return;
   }
   last_change_event_ = change_event;
@@ -40,17 +37,17 @@ void DependencyTracker::NotePrerequisiteChange(
     int depth) const {
   DRAKE_ASSERT(change_event > 0);
   DRAKE_ASSERT(HasPrerequisite(prerequisite));  // Expensive.
-  SPDLOG_DEBUG(log(),
-               "{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
-               Indent(depth), GetPathDescription(),
-               prerequisite.GetPathDescription(), change_event);
+  DRAKE_SPDLOG_DEBUG(
+      log(), "{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
+      Indent(depth), GetPathDescription(), prerequisite.GetPathDescription(),
+      change_event);
 
   ++num_prerequisite_notifications_received_;
   if (last_change_event_ == change_event) {
     ++num_ignored_notifications_;
-    SPDLOG_DEBUG(log(),
-                 "{}... ignoring repeated notification same change event.",
-                 Indent(depth));
+    DRAKE_SPDLOG_DEBUG(
+        log(), "{}... ignoring repeated notification same change event.",
+        Indent(depth));
     return;
   }
   last_change_event_ = change_event;
@@ -62,13 +59,14 @@ void DependencyTracker::NotePrerequisiteChange(
 
 void DependencyTracker::NotifySubscribers(int64_t change_event,
                                           int depth) const {
-  SPDLOG_DEBUG(log(), "{}... {} downstream subscribers.{}", Indent(depth),
-               num_subscribers(), num_subscribers() > 0 ? " Notifying:" : "");
+  DRAKE_SPDLOG_DEBUG(log(), "{}... {} downstream subscribers.{}", Indent(depth),
+                     num_subscribers(),
+                     num_subscribers() > 0 ? " Notifying:" : "");
 
   for (const DependencyTracker* subscriber : subscribers_) {
     DRAKE_ASSERT(subscriber != nullptr);
-    SPDLOG_DEBUG(log(), "{}->{}", Indent(depth),
-                 subscriber->GetPathDescription());
+    DRAKE_SPDLOG_DEBUG(log(), "{}->{}", Indent(depth),
+                       subscriber->GetPathDescription());
     subscriber->NotePrerequisiteChange(change_event, *this, depth + 1);
   }
 
@@ -89,8 +87,8 @@ void DependencyTracker::NotifySubscribers(int64_t change_event,
 void DependencyTracker::SubscribeToPrerequisite(
     DependencyTracker* prerequisite) {
   DRAKE_DEMAND(prerequisite != nullptr);
-  SPDLOG_DEBUG(log(), "Tracker '{}' subscribing to prerequisite '{}'",
-               GetPathDescription(), prerequisite->GetPathDescription());
+  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' subscribing to prerequisite '{}'",
+                     GetPathDescription(), prerequisite->GetPathDescription());
 
   // Make sure we haven't already added this prerequisite. Expensive.
   DRAKE_ASSERT(!HasPrerequisite(*prerequisite));  // Expensive.
@@ -99,17 +97,15 @@ void DependencyTracker::SubscribeToPrerequisite(
   prerequisite->AddDownstreamSubscriber(*this);
 }
 
-
 void DependencyTracker::AddDownstreamSubscriber(
     const DependencyTracker& subscriber) {
-
   // Make sure we haven't already added this subscriber. Expensive.
   DRAKE_ASSERT(!HasSubscriber(subscriber));
   // Subscriber must have *already* recorded this prerequisite. Expensive.
   DRAKE_ASSERT(subscriber.HasPrerequisite(*this));
 
-  SPDLOG_DEBUG(log(), "Tracker '{}' adding subscriber '{}'",
-               GetPathDescription(), subscriber.GetPathDescription());
+  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' adding subscriber '{}'",
+                     GetPathDescription(), subscriber.GetPathDescription());
 
   subscribers_.push_back(&subscriber);
 }
@@ -137,8 +133,8 @@ void Remove(const T& value, std::vector<T>* to_search) {
 void DependencyTracker::UnsubscribeFromPrerequisite(
     DependencyTracker* prerequisite) {
   DRAKE_DEMAND(prerequisite != nullptr);
-  SPDLOG_DEBUG(log(), "Tracker '{}' unsubscribing from prerequisite '{}'",
-               GetPathDescription(), prerequisite->GetPathDescription());
+  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' unsubscribing from prerequisite '{}'",
+                     GetPathDescription(), prerequisite->GetPathDescription());
 
   // Make sure we have already added this prerequisite. Expensive.
   DRAKE_ASSERT(HasPrerequisite(*prerequisite));  // Expensive.
@@ -155,8 +151,8 @@ void DependencyTracker::RemoveDownstreamSubscriber(
   // Subscriber must have *already* removed this prerequisite. Expensive.
   DRAKE_ASSERT(!subscriber.HasPrerequisite(*this));
 
-  SPDLOG_DEBUG(log(), "Tracker '{}' removing subscriber '{}'",
-               GetPathDescription(), subscriber.GetPathDescription());
+  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' removing subscriber '{}'",
+                     GetPathDescription(), subscriber.GetPathDescription());
 
   Remove<const DependencyTracker*>(&subscriber, &subscribers_);
 }
@@ -193,8 +189,7 @@ void DependencyTracker::RepairTrackerPointers(
   } else {
     const CacheIndex source_index(source.cache_value_->cache_index());
     cache_value_ = &cache->get_mutable_cache_entry_value(source_index);
-    SPDLOG_DEBUG(
-        log(),
+    DRAKE_SPDLOG_DEBUG(log(),
         "Cloned tracker '{}' repairing cache entry {} invalidation to {:#x}.",
         GetPathDescription(), source.cache_value_->cache_index(),
         size_t(cache_value_));

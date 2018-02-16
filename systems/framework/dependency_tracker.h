@@ -259,7 +259,7 @@ class DependencyTracker {
         description_(std::move(description)),
         owning_subcontext_(owning_subcontext),
         cache_value_(cache_value ? cache_value : &dummy_cache_value_) {
-    SPDLOG_DEBUG(
+    DRAKE_SPDLOG_DEBUG(
         log(), "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
         description_, cache_value ? "with" : "without", size_t(cache_value),
         cache_value
