@@ -22,6 +22,20 @@ not be compiled if debugging is turned off (-DNDEBUG is set):
   SPDLOG_TRACE(drake::log(), "message: {}", something_conditionally_compiled);
   SPDLOG_DEBUG(drake::log(), "message: {}", something_conditionally_compiled);
 </pre>
+Note that if you are running with NDEBUG _undefined_, so that these two macros
+are expanded, the arguments will be evaluated even if logging is disabled. If
+you want to avoid that cost, Drake provides macros that provide the same
+functionality but won't evaluate the arguments unless they are actually going
+to be logged:
+<pre>
+  DRAKE_SPDLOG_TRACE(drake::log(),
+                     "message: {}", something_conditionally_compiled);
+  DRAKE_SPDLOG_DEBUG(drake::log(),
+                     "message: {}", something_conditionally_compiled);
+</pre>
+We suggest using the Drake versions of these macros everywhere so that you don't
+have to decide when the argument-evaluation cost is going to be excessive.
+
 The format string syntax is fmtlib; see http://fmtlib.net/3.0.0/syntax.html.
 In particular, any class that overloads `operator<<` for `ostream` can be
 printed without any special handling.
@@ -36,7 +50,19 @@ printed without any special handling.
 #ifndef NDEBUG
 #define SPDLOG_DEBUG_ON 1
 #define SPDLOG_TRACE_ON 1
+
+#define DRAKE_SPDLOG_TRACE(logger, ...) \
+  if (logger->level() <= spdlog::level::trace) \
+    SPDLOG_TRACE(logger, __VA_ARGS__)
+
+#define DRAKE_SPDLOG_DEBUG(logger, ...) \
+  if (logger->level() <= spdlog::level::debug) \
+    SPDLOG_DEBUG(logger, __VA_ARGS__)
+#else
+#define DRAKE_SPDLOG_TRACE(logger, ...)
+#define DRAKE_SPDLOG_DEBUG(logger, ...)
 #endif
+
 /* clang-format off */
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
@@ -91,6 +117,8 @@ class logger {
 
 #define SPDLOG_TRACE(logger, ...)
 #define SPDLOG_DEBUG(logger, ...)
+#define DRAKE_SPDLOG_TRACE(logger, ...)
+#define DRAKE_SPDLOG_DEBUG(logger, ...)
 
 #endif  // HAVE_SPDLOG
 
