@@ -3,6 +3,9 @@
 /* clang-format on */
 
 #include <cmath>
+#include <map>
+#include <tuple>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -23,13 +26,27 @@ const double kWidth{2.};  // Lane and drivable width.
 const double kHeight{5.};  // Elevation bound.
 
 const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
-                                     const std::string& junction_id) {
+                                     const std::string& junction_id,
+                                     int segment_index, int lane_index) {
   for (int i = 0; i < rg.num_junctions(); ++i) {
     if (rg.junction(i)->id() == api::JunctionId(junction_id)) {
-      return rg.junction(i)->segment(0)->lane(0);
+      if (segment_index >= rg.junction(i)->num_segments()) {
+        throw std::runtime_error(
+            "Segment index is greater than available segment number.");
+      }
+      if (lane_index >= rg.junction(i)->segment(segment_index)->num_lanes()) {
+        throw std::runtime_error(
+            "Lane index is greater than available lane number.");
+      }
+      return rg.junction(i)->segment(segment_index)->lane(lane_index);
     }
   }
   throw std::runtime_error("No matching junction name in the road network");
+}
+
+const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
+                                     const std::string& junction_id) {
+  return GetLaneByJunctionId(rg, junction_id, 0, 0);
 }
 
 GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
@@ -246,6 +263,117 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane1_0"));
   // lane1 does not contain the point.
   EXPECT_GT(distance, 0.);
+}
+
+// Tests different api::Geoposition in the following RoadGeometry without a
+// hint.
+//
+//        ^ +r, +y
+//        |
+//        |                 g
+//        ------------------------------------
+//        |                 f                |           Left shoulder
+//        ------------------------------------
+//        |                 e                |           l:2
+//        |                                  |
+//        ------------------------------------
+//        |                                  |           l:1
+//        |                 d                |
+//        ------------------c-----------------
+// (0,0,0)|__________________________________|_____> +s  l:0
+//        |                                  |       +x
+//        ------------------------------------
+//        |                 b                |           Right shoulder
+//        ------------------------------------
+//                          a
+//
+// Letters, such as `a`, `b`, etc. are the api::GeoPositions to test.
+GTEST_TEST(MultilaneLanesTest, MultipleLineLaneSegmentWithoutHint) {
+  const double kLaneWidth{2. * kWidth};
+  const HBounds kElevationBounds{0., kHeight};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.01 * M_PI};
+
+  auto builder = std::make_unique<Builder>(kLaneWidth, kElevationBounds,
+                                           kLinearTolerance, kAngularTolerance);
+
+  // Initialize the road from the origin.
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const Endpoint kRoadOrigin{{0., 0., 0.}, kFlatZ};
+  const double kLength{10.};
+  const double kThreeLanes{3};
+  const double kZeroR0{0.};
+  const double kShoulder{1.0};
+
+  // Creates a simple 3-line-lane segment road.
+  builder->Connect("s0", kThreeLanes, kZeroR0, kShoulder, kShoulder,
+                   kRoadOrigin, kLength, kFlatZ);
+  std::unique_ptr<const api::RoadGeometry> rg =
+      builder->Build(api::RoadGeometryId{"multi-lane-line-segment"});
+
+  // Prepares the truth table to match different api::GeoPositions into
+  // api::RoadPositions.
+  const api::Lane* kFirstLane = GetLaneByJunctionId(*rg, "j:s0", 0, 0);
+  const api::Lane* kSecondLane = GetLaneByJunctionId(*rg, "j:s0", 0, 1);
+  const api::Lane* kThirdLane = GetLaneByJunctionId(*rg, "j:s0", 0, 2);
+
+  const std::vector<  // <Geo point - Expected road pos - Hint - Distance >
+      std::tuple<api::GeoPosition, api::RoadPosition, api::RoadPosition,
+                 double>>
+      truth_vector{
+          std::make_tuple<api::GeoPosition, api::RoadPosition,
+                          api::RoadPosition, double>(  // a
+              {5., -4., 0.}, {kFirstLane, {5., -3, 0.}}, {kFirstLane, {}}, 1.),
+          std::make_tuple<api::GeoPosition, api::RoadPosition,
+                          api::RoadPosition, double>(  // b
+              {5., -2.5, 0.}, {kFirstLane, {5., -2.5, 0.}}, {kFirstLane, {}},
+              0.),
+          std::make_tuple<api::GeoPosition, api::RoadPosition,
+                          api::RoadPosition, double>(  // c
+              {5., 2.0, 0.}, {kSecondLane, {5., -2.0, 0.}}, {kSecondLane, {}},
+              0.),
+          std::make_tuple<api::GeoPosition, api::RoadPosition,
+                          api::RoadPosition, double>(  // d
+              {5., 3.1, 0.}, {kSecondLane, {5., -0.9, 0.}}, {kSecondLane, {}},
+              0.),
+          std::make_tuple<api::GeoPosition, api::RoadPosition,
+                          api::RoadPosition, double>(  // e
+              {5., 8.3, 0.}, {kThirdLane, {5., 0.3, 0.}}, {kThirdLane, {}}, 0.),
+          std::make_tuple<api::GeoPosition, api::RoadPosition,
+                          api::RoadPosition, double>(  // f
+              {5., 10.5, 0.}, {kThirdLane, {5., 2.5, 0.}}, {kThirdLane, {}},
+              0.),
+          std::make_tuple<api::GeoPosition, api::RoadPosition,
+                          api::RoadPosition, double>(  // g
+              {5., 12., 0.}, {kThirdLane, {5., 3., 0.}}, {kThirdLane, {}}, 1.),
+      };
+
+  double distance{};
+  api::RoadPosition test_road_position{};
+  // Evaluates the truth table without a hint.
+  for (const auto truth_value : truth_vector) {
+    EXPECT_NO_THROW(test_road_position = rg->ToRoadPosition(
+                        std::get<0>(truth_value), nullptr, nullptr, &distance));
+    EXPECT_EQ(test_road_position.lane->id().string(),
+              std::get<1>(truth_value).lane->id().string());
+    EXPECT_TRUE(api::test::IsLanePositionClose(test_road_position.pos,
+                                               std::get<1>(truth_value).pos,
+                                               kLinearTolerance));
+    EXPECT_NEAR(distance, std::get<3>(truth_value), kVeryExact);
+  }
+
+  // Evaluates the truth table with a hint.
+  for (const auto truth_value : truth_vector) {
+    EXPECT_NO_THROW(test_road_position = rg->ToRoadPosition(
+                        std::get<0>(truth_value), &(std::get<2>(truth_value)),
+                        nullptr, &distance));
+    EXPECT_EQ(test_road_position.lane->id().string(),
+              std::get<1>(truth_value).lane->id().string());
+    EXPECT_TRUE(api::test::IsLanePositionClose(test_road_position.pos,
+                                               std::get<1>(truth_value).pos,
+                                               kLinearTolerance));
+    EXPECT_NEAR(distance, std::get<3>(truth_value), kVeryExact);
+  }
 }
 
 }  // namespace
