@@ -16,6 +16,11 @@ namespace trajectory_optimization {
 class JointLimitConstraintForceEvaluator
     : public GeneralizedConstraintForceEvaluator {
  public:
+  /** Constructor.
+   * @param tree The tree on which the joint limit force is evaluated.
+   * @param joint_velocity_index The joint whose velocity index equals to 
+   * joint_velocity_index has joint limit force.
+   */
   JointLimitConstraintForceEvaluator(const RigidBodyTree<double>& tree,
                                      int joint_velocity_index);
 
@@ -30,6 +35,9 @@ class JointLimitConstraintForceEvaluator
   static constexpr int LowerLimitForceIndexInLambda() { return 1; }
 
  protected:
+  Eigen::MatrixXd EvalConstraintJacobian(
+      const Eigen::Ref<const Eigen::VectorXd>& x) const override;
+
   MatrixX<AutoDiffXd> EvalConstraintJacobian(
       const Eigen::Ref<const AutoDiffVecXd>& x) const override;
 

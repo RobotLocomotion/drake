@@ -10,15 +10,16 @@ namespace systems {
 namespace trajectory_optimization {
 /**
  * Evaluates the generalized constraint force from
- * RigidBodyTree::positionConstraint.
- * Loop joint constraint is a position constraint.
+ * RigidBodyTree::positionConstraint. For example, loop joint constraint is a
+ * position constraint.
  */
 class PositionConstraintForceEvaluator
     : public GeneralizedConstraintForceEvaluator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositionConstraintForceEvaluator)
 
-  /**
+  /** Constructor.
+   * @param tree The tree on which the position constraint force is evaluated.
    * @param kinematics_cache_helper. The helper class to update the kinematics
    * cache. The kinematics cache is useful when computing the Jacobian of the
    * position constraint.
@@ -28,9 +29,16 @@ class PositionConstraintForceEvaluator
       std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
           kinematics_cache_helper);
 
-  ~PositionConstraintForceEvaluator() override{};
+  ~PositionConstraintForceEvaluator() override {}
+
+  /** The size of the generalized position vector to evaluate the position
+   * constraint Jacobian. */
+  int generalized_positions_size() const { return non_lambda_size(); }
 
  protected:
+  Eigen::MatrixXd EvalConstraintJacobian(
+      const Eigen::Ref<const Eigen::VectorXd>& q) const override;
+
   MatrixX<AutoDiffXd> EvalConstraintJacobian(
       const Eigen::Ref<const AutoDiffVecXd>& q) const override;
 

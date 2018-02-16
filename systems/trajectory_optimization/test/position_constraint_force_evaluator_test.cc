@@ -20,7 +20,7 @@ GTEST_TEST(PositionConstraintForceEvaluatorTest, TestEval) {
   PositionConstraintForceEvaluator evaluator(*tree, cache_helper);
 
   EXPECT_EQ(evaluator.lambda_size(), tree->getNumPositionConstraints());
-  EXPECT_EQ(evaluator.non_lambda_size(), tree->get_num_positions());
+  EXPECT_EQ(evaluator.generalized_positions_size(), tree->get_num_positions());
 
   // Set q to some arbitrary number.
   const Eigen::VectorXd q =

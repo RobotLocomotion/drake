@@ -16,19 +16,12 @@ GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(
 
 void GeneralizedConstraintForceEvaluator::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
-  AutoDiffVecXd y_t;
-  Eval(math::initializeAutoDiff(x), y_t);
-  y = math::autoDiffToValueMatrix(y_t);
+  DoEvalGeneric(x, &y);
 }
 
 void GeneralizedConstraintForceEvaluator::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
-  // x contains non-λ and λ
-  DRAKE_ASSERT(x.rows() == num_vars());
-  const auto lambda = GetLambdaFromEvalInputVector(x);
-
-  const auto J = EvalConstraintJacobian(x);
-  y = J.transpose() * lambda;
+  DoEvalGeneric(x, &y);
 }
 }  // namespace trajectory_optimization
 }  // namespace systems

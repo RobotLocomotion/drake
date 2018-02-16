@@ -1,5 +1,7 @@
 #include "drake/systems/trajectory_optimization/position_constraint_force_evaluator.h"
 
+#include "drake/math/autodiff.h"
+
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
@@ -13,6 +15,12 @@ PositionConstraintForceEvaluator::PositionConstraintForceEvaluator(
           tree, tree.get_num_positions() + tree.getNumPositionConstraints(),
           tree.getNumPositionConstraints()),
       kinematics_cache_helper_(kinematics_cache_helper) {}
+
+Eigen::MatrixXd PositionConstraintForceEvaluator::EvalConstraintJacobian(
+    const Eigen::Ref<const Eigen::VectorXd>& x) const {
+  return math::autoDiffToValueMatrix(
+      EvalConstraintJacobian(math::initializeAutoDiff(x)));
+}
 
 MatrixX<AutoDiffXd> PositionConstraintForceEvaluator::EvalConstraintJacobian(
     const Eigen::Ref<const AutoDiffVecXd>& x) const {

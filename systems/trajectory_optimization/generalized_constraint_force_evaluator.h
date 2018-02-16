@@ -9,8 +9,9 @@
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
-/** This evaluator computes the generalized constraint force Jᵀλ.
- * where the Jacobian J can depend on generalized position q and/or other
+/** This evaluator computes the generalized constraint force Jᵀλ ∈ ℝ ᴺᵛ, where
+ * Nᵥ is the size of the generalized velocities.
+ * The Jacobian J may or may not depend on generalized position q and/or other
  * variables.
  */
 class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
@@ -20,6 +21,11 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
    * @param tree Note @p tree is aliased for the lifetime of of this object.
    * @param num_vars Number of variables, including λ.
    * @param lambda_size λ is a lambda_size x 1 vector.
+   * @Note the Jᵀλ ∈ ℝ ᴺᵛ, where Nᵥ is the size of the generalized velocities.
+   * So the size of the output vector is always Nᵥ. To evaluate Jᵀλ, it may or
+   * may not depend on variables such as contact force λ, generalized position
+   * q, or some additional variables, so the size of the input variable to this
+   * evalautor should be specified by the user.
    */
   GeneralizedConstraintForceEvaluator(const RigidBodyTree<double>& tree,
                                       int num_vars, int lambda_size);
@@ -46,13 +52,13 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
       is_eigen_vector_of<DerivedNonLambda,
                          typename DerivedLambda::Scalar>::value &&
           is_eigen_vector<DerivedLambda>::value,
-      Eigen::Matrix<typename DerivedLambda::Scalar, Eigen::Dynamic, 1>>::type
+      VectorX<typename DerivedLambda::Scalar>>::type
   ComposeEvalInputVector(const Eigen::MatrixBase<DerivedNonLambda>& non_lambda,
                          const Eigen::MatrixBase<DerivedLambda>& lambda) const {
     using Scalar = typename DerivedLambda::Scalar;
     DRAKE_ASSERT(non_lambda.rows() == num_vars() - lambda_size_);
     DRAKE_ASSERT(lambda.rows() == lambda_size_);
-    typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(num_vars());
+    VectorX<Scalar> x(num_vars());
     x << non_lambda, lambda;
     return x;
   }
@@ -78,14 +84,34 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
               AutoDiffVecXd& y) const override;
-  //
+
+  template <typename DerivedX, typename DerivedY>
+  typename std::enable_if<std::is_same<typename DerivedX::Scalar,
+                                       typename DerivedY::Scalar>::value &&
+                          is_eigen_vector<DerivedX>::value &&
+                          is_eigen_vector<DerivedY>::value>::type
+  DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                Eigen::MatrixBase<DerivedY>* y) const {
+    // x contains non-λ and λ
+    DRAKE_ASSERT(x.rows() == num_vars());
+    const auto lambda = GetLambdaFromEvalInputVector(x);
+
+    const auto J = EvalConstraintJacobian(x);
+    *y = J.transpose() * lambda;
+  }
+
   // Computes the Jacobian J so as to evaluate the generalized constraint force
-  // Jᵀλ.
+  // Jᵀλ. The Jacobian J is of size Nv x n_λ.
+  virtual Eigen::MatrixXd EvalConstraintJacobian(
+      const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;
+
+  // Computes the Jacobian J so as to evaluate the generalized constraint force
+  // Jᵀλ. The Jacobian J is of size Nv x n_λ.
   virtual MatrixX<AutoDiffXd> EvalConstraintJacobian(
       const Eigen::Ref<const AutoDiffVecXd>& x) const = 0;
 
  private:
-  const RigidBodyTree<double>* tree_;
+  const RigidBodyTree<double>* const tree_;
   const int lambda_size_;
 };
 }  // namespace trajectory_optimization
