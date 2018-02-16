@@ -32,30 +32,38 @@ namespace schunk_wsg {
  *                │Position   │    └─────────────┘
  *                └───────────┘
  * ```
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ * - AutoDiffXd
+ * - symbolic::Expression
+ *
+ * They are already available to link against in the containing library.
+ * No other values for T are currently supported.
  */
-class SchunkWsgLowLevelController : public systems::Diagram<double> {
+template <typename T>
+class SchunkWsgLowLevelController : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgLowLevelController)
   explicit SchunkWsgLowLevelController(
       const Vector2<double>& closed_joint_position = Vector2<double>::Zero(),
       const Vector2<double>& open_joint_position = Vector2<double>(1, -1));
 
-  const systems::InputPortDescriptor<double>&
+  const systems::InputPortDescriptor<T>&
   get_commanded_grip_force_input_port() const {
     return this->get_input_port(commanded_grip_force_input_port_);
   }
 
-  const systems::InputPortDescriptor<double>&
+  const systems::InputPortDescriptor<T>&
   get_estimated_joint_state_input_port() const {
     return this->get_input_port(estimated_joint_state_input_port_);
   }
 
-  const systems::OutputPort<double>& get_comanded_joint_force_output_port()
+  const systems::OutputPort<T>& get_comanded_joint_force_output_port()
       const {
     return this->get_output_port(commanded_joint_force_output_port_);
   }
 
-  const systems::OutputPort<double>& get_estimated_grip_state_output_port()
+  const systems::OutputPort<T>& get_estimated_grip_state_output_port()
       const {
     return this->get_output_port(estimated_grip_state_output_port_);
   }
