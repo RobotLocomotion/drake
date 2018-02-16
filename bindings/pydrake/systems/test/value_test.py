@@ -10,6 +10,7 @@ import numpy as np
 from pydrake.systems.framework import (
     AbstractValue,
     BasicVector,
+    Parameters,
     Value,
     )
 from pydrake.systems.test.test_util import (
@@ -136,6 +137,46 @@ class TestValue(unittest.TestCase):
                 "get_value",
                 "AddValueInstantiation",
             ]), cm.exception.message)
+
+    def test_parameters_api(self):
+
+        def make_abstract():
+            return AbstractValue.Make("Hello")
+
+        def make_vector():
+            return BasicVector(1)
+
+        params = Parameters(
+            numeric=[make_vector()], abstract=[make_abstract()])
+        self.assertEquals(params.num_numeric_parameters(), 1)
+        self.assertEquals(params.num_abstract_parameters(), 1)
+        # Numeric.
+        numeric_param = params.get_numeric_parameter(index=0)
+        self.assertTrue(isinstance(numeric_param, BasicVector))
+        self.assertTrue(
+            params.get_mutable_numeric_parameter(index=0) is numeric_param)
+        # WARNING: This will invalidate old references!
+        params.set_numeric_parameters(params.get_numeric_parameters().Clone())
+        # Abstract.
+        abstract_param = params.get_abstract_parameter(index=0)
+        self.assertTrue(isinstance(abstract_param, AbstractValue))
+        self.assertTrue(
+            params.get_mutable_abstract_parameter(index=0) is abstract_param)
+        # WARNING: This will invalidate old references!
+        params.set_abstract_parameters(
+            params.get_abstract_parameters().Clone())
+        # WARNING: This may invalidate old references!
+        params.SetFrom(copy.deepcopy(params))
+
+        # Test alternative constructors.
+        ctor_test = [
+            Parameters(),
+            Parameters(numeric=[make_vector()]),
+            Parameters(abstract=[make_abstract()]),
+            Parameters(numeric=[make_vector()], abstract=[make_abstract()]),
+            Parameters(vec=make_vector()),
+            Parameters(value=make_abstract()),
+            ]
 
 
 if __name__ == '__main__':
