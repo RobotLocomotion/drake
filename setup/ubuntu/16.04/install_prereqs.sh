@@ -31,7 +31,7 @@ apt install --no-install-recommends lsb-release
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
 
-source "${BASH_SOURCE%/*}/install_prereqs_binary_distribution.sh"
+source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.

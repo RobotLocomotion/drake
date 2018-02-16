@@ -113,6 +113,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/manipulation/util:trajectory_utils",
     "//drake/manipulation/util:world_sim_tree_builder",
     "//drake/math:autodiff",
+    "//drake/math:barycentric",
     "//drake/math:continuous_algebraic_riccati_equation",
     "//drake/math:discrete_algebraic_riccati_equation",
     "//drake/math:eigen_sparse_triplet",
@@ -225,6 +226,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/controllers/qp_inverse_dynamics:robot_kinematic_state",
     "//drake/systems/controllers/qp_inverse_dynamics:robot_kinematic_state_translator_system",  # noqa
     "//drake/systems/controllers:control_util",
+    "//drake/systems/controllers:dynamic_programming",
     "//drake/systems/controllers:instantaneous_qp_controller",
     "//drake/systems/controllers:inverse_dynamics",
     "//drake/systems/controllers:inverse_dynamics_controller",
@@ -277,6 +279,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/plants/spring_mass_system:spring_mass_system",
     "//drake/systems/primitives:adder",
     "//drake/systems/primitives:affine_system",
+    "//drake/systems/primitives:barycentric_system",
     "//drake/systems/primitives:constant_value_source",
     "//drake/systems/primitives:constant_vector_source",
     "//drake/systems/primitives:demultiplexer",

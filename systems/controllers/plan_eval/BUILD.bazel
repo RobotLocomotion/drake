@@ -20,12 +20,12 @@ drake_cc_library(
         "generic_plan.h",
     ],
     deps = [
-        "//drake/manipulation/util:trajectory_utils",
-        "//drake/multibody:rigid_body_tree_alias_groups",
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
-        "//drake/systems/framework:value",
+        "//manipulation/util:trajectory_utils",
+        "//multibody:rigid_body_tree_alias_groups",
+        "//systems/controllers:setpoint",
+        "//systems/controllers/qp_inverse_dynamics",
+        "//systems/controllers/qp_inverse_dynamics:param_parser",
+        "//systems/framework:value",
     ],
 )
 
@@ -36,8 +36,8 @@ drake_cc_library(
         "test/test_common.h",
     ],
     deps = [
-        "//drake/multibody:rigid_body_tree_alias_groups",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
+        "//multibody:rigid_body_tree_alias_groups",
+        "//systems/controllers/qp_inverse_dynamics:param_parser",
     ],
 )
 
@@ -46,10 +46,10 @@ drake_cc_library(
     srcs = ["plan_eval_base_system.cc"],
     hdrs = ["plan_eval_base_system.h"],
     deps = [
-        "//drake/multibody:rigid_body_tree_alias_groups",
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
-        "//drake/systems/framework:leaf_system",
+        "//multibody:rigid_body_tree_alias_groups",
+        "//systems/controllers:setpoint",
+        "//systems/controllers/qp_inverse_dynamics:param_parser",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -58,17 +58,17 @@ drake_cc_library(
 drake_cc_googletest(
     name = "generic_plan_test",
     data = [
-        "//drake/manipulation/models/iiwa_description:models",
-        "//drake/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
-        "//drake/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
+        "//manipulation/models/iiwa_description:models",
+        "//systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
+        "//systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
     ],
     deps = [
         ":generic_plan",
         ":test_common",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
     ],
 )
 

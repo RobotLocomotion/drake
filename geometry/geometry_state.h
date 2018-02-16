@@ -80,11 +80,11 @@ using FrameIdSet = std::unordered_set<FrameId>;
 //@}
 
 /**
- The context-dependent state of GeometryWorld. This serves as an AbstractValue
- in the context. GeometryWorld's time-dependent state includes more than just
+ The context-dependent state of GeometrySystem. This serves as an AbstractValue
+ in the context. GeometrySystem's time-dependent state includes more than just
  values; objects can be added to or removed from the world over time. Therefore,
- GeometryWorld's context-dependent state includes values and structure -- the
- topology of the world.
+ GeometrySystem's context-dependent state includes values (the poses) and
+ structure (the topology of the world).
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
 

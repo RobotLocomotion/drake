@@ -174,7 +174,7 @@ class RgbdRenderer {
 
   /// The color palette for sky, terrain colors and ground truth label rendering
   /// TODO(thduynguyen, SeanCurtis-TRI): This is a world's property (colors for
-  /// each object/segment) hence should be moved to GeometryWorld. That would
+  /// each object/segment) hence should be moved to GeometrSystem. That would
   /// also answer the question whether this heavy object should be a singleton.
   ColorPalette color_palette_;
 };

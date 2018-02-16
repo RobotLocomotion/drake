@@ -16,7 +16,7 @@ namespace rendering {
 namespace pose_aggregator_detail { struct InputRecord; }
 
 // TODO(david-german-tri, SeanCurtis-TRI): Evolve PoseAggregator into
-// GeometrySystem after GeometryWorld becomes available.
+// GeometrySystem as it becomes available.
 
 // TODO(david-german-tri): Rename PoseAggregator to KinematicsAggregator, since
 // it includes both poses and velocities now.
