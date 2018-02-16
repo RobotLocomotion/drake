@@ -64,7 +64,7 @@ class RotationMatrix {
   /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
   ///        ⎣ 0   sin(theta)    cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeRotationMatrixX(const T& theta) {
+  static RotationMatrix<T> MakeXRotation(const T& theta) {
       Matrix3<T> R;
       using std::sin;
       using std::cos;
@@ -88,7 +88,7 @@ class RotationMatrix {
   /// R_AB = ⎢          0    1           0  ⎥
   ///        ⎣ -sin(theta)   0   cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeRotationMatrixY(const T& theta) {
+  static RotationMatrix<T> MakeYRotation(const T& theta) {
     Matrix3<T> R;
     using std::sin;
     using std::cos;
@@ -112,7 +112,7 @@ class RotationMatrix {
   /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
   ///        ⎣         0            0    1 ⎦
   /// ```
-  static RotationMatrix<T> MakeRotationMatrixZ(const T& theta) {
+  static RotationMatrix<T> MakeZRotation(const T& theta) {
     Matrix3<T> R;
     using std::sin;
     using std::cos;
@@ -149,9 +149,9 @@ class RotationMatrix {
   /// @li 3rd rotation R_CD: %Frame D rotates relative to frame C by a roll
   /// angle `r` about `Cx = Dx`.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-  static RotationMatrix<T> MakeRotationMatrixBodyZYX(const Vector3<T>& ypr) {
+  static RotationMatrix<T> MakeBodyZYXRotation(const Vector3<T>& ypr) {
     const Vector3<T> roll_pitch_yaw(ypr(2), ypr(1), ypr(0));
-    return RotationMatrix<T>::MakeRotationMatrixSpaceXYZ(roll_pitch_yaw);
+    return RotationMatrix<T>::MakeSpaceXYZRotation(roll_pitch_yaw);
   }
 
   /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
@@ -180,7 +180,7 @@ class RotationMatrix {
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-  static RotationMatrix<T> MakeRotationMatrixSpaceXYZ(const Vector3<T>& rpy) {
+  static RotationMatrix<T> MakeSpaceXYZRotation(const Vector3<T>& rpy) {
     Matrix3<T> R;
     using std::sin;
     using std::cos;
@@ -365,10 +365,6 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
 
-  // Given an approximate rotation matrix M, finds the orthonormal matrix R
-  // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
-  // with a Frobenius norm).  Hence, this method creates an orthonormal matrix R
-
   /// Given an approximate rotation matrix M, finds the %RotationMatrix R
   /// closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
   /// with a Frobenius norm).  Hence, this method creates a %RotationMatrix R
@@ -376,8 +372,8 @@ class RotationMatrix {
   /// subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
   /// problem, closeness can also be measured by forming the orthonormal matrix
   /// R whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
-  /// where `i = 1:3, j = 1:3`. The square-root of this double-summation is
-  /// called the Frobenius norm.
+  /// `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I` The square-root of this
+  /// double-summation is called the Frobenius norm.
   /// @param[in] M a 3x3 matrix.
   /// @param[out] quality_factor.  The quality of M as a rotation matrix.
   /// `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
@@ -488,8 +484,8 @@ class RotationMatrix {
   // subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
   // problem, closeness can also be measured by forming the orthonormal matrix R
   // whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
-  // where `i = 1:3, j = 1:3`. The square-root of this double-summation is
-  // called the Frobenius norm.
+  // `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of this
+  // double-summation is called the Frobenius norm.
   // @param[in] M a 3x3 matrix.
   // @param[out] quality_factor.  The quality of M as a rotation matrix.
   // `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
@@ -525,12 +521,12 @@ class RotationMatrix {
     if (quality_factor) {
       // Singular values are always non-negative and sorted in decreasing order.
       const auto singular_values = svd.singularValues();
-      const double s_max = singular_values(0);  // maximum singular value.
-      const double s_min = singular_values(2);  // minimum singular value.
-      const double s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
-      const double det = M.determinant();
-      const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : det);
-      *quality_factor = s_f * sign_det;
+      const T s_max = singular_values(0);  // maximum singular value.
+      const T s_min = singular_values(2);  // minimum singular value.
+      const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
+      const T det = M.determinant();
+      const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
+      *quality_factor = ExtractDoubleOrThrow(s_f) * sign_det;
     }
     return svd.matrixU() * svd.matrixV().transpose();
   }
