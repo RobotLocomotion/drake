@@ -8,34 +8,46 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-/// This class implements a controller for a Schunk WSG gripper as a
-/// `systems::Diagram`. The composition of this diagram is determined by the
-/// ControlMode specified for the controller.
+/**
+ * This class implements force-limited PID controller for a single degree of
+ * freedom gripper.
+ * ```
+ *                    ┌─────────────┐            ┌──────────┐
+ * estimated state ──▶│             │ ┌─────────▶│          │
+ *                    │PidController├───────────▶│Saturation├────▶ control
+ * desired state ────▶│             │ │       ┌─▶│          │
+ *                    └─────────────┘ │       │  └──────────┘
+ *                    ┌─────────────┐ │  ┌──┐ │
+ * max force ────────▶│PassThough   ├─┴─▶│-1├─┘
+ *                    └─────────────┘    └──┘
+ * ```
+ */
+template <typename T>
 class SchunkWsgPositionController
-    : public systems::Diagram<double>,
-      public systems::controllers::StateFeedbackControllerInterface<double> {
+    : public systems::Diagram<T>,
+      public systems::controllers::StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
   explicit SchunkWsgPositionController();
 
-  const systems::InputPortDescriptor<double>& get_max_force_input_port() const {
+  const systems::InputPortDescriptor<T>& get_max_force_input_port() const {
     return this->get_input_port(max_force_input_port_);
   }
 
   // Implement StateFeedbackControllerInterface
-  virtual const systems::InputPortDescriptor<double>&
+  virtual const systems::InputPortDescriptor<T>&
   get_input_port_estimated_state() const override {
     return this->get_input_port(estimated_state_input_port_);
   }
 
-  virtual const systems::InputPortDescriptor<double>&
+  virtual const systems::InputPortDescriptor<T>&
   get_input_port_desired_state() const override {
     return this->get_input_port(desired_state_input_port_);
   }
 
-  virtual const systems::OutputPort<double>& get_output_port_control()
+  virtual const systems::OutputPort<T>& get_output_port_control()
       const override {
-    return get_output_port(0);
+    return this->get_output_port(0);
   }
 
  private:
