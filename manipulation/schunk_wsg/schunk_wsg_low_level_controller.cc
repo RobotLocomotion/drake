@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -16,80 +15,115 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-SchunkWsgLowLevelController::SchunkWsgLowLevelController() {
-  systems::DiagramBuilder<double> builder;
+SchunkWsgLowLevelController::SchunkWsgLowLevelController(
+    const Vector2<double>& closed_joint_position,
+    const Vector2<double>& open_joint_position) {
+  // Define position and state sizes.
+  const int joint_position_size{2};  // Two fingers.
+  const int joint_state_size{2 * joint_position_size};
+  const int mean_finger_position_size{1};
+  const int mean_finger_state_size{2 * mean_finger_position_size};
+  const int grip_position_size{1};  // Distance between the fingers.
+  const int grip_state_size{2 * grip_position_size};
 
-  auto estimated_state_passthrough =
-      builder.AddSystem<systems::PassThrough<double>>(kSchunkWsgNumPositions +
-                                                      kSchunkWsgNumVelocities);
-  estimated_joint_state_input_port_ =
-      builder.ExportInput(estimated_state_passthrough->get_input_port());
+  systems::DiagramBuilder<double> builder;
 
   // Define Jacobians for the mean finger position and the grip position
   // (distance between the fingers).
-  MatrixX<double> mean_finger_position_jacobian{1, 2};
-  mean_finger_position_jacobian << 0.5, 0.5;
-  MatrixX<double> mean_finger_state_jacobian{2, 4};
-  mean_finger_state_jacobian << mean_finger_position_jacobian,
-      MatrixX<double>::Zero(1, 2), MatrixX<double>::Zero(1, 2),
-      mean_finger_position_jacobian;
+  const auto zero_mean_joint =
+      MatrixX<double>::Zero(mean_finger_position_size, joint_position_size);
+  const auto zero_grip_joint =
+      MatrixX<double>::Zero(grip_position_size, joint_position_size);
+  const MatrixX<double> grip_position_jacobian =
+      (open_joint_position - closed_joint_position).transpose().cwiseSign();
+  // clang-format off
+  const auto mean_finger_position_jacobian =
+      (MatrixX<double>(mean_finger_position_size, joint_position_size) <<
+        0.5, 0.5
+      ).finished();
+  const auto mean_finger_state_jacobian =
+      (MatrixX<double>(mean_finger_state_size, joint_state_size) <<
+        mean_finger_position_jacobian, zero_mean_joint,
+        zero_mean_joint,               mean_finger_position_jacobian
+      ).finished();
+  const auto grip_state_jacobian =
+      (MatrixX<double>(grip_state_size, joint_state_size) <<
+        grip_position_jacobian,      zero_grip_joint,
+        zero_grip_joint,             grip_position_jacobian
+      ).finished();
+  // clang-format on
 
-  MatrixX<double> grip_position_jacobian{1, 2};
-  grip_position_jacobian << 0.5, -0.5;
-  MatrixX<double> grip_state_jacobian{2, 4};
-  grip_state_jacobian << grip_position_jacobian, MatrixX<double>::Zero(1, 2),
-      MatrixX<double>::Zero(1, 2), grip_position_jacobian;
+  // Add a pass through to provide the estimated state to multiple subsystems.
+  const auto estimated_state_passthrough =
+      builder.AddSystem<systems::PassThrough<double>>(joint_state_size);
 
-  // The mean finger position should be zero.
-  auto desired_mean_finger_state =
+  // Add a constant source for the desired mean finger state (position and
+  // velocity).
+  // clang-format off
+  const auto desired_mean_finger_state =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
-          Vector2<double>::Zero());
+          (VectorX<double>(mean_finger_state_size) <<
+            closed_joint_position.mean(), 0.
+          ).finished());
+  // clang-format on
 
   // Add the PID controller.
-  // Set up the control signal, u.
-  const int num_pid_positions = mean_finger_position_jacobian.rows();
-  const Eigen::VectorXd wsg_kp =
-      Eigen::VectorXd::Constant(num_pid_positions, 2000.0);
-  const Eigen::VectorXd wsg_ki =
-      Eigen::VectorXd::Constant(num_pid_positions, 0.0);
-  const Eigen::VectorXd wsg_kd =
-      Eigen::VectorXd::Constant(num_pid_positions, 5.0);
+  const Vector1<double> kp{2000.0};
+  const Vector1<double> ki{0.0};
+  const Vector1<double> kd{5.0};
 
-  auto pid_controller =
+  const auto pid_controller =
       builder.AddSystem<systems::controllers::PidController<double>>(
-          mean_finger_state_jacobian, mean_finger_state_jacobian.transpose(),
-          wsg_kp, wsg_ki, wsg_kd);
-
-  builder.Connect(estimated_state_passthrough->get_output_port(),
-                  pid_controller->get_input_port_estimated_state());
-  builder.Connect(desired_mean_finger_state->get_output_port(),
-                  pid_controller->get_input_port_desired_state());
+          mean_finger_state_jacobian, mean_finger_position_jacobian.transpose(),
+          kp, ki, kd);
 
   // Add a block to convert the commanded grip force to joint forces.
-  auto convert_commanded_grip_force_to_joint_force =
-      builder.AddSystem<systems::MatrixGain<double>>(grip_position_jacobian);
+  const auto commanded_grip_force_to_joint_force =
+      builder.AddSystem<systems::MatrixGain<double>>(
+          grip_position_jacobian.transpose());
 
   // Add a block to add the joint forces due to the PID controller and the
   // commanded grip force.
-  auto adder = builder.AddSystem<systems::Adder<double>>(2, 2);
-  builder.Connect(pid_controller->get_output_port_control(),
-                  adder->get_input_port(0));
-  builder.Connect(
-      convert_commanded_grip_force_to_joint_force->get_output_port(),
-      adder->get_input_port(1));
+  const auto joint_force_adder =
+      builder.AddSystem<systems::Adder<double>>(2, joint_position_size);
+
+  // Add a block to convert the joint state to the grip state.
+  const auto joint_state_to_grip_state =
+      builder.AddSystem<systems::AffineSystem<double>>(
+          MatrixX<double>::Zero(0, 0),                 // A
+          MatrixX<double>::Zero(0, joint_state_size),  // B
+          MatrixX<double>::Zero(0, 0),                 // f0
+          MatrixX<double>::Zero(grip_state_size, 0),   // C
+          grip_state_jacobian,                         // D
+          closed_joint_position                        // y0
+      );
+
+  // Export the inputs.
+  estimated_joint_state_input_port_ =
+      builder.ExportInput(estimated_state_passthrough->get_input_port());
   commanded_grip_force_input_port_ = builder.ExportInput(
-      convert_commanded_grip_force_to_joint_force->get_input_port());
-  commanded_joint_force_output_port_ =
-      builder.ExportOutput(adder->get_output_port());
+      commanded_grip_force_to_joint_force->get_input_port());
 
-  // Set up the estimated grip state output.
-
-  auto convert_to_grip_state =
-      builder.AddSystem<systems::MatrixGain<double>>(grip_state_jacobian);
-  builder.Connect(estimated_state_passthrough->get_output_port(),
-                  convert_to_grip_state->get_input_port());
+  // Export the outputs.
   estimated_grip_state_output_port_ =
-      builder.ExportOutput(convert_to_grip_state->get_output_port());
+      builder.ExportOutput(joint_state_to_grip_state->get_output_port());
+  commanded_joint_force_output_port_ =
+      builder.ExportOutput(joint_force_adder->get_output_port());
+
+  // Connect the subsystems.
+  // Estimated state -> other subsystems
+  builder.Connect(estimated_state_passthrough->get_output_port(),
+                  pid_controller->get_input_port_estimated_state());
+  builder.Connect(estimated_state_passthrough->get_output_port(),
+                  joint_state_to_grip_state->get_input_port());
+  // Desired mean finger state -> PID
+  builder.Connect(desired_mean_finger_state->get_output_port(),
+                  pid_controller->get_input_port_desired_state());
+  // Other subsystems -> joint_force_adder
+  builder.Connect(pid_controller->get_output_port_control(),
+                  joint_force_adder->get_input_port(0));
+  builder.Connect(commanded_grip_force_to_joint_force->get_output_port(),
+                  joint_force_adder->get_input_port(1));
 
   builder.BuildInto(this);
 }

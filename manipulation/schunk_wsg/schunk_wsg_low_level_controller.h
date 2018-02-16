@@ -10,28 +10,35 @@ namespace schunk_wsg {
 ;
 
 /** This system coordinates the fingers of a parallel-jaw gripper.
+ * When attached to a plant with two degrees-of-freedom (position of each
+ * finger), the resulting combined system acts like a plant with a single
+ * degree-of-freeedom (gripper width).
+ * ```
  *                                 ┌──────────────┐
- *    commanded                    │JointState    │                estimated
- *    grip force ────────┐      ┌─▶│ToGripState   ├──────────────▶ grip state
+ * commanded                       │JointState    │                estimated
+ * grip force ───────────┐      ┌─▶│ToGripState   ├──────────────▶ grip state
  *                       │      │  └──────────────┘
  *                       │      │  ┌─────────────┐
  *                       │      │  │GripForce    │     ┌─────┐
  *                       └────────▶│ToJointForce ├────▶│     │
  *                              │  └─────────────┘     │     │
- *                    ┌───────┐ │                      │     │
- *    estimated       │Pass   │ │  ┌─────────────┐     │Adder├───▶ commanded
- *    joint state ───▶│Through├─┴─▶│             │     │     │     joint force
- *                    └───────┘    │             │     │     │
+ *                ┌───────────┐ │                      │     │
+ * estimated      │Pass       │ │  ┌─────────────┐     │Adder├───▶ commanded
+ * joint state ──▶│Through    ├─┴─▶│             │     │     │     joint force
+ *                └───────────┘    │             │     │     │
  *                ┌───────────┐    │PidController├────▶│     │
  *                │DesiredMean│    │             │     └─────┘
  *                │Finger     ├───▶│             │
  *                │Position   │    └─────────────┘
  *                └───────────┘
+ * ```
  */
 class SchunkWsgLowLevelController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgLowLevelController)
-  explicit SchunkWsgLowLevelController();
+  explicit SchunkWsgLowLevelController(
+      const Vector2<double>& closed_joint_position = Vector2<double>::Zero(),
+      const Vector2<double>& open_joint_position = Vector2<double>(1, -1));
 
   const systems::InputPortDescriptor<double>&
   get_commanded_grip_force_input_port() const {
