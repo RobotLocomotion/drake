@@ -24,6 +24,8 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   GeneralizedConstraintForceEvaluator(const RigidBodyTree<double>& tree,
                                       int num_vars, int lambda_size);
 
+  ~GeneralizedConstraintForceEvaluator() override {}
+
   /** Getter for the size of non_lambda part in the evaluator variables. */
   int non_lambda_size() const { return num_vars() - lambda_size_; }
 

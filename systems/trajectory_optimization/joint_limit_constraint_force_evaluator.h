@@ -19,6 +19,8 @@ class JointLimitConstraintForceEvaluator
   JointLimitConstraintForceEvaluator(const RigidBodyTree<double>& tree,
                                      int joint_velocity_index);
 
+  ~JointLimitConstraintForceEvaluator() override {}
+
   /**
    * The constraint force λ contains both the joint upper limit force λᵤ, and
    * the joint lower limit force λₗ. The following two method returns the

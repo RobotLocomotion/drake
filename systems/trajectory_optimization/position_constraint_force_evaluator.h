@@ -28,6 +28,8 @@ class PositionConstraintForceEvaluator
       std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>
           kinematics_cache_helper);
 
+  ~PositionConstraintForceEvaluator() override{};
+
  protected:
   MatrixX<AutoDiffXd> EvalConstraintJacobian(
       const Eigen::Ref<const AutoDiffVecXd>& q) const override;
