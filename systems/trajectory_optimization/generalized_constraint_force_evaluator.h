@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/kinematics_cache_helper.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/evaluator_base.h"
 

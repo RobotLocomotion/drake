@@ -3,6 +3,8 @@
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
+using plants::KinematicsCacheWithVHelper;
+
 PositionConstraintForceEvaluator::PositionConstraintForceEvaluator(
     const RigidBodyTree<double>& tree,
     std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>

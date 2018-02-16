@@ -5,7 +5,6 @@
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
-using plants::KinematicsCacheWithVHelper;
 
 // This evaluator computes the generalized constraint force Jᵀλ.
 GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(

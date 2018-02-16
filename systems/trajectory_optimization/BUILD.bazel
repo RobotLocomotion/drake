@@ -12,7 +12,6 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//math:autodiff",
-        "//multibody:kinematics_cache_helper",
         "//multibody:rigid_body_tree",
         "//solvers:evaluator_base",
     ],
@@ -24,6 +23,7 @@ drake_cc_library(
     hdrs = ["position_constraint_force_evaluator.h"],
     deps = [
         ":generalized_constraint_force_evaluator",
+        "//multibody:kinematics_cache_helper",
     ],
 )
 
