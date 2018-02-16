@@ -5,6 +5,8 @@
 namespace drake {
 namespace systems {
 
+ContextBase::~ContextBase() {}
+
 std::string ContextBase::GetSystemPathname() const {
   // TODO(sherm1) Replace with the real pathname.
   return "/dummy/system/pathname";

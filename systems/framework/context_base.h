@@ -34,14 +34,7 @@ class ContextBase : public internal::SystemPathnameInterface {
     return clone;
   }
 
-  /** (Internal use only) Clones a context but without any of its internal
-  pointers. */
-  std::unique_ptr<ContextBase> CloneWithoutPointers() const {
-    std::unique_ptr<ContextBase> clone(DoCloneWithoutPointers());
-    return clone;
-  }
-
-  virtual ~ContextBase() = default;
+  virtual ~ContextBase();
 
   /** (Debugging) Returns the local name of the subsystem for which this is the
   Context. See GetSystemPathname() if you want to the full name. */
@@ -85,6 +78,15 @@ class ContextBase : public internal::SystemPathnameInterface {
   DependencyGraph& get_mutable_dependency_graph() {
     return graph_;
   }
+
+  // These are for internal use only.
+  #ifndef DRAKE_DOXYGEN_CXX
+  // Clones a context but without any of its internal pointers.
+  std::unique_ptr<ContextBase> CloneWithoutPointers() const {
+    std::unique_ptr<ContextBase> clone(DoCloneWithoutPointers());
+    return clone;
+  }
+  #endif
 
  protected:
   /** Default constructor creates an empty Context but initializes all the
