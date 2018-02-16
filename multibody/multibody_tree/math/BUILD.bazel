@@ -82,7 +82,6 @@ drake_cc_library(
         ":rotation_matrix",
         "//drake/common",
         "//drake/common:default_scalars",
-        "//drake/math:geometric_transform",
     ],
 )
 

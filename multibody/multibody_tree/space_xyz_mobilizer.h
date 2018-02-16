@@ -127,7 +127,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// in the input matrix `R_FM` this method performs a projection of `R_FM`
   /// into its closest element in `SO(3)` and then computes the space x-y-z
   /// angles θ₁, θ₂, θ₃ that correspond to this rotation.
-  /// See math::ProjectMatToOrthonormalMat().
+  /// See @ref RotationMatrix<T>::ProjectToRotationMatrix
   ///
   /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   /// @throws std::logic_error if an improper rotation results after projection
