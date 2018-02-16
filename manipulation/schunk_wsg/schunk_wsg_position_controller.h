@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
@@ -9,7 +10,7 @@ namespace manipulation {
 namespace schunk_wsg {
 
 /**
- * This class implements force-limited PID controller for a single degree of
+ * This class implements a force-limited PID controller for a single degree of
  * freedom gripper.
  * ```
  *                    ┌─────────────┐            ┌──────────┐
@@ -21,6 +22,13 @@ namespace schunk_wsg {
  * max force ────────▶│PassThough   ├─┴─▶│-1├─┘
  *                    └─────────────┘    └──┘
  * ```
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ * - AutoDiffXd
+ * - symbolic::Expression
+ *
+ * They are already available to link against in the containing library.
+ * No other values for T are currently supported.
  */
 template <typename T>
 class SchunkWsgPositionController
@@ -30,7 +38,7 @@ class SchunkWsgPositionController
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
   explicit SchunkWsgPositionController();
 
-  const systems::InputPortDescriptor<T>& get_max_force_input_port() const {
+  const systems::InputPortDescriptor<T>& get_input_port_max_force() const {
     return this->get_input_port(max_force_input_port_);
   }
 
@@ -59,3 +67,6 @@ class SchunkWsgPositionController
 }  // namespace schunk_wsg
 }  // namespace manipulation
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::manipulation::schunk_wsg::SchunkWsgPositionController);

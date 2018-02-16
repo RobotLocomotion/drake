@@ -1,13 +1,11 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
-;
 
 /** This system coordinates the fingers of a parallel-jaw gripper.
  * When attached to a plant with two degrees-of-freedom (position of each
@@ -49,21 +47,21 @@ class SchunkWsgLowLevelController : public systems::Diagram<T> {
       const Vector2<double>& open_joint_position = Vector2<double>(1, -1));
 
   const systems::InputPortDescriptor<T>&
-  get_commanded_grip_force_input_port() const {
+  get_input_port_commanded_grip_force() const {
     return this->get_input_port(commanded_grip_force_input_port_);
   }
 
   const systems::InputPortDescriptor<T>&
-  get_estimated_joint_state_input_port() const {
+  get_input_port_estimated_joint_state() const {
     return this->get_input_port(estimated_joint_state_input_port_);
   }
 
-  const systems::OutputPort<T>& get_comanded_joint_force_output_port()
+  const systems::OutputPort<T>& get_output_port_commanded_joint_force()
       const {
     return this->get_output_port(commanded_joint_force_output_port_);
   }
 
-  const systems::OutputPort<T>& get_estimated_grip_state_output_port()
+  const systems::OutputPort<T>& get_output_port_estimated_grip_state()
       const {
     return this->get_output_port(estimated_grip_state_output_port_);
   }
