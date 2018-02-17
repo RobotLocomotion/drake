@@ -3013,8 +3013,37 @@ size_t RigidBodyTree<T>::getNumPositionConstraints() const {
   return loops.size() * 6;
 }
 
+namespace {
+
+std::string strlower(std::string s) {
+  std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+  return s;
+}
+
+}  // namespace
+
 template <typename T>
 void RigidBodyTree<T>::addFrame(std::shared_ptr<RigidBodyFrame<T>> frame) {
+  // Ensure there are no duplicates.
+  const std::string model_name =
+      strlower(frame->get_rigid_body().get_model_name());
+  // TODO(eric.cousineau): Provide RigidBodyFrame::get_model_name(), incorporate
+  // this into `findFrame`.
+  for (auto& other : frames_) {
+    const std::string other_model_name =
+        strlower(other->get_rigid_body().get_model_name());
+    if (other->get_name() == frame->get_name()) {
+      if (other_model_name == model_name &&
+          other->get_model_instance_id() == frame->get_model_instance_id()) {
+        throw std::runtime_error(
+            fmt::format(
+                "Frame '{}', with model instance id {} ('{}'), already "
+                "registered!",
+                frame->get_name(), frame->get_model_instance_id(), model_name));
+      }
+    }
+  }
+
   frames_.push_back(frame);
   // yuck!!
   frame->set_frame_index(-(static_cast<int>(frames_.size()) - 1) - 2);
@@ -3023,17 +3052,34 @@ void RigidBodyTree<T>::addFrame(std::shared_ptr<RigidBodyFrame<T>> frame) {
 template <typename T>
 RigidBody<T>* RigidBodyTree<T>::add_rigid_body(
         std::unique_ptr<RigidBody<T>> body) {
+  // Ensure there are no duplicates.
+  const std::string model_name = strlower(body->get_model_name());
+  for (auto& other : bodies_) {
+    if (other->get_name() == body->get_name()) {
+      if (strlower(other->get_model_name()) == model_name &&
+          other->get_model_instance_id() == body->get_model_instance_id()) {
+        throw std::runtime_error(
+            fmt::format(
+                "Body '{}', with model instance id {} ('{}'), already "
+                "registered!",
+                body->get_name(), body->get_model_instance_id(), model_name));
+      }
+    }
+  }
+
+  // Create a default frame for the given body.
+  // N.B. We must add the frame here before the body is registered, so that we
+  // can quickly fail if there is a duplicate frame (transaction integrity).
+  auto body_frame = std::make_shared<RigidBodyFrame<T>>(
+      body->get_name(), body.get());
+  addFrame(body_frame);
+
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
   // properly computed taking into account a RigidBodySystem could be part of a
   // larger RigidBodySystem (a system within a tree of systems).
   body->set_body_index(static_cast<int>(bodies_.size()));
-
-  // Create a default frame for the given body.
-  auto body_frame = std::make_shared<RigidBodyFrame<T>>(
-      body->get_name(), body.get());
-  addFrame(body_frame);
 
   // bodies will be sorted by SortTree by generation. Therefore bodies[0]
   // (world) will be at the top and subsequent generations of children will

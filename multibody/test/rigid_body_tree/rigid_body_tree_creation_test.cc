@@ -448,6 +448,19 @@ TEST_F(RigidBodyTreeTest, TestGetNumActuators) {
   EXPECT_EQ(tree_->get_num_actuators(), 4);
 }
 
+// Tests that attempting to add duplicate bodies / frames will fail.
+TEST_F(RigidBodyTreeTest, TestAddDuplicates) {
+  auto* body = tree_->add_rigid_body(r1b1_->Clone());
+
+  // Duplicate body.
+  EXPECT_THROW(tree_->add_rigid_body(body->Clone()), std::runtime_error);
+
+  // Duplicate frame - also guarantees that a default frame is created.
+  auto frame = std::make_shared<RigidBodyFrame<double>>(
+      body->get_name(), body);
+  EXPECT_THROW(tree_->addFrame(frame), std::runtime_error);
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace plants
