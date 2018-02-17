@@ -138,6 +138,16 @@ class RigidBodyTree {
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
   int get_number_of_model_instances() const;
 
+
+  /**
+   * Adds a frame.
+   *
+   * @param frame Frame to be added.
+   * @pre Neither a body nor frame with the same identifying information (name
+   * and model id / name) should already exist in the tree.
+   * @throws std::runtime_error if preconditions are not met.
+   */
+  // TODO(eric.cousineau): Rename to `AddFrame`.
   void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
   /**
@@ -1389,16 +1399,21 @@ class RigidBodyTree {
   friend std::ostream& operator<<(std::ostream&, const RigidBodyTree<double>&);
 
   /**
-   * @brief Adds and takes ownership of a rigid body.
+   * @brief Adds and takes ownership of a rigid body. This also adds a frame
+   * whose pose is the same as the body's.
    *
    * A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
    * A body is assigned a unique id (RigidBody::id()) when added to a
-   * RigidBodyTree. This unique id can be use to access a body with the accessor
-   * RigidBodyTree::body.
+   * RigidBodyTree. This unique id can be use to access a body using
+   * RigidBodyTree::get_bodies()[id].
    *
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return A bare, unowned pointer to the @p body.
+   * @pre Neither a body nor frame with the same identifying information (name
+   * and model id / name) should already exist in the tree.
+   * @throws std::runtime_error if preconditions are not met.
    */
+  // TODO(eric.cousineau): Rename to `AddRigidBody`.
   RigidBody<T>* add_rigid_body(std::unique_ptr<RigidBody<T>> body);
 
   /**
