@@ -71,13 +71,13 @@ struct DynamicProgrammingOptions {
 /// @param options optional DynamicProgrammingOptions structure.
 ///
 /// @return a std::pair containing the resulting policy, implemented as a
-/// BarycentricMeshSystem, and the MatrixXd J that defines the expected
+/// BarycentricMeshSystem, and the RowVectorXd J that defines the expected
 /// cost-to-go on a BarycentricMesh using @p state_grid.  The policy has a
 /// single vector input (which is the continuous state of the system passed
 /// in through @p simulator) and a single vector output (which is the input
 /// of the system passed in through @p simulator).
 ///
-std::pair<std::unique_ptr<BarycentricMeshSystem<double>>, Eigen::MatrixXd>
+std::pair<std::unique_ptr<BarycentricMeshSystem<double>>, Eigen::RowVectorXd>
 FittedValueIteration(
     Simulator<double>* simulator,  // has system and context, as well
     // as integrator params, etc.
@@ -93,6 +93,16 @@ FittedValueIteration(
 
 // TODO(russt): Implement more general FittedValueIteration methods as the
 // function approximation tools become available.
+
+Eigen::RowVectorXd
+LinearProgrammingApproximateDynamicProgramming(
+    Simulator<double>* simulator,  // has system and context, as well
+    // as integrator params, etc.
+    const std::function<double(const Context<double>& context)>& cost_function,
+    const math::BarycentricMesh<double>::MeshGrid& state_grid,
+    const math::BarycentricMesh<double>::MeshGrid& input_grid, double timestep,
+    const DynamicProgrammingOptions& options = DynamicProgrammingOptions());
+
 
 }  // namespace controllers
 }  // namespace systems

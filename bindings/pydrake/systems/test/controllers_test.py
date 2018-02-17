@@ -27,12 +27,13 @@ class TestControllers(unittest.TestCase):
             u = plant.EvalVectorInput(context, 0).CopyToVector()
             return x.dot(x) + u.dot(u)
 
-        qbins = np.linspace(0., 2.*math.pi, 51)
-        qdotbins = np.linspace(-10., 10., 41)
+        # Note: intentionally under-sampled to keep the problem small
+        qbins = np.linspace(0., 2.*math.pi, 11)
+        qdotbins = np.linspace(-10., 10., 11)
         state_grid = [set(qbins), set(qdotbins)]
 
         input_limit = 2.
-        input_mesh = [set(np.linspace(-input_limit, input_limit, 9))]
+        input_mesh = [set(np.linspace(-input_limit, input_limit, 5))]
         timestep = 0.01
 
         [Q, Qdot] = np.meshgrid(qbins, qdotbins)

@@ -52,6 +52,9 @@ PYBIND11_MODULE(controllers, m) {
                      &DynamicProgrammingOptions::visualization_callback);
 
   m.def("FittedValueIteration", WrapPtr(&FittedValueIteration));
+
+  m.def("LinearProgrammingApproximateDynamicProgramming",
+        WrapPtr(&LinearProgrammingApproximateDynamicProgramming));
 }
 
 }  // namespace pydrake
