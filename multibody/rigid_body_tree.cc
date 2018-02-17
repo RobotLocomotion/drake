@@ -3025,6 +3025,11 @@ RigidBody<T>* RigidBodyTree<T>::add_rigid_body(
   // larger RigidBodySystem (a system within a tree of systems).
   body->set_body_index(static_cast<int>(bodies_.size()));
 
+  // Create a default frame for the given body.
+  auto body_frame = std::make_shared<RigidBodyFrame<T>>(
+      body->get_name(), body.get());
+  addFrame(body_frame);
+
   // bodies will be sorted by SortTree by generation. Therefore bodies[0]
   // (world) will be at the top and subsequent generations of children will
   // follow.
