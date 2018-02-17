@@ -119,7 +119,7 @@ RigidBodyTree<T>::RigidBodyTree()
   // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
   // See: https://github.com/RobotLocomotion/drake/issues/3088
 
-  bodies_.push_back(std::move(world_body));
+  add_rigid_body(std::move(world_body));
 }
 
 template <typename T>
@@ -131,6 +131,7 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
   // The following is necessary to remove the world link from the clone. The
   // world link will be re-added when the bodies are cloned below.
   clone->bodies_.clear();
+  clone->frames_.clear();
 
   clone->joint_limit_min = this->joint_limit_min;
   clone->joint_limit_max = this->joint_limit_max;
@@ -141,9 +142,13 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
   clone->num_model_instances_ = this->num_model_instances_;
   clone->initialized_ = this->initialized_;
 
+  // N.B. `add_rigid_body` is not used here because this may change the ordering
+  // of frames, and the clone tests require that they maintain their original
+  // ordering / indices.
+
   // Clones the rigid bodies.
   for (const auto& body : bodies_) {
-    clone->add_rigid_body(body->Clone());
+    clone->bodies_.push_back(body->Clone());
   }
 
   // Clones the joints and adds them to the cloned RigidBody objects.
@@ -3024,6 +3029,11 @@ RigidBody<T>* RigidBodyTree<T>::add_rigid_body(
   // properly computed taking into account a RigidBodySystem could be part of a
   // larger RigidBodySystem (a system within a tree of systems).
   body->set_body_index(static_cast<int>(bodies_.size()));
+
+  // Create a default frame for the given body.
+  auto body_frame = std::make_shared<RigidBodyFrame<T>>(
+      body->get_name(), body.get());
+  addFrame(body_frame);
 
   // bodies will be sorted by SortTree by generation. Therefore bodies[0]
   // (world) will be at the top and subsequent generations of children will

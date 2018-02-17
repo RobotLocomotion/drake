@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_geometry_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
@@ -65,6 +66,15 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // RigidBodyTree takes ownership of these bodies.
   // User still has access to these bodies through the raw pointers.
   RigidBody<double>* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
+
+  // Ensure we create a default frame.
+  std::shared_ptr<RigidBodyFrame<double>> r1b1_frame =
+      tree_->findFrame("body1");
+  EXPECT_EQ(&r1b1_frame->get_rigid_body(), r1b1);
+  EXPECT_TRUE(CompareTransforms(
+      r1b1_frame->get_transform_to_body(),
+      Eigen::Isometry3d::Identity(), 0.));
+
   RigidBody<double>* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot1") != nullptr);
