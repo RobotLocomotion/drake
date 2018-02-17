@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "osqp.h"
+#include <osqp.h>
 
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/solvers/mathematical_program.h"
@@ -15,7 +15,7 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
                          std::vector<c_float>* q, double* constant_cost_term) {
   DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
 
-  // Loop through each quadratic costs in prog, and compute the Hessiagn matrix
+  // Loop through each quadratic costs in prog, and compute the Hessian matrix
   // P, the linear cost q, and the constant cost term.
   std::vector<Eigen::Triplet<c_float>> P_triplets;
   for (const auto& quadratic_cost : prog.quadratic_costs()) {
@@ -34,7 +34,7 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
                               static_cast<c_float>(Qi_triplets[i].value()));
     }
 
-    // Add quadratic_cost.b to the linear cost term q
+    // Add quadratic_cost.b to the linear cost term q.
     for (int i = 0; i < x.rows(); ++i) {
       q->at(x_indices[i]) += quadratic_cost.constraint()->b()(i);
     }
@@ -51,17 +51,17 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
   // Add the linear costs to the osqp cost.
   DRAKE_ASSERT(static_cast<int>(q->size()) == prog.num_vars());
 
-  // Loop over the linear costs stored inside prog
+  // Loop over the linear costs stored inside prog.
   for (const auto& linear_cost : prog.linear_costs()) {
     for (int i = 0; i < static_cast<int>(linear_cost.GetNumElements()); ++i) {
-      // Append the linear cost term to q
+      // Append the linear cost term to q.
       if (linear_cost.constraint()->a()(i) != 0) {
         const int x_index =
             prog.FindDecisionVariableIndex(linear_cost.variables()(i));
         q->at(x_index) += linear_cost.constraint()->a()(i);
       }
     }
-    // Add the constant cost term to constant_cost_term
+    // Add the constant cost term to constant_cost_term.
     *constant_cost_term += linear_cost.constraint()->b();
   }
 }
@@ -78,7 +78,7 @@ c_float ConvertInfinity(double val) {
 }
 
 // Will call this function to parse both LinearConstraint and
-// LinearEqualityConstraint
+// LinearEqualityConstraint.
 template <typename C>
 void ParseLinearConstraints(const MathematicalProgram& prog,
                             const std::vector<Binding<C>>& linear_constraints,
@@ -181,11 +181,12 @@ void SetOsqpSolverSetting(const std::map<std::string, T1>& options,
   }
 }
 
-void SetOsqpSolverSettings(MathematicalProgram& prog, OSQPSettings* settings) {
+void SetOsqpSolverSettings(MathematicalProgram* prog,
+                           OSQPSettings* settings) {
   const std::map<std::string, double>& options_double =
-      prog.GetSolverOptionsDouble(OsqpSolver::id());
+      prog->GetSolverOptionsDouble(OsqpSolver::id());
   const std::map<std::string, int>& options_int =
-      prog.GetSolverOptionsInt(OsqpSolver::id());
+      prog->GetSolverOptionsInt(OsqpSolver::id());
   // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
   SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
   SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
@@ -209,7 +210,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   OSQPSettings* settings =
       static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
 
-  // OSQP structures
+  // OSQP structures.
   OSQPWorkspace* work;  // Workspace
 
   // Get the cost for the QP.
@@ -220,7 +221,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   ParseQuadraticCosts(prog, &P_sparse, &q, &constant_cost_term);
   ParseLinearCosts(prog, &q, &constant_cost_term);
 
-  // Parse the linear constraints
+  // Parse the linear constraints.
   Eigen::SparseMatrix<c_float> A_sparse;
   std::vector<c_float> l, u;
   ParseAllLinearConstraints(prog, &A_sparse, &l, &u);
@@ -228,7 +229,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // Now pass the constraint and cost to osqp data.
   OSQPData* data;  // OSQPData
 
-  // Populate data
+  // Populate data.
   data = static_cast<OSQPData*>(c_malloc(sizeof(OSQPData)));
 
   data->n = prog.num_vars();
@@ -239,17 +240,17 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   data->l = l.data();
   data->u = u.data();
 
-  // Define Solver settings as default
+  // Define Solver settings as default.
   set_default_settings(settings);
   // Default polish to true, to get an accurate solution.
   // TODO(hongkai.dai): add a setter so that we can turn off polishing.
   settings->polish = 1;
-  SetOsqpSolverSettings(prog, settings);
+  SetOsqpSolverSettings(&prog, settings);
 
-  // Setup workspace
+  // Setup workspace.
   work = osqp_setup(data, settings);
 
-  // Solve Problem
+  // Solve Problem.
   c_int osqp_exitflag = osqp_solve(work);
   if (osqp_exitflag) {
     return SolutionResult::kInvalidInput;
@@ -284,7 +285,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
     default: { solution_result = SolutionResult::kUnknownError; }
   }
 
-  // Clean workspace
+  // Clean workspace.
   osqp_cleanup(work);
   c_free(data->P->x);
   c_free(data->P->i);

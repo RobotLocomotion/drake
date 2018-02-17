@@ -73,7 +73,7 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
       b1_cnstr_.constraint()->UpdateUpperBound(Vector1d(b_vals_[i](1)));
       auto result = prog_.Solve();
       EXPECT_EQ(result, SolutionResult::kSolutionFound);
-      double tol = 3E-3;
+      double tol = 1E-3;
       if (prog_.GetSolverId() == OsqpSolver::id()) {
         // OSQP can solve linear program, but it is likely to fail in polishing,
         // thus the solution is less accurate.
