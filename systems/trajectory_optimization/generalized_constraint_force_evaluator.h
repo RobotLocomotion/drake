@@ -25,7 +25,7 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
    * So the size of the output vector is always Nᵥ. To evaluate Jᵀλ, it may or
    * may not depend on variables such as contact force λ, generalized position
    * q, or some additional variables, so the size of the input variable to this
-   * evalautor should be specified by the user.
+   * evaluator should be specified by the user.
    */
   GeneralizedConstraintForceEvaluator(const RigidBodyTree<double>& tree,
                                       int num_vars, int lambda_size);
@@ -100,13 +100,15 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
     *y = J.transpose() * lambda;
   }
 
-  // Computes the Jacobian J so as to evaluate the generalized constraint force
-  // Jᵀλ. The Jacobian J is of size Nv x n_λ.
+  // Derived class implementation should compute the Jacobian J 
+  // that can be used to evaluate the generalized constraint force
+  // Jᵀλ. J must be size Nv x n_λ. 
   virtual Eigen::MatrixXd EvalConstraintJacobian(
       const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;
 
-  // Computes the Jacobian J so as to evaluate the generalized constraint force
-  // Jᵀλ. The Jacobian J is of size Nv x n_λ.
+  // Derived class implementation should compute the Jacobian J 
+  // that can be used to evaluate the generalized constraint force
+  // Jᵀλ. J must be size Nv x n_λ. 
   virtual MatrixX<AutoDiffXd> EvalConstraintJacobian(
       const Eigen::Ref<const AutoDiffVecXd>& x) const = 0;
 
