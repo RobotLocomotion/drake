@@ -100,15 +100,15 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
     *y = J.transpose() * lambda;
   }
 
-  // Derived class implementation should compute the Jacobian J 
+  // Derived class implementation should compute the Jacobian J
   // that can be used to evaluate the generalized constraint force
-  // Jᵀλ. J must be size Nv x n_λ. 
+  // Jᵀλ. J must be size Nv x n_λ.
   virtual Eigen::MatrixXd EvalConstraintJacobian(
       const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;
 
-  // Derived class implementation should compute the Jacobian J 
+  // Derived class implementation should compute the Jacobian J
   // that can be used to evaluate the generalized constraint force
-  // Jᵀλ. J must be size Nv x n_λ. 
+  // Jᵀλ. J must be size Nv x n_λ.
   virtual MatrixX<AutoDiffXd> EvalConstraintJacobian(
       const Eigen::Ref<const AutoDiffVecXd>& x) const = 0;
 

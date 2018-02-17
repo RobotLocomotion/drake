@@ -18,7 +18,7 @@ class JointLimitConstraintForceEvaluator
  public:
   /** Constructor.
    * @param tree The tree on which the joint limit force is evaluated.
-   * @param joint_velocity_index The joint whose velocity index equals to 
+   * @param joint_velocity_index The joint whose velocity index equals to
    * joint_velocity_index has joint limit force.
    */
   JointLimitConstraintForceEvaluator(const RigidBodyTree<double>& tree,
