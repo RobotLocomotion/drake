@@ -154,14 +154,17 @@ class TemplateBase(object):
 
 class TemplateClass(TemplateBase):
     """Extension of `TemplateBase` for classes. """
-    def __init__(self, name, override_name=True, **kwargs):
-        TemplateBase.__init__(self, name, **kwargs)
-        self._override_name = override_name
+    def __init__(self, name, override_meta=True, module_name=None, **kwargs):
+        if module_name is None:
+            module_name = _get_module_name_from_stack()
+        TemplateBase.__init__(self, name, module_name=module_name, **kwargs)
+        self._override_meta = override_meta
 
     def _on_add(self, param, cls):
         # Update class name for easier debugging.
-        if self._override_name:
+        if self._override_meta:
             cls.__name__ = self._instantiation_name(param)
+            cls.__module__ = self._module_name
 
 
 class TemplateFunction(TemplateBase):
@@ -171,8 +174,10 @@ class TemplateFunction(TemplateBase):
 
 class TemplateMethod(TemplateBase):
     """Extension of `TemplateBase` for class methods. """
-    def __init__(self, name, cls, **kwargs):
-        TemplateBase.__init__(self, name, **kwargs)
+    def __init__(self, name, cls, module_name=None, **kwargs):
+        if module_name is None:
+            module_name = _get_module_name_from_stack()
+        TemplateBase.__init__(self, name, module_name=module_name, **kwargs)
         self._cls = cls
 
     def __get__(self, obj, objtype):
