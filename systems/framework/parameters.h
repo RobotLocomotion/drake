@@ -130,7 +130,7 @@ class Parameters {
   }
 
   /// Returns a deep copy of the Parameters.
-  std::unique_ptr<Parameters<T>> Clone() {
+  std::unique_ptr<Parameters<T>> Clone() const {
     auto clone = std::make_unique<Parameters<T>>();
     clone->set_numeric_parameters(numeric_parameters_->Clone());
     clone->set_abstract_parameters(abstract_parameters_->Clone());
