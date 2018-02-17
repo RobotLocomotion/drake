@@ -81,6 +81,7 @@ class TestCppTemplate(unittest.TestCase):
 
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
+        self.assertEquals(str(template), "<TemplateClass __main__.ClassTpl>")
 
         template.add_instantiation(int, DummyA)
         template.add_instantiation(float, DummyB)
