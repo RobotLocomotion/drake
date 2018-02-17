@@ -59,20 +59,22 @@ class FramePoseTracker : public systems::LeafSystem<double> {
 
   /**
    * Constructs a FramePoseTracker object from the information contained in
-   * @p frames_info, which is a std::map whose keys denote unique frame names.
-   * Each key is mapped to a std::pair that includes the RigidBody name
-   * (std::string) specifying which body this frame should be attached to, and
-   * the model instance id in the @p tree that contains the corresponding body.
+   * @p frames_info, which is a std::map whose keys denote unique names.
+   * Each key is mapped to a std::pair that includes a RigidBody or
+   * RigidBodyFrame name (std::string) specifying which parent this frame
+   * should be attached to, and the model instance id in the @p tree that
+   * contains the corresponding parent frame.
    *
    * @param tree The RigidBodyTree containing the named bodies. FramePoseTracker
    *        keeps a reference to this tree to calculate frame poses in the world
    *        frame.
-   * @param frames_info A mapping from a unique frame name to a std::pair
-   *        consisting of body name and model instance id. If model instance id
-   *        is -1, every model is searched.
+   * @param frames_info A mapping from a name (unique in this mapping) to a
+   *        std::pair consisting of the parent name and model instance id. The
+   *        parent is either a frame or body. If model instance id is -1, every
+   *        model is searched.
    * @param frame_poses A vector containing each frame's pose relative to the
-   *        parent body. If this vector is empty, it assumes identity for all
-   *        poses.
+   *        parent body or frame. If this vector is empty, it assumes identity
+   *        for all poses.
    */
   FramePoseTracker(
       const RigidBodyTree<double>& tree,
