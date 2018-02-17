@@ -6,6 +6,7 @@
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/integrator.h"
+#include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -30,6 +31,10 @@ PYBIND11_MODULE(primitives, m) {
 
   py::class_<Integrator<T>, LeafSystem<T>>(m, "Integrator")
     .def(py::init<int>());
+
+  py::class_<PassThrough<T>, LeafSystem<T>>(m, "PassThrough")
+    .def(py::init<int>())
+    .def(py::init<const AbstractValue&>());
 
   py::class_<ZeroOrderHold<T>, LeafSystem<T>>(m, "ZeroOrderHold")
     .def(py::init<double, int>());

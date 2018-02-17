@@ -12,6 +12,7 @@ from pydrake.systems.analysis import (
     Simulator,
     )
 from pydrake.systems.framework import (
+    AbstractValue,
     BasicVector,
     Diagram,
     DiagramBuilder,
@@ -20,6 +21,7 @@ from pydrake.systems.primitives import (
     Adder,
     ConstantVectorSource,
     Integrator,
+    PassThrough,
     SignalLogger,
     )
 
@@ -164,6 +166,19 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(t.shape[0] > 2)
         self.assertTrue(t.shape[0] == x.shape[1])
         self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
+
+    def test_abstract_pass_through(self):
+        model_value = AbstractValue.Make("Hello world")
+        input_value = model_value.Clone()
+        system = PassThrough(model_value)
+        context = system.CreateDefaultContext()
+        context.FixInputPort(0, input_value)
+        output = system.AllocateOutput(context)
+        input_eval = system.EvalAbstractInput(context, 0)
+        self.assertEquals(input_eval.get_value(), input_value.get_value())
+        system.CalcOutput(context, output)
+        output_value = output.get_data(0)
+        self.assertEquals(output_value.get_value(), input_value.get_value())
 
 
 if __name__ == '__main__':
