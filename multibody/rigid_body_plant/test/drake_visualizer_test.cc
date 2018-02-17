@@ -319,7 +319,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
         "box_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
-    tree->bodies.push_back(std::move(body));
+    tree->add_rigid_body(std::move(body));
   }
 
   // Adds a RigidBody that looks like a capsule to the tree to achieve some
@@ -350,7 +350,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
         "capsule_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
-    tree->bodies.push_back(std::move(body));
+    tree->add_rigid_body(std::move(body));
   }
 
   // Adds a RigidBody that looks like a cylinder to the tree to achieve some
@@ -381,7 +381,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
         "cylinder_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
-    tree->bodies.push_back(std::move(body));
+    tree->add_rigid_body(std::move(body));
   }
 
   // Adds a RigidBody that looks like a mesh to the tree to achieve some
@@ -414,7 +414,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
         "mesh_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
-    tree->bodies.push_back(std::move(body));
+    tree->add_rigid_body(std::move(body));
   }
 
   // Adds a RigidBody that looks like a sphere to the tree to achieve some
@@ -444,7 +444,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
     auto joint = make_unique<RollPitchYawFloatingJoint>(
         "sphere_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
-    tree->bodies.push_back(std::move(body));
+    tree->add_rigid_body(std::move(body));
   }
 
   tree->compile();

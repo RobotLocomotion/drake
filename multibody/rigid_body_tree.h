@@ -1500,10 +1500,16 @@ class RigidBodyTree {
   // TODO(amcastro-tri): make private and start using accessors body(int).
   // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
   // accessors are used throughout the code.
+ private:
   std::vector<std::unique_ptr<RigidBody<T>>> bodies;
 
   // Rigid body frames
   std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
+
+ public:
+  auto& get_bodies() const { return bodies; }
+
+  auto& get_frames() const { return frames; }
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>

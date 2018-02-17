@@ -41,7 +41,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
     body->add_joint(&tree->world(), std::move(joint));
 
-    tree->bodies.push_back(std::move(body));
+    tree->add_rigid_body(std::move(body));
   }
   tree->compile();
 

@@ -55,8 +55,9 @@ HumanoidStatus::HumanoidStatus(
 
   // Build various lookup maps.
   body_name_to_id_ = std::unordered_map<std::string, int>();
-  for (auto it = robot->bodies.begin(); it != robot->bodies.end(); ++it) {
-    body_name_to_id_[(*it)->get_name()] = it - robot->bodies.begin();
+  for (auto it = robot->get_bodies().begin(); it != robot->get_bodies().end();
+       ++it) {
+    body_name_to_id_[(*it)->get_name()] = it - robot->get_bodies().begin();
   }
 
   name_to_position_index_ = std::unordered_map<std::string, int>();

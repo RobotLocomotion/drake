@@ -270,7 +270,7 @@ IiwaContactResultsToExternalTorque::IiwaContactResultsToExternalTorque(
   velocity_map_.resize(tree.get_num_model_instances(),
                        std::pair<int, int>(-1, -1));
 
-  for (const auto& body : tree.bodies) {
+  for (const auto& body : tree.get_bodies()) {
     if (!body->has_parent_body()) {
       continue;
     }
