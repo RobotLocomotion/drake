@@ -29,6 +29,10 @@ def _py_target_isolated(
     # See #8041 for more details.
     if py_target == None:
         fail("Must supply macro function for defining `py_target`.")
+    # Do not isolate targets that are already isolated. This generally happens
+    # when linting tests (which are isolated) are invoked for isolated Python
+    # targets. Without this check, the actual test turns into
+    # `_isolated/_isolated/{name}`.
     prefix = "_isolated/"
     if isolate and not name.startswith(prefix):
         actual = prefix + name
@@ -110,4 +114,16 @@ def drake_py_test(
         srcs = srcs,
         deps = deps,
         data = data,
+        **kwargs)
+
+def py_test_isolated(
+        name,
+        **kwargs):
+    """Provides a directory-isolated Python test, robust against shadowing
+    (#8041).
+    """
+    _py_target_isolated(
+        name = name,
+        py_target = native.py_test,
+        isolate = True,
         **kwargs)
