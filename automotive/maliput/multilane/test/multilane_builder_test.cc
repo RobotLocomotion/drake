@@ -45,7 +45,7 @@ GTEST_TEST(StartReferenceSpecTest, Connection) {
   const EndpointZ kFlatEndpointZ{0., 0., 0., 0.};
   const Endpoint kStartEndpoint{{1., 2., 3.}, kFlatEndpointZ};
   const Connection conn("conn", kStartEndpoint, kFlatEndpointZ, 2, 0., 1., 1.5,
-                        1.5, 10.);
+                        1.5, LineOffset(10.));
   const double kVeryExact{1e-15};
 
   const StartReference::Spec forward_start_dut =
@@ -181,17 +181,16 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
 
   // Tweak ends to check if fuzzy-matching is working.
   Endpoint c6end = c6->end();
-  c6end = Endpoint(EndpointXy(c6end.xy().x() + kLinearTolerance * 0.5,
-                              c6end.xy().y() - kLinearTolerance * 0.5,
-                              c6end.xy().heading()),
-                   EndpointZ(c6end.z().z() + kLinearTolerance * 0.5,
-                             c6end.z().z_dot(),
-                             c6end.z().theta(), c6end.z().theta_dot()));
+  c6end = Endpoint(
+      EndpointXy(c6end.xy().x() + kLinearTolerance * 0.5,
+                 c6end.xy().y() - kLinearTolerance * 0.5, c6end.xy().heading()),
+      EndpointZ(c6end.z().z() + kLinearTolerance * 0.5, c6end.z().z_dot(),
+                c6end.z().theta(), c6end.z().theta_dot().value()));
 
   EndpointZ c0start_z = c0->start().z();
-  c0start_z = EndpointZ(c0start_z.z() - kLinearTolerance * 0.5,
-                        c0start_z.z_dot(),
-                        c0start_z.theta(), c0start_z.theta_dot());
+  c0start_z =
+      EndpointZ(c0start_z.z() - kLinearTolerance * 0.5, c0start_z.z_dot(),
+                c0start_z.theta(), c0start_z.theta_dot().value());
 
   b.Connect("7", kLaneLayout, StartReference().at(c6end, Direction::kForward),
             kLineOffset, EndReference().z_at(c0start_z, Direction::kForward));

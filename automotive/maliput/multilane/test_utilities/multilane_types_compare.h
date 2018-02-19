@@ -155,7 +155,7 @@ class LineOffsetMatcher : public MatcherInterface<const LineOffset&> {
   }
 
  private:
-  const LineOffset line_offset_{};
+  const LineOffset line_offset_;
   const double tolerance_{};
 };
 
@@ -218,8 +218,8 @@ class StartReferenceSpecMatcher
   }
 
   void DescribeTo(std::ostream* os) const override {
-    *os << "is within tolerance: [" << tolerance_ << "] of start_reference: [{"
-        << start_reference_.endpoint() << "}].";
+    *os << "is within tolerance: [" << tolerance_ << "] of start_reference: ["
+        << start_reference_ << "].";
   }
 
  private:
@@ -247,8 +247,8 @@ class EndReferenceSpecMatcher
   }
 
   void DescribeTo(std::ostream* os) const override {
-    *os << "is within tolerance: [" << tolerance_ << "] of end_reference: [{"
-        << end_reference_.endpoint_z() << "}].";
+    *os << "is within tolerance: [" << tolerance_ << "] of end_reference: ["
+        << end_reference_ << "].";
   }
 
  private:

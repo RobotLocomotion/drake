@@ -16,7 +16,7 @@ std::ostream& operator<<(std::ostream& out, const EndpointXy& endpoint_xy) {
 std::ostream& operator<<(std::ostream& out, const EndpointZ& endpoint_z) {
   return out << "(z = " << endpoint_z.z() << ", z_dot = " << endpoint_z.z_dot()
              << ", theta = " << endpoint_z.theta()
-             << ", theta_dot = " << endpoint_z.theta_dot() << ")";
+             << ", theta_dot = " << endpoint_z.theta_dot().value() << ")";
 }
 
 std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint) {
@@ -35,7 +35,7 @@ std::ostream& operator<<(std::ostream& out, const ArcOffset& arc_offset) {
 Connection::Connection(const std::string& id, const Endpoint& start,
                        const EndpointZ& end_z, int num_lanes, double r0,
                        double lane_width, double left_shoulder,
-                       double right_shoulder, double line_length)
+                       double right_shoulder, const LineOffset& line_offset)
     : type_(kLine),
       id_(id),
       start_(start),
@@ -47,7 +47,7 @@ Connection::Connection(const std::string& id, const Endpoint& start,
       r_min_(r0 - lane_width / 2. - right_shoulder),
       r_max_(r0 + lane_width * (static_cast<double>(num_lanes - 1) + 0.5) +
              left_shoulder),
-      line_length_(line_length) {
+      line_length_(line_offset.length()) {
   DRAKE_DEMAND(num_lanes_ > 0);
   DRAKE_DEMAND(lane_width_ >= 0);
   DRAKE_DEMAND(left_shoulder_ >= 0);
@@ -139,9 +139,10 @@ Endpoint Connection::LaneStart(int lane_index) const {
   // theta_dot is derivative with respect to t, but the reference curve t
   // coordinate. So, a ∂t_0/∂t_i is needed, being t_0 the reference curve
   // coordinate and t_i the arc-length xy projection for lane_index lane.
-  const double theta_dot = type_ == kLine ?
-      start_.z().theta_dot() :
-      start_.z().theta_dot() * std::abs(d_theta_ * radius_) / planar_length;
+  const double theta_dot = type_ == kLine ? start_.z().theta_dot().value()
+                                          : start_.z().theta_dot().value() *
+                                                std::abs(d_theta_ * radius_) /
+                                                planar_length;
   return Endpoint({position[0], position[1], rotation.yaw()},
                   {position[2], z_dot, start_.z().theta(), theta_dot});
 }
@@ -178,11 +179,23 @@ Endpoint Connection::LaneEnd(int lane_index) const {
   // theta_dot is derivative with respect to t, but the reference curve t
   // coordinate. So, a ∂t_0/∂t_i is needed, being t_0 the reference curve
   // coordinate and t_i the arc-length xy projection for lane_index lane.
-  const double theta_dot = type_ == kLine ?
-      end_.z().theta_dot() :
-      end_.z().theta_dot() * std::abs(d_theta_ * radius_) / planar_length;
+  const double theta_dot = type_ == kLine ? end_.z().theta_dot().value()
+                                          : end_.z().theta_dot().value() *
+                                                std::abs(d_theta_ * radius_) /
+                                                planar_length;
   return Endpoint({position[0], position[1], rotation.yaw()},
                   {position[2], z_dot, end_.z().theta(), theta_dot});
+}
+
+double Connection::ReferenceCurvature() const {
+  return type_ == kLine ? 0. : (1. / radius_);
+}
+
+double Connection::LaneCurvature(int lane_index) const {
+  if (type_ == kLine) return 0.;
+  const double lane_radius =
+      radius_ - std::copysign(1., d_theta_) * lane_offset(lane_index);
+  return 1. / lane_radius;
 }
 
 namespace {
@@ -216,11 +229,8 @@ std::unique_ptr<RoadCurve> Connection::CreateRoadCurve() const {
           start_.z().z_dot(),
           end_.z().z_dot()));
       const CubicPolynomial superelevation(MakeCubic(
-          dxy.norm(),
-          start_.z().theta(),
-          end_.z().theta() - start_.z().theta(),
-          start_.z().theta_dot(),
-          end_.z().theta_dot()));
+          dxy.norm(), start_.z().theta(), end_.z().theta() - start_.z().theta(),
+          start_.z().theta_dot().value(), end_.z().theta_dot().value()));
       return
         std::make_unique<LineRoadCurve>(xy0, dxy, elevation, superelevation);
     };
@@ -234,11 +244,8 @@ std::unique_ptr<RoadCurve> Connection::CreateRoadCurve() const {
           start_.z().z_dot(),
           end_.z().z_dot()));
       const CubicPolynomial superelevation(MakeCubic(
-          arc_length,
-          start_.z().theta(),
-          end_.z().theta() - start_.z().theta(),
-          start_.z().theta_dot(),
-          end_.z().theta_dot()));
+          arc_length, start_.z().theta(), end_.z().theta() - start_.z().theta(),
+          start_.z().theta_dot().value(), end_.z().theta_dot().value()));
       return std::make_unique<ArcRoadCurve>(
           center, radius_, theta0_, d_theta_, elevation, superelevation);
     };
