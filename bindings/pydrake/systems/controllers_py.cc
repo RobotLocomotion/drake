@@ -4,6 +4,7 @@
 #include <pybind11/stl.h>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_function.h"
 #include "drake/systems/controllers/dynamic_programming.h"
 
@@ -37,15 +38,19 @@ PYBIND11_MODULE(controllers, m) {
   using namespace drake::systems::controllers;
 
   py::module::import("pydrake._math");
+  py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.primitives");
+
+  py::class_<DynamicProgrammingOptions::PeriodicBoundaryCondition>(m,
+"PeriodicBoundaryCondition")
+      .def(py::init<int, double, double>());
 
   py::class_<DynamicProgrammingOptions>(m, "DynamicProgrammingOptions")
       .def(py::init<>())
       .def_readwrite("discount_factor",
                      &DynamicProgrammingOptions::discount_factor)
-      .def_readwrite("state_indices_with_periodic_boundary_conditions",
-                     &DynamicProgrammingOptions::
-                         state_indices_with_periodic_boundary_conditions)
+      .def_readwrite("periodic_boundary_conditions",
+                     &DynamicProgrammingOptions::periodic_boundary_conditions)
       .def_readwrite("convergence_tol",
                      &DynamicProgrammingOptions::convergence_tol)
       .def_readwrite("visualization_callback",
