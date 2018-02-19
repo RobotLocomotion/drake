@@ -903,7 +903,7 @@ class RigidBodyTree {
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
-    for (const auto& body_ptr : bodies) {
+    for (const auto& body_ptr : bodies_) {
       std::vector<std::string> names_of_groups_to_delete;
       for (const auto& group : body_ptr->get_group_to_collision_ids_map()) {
         const std::string& group_name = group.first;
@@ -1371,7 +1371,7 @@ class RigidBodyTree {
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
          it != joint_path.end(); ++it) {
-      RigidBody<T>& body = *bodies[*it];
+      RigidBody<T>& body = *bodies_[*it];
       int ncols_joint = in_terms_of_qdot ? body.getJoint().get_num_positions()
                                          : body.getJoint().get_num_velocities();
       int col_start = in_terms_of_qdot ? body.get_position_start_index()
@@ -1457,13 +1457,13 @@ class RigidBodyTree {
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  RigidBody<T>& world() { return *bodies[0]; }
+  RigidBody<T>& world() { return *bodies_[0]; }
 
   /**
    * @brief Returns a const reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  const RigidBody<T>& world() const { return *bodies[0]; }
+  const RigidBody<T>& world() const { return *bodies_[0]; }
 
   /**
    * Returns the number of position states outputted by this %RigidBodyTree.
@@ -1575,7 +1575,7 @@ class RigidBodyTree {
                             std::set<int>* connected) const;
 
   // Reorder body list to ensure parents are before children in the list
-  // RigidBodyTree::bodies.
+  // of bodies.
   //
   // See RigidBodyTree::compile
   void SortTree();
