@@ -139,12 +139,40 @@ class Endpoint {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint);
 
+/// Defines a common type that defines how a connection goes from the start
+/// point to the end point. So far, multilane has two subtypes based on lines
+/// and arcs.
+class ConnectionOffset {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConnectionOffset)
+
+  ConnectionOffset() = default;
+};
+
+/// Specification for path offset along a line.
+///  * length: length of the line, which must be nonnegative.
+class LineOffset : public ConnectionOffset {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LineOffset)
+
+  LineOffset() = default;
+
+  explicit LineOffset(double length) : ConnectionOffset(), length_(length) {
+    DRAKE_DEMAND(length_ >= 0.);
+  }
+
+  double length() const { return length_; }
+
+ private:
+  double length_{};
+};
+
 /// Specification for path offset along a circular arc.
 ///  * radius: radius of the arc, which must be positive
 ///  * d_theta:  angle of arc segment (Δθ)
 ///    * d_theta > 0 is counterclockwise ('veer to left')
 ///    * d_theta < 0 is clockwise ('veer to right')
-class ArcOffset {
+class ArcOffset : public ConnectionOffset {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArcOffset)
 
@@ -152,7 +180,7 @@ class ArcOffset {
   ArcOffset() = default;
 
   ArcOffset(double radius, double d_theta)
-      : radius_(radius), d_theta_(d_theta) {
+      : ConnectionOffset(), radius_(radius), d_theta_(d_theta) {
     DRAKE_DEMAND(radius_ > 0.);
   }
 
