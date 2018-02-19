@@ -49,6 +49,7 @@ class TestGeneral(unittest.TestCase):
 
         # Create simulator specifying context.
         context = system.CreateDefaultContext()
+        context.set_time(0.)
         # @note `simulator` now owns `context`.
         simulator = Simulator(system, context)
         self.assertTrue(simulator.get_context() is context)

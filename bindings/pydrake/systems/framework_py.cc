@@ -356,6 +356,7 @@ PYBIND11_MODULE(framework, m) {
          // Keep alive, ownership: `BasicVector` keeps `self` alive.
          py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
+    .def("set_time", &Context<T>::set_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
     .def("__deepcopy__", [](const Context<T>* self, py::dict /* memo */) {
