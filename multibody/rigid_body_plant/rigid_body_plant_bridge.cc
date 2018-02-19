@@ -76,11 +76,11 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
   // will be reported.
 
   // Load *dynamic* geometry
-  const int body_count = static_cast<int>(tree_->bodies.size());
+  const int body_count = static_cast<int>(tree_->get_bodies().size());
   if (body_count > 1) {  // more than just the world.
     body_ids_.reserve(body_count - 1);
     for (int i = 1; i < body_count; ++i) {
-      const RigidBody<T>& body = *tree_->bodies[i];
+      const RigidBody<T>& body = *tree_->get_bodies()[i];
       FrameId body_id = geometry_system->RegisterFrame(
           source_id_,
           GeometryFrame(body.get_name(), Isometry3<double>::Identity(),
@@ -160,7 +160,7 @@ void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
   // TODO(SeanCurtis-TRI): When I start skipping rigidly fixed bodies, modify
   // this loop to account for them.
   const int world_body = 0;
-  for (size_t i = 1; i < tree_->bodies.size(); ++i) {
+  for (size_t i = 1; i < tree_->get_bodies().size(); ++i) {
     pose_data[i - 1] = tree_->relativeTransform(cache, world_body, i);
   }
 }

@@ -232,7 +232,7 @@ struct HardwareParams {
 struct QPControllerParams {
   explicit QPControllerParams(const RigidBodyTree<double>& robot)
       : whole_body(robot),
-        body_motion(robot.bodies.size()),
+        body_motion(robot.get_bodies().size()),
         vref_integrator(),
         joint_soft_limits(robot),
         hardware(robot),

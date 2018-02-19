@@ -23,8 +23,8 @@ ManipulatorMoveJointPlanEvalSystem::ManipulatorMoveJointPlanEvalSystem(
   DRAKE_DEMAND(get_robot().get_num_velocities() ==
                get_robot().get_num_positions());
   // Skips the first body (world), which doesn't have a joint.
-  for (size_t i = 1; i < robot->bodies.size(); i++) {
-    DRAKE_DEMAND(!robot->bodies[i]->getJoint().is_floating());
+  for (size_t i = 1; i < robot->get_bodies().size(); i++) {
+    DRAKE_DEMAND(!robot->get_bodies()[i]->getJoint().is_floating());
   }
   const int kStateDim =
       get_robot().get_num_positions() + get_robot().get_num_velocities();
@@ -60,7 +60,7 @@ void ManipulatorMoveJointPlanEvalSystem::Initialize(
   QpInput& qp_input = get_mutable_qp_input(state);
   const std::vector<std::string> empty;
   qp_input = get_paramset().MakeQpInput(empty, /* contacts */
-                                        empty, /* tracked bodies */
+                                        empty, /* tracked get_bodies() */
                                         get_alias_groups());
 }
 

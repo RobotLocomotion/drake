@@ -217,7 +217,7 @@ MatrixXd individualSupportCOPs(
       const auto& betaj = beta.segment(beta_start, active_support_length);
 
       const auto& contact_positions =
-          r.bodies[active_support.body_idx]->get_contact_points();
+          r.get_bodies()[active_support.body_idx]->get_contact_points();
       Vector3d force = Vector3d::Zero();
       Vector3d torque = Vector3d::Zero();
 
