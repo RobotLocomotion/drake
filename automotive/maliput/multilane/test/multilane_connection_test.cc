@@ -65,6 +65,17 @@ GTEST_TEST(EndpointZTest, Reverse) {
       dut.reverse(), {1., -2., -M_PI / 4., M_PI / 2.}, kZeroTolerance));
 }
 
+// LineOffset checks.
+GTEST_TEST(LineOffsetTest, DefaultConstructor) {
+  const LineOffset dut{};
+  EXPECT_EQ(dut.length(), 0.);
+}
+
+GTEST_TEST(LineOffsetTest, ParametrizedConstructor) {
+  const LineOffset dut{123.456};
+  EXPECT_EQ(dut.length(), 123.456);
+}
+
 // ArcOffset checks.
 GTEST_TEST(ArcOffsetTest, DefaultConstructor) {
   const ArcOffset dut{};
