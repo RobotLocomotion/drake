@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <typeinfo>
 
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
@@ -11,7 +12,15 @@ namespace systems {
 
 /** Provides non-templatized functionality shared by the templatized derived
 classes. That includes caching and dependency tracking, and management of
-local values for fixed input ports. */
+local values for fixed input ports.
+
+Terminology: in general a Drake System is a tree structure composed of
+"subsystems", which are themselves System objects. The corresponding Context is
+a parallel tree structure composed of "subcontexts", which are themselves
+Context objects. There is a one-to-one correspondence between subsystems and
+subcontexts. Within a given System (Context), its child subsystems (subcontexts)
+are indexed using a SubsystemIndex; there is no separate SubcontextIndex since
+the numbering must be identical. */
 class ContextBase : public internal::SystemPathnameInterface {
  public:
   /** @name  Does not allow move or assignment; copy is protected. */
@@ -24,21 +33,14 @@ class ContextBase : public internal::SystemPathnameInterface {
   /** @} */
 
   /** Creates an identical copy of the concrete context object. */
-  std::unique_ptr<ContextBase> Clone() const {
-    std::unique_ptr<ContextBase> clone(CloneWithoutPointers());
-    // Create a complete mapping of tracker pointers.
-    DependencyTracker::PointerMap tracker_map;
-    BuildTrackerPointerMap(*clone, &tracker_map);
-    // Then do a pointer fixup pass.
-    clone->FixTrackerPointers(*this, tracker_map);
-    return clone;
-  }
+  std::unique_ptr<ContextBase> Clone() const;
 
   virtual ~ContextBase();
 
   /** (Debugging) Returns the local name of the subsystem for which this is the
   Context. See GetSystemPathname() if you want to the full name. */
-  std::string GetSystemName() const final { return system_name_; }
+  // TODO(sherm1) Replace with the real name.
+  std::string GetSystemName() const final { return "dummy"; }
 
   /** (Debugging) Returns the full pathname of the subsystem for which this is
   the Context. See get_system_pathname() if you want to the full name. */
@@ -49,14 +51,21 @@ class ContextBase : public internal::SystemPathnameInterface {
     return cache_;
   }
 
-  /** Returns a mutable reference to this subcontext's cache. Note that this
-  method is const because the cache is always writable. Be careful. */
+  /** (Advanced) Returns a mutable reference to this subcontext's cache. Note
+  that this method is const because the cache is always writable.
+  @warning Writing directly to the cache does not automatically propagate
+  invalidations to downstream dependents of a contained cache entry, because
+  invalidations would normally have been propagated when the cache entry itself
+  went out of date. Cache entries are updated automatically when needed via
+  their `Calc()` methods; most users should not bypass that mechanism by using
+  this method. */
   Cache& get_mutable_cache() const {
     return cache_;
   }
 
   /** Returns a const reference to a DependencyTracker in this subcontext.
-  Value change notifications can be delivered to a const tracker. */
+  Advanced users and internal code can use the returned reference to issue value
+  change notifications -- mutable access is not required for that purpose. */
   const DependencyTracker& get_tracker(DependencyTicket ticket) const {
     return graph_.get_tracker(ticket);
   }
@@ -80,7 +89,7 @@ class ContextBase : public internal::SystemPathnameInterface {
   }
 
  protected:
-  /** Default constructor creates an empty Context but initializes all the
+  /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
   q, all states, all inputs, etc.). We can't allocate trackers for individual
   discrete & abstract states, parameters, or input ports since we don't yet
@@ -92,10 +101,8 @@ class ContextBase : public internal::SystemPathnameInterface {
   /** Copy constructor takes care of base class data members, but _does not_ fix
   up base class pointers. Derived classes must implement copy constructors that
   delegate to this one for use in their DoCloneWithoutPointers()
-  implementations. The cache and dependency graph are copied, but the parent
-  pointer, and internal tracker pointers, will be null in the copy. */
-  // TODO(sherm1) Use reinit_after_copy<T> members to permit default constructor
-  // here. Meanwhile, be very careful with these members.
+  implementations. The cache and dependency graph are copied, but any pointers
+  contained in the source are left null in the copy. */
   ContextBase(const ContextBase& source)
       : cache_(source.cache_), graph_(source.graph_) {
     // Everything else is left default-initialized.
@@ -122,8 +129,8 @@ class ContextBase : public internal::SystemPathnameInterface {
 
   // Given a new context `clone` with the same dependency graph as this one,
   // create a mapping of all tracker memory addresses from `this` to `clone`.
-  // The mapping is flat, not hierarchical, because dependencies may cross
-  // levels.
+  // This must be done for the whole Context tree because pointers can point
+  // outside of their containing subcontext.
   void BuildTrackerPointerMap(
       const ContextBase& clone,
       DependencyTracker::PointerMap* tracker_map) const {
@@ -149,9 +156,6 @@ class ContextBase : public internal::SystemPathnameInterface {
 
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
-
-  // Name of the subsystem whose subcontext this is.
-  std::string system_name_;
 };
 
 }  // namespace systems

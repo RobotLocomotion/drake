@@ -5,6 +5,24 @@
 namespace drake {
 namespace systems {
 
+std::unique_ptr<ContextBase> ContextBase::Clone() const {
+  std::unique_ptr<ContextBase> clone_ptr(CloneWithoutPointers());
+
+  // Verify that the most-derived Context didn't forget to override
+  // CloneWithoutPointers().
+  const ContextBase& source = *this;  // Deref here to avoid typeid warning.
+  ContextBase& clone = *clone_ptr;
+  DRAKE_ASSERT(typeid(source) == typeid(clone));
+
+  // Create a complete mapping of tracker pointers.
+  DependencyTracker::PointerMap tracker_map;
+  BuildTrackerPointerMap(clone, &tracker_map);
+
+  // Then do a pointer fixup pass.
+  clone.FixTrackerPointers(source, tracker_map);
+  return clone_ptr;
+}
+
 ContextBase::~ContextBase() {}
 
 std::string ContextBase::GetSystemPathname() const {
