@@ -91,6 +91,16 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   EXPECT_FALSE(jointR2B1.is_floating());
   EXPECT_TRUE(jointR2B1.get_transform_to_parent_body().matrix() ==
               Eigen::Isometry3d::Identity().matrix());
+
+  // Ensure we have access to the list of frames and bodies.
+  EXPECT_EQ(tree_->get_bodies().size(), 3);  // Includes world.
+  EXPECT_EQ(tree_->get_frames().size(), 2);  // Does not include world.
+  // - Check deprecated accessors.
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(tree_->bodies, tree_->get_bodies());
+  EXPECT_EQ(tree_->frames, tree_->get_frames());
+  #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {

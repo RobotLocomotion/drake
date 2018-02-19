@@ -1496,14 +1496,32 @@ class RigidBodyTree {
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
 
+ private:
   // Rigid body objects
-  // TODO(amcastro-tri): make private and start using accessors body(int).
-  // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
-  // accessors are used throughout the code.
-  std::vector<std::unique_ptr<RigidBody<T>>> bodies;
+  std::vector<std::unique_ptr<RigidBody<T>>> bodies_;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames_;
+
+ public:
+  DRAKE_DEPRECATED(
+      "Direct access to `bodies` has been deprecated, "
+      "mutable access has been removed. Use `get_bodies` and `add_rigid_body` "
+      "instead")
+  const std::vector<std::unique_ptr<RigidBody<T>>>& bodies{bodies_};
+
+  /// List of bodies.
+  // TODO(amcastro-tri): start using accessors body(int).
+  auto& get_bodies() const { return bodies_; }
+
+  DRAKE_DEPRECATED(
+      "Direct access to `frames` has been deprecated, "
+      "mutable access has been removed. Use `get_frames` and `addFrame` "
+      "instead")
+  const std::vector<std::shared_ptr<RigidBodyFrame<T>>>& frames{frames_};
+
+  /// List of frames.
+  auto& get_frames() const { return frames_; }
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
