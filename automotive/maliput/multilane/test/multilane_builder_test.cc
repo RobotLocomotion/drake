@@ -15,6 +15,7 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+namespace {
 
 // TODO(maddog-tri)  Test use of Endpoint::reverse() with non-zero theta and
 //                   theta_dot, checking that the orientation of the resulting
@@ -560,6 +561,7 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
   EXPECT_EQ(rg->num_branch_points(), 20);
 }
 
+}  // namespace
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake

@@ -1,0 +1,40 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "multibody_plant",
+    srcs = [
+        "multibody_plant.cc",
+    ],
+    hdrs = [
+        "multibody_plant.h",
+    ],
+    deps = [
+        "//drake/common:default_scalars",
+        "//drake/multibody/multibody_tree",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_test",
+    deps = [
+        ":multibody_plant",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/acrobot",
+        "//drake/multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+add_lint_tests()

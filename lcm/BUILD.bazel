@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -12,7 +13,7 @@ drake_cc_library(
         "drake_lcm_message_handler_interface.h",
     ],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -37,7 +38,7 @@ drake_cc_library(
     ],
     deps = [
         ":interface",
-        "//drake/common:essential",
+        "//common:essential",
         "@lcm",
     ],
 )
@@ -52,7 +53,7 @@ drake_cc_library(
     ],
     deps = [
         ":interface",
-        "//drake/common:essential",
+        "//common:essential",
         "@lcm",
     ],
 )
@@ -63,8 +64,8 @@ drake_cc_library(
     srcs = ["lcmt_drake_signal_utils.cc"],
     hdrs = ["lcmt_drake_signal_utils.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/lcmtypes:drake_signal",
+        "//common:essential",
+        "//lcmtypes:drake_signal",
     ],
 )
 
@@ -74,8 +75,8 @@ drake_cc_library(
         "translator_base.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:unused",
+        "//common:essential",
+        "//common:unused",
     ],
 )
 
@@ -114,6 +115,13 @@ drake_cc_googletest(
     deps = [
         ":lcmt_drake_signal_utils",
     ],
+)
+
+drake_py_test(
+    name = "import_lcm_test",
+    srcs = ["test/import_lcm_test.py"],
+    main = "test/import_lcm_test.py",
+    deps = ["@lcm//:lcm-python"],
 )
 
 add_lint_tests()

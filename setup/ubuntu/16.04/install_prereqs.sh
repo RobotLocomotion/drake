@@ -1,74 +1,55 @@
 #!/bin/bash
 #
-# Prerequisite set-up script for Drake on Ubuntu 16.04.
+# Install development prerequisites for source distributions of Drake on
+# Ubuntu 16.04.
 
 set -euo pipefail
 
 die () {
     echo "$@" 1>&2
+    trap : EXIT  # Disable line number reporting; the "$@" message is enough.
     exit 1
 }
 
-me="The Drake prerequisite set-up script"
+at_exit () {
+    echo "${me} has experienced an error on line ${LINENO}" \
+        "while running the command ${BASH_COMMAND}"
+}
+
+me='The Drake source distribution prerequisite setup script'
+
+trap at_exit EXIT
 
 [[ "${EUID}" -eq 0 ]] || die "${me} must run as root. Please use sudo."
 
 apt update
-apt install --no-install-recommends lsb-release wget
+apt install --no-install-recommends lsb-release
 
-[[ "$(lsb_release -sc)" == "xenial" ]] || die "${me} only supports Ubuntu 16.04."
+[[ "$(lsb_release -sc)" == 'xenial' ]] || die "${me} only supports Ubuntu 16.04."
 
-# Install Clang 3.9
-while true; do
-  echo "The Ubuntu 16.04 distribution includes Clang 3.8 by default."
-  echo "To install Clang 3.9 it is necessary to add a Personal Package Archive (PPA)."
-  echo "This script will add the repository
-    'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main'"
-  read -p "Do you want to continue? [Y/n] " yn
-  case $yn in
-    [Yy]*)
-      apt install --no-install-recommends software-properties-common
-      wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | apt-key add -
-      # In this form, add-apt-repository is only truly idempotent when -s is
-      # added, since it otherwise duplicates the commented deb-src line.
-      add-apt-repository -s -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
-      apt update
-      apt install --no-install-recommends clang-3.9 lldb-3.9
-      break
-      ;;
-    [Nn]*) break ;;
-    *) echo "Please answer yes or no." ;;
-  esac
-done
+# Dependencies that are installed by the following sourced script that are
+# needed when developing with binary distributions are also needed when
+# developing with source distributions.
 
-# Install the APT dependencies.
-apt update -y
+source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
+
+# The following additional dependencies are only needed when developing with
+# source distributions.
+
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
-
 bash-completion
-binutils
-bison
-chrpath
 clang-4.0
 clang-format-4.0
-cmake
 cmake-curses-gui
 coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
-flex
-g++
-g++-5
-g++-5-multilib
-gcc
-gcc-5
-gcc-5-multilib
 gdb
 git
 graphviz
+kcov-34
 libblas-dev
-libboost-all-dev
 libbz2-dev
 libexpat1-dev
 libfreetype6-dev
@@ -83,21 +64,17 @@ libnetcdf-cxx-legacy-dev
 libnetcdf-dev
 libnlopt-dev
 libogg-dev
-libpng-dev
-libprotobuf-dev
+libpng12-dev
 libqt5opengl5-dev
 libqt5x11extras5-dev
 libtheora-dev
 libtiff5-dev
 libtinyxml-dev
-libtinyxml2-dev
 libtool
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
 lldb-4.0
-make
-mesa-common-dev
 openjdk-8-jdk
 patchelf
 patchutils
@@ -105,21 +82,16 @@ pkg-config
 protobuf-compiler
 python-dev
 python-gtk2
-python-lxml
 python-matplotlib
-python-numpy
 python-protobuf
 python-pygame
-python-scipy
 python-sphinx
 python-tk
-python-yaml
 valgrind
 zip
 zlib1g-dev
-
 EOF
-    )
+)
 
 dpkg_install_from_wget() {
   package="$1"
@@ -138,7 +110,7 @@ dpkg_install_from_wget() {
   if dpkg --compare-versions "${installed}" gt "${version}"; then
     echo "This system has ${package} version ${installed} installed."
     echo "Drake suggests downgrading to version ${version}, our supported version."
-    read -r -p "Do you want to downgrade? [Y/n] " reply
+    read -r -p 'Do you want to downgrade? [Y/n] ' reply
     if [[ ! "${reply}" =~ ^([yY][eE][sS]|[yY])*$ ]]; then
       echo "Skipping ${package} ${version} installation."
       return
@@ -161,30 +133,14 @@ dpkg_install_from_wget() {
 
 # Install Bazel.
 dpkg_install_from_wget \
-  bazel 0.6.1 \
-  https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb \
-  5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd
+  bazel 0.9.0 \
+  https://github.com/bazelbuild/bazel/releases/download/0.9.0/bazel_0.9.0-linux-x86_64.deb \
+  a600454ec218bffd1a1cea0f5bb511031081d23c4de15bfde674164dc2f9cd7f
 
-# Install IBEX, a dReal dependency.  See
-# https://launchpad.net/~dreal/+archive/ubuntu/dreal
-# for more information. To rebuild IBEX, add the PPA `ppa:dreal/dreal` and then
-# run `apt source libibex-dev` to get the sources.
-dpkg_install_from_wget \
-  ibex 2.6.3 \
-  https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files/libibex-dev_2.6.3.20171215122721.git2275df8f465a9db6a42d497ca322011ff2c6f8f7~16.04_amd64.deb \
-  7d76c4450921b83971006f01b3259c75cddc178bc7f4f8766f996df7763ed2b5
-
-# Install dReal. See
-# https://github.com/dreal/dreal4/blob/master/README.md#build-debian-package for
-# build instructions.
-dpkg_install_from_wget \
-  dreal 4.17.12.2 \
-  https://dl.bintray.com/dreal/dreal/dreal_4.17.12.2_amd64.deb \
-  9347492e47a518ff78991e15fe9de0cff0200573091385e42940cdbf1fcf77a5
-
-# Remove deb that we used to generate and install, but no longer need.
+# Remove a deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then
   apt purge ccache-bazel-wrapper
 fi
 
-echo "install_prereqs: success"
+trap : EXIT  # Disable exit reporting.
+echo 'install_prereqs: success'

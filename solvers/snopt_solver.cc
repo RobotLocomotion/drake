@@ -12,20 +12,46 @@
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
+// TODO(#7984) The SNOPT includes we use below are from an older f2c-based
+// implementation.  SNOPT has since switched to wrapping using F90 per the
+// publicly-available `snopt-interface` headers.  We should consider using that
+// header instead, which would remove a bunch of the odd #include and #define
+// statements from the below.
+
+// Put SNOPT's and F2C's typedefs into their own namespace.
+namespace snopt {
+extern "C" {
+
+// Include F2C's typedefs but revert its leaky defines.
+#include <f2c.h>
+#undef qbit_clear
+#undef qbit_set
+#undef TRUE_
+#undef FALSE_
+#undef Extern
+#undef VOID
+#undef abs
+#undef dabs
+#undef min
+#undef max
+#undef dmin
+#undef dmax
+#undef bit_test
+#undef bit_clear
+#undef bit_set
+
+// Include SNOPT's function declarations.
+#include <cexamples/snopt.h>
+#ifdef SNOPT_HAS_SNFILEWRAPPER
+#include <cexamples/snfilewrapper.h>
+#endif
+
+}  // extern C
+}  // namespace snopt
+
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-
-namespace snopt {
-// Needs to include snopt.hh BEFORE snfilewrapper.hh, otherwise compiler does
-// not work.
-// clang-format wants to switch the order of this inclusion, which causes
-// compiler failure.
-// clang-format off
-#include "snopt.hh"
-#include "snfilewrapper.hh"
-// clang-format on
-}
 
 // todo(sammy-tri) :  implement sparsity inside each cost/constraint
 // todo(sammy-tri) :  handle snopt options
@@ -152,19 +178,23 @@ struct SNOPTRun {
   snopt::integer iPrint = -1;
   snopt::integer iSumm = -1;
 
-  snopt::integer snSeti(std::string const& opt, snopt::integer val) {
+  // The `opt` is non-const, because snopt wants a non-const char*.
+  snopt::integer snSeti(std::string opt, snopt::integer val) {
+    DRAKE_DEMAND(!opt.empty());
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
-    snopt::snseti_(opt.c_str(), &val, &iPrint, &iSumm, &err, D.cw.data(),
+    snopt::snseti_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
                    &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
                    opt_len, 8 * D.lencw);
     return err;
   }
 
-  snopt::integer snSetr(std::string const& opt, snopt::doublereal val) {
+  // The `opt` is non-const, because snopt wants a non-const char*.
+  snopt::integer snSetr(std::string opt, snopt::doublereal val) {
+    DRAKE_DEMAND(!opt.empty());
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
-    snopt::snsetr_(opt.c_str(), &val, &iPrint, &iSumm, &err, D.cw.data(),
+    snopt::snsetr_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
                    &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
                    opt_len, 8 * D.lencw);
     return err;
@@ -190,12 +220,12 @@ struct SNOPTRun {
 
 // Return the number of rows in the nonlinear constraint.
 template <typename C>
-size_t SingleNonlinearConstraintSize(const C& constraint) {
+int SingleNonlinearConstraintSize(const C& constraint) {
   return constraint.num_constraints();
 }
 
 template <>
-size_t SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
+int SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint) {
   return 1;
 }
@@ -246,7 +276,7 @@ void EvaluateNonlinearConstraints(
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.constraint();
-    size_t num_constraints = SingleNonlinearConstraintSize(*c);
+    int num_constraints = SingleNonlinearConstraintSize(*c);
 
     int num_v_variables = binding.GetNumElements();
     this_x.resize(num_v_variables);
@@ -355,10 +385,10 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 template <typename C>
 void UpdateNumNonlinearConstraintsAndGradients(
     const std::vector<Binding<C>>& constraint_list,
-    size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
+    int* num_nonlinear_constraints, int* max_num_gradients) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
-    size_t n = c->num_constraints();
+    int n = c->num_constraints();
     *max_num_gradients += n * binding.GetNumElements();
     *num_nonlinear_constraints += n;
   }
@@ -373,7 +403,7 @@ template <>
 void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
     const std::vector<Binding<LinearComplementarityConstraint>>&
         constraint_list,
-    size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
+    int* num_nonlinear_constraints, int* max_num_gradients) {
   *num_nonlinear_constraints += constraint_list.size();
   for (const auto& binding : constraint_list) {
     *max_num_gradients += binding.constraint()->M().rows();
@@ -388,15 +418,15 @@ void UpdateConstraintBoundsAndGradients(
     size_t* constraint_index, size_t* grad_index) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
-    size_t n = c->num_constraints();
+    int n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       Flow[*constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[*constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
 
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
         iGfun[*grad_index] = *constraint_index + i + 1;  // row order
         jGvar[*grad_index] =
@@ -441,7 +471,7 @@ Eigen::SparseMatrix<double> LinearConstraintA(const C& constraint) {
 
 // Return the number of rows in the linear constraint
 template <typename C>
-size_t LinearConstraintSize(const C& constraint) {
+int LinearConstraintSize(const C& constraint) {
   return constraint.num_constraints();
 }
 
@@ -450,7 +480,7 @@ size_t LinearConstraintSize(const C& constraint) {
 // The linear constraint we add to the program is Mx >= -q
 // This linear constraint has the same number of rows, as matrix M.
 template <>
-size_t LinearConstraintSize<LinearComplementarityConstraint>(
+int LinearConstraintSize<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint) {
   return constraint.M().rows();
 }
@@ -489,7 +519,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
                             size_t* linear_constraint_index) {
   for (auto const& binding : linear_constraints) {
     auto const& c = binding.constraint();
-    size_t n = LinearConstraintSize(*c);
+    int n = LinearConstraintSize(*c);
 
     const Eigen::SparseMatrix<double> A_constraint = LinearConstraintA(*c);
 
@@ -498,13 +528,12 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
            ++it) {
         tripletList->emplace_back(
             *linear_constraint_index + it.row(),
-            prog.FindDecisionVariableIndex(binding.variables()(k)),
-            it.value());
+            prog.FindDecisionVariableIndex(binding.variables()(k)), it.value());
       }
     }
 
     const auto bounds = LinearConstraintBounds(*c);
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       Flow[*constraint_index + i] =
           static_cast<snopt::doublereal>(bounds.first(i));
       Fupp[*constraint_index + i] =
@@ -566,7 +595,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
+  int num_nonlinear_constraints = 0, max_num_gradients = nx;
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
@@ -580,7 +609,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
       prog.linear_complementarity_constraints(), &num_nonlinear_constraints,
       &max_num_gradients);
 
-  size_t num_linear_constraints = 0;
+  int num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
     num_linear_constraints += binding.constraint()->num_constraints();
@@ -702,7 +731,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   snopt::integer info;
   snopt::snopta_(
-      &Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob, snopt_userfun,
+      &Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob,
+      reinterpret_cast<snopt::U_fp>(&snopt_userfun),
       iAfun, jAvar, &lenA, &lenA, A, iGfun, jGvar, &lenG, &lenG, xlow, xupp,
       xnames, Flow, Fupp, Fnames, x, xstate, xmul, F, Fstate, Fmul, &info,
       &mincw, &miniw, &minrw, &nS, &nInf, &sInf,
@@ -728,6 +758,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     drake::log()->debug("Snopt returns code {}\n", info);
     if (info >= 11 && info <= 16) {
       return SolutionResult::kInfeasibleConstraints;
+    } else if (info >= 20 && info <= 22) {
+      prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
+      return SolutionResult::kUnbounded;
     } else if (info == 91) {
       return SolutionResult::kInvalidInput;
     }

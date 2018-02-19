@@ -237,7 +237,7 @@ int DoMain() {
   builder.Connect(optitrack_encoder->get_optitrack_output_port(),
                   optitrack_sender->get_optitrack_input_port());
   builder.Connect(optitrack_sender->get_lcm_output_port(),
-                  optitrack_pub->get_input_port(0));
+                  optitrack_pub->get_input_port());
 
   // TODO(rcory): Do we need this accel source?
   auto iiwa_zero_acceleration_source =
@@ -245,7 +245,7 @@ int DoMain() {
           Eigen::VectorXd::Zero(14));
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
-  builder.Connect(iiwa_command_sub->get_output_port(0),
+  builder.Connect(iiwa_command_sub->get_output_port(),
                   iiwa_command_receiver->get_input_port(0));
 
   builder.Connect(iiwa_command_receiver->get_output_port(0),
@@ -261,10 +261,10 @@ int DoMain() {
                   iiwa_status_sender->get_command_input_port());
 
   builder.Connect(model->get_output_port_computed_torque(),
-                  iiwa_status_sender->get_torque_commanded_input_port());
+                  iiwa_status_sender->get_commanded_torque_input_port());
 
   builder.Connect(iiwa_status_sender->get_output_port(0),
-                  iiwa_status_pub->get_input_port(0));
+                  iiwa_status_pub->get_input_port());
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
@@ -273,7 +273,7 @@ int DoMain() {
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
-                  iiwa_state_pub->get_input_port(0));
+                  iiwa_state_pub->get_input_port());
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
@@ -283,7 +283,7 @@ int DoMain() {
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_box_robot_state_msg(),
-                  box_state_pub->get_input_port(0));
+                  box_state_pub->get_input_port());
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
 
@@ -302,7 +302,7 @@ int DoMain() {
     builder.Connect(model->get_output_port_contact_results(),
                     contact_viz->get_input_port(0));
     builder.Connect(contact_viz->get_output_port(0),
-                    contact_results_publisher->get_input_port(0));
+                    contact_results_publisher->get_input_port());
     contact_results_publisher->set_publish_period(.01);
   }
 

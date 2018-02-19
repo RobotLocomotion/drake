@@ -41,7 +41,7 @@ struct is_cloneable_helper<
  bool value = drake::is_cloneable<Foo>::value;
  @endcode
 
- If `Foo` is cloneable, it will evalute to true. It can also be used in
+ If `Foo` is cloneable, it will evaluate to true. It can also be used in
  compile-time tests (e.g., SFINAE and `static_assert`s):
 
  @code

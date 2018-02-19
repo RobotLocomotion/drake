@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_state.h"
-#include "drake/geometry/query_handle.h"
+#include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -19,14 +19,15 @@ class GeometryInstance;
 
 template <typename T> class GeometryContext;
 
-/** GeometrySystem serves as a system-level wrapper for GeometryWorld. It serves
- as the nexus for all geometry (and geometry-based operations) in a Diagram.
- Through GeometrySystem, other systems that introduce geometry can _register_
- that geometry as part of a common global domain, including it in geometric
- queries (e.g., cars controlled by one LeafSystem can be observed by a different
- sensor system). GeometrySystem provides the interface for registering the
- geometry, updating its position based on the current context, and performing
- geometric queries.
+template <typename T> class QueryObject;
+
+/** GeometrySystem serves as the nexus for all geometry (and geometry-based
+ operations) in a Diagram. Through GeometrySystem, other systems that introduce
+ geometry can _register_ that geometry as part of a common global domain,
+ including it in geometric queries (e.g., cars controlled by one LeafSystem can
+ be observed by a different sensor system). GeometrySystem provides the
+ interface for registering the geometry, updating its position based on the
+ current context, and performing geometric queries.
 
  Only registered "geometry sources" can introduce geometry into %GeometrySystem.
  Geometry sources will typically be other leaf systems, but, in the case of
@@ -85,10 +86,10 @@ template <typename T> class GeometryContext;
 
  %GeometrySystem has two output ports:
 
- __query port__: An abstract-valued port containing an instance of QueryHandle.
+ __query port__: An abstract-valued port containing an instance of QueryObject.
  It provides a "ticket" for downstream LeafSystem instances to perform geometric
  queries on the %GeometrySystem. To perform geometric queries, downstream
- LeafSystem instances acquire the QueryHandle from %GeometrySystem's output port
+ LeafSystem instances acquire the QueryObject from %GeometrySystem's output port
  and provide it as a parameter to one of %GeometrySystem's query methods (e.g.,
  GeometrySystem::ComputeContact()). This assumes that the querying system has
  access to a const pointer to the connected %GeometrySystem instance. Use
@@ -112,14 +113,14 @@ template <typename T> class GeometryContext;
  Consumers perform geometric queries upon the world geometry. %GeometrySystem
  _serves_ those queries. As indicated above, in order for a LeafSystem to act
  as a consumer, it must:
-   1. define a QueryHandle-valued input port and connect it to %GeometrySystem's
+   1. define a QueryObject-valued input port and connect it to %GeometrySystem's
    corresponding output port, and
    2. have a reference to the connected %GeometrySystem instance.
 
  With those two requirements satisfied, a LeafSystem can perform geometry
  queries by:
-   1. evaluating the QueryHandle input port, and
-   2. passing the returned handle into the appropriate query method on
+   1. evaluating the QueryObject input port, and
+   2. passing the returned query object into the appropriate query method on
    GeometrySystem (e.g., GeometrySystem::ComputeContact()).
 
  __Producer__
@@ -225,10 +226,9 @@ class GeometrySystem final : public systems::LeafSystem<T> {
    provided. */
   //@{
 
-  /** Registers a new source to the geometry system (see GeometryWorld for the
-   discussion of "geometry source"). The caller must save the returned SourceId;
-   it is the token by which all other operations on the geometry world are
-   conducted.
+  /** Registers a new source to the geometry system. The caller must save the
+   returned SourceId; it is the token by which all other operations on the
+   geometry world are conducted.
 
    This source id can be used to register arbitrary _anchored_ geometry. But if
    dynamic geometry is registered (via RegisterGeometry/RegisterFrame), then
@@ -241,6 +241,10 @@ class GeometrySystem final : public systems::LeafSystem<T> {
                             %GeometrySystem.
    @see GeometryState::RegisterNewSource() */
   SourceId RegisterSource(const std::string &name = "");
+
+  /** Reports if the given source id is registered.
+   @param id       The id of the source to query. */
+  bool SourceIsRegistered(SourceId id) const;
 
   /** Given a valid source `id`, returns the "frame id" input port associated
    with that `id`. This port's value is an ordered list of frame ids; it
@@ -261,7 +265,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
     return systems::System<T>::get_output_port(bundle_port_index_);
   }
 
-  /** Returns the output port which produces the QueryHandle for performing
+  /** Returns the output port which produces the QueryObject for performing
    geometric queries. */
   const systems::OutputPort<T>& get_query_output_port() const {
     return systems::System<T>::get_output_port(query_port_index_);
@@ -270,8 +274,8 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   //@}
 
   /** @name             Topology Manipulation
-   Topology manipulation consists of changing the data contained in
-   GeometryWorld. This includes registering a new geometry source, adding or
+   Topology manipulation consists of changing the data contained in the world.
+   This includes registering a new geometry source, adding or
    removing frames, and adding or removing geometries.
 
    Currently, the topology can only be manipulated during initialization.
@@ -280,7 +284,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
 
    The initialization phase begins with the instantiation of a %GeometrySystem
    and ends when a context is allocated by the %GeometrySystem instance. This is
-   the only phase when geometry sources can be registered with GeometryWorld.
+   the only phase when geometry sources can be registered with %GeometrySystem.
    Once a source is registered, it can register frames and geometries. Any
    frames and geometries registered during this phase become part of the
    _default_ context state for %GeometrySystem and calls to
@@ -375,77 +379,6 @@ class GeometrySystem final : public systems::LeafSystem<T> {
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
 
-  /** Clears of all the registered frames and geometries from this source, but
-   the source is still registered, allowing future registration of frames
-   and geometries.
-   @param source_id   The id of the source whose registered elements will be
-                      cleared.
-   @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source or if a context has been allocated. */
-  void ClearSource(SourceId source_id);
-
-  /** Removes the given frame F (indicated by `frame_id`) from the the given
-   source's registered frames. All registered geometries connected to this frame
-   will also be removed.
-   @param source_id   The id for the owner geometry source.
-   @param frame_id    The id of the frame to remove.
-   @throws std::logic_error If:
-                            1. The `source_id` is not a registered source,
-                            2. the `frame_id` doesn't belong to the source, or
-                            3. a context has been allocated. */
-  void RemoveFrame(SourceId source_id, FrameId frame_id);
-
-  /** Removes the given geometry G (indicated by `geometry_id`) from the the
-   given source's registered geometries. All registered geometries hanging from
-   this geometry will also be removed.
-   @param source_id   The identifier for the owner geometry source.
-   @param geometry_id The identifier of the geometry to remove.
-   @throws std::logic_error If:
-                            1. The `source_id` is not a registered source,
-                            2. the `geometry_id` doesn't belong to the source,
-                               or
-                            3. a context has been allocated. */
-  void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
-
-  //@}
-
-  /** @name     System Queries
-   These methods perform queries on the state of the geometry world including:
-   proximity queries, contact queries, ray-casting queries, and look ups on
-   geometry resources.
-
-   These operations require a QueryHandle instance. The caller must acquire one
-   from the %GeometrySystem by connecting to the output port that provides
-   GeometryQuery instances. */
-  //@{
-
-  /** Reports the name for the given source id.
-   @param handle   The QueryHandle produced by evaluating the connected
-                   input port on the querying LeafSystem.
-   @param id       The id of the source to query. */
-  const std::string& get_source_name(const QueryHandle<T>& handle,
-                                     SourceId id) const;
-
-  /** Reports if the given source id is registered.
-   @param id       The id of the source to query. */
-  bool SourceIsRegistered(SourceId id) const;
-
-  /** Reports the frame to which this geometry is registered.
-   @param handle   The QueryHandle produced by evaluating the connected
-                   input port on the querying LeafSystem. */
-  FrameId GetFrameId(const QueryHandle<T>& handle,
-                     GeometryId geometry_id) const;
-
-  /** Determines penetrations across all pairs of geometries in GeometryWorld.
-   @param handle   The QueryHandle produced by evaluating the connected
-                   input port on the querying LeafSystem.
-   @returns A vector populated with all detected penetrations characterized as
-            point pairs. */
-  std::vector<PenetrationAsPointPair<T>> ComputePenetration(
-      const QueryHandle<T>& handle) const;
-
-  // TODO(SeanCurtis-TRI): Flesh this out with the full set of queries.
-
   //@}
 
  private:
@@ -456,19 +389,31 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   template <typename>
   friend class GeometrySystem;
 
+  // Give (at least temporarily) QueryObject access to the system API to
+  // evaluate inputs on the context.
+  friend class QueryObject<T>;
+
+  // The two output ports (bundle and query object) depend on all input
+  // kinematics (more or less). This makes those relationships concrete and
+  // official even if/when this class is made symbolic-compatible (or the
+  // default non-symbolic-compatible behavior were to change).
+  optional<bool> DoHasDirectFeedthrough(int, int) const override {
+    return true;
+  }
+
   // Helper class to register input ports for a source id.
   void MakeSourcePorts(SourceId source_id);
 
   // Allow the load dispatch to peek into GeometrySystem.
   friend void DispatchLoadMessage(const GeometrySystem<double>&);
 
-  // Constructs a QueryHandle for OutputPort allocation.
-  QueryHandle<T> MakeQueryHandle(const systems::Context<T>& context) const;
+  // Constructs a QueryObject for OutputPort allocation.
+  QueryObject<T> MakeQueryObject(const systems::Context<T>& context) const;
 
   // Sets the context into the output port value so downstream consumers can
   // perform queries.
-  void CalcQueryHandle(const systems::Context<T>& context,
-                      QueryHandle<T>* output) const;
+  void CalcQueryObject(const systems::Context<T>& context,
+                       QueryObject<T>* output) const;
 
   // Constructs a PoseBundle of length equal to the concatenation of all inputs.
   // This is the method used by the allocator for the output port.
@@ -488,7 +433,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   //    - instantiating a GeometryContext instance (as opposed to LeafContext),
   //    - to detect allocation in support of the topology semantics described
   //      above.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
 
   // Helper method for throwing an exception if a context has *ever* been
   // allocated by this system. The invoking method should pass it's name so
@@ -513,7 +458,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   // The index of the output port with the PoseBundle abstract value.
   int bundle_port_index_{-1};
 
-  // The index of the output port with the QueryHandle abstract value.
+  // The index of the output port with the QueryObject abstract value.
   int query_port_index_{-1};
 
   // A raw pointer to the default geometry state (which serves as the model for

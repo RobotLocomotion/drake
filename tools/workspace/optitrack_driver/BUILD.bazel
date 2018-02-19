@@ -20,7 +20,7 @@ install_files(
 CMAKE_PACKAGE = "optitrack"
 
 cmake_config(
-    cps_file_name = CMAKE_PACKAGE + ".cps",
+    cps_file_name = "package.cps",
     package = CMAKE_PACKAGE,
 )
 
@@ -45,7 +45,7 @@ install(
     java_strip_prefix = ["**/"],
     py_dest = "lib/python2.7/site-packages/optitrack",
     py_strip_prefix = ["**/"],
-    hdr_dest = "include/lcmtypes",
+    hdr_dest = "include",
     guess_hdrs = "PACKAGE",
     docs = OPTITRACK_LICENSE_DOCS,
     doc_strip_prefix = ["**/"],

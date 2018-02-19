@@ -287,11 +287,72 @@ struct assert_if_is_constraint {
 class MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
-
   using VarType = symbolic::Variable::Type;
+
+  /// The optimal cost is +∞ when the problem is globally infeasible.
+  static constexpr double kGlobalInfeasibleCost =
+    std::numeric_limits<double>::infinity();
+  /// The optimal cost is -∞ when the problem is unbounded.
+  static constexpr double kUnboundedCost =
+    -std::numeric_limits<double>::infinity();
 
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
+
+  /** Clones an optimization program.
+   * The clone will be functionally equivalent to the source program with the
+   * same:
+   * - decision variables
+   * - constraints
+   * - costs
+   * - solver settings
+   * - initial guess
+   * However, the clone's x values will be initialized to NaN, and all internal
+   * solvers will be freshly constructed.
+   * @retval new_prog. The newly constructed mathematical program.
+   * TODO(hongkai.dai): I put the definition of this function in the header
+   * file, so that the target mathematical_program_api has the definition of
+   * this virtual function. We should make MathematicalProgramSolverInterface
+   * independent of MathematicalProgram.
+   */
+  virtual std::unique_ptr<MathematicalProgram> Clone() const {
+    // The constructor of MathematicalProgram will construct each solver. It
+    // also sets x_values_ and x_initial_guess_ to default values.
+    auto new_prog = std::make_unique<MathematicalProgram>();
+    // Add variables and indeterminates
+    // AddDecisionVariables and AddIndeterminates also set
+    // decision_variable_index_ and indeterminate_index_ properly.
+    new_prog->AddDecisionVariables(decision_variables_);
+    new_prog->AddIndeterminates(indeterminates_);
+    // Add costs
+    new_prog->generic_costs_ = generic_costs_;
+    new_prog->quadratic_costs_ = quadratic_costs_;
+    new_prog->linear_costs_ = linear_costs_;
+
+    // Add constraints
+    new_prog->generic_constraints_ = generic_constraints_;
+    new_prog->linear_constraints_ = linear_constraints_;
+    new_prog->linear_equality_constraints_ = linear_equality_constraints_;
+    new_prog->bbox_constraints_ = bbox_constraints_;
+    new_prog->lorentz_cone_constraint_ = lorentz_cone_constraint_;
+    new_prog->rotated_lorentz_cone_constraint_ =
+        rotated_lorentz_cone_constraint_;
+    new_prog->positive_semidefinite_constraint_ =
+        positive_semidefinite_constraint_;
+    new_prog->linear_matrix_inequality_constraint_ =
+        linear_matrix_inequality_constraint_;
+    new_prog->linear_complementarity_constraints_ =
+        linear_complementarity_constraints_;
+
+    new_prog->x_initial_guess_ = x_initial_guess_;
+    new_prog->solver_id_ = solver_id_;
+    new_prog->solver_options_double_ = solver_options_double_;
+    new_prog->solver_options_int_ = solver_options_int_;
+    new_prog->solver_options_str_ = solver_options_str_;
+
+    new_prog->required_capabilities_ = required_capabilities_;
+    return new_prog;
+  }
 
   /**
    * Adds continuous variables, appending them to an internal vector of any
@@ -355,8 +416,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewContinuousVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -425,8 +486,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewBinaryVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -514,6 +575,16 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /** Appends new variables to the end of the existing variables.
+   * @param decision_variables The newly added decision_variables.
+   * @pre `decision_variables` should not intersect with the existing variables
+   * or indeterminates in the optimization program.
+   * @pre Each entry in `decision_variables` should not be a dummy variable.
+   * @throw runtime_error if the preconditions are not satisfied.
+   */
+  void AddDecisionVariables(
+      const Eigen::Ref<const VectorXDecisionVariable>& decision_variables);
 
   /**
    * Returns a free polynomial in a monomial basis over @p indeterminates of a
@@ -689,6 +760,19 @@ class MathematicalProgram {
    */
   MatrixXIndeterminate NewIndeterminates(int rows, int cols,
                                          const std::string& name = "X");
+
+  /** Adds indeterminates.
+   * This method appends some indeterminates to the end of the program's old
+   * indeterminates.
+   * @param new_indeterminates The indeterminates to be appended to the
+   * program's old indeterminates.
+   * @pre `new_indeterminates` should not intersect with the program's old
+   * indeterminates or decision variables.
+   * @pre Each entry in new_indeterminates should not be dummy.
+   * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
+   */
+  void AddIndeterminates(
+      const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
 
   /**
    * Adds a generic cost to the optimization program.
@@ -1993,8 +2077,14 @@ class MathematicalProgram {
   optional<SolverId> GetSolverId() const { return solver_id_; }
 
   /**
-   * Getter for optimal cost at the solution. Will return NaN if there has
-   * been no successful solution.
+   * Getter for optimal cost at the solution.
+   * If the solver finds an optimal solution, then we return the cost evaluated
+   * at this solution.
+   * If the program is unbounded, then the optimal cost is -∞.
+   * If the program is globally infeasible, then the optimal cost is +∞.
+   * If the program is locally infeasible, then the solver (e.g. SNOPT) might
+   * return some finite value as the optimal cost.
+   * Otherwise, the optimal cost is NaN.
    */
   double GetOptimalCost() const { return optimal_cost_; }
 
@@ -2243,12 +2333,12 @@ class MathematicalProgram {
   VectorXIndeterminate indeterminates_;
 
   std::vector<Binding<Cost>> generic_costs_;
-  std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
   std::vector<Binding<LinearCost>> linear_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
+  std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<LinearConstraint>> linear_constraints_;
   std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;

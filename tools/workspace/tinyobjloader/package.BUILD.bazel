@@ -1,0 +1,24 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "tinyobjloader",
+    srcs = ["tiny_obj_loader.cc"],
+    hdrs = ["tiny_obj_loader.h"],
+    copts = ["-fvisibility=hidden"],
+    includes = ["."],
+    linkstatic = 1,
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

@@ -12,6 +12,7 @@ def _drake_java_binary_install_launcher_impl(ctx):
             main_class = ctx.attr.main_class,
             classpath = classpath,
             filename = ctx.attr.filename,
+            jvm_flags = ctx.attr.jvm_flags
         )
     ]
 
@@ -20,6 +21,10 @@ _drake_java_binary_install_launcher = rule(
         "main_class": attr.string(mandatory = True),
         "filename": attr.string(mandatory = True),
         "target": attr.label(mandatory = True),
+        "jvm_flags": attr.string_list(
+            mandatory = False,
+            default = [],
+        ),
     },
     implementation = _drake_java_binary_install_launcher_impl,
 )
@@ -36,14 +41,16 @@ def drake_java_binary(
 
     The native java_binary creates a java launcher (shell script) that works in
     the build tree. However, a different launcher needs to be created to run
-    the java binary in the install tree. This function generates a
-    MainClassInfo provider that can be used by the installer (install.bzl) to
-    configure the installation script that will copy the installed files and
-    generate a launcher script at install time.
+    the java binary in the install tree. This function creates a target
+    `${name}-launcher` which contains a MainClassInfo provider. That provider
+    will be used by the installer (install.bzl) to configure the installation
+    script to generate a launcher script called `${name}-launcher.sh` at
+    install time. That launcher can be renamed at install time to match the
+    name of the java binary".
     """
     vkwargs = {
         key: value for key, value in kwargs.items()
-        if key == "visibility"
+        if key == "visibility" or key == "jvm_flags"
     }
     native.java_binary(
         name = name,

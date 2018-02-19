@@ -51,6 +51,14 @@ Installing CLion
    30-day trial version of CLion. Either try it out as is, or get a free
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
+The most recent versions that we have tested for compatibility are:
+  - CLion 2017.2.3
+  - Bazel 0.9.0
+  - "CLion with Bazel" plug-in 2018.01.02.0.1
+
+Note that as of this writing, CLion 2017.3.2 is not compatible.  For more
+details, see https://github.com/bazelbuild/intellij/issues/175.
+  
 Upgrading CLion
 ---------------
 
@@ -72,11 +80,19 @@ in ``~/ClionProjects/project-name``).
 Installing the Bazel Plugin
 ---------------------------
 
-To use Bazel in CLion, you must install a plugin supplied by Google. The plugin
-requires CLion 2016.3 or later.  To install the plugin, open
-``File > Settings``, select ``Plugins``, and press the ``Browse repositories``
-button.  Locate and install the ``CLion with Bazel`` plugin. You will be
-prompted to restart CLion.
+To use Bazel in CLion, you must install a plugin supplied by Google.  To
+install the plugin, open ``File > Settings``, select ``Plugins``, and press the
+``Browse repositories`` button.  Locate and install the ``CLion with Bazel``
+plugin. You will be prompted to restart CLion.
+
+To use Drake with CLion, your Drake checkout should ideally be named ``drake``;
+if it isn't, navigation features like "Jump to Definition" will have confusing
+results.
+
+Open ``Settings >> Bazel Settings``.  For ``Bazel binary location`` select the
+path to ``drake/tools/clion/bazel_wrapper`` from any recent Drake source tree
+(it doesn't have to match the current project open in CLion).
+
 
 Setting up Drake in CLion
 -------------------------
@@ -85,17 +101,15 @@ specified in the WORKSPACE file.
 
 1. ``File > Import Bazel Project``
 2. Select Workspace: Use an existing Bazel workspace, and provide the path to
-   your ``drake-distro`` directory.
-3. (Sometimes) Select Bazel Executable: If prompted, specify the path to your
-   Bazel executable. The default is probably correct.
-4. Select Project View: choose "Import from workspace", and
-   select the file ``drake-distro/.bazelproject``
-5. Project View: Pick a ``project data directory`` of your choice for the
-   CLion project files. It must not be a subdirectory of ``drake-distro``.
-6. (Advanced) Project View: If you only wish to develop a subset of Drake,
+   your ``drake`` directory.
+3. Select Project View: choose "Import from workspace", and
+   select the file ``drake/.bazelproject``
+4. Project View: Pick a ``project data directory`` of your choice for the
+   CLion project files. It must not be a subdirectory of ``drake``.
+5. (Advanced) Project View: If you only wish to develop a subset of Drake,
    you can specify only those files and targets in the project view file.
    Most users should leave it as-is.
-7. Click "Finish".  CLion will begin ingesting the Drake source, building
+6. Click "Finish".  CLion will begin ingesting the Drake source, building
    symbols, and compiling Drake. This will take several minutes.
 
 Building and Running Targets
@@ -109,7 +123,7 @@ To build or run a specific target go to ``Run > Edit Configurations``. Click
 options. The ``Target expression`` specifies the actual code (library, binary,
 and/or test) that you want to run. To learn more about target expressions, see
 `the Bazel manual
-<https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns>`
+<https://docs.bazel.build/versions/master/user-manual.html#target-patterns>`
 _. Once you've created a configuration, you can launch it from the ``Run`` menu.
 
 To run a specific target in the debugger, create a configuration as above,
@@ -127,13 +141,13 @@ Git Integration
 
 CLion provides a user interface for Git, which you can enable in the ``VCS``
 menu.  It automatically detects all Git roots within the workspace. This will
-include ``bazel-drake-distro``, which is a Bazel-internal detail. Bazel edits
+include ``bazel-drake``, which is a Bazel-internal detail. Bazel edits
 the contents of that directory for its own purposes, and those changes will
 spuriously appear in the CLion UI as changes that need to be committed. To make
-CLion ignore ``bazel-drake-distro``, enable Git integration under the ``VCS``
+CLion ignore ``bazel-drake``, enable Git integration under the ``VCS``
 tab, then go to ``File > Settings``. Select the ``Version Control`` menu item
 directly (not one of the subtopics displayed when that item is expanded). You
-will see a list of all the Git root directories. Look for ``bazel-drake-distro``
+will see a list of all the Git root directories. Look for ``bazel-drake``
 on that list and select it. On the right hand side are ``+`` and ``-`` buttons;
 click ``-`` to remove the spurious root directory. After that you should be
 able to go to ``VCS > Commit Changes`` and there should be no changes seen.

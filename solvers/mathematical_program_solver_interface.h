@@ -11,13 +11,16 @@ namespace solvers {
 class MathematicalProgram;
 
 enum SolutionResult {
-  kSolutionFound = 0,
-  kInvalidInput = -1,
-  kInfeasibleConstraints = -2,
-  kUnbounded = -3,
-  kUnknownError = -4,
-  kInfeasible_Or_Unbounded = -5,
-  kIterationLimit = -6,
+  kSolutionFound = 0,           ///< Found the optimal solution.
+  kInvalidInput = -1,           ///< Invalid input.
+  kInfeasibleConstraints = -2,  ///< The primal is infeasible.
+  kUnbounded = -3,              ///< The primal is unbounded.
+  kUnknownError = -4,           ///< Unknown error.
+  kInfeasible_Or_Unbounded =
+      -5,                ///< The primal is either infeasible or unbounded.
+  kIterationLimit = -6,  ///< Reaches the iteration limits.
+  kDualInfeasible = -7,  ///< Dual problem is infeasible. In this case we cannot
+                         /// infer the status of the primal problem.
 };
 
 /// Interface used by implementations of individual solvers.

@@ -2,11 +2,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(_ik_py, m) {
   m.doc() = "RigidBodyTree inverse kinematics";
@@ -57,6 +59,21 @@ PYBIND11_MODULE(_ik_py, m) {
          py::arg("bodyA_idx"),
          py::arg("bodyB_idx"),
          py::arg("bTbp"),
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+
+  py::class_<RelativeQuatConstraint, RigidBodyConstraint>(
+    m, "RelativeQuatConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  int,
+                  int,
+                  const Eigen::Vector4d&,
+                  double,
+                  const Eigen::Vector2d&>(),
+         py::arg("model"),
+         py::arg("bodyA_idx"),
+         py::arg("bodyB_idx"),
+         py::arg("quat_des"),
+         py::arg("tol"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
   py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(
@@ -246,3 +263,6 @@ PYBIND11_MODULE(_ik_py, m) {
     .def_readonly("info", &IKResults::info)
     .def_readonly("infeasible_constraints", &IKResults::infeasible_constraints);
 }
+
+}  // namespace pydrake
+}  // namespace drake

@@ -571,15 +571,13 @@ class SystemIOTest : public ::testing::Test {
     // make string input
     std::unique_ptr<Value<std::string>> str_input =
         std::make_unique<Value<std::string>>("input");
-    context_->SetInputPortValue(
-        0, std::make_unique<FreestandingInputPortValue>(std::move(str_input)));
+    context_->FixInputPort(0, std::move(str_input));
 
     // make vector input
     std::unique_ptr<BasicVector<double>> vec_input =
         std::make_unique<BasicVector<double>>(1);
     vec_input->SetAtIndex(0, 2);
-    context_->SetInputPortValue(
-        1, std::make_unique<FreestandingInputPortValue>(std::move(vec_input)));
+    context_->FixInputPort(1, std::move(vec_input));
   }
 
   ValueIOTestSystem<double> test_sys_;
@@ -596,6 +594,15 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(output_->get_data(0)->GetValue<std::string>(),
             std::string("inputoutput"));
   EXPECT_EQ(output_->get_vector_data(1)->get_value()(0), 4);
+
+  // Connected inputs ports can be evaluated.  (Port #1 was set to [2]).
+  const auto& block = test_sys_.EvalEigenVectorInput(*context_, 1);
+  ASSERT_EQ(block.size(), 1);
+  ASSERT_EQ(block[0], 2.0);
+
+  // Disconnected inputs are nullptr, or generate an exception (not assert).
+  EXPECT_EQ(test_sys_.EvalVectorInput(*context_, 2), nullptr);
+  EXPECT_THROW(test_sys_.EvalEigenVectorInput(*context_, 2), std::exception);
 
   // Test AllocateInput*
   // Second input is not (yet) a TestTypedVector, since I haven't called the

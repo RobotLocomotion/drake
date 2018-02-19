@@ -37,7 +37,7 @@ int DoMain() {
   auto state_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_x>(channel_x, &lcm));
   auto state_receiver = builder.AddSystem<AcrobotStateReceiver>();
-  builder.Connect(state_sub->get_output_port(0),
+  builder.Connect(state_sub->get_output_port(),
                   state_receiver->get_input_port(0));
 
   // Create command sender.
@@ -45,7 +45,7 @@ int DoMain() {
       systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(channel_u, &lcm));
   auto command_sender = builder.AddSystem<AcrobotCommandSender>();
   builder.Connect(command_sender->get_output_port(0),
-                  command_pub->get_input_port(0));
+                  command_pub->get_input_port());
 
   auto controller = builder.AddSystem<AcrobotSpongController>();
   builder.Connect(controller->get_output_port(0),

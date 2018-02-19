@@ -18,13 +18,14 @@ drake_cc_library(
         "lane.h",
         "lane_data.h",
         "road_geometry.h",
+        "rules/right_of_way_rule.h",
         "segment.h",
         "type_specific_identifier.h",
     ],
     deps = [
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 
@@ -34,7 +35,7 @@ drake_cc_googletest(
     name = "lane_data_test",
     deps = [
         ":api",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -47,6 +48,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "type_specific_identifier_test",
+    deps = [
+        ":api",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rules_test",
     deps = [
         ":api",
     ],

@@ -258,14 +258,18 @@ PostureInterpolationResult PlanInterpolatingMotion(
   return result;
 }
 
-void OpenGripper(const WorldState& env_state, WsgAction* wsg_act,
+void OpenGripper(const WorldState& env_state,
+                 double grip_force,
+                 WsgAction* wsg_act,
                  lcmt_schunk_wsg_command* msg) {
-  wsg_act->OpenGripper(env_state, msg);
+  wsg_act->OpenGripper(env_state, grip_force, msg);
 }
 
-void CloseGripper(const WorldState& env_state, WsgAction* wsg_act,
+void CloseGripper(const WorldState& env_state,
+                  double grip_force,
+                  WsgAction* wsg_act,
                   lcmt_schunk_wsg_command* msg) {
-  wsg_act->CloseGripper(env_state, msg);
+  wsg_act->CloseGripper(env_state, grip_force, msg);
 }
 
 std::unique_ptr<RigidBodyTree<double>> BuildTree(
@@ -295,7 +299,8 @@ std::unique_ptr<RigidBodyTree<double>> BuildTree(
     // The grasp frame is located between the fingertips of the gripper, which
     // puts it grasp_frame_translational_offset from the origin of the
     // end-effector link.
-    const double grasp_frame_translational_offset{0.19};
+    const double grasp_frame_translational_offset =
+        configuration.grasp_frame_translational_offset;
     // Define the pose of the grasp frame (G) relative to the end effector (E).
     Isometry3<double> X_EG{Isometry3<double>::Identity()};
     X_EG.rotate(Eigen::AngleAxisd(grasp_frame_angular_offset,
@@ -869,7 +874,8 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
     case PickAndPlaceState::kPlace: {
       if (!wsg_act_.ActionStarted()) {
         lcmt_schunk_wsg_command msg;
-        schunk_action(env_state, &wsg_act_, &msg);
+        schunk_action(env_state, configuration_.grip_force,
+                      &wsg_act_, &msg);
         wsg_callback(&msg);
 
         drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());

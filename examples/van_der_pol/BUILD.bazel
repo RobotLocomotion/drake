@@ -13,9 +13,9 @@ drake_cc_library(
     hdrs = ["van_der_pol.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/framework:system_constraint",
-        "//drake/systems/framework:vector",
+        "//systems/framework:leaf_system",
+        "//systems/framework:system_constraint",
+        "//systems/framework:vector",
     ],
 )
 
@@ -26,11 +26,11 @@ drake_cc_binary(
     add_test_rule = 1,
     deps = [
         "van_der_pol",
-        "//drake/common:is_approx_equal_abstol",
-        "//drake/common/proto:call_matlab",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:signal_logger",
+        "//common:is_approx_equal_abstol",
+        "//common/proto:call_matlab",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/primitives:signal_logger",
     ],
 )
 

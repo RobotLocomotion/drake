@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -120,6 +121,53 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
+  /// Returns the number of degrees of freedom for `this` joint.
+  /// E.g., one for a revolute joint and three for a ball joint.
+  // NVI to do_get_num_dofs();
+  int num_dofs() const {
+    // Verifies the implementation returns an acceptable value.
+    const int n_joint_dofs = do_get_num_dofs();
+    DRAKE_DEMAND(0 <= n_joint_dofs && n_joint_dofs <= 6);
+    return n_joint_dofs;
+  }
+
+  /// Adds into `forces` a force along the one of the joint's degrees of
+  /// freedom indicated by index `joint_dof`.
+  /// The meaning for this degree of freedom and even its dimensional units
+  /// depend on the specific joint sub-class. For a RevoluteJoint for instance,
+  /// `joint_dof` can only be 0 since revolute joints's motion subspace only has
+  /// one degree of freedom, while the units of `joint_tau` are those of torque
+  /// (N⋅m in the MKS system of units). For multi-dof joints please refer to
+  /// the documentation provided by specific joint sub-classes regarding the
+  /// meaning of `joint_dof`.
+  ///
+  /// @param[in] context
+  ///   The context storing the state and parameters for the model to which
+  ///   `this` joint belongs.
+  /// @param[in] joint_dof
+  ///   Index specifying one of the degress of freedom for this joint. The index
+  ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
+  ///   method will abort.
+  /// @param[in] joint_tau
+  ///   Generalized force corresponding to the degree of freedom indicated by
+  ///   `joint_dof` to be added into `forces`.
+  /// @param[out] forces
+  ///   On return, this method will add force `joint_tau` for the degree of
+  ///   freedom `joint_dof` into the output `forces`. This method aborts if
+  ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
+  ///   accommodate a set of forces for the model to which this joint belongs.
+  // NVI to DoAddInOneForce().
+  void AddInOneForce(
+      const systems::Context<T> &context,
+      int joint_dof,
+      const T &joint_tau,
+      MultibodyForces<T> *forces) const {
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    DoAddInOneForce(context, joint_dof, joint_tau, forces);
+  }
+
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -200,6 +248,31 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     std::vector<const Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
+
+  /// Returns the number of degrees of freedom for `this` joint.
+  /// Implementation to the NVI num_dofs() that must be implemented by all
+  /// subclasses.
+  /// E.g., this method should return one for a revolute joint and it should
+  /// return three for a ball joint.
+  virtual int do_get_num_dofs() const = 0;
+
+  /// Adds into `forces` a force along the one of the joint's degrees of
+  /// freedom given by `joint_dof`.
+  /// How forces is added to a MultibodyTree model depends on the underlying
+  /// implementation of a particular joint and therefore specific %Joint
+  /// subclasses must provide a definition for this method. For instance, a
+  /// revolute joint could be modeled with a single generalized coordinate for
+  /// the angular rotation (implemented through a RevoluteMobilizer) or it could
+  /// be modeled using a constraint that only allows rotation about the joint's
+  /// axis but that constrains the motion in the other five degrees of freedom.
+  /// This method is only called by the public NVI AddInOneForce() and therefore
+  /// input arguments were checked to be valid.
+  /// @see The public NVI AddInOneForce() for details.
+  virtual void DoAddInOneForce(
+      const systems::Context<T> &context,
+      int joint_dof,
+      const T &joint_tau,
+      MultibodyForces<T> *forces) const = 0;
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.

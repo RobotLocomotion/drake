@@ -71,7 +71,17 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/common:default_scalars",
-        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "transform",
+    srcs = ["transform.cc"],
+    hdrs = ["transform.h"],
+    deps = [
+        ":rotation_matrix",
+        "//drake/common",
+        "//drake/common:default_scalars",
     ],
 )
 
@@ -87,6 +97,13 @@ drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":rotation_matrix",
+    ],
+)
+
+drake_cc_googletest(
+    name = "transform_test",
+    deps = [
+        ":transform",
     ],
 )
 

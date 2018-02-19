@@ -40,6 +40,10 @@ struct ClosestPose {
 /// current orientation with respect to its lane.
 enum class AheadOrBehind { kAhead = 0, kBehind = 1 };
 
+/// Specifies whether to check ongoing lanes or both ongoing lanes and confluent
+/// branches for traffic.
+enum class ScanStrategy { kBranches, kPath };
+
 /// PoseSelector is a class that provides the relevant pose or poses with
 /// respect to a given ego vehicle driving within a given maliput road geometry.
 ///
@@ -57,20 +61,29 @@ class PoseSelector {
 
   PoseSelector() = delete;
 
-  /// Returns the leading and trailing vehicles in a given @p lane that are
-  /// closest to an ego vehicle (within @p lane or another lane) as measured
-  /// along the `s`-coordinate of the ego vehicle's lane.  The ego vehicle must
-  /// be within the `driveable_bounds` of @p lane (i.e. the road is contiguous
-  /// with @p lane along the `r`-direction).  This function is used, for
-  /// instance, as logic for lane-change planners (e.g. MOBIL).  The ego car's
-  /// pose (@p ego_pose) and the poses of the traffic cars (@p traffic_poses)
-  /// are provided.  The parameter @p scan_distance determines the distance
-  /// along the sequence of lanes to scan before declaring that no traffic car
-  /// is ahead (resp. behind) the ego car.  If no leading/trailing vehicles are
-  /// seen within @p traffic_lane, `s`-positions are taken to be at infinite
-  /// distances away from the ego car.  Traffic vehicles having exactly the same
-  /// s-position as the ego vehicle but situated in a different (parallel) lane
-  /// are taken to be behind the ego vehicle.
+  /// Returns the leading and trailing vehicles in a given @p lane or @p road
+  /// that are closest to an ego vehicle along its path, as measured along the
+  /// `s`-coordinate of the ego vehicle's lane.  If @p path_or_branches is
+  /// ScanStrategy::kPath, only poses in the same path as the ego (ahead or
+  /// behind) are tracked; if ScanStrategy::kBranches, poses in lanes that
+  /// eventually merge (converge to the same branch point that is on the default
+  /// path of @p lane) are considered in addition to those along the ego car's
+  /// default path.
+  ///
+  /// Users should take heed to the fact that ScanStrategy::kBranches does _not_
+  /// assess the relationship between traffic and ego vehicle velocity when
+  /// selecting poses.  Thus, cars with in the same lane as the ego but with
+  /// negative net-velocity (approaching the ego car, from the ego's
+  /// point-of-view) could be ignored in favor of a car in a branch with
+  /// positive net-velocity.
+  ///
+  /// The ego vehicle must be within the `driveable_bounds` of @p lane (i.e. the
+  /// road is contiguous with @p lane along the `r`-direction).  This function
+  /// is used, for instance, as logic for lane-change planners (e.g. MOBIL).
+  /// The ego car's pose (@p ego_pose) and the poses of the traffic cars (@p
+  /// traffic_poses) are provided.  The parameter @p scan_distance determines
+  /// the distance along the sequence of lanes to scan before declaring that no
+  /// traffic car is ahead (resp. behind) the ego car.
   ///
   /// @return A map of AheadOrBehind values to vehicle ClosestPoses (containing
   /// RoadOdometries and closest relative distances).  Relative distances are
@@ -79,7 +92,15 @@ class PoseSelector {
   /// (resp. behind) the ego vehicle, the respective RoadPosition within
   /// ClosestPoses will contain an `s`-value of positive (resp. negative)
   /// infinity.  Any traffic poses that are redunant with `ego_pose` (i.e. have
-  /// the same RoadPosition as the ego car) are discarded.
+  /// the same RoadPosition as the ego car and thus the same `s` and `r` value)
+  /// are discarded.  If no leading/trailing vehicles are seen within
+  /// scan-distance of the ego car, `s`-positions are taken to be at infinite
+  /// distances away from the ego car.  Note also that traffic vehicles having
+  /// exactly the same `s`-position as the ego vehicle but with different
+  /// `r`-value or are directly perpendicular in a Lane::to_left(),
+  /// Lane::to_right() lane are taken to be *behind* the ego vehicle.  Note that
+  /// this implementation is greatly simplified by considering poses as points
+  /// (i.e. vehicle geometries are ignored).
   ///
   /// The RoadGeometry from which @p lane is drawn is required to have default
   /// branches set for all branches in the road network.
@@ -87,23 +108,27 @@ class PoseSelector {
       const maliput::api::Lane* lane,
       const systems::rendering::PoseVector<T>& ego_pose,
       const systems::rendering::PoseBundle<T>& traffic_poses,
-      const T& scan_distance);
+      const T& scan_distance, ScanStrategy path_or_branches);
 
   /// Same as PoseSelector::FindClosestPair() except that it returns a single
   /// ClosestPose for either the vehicle ahead (AheadOrBehind::kAhead) or behind
   /// (AheadOrBehind::kBehind).
   ///
+  /// Cars in other lanes are only tracked if they are in confluent lanes to a
+  /// given branch point within the `scan_distance`; i.e. cars in two
+  /// side-by-side lanes that never enter a branch point will not be selected.
+  /// This assumes that the ego car has knowledge of the traffic cars' default
+  /// lane.
+  ///
   /// Note that when no car is detected in front of the ego car, the returned
   /// RoadOdometry within ClosestPose will contain an `s`-value of
   /// `std::numeric_limits<double>::infinity()`.
-  //
-  // TODO(jadecastro): Generalize this function to find and locate cars that are
-  // in lanes that eventually merge with the ego car's default ongoing lane.
   static ClosestPose<T> FindSingleClosestPose(
       const maliput::api::Lane* lane,
       const systems::rendering::PoseVector<T>& ego_pose,
       const systems::rendering::PoseBundle<T>& traffic_poses,
-      const T& scan_distance, const AheadOrBehind side);
+      const T& scan_distance, const AheadOrBehind side,
+      ScanStrategy path_or_branches);
 
   /// Extracts the vehicle's `s`-direction velocity based on its RoadOdometry @p
   /// road_odometry in the Lane coordinate frame.  Assumes the road has zero
@@ -117,68 +142,6 @@ class PoseSelector {
   // TODO(jadecastro) Enable AutoDiffXd for
   // maliput::api::Lane::GetOrientation().
   static T GetSigmaVelocity(const RoadOdometry<T>& road_odometry);
-
-  /// Returns `true` if and only if @p lane_position is within the longitudinal
-  /// (s), driveable (r) and elevation (h) bounds of the specified @p lane
-  /// (i.e. within `lane->driveable_bounds()` and `lane->elevation_bounds()`).
-  static bool IsWithinDriveable(
-      const maliput::api::LanePositionT<T>& lane_position,
-      const maliput::api::Lane* lane);
-
-  /// Returns `true` if and only if @p geo_position is within the longitudinal
-  /// (s), lateral (r) and elevation (h) bounds of the specified @p lane
-  /// (i.e. within `lane->lane_bounds()` and `lane->elevation_bounds()`).
-  static bool IsWithinLane(const maliput::api::GeoPositionT<T>& geo_position,
-                           const maliput::api::Lane* lane);
-
-  /// Returns `true` if and only if @p lane_position is within the driveable
-  /// bounds of @p lane and, in addition, `r` is within its lane bounds.
-  static bool IsWithinLane(const maliput::api::LanePositionT<T>& lane_position,
-                           const maliput::api::Lane* lane);
-
- private:
-  // Given a @p lane_direction, returns its default branch and updates @p
-  // lane_direction to match the `lane` and `with_s` of that branch.  If there
-  // is no default branch, returns `nullopt` and sets `lane_direction->lane` to
-  // `nullptr`.
-  static optional<maliput::api::LaneEnd> GetDefaultOngoingLane(
-      LaneDirection* lane_direction);
-
-  // Returns a RoadOdometry that contains an infinite `s` position, zero `r` and
-  // `h` positions, and zero velocities. If @p lane_direction contains `with_s
-  // == True`, a RoadOdometry containing an s-position at positive infinity is
-  // returned; otherwise a negative-infinite position is returned.  For T =
-  // AutoDiffXd, the derivatives of the returned RoadOdometry are made to be
-  // coherent with respect to @p ego_pose.
-  static RoadOdometry<T> MakeInfiniteOdometry(
-      const LaneDirection& lane_direction,
-      const systems::rendering::PoseVector<T>& ego_pose);
-
-  // Returns positive infinity. For T = AutoDiffXd, the derivatives of the
-  // the return value are made to be coherent with respect to @p ego_pose.
-  static T MakeInfiniteDistance(
-      const systems::rendering::PoseVector<T>& ego_pose);
-
-  // Returns the distance (along the `s`-coordinate) from an end of a lane to a
-  // @p lane_position in that lane, where the end is determined by the `with_s`
-  // of the provided `lane_direction`.  Both `lane` and `with_s` are specified
-  // in @p lane_direction.  Throws if any element of @p lane_position is not
-  // within the respective bounds of `lane_direction.lane`.
-  static T CalcLaneProgress(
-      const LaneDirection& lane_direction,
-      const maliput::api::LanePositionT<T>& lane_position);
-
-  // Constructs a LaneDirection structure based on a vehicle's current @p lane,
-  // @p lane_position, @p rotation (in global coordinates), and the @p side of
-  // the car (ahead or behind) that traffic is being observed.  Note that
-  // `LaneDirection::with_s` in the return argument is interpreted as the
-  // direction along which targets are being observed (regardless of the ego
-  // car's orientation): it is true if cars are being observed along the
-  // `s`-direction and is false otherwise.
-  static LaneDirection CalcLaneDirection(
-      const maliput::api::Lane* lane,
-      const maliput::api::LanePositionT<T>& lane_position,
-      const Eigen::Quaternion<T>& rotation, AheadOrBehind side);
 };
 
 }  // namespace automotive

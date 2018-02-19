@@ -11,7 +11,7 @@ load(
     "@drake//tools/skylark:drake_proto.bzl",
     "drake_cc_proto_library",
 )
-load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
@@ -58,6 +58,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "kinematics_cache_helper",
+    srcs = [
+        "kinematics_cache_helper.cc",
+    ],
+    hdrs = [
+        "kinematics_cache_helper.h",
+    ],
+    deps = [
+        ":rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
     name = "inverse_kinematics",
     srcs = [
         "constraint_wrappers.cc",
@@ -78,6 +91,7 @@ drake_cc_library(
     ],
     deps = [
         ":approximate_ik",
+        ":kinematics_cache_helper",
         ":rigid_body_constraint",
         ":rigid_body_tree",
         "//drake/common:unused",

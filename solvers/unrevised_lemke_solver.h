@@ -131,7 +131,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   SolverId solver_id() const override;
 
  private:
-  struct LemkeSets {
+  struct LemkeIndexSets {
     std::vector<int> alpha, alpha_prime;
     std::vector<int> bar_alpha, bar_alpha_prime;
     std::vector<int> beta, beta_prime;
@@ -146,22 +146,35 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   };
 
   static bool IsEachUnique(const std::vector<LCPVariable>& vars);
-  static void LemkePivot(const MatrixX<T>& M, const VectorX<T>& q,
-      const std::vector<LCPVariable>& indep_variables, int driving_index,
-      const std::vector<LCPVariable>& dep_variables,
-      VectorX<T>* M_bar_col, VectorX<T>* q_bar);
-  static void ConstructLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
-      const std::vector<LCPVariable>& indep_variables, int artificial_index,
-      const std::vector<LCPVariable>& dep_variables, VectorX<T>* z);
+  void LemkePivot(const MatrixX<T>& M, const VectorX<T>& q,
+      int driving_index, VectorX<T>* M_bar_col, VectorX<T>* q_bar) const;
+  void ConstructLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
+      int artificial_index, VectorX<T>* z) const;
   static int FindComplementIndex(
       const LCPVariable& query,
       const std::vector<LCPVariable>& indep_variables);
-  void DetermineIndexSets();
+  void DetermineIndexSets() const;
 
-  // The index sets for the Lemke Algorithm.
-  // TODO: Explain why these can be mutable.
+  // These temporary matrices and vectors are members to facilitate minimizing
+  // memory allocations/deallocations. Changing their value between invocations
+  // of the LCP solver will not change the resulting computation.
+  mutable MatrixX<T> M_alpha_beta_, M_prime_alpha_beta_;
+  mutable VectorX<T> q_alpha_, q_bar_alpha_, q_prime_beta_prime_,
+      q_prime_bar_alpha_prime_, e_, M_prime_driving_beta_prime_,
+      M_prime_driving_bar_alpha_prime_, g_alpha_, g_bar_alpha_;
+
+  // The index sets for the Lemke Algorithm and is a member variable to
+  // permit warmstarting. Changing the index set between invocations of the LCP
+  // solver will not change the resulting computation.
+  mutable LemkeIndexSets index_sets_;
+
+  // The partitions of independent and dependent variables (denoted z' and w',
+  // respectively, in [Dai and Drumwright 2018]). These have been made member
+  // variables to permit warmstarting. Changing these sets between invocations
+  // of the LCP solver will not change the resulting computation.
   mutable std::vector<LCPVariable> indep_variables_, dep_variables_;
 };
 
 }  // end namespace solvers
 }  // end namespace drake
+

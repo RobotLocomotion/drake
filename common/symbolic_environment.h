@@ -112,6 +112,10 @@ class Environment {
    */
   mapped_type& operator[](const key_type& key);
 
+  /** As above, but returns a constref and does not perform an insertion
+   * (throwing a runtime error instead) if the key does not exist. */
+  const mapped_type& operator[](const key_type& key) const;
+
   friend std::ostream& operator<<(std::ostream& os, const Environment& env);
 
  private:

@@ -51,9 +51,9 @@ class PackageMap {
   /// paths.
   void PopulateFromEnvironment(const std::string& environment_variable);
 
-  /// Crawls up the directory tree from @p model_file to `drake-distro/drake`
+  /// Crawls up the directory tree from @p model_file to `drake`
   /// searching for `package.xml` files. Adds the packages described by these
-  /// `package.xml` files. If @p model_file is not in `drake-distro/drake`, this
+  /// `package.xml` files. If @p model_file is not in `drake`, this
   /// method returns without doing anything.
   ///
   /// @param[in] model_file The model file whose directory is the start of the
@@ -78,9 +78,13 @@ class PackageMap {
       const std::string& path);
 
   // Recursively searches up the directory path searching for package.xml files.
+  // The @p directory must be a child of @p stop_at_directory.  Stops searching
+  // when the search directory is not longer than @p stop_at_directory.
   // Adds the packages defined by these package.xml files to this PackageMap.
   // This method is intended to be called by PopulateUpstreamToDrake().
-  void PopulateUpstreamToDrakeHelper(const std::string& directory);
+  void PopulateUpstreamToDrakeHelper(
+      const std::string& directory,
+      const std::string& stop_at_directory);
 
   // The key is the name of a ROS package and the value is the package's
   // directory.

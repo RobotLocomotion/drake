@@ -18,7 +18,6 @@ using std::make_pair;
 using std::map;
 using std::ostream;
 using std::ostringstream;
-using std::out_of_range;
 using std::pair;
 using std::runtime_error;
 
@@ -141,7 +140,7 @@ double Monomial::Evaluate(const Environment& env) const {
                                "environment which does not provide an entry "
                                "for variable = "
                             << var << ".";
-                        throw out_of_range(oss.str());
+                        throw runtime_error(oss.str());
                       } else {
                         const double base{it->second};
                         const int exponent{p.second};
@@ -150,7 +149,7 @@ double Monomial::Evaluate(const Environment& env) const {
                     });
 }
 
-pair<double, Monomial> Monomial::Substitute(const Environment& env) const {
+pair<double, Monomial> Monomial::EvaluatePartial(const Environment& env) const {
   double coeff{1.0};
   map<Variable, int> new_powers;
   for (const auto& p : powers_) {

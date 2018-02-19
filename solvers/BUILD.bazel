@@ -6,10 +6,8 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,10 +26,10 @@ drake_cc_library(
     hdrs = ["evaluator_base.h"],
     deps = [
         ":function",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:polynomial",
-        "//drake/math:matrix_util",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:polynomial",
+        "//math:matrix_util",
     ],
 )
 
@@ -41,10 +39,10 @@ drake_cc_library(
     hdrs = ["constraint.h"],
     deps = [
         ":evaluator_base",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:polynomial",
-        "//drake/math:matrix_util",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:polynomial",
+        "//math:matrix_util",
     ],
 )
 
@@ -54,10 +52,10 @@ drake_cc_library(
     hdrs = ["cost.h"],
     deps = [
         ":evaluator_base",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:polynomial",
-        "//drake/math:matrix_util",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:polynomial",
+        "//math:matrix_util",
     ],
 )
 
@@ -67,11 +65,11 @@ drake_cc_library(
     hdrs = ["symbolic_extraction.h"],
     deps = [
         ":decision_variable",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:number_traits",
-        "//drake/common:polynomial",
-        "//drake/common:symbolic",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:number_traits",
+        "//common:polynomial",
+        "//common:symbolic",
     ],
 )
 
@@ -83,10 +81,10 @@ drake_cc_library(
         ":binding",
         ":constraint",
         ":symbolic_extraction",
-        "//drake/common:essential",
-        "//drake/common:polynomial",
-        "//drake/common:symbolic",
-        "//drake/math:quadratic_form",
+        "//common:essential",
+        "//common:polynomial",
+        "//common:symbolic",
+        "//math:quadratic_form",
     ],
 )
 
@@ -98,10 +96,10 @@ drake_cc_library(
         ":binding",
         ":cost",
         ":symbolic_extraction",
-        "//drake/common:essential",
-        "//drake/common:polynomial",
-        "//drake/common:symbolic",
-        "//drake/common:unused",
+        "//common:essential",
+        "//common:polynomial",
+        "//common:symbolic",
+        "//common:unused",
     ],
 )
 
@@ -110,7 +108,7 @@ drake_cc_library(
     srcs = ["decision_variable.cc"],
     hdrs = ["decision_variable.h"],
     deps = [
-        "//drake/common:symbolic",
+        "//common:symbolic",
     ],
 )
 
@@ -119,7 +117,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["function.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -133,8 +131,8 @@ drake_cc_library(
     srcs = ["solver_id.cc"],
     hdrs = ["solver_id.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:reinit_after_move",
+        "//common:essential",
+        "//common:reinit_after_move",
     ],
 )
 
@@ -143,8 +141,8 @@ drake_cc_library(
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
     deps = [
-        "//drake/common:symbolic",
-        "//drake/solvers:decision_variable",
+        "//common:symbolic",
+        "//solvers:decision_variable",
     ],
 )
 
@@ -165,7 +163,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":solver_type",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -194,12 +192,20 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":symbolic_extraction",
-        ":unrevised_lemke_solver",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:number_traits",
-        "//drake/common:polynomial",
-        "//drake/common:symbolic",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:number_traits",
+        "//common:polynomial",
+        "//common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "branch_and_bound",
+    srcs = ["branch_and_bound.cc"],
+    hdrs = ["branch_and_bound.h"],
+    deps = [
+        ":mathematical_program",
     ],
 )
 
@@ -209,7 +215,7 @@ drake_cc_library(
     hdrs = ["non_convex_optimization_util.h"],
     deps = [
         ":mathematical_program",
-        "//drake/math:quadratic_form",
+        "//math:quadratic_form",
     ],
 )
 
@@ -219,8 +225,8 @@ drake_cc_library(
     hdrs = ["bilinear_product_util.h"],
     deps = [
         ":decision_variable",
-        "//drake/common:essential",
-        "//drake/common:symbolic",
+        "//common:essential",
+        "//common:symbolic",
     ],
 )
 
@@ -239,9 +245,9 @@ drake_cc_library(
     hdrs = ["system_identification.h"],
     deps = [
         ":mathematical_program",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:polynomial",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:polynomial",
     ],
 )
 
@@ -258,7 +264,7 @@ drake_cc_library(
         ":bilinear_product_util",
         ":mathematical_program",
         ":mixed_integer_optimization_util",
-        "//drake/math:gradient",
+        "//math:gradient",
     ],
 )
 
@@ -273,7 +279,7 @@ drake_cc_library(
     ],
     deps = [
         ":rotation_constraint",
-        "//drake/common/proto:call_matlab",
+        "//common/proto:call_matlab",
     ],
 )
 
@@ -298,11 +304,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "generic_trivial_constraint",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["test/generic_trivial_constraints.h"],
+    deps = [
+        ":constraint",
+    ],
+)
+
 drake_cc_googletest(
     name = "indeterminate_test",
     deps = [
         ":indeterminate",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -326,7 +342,7 @@ drake_cc_library(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":solver_type_converter",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
         "@gtest//:without_main",
     ],
 )
@@ -358,7 +374,7 @@ drake_cc_library(
     hdrs = ["test/second_order_cone_program_examples.h"],
     deps = [
         ":mathematical_program_test_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -369,7 +385,7 @@ drake_cc_library(
     hdrs = ["test/semidefinite_program_examples.h"],
     deps = [
         ":mathematical_program_test_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -398,10 +414,10 @@ drake_cc_library(
         ":function",
         ":indeterminate",
         ":solver_id",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:number_traits",
-        "//drake/common:polynomial",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:number_traits",
+        "//common:polynomial",
     ],
 )
 
@@ -413,7 +429,7 @@ drake_cc_library(
     hdrs = ["equality_constrained_qp_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -423,7 +439,7 @@ drake_cc_library(
     hdrs = ["linear_system_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -443,7 +459,7 @@ drake_cc_library(
     hdrs = ["moby_lcp_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -457,7 +473,7 @@ drake_cc_library(
     hdrs = ["dreal_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common:essential",
+        "//common:essential",
         "@dreal",
     ],
 )
@@ -481,11 +497,11 @@ drake_cc_library(
     }),
     hdrs = ["gurobi_solver.h"],
     deps = select({
-        "//tools:with_gurobi": adjust_labels_for_drake_hoist([
+        "//tools:with_gurobi": [
             ":mathematical_program_api",
-            "//drake/math:eigen_sparse_triplet",
+            "//math:eigen_sparse_triplet",
             "@gurobi",
-        ]),
+        ],
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -509,11 +525,11 @@ drake_cc_library(
     }),
     hdrs = ["mosek_solver.h"],
     deps = select({
-        "//tools:with_mosek": adjust_labels_for_drake_hoist([
+        "//tools:with_mosek": [
             ":mathematical_program_api",
-            "//drake/common:scoped_singleton",
+            "//common:scoped_singleton",
             "@mosek",
-        ]),
+        ],
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -548,11 +564,11 @@ drake_cc_library(
     # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
     copts = ["-fpermissive"],
     deps = select({
-        "//tools:with_snopt": adjust_labels_for_drake_hoist([
+        "//tools:with_snopt": [
             ":mathematical_program_api",
-            "//drake/math:autodiff",
+            "//math:autodiff",
             "@snopt//:snopt_c",
-        ]),
+        ],
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -573,12 +589,12 @@ drake_cc_library(
     }),
     hdrs = ["ipopt_solver.h"],
     deps = select({
-        "//conditions:default": adjust_labels_for_drake_hoist([
+        "//conditions:default": [
             "@ipopt",
             ":mathematical_program_api",
-            "//drake/common:unused",
-            "//drake/math:autodiff",
-        ]),
+            "//common:unused",
+            "//math:autodiff",
+        ],
         "//tools:no_ipopt": [
             ":mathematical_program_api",
         ],
@@ -599,11 +615,11 @@ drake_cc_library(
     }),
     hdrs = ["nlopt_solver.h"],
     deps = select({
-        "//conditions:default": adjust_labels_for_drake_hoist([
+        "//conditions:default": [
             ":mathematical_program_api",
-            "//drake/math:autodiff",
+            "//math:autodiff",
             "@nlopt",
-        ]),
+        ],
         "//tools:no_nlopt": [
             ":mathematical_program_api",
         ],
@@ -624,12 +640,12 @@ drake_cc_library(
     }),
     hdrs = ["scs_solver.h"],
     deps = select({
-        "//conditions:default": adjust_labels_for_drake_hoist([
+        "//conditions:default": [
             ":mathematical_program_api",
-            "//drake/common:essential",
-            "//drake/math:eigen_sparse_triplet",
+            "//common:essential",
+            "//math:eigen_sparse_triplet",
             "@scs//:scsdir",
-        ]),
+        ],
         "//tools:no_scs": [
             ":mathematical_program_api",
         ],
@@ -667,7 +683,7 @@ drake_cc_library(
     hdrs = ["mixed_integer_optimization_util.h"],
     deps = [
         ":mathematical_program",
-        "//drake/math:gray_code",
+        "//math:gray_code",
     ],
 )
 
@@ -676,7 +692,7 @@ drake_cc_googletest(
     name = "bilinear_product_util_test",
     deps = [
         ":bilinear_product_util",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -688,7 +704,18 @@ drake_cc_googletest(
     deps = [
         ":binding",
         ":constraint",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "branch_and_bound_test",
+    tags = gurobi_test_tags(),
+    deps = [
+        ":branch_and_bound",
+        ":mathematical_program_test_util",
+        ":mixed_integer_optimization_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -696,9 +723,9 @@ drake_cc_googletest(
     name = "evaluator_base_test",
     deps = [
         ":evaluator_base",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:is_dynamic_castable",
-        "//drake/math:gradient",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:is_dynamic_castable",
+        "//math:gradient",
     ],
 )
 
@@ -706,8 +733,8 @@ drake_cc_googletest(
     name = "constraint_test",
     deps = [
         ":constraint",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:gradient",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
     ],
 )
 
@@ -718,9 +745,9 @@ drake_cc_googletest(
         ":cost",
         ":create_cost",
         ":generic_trivial_cost",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:is_dynamic_castable",
-        "//drake/math:gradient",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:is_dynamic_castable",
+        "//math:gradient",
     ],
 )
 
@@ -728,8 +755,8 @@ drake_cc_googletest(
     name = "symbolic_extraction_test",
     deps = [
         ":symbolic_extraction",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -745,7 +772,7 @@ drake_cc_googletest(
     name = "create_constraint_test",
     deps = [
         ":create_constraint",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -753,7 +780,7 @@ drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
         ":mathematical_program",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -765,18 +792,26 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
-# TODO(soonho-tri): Enable this test after checking lsan/tsan/asan results.
-#                   See https://github.com/RobotLocomotion/drake/pull/7647
-# drake_cc_googletest(
-#     name = "dreal_solver_test",
-#     deps = [
-#         ":dreal_solver",
-#     ],
-# )
+drake_cc_googletest(
+    name = "dreal_solver_test",
+    tags = [
+        # For most of floating-point operations, Valgrind only supports the
+        # IEEE default mode (round to nearest) while dReal uses to +infinity
+        # and to -infinity rounding modes intensively to maintain conservative
+        # interval approximations. This causes some of the assertions to fail
+        # in the test. So we disable memcheck for this test. See
+        # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
+        # for more information.
+        "no_memcheck",
+    ],
+    deps = [
+        ":dreal_solver",
+    ],
+)
 
 drake_cc_googletest(
     name = "gurobi_solver_test",
@@ -791,7 +826,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -814,7 +849,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -825,7 +860,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":mathematical_program",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -838,7 +873,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":optimization_examples",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -848,13 +883,14 @@ drake_cc_googletest(
         "test/mathematical_program_test.cc",
     ],
     deps = [
+        ":generic_trivial_constraint",
         ":generic_trivial_cost",
         ":mathematical_program",
         ":mathematical_program_test_util",
-        "//drake/common:symbolic",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:is_dynamic_castable",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:is_dynamic_castable",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -871,7 +907,7 @@ drake_cc_googletest(
         ":add_solver_util",
         ":mathematical_program",
         ":mathematical_program_test_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -879,7 +915,7 @@ drake_cc_googletest(
     name = "moby_lcp_solver_test",
     deps = [
         ":mathematical_program",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -887,6 +923,7 @@ drake_cc_googletest(
     name = "unrevised_lemke_solver_test",
     deps = [
         ":mathematical_program",
+        ":unrevised_lemke_solver",
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -909,6 +946,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "nlopt_solver_test",
+    srcs = [
+        "test/nlopt_solver_test.cc",
+    ],
+    deps = [
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
+        ":quadratic_program_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "non_convex_optimization_util_test",
     srcs = [
         "test/non_convex_optimization_util_test.cc",
@@ -917,8 +969,8 @@ drake_cc_googletest(
     deps = [
         ":decision_variable",
         ":non_convex_optimization_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -931,8 +983,8 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":optimization_examples",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:is_dynamic_castable",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:is_dynamic_castable",
     ],
 )
 
@@ -951,8 +1003,8 @@ drake_cc_googletest(
         ":gurobi_solver",
         ":mathematical_program",
         ":rotation_constraint",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:geometric_transform",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
@@ -962,8 +1014,8 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":rotation_constraint",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:geometric_transform",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
@@ -974,7 +1026,7 @@ drake_cc_binary(
     deps = [
         ":mathematical_program",
         ":rotation_constraint",
-        "//drake/common/proto:call_matlab",
+        "//common/proto:call_matlab",
     ],
 )
 
@@ -991,7 +1043,7 @@ drake_cc_googletest(
         ":gurobi_solver",
         ":mathematical_program",
         ":rotation_constraint",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1021,7 +1073,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1054,7 +1106,7 @@ drake_cc_googletest(
     size = "large",
     deps = [
         ":system_identification",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1073,7 +1125,7 @@ drake_cc_googletest(
     deps = [
         ":gurobi_solver",
         ":mixed_integer_optimization_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

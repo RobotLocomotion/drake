@@ -8,6 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
@@ -186,71 +187,32 @@ VectorX<typename Derived::Scalar> rotmat2Representation(
   }
 }
 
-/// Computes the rotation matrix for rotating by theta (radians) around the
-/// positive X axis.
+/// (Deprecated), use @ref multibody::RotationMatrix::MakeXRotation
 template <typename T>
 Matrix3<T> XRotation(const T& theta) {
-  Matrix3<T> R;
-  using std::sin;
-  using std::cos;
-  const double c = cos(theta), s = sin(theta);
-  // clang-format off
-  R << 1, 0,  0,
-       0, c, -s,
-       0, s,  c;
-  // clang-format on
-  return R;
+  return drake::multibody::RotationMatrix<T>::MakeXRotation(theta).matrix();
 }
 
-/// Computes the rotation matrix for rotating by theta (radians) around the
-/// positive Y axis.
+/// (Deprecated), use @ref multibody::RotationMatrix::MakeYRotation
 template <typename T>
 Matrix3<T> YRotation(const T& theta) {
-  Matrix3<T> R;
-  using std::sin;
-  using std::cos;
-  const double c = cos(theta), s = sin(theta);
-  // clang-format off
-  R <<  c, 0, s,
-        0, 1, 0,
-       -s, 0, c;
-  // clang-format on
-  return R;
+  return drake::multibody::RotationMatrix<T>::MakeYRotation(theta).matrix();
 }
 
-/// Computes the rotation matrix for rotating by theta (radians) around the
-/// positive Z axis.
+/// (Deprecated), use @ref multibody::RotationMatrix::MakeZRotation
 template <typename T>
 Matrix3<T> ZRotation(const T& theta) {
-  Matrix3<T> R;
-  using std::sin;
-  using std::cos;
-  const double c = cos(theta), s = sin(theta);
-  // clang-format off
-  R << c, -s, 0,
-       s,  c, 0,
-       0,  0,  1;
-  // clang-format on
-  return R;
+  return drake::multibody::RotationMatrix<T>::MakeZRotation(theta).matrix();
 }
 
-/// Projects a full-rank 3x3 matrix @p M onto O(3), defined as
-/// <pre>
-///   min_R  \sum_i,j | R(i,j) - M(i,j) |^2
-///  subject to   R*R^T = I  =>  R ∈ O(3)
-/// </pre>
-///
-/// The algorithm (just SVD) can be derived as a small modification of
-/// section 3.2 in http://haralick.org/conferences/pose_estimation.pdf .
-///
-/// Note that it does not enforce det(R)=1; you could get det(R)=-1 if that
-/// solution is closer to the matrix M using the norm above.
+/// (Deprecated), use @ref multibody::RotationMatrix::ProjectToRotationMatrix
 template <typename Derived>
 Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
     const Eigen::MatrixBase<Derived>& M) {
-  DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
-  const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
-  return svd.matrixU() * svd.matrixV().transpose();
+  using Scalar = typename Derived::Scalar;
+  const drake::Matrix3<Scalar> R = M;
+  return drake::multibody::RotationMatrix<Scalar>::ProjectToRotationMatrix(R,
+      NULL).matrix();
 }
 
 /// Projects a full-rank 3x3 matrix @p M onto SO(3), defined as

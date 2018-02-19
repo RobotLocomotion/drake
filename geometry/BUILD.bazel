@@ -10,6 +10,25 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "proximity_engine",
+    srcs = [
+        "proximity_engine.cc",
+    ],
+    hdrs = [
+        "proximity_engine.h",
+    ],
+    deps = [
+        ":geometry_ids",
+        ":geometry_index",
+        ":shape_specification",
+        "//common",
+        "//common:default_scalars",
+        "//geometry/query_results:penetration_as_point_pair",
+        "@fcl",
+    ],
+)
+
+drake_cc_library(
     name = "frame_kinematics",
     srcs = [
         "frame_id_vector.cc",
@@ -21,8 +40,8 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_ids",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
+        "//common:autodiff",
+        "//common:essential",
     ],
 )
 
@@ -32,7 +51,7 @@ drake_cc_library(
     hdrs = ["geometry_context.h"],
     deps = [
         ":geometry_state",
-        "//drake/systems/framework:leaf_context",
+        "//systems/framework:leaf_context",
     ],
 )
 
@@ -42,7 +61,7 @@ drake_cc_library(
     hdrs = ["geometry_frame.h"],
     deps = [
         ":geometry_ids",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -57,7 +76,7 @@ drake_cc_library(
     name = "geometry_index",
     srcs = [],
     hdrs = ["geometry_index.h"],
-    deps = ["//drake/common:type_safe_index"],
+    deps = ["//common:type_safe_index"],
 )
 
 drake_cc_library(
@@ -67,8 +86,8 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":shape_specification",
-        "//drake/common:copyable_unique_ptr",
-        "//drake/common:essential",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
     ],
 )
 
@@ -84,23 +103,27 @@ drake_cc_library(
         ":geometry_instance",
         ":internal_frame",
         ":internal_geometry",
+        ":proximity_engine",
     ],
 )
 
 drake_cc_library(
     name = "geometry_system",
-    srcs = ["geometry_system.cc"],
+    srcs = [
+        "geometry_system.cc",
+        "query_object.cc",
+    ],
     hdrs = [
         "geometry_system.h",
-        "query_handle.h",
+        "query_object.h",
     ],
     deps = [
         ":geometry_context",
         ":geometry_state",
-        "//drake/common:essential",
-        "//drake/geometry/query_results:penetration_as_point_pair",
-        "//drake/systems/framework",
-        "//drake/systems/rendering:pose_bundle",
+        "//common:essential",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//systems/framework",
+        "//systems/rendering:pose_bundle",
     ],
 )
 
@@ -111,9 +134,9 @@ drake_cc_library(
     deps = [
         ":geometry_state",
         ":geometry_system",
-        "//drake/lcm",
-        "//drake/lcmtypes:viewer",
-        "//drake/math:geometric_transform",
+        "//lcm",
+        "//lcmtypes:viewer",
+        "//math:geometric_transform",
     ],
 )
 
@@ -124,7 +147,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":geometry_index",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -136,8 +159,8 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_index",
         ":shape_specification",
-        "//drake/common:copyable_unique_ptr",
-        "//drake/common:essential",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
     ],
 )
 
@@ -145,23 +168,31 @@ drake_cc_library(
     name = "identifier",
     srcs = [],
     hdrs = ["identifier.h"],
-    deps = ["//drake/common:essential"],
+    deps = ["//common:essential"],
 )
 
 drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    deps = ["//drake/common:essential"],
+    deps = ["//common:essential"],
 )
 
 # -----------------------------------------------------
 
 drake_cc_googletest(
+    name = "proximity_engine_test",
+    deps = [
+        ":proximity_engine",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "frame_id_vector_test",
     deps = [
         ":frame_kinematics",
-        "//drake/geometry/test_utilities",
+        "//geometry/test_utilities",
     ],
 )
 
@@ -169,7 +200,7 @@ drake_cc_googletest(
     name = "frame_kinematics_vector_test",
     deps = [
         ":frame_kinematics",
-        "//drake/common/test_utilities",
+        "//common/test_utilities",
     ],
 )
 
@@ -177,7 +208,7 @@ drake_cc_googletest(
     name = "geometry_frame_test",
     deps = [
         ":geometry_frame",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -190,8 +221,8 @@ drake_cc_googletest(
     name = "geometry_state_test",
     deps = [
         ":geometry_state",
-        "//drake/common/test_utilities",
-        "//drake/geometry/test_utilities",
+        "//common/test_utilities",
+        "//geometry/test_utilities",
     ],
 )
 
@@ -200,7 +231,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_system",
         ":geometry_visualization",
-        "//drake/geometry/test_utilities",
+        "//geometry/test_utilities",
     ],
 )
 
@@ -210,10 +241,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "query_object_test",
+    deps = [
+        ":geometry_system",
+        "//geometry/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "shape_specification_test",
     deps = [
         ":shape_specification",
-        "//drake/common/test_utilities",
+        "//common/test_utilities",
     ],
 )
 

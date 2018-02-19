@@ -1,6 +1,7 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
 #include <map>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -10,6 +11,7 @@
 #include "drake/common/symbolic_expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
+using std::accumulate;
 using std::make_pair;
 using std::map;
 using std::ostream;
@@ -464,6 +466,43 @@ Polynomial Polynomial::Differentiate(const Variable& x) const {
     // The variable `x` does not appear in this polynomial.
     return p;
   }
+}
+
+double Polynomial::Evaluate(const Environment& env) const {
+  return accumulate(
+      monomial_to_coefficient_map_.begin(), monomial_to_coefficient_map_.end(),
+      0.0, [&env](const double v, const pair<const Monomial, Expression> item) {
+        const Monomial& monomial{item.first};
+        const Expression& coeff{item.second};
+        return v + monomial.Evaluate(env) * coeff.Evaluate(env);
+      });
+}
+
+Polynomial Polynomial::EvaluatePartial(const Environment& env) const {
+  MapType new_map;  // Will use this to construct the return value.
+  for (const auto& product_i : monomial_to_coefficient_map_) {
+    const Expression& coeff_i{product_i.second};
+    const Expression coeff_i_partial_evaluated{coeff_i.EvaluatePartial(env)};
+    const Monomial& monomial_i{product_i.first};
+    const pair<double, Monomial> partial_eval_result{
+        monomial_i.EvaluatePartial(env)};
+    const double coeff_from_subst{partial_eval_result.first};
+    const Monomial& monomial_from_subst{partial_eval_result.second};
+    const Expression new_coeff_i{coeff_i_partial_evaluated * coeff_from_subst};
+
+    auto it = new_map.find(monomial_from_subst);
+    if (it == new_map.end()) {
+      new_map.emplace_hint(it, monomial_from_subst, new_coeff_i);
+    } else {
+      it->second += new_coeff_i;
+    }
+  }
+  return Polynomial{new_map};
+}
+
+Polynomial Polynomial::EvaluatePartial(const Variable& var,
+                                       const double c) const {
+  return EvaluatePartial({{{var, c}}});
 }
 
 Polynomial& Polynomial::operator+=(const Polynomial& p) {

@@ -168,11 +168,11 @@ bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
 
 // Checks the following two formulas are identical:
 //   - m1 != m2
-//   - ⋀ᵢⱼ (m1.array() != m2.array())
+//   - ⋁ᵢⱼ (m1.array() != m2.array())
 bool CheckMatrixOperatorNeq(const MatrixX<Expression>& m1,
                             const MatrixX<Expression>& m2) {
   const Formula f1{m1 != m2};
-  const Formula f2{(m1.array() != m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() != m2.array()).redux(detail::logic_or)};
   return f1.EqualTo(f2);
 }
 

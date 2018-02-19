@@ -17,15 +17,15 @@ drake_cc_library(
         "monolithic_pick_and_place_system.h",
     ],
     deps = [
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:lcm_plan_interpolator",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:lcm_planner",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:lcm_plant",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/primitives",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//examples/kuka_iiwa_arm:lcm_plan_interpolator",
+        "//examples/kuka_iiwa_arm/dev/pick_and_place:lcm_planner",
+        "//examples/kuka_iiwa_arm/dev/pick_and_place:lcm_plant",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant:contact_results_to_lcm",
+        "//systems/framework:leaf_system",
+        "//systems/primitives",
     ],
 )
 
@@ -34,10 +34,10 @@ drake_cc_binary(
     srcs = ["monolithic_pick_and_place_demo.cc"],
     add_test_rule = 1,
     data = [
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:configuration",
-        "//drake/manipulation/models/iiwa_description:models",
-        "//drake/manipulation/models/wsg_50_description:models",
+        "//examples/kuka_iiwa_arm:models",
+        "//examples/kuka_iiwa_arm/pick_and_place:configuration",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     # TODO(m-chaturvedi) TSan fails with a data race in LCM for this test. See
     # #7524.
@@ -49,15 +49,15 @@ drake_cc_binary(
     test_rule_flaky = 1,
     deps = [
         ":kuka_pick_and_place_monolithic",
-        "//drake/common:find_resource",
-        "//drake/common:text_logging_gflags",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm/dev/pick_and_place:pick_and_place_configuration_parsing",  # noqa
-        "//drake/lcm",
-        "//drake/lcmtypes:iiwa",
-        "//drake/systems/analysis:simulator",
-        "@com_github_gflags_gflags//:gflags",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration_parsing",  # noqa
+        "//lcm",
+        "//lcmtypes:iiwa",
+        "//systems/analysis:simulator",
+        "@gflags",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -86,6 +86,7 @@ drake_cc_googletest(
     # times out in those configurations. We should try to split this test up
     # such that the exclusions are no longer necessary.
     tags = [
+        "no_kcov",
         "no_lsan",
         "no_memcheck",
         "no_tsan",
@@ -94,9 +95,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":kuka_pick_and_place_monolithic",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis:simulator",
+        "//systems/framework",
     ],
 )
 

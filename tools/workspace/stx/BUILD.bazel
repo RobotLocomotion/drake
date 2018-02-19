@@ -3,7 +3,10 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(
-    ["stx.cps"],
+    [
+        "LICENSE",
+        "package.cps",
+    ],
     visibility = ["@stx//:__pkg__"],
 )
 

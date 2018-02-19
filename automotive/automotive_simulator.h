@@ -99,11 +99,23 @@ class AutomotiveSimulator {
   /// @param initial_with_s Initial travel direction in the lane. (See
   /// MobilPlanner documentation.)
   ///
+  /// @param path_or_branches If ScanStrategy::kBranches, performs IDM
+  /// computations using vehicles detected in confluent branches; if
+  /// ScanStrategy::kPath, limits to vehicles on the default path.
+  ///
+  /// @param road_position_strategy Determines whether or not to memorize
+  /// RoadPosition. See `calc_ongoing_road_position.h`.
+  ///
+  /// @param period_sec The update period to use if road_position_strategy ==
+  /// RoadPositionStrategy::kCache.
+  ///
   /// @param initial_state The SimpleCar's initial state.
   ///
   /// @return The ID of the car that was just added to the simulation.
   int AddMobilControlledSimpleCar(
       const std::string& name, bool initial_with_s,
+      ScanStrategy path_or_branches,
+      RoadPositionStrategy road_position_strategy, double period_sec,
       const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
   /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius.
@@ -144,11 +156,24 @@ class AutomotiveSimulator {
   /// a member of the road supplied via SetRoadGeometry(), a std::runtime_error
   /// will be thrown.
   ///
+  /// @param path_or_branches If ScanStrategy::kBranches, performs IDM
+  /// computations using vehicles detected in confluent branches; if
+  /// ScanStrategy::kPath, limits to vehicles on the default path.
+  ///
+  /// @param road_position_strategy Determines whether or not to memorize
+  /// RoadPosition. See `calc_ongoing_road_position.h`.
+  ///
+  /// @param period_sec The update period to use if road_position_strategy ==
+  /// RoadPositionStrategy::kCache.
+  ///
   /// @return The ID of the car that was just added to the simulation.
   int AddIdmControlledCar(const std::string& name,
                           bool initial_with_s,
                           const SimpleCarState<T>& initial_state,
-                          const maliput::api::Lane* goal_lane);
+                          const maliput::api::Lane* goal_lane,
+                          ScanStrategy path_or_branches,
+                          RoadPositionStrategy road_position_strategy,
+                          double period_sec);
 
   /// Adds a MaliputRailcar to this simulation visualized as a Toyota Prius.
   ///
@@ -193,6 +218,16 @@ class AutomotiveSimulator {
   /// maliput::api::RoadGeometry that is added via SetRoadGeometry(). Otherwise
   /// a std::runtime_error will be thrown.
   ///
+  /// @param path_or_branches If ScanStrategy::kBranches, performs IDM
+  /// computations using vehicles detected in confluent branches; if
+  /// ScanStrategy::kPath, limits to vehicles on the default path.
+  ///
+  /// @param road_position_strategy Determines whether or not to memorize
+  /// RoadPosition. See `calc_ongoing_road_position.h`.
+  ///
+  /// @param period_sec The update period to use if road_position_strategy ==
+  /// RoadPositionStrategy::kCache.
+  ///
   /// @param params The MaliputRailcar's parameters. This is an optional
   /// parameter. Defaults are used if this parameter is not provided.
   ///
@@ -202,6 +237,8 @@ class AutomotiveSimulator {
   /// @return The ID of the car that was just added to the simulation.
   int AddIdmControlledPriusMaliputRailcar(
       const std::string& name, const LaneDirection& initial_lane_direction,
+      ScanStrategy path_or_branches,
+      RoadPositionStrategy road_position_strategy, double period_sec,
       const MaliputRailcarParams<T>& params = MaliputRailcarParams<T>(),
       const MaliputRailcarState<T>& initial_state = MaliputRailcarState<T>());
 

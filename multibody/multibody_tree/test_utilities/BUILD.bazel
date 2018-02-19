@@ -17,4 +17,10 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "expect_error_message",
+    testonly = 1,
+    hdrs = ["expect_error_message.h"],
+)
+
 add_lint_tests()

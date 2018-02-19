@@ -26,4 +26,18 @@ filegroup(
     ]),
 )
 
+drake_cc_library(
+    name = "make_acrobot_plant",
+    srcs = [
+        "make_acrobot_plant.cc",
+    ],
+    hdrs = [
+        "make_acrobot_plant.h",
+    ],
+    deps = [
+        "//drake/geometry:geometry_system",
+        "//drake/multibody/multibody_tree/multibody_plant",
+    ],
+)
+
 add_lint_tests()

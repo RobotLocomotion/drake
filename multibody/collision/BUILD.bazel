@@ -105,13 +105,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "fcl_model_test",
-    deps = [
-        ":fcl_collision",
-    ],
-)
-
-drake_cc_googletest(
     name = "collision_filter_group_test",
     data = [":test_models"],
     deps = [

@@ -164,6 +164,10 @@ class Lane final : public api::Lane {
   api::Rotation DoGetOrientation(const api::LanePosition& lane_pos) const
       final;
 
+  api::GeoPositionT<symbolic::Expression> DoToGeoPositionSymbolic(
+      const api::LanePositionT<symbolic::Expression>& lane_pos) const final;
+
+
   api::LanePosition DoToLanePosition(const api::GeoPosition& geo_pos,
                                      api::GeoPosition* nearest_point,
                                      double* distance) const final;
@@ -172,6 +176,11 @@ class Lane final : public api::Lane {
       const api::GeoPositionT<AutoDiffXd>& geo_pos,
       api::GeoPositionT<AutoDiffXd>* nearest_point,
       AutoDiffXd* distance) const final;
+
+  api::LanePositionT<symbolic::Expression> DoToLanePositionSymbolic(
+      const api::GeoPositionT<symbolic::Expression>& geo_pos,
+      api::GeoPositionT<symbolic::Expression>* nearest_point,
+      symbolic::Expression* distance) const final;
 
   template <typename T>
   api::LanePositionT<T> ImplDoToLanePositionT(

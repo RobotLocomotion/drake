@@ -6,8 +6,8 @@
 
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_planner.h"
-#include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -23,7 +23,7 @@ DEFINE_int32(task_index, 0,
 DEFINE_bool(use_channel_suffix, false,
             "If true, append a suffix to channel names");
 DEFINE_string(configuration_file,
-              "drake/examples/kuka_iiwa_arm/dev/pick_and_place/configuration/"
+              "drake/examples/kuka_iiwa_arm/pick_and_place/configuration/"
               "yellow_posts.pick_and_place_configuration",
               "Path to the configuration file.");
 
@@ -83,18 +83,18 @@ int DoMain(void) {
   wsg_command_pub->set_publish_period(planner_configuration.period_sec);
 
   // Connect subscribers to planner input ports.
-  builder.Connect(wsg_status_sub->get_output_port(0),
+  builder.Connect(wsg_status_sub->get_output_port(),
                   planner->get_input_port_wsg_status());
-  builder.Connect(iiwa_status_sub->get_output_port(0),
+  builder.Connect(iiwa_status_sub->get_output_port(),
                   planner->get_input_port_iiwa_status());
-  builder.Connect(optitrack_sub->get_output_port(0),
+  builder.Connect(optitrack_sub->get_output_port(),
                   planner->get_input_port_optitrack_message());
 
   // Connect publishers to planner output ports.
   builder.Connect(planner->get_output_port_iiwa_plan(),
-                  iiwa_plan_pub->get_input_port(0));
+                  iiwa_plan_pub->get_input_port());
   builder.Connect(planner->get_output_port_wsg_command(),
-                  wsg_command_pub->get_input_port(0));
+                  wsg_command_pub->get_input_port());
 
   // Build the diagram.
   auto sys = builder.Build();

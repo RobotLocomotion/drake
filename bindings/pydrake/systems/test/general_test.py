@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 from __future__ import print_function
 
@@ -20,6 +20,7 @@ from pydrake.systems.primitives import (
     Adder,
     ConstantVectorSource,
     Integrator,
+    SignalLogger,
     )
 
 
@@ -39,6 +40,8 @@ class TestGeneral(unittest.TestCase):
         # Create simulator with basic constructor.
         simulator = Simulator(system)
         simulator.Initialize()
+        simulator.set_target_realtime_rate(0)
+        simulator.set_publish_every_time_step(True)
         self.assertTrue(simulator.get_context() is
                         simulator.get_mutable_context())
         check_output(simulator.get_context())
@@ -46,6 +49,7 @@ class TestGeneral(unittest.TestCase):
 
         # Create simulator specifying context.
         context = system.CreateDefaultContext()
+        context.set_time(0.)
         # @note `simulator` now owns `context`.
         simulator = Simulator(system, context)
         self.assertTrue(simulator.get_context() is context)
@@ -53,14 +57,17 @@ class TestGeneral(unittest.TestCase):
         simulator.StepTo(1)
 
     def test_copy(self):
-        # Copy a context using `copy` or `clone`.
+        # Copy a context using `deepcopy` or `clone`.
         system = ConstantVectorSource([1])
         context = system.CreateDefaultContext()
-        context_2 = copy.copy(context)
-        self.assertNotEquals(context, context_2)
-        context_3 = context.Clone()
-        self.assertNotEquals(context, context_3)
-        # TODO(eric.cousineau): Check more properties.
+        context_copies = [
+            copy.copy(context),
+            copy.deepcopy(context),
+            context.Clone(),
+        ]
+        # TODO(eric.cousineau): Compare copies.
+        for context_copy in context_copies:
+            self.assertTrue(context_copy is not context)
 
     def test_diagram_simulation(self):
         # Similar to: //systems/framework:diagram_test, ExampleDiagram
@@ -104,12 +111,10 @@ class TestGeneral(unittest.TestCase):
         context.FixInputPort(2, input2)
 
         # Initialize integrator states.
-        def get_mutable_continuous_state(system):
-            return (diagram.GetMutableSubsystemState(system, context)
-                           .get_mutable_continuous_state())
-
-        integrator_xc = get_mutable_continuous_state(integrator)
-        integrator_xc.get_mutable_vector().SetFromVector([0, 1, 2])
+        integrator_xc = (
+            diagram.GetMutableSubsystemState(integrator, context)
+                   .get_mutable_continuous_state().get_vector())
+        integrator_xc.SetFromVector([0, 1, 2])
 
         simulator.Initialize()
 
@@ -129,12 +134,37 @@ class TestGeneral(unittest.TestCase):
         for i, context_i in enumerate(context_log):
             t = times[i]
             self.assertEqual(context_i.get_time(), t)
-            xc = (context_i.get_state().get_continuous_state()
-                           .get_vector().CopyToVector())
+            xc = context_i.get_continuous_state_vector().CopyToVector()
             xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial) +
                            xc_initial)
             print("xc[t = {}] = {}".format(t, xc))
             self.assertTrue(np.allclose(xc, xc_expected))
+
+    def test_signal_logger(self):
+        # Log the output of a simple diagram containing a constant
+        # source and an integrator.
+        builder = DiagramBuilder()
+        kValue = 2.4
+        source = builder.AddSystem(ConstantVectorSource([kValue]))
+        kSize = 1
+        integrator = builder.AddSystem(Integrator(kSize))
+        logger = builder.AddSystem(SignalLogger(kSize))
+        builder.Connect(source.get_output_port(0),
+                        integrator.get_input_port(0))
+        builder.Connect(integrator.get_output_port(0),
+                        logger.get_input_port(0))
+
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
+
+        simulator.StepTo(1)
+
+        t = logger.sample_times()
+        x = logger.data()
+
+        self.assertTrue(t.shape[0] > 2)
+        self.assertTrue(t.shape[0] == x.shape[1])
+        self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <limits>
 #include <string>
 
@@ -159,7 +160,7 @@ class TypeSafeIndex {
 
   /// Disallow construction from another index type.
   template <typename U>
-  TypeSafeIndex( const TypeSafeIndex<U>& idx) = delete;
+  TypeSafeIndex(const TypeSafeIndex<U>& idx) = delete;
 
   TypeSafeIndex(const TypeSafeIndex&) = default;
 
@@ -446,3 +447,13 @@ class TypeSafeIndex {
 };
 
 }  // namespace drake
+
+namespace std {
+/// Specialization of std::hash for drake::TypeSafeIndex<Tag>.
+template <typename Tag>
+struct hash<drake::TypeSafeIndex<Tag>> {
+  size_t operator()(const drake::TypeSafeIndex<Tag>& index) const {
+    return std::hash<int>()(index);
+  }
+};
+}  // namespace std

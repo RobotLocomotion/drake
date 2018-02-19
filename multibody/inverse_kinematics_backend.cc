@@ -66,6 +66,9 @@ int GetIKSolverInfo(SolutionResult result) {
     case SolutionResult::kIterationLimit: {
       return 3;
     }
+    case SolutionResult::kDualInfeasible: {
+      return 100;  // Not a real SNOPT error.
+    }
   }
 
   return -1;
@@ -210,7 +213,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
         "nq x nT");
   }
 
-  KinematicsCacheHelper<double> kin_helper(model->bodies);
+  KinematicsCacheHelper<double> kin_helper(*model);
 
   // TODO(sam.creasey) I really don't like rebuilding the
   // MathematicalProgram for every timestep, but it's not possible to

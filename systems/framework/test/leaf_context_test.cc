@@ -175,8 +175,8 @@ TEST_F(LeafContextTest, GetNumDiscreteStateGroups) {
   EXPECT_EQ(2, context_.get_num_discrete_state_groups());
 }
 
-TEST_F(LeafContextTest, GetNumAbstractStateGroups) {
-  EXPECT_EQ(1, context_.get_num_abstract_state_groups());
+TEST_F(LeafContextTest, GetNumAbstractStates) {
+  EXPECT_EQ(1, context_.get_num_abstract_states());
 }
 
 TEST_F(LeafContextTest, IsStateless) {
@@ -252,19 +252,6 @@ TEST_F(LeafContextTest, GetAbstractInput) {
 
   // Test that port 1 is nullptr.
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
-}
-
-// Tests that items can be stored and retrieved in the cache, even when
-// the LeafContext is const.
-TEST_F(LeafContextTest, SetAndGetCache) {
-  const LeafContext<double>& ctx = context_;
-  CacheTicket ticket = ctx.CreateCacheEntry({});
-  ctx.InitCachedValue(ticket, PackValue(42));
-  const AbstractValue* value = ctx.GetCachedValue(ticket);
-  EXPECT_EQ(42, UnpackIntValue(value));
-
-  ctx.SetCachedValue<int>(ticket, 43);
-  EXPECT_EQ(43, UnpackIntValue(ctx.GetCachedValue(ticket)));
 }
 
 TEST_F(LeafContextTest, Clone) {
@@ -419,7 +406,7 @@ TEST_F(LeafContextTest, Accuracy) {
   const double unity = 1.0;
   context_.set_accuracy(unity);
   std::unique_ptr<Context<double>> clone = context_.Clone();
-  EXPECT_EQ(clone->get_accuracy().value_or(999), unity);
+  EXPECT_EQ(clone->get_accuracy().value(), unity);
 }
 
 }  // namespace systems

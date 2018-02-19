@@ -73,6 +73,7 @@ drake_cc_library(
         "fixed_offset_frame.cc",
         "joints/revolute_joint.cc",
         "mobilizer_impl.cc",
+        "multibody_forces.cc",
         "multibody_tree.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
@@ -92,6 +93,7 @@ drake_cc_library(
         "joints/revolute_joint.h",
         "mobilizer.h",
         "mobilizer_impl.h",
+        "multibody_forces.h",
         "multibody_tree.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
@@ -105,6 +107,7 @@ drake_cc_library(
         ":spatial_inertia",
         "//drake/common:autodiff",
         "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree/math:rotation_matrix",
     ],
 )
 
@@ -139,6 +142,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "articulated_body_inertia",
+    srcs = ["articulated_body_inertia.cc"],
+    hdrs = ["articulated_body_inertia.h"],
+    deps = [
+        ":spatial_inertia",
+        "//drake/common:default_scalars",
+        "//drake/multibody/multibody_tree/math:spatial_algebra",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -168,7 +182,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "double_pendulum_test",
+    name = "tree_from_mobilizers_test",
     # Presently times out in valgrind + debug with default size, "small".
     size = "medium",
     deps = [
@@ -179,8 +193,35 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "tree_from_joints_test",
+    deps = [
+        ":multibody_tree",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/acrobot",
+    ],
+)
+
+drake_cc_googletest(
     name = "frames_test",
     deps = [":multibody_tree"],
+)
+
+drake_cc_googletest(
+    name = "multibody_forces_test",
+    deps = [
+        ":multibody_tree",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_tree_test",
+    deps = [
+        ":multibody_tree",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
+        "//drake/multibody/multibody_tree/test_utilities:expect_error_message",
+    ],
 )
 
 drake_cc_googletest(
@@ -219,6 +260,24 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rigid_body_test",
+    deps = [
+        ":multibody_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "articulated_body_inertia_test",
+    deps = [
+        ":articulated_body_inertia",
+        ":multibody_tree",
+    ],
+)
+
+# === joints/test/ ===
+
+drake_cc_googletest(
+    name = "revolute_joint_test",
+    srcs = ["joints/test/revolute_joint_test.cc"],
     deps = [
         ":multibody_tree",
     ],

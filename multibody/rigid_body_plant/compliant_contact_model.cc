@@ -14,6 +14,13 @@
 namespace drake {
 namespace systems {
 
+// 1 cm/s
+const double
+    CompliantContactModelParameters::kDefaultVStictionTolerance{1e-2};
+// 0.2 mm
+const double
+    CompliantContactModelParameters::kDefaultCharacteristicRadius{2e-4};
+
 template <typename T>
 void CompliantContactModel<T>::set_default_material(
     const CompliantMaterial& material) {
@@ -181,6 +188,9 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
         contact_info.set_contact_details(move(details));
       }
     }
+  }
+  if (contacts != nullptr) {
+    contacts->set_generalized_contact_force(contact_force);
   }
   return contact_force;
 }

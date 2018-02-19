@@ -322,6 +322,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
  private:
   void AppendBounds(const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     DRAKE_ASSERT(lb.size() == ub.size());
+    set_num_outputs(num_constraints() + lb.rows());
     int prev_size = lower_bound().size();
     Eigen::VectorXd new_lb(prev_size + lb.size());
     Eigen::VectorXd new_ub(prev_size + ub.size());
@@ -439,7 +440,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   // speed boost?  It could be more if there are no inbetween sample
   // times (which effectively cache internally by doing all of the
   // constraints for the same time inbetween sample at once).
-  KinematicsCacheHelper<double> kin_helper(model->bodies);
+  KinematicsCacheHelper<double> kin_helper(*model);
 
   // Add all of our single time and quasi static constraints.
   int qstart_idx = 0;

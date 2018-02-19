@@ -5,20 +5,19 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/cond.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/extract_double.h"
-#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace automotive {
 
 using maliput::api::GeoPosition;
+using maliput::api::GeoPositionT;
+using maliput::api::Lane;
+using maliput::api::LanePosition;
 using maliput::api::LanePositionT;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadPosition;
-using maliput::api::Rotation;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseBundle;
 using systems::rendering::PoseVector;
@@ -26,20 +25,34 @@ using systems::rendering::PoseVector;
 static constexpr int kIdmParamsIndex{0};
 
 template <typename T>
-IdmController<T>::IdmController(const RoadGeometry& road)
+IdmController<T>::IdmController(const RoadGeometry& road,
+                                ScanStrategy path_or_branches,
+                                RoadPositionStrategy road_position_strategy,
+                                double period_sec)
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<automotive::IdmController>{}),
       road_(road),
-      ego_pose_index_{
-          this->DeclareVectorInputPort(PoseVector<T>()).get_index()},
-      ego_velocity_index_{
-          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()},
-      traffic_index_{this->DeclareAbstractInputPort().get_index()},
-      acceleration_index_{
+      path_or_branches_(path_or_branches),
+      road_position_strategy_(road_position_strategy),
+      period_sec_(period_sec),
+      ego_pose_index_(
+          this->DeclareVectorInputPort(PoseVector<T>()).get_index()),
+      ego_velocity_index_(
+          this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()),
+      traffic_index_(this->DeclareAbstractInputPort().get_index()),
+      acceleration_index_(
           this->DeclareVectorOutputPort(systems::BasicVector<T>(1),
                                         &IdmController::CalcAcceleration)
-              .get_index()} {
+              .get_index()) {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
+  // TODO(jadecastro) It is possible to replace the following AbstractState with
+  // a caching sceme once #4364 lands, preventing the need to use abstract
+  // states and periodic sampling time.
+  if (road_position_strategy == RoadPositionStrategy::kCache) {
+    this->DeclareAbstractState(systems::AbstractValue::Make<RoadPosition>(
+        RoadPosition()));
+    this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
+  }
 }
 
 template <typename T>
@@ -89,8 +102,15 @@ void IdmController<T>::CalcAcceleration(
       this->template EvalInputValue<PoseBundle<T>>(context, traffic_index_);
   DRAKE_ASSERT(traffic_poses != nullptr);
 
+  // Obtain the state if we've allocated it.
+  RoadPosition ego_rp;
+  if (context.template get_state().get_abstract_state().size() != 0) {
+    DRAKE_ASSERT(context.get_num_abstract_states() == 1);
+    ego_rp = context.template get_abstract_state<RoadPosition>(0);
+  }
+
   ImplCalcAcceleration(*ego_pose, *ego_velocity, *traffic_poses, idm_params,
-                       accel_output);
+                       ego_rp, accel_output);
 }
 
 template <typename T>
@@ -98,32 +118,33 @@ void IdmController<T>::ImplCalcAcceleration(
     const PoseVector<T>& ego_pose, const FrameVelocity<T>& ego_velocity,
     const PoseBundle<T>& traffic_poses,
     const IdmPlannerParameters<T>& idm_params,
+    const RoadPosition& ego_rp,
     systems::BasicVector<T>* command) const {
   using std::abs;
   using std::max;
 
   DRAKE_DEMAND(idm_params.IsValid());
-  Isometry3<T> ego_pose_isometry = ego_pose.get_isometry();
-  const auto translation = ego_pose_isometry.translation();
-
-  const GeoPosition geo_position(ExtractDoubleOrThrow(translation.x()),
-                                 ExtractDoubleOrThrow(translation.y()),
-                                 ExtractDoubleOrThrow(translation.z()));
-  const RoadPosition ego_position =
-      road_.ToRoadPosition(geo_position, nullptr, nullptr, nullptr);
+  RoadPosition ego_position = ego_rp;
+  if (!ego_rp.lane) {
+    const auto gp =
+        GeoPositionT<T>::FromXyz(ego_pose.get_isometry().translation());
+    ego_position =
+        road_.ToRoadPosition(gp.MakeDouble(), nullptr, nullptr, nullptr);
+  }
 
   // Find the single closest car ahead.
   const ClosestPose<T> lead_car_pose = PoseSelector<T>::FindSingleClosestPose(
       ego_position.lane, ego_pose, traffic_poses,
-      idm_params.scan_ahead_distance(), AheadOrBehind::kAhead);
+      idm_params.scan_ahead_distance(), AheadOrBehind::kAhead,
+      path_or_branches_);
   const T headway_distance = lead_car_pose.distance;
 
   const LanePositionT<T> lane_position(T(ego_position.pos.s()),
                                        T(ego_position.pos.r()),
                                        T(ego_position.pos.h()));
-  T s_dot_ego = PoseSelector<T>::GetSigmaVelocity(
+  const T s_dot_ego = PoseSelector<T>::GetSigmaVelocity(
       {ego_position.lane, lane_position, ego_velocity});
-  T s_dot_lead =
+  const T s_dot_lead =
       (abs(lead_car_pose.odometry.pos.s()) ==
        std::numeric_limits<T>::infinity())
           ? T(0.)
@@ -138,6 +159,29 @@ void IdmController<T>::ImplCalcAcceleration(
   // Compute the acceleration command from the IDM equation.
   (*command)[0] = IdmPlanner<T>::Evaluate(idm_params, s_dot_ego, net_distance,
                                           closing_velocity);
+}
+
+template <typename T>
+void IdmController<T>::DoCalcUnrestrictedUpdate(
+    const systems::Context<T>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+    systems::State<T>* state) const {
+  DRAKE_ASSERT(context.get_num_abstract_states() == 1);
+
+  // Obtain the input and state data.
+  const PoseVector<T>* const ego_pose =
+      this->template EvalVectorInput<PoseVector>(context, ego_pose_index_);
+  DRAKE_ASSERT(ego_pose != nullptr);
+
+  const FrameVelocity<T>* const ego_velocity =
+      this->template EvalVectorInput<FrameVelocity>(context,
+                                                    ego_velocity_index_);
+  DRAKE_ASSERT(ego_velocity != nullptr);
+
+  RoadPosition& rp =
+      state->template get_mutable_abstract_state<RoadPosition>(0);
+
+  CalcOngoingRoadPosition(*ego_pose, *ego_velocity, road_, &rp);
 }
 
 }  // namespace automotive

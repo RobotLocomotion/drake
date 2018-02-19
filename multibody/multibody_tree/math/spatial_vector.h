@@ -227,6 +227,11 @@ class SpatialVector {
     return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
   }
 
+  /// Unary minus operator.
+  SpatialQuantity operator-() const {
+    return SpatialQuantity(-get_coeffs());
+  }
+
   /// Factory to create a _zero_ %SpatialVector, i.e. rotational and
   /// translational components are both zero.
   static SpatialQuantity Zero() {

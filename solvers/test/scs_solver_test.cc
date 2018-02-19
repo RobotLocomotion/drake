@@ -40,9 +40,7 @@ GTEST_TEST(LinearProgramTest, Test0) {
     EXPECT_EQ(sol_result, SolutionResult::kUnbounded);
   }
 
-  // The accuracy of SCS is not high, so we choose 1E-2 here, 10x the
-  // epsilon defined in SCS.
-  const double tol{1E-2};
+  const double tol{1E-5};
   // Now add the constraint x(0) <= 5. The problem is
   // min x(0) + 2x(1)
   // s.t x(0) + x(1) = 2
@@ -131,7 +129,7 @@ GTEST_TEST(LinearProgramTest, Test2) {
 
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    const double tol{1E-2};
+    const double tol{2E-5};
     const SolutionResult sol_result = scs_solver.Solve(prog);
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
     EXPECT_NEAR(prog.GetOptimalCost(), 8, tol);
@@ -151,11 +149,29 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
 
+TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
+  ScsSolver solver;
+  if (solver.available()) {
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+    EXPECT_EQ(prog_->GetOptimalCost(),
+              MathematicalProgram::kGlobalInfeasibleCost);
+  }
+}
+
+TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
+  ScsSolver solver;
+  if (solver.available()) {
+    SolutionResult result = solver.Solve(*prog_);
+    EXPECT_EQ(result, SolutionResult::kUnbounded);
+    EXPECT_EQ(prog_->GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    // SCS is inaccurate, choose a large tolerance.
-    SolveAndCheckSolution(scs_solver, 1.3e-3);
+    SolveAndCheckSolution(scs_solver, 1E-5);
   }
 }
 
@@ -165,8 +181,7 @@ INSTANTIATE_TEST_CASE_P(SCSTest, TestEllipsoidsSeparation,
 TEST_P(TestQPasSOCP, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    // SCS is inaccurate, choose a large tolerance.
-    SolveAndCheckSolution(scs_solver, 2E-4);
+    SolveAndCheckSolution(scs_solver, 1E-5);
   }
 }
 
@@ -176,8 +191,7 @@ INSTANTIATE_TEST_CASE_P(SCSTest, TestQPasSOCP,
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    // SCS is inaccurate, choose a large tolerance.
-    SolveAndCheckSolution(scs_solver, 2E-3);
+    SolveAndCheckSolution(scs_solver, 1E-5);
   }
 }
 
@@ -208,28 +222,28 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    TestTrivialSDP(scs_solver, 2E-3);
+    TestTrivialSDP(scs_solver, 1E-5);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    FindCommonLyapunov(scs_solver, 5E-4);
+    FindCommonLyapunov(scs_solver, 1E-5);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    FindOuterEllipsoid(scs_solver, 1E-3);
+    FindOuterEllipsoid(scs_solver, 1E-5);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveEigenvalueProblem(scs_solver, 1E-3);
+    SolveEigenvalueProblem(scs_solver, 1E-5);
   }
 }
 }  // namespace test

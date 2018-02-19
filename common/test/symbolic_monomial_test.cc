@@ -13,7 +13,6 @@
 
 using std::map;
 using std::ostringstream;
-using std::out_of_range;
 using std::pair;
 using std::runtime_error;
 using std::unordered_map;
@@ -91,28 +90,26 @@ class MonomialTest : public ::testing::Test {
     return result1 == result2;
   }
 
-  // Checks if Monomial::Substitute corresponds to Expression::Substitute.
+  // Checks if Monomial::EvaluatePartial corresponds to Expression's
+  // EvaluatePartial.
   //
   //                            ToExpression
   //                   Monomial ------------> Expression
   //                      ||                      ||
-  // Monomial::Substitute ||                      || Expression::Substitute
+  //      EvaluatePartial ||                      || EvaluatePartial
   //                      ||                      ||
   //                      \/                      \/
   //          double * Monomial (e2)   ==   Expression (e1)
   //
   // In one direction (left-to-right), first we convert a Monomial to an
-  // Expression using Monomial::ToExpression and call Expression::Substitution
-  // to have an Expression (e1). In another direction (top-to-bottom), we call
-  // Monomial::Substitution which returns a pair of double (coefficient part)
-  // and Monomial. We obtain e2 by multiplying the two. Then, we check if e1 and
-  // e2 are structurally equal.
-  bool CheckSubstitute(const Monomial& m, const Environment& env) {
-    const Substitution subst{ExtractSubst(env)};
-
-    const Expression e1{m.ToExpression().Substitute(subst)};
-
-    const pair<double, Monomial> subst_result{m.Substitute(env)};
+  // Expression using Monomial::ToExpression and call
+  // Expression::EvaluatePartial to have an Expression (e1). In another
+  // direction (top-to-bottom), we call Monomial::EvaluatePartial which returns
+  // a pair of double (coefficient part) and Monomial. We obtain e2 by
+  // multiplying the two. Then, we check if e1 and e2 are structurally equal.
+  bool CheckEvaluatePartial(const Monomial& m, const Environment& env) {
+    const Expression e1{m.ToExpression().EvaluatePartial(env)};
+    const pair<double, Monomial> subst_result{m.EvaluatePartial(env)};
     const Expression e2{subst_result.first *
                         subst_result.second.ToExpression()};
 
@@ -583,10 +580,10 @@ TEST_F(MonomialTest, Evaluate) {
 TEST_F(MonomialTest, EvaluateException) {
   const Monomial m{{{var_x_, 1}, {var_y_, 2}}};  // xy^2
   const Environment env{{{var_x_, 1.0}}};
-  EXPECT_THROW(m.Evaluate(env), out_of_range);
+  EXPECT_THROW(m.Evaluate(env), runtime_error);
 }
 
-TEST_F(MonomialTest, Substitute) {
+TEST_F(MonomialTest, EvaluatePartial) {
   const vector<Environment> environments{
       {{var_x_, 2.0}},
       {{var_y_, 3.0}},
@@ -598,7 +595,7 @@ TEST_F(MonomialTest, Substitute) {
   };
   for (const Monomial m : monomials_) {
     for (const Environment env : environments) {
-      EXPECT_TRUE(CheckSubstitute(m, env));
+      EXPECT_TRUE(CheckEvaluatePartial(m, env));
     }
   }
 }

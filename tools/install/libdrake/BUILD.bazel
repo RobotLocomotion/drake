@@ -13,15 +13,8 @@ load(
     "drake_transitive_installed_hdrs_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_labels_for_drake_hoist",
-    "HAS_MOVED_6996",
-)
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load("//tools:drake.bzl", "drake_cc_binary")
-
-LIBDRAKE_COMPONENTS = adjust_labels_for_drake_hoist(LIBDRAKE_COMPONENTS)
 
 cmake_config(
     cps_file_name = "drake.cps",
@@ -57,7 +50,7 @@ install(
     name = "install",
     targets = ["libdrake.so"],
     hdrs = [":libdrake_headers"],
-    hdr_dest = "include/drake" if HAS_MOVED_6996 else "include",
+    hdr_dest = "include/drake",
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
     deps = [
         ":install_cmake_config",
@@ -90,8 +83,8 @@ cc_library(
     visibility = [],
     deps = [
         # TODO(jwnimmer-tri) This duplicates the list of VTK libraries needed
-        # by //drake/sensors.  We should find a way for ":drake_shared_library"
-        # to be declared without having to repeat this list here.
+        # by //sensors.  We should find a way for ":drake_shared_library" to be
+        # declared without having to repeat this list here.
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
         "@vtk//:vtkCommonTransforms",
@@ -113,20 +106,25 @@ cc_library(
 cc_library(
     name = "drake_shared_library",
     hdrs = [":libdrake_headers"],
-    include_prefix = "drake" if HAS_MOVED_6996 else None,
-    strip_include_prefix = "/" if HAS_MOVED_6996 else None,
-    visibility = adjust_labels_for_drake_hoist([
-        "//drake/bindings/pydrake:__subpackages__",
-        "//drake/examples:__subpackages__",
-    ]),
+    include_prefix = "drake",
+    strip_include_prefix = "/",
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        "//examples:__subpackages__",
+    ],
     deps = [
         ":gurobi_deps",
         ":mosek_deps",
         ":vtk_deps",
         "@bullet//:BulletCollision",
+        "@dreal",
+        "@ignition_math",
+        "@ignition_rndf",
         "@lcm",
         "@libprotobuf",
         "@scs//:scsdir",
+        "@sdformat",
+        "@tinyobjloader",
         "@tinyxml2",
     ],
 )

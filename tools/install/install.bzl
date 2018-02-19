@@ -268,8 +268,10 @@ def _install_java_launcher_actions(
     filename = target[MainClassInfo].filename
     file_dest = join_paths(dest, filename)
     file_dest = _rename(file_dest, rename)
+    jvm_flags = target[MainClassInfo].jvm_flags
 
     actions.append(struct(dst = file_dest, classpath = classpath,
+                          jvm_flags = jvm_flags,
                           main_class = main_class))
 
     return actions
@@ -282,8 +284,9 @@ def _install_code(action):
 #------------------------------------------------------------------------------
 # Generate install code for a java launcher.
 def _java_launcher_code(action):
-    return "create_java_launcher(%r, %r, %r)" % (action.dst, action.classpath,
-                                                 action.main_class)
+    return "create_java_launcher(%r, %r, %r, %r)" % (
+        action.dst, action.classpath, " ".join(action.jvm_flags),
+        action.main_class)
 
 #END internal helpers
 #==============================================================================
@@ -529,7 +532,7 @@ install_files = rule(
         "rename": attr.string_dict(),
         "strip_prefix": attr.string_list(),
         "workspace": attr.string(),
-        "allowed_externals": attr.string_list(),
+        "allowed_externals": attr.label_list(allow_files = True),
     },
     implementation = _install_files_impl,
 )
@@ -609,7 +612,7 @@ def cmake_config(
             deps = ["@drake//tools/install:cpsutils"],
         )
 
-        cps_file_name = "{}.cps".format(package)
+        cps_file_name = "package.cps"
 
         native.genrule(
             name = "cps",
@@ -620,8 +623,8 @@ def cmake_config(
             visibility = ["//visibility:public"],
         )
     elif not cps_file_name:
-        cps_file_name = "@drake//tools/workspace/{}:{}.cps".format(
-            package, package)
+        cps_file_name = "@drake//tools/workspace/{}:package.cps".format(
+            package)
 
     package_lower = package.lower()
 

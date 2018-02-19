@@ -15,6 +15,32 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
+GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
+  // Update the coefficients or the bound of the linear constraint, and check
+  // the updated constraint.
+  const Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
+  const Eigen::Vector2d b(1, 2);
+  LinearEqualityConstraint constraint(A, b);
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), b));
+  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b));
+  EXPECT_TRUE(CompareMatrices(constraint.A(), A));
+  EXPECT_EQ(constraint.num_constraints(), 2);
+
+  // Update with a new matrix A2 with three columns. This should cause a runtime
+  // error, since the number of variables do not match.
+  const Eigen::Matrix<double, 2, 3> A2 = Eigen::Matrix<double, 2, 3>::Ones();
+  const Eigen::Vector2d b2(1, 2);
+  EXPECT_THROW(constraint.UpdateCoefficients(A2, b2), std::runtime_error);
+
+  // Update with a new matrix A3 with size 3 x 2.
+  const Eigen::Matrix<double, 3, 2> A3 = Eigen::Matrix<double, 3, 2>::Ones();
+  const Eigen::Vector3d b3(1, 2, 3);
+  constraint.UpdateCoefficients(A3, b3);
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), b3));
+  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b3));
+  EXPECT_TRUE(CompareMatrices(constraint.A(), A3));
+  EXPECT_EQ(constraint.num_constraints(), 3);
+}
 GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   // Check if the getters in the QuadraticConstraint are right.
   Eigen::Matrix2d Q;

@@ -4,4 +4,13 @@ package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+py_binary(
+    name = "drake_proto_ubsan_fix",
+    srcs = ["drake_proto_ubsan_fix.py"],
+)
+
+exports_files([
+    "py_env_runner.py",
+])
+
 add_lint_tests()

@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/calc_ongoing_road_position.h"
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/automotive/idm_planner.h"
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -54,13 +56,26 @@ class IdmController : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmController)
 
   /// Constructor.
-  /// @param road is the pre-defined RoadGeometry.
-  explicit IdmController(const maliput::api::RoadGeometry& road);
+  /// @param road The pre-defined RoadGeometry.
+  /// @param path_or_branches If ScanStrategy::kBranches, performs IDM
+  /// computations using vehicles detected in confluent branches; if
+  /// ScanStrategy::kPath, limits to vehicles on the default path.  See
+  /// documentation for PoseSelector::FindSingleClosestPose().
+  /// @param road_position_strategy Determines whether or not to cache
+  /// RoadPosition. See `calc_ongoing_road_position.h`.
+  /// @param period_sec The update period to use if road_position_strategy ==
+  /// RoadPositionStrategy::kCache.
+  IdmController(const maliput::api::RoadGeometry& road,
+                ScanStrategy path_or_branches,
+                RoadPositionStrategy road_position_strategy,
+                double period_sec);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit IdmController(const IdmController<U>& other)
-      : IdmController<T>(other.road_) {}
+      : IdmController<T>(other.road_, other.path_or_branches_,
+                         other.road_position_strategy_,
+                         other.period_sec_) {}
 
   ~IdmController() override;
 
@@ -84,7 +99,13 @@ class IdmController : public systems::LeafSystem<T> {
       const systems::rendering::FrameVelocity<T>& ego_velocity,
       const systems::rendering::PoseBundle<T>& traffic_poses,
       const IdmPlannerParameters<T>& idm_params,
+      const maliput::api::RoadPosition& ego_rp,
       systems::BasicVector<T>* command) const;
+
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<T>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+      systems::State<T>* state) const override;
 
  private:
   // Allow different specializations to access each other's private data.
@@ -98,6 +119,9 @@ class IdmController : public systems::LeafSystem<T> {
                         systems::BasicVector<T>* accel_output) const;
 
   const maliput::api::RoadGeometry& road_;
+  const ScanStrategy path_or_branches_{};
+  const RoadPositionStrategy road_position_strategy_{};
+  const double period_sec_{};
 
   // Indices for the input / output ports.
   const int ego_pose_index_{};

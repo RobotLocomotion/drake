@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -178,13 +179,13 @@ class System {
     // not change.
     const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_states();
 
     SetDefaultState(*context, &context->get_mutable_state());
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -235,13 +236,13 @@ class System {
     // not change.
     const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_states();
 
     SetRandomState(*context, &context->get_mutable_state(), generator);
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -399,12 +400,17 @@ class System {
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value as an %Eigen expression.
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns the
+  /// port's value as an %Eigen expression. Throws an exception if the input
+  /// port is not connected.
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
     const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
-    DRAKE_ASSERT(input_vector != nullptr);
+    if (input_vector == nullptr) {
+      throw std::logic_error(
+          "System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is not connected.");
+    }
     DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).size());
     return input_vector->get_value();
   }

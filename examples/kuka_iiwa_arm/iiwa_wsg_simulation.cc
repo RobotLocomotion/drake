@@ -173,6 +173,11 @@ int DoMain() {
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
   iiwa_status_sender->set_name("iiwa_status_sender");
 
+  std::vector<int> instance_ids = {iiwa_instance.instance_id};
+  auto external_torque_converter =
+      builder.AddSystem<IiwaContactResultsToExternalTorque>(
+          tree, instance_ids);
+
   // TODO(siyuan): Connect this to kuka_planner runner once it generates
   // reference acceleration.
   auto iiwa_zero_acceleration_source =
@@ -180,7 +185,7 @@ int DoMain() {
           Eigen::VectorXd::Zero(7));
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
-  builder.Connect(iiwa_command_sub->get_output_port(0),
+  builder.Connect(iiwa_command_sub->get_output_port(),
                   iiwa_command_receiver->get_input_port(0));
   builder.Connect(iiwa_command_receiver->get_output_port(0),
                   model->get_input_port_iiwa_state_command());
@@ -192,9 +197,15 @@ int DoMain() {
   builder.Connect(iiwa_command_receiver->get_output_port(0),
                   iiwa_status_sender->get_command_input_port());
   builder.Connect(model->get_output_port_computed_torque(),
-                  iiwa_status_sender->get_torque_commanded_input_port());
+                  iiwa_status_sender->get_commanded_torque_input_port());
+  builder.Connect(model->get_output_port_iiwa_measured_torque(),
+                  iiwa_status_sender->get_measured_torque_input_port());
+  builder.Connect(model->get_output_port_contact_results(),
+                  external_torque_converter->get_input_port(0));
+  builder.Connect(external_torque_converter->get_output_port(0),
+                  iiwa_status_sender->get_external_torque_input_port());
   builder.Connect(iiwa_status_sender->get_output_port(0),
-                  iiwa_status_pub->get_input_port(0));
+                  iiwa_status_pub->get_input_port());
 
   auto wsg_command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
@@ -210,15 +221,20 @@ int DoMain() {
       manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->get_output_port_wsg_state().size(), 0, 1);
+      model->get_output_port_wsg_state().size(),
+      model->get_output_port_wsg_measured_torque().size(),
+      manipulation::schunk_wsg::kSchunkWsgPositionIndex,
+      manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
   wsg_status_sender->set_name("wsg_status_sender");
 
-  builder.Connect(wsg_command_sub->get_output_port(0),
+  builder.Connect(wsg_command_sub->get_output_port(),
                   wsg_controller->get_command_input_port());
   builder.Connect(wsg_controller->get_output_port(0),
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_status_sender->get_input_port(0));
+                  wsg_status_sender->get_input_port_wsg_state());
+  builder.Connect(model->get_output_port_wsg_measured_torque(),
+                  wsg_status_sender->get_input_port_measured_torque());
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_controller->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
@@ -230,7 +246,7 @@ int DoMain() {
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
-                  iiwa_state_pub->get_input_port(0));
+                  iiwa_state_pub->get_input_port());
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
@@ -240,7 +256,7 @@ int DoMain() {
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_object_robot_state_msg(),
-                  box_state_pub->get_input_port(0));
+                  box_state_pub->get_input_port());
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto sys = builder.Build();
