@@ -111,3 +111,15 @@ def drake_py_test(
         deps = deps,
         data = data,
         **kwargs)
+
+def py_test_isolated(
+        name,
+        **kwargs):
+    """Provides a directory-isolated Python test, robust against shadowing
+    (#8041).
+    """
+    _py_target_isolated(
+        name = name,
+        py_target = native.py_test,
+        isolate = True,
+        **kwargs)
