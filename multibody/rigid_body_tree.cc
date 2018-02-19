@@ -119,7 +119,7 @@ RigidBodyTree<T>::RigidBodyTree()
   // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
   // See: https://github.com/RobotLocomotion/drake/issues/3088
 
-  bodies.push_back(std::move(world_body));
+  bodies_.push_back(std::move(world_body));
 }
 
 template <typename T>
@@ -130,7 +130,7 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
   auto clone = make_unique<RigidBodyTree<double>>();
   // The following is necessary to remove the world link from the clone. The
   // world link will be re-added when the bodies are cloned below.
-  clone->bodies.clear();
+  clone->bodies_.clear();
 
   clone->joint_limit_min = this->joint_limit_min;
   clone->joint_limit_max = this->joint_limit_max;
@@ -142,8 +142,8 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
   clone->initialized_ = this->initialized_;
 
   // Clones the rigid bodies.
-  for (const auto& body : bodies) {
-    clone->bodies.push_back(body->Clone());
+  for (const auto& body : bodies_) {
+    clone->add_rigid_body(body->Clone());
   }
 
   // Clones the joints and adds them to the cloned RigidBody objects.
@@ -181,7 +181,7 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
     DRAKE_DEMAND(cloned_frame_body != nullptr);
     std::shared_ptr<RigidBodyFrame<double>> cloned_frame =
         original_frame->Clone(cloned_frame_body);
-    clone->frames.push_back(cloned_frame);
+    clone->frames_.push_back(cloned_frame);
   }
 
   for (const auto& actuator : actuators) {
@@ -251,18 +251,18 @@ bool RigidBodyTree<T>::transformCollisionFrame(
 // A possibility would be to use std::sort or our own version of a quick sort.
 template <typename T>
 void RigidBodyTree<T>::SortTree() {
-  if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
+  if (bodies_.size() == 0) return;  // no-op if there are no RigidBody's
 
-  for (size_t i = 0; i < bodies.size() - 1;) {
-    if (bodies[i]->has_parent_body()) {
-      auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
+  for (size_t i = 0; i < bodies_.size() - 1;) {
+    if (bodies_[i]->has_parent_body()) {
+      auto iter = std::find_if(bodies_.begin() + i + 1, bodies_.end(),
                                [&](std::unique_ptr<RigidBody<T>> const& p) {
-                                 return bodies[i]->has_as_parent(*p);
+                                 return bodies_[i]->has_as_parent(*p);
                                });
-      if (iter != bodies.end()) {
+      if (iter != bodies_.end()) {
         std::unique_ptr<RigidBody<T>> parent = std::move(*iter);
-        bodies.erase(iter);
-        bodies.insert(bodies.begin() + i, std::move(parent));
+        bodies_.erase(iter);
+        bodies_.insert(bodies_.begin() + i, std::move(parent));
         --i;
       }
     }
@@ -270,8 +270,8 @@ void RigidBodyTree<T>::SortTree() {
   }
 
   // Re-assign body_index to be the i-th entry in RBT::bodies
-  for (size_t i = 0; i < bodies.size(); ++i) {
-    bodies[i]->set_body_index(static_cast<int>(i));
+  for (size_t i = 0; i < bodies_.size(); ++i) {
+    bodies_[i]->set_body_index(static_cast<int>(i));
   }
 }
 
