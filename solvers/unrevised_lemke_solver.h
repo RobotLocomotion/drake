@@ -131,6 +131,13 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   SolverId solver_id() const override;
 
  private:
+  struct LemkeSets {
+    std::vector<int> alpha, alpha_prime;
+    std::vector<int> bar_alpha, bar_alpha_prime;
+    std::vector<int> beta, beta_prime;
+    std::vector<int> bar_beta, bar_beta_prime;
+  };
+
   // A structure for holding a linear complementarity problem variable.
   struct LCPVariable {
     bool z{true};        // Is this a z variable or a w variable?
@@ -146,9 +153,10 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   static void ConstructLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
       const std::vector<LCPVariable>& indep_variables, int artificial_index,
       const std::vector<LCPVariable>& dep_variables, VectorX<T>* z);
-    static int FindComplementIndex(
+  static int FindComplementIndex(
       const LCPVariable& query,
       const std::vector<LCPVariable>& indep_variables);
+  void DetermineIndexSets();
 
   // The index sets for the Lemke Algorithm.
   // TODO: Explain why these can be mutable.
