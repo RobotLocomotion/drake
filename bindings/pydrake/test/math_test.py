@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
-from pydrake._math import BarycentricMesh
+from pydrake.math import BarycentricMesh
 import numpy as np
 
 

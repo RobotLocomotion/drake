@@ -25,7 +25,7 @@ from . import getDrakePath
 from .autodiffutils import *
 from .common import *
 from .forwarddiff import *
-from ._math import *
+from .math import *
 from .symbolic import *
 
 # Submodules.
