@@ -188,7 +188,8 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
       // approximation on the grid and the (more importantly) the discretization
       // of actions.  The matlab plots above are as expected, and this guard
       // will make sure they remain close.
-      EXPECT_NEAR(state_mesh.Eval(solution.second, x)[0], J, 1. + .2 * J);
+      EXPECT_NEAR(state_mesh.Eval<double>(solution.second, x)[0], J,
+                  1. + .2 * J);
     }
   }
 }

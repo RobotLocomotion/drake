@@ -56,7 +56,7 @@ class BarycentricMeshSystem : public VectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const {
     unused(context, state);
-    mesh_.Eval(output_values_, input, output);
+    mesh_.template Eval<T>(output_values_, input, output);
   }
 
  private:

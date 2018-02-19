@@ -31,7 +31,7 @@ GTEST_TEST(BarycentricSystemTest, MatrixGain) {
 
   // Quick sanity check of the barycentric mesh.
   Vector2d test{-.5, .5}, test_output;
-  bary.Eval(values, test, &test_output);
+  bary.Eval<double>(values, test, &test_output);
   EXPECT_TRUE(CompareMatrices(test_output, A * test, 1e-8));
 
   // Create the new system.

@@ -31,7 +31,7 @@ PYBIND11_MODULE(_math, m) {
       .def("Eval", overload_cast_explicit<VectorX<T>,
                                           const Eigen::Ref<const MatrixX<T>>&,
                                           const Eigen::Ref<const VectorX<T>>&>(
-                       &BarycentricMesh<T>::Eval))
+                       &BarycentricMesh<T>::Eval<T>))
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom);
 }
 

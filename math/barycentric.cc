@@ -143,33 +143,6 @@ void BarycentricMesh<T>::EvalBarycentricWeights(
 }
 
 template <typename T>
-void BarycentricMesh<T>::Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
-                              const Eigen::Ref<const VectorX<T>>& input,
-                              EigenPtr<VectorX<T>> output) const {
-  DRAKE_DEMAND(input.size() == get_input_size());
-  DRAKE_DEMAND(mesh_values.cols() == get_num_mesh_points());
-
-  Eigen::VectorXi mesh_indices(num_interpolants_);
-  VectorX<T> weights(num_interpolants_);
-
-  EvalBarycentricWeights(input, &mesh_indices, &weights);
-
-  *output = weights[0] * mesh_values.col(mesh_indices[0]);
-  for (int i = 1; i < num_interpolants_; i++) {
-    *output += weights[i] * mesh_values.col(mesh_indices[i]);
-  }
-}
-
-template <typename T>
-VectorX<T> BarycentricMesh<T>::Eval(
-    const Eigen::Ref<const MatrixX<T>>& mesh_values,
-    const Eigen::Ref<const VectorX<T>>& input) const {
-  VectorX<T> output(mesh_values.rows());
-  Eval(mesh_values, input, &output);
-  return output;
-}
-
-template <typename T>
 MatrixX<T> BarycentricMesh<T>::MeshValuesFrom(
     const std::function<VectorX<T>(const Eigen::Ref<const VectorX<T>>&)>&
         vector_func) const {

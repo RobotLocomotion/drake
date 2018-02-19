@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -102,32 +103,61 @@ GTEST_TEST(BarycentricTest, EvalTest) {
   Vector1d value;
   double tol = 1e-8;
   // Check grid points.
-  bary.Eval(mesh, Vector2d{0., 0.}, &value);
+  bary.Eval<double>(mesh, Vector2d{0., 0.}, &value);
   EXPECT_NEAR(value[0], 1., tol);
-  bary.Eval(mesh, Vector2d{1., 0.}, &value);
+  bary.Eval<double>(mesh, Vector2d{1., 0.}, &value);
   EXPECT_NEAR(value[0], 2., tol);
-  bary.Eval(mesh, Vector2d{0., 1.}, &value);
+  bary.Eval<double>(mesh, Vector2d{0., 1.}, &value);
   EXPECT_NEAR(value[0], 3., tol);
-  bary.Eval(mesh, Vector2d{1., 1.}, &value);
+  bary.Eval<double>(mesh, Vector2d{1., 1.}, &value);
   EXPECT_NEAR(value[0], 4., tol);
 
   // Check the middle.
-  bary.Eval(mesh, Vector2d{.5, .5}, &value);
+  bary.Eval<double>(mesh, Vector2d{.5, .5}, &value);
   EXPECT_NEAR(value[0], 2.5, 1e-8);
 
   // Check the two faces.
-  bary.Eval(mesh, Vector2d{.75, .25}, &value);
+  bary.Eval<double>(mesh, Vector2d{.75, .25}, &value);
   EXPECT_NEAR(value[0], 2.25, 1e-8);
-  bary.Eval(mesh, Vector2d{.25, .75}, &value);
+  bary.Eval<double>(mesh, Vector2d{.25, .75}, &value);
   EXPECT_NEAR(value[0], 2.75, 1e-8);
 
   // Lift a corner and check again.
   mesh(0, 2) = 10.;
-  bary.Eval(mesh, Vector2d{.25, .75}, &value);
+  bary.Eval<double>(mesh, Vector2d{.25, .75}, &value);
   EXPECT_NEAR(value[0], 6.25, 1e-8);
 
   // Test the alternative call signature.
-  EXPECT_NEAR(bary.Eval(mesh, Vector2d{.25, .75})[0], 6.25, 1e-8);
+  EXPECT_NEAR(bary.Eval<double>(mesh, Vector2d{.25, .75})[0], 6.25, 1e-8);
+}
+
+GTEST_TEST(BarycentricTest, EvalSymbolicTest) {
+  BarycentricMesh<double> bary{{{0.0, 1.0},  // BR
+                                   {0.0, 1.0}}};
+
+  using symbolic::Variable;
+  using symbolic::Expression;
+  Variable a{"a"}, b{"b"}, c{"c"}, d{"d"};
+  RowVector4<Expression> mesh;
+  mesh << a, b, c, d;
+
+  Vector1<Expression> value;
+  // Check grid points.
+  bary.Eval<Expression>(mesh, Vector2d{0., 0.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(a));
+  bary.Eval<Expression>(mesh, Vector2d{1., 0.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(b));
+  bary.Eval<Expression>(mesh, Vector2d{0., 1.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(c));
+  bary.Eval<Expression>(mesh, Vector2d{1., 1.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(d));
+
+  // Check the middle.
+  bary.Eval<Expression>(mesh, Vector2d{.5, .5}, &value);
+  EXPECT_TRUE(value[0].EqualTo(.5*a + .5*d));
+
+  // Test the alternative call signature.
+  EXPECT_TRUE(bary.Eval<Expression>(mesh, Vector2d{0., 0.})[0].EqualTo(a));
 }
 
 GTEST_TEST(BarycentricTest, MultidimensionalOutput) {
@@ -141,9 +171,9 @@ GTEST_TEST(BarycentricTest, MultidimensionalOutput) {
 
   Vector2d value;
   // Check the two faces.
-  bary.Eval(mesh, Vector2d{.75, .25}, &value);
+  bary.Eval<double>(mesh, Vector2d{.75, .25}, &value);
   EXPECT_TRUE(CompareMatrices(value, Vector2d{2.25, 6.25}, 1e-8));
-  bary.Eval(mesh, Vector2d{.25, .75}, &value);
+  bary.Eval<double>(mesh, Vector2d{.25, .75}, &value);
   EXPECT_TRUE(CompareMatrices(value, Vector2d{2.75, 6.75}, 1e-8));
 }
 
@@ -163,7 +193,7 @@ GTEST_TEST(BarycentricTest, FromVectorFunc) {
   // verified with the other tests).
   Vector1d y_value;
   for (const auto& x : x_values) {
-    bary.Eval(mesh_values, Vector1d(x), &y_value);
+    bary.Eval<double>(mesh_values, Vector1d(x), &y_value);
     EXPECT_EQ(y_value[0], std::sin(x));
   }
 }
@@ -181,7 +211,7 @@ GTEST_TEST(BarycentricTest, FromLambda) {
   // verified with the other tests).
   Vector1d y_value;
   for (const auto& x : x_values) {
-    bary.Eval(mesh_values, Vector1d(x), &y_value);
+    bary.Eval<double>(mesh_values, Vector1d(x), &y_value);
     EXPECT_EQ(y_value[0], std::sin(x));
   }
 }

@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -110,13 +111,36 @@ class BarycentricMesh {
   /// by get_mesh_point().
   /// @param input must be a vector of length get_num_inputs().
   /// @param output is the interpolated vector of length num_outputs
-  void Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
+  /// @tparam ValueT allows the values on the mesh to have a different scalar
+  /// type than the values defining the mesh.  (symbolic::Expression
+  /// containing decision variables for an optimization problem is an
+  /// important example).
+  template <typename ValueT = T>
+  void Eval(const Eigen::Ref<const MatrixX<ValueT>>& mesh_values,
             const Eigen::Ref<const VectorX<T>>& input,
-            EigenPtr<VectorX<T>> output) const;
+            EigenPtr<VectorX<ValueT>> output) const {
+    DRAKE_DEMAND(input.size() == get_input_size());
+    DRAKE_DEMAND(mesh_values.cols() == get_num_mesh_points());
+
+    Eigen::VectorXi mesh_indices(num_interpolants_);
+    VectorX<T> weights(num_interpolants_);
+
+    EvalBarycentricWeights(input, &mesh_indices, &weights);
+
+    *output = weights[0] * mesh_values.col(mesh_indices[0]);
+    for (int i = 1; i < num_interpolants_; i++) {
+      *output += weights[i] * mesh_values.col(mesh_indices[i]);
+    }
+  }
 
   /// Returns the function evaluated at @p input.
-  VectorX<T> Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
-                  const Eigen::Ref<const VectorX<T>>& input) const;
+  template <typename ValueT = T>
+  VectorX<ValueT> Eval(const Eigen::Ref<const MatrixX<ValueT>>& mesh_values,
+                  const Eigen::Ref<const VectorX<T>>& input) const {
+    VectorX<ValueT> output(mesh_values.rows());
+    Eval<ValueT>(mesh_values, input, &output);
+    return output;
+  }
 
   /// Evaluates @p vector_func at all input mesh points and extracts the mesh
   /// value matrix that should be used to approximate the function with this

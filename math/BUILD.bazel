@@ -218,6 +218,7 @@ drake_cc_googletest(
     name = "barycentric_test",
     deps = [
         ":barycentric",
+        "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
