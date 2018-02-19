@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -133,6 +134,37 @@ GTEST_TEST(BarycentricTest, EvalTest) {
 
   // Test the alternative call signature.
   EXPECT_NEAR(bary.Eval(mesh, Vector2d{.25, .75})[0], 6.25, 1e-8);
+}
+
+GTEST_TEST(BarycentricTest, EvalSymbolicTest) {
+  BarycentricMesh<double> bary{{{0.0, 1.0},  // BR
+                                {0.0, 1.0}}};
+
+  using symbolic::Variable;
+  using symbolic::Expression;
+  Variable a{"a"}, b{"b"}, c{"c"}, d{"d"};
+  RowVector4<Expression> mesh;
+  mesh << a, b, c, d;
+
+  Vector1<Expression> value;
+  // Check grid points.
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{0., 0.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(a));
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{1., 0.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(b));
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{0., 1.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(c));
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{1., 1.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(d));
+
+  // Check the middle.
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{.5, .5}, &value);
+  EXPECT_TRUE(value[0].EqualTo(.5 * a + .5 * d));
+
+  // Test the alternative call signature.
+  EXPECT_TRUE(
+      bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{0., 0.})[0].EqualTo(
+          a));
 }
 
 GTEST_TEST(BarycentricTest, MultidimensionalOutput) {
