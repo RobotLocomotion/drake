@@ -20,6 +20,7 @@ namespace {
 using api::RBounds;
 using api::HBounds;
 using multilane::ArcOffset;
+using Which = api::LaneEnd::Which;
 
 const double kVeryExact{1e-11};
 const double kWidth{2.};  // Lane and drivable width.
@@ -70,20 +71,42 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
   const double kOneLane{1};
   const double kZeroR0{0.};
   const double kNoShoulder{0.};
+
+  const int kRefLane{0};
+  const LaneLayout kMonolaneLayout(kNoShoulder, kNoShoulder, kOneLane, kRefLane,
+                                   kZeroR0);
+
   const auto& lane0 =
-      rb->Connect("lane0", kOneLane, kZeroR0, kNoShoulder, kNoShoulder,
-                  kRoadOrigin, ArcOffset(kArcRadius, -kArcDeltaTheta), kFlatZ);
-  const auto& lane1 = rb->Connect("lane1", kOneLane, kZeroR0, kNoShoulder,
-                                  kNoShoulder, lane0->end(), kLength, kFlatZ);
-  const auto& lane2 =
-      rb->Connect("lane2", kOneLane, kZeroR0, kNoShoulder, kNoShoulder,
-                  lane1->end(), ArcOffset(kArcRadius, kArcDeltaTheta), kFlatZ);
-  rb->Connect("lane3a", kOneLane, kZeroR0, kNoShoulder, kNoShoulder,
-              lane2->end(), kLength, kFlatZ);
-  rb->Connect("lane3b", kOneLane, kZeroR0, kNoShoulder, kNoShoulder,
-              lane2->end(), ArcOffset(kArcRadius, kArcDeltaTheta), kFlatZ);
-  rb->Connect("lane3c", kOneLane, kZeroR0, kNoShoulder, kNoShoulder,
-              lane2->end(), ArcOffset(kArcRadius, -kArcDeltaTheta), kFlatZ);
+      rb->Connect("lane0", kMonolaneLayout,
+                  StartReference().at(kRoadOrigin, Direction::kForward),
+                  ArcOffset(kArcRadius, -kArcDeltaTheta),
+                  EndReference().z_at(kFlatZ, Direction::kForward));
+
+  const auto& lane1 = rb->Connect(
+      "lane1", kMonolaneLayout,
+      StartReference().at(*lane0, Which::kFinish, Direction::kForward),
+      LineOffset(kLength), EndReference().z_at(kFlatZ, Direction::kForward));
+
+  const auto& lane2 = rb->Connect(
+      "lane2", kMonolaneLayout,
+      StartReference().at(*lane1, Which::kFinish, Direction::kForward),
+      ArcOffset(kArcRadius, kArcDeltaTheta),
+      EndReference().z_at(kFlatZ, Direction::kForward));
+
+  rb->Connect("lane3a", kMonolaneLayout,
+              StartReference().at(*lane2, Which::kFinish, Direction::kForward),
+              LineOffset(kLength),
+              EndReference().z_at(kFlatZ, Direction::kForward));
+
+  rb->Connect("lane3b", kMonolaneLayout,
+              StartReference().at(*lane2, Which::kFinish, Direction::kForward),
+              ArcOffset(kArcRadius, kArcDeltaTheta),
+              EndReference().z_at(kFlatZ, Direction::kForward));
+
+  rb->Connect("lane3c", kMonolaneLayout,
+              StartReference().at(*lane2, Which::kFinish, Direction::kForward),
+              ArcOffset(kArcRadius, -kArcDeltaTheta),
+              EndReference().z_at(kFlatZ, Direction::kForward));
 
   std::unique_ptr<const api::RoadGeometry> rg =
       rb->Build(api::RoadGeometryId{"multi_lane_with_branches"});
@@ -92,7 +115,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
   api::GeoPosition geo_pos{kArcRadius, -kArcRadius - kLength / 2., 0.};
 
   api::GeoPosition nearest_position{};
-  double distance;
+  double distance{};
   api::RoadPosition actual_position =
       rg->ToRoadPosition(geo_pos, nullptr, &nearest_position, &distance);
 
@@ -238,15 +261,24 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   const multilane::EndpointZ kFlatZ{0., 0., 0., 0.};
   const multilane::Endpoint kRoadOrigin0{kOriginXy0, kFlatZ};
   const multilane::Endpoint kRoadOrigin1{kOriginXy1, kFlatZ};
-  const double kOneLane{1};
+  const int kOneLane{1};
+  const int kRefLane{0};
   const double kZeroR0{0.};
   const double kNoShoulder{0.};
 
   // Define the lanes and connections.
-  rb->Connect("lane0", kOneLane, kZeroR0, kNoShoulder, kNoShoulder,
-              kRoadOrigin0, ArcOffset(50., -M_PI / 2.), kFlatZ);
-  rb->Connect("lane1", kOneLane, kZeroR0, kNoShoulder, kNoShoulder,
-              kRoadOrigin1, ArcOffset(50., M_PI / 2.), kFlatZ);
+  const LaneLayout kMonolaneLayout(kNoShoulder, kNoShoulder, kOneLane, kRefLane,
+                                   kZeroR0);
+
+  rb->Connect("lane0", kMonolaneLayout,
+              StartReference().at(kRoadOrigin0, Direction::kForward),
+              ArcOffset(50., -M_PI / 2.),
+              EndReference().z_at(kFlatZ, Direction::kForward));
+
+  rb->Connect("lane1", kMonolaneLayout,
+              StartReference().at(kRoadOrigin1, Direction::kForward),
+              ArcOffset(50., M_PI / 2.),
+              EndReference().z_at(kFlatZ, Direction::kForward));
 
   std::unique_ptr<const api::RoadGeometry> rg =
       rb->Build(api::RoadGeometryId{"disconnected_lanes"});
@@ -256,7 +288,7 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
                            0.};
 
   // Supply a hint with a position at the start of lane1.
-  double distance;
+  double distance{};
   api::RoadPosition hint =
       api::RoadPosition{GetLaneByJunctionId(*rg, "j:lane1"), {0., 0., 0.}};
   api::RoadPosition actual_position{};
@@ -292,10 +324,10 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
 //
 // Letters, such as `a`, `b`, etc. are the api::GeoPositions to test.
 GTEST_TEST(MultilaneLanesTest, MultipleLineLaneSegmentWithoutHint) {
-  const double kLaneWidth{2. * kWidth};
   const HBounds kElevationBounds{0., kHeight};
   const double kLinearTolerance{kVeryExact};
   const double kAngularTolerance{0.01 * M_PI};
+  const double kLaneWidth{2. * kWidth};
 
   auto builder = multilane::BuilderFactory().Make(
       kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
@@ -306,13 +338,17 @@ GTEST_TEST(MultilaneLanesTest, MultipleLineLaneSegmentWithoutHint) {
   const Endpoint kRoadOrigin{{0., 0., 0.}, kFlatZ};
   const double kLength{10.};
   const double kHalfLength{0.5 * kLength};
-  const double kThreeLanes{3};
+  const int kThreeLanes{3};
+  const int kRefLane{0};
   const double kZeroR0{0.};
   const double kShoulder{1.0};
-
+  const LaneLayout kThreeLaneLayout(kShoulder, kShoulder, kThreeLanes, kRefLane,
+                                    kZeroR0);
   // Creates a simple 3-line-lane segment road.
-  builder->Connect("s0", kThreeLanes, kZeroR0, kShoulder, kShoulder,
-                   kRoadOrigin, kLength, kFlatZ);
+  builder->Connect("s0", kThreeLaneLayout,
+                   StartReference().at(kRoadOrigin, Direction::kForward),
+                   LineOffset(kLength),
+                   EndReference().z_at(kFlatZ, Direction::kForward));
   std::unique_ptr<const api::RoadGeometry> rg =
       builder->Build(api::RoadGeometryId{"multi-lane-line-segment"});
 
