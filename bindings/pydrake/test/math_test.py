@@ -23,6 +23,13 @@ class TestBarycentricMesh(unittest.TestCase):
         self.assertEquals(mesh.Eval(values, (0, 1))[0], 2)
         self.assertEquals(mesh.Eval(values, (1, 1))[0], 3)
 
+    def test_weight(self):
+        mesh = BarycentricMesh([{0, 1}, {0, 1}])
+
+        (Ti, T) = mesh.EvalBarycentricWeights((0., 1.))
+        np.testing.assert_equal(Ti, [2, 2, 0])
+        np.testing.assert_almost_equal(T, (1., 0., 0.))
+
     def test_mesh_values_from(self):
         mesh = BarycentricMesh([{0, 1}, {0, 1}])
 
