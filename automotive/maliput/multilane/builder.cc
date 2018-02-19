@@ -16,35 +16,45 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
-Builder::Builder(double lane_width, const api::HBounds& elevation_bounds,
-                 double linear_tolerance, double angular_tolerance)
-    : lane_width_(lane_width),
-      elevation_bounds_(elevation_bounds),
+StartReferenceSpecBuilder ConnectionSpecFabric::StartReference() {
+  return StartReferenceSpecBuilder();
+}
+
+EndReferenceSpecBuilder ConnectionSpecFabric::EndReference() {
+  return EndReferenceSpecBuilder();
+}
+
+Builder::Builder(const api::HBounds& elevation_bounds, double linear_tolerance,
+                 double angular_tolerance)
+    : elevation_bounds_(elevation_bounds),
       linear_tolerance_(linear_tolerance),
       angular_tolerance_(angular_tolerance) {
-  DRAKE_DEMAND(lane_width_ >= 0.);
   DRAKE_DEMAND(linear_tolerance_ >= 0.);
   DRAKE_DEMAND(angular_tolerance_ >= 0.);
 }
 
-const Connection* Builder::Connect(const std::string& id, int num_lanes,
-                                   double r0, double left_shoulder,
-                                   double right_shoulder, const Endpoint& start,
-                                   double length, const EndpointZ& z_end) {
-  connections_.push_back(
-      std::make_unique<Connection>(id, start, z_end, num_lanes, r0, lane_width_,
-                                   left_shoulder, right_shoulder, length));
+const Connection* Builder::Connect(const std::string& id,
+                                   const LaneLayout& lane_layout,
+                                   const StartReferenceSpec& start_spec,
+                                   const LineOffset& line_offset,
+                                   const EndReferenceSpec& end_spec) {
+  connections_.push_back(std::make_unique<Connection>(
+      id, start_spec.endpoint(), end_spec.endpoint_z(), lane_layout.num_lanes(),
+      lane_layout.ref_r0(), lane_layout.lane_width(),
+      lane_layout.left_shoulder(), lane_layout.right_shoulder(),
+      line_offset.length()));
   return connections_.back().get();
 }
 
-const Connection* Builder::Connect(const std::string& id, int num_lanes,
-                                   double r0, double left_shoulder,
-                                   double right_shoulder, const Endpoint& start,
-                                   const ArcOffset& arc,
-                                   const EndpointZ& z_end) {
-  connections_.push_back(
-      std::make_unique<Connection>(id, start, z_end, num_lanes, r0, lane_width_,
-                                   left_shoulder, right_shoulder, arc));
+const Connection* Builder::Connect(const std::string& id,
+                                   const LaneLayout& lane_layout,
+                                   const StartReferenceSpec& start_spec,
+                                   const ArcOffset& arc_offset,
+                                   const EndReferenceSpec& end_spec) {
+  connections_.push_back(std::make_unique<Connection>(
+      id, start_spec.endpoint(), end_spec.endpoint_z(), lane_layout.num_lanes(),
+      lane_layout.ref_r0(), lane_layout.lane_width(),
+      lane_layout.left_shoulder(), lane_layout.right_shoulder(), arc_offset));
   return connections_.back().get();
 }
 

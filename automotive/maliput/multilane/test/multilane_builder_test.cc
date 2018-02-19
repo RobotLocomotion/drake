@@ -11,6 +11,7 @@
 
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
+#include "drake/automotive/maliput/multilane/test_utilities/multilane_types_compare.h"
 
 namespace drake {
 namespace maliput {
@@ -22,45 +23,181 @@ namespace {
 //                   road surface is continuous, off the centerline, at the
 //                   branch-point where two connections connect
 
+// StartReferenceSpec using an Endpoint.
+GTEST_TEST(StartReferenceSpecTest, Endpoint) {
+  const Endpoint point{{1., 2., 3.}, {4., 5., 6., 7.}};
+  const double kVeryExact{1e-15};
+
+  const StartReferenceSpec forward_dut =
+      ConnectionSpecFabric::StartReference().at(
+          point, ConnectionSpec::Direction::kForward);
+  EXPECT_TRUE(test::IsEndpointClose(forward_dut.endpoint(), point, kVeryExact));
+
+  const StartReferenceSpec reversed_dut =
+      ConnectionSpecFabric::StartReference().at(
+          point, ConnectionSpec::Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointClose(reversed_dut.endpoint(), point.reverse(),
+                                    kVeryExact));
+}
+
+// StartReferenceSpec using a connection's reference curve.
+GTEST_TEST(StartReferenceSpec, Connection) {
+  const EndpointZ kFlazEndpointZ{0., 0., 0., 0.};
+  const Endpoint kStartEndpoint{{1., 2., 3.}, kFlazEndpointZ};
+  const Connection conn("conn", kStartEndpoint, kFlazEndpointZ, 2, 0., 1., 1.5,
+                        1.5, 10.);
+  const double kVeryExact{1e-15};
+
+  const StartReferenceSpec forward_start_dut =
+      ConnectionSpecFabric::StartReference().at(
+          conn, api::LaneEnd::Which::kStart,
+          ConnectionSpec::Direction::kForward);
+  EXPECT_TRUE(test::IsEndpointClose(forward_start_dut.endpoint(), conn.start(),
+                                    kVeryExact));
+
+  const StartReferenceSpec reversed_start_dut =
+      ConnectionSpecFabric::StartReference().at(
+          conn, api::LaneEnd::Which::kStart,
+          ConnectionSpec::Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointClose(reversed_start_dut.endpoint(),
+                                    conn.start().reverse(), kVeryExact));
+
+  const StartReferenceSpec forward_end_dut =
+      ConnectionSpecFabric::StartReference().at(
+          conn, api::LaneEnd::Which::kFinish,
+          ConnectionSpec::Direction::kForward);
+  EXPECT_TRUE(test::IsEndpointClose(forward_end_dut.endpoint(), conn.end(),
+                                    kVeryExact));
+
+  const StartReferenceSpec reversed_end_dut =
+      ConnectionSpecFabric::StartReference().at(
+          conn, api::LaneEnd::Which::kFinish,
+          ConnectionSpec::Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointClose(reversed_end_dut.endpoint(),
+                                    conn.end().reverse(), kVeryExact));
+}
+
+// EndReferenceSpec using an Endpoint.
+GTEST_TEST(EndReferenceSpecTest, Endpoint) {
+  const EndpointZ z_point{4., 5., 6., 7.};
+  const Endpoint point{{1., 2., 3.}, z_point};
+  const double kVeryExact{1e-15};
+
+  const EndReferenceSpec forward_dut = ConnectionSpecFabric::EndReference().at(
+      point, ConnectionSpec::Direction::kForward);
+  EXPECT_TRUE(
+      test::IsEndpointZClose(forward_dut.endpoint_z(), z_point, kVeryExact));
+
+  const EndReferenceSpec reversed_dut = ConnectionSpecFabric::EndReference().at(
+      point, ConnectionSpec::Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointZClose(reversed_dut.endpoint_z(),
+                                     z_point.reverse(), kVeryExact));
+
+  const EndReferenceSpec z_forward_dut =
+      ConnectionSpecFabric::EndReference().z_at(
+          z_point, ConnectionSpec::Direction::kForward);
+  EXPECT_TRUE(
+      test::IsEndpointZClose(z_forward_dut.endpoint_z(), z_point, kVeryExact));
+
+  const EndReferenceSpec z_reversed_dut =
+      ConnectionSpecFabric::EndReference().z_at(
+          z_point, ConnectionSpec::Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointZClose(z_reversed_dut.endpoint_z(),
+                                     z_point.reverse(), kVeryExact));
+}
+
+// LaneLayout check.
+GTEST_TEST(LaneLayeoutTest, ConstructorAndAccessors) {
+  const double kLaneWidth{1.2345};
+  const double kLeftShoulder{6.789};
+  const double kRightShoulder{0.123};
+  const int kNumLanes{4};
+  const int kRefLane{2};
+  const double kRefR0{-3.14};
+  const LaneLayout dut(kLaneWidth, kLeftShoulder, kRightShoulder, kNumLanes,
+                       kRefLane, kRefR0);
+
+  EXPECT_EQ(dut.lane_width(), kLaneWidth);
+  EXPECT_EQ(dut.left_shoulder(), kLeftShoulder);
+  EXPECT_EQ(dut.right_shoulder(), kRightShoulder);
+  EXPECT_EQ(dut.num_lanes(), kNumLanes);
+  EXPECT_EQ(dut.ref_lane(), kRefLane);
+  EXPECT_EQ(dut.ref_r0(), kRefR0);
+}
+
 GTEST_TEST(MultilaneBuilderTest, Fig8) {
-  const double kLaneWidth = 4.;
-  const double kLeftShoulder = 2.;
-  const double kRightShoulder = 2.;
   const api::HBounds kElevationBounds(0., 5.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kElevationBounds, kLinearTolerance, kAngularTolerance);
+
+  const double kLaneWidth = 4.;
+  const double kLeftShoulder = 2.;
+  const double kRightShoulder = 2.;
+  const int kOneLane = 1;
+  const int kRefLane = 0;
+  const double kRefR0 = 0.;
+  const LaneLayout kLaneLayout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                               kOneLane, kRefLane, kRefR0);
+
+  const ArcOffset kCounterClockwiseArc(50., 0.75 * M_PI);  // 135deg, 50m radius
+  const ArcOffset kClockwiseArc(50., -0.75 * M_PI);        // 135deg, 50m radius
+  const LineOffset kLineOffset(50.);
 
   const EndpointZ kLowFlatZ(0., 0., 0., 0.);
   const EndpointZ kMidFlatZ(3., 0., 0., 0.);
   const EndpointZ kMidTiltLeftZ(3., 0., -0.4, 0.);
   const EndpointZ kMidTiltRightZ(3., 0., 0.4, 0.);
   const EndpointZ kHighFlatZ(6., 0., 0., 0.);
+  const Endpoint kStartEndpoint{{0., 0., -M_PI / 4.}, kLowFlatZ};
 
-  const ArcOffset kCounterClockwiseArc(50., 0.75 * M_PI);  // 135deg, 50m radius
-  const ArcOffset kClockwiseArc(50., -0.75 * M_PI);  // 135deg, 50m radius
+  const StartReferenceSpec start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          kStartEndpoint, ConnectionSpec::Direction::kForward);
+  const EndReferenceSpec mid_flat_end_spec =
+      ConnectionSpecFabric::EndReference().z_at(
+          kMidFlatZ, ConnectionSpec::Direction::kForward);
+  const EndReferenceSpec mid_tilt_left_end_spec =
+      ConnectionSpecFabric::EndReference().z_at(
+          kMidTiltLeftZ, ConnectionSpec::Direction::kForward);
+  const EndReferenceSpec mid_tilt_right_end_spec =
+      ConnectionSpecFabric::EndReference().z_at(
+          kMidTiltRightZ, ConnectionSpec::Direction::kForward);
+  const EndReferenceSpec high_flat_end_spec =
+      ConnectionSpecFabric::EndReference().z_at(
+          kHighFlatZ, ConnectionSpec::Direction::kForward);
 
-  const int kOneLane = 1;
-  const double kZeroR0 = 0.;
+  auto c0 =
+      b.Connect("0", kLaneLayout, start_spec, kLineOffset, mid_flat_end_spec);
 
-  Endpoint start {{0., 0., -M_PI / 4.}, kLowFlatZ};
-  auto c0 = b.Connect("0", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                      start, 50., kMidFlatZ);
+  const StartReferenceSpec c0_end = ConnectionSpecFabric::StartReference().at(
+      *c0, api::LaneEnd::Which::kFinish, ConnectionSpec::Direction::kForward);
+  auto c1 = b.Connect("1", kLaneLayout, c0_end, kCounterClockwiseArc,
+                      mid_tilt_left_end_spec);
 
-  auto c1 = b.Connect("1", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                      c0->end(), kCounterClockwiseArc, kMidTiltLeftZ);
-  auto c2 = b.Connect("2", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                      c1->end(), kCounterClockwiseArc, kMidFlatZ);
+  const StartReferenceSpec c1_end = ConnectionSpecFabric::StartReference().at(
+      *c1, api::LaneEnd::Which::kFinish, ConnectionSpec::Direction::kForward);
+  auto c2 = b.Connect("2", kLaneLayout, c1_end, kCounterClockwiseArc,
+                      mid_flat_end_spec);
 
-  auto c3 = b.Connect("3", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                      c2->end(), 50., kHighFlatZ);
-  auto c4 = b.Connect("4", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                      c3->end(), 50., kMidFlatZ);
+  const StartReferenceSpec c2_end = ConnectionSpecFabric::StartReference().at(
+      *c2, api::LaneEnd::Which::kFinish, ConnectionSpec::Direction::kForward);
+  auto c3 =
+      b.Connect("3", kLaneLayout, c2_end, kLineOffset, high_flat_end_spec);
 
-  auto c5 = b.Connect("5", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                      c4->end(), kClockwiseArc, kMidTiltRightZ);
-  auto c6 = b.Connect("6", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                      c5->end(), kClockwiseArc, kMidFlatZ);
+  const StartReferenceSpec c3_end = ConnectionSpecFabric::StartReference().at(
+      *c3, api::LaneEnd::Which::kFinish, ConnectionSpec::Direction::kForward);
+  auto c4 = b.Connect("4", kLaneLayout, c3_end, kLineOffset, mid_flat_end_spec);
+
+  const StartReferenceSpec c4_end = ConnectionSpecFabric::StartReference().at(
+      *c4, api::LaneEnd::Which::kFinish, ConnectionSpec::Direction::kForward);
+  auto c5 = b.Connect("5", kLaneLayout, c4_end, kClockwiseArc,
+                      mid_tilt_right_end_spec);
+
+  const StartReferenceSpec c5_end = ConnectionSpecFabric::StartReference().at(
+      *c5, api::LaneEnd::Which::kFinish, ConnectionSpec::Direction::kForward);
+  auto c6 =
+      b.Connect("6", kLaneLayout, c5_end, kClockwiseArc, mid_flat_end_spec);
 
   // Tweak ends to check if fuzzy-matching is working.
   Endpoint c6end = c6->end();
@@ -70,13 +207,19 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
                    EndpointZ(c6end.z().z() + kLinearTolerance * 0.5,
                              c6end.z().z_dot(),
                              c6end.z().theta(), c6end.z().theta_dot()));
+  const StartReferenceSpec c6end_spec =
+      ConnectionSpecFabric::StartReference().at(
+          c6end, ConnectionSpec::Direction::kForward);
+
   EndpointZ c0start_z = c0->start().z();
   c0start_z = EndpointZ(c0start_z.z() - kLinearTolerance * 0.5,
                         c0start_z.z_dot(),
                         c0start_z.theta(), c0start_z.theta_dot());
+  const EndReferenceSpec c0start_z_spec =
+      ConnectionSpecFabric::EndReference().z_at(
+          c0start_z, ConnectionSpec::Direction::kForward);
 
-  b.Connect("7", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder, c6end, 50.,
-            c0start_z);
+  b.Connect("7", kLaneLayout, c6end_spec, kLineOffset, c0start_z_spec);
 
   std::unique_ptr<const api::RoadGeometry> rg =
       b.Build(api::RoadGeometryId{"figure-eight"});
@@ -118,41 +261,49 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
 
 
 GTEST_TEST(MultilaneBuilderTest, QuadRing) {
-  const double kLaneWidth = 4.;
-  const double kLeftShoulder = 2.;
-  const double kRightShoulder = 2.;
   const api::HBounds kElevationBounds(0., 5.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kElevationBounds, kLinearTolerance, kAngularTolerance);
 
-  const EndpointZ kFlatZ(0., 0., 0., 0.);
+  const double kLaneWidth = 4.;
+  const double kLeftShoulder = 2.;
+  const double kRightShoulder = 2.;
+  const int kOneLane = 1;
+  const int kRefLane = 0;
+  const double kRefR0 = 0.;
+  const LaneLayout kLaneLayout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                               kOneLane, kRefLane, kRefR0);
+
   const ArcOffset kLargeClockwiseLoop(150., -2. * M_PI);
   const ArcOffset kSmallClockwiseLoop(50., -2. * M_PI);
   const ArcOffset kLargeCounterClockwiseLoop(150., 2. * M_PI);
   const ArcOffset kSmallCounterClockwiseLoop(50., 2. * M_PI);
 
-  const int kOneLane = 1;
-  const double kZeroR0 = 0.;
-
-  Endpoint northbound {{0., 0., M_PI / 2.}, kFlatZ};
+  const EndpointZ kFlatZ(0., 0., 0., 0.);
+  const Endpoint northbound{{0., 0., M_PI / 2.}, kFlatZ};
+  const StartReferenceSpec northbound_forward_spec =
+      ConnectionSpecFabric::StartReference().at(
+          northbound, ConnectionSpec::Direction::kForward);
+  const StartReferenceSpec northbound_reverse_spec =
+      ConnectionSpecFabric::StartReference().at(
+          northbound, ConnectionSpec::Direction::kReverse);
+  const EndReferenceSpec flat_z_spec =
+      ConnectionSpecFabric::EndReference().z_at(
+          kFlatZ, ConnectionSpec::Direction::kForward);
 
   // This heads -y, loops to -x, clockwise, back to origin.
-  auto left1 =
-      b.Connect("left1", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                northbound.reverse(), kLargeClockwiseLoop, kFlatZ);
+  auto left1 = b.Connect("left1", kLaneLayout, northbound_reverse_spec,
+                         kLargeClockwiseLoop, flat_z_spec);
   // This heads +y, loops to -x, counterclockwise, back to origin.
-  auto left0 =
-      b.Connect("left0", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                northbound, kSmallCounterClockwiseLoop, kFlatZ);
+  auto left0 = b.Connect("left0", kLaneLayout, northbound_forward_spec,
+                         kSmallCounterClockwiseLoop, flat_z_spec);
   // This heads +y, loops to +x, clockwise, back to origin.
-  auto right0 =
-      b.Connect("right0", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                northbound, kSmallClockwiseLoop, kFlatZ);
+  auto right0 = b.Connect("right0", kLaneLayout, northbound_forward_spec,
+                          kSmallClockwiseLoop, flat_z_spec);
   // This heads -y, loops to +x, counterclockwise, back to origin.
-  auto right1 =
-      b.Connect("right1", kOneLane, kZeroR0, kLeftShoulder, kRightShoulder,
-                northbound.reverse(), kLargeCounterClockwiseLoop, kFlatZ);
+  auto right1 = b.Connect("right1", kLaneLayout, northbound_reverse_spec,
+                          kLargeCounterClockwiseLoop, flat_z_spec);
 
   // There is only one branch-point in this topology, since every lane is
   // a ring connecting back to itself and all other lanes.
@@ -258,14 +409,17 @@ struct BranchPointLaneIds {
 
 class MultilaneBuilderPrimitivesTest : public ::testing::Test {
  protected:
-  const double kR0{10.};
+  const double kRefR0{10.};
   const double kLaneWidth{4.};
   const double kLeftShoulder{2.};
   const double kRightShoulder{2.};
+  const int kNumLanes{3};
+  const int kRefLane{0};
+  const LaneLayout kLaneLayout{kLaneWidth, kLeftShoulder, kRightShoulder,
+                               kNumLanes,  kRefLane,      kRefR0};
   const api::HBounds kElevationBounds{0., 5.};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.01 * M_PI};
-  const int kNumLanes{3};
   const EndpointZ kLowFlatZ{0., 0., 0., 0.};
   const double kStartHeading{-M_PI / 4.};
   const Endpoint start{{0., 0., kStartHeading}, kLowFlatZ};
@@ -273,10 +427,16 @@ class MultilaneBuilderPrimitivesTest : public ::testing::Test {
 
 // Checks that a multi-lane line segment is correctly created.
 TEST_F(MultilaneBuilderPrimitivesTest, MultilaneLineSegment) {
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
-  const double kLength = 50.;
-  b.Connect("c0", kNumLanes, kR0, kLeftShoulder, kRightShoulder, start, kLength,
-            kLowFlatZ);
+  Builder b(kElevationBounds, kLinearTolerance, kAngularTolerance);
+
+  const LineOffset kLineOffset(50.);
+  const StartReferenceSpec start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          start, ConnectionSpec::Direction::kForward);
+  const EndReferenceSpec end_spec = ConnectionSpecFabric::EndReference().z_at(
+      kLowFlatZ, ConnectionSpec::Direction::kForward);
+  b.Connect("c0", kLaneLayout, start_spec, kLineOffset, end_spec);
+
   std::unique_ptr<const api::RoadGeometry> rg =
       b.Build(api::RoadGeometryId{"multilane-line-segment"});
 
@@ -301,7 +461,7 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneLineSegment) {
     // applied.
     const Vector3<double> lane_start_geo =
         start_reference_curve +
-        (kR0 + static_cast<double>(i) * kLaneWidth) * r_versor;
+        (kRefR0 + static_cast<double>(i) * kLaneWidth) * r_versor;
     EXPECT_TRUE(api::test::IsGeoPositionClose(
         lane->ToGeoPosition({0., 0., 0.}),
         api::GeoPosition::FromXyz(lane_start_geo), kLinearTolerance));
@@ -323,11 +483,18 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneLineSegment) {
 
 // Checks that a multi-lane arc segment is correctly created.
 TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kElevationBounds, kLinearTolerance, kAngularTolerance);
+
+  const StartReferenceSpec start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          start, ConnectionSpec::Direction::kForward);
+  const EndReferenceSpec end_spec = ConnectionSpecFabric::EndReference().z_at(
+      kLowFlatZ, ConnectionSpec::Direction::kForward);
   const double kRadius = 30.;
   const double kDTheta = 0.5 * M_PI;
-  b.Connect("c0", kNumLanes, kR0, kLeftShoulder, kRightShoulder, start,
-            ArcOffset(kRadius, kDTheta), kLowFlatZ);
+  b.Connect("c0", kLaneLayout, start_spec, ArcOffset(kRadius, kDTheta),
+            end_spec);
+
   std::unique_ptr<const api::RoadGeometry> rg =
       b.Build(api::RoadGeometryId{"multilane-arc-segment"});
 
@@ -352,7 +519,7 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
     // applied.
     const Vector3<double> lane_start_geo =
         start_reference_curve +
-        (kR0 + static_cast<double>(i) * kLaneWidth) * r_versor;
+        (kRefR0 + static_cast<double>(i) * kLaneWidth) * r_versor;
     EXPECT_TRUE(api::test::IsGeoPositionClose(
         lane->ToGeoPosition({0., 0., 0.}),
         api::GeoPosition::FromXyz(lane_start_geo), kLinearTolerance));
@@ -415,6 +582,7 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
   const double kAngularTolerance{0.01 * M_PI};
   const int kTwoLanes{2};
   const int kThreeLanes{3};
+  const int kRefLane{0};
   const EndpointZ kLowFlatZ{0., 0., 0., 0.};
 
   const Endpoint endpoint_a{{0., 0., 0.}, kLowFlatZ};
@@ -425,24 +593,69 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
   const Endpoint endpoint_f{{60., 14., -M_PI / 2.}, kLowFlatZ};
   const Endpoint endpoint_g{{50., -6., -M_PI / 2.}, kLowFlatZ};
 
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kElevationBounds, kLinearTolerance, kAngularTolerance);
+
+  const EndReferenceSpec end_spec = ConnectionSpecFabric::EndReference().z_at(
+      kLowFlatZ, ConnectionSpec::Direction::kReverse);
+
   // Creates connections.
-  b.Connect("c1", kThreeLanes, 0, kLeftShoulder, kRightShoulder, endpoint_a,
-            50., kLowFlatZ);
-  auto c2 = b.Connect("c2", kTwoLanes, 4., kLeftShoulder, kRightShoulder,
-                      endpoint_b, 20., kLowFlatZ);
-  b.Connect("c3", kTwoLanes, 4., kLeftShoulder, kRightShoulder, endpoint_c, 30.,
-            kLowFlatZ);
-  auto c4 = b.Connect("c4", kThreeLanes, 0., kLeftShoulder, kRightShoulder,
-                      endpoint_b, ArcOffset(6., -M_PI / 2.), kLowFlatZ);
-  b.Connect("c5", kTwoLanes, 10., kLeftShoulder, kRightShoulder, endpoint_d,
-            36., kLowFlatZ);
-  auto c6 = b.Connect("c6", kTwoLanes, 0., kLeftShoulder, kRightShoulder,
-                      endpoint_f, ArcOffset(10., M_PI / 2.), kLowFlatZ);
-  auto c7 = b.Connect("c7", kTwoLanes, 10., kLeftShoulder, kRightShoulder,
-                      endpoint_e, 20., kLowFlatZ);
-  b.Connect("c8", kThreeLanes, 6., kLeftShoulder, kRightShoulder, endpoint_g,
-            44., kLowFlatZ);
+  const LaneLayout c1_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kThreeLanes, kRefLane, 0.);
+  const StartReferenceSpec a_start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          endpoint_a, ConnectionSpec::Direction::kForward);
+  b.Connect("c1", c1_lane_layout, a_start_spec, LineOffset(50.), end_spec);
+
+  const LaneLayout c2_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kTwoLanes, kRefLane, 4.);
+  const StartReferenceSpec b_start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          endpoint_b, ConnectionSpec::Direction::kForward);
+  auto c2 = b.Connect("c2", c2_lane_layout, b_start_spec, LineOffset((20.)),
+                      end_spec);
+
+  const LaneLayout c3_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kTwoLanes, kRefLane, 4.);
+  const StartReferenceSpec c_start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          endpoint_c, ConnectionSpec::Direction::kForward);
+  b.Connect("c3", c3_lane_layout, c_start_spec, LineOffset(30.), end_spec);
+
+  const LaneLayout c4_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kThreeLanes, kRefLane, 0.);
+  auto c4 = b.Connect("c4", c4_lane_layout, b_start_spec,
+                      ArcOffset(6., -M_PI / 2.), end_spec);
+
+  const LaneLayout c5_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kTwoLanes, kRefLane, 10.);
+  const StartReferenceSpec d_start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          endpoint_d, ConnectionSpec::Direction::kForward);
+  b.Connect("c5", c5_lane_layout, d_start_spec, LineOffset(36.), end_spec);
+
+  const LaneLayout c6_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kTwoLanes, kRefLane, 0.);
+  const StartReferenceSpec f_start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          endpoint_f, ConnectionSpec::Direction::kForward);
+  auto c6 = b.Connect("c6", c6_lane_layout, f_start_spec,
+                      ArcOffset(10., M_PI / 2.), end_spec);
+
+  const LaneLayout c7_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kTwoLanes, kRefLane, 10.);
+  const StartReferenceSpec e_start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          endpoint_e, ConnectionSpec::Direction::kForward);
+  auto c7 =
+      b.Connect("c7", c7_lane_layout, e_start_spec, LineOffset(20.), end_spec);
+
+  const LaneLayout c8_lane_layout(kLaneWidth, kLeftShoulder, kRightShoulder,
+                                  kThreeLanes, kRefLane, 6.);
+  const StartReferenceSpec g_start_spec =
+      ConnectionSpecFabric::StartReference().at(
+          endpoint_g, ConnectionSpec::Direction::kForward);
+  b.Connect("c8", c8_lane_layout, g_start_spec, LineOffset(44.), end_spec);
+
   // Creates the crossing junction.
   std::vector<const Connection*> connections{c2, c4, c6, c7};
   b.MakeGroup("cross", connections);
@@ -521,6 +734,7 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
       for (int k = 0; k < segment->num_lanes(); k++) {
         // Checks each Lane.
         const api::Lane* const lane = segment->lane(k);
+
         EXPECT_NE(lane_truth_map.find(lane->id().string()),
                   lane_truth_map.end());
         const BranchPointLaneIds& bp_lane_ids =
