@@ -9,7 +9,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(_math, m) {
+PYBIND11_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
 
