@@ -39,21 +39,23 @@ GTEST_TEST(FittedValueIterationTest, SingleIntegrator) {
 
   const double timestep = 1.0;
 
-  auto solution = FittedValueIteration(&simulator, cost_function, state_grid,
-                                       input_grid, timestep);
+  std::unique_ptr<BarycentricMeshSystem<double>> policy;
+  Eigen::RowVectorXd cost_to_go_values;
+  std::tie(policy, cost_to_go_values) = FittedValueIteration(
+      &simulator, cost_function, state_grid, input_grid, timestep);
 
   // Optimal cost-to-go is |x|.
   Eigen::RowVectorXd J_expected(static_cast<int>(state_grid[0].size()));
   J_expected << 4., 3., 2., 1., 0., 1., 2., 3., 4.;
-  EXPECT_TRUE(CompareMatrices(solution.second, J_expected, 1e-8));
+  EXPECT_TRUE(CompareMatrices(cost_to_go_values, J_expected, 1e-8));
 
   // Optimal policy is 1 if x < 0, 0 if x = 0, -1 if x > 0.
-  EXPECT_EQ(solution.first->get_output_port().size(), 1);
-  auto context = solution.first->CreateDefaultContext();
-  auto output = solution.first->get_output_port().Allocate(*context);
+  EXPECT_EQ(policy->get_output_port().size(), 1);
+  auto context = policy->CreateDefaultContext();
+  auto output = policy->get_output_port().Allocate(*context);
   for (const double x : state_grid[0]) {
     context->FixInputPort(0, Vector1d{x});
-    solution.first->get_output_port().Calc(*context, output.get());
+    policy->get_output_port().Calc(*context, output.get());
     double y = output->GetValue<BasicVector<double>>()[0];
     EXPECT_EQ(y, (x < 0) - (x > 0));  // implements -sgn(x).
   }
@@ -80,15 +82,18 @@ GTEST_TEST(FittedValueIterationTest, PeriodicBoundary) {
   const double timestep = 1.0;
 
   DynamicProgrammingOptions options;
-  options.state_indices_with_periodic_boundary_conditions = {0};
+  options.periodic_boundary_conditions.push_back(
+      DynamicProgrammingOptions::PeriodicBoundaryCondition(0, -4., 4.));
 
-  auto solution = FittedValueIteration(&simulator, cost_function, state_grid,
-                                       input_grid, timestep, options);
+  std::unique_ptr<BarycentricMeshSystem<double>> policy;
+  Eigen::RowVectorXd cost_to_go_values;
+  std::tie(policy, cost_to_go_values) = FittedValueIteration(
+      &simulator, cost_function, state_grid, input_grid, timestep, options);
 
   // Optimal cost-to-go is |x|.
   Eigen::RowVectorXd J_expected(static_cast<int>(state_grid[0].size()));
   J_expected << 1., 0., 1., 2., 3., 4., 3., 2., 1.;
-  EXPECT_TRUE(CompareMatrices(solution.second, J_expected, 1e-8));
+  EXPECT_TRUE(CompareMatrices(cost_to_go_values, J_expected, 1e-4));
 }
 
 // Plot in Matlab.  (Costs little here and is very useful for any future
@@ -163,9 +168,12 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
 
   DynamicProgrammingOptions options;
   options.visualization_callback = VisualizationCallback;
+  options.discount_factor = 1.;
 
-  auto solution = FittedValueIteration(&simulator, cost_function, state_grid,
-                                       input_grid, timestep, options);
+  std::unique_ptr<BarycentricMeshSystem<double>> policy;
+  Eigen::MatrixXd cost_to_go_values;
+  std::tie(policy, cost_to_go_values) = FittedValueIteration(
+      &simulator, cost_function, state_grid, input_grid, timestep, options);
 
   // Note: Compare against continuous time solution, even though we are solving
   // a discretized version.  Confirmed in MATLAB (due to #8034) that cost-to-go
@@ -188,9 +196,50 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
       // approximation on the grid and the (more importantly) the discretization
       // of actions.  The matlab plots above are as expected, and this guard
       // will make sure they remain close.
-      EXPECT_NEAR(state_mesh.Eval(solution.second, x)[0], J, 1. + .2 * J);
+      EXPECT_NEAR(state_mesh.Eval(cost_to_go_values, x)[0], J, 1. + .2 * J);
     }
   }
+}
+
+// Minimum-time problem for the single integrator (which has a trivial solution,
+// that can be achieved exactly on a mesh when timestep=1).
+// ẋ = u,  u ∈ {-1,0,1}.
+// g(x,u) = 0 if x == 0, 1 otherwise.
+// The optimal solution is: J(x) = |x|.
+GTEST_TEST(LinearProgrammingTest, SingleIntegrator) {
+  const int kNumStates = 1;
+  Integrator<double> sys(kNumStates);
+
+  Simulator<double> simulator(sys);
+
+  // minimum time cost function (1 for all non-zero states).
+  const auto cost_function = [](const Context<double>& context) {
+    double x = context.get_continuous_state()[0];
+    return (std::abs(x) > 0.1) ? 1. : 0.;
+  };
+
+  const int kNumParameters = 1;
+  const auto cost_to_go_function = [](
+      const Eigen::Ref<const Eigen::VectorXd>& state,
+      const VectorX<symbolic::Variable>& parameters) {
+    using std::abs;
+    return parameters[0] * abs(state[0]);
+  };
+
+  Eigen::RowVectorXd state_samples(9);
+  state_samples << -4., -3., -2., -1., 0., 1., 2., 3., 4.;
+  const Eigen::RowVector3d input_samples{-1., 0., 1.};
+
+  const double timestep = 1.0;
+  DynamicProgrammingOptions options;
+  options.discount_factor = 1.;
+
+  Eigen::VectorXd J = LinearProgrammingApproximateDynamicProgramming(
+      &simulator, cost_function, cost_to_go_function, kNumParameters,
+      state_samples, input_samples, timestep, options);
+
+  // Optimal cost-to-go is |x|.
+  EXPECT_NEAR(J[0], 1., 1e-6);
 }
 
 }  // namespace
