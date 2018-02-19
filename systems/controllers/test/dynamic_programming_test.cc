@@ -61,44 +61,6 @@ GTEST_TEST(FittedValueIterationTest, SingleIntegrator) {
   }
 }
 
-// Minimum-time problem for the single integrator (which has a trivial solution,
-// that can be achieved exactly on a mesh when timestep=1).
-// ẋ = u,  u ∈ {-1,0,1}.
-// g(x,u) = 0 if x == 0, 1 otherwise.
-// The optimal solution is: J(x) = |x|.
-// Note: Only testing very small programs for
-// LinearProgrammingApproximateDynamicProgramming here because
-//  1) they are expensive even with Gurobi
-//  2) in non-Gurobi-enabled builds, they run with an even weak solver.
-GTEST_TEST(LinearProgrammingTest, SingleIntegrator) {
-  const int kNumStates = 1;
-  Integrator<double> sys(kNumStates);
-
-  Simulator<double> simulator(sys);
-
-  // minimum time cost function (1 for all non-zero states).
-  const auto cost_function = [](const Context<double>& context) {
-    double x = context.get_continuous_state()[0];
-    return (std::abs(x) > 0.1) ? 1. : 0.;
-  };
-
-  const math::BarycentricMesh<double>::MeshGrid state_grid(
-      {{-4., -3., -2., -1., 0., 1., 2., 3., 4.}});
-  const math::BarycentricMesh<double>::MeshGrid input_grid({{-1., 0., 1.}});
-
-  const double timestep = 1.0;
-  DynamicProgrammingOptions options;
-  options.discount_factor = .99;
-
-  Eigen::RowVectorXd J = LinearProgrammingApproximateDynamicProgramming(
-      &simulator, cost_function, state_grid, input_grid, timestep, options);
-
-  // Optimal cost-to-go is |x|.
-  Eigen::RowVectorXd J_expected(static_cast<int>(state_grid[0].size()));
-  J_expected << 3.9404, 2.9701, 1.99, 1., 0., 1., 1.99, 2.9701, 3.9404;
-  EXPECT_TRUE(CompareMatrices(J, J_expected, 1e-4));
-}
-
 // Single integrator minimum time problem, but with the goal at -3, and the
 // state wrapped on itself.
 GTEST_TEST(FittedValueIterationTest, PeriodicBoundary) {
@@ -237,6 +199,47 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
                   1. + .2 * J);
     }
   }
+}
+
+// Minimum-time problem for the single integrator (which has a trivial solution,
+// that can be achieved exactly on a mesh when timestep=1).
+// ẋ = u,  u ∈ {-1,0,1}.
+// g(x,u) = 0 if x == 0, 1 otherwise.
+// The optimal solution is: J(x) = |x|.
+GTEST_TEST(LinearProgrammingTest, SingleIntegrator) {
+  const int kNumStates = 1;
+  Integrator<double> sys(kNumStates);
+
+  Simulator<double> simulator(sys);
+
+  // minimum time cost function (1 for all non-zero states).
+  const auto cost_function = [](const Context<double>& context) {
+    double x = context.get_continuous_state()[0];
+    return (std::abs(x) > 0.1) ? 1. : 0.;
+  };
+
+  const int kNumParameters = 1;
+  const auto cost_to_go_function = [](
+      const Eigen::Ref<const Eigen::VectorXd>& state,
+      const VectorX<symbolic::Variable>& parameters) {
+    using std::abs;
+    return parameters[0] * abs(state[0]);
+  };
+
+  Eigen::RowVectorXd state_samples(9);
+  state_samples << -4., -3., -2., -1., 0., 1., 2., 3., 4.;
+  const Eigen::RowVector3d input_samples{-1., 0., 1.};
+
+  const double timestep = 1.0;
+  DynamicProgrammingOptions options;
+  options.discount_factor = 1.;
+
+  Eigen::VectorXd J = LinearProgrammingApproximateDynamicProgramming(
+      &simulator, cost_function, cost_to_go_function, kNumParameters,
+      state_samples, input_samples, timestep, options);
+
+  // Optimal cost-to-go is |x|.
+  EXPECT_NEAR(J[0], 1., 1e-6);
 }
 
 }  // namespace

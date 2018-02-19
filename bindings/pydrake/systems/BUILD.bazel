@@ -89,8 +89,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "controllers_py",
     cc_deps = [
+        "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/util:wrap_function",
-        "//systems/controllers:dynamic_programming",
     ],
     cc_so_name = "controllers",
     cc_srcs = ["controllers_py.cc"],
@@ -100,6 +100,7 @@ drake_pybind_library(
         ":module_py",
         ":primitives_py",
         "//bindings/pydrake:math_py",
+        "//bindings/pydrake:symbolic_py",
     ],
 )
 
