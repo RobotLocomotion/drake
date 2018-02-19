@@ -70,6 +70,12 @@ class StartReference {
   }
 };
 
+/// Streams a string representation of `start_spec` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out,
+                         const StartReference::Spec& start_spec);
+
 /// Provides methods to build an EndReference::Spec.
 class EndReference {
  public:
@@ -118,6 +124,11 @@ class EndReference {
                                             : Spec(endpoint_z.reverse());
   }
 };
+
+/// Streams a string representation of `end_spec` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const EndReference::Spec& end_spec);
 
 /// Wraps all the lane-related specifications in a Connection.
 class LaneLayout {

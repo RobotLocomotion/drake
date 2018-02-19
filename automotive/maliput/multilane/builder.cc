@@ -16,6 +16,16 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
+std::ostream& operator<<(std::ostream& out,
+                         const StartReference::Spec& start_spec) {
+  return out << "(endpoint: " << start_spec.endpoint() << ")";
+}
+
+std::ostream& operator<<(std::ostream& out,
+                         const EndReference::Spec& end_spec) {
+  return out << "(endpoint_z: " << end_spec.endpoint_z() << ")";
+}
+
 std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout) {
   return out << "(left_shoulder: " << lane_layout.left_shoulder()
              << ", right_shoulder: " << lane_layout.right_shoulder()
@@ -48,7 +58,7 @@ const Connection* Builder::Connect(const std::string& id,
   connections_.push_back(std::make_unique<Connection>(
       id, start_spec.endpoint(), end_spec.endpoint_z(), lane_layout.num_lanes(),
       lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
-      lane_layout.right_shoulder(), line_offset.length()));
+      lane_layout.right_shoulder(), line_offset));
   return connections_.back().get();
 }
 
