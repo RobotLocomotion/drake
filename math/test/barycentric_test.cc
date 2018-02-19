@@ -45,6 +45,11 @@ GTEST_TEST(BarycentricTest, GetMeshPoints) {
 
   // Test the alternative call signature.
   EXPECT_TRUE(CompareMatrices(bary.get_mesh_point(0), Vector3d{0, 2, 3}));
+
+  // Test the batch retrieval.
+  const MatrixXd points = bary.get_all_mesh_points();
+  EXPECT_EQ(points.cols(), 4);
+  EXPECT_TRUE(CompareMatrices(points.col(3), Vector3d{1, 2, 4}));
 }
 
 GTEST_TEST(BarycentricTest, EvalWeights) {
