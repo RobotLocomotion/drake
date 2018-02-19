@@ -39,8 +39,8 @@ exist only in the Context.
 Each %DependencyTracker manages dependencies for a value, or group of related
 values, upon which some downstream computations may depend, and maintains lists
 of downstream dependents (subscribers) and upstream prerequisites. An optional
-CacheEntryValue may be registered with a tracker for marking the managed cache
-value out of date when one of its prerequisites has changed.
+CacheEntryValue may be registered with a tracker in which case the tracker will
+mark the cache value out of date when one of its prerequisites has changed.
 
 A single %DependencyTracker can represent interdependencies within its
 subcontext, and to and from other subcontexts within the same containing Context
@@ -54,18 +54,19 @@ state, parameters, and input ports) to dependent cached computations and output
 ports. A %DependencyTracker maintains lists of both its downstream subscribers
 and its upstream prerequisites. The entries in both lists are pointers to other
 %DependencyTrackers. That requires special handling when cloning a Context,
-since the internal pointers in the source must be replaced by their
-corresponding pointers in the copy.
+since the internal pointers to the %DependencyTracker objects in the source must
+be replaced by their corresponding pointers in the copy.
 
 %DependencyTrackers may simply group upstream values, without representing a
-new value or computation. For example, the three continuous state
-subgroups q, v, and z each have their own %DependencyTracker. There is
-also a tracker for _any_ continuous variable change `xc≜{q,v,z}`; that tracker
-subscribes to the three individual trackers. Similarly individual discrete
+new value or computation. For example, the three continuous state subgroups
+q, v, and z are each associated with their own %DependencyTracker. There is
+also a tracker that monitors changes to _any_ variable within the entire
+collection of continuous variables `xc≜{q,v,z}`; that tracker
+subscribes to the three individual trackers. Similarly, individual discrete
 variable groups dᵢ collectively determine the discrete state `xd≜{dᵢ}`,
 individual abstract state variables aᵢ determine the abstract state `xa≜{aᵢ}`,
-and the full state is `x≜{xc,xd,xa}`. Here is a graph showing time and state
-trackers and some hypothetical cache entry trackers.
+and the full state is `x≜{xc,xd,xa}`. Here is a graph showing
+time and state trackers and some hypothetical cache entry trackers.
 <pre>
                    (q)--------➙(position kinematics)
                       ➘
@@ -83,6 +84,15 @@ a directed edge `(a)->(b)` can be read as "a is-prerequisite-of b" or
 "a determines b". The graph also maintains reverse-direction edges (not shown).
 A reversed edge `(a)<-(b)` could be read as "b subscribes-to a" or
 "b depends-on a".)
+
+These grouped trackers simplify dependency specification for quantities that
+depend on many sources, which is very common. For example, they allow a user to
+express a dependence on "all the inputs" without actually having to
+know how many inputs there are, which might change over time. Grouped trackers
+also serve to reduce the total number of edges in the dependency graph,
+providing faster invalidation. For example, if there are 10 computations
+dependent on q, v, and z (which frequently change together) we would have 30
+edges. Introducing (xc) reduces that to 13 edges.
 
 Downstream computations may subscribe to any of the individual or grouped
 nodes. */
@@ -106,16 +116,18 @@ nodes. */
 // trackers within the same subcontext that owns the tracker. There is also
 // a pointer to the containing Context's system pathname service for use in
 // logging and error messages. These pointers provide great performance but
-// make these things hard to clone because the pointers have to be set to
+// make DependencyTrackers hard to clone because the pointers have to be set to
 // point to corresponding entries in the new copy.
 //
 // DependencyTrackers for cache entries have to invalidate the associated cache
-// value when notified of prerequisite changes. That simply sets a bool to
-// `false` in the CacheEntryValue object. It is faster and cleaner to do that
-// unconditionally, and with inline code, so we have a static dummy
-// CacheEntryValue available for all non-cache DependencyTrackers to invalidate,
-// and make the definition of the cache invalidation method visible here rather
-// than use an abstract interface to it.
+// value when notified of prerequisite changes. That simply sets a bool that is
+// maintained by the CacheEntryValue object. This is an inner loop activity
+// that must be done very efficiently. It is faster to invalidate with
+// unconditional, inline code than to have a runtime test or abstract interface
+// for cache invalidation. To permit that, we allocate a static dummy
+// CacheEntryValue here, make it available for all non-cache DependencyTrackers
+// to "invalidate", and require that the definition of the cache invalidation
+// method is visible here rather than use an abstract interface to it.
 
 class DependencyTracker {
  public:
@@ -140,9 +152,18 @@ class DependencyTracker {
   modified or made available for mutable access. That is, this is the
   _initiating_ event of a value modification. All of our downstream
   subscribers are notified but the associated cache entry (if any) is _not_
-  invalidated, since it would be that cache entry that is initiating this
-  change. A unique `change_event` should have been obtained from the owning
-  Context and supplied here. */
+  invalidated (see below for why). A unique, positive `change_event` should
+  have been obtained from the owning Context and supplied here.
+
+  Why don't we invalidate the cache entry? Recall that this method is for
+  _initiating_ a change event, meaning that the quantity that this tracker
+  tracks is _initiating_ an invalidation sweep, as opposed to just reacting to
+  prerequisite changes. Normally cache entries become invalid because their
+  prerequisites change; they are not usually the first step in an invalidation
+  sweep. So it is unusual for NoteValueChange() to be called on a cache entry's
+  dependency tracker. But if it is called, that is likely to mean the cache
+  entry was just given a new value, and is therefore _valid_; invalidating it
+  now would be an error. */
   void NoteValueChange(int64_t change_event) const;
 
   /** @name              Prerequisites and subscribers
@@ -156,29 +177,30 @@ class DependencyTracker {
   void SubscribeToPrerequisite(DependencyTracker* prerequisite);
 
   /** Unsubscribes `this` tracker from an upstream prerequisite tracker to
-  which we previously subscribed. Throws an exception if we are not already
-  subscribed. Both the prerequisite list in `this` tracker and the subscriber
-  list in `prerequisite` are modified. */
+  which we previously subscribed. Both the prerequisite list in `this` tracker
+  and the subscriber list in `prerequisite` are modified.
+  @pre The supplied pointer must not be null.
+  @pre This tracker must already be subscribed to the given `prerequisite`. */
   void UnsubscribeFromPrerequisite(DependencyTracker* prerequisite);
 
   /** Adds a downstream subscriber to `this` %DependencyTracker, which will keep
   a pointer to the subscribing tracker. The subscriber will be notified whenever
-  this %DependencyTracker is notified of a value or prerequisite change. This is
-  only allowed if the subscriber has already recorded its dependency on this
-  tracker in its prerequisite list. */
+  this %DependencyTracker is notified of a value or prerequisite change.
+  @pre The subscriber has already recorded its dependency on this tracker in its
+       prerequisite list. */
   void AddDownstreamSubscriber(const DependencyTracker& subscriber);
 
-  /** Removes a downstream subscriber from `this` %DependencyTracker. This is
-  only allowed if the subscriber has already removed the dependency on this
-  tracker from its prerequisite list. */
+  /** Removes a downstream subscriber from `this` %DependencyTracker.
+  @pre The subscriber has already removed the dependency on this tracker from
+       its prerequisite list. */
   void RemoveDownstreamSubscriber(const DependencyTracker& subscriber);
 
-  /** Returns `true` if the given prerequisite is already listed here. This is
-  slow and should not be used in performance-sensitive code. */
+  /** Returns `true` if this tracker has already subscribed to `prerequisite`.
+  This is slow and should not be used in performance-sensitive code. */
   bool HasPrerequisite(const DependencyTracker& prerequisite) const;
 
-  /** Returns `true` if the given subscriber is already listed here. This is
-  slow and should not be used in performance-sensitive code. */
+  /** Returns `true` if `subscriber` is one of this tracker's subscribers.
+  This is slow and should not be used in performance-sensitive code. */
   bool HasSubscriber(const DependencyTracker& subscriber) const;
 
   /** Returns the total number of "depends-on" edges emanating from `this`
@@ -207,9 +229,9 @@ class DependencyTracker {
   performance analysis. **/
   //@{
 
-  /** Returns the total number of notifications received by this tracker.
-  This is the sum of managed-value notifications and prerequisite notifications
-  received. */
+  /** What is the total number of notifications received by this tracker?
+  This is the sum of managed-value change event notifications and prerequisite
+  change notifications received. */
   int64_t num_notifications_received() const {
     return num_value_change_events() + num_prerequisite_change_events();
   }

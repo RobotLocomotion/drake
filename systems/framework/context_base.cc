@@ -1,6 +1,7 @@
 #include "drake/systems/framework/context_base.h"
 
 #include <string>
+#include <typeinfo>
 
 namespace drake {
 namespace systems {

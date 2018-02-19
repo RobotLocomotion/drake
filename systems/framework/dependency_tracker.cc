@@ -28,9 +28,8 @@ void DependencyTracker::NoteValueChange(int64_t change_event) const {
 }
 
 // A prerequisite says it has changed. Short circuit if we've already heard
-// about this change event. Otherwise, notify our associated value (e.g. to
-// invalidate a cache entry), and then pass on the bad news to our subscribers.
-// Update statistics.
+// about this change event. Otherwise, invalidate the associated cache entry and
+// then pass on the bad news to our subscribers. Update statistics.
 void DependencyTracker::NotePrerequisiteChange(
     int64_t change_event,
     const DependencyTracker& prerequisite,
@@ -90,7 +89,7 @@ void DependencyTracker::SubscribeToPrerequisite(
   DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' subscribing to prerequisite '{}'",
                      GetPathDescription(), prerequisite->GetPathDescription());
 
-  // Make sure we haven't already added this prerequisite. Expensive.
+  // Make sure we haven't already added this prerequisite.
   DRAKE_ASSERT(!HasPrerequisite(*prerequisite));  // Expensive.
   prerequisites_.push_back(prerequisite);
 
@@ -99,10 +98,10 @@ void DependencyTracker::SubscribeToPrerequisite(
 
 void DependencyTracker::AddDownstreamSubscriber(
     const DependencyTracker& subscriber) {
-  // Make sure we haven't already added this subscriber. Expensive.
-  DRAKE_ASSERT(!HasSubscriber(subscriber));
-  // Subscriber must have *already* recorded this prerequisite. Expensive.
-  DRAKE_ASSERT(subscriber.HasPrerequisite(*this));
+  // Make sure we haven't already added this subscriber.
+  DRAKE_ASSERT(!HasSubscriber(subscriber));  // Expensive.
+  // Subscriber must have *already* recorded this prerequisite.
+  DRAKE_ASSERT(subscriber.HasPrerequisite(*this));  // Expensive.
 
   DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' adding subscriber '{}'",
                      GetPathDescription(), subscriber.GetPathDescription());
@@ -136,7 +135,7 @@ void DependencyTracker::UnsubscribeFromPrerequisite(
   DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' unsubscribing from prerequisite '{}'",
                      GetPathDescription(), prerequisite->GetPathDescription());
 
-  // Make sure we have already added this prerequisite. Expensive.
+  // Make sure we have already added this prerequisite.
   DRAKE_ASSERT(HasPrerequisite(*prerequisite));  // Expensive.
   Remove<const DependencyTracker*>(prerequisite, &prerequisites_);
 
@@ -146,10 +145,10 @@ void DependencyTracker::UnsubscribeFromPrerequisite(
 void DependencyTracker::RemoveDownstreamSubscriber(
     const DependencyTracker& subscriber) {
 
-  // Make sure we already added this subscriber. Expensive.
-  DRAKE_ASSERT(HasSubscriber(subscriber));
-  // Subscriber must have *already* removed this prerequisite. Expensive.
-  DRAKE_ASSERT(!subscriber.HasPrerequisite(*this));
+  // Make sure we already added this subscriber.
+  DRAKE_ASSERT(HasSubscriber(subscriber));  // Expensive.
+  // Subscriber must have *already* removed this prerequisite.
+  DRAKE_ASSERT(!subscriber.HasPrerequisite(*this));  // Expensive.
 
   DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' removing subscriber '{}'",
                      GetPathDescription(), subscriber.GetPathDescription());

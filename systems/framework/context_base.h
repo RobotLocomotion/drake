@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <typeinfo>
 
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
