@@ -60,15 +60,23 @@ class StartReference {
 
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
   /// When `direction` == `Direction::kReverse`, `endpoint` is reversed.
+  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
+  /// continuity constraints.
   Spec at(const Connection& connection, api::LaneEnd::Which end,
           Direction direction) const {
-    const Endpoint endpoint = end == api::LaneEnd::Which::kStart
-                                  ? connection.start()
-                                  : connection.end();
+    Endpoint endpoint = end == api::LaneEnd::Which::kStart ? connection.start()
+                                                           : connection.end();
+    endpoint.get_mutable_z().get_mutable_theta_dot() = {};
     return direction == Direction::kForward ? Spec(endpoint)
                                             : Spec(endpoint.reverse());
   }
 };
+
+/// Streams a string representation of `start_spec` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out,
+                         const StartReference::Spec& start_spec);
 
 /// Provides methods to build an EndReference::Spec.
 class EndReference {
@@ -102,11 +110,14 @@ class EndReference {
   /// Builds a Spec at `connection`'s `end` side with `direction` direction.
   /// When `direction` == `Direction::kReverse`, `end`-side endpoint's
   /// EndpointZ is reversed.
+  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
+  /// continuity constraints.
   Spec z_at(const Connection& connection, api::LaneEnd::Which end,
             Direction direction) const {
-    const EndpointZ endpoint_z = end == api::LaneEnd::Which::kStart
-                                     ? connection.start().z()
-                                     : connection.end().z();
+    EndpointZ endpoint_z = end == api::LaneEnd::Which::kStart
+                               ? connection.start().z()
+                               : connection.end().z();
+    endpoint_z.get_mutable_theta_dot() = {};
     return direction == Direction::kForward ? Spec(endpoint_z)
                                             : Spec(endpoint_z.reverse());
   }
@@ -118,6 +129,11 @@ class EndReference {
                                             : Spec(endpoint_z.reverse());
   }
 };
+
+/// Streams a string representation of `end_spec` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const EndReference::Spec& end_spec);
 
 /// Wraps all the lane-related specifications in a Connection.
 class LaneLayout {
