@@ -28,6 +28,7 @@ PYBIND11_MODULE(_math, m) {
       .def("get_num_interpolants", &BarycentricMesh<T>::get_num_interpolants)
       .def("get_mesh_point", overload_cast_explicit<VectorX<T>, int>(
                                  &BarycentricMesh<T>::get_mesh_point))
+      .def("get_all_mesh_points", &BarycentricMesh<T>::get_all_mesh_points)
       .def("Eval", overload_cast_explicit<VectorX<T>,
                                           const Eigen::Ref<const MatrixX<T>>&,
                                           const Eigen::Ref<const VectorX<T>>&>(

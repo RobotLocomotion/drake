@@ -54,6 +54,19 @@ VectorX<T> BarycentricMesh<T>::get_mesh_point(int index) const {
 }
 
 template <typename T>
+MatrixX<T> BarycentricMesh<T>::get_all_mesh_points() const {
+  const int M = get_input_size();
+  const int N = get_num_mesh_points();
+  VectorX<T> point(M);
+  MatrixX<T> points(M, N);
+  for (int i = 0; i < N; i++) {
+    get_mesh_point(i, &point);
+    points.col(i) = point;
+  }
+  return points;
+}
+
+template <typename T>
 void BarycentricMesh<T>::EvalBarycentricWeights(
     const Eigen::Ref<const VectorX<T>>& input,
     EigenPtr<Eigen::VectorXi> mesh_indices,

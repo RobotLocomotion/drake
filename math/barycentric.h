@@ -81,6 +81,9 @@ class BarycentricMesh {
   /// @param index must be in [0, get_num_mesh_points).
   VectorX<T> get_mesh_point(int index) const;
 
+  /// Returns a matrix with all of the mesh points, one per column.
+  MatrixX<T> get_all_mesh_points() const;
+
   /// Writes the mesh indices used for interpolation to @p mesh_indices, and the
   /// interpolating coefficients to @p weights.  Inputs that are outside the
   /// bounding box of the input_grid are interpolated as though they were
