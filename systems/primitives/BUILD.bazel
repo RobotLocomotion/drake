@@ -135,6 +135,7 @@ drake_cc_library(
     hdrs = ["linear_system.h"],
     deps = [
         ":affine_system",
+        "//common:essential",
         "//common:symbolic",
         "//common:symbolic_decompose",
         "//math:autodiff",

@@ -66,6 +66,9 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "primitives_py",
+    cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
+    ],
     cc_so_name = "primitives",
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -250,6 +253,16 @@ drake_py_test(
     deps = [
         ":controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+drake_py_test(
+    name = "primitives_test",
+    size = "small",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
     ],
 )
 
