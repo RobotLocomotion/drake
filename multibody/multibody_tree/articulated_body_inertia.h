@@ -162,11 +162,14 @@ class ArticulatedBodyInertia {
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value, bool>::type
   IsPhysicallyValid() const {
+    // Note that this tolerance may need to be loosened.
+    const double tolerance = -1e-14;
+
     // Get the eigenvalues of the matrix and see if they are all greater than or
     // equal to zero with some tolerance for floating point errors.
     const auto eigvals =
         matrix_.template selfadjointView<Eigen::Lower>().eigenvalues();
-    return (eigvals.array() > -1e-10).all();
+    return (eigvals.array() > tolerance).all();
   }
 
   /// IsPhysicallyValid() for non-numeric scalar types is not supported.

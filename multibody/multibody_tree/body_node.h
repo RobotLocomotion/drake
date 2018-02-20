@@ -1033,9 +1033,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
     // inertia of this body B as felt by body P and expressed in frame W.
+    // Symmetrize the computation to reduce floating point errors.
     // TODO(bobbyluig): Only compute lower-triangular region.
+    const Matrix6<T> Pplus_PB_W_mat = P_B_W.CopyToFullMatrix6() - g_PB_W * HTxP;
     get_mutable_Pplus_PB_W(abc) = ArticulatedBodyInertia<T>(
-        P_B_W.CopyToFullMatrix6()- g_PB_W * HTxP);
+        0.5 * (Pplus_PB_W_mat + Pplus_PB_W_mat.transpose()));
   }
 
  protected:
