@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/math/cross_product.h"
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
@@ -114,6 +115,25 @@ class ArticulatedBodyInertia {
         M_SQ_E.CopyToFullMatrix6();
   }
 
+  /// Constructs an articulated body inertia from an input matrix.
+  ///
+  /// In Debug, this constructor checks for the physical validity of the
+  /// resulting %ArticulatedBodyInertia with IsPhysicallyValid() and throws a
+  /// std::runtime_error exception in the event the provided input matrix leads
+  /// to a non-physically viable articulated body inertia.
+  ///
+  /// @param[in] matrix A matrix or matrix expression representing the
+  ///                   articulated body inertia. Only the lower triangular
+  ///                   region is used and the strictly upper part is ignored.
+  ///
+  /// @throws an exception in Debug builds if IsPhysicallyValid() for `this`
+  /// inertia is `false`.
+  template <typename Derived>
+  explicit ArticulatedBodyInertia(const Eigen::MatrixBase<Derived>& matrix) {
+    matrix_.template triangularView<Eigen::Lower>() = matrix;
+    DRAKE_ASSERT_VOID(CheckInvariants());
+  }
+
   /// Returns a new %ArticulatedBodyInertia object templated on `Scalar` with
   /// casted values of `this` articulated body inertia.
   ///
@@ -132,6 +152,34 @@ class ArticulatedBodyInertia {
     P.matrix_.template triangularView<Eigen::Lower>() =
         matrix_.template cast<Scalar>();
     return P;
+  }
+
+  /// Performs a number of checks to verify that this is a physically valid
+  /// articulated body inertia.
+  ///
+  /// The checks performed are:
+  ///   - The matrix is positive semi-definite.
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value, bool>::type
+  IsPhysicallyValid() const {
+    // Note that this tolerance may need to be loosened.
+    const double kTolerance = -1e-14;
+
+    // Get the eigenvalues of the matrix and see if they are all greater than or
+    // equal to zero with some tolerance for floating point errors.
+    const auto eigvals =
+        matrix_.template selfadjointView<Eigen::Lower>().eigenvalues();
+    return (eigvals.array() > kTolerance).all();
+  }
+
+  /// IsPhysicallyValid() for non-numeric scalar types is not supported.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value, bool>::type
+  IsPhysicallyValid() const {
+    throw std::logic_error(
+        "IsPhysicallyValid() is only supported for numeric types. It is not "
+        "supported for type '" + NiceTypeName::Get<T>() + "'.");
+    return false;  // Return something so that the compiler doesn't complain.
   }
 
   /// Copy to a full 6x6 matrix representation.
@@ -301,6 +349,17 @@ class ArticulatedBodyInertia {
   // All elements of the articulated body inertia matrix are initially set to
   // NaN.
   Matrix6<T> matrix_{Matrix6<T>::Constant(nan())};
+
+  // Checks that the ArticulatedBodyInertia is physically valid and throws an
+  // exception if not. This is mostly used in Debug builds to throw an
+  // appropriate exception.
+  void CheckInvariants() const {
+    if (!IsPhysicallyValid()) {
+      throw std::runtime_error(
+          "The resulting articulated body inertia is not physically valid. "
+              "See ArticulatedBodyInertia::IsPhysicallyValid()");
+    }
+  }
 };
 
 }  // namespace multibody

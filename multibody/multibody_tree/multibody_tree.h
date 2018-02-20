@@ -1346,6 +1346,31 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
+  /// Computes all the quantities that are required in the final pass of the
+  /// articulated body algorithm and stores them in the articulated body cache
+  /// `abc`.
+  ///
+  /// These include:
+  /// - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
+  ///   articulated body inertia of parent body P as though it were inertialess,
+  ///   but taken about Bo and expressed in W.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[out] abc
+  ///   A pointer to a valid, non nullptr, articulated body cache. This method
+  ///   throws an exception if `abc` is a nullptr.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache() using the same `context`  .
+  void CalcArticulatedBodyInertiaCache(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      ArticulatedBodyInertiaCache<T>* abc) const;
+
   /// @}
   // Closes "Computational methods" Doxygen section.
 
