@@ -15,7 +15,7 @@ values. */
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/unused.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
@@ -68,20 +68,34 @@ class CacheEntryValue {
 
   void set_is_up_to_date(bool up_to_date) { is_up_to_date_flag_ = up_to_date; }
 
-  // (Internal use only) Constructs an empty CacheEntryValue with description
-  // "DUMMY" and a meaningless value. Used only as a default destination for
-  // non-cache DependencyTracker invalidations.
-  explicit CacheEntryValue(bool not_used)
-      : description_("DUMMY"), value_(AbstractValue::Make<int>(0)) {
-    unused(not_used);
+  /** Returns a mutable reference to an unused cache entry value object, which
+  has no valid CacheIndex or DependencyTicket and has a meaningless value. The
+  reference is to a singleton %CacheEntryValue and will always return the same
+  address at zero computational cost. You may invoke set_is_up_to_date()
+  harmlessly on this object, but may not depend on its contents in any way as
+  they may change unexpectedly. The intention is that this object is used as a
+  common throw-away destination for non-cache DependencyTracker invalidations
+  so that invalidation can be done unconditionally, and to the same memory
+  location, for speed. */
+  static CacheEntryValue& dummy() {
+    return dummy_.access();
   }
 
  private:
+  // Default constructor can only be used privately to construct an empty
+  // CacheEntryValue with description "DUMMY" and a meaningless value.
+  CacheEntryValue()
+      : description_("DUMMY"), value_(AbstractValue::Make<int>(0)) {}
+
   std::string description_;
   CacheIndex cache_index_;
   copyable_unique_ptr<AbstractValue> value_;
   bool is_up_to_date_flag_{false};
   DependencyTicket ticket_;
+
+  // Allow never_destroyed to invoke the private constructor on our behalf.
+  friend class never_destroyed<CacheEntryValue>;
+  static never_destroyed<CacheEntryValue> dummy_;
 };
 
 // TODO(sherm1) Stubbed for DependencyTracker/Graph review; don't review.

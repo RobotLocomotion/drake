@@ -277,7 +277,7 @@ class DependencyTracker {
       : ticket_(ticket),
         description_(std::move(description)),
         owning_subcontext_(owning_subcontext),
-        cache_value_(cache_value ? cache_value : &dummy_cache_value_) {
+        cache_value_(cache_value ? cache_value : &CacheEntryValue::dummy()) {
     DRAKE_SPDLOG_DEBUG(
         log(), "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
         description_, cache_value ? "with" : "without", size_t(cache_value),
@@ -330,9 +330,6 @@ class DependencyTracker {
   // prerequisite; downstream subscribers can't tell the difference.
   void NotifySubscribers(int64_t change_event, int depth) const;
 
-  // For debugging use, provide an indent of 2*depth characters.
-  static std::string Indent(int depth);
-
   std::string GetSystemPathname() const {
     DRAKE_DEMAND(owning_subcontext_!= nullptr);
     return owning_subcontext_->GetSystemPathname();
@@ -346,7 +343,7 @@ class DependencyTracker {
   // Pointer to the system name service of the owning subcontext.
   const internal::SystemPathnameInterface* owning_subcontext_{nullptr};
 
-  // Points to the dummy_cache_value below if we're not told otherwise.
+  // Points to CacheEntryValue::dummy() if we're not told otherwise.
   CacheEntryValue* cache_value_{nullptr};
 
   std::vector<const DependencyTracker*> subscribers_;
@@ -361,12 +358,6 @@ class DependencyTracker {
   mutable int64_t num_prerequisite_notifications_received_{0};
   mutable int64_t num_ignored_notifications_{0};
   mutable int64_t num_downstream_notifications_sent_{0};
-
-  // Trackers that are not associated with a cache entry point to this dummy
-  // entry so we don't have to do that conditionally.
-  // TODO(sherm1) Move to Cache instead which can provide an unused cache
-  // entry as a service.
-  static CacheEntryValue dummy_cache_value_;
 };
 
 //==============================================================================

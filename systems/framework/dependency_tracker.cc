@@ -2,19 +2,29 @@
 
 #include <algorithm>
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace systems {
 
-CacheEntryValue DependencyTracker::dummy_cache_value_(true);
+namespace {
+// For debugging use, provide an indent of 2*depth characters.
+std::string Indent(int depth) {
+  std::string s;
+  for (int i = 0; i < depth; ++i) s += "| ";
+  return s;
+}
+}  // namespace
 
 // Our associated value has initiated a change (e.g. the associated value is
 // time and someone advanced time). Short circuit if this is part of a change
 // event that we have already heard about. Otherwise, let the subscribers know
 // that things have changed. Update statistics.
 void DependencyTracker::NoteValueChange(int64_t change_event) const {
-  DRAKE_ASSERT(change_event > 0);
+  unused(Indent);  // Avoid warning in non-Debug builds.
   DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' value change event {} ...",
                      GetPathDescription(), change_event);
+  DRAKE_ASSERT(change_event > 0);
 
   ++num_value_change_notifications_received_;
   if (last_change_event_ == change_event) {
@@ -34,12 +44,12 @@ void DependencyTracker::NotePrerequisiteChange(
     int64_t change_event,
     const DependencyTracker& prerequisite,
     int depth) const {
-  DRAKE_ASSERT(change_event > 0);
-  DRAKE_ASSERT(HasPrerequisite(prerequisite));  // Expensive.
   DRAKE_SPDLOG_DEBUG(
       log(), "{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
       Indent(depth), GetPathDescription(), prerequisite.GetPathDescription(),
       change_event);
+  DRAKE_ASSERT(change_event > 0);
+  DRAKE_ASSERT(HasPrerequisite(prerequisite));  // Expensive.
 
   ++num_prerequisite_notifications_received_;
   if (last_change_event_ == change_event) {
@@ -72,13 +82,6 @@ void DependencyTracker::NotifySubscribers(int64_t change_event,
   num_downstream_notifications_sent_ += num_subscribers();
 }
 
-// For debugging use, provide an indent of 2*depth characters.
-/*static*/ std::string DependencyTracker::Indent(int depth) {
-  std::string s;
-  for (int i=0; i < depth; ++i) s += "| ";
-  return s;
-}
-
 // Given a DependencyTracker that is supposed to be a prerequisite to this
 // one, subscribe to it. This is done only at Context allocation and copying
 // so we can afford Release-build checks and general mucking about to make
@@ -98,13 +101,12 @@ void DependencyTracker::SubscribeToPrerequisite(
 
 void DependencyTracker::AddDownstreamSubscriber(
     const DependencyTracker& subscriber) {
+  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' adding subscriber '{}'",
+                     GetPathDescription(), subscriber.GetPathDescription());
   // Make sure we haven't already added this subscriber.
   DRAKE_ASSERT(!HasSubscriber(subscriber));  // Expensive.
   // Subscriber must have *already* recorded this prerequisite.
   DRAKE_ASSERT(subscriber.HasPrerequisite(*this));  // Expensive.
-
-  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' adding subscriber '{}'",
-                     GetPathDescription(), subscriber.GetPathDescription());
 
   subscribers_.push_back(&subscriber);
 }
@@ -125,7 +127,6 @@ void Remove(const T& value, std::vector<T>* to_search) {
   DRAKE_DEMAND(found != to_search->end());
   to_search->erase(found);
 }
-
 }  // namespace
 
 // Remove a subscription that we made earlier.
@@ -144,14 +145,12 @@ void DependencyTracker::UnsubscribeFromPrerequisite(
 
 void DependencyTracker::RemoveDownstreamSubscriber(
     const DependencyTracker& subscriber) {
-
+  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' removing subscriber '{}'",
+                     GetPathDescription(), subscriber.GetPathDescription());
   // Make sure we already added this subscriber.
   DRAKE_ASSERT(HasSubscriber(subscriber));  // Expensive.
   // Subscriber must have *already* removed this prerequisite.
   DRAKE_ASSERT(!subscriber.HasPrerequisite(*this));  // Expensive.
-
-  DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' removing subscriber '{}'",
-                     GetPathDescription(), subscriber.GetPathDescription());
 
   Remove<const DependencyTracker*>(&subscriber, &subscribers_);
 }
@@ -160,15 +159,11 @@ std::string DependencyTracker::GetPathDescription() const {
   return GetSystemPathname() + ":" + description();
 }
 
-// Figure out which list the prerequisite would be on, then see if it
-// is present.
 bool DependencyTracker::HasPrerequisite(
     const DependencyTracker& prerequisite) const {
   return Contains(&prerequisite, prerequisites_);
 }
 
-// Figure out which list the subscriber would be on, then see if it
-// is present.
 bool DependencyTracker::HasSubscriber(
     const DependencyTracker& subscriber) const {
   return Contains(&subscriber, subscribers_);
@@ -183,8 +178,8 @@ void DependencyTracker::RepairTrackerPointers(
   owning_subcontext_ = owning_subcontext;
 
   // Set the cache entry pointer.
-  if (source.cache_value_ == &dummy_cache_value_) {
-    cache_value_ = &dummy_cache_value_;
+  if (source.cache_value_ == &CacheEntryValue::dummy()) {
+    cache_value_ = &CacheEntryValue::dummy();
   } else {
     const CacheIndex source_index(source.cache_value_->cache_index());
     cache_value_ = &cache->get_mutable_cache_entry_value(source_index);
