@@ -434,14 +434,16 @@ PYBIND11_MODULE(framework, m) {
   // signatures(e.g. GetValue<T>()).
   py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
 
-  py::class_<OutputPort<T>>(m, "OutputPort");
+  py::class_<OutputPort<T>>(m, "OutputPort")
+    .def("size", &OutputPort<T>::size);
 
   py::class_<SystemOutput<T>>(m, "SystemOutput")
     .def("get_num_ports", &SystemOutput<T>::get_num_ports)
     .def("get_vector_data", &SystemOutput<T>::get_vector_data,
          py_reference_internal);
 
-  py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor");
+  py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor")
+    .def("size", &InputPortDescriptor<T>::size);
 
   // Value types.
   py::class_<VectorBase<T>>(m, "VectorBase")
