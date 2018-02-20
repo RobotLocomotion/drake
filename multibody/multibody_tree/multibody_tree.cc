@@ -843,7 +843,7 @@ void MultibodyTree<T>::ThrowIfNotFinalized(
   if (!topology_is_valid()) {
     throw std::logic_error(
         "The call to '" + std::string(source_method) + "' is invalid; "
-            " You must call Finalize() first. ");
+        " You must call Finalize() first. ");
   }
 }
 
