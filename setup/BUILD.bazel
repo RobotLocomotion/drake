@@ -16,6 +16,7 @@ install_files(
         ],
         "//tools/cc_toolchain:linux": [
             "ubuntu/16.04/binary_distribution/install_prereqs.sh",
+            "ubuntu/16.04/binary_distribution/packages.txt",
         ],
         "//conditions:default": [],
     }),
