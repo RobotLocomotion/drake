@@ -28,6 +28,15 @@ int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   return it->second;
 }
 
+std::vector<int> MathematicalProgram::FindDecisionVariableIndices(
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) const {
+  std::vector<int> x_indices(vars.rows());
+  for (int i = 0; i < vars.rows(); ++i) {
+    x_indices[i] = FindDecisionVariableIndex(vars(i));
+  }
+  return x_indices;
+}
+
 size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   auto it = indeterminates_index_.find(var.get_id());
   if (it == indeterminates_index_.end()) {

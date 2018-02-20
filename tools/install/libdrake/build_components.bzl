@@ -200,6 +200,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/solvers:mosek_solver",
     "//drake/solvers:nlopt_solver",
     "//drake/solvers:non_convex_optimization_util",
+    "//drake/solvers:osqp_solver",
     "//drake/solvers:rotation_constraint",
     "//drake/solvers:snopt_solver",
     "//drake/solvers:solver_id",
