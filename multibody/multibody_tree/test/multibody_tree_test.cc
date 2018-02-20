@@ -20,14 +20,14 @@ namespace multibody {
 namespace multibody_model {
 namespace {
 
-using drake::multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
-using drake::multibody::benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
-using drake::multibody::multibody_tree::test_utilities::SpatialKinematicsPVA;
-using drake::systems::Context;
-using drake::systems::ContinuousState;
+using benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
+using benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
 using Eigen::Isometry3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
+using multibody_tree::test_utilities::SpatialKinematicsPVA;
+using systems::Context;
+using systems::ContinuousState;
 
 // This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
 // multibody elements by name or get exceptions accordingly.
@@ -295,7 +295,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
   VectorX<double> q, v;
-  GetArbitraryNonZeroConfiguration(&q, &v);;
+  GetArbitraryNonZeroConfiguration(&q, &v);
 
   // Zero generalized positions and velocities.
   int angle_index = 0;
@@ -462,7 +462,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // A set of values for the joints' angles chosen mainly to avoid in-plane
   // motions.
   VectorX<double> q, v;
   GetArbitraryNonZeroConfiguration(&q, &v);
@@ -475,7 +475,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
     angle_index++;
   }
 
-  // Spatial velocity of the end effector.
+  // Spatial velocity of the end effector in the world frame.
   const SpatialVelocity<double>& V_WE =
       model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
@@ -513,7 +513,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  // A set of values for the joint's angles chosen mainly to avoid in-plane
+  // A set of values for the joints' angles chosen mainly to avoid in-plane
   // motions.
   VectorX<double> q, v;
   GetArbitraryNonZeroConfiguration(&q, &v);
@@ -535,7 +535,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
       model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
 
   // Position of a frame F measured and expressed in frame E.
-  const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);  // p_EoFo for short.
+  const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);
   // Express this same last vector in the world frame.
   const Vector3d p_EoFo_W = X_WE.linear() * p_EoFo_E;
 
@@ -546,7 +546,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   const SpatialVelocity<double> V_WEf = V_WE.Shift(p_EoFo_W);
 
   MatrixX<double> Jv_WF(6, model_->get_num_velocities());
-  // Compute the Jacobina Jv_WF for that relate the generalized velocities with
+  // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
   model_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_,

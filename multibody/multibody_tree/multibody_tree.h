@@ -901,7 +901,7 @@ class MultibodyTree {
   ///   The context storing the state of the %MultibodyTree model.
   /// @param[in] body_B
   ///   The body B for which the pose is requested.
-  /// @returns X_WB
+  /// @retval X_WB
   ///   The pose of body frame B in the world frame W.
   /// @throws if Finalize() was not called on `this` model or if `body_B` does
   /// not belong to this model.
