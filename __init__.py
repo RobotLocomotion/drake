@@ -12,15 +12,9 @@
 # Note that this file should NOT be installed (`//:install` should not touch
 # it).  The `//lcmtypes`-supplied init file is the correct file to install.
 
-# First, probe whether we need the repair.
-_needs_lcmtypes_pathing = False
 try:
     import drake.lcmtypes
-    _needs_lcmtypes_pathing = True
-except ImportError:
-    pass
-
-# Run the repair outside of try-except, so we'll yell if it fails.
-if _needs_lcmtypes_pathing:
     __path__.append(drake.lcmtypes.__path__[0] + "/drake")
     from drake.lcmtypes.drake import *
+except ImportError:
+    pass
