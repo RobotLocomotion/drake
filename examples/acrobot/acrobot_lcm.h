@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
+#include "drake/examples/acrobot/gen/acrobot_state.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
 #include "drake/systems/framework/basic_vector.h"
@@ -18,14 +18,14 @@ namespace acrobot {
 
 /// Receives the output of an LcmSubsriberSystem that subsribes to the
 /// acrobot state channel with LCM type lcmt_acrobot_x, and outputs the
-/// acrobot states as an AcrobotStateVector.
+/// acrobot states as an AcrobotState.
 class AcrobotStateReceiver : public systems::LeafSystem<double> {
  public:
   AcrobotStateReceiver();
 
  private:
   void CopyStateOut(const systems::Context<double>& context,
-                    AcrobotStateVector<double>* output) const;
+                    AcrobotState<double>* output) const;
 };
 
 /// Receives the output of an acrobot controller, and outputs it as an LCM
