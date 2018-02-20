@@ -84,7 +84,7 @@ int DoMain() {
   systems::Context<double>& acrobot_context =
       diagram->GetMutableSubsystemContext(*acrobot,
                                           &simulator.get_mutable_context());
-  AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
+  AcrobotState<double>* x0 = dynamic_cast<AcrobotState<double>*>(
       &acrobot_context.get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(0.1);

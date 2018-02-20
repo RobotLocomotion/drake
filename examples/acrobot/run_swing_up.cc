@@ -4,18 +4,15 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/acrobot_spong_controller.h"
-#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
+#include "drake/examples/acrobot/gen/acrobot_state.h"
+#include "drake/examples/acrobot/spong_controller.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/math/wrap_to.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/linear_quadratic_regulator.h"
-#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace examples {
@@ -55,17 +52,22 @@ int do_main(int argc, char* argv[]) {
                                           &simulator.get_mutable_context());
 
   // Sets an initial condition near the upright fixed point.
-  AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
+  AcrobotState<double>* state = dynamic_cast<AcrobotState<double>*>(
       &acrobot_context.get_mutable_continuous_state_vector());
-  DRAKE_DEMAND(x0 != nullptr);
-  x0->set_theta1(0.1);
-  x0->set_theta2(-0.1);
-  x0->set_theta1dot(0.0);
-  x0->set_theta2dot(0.02);
+  DRAKE_DEMAND(state != nullptr);
+  state->set_theta1(0.1);
+  state->set_theta2(-0.1);
+  state->set_theta1dot(0.0);
+  state->set_theta2dot(0.02);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
-  simulator.Initialize();
-  simulator.StepTo(60);
+  simulator.StepTo(10.);
+
+  DRAKE_DEMAND(std::abs(math::wrap_to(state->theta1(), 0., 2. * M_PI) - M_PI) <
+               1e-2);
+  DRAKE_DEMAND(std::abs(math::wrap_to(state->theta2(), -M_PI, M_PI)) < 1e-2);
+  DRAKE_DEMAND(std::abs(state->theta1dot()) < 0.1);
+  DRAKE_DEMAND(std::abs(state->theta2dot()) < 0.1);
 
   return 0;
 }
