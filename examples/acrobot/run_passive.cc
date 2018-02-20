@@ -4,7 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
+#include "drake/examples/acrobot/gen/acrobot_state.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -19,9 +19,8 @@ namespace examples {
 namespace acrobot {
 namespace {
 
-// Simple example which simulates the Acrobot, started near the upright, with an
-// LQR controller designed to stabilize the unstable fixed point.  Run
-// drake-visualizer to see the animated result.
+// Simple example which simulates the (passive) Acrobot.  Run drake-visualizer
+// to see the animated result.
 
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
@@ -40,26 +39,24 @@ int do_main(int argc, char* argv[]) {
   auto acrobot = builder.AddSystem<AcrobotPlant>();
   acrobot->set_name("acrobot");
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  publisher->set_name("publisher");
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
-
-  auto controller = builder.AddSystem(BalancingLQRController(*acrobot));
-  controller->set_name("controller");
-  builder.Connect(acrobot->get_output_port(0), controller->get_input_port());
-  builder.Connect(controller->get_output_port(), acrobot->get_input_port(0));
-
   auto diagram = builder.Build();
+
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& acrobot_context =
       diagram->GetMutableSubsystemContext(*acrobot,
                                           &simulator.get_mutable_context());
 
-  // Set an initial condition near the upright fixed point.
-  AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
+  double tau = 0;
+  acrobot_context.FixInputPort(0, Eigen::Matrix<double, 1, 1>::Constant(tau));
+
+  // Set an initial condition that is sufficiently far from the downright fixed
+  // point.
+  AcrobotState<double>* x0 = dynamic_cast<AcrobotState<double>*>(
       &acrobot_context.get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
-  x0->set_theta1(M_PI + 0.1);
-  x0->set_theta2(-.1);
+  x0->set_theta1(1.0);
+  x0->set_theta2(1.0);
   x0->set_theta1dot(0.0);
   x0->set_theta2dot(0.0);
 

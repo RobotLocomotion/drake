@@ -17,108 +17,92 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-namespace {
-constexpr int kNumDOF = 2;  // theta1 + theta2.
-}
-
 template <typename T>
-AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
-                              double lc1, double lc2, double Ic1, double Ic2,
-                              double b1, double b2, double g)
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<acrobot::AcrobotPlant>{}),
-      m1_(m1),
-      m2_(m2),
-      l1_(l1),
-      l2_(l2),
-      lc1_(lc1),
-      lc2_(lc2),
-      Ic1_(Ic1),
-      Ic2_(Ic2),
-      b1_(b1),
-      b2_(b2),
-      g_(g) {
-  this->DeclareInputPort(systems::kVectorValued, 1);
-  this->DeclareVectorOutputPort(&AcrobotPlant::OutputState);
-  static_assert(AcrobotStateVectorIndices::kNumCoordinates == kNumDOF * 2, "");
-  this->DeclareContinuousState(
-      AcrobotStateVector<T>(),
-      kNumDOF /* num_q */,
-      kNumDOF /* num_v */,
-      0 /* num_z */);
+AcrobotPlant<T>::AcrobotPlant()
+    : systems::LeafSystem<T>(systems::SystemTypeTag<acrobot::AcrobotPlant>{}) {
+  this->DeclareVectorInputPort(AcrobotInput<T>());
+  this->DeclareVectorOutputPort(AcrobotState<T>(), &AcrobotPlant::CopyStateOut);
+  this->DeclareContinuousState(AcrobotState<T>(), 2 /* num_q */, 2 /* num_v */,
+                               0 /* num_z */);
+  this->DeclareNumericParameter(AcrobotParams<T>());
 }
 
 template <typename T>
 template <typename U>
-AcrobotPlant<T>::AcrobotPlant(const AcrobotPlant<U>& other)
-    : AcrobotPlant<T>(
-          other.m1(),
-          other.m2(),
-          other.l1(),
-          other.l2(),
-          other.lc1(),
-          other.lc2(),
-          other.Ic1(),
-          other.Ic2(),
-          other.b1(),
-          other.b2(),
-          other.g()) {}
+AcrobotPlant<T>::AcrobotPlant(const AcrobotPlant<U>&) : AcrobotPlant<T>() {}
 
 template <typename T>
-std::unique_ptr<AcrobotPlant<T>> AcrobotPlant<T>::CreateAcrobotMIT() {
-  return std::make_unique<AcrobotPlant<T>>(2.4367,   // m1
-                                           0.6178,   // m2
-                                           0.2563,   // l1
-                                           0,        // l2
-                                           1.6738,   // lc1
-                                           1.5651,   // lc2
-                                           -4.7443,  // Ic1
-                                           -1.0068,  // Ic2
-                                           0.0320,   // b1
-                                           0.0413);  // b2
-  // Parameters are identified in a way that torque has the unit of current
-  // (Amps), in order to simplify the implementation of torque constraint on
-  // motors. Therefore, numbers here do not carry physical meanings.
+void AcrobotPlant<T>::SetMITAcrobotParameters(systems::Parameters<T>*
+parameters) const {
+  auto* p = dynamic_cast<AcrobotParams<T>*>(parameters);
+  DRAKE_ASSERT(p != nullptr);
+  p->set_m1(2.4367);
+  p->set_m2(0.6178);
+  p->set_l1(0.2563);
+  p->set_lc1(1.6738);
+  p->set_lc2(1.5651);
+  p->set_Ic1(-4.7443);  // Notes: Yikes!  Negative inertias (from sysid).
+  p->set_Ic2(-1.0068);
+  p->set_b1(0.0320);
+  p->set_b2(0.0413);
+  // Note: parameters are identified in a way that torque has the unit of
+  // current (Amps), in order to simplify the implementation of torque
+  // constraint on motors. Therefore, some of the numbers here have incorrect
+  // units.
 }
 
 template <typename T>
-void AcrobotPlant<T>::OutputState(const systems::Context<T>& context,
-                                   AcrobotStateVector<T>* output) const {
-  output->set_value(
-      dynamic_cast<const AcrobotStateVector<T>&>(
-          context.get_continuous_state_vector())
-          .get_value());
+void AcrobotPlant<T>::CopyStateOut(const systems::Context<T>& context,
+                                  AcrobotState<T>* output) const {
+  output->set_value(dynamic_cast<const AcrobotState<T>&>(
+                        context.get_continuous_state_vector())
+                        .get_value());
 }
 
 template <typename T>
-Matrix2<T> AcrobotPlant<T>::MatrixH(const AcrobotStateVector<T>& x) const {
-  const T c2 = cos(x.theta2());
+Matrix2<T> AcrobotPlant<T>::MassMatrix(
+    const systems::Context<T> &context) const {
+  const AcrobotState<T>& state = get_state(context);
+  const AcrobotParams<T>& p = get_parameters(context);
+  const T c2 = cos(state.theta2());
+  const T I1 = p.Ic1() + p.m1() * p.lc1() * p.lc1();
+  const T I2 = p.Ic2() + p.m2() * p.lc2() * p.lc2();
+  const T m2l1lc2 = p.m2() * p.l1() * p.lc2();
 
-  const T h12 = I2_ + m2l1lc2_ * c2;
-  Matrix2<T> H;
-  H << I1_ + I2_ + m2_ * l1_ * l1_ + 2 * m2l1lc2_ * c2, h12, h12, I2_;
-  return H;
+  const T m12 = I2 + m2l1lc2 * c2;
+  Matrix2<T> M;
+  M << I1 + I2 + p.m2() * p.l1() * p.l1() + 2 * m2l1lc2 * c2, m12, m12,
+      I2;
+  return M;
 }
 
 template <typename T>
-Vector2<T> AcrobotPlant<T>::VectorC(const AcrobotStateVector<T>& x) const {
-  const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
-  const T s12 = sin(x.theta1() + x.theta2());
+Vector2<T> AcrobotPlant<T>::DynamicsBiasTerm(const systems::Context<T> &
+context)
+const {
+  const AcrobotState<T>& state = get_state(context);
+  const AcrobotParams<T>& p = get_parameters(context);
 
-  Vector2<T> C;
-  C << -2 * m2l1lc2_ * s2 * x.theta2dot() * x.theta1dot() +
-           -m2l1lc2_ * s2 * x.theta2dot() * x.theta2dot(),
-      m2l1lc2_ * s2 * x.theta1dot() * x.theta1dot();
+  const T s1 = sin(state.theta1()), s2 = sin(state.theta2());
+  const T s12 = sin(state.theta1() + state.theta2());
+  const T m2l1lc2 = p.m2() * p.l1() * p.lc2();
 
-  // Add in G terms.
-  C(0) += g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
-  C(1) += g_ * m2_ * lc2_ * s12;
+  Vector2<T> bias;
+  // C(q,v)*v terms.
+  bias << -2 * m2l1lc2 * s2 * state.theta2dot() * state.theta1dot() +
+           -m2l1lc2 * s2 * state.theta2dot() * state.theta2dot(),
+      m2l1lc2 * s2 * state.theta1dot() * state.theta1dot();
+
+  // -τ_g(q) terms.
+  bias(0) += p.gravity() * p.m1() * p.lc1() * s1 +
+          p.gravity() * p.m2() * (p.l1() * s1 + p.lc2() * s12);
+  bias(1) += p.gravity() * p.m2() * p.lc2() * s12;
 
   // Damping terms.
-  C(0) += b1_ * x.theta1dot();
-  C(1) += b2_ * x.theta2dot();
+  bias(0) += p.b1() * state.theta1dot();
+  bias(1) += p.b2() * state.theta2dot();
 
-  return C;
+  return bias;
 }
 
 // Compute the actual physics.
@@ -126,42 +110,42 @@ template <typename T>
 void AcrobotPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
-      context.get_continuous_state_vector());
-  const T& tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
+  const AcrobotState<T>& state = get_state(context);
+  const T& tau = get_tau(context);
 
-  Matrix2<T> H = MatrixH(x);
-  Vector2<T> C = VectorC(x);
+  Matrix2<T> M = MassMatrix(context);
+  Vector2<T> bias = DynamicsBiasTerm(context);
   Vector2<T> B(0, 1);  // input matrix
 
   Vector4<T> xdot;
-  xdot << x.theta1dot(), x.theta2dot(), H.inverse() * (B * tau - C);
+  xdot << state.theta1dot(), state.theta2dot(), M.inverse() * (B * tau - bias);
   derivatives->SetFromVector(xdot);
 }
 
 template <typename T>
 T AcrobotPlant<T>::DoCalcKineticEnergy(
     const systems::Context<T>& context) const {
-  const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
+  const AcrobotState<T>& state = dynamic_cast<const AcrobotState<T>&>(
       context.get_continuous_state_vector());
 
-  Matrix2<T> H = MatrixH(x);
-  Vector2<T> qdot(x.theta1dot(), x.theta2dot());
+  Matrix2<T> M = MassMatrix(context);
+  Vector2<T> qdot(state.theta1dot(), state.theta2dot());
 
-  return 0.5 * qdot.transpose() * H * qdot;
+  return 0.5 * qdot.transpose() * M * qdot;
 }
 
 template <typename T>
 T AcrobotPlant<T>::DoCalcPotentialEnergy(
     const systems::Context<T>& context) const {
-  const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
-      context.get_continuous_state_vector());
+  const AcrobotState<T>& state = get_state(context);
+  const AcrobotParams<T>& p = get_parameters(context);
 
   using std::cos;
-  const T c1 = cos(x.theta1());
-  const T c12 = cos(x.theta1() + x.theta2());
+  const T c1 = cos(state.theta1());
+  const T c12 = cos(state.theta1() + state.theta2());
 
-  return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
+  return -p.m1() * p.gravity() * p.lc1() * c1 -
+         p.m2() * p.gravity() * (p.l1() * c1 + p.lc2() * c12);
 }
 
 template <typename T>
@@ -184,13 +168,13 @@ AcrobotWEncoder<T>::AcrobotWEncoder(bool acrobot_state_as_second_output) {
 }
 
 template <typename T>
-AcrobotStateVector<T>* AcrobotWEncoder<T>::get_mutable_acrobot_state(
+AcrobotState<T>& AcrobotWEncoder<T>::get_mutable_acrobot_state(
     systems::Context<T>* context) const {
-  AcrobotStateVector<T>* x = dynamic_cast<AcrobotStateVector<T>*>(
+  AcrobotState<T>* x = dynamic_cast<AcrobotState<T>*>(
       &this->GetMutableSubsystemContext(*acrobot_plant_, context)
-          .get_mutable_continuous_state_vector());
+           .get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x != nullptr);
-  return x;
+  return *x;
 }
 
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
@@ -201,7 +185,7 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   context->FixInputPort(0, Vector1d::Constant(0.0));
 
   // Set nominal state to the upright fixed point.
-  AcrobotStateVector<double>* x = dynamic_cast<AcrobotStateVector<double>*>(
+  AcrobotState<double>* x = dynamic_cast<AcrobotState<double>*>(
       &context->get_mutable_continuous_state_vector());
   DRAKE_ASSERT(x != nullptr);
   x->set_theta1(M_PI);
@@ -217,8 +201,8 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   Q(1, 1) = 10;
   Vector1d R = Vector1d::Constant(1);
 
-  return systems::controllers::LinearQuadraticRegulator(
-      acrobot, *context, Q, R);
+  return systems::controllers::LinearQuadraticRegulator(acrobot, *context, Q,
+                                                        R);
 }
 
 }  // namespace acrobot
