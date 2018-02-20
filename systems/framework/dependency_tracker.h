@@ -286,6 +286,21 @@ class DependencyTracker {
         : "");
   }
 
+  // Copies the current tracker but with all pointers set to null, and all
+  // counters reset to their default-constructed values (0 for statistics, an
+  // unmatchable value for the last change event).
+  std::unique_ptr<DependencyTracker> CloneWithoutPointers() const {
+    // Can't use make_unique here because constructor is private.
+    std::unique_ptr<DependencyTracker> clone(
+        new DependencyTracker(ticket(), description(), nullptr, nullptr));
+    // cache_value_ is set to dummy by default; must reset to null now so we
+    // can fix it up later.
+    clone->cache_value_ = nullptr;
+    clone->subscribers_.resize(num_subscribers(), nullptr);
+    clone->prerequisites_.resize(num_prerequisites(), nullptr);
+    return clone;
+  }
+
   // Assumes `this` tracker is a recent clone containing no pointers, sets
   // the pointers here to addresses corresponding to those in the source
   // tracker, with the help of the given map. It is a fatal error if any needed
@@ -295,30 +310,13 @@ class DependencyTracker {
       const DependencyTracker::PointerMap& tracker_map,
       const internal::SystemPathnameInterface* owning_subcontext, Cache* cache);
 
-  // Copies the current tracker but with all pointers set to null.
-  std::unique_ptr<DependencyTracker> CloneWithoutPointers() const {
-    // Can't use make_unique here because constructor is private.
-    std::unique_ptr<DependencyTracker> clone(
-        new DependencyTracker(ticket(), description(), nullptr, nullptr));
-    clone->SetSizesAndNullPointers(*this);
-    return clone;
-  }
-
-  // As part of a cloning operation, makes sizes match and sets internal
-  // pointers to null.
-  void SetSizesAndNullPointers(const DependencyTracker& source) {
-    cache_value_ = nullptr;
-    subscribers_.resize(source.num_subscribers(), nullptr);
-    prerequisites_.resize(source.num_prerequisites(), nullptr);
-  }
-
   // Notifies `this` DependencyTracker that one of its prerequisite values was
   // modified or made available for mutable access. All of our downstream
   // subscribers are notified and the associated cache entry (if any) is
   // invalidated. The unique `change_event` obtained by the initiating value
   // modification should be passed through here. The particular upstream
   // `prerequisite` reporting the change is provided here for enforcing
-  // invariants in Debug builds.`depth` measures the notification chain length
+  // invariants in Debug builds. `depth` measures the notification chain length
   // and is useful for debugging and performance analysis. An initial caller
   // should supply `depth`=0; it is incremented internally.
   void NotePrerequisiteChange(int64_t change_event,
@@ -336,9 +334,9 @@ class DependencyTracker {
   }
 
   // This tracker's index within its owning DependencyGraph.
-  DependencyTicket ticket_;
+  const DependencyTicket ticket_;
 
-  std::string description_;
+  const std::string description_;
 
   // Pointer to the system name service of the owning subcontext.
   const internal::SystemPathnameInterface* owning_subcontext_{nullptr};
@@ -350,7 +348,8 @@ class DependencyTracker {
   std::vector<const DependencyTracker*> prerequisites_;
 
   // Used for short-circuiting repeated notifications. Does not otherwise change
-  // the result; hence mutable is OK.
+  // the result; hence mutable is OK. All legitimate change events must be
+  // greater than zero, so this will never match.
   mutable int64_t last_change_event_{-1};
 
   // Runtime statistics. Does not change behavior at all.
@@ -368,9 +367,10 @@ centered on the owning subcontext, plus some edges leading to other subcontexts.
 DependencyTracker objects are the nodes of the graph, and maintain
 prerequisite/subscriber edges that interconnect these nodes, and may also
 connect to nodes contained in dependency graphs belonging to other subcontexts
-within the same complete context tree. Parent and child dependencies
-typically arise from exported input and output ports, while sibling dependencies
-arise from output-to-input port connections.
+within the same complete context tree. Dependencies on the parent (containing
+DiagramContext) and children (contained subcontexts) typically arise from
+exported input and output ports, while sibling dependencies arise from
+output-to-input port connections.
 
 A %DependencyGraph creates and owns all the DependencyTracker objects for a
 particular subcontext, organized to allow fast access using a DependencyTicket
@@ -406,13 +406,15 @@ class DependencyGraph {
 
   /** Allocates a new DependencyTracker with an already-known ticket number, the
   given description and an optional cache value to be invalidated. The new
-  tracker has no prerequisites or subscribers yet. Note that the
-  DependencyTracker memory address is stable after allocation in a particular
-  Context while the DependencyTicket remains stable even after cloning the
-  Context. There must be no DependencyTracker already using the given ticket,
-  which must be valid. Note that this may leave gaps in the node numbering. Use
-  has_tracker() if you need to know whether there is a tracker for a particular
-  ticket. */
+  tracker has no prerequisites or subscribers yet. This may leave gaps in the
+  node numbering. Use has_tracker() if you need to know whether there is a
+  tracker for a particular ticket. We promise that the returned
+  DependencyTracker's location in memory will remain unchanged once created in
+  a particular Context, even as more trackers are added. The DependencyTicket
+  retains its meaning even after cloning the Context, although of course the
+  tracker has a new address in the clone.
+  @pre The given ticket must be valid.
+  @pre No DependencyTracker is already using the given ticket. */
   DependencyTracker& CreateNewDependencyTracker(
       DependencyTicket known_ticket, std::string description,
       CacheEntryValue* cache_value = nullptr) {
@@ -462,7 +464,8 @@ class DependencyGraph {
 
   /** (Internal use only) Copy constructor partially duplicates the source
   %DependencyGraph object, with identical structure to the source but
-  with all internal pointers set to null. These must be set properly using
+  with all internal pointers set to null, and all counters and statistics set
+  to their default-constructed values. Pointers must be set properly using
   RepairTrackerPointers() once all the old-to-new pointer mappings have been
   determined _for the whole Context_, not just the containing subcontext. This
   should only be invoked by Context code as part of copying an entire Context

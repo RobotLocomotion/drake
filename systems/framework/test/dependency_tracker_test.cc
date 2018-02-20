@@ -105,6 +105,22 @@ class HandBuiltDependencies : public ::testing::Test {
   DependencyTracker* time_tracker_{};
 };
 
+// Check that we can ask the graph for new dependency trackers, and that the
+// associated cache entry has the right value.
+TEST_F(HandBuiltDependencies, Construction) {
+  DependencyGraph& graph = context_.get_mutable_dependency_graph();
+
+  // Construct with a known ticket.
+  auto& tracker100 = graph.CreateNewDependencyTracker(
+      DependencyTicket(100), "tracker100");
+  EXPECT_EQ(tracker100.ticket(), 100);
+
+  // Construct with assigned ticket (should get the next one).
+  const int num_trackers = graph.num_trackers();
+  auto& tracker = graph.CreateNewDependencyTracker("tracker");
+  EXPECT_EQ(tracker.ticket(), num_trackers);
+}
+
 // Check that we can unsubscribe from a previously-subscribed-to
 // prerequisite.
 TEST_F(HandBuiltDependencies, Unsubscribe) {

@@ -118,7 +118,9 @@ class ContextBase : public internal::SystemPathnameInterface {
   up base class pointers. To do that, implement a protected copy constructor
   that inherits from the base class copy constructor (which doesn't repair the
   pointers), then implement DoCloneWithoutPointers() as
-  `new DerivedType(*this)`. */
+  `new DerivedType(*this)`. The derived class should not take ownership of
+  the allocated object, just invoke the appropriate form of `new` and
+  return the result which is owned by the base class. */
   virtual ContextBase* DoCloneWithoutPointers() const = 0;
 
  private:

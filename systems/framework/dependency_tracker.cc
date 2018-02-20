@@ -71,6 +71,8 @@ void DependencyTracker::NotifySubscribers(int64_t change_event,
   DRAKE_SPDLOG_DEBUG(log(), "{}... {} downstream subscribers.{}", Indent(depth),
                      num_subscribers(),
                      num_subscribers() > 0 ? " Notifying:" : "");
+  DRAKE_ASSERT(change_event > 0);
+  DRAKE_ASSERT(depth >= 0);
 
   for (const DependencyTracker* subscriber : subscribers_) {
     DRAKE_ASSERT(subscriber != nullptr);
