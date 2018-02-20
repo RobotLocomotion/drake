@@ -246,6 +246,14 @@ drake_py_test(
 )
 
 drake_py_test(
+    name = "symbolic_monomial_test",
+    size = "small",
+    srcs = ["test/symbolic_monomial_test.py"],
+    main = "test/symbolic_monomial_test.py",
+    deps = [":symbolic_py"],
+)
+
+drake_py_test(
     name = "backwards_compatability_test",
     deps = [
         ":backwards_compatibility_py",
