@@ -9,7 +9,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
-GTEST_TEST(QuadraticProgramTest, TestUnconstrainedQP) {
+GTEST_TEST(QPtest, TestUnconstrainedQP) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
   prog.AddQuadraticCost(x(0) * x(0));
@@ -65,7 +65,7 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
-GTEST_TEST(QuadraticProgramTest, TestUnbounded) {
+GTEST_TEST(QPtest, TestUnbounded) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
 
@@ -87,7 +87,7 @@ GTEST_TEST(QuadraticProgramTest, TestUnbounded) {
   }
 }
 
-GTEST_TEST(QuadraticProgramTest, TestInfeasible) {
+GTEST_TEST(QPtest, TestInfeasible) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
@@ -106,7 +106,7 @@ GTEST_TEST(QuadraticProgramTest, TestInfeasible) {
   }
 }
 
-GTEST_TEST(LinearProgramTest, TestUnbounded) {
+GTEST_TEST(LPtest, TestUnbounded) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
