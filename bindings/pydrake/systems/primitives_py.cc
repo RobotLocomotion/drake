@@ -21,6 +21,8 @@ PYBIND11_MODULE(primitives, m) {
 
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
 
+  py::module::import("pydrake.systems.framework");
+
   using T = double;
 
   py::class_<Adder<T>, LeafSystem<T>>(m, "Adder").def(py::init<int, int>());
@@ -71,6 +73,21 @@ PYBIND11_MODULE(primitives, m) {
                     const Eigen::Ref<const Eigen::MatrixXd>&, double>(),
            py::arg("A"), py::arg("B"), py::arg("C"), py::arg("D"),
            py::arg("time_period") = 0.0);
+
+  m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
+        py::arg("equilibrium_check_tolerance") = 1e-6);
+
+  m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation);
+
+  m.def("ControllabilityMatrix", &ControllabilityMatrix);
+
+  m.def("IsControllable", &IsControllable, py::arg("sys"),
+        py::arg("threshold") = 1e-6);
+
+  m.def("ObservabilityMatrix", &ObservabilityMatrix);
+
+  m.def("IsObservable", &IsObservable, py::arg("sys"),
+        py::arg("threshold") = 1e-6);
 
   py::class_<SignalLogger<T>, LeafSystem<T>>(m, "SignalLogger")
       .def(py::init<int>())
