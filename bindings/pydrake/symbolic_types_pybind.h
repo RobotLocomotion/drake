@@ -12,3 +12,4 @@
 PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Variable);
 PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Expression);
 PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Formula);
+PYBIND11_NUMPY_OBJECT_DTYPE(drake::symbolic::Monomial);
