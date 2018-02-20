@@ -12,16 +12,33 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_transitive_installed_hdrs_filegroup",
 )
+load(
+    "@drake//tools/skylark:write_file.bzl",
+    "write_cmake_vars",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load("//tools:drake.bzl", "drake_cc_binary")
+load(
+    "@drake//tools/workspace/pybind11:repository.bzl",
+    "drake_pybind11_cmake_vars",
+)
 
 cmake_config(
     cps_file_name = "drake.cps",
     package = "drake",
 )
 
+# Write external fork information.
+write_cmake_vars(
+    name = "DrakeExternalForksInfo.cmake",
+    vars = drake_pybind11_cmake_vars(),
+)
+
 install_cmake_config(
+    extra_files = [
+        "DrakeExternalForksInfo.cmake",
+    ],
     package = "drake",
     versioned = 0,
 )
