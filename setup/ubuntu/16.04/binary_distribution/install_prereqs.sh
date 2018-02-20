@@ -11,7 +11,18 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 apt update
-apt install --no-install-recommends apt-transport-https ca-certificates wget
+apt install --no-install-recommends $(tr '\n' ' ' <<EOF
+apt-transport-https
+ca-certificates
+lsb-release
+wget
+EOF
+)
+
+if [[ "$(lsb_release -sc)" != 'xenial' ]]; then
+  echo 'This script requires Ubuntu 16.04 (Xenial)' >&2
+  exit 2
+fi
 
 wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
 echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu xenial main' > /etc/apt/sources.list.d/drake.list
