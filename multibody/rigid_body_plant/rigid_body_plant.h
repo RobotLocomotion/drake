@@ -195,6 +195,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// `position`.
   void set_position(Context<T>* context, int position_index, T position) const;
 
+  /// Sets the generalized coordinates of the model instance specified by
+  /// `model_instance_id` to the values in `position`.
+  void SetModelInstancePositions(
+      Context<T>* context, int model_instance_id,
+      const Eigen::Ref<const VectorX<T>> positions) const;
+
   /// Sets the generalized velocity `velocity_index` to the value
   /// `velocity`.
   void set_velocity(Context<T>* context, int velocity_index, T velocity) const;

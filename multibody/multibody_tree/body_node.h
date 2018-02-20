@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
@@ -861,6 +862,184 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return Eigen::Map<MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
+  /// This method is used by MultibodyTree within a tip-to-base loop to compute
+  /// this node's articulated body inertia quantities that depend only on the
+  /// generalized positions.
+  ///
+  /// @param[in] context
+  ///   The context with the state of the MultibodyTree model.
+  /// @param[in] pc
+  ///   An already updated position kinematics cache in sync with `context`.
+  /// @param[in] H_PB_W
+  ///   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
+  ///   of this node's body B in its parent node body P, expressed in the world
+  ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
+  ///   by `V_PB_W = H_PB_W⋅v_B`.
+  /// @param[out] abc
+  ///   A pointer to a valid, non nullptr, articulated body cache.
+  ///
+  /// @pre The position kinematics cache `pc` was already updated to be in sync
+  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  /// @pre CalcArticulatedBodyInertiaCache_TipToBase() must have already been
+  /// called for all the child nodes of `this` node (and, by recursive
+  /// precondition, all successor nodes in the tree.)
+  ///
+  /// @throws when called on the _root_ node or `abc` is nullptr.
+  void CalcArticulatedBodyInertiaCache_TipToBase(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
+      ArticulatedBodyInertiaCache<T>* abc) const {
+    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(abc != nullptr);
+
+    // As a guideline for developers, a summary of the computations performed in
+    // this method is provided:
+    // Notation:
+    //  - B body frame associated with this node.
+    //  - P ("parent") body frame associated with this node's parent. This is
+    //    not to be confused with the articulated body inertia, which is also
+    //    named P.
+    //  - C within a loop over children, one of body B's children.
+    //  - P_B_W for the articulated body inertia of body B, about Bo, and
+    //    expressed in world frame W.
+    //  - Pplus_PB_W for the same articulated body inertia P_B_W but projected
+    //    across B's inboard mobilizer to frame P so that instead of
+    //    F_Bo_W = P_B_W A_WB + z_Bo_W, we can write
+    //    F_Bo_W = Pplus_PB_W Aplus_WP + zplus_Bo_W where Aplus_WP is defined
+    //    in Section 6.2.2, Page 101 of [Jain 2010] and zplus_Bo_W is defined
+    //    in Section 6.3, Page 108 of [Jain 2010].
+    //  - Φ(p_PQ) for Jain's rigid body transformation operator. In code,
+    //    V_MQ = Φᵀ(p_PQ) V_MP is equivalent to V_MP.Shift(p_PQ).
+    //
+    // The goal is to populate the articulated body cache with values necessary
+    // for computing generalized accelerations in the second pass of the
+    // articulated body algorithm. This computation is recursive, and assumes
+    // that required articulated body quantities are already computed for all
+    // children.
+    //
+    // We compute the articulated inertia of the current body by summing
+    // contributions from all its children with its own spatial inertia. Note
+    // that Φ is the is the rigid body shift operator as defined in [Jain 2010]
+    // (Φ(P, Q) in Jain's book corresponds to Φ(p_PQ) in the notation used
+    // here).
+    //   P_B_W = Σᵢ(Φ(p_BCᵢ_W) Pplus_BCᵢ_W Φ(p_BCᵢ_W)ᵀ) + M_B_W
+    //         = Σᵢ(Pplus_BCᵢb_W) + M_B_W                                   (1)
+    // where Pplus_BCᵢb_W is the articulated body inertia of the child body Cᵢ,
+    // projected across its inboard mobilizer to frame B, shifted to frame B,
+    // and expressed in the world frame W.
+    //
+    // From P_B_W, we can obtain Pplus_PB_W by projecting the articulated body
+    // inertia for this node across its mobilizer.
+    //   Pplus_PB_W = (I - P_B_W H_PB_W (H_PB_Wᵀ P_B_W H_PB_W)⁻¹ H_PB_Wᵀ)
+    //                  P_B_W                                               (2)
+    // where H_PB_W is the hinge mapping matrix.
+    //
+    // A few quantities are required in the second pass. We write them out
+    // explicitly so we can cache them and simplify the expression for P_PB_W.
+    //   D_B = H_PB_Wᵀ P_B_W H_PB_W                                         (3)
+    //   g_PB_W = P_B_W H_PB_W D_B⁻¹                                        (4)
+    // where D_B is the articulated body hinge inertia and g_PB_W is the
+    // Kalman gain.
+    //
+    // With D_B, it is possible to view equation (2) in another manner. D_B
+    // relates mobility-space forces to mobility-space accelerations. We can
+    // view Pplus_PB_W as subtracting the mobilizer space inertia that
+    // results from expanding D_B into an articulated body inertia from B's
+    // articulated body inertia.
+    //
+    // In order to reduce the number of computations, we can save the common
+    // factor HTxP = H_PB_Wᵀ P_B_W. We then can write:
+    //   D_B = HTxP H_PB_W                                                  (5)
+    // and for g,
+    //   g_PB_Wᵀ = (D_B⁻¹)ᵀ H_PB_Wᵀ P_B_Wᵀ
+    //           = (D_Bᵀ)⁻¹ H_PB_Wᵀ P_B_W
+    //           = D_B⁻¹ HTxP                                               (6)
+    // where we used the fact that both D and P are symmetric. Notice in the
+    // last expression for g_PB_Wᵀ we are reusing the common factor HTxP.
+    //
+    // Given the articulated body hinge inertia and Kalman gain, we can simplify
+    // the equation in (2).
+    //   Pplus_PB_W = (I - g_PB_W H_PB_Wᵀ) P_B_W
+    //              = P_B_W - g_PB_W H_PB_Wᵀ P_B_W
+    //              = P_B_W - g_PB_W * HTxP                                 (7)
+
+    // Body for this node.
+    const Body<T>& body_B = get_body();
+
+    // Get pose of B in W.
+    const Isometry3<T>& X_WB = get_X_WB(pc);
+
+    // Get R_WB.
+    const Matrix3<T> R_WB = X_WB.linear();
+
+    // Compute the spatial inertia for this body and re-express in W frame.
+    const SpatialInertia<T> M_B = body_B.CalcSpatialInertiaInBodyFrame(context);
+    const SpatialInertia<T> M_B_W = M_B.ReExpress(R_WB);
+
+    // Compute articulated body inertia for body using (1).
+    ArticulatedBodyInertia<T> P_B_W = ArticulatedBodyInertia<T>(M_B_W);
+
+    // Add articulated body inertia contributions from all children.
+    for (const BodyNode<T>* child : children_) {
+      // Get X_BC (which is X_PB for child).
+      const Isometry3<T>& X_BC = child->get_X_PB(pc);
+
+      // Compute shift vector p_CoBo_W.
+      const Vector3<T> p_CoBo_B = -X_BC.translation();
+      const Vector3<T> p_CoBo_W = R_WB * p_CoBo_B;
+
+      // Pull Pplus_BC_W from cache (which is Pplus_PB_W for child).
+      const ArticulatedBodyInertia<T>& Pplus_BC_W = child->get_Pplus_PB_W(*abc);
+
+      // Shift Pplus_BC_W to Pplus_BCb_W.
+      const ArticulatedBodyInertia<T> Pplus_BCb_W = Pplus_BC_W.Shift(p_CoBo_W);
+
+      // Add Pplus_BCb_W contribution to articulated body inertia.
+      P_B_W += Pplus_BCb_W;
+    }
+
+    // Get the number of mobilizer velocities (number of columns of H_PB_W).
+    const int nv = get_num_mobilizer_velocites();
+
+    // Compute common term HTxP.
+    const MatrixUpTo6<T> HTxP = H_PB_W.transpose() * P_B_W;
+
+    // Compute the articulated body hinge inertia, D_B, using (5).
+    MatrixUpTo6<T> D_B(nv, nv);
+    D_B.template triangularView<Eigen::Lower>() = HTxP * H_PB_W;
+
+    // Compute the LDLT factorization of D_B as ldlt_D_B.
+    // TODO(bobbyluig): Test performance against inverse().
+    const auto ldlt_D_B =
+        D_B.template selfadjointView<Eigen::Lower>().ldlt();
+
+    // Ensure that D_B is not singular.
+    // Singularity means that a non-physical hinge mapping matrix was used or
+    // that this articulated body inertia has some non-physical quantities
+    // (such as zero moment of inertia along an axis which the hinge mapping
+    // matrix permits motion).
+    if (ldlt_D_B.info() != Eigen::Success) {
+      std::stringstream message;
+      message << "Encountered singular articulated body hinge inertia "
+              << "for body node index " << topology_.index << ". "
+              << "Please ensure that this body has non-zero inertia "
+              << "along all axes of motion.";
+      throw std::runtime_error(message.str());
+    }
+
+    // Compute the Kalman gain, g_PB_W, using (6).
+    const MatrixUpTo6<T> g_PB_W = ldlt_D_B.solve(HTxP).transpose();
+
+    // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
+    // inertia of this body B as felt by body P and expressed in frame W.
+    // Symmetrize the computation to reduce floating point errors.
+    // TODO(bobbyluig): Only compute lower-triangular region.
+    const Matrix6<T> Pplus_PB_W_mat = P_B_W.CopyToFullMatrix6() - g_PB_W * HTxP;
+    get_mutable_Pplus_PB_W(abc) = ArticulatedBodyInertia<T>(
+        0.5 * (Pplus_PB_W_mat + Pplus_PB_W_mat.transpose()));
+  }
+
  protected:
   /// Returns the inboard frame F of this node's mobilizer.
   /// @throws std::runtime_error if called on the root node corresponding to
@@ -1017,6 +1196,23 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   const SpatialAcceleration<T>& get_A_WP(
       const AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(topology_.parent_body_node);
+  }
+
+  // =========================================================================
+  // ArticulatedBodyInertiaCache Accessors and Mutators.
+
+  /// Returns a const reference to the articulated body inertia `Pplus_PB_W`,
+  /// which can be thought of as the articulated body inertia of parent body P
+  /// as though it were inertialess, but taken about Bo and expressed in W.
+  const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
+      const ArticulatedBodyInertiaCache<T>& abc) const {
+    return abc.get_Pplus_PB_W(topology_.index);
+  }
+
+  /// Mutable version of get_Pplus_PB_W().
+  ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
+      ArticulatedBodyInertiaCache<T>* abc) const {
+    return abc->get_mutable_Pplus_PB_W(topology_.index);
   }
 
   // =========================================================================

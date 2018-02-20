@@ -123,8 +123,6 @@ cc_library(
         "@lcm",
         "@libprotobuf",
         "@scs//:scsdir",
-        "@sdformat",
-        "@tinyobjloader",
         "@tinyxml2",
     ],
 )

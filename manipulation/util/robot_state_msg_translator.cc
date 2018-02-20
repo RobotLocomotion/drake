@@ -61,7 +61,7 @@ RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
     DRAKE_DEMAND(root_joint.get_num_velocities() == 0);
   }
 
-  for (const auto& body : robot.bodies) {
+  for (const auto& body : robot.get_bodies()) {
     if (body->has_parent_body()) {
       const auto& joint = body->getJoint();
       if (!joint.is_fixed() && !joint.is_floating()) {
@@ -357,7 +357,7 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
 
   // Skip the "world" and the "root_body".
   for (int i = 2; i < robot.get_num_bodies(); ++i) {
-    const RigidBody<double>* body = robot.bodies[i].get();
+    const RigidBody<double>* body = robot.get_bodies()[i].get();
     DRAKE_DEMAND(body->has_parent_body());
 
     const auto& joint = body->getJoint();

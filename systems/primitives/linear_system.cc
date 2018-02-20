@@ -297,10 +297,13 @@ Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys) {
 }
 
 /// Returns true iff the controllability matrix is full row rank.
-bool IsControllable(const LinearSystem<double>& sys, double threshold) {
+bool IsControllable(const LinearSystem<double>& sys, optional<double>
+    threshold) {
   const auto R = ControllabilityMatrix(sys);
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(R);
-  lu_decomp.setThreshold(threshold);
+  if (threshold) {
+    lu_decomp.setThreshold(threshold.value());
+  }
   return lu_decomp.rank() == sys.A().rows();
 }
 
@@ -320,10 +323,12 @@ Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys) {
 }
 
 /// Returns true iff the observability matrix is full column rank.
-bool IsObservable(const LinearSystem<double>& sys, double threshold) {
+bool IsObservable(const LinearSystem<double>& sys, optional<double> threshold) {
   const auto O = ObservabilityMatrix(sys);
   Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(O);
-  lu_decomp.setThreshold(threshold);
+  if (threshold) {
+    lu_decomp.setThreshold(threshold.value());
+  }
   return lu_decomp.rank() == sys.A().rows();
 }
 

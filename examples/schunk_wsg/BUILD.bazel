@@ -63,6 +63,7 @@ drake_cc_googletest(
         "//common/trajectories:piecewise_polynomial_trajectory",
         "//common/trajectories:trajectory",
         "//lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//multibody:rigid_body_tree",
         "//multibody:rigid_body_tree_construction",
         "//multibody/parsers",
