@@ -64,6 +64,7 @@ DEFINE_validator(sdf_fixed, &ValidateSdf);
 DEFINE_validator(sdf_floating, &ValidateSdf);
 
 constexpr double kCameraUpdatePeriod{0.01};
+constexpr bool kCameraRenderLabelImage{true};
 
 constexpr char kCameraBaseFrameName[] = "camera_base_frame";
 constexpr char kColorCameraFrameName[] = "color_camera_optical_frame";
@@ -136,7 +137,7 @@ int main() {
               config.pos, config.rpy,
               config.depth_range_near, config.depth_range_far,
               config.fov_y, FLAGS_show_window),
-      kCameraUpdatePeriod);
+      kCameraUpdatePeriod, kCameraRenderLabelImage);
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<ImageToLcmImageArrayT>(

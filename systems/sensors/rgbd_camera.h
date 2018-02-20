@@ -273,10 +273,18 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCameraDiscrete);
 
+  static constexpr double kDefaultPeriod = 1. / 30;
+
   /// Constructs a diagram containing a (non-registered) RgbdCamera that will
   /// update at a given rate.
+  /// @param period
+  ///   Update period (sec).
+  /// @param render_label_image
+  ///   If true, renders label image (which requires additional overhead). If
+  ///   false, `label_image_output_port` will raise an error if called.
   RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
-                     double period = 1. / 30);
+                     double period = kDefaultPeriod,
+                     bool render_label_image = true);
 
   /// Returns reference to RgbdCamera intsance.
   const RgbdCamera& camera() const { return *camera_; }
