@@ -27,7 +27,7 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   Eigen::VectorXd lemke_z;
   int num_pivots;
   bool result = l.SolveLcpLemke(M, q, &lemke_z, &num_pivots);
-  EXPECT_TRUE(result);
+  ASSERT_TRUE(result);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
   EXPECT_GT(num_pivots, 0);
