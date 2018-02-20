@@ -13,62 +13,7 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-apt install --no-install-recommends $(tr '\n' ' ' <<EOF
-bash-completion
-clang-4.0
-clang-format-4.0
-cmake-curses-gui
-coinor-libclp-dev
-coinor-libipopt-dev
-diffstat
-doxygen
-gdb
-git
-graphviz
-kcov-34
-libblas-dev
-libbz2-dev
-libexpat1-dev
-libfreetype6-dev
-libglib2.0-dev
-libglu1-mesa-dev
-libhdf5-dev
-libjpeg8-dev
-libjsoncpp-dev
-liblapack-dev
-liblz4-dev
-libnetcdf-cxx-legacy-dev
-libnetcdf-dev
-libnlopt-dev
-libogg-dev
-libpng12-dev
-libqt5opengl5-dev
-libqt5x11extras5-dev
-libtheora-dev
-libtiff5-dev
-libtinyxml-dev
-libtool
-libxml2-dev
-libxt-dev
-libyaml-cpp-dev
-lldb-4.0
-openjdk-8-jdk
-patchelf
-patchutils
-pkg-config
-protobuf-compiler
-python-dev
-python-gtk2
-python-matplotlib
-python-protobuf
-python-pygame
-python-sphinx
-python-tk
-valgrind
-zip
-zlib1g-dev
-EOF
-)
+apt install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
 
 dpkg_install_from_wget() {
   package="$1"
