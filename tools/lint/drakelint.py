@@ -1,3 +1,4 @@
+import os
 import sys
 
 from drake.tools.lint.formatter import IncludeFormatter
@@ -41,6 +42,23 @@ def _check_includes(filename):
     return 0
 
 
+def _check_shebang(filename):
+    """Return 0 if the filename's executable bit is consistent with the presence of
+    a shebang line, and 1 otherwise."""
+    is_executable = os.access(filename, os.X_OK)
+    with open(filename, 'r') as file:
+        has_shebang = file.readline().startswith("#!")
+    if is_executable and not has_shebang:
+        print("error: {} is executable but lacks a shebang".format(filename))
+        print("note: fix via chmod a-x '{}'".format(filename))
+        return 1
+    if has_shebang and not is_executable:
+        print("error: {} has a shebang but is not executable".format(filename))
+        print("note: fix by removing the first line of the file")
+        return 1
+    return 0
+
+
 def main():
     """Run Drake lint checks on each path specified as a command-line argument.
     Exit 1 if any of the paths are invalid or any lint checks fail.
@@ -50,7 +68,12 @@ def main():
     for filename in sys.argv[1:]:
         print("drakelint.py: Linting " + filename)
         total_errors += _check_invalid_line_endings(filename)
-        total_errors += _check_includes(filename)
+        if filename.endswith(".py"):
+            # TODO(jwnimmer-tri) We should enable this check for C++ files
+            # also, but that runs into some struggle with genfiles.
+            total_errors += _check_shebang(filename)
+        if not filename.endswith(".py"):
+            total_errors += _check_includes(filename)
 
     if total_errors == 0:
         sys.exit(0)

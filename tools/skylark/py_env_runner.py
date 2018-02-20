@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Wrapper Python script to ensure we can execute a C++ binary with access to
 Python libraries using an environment established by Bazel.

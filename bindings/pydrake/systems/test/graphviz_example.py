@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import matplotlib.pyplot as plt
 
 from pydrake.systems.drawing import plot_system_graphviz

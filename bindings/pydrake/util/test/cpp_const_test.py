@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import unittest
 
 import pydrake.util.cpp_const as cpp_const
