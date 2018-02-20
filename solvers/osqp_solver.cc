@@ -152,6 +152,8 @@ void ParseAllLinearConstraints(const MathematicalProgram& prog,
 // Convert an Eigen::SparseMatrix to csc_matrix, to be used by osqp.
 // Make sure the input Eigen sparse matrix is compressed, by calling
 // makeCompressed() function.
+// The caller of this function is responsible for freeing the memory allocated
+// here.
 csc* EigenSparseToCSC(const Eigen::SparseMatrix<c_float>& mat) {
   // A csc matrix is in the compressed column major.
   c_float* values =
@@ -181,8 +183,7 @@ void SetOsqpSolverSetting(const std::map<std::string, T1>& options,
   }
 }
 
-void SetOsqpSolverSettings(MathematicalProgram* prog,
-                           OSQPSettings* settings) {
+void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
   const std::map<std::string, double>& options_double =
       prog->GetSolverOptionsDouble(OsqpSolver::id());
   const std::map<std::string, int>& options_int =
@@ -205,13 +206,6 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
   // OSQP is written in C, so this function will be in C style.
-
-  // Problem settings
-  OSQPSettings* settings =
-      static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
-
-  // OSQP structures.
-  OSQPWorkspace* work;  // Workspace
 
   // Get the cost for the QP.
   Eigen::SparseMatrix<c_float> P_sparse;
@@ -241,6 +235,9 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   data->u = u.data();
 
   // Define Solver settings as default.
+  // Problem settings
+  OSQPSettings* settings =
+      static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
   set_default_settings(settings);
   // Default polish to true, to get an accurate solution.
   // TODO(hongkai.dai): add a setter so that we can turn off polishing.
@@ -248,41 +245,44 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   SetOsqpSolverSettings(&prog, settings);
 
   // Setup workspace.
+  // OSQP structures.
+  OSQPWorkspace* work;  // Workspace
   work = osqp_setup(data, settings);
 
   // Solve Problem.
   c_int osqp_exitflag = osqp_solve(work);
-  if (osqp_exitflag) {
-    return SolutionResult::kInvalidInput;
-  }
 
   SolutionResult solution_result;
-  switch (work->info->status_val) {
-    case OSQP_SOLVED:
-    case OSQP_SOLVED_INACCURATE: {
-      const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
-          work->solution->x, prog.num_vars());
-      prog.SetDecisionVariableValues(osqp_sol.cast<double>());
-      prog.SetOptimalCost(work->info->obj_val + constant_cost_term);
-      solution_result = SolutionResult::kSolutionFound;
-      break;
+  if (osqp_exitflag) {
+    solution_result = SolutionResult::kInvalidInput;
+  } else {
+    switch (work->info->status_val) {
+      case OSQP_SOLVED:
+      case OSQP_SOLVED_INACCURATE: {
+        const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
+            work->solution->x, prog.num_vars());
+        prog.SetDecisionVariableValues(osqp_sol.cast<double>());
+        prog.SetOptimalCost(work->info->obj_val + constant_cost_term);
+        solution_result = SolutionResult::kSolutionFound;
+        break;
+      }
+      case OSQP_PRIMAL_INFEASIBLE:
+      case OSQP_PRIMAL_INFEASIBLE_INACCURATE: {
+        solution_result = SolutionResult::kInfeasibleConstraints;
+        prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+        break;
+      }
+      case OSQP_DUAL_INFEASIBLE:
+      case OSQP_DUAL_INFEASIBLE_INACCURATE: {
+        solution_result = SolutionResult::kDualInfeasible;
+        break;
+      }
+      case OSQP_MAX_ITER_REACHED: {
+        solution_result = SolutionResult::kIterationLimit;
+        break;
+      }
+      default: { solution_result = SolutionResult::kUnknownError; }
     }
-    case OSQP_PRIMAL_INFEASIBLE:
-    case OSQP_PRIMAL_INFEASIBLE_INACCURATE: {
-      solution_result = SolutionResult::kInfeasibleConstraints;
-      prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
-      break;
-    }
-    case OSQP_DUAL_INFEASIBLE:
-    case OSQP_DUAL_INFEASIBLE_INACCURATE: {
-      solution_result = SolutionResult::kDualInfeasible;
-      break;
-    }
-    case OSQP_MAX_ITER_REACHED: {
-      solution_result = SolutionResult::kIterationLimit;
-      break;
-    }
-    default: { solution_result = SolutionResult::kUnknownError; }
   }
 
   // Clean workspace.
