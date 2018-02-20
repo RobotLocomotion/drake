@@ -38,6 +38,7 @@ write_cmake_vars(
 install_cmake_config(
     extra_files = [
         "DrakeExternalForksInfo.cmake",
+        "DrakePythonInfo.cmake",
     ],
     package = "drake",
     versioned = 0,
