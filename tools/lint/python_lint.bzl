@@ -1,6 +1,8 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+
 #------------------------------------------------------------------------------
 # Internal helper; set up test given name and list of files. Will do nothing
 # if no files given.
@@ -8,7 +10,7 @@ def _python_lint(name, files, ignore):
     if ignore:
         ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
 
-    native.py_test(
+    py_test_isolated(
         name = name,
         size = "small",
         srcs = ["@pycodestyle//:pycodestyle"],
