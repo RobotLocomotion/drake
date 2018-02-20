@@ -2,6 +2,7 @@
 #include <pybind11/pybind11.h>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/primitives/barycentric_system.h"
@@ -20,6 +21,8 @@ PYBIND11_MODULE(primitives, m) {
   using namespace drake::systems;
 
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
+
+  py::module::import("pydrake.systems.framework");
 
   using T = double;
 
@@ -71,6 +74,21 @@ PYBIND11_MODULE(primitives, m) {
                     const Eigen::Ref<const Eigen::MatrixXd>&, double>(),
            py::arg("A"), py::arg("B"), py::arg("C"), py::arg("D"),
            py::arg("time_period") = 0.0);
+
+  m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
+        py::arg("equilibrium_check_tolerance") = 1e-6);
+
+  m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation);
+
+  m.def("ControllabilityMatrix", &ControllabilityMatrix);
+
+  m.def("IsControllable", &IsControllable, py::arg("sys"),
+        py::arg("threshold") = nullopt);
+
+  m.def("ObservabilityMatrix", &ObservabilityMatrix);
+
+  m.def("IsObservable", &IsObservable, py::arg("sys"),
+        py::arg("threshold") = nullopt);
 
   py::class_<SignalLogger<T>, LeafSystem<T>>(m, "SignalLogger")
       .def(py::init<int>())
