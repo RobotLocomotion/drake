@@ -57,8 +57,7 @@ cmake_configure_file(
 )
 
 generate_file(
-    name = "export_genrule",
-    out = "include/ignition/rndf/Export.hh",
+    name = "include/ignition/rndf/Export.hh",
     content = """
 #pragma once
 

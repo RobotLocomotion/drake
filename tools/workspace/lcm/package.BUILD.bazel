@@ -207,8 +207,7 @@ cc_binary(
 # that, we pre-load the shared library before calling the upstream __init__,
 # using python ctypes with the realpath to the shared library.
 generate_file(
-    name = "init_genrule",
-    out = "__init__.py",
+    name = "__init__.py",
     content = """
 import ctypes
 import os.path
