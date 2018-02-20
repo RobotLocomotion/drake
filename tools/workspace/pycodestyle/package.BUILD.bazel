@@ -20,8 +20,7 @@ package(default_visibility = ["//visibility:public"])
 # overrides the Bazel empty default and imports the contents of the "real"
 # module.
 generate_file(
-    name = "init_genrule",
-    out = "__init__.py",
+    name = "__init__.py",
     content = "from .pycodestyle import *",
     visibility = ["//visibility:private"],
 )
