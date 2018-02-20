@@ -96,12 +96,12 @@ class ContactResultTestCommon : public ::testing::Test {
   //  Returns a raw pointer so that tests can use it for result validation.
   RigidBody<double>* AddSphere(RigidBodyTree<double> *tree,
       const Eigen::Vector3d& pos, const std::string& name) {
-    RigidBody<double>* body;
-    tree->add_rigid_body(
-        std::unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
+    RigidBody<double>* body = new RigidBody<double>();
     body->set_name(name);
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
+    tree->add_rigid_body(
+        std::unique_ptr<RigidBody<double>>(body));
     Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     pose.translate(pos);
     body->add_joint(&tree->world(),

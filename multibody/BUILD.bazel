@@ -501,6 +501,7 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_tree",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities",
         "//drake/multibody/parsers",
     ],
 )

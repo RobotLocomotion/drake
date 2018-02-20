@@ -19,7 +19,7 @@ GTEST_TEST(LoadPr2SimplifiedTest, TestIfPr2SimplifiedLoads) {
       nullptr /* weld to frame */, tree_.get());
   EXPECT_EQ(tree_->get_num_actuators(), 28);
   EXPECT_EQ(tree_->get_num_positions(), 28);
-  EXPECT_EQ(tree_->bodies.size(), 86);
+  EXPECT_EQ(tree_->get_bodies().size(), 86);
 }
 
 }  // namespace pr2

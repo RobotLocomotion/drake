@@ -123,7 +123,7 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 
     // Now create the appropriate maps for the position and velocity
     // components.
-    for (const auto& body : tree_->bodies) {
+    for (const auto& body : tree_->get_bodies()) {
       if (!body->has_parent_body()) {
         continue;
       }
@@ -892,7 +892,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // TODO(amcastro-tri): Maybe move to
   // RBT::ComputeGeneralizedJointLimitForces(C)?
   {
-    for (auto const& b : tree_->bodies) {
+    for (auto const& b : tree_->get_bodies()) {
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       // Joint limit forces are only implemented for single-axis joints.
@@ -1033,7 +1033,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Set the joint range of motion limits.
   std::vector<JointLimit> limits;
-  for (auto const& b : tree.bodies) {
+  for (auto const& b : tree.get_bodies()) {
     if (!b->has_parent_body()) continue;
     auto const& joint = b->getJoint();
 

@@ -319,9 +319,9 @@ void FixDanglingLinks(const ModelInstance& instance,
   DRAKE_DEMAND(tree != nullptr);
   const int& world_index = RigidBodyTreeConstants::kWorldBodyIndex;
   const std::string world_name = RigidBodyTreeConstants::kWorldName;
-  RigidBody<double>* world = tree->bodies[world_index].get();
+  RigidBody<double>* world = tree->get_bodies()[world_index].get();
 
-  for (auto& body : tree->bodies) {
+  for (auto& body : tree->get_bodies()) {
     // Filter out by model instance id but also make
     // sure we're not dealing with the world body.
     if (body->get_model_instance_id() == instance.id &&

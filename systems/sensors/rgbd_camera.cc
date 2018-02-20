@@ -117,7 +117,7 @@ void RgbdCamera::Init(const std::string& name) {
       rendering::PoseVector<double>(), &RgbdCamera::OutputPoseVector);
 
   // Creates rendering world.
-  for (const auto& body : tree_.bodies) {
+  for (const auto& body : tree_.get_bodies()) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
@@ -196,7 +196,7 @@ void RgbdCamera::UpdateModelPoses(
   }
 
   // Updates body poses.
-  for (const auto& body : tree_.bodies) {
+  for (const auto& body : tree_.get_bodies()) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
