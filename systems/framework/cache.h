@@ -71,17 +71,20 @@ class CacheEntryValue {
   /** Returns a mutable reference to an unused cache entry value object, which
   has no valid CacheIndex or DependencyTicket and has a meaningless value. The
   reference is to a singleton %CacheEntryValue and will always return the same
-  address at zero computational cost. You may invoke set_is_up_to_date()
-  harmlessly on this object, but may not depend on its contents in any way as
-  they may change unexpectedly. The intention is that this object is used as a
-  common throw-away destination for non-cache DependencyTracker invalidations
-  so that invalidation can be done unconditionally, and to the same memory
-  location, for speed. */
+  address. You may invoke set_is_up_to_date() harmlessly on this object, but may
+  not depend on its contents in any way as they may change unexpectedly. The
+  intention is that this object is used as a common throw-away destination for
+  non-cache DependencyTracker invalidations so that invalidation can be done
+  unconditionally, and to the same memory location, for speed. */
   static CacheEntryValue& dummy() {
-    return dummy_.access();
+    static never_destroyed<CacheEntryValue> dummy;
+    return dummy.access();
   }
 
  private:
+  // Allow never_destroyed to invoke the private constructor on our behalf.
+  friend class never_destroyed<CacheEntryValue>;
+
   // Default constructor can only be used privately to construct an empty
   // CacheEntryValue with description "DUMMY" and a meaningless value.
   CacheEntryValue()
@@ -92,10 +95,6 @@ class CacheEntryValue {
   copyable_unique_ptr<AbstractValue> value_;
   bool is_up_to_date_flag_{false};
   DependencyTicket ticket_;
-
-  // Allow never_destroyed to invoke the private constructor on our behalf.
-  friend class never_destroyed<CacheEntryValue>;
-  static never_destroyed<CacheEntryValue> dummy_;
 };
 
 // TODO(sherm1) Stubbed for DependencyTracker/Graph review; don't review.

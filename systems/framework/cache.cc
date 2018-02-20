@@ -8,9 +8,6 @@
 namespace drake {
 namespace systems {
 
-// Use private constructor to make this pre-allocated variable.
-never_destroyed<CacheEntryValue> CacheEntryValue::dummy_{};
-
 CacheEntryValue& Cache::CreateNewCacheEntryValue(
     CacheIndex index, DependencyTicket ticket,
     const std::string& description,

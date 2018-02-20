@@ -21,7 +21,6 @@ std::string Indent(int depth) {
 // event that we have already heard about. Otherwise, let the subscribers know
 // that things have changed. Update statistics.
 void DependencyTracker::NoteValueChange(int64_t change_event) const {
-  unused(Indent);  // Avoid warning in non-Debug builds.
   DRAKE_SPDLOG_DEBUG(log(), "Tracker '{}' value change event {} ...",
                      GetPathDescription(), change_event);
   DRAKE_ASSERT(change_event > 0);
@@ -44,6 +43,7 @@ void DependencyTracker::NotePrerequisiteChange(
     int64_t change_event,
     const DependencyTracker& prerequisite,
     int depth) const {
+  unused(Indent);  // Avoid warning in non-Debug builds.
   DRAKE_SPDLOG_DEBUG(
       log(), "{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
       Indent(depth), GetPathDescription(), prerequisite.GetPathDescription(),
@@ -217,7 +217,9 @@ void DependencyGraph::AppendToTrackerPointerMap(
   DRAKE_DEMAND(clone.num_trackers() == num_trackers());
   for (DependencyTicket ticket(0); ticket < num_trackers(); ++ticket) {
     if (!has_tracker(ticket)) continue;
-    (*tracker_map)[&get_tracker(ticket)] = &clone.get_tracker(ticket);
+    const bool added = tracker_map->emplace(&get_tracker(ticket),
+                                            &clone.get_tracker(ticket)).second;
+    DRAKE_DEMAND(added);  // Shouldn't have been there.
   }
 }
 
