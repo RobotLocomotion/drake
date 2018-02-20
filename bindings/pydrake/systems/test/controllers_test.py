@@ -8,7 +8,7 @@ import unittest
 
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.systems.analysis import Simulator
-from pydrake._math import BarycentricMesh
+from pydrake.math import BarycentricMesh
 from pydrake.systems.controllers import (
     DynamicProgrammingOptions, FittedValueIteration,
     LinearProgrammingApproximateDynamicProgramming,
