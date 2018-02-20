@@ -254,6 +254,16 @@ drake_py_test(
 )
 
 drake_py_test(
+    name = "primitives_test",
+    size = "small",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+    ],
+)
+
+drake_py_test(
     name = "sensors_test",
     size = "small",
     deps = [
