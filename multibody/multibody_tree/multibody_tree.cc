@@ -847,6 +847,7 @@ void MultibodyTree<T>::ThrowIfNotFinalized(
   }
 }
 
+template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
