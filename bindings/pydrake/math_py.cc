@@ -29,6 +29,15 @@ PYBIND11_MODULE(_math, m) {
       .def("get_mesh_point", overload_cast_explicit<VectorX<T>, int>(
                                  &BarycentricMesh<T>::get_mesh_point))
       .def("get_all_mesh_points", &BarycentricMesh<T>::get_all_mesh_points)
+      .def("EvalBarycentricWeights",
+           [](const BarycentricMesh<T>* self,
+              const Eigen::Ref<const VectorX<T>>& input) {
+             const int n = self->get_num_interpolants();
+             Eigen::VectorXi indices(n);
+             VectorX<T> weights(n);
+             self->EvalBarycentricWeights(input, &indices, &weights);
+             return std::make_pair(indices, weights);
+           })
       .def("Eval", overload_cast_explicit<VectorX<T>,
                                           const Eigen::Ref<const MatrixX<T>>&,
                                           const Eigen::Ref<const VectorX<T>>&>(
