@@ -36,8 +36,6 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        repository_ctx.file("empty.cc", executable = False)
-
         repository_ctx.symlink("/usr/include/expat.h", "include/expat.h")
         repository_ctx.symlink("/usr/include/expat_external.h",
                                "include/expat_external.h")
@@ -45,7 +43,6 @@ def _impl(repository_ctx):
         file_content = """
 cc_library(
     name = "expat",
-    srcs = ["empty.cc"],
     hdrs = [
         "include/expat_external.h",
         "include/expat.h",
