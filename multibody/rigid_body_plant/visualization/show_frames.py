@@ -9,6 +9,7 @@ import robotlocomotion as lcmrobotlocomotion
 
 
 class FrameChannel(object):
+
     def __init__(self, parent_folder, channel):
         self._parent_folder = parent_folder
         self._channel = channel
@@ -29,7 +30,7 @@ class FrameChannel(object):
                 msg.position[i], msg.quaternion[i])
             # `vis.updateFrame` will either create or update the frame
             # according to its name within its parent folder.
-            vis.updateFrame(transform, name, parent=folder, scale=0.1);
+            vis.updateFrame(transform, name, parent=folder, scale=0.1)
 
     def _get_folder(self):
         return om.getOrCreateContainer(
@@ -40,6 +41,7 @@ class FrameChannel(object):
 
 
 class FramesVisualizer(object):
+
     def __init__(self):
         self._name = "Frame Visualizer"
         self._subscriber = None
@@ -52,9 +54,9 @@ class FramesVisualizer(object):
 
         self._subscriber = lcmUtils.addSubscriber(
             'DRAKE_DRAW_FRAMES.*',
-            messageClass = lcmrobotlocomotion.viewer_draw_t,
-            callback = self._handle_message,
-            callbackNeedsChannel = True)
+            messageClass=lcmrobotlocomotion.viewer_draw_t,
+            callback=self._handle_message,
+            callbackNeedsChannel=True)
         self._subscriber.setNotifyAllMessagesEnabled(True)
 
     def _get_folder(self):
@@ -87,6 +89,7 @@ class FramesVisualizer(object):
             self._frame_channels[channel] = frame_channel
         frame_channel.handle_message(msg)
 
+
 def init_visualizer():
     frame_viz = FramesVisualizer()
 
@@ -95,6 +98,7 @@ def init_visualizer():
         'Tools', frame_viz._name,
         frame_viz.is_enabled, frame_viz.set_enabled)
     return frame_viz
+
 
 # Creates the visualizer when this script is executed.
 frame_viz = init_visualizer()
