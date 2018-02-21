@@ -8,6 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
@@ -19,8 +20,12 @@ namespace multibody {
 namespace multibody_model {
 namespace {
 
+using benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
+using benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
+using Eigen::Isometry3d;
 using Eigen::MatrixXd;
-using multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
+using Eigen::Vector3d;
+using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using systems::Context;
 using systems::ContinuousState;
 
@@ -137,7 +142,7 @@ class KukaIiwaModelTests : public ::testing::Test {
  public:
   /// Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    model_ = MakeKukaIiwaModel<double>();
+    model_ = MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_);
 
     // Keep pointers to the modeling elements.
     end_effector_link_ = &model_->GetBodyByName("iiwa_link_7");
@@ -156,6 +161,37 @@ class KukaIiwaModelTests : public ::testing::Test {
     context_autodiff_ = model_autodiff_->CreateDefaultContext();
   }
 
+  // Gets an arm state to an arbitrary configuration in which joint angles and
+  // rates are non-zero.
+  void GetArbitraryNonZeroConfiguration(
+      VectorX<double>* q, VectorX<double>* v) {
+    const int kNumPositions = model_->get_num_positions();
+    q->resize(kNumPositions);
+    v->resize(kNumPositions);  // q and v have the same dimension for kuka.
+
+    // A set of values for the joint's angles chosen mainly to avoid in-plane
+    // motions.
+    const double q30 = M_PI / 6, q60 = M_PI / 3;
+    const double qA = q60;
+    const double qB = q30;
+    const double qC = q60;
+    const double qD = q30;
+    const double qE = q60;
+    const double qF = q30;
+    const double qG = q60;
+    *q << qA, qB, qC, qD, qE, qF, qG;
+
+    // A non-zero set of values for the joint's velocities.
+    const double vA = 0.1;
+    const double vB = 0.2;
+    const double vC = 0.3;
+    const double vD = 0.4;
+    const double vE = 0.5;
+    const double vF = 0.6;
+    const double vG = 0.7;
+    *v << vA, vB, vC, vD, vE, vF, vG;
+  }
+
   // Computes the translational velocity `v_WE` of the end effector frame E in
   // the world frame W.
   template <typename T>
@@ -165,6 +201,17 @@ class KukaIiwaModelTests : public ::testing::Test {
     std::vector<SpatialVelocity<T>> V_WB_array;
     model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
     return V_WB_array[end_effector_link_->get_index()].translational();
+  }
+
+  // Computes spatial velocity `V_WE` of the end effector frame E in the world
+  // frame W.
+  template <typename T>
+  SpatialVelocity<T> CalcEndEffectorSpatialVelocity(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T) const {
+    std::vector<SpatialVelocity<T>> V_WB_array;
+    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    return V_WB_array[end_effector_link_->get_index()];
   }
 
   // Computes p_WEo, the position of the end effector frame's origin Eo.
@@ -198,6 +245,8 @@ class KukaIiwaModelTests : public ::testing::Test {
   }
 
  protected:
+  // Acceleration of gravity:
+  const double gravity_{9.81};
   // The model plant:
   std::unique_ptr<MultibodyTree<double>> model_;
   // Workspace including context and derivatives vector:
@@ -210,6 +259,9 @@ class KukaIiwaModelTests : public ::testing::Test {
   // AutoDiffXd model to compute automatic derivatives:
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff_;
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
+
+  // And independent benchmarking set of solutions.
+  const MGKukaIIwaRobot<double> benchmark_{gravity_};
 };
 
 // This test is used to verify the correctness of the method
@@ -242,27 +294,8 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  const double q30 = M_PI / 6, q60 = M_PI / 3;
-  const double qA = q60;
-  const double qB = q30;
-  const double qC = q60;
-  const double qD = q30;
-  const double qE = q60;
-  const double qF = q30;
-  const double qG = q60;
-  VectorX<double> q(kNumPositions);
-  q << qA, qB, qC, qD, qE, qF, qG;
-
-  // A non-zero set of values for the joint's velocities.
-  const double vA = 0.1;
-  const double vB = 0.2;
-  const double vC = 0.3;
-  const double vD = 0.4;
-  const double vE = 0.5;
-  const double vF = 0.6;
-  const double vG = 0.7;
-  VectorX<double> v(kNumPositions);
-  v << vA, vB, vC, vD, vE, vF, vG;
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
 
   // Zero generalized positions and velocities.
   int angle_index = 0;
@@ -363,16 +396,8 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  const double q30 = M_PI / 6, q60 = M_PI / 3;
-  const double qA = q60;
-  const double qB = q30;
-  const double qC = q60;
-  const double qD = q30;
-  const double qE = q60;
-  const double qF = q30;
-  const double qG = q60;
-  VectorX<double> q0(kNumPositions);
-  q0 << qA, qB, qC, qD, qE, qF, qG;
+  VectorX<double> q0, v0;  // v0 will not be used in this test.
+  GetArbitraryNonZeroConfiguration(&q0, &v0);
 
   context_->get_mutable_continuous_state().
       get_mutable_generalized_position().SetFromVector(q0);
@@ -431,6 +456,106 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   // In this case analytic and geometric Jacobians are equal since v = q.
   EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
                               kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joints' angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set joint angles and rates.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Spatial velocity of the end effector in the world frame.
+  const SpatialVelocity<double>& V_WE =
+      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+
+  // Pose of the end effector in the world frame.
+  const Isometry3<double>& X_WE =
+      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+
+  // Independent benchmark solution.
+  const SpatialKinematicsPVA<double> MG_kinematics =
+      benchmark_.CalcEndEffectorKinematics(
+          q, v, VectorX<double>::Zero(7) /* vdot */);
+  const SpatialVelocity<double>& V_WE_benchmark =
+      MG_kinematics.spatial_velocity();
+  const Isometry3<double>& X_WE_benchmark = MG_kinematics.transform();
+
+  // Compare against benchmark.
+  EXPECT_TRUE(V_WE.IsApprox(V_WE_benchmark, kTolerance));
+  EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_benchmark.matrix(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = model_->get_num_positions();
+  const int kNumStates = model_->get_num_states();
+
+  ASSERT_EQ(kNumPositions, 7);
+
+  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+
+  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joints' angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set joint angles and rates.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Spatial velocity of the end effector.
+  const SpatialVelocity<double>& V_WE =
+      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+
+  // Pose of the end effector.
+  const Isometry3d& X_WE =
+      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+
+  // Position of a frame F measured and expressed in frame E.
+  const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);
+  // Express this same last vector in the world frame.
+  const Vector3d p_EoFo_W = X_WE.linear() * p_EoFo_E;
+
+  // The spatial velocity of a frame F moving with E can be obtained by
+  // "shifting" the spatial velocity of frame E from Eo to Fo.
+  // That is, frame F has the spatial velocity of a frame Ef obtained by
+  // "shifting" from E by an offset p_EoFo.
+  const SpatialVelocity<double> V_WEf = V_WE.Shift(p_EoFo_W);
+
+  MatrixX<double> Jv_WF(6, model_->get_num_velocities());
+  // Compute the Jacobian Jv_WF for that relate the generalized velocities with
+  // the spatial velocity of frame F.
+  model_->CalcFrameGeometricJacobianExpressedInWorld(
+      *context_,
+      end_effector_link_->get_body_frame(), p_EoFo_E, &Jv_WF);
+
+  // Verify that V_WEf = Jv_WF * v:
+  const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
+
+  EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
 }  // namespace
