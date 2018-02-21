@@ -19,9 +19,13 @@ Quaternion<T> QuaternionFloatingMobilizer<T>::get_quaternion(
       this->GetMultibodyTreeContextOrThrow(context);
   auto q = this->get_positions(mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
-  // Note: Very important to use the proper constructor here! since as a vector,
-  // q[0] is the "real" part, but for Eigen internally the Vector4
-  // representation contains the "real" part in the last entry.
+  // Note: In the context we store the quaternion's components first, followed
+  // by the position vector components. The quaternion components are stored as
+  // a plain vector in the order: (qs, qv₁, qv₂, qv₃), where qs corresponds to
+  // the "scalar" component of the quaternion and qv corresponds to the "vector"
+  // component.
+  // Eigen::Quaternion's constructor takes the scalar component first followed
+  // by the vector components.
   return Quaternion<T>(q[0], q[1], q[2], q[3]);
 }
 
@@ -32,78 +36,68 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_position(
       this->GetMultibodyTreeContextOrThrow(context);
   auto q = this->get_positions(mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
-  // QuaternionFloatingMobilizer stores the positions after the quaternion
-  // orientation.
+  // Note: In the context we store the quaternion's components first (q₀ to q₃),
+  // followed by the position vector components (q₄ to q₆).
   return Vector3<T>(q[4], q[5], q[6]);
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_quaternion(
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_quaternion(
     systems::Context<T>* context, const Quaternion<T>& q_FM) const {
   DRAKE_DEMAND(context != nullptr);
-  set_quaternion(*context, &context->get_mutable_state(), q_FM);
-#if 0
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto q = this->get_mutable_positions(&mbt_context);
-  DRAKE_ASSERT(q.size() == kNq);
-  // Note: Very important to use the proper constructor here! since as a vector,
-  // q[0] is the "real" part, but for Eigen internally the Vector4
-  // representation contains the "real" part in the last entry.
-  q[0] = q_FM.w();
-  q.template segment<3>(1) = q_FM.vec();
-#endif
+  set_quaternion(*context, q_FM, &context->get_mutable_state());
   return *this;
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_quaternion(
-    const systems::Context<T>& context,
-    systems::State<T>* state,
-    const Quaternion<T>& q_FM) const {
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_quaternion(
+    const systems::Context<T>&, const Quaternion<T>& q_FM,
+    systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   auto q = this->get_mutable_positions(state);
   DRAKE_ASSERT(q.size() == kNq);
-  // Note: Very important to use the proper constructor here! since as a vector,
-  // q[0] is the "real" part, but for Eigen internally the Vector4
-  // representation contains the "real" part in the last entry.
+  // Note: see storage order notes in get_quaternion().
   q[0] = q_FM.w();
   q.template segment<3>(1) = q_FM.vec();
   return *this;
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_position(
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_position(
     systems::Context<T>* context, const Vector3<T>& p_FM) const {
   DRAKE_DEMAND(context != nullptr);
-  set_position(*context, &context->get_mutable_state(), p_FM);
+  set_position(*context, p_FM, &context->get_mutable_state());
   return *this;
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_position(
-    const systems::Context<T>& context,
-    systems::State<T>* state,
-    const Vector3<T>& p_FM) const {
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_position(
+    const systems::Context<T>&, const Vector3<T>& p_FM,
+    systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   auto q = this->get_mutable_positions(state);
   DRAKE_ASSERT(q.size() == kNq);
-  q.template tail<3>() = p_FM;  // elements 4, 5, 6.
+  // Note: see storage order notes in get_position().
+  q.template tail<3>() = p_FM;
   return *this;
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::SetFromRotationMatrix(
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const Matrix3<T>& R_FM) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto q = this->get_mutable_positions(&mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
   Vector4<T> v4 = math::rotmat2quat(R_FM);
-  // Note: the Eigen quaternion would be crated with:
-  // Quaternion<T> quat(v4[0], v4[1], v4[2], v4[3]);
-  // Note: Notice that here we assume the ordering imposed by rotmat2quat, i.e.
-  // q[0] is the "real" part and q[1:3] is the "imaginary" part.
+  // Note: Notice that the storage order documented in get_quaternion() is
+  // consistent with the ordering used in the vector return by rotmat2quat, i.e.
+  // q[0] is the "scalar" part and q[1:3] is the "vector" part.
   q.template head<4>() = v4;
   return *this;
 }
@@ -113,82 +107,66 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_angular_velocity(
     const systems::Context<T> &context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
+  // Note: we store the components of the angular velocity w_FM first, followed
+  // by the components of the position vector v_FM.
   return this->get_velocities(mbt_context).template head<3>();
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angular_velocity(
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
   return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angular_velocity(
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_angular_velocity(
     const systems::Context<T>&, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
+  // Note: See storage order notes in get_angular_velocity().
   auto v = this->get_mutable_velocities(state);
   DRAKE_ASSERT(v.size() == kNv);
   v.template head<3>() = w_FM;
   return *this;
 }
-
-#if 0
-template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_angular_velocity(
-    systems::Context<T> *context, const Vector3<T>& w_FM) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto v = this->get_mutable_velocities(&mbt_context);
-  DRAKE_ASSERT(v.size() == kNv);
-  v.template head<3>() = w_FM;
-  return *this;
-}
-#endif
 
 template <typename T>
 Vector3<T> QuaternionFloatingMobilizer<T>::get_translational_velocity(
     const systems::Context<T> &context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
+  // Note: we store the components of the angular velocity w_FM first, followed
+  // by the components of the position vector v_FM.
   return this->get_velocities(mbt_context).template tail<3>();
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_translational_velocity(
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_translational_velocity(
     systems::Context<T>* context, const Vector3<T>& v_FM) const {
   return set_angular_velocity(*context, v_FM, &context->get_mutable_state());
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>& QuaternionFloatingMobilizer<T>::set_translational_velocity(
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::set_translational_velocity(
     const systems::Context<T>&, const Vector3<T>& v_FM,
     systems::State<T>* state) const {
   auto v = this->get_mutable_velocities(state);
   DRAKE_ASSERT(v.size() == kNv);
+  // Note: See storage order notes in get_translational_velocity().
   v.template tail<3>() = v_FM;
   return *this;
 }
 
-#if 0
 template <typename T>
-const QuaternionFloatingMobilizer<T>&
-QuaternionFloatingMobilizer<T>::set_translational_velocity(
-    systems::Context<T>* context, const Vector3<T>& v_FM) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto v = this->get_mutable_velocities(&mbt_context);
-  DRAKE_ASSERT(v.size() == kNv);
-  v.template tail<3>() = v_FM;
-  return *this;
-}
-#endif
-
-template <typename T>
-void QuaternionFloatingMobilizer<T>::set_zero_state(const systems::Context<T>& context,
-                                      systems::State<T>* state) const {
-  set_quaternion(context, state, Quaternion<T>::Identity());
-  set_position(context, state, Vector3<T>::Zero());
-  this->get_mutable_velocities(state).setZero();
+void QuaternionFloatingMobilizer<T>::set_zero_state(
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  set_quaternion(context, Quaternion<T>::Identity(), state);
+  set_position(context, Vector3<T>::Zero(), state);
+  set_angular_velocity(context, Vector3<T>::Zero(), state);
+  set_translational_velocity(context, Vector3<T>::Zero(), state);
 }
 
 template <typename T>
@@ -234,26 +212,40 @@ void QuaternionFloatingMobilizer<T>::ProjectSpatialForce(
 template <typename T>
 Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
     const Quaternion<T>& q_FM) {
-  // See Eq. 5 in Section 9.2 of Paul's book, for the time derivative of the
-  // vector component of the quaternion (Euler parameters):
-  // Notice in the book derivatives are taken in M though the math can be worked
-  // out to get it in F.
-
+  // This L matrix helps us compute both N(q) and N⁺(q) since it turns out that:
+  //   N(q) = [L(q_FM/2) 0₄ₓ₃
+  //          [     0₃ₓ₃   I₃]
+  // and:
+  //   N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃
+  //           [     0₃ₓ₄    I₃]
+  //
+  // See Eqs. 5 and 6 in Section 9.2 of Paul's book
+  // [Mitiguy (August 7) 2017, §9.2], for the time derivative of the vector
+  // component of the quaternion (Euler parameters). Notice however here we use
+  // qs and qv for the "scalar" and "vector" components of the quaternion q_FM,
+  // respectively, while Mitiguy uses ε₀ and ε (in bold), respectively.
+  // This mobilizer is parametrized by the angular velocity w_FM, i.e. time
+  // derivatives of the vector component of the quaternion are taken in the F
+  // frame. If you are confused by this, notice that the vector component of a
+  // quaternion IS a vector, and therefore you must specify in what frame time
+  // derivatives are taken.
+  //
   // Notice this is equivalent to:
-  // Dt_F(q) = 1/2 * w_FM.cross(q_FM), with qv_FM expressed in F and w_FM
-  // expressed in F. Dt_F(q) is short for [Dt_F(q)]_F.
+  // Dt_F(q) = 1/2 * w_FM⋅q_FM, where ⋅ denotes the "quaternion product" and
+  // both the vector component qv_FM of q_FM and w_FM are expressed in frame F.
+  // Dt_F(q) is short for [Dt_F(q)]_F.
   // The expression above can be writen as:
   // Dt_F(q) = 1/2 * (-w_FM.dot(qv_F); qs * w_FM + w_FM.cross(qv_F))
   //         = 1/2 * (-w_FM.dot(qv_F); qs * w_FM - qv_F.cross(w_FM))
   //         = 1/2 * (-w_FM.dot(qv_F); (qs * Id - [qv_F]x) * w_FM)
-  //         = N(q) * w_FM
+  //         = L(q_FM/2) * w_FM
   // That is:
-  //      |         -qv_F     |
-  // Nq = | qs * Id - [qv_F]x |
+  //        |         -qv_Fᵀ    |
+  // L(q) = | qs * Id - [qv_F]x |
 
-  const T qs = q_FM.w();  // The scalar part.
-  const Vector3<T> qv = q_FM.vec();  // The imaginary part.
-  const Vector3<T> mqv = -qv;  // minus qv.
+  const T qs = q_FM.w();             // The scalar component.
+  const Vector3<T> qv = q_FM.vec();  // The vector component.
+  const Vector3<T> mqv = -qv;        // minus qv.
   return (Eigen::Matrix<T, 4, 3>() <<
       mqv.transpose(),
       qs, qv.z(), mqv.y(),
@@ -264,6 +256,9 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
 template <typename T>
 Eigen::Matrix<T, 7, 6> QuaternionFloatingMobilizer<T>::CalcNMatrix(
     const Quaternion<T>& q_FM) {
+  // With L given by CalcLMatrix we have:
+  // N(q) = [L(q_FM/2) 0₄ₓ₃
+  //        [     0₃ₓ₃   I₃]
   const Eigen::Matrix<T, 4, 3> L = CalcLMatrix(
       {q_FM.w() / 2.0, q_FM.x() / 2.0, q_FM.y() / 2.0, q_FM.z() / 2.0});
   Eigen::Matrix<T, 7, 6> N = Eigen::Matrix<T, 7, 6>::Zero();
@@ -273,8 +268,11 @@ Eigen::Matrix<T, 7, 6> QuaternionFloatingMobilizer<T>::CalcNMatrix(
 };
 
 template <typename T>
-Eigen::Matrix<T, 6, 7> QuaternionFloatingMobilizer<T>::CalcNtransposeMatrix(
+Eigen::Matrix<T, 6, 7> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
     const Quaternion<T>& q_FM) {
+  // With L given by CalcLMatrix we have:
+  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃
+  //         [     0₃ₓ₄    I₃]
   const Eigen::Matrix<T, 3, 4> LT =
       CalcLMatrix(
           {2.0 * q_FM.w(), 2.0 * q_FM.x(), 2.0 * q_FM.y(), 2.0 * q_FM.z()}).
@@ -306,7 +304,7 @@ void QuaternionFloatingMobilizer<T>::MapQDotToVelocity(
   DRAKE_ASSERT(v != nullptr);
   DRAKE_ASSERT(v->size() == kNv);
   const Quaternion<T> q_FM = get_quaternion(context);
-  *v = CalcNtransposeMatrix(q_FM) * qdot;
+  *v = CalcNplusMatrix(q_FM) * qdot;
 }
 
 template <typename T>
@@ -323,13 +321,15 @@ QuaternionFloatingMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> QuaternionFloatingMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<double>>
+QuaternionFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>> QuaternionFloatingMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<AutoDiffXd>>
+QuaternionFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }

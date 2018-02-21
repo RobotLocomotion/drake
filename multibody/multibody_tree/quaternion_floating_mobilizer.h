@@ -14,20 +14,16 @@
 namespace drake {
 namespace multibody {
 
-/// This Mobilizer allows two frames to rotate relatively to one another around
-/// an axis that is constant when measured in either this mobilizer's inboard or
-/// outboard frames, while the distance between the two frames does not vary.
-/// To fully specify this mobilizer a user must provide the inboard frame F,
-/// the outboard (or "mobilized") frame M and the axis `axis_F` (expressed in
-/// frame F) about which frame M rotates with respect to F.
-/// The single generalized coordinate q introduced by this mobilizer
-/// corresponds to the rotation angle in radians of frame M with respect to
-/// frame F about the rotation axis `axis_F`. When `q = 0`, frames F and M are
-/// coincident. The rotation angle is defined to be positive according to the
-/// right-hand-rule with the thumb aligned in the direction of the `axis_F`.
-/// Notice that the components of the rotation axis as expressed in
-/// either frame F or M are constant. That is, `axis_F` and `axis_M` remain
-/// unchanged w.r.t. both frames by this mobilizer's motion.
+/// This Mobilizer allows two frames to move freely relatively to one another.
+/// To fully specify this mobilizer a user must provide an inboard frame F and
+/// an outboard frame M. This mobilizer introduces six degrees of freedom which
+/// allow frame M to freely move with respect to frame F. This mobilizer
+/// introduces four generalized positions to describe the orientation `R_FM` of
+/// frame M in F with a quaternion `q_FM`, and three generalized positions to
+/// describe the position of frame M's origin in F with a position vector
+/// `p_FM`. As generalized velocities, this mobilizer introduces the angular
+/// velocity `w_FM` of frame M in F and the linear velocity `v_FM` of frame M's
+/// origin in frame F.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -42,147 +38,164 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer)
 
-  /// Constructor for a %QuaternionFloatingMobilizer between the inboard frame F
-  /// `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
-  /// single rotational degree of freedom about axis `axis_F` expressed in the
-  /// inboard frame F.
-  /// @pre axis_F must be a unit vector within at least 1.0e-6. This rather
-  /// loose tolerance (at least for simulation) allows users to provide "near
-  /// unity" axis vectors originated, for instance, during the parsing of a
-  /// file with limited precision. Internally, we re-normalize the axis to
-  /// within machine precision.
-  /// @throws std::runtime_error if the provided rotational axis is not a unit
-  /// vector.
+  /// Constructor for a %QuaternionFloatingMobilizer granting six degrees of
+  /// freedom to an outboard frame M with respect to an inboard frame F. The
+  /// orientation of frame M in F is represented by a quaternion `q_FM` while
+  /// the position of F in M is given by a position vector `p_FM` expressed in
+  /// frame F.
+  /// @param[in] inboard_frame_F
+  ///   the inboard frame F.
+  /// @param[in] outboard_frame_M
+  ///   the outboard frame M which can move freely with respect to frame M.
   QuaternionFloatingMobilizer(const Frame<T>& inboard_frame_F,
                 const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  /// Gets the rotation angle of `this` mobilizer from `context`. See class
-  /// documentation for sign convention.
-  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @returns q_FM
+  /// @name Methods to get and set the state for a QuaternionFloatingMobilizer
+  /// @{
+  /// These methods throw an exception if the provided systems::Context does not
+  /// correspond to a valid MultibodyTreeContext.
+
+  /// Gets the quaternion `q_FM` that represents the orientation of outboard
+  /// frame M in the inboard frame F. Refer to the documentation for this class
+  /// for details.
+  /// @param[in] context
+  ///   The context storing the state of the MultibodyTree this mobilizer
+  ///   belongs to.
+  /// @retval q_FM
+  ///   The quaternion representing the orientaiton of frame M in F.
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
 
-  /// @returns p_FM
+  /// Returns the position `p_FM` of the outboard frame M's origin as measured
+  /// and expressed in the inboard frame F. Refer to the documentation for this
+  /// class for details.
+  /// @param[in] context
+  ///   The context storing the state of the MultibodyTree this mobilizer
+  ///   belongs to.
+  /// @retval p_FM
+  ///   The position vector of frame M's origin in frame F.
   Vector3<T> get_position(const systems::Context<T>& context) const;
 
-  const QuaternionFloatingMobilizer<T>& set_quaternion(systems::Context<T>* context,
-                                         const Quaternion<T>& q_FM) const;
+  /// Sets `context` so that the orientation of frame M in F is given by the
+  /// input quaternion `q_FM`.
+  /// @param[out] context
+  ///   The context storing the state of the MultibodyTree this mobilizer
+  ///   belongs to.
+  /// @param[in] q_FM
+  ///   The desired orientation of M in F to be stored in `context`.
+  /// @returns a constant reference to `this` mobilizer.
+  const QuaternionFloatingMobilizer<T>& set_quaternion(
+      systems::Context<T>* context, const Quaternion<T>& q_FM) const;
 
+  /// Alternative signature to set_quaternion(context, q_FM) to set `state` to
+  /// store the orientation of M in F given by the equaternion `q_FM`.
   const QuaternionFloatingMobilizer<T>& set_quaternion(
       const systems::Context<T>& context,
-      systems::State<T>* state,
-      const Quaternion<T>& q_FM) const;
+      const Quaternion<T>& q_FM, systems::State<T>* state) const;
 
+  /// Sets `context` to store the position `p_FM` of frame M's origin `Mo`
+  /// measured and expressed in frame F.
+  /// @param[out] context
+  ///   The context storing the state of the MultibodyTree this mobilizer
+  ///   belongs to.
+  /// @param[in] p_FM
+  ///   The desired position of frame M in F to be stored in `context`.
+  /// @returns a constant reference to `this` mobilizer.
   const QuaternionFloatingMobilizer<T>& set_position(
       systems::Context<T>* context, const Vector3<T>& p_FM) const;
 
+  /// Alternative signature to set_position(context, p_FM) to set `state` to
+  /// store the position `p_FM` of M in F.
   const QuaternionFloatingMobilizer<T>& set_position(
-      const systems::Context<T>& context,
-      systems::State<T>* state,
-      const Vector3<T>& p_FM) const;
+      const systems::Context<T>& context, const Vector3<T>& p_FM,
+      systems::State<T>* state) const;
 
-  /// Sets the `context` so that the generalized coordinate corresponding to the
-  /// rotation angle of `this` mobilizer equals `angle`.
-  /// @throws std::logic_error if `context` is not a valid
-  /// MultibodyTreeContext.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @param[in] angle The desired angle in radians.
+  /// Sets `context` to store the quaternion `q_FM` which represents the same
+  /// orientation of M in F as given by the rotation matrix `R_FM`.
+  /// @param[out] context
+  ///   The context of the MultibodyTree to which this mobilizer belongs to.
+  /// @param[in] R_FM
+  ///   The desired orientation of M in F given as a rotation matrix.
   /// @returns a constant reference to `this` mobilizer.
   const QuaternionFloatingMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const Matrix3<T>& R_FM) const;
 
-  /// Gets the rate of change, in radians per second, of `this` mobilizer's
-  /// angle (see get_angle()) from `context`. See class documentation for the
-  /// angle sign convention.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @returns w_FM
-  Vector3<T> get_angular_velocity(const systems::Context<T> &context) const;
+  /// Returns the angular velocity `w_FM` of frame M in F stored in `context`.
+  /// @param[in] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @retval w_FM
+  ///   The angular velocity of the outboard frame M in the inboard frame F.
+  Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
-  /// Sets the rate of change, in radians per second, of this `this` mobilizer's
-  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
-  /// `context`.
-  /// See class documentation for the angle sign convention.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @param[in] theta_dot The desired rate of change of `this` mobilizer's
-  /// angle in radians per second.
+  /// Sets `context` to store the angular velocity `w_FM` of frame M in frame F.
+  /// @param[out] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[in] w_FM
+  ///   The desired angular velocity of frame M in F, expressed in F.
   /// @returns a constant reference to `this` mobilizer.
   const QuaternionFloatingMobilizer<T>& set_angular_velocity(
-      systems::Context<T> *context, const Vector3<T>& w_FM) const;
+      systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
+  /// Alternative signature to set_angular_velocity(context, w_FM) to set
+  /// `state` to store the angular velocity `w_FM` of M in F.
   const QuaternionFloatingMobilizer<T>& set_angular_velocity(
       const systems::Context<T>&, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 
+  /// Retrieves and returns from `context` the translational velocity `v_FM` of
+  /// frame M's origin as measured and expressed in frame F.
+  /// @param[in] context
+  ///   The context of the MultibodyTree to which this mobilizer belongs to.
+  /// @retval v_FM
+  ///   The translational velocity of the outboard frame M in the inboard
+  ///   frame F, expressed in F.
   Vector3<T> get_translational_velocity(
-      const systems::Context<T> &context) const;
+      const systems::Context<T>& context) const;
 
+  /// Sets `context` to store the translational velocity `v_FM` of frame M in
+  /// frame F.
+  /// @param[out] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[in] v_FM
+  ///   The desired translational velocity of frame M in F, expressed in F.
+  /// @returns a constant reference to `this` mobilizer.
   const QuaternionFloatingMobilizer<T>& set_translational_velocity(
-      systems::Context<T> *context, const Vector3<T>& v_FM) const;
+      systems::Context<T>* context, const Vector3<T>& v_FM) const;
 
+  /// Alternative signature to set_translational_velocity(context, v_FM) to set
+  /// `state` to store the translational velocity `v_FM` of M in F.
   const QuaternionFloatingMobilizer<T>& set_translational_velocity(
       const systems::Context<T>&, const Vector3<T>& v_FM,
       systems::State<T>* state) const;
 
 
-    /// Sets `state` to store a zero angle and angular rate.
+  /// Sets `state` to store a configuration in which M coincides with F (i.e.
+  /// q_FM is the identity quaternion) and the spatial velocity V_FM of M in F
+  /// is zero.
   void set_zero_state(const systems::Context<T>& context,
                       systems::State<T>* state) const override;
+  /// @}
+  // End of Doxygen section on methods to get/set from a context.
 
-  /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
-  /// frame F and the outboard frame M as a function of the rotation angle
-  /// about this mobilizer's axis (@see get_revolute_axis().)
-  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  /// stored in `context`.
-  /// This method aborts in Debug builds if `v.size()` is not one.
+  /// @name Mobilizer overrides
+  /// Refer to the Mobilizer class documentation for details.
+  /// @{
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const override;
 
-  /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
-  /// M measured and expressed in frame F as a function of the rotation angle
-  /// and input angular velocity `v` about this mobilizer's axis
-  /// (@see get_revolute_axis()).
-  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  /// stored in `context`.
-  /// This method aborts in Debug builds if `v.size()` is not one.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
-  /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
-  /// outboard frame M in the inboard frame F.
-  /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
-  /// The acceleration `A_FM` will be a function of the rotation angle q, its
-  /// rate of change v for the current state in `context` and of the input
-  /// generalized acceleration `v̇ = dv/dt`, the rate of change of v.
-  /// See class documentation for the angle sign convention.
-  /// This method aborts in Debug builds if `vdot.size()` is not one.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
-  /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
-  /// <pre>
-  ///    tau = F_Mo_F.rotational().dot(axis_F)
-  /// </pre>
-  /// Therefore, the result of this method is the scalar value of the torque at
-  /// the axis of `this` mobilizer.
-  /// This method aborts in Debug builds if `tau.size()` is not one.
   void ProjectSpatialForce(
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
-  // Computes Dt_F(q) from its generalized velocity state w_FM.
-  // Notice q_FM = (qs; qv_F), where the vector (or imaginary) component is
-  // expressed in the inboard frame F. The time derivative computed by this
-  // method is [Dt_F(qv)]F, or Dt_F(qv) for short.
   void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
@@ -192,7 +205,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const override;
-
+  /// @}
 
  protected:
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
@@ -212,17 +225,23 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 
+  // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
+  // Helper to compute the kinematic map N(q) for which q̇ = N(q)v.
+  // With L given by CalcLMatrix we have:
+  // N(q) = [L(q_FM/2) 0₄ₓ₃
+  //        [     0₃ₓ₃   I₃]
   static Eigen::Matrix<T, 7, 6> CalcNMatrix(const Quaternion<T>& q);
-  static Eigen::Matrix<T, 6, 7> CalcNtransposeMatrix(const Quaternion<T>& q);
+  // Helper to compute the kinematic map N⁺(q) for which v = N⁺(q)q̇.
+  // With L given by CalcLMatrix we have:
+  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃
+  //         [     0₃ₓ₄    I₃]
+  static Eigen::Matrix<T, 6, 7> CalcNplusMatrix(const Quaternion<T>& q);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
-
-  // Default joint axis expressed in the inboard frame F.
-  Vector3<double> axis_F_;
 };
 
 }  // namespace multibody
