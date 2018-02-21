@@ -47,8 +47,7 @@ cmake_configure_file(
 )
 
 generate_file(
-    name = "export_genrule",
-    out = "include/ignition/math/Export.hh",
+    name = "include/ignition/math/Export.hh",
     content = """
 #pragma once
 
