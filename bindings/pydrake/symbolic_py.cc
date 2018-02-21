@@ -12,6 +12,7 @@
 namespace drake {
 namespace pydrake {
 
+// TODO(eric.cousineau): Use py::self for operator overloads?
 PYBIND11_MODULE(_symbolic_py, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
@@ -19,7 +20,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
   using std::map;
   using std::ostringstream;
 
-  m.doc() = "Symbolic variable, monomial, expression, and formula";
+  m.doc() = "Symbolic variable, variables, monomial, expression, and formula";
 
   py::class_<Variable>(m, "Variable")
       .def(py::init<const std::string&>())
@@ -210,6 +211,39 @@ PYBIND11_MODULE(_symbolic_py, m) {
            },
            py::is_operator());
 
+  py::class_<Variables>(m, "Variables")
+      .def(py::init<>())
+      .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>())
+      .def("size", &Variables::size)
+      .def("empty", &Variables::empty)
+      .def("to_string", &Variables::to_string)
+      .def("__hash__",
+           [](const Variables& self) { return std::hash<Variables>{}(self); })
+      .def("insert",
+           [](Variables& self, const Variable& var) { self.insert(var); })
+      .def("insert",
+           [](Variables& self, const Variables& vars) { self.insert(vars); })
+      .def("erase",
+           [](Variables& self, const Variable& var) { return self.erase(var); })
+      .def("erase", [](Variables& self,
+                       const Variables& vars) { return self.erase(vars); })
+      .def("include", &Variables::include)
+      .def("IsSubsetOf", &Variables::IsSubsetOf)
+      .def("IsSupersetOf", &Variables::IsSupersetOf)
+      .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf)
+      .def("IsStrictSupersetOf", &Variables::IsStrictSupersetOf)
+      .def(py::self == py::self)
+      .def(py::self < py::self)
+      .def(py::self + py::self)
+      .def(py::self + Variable())
+      .def(Variable() + py::self)
+      .def(py::self - py::self)
+      .def(py::self - Variable());
+
+  m.def("intersect", [](const Variables& vars1, const Variables& vars2) {
+    return intersect(vars1, vars2);
+  });
+
   py::class_<Expression>(m, "Expression")
       .def(py::init<>())
       .def(py::init<const Variable&>())
@@ -363,6 +397,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
              oss << self;
              return oss.str();
            })
+      .def("GetVariables", &Monomial::GetVariables)
       .def("get_powers", &Monomial::get_powers, py_reference_internal)
       .def("ToExpression", &Monomial::ToExpression)
       .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal)
