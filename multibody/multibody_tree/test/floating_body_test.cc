@@ -107,11 +107,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   Vector3d w_WB_B_exact, wDt_WB_B_exact;
   std::tie(quat_WB_exact, quatDt_WB_exact, w_WB_B_exact, wDt_WB_B_exact) =
       benchmark_.CalculateExactRotationalSolutionNB(kEndTime);
+
   Vector4d qv; qv << quat_WB_exact.w(), quat_WB_exact.vec();
   Matrix3d R_WB_exact = math::quat2rotmat(qv);
   Vector3d w_WB_exact = R_WB_exact * w_WB_B_exact;
-
-  //std::tuple<Vector3d, Vector3d, Vector3d>
   Vector3d p_WBcm_exact, v_WBcm_exact, a_WBcm_exact;
   std::tie(p_WBcm_exact, v_WBcm_exact, a_WBcm_exact) =
       benchmark_.CalculateExactTranslationalSolution(kEndTime);
@@ -128,7 +127,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
                               MatrixCompareType::relative));
 
   // TODO(amcastro-tri): Verify angular momentum is conserved.
-  // TODO(amcastro-tri): Verify total energy (kinetic) is conserved.
+  // TODO(amcastro-tri): Verify total energy is conserved.
 }
 
 }  // namespace

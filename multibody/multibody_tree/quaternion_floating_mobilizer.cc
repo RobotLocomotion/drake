@@ -5,8 +5,8 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/rotation_matrix.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -181,7 +181,8 @@ Isometry3<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
 }
 
 template <typename T>
-SpatialVelocity<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
+SpatialVelocity<T>
+QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -251,7 +252,7 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
       qs, qv.z(), mqv.y(),
       mqv.z(), qs, qv.x(),
       qv.y(), mqv.x(), qs).finished();
-};
+}
 
 template <typename T>
 Eigen::Matrix<T, 7, 6> QuaternionFloatingMobilizer<T>::CalcNMatrix(
@@ -265,7 +266,7 @@ Eigen::Matrix<T, 7, 6> QuaternionFloatingMobilizer<T>::CalcNMatrix(
   N.template topLeftCorner<4, 3>() = L;
   N.template bottomRightCorner<3, 3>() = Matrix3<T>::Identity();
   return N;
-};
+}
 
 template <typename T>
 Eigen::Matrix<T, 6, 7> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
@@ -281,7 +282,7 @@ Eigen::Matrix<T, 6, 7> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
   Nplus.template topLeftCorner<3, 4>() = LT;
   Nplus.template bottomRightCorner<3, 3>() = Matrix3<T>::Identity();
   return Nplus;
-};
+}
 
 template <typename T>
 void QuaternionFloatingMobilizer<T>::MapVelocityToQDot(

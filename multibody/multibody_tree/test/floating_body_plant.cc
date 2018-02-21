@@ -1,6 +1,6 @@
 #include "drake/multibody/multibody_tree/test/floating_body_plant.h"
 
-#include <limits>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -15,8 +15,9 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 template<typename T>
-FloatingBodyPlant<T>::FloatingBodyPlant(double mass, double I, double J, double g) :
-    mass_(mass), I_(I), J_(J), g_(g) {
+FloatingBodyPlant<T>::FloatingBodyPlant(
+    double mass, double I, double J, double g)
+    : mass_(mass), I_(I), J_(J), g_(g) {
   BuildMultibodyTreeModel();
   DRAKE_DEMAND(model_.get_num_positions() == 7);
   DRAKE_DEMAND(model_.get_num_velocities() == 6);
