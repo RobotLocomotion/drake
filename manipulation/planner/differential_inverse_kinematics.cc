@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace manipulation {
@@ -168,15 +169,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   }
 
   // Solve
-  // TODO(siyuan.feng): Switch this to a accurate open source QP solver when we
-  // have it.
-  solvers::SnoptSolver snopt;
-  DRAKE_THROW_UNLESS(snopt.available());
-  // TODO(siyuan.feng): This is only necessary because we are explicitly calling
-  // snopt here.
-  prog.SetInitialGuessForAllVariables(
-      VectorX<double>::Zero(num_velocities + 1));
-  solvers::SolutionResult result = snopt.Solve(prog);
+  solvers::OsqpSolver solver;
+  DRAKE_THROW_UNLESS(solver.available());
+  solvers::SolutionResult result = solver.Solve(prog);
 
   if (result != solvers::SolutionResult::kSolutionFound) {
     return {nullopt, DifferentialInverseKinematicsStatus::kNoSolutionFound};

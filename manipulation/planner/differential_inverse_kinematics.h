@@ -129,7 +129,8 @@ class DifferentialInverseKinematicsParameters {
   }
 
   /**
-   * Sets the end effector gains in the body frame.
+   * Sets the end effector gains in the body frame. Gains can be used to
+   * specify relative importance among different dimensions.
    * @throws if any element of @p gain_E is larger than 1 or smaller than 0.
    */
   void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
@@ -233,8 +234,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * that tracks frame E's spatial velocity.
  * q_current and v_current are taken from @p cache. V is computed by first
  * transforming @p V_WE to V_WE_E, then taking the element-wise product between
- * V_WE_E and the gains in @p parameters, and only selecting the non zero
- * elements. J is computed similarly.
+ * V_WE_E and the gains (specified in frame E) in @p parameters, and only
+ * selecting the non zero elements. J is computed similarly.
  * @param robot Kinematic tree.
  * @param cache Kinematic cache build from the current generalized position and
  * velocity.
@@ -279,8 +280,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * that tracks frame E's spatial velocity.
  * q_current and v_current are taken from @p context. V is computed by first
  * transforming @p V_WE to V_WE_E, then taking the element-wise product between
- * V_WE_E and the gains in @p parameters, and only selecting the non zero
- * elements. J is computed similarly.
+ * V_WE_E and the gains (specified in frame E) in @p parameters, and only
+ * selecting the non zero elements. J is computed similarly.
  * @param robot A MultibodyTree model.
  * @param context Contains the current generalized position and velocity.
  * @param V_WE_desired Desired world frame spatial velocity of @p frame_E.
@@ -303,7 +304,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * that tracks frame E's pose in the world frame.
  * q_current and v_current are taken from @p cache. V_WE is computed by
  * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
- * from @p cache, and dt is taken from @p parameters.
+ * from @p context, and dt is taken from @p parameters.
  * @param robot A MultibodyTree model.
  * @param context Contains the current generalized position and velocity.
  * @param X_WE_desired Desired pose of @p frame_E in the world frame.

@@ -163,7 +163,8 @@ TEST_F(DifferentialInverseKinematicsTest, MultiBodyTreeTest) {
       DoDifferentialInverseKinematics(*mbt_, *context_, V_WE, *frame_E_mbt_,
                                       *params_);
   EXPECT_TRUE(CompareMatrices(rbt_result.joint_velocities.value(),
-                              mbt_result.joint_velocities.value(), 1e-8));
+                              mbt_result.joint_velocities.value(),
+                              10 * std::numeric_limits<double>::epsilon()));
 
   Isometry3<double> X_WE_desired =
       Translation3<double>(Vector3<double>(0.1, 0.2, 0.3)) *
@@ -173,7 +174,8 @@ TEST_F(DifferentialInverseKinematicsTest, MultiBodyTreeTest) {
   mbt_result = DoDifferentialInverseKinematics(*mbt_, *context_, X_WE_desired,
                                                *frame_E_mbt_, *params_);
   EXPECT_TRUE(CompareMatrices(rbt_result.joint_velocities.value(),
-                              mbt_result.joint_velocities.value(), 1e-8));
+                              mbt_result.joint_velocities.value(),
+                              10 * std::numeric_limits<double>::epsilon()));
 }
 
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
@@ -251,7 +253,7 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
 
     q = cache_->getQ() + v * dt;
     *cache_ = tree_->doKinematics(q, v);
-  } while (v.norm() > 1e-6);
+  } while (v.norm() > 1e-5);
   X_WE = tree_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
   EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
                               MatrixCompareType::absolute));
