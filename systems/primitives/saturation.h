@@ -34,7 +34,7 @@ namespace systems {
 /// are not defined as constants but they are not connected to appropriate
 /// sources, their values are taken by default to be
 /// @f$ u_{min} = -\infty @f$, and  @f$ u_{max} = \infty @f$ respectively.
-/// In this "variable" configuration, atleast one of the input ports must be
+/// In this "variable" configuration, at least one of the input ports must be
 /// connected.
 ///
 /// @ingroup primitive_systems

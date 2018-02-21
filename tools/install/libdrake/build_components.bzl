@@ -300,6 +300,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/primitives:signal_logger",
     "//drake/systems/primitives:time_varying_data",
     "//drake/systems/primitives:trajectory_source",
+    "//drake/systems/primitives:wrap_to_system",
     "//drake/systems/primitives:zero_order_hold",
     "//drake/systems/rendering:drake_visualizer_client",
     "//drake/systems/rendering:frame_velocity",
