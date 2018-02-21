@@ -11,7 +11,9 @@
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
@@ -95,11 +97,19 @@ PYBIND11_MODULE(primitives, m) {
     .def(py::init<int>())
     .def(py::init<const AbstractValue&>());
 
+  py::class_<Saturation<T>, LeafSystem<T>>(m, "Saturation")
+      .def(py::init<const VectorX<T>&, const VectorX<T>&>(), py::arg
+    ("min_value"), py::arg("max_value"));
+
   py::class_<SignalLogger<T>, LeafSystem<T>>(m, "SignalLogger")
       .def(py::init<int>())
       .def(py::init<int, int>())
       .def("sample_times", &SignalLogger<T>::sample_times)
       .def("data", &SignalLogger<T>::data);
+
+  py::class_<WrapToSystem<T>, LeafSystem<T>>(m, "WrapToSystem")
+      .def(py::init<int>())
+      .def("set_interval", &WrapToSystem<T>::set_interval);
 
   py::class_<ZeroOrderHold<T>, LeafSystem<T>>(m, "ZeroOrderHold")
       .def(py::init<double, int>());

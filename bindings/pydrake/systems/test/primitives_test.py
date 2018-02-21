@@ -22,7 +22,9 @@ from pydrake.systems.primitives import (
     IsObservable,
     ObservabilityMatrix,
     PassThrough,
+    Saturation,
     SignalLogger,
+    WrapToSystem,
 )
 
 
@@ -134,6 +136,35 @@ class TestGeneral(unittest.TestCase):
         system.CalcOutput(context, output)
         output_value = output.get_data(0)
         compare_value(self, output_value, model_value)
+
+    def test_saturation(self):
+        system = Saturation((0., -1., 3.), (1., 2., 4.))
+        context = system.CreateDefaultContext()
+        output = system.AllocateOutput(context)
+
+        def mytest(input, expected):
+            context.FixInputPort(0, BasicVector(input))
+            system.CalcOutput(context, output)
+            self.assertTrue(np.allclose(output.get_vector_data(
+                0).CopyToVector(), expected))
+
+        mytest((-5., 5., 4.), (0., 2., 4.))
+        mytest((.4, 0., 3.5), (.4, 0., 3.5))
+
+    def test_wrap_to_system(self):
+        system = WrapToSystem(2)
+        system.set_interval(1, 1., 2.)
+        context = system.CreateDefaultContext()
+        output = system.AllocateOutput(context)
+
+        def mytest(input, expected):
+            context.FixInputPort(0, BasicVector(input))
+            system.CalcOutput(context, output)
+            self.assertTrue(np.allclose(output.get_vector_data(
+                0).CopyToVector(), expected))
+
+        mytest((-1.5, 0.5), (-1.5, 1.5))
+        mytest((.2, .3), (.2, 1.3))
 
 
 if __name__ == '__main__':
