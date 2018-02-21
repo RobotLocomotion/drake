@@ -44,6 +44,14 @@ enum class AheadOrBehind { kAhead = 0, kBehind = 1 };
 /// branches for traffic.
 enum class ScanStrategy { kBranches, kPath };
 
+/// If kCache, configures a planning system (e.g. IdmController, MobilPlanner)
+/// to declare an abstract state that caches the last-computed RoadPosition.  If
+/// kExhaustiveSearch, then the system will contain no abstract states.  Note
+/// that the kCache option is for performance speedup (at the expense of
+/// optimizer compatibility) by preventing a potentially sizeable computation
+/// within RoadGeometry::ToRoadPosition().
+enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
+
 /// PoseSelector is a class that provides the relevant pose or poses with
 /// respect to a given ego vehicle driving within a given maliput road geometry.
 ///
