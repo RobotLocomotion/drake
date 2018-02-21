@@ -45,6 +45,13 @@ class FrameVisualizer : public LeafSystem<double> {
     this->DeclarePeriodicPublish(period);
   }
 
+  /**
+   * Sets the LCM channel to which frames are published.
+   */
+  void set_lcm_channel(const std::string& lcm_channel) {
+    lcm_channel_ = lcm_channel;
+  }
+
  private:
   void DoPublish(
       const systems::Context<double>& context,
@@ -55,6 +62,7 @@ class FrameVisualizer : public LeafSystem<double> {
   const std::vector<RigidBodyFrame<double>> local_transforms_;
 
   drake::lcmt_viewer_draw default_msg_{};
+  std::string lcm_channel_{"DRAKE_DRAW_FRAMES"};
 };
 
 }  // namespace systems
