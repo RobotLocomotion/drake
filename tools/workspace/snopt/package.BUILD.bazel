@@ -156,6 +156,7 @@ cc_library(
     hdrs = [":generated_headers"],
     copts = [
         "-DSkip_f2c_Undefs",
+        "-fvisibility=hidden",
         "-w",
     ],
     # Link statically so that Fortran MAIN__ resolution works on gcc.
