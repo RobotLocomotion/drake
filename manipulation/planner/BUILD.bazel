@@ -29,6 +29,7 @@ drake_cc_library(
     hdrs = ["differential_inverse_kinematics.h"],
     deps = [
         "//multibody:rigid_body_tree",
+        "//multibody/multibody_tree",
         "//multibody/parsers",
         "//solvers:mathematical_program",
     ],
@@ -85,6 +86,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//manipulation/util:world_sim_tree_builder",
+        "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
     ],
 )
 

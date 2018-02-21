@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -222,7 +223,7 @@ class DifferentialInverseKinematicsParameters {
  * be set to v, otherwise it will be nullopt.
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const VectorX<double> q_current, const VectorX<double>& v_current,
+    const VectorX<double>& q_current, const VectorX<double>& v_current,
     const VectorX<double>& V, const MatrixX<double>& J,
     const DifferentialInverseKinematicsParameters& parameters);
 
@@ -270,6 +271,53 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     const Isometry3<double>& X_WE_desired,
     const RigidBodyFrame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters);
+
+/**
+ * A wrapper over
+ * DoDifferentialInverseKinematics(q_current, v_current, V, J, params)
+ * that tracks frame E's spatial velocity.
+ * q_current and v_current are taken from @p context. V is computed by first
+ * transforming @p V_WE to V_WE_E, then taking the element-wise product between
+ * V_WE_E and the gains in @p parameters, and only selecting the non zero
+ * elements. J is computed similarly.
+ * @param robot A MultibodyTree model.
+ * @param context Contains the current generalized position and velocity.
+ * @param V_WE_desired Desired world frame spatial velocity of @p frame_E.
+ * @param frame_E End effector frame.
+ * @param parameters Collection of various problem specific constraints and
+ * constants.
+ * @return If the solver successfully finds a solution, joint_velocities will
+ * be set to v, otherwise it will be nullopt.
+ */
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const multibody::MultibodyTree<double>& robot,
+    const systems::Context<double>& context,
+    const Vector6<double>& V_WE_desired,
+    const multibody::Frame<double>& frame_E,
+    const DifferentialInverseKinematicsParameters& parameters);
+
+/**
+ * A wrapper over
+ * DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E, params)
+ * that tracks frame E's pose in the world frame.
+ * q_current and v_current are taken from @p cache. V_WE is computed by
+ * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
+ * from @p cache, and dt is taken from @p parameters.
+ * @param robot A MultibodyTree model.
+ * @param context Contains the current generalized position and velocity.
+ * @param X_WE_desired Desired pose of @p frame_E in the world frame.
+ * @param frame_E End effector frame.
+ * @param parameters Collection of various problem specific constraints and
+ * constants.
+ * @return If the solver successfully finds a solution, joint_velocities will
+ * be set to v, otherwise it will be nullopt.
+ */
+DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
+    const multibody::MultibodyTree<double>& robot,
+    const systems::Context<double>& context,
+    const Isometry3<double>& X_WE_desired,
+    const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 }  // namespace planner
