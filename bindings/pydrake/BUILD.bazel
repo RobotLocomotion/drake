@@ -116,6 +116,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":math_py",
     ":symbolic_py",
     "//bindings/pydrake/examples",
+    "//bindings/pydrake/maliput",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
     "//bindings/pydrake/systems",
