@@ -1041,7 +1041,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
       const T qmin = joint.getJointLimitMin()(0);
       const T qmax = joint.getJointLimitMax()(0);
-      DRAKE_DEMAND(qmin < qmax);
+      DRAKE_DEMAND(qmin <= qmax);
 
       // Get the current joint position and velocity.
       const T& qjoint = q(b->get_position_start_index());
@@ -1296,7 +1296,7 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
                                      const T& velocity) {
   const T qmin = joint.getJointLimitMin()(0);
   const T qmax = joint.getJointLimitMax()(0);
-  DRAKE_DEMAND(qmin < qmax);
+  DRAKE_DEMAND(qmin <= qmax);
   const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
   DRAKE_DEMAND(joint_stiffness >= 0);
   const T joint_dissipation = joint.get_joint_limit_dissipation()(0);
