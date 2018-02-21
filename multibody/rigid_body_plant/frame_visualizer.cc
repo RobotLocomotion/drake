@@ -10,7 +10,7 @@ FrameVisualizer::FrameVisualizer(
     : tree_(*tree), lcm_(lcm), local_transforms_(local_transforms) {
   DeclareInputPort(kVectorValued,
                    tree_.get_num_positions() + tree_.get_num_velocities());
-  set_name("frame_visualzier");
+  set_name("frame_visualizer");
 
   default_msg_.num_links = static_cast<int>(local_transforms_.size());
   default_msg_.link_name.resize(default_msg_.num_links);
@@ -54,7 +54,7 @@ void FrameVisualizer::DoPublish(
   const int length = msg.getEncodedSize();
   std::vector<uint8_t> msgbytes(length);
   msg.encode(msgbytes.data(), 0, length);
-  lcm_->Publish("DRAKE_DRAW_FRAMES", msgbytes.data(), msgbytes.size());
+  lcm_->Publish(lcm_channel_, msgbytes.data(), msgbytes.size());
 }
 
 }  // namespace systems
