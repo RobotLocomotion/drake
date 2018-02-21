@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -59,6 +60,7 @@ class BarycentricMesh {
   explicit BarycentricMesh(MeshGrid input_grid);
 
   // Accessor methods.
+  const MeshGrid& get_input_grid() const { return input_grid_; }
   int get_input_size() const { return input_grid_.size(); }
   int get_num_mesh_points() const {
     int num_mesh_points = 1;
@@ -74,6 +76,14 @@ class BarycentricMesh {
   /// @param index must be in [0, get_num_mesh_points).
   /// @param point is set to the num_inputs-by-1 location of the mesh point.
   void get_mesh_point(int index, EigenPtr<Eigen::VectorXd> point) const;
+
+  /// Returns the position of a mesh point in the input space referenced by its
+  /// scalar index to @p point.
+  /// @param index must be in [0, get_num_mesh_points).
+  VectorX<T> get_mesh_point(int index) const;
+
+  /// Returns a matrix with all of the mesh points, one per column.
+  MatrixX<T> get_all_mesh_points() const;
 
   /// Writes the mesh indices used for interpolation to @p mesh_indices, and the
   /// interpolating coefficients to @p weights.  Inputs that are outside the
@@ -108,6 +118,45 @@ class BarycentricMesh {
             const Eigen::Ref<const VectorX<T>>& input,
             EigenPtr<VectorX<T>> output) const;
 
+  /// Returns the function evaluated at @p input.
+  VectorX<T> Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
+                  const Eigen::Ref<const VectorX<T>>& input) const;
+
+  /// Performs Eval, but with the possibility of the values on the mesh
+  /// having a different scalar type than the values defining the mesh
+  /// (symbolic::Expression containing decision variables for an optimization
+  /// problem is an important example)
+  /// @tparam ValueT defines the scalar type of the mesh_values and the output.
+  /// @see Eval
+  template <typename ValueT = T>
+  void EvalWithMixedScalars(
+      const Eigen::Ref<const MatrixX<ValueT>>& mesh_values,
+      const Eigen::Ref<const VectorX<T>>& input,
+      EigenPtr<VectorX<ValueT>> output) const {
+    DRAKE_DEMAND(input.size() == get_input_size());
+    DRAKE_DEMAND(mesh_values.cols() == get_num_mesh_points());
+
+    Eigen::VectorXi mesh_indices(num_interpolants_);
+    VectorX<T> weights(num_interpolants_);
+
+    EvalBarycentricWeights(input, &mesh_indices, &weights);
+
+    *output = weights[0] * mesh_values.col(mesh_indices[0]);
+    for (int i = 1; i < num_interpolants_; i++) {
+      *output += weights[i] * mesh_values.col(mesh_indices[i]);
+    }
+  }
+
+  /// Returns the function evaluated at @p input.
+  template <typename ValueT = T>
+  VectorX<ValueT> EvalWithMixedScalars(
+      const Eigen::Ref<const MatrixX<ValueT>>& mesh_values,
+      const Eigen::Ref<const VectorX<T>>& input) const {
+    VectorX<ValueT> output(mesh_values.rows());
+    EvalWithMixedScalars<ValueT>(mesh_values, input, &output);
+    return output;
+  }
+
   /// Evaluates @p vector_func at all input mesh points and extracts the mesh
   /// value matrix that should be used to approximate the function with this
   /// barycentric interpolation.
@@ -121,8 +170,8 @@ class BarycentricMesh {
           vector_func) const;
 
  private:
-  MeshGrid input_grid_;  // Specifies the location of the mesh points in
-                         // the input space.
+  MeshGrid input_grid_;      // Specifies the location of the mesh points in
+                             // the input space.
   std::vector<int> stride_;  // The number of elements to skip to arrive at the
                              // next value (per input dimension)
   int num_interpolants_{1};  // The number of points used in any interpolation.

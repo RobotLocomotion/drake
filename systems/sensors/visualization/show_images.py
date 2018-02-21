@@ -138,7 +138,9 @@ class ImageWidget(object):
             # @note `GetScalarRange` permits non-finite values, such as `inf`.
             # Use a custom mechanism to get min/max.
             data = vtk_image_to_numpy(self._image)
-            upper_depth = np.max(data[np.isfinite(data[:])])
+            good = np.isfinite(data[:])
+            if np.any(good):
+                upper_depth = np.max(data[good])
         return (lower_depth, upper_depth)
 
     def _on_new_image_attrib(self, attrib):

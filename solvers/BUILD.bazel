@@ -159,6 +159,7 @@ drake_cc_library(
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
+        ":osqp_solver",
         ":scs_solver",
         ":snopt_solver",
         ":solver_id",
@@ -188,6 +189,7 @@ drake_cc_library(
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
+        ":osqp_solver",
         ":scs_solver",
         ":snopt_solver",
         ":solver_id",
@@ -197,6 +199,15 @@ drake_cc_library(
         "//common:number_traits",
         "//common:polynomial",
         "//common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "branch_and_bound",
+    srcs = ["branch_and_bound.cc"],
+    hdrs = ["branch_and_bound.h"],
+    deps = [
+        ":mathematical_program",
     ],
 )
 
@@ -608,6 +619,31 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "osqp_solver",
+    srcs = select({
+        "//tools:no_osqp": [
+            "no_osqp.cc",
+            "osqp_solver_common.cc",
+        ],
+        "//conditions:default": [
+            "osqp_solver.cc",
+            "osqp_solver_common.cc",
+        ],
+    }),
+    hdrs = ["osqp_solver.h"],
+    deps = select({
+        "//conditions:default": [
+            ":mathematical_program_api",
+            "//math:eigen_sparse_triplet",
+            "@osqp",
+        ],
+        "//tools:no_osqp": [
+            ":mathematical_program_api",
+        ],
+    }),
+)
+
+drake_cc_library(
     name = "scs_solver",
     srcs = select({
         "//conditions:default": [
@@ -686,6 +722,17 @@ drake_cc_googletest(
         ":binding",
         ":constraint",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "branch_and_bound_test",
+    tags = gurobi_test_tags(),
+    deps = [
+        ":branch_and_bound",
+        ":mathematical_program_test_util",
+        ":mixed_integer_optimization_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -980,6 +1027,17 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "osqp_solver_test",
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":osqp_solver",
+        ":quadratic_program_examples",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 drake_cc_binary(
     name = "plot_feasible_rotation_matrices",
     testonly = 1,
@@ -1111,7 +1169,9 @@ add_lint_tests(cpplint_extra_srcs = [
     "no_ipopt.cc",
     "no_mosek.cc",
     "no_nlopt.cc",
+    "no_osqp.cc",
     "no_snopt.cc",
+    "osqp_solver.cc",
     "qp.cc",
     "scs_solver.cc",
     "snopt_solver.cc",

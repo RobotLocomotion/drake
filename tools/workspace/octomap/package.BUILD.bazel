@@ -22,7 +22,9 @@ cc_library(
     hdrs = glob([
         "octomap/include/octomap/math/*.h*",
     ]),
+    copts = ["-fvisibility=hidden"],
     includes = ["octomap/include"],
+    linkstatic = 1,
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -44,6 +46,7 @@ cc_library(
     hdrs = glob([
         "octomap/include/octomap/*.h*",
     ]),
+    copts = ["-fvisibility=hidden"],
     includes = ["octomap/include"],
     linkstatic = 1,
     deps = [":octomath"],

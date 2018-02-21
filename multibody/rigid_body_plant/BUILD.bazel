@@ -77,6 +77,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rigid_body_plant_bridge",
+    srcs = ["rigid_body_plant_bridge.cc"],
+    hdrs = ["rigid_body_plant_bridge.h"],
+    deps = [
+        "//drake/geometry:geometry_ids",
+        "//drake/geometry:geometry_system",
+        "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
     name = "contact_results_to_lcm",
     srcs = [
         "contact_results_to_lcm.cc",

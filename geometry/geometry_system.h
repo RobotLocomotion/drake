@@ -226,10 +226,9 @@ class GeometrySystem final : public systems::LeafSystem<T> {
    provided. */
   //@{
 
-  /** Registers a new source to the geometry system (see GeometryWorld for the
-   discussion of "geometry source"). The caller must save the returned SourceId;
-   it is the token by which all other operations on the geometry world are
-   conducted.
+  /** Registers a new source to the geometry system. The caller must save the
+   returned SourceId; it is the token by which all other operations on the
+   geometry world are conducted.
 
    This source id can be used to register arbitrary _anchored_ geometry. But if
    dynamic geometry is registered (via RegisterGeometry/RegisterFrame), then

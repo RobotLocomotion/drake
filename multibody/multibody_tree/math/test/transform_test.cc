@@ -283,7 +283,7 @@ GTEST_TEST(Transform, OperatorMultiplyByPositionVector) {
 GTEST_TEST(Transform, CastFromDoubleToAutoDiffXd) {
   const Vector3d yaw_pitch_roll(0.2, 0.3, 0.4);
   const RotationMatrix<double> R_double =
-      RotationMatrix<double>::MakeRotationMatrixBodyZYX(yaw_pitch_roll);
+      RotationMatrix<double>::MakeBodyZYXRotation(yaw_pitch_roll);
   const Vector3d p_double(-5, 3, 9);
   const Transform<double> T_double(R_double, p_double);
   const Transform<AutoDiffXd> T_autodiff = T_double.cast<AutoDiffXd>();

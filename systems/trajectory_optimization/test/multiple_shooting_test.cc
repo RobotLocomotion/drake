@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace systems {
@@ -208,8 +209,12 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
 
   ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   for (int i = 0; i < kNumSampleTimes; i++) {
+    // osqp can fail in polishing step, such that the accuracy cannot reach
+    // 1E-6.
+    const double tol =
+        prog.GetSolverId() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
     EXPECT_TRUE(
-        CompareMatrices(prog.GetSolution(prog.state(i)), state_value, 1e-6));
+        CompareMatrices(prog.GetSolution(prog.state(i)), state_value, tol));
   }
 
   const solvers::VectorDecisionVariable<1>& t = prog.time();

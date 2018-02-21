@@ -38,6 +38,7 @@ load("@drake//tools/workspace/numpy:repository.bzl", "numpy_repository")
 load("@drake//tools/workspace/octomap:repository.bzl", "octomap_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
+load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
 load("@drake//tools/workspace/protoc:repository.bzl", "protoc_repository")
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
@@ -145,6 +146,8 @@ def add_default_repositories(excludes = []):
         optitrack_driver_repository(name = "optitrack_driver")
     if "org_apache_xmlgraphics_commons" not in excludes:
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons")  # noqa
+    if "osqp" not in excludes:
+        osqp_repository(name = "osqp")
     if "protoc" not in excludes:
         protoc_repository(name = "protoc")
     if "pybind11" not in excludes:

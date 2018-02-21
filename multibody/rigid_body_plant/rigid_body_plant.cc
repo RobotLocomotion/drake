@@ -123,7 +123,7 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 
     // Now create the appropriate maps for the position and velocity
     // components.
-    for (const auto& body : tree_->bodies) {
+    for (const auto& body : tree_->get_bodies()) {
       if (!body->has_parent_body()) {
         continue;
       }
@@ -272,6 +272,30 @@ void RigidBodyPlant<T>::set_position(Context<T>* context, int position_index,
     context->get_mutable_continuous_state()
         .get_mutable_generalized_position()
         .SetAtIndex(position_index, position);
+  }
+}
+
+template <typename T>
+void RigidBodyPlant<T>::SetModelInstancePositions(
+    Context<T>* context, int model_instance_id,
+    const Eigen::Ref<const VectorX<T>> positions) const {
+  DRAKE_ASSERT(context != nullptr);
+  const int num_positions = positions.size();
+  std::vector<const RigidBody<T>*> model_instance_bodies =
+      this->get_rigid_body_tree().FindModelInstanceBodies(model_instance_id);
+  std::vector<int> position_indices;
+  position_indices.reserve(num_positions);
+  for (const RigidBody<T>* body : model_instance_bodies) {
+    const int joint_num_positions = body->getJoint().get_num_positions();
+    const int position_start_index = body->get_position_start_index();
+    for (int i = 0; i < joint_num_positions; ++i) {
+      position_indices.push_back(position_start_index + i);
+    }
+  }
+  DRAKE_THROW_UNLESS(static_cast<int>(position_indices.size()) ==
+                     num_positions);
+  for (int i = 0; i < num_positions; ++i) {
+    set_position(context, position_indices[i], positions(i));
   }
 }
 
@@ -868,7 +892,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // TODO(amcastro-tri): Maybe move to
   // RBT::ComputeGeneralizedJointLimitForces(C)?
   {
-    for (auto const& b : tree_->bodies) {
+    for (auto const& b : tree_->get_bodies()) {
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       // Joint limit forces are only implemented for single-axis joints.
@@ -1009,7 +1033,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Set the joint range of motion limits.
   std::vector<JointLimit> limits;
-  for (auto const& b : tree.bodies) {
+  for (auto const& b : tree.get_bodies()) {
     if (!b->has_parent_body()) continue;
     auto const& joint = b->getJoint();
 
@@ -1017,7 +1041,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
       const T qmin = joint.getJointLimitMin()(0);
       const T qmax = joint.getJointLimitMax()(0);
-      DRAKE_DEMAND(qmin < qmax);
+      DRAKE_DEMAND(qmin <= qmax);
 
       // Get the current joint position and velocity.
       const T& qjoint = q(b->get_position_start_index());
@@ -1272,7 +1296,7 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
                                      const T& velocity) {
   const T qmin = joint.getJointLimitMin()(0);
   const T qmax = joint.getJointLimitMax()(0);
-  DRAKE_DEMAND(qmin < qmax);
+  DRAKE_DEMAND(qmin <= qmax);
   const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
   DRAKE_DEMAND(joint_stiffness >= 0);
   const T joint_dissipation = joint.get_joint_limit_dissipation()(0);

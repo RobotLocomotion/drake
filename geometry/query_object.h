@@ -101,10 +101,15 @@ class QueryObject {
    geometry are also not reported. The penetration between two geometries is
    characterized as a point pair (see PenetrationAsPointPair).
 
-   @internal This method is affected by collision filtering; element pairs that
+   <!--
+   This method is affected by collision filtering; element pairs that
    have been filtered will not produce contacts, even if their collision
    geometry is penetrating.
-   TODO(SeanCurtis-TRI): THis isn't true yet.
+   TODO(SeanCurtis-TRI): This isn't true yet.
+
+   NOTE: This is currently declared as double because we haven't exposed FCL's
+   templated functionality yet. When that happens, double -> T.
+   -->
 
    @returns A vector populated with all detected penetrations characterized as
             point pairs. */
@@ -145,7 +150,7 @@ class QueryObject {
   //
   // Several issues:
   //  1. Leads to a clunky API (passing self and context into *every* query).
-  //  2. The index value would be insufficient if the GeoemtrySystem were buried
+  //  2. The index value would be insufficient if the GeometrySystem were buried
   //     in a diagram with its query object port exported in the diagram.
   // This is documented for future consideration, and should not necessarily be
   // interpreted as a guaranteed task.
@@ -155,8 +160,8 @@ class QueryObject {
   // on the current context (fully-dependent on context). These pointers must
   // be null for "baked" contexts (e.g., the result of copying a "live"
   // context).
-  const GeometryContext<T>* context_{};
-  const GeometrySystem<T>* system_{};
+  const GeometryContext<T>* context_{nullptr};
+  const GeometrySystem<T>* system_{nullptr};
 };
 
 }  // namespace geometry
