@@ -33,15 +33,8 @@ MAC_OS_X_PREFIX = "/usr/local/opt/boost"
 def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
         prefix = MAC_OS_X_PREFIX
-
-        repository_ctx.file("empty.cc", executable = False)
-        srcs = ["empty.cc"]
-
     elif repository_ctx.os.name == "linux":
         prefix = LINUX_PREFIX
-
-        srcs = []
-
     else:
         fail("Operating system is NOT supported",
              attr = repository_ctx.os.name)
@@ -51,12 +44,11 @@ def _impl(repository_ctx):
     file_content = """
 cc_library(
     name = "boost_headers",
-    srcs = {},
     hdrs = glob({}),
     includes = ["."],
     visibility = ["//visibility:public"],
 )
-    """.format(srcs, HDRS_PATTERNS)
+    """.format(HDRS_PATTERNS)
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
