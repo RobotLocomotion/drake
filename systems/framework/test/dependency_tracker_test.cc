@@ -38,6 +38,24 @@ class MyContextBase : public ContextBase {
   }
 };
 
+// For testing that trackers did what we expected.
+struct Stats {
+  int64_t ignored{0};
+  int64_t sent{0};
+  int64_t value_change{0};
+  int64_t prereq_change{0};
+};
+
+void ExpectStatsMatch(const DependencyTracker* tracker, const Stats& expected) {
+  EXPECT_EQ(tracker->num_ignored_notifications(), expected.ignored);
+  EXPECT_EQ(tracker->num_notifications_sent(), expected.sent);
+  EXPECT_EQ(tracker->num_value_change_events(), expected.value_change);
+  EXPECT_EQ(tracker->num_prerequisite_change_events(), expected.prereq_change);
+  EXPECT_EQ(tracker->num_notifications_received(),
+            tracker->num_value_change_events() +
+                tracker->num_prerequisite_change_events());
+}
+
 // Normally the dependency trackers are allocated automatically by the
 // System framework. Here we try to use as little of the framework as possible
 // and cobble together the following dependency graph by hand:
@@ -90,6 +108,16 @@ class HandBuiltDependencies : public ::testing::Test {
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(time_ticket_);
   }
+  
+  void ExpectAllStatsMatch() const {
+    ExpectStatsMatch(time_tracker_, tt_stats_);
+    ExpectStatsMatch(upstream1_, up1_stats_);
+    ExpectStatsMatch(upstream2_, up2_stats_);
+    ExpectStatsMatch(middle1_, mid1_stats_);
+    ExpectStatsMatch(downstream1_, down1_stats_);
+    ExpectStatsMatch(downstream2_, down2_stats_);
+    ExpectStatsMatch(entry0_tracker_, entry0_stats_);    
+  }
 
   std::unique_ptr<MyContextBase> context_ptr_ =
       std::make_unique<MyContextBase>();
@@ -104,6 +132,10 @@ class HandBuiltDependencies : public ::testing::Test {
 
   const DependencyTicket time_ticket_{internal::kTimeTicket};
   DependencyTracker* time_tracker_{};
+
+  // Expected statistics for each of the above trackers; initially zero.
+  Stats tt_stats_, up1_stats_, up2_stats_, mid1_stats_, down1_stats_,
+      down2_stats_, entry0_stats_;
 };
 
 // Check that we can ask the graph for new dependency trackers, and that the
@@ -145,45 +177,41 @@ TEST_F(HandBuiltDependencies, Notify) {
   entry0_->set_value(1125);
   EXPECT_TRUE(entry0_->is_up_to_date());
 
+  // Refer to diagram above to decipher the expected stats below.
+
   // Nobody should have been notified yet.
-  EXPECT_EQ(time_tracker_->num_notifications_received(), 0);
-  EXPECT_EQ(upstream1_->num_notifications_received(), 0);
-  EXPECT_EQ(upstream2_->num_notifications_received(), 0);
-  EXPECT_EQ(middle1_->num_notifications_received(), 0);
-  EXPECT_EQ(downstream1_->num_notifications_received(), 0);
-  EXPECT_EQ(downstream2_->num_notifications_received(), 0);
-  EXPECT_EQ(entry0_tracker_->num_notifications_received(), 0);
+  ExpectAllStatsMatch();
 
   // The cache entry does not depend on downstream1.
   downstream1_->NoteValueChange(1LL);
-  EXPECT_EQ(downstream1_->num_value_change_events(), 1);
-  EXPECT_EQ(downstream1_->num_notifications_received(), 1);
+  down1_stats_.value_change++;  // No dependents.
   EXPECT_TRUE(entry0_->is_up_to_date());
+  ExpectAllStatsMatch();
 
   // The cache entry depends directly on time.
   time_tracker_->NoteValueChange(2LL);
+  tt_stats_.value_change++;
+  tt_stats_.sent++;  // entry0
+  entry0_stats_.prereq_change++;
   EXPECT_FALSE(entry0_->is_up_to_date());
-  EXPECT_EQ(time_tracker_->num_notifications_received(), 1);
-  EXPECT_EQ(entry0_tracker_->num_notifications_received(), 1);
+  ExpectAllStatsMatch();
 
-  // Cache entry depends indirectly on upstream1, two different ways. Also,
-  // middle1, downstream1&2 should have been notified along the way.
   entry0_->set_is_up_to_date(true);
   EXPECT_TRUE(entry0_->is_up_to_date());
+
   upstream1_->NoteValueChange(3LL);
+  up1_stats_.value_change++;
+  up1_stats_.sent += 2;  // mid1, down1
+  mid1_stats_.prereq_change++;
+  mid1_stats_.sent += 3;  // down1, down2, entry0
+  down1_stats_.prereq_change += 2;
+  down1_stats_.ignored++;
+  down2_stats_.prereq_change++;
+  down2_stats_.sent++;  // entry0
+  entry0_stats_.prereq_change += 2;
+  entry0_stats_.ignored++;
   EXPECT_FALSE(entry0_->is_up_to_date());
-  EXPECT_EQ(time_tracker_->num_notifications_received(), 1);
-  EXPECT_EQ(upstream1_->num_notifications_received(), 1);
-  EXPECT_EQ(upstream2_->num_notifications_received(), 0);
-  EXPECT_EQ(middle1_->num_notifications_received(), 1);
-  EXPECT_EQ(downstream2_->num_notifications_received(), 1);
-  // Downstream1 will have been notified twice (via up1 & mid1); should have
-  // ignored one.
-  EXPECT_EQ(downstream1_->num_notifications_received(), 3);
-  EXPECT_EQ(downstream1_->num_ignored_notifications(), 1);
-  // Entry0 was notified twice (by mid1 and down1) and should have ignored one.
-  EXPECT_EQ(entry0_tracker_->num_notifications_received(), 3);
-  EXPECT_EQ(entry0_tracker_->num_ignored_notifications(), 1);
+  ExpectAllStatsMatch();
 }
 
 // Clone the dependency graph and make sure the clone works like the
@@ -255,24 +283,30 @@ TEST_F(HandBuiltDependencies, Clone) {
   clone_entry0.set_value(101);
   EXPECT_TRUE(clone_entry0.is_up_to_date());
 
+  // Expected statistics for the cloned trackers; initially zero.
+  Stats tt_stats, up1_stats, up2_stats, mid1_stats, down1_stats,
+      down2_stats, entry0_stats;
+
   // Upstream2 is prerequisite to middle1 which is prerequisite to down1,2 and
   // the cache entry, and down2 gets the cache entry again so should be
   // ignored.
   up2.NoteValueChange(1LL);
-  EXPECT_EQ(time1.num_notifications_received(), 0);
-  EXPECT_EQ(up1.num_notifications_received(), 0);
-  EXPECT_EQ(up2.num_notifications_received(), 1);
-  EXPECT_EQ(mid1.num_notifications_received(), 1);
-  EXPECT_EQ(down1.num_notifications_received(), 1);
-  EXPECT_EQ(down2.num_notifications_received(), 1);
-  EXPECT_EQ(e0_tracker.num_notifications_received(), 2);
-
-  // Checking notification sending statistics.
-  EXPECT_EQ(up2.num_notifications_sent(), 1);    // To middle1.
-  EXPECT_EQ(mid1.num_notifications_sent(), 3);   // To down1,2 & cache.
-  EXPECT_EQ(down1.num_notifications_sent(), 0);  // No dependents.
-  EXPECT_EQ(down2.num_notifications_sent(), 1);  // To cache ...
-  EXPECT_EQ(e0_tracker.num_ignored_notifications(), 1);   // ... but ignored.
+  up2_stats.value_change++;
+  up2_stats.sent++;  // mid1
+  mid1_stats.prereq_change++;
+  mid1_stats.sent += 3;  // down1, down2, entry0
+  down1_stats.prereq_change++;
+  down2_stats.prereq_change++;
+  down2_stats.sent++;
+  entry0_stats.prereq_change += 2;
+  entry0_stats.ignored++;
+  ExpectStatsMatch(&time1, tt_stats);
+  ExpectStatsMatch(&up1, up1_stats);
+  ExpectStatsMatch(&up2, up2_stats);
+  ExpectStatsMatch(&mid1, mid1_stats);
+  ExpectStatsMatch(&down1, down1_stats);
+  ExpectStatsMatch(&down2, down2_stats);
+  ExpectStatsMatch(&e0_tracker, entry0_stats);
 }
 
 }  // namespace
