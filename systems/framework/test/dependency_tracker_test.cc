@@ -108,7 +108,7 @@ class HandBuiltDependencies : public ::testing::Test {
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(time_ticket_);
   }
-  
+
   void ExpectAllStatsMatch() const {
     ExpectStatsMatch(time_tracker_, tt_stats_);
     ExpectStatsMatch(upstream1_, up1_stats_);
@@ -116,7 +116,7 @@ class HandBuiltDependencies : public ::testing::Test {
     ExpectStatsMatch(middle1_, mid1_stats_);
     ExpectStatsMatch(downstream1_, down1_stats_);
     ExpectStatsMatch(downstream2_, down2_stats_);
-    ExpectStatsMatch(entry0_tracker_, entry0_stats_);    
+    ExpectStatsMatch(entry0_tracker_, entry0_stats_);
   }
 
   std::unique_ptr<MyContextBase> context_ptr_ =
