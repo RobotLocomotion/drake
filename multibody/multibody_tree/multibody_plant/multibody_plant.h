@@ -7,13 +7,11 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -351,49 +349,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  /// @name Registering geometry
-  /// @{
-
-  /// Register geometry for `body`.
-  /// 1. If not done yet, register this plant as a source for the given GS.
-  /// 2. Register frame for this body if not already done so.
-  /// 3. Register geomtery for the corresponding FrameId.
-  void RegisterGeometry(
-      const Body<T>& body,
-      const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
-
-  void RegisterAnchoredGeometry(
-      const Isometry3<double>& X_WG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
-
-  /// Returns the unique id identifying this plant as a source for a
-  /// GeometrySystem.
-  /// Returns `nullopt` if `this` plant did not register any geometry.
-  optional<geometry::SourceId> get_source_id() const {
-    return source_id_;
-  }
-
-  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
-
-  /// Returns the output port of frame id's used to communicate poses to a
-  /// GeometrySystem. It throws a std::out_of_range exception if this system was
-  /// not registered with a GeometrySystem.
-  const systems::OutputPort<T>& get_geometry_ids_output_port() const;
-
-  /// Returns the output port of frames' poses to communicate with a
-  /// GeometrySystem. It throws a std::out_of_range exception if this system was
-  /// not registered with a GeometrySystem.
-  const systems::OutputPort<T>& get_geometry_poses_output_port() const;
-
-  /// @}
-
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& get_world_body() const {
     return model_->get_world_body();
   }
-
-  const MultibodyTree<T>& model() const { return *model_; }
 
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
@@ -415,14 +374,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @throws std::logic_error if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
-
-  void set_contact_penalty_stiffness(double k) {
-    contact_penalty_stiffness_ = k;
-  }
-
-  void set_contact_penalty_damping(double d) {
-    contact_penalty_damping_ = d;
-  }
 
  private:
   // Allow different specializations to access each other's private data for
@@ -447,22 +398,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  void CalcAndAddContactForcesByPenaltyMethod(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
-
-  void DoMapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      systems::VectorBase<T>* generalized_velocity) const override;
-
-  void DoMapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      systems::VectorBase<T>* qdot) const override;
-
   // Helper method to declare cache entries to be allocated in the context.
   void DeclareCacheEntries();
 
@@ -474,63 +409,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const;
 
-  // maybe geometry_source_is_registered_with(const GeometrySystem<T>& gs) ???
-  bool geometry_source_is_registered() const {
-    return !!source_id_;
-  }
-
-  bool body_has_registered_frame(const Body<T>& body) const {
-    return body_index_to_frame_id_.find(body.get_index()) !=
-        body_index_to_frame_id_.end();
-  }
-
-  // Helper method to declare output ports used by this plant to communicate
-  // with a GeometrySystem.
-  void DeclareGeometrySystemPorts();
-
-  // Allocate the id output.
-  geometry::FrameIdVector AllocateFrameIdOutput(
-      const systems::Context<T>& context) const;
-
-  // Calculate the id output.
-  void CalcFrameIdOutput(
-      const systems::Context<T>& context,
-      geometry::FrameIdVector* id_set) const;
-
-  // Allocate the frame pose set output port value.
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const systems::Context<T>& context) const;
-
-  // Calculate the frame pose set output port value.
-  void CalcFramePoseOutput(const systems::Context<T>& context,
-                           geometry::FramePoseVector<T>* poses) const;
-
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
-
-  // Geometry source identifier for this system to interact with geometry
-  // system. It is made optional for plants that do not register geometry
-  // (dynamics only).
-  optional<geometry::SourceId> source_id_{nullopt};
-
-  // Frame Id's for each body in the model:
-  // Not all bodies need to be in this map.
-  std::unordered_map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
-
-  std::unordered_map<geometry::GeometryId, BodyIndex> geometry_id_to_body_index_;
-
-  // Map provided at construction that tells how bodies (referenced by name),
-  // map to frame ids.
-  std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
-
-  // Port handles for geometry:
-  int geometry_query_port_{-1};
-  int geometry_id_port_{-1};
-  int geometry_pose_port_{-1};
-
-  // Rigid contact constraint parameters.
-  double contact_penalty_stiffness_{0};
-  double contact_penalty_damping_{0};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

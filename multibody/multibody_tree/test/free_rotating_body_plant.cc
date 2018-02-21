@@ -14,17 +14,12 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 template<typename T>
-FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J,
-                                                bool with_quaternion) :
-    I_(I), J_(J), with_quaternion_(with_quaternion) {
+FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) :
+    I_(I), J_(J) {
   BuildMultibodyTreeModel();
-  DRAKE_DEMAND(
-      (model_.get_num_positions() == 3 && !with_quaternion) ||
-      (model_.get_num_positions() == 4 && with_quaternion));
+  DRAKE_DEMAND(model_.get_num_positions() == 3);
   DRAKE_DEMAND(model_.get_num_velocities() == 3);
-  DRAKE_DEMAND(
-      (model_.get_num_states() == 6 && !with_quaternion) ||
-      (model_.get_num_states() == 7 && with_quaternion));
+  DRAKE_DEMAND(model_.get_num_states() == 6);
   this->DeclareContinuousState(
       model_.get_num_positions(),
       model_.get_num_velocities(), 0 /* num_z */);
@@ -44,15 +39,9 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
   body_ = &model_.template AddBody<RigidBody>(M_Bcm);
 
-  if (with_quaternion_) {
-    quaternion_mobilizer_ =
-        &model_.template AddMobilizer<QuaternionMobilizer>(
-            model_.get_world_frame(), body_->get_body_frame());
-  } else {
-    space_xyx_mobilizer_ =
-        &model_.template AddMobilizer<SpaceXYZMobilizer>(
-            model_.get_world_frame(), body_->get_body_frame());
-  }
+  mobilizer_ =
+      &model_.template AddMobilizer<SpaceXYZMobilizer>(
+          model_.get_world_frame(), body_->get_body_frame());
 
   model_.Finalize();
 }
@@ -140,32 +129,20 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   model_.SetDefaultState(context, state);
-  if (with_quaternion_) {
-    quaternion_mobilizer_->set_angular_velocity(
-        context, get_default_initial_angular_velocity(), state);
-  } else {
-    space_xyx_mobilizer_->set_angular_velocity(
-        context, get_default_initial_angular_velocity(), state);
-  }
+  mobilizer_->set_angular_velocity(
+      context, get_default_initial_angular_velocity(), state);
 }
 
 template<typename T>
 Vector3<T> FreeRotatingBodyPlant<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
-  if (with_quaternion_) {
-    return quaternion_mobilizer_->get_angular_velocity(context);
-  }
-  return space_xyx_mobilizer_->get_angular_velocity(context);
+  return mobilizer_->get_angular_velocity(context);
 }
 
 template<typename T>
 void FreeRotatingBodyPlant<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_WB) const {
-  if (with_quaternion_) {
-    quaternion_mobilizer_->set_angular_velocity(context, w_WB);
-  } else {
-    space_xyx_mobilizer_->set_angular_velocity(context, w_WB);
-  }
+  mobilizer_->set_angular_velocity(context, w_WB);
 }
 
 template<typename T>
