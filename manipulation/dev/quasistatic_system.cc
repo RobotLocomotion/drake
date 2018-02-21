@@ -22,18 +22,15 @@ using std::flush;
 using std::sin;
 
 const double kInfinity = std::numeric_limits<double>::infinity();
-
-template <typename T>
-bool IsInStlVector(T element, const std::vector<T>& v) {
-  bool result = false;
-  for (auto i : v) {
-    if (element == i) {
-      result = true;
-      break;
-    }
+/*
+template <class T>
+void PrintStlVector(const std::vector<T>& v) {
+  for(const auto & e : v) {
+    cout << e << " ";
   }
-  return result;
+  cout << endl;
 }
+*/
 
 template <typename T>
 T MaxStlVector(const std::vector<T>& v) {
@@ -46,22 +43,31 @@ T MaxStlVector(const std::vector<T>& v) {
  */
 template <class Scalar>
 std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(
-    const RigidBodyTree<Scalar>* const tree, const std::vector<int>& idx_body,
-    bool is_position, std::map<int, std::vector<int>>* fixed_body_dofs) {
+    const RigidBodyTree<Scalar>& tree, const std::vector<int>& idx_body,
+    bool is_position,
+    const std::unordered_map<int, std::vector<int>>& fixed_body_dofs) {
   std::vector<int> idx_q;
   for (auto i : idx_body) {
     int start = 0;
     int size = 0;
     if (is_position) {
-      start = tree->get_body(i).get_position_start_index();
-      size = tree->get_body(i).getJoint().get_num_positions();
+      start = tree.get_body(i).get_position_start_index();
+      size = tree.get_body(i).getJoint().get_num_positions();
     } else {
-      start = tree->get_body(i).get_velocity_start_index();
-      size = tree->get_body(i).getJoint().get_num_velocities();
+      start = tree.get_body(i).get_velocity_start_index();
+      size = tree.get_body(i).getJoint().get_num_velocities();
     }
+    idx_q.reserve(static_cast<unsigned long>(size));
     for (int j = 0; j < size; j++) {
-      if (!IsInStlVector<int>(j, (*fixed_body_dofs)[i]))
-        idx_q.push_back(start + j);
+      auto it = fixed_body_dofs.find(i);
+      std::vector<int> vtr{};
+      if (it != fixed_body_dofs.end()) {
+        vtr = it->second;
+      }
+      const bool j_not_in_vtr =
+          vtr.end() == std::find(vtr.begin(), vtr.end(), j);
+
+      if (j_not_in_vtr) idx_q.push_back(start + j);
     }
   }
   return idx_q;
@@ -89,17 +95,19 @@ template <class Scalar>
 void QuasistaticSystem<Scalar>::Initialize() {
   nq_tree_ = tree_->get_num_positions();
 
-  // TODO(pang) this is correct only if the translation DOFs of the base of the
-  // unactuated bodies are not constrained.
+  // TODO(pang) this is correct only if the DOFs of the base of
+  // the unactuated bodies are not constrained.
   is_base_quaternion_ = false;
   if (tree_->get_body(idx_base_).getJoint().get_num_positions() == 7) {
     is_base_quaternion_ = true;
   }
 
   // checks if idx_base is an element of idx_unactuated_bodies.
-  DRAKE_ASSERT(IsInStlVector(idx_base_, idx_unactuated_bodies_));
+  DRAKE_ASSERT(idx_unactuated_bodies_.end() !=
+               std::find(idx_unactuated_bodies_.begin(),
+                         idx_unactuated_bodies_.end(), idx_base_));
 
-  // create list of actuated bodies, which is:
+  // create the list of actuated bodies, which is:
   // list_of_all_bodies - list_of_unactuated_bodies - 0 (world)
   std::sort(idx_unactuated_bodies_.begin(), idx_unactuated_bodies_.end());
   std::vector<int> idx_actuated_bodies;
@@ -115,27 +123,27 @@ void QuasistaticSystem<Scalar>::Initialize() {
 
   // create maps of fixed positions/velocities of each body, keyed by body
   // indices in rigidbodytree. fixed_actuated_positions is empty.
-  std::map<int, std::vector<int>> fixed_body_positions, fixed_body_velocities,
-      fixed_actuated_body_positions;
+  std::unordered_map<int, std::vector<int>> fixed_body_positions,
+      fixed_body_velocities, fixed_actuated_body_positions;
   fixed_body_positions[idx_base_] = fixed_base_positions_;
   fixed_body_velocities[idx_base_] = fixed_base_velocities_;
 
   // create idx_qu_
   idx_qu_.clear();
   idx_qu_ = GetPositionOrVelocityIndicesOfBodiesFromRBT(
-      tree_.get(), idx_unactuated_bodies_, true, &fixed_body_positions);
+      *tree_, idx_unactuated_bodies_, true, fixed_body_positions);
 
   // assuming that the first body in idx_unactuated_bodies is the base link of
   // the unactuated rigid body mechanism.
   DRAKE_ASSERT(idx_base_ == idx_unactuated_bodies_[0]);
   // create idx_vu_
   idx_vu_ = GetPositionOrVelocityIndicesOfBodiesFromRBT(
-      tree_.get(), idx_unactuated_bodies_, false, &fixed_body_velocities);
+      *tree_, idx_unactuated_bodies_, false, fixed_body_velocities);
 
   // create idx_qa_
   idx_qa_.clear();
   idx_qa_ = GetPositionOrVelocityIndicesOfBodiesFromRBT(
-      tree_.get(), idx_actuated_bodies, true, &fixed_actuated_body_positions);
+      *tree_, idx_actuated_bodies, true, fixed_actuated_body_positions);
 
   // get contact information
   int nc_actuated = 0;  // number of collision elements of actauted bodies
@@ -155,7 +163,6 @@ void QuasistaticSystem<Scalar>::Initialize() {
   } else {
     DRAKE_ASSERT(static_cast<int>(is_contact_2d_.size()) == nc_);
   }
-  cout << "nc_: " << nc_ << endl;
   UpdateNs();
 
   this->DeclarePeriodicDiscreteUpdate(period_sec_);
@@ -226,32 +233,23 @@ void QuasistaticSystem<Scalar>::Initialize() {
   z_gamma_ = prog_->NewBinaryVariables(nc_, "z_gamma");
 
   // Add uppder bound to the norms of all decision variables.
-  bounds_delta_q_ = prog_
-                        ->AddLinearConstraint(
-                            MatrixX<Scalar>::Identity(n1_, n1_),
-                            -VectorX<Scalar>::Constant(n1_, kInfinity),
-                            VectorX<Scalar>::Constant(n1_, kInfinity), delta_q_)
-                        .constraint()
-                        .get();
+  bounds_delta_q_ =
+      prog_->AddBoundingBoxConstraint(-kInfinity, kInfinity, delta_q_)
+          .constraint()
+          .get();
   bounds_gamma_ =
       prog_
-          ->AddLinearConstraint(
-              MatrixX<Scalar>::Identity(nc_, nc_), VectorX<Scalar>::Zero(nc_),
-              VectorX<Scalar>::Constant(nc_, kInfinity), gamma_)
+          ->AddBoundingBoxConstraint(0, kInfinity, gamma_)
           .constraint()
           .get();
   bounds_lambda_n_ =
       prog_
-          ->AddLinearConstraint(
-              MatrixX<Scalar>::Identity(nc_, nc_), VectorX<Scalar>::Zero(nc_),
-              VectorX<Scalar>::Constant(nc_, kInfinity), lambda_n_)
+          ->AddBoundingBoxConstraint(0, kInfinity, lambda_n_)
           .constraint()
           .get();
   bounds_lambda_f_ =
       prog_
-          ->AddLinearConstraint(
-              MatrixX<Scalar>::Identity(nd_, nd_), VectorX<Scalar>::Zero(nd_),
-              VectorX<Scalar>::Constant(nd_, kInfinity), lambda_f_)
+          ->AddBoundingBoxConstraint(0, kInfinity, lambda_f_)
           .constraint()
           .get();
   // Force balance
@@ -627,8 +625,8 @@ void QuasistaticSystem<Scalar>::StepForward(
   max_impulse *= 5;
 
   // cacluate big M
-  const Scalar kBigM = CalcBigM(max_impulse, max_delta_q, max_gamma, Jn, Jf,
-                                phi, qa_dot_d);
+  const Scalar kBigM =
+      CalcBigM(max_impulse, max_delta_q, max_gamma, Jn, Jf, phi, qa_dot_d);
 
   // find columns of Jn and Jq corresponding to q.
   MatrixX<Scalar> Jn_q(nc_, n1_);

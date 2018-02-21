@@ -176,6 +176,13 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
     n_ = n1_ + 2 * n2_;
   }
 
+  void StepForward(
+      const drake::MatrixX<Scalar>& Wn, const drake::MatrixX<Scalar>& Wf,
+      const drake::MatrixX<Scalar>& Jn, const drake::MatrixX<Scalar>& Jf,
+      const drake::MatrixX<Scalar>& U, const drake::MatrixX<Scalar>& E,
+      const drake::VectorX<Scalar>& phi, const drake::VectorX<Scalar>& f,
+      const drake::VectorX<Scalar>& qa_dot_d) const;
+
   // initial guesses
   std::unique_ptr<drake::VectorX<Scalar>> lambda_n_start_ =
       std::make_unique<drake::VectorX<Scalar>>();
@@ -206,10 +213,10 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   solvers::VectorXDecisionVariable z_f_;
   solvers::VectorXDecisionVariable z_gamma_;
 
-  solvers::LinearConstraint* bounds_delta_q_{nullptr};
-  solvers::LinearConstraint* bounds_gamma_{nullptr};
-  solvers::LinearConstraint* bounds_lambda_n_{nullptr};
-  solvers::LinearConstraint* bounds_lambda_f_{nullptr};
+  solvers::BoundingBoxConstraint* bounds_delta_q_{nullptr};
+  solvers::BoundingBoxConstraint* bounds_gamma_{nullptr};
+  solvers::BoundingBoxConstraint* bounds_lambda_n_{nullptr};
+  solvers::BoundingBoxConstraint* bounds_lambda_f_{nullptr};
   solvers::LinearEqualityConstraint* force_balance_{nullptr};
   solvers::LinearConstraint* non_penetration_{nullptr};
   solvers::LinearConstraint* coulomb_friction1_{nullptr};
@@ -220,13 +227,6 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   solvers::LinearConstraint* decision_variables_complementary_{nullptr};
 
   solvers::QuadraticCost* objective_{nullptr};
-
-  void StepForward(
-      const drake::MatrixX<Scalar>& Wn, const drake::MatrixX<Scalar>& Wf,
-      const drake::MatrixX<Scalar>& Jn, const drake::MatrixX<Scalar>& Jf,
-      const drake::MatrixX<Scalar>& U, const drake::MatrixX<Scalar>& E,
-      const drake::VectorX<Scalar>& phi, const drake::VectorX<Scalar>& f,
-      const drake::VectorX<Scalar>& qa_dot_d) const;
 };
 
 }  // namespace manipulation

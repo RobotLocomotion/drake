@@ -30,7 +30,6 @@ drake_cc_library(
 
 drake_cc_binary(
     name = "rod2d_time_stepping",
-    testonly = 1,
     srcs = [
         "rod2d_time_stepping.cc",
     ],
