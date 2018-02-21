@@ -117,7 +117,7 @@ GTEST_TEST(RotationMatrix, MakeIdentityMatrix) {
 GTEST_TEST(RotationMatrix, RotationMatrixX) {
   const double theta = 0.3;
   const Matrix3d m = Eigen::AngleAxisd(theta, Vector3d::UnitX()).matrix();
-  RotationMatrix<double> R = RotationMatrix<double>::MakeRotationMatrixX(theta);
+  RotationMatrix<double> R = RotationMatrix<double>::MakeXRotation(theta);
   const Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
@@ -126,7 +126,7 @@ GTEST_TEST(RotationMatrix, RotationMatrixX) {
 GTEST_TEST(RotationMatrix, RotationMatrixY) {
   const double theta = 0.4;
   const Matrix3d m = Eigen::AngleAxisd(theta, Vector3d::UnitY()).matrix();
-  RotationMatrix<double> R = RotationMatrix<double>::MakeRotationMatrixY(theta);
+  RotationMatrix<double> R = RotationMatrix<double>::MakeYRotation(theta);
   const Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
@@ -135,7 +135,7 @@ GTEST_TEST(RotationMatrix, RotationMatrixY) {
 GTEST_TEST(RotationMatrix, RotationMatrixZ) {
   const double theta = 0.5;
   const Matrix3d m = Eigen::AngleAxisd(theta, Vector3d::UnitZ()).matrix();
-  RotationMatrix<double> R = RotationMatrix<double>::MakeRotationMatrixZ(theta);
+  RotationMatrix<double> R = RotationMatrix<double>::MakeZRotation(theta);
   const Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
@@ -149,19 +149,19 @@ GTEST_TEST(RotationMatrix, RotationMatrixBodyZYX) {
                     * Eigen::AngleAxisd(q(2), Vector3d::UnitX())).matrix();
   const RotationMatrix<double> R_eigen(m);
   const RotationMatrix<double> R_bodyZYX =
-      RotationMatrix<double>::MakeRotationMatrixBodyZYX(q);
+      RotationMatrix<double>::MakeBodyZYXRotation(q);
   EXPECT_TRUE(R_bodyZYX.IsNearlyEqualTo(R_eigen, kEpsilon));
 
-  RotationMatrix<double> R1 = RotationMatrix<double>::MakeRotationMatrixZ(q(0));
-  RotationMatrix<double> R2 = RotationMatrix<double>::MakeRotationMatrixY(q(1));
-  RotationMatrix<double> R3 = RotationMatrix<double>::MakeRotationMatrixX(q(2));
+  RotationMatrix<double> R1 = RotationMatrix<double>::MakeZRotation(q(0));
+  RotationMatrix<double> R2 = RotationMatrix<double>::MakeYRotation(q(1));
+  RotationMatrix<double> R3 = RotationMatrix<double>::MakeXRotation(q(2));
   RotationMatrix<double> R_expected = R1 * R2 * R3;
   EXPECT_TRUE(R_bodyZYX.IsExactlyEqualTo(R_expected));
 
   // Compare to SpaceXYZ rotation sequence.
   const Vector3d roll_pitch_yaw(q(2), q(1), q(0));
   const RotationMatrix<double> R_spaceXYZ =
-      RotationMatrix<double>::MakeRotationMatrixSpaceXYZ(roll_pitch_yaw);
+      RotationMatrix<double>::MakeSpaceXYZRotation(roll_pitch_yaw);
   EXPECT_TRUE(R_spaceXYZ.IsNearlyEqualTo(R_eigen, kEpsilon));
   EXPECT_TRUE(R_spaceXYZ.IsExactlyEqualTo(R_bodyZYX));
 }
@@ -257,28 +257,76 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
 
 // Test ProjectMatrixToRotationMatrix.
 GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
-  Matrix3d m;
+  // Test an identity matrix (valid rotation matrix).
+  Matrix3d m = Matrix3d::Identity();
+  double quality_factor;
+  RotationMatrix<double> R =
+      RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
+  EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),
+                                10 * kEpsilon));
+  EXPECT_TRUE(std::abs(quality_factor - 1.0) < 40 * kEpsilon);
+
+  // Test another valid rotation matrix.  Ensure near-perfect quality_factor.
+  const Vector3d angles(0.1, 0.2, 0.3);
+  m = RotationMatrix<double>::MakeSpaceXYZRotation(angles).matrix();
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
+  EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon));
+  EXPECT_TRUE(std::abs(quality_factor - 1.0) < 40*kEpsilon);
+
+  // Test scaling each element of a rotation matrix by 2 (linear scaling).
+  const Matrix3d m2 = 2 * m;
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m2, &quality_factor);
+  EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon));
+  EXPECT_TRUE(std::abs(quality_factor - 2.0) < 40*kEpsilon);
+
+  // Test a poor non-identity matrix.
   m << 1, 0.1, 0.1, -0.2, 1.0, 0.1, 0.5, 0.6, 0.8;
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
-  RotationMatrix<double> R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [1.405049, 1.061152, 0.4688222]
+  EXPECT_TRUE(std::abs(quality_factor - 0.4688222) < 1E-5);
 
   m << 1, 2, 3, 4, 5, 6, 7, 8, -10;
-  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [14.61524, 9.498744, 0.4105846]
+  EXPECT_TRUE(std::abs(quality_factor - 14.61524) < 1E-5);
 
   m << 1E-7, 2, 3, 4, 5, 6, 7, 8, -1E6;
-  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [1000000, 6.597777, 1.21254]
+  EXPECT_TRUE(std::abs(quality_factor - 1000000) < 1E-1);
 
   m << 0, 0, 0, 0, 0, 0, 0, 0, 0;
-  R = RotationMatrix<double>::ProjectToRotationMatrix(m);
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
+  // Singular values from MotionGenesis [0, 0, 0]
+  EXPECT_TRUE(std::abs(quality_factor - 0) < 1E-13);
 
+  // Check that an exception is thrown if the rotation matrix is improper,
+  // meaning that the determinant of m happens to be zero.
   m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
-  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m),
-               std::logic_error);
+  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
+               &quality_factor), std::logic_error);
+
+  // Check that an exception is thrown if the rotation matrix is improper,
+  // meaning that the determinant of m happens to be negative.
+  m << 1, 2, 3, 4, 5, 6, -7, -8, -7;
+  EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
+  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
+               &quality_factor), std::logic_error);
+
+  // Check that returned rotation matrix is orthonormal.  In other words, its
+  // transpose should be equal to its inverse so  that R * Rᵀ = IdentityMatrix.
+  m << 1, 2, 3, 4, 5, 6, 7, 8, 7;
+  EXPECT_TRUE(RotationMatrix<double>::IsDeterminantPositive(m));
+  R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
+  const RotationMatrix<double> I = R * R.inverse();
+  EXPECT_TRUE(I.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),
+                                10 * kEpsilon));
 }
 
 // Test RotationMatrix cast method from double to AutoDiffXd.

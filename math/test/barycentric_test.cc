@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -30,6 +31,7 @@ GTEST_TEST(BarycentricTest, GetMeshPoints) {
                                 {3.0, 4.0}}};
 
   EXPECT_EQ(bary.get_input_size(), kNumInputs);
+  EXPECT_EQ(*(bary.get_input_grid()[2].rbegin()), 4.0);
   EXPECT_EQ(bary.get_num_mesh_points(), 4);
 
   Vector3d point;
@@ -41,6 +43,14 @@ GTEST_TEST(BarycentricTest, GetMeshPoints) {
   EXPECT_TRUE(CompareMatrices(point, Vector3d{0, 2, 4}));
   bary.get_mesh_point(3, &point);
   EXPECT_TRUE(CompareMatrices(point, Vector3d{1, 2, 4}));
+
+  // Test the alternative call signature.
+  EXPECT_TRUE(CompareMatrices(bary.get_mesh_point(0), Vector3d{0, 2, 3}));
+
+  // Test the batch retrieval.
+  const MatrixXd points = bary.get_all_mesh_points();
+  EXPECT_EQ(points.cols(), 4);
+  EXPECT_TRUE(CompareMatrices(points.col(3), Vector3d{1, 2, 4}));
 }
 
 GTEST_TEST(BarycentricTest, EvalWeights) {
@@ -121,6 +131,40 @@ GTEST_TEST(BarycentricTest, EvalTest) {
   mesh(0, 2) = 10.;
   bary.Eval(mesh, Vector2d{.25, .75}, &value);
   EXPECT_NEAR(value[0], 6.25, 1e-8);
+
+  // Test the alternative call signature.
+  EXPECT_NEAR(bary.Eval(mesh, Vector2d{.25, .75})[0], 6.25, 1e-8);
+}
+
+GTEST_TEST(BarycentricTest, EvalSymbolicTest) {
+  BarycentricMesh<double> bary{{{0.0, 1.0},  // BR
+                                {0.0, 1.0}}};
+
+  using symbolic::Variable;
+  using symbolic::Expression;
+  Variable a{"a"}, b{"b"}, c{"c"}, d{"d"};
+  RowVector4<Expression> mesh;
+  mesh << a, b, c, d;
+
+  Vector1<Expression> value;
+  // Check grid points.
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{0., 0.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(a));
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{1., 0.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(b));
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{0., 1.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(c));
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{1., 1.}, &value);
+  EXPECT_TRUE(value[0].EqualTo(d));
+
+  // Check the middle.
+  bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{.5, .5}, &value);
+  EXPECT_TRUE(value[0].EqualTo(.5 * a + .5 * d));
+
+  // Test the alternative call signature.
+  EXPECT_TRUE(
+      bary.EvalWithMixedScalars<Expression>(mesh, Vector2d{0., 0.})[0].EqualTo(
+          a));
 }
 
 GTEST_TEST(BarycentricTest, MultidimensionalOutput) {

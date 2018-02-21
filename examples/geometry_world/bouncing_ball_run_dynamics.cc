@@ -16,6 +16,7 @@
 
 namespace drake {
 namespace examples {
+namespace geometry_world {
 namespace bouncing_ball {
 namespace {
 
@@ -35,22 +36,28 @@ int do_main() {
   auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
   geometry_system->set_name("geometry_system");
 
-  SourceId ball_source_id = geometry_system->RegisterSource("ball1");
-  auto bouncing_ball = builder.AddSystem<BouncingBallPlant>(
-      ball_source_id, geometry_system, Vector2<double>(0.25, 0.25));
-  bouncing_ball->set_name("BouncingBall1");
+  // Create two bouncing balls --> two plants. Put the balls at positions
+  // mirrored over the origin (<0.25, 0.25> and <-0.25, -0.25>, respectively).
+  // See below for setting the initial *height*.
+  SourceId ball_source_id1 = geometry_system->RegisterSource("ball1");
+  auto bouncing_ball1 = builder.AddSystem<BouncingBallPlant>(
+      ball_source_id1, geometry_system, Vector2<double>(0.25, 0.25));
+  bouncing_ball1->set_name("BouncingBall1");
 
   SourceId ball_source_id2 = geometry_system->RegisterSource("ball2");
   auto bouncing_ball2 = builder.AddSystem<BouncingBallPlant>(
       ball_source_id2, geometry_system, Vector2<double>(-0.25, -0.25));
-  bouncing_ball->set_name("BouncingBall2");
+  bouncing_ball2->set_name("BouncingBall2");
 
   SourceId global_source = geometry_system->RegisterSource("anchored");
-  Vector3<double> normal_G(0, 0, 1);
-  Vector3<double> point_G(0, 0, 0);
+  // Add a "ground" halfspace. Define the pose of the half space (H) in the
+  // world from its normal (Hz_W) and a point on the plane (p_WH). In this case,
+  // X_WH will be the identity.
+  Vector3<double> Hz_W(0, 0, 1);
+  Vector3<double> p_WH(0, 0, 0);
   geometry_system->RegisterAnchoredGeometry(
       global_source,
-      make_unique<GeometryInstance>(HalfSpace::MakePose(normal_G, point_G),
+      make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WH),
                                     make_unique<HalfSpace>()));
   DrakeLcm lcm;
   PoseBundleToDrawMessage* converter =
@@ -61,12 +68,12 @@ int do_main() {
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
   publisher->set_publish_period(1 / 60.0);
 
-  builder.Connect(bouncing_ball->get_geometry_id_output_port(),
-                  geometry_system->get_source_frame_id_port(ball_source_id));
-  builder.Connect(bouncing_ball->get_geometry_pose_output_port(),
-                  geometry_system->get_source_pose_port(ball_source_id));
+  builder.Connect(bouncing_ball1->get_geometry_id_output_port(),
+                  geometry_system->get_source_frame_id_port(ball_source_id1));
+  builder.Connect(bouncing_ball1->get_geometry_pose_output_port(),
+                  geometry_system->get_source_pose_port(ball_source_id1));
   builder.Connect(geometry_system->get_query_output_port(),
-                  bouncing_ball->get_geometry_query_input_port());
+                  bouncing_ball1->get_geometry_query_input_port());
 
   builder.Connect(bouncing_ball2->get_geometry_id_output_port(),
                   geometry_system->get_source_frame_id_port(ball_source_id2));
@@ -93,7 +100,7 @@ int do_main() {
     system->set_z(&ball_context, z);
     system->set_zdot(&ball_context, zdot);
   };
-  init_ball(bouncing_ball, 0.3, 0.);
+  init_ball(bouncing_ball1, 0.3, 0.);
   init_ball(bouncing_ball2, 0.3, 0.3);
 
   simulator.get_mutable_integrator()->set_maximum_step_size(0.002);
@@ -106,9 +113,10 @@ int do_main() {
 
 }  // namespace
 }  // namespace bouncing_ball
+}  // namespace geometry_world
 }  // namespace examples
 }  // namespace drake
 
 int main() {
-  return drake::examples::bouncing_ball::do_main();
+  return drake::examples::geometry_world::bouncing_ball::do_main();
 }

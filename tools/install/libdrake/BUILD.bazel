@@ -122,9 +122,8 @@ cc_library(
         "@ignition_rndf",
         "@lcm",
         "@libprotobuf",
+        "@osqp",
         "@scs//:scsdir",
-        "@sdformat",
-        "@tinyobjloader",
         "@tinyxml2",
     ],
 )

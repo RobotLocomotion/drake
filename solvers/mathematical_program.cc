@@ -26,6 +26,7 @@
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/symbolic_extraction.h"
@@ -81,6 +82,11 @@ AttributesSet kGurobiCapabilities =
      kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
      kBinaryVariable);
 
+// OSQP solver capabilities. This is a QP solver.
+AttributesSet kOsqpCapabilities =
+    (kLinearEqualityConstraint | kLinearConstraint | kLinearCost |
+     kQuadraticCost);
+
 // Mosek solver capabilities.
 AttributesSet kMosekCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
@@ -132,6 +138,7 @@ MathematicalProgram::MathematicalProgram()
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
       gurobi_solver_(new GurobiSolver()),
       mosek_solver_(new MosekSolver()),
+      osqp_solver_(new OsqpSolver()),
       scs_solver_(new ScsSolver()) {}
 
 MatrixXDecisionVariable MathematicalProgram::NewVariables(
@@ -714,6 +721,9 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kOsqpCapabilities) &&
+             osqp_solver_->available()) {
+    return osqp_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);

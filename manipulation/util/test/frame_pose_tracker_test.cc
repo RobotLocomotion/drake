@@ -37,27 +37,32 @@ class FramePoseTrackerTest : public ::testing::Test {
         weld_to_frame, tree_.get());
     model_id_ = mtable.begin()->second;
 
-    // Arbitrarily pick the first three bodies in the iiwa model to attach
-    // frames to. Each frame name should be unique.
+    // Arbitrarily pick three bodies / frames in the iiwa model to
+    // attach frames to. Each frame name should be unique.
     frame_info_["iiwa_frame_0"] =
         std::make_pair("iiwa_link_0", model_id_);
     frame_info_["iiwa_frame_1"] =
         std::make_pair("iiwa_link_1", model_id_);
-    frame_info_["iiwa_frame_2"] =
-        std::make_pair("iiwa_link_2", model_id_);
+    frame_info_["iiwa_frame_ee"] =
+        std::make_pair("iiwa_frame_ee", model_id_);
 
     // Each RigidBodyFrame has a pose offset w.r.t. the RigidBody it is attached
     // to. Here we set an arbitrarily chosen pose offset for the frames.
     Eigen::Vector3d axis(1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3));
-    T_BF_ = Eigen::AngleAxisd(0.2, axis);
+    X_PF_ = Eigen::AngleAxisd(0.2, axis);
 
     // Create the RigidBodyFrames associated with the named bodies, and apply
     // the pose offset.
     for (auto frame_info : frame_info_) {
-      RigidBody<double>* body = tree_.get()->FindBody(
-          frame_info.second.first, "", frame_info.second.second);
+      std::string name;
+      int model_id{};
+      std::tie(name, model_id) = frame_info.second;
+      RigidBody<double>* parent_body = nullptr;
+      auto parent_frame = tree_->findFrame(name, model_id);
+      parent_body = parent_frame->get_mutable_rigid_body();
+      Eigen::Isometry3d X_BF = parent_frame->get_transform_to_body() * X_PF_;
       frames_.push_back(std::make_unique<RigidBodyFrame<double>>(
-          frame_info.first, body, T_BF_));
+          frame_info.first, parent_body, X_BF));
     }
   }
 
@@ -84,7 +89,7 @@ class FramePoseTrackerTest : public ::testing::Test {
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
   int model_id_;
-  Eigen::Isometry3d T_BF_;
+  Eigen::Isometry3d X_PF_;  // Pose of frame relative to parent.
 
   std::map<std::string, std::pair<std::string, int>> frame_info_;
   std::vector<std::unique_ptr<RigidBodyFrame<double>>> frames_;
@@ -123,7 +128,7 @@ TEST_F(FramePoseTrackerTest, InvalidFrameNameTest) {
 }
 
 TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
-  std::vector<Eigen::Isometry3d> frame_poses(3, T_BF_);
+  std::vector<Eigen::Isometry3d> frame_poses(3, X_PF_);
   FramePoseTracker dut(*tree_.get(), frame_info_, frame_poses);
 
   // Update the input, calculate the output, and compare it with expected pose.
@@ -145,15 +150,15 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
     // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
     // Multiply these two and the result should equal the pose contained in the
     // PoseBundle object, i.e., the frame pose w.r.t. the world.
-    Eigen::Isometry3d T_WB =
+    Eigen::Isometry3d X_WB =
         kres.get_pose_in_world(frame.get()->get_rigid_body());
-    Eigen::Isometry3d T_BF = frame.get()->get_transform_to_body();
+    Eigen::Isometry3d X_BF = frame.get()->get_transform_to_body();
 
     // Extract the appropriate frame from the PoseBundle object.
     int frame_pose_index = frame_name_to_index_map.at(frame.get()->get_name());
-    Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
+    Eigen::Isometry3d X_WF = frames_bundle.get_pose(frame_pose_index);
 
-    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-6));
+    EXPECT_TRUE(X_WF.isApprox(X_WB * X_BF, 1e-6));
   }
 }
 
@@ -183,14 +188,14 @@ TEST_F(FramePoseTrackerTest, ValidFrameTest) {
     // Multiply these two and the result should equal the pose contained in the
     // PoseBundle object, i.e., the frame pose w.r.t. the world.
     RigidBodyFrame<double>* frame = dut.get_mutable_frame(frame_name);
-    Eigen::Isometry3d T_WB = kres.get_pose_in_world(frame->get_rigid_body());
-    Eigen::Isometry3d T_BF = frame->get_transform_to_body();
+    Eigen::Isometry3d X_WB = kres.get_pose_in_world(frame->get_rigid_body());
+    Eigen::Isometry3d X_BF = frame->get_transform_to_body();
 
     // Extract the appropriate frame from the PoseBundle object.
     int frame_pose_index = frame_name_to_index_map.at(frame->get_name());
-    Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
+    Eigen::Isometry3d X_WF = frames_bundle.get_pose(frame_pose_index);
 
-    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-6));
+    EXPECT_TRUE(X_WF.isApprox(X_WB * X_BF, 1e-6));
   }
 }
 

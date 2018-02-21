@@ -228,8 +228,7 @@ class SpatialVector {
   }
 
   /// Unary minus operator.
-  /// @relates SpatialVector.
-  SpatialQuantity operator-() {
+  SpatialQuantity operator-() const {
     return SpatialQuantity(-get_coeffs());
   }
 

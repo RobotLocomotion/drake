@@ -183,7 +183,7 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   DRAKE_DEMAND(ego_closest_pose.odometry.lane != nullptr);
   const ClosestPoses current_closest_poses = PoseSelector<T>::FindClosestPair(
       ego_closest_pose.odometry.lane, ego_pose, traffic_poses,
-      idm_params.scan_ahead_distance());
+      idm_params.scan_ahead_distance(), ScanStrategy::kPath);
   // Construct ClosestPose containers for the leading, trailing, and ego car.
   const ClosestPose<T>& leading_closest_pose =
       current_closest_poses.at(AheadOrBehind::kAhead);
@@ -202,7 +202,8 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   // Compute the incentive for the left lane.
   if (lanes.first != nullptr) {
     const ClosestPoses left_closest_poses = PoseSelector<T>::FindClosestPair(
-        lanes.first, ego_pose, traffic_poses, idm_params.scan_ahead_distance());
+        lanes.first, ego_pose, traffic_poses, idm_params.scan_ahead_distance(),
+        ScanStrategy::kPath);
     ComputeIncentiveOutOfLane(idm_params, mobil_params, left_closest_poses,
                               ego_closest_pose, ego_acceleration,
                               trailing_delta_accel_this, &incentives.first);
@@ -211,7 +212,8 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   if (lanes.second != nullptr) {
     const ClosestPoses right_closest_poses =
         PoseSelector<T>::FindClosestPair(lanes.second, ego_pose, traffic_poses,
-                                         idm_params.scan_ahead_distance());
+                                         idm_params.scan_ahead_distance(),
+                                         ScanStrategy::kPath);
     ComputeIncentiveOutOfLane(idm_params, mobil_params, right_closest_poses,
                               ego_closest_pose, ego_acceleration,
                               trailing_delta_accel_this, &incentives.second);

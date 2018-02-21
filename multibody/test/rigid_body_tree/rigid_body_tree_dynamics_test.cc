@@ -298,7 +298,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
 
   // Set external wrenches, keep track of total wrench.
   Vector6<double> total_wrench_world = gravitational_wrench_world;
-  for (const auto& body_ptr : tree.bodies) {
+  for (const auto& body_ptr : tree.get_bodies()) {
     if (body_ptr->has_parent_body()) {
       auto wrench_body = Vector6<double>::Random().eval();
       external_wrenches[body_ptr.get()] = wrench_body;
@@ -311,7 +311,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
 
   // Compute wrench across floating joint W_f, add to total wrench.
   auto tau = tree.inverseDynamics(kinematics_cache, external_wrenches, vd);
-  auto& floating_body_ptr = tree.bodies[1];
+  auto& floating_body_ptr = tree.get_bodies()[1];
   int floating_joint_start_index =
       floating_body_ptr->get_velocity_start_index();
   Vector6<double> floating_joint_wrench_body =

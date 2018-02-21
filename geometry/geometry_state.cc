@@ -498,5 +498,8 @@ void GeometryState<T>::UpdatePosesRecursively(
 }  // namespace geometry
 }  // namespace drake
 
+// TODO(SeanCurtis-TRI): Currently assumes that "non-symbolic" implies
+// AutoDiffXd. Update things appropriately when more non-symbolic scalars
+// are available.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::geometry::GeometryState)

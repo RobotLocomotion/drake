@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 This tests ODR for how we wrap our Python.
 This is tested explicitly with symbolic::Variable, given that it has global

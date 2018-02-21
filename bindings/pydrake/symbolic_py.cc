@@ -1,6 +1,10 @@
+#include <map>
+#include <sstream>
+
 #include <pybind11/eigen.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -9,17 +13,21 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(_symbolic_py, m) {
-  using drake::symbolic::Variable;
-  using drake::symbolic::Expression;
-  using drake::symbolic::Formula;
-  using drake::symbolic::pow;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::symbolic;
 
-  m.doc() = "Symbolic variables, expressions, and formulae";
+  using std::map;
+  using std::ostringstream;
+
+  m.doc() = "Symbolic variable, monomial, expression, and formula";
 
   py::class_<Variable>(m, "Variable")
     .def(py::init<const std::string&>())
     .def("get_id", &Variable::get_id)
     .def("__repr__", &Variable::to_string)
+    .def("__hash__", [](const Variable& self) {
+      return std::hash<Variable>{}(self);
+    })
     .def("__add__", [](const Variable& self, const Variable& other) {
       return Expression{self + other};
     }, py::is_operator())
@@ -52,6 +60,9 @@ PYBIND11_MODULE(_symbolic_py, m) {
     }, py::is_operator())
     .def("__mul__", [](const Variable& self, const Expression& other) {
       return Expression{self * other};
+    }, py::is_operator())
+    .def("__mul__", [](const Variable& self, const Monomial& other) {
+      return Monomial(self) * other;
     }, py::is_operator())
     .def("__rmul__", [](const Variable& self, double other) {
       return Expression{other * self};
@@ -250,6 +261,30 @@ PYBIND11_MODULE(_symbolic_py, m) {
     .def("logical_not", [](const Formula& a) {
           return !a;
     });
+
+  py::class_<Monomial>(m, "Monomial")
+    .def(py::init<const Variable&>())
+    .def(py::init<const Variable&, int>())
+    .def(py::init<const map<Variable, int>&>())
+    .def("degree", &Monomial::degree)
+    .def("total_degree", &Monomial::total_degree)
+    .def(py::self   * py::self)
+    .def("__mul__", [](const Monomial& self, const Variable& other) {
+      return self * Monomial(other);
+    }, py::is_operator())
+    .def(py::self == py::self)
+    .def(py::self != py::self)
+    .def("__repr__", [](const Monomial& self) {
+        ostringstream oss;
+        oss << self;
+        return oss.str();
+      })
+    .def("get_powers", &Monomial::get_powers, py_reference_internal)
+    .def("ToExpression", &Monomial::ToExpression)
+    .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal)
+    .def("__pow__", [](const Monomial& self, const int p) {
+        return pow(self, p);
+      });
 }
 
 }  // namespace pydrake

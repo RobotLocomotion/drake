@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "drake/common/eigen_types.h"
 #include "drake/geometry/frame_id_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -10,6 +11,7 @@
 
 namespace drake {
 namespace examples {
+namespace geometry_world {
 namespace bouncing_ball {
 
 using geometry::FrameIdVector;
@@ -27,8 +29,10 @@ using std::make_unique;
 template <typename T>
 BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
                                         GeometrySystem<T>* geometry_system,
-                                        const Vector2<T>& init_position)
-    : source_id_(source_id), init_position_(init_position) {
+                                        const Vector2<double>& p_WB)
+    : source_id_(source_id), p_WB_(p_WB) {
+  DRAKE_DEMAND(geometry_system != nullptr);
+
   geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
   state_port_ =
       this->DeclareVectorOutputPort(BouncingBallVector<T>(),
@@ -49,7 +53,7 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
 
   ball_frame_id_ = geometry_system->RegisterFrame(
       source_id, GeometryFrame("ball_frame",
-                               Isometry3<double>::Identity() /*X_PF = X_WF*/));
+                               Isometry3<double>::Identity()));
   ball_id_ = geometry_system->RegisterGeometry(
       source_id, ball_frame_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/
@@ -105,23 +109,22 @@ void BouncingBallPlant<T>::CalcFramePoseOutput(
   const BouncingBallVector<T>& state = get_state(context);
   DRAKE_ASSERT(poses->vector().size() == 1);
   // This assumes *no* rotation, we only need to update the translation.
-  poses->mutable_vector()[0].translation() << init_position_(0),
-      init_position_(1), state.z();
+  poses->mutable_vector()[0].translation() << p_WB_(0),
+      p_WB_(1), state.z();
+  poses->mutable_vector()[0].linear() << Matrix3<T>::Identity();
 }
 
 template <typename T>
 FrameIdVector BouncingBallPlant<T>::AllocateFrameIdOutput(
-    const MyContext&) const {
-  FrameIdVector ids(source_id_);
-  ids.AddFrameId(ball_frame_id_);
-  return ids;
+    const systems::Context<T>&) const {
+  return FrameIdVector(source_id_,
+                       std::vector<geometry::FrameId>{ball_frame_id_});
 }
 
 template <typename T>
-void BouncingBallPlant<T>::CalcFrameIdOutput(const MyContext&,
-                                             FrameIdVector*) const {
-  // TODO(SeanCurtis-TRI): Only take action if the topology has changed; this
-  // system never changes the topology.
+void BouncingBallPlant<T>::CalcFrameIdOutput(const systems::Context<T>& context,
+                                             FrameIdVector* frame_ids) const {
+  *frame_ids = AllocateFrameIdOutput(context);
 }
 
 // Compute the actual physics.
@@ -135,7 +138,7 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
   BouncingBallVector<T>& derivative_vector = get_mutable_state(derivatives);
 
   const geometry::QueryObject<T>& query_object =
-      this->template EvalAbstractInput(context, geometry_query_port_)
+      this->EvalAbstractInput(context, geometry_query_port_)
           ->template GetValue<geometry::QueryObject<T>>();
 
   std::vector<PenetrationAsPointPair<T>> penetrations =
@@ -162,5 +165,6 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
 template class BouncingBallPlant<double>;
 
 }  // namespace bouncing_ball
+}  // namespace geometry_world
 }  // namespace examples
 }  // namespace drake

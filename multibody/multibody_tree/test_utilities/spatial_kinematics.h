@@ -45,6 +45,7 @@ class SpatialKinematicsPVA {
                        A_NBo_N_(alpha_NB_N, a_NBo_N) {
     X_NB_.linear() = R_NB;
     X_NB_.translation() = p_NoBo_N;
+    X_NB_.makeAffine();
   }
 
   /// Returns the transform that contains the 3x3 rotation matrix relating

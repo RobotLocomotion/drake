@@ -16,8 +16,8 @@ py_binary(
     visibility = ["//visibility:private"],
     # Python libraries to import.
     deps = [
-        "//bindings/pydrake",
         "//lcmtypes:lcmtypes_py",
+        "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],
@@ -63,6 +63,16 @@ config_setting(
 config_setting(
     name = "no_nlopt",
     values = {"define": "NO_NLOPT=ON"},
+)
+
+# OSQP is an open-source solver, and is included in the Drake build by
+# default. The OSQP solver is irrelvant to some users of MathematicalProgram,
+# so we provide a hidden switch to shut it off for developers who don't
+# actually need it.  This is not a supported configuration. Use at your own
+# risk: --define=NO_OSQP=ON
+config_setting(
+    name = "no_osqp",
+    values = {"define": "NO_OSQP=ON"},
 )
 
 # SCS is an open-source solver, and is included in the Drake build by default.

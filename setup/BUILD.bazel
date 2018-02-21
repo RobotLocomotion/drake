@@ -10,19 +10,22 @@ install_files(
     dest = "share/drake/setup",
     files = select({
         "//tools/cc_toolchain:apple": [
-            "mac/install_prereqs_binary_distribution.sh",
+            "mac/binary_distribution/Brewfile",
+            "mac/binary_distribution/install_prereqs.sh",
+            "mac/binary_distribution/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
-            "ubuntu/16.04/install_prereqs_binary_distribution.sh",
+            "ubuntu/16.04/binary_distribution/install_prereqs.sh",
+            "ubuntu/16.04/binary_distribution/packages.txt",
         ],
         "//conditions:default": [],
     }),
     strip_prefix = [
-        "mac",
-        "ubuntu/16.04",
+        "mac/binary_distribution",
+        "ubuntu/16.04/binary_distribution",
     ],
     rename = {
-        "share/drake/setup/install_prereqs_binary_distribution.sh": "install_prereqs",  # noqa
+        "share/drake/setup/install_prereqs.sh": "install_prereqs",
     },
 )
 

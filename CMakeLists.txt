@@ -14,7 +14,8 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
-find_package(Bazel 0.6.1 MODULE REQUIRED)
+# TODO(jamiesnape): Update to 0.10.1 after #8016 merges.
+find_package(Bazel 0.9.0 MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
 get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
@@ -86,7 +87,10 @@ endif()
 option(WITH_MATLAB "Build with support for MATLAB" OFF)
 
 if(WITH_MATLAB)
-  list(APPEND BAZEL_ARGS --define=NO_IPOPT=ON)
+  list(APPEND BAZEL_ARGS
+    --define=NO_IPOPT=ON
+    --define=NO_OSQP=ON
+  )
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
