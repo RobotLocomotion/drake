@@ -3,7 +3,12 @@ import unittest
 import numpy as np
 
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (BasicVector, DiagramBuilder)
+from pydrake.systems.framework import (
+    AbstractValue,
+    BasicVector,
+    DiagramBuilder,
+    VectorBase,
+    )
 from pydrake.systems.primitives import (
     Adder,
     AffineSystem,
@@ -16,8 +21,18 @@ from pydrake.systems.primitives import (
     ControllabilityMatrix,
     IsObservable,
     ObservabilityMatrix,
+    PassThrough,
     SignalLogger,
 )
+
+
+def compare_value(test, a, b):
+    # Compares a vector or abstract value.
+    if isinstance(a, VectorBase):
+        test.assertTrue(np.allclose(a.get_value(), b.get_value()))
+    else:
+        test.assertEquals(type(a.get_value()), type(b.get_value()))
+        test.assertEquals(a.get_value(), b.get_value())
 
 
 class TestGeneral(unittest.TestCase):
@@ -95,6 +110,30 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue((linearized.A() == A).all())
         taylor = FirstOrderTaylorApproximation(system, context)
         self.assertTrue((taylor.y0() == y0).all())
+
+    def test_vector_pass_through(self):
+        model_value = BasicVector([1., 2, 3])
+        system = PassThrough(model_value.size())
+        context = system.CreateDefaultContext()
+        context.FixInputPort(0, model_value)
+        output = system.AllocateOutput(context)
+        input_eval = system.EvalVectorInput(context, 0)
+        compare_value(self, input_eval, model_value)
+        system.CalcOutput(context, output)
+        output_value = output.get_vector_data(0)
+        compare_value(self, output_value, model_value)
+
+    def test_abstract_pass_through(self):
+        model_value = AbstractValue.Make("Hello world")
+        system = PassThrough(model_value)
+        context = system.CreateDefaultContext()
+        context.FixInputPort(0, model_value)
+        output = system.AllocateOutput(context)
+        input_eval = system.EvalAbstractInput(context, 0)
+        compare_value(self, input_eval, model_value)
+        system.CalcOutput(context, output)
+        output_value = output.get_data(0)
+        compare_value(self, output_value, model_value)
 
 
 if __name__ == '__main__':

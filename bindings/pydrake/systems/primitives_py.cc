@@ -10,6 +10,7 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -89,6 +90,10 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
         py::arg("threshold") = nullopt);
+
+  py::class_<PassThrough<T>, LeafSystem<T>>(m, "PassThrough")
+    .def(py::init<int>())
+    .def(py::init<const AbstractValue&>());
 
   py::class_<SignalLogger<T>, LeafSystem<T>>(m, "SignalLogger")
       .def(py::init<int>())
