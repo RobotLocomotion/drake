@@ -23,9 +23,6 @@ using Eigen::Vector4d;
 using systems::Context;
 using systems::RungeKutta3Integrator;
 
-#include <iostream>
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
   const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
@@ -63,7 +60,6 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   systems::Context<double>& context = simulator.get_mutable_context();
 
   EXPECT_EQ(context.get_continuous_state().size(), 13);
-  PRINT_VARn(context.get_continuous_state().size());
 
   // The expected initial angular velocity with non-zero components in all three
   // axes, where B is the free body frame and W is the world frame.
@@ -98,14 +94,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Get solution:
   Isometry3d X_WB = free_body_plant.CalcPoseInWorldFrame(context);
-  PRINT_VARn(X_WB.matrix());
-
   Matrix3d R_WB = X_WB.linear();
   Vector3d p_WBcm = X_WB.translation();
   SpatialVelocity<double> V_WB =
       free_body_plant.CalcSpatialVelocityInWorldFrame(context);
-  PRINT_VARn(V_WB);
-
   const Vector3d& w_WB = V_WB.rotational();
   const Vector3d& v_WB = V_WB.translational();
 
@@ -134,13 +126,6 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(v_WB, v_WBcm_exact, kTolerance,
                               MatrixCompareType::relative));
-
-  std::cout << std::fixed;
-  std::cout << std::setprecision(16);
-  PRINT_VARn(w_WB.transpose());
-  PRINT_VARn(w_WB_exact.transpose());
-  PRINT_VARn(v_WB.transpose());
-  PRINT_VARn(v_WBcm_exact.transpose());
 
   // TODO(amcastro-tri): Verify angular momentum is conserved.
   // TODO(amcastro-tri): Verify total energy (kinetic) is conserved.

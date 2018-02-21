@@ -13,7 +13,7 @@ namespace multibody {
 namespace multibody_tree {
 namespace test {
 
-/// This plant models the rotational motion of a torque free body in space.
+/// This plant models the free motion of a torque free body in space.
 /// This body is axially symmetric with rotational inertia about its axis of
 /// revolution J and with a rotational inertia I about any axis perpendicular to
 /// its axis of revolution.
@@ -48,8 +48,9 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
 
   /// Sets `state` to a default value corresponding to a configuration in which
   /// the free body frame B is coincident with the world frame W and the angular
-  /// velocity has a value as returned by
-  /// get_default_initial_angular_velocity().
+  /// and translational velocities have a value as returned by
+  /// get_default_initial_angular_velocity() and
+  /// get_default_initial_translational_velocity(), respectively.
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
@@ -57,12 +58,10 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
   /// in the world frame W.
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
-  Vector3<T> get_translational_velocity(const systems::Context<T>& context) const;
-
-  /// Stores in `context` the value of the angular velocity `w_WB` of the body
-  /// in the world frame W.
-  void set_angular_velocity(
-      systems::Context<T>* context, const Vector3<T>& w_WB) const;
+  /// Returns the translational velocity `v_WB` stored in `context` of the free
+  /// body B in the world frame W.
+  Vector3<T> get_translational_velocity(
+      const systems::Context<T>& context) const;
 
   /// Computes the pose `X_WB` of the body in the world frame.
   Isometry3<T> CalcPoseInWorldFrame(
@@ -74,11 +73,11 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
 
   /// Returns the default value of the angular velocity set by default by
   /// SetDefaultState(). Currently a non-zero value.
-  Vector3<double> get_default_initial_angular_velocity() const;
+  static Vector3<double> get_default_initial_angular_velocity();
 
   /// Returns the default value of the translational velocity set by default by
   /// SetDefaultState(). Currently a non-zero value.
-  Vector3<double> get_default_initial_translational_velocity() const;
+  static Vector3<double> get_default_initial_translational_velocity();
 
  private:
   // Override of context construction so that we can delegate it to
