@@ -16,11 +16,6 @@ namespace manipulation {
 
 struct QuasistaticSystemOptions {
   double period_sec{0.01};
-  std::vector<int> idx_unactuated_bodies{};
-  int idx_base;  // base body (has a floating joint to the world) of
-  // the unactuated rigid body mechanism.
-  std::vector<int> fixed_base_positions{};
-  std::vector<int> fixed_base_velocities{};
   std::vector<bool> is_contact_2d{};
   double mu{1};  // coefficent of friction for all contacts
   double kBigM{1};
@@ -31,7 +26,13 @@ struct QuasistaticSystemOptions {
 template <class Scalar>
 class QuasistaticSystem : public systems::LeafSystem<Scalar> {
  public:
-  explicit QuasistaticSystem(const QuasistaticSystemOptions& options);
+  // idx_base: base body (has a floating joint to the world) of
+  // the unactuated rigid body mechanism.
+  QuasistaticSystem(int idx_base,
+                    const std::vector<int> &idx_unactuated_bodies,
+                    const std::vector<int> &fixed_base_velocities,
+                    const std::vector<int> &fixed_base_positions,
+                    const QuasistaticSystemOptions &options);
 
   const systems::OutputPort<Scalar>& state_output() const;
   const systems::OutputPort<Scalar>& decision_variables_output() const;
@@ -104,10 +105,9 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   // DoFs of the floating joint of the base body of the unactuated rigid body
   // mechanisms that are fixed.
   const std::vector<int> fixed_base_positions_;
-  // When base roatation is parametrized by a quaternion, fixing components of
-  // the
-  // quaternion doesn't make much sense. Angular velocities in body frame are
-  // fixed instead.
+  // When base rotation is parametrized by a quaternion, fixing components of
+  // the quaternion doesn't make much sense. Angular velocities in body frame
+  // are fixed instead.
   std::vector<int> fixed_base_velocities_;
 
   // Each entry indicates if a contact is 2-dimensional, i.e. friction force

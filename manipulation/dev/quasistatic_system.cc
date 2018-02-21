@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <limits>
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/math/quaternion.h"
@@ -57,7 +57,7 @@ std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(
       start = tree.get_body(i).get_velocity_start_index();
       size = tree.get_body(i).getJoint().get_num_velocities();
     }
-    idx_q.reserve(static_cast<unsigned long>(size));
+    idx_q.reserve(static_cast<uint64_t>(size));
     for (int j = 0; j < size; j++) {
       auto it = fixed_body_dofs.find(i);
       std::vector<int> vtr{};
@@ -75,12 +75,15 @@ std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(
 
 template <class Scalar>
 QuasistaticSystem<Scalar>::QuasistaticSystem(
+    int idx_base, const std::vector<int>& idx_unactuated_bodies,
+    const std::vector<int>& fixed_base_velocities,
+    const std::vector<int>& fixed_base_positions,
     const QuasistaticSystemOptions& options)
     : period_sec_(options.period_sec),
-      idx_unactuated_bodies_(options.idx_unactuated_bodies),
-      idx_base_(options.idx_base),
-      fixed_base_positions_(options.fixed_base_positions),
-      fixed_base_velocities_(options.fixed_base_velocities),
+      idx_unactuated_bodies_(idx_unactuated_bodies),
+      idx_base_(idx_base),
+      fixed_base_positions_(fixed_base_positions),
+      fixed_base_velocities_(fixed_base_velocities),
       is_contact_2d_(options.is_contact_2d),
       mu_(options.mu),
       kBigM_(options.kBigM),
@@ -238,20 +241,13 @@ void QuasistaticSystem<Scalar>::Initialize() {
           .constraint()
           .get();
   bounds_gamma_ =
-      prog_
-          ->AddBoundingBoxConstraint(0, kInfinity, gamma_)
-          .constraint()
-          .get();
-  bounds_lambda_n_ =
-      prog_
-          ->AddBoundingBoxConstraint(0, kInfinity, lambda_n_)
-          .constraint()
-          .get();
-  bounds_lambda_f_ =
-      prog_
-          ->AddBoundingBoxConstraint(0, kInfinity, lambda_f_)
-          .constraint()
-          .get();
+      prog_->AddBoundingBoxConstraint(0, kInfinity, gamma_).constraint().get();
+  bounds_lambda_n_ = prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_n_)
+                         .constraint()
+                         .get();
+  bounds_lambda_f_ = prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_f_)
+                         .constraint()
+                         .get();
   // Force balance
   force_balance_ = prog_
                        ->AddLinearEqualityConstraint(
@@ -1002,6 +998,9 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
 
 // explicit template instantiations
 template QuasistaticSystem<double>::QuasistaticSystem(
+    int idx_base, const std::vector<int>& idx_unactuated_bodies,
+    const std::vector<int>& fixed_base_velocities,
+    const std::vector<int>& fixed_base_positions,
     const QuasistaticSystemOptions& options);
 
 template const systems::OutputPort<double>&

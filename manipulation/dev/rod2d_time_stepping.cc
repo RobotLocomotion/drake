@@ -15,16 +15,16 @@
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/signal_logger.h"
 
+using Eigen::Matrix;
+using Eigen::Matrix3Xd;
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+using drake::systems::BasicVector;
+using std::cos;
 using std::cout;
 using std::endl;
 using std::sin;
-using std::cos;
-using Eigen::Matrix;
-using Eigen::MatrixXd;
-using Eigen::Matrix3Xd;
-using Eigen::VectorXd;
-using Eigen::Vector3d;
-using drake::systems::BasicVector;
 
 namespace drake {
 namespace manipulation {
@@ -37,52 +37,54 @@ class Rod2DTimeStepping : public manipulation::QuasistaticSystem<double> {
   Rod2DTimeStepping();
 
  private:
-  void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double> &cache,
-                                 MatrixXd *const Wn_ptr,
-                                 MatrixXd *const Wf_ptr,
-                                 MatrixXd *const Jn_ptr,
-                                 MatrixXd *const Jf_ptr,
-                                 VectorXd *const phi_ptr) const override;
+  void DoCalcWnWfJnJfPhiAnalytic(const KinematicsCache<double>& cache,
+                                 MatrixXd* const Wn_ptr, MatrixXd* const Wf_ptr,
+                                 MatrixXd* const Jn_ptr, MatrixXd* const Jf_ptr,
+                                 VectorXd* const phi_ptr) const override;
 
   const double r_ = 0.01;
   const double l_ = 0.5;
 
+  static const int idx_base;
+  static const std::vector<int> idx_unactuated_bodies;
+  static const std::vector<int> fixed_base_positions;
+  static const std::vector<int> fixed_base_velocities;
   static QuasistaticSystemOptions InitializeOptions();
 };
+
+const int Rod2DTimeStepping::idx_base = 3;
+const std::vector<int> Rod2DTimeStepping::idx_unactuated_bodies = {3};
+const std::vector<int> Rod2DTimeStepping::fixed_base_positions = {3};
+const std::vector<int> Rod2DTimeStepping::fixed_base_velocities = {3};
 
 QuasistaticSystemOptions Rod2DTimeStepping::InitializeOptions() {
   QuasistaticSystemOptions options;
   options.period_sec = 0.05;
-  options.idx_unactuated_bodies = {3};
-  options.idx_base = 3;
-  options.fixed_base_positions = {3};
-  options.fixed_base_velocities = {3};
   options.is_contact_2d = {false, false, true, true};
   options.mu = 0.6;
   return options;
 }
 
-
 Rod2DTimeStepping::Rod2DTimeStepping()
-    : QuasistaticSystem(InitializeOptions()) {
+    : QuasistaticSystem(idx_base,
+                        idx_unactuated_bodies,
+                        fixed_base_positions,
+                        fixed_base_velocities,
+                        InitializeOptions()) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree_.get());
   Initialize();
 }
 
 void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
-    const KinematicsCache<double> &cache,
-    MatrixXd *const Wn_ptr,
-    MatrixXd *const Wf_ptr,
-    MatrixXd *const Jn_ptr,
-    MatrixXd *const Jf_ptr,
-    VectorXd *const phi_ptr) const {
-
-  MatrixXd & Wn = *Wn_ptr;
-  MatrixXd & Wf = *Wf_ptr;
-  MatrixXd & Jn = *Jn_ptr;
-  MatrixXd & Jf = *Jf_ptr;
-  VectorXd & phi = *phi_ptr;
+    const KinematicsCache<double>& cache, MatrixXd* const Wn_ptr,
+    MatrixXd* const Wf_ptr, MatrixXd* const Jn_ptr, MatrixXd* const Jf_ptr,
+    VectorXd* const phi_ptr) const {
+  MatrixXd& Wn = *Wn_ptr;
+  MatrixXd& Wf = *Wf_ptr;
+  MatrixXd& Jn = *Jn_ptr;
+  MatrixXd& Jf = *Jf_ptr;
+  VectorXd& phi = *phi_ptr;
 
   const int nq_tree = tree_->get_num_positions();
   auto q = GetQuasistaticSystemStatesFromRigidBodyTreePositions(cache);
@@ -220,7 +222,6 @@ int do_main() {
   cout << "error: " << error << endl;
   DRAKE_DEMAND(error < 1e-3);
 
-
   return 0;
 }
 
@@ -228,6 +229,4 @@ int do_main() {
 }  // namespace manipulation
 }  // namespace drake
 
-int main() {
-  return drake::manipulation::rod2d::do_main();
-}
+int main() { return drake::manipulation::rod2d::do_main(); }
