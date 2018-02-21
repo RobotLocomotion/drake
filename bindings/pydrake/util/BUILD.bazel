@@ -19,6 +19,10 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
+load(
+    "//tools/workspace/pybind11:repository.bzl",
+    "generate_pybind11_version_py_file",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -132,6 +136,19 @@ drake_cc_library(
     hdrs = ["type_safe_index_pybind.h"],
 )
 
+generate_pybind11_version_py_file(
+    name = "pybind11_version.py",
+)
+
+drake_py_library(
+    name = "pybind11_version_py",
+    srcs = ["pybind11_version.py"],
+    tags = ["nolint"],  # Do not lint generated files.
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
@@ -142,6 +159,7 @@ PY_LIBRARIES = [
     ":cpp_template_py",
     ":module_py",
     ":module_shim_py",
+    ":pybind11_version_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -258,6 +276,13 @@ drake_pybind_cc_googletest(
     cc_deps = [
         ":type_safe_index_pybind",
         "//common:nice_type_name",
+    ],
+)
+
+drake_py_test(
+    name = "pybind11_version_test",
+    deps = [
+        ":pybind11_version_py",
     ],
 )
 
