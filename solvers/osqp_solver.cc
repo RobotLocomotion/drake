@@ -242,6 +242,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // Default polish to true, to get an accurate solution.
   // TODO(hongkai.dai): add a setter so that we can turn off polishing.
   settings->polish = 1;
+  settings->verbose = 0;
   SetOsqpSolverSettings(&prog, settings);
 
   // Setup workspace.
