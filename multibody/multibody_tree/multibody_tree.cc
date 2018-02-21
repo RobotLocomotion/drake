@@ -553,9 +553,11 @@ Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const Frame<T>& frame_A, const Frame<T>& frame_B) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Isometry3<T>& X_WA =
-      pc.get_X_WB(frame_A.get_body().get_node_index());
+      pc.get_X_WB(frame_A.get_body().get_node_index()) *
+      frame_A.CalcPoseInBodyFrame(context);
   const Isometry3<T>& X_WB =
-      pc.get_X_WB(frame_B.get_body().get_node_index());
+      pc.get_X_WB(frame_B.get_body().get_node_index()) *
+      frame_B.CalcPoseInBodyFrame(context);
   return X_WA.inverse() * X_WB;
 }
 
