@@ -154,6 +154,14 @@ TEST_F(HandBuiltDependencies, Construction) {
   EXPECT_EQ(tracker.ticket(), num_trackers);
 }
 
+// Check that a dependency tracker can provide a human-readable name.
+TEST_F(HandBuiltDependencies, GetPathname) {
+  const std::string system_path = context_.GetSystemPathname();
+  const std::string mid1_description = middle1_->description();
+  EXPECT_EQ(middle1_->GetPathDescription(),
+    system_path + ":" + mid1_description);
+}
+
 // Check that we can unsubscribe from a previously-subscribed-to
 // prerequisite.
 TEST_F(HandBuiltDependencies, Unsubscribe) {
