@@ -10,6 +10,7 @@ import drake as lcmdrakemsg
 
 
 class ContactVisualizer(object):
+
     def __init__(self):
         self._folder_name = 'Contact Results'
         self._name = "Contact Visualizer"
@@ -103,6 +104,7 @@ def init_visualizer():
         'Tools', my_visualizer._name,
         my_visualizer.is_enabled, my_visualizer.set_enabled)
     return my_visualizer
+
 
 # Creates the visualizer when this script is executed.
 contact_viz = init_visualizer()
