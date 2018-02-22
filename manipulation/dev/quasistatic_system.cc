@@ -12,6 +12,8 @@ namespace drake {
 namespace manipulation {
 
 using Eigen::Matrix3Xd;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using Eigen::VectorXi;
 using drake::MatrixX;
 using drake::VectorX;
@@ -41,9 +43,8 @@ T MaxStlVector(const std::vector<T>& v) {
 /* returns the indicies of positions/velocities of the bodies in idx_body. The
  * indices are into the rigidbodytree containing these bodies.
  */
-template <class Scalar>
 std::vector<int> GetPositionOrVelocityIndicesOfBodiesFromRBT(
-    const RigidBodyTree<Scalar>& tree, const std::vector<int>& idx_body,
+    const RigidBodyTree<double>& tree, const std::vector<int>& idx_body,
     bool is_position,
     const std::unordered_map<int, std::vector<int>>& fixed_body_dofs) {
   std::vector<int> idx_q;
@@ -94,6 +95,7 @@ QuasistaticSystem<Scalar>::QuasistaticSystem(
     throw std::runtime_error("Gurobi solver not available.");
   }
 }
+
 template <class Scalar>
 void QuasistaticSystem<Scalar>::Initialize() {
   nq_tree_ = tree_->get_num_positions();
@@ -202,21 +204,21 @@ void QuasistaticSystem<Scalar>::Initialize() {
   }
 
   // initialize initial guess and intended penetration vectors
-  lambda_n_start_->resize(nc_);
-  lambda_f_start_->resize(nd_);
-  gamma_start_->resize(nc_);
-  z_n_start_->resize(nc_);
-  z_f_start_->resize(nd_);
-  z_gamma_start_->resize(nc_);
-  phi_bar_->resize(nc_);
+  lambda_n_start_.resize(nc_);
+  lambda_f_start_.resize(nd_);
+  gamma_start_.resize(nc_);
+  z_n_start_.resize(nc_);
+  z_f_start_.resize(nd_);
+  z_gamma_start_.resize(nc_);
+  phi_bar_.resize(nc_);
 
-  lambda_n_start_->setZero();
-  lambda_f_start_->setZero();
-  gamma_start_->setZero();
-  z_n_start_->setZero();
-  z_f_start_->setZero();
-  z_gamma_start_->setZero();
-  phi_bar_->setZero();
+  lambda_n_start_.setZero();
+  lambda_f_start_.setZero();
+  gamma_start_.setZero();
+  z_n_start_.setZero();
+  z_f_start_.setZero();
+  z_gamma_start_.setZero();
+  phi_bar_.setZero();
 
   if (is_base_quaternion_) {
     DRAKE_ASSERT(nu_ == n_vu_ - 1);
@@ -238,98 +240,84 @@ void QuasistaticSystem<Scalar>::Initialize() {
   // Add uppder bound to the norms of all decision variables.
   bounds_delta_q_ =
       prog_->AddBoundingBoxConstraint(-kInfinity, kInfinity, delta_q_)
-          .constraint()
-          .get();
+          .constraint();
   bounds_gamma_ =
-      prog_->AddBoundingBoxConstraint(0, kInfinity, gamma_).constraint().get();
-  bounds_lambda_n_ = prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_n_)
-                         .constraint()
-                         .get();
-  bounds_lambda_f_ = prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_f_)
-                         .constraint()
-                         .get();
+      prog_->AddBoundingBoxConstraint(0, kInfinity, gamma_).constraint();
+  bounds_lambda_n_ =
+      prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_n_).constraint();
+  bounds_lambda_f_ =
+      prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_f_).constraint();
   // Force balance
   force_balance_ = prog_
                        ->AddLinearEqualityConstraint(
-                           MatrixX<Scalar>::Zero(n_vu_, nc_ + nd_),
-                           VectorX<Scalar>::Zero(n_vu_), {lambda_n_, lambda_f_})
-                       .constraint()
-                       .get();
+                           MatrixXd::Zero(n_vu_, nc_ + nd_),
+                           VectorXd::Zero(n_vu_), {lambda_n_, lambda_f_})
+                       .constraint();
 
   // prog.AddLinearConstraint(delta_phi_n >= -phi);
   non_penetration_ =
       prog_
-          ->AddLinearConstraint(
-              MatrixX<Scalar>::Zero(nc_, n1_), VectorX<Scalar>::Zero(nc_),
-              VectorX<Scalar>::Constant(nc_, kInfinity), delta_q_)
-          .constraint()
-          .get();
+          ->AddLinearConstraint(MatrixXd::Zero(nc_, n1_), VectorXd::Zero(nc_),
+                                VectorXd::Constant(nc_, kInfinity), delta_q_)
+          .constraint();
 
   // prog.AddLinearConstraint(delta_phi_f >= -E * gamma);
   coulomb_friction1_ =
       prog_
           ->AddLinearConstraint(
-              MatrixX<Scalar>::Zero(nd_, n1_ + nc_), VectorX<Scalar>::Zero(nd_),
-              VectorX<Scalar>::Constant(nd_, kInfinity), {delta_q_, gamma_})
-          .constraint()
-          .get();
+              MatrixXd::Zero(nd_, n1_ + nc_), VectorXd::Zero(nd_),
+              VectorXd::Constant(nd_, kInfinity), {delta_q_, gamma_})
+          .constraint();
 
   // prog.AddLinearConstraint(U * lambda_n >= E.transpose() * lambda_f);
   coulomb_friction2_ =
       prog_
           ->AddLinearConstraint(
-              MatrixX<Scalar>::Zero(nc_, nc_ + nd_), VectorX<Scalar>::Zero(nc_),
-              VectorX<Scalar>::Constant(nc_, kInfinity), {lambda_n_, lambda_f_})
-          .constraint()
-          .get();
+              MatrixXd::Zero(nc_, nc_ + nd_), VectorXd::Zero(nc_),
+              VectorXd::Constant(nc_, kInfinity), {lambda_n_, lambda_f_})
+          .constraint();
 
   // prog.AddLinearConstraint(delta_phi_n + phi <= kBigM * z_n);
   non_penetration_complementary_ =
       prog_
-          ->AddLinearConstraint(MatrixX<Scalar>::Zero(nc_, n1_ + nc_),
-                                -VectorX<Scalar>::Constant(nc_, kInfinity),
-                                VectorX<Scalar>::Zero(nc_), {delta_q_, z_n_})
-          .constraint()
-          .get();
+          ->AddLinearConstraint(MatrixXd::Zero(nc_, n1_ + nc_),
+                                -VectorXd::Constant(nc_, kInfinity),
+                                VectorXd::Zero(nc_), {delta_q_, z_n_})
+          .constraint();
 
   // prog.AddLinearConstraint(delta_phi_f + E * gamma <= kBigM * z_f);
   coulomb_friction1_complementary_ =
       prog_
-          ->AddLinearConstraint(MatrixX<Scalar>::Zero(nd_, n1_ + nc_ + nd_),
-                                -VectorX<Scalar>::Constant(nd_, kInfinity),
-                                VectorX<Scalar>::Zero(nd_),
-                                {delta_q_, gamma_, z_f_})
-          .constraint()
-          .get();
+          ->AddLinearConstraint(MatrixXd::Zero(nd_, n1_ + nc_ + nd_),
+                                -VectorXd::Constant(nd_, kInfinity),
+                                VectorXd::Zero(nd_), {delta_q_, gamma_, z_f_})
+          .constraint();
 
   // prog.AddLinearConstraint(U * lambda_n - E.transpose() * lambda_f <=
   //                         kBigM * z_gamma);
   coulomb_friction2_complementary_ =
       prog_
-          ->AddLinearConstraint(MatrixX<Scalar>::Zero(nc_, nc_ + nd_ + nc_),
-                                -VectorX<Scalar>::Constant(nc_, kInfinity),
-                                VectorX<Scalar>::Zero(nc_),
+          ->AddLinearConstraint(MatrixXd::Zero(nc_, nc_ + nd_ + nc_),
+                                -VectorXd::Constant(nc_, kInfinity),
+                                VectorXd::Zero(nc_),
                                 {lambda_n_, lambda_f_, z_gamma_})
-          .constraint()
-          .get();
+          .constraint();
 
   // decision_variables_complementarity
   decision_variables_complementary_ =
       prog_
           ->AddLinearConstraint(
-              MatrixX<Scalar>::Zero(n2_, n2_ * 2),
-              -VectorX<Scalar>::Constant(n2_, kInfinity),
-              VectorX<Scalar>::Ones(n2_),
+              MatrixXd::Zero(n2_, n2_ * 2), -VectorXd::Constant(n2_, kInfinity),
+              VectorXd::Ones(n2_),
               {lambda_n_, lambda_f_, gamma_, z_n_, z_f_, z_gamma_})
-          .constraint()
-          .get();
+          .constraint();
 
   // objective
-  MatrixX<Scalar> Q(n1_, n1_);
+  MatrixXd Q(n1_, n1_);
   Q.setZero();
-  VectorX<Scalar> b(n1_);
+  VectorXd b(n1_);
   b.setZero();
-  objective_ = prog_->AddQuadraticCost(Q, b, delta_q_).constraint().get();
+  objective_ = prog_->AddQuadraticCost(Q, b, delta_q_).constraint();
 
   // set solver options.
   prog_->SetSolverId(solvers::GurobiSolver::id());
@@ -339,7 +327,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
 template <class Scalar>
 drake::VectorX<Scalar>
 QuasistaticSystem<Scalar>::GetQuasistaticSystemStatesFromRigidBodyTreePositions(
-    const KinematicsCache<Scalar>& cache) const {
+    const KinematicsCache<double>& cache) const {
   auto q_tree = cache.getQ();
   VectorX<Scalar> q_quasistatic_system(n1_);
   for (int i = 0; i < n1_; i++) {
@@ -363,8 +351,8 @@ QuasistaticSystem<Scalar>::GetRigidBodyTreePositionsFromQuasistaticSystemStates(
 }
 
 template <class Scalar>
-MatrixX<Scalar> QuasistaticSystem<Scalar>::CalcE() const {
-  MatrixX<Scalar> A(nc_, nd_);
+MatrixXd QuasistaticSystem<Scalar>::CalcE() const {
+  MatrixXd A(nc_, nd_);
   A.setZero();
   int first = 0;
   for (int i = 0; i < nc_; i++) {
@@ -388,9 +376,9 @@ QuasistaticSystem<Scalar>::decision_variables_output() const {
 
 template <class Scalar>
 void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhiAnalytic(
-    const KinematicsCache<Scalar>& cache, MatrixX<Scalar>* const Wn_ptr,
-    MatrixX<Scalar>* const Wf_ptr, MatrixX<Scalar>* const Jn_ptr,
-    MatrixX<Scalar>* const Jf_ptr, VectorX<Scalar>* const phi_ptr) const {
+    const KinematicsCache<double>& cache, MatrixXd* const Wn_ptr,
+    MatrixXd* const Wf_ptr, MatrixXd* const Jn_ptr, MatrixXd* const Jf_ptr,
+    VectorXd* const phi_ptr) const {
   static_cast<void>(cache);
   static_cast<void>(Wn_ptr);
   static_cast<void>(Wn_ptr);
@@ -405,9 +393,9 @@ void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhiAnalytic(
 
 template <class Scalar>
 void QuasistaticSystem<Scalar>::CalcWnWfJnJfPhi(
-    const KinematicsCache<Scalar>& cache, MatrixX<Scalar>* const Wn_ptr,
-    MatrixX<Scalar>* const Wf_ptr, MatrixX<Scalar>* const Jn_ptr,
-    MatrixX<Scalar>* const Jf_ptr, VectorX<Scalar>* const phi_ptr) const {
+    const KinematicsCache<double>& cache, MatrixXd* const Wn_ptr,
+    MatrixXd* const Wf_ptr, MatrixXd* const Jn_ptr, MatrixXd* const Jf_ptr,
+    VectorXd* const phi_ptr) const {
   if (!is_analytic_) {
     DoCalcWnWfJnJfPhi(cache, Wn_ptr, Wf_ptr, Jn_ptr, Jf_ptr, phi_ptr);
   } else {
@@ -417,9 +405,9 @@ void QuasistaticSystem<Scalar>::CalcWnWfJnJfPhi(
 
 template <class Scalar>
 void QuasistaticSystem<Scalar>::CalcJf(
-    const Eigen::Ref<const MatrixX<Scalar>>& Jf_half,
-    MatrixX<Scalar>* const Jf_ptr) const {
-  MatrixX<Scalar>& Jf = *Jf_ptr;
+    const Eigen::Ref<const MatrixXd>& Jf_half,
+    Eigen::MatrixXd* const Jf_ptr) const {
+  MatrixXd& Jf = *Jf_ptr;
   Jf.resize(nd_, Jf_half.cols());
   int first_J = 0;
   for (int i = 0; i < nc_; i++) {
@@ -437,20 +425,20 @@ void QuasistaticSystem<Scalar>::CalcJf(
 
 template <class Scalar>
 void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhi(
-    const KinematicsCache<Scalar>& cache, MatrixX<Scalar>* const Wn_ptr,
-    MatrixX<Scalar>* const Wf_ptr, MatrixX<Scalar>* const Jn_ptr,
-    MatrixX<Scalar>* const Jf_ptr, VectorX<Scalar>* const phi_ptr) const {
-  MatrixX<Scalar>& Wn = *Wn_ptr;
-  MatrixX<Scalar>& Wf = *Wf_ptr;
-  MatrixX<Scalar>& Jn = *Jn_ptr;
-  VectorX<Scalar>& phi = *phi_ptr;
+    const KinematicsCache<double>& cache, Eigen::MatrixXd* const Wn_ptr,
+    Eigen::MatrixXd* const Wf_ptr, Eigen::MatrixXd* const Jn_ptr,
+    Eigen::MatrixXd* const Jf_ptr, Eigen::VectorXd* const phi_ptr) const {
+  MatrixXd& Wn = *Wn_ptr;
+  MatrixXd& Wf = *Wf_ptr;
+  MatrixXd& Jn = *Jn_ptr;
+  VectorXd& phi = *phi_ptr;
 
   const int nq_tree = tree_->get_num_positions();
   const int nv_tree = tree_->get_num_velocities();
 
   // run collision detection
   Matrix3Xd normals, xA, xB;
-  VectorX<Scalar> phi_all;
+  VectorXd phi_all;
   std::vector<int> bodyA_idx;
   std::vector<int> bodyB_idx;
   tree_->collisionDetect(cache, phi_all, normals, xA, xB, bodyA_idx, bodyB_idx);
@@ -546,12 +534,12 @@ void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhi(
 }
 
 template <class Scalar>
-VectorX<Scalar> QuasistaticSystem<Scalar>::CalcExternalGeneralizedForce(
-    KinematicsCache<Scalar>* const cache) const {
+VectorXd QuasistaticSystem<Scalar>::CalcExternalGeneralizedForce(
+    KinematicsCache<double>* const cache) const {
   RigidBodyTree<double>::BodyToWrenchMap f_ext;
   auto g = tree_->dynamicsBiasTerm(*cache, f_ext, false);
 
-  VectorX<Scalar> f(n_vu_);
+  VectorXd f(n_vu_);
   for (int i = 0; i < n_vu_; i++) {
     f[i] = -g[idx_vu_[i]];
   }
@@ -559,14 +547,14 @@ VectorX<Scalar> QuasistaticSystem<Scalar>::CalcExternalGeneralizedForce(
 }
 
 template <class Scalar>
-Scalar QuasistaticSystem<Scalar>::CalcBigM(
-    Scalar max_impulse, Scalar max_delta_q, Scalar max_gamma,
-    const Eigen::Ref<const MatrixX<Scalar>>& Jn,
-    const Eigen::Ref<const MatrixX<Scalar>>& Jf,
-    const Eigen::Ref<const VectorX<Scalar>>& phi,
-    const Eigen::Ref<const VectorX<Scalar>>& qa_dot_d) const {
+double QuasistaticSystem<Scalar>::CalcBigM(
+    double max_impulse, double max_delta_q, double max_gamma,
+    const Eigen::Ref<const Eigen::MatrixXd>& Jn,
+    const Eigen::Ref<const Eigen::MatrixXd>& Jf,
+    const Eigen::Ref<const Eigen::VectorXd>& phi,
+    const Eigen::Ref<const Eigen::VectorXd>& qa_dot_d) const {
   // finding a good BigM using interval arithmetic.
-  std::vector<Scalar> max_of_normal_constraints;
+  std::vector<double> max_of_normal_constraints;
   for (int i = 0; i < nc_; i++) {
     max_of_normal_constraints.push_back(phi(i));
     for (int j = 0; j < na_; j++) {
@@ -578,7 +566,7 @@ Scalar QuasistaticSystem<Scalar>::CalcBigM(
     }
   }
 
-  std::vector<Scalar> max_of_tangent_constraints;
+  std::vector<double> max_of_tangent_constraints;
   for (int i = 0; i < nd_; i++) {
     max_of_tangent_constraints.push_back(max_gamma);
     for (int j = 0; j < na_; j++) {
@@ -591,9 +579,9 @@ Scalar QuasistaticSystem<Scalar>::CalcBigM(
     }
   }
 
-  Scalar max_friction = mu_ * max_impulse;
+  double max_friction = mu_ * max_impulse;
 
-  std::vector<Scalar> maxes = {
+  std::vector<double> maxes = {
       max_friction, MaxStlVector(max_of_normal_constraints),
       MaxStlVector(max_of_tangent_constraints), max_impulse, max_gamma};
 
@@ -602,11 +590,11 @@ Scalar QuasistaticSystem<Scalar>::CalcBigM(
 
 template <class Scalar>
 void QuasistaticSystem<Scalar>::StepForward(
-    const MatrixX<Scalar>& Wn, const MatrixX<Scalar>& Wf,
-    const MatrixX<Scalar>& Jn, const MatrixX<Scalar>& Jf,
-    const MatrixX<Scalar>& U, const MatrixX<Scalar>& E,
-    const VectorX<Scalar>& phi, const VectorX<Scalar>& f,
-    const VectorX<Scalar>& qa_dot_d) const {
+    const Eigen::MatrixXd& Wn, const Eigen::MatrixXd& Wf,
+    const Eigen::MatrixXd& Jn, const Eigen::MatrixXd& Jf,
+    const Eigen::MatrixXd& U, const Eigen::MatrixXd& E,
+    const drake::VectorX<Scalar>& phi, const Eigen::VectorXd& f,
+    const Eigen::VectorXd& qa_dot_d) const {
   // upper bounds on delta_q
   const Scalar max_delta_q = 10 * period_sec_;  // The multiplier is arbitrary.
   const Scalar max_gamma = max_delta_q;
@@ -618,36 +606,31 @@ void QuasistaticSystem<Scalar>::StepForward(
       max_impulse = period_sec_ * std::abs(f(i));
     }
   }
-  max_impulse *= 5;
+  max_impulse *= 5;  // this upper bound is arbitrary.
 
   // cacluate big M
   const Scalar kBigM =
       CalcBigM(max_impulse, max_delta_q, max_gamma, Jn, Jf, phi, qa_dot_d);
 
   // find columns of Jn and Jq corresponding to q.
-  MatrixX<Scalar> Jn_q(nc_, n1_);
-  MatrixX<Scalar> Jf_q(nd_, n1_);
+  MatrixXd Jn_q(nc_, n1_);
+  MatrixXd Jf_q(nd_, n1_);
   for (int i = 0; i < n1_; i++) {
     Jn_q.col(i) = Jn.col(idx_q_[i]);
     Jf_q.col(i) = Jf.col(idx_q_[i]);
   }
 
   // Add uppder bound to the norms of all decision variables.
-  bounds_delta_q_->UpdateLowerBound(
-      -VectorX<Scalar>::Constant(n1_, max_delta_q));
-  bounds_delta_q_->UpdateUpperBound(
-      VectorX<Scalar>::Constant(n1_, max_delta_q));
-  bounds_gamma_->UpdateUpperBound(VectorX<Scalar>::Constant(nc_, max_gamma));
-  bounds_lambda_n_->UpdateUpperBound(
-      VectorX<Scalar>::Constant(nc_, max_impulse));
-  bounds_lambda_f_->UpdateUpperBound(
-      VectorX<Scalar>::Constant(nd_, max_impulse));
+  bounds_delta_q_->UpdateLowerBound(-VectorXd::Constant(n1_, max_delta_q));
+  bounds_delta_q_->UpdateUpperBound(VectorXd::Constant(n1_, max_delta_q));
+  bounds_gamma_->UpdateUpperBound(VectorXd::Constant(nc_, max_gamma));
+  bounds_lambda_n_->UpdateUpperBound(VectorXd::Constant(nc_, max_impulse));
+  bounds_lambda_f_->UpdateUpperBound(VectorXd::Constant(nd_, max_impulse));
 
   // force balance constraints
   // Wn * lambda_n + Wf * lambda_f == -f *period_sec_
   force_balance_->UpdateCoefficients(
-      (MatrixX<Scalar>(n_vu_, nc_ + nd_) << Wn, Wf).finished(),
-      -f * period_sec_);
+      (MatrixXd(n_vu_, nc_ + nd_) << Wn, Wf).finished(), -f * period_sec_);
 
   // Lower bound on contact forces (impulses) can be added by adding
   // "springs" at contact points. This is the mechanically correct way to
@@ -657,10 +640,10 @@ void QuasistaticSystem<Scalar>::StepForward(
   // "hypothetical penetration" from the previous time step. Less elegant but
   // numerically better.
   const Scalar kEpsilon = 1e-6;
-  VectorX<Scalar> lb_lambda_n(nc_);
+  VectorXd lb_lambda_n(nc_);
   lb_lambda_n.setZero();
   for (int i = 0; i < nc_; i++) {
-    if ((*phi_bar_)(i) < -kEpsilon) {
+    if (phi_bar_(i) < -kEpsilon) {
       lb_lambda_n(i) = period_sec_ * 0.8;
     }
   }
@@ -670,56 +653,54 @@ void QuasistaticSystem<Scalar>::StepForward(
   //    delta_phi_f = Jf.col(idx_q_) * delta_q
 
   // prog.AddLinearConstraint(delta_phi_n >= -phi);
-  non_penetration_->UpdateCoefficients(
-      Jn_q, -phi, VectorX<Scalar>::Constant(nc_, kInfinity));
+  non_penetration_->UpdateCoefficients(Jn_q, -phi,
+                                       VectorXd::Constant(nc_, kInfinity));
 
   // prog.AddLinearConstraint(delta_phi_f >= -E * gamma);
   coulomb_friction1_->UpdateCoefficients(
-      (MatrixX<Scalar>(nd_, n1_ + nc_) << Jf_q, E).finished(),
-      VectorX<Scalar>::Zero(nd_), VectorX<Scalar>::Constant(nd_, kInfinity));
+      (MatrixXd(nd_, n1_ + nc_) << Jf_q, E).finished(), VectorXd::Zero(nd_),
+      VectorXd::Constant(nd_, kInfinity));
 
   // prog.AddLinearConstraint(U * lambda_n >= E.transpose() * lambda_f);
   coulomb_friction2_->UpdateCoefficients(
-      (MatrixX<Scalar>(nc_, nc_ + nd_) << U, -E.transpose()).finished(),
-      VectorX<Scalar>::Zero(nc_), VectorX<Scalar>::Constant(nc_, kInfinity));
+      (MatrixXd(nc_, nc_ + nd_) << U, -E.transpose()).finished(),
+      VectorXd::Zero(nc_), VectorXd::Constant(nc_, kInfinity));
 
   // prog.AddLinearConstraint(delta_phi_n + phi <= kBigM * z_n);
   non_penetration_complementary_->UpdateCoefficients(
-      (MatrixX<Scalar>(nc_, n1_ + nc_) << Jn_q,
-       -kBigM * MatrixX<Scalar>::Identity(nc_, nc_))
+      (MatrixXd(nc_, n1_ + nc_) << Jn_q, -kBigM * MatrixXd::Identity(nc_, nc_))
           .finished(),
-      -VectorX<Scalar>::Constant(nc_, kInfinity), -phi);
+      -VectorXd::Constant(nc_, kInfinity), -phi);
 
   // prog.AddLinearConstraint(delta_phi_f + E * gamma <= kBigM * z_f);
   coulomb_friction1_complementary_->UpdateCoefficients(
-      (MatrixX<Scalar>(nd_, n1_ + nc_ + nd_) << Jf_q, E,
-       -kBigM * MatrixX<Scalar>::Identity(nd_, nd_))
+      (MatrixXd(nd_, n1_ + nc_ + nd_) << Jf_q, E,
+       -kBigM * MatrixXd::Identity(nd_, nd_))
           .finished(),
-      -VectorX<Scalar>::Constant(nd_, kInfinity), VectorX<Scalar>::Zero(nd_));
+      -VectorXd::Constant(nd_, kInfinity), VectorXd::Zero(nd_));
 
   // prog.AddLinearConstraint(U * lambda_n - E.transpose() * lambda_f <=
   //                         kBigM * z_gamma);
   coulomb_friction2_complementary_->UpdateCoefficients(
-      (MatrixX<Scalar>(nc_, nc_ + nd_ + nc_) << U, -E.transpose(),
-       -kBigM * MatrixX<Scalar>::Identity(nc_, nc_))
+      (MatrixXd(nc_, nc_ + nd_ + nc_) << U, -E.transpose(),
+       -kBigM * MatrixXd::Identity(nc_, nc_))
           .finished(),
-      -VectorX<Scalar>::Constant(nc_, kInfinity), VectorX<Scalar>::Zero(nc_));
+      -VectorXd::Constant(nc_, kInfinity), VectorXd::Zero(nc_));
 
-  // prog.AddLinearConstraint(lambda_n <= kBigM * (VectorX<Scalar>::Ones(nc_) -
+  // prog.AddLinearConstraint(lambda_n <= kBigM * (VectorXd::Ones(nc_) -
   // z_n)); prog.AddLinearConstraint(gamma <= kBigM *
-  // (VectorX<Scalar>::Ones(nc_) - z_gamma)); prog.AddLinearConstraint(lambda_f
-  // <= kBigM * (VectorX<Scalar>::Ones(nd_) - z_f));
+  // (VectorXd::Ones(nc_) - z_gamma)); prog.AddLinearConstraint(lambda_f
+  // <= kBigM * (VectorXd::Ones(nd_) - z_f));
   decision_variables_complementary_->UpdateCoefficients(
-      (MatrixX<Scalar>(n2_, n2_ * 2) << MatrixX<Scalar>::Identity(n2_, n2_),
-       kBigM * MatrixX<Scalar>::Identity(n2_, n2_))
+      (MatrixXd(n2_, n2_ * 2) << MatrixXd::Identity(n2_, n2_),
+       kBigM * MatrixXd::Identity(n2_, n2_))
           .finished(),
-      -VectorX<Scalar>::Constant(n2_, kInfinity),
-      kBigM * VectorX<Scalar>::Ones(n2_));
+      -VectorXd::Constant(n2_, kInfinity), kBigM * VectorXd::Ones(n2_));
 
   // objective
-  MatrixX<Scalar> Q(n1_, n1_);
+  MatrixXd Q(n1_, n1_);
   Q.setZero();
-  VectorX<Scalar> b(n1_);
+  VectorXd b(n1_);
   b.setZero();
   for (int i = 0; i < static_cast<int>(idx_qa_in_q_.size()); i++) {
     Q(idx_qa_in_q_[i], idx_qa_in_q_[i]) = 1 / std::pow(period_sec_, 2);
@@ -728,13 +709,13 @@ void QuasistaticSystem<Scalar>::StepForward(
   objective_->UpdateCoefficients(Q, b);
 
   // initial guesses
-  prog_->SetInitialGuess(delta_q_, VectorX<Scalar>::Constant(n1_, 0));
-  prog_->SetInitialGuess(lambda_n_, *lambda_n_start_);
-  prog_->SetInitialGuess(lambda_f_, *lambda_f_start_);
-  prog_->SetInitialGuess(gamma_, *gamma_start_);
-  prog_->SetInitialGuess(z_n_, *z_n_start_);
-  prog_->SetInitialGuess(z_f_, *z_f_start_);
-  prog_->SetInitialGuess(z_gamma_, *z_gamma_start_);
+  prog_->SetInitialGuess(delta_q_, VectorXd::Constant(n1_, 0));
+  prog_->SetInitialGuess(lambda_n_, lambda_n_start_);
+  prog_->SetInitialGuess(lambda_f_, lambda_f_start_);
+  prog_->SetInitialGuess(gamma_, gamma_start_);
+  prog_->SetInitialGuess(z_n_, z_n_start_);
+  prog_->SetInitialGuess(z_f_, z_f_start_);
+  prog_->SetInitialGuess(z_gamma_, z_gamma_start_);
 
   const auto result = prog_->Solve();
   DRAKE_DEMAND(result == drake::solvers::kSolutionFound);
@@ -748,27 +729,26 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
   // copy of discrete states at current time step (l)
   VectorX<Scalar> discrete_state_vector =
       context.get_discrete_state(0).CopyToVector();
-  VectorX<Scalar> qa_dot_d =
-      (*this->EvalVectorInput(context, 0)).CopyToVector();
+  VectorXd qa_dot_d = (*this->EvalVectorInput(context, 0)).CopyToVector();
   VectorX<Scalar> q_quasistatic_system = discrete_state_vector.head(n1_);
-  KinematicsCache<Scalar> cache = tree_->CreateKinematicsCache();
-  VectorX<Scalar> v(tree_->get_num_velocities());
+  KinematicsCache<double> cache = tree_->CreateKinematicsCache();
+  VectorXd v(tree_->get_num_velocities());
   v.setZero();
   cache.initialize(GetRigidBodyTreePositionsFromQuasistaticSystemStates(
                        q_quasistatic_system),
                    v);
   tree_->doKinematics(cache);
 
-  MatrixX<Scalar> Jn, Jf, Wn, Wf;
-  VectorX<Scalar> phi;
+  MatrixXd Jn, Jf, Wn, Wf;
+  VectorXd phi;
   CalcWnWfJnJfPhi(cache, &Wn, &Wf, &Jn, &Jf, &phi);
 
-  MatrixX<Scalar> U(nc_, nc_);
+  MatrixXd U(nc_, nc_);
   U.setZero();
   U.diagonal().setConstant(mu_);
 
-  MatrixX<Scalar> E = CalcE();
-  VectorX<Scalar> f = CalcExternalGeneralizedForce(&cache);
+  MatrixXd E = CalcE();
+  VectorXd f = CalcExternalGeneralizedForce(&cache);
   f /= f.norm();  // normalize f, which generally makes kBigM smaller.
 
   DRAKE_DEMAND(Wn.rows() == n_vu_);
@@ -791,7 +771,7 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
   auto z_f_value = prog_->GetSolution(z_f_);
   auto z_gamma_value = prog_->GetSolution(z_gamma_);
 
-  VectorX<Scalar> delta_qu_value(nu_);
+  VectorXd delta_qu_value(nu_);
   for (int i = 0; i < nu_; i++) {
     delta_qu_value(i) = delta_q_value(idx_qu_in_q_[i]);
   }
@@ -800,9 +780,9 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
   if (is_using_kinetic_energy_minimizing_QP_) {
     drake::solvers::MathematicalProgram prog_QP;
     auto delta_qu_QP = prog_QP.NewContinuousVariables(nu_, "delta_qu_QP");
-    VectorX<Scalar> Jna_times_delta_qa = VectorX<Scalar>::Zero(nc_);
-    VectorX<Scalar> Jfa_times_delta_qa = VectorX<Scalar>::Zero(nd_);
-    VectorX<Scalar> delta_phi_f_value = VectorX<Scalar>::Zero(nd_);
+    VectorXd Jna_times_delta_qa = VectorXd::Zero(nc_);
+    VectorXd Jfa_times_delta_qa = VectorXd::Zero(nd_);
+    VectorXd delta_phi_f_value = VectorXd::Zero(nd_);
     for (int i = 0; i < na_; i++) {
       int idx = idx_qa_in_q_[i];
       Jna_times_delta_qa += Jn.col(idx_qa_[i]) * delta_q_value(idx);
@@ -815,7 +795,7 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
     int idx_fi0 = 0;
     for (int i = 0; i < nc_; i++) {
       // row of Jn corresponding to contact i
-      MatrixX<Scalar> Jnu_row;
+      MatrixXd Jnu_row;
       Jnu_row.resize(1, nu_);
       for (int j = 0; j < nu_; j++) {
         Jnu_row(0, j) = Jn(i, idx_qu_[j]);
@@ -832,14 +812,14 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
                                         Jna_times_delta_qa.segment(i, 1) ==
                                     -phi.segment(i, 1));
         const int tangent_vector_half_count = nf_(i) / 2;
-        MatrixX<Scalar> Jfu_half(tangent_vector_half_count, nu_);
-        MatrixX<Scalar> Jfu(nf_(i), nu_);
+        MatrixXd Jfu_half(tangent_vector_half_count, nu_);
+        MatrixXd Jfu(nf_(i), nu_);
         for (int j = 0; j < nu_; j++) {
           Jfu_half.col(j) =
               Jf.block(idx_fi0, idx_qu_[j], tangent_vector_half_count, 1);
           Jfu.col(j) = Jf.block(idx_fi0, idx_qu_[j], nf_(i), 1);
         }
-        VectorX<Scalar> Jfa_times_delta_qa_i =
+        VectorXd Jfa_times_delta_qa_i =
             Jfa_times_delta_qa.segment(idx_fi0, nf_(i));
         // if contact i is not sliding
         if (z_gamma_value(i) > 0.5) {
@@ -856,7 +836,7 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
           int non_zero_friction_count = 0;
 
           for (int j = 0; j < nf_(i); j++) {
-            MatrixX<Scalar> Jfu_row(1, nu_);
+            MatrixXd Jfu_row(1, nu_);
             Jfu_row = Jfu.row(j);
             // cout << "z_f_value_i " << z_f_value(idx_fi0 + j) << endl;
             if (z_f_value(idx_fi0 + j) < 0.5) {  // lambda_f_ij <= M
@@ -878,9 +858,9 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
               const int j_opposite_next = (j_opposite + 1) % nf_(i);
               const int j_opposite_previous =
                   (j_opposite - 1 + nf_(i)) % nf_(i);
-              MatrixX<Scalar> Jfu_opposite_next(1, nu_);
-              MatrixX<Scalar> Jfu_opposite_previous(1, nu_);
-              MatrixX<Scalar> Jfu_opposite(1, nu_);
+              MatrixXd Jfu_opposite_next(1, nu_);
+              MatrixXd Jfu_opposite_previous(1, nu_);
+              MatrixXd Jfu_opposite(1, nu_);
               Jfu_opposite_next = Jfu.row(j_opposite_next);
               Jfu_opposite_previous = Jfu.row(j_opposite_previous);
               Jfu_opposite = Jfu.row(j_opposite);
@@ -908,8 +888,8 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
               VectorX<symbolic::Expression> rhs(1);
               int j1 = non_zero_friction_idx[0];
               int j2 = non_zero_friction_idx[1];
-              MatrixX<Scalar> Jfu_row1(1, nu_);
-              MatrixX<Scalar> Jfu_row2(1, nu_);
+              MatrixXd Jfu_row1(1, nu_);
+              MatrixXd Jfu_row2(1, nu_);
               Jfu_row1 = Jfu.row(j1);
               Jfu_row2 = Jfu.row(j2);
               lhs = Jfa_times_delta_qa.segment(idx_fi0 + j1, 1) +
@@ -925,17 +905,17 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
       cout << endl << endl;
     }
     // cost
-    MatrixX<Scalar> H(nu_, nu_);
+    MatrixXd H(nu_, nu_);
 
     H.setZero();
-    MatrixX<Scalar> H_all = tree_->massMatrix(cache);
+    MatrixXd H_all = tree_->massMatrix(cache);
     for (int i = 0; i < nu_; i++) {
       for (int j = 0; j < nu_; j++) {
         H(i, j) = H_all(idx_qu_[i], idx_qu_[j]);
       }
     }
 
-    prog_QP.AddQuadraticCost(H, VectorX<Scalar>::Zero(nu_, 0), delta_qu_QP);
+    prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_, 0), delta_qu_QP);
 
     // solve QP
     prog_QP.SetSolverId(solvers::GurobiSolver::id());
@@ -956,27 +936,27 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
   /////////////////////////////////////// end of KE-minimizing QP
 
   // update quasistatic system configuration at time step l+1
-  VectorX<Scalar> ql1(n1_);
+  VectorXd ql1(n1_);
   ql1 << q_quasistatic_system;
   ql1 += delta_q_value;
 
   // update initial guesses
-  (*lambda_n_start_) = lambda_n_value;
-  (*gamma_start_) = gamma_value;
-  (*z_n_start_) = z_n_value;
-  (*z_gamma_start_) = z_gamma_value;
-  (*lambda_f_start_) = lambda_f_value;
-  (*z_f_start_) = z_f_value;
+  lambda_n_start_ = lambda_n_value;
+  gamma_start_ = gamma_value;
+  z_n_start_ = z_n_value;
+  z_gamma_start_ = z_gamma_value;
+  lambda_f_start_ = lambda_f_value;
+  z_f_start_ = z_f_value;
 
   // calculate "hypothetical penetration"
-  *phi_bar_ = phi;
-  VectorX<Scalar> delta_q_bar(n1_);
+  phi_bar_ = phi;
+  VectorXd delta_q_bar(n1_);
   delta_q_bar = delta_q_value;
   for (int i = 0; i < na_; i++) {
     delta_q_bar(idx_qa_in_q_[i]) = qa_dot_d(i) * period_sec_;
   }
   for (int i = 0; i < n1_; i++) {
-    *phi_bar_ += Jn.col(idx_q_[i]) * delta_q_bar(i);
+    phi_bar_ += Jn.col(idx_q_[i]) * delta_q_bar(i);
   }
 
   // Normalize quaternion if there is one.
@@ -997,78 +977,7 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
 }
 
 // explicit template instantiations
-template QuasistaticSystem<double>::QuasistaticSystem(
-    int idx_base, const std::vector<int>& idx_unactuated_bodies,
-    const std::vector<int>& fixed_base_velocities,
-    const std::vector<int>& fixed_base_positions,
-    const QuasistaticSystemOptions& options);
+template class QuasistaticSystem<double>;
 
-template const systems::OutputPort<double>&
-QuasistaticSystem<double>::state_output() const;
-
-template const systems::OutputPort<double>&
-QuasistaticSystem<double>::decision_variables_output() const;
-
-template void QuasistaticSystem<double>::Initialize();
-
-template void QuasistaticSystem<double>::DoCalcDiscreteVariableUpdates(
-    const systems::Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-    systems::DiscreteValues<double>* discrete_state) const;
-
-template drake::VectorX<double>
-QuasistaticSystem<double>::GetQuasistaticSystemStatesFromRigidBodyTreePositions(
-    const KinematicsCache<double>& cache) const;
-
-template VectorX<double>
-QuasistaticSystem<double>::GetRigidBodyTreePositionsFromQuasistaticSystemStates(
-    const Eigen::Ref<const VectorX<double>>& q_quasistatic_system) const;
-
-template void QuasistaticSystem<double>::CalcJf(
-    const Eigen::Ref<const MatrixX<double>>& Jf_half,
-    MatrixX<double>* const Jf_ptr) const;
-
-template void QuasistaticSystem<double>::CalcWnWfJnJfPhi(
-    const KinematicsCache<double>& cache, MatrixX<double>* const Wn_ptr,
-    MatrixX<double>* const Wf_ptr, MatrixX<double>* const Jn_ptr,
-    MatrixX<double>* const Jf_ptr, VectorX<double>* const phi_ptr) const;
-
-template void QuasistaticSystem<double>::DoCalcWnWfJnJfPhi(
-    const KinematicsCache<double>& cache, MatrixX<double>* const Wn_ptr,
-    MatrixX<double>* const Wf_ptr, MatrixX<double>* const Jn_ptr,
-    MatrixX<double>* const Jf_ptr, VectorX<double>* const phi_ptr) const;
-
-template double QuasistaticSystem<double>::CalcBigM(
-    double max_impulse, double max_delta_q, double max_delta_gamma,
-    const Eigen::Ref<const MatrixX<double>>& Jn,
-    const Eigen::Ref<const MatrixX<double>>& Jf,
-    const Eigen::Ref<const VectorX<double>>& phi,
-    const Eigen::Ref<const VectorX<double>>& qa_dot_d) const;
-
-template void QuasistaticSystem<double>::DoCalcWnWfJnJfPhiAnalytic(
-    const KinematicsCache<double>& cache, MatrixX<double>* const Wn_ptr,
-    MatrixX<double>* const Wf_ptr, MatrixX<double>* const Jn_ptr,
-    MatrixX<double>* const Jf_ptr, VectorX<double>* const phi_ptr) const;
-
-template MatrixX<double> QuasistaticSystem<double>::CalcE() const;
-
-template VectorX<double>
-QuasistaticSystem<double>::CalcExternalGeneralizedForce(
-    KinematicsCache<double>* const cache) const;
-
-template void QuasistaticSystem<double>::CopyStateOut(
-    const systems::Context<double>& context,
-    systems::BasicVector<double>* output) const;
-
-template void QuasistaticSystem<double>::CopyDecisionVariablesOut(
-    const systems::Context<double>& context,
-    systems::BasicVector<double>* output) const;
-
-template void QuasistaticSystem<double>::StepForward(
-    const drake::MatrixX<double>& Wn, const drake::MatrixX<double>& Wf,
-    const drake::MatrixX<double>& Jn, const drake::MatrixX<double>& Jf,
-    const drake::MatrixX<double>& U, const drake::MatrixX<double>& E,
-    const drake::VectorX<double>& phi, const drake::VectorX<double>& f,
-    const drake::VectorX<double>& qa_dot_d) const;
 }  // namespace manipulation
 }  // namespace drake
