@@ -8,9 +8,9 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <pybind11/embed.h>
-#include <pybind11/eval.h>
-#include <pybind11/pybind11.h>
+#include "pybind11/embed.h"
+#include "pybind11/eval.h"
+#include "pybind11/pybind11.h"
 
 #include "drake/common/nice_type_name.h"
 
