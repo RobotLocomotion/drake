@@ -57,6 +57,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(plant->num_bodies(), 3);
   EXPECT_EQ(plant->num_joints(), 2);
+  EXPECT_EQ(plant->num_actuators(), 1);
 
   // State size.
   EXPECT_EQ(plant->num_positions(), 2);
@@ -129,7 +130,9 @@ class AcrobotPlantTests : public ::testing::Test {
             plant_->get_source_id().value()));
     builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        geometry_system_->get_source_pose_port(plant_->get_source_id().value()));
+        geometry_system_->get_source_pose_port(
+            plant_->get_source_id().value()));
+    builder.ExportInput(plant_->get_actuation_input_port());
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -140,24 +143,35 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_ = &plant_->GetJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
-    context_ = plant_->CreateDefaultContext();
-    derivatives_ = plant_->AllocateTimeDerivatives();
+    context_ = diagram_->CreateDefaultContext();
+    derivatives_ = diagram_->AllocateTimeDerivatives();
+
+    input_port_ = &context_->FixInputPort(
+        plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
+
+    plant_context_ = &diagram_->GetMutableSubsystemContext(
+        *plant_, context_.get());
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
   // for the acrobot model. The comparison is carried out against a benchmark
   // with hand written dynamics.
   void VerifyCalcTimeDerivatives(double theta1, double theta2,
-                                 double theta1dot, double theta2dot) {
+                                 double theta1dot, double theta2dot,
+                                 double input_torque) {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
-    shoulder_->set_angle(context_.get(), theta1);
-    elbow_->set_angle(context_.get(), theta2);
-    shoulder_->set_angular_rate(context_.get(), theta1dot);
-    elbow_->set_angular_rate(context_.get(), theta2dot);
+    shoulder_->set_angle(plant_context_, theta1);
+    elbow_->set_angle(plant_context_, theta2);
+    shoulder_->set_angular_rate(plant_context_, theta1dot);
+    elbow_->set_angular_rate(plant_context_, theta2dot);
 
-    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    // Fix input port to a value before computing anything. In this case, zero
+    // actuation.
+    input_port_->GetMutableVectorData<double>()->SetAtIndex(0, input_torque);
+
+    diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
     const VectorXd xdot = derivatives_->CopyToVector();
 
     // Now compute inverse dynamics using our benchmark:
@@ -165,7 +179,7 @@ class AcrobotPlantTests : public ::testing::Test {
         theta1, theta2, theta1dot, theta2dot);
     Vector2d tau_g_expected =
         acrobot_benchmark_.CalcGravityVector(theta1, theta2);
-    Vector2d rhs = tau_g_expected - C_expected;
+    Vector2d rhs = tau_g_expected - C_expected + Vector2d(0.0, input_torque);
     Matrix2d M_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
     Vector2d vdot_expected = M_expected.inverse() * rhs;
     VectorXd xdot_expected(4);
@@ -186,14 +200,17 @@ class AcrobotPlantTests : public ::testing::Test {
   std::unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
+  Context<double>* plant_context_{nullptr};
   std::unique_ptr<ContinuousState<double>> derivatives_;
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
   const Body<double>* link2_{nullptr};
   const RevoluteJoint<double>* shoulder_{nullptr};
   const RevoluteJoint<double>* elbow_{nullptr};
+  // Input port for the actuation:
+  systems::FreestandingInputPortValue* input_port_{nullptr};
 
-  // Reference benchmark for verification.
+      // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
       parameters_.m1(), parameters_.m2(),
@@ -210,16 +227,20 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
   // Some random tests with non-zero state:
   VerifyCalcTimeDerivatives(
       -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0);                /* joint's angular rates */
+      0.5, 1.0,                 /* joint's angular rates */
+      -1.0);                    /* Actuation torque */
   VerifyCalcTimeDerivatives(
       M_PI / 3.0, -M_PI / 5.0,  /* joint's angles */
-      0.7, -1.0);               /* joint's angular rates */
+      0.7, -1.0,                /* joint's angular rates */
+      1.0);                     /* Actuation torque */
   VerifyCalcTimeDerivatives(
       M_PI / 4.0, -M_PI / 3.0,  /* joint's angles */
-      -0.5, 2.0);               /* joint's angular rates */
+      -0.5, 2.0,                /* joint's angular rates */
+      -1.5);                    /* Actuation torque */
   VerifyCalcTimeDerivatives(
       -M_PI, -M_PI / 2.0,       /* joint's angles */
-      -1.5, -2.5);              /* joint's angular rates */
+      -1.5, -2.5,               /* joint's angular rates */
+      2.0);                     /* Actuation torque */
 }
 
 TEST_F(AcrobotPlantTests, VerifyGeometryRegistration) {

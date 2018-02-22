@@ -17,6 +17,7 @@
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
+#include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
@@ -557,6 +558,28 @@ class MultibodyTree {
     return joint;
   }
 
+  const JointActuator<T>& AddJointActuator(
+      const std::string& name, const Joint<T>& joint) {
+    if (HasJointActuatorNamed(name)) {
+      throw std::logic_error(
+          "This model already contains a joint actuator named '" + name +
+          "'. Joint actuator names must be unique within a given model.");
+    }
+
+    if (topology_is_valid()) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more actuatros is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+
+    const JointActuatorIndex actuator_index(owned_actuators_.size());
+    owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
+    JointActuator<T>* actuator = owned_actuators_.back().get();
+    actuator->set_parent_tree(this, actuator_index);
+    actuator_name_to_index_[name] = actuator_index;
+    return *actuator;
+  }
+
   // This method adds a QuaternionFreeMobilizer to all bodies that do not have
   // a mobilizer. The mobilizer is between each body and the world.
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
@@ -583,6 +606,12 @@ class MultibodyTree {
 
   /// Returns the number of joints added with AddJoint() to the %MultibodyTree.
   int get_num_joints() const { return static_cast<int>(owned_joints_.size()); }
+
+  /// Returns the number of actuators in the %MultibodyTree.
+  /// @see AddJointActuator.
+  int get_num_actuators() const {
+    return static_cast<int>(owned_actuators_.size());
+  }
 
   /// Returns the number of mobilizers in the %MultibodyTree. Since the world
   /// has no Mobilizer, the number of mobilizers equals the number of bodies
@@ -654,6 +683,16 @@ class MultibodyTree {
     return *owned_joints_[joint_index];
   }
 
+  /// Returns a constant reference to the joint actuator with unique index
+  /// `actuator_index`.
+  /// @throws std::runtime_error when `actuator_index` does not correspond to a
+  /// joint actuator in this multibody tree.
+  const JointActuator<T>& get_joint_actuator(
+      JointActuatorIndex actuator_index) const {
+    DRAKE_THROW_UNLESS(actuator_index < get_num_actuators());
+    return *owned_actuators_[actuator_index];
+  }
+
   /// Returns a constant reference to the frame with unique index `frame_index`.
   /// @throws std::runtime_error when `frame_index` does not correspond to a
   /// frame in `this` multibody tree.
@@ -690,6 +729,12 @@ class MultibodyTree {
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) const {
     return joint_name_to_index_.find(name) != joint_name_to_index_.end();
+  }
+
+  /// @returns `true` if a joint actuator named `name` was added to the model.
+  /// @see AddJointActuator().
+  bool HasJointActuatorNamed(const std::string& name) const {
+    return actuator_name_to_index_.find(name) != actuator_name_to_index_.end();
   }
   /// @}
 
@@ -752,6 +797,20 @@ class MultibodyTree {
           NiceTypeName::Get(GetJointByName(name)) + "'.");
     }
     return *joint;
+  }
+
+  /// Returns a constant reference to the actuator that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @see HasJointActuatorNamed() to query if there exists an actuator in
+  /// `this` model with a given specified name.
+  const JointActuator<T>& GetJointActuatorByName(const std::string& name) const {
+    auto it = actuator_name_to_index_.find(name);
+    if (it == actuator_name_to_index_.end()) {
+      throw std::logic_error("There is no joint actuator named '" + name +
+          "' in the model.");
+    }
+    return get_joint_actuator(it->second);
   }
   /// @}
 
@@ -1895,6 +1954,7 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
+  std::vector<std::unique_ptr<JointActuator<T>>> owned_actuators_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
 
   std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
@@ -1912,6 +1972,9 @@ class MultibodyTree {
 
   // Map used to find joint indexes by their joint name.
   std::unordered_map<std::string, JointIndex> joint_name_to_index_;
+
+  // Map used to find actuator indexes by their actuator name.
+  std::unordered_map<std::string, JointActuatorIndex> actuator_name_to_index_;
 
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes

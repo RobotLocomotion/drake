@@ -175,8 +175,20 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // the forces to zero and adds in contributions due to force elements.
   model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
-  // TODO(amcastro-tri): Add in input forces with actuators.
-  // Like so: elbow_->AddInTorque(context, get_tau(context), &forces);
+  // If there is any input actuation, add it to the multibody forces.
+  if (num_actuators() > 0) {
+    Eigen::VectorBlock<const VectorX<T>> u =
+        this->EvalEigenVectorInput(context, actuation_port_);
+    for (JointActuatorIndex actuator_index(0);
+         actuator_index < num_actuators(); ++actuator_index) {
+      const JointActuator<T>& actuator =
+          model().get_joint_actuator(actuator_index);
+      const Joint<T> &joint = actuator.joint();
+      // We only support actuators on single dof joints for now.
+      DRAKE_DEMAND(joint.num_dofs() == 1);
+      joint.AddInOneForce(context, 0, u[actuator_index], &forces);
+    }
+  }
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -384,7 +396,11 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
       model_->get_num_positions(),
       model_->get_num_velocities(), 0 /* num_z */);
 
-  // TODO(amcastro-tri): Declare input ports for actuators.
+  if (num_actuators() > 0) {
+    actuation_port_ =
+        this->DeclareVectorInputPort(
+            systems::BasicVector<T>(num_actuators())).get_index();
+  }
 
   // TODO(amcastro-tri): Declare output port for the state.
 }
@@ -458,6 +474,12 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     PRINT_VAR(body_index);
     PRINT_VAR(pc.get_X_WB(body.get_node_index()).matrix());
   }
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>&
+MultibodyPlant<T>::get_actuation_input_port() const {
+  return systems::System<T>::get_input_port(actuation_port_);
 }
 
 template <typename T>

@@ -102,6 +102,7 @@ class AcrobotParameters {
   const std::string& elbow_joint_name() const {
     return elbow_joint_name_;
   }
+  const std::string& actuator_name() const { return actuator_name_; }
 
  private:
   // Helper method for NaN initialization.
@@ -125,6 +126,7 @@ class AcrobotParameters {
   std::string link2_name_{"Link2"};
   std::string shoulder_joint_name_{"ShoulderJoint"};
   std::string elbow_joint_name_{"ElbowJoint"};
+  std::string actuator_name_{"ElbowActuator"};
 };
 
 /// This method makes a MultibodyPlant model of the Acrobot - a canonical

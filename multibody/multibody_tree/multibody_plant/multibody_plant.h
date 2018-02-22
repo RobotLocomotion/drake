@@ -132,6 +132,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->get_num_joints();
   }
 
+  /// Returns the number of joint actuators in the model.
+  /// @see AddJointActuator().
+  int num_actuators() const {
+    return model_->get_num_actuators();
+  }
+
   /// Returns the size of the generalized position vector `q` for `this` model.
   int num_positions() const { return model_->get_num_positions(); }
 
@@ -284,6 +290,33 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
+
+  /// Creates a rigid body model with the provided name and spatial inertia.
+  /// This method returns a constant reference to the body just added, which
+  /// will remain valid for the lifetime of `this` %MultibodyPlant.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyPlant<T> plant;
+  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   const RigidBody<T>& body =
+  ///     plant.AddRigidBody("BodyName", spatial_inertia);
+  /// @endcode
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new body to be added to `this`
+  ///   model. A std::runtime_error is thrown if a body named `name` already is
+  ///   part of the model. See HasBodyNamed(), Body::get_name().
+  /// @param[in] M_BBo_B
+  ///   The SpatialInertia of the new rigid body to be added to `this` model,
+  ///   computed about the body frame origin `Bo` and expressed in the body
+  ///   frame B.
+  /// @returns A constant reference to the new RigidBody just added, which will
+  ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  const JointActuator<T>& AddJointActuator(
+      const std::string& name, const Joint<T>& joint) {
+    return model_->AddJointActuator(name, joint);
+  }
   /// @}
 
   /// @name Querying for multibody elements by name
@@ -424,6 +457,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
 
   /// @}
+
+  /// Returns a constant reference to the input port for external actuation.
+  /// This input port is a vector valued port, indexed by JointActuatorIndex.
+  const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& get_world_body() const {
@@ -576,6 +613,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   int geometry_query_port_{-1};
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
+
+  // Actuation input port:
+  int actuation_port_{-1};
 
   // Rigid contact constraint parameters.
   double contact_penalty_stiffness_{0};

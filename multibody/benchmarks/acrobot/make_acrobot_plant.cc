@@ -83,7 +83,7 @@ MakeAcrobotPlant(
       link1, {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
-  plant->AddJoint<RevoluteJoint>(
+  const RevoluteJoint<double>& elbow = plant->AddJoint<RevoluteJoint>(
       params.elbow_joint_name(),
       link1,
       /* Pose of the elbow inboard frame Ei in Link 1's frame. */
@@ -92,6 +92,9 @@ MakeAcrobotPlant(
       /* Elbow outboard frame Eo IS frame L2 for link 2. */
       {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
+
+  // Add acrobot's actuator at the elbow joint.
+  plant->AddJointActuator(params.actuator_name(), elbow);
 
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(
