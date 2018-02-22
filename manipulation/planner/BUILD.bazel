@@ -29,6 +29,7 @@ drake_cc_library(
     hdrs = ["differential_inverse_kinematics.h"],
     deps = [
         "//multibody:rigid_body_tree",
+        "//multibody/multibody_tree",
         "//multibody/parsers",
         "//solvers:mathematical_program",
     ],
@@ -74,17 +75,12 @@ drake_cc_googletest(
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
-    # TODO(siyuan.feng) This needs to be switched over to a accurate open
-    # source QP sovler when we have one. Snopt is chosen here because it
-    # is fast enough most of the time, and to minimize licensing issues.
-    tags = [
-        "snopt",
-    ],
     deps = [
         ":differential_inverse_kinematics",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//manipulation/util:world_sim_tree_builder",
+        "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
     ],
 )
 
