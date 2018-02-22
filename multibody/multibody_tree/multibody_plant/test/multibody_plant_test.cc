@@ -224,7 +224,7 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
 
 TEST_F(AcrobotPlantTests, VerifyGeometryRegistration) {
   EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
-  EXPECT_EQ(plant_->get_num_collision_geometries(), 0);
+  EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
 
   std::unique_ptr<systems::Context<double>> context =

@@ -69,9 +69,35 @@ namespace multibody_plant {
 /// - Bodies: AddRigidBody().
 /// - Joints: AddJoint().
 ///
-/// @cond
-/// TODO(amcastro-tri): In subsequent PR add doc on how to register geometry.
-/// @endcond
+/// @section mbp_geometry_registration Registering with a GeometrySystem
+///
+/// %MultibodyPlant users can register geometry with a GeometrySystem for
+/// essentially two purposes; a) visualization and, b) contact modeling.
+/// To add geometry for visualization %MultibodyPlant provides:
+/// - RegisterVisualGeometry() for dynamically moving geometry.
+/// - RegisterVisualAnchoredGeometry() for geometry that does not move but that
+///   is fixed to the world.
+///
+/// The process of geometry registration includes:
+/// 1. If not done yet, the plant is registered as a source for the given
+///    GeometrySystem. This assigns a SourceId to the plant.
+/// 2. For the body on which geometry is being registered, a new frame is
+///    registered with GeometrySystem is not done already. Therefore, each body
+///    gets associated with a FrameId.
+/// 3. Finally, geometry is registered for the corresponding FrameId. This
+///    associates a GeometryId with the body FrameId.
+/// This entire process is controlled by the %MultibodyPlant's registration
+/// methods.
+///
+/// @section Finalize() stage
+///
+/// Once the user is done adding modeling elements and registering geometry, a
+/// a call to Finalize() must be performed. This call will:
+/// - Build the underlying MultibodyTree topology, see MultibodyTree::Finalize()
+///   for details,
+/// - declare the plant's state,
+/// - declare the plant's input and output ports,
+/// - declare input and output ports for communication with a GeometrySystem.
 ///
 /// @cond
 /// TODO(amcastro-tri): Add next section in future PR's as funcionality lands.
@@ -351,78 +377,86 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @}
 
   /// @name Registering geometry for visualization
+  /// These methods allow to register geometry with a GeometrySystem in order to
+  /// visualize a plant's model. At the time of the first registration, `this`
+  /// `MultibodyPlant` is registered with the provided GeometrySystem and gets
+  /// assigned a SourceId that can be retrieved with get_source_id().
+  /// At Finalize(), two output ports are declared to enable communication with
+  /// GeometrySystem:
+  ///   1. A port with the GeometryId for each geometry that was registered. It
+  ///      can be retrieved with get_geometry_ids_output_port().
+  ///   2. A port with the pose for each of the geometries that was registered.
+  ///      It can be retrieved with get_geometry_poses_output_port().
   // TODO(amcastro-tri): When GS supports it, provide argument to specify
   // visual properties.
   /// @{
 
+  /// This method allows to register (dynamic, i.e. moving) geometry with a
+  /// given geometry::Shape to be used for visualization of a given `body`.
+  /// @param[in] body
+  ///   The body for which geometry is being registered.
+  /// @param[in] X_BG
+  ///   The fixed pose of the geometry frame G in the body frame B.
+  /// @param[in] shape
+  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
+  ///   geometry::Cylinder.
+  /// @param[out] geometry_system
+  ///   A valid non nullptr to a GeometrySystem on which geometry will get
+  ///   registered.
+  /// @throws if `geometry_system` is the nullptr.
   void RegisterVisualGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<double>* geometry_system);
 
+  /// This method allows to register anchored geometry to the world with a given
+  /// geometry::Shape. This geometry does not move and has a fixed pose `X_WG`
+  /// in the world frame W.
+  /// @param[in] X_WG
+  ///   The fixed pose of the geometry frame G in the world frame W.
+  /// @param[in] shape
+  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
+  ///   geometry::Cylinder.
+  /// @param[out] geometry_system
+  ///   A valid non nullptr to a GeometrySystem on which geometry will get
+  ///   registered.
+  /// @throws if `geometry_system` is the nullptr.
   void RegisterAnchoredVisualGeometry(
       const Isometry3<double>& X_WG, const geometry::Shape& shape,
       geometry::GeometrySystem<double>* geometry_system);
 
-  bool is_visual_geometry(geometry::GeometryId id) const {
-    return geometry_id_to_visual_index_.find(id) !=
-        geometry_id_to_visual_index_.end();
-  }
-
+  /// Returns the number of geometries registered for visualization.
   int get_num_visual_geometries() const {
-    return geometry_id_to_visual_index_.size();
+    return static_cast<int>(geometry_id_to_visual_index_.size());
   }
+  /// @}
 
-  int get_visual_geometry_index(geometry::GeometryId id) const {
-    auto it = geometry_id_to_visual_index_.find(id);
-    if (it != geometry_id_to_visual_index_.end()) {
-      return it->second;
-    }
-    return -1;
-  }
+  /// @name Retrieving ports for communication with a GeometrySystem.
+  /// @{
 
-  bool is_collision_geometry(geometry::GeometryId id) const {
-    return geometry_id_to_collision_index_.find(id) !=
-        geometry_id_to_collision_index_.end();
-  }
-
-  int get_num_collision_geometries() const {
-    return geometry_id_to_collision_index_.size();
-  }
-
-  /// Register geometry for `body`.
-  /// 1. If not done yet, register this plant as a source for the given GS.
-  /// 2. Register frame for this body if not already done so.
-  /// 3. Register geomtery for the corresponding FrameId.
-  geometry::GeometryId RegisterGeometry(
-      const Body<T>& body,
-      const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
-
-  geometry::GeometryId RegisterAnchoredGeometry(
-      const Isometry3<double>& X_WG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
-
-  /// Returns the unique id identifying this plant as a source for a
+  /// Returns the unique id identifying `this` plant as a source for a
   /// GeometrySystem.
   /// Returns `nullopt` if `this` plant did not register any geometry.
   optional<geometry::SourceId> get_source_id() const {
     return source_id_;
   }
 
-  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
-
   /// Returns the output port of frame id's used to communicate poses to a
-  /// GeometrySystem. It throws a std::out_of_range exception if this system was
-  /// not registered with a GeometrySystem.
+  /// GeometrySystem.
+  /// @throws if this system was not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_ids_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
-  /// GeometrySystem. It throws a std::out_of_range exception if this system was
-  /// not registered with a GeometrySystem.
+  /// GeometrySystem.
+  /// @throws if this system was not registered with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
-
   /// @}
+
+  /// @returns `true` if `this` %MultibodyPlant was registered with a
+  /// GeometrySystem.
+  bool geometry_source_is_registered() const {
+    return !!source_id_;
+  }
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& get_world_body() const {
@@ -436,7 +470,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see Finalize().
   bool is_finalized() const { return model_->topology_is_valid(); }
 
-  /// This method must be called after all elements in the tree (joints, bodies,
+  /// This method must be called after all elements in the model (joints, bodies,
   /// force elements, constraints, etc.) are added and before any computations
   /// are performed.
   /// It essentially compiles all the necessary "topological information", i.e.
@@ -448,17 +482,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// is valid, meaning that the topology is up-to-date after this call.
   /// No more multibody elements can be added after a call to Finalize().
   ///
+  /// At Finalize(), state and input/output ports for `this` plant are declared.
+  /// If `this` plant registered geometry with a GeometrySystem, input and
+  /// output ports to enable communication with that GeometrySystem are declared
+  /// as well.
+  ///
+  /// @see is_finalized().
+  ///
   /// @throws std::logic_error if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
-
-  void set_contact_penalty_stiffness(double k) {
-    contact_penalty_stiffness_ = k;
-  }
-
-  void set_contact_penalty_damping(double d) {
-    contact_penalty_damping_ = d;
-  }
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
@@ -491,12 +524,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  void CalcAndAddContactForcesByPenaltyMethod(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
-
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
@@ -518,10 +545,28 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const;
 
-  // maybe geometry_source_is_registered_with(const GeometrySystem<T>& gs) ???
-  bool geometry_source_is_registered() const {
-    return !!source_id_;
-  }
+  // Helper method to register geometry for a given body, either visual or
+  // collision. The registration includes:
+  // 1. If not done yet, register this plant as a source for the given
+  //    GeometrySystem. This assigns a SourceId to this plant.
+  // 2. Register a frame for this body if not already done so. The body gets
+  //    associated with a FrameId.
+  // 3. Register geometry for the corresponding FrameId. This associates a
+  //    GeometryId with the body FrameId.
+  geometry::GeometryId RegisterGeometry(
+      const Body<T>& body,
+      const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      geometry::GeometrySystem<double>* geometry_system);
+
+  // Helper method to register anchored geometry to the world, either visual or
+  // collision. The anchored geometry registration includes:
+  // 1. If not done yet, register this plant as a source for the given
+  //    GeometrySystem. This assigns a SourceId to this plant.
+  // 2. Register geometry for the world body. This associates a GeometryId with
+  //    the world body.
+  geometry::GeometryId RegisterAnchoredGeometry(
+      const Isometry3<double>& X_WG, const geometry::Shape& shape,
+      geometry::GeometrySystem<double>* geometry_system);
 
   bool body_has_registered_frame(const Body<T>& body) const {
     return body_index_to_frame_id_.find(body.get_index()) !=
@@ -572,13 +617,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
 
   // Port handles for geometry:
-  int geometry_query_port_{-1};
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
-
-  // Rigid contact constraint parameters.
-  double contact_penalty_stiffness_{0};
-  double contact_penalty_damping_{0};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
