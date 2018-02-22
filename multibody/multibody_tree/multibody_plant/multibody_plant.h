@@ -458,6 +458,19 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return !!source_id_;
   }
 
+  /// If the body with `body_index` has geometry registered with it, it returns
+  /// the geometry::FrameId associated with it. Otherwise this method throws
+  /// an exception.
+  geometry::FrameId GetBodyFrameIdOrThrow(BodyIndex body_index) const {
+    const auto it = body_index_to_frame_id_.find(body_index);
+    if (it == body_index_to_frame_id_.end()) {
+      throw std::logic_error(
+          "Body '" + model().get_body(body_index).get_name() +
+          "' does not have geometry registered with it.");
+    }
+    return it->second;
+  }
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& get_world_body() const {
     return model_->get_world_body();
@@ -606,15 +619,14 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Not all bodies need to be in this map.
   std::unordered_map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
-  std::unordered_map<geometry::GeometryId, BodyIndex> geometry_id_to_body_index_;
+  // Map from GeometryId to BodyIndex. During contact queries, it allows to find
+  // out to which body a given geometry corresponds to.
+  std::unordered_map<geometry::GeometryId, BodyIndex>
+      geometry_id_to_body_index_;
 
-  // Map provided at construction that tells how bodies (referenced by name),
-  // map to frame ids.
-  std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
-
+  // Maps a GeometryId with a visual index. This allows, for intance, to find
+  // out visual properties for a given geometry.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
-
-  std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
 
   // Port handles for geometry:
   int geometry_id_port_{-1};

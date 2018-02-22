@@ -45,7 +45,7 @@ class JointImplementationBuilder {
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
-  world_body_ = &AddBody<RigidBody>(SpatialInertia<double>());
+  world_body_ = &AddRigidBody("WorldBody", SpatialInertia<double>());
 }
 
 template <typename T>
