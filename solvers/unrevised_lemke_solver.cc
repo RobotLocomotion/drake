@@ -668,7 +668,7 @@ void UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
   const int n = q.rows();
 
   // Compute the solution.
-  VectorX<T> q_prime;
+  VectorX<T> q_prime(n);
   LemkePivot(M, q, artificial_index, nullptr, &q_prime);
 
   z->setZero(n);

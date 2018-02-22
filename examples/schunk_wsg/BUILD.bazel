@@ -56,7 +56,7 @@ drake_cc_googletest(
         "//multibody:models",
     ],
     # This test is prohibitively slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
+    # disable_in_compilation_mode_dbg = True,
     deps = [
         "//common:essential",
         "//common:find_resource",

@@ -9,7 +9,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
-#include "drake/solvers/moby_lcp_solver.h"
+#include "drake/solvers/unrevised_lemke_solver.h"
 
 namespace drake {
 namespace multibody {
@@ -310,7 +310,7 @@ class ConstraintSolver {
       std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
       ProblemData* modified_problem_data) const;
 
-  drake::solvers::MobyLCPSolver<T> lcp_;
+  drake::solvers::UnrevisedLemkeSolver<T> lcp_;
 };
 
 // Given a matrix A of blocks consisting of generalized inertia (M) and the
@@ -685,7 +685,8 @@ void ConstraintSolver<T>::FormAndSolveConstraintLCP(
 
   // Solve the LCP and compute the values of the slack variables.
   VectorX<T> zz;
-  bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
+  int num_pivots = -1;
+  bool success = lcp_.SolveLcpLemke(MM, qq, &zz, &num_pivots, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
   const double max_dot = (zz.size() > 0) ?
                          (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
@@ -698,12 +699,12 @@ void ConstraintSolver<T>::FormAndSolveConstraintLCP(
   // the problem size. zzᵀww must use a looser tolerance to account for the
   // num_vars multiplies.
   const int num_vars = qq.size();
-  const int npivots = std::max(1, lcp_.get_num_pivots());
+  num_pivots = std::max(1, num_pivots);
   if (!success || (zz.size() > 0 &&
-      (zz.minCoeff() < -num_vars * npivots * zero_tol ||
-      ww.minCoeff() < -num_vars * npivots * zero_tol ||
+      (zz.minCoeff() < -num_vars * num_pivots * zero_tol ||
+      ww.minCoeff() < -num_vars * num_pivots * zero_tol ||
       max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
-          npivots * zero_tol))) {
+          num_pivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
@@ -1052,7 +1053,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
 
   // Solve the LCP and compute the values of the slack variables.
   VectorX<T> zz;
-  bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
+  int num_pivots;
+  bool success = lcp_.SolveLcpLemke(MM, qq, &zz, &num_pivots, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
   const double max_dot = (zz.size() > 0) ?
                          (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
@@ -1065,24 +1067,24 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // the problem size. zzᵀww must use a looser tolerance to account for the
   // num_vars multiplies.
   const int num_vars = qq.size();
-  const int npivots = std::max(lcp_.get_num_pivots(), 1);
+  num_pivots = std::max(num_pivots, 1);
   if (!success ||
       (zz.size() > 0 &&
-       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
-        ww.minCoeff() < -num_vars * npivots * zero_tol ||
+       (zz.minCoeff() < -num_vars * num_pivots * zero_tol ||
+        ww.minCoeff() < -num_vars * num_pivots * zero_tol ||
         max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
-            num_vars * npivots * zero_tol))) {
+            num_vars * num_pivots * zero_tol))) {
     // Report difficulty
     SPDLOG_DEBUG(drake::log(), "Unable to solve impacting problem LCP without "
         "progressive regularization");
     SPDLOG_DEBUG(drake::log(), "zero tolerance for z/w: {}",
-        num_vars * npivots * zero_tol);
+        num_vars * num_pivots * zero_tol);
     SPDLOG_DEBUG(drake::log(), "Solver reports success? {}", success);
     SPDLOG_DEBUG(drake::log(), "minimum z: {}", zz.minCoeff());
     SPDLOG_DEBUG(drake::log(), "minimum w: {}", ww.minCoeff());
     SPDLOG_DEBUG(drake::log(), "zero tolerance for <z,w>: {}",
       max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
-      npivots * zero_tol);
+      num_pivots * zero_tol);
     SPDLOG_DEBUG(drake::log(), "z'w: {}", max_dot);
 
     // Use progressive regularization to solve.
@@ -1091,8 +1093,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                   // factor of ten.
     const int max_exp = 1;        // Maximum regularization: 1e1.
     const double piv_tol = -1;    // Make solver compute the pivot tolerance.
-    if (!lcp_.SolveLcpLemkeRegularized(
-        MM, qq, &zz, min_exp, step_exp, max_exp, piv_tol, zero_tol)) {
+    if (!lcp_.SolveLcpLemkeRegularized(MM, qq, &zz, &num_pivots, min_exp,
+                                       step_exp, max_exp, piv_tol, zero_tol)) {
       throw std::runtime_error("Progressively regularized LCP solve failed.");
     } else {
       ww = MM * zz + qq;
