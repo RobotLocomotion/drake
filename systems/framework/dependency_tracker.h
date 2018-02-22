@@ -419,7 +419,7 @@ class DependencyGraph {
       DependencyTicket known_ticket, std::string description,
       CacheEntryValue* cache_value = nullptr) {
     DRAKE_DEMAND(!has_tracker(known_ticket));
-    if (known_ticket >= num_trackers()) graph_.resize(known_ticket + 1);
+    if (known_ticket >= trackers_size()) graph_.resize(known_ticket + 1);
     // Can't use make_unique here because constructor is private.
     graph_[known_ticket].reset(new DependencyTracker(
         known_ticket, std::move(description), owning_subcontext_, cache_value));
@@ -431,7 +431,7 @@ class DependencyGraph {
   ticket from the returned tracker. See the other signature for details. */
   DependencyTracker& CreateNewDependencyTracker(
       std::string description, CacheEntryValue* cache_value = nullptr) {
-    DependencyTicket ticket(num_trackers());
+    DependencyTicket ticket(trackers_size());
     return CreateNewDependencyTracker(ticket, std::move(description),
                                       cache_value);
   }
@@ -440,12 +440,15 @@ class DependencyGraph {
   given ticket number. */
   bool has_tracker(DependencyTicket ticket) const {
     DRAKE_DEMAND(ticket.is_valid());
-    if (ticket >= num_trackers()) return false;
+    if (ticket >= trackers_size()) return false;
     return graph_[ticket] != nullptr;
   }
 
-  /** Returns the number of DependencyTracker objects currently stored here. */
-  int num_trackers() const { return static_cast<int>(graph_.size()); }
+  /** Returns the current size of the DependencyTracker container, providing
+  for DependencyTicket numbers from `0..trackers_size()-1`. Note that it is
+  possible to have empty slots in the container. Use has_tracker() to determine
+  if there is a tracker associated with a particular ticket. */
+  int trackers_size() const { return static_cast<int>(graph_.size()); }
 
   /** Returns a const DependencyTracker given a ticket. This is very fast.
   Behavior is undefined if the ticket is out of range [0..num_trackers()-1]. */
@@ -472,8 +475,9 @@ class DependencyGraph {
   tree.
   @see AppendToTrackerPointerMap(), RepairTrackerPointers() */
   DependencyGraph(const DependencyGraph& source) {
-    graph_.reserve(source.num_trackers());
-    for (DependencyTicket ticket(0); ticket < source.num_trackers(); ++ticket) {
+    graph_.reserve(source.trackers_size());
+    for (DependencyTicket ticket(0); ticket < source.trackers_size();
+         ++ticket) {
       graph_.emplace_back(
           source.has_tracker(ticket)
               ? source.get_tracker(ticket).CloneWithoutPointers()

@@ -214,9 +214,10 @@ void DependencyGraph::AppendToTrackerPointerMap(
     const DependencyGraph& clone,
     DependencyTracker::PointerMap* tracker_map) const {
   DRAKE_DEMAND(tracker_map != nullptr);
-  DRAKE_DEMAND(clone.num_trackers() == num_trackers());
-  for (DependencyTicket ticket(0); ticket < num_trackers(); ++ticket) {
-    if (!has_tracker(ticket)) continue;
+  DRAKE_DEMAND(clone.trackers_size() == trackers_size());
+  for (DependencyTicket ticket(0); ticket < trackers_size(); ++ticket) {
+    if (!has_tracker(ticket))
+      continue;
     const bool added = tracker_map->emplace(&get_tracker(ticket),
                                             &clone.get_tracker(ticket)).second;
     DRAKE_DEMAND(added);  // Shouldn't have been there.
@@ -230,8 +231,9 @@ void DependencyGraph::RepairTrackerPointers(
     Cache* new_cache) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   owning_subcontext_ = owning_subcontext;
-  for (DependencyTicket ticket(0); ticket < num_trackers(); ++ticket) {
-    if (!has_tracker(ticket)) continue;
+  for (DependencyTicket ticket(0); ticket < trackers_size(); ++ticket) {
+    if (!has_tracker(ticket))
+      continue;
     get_mutable_tracker(ticket).RepairTrackerPointers(
         source.get_tracker(ticket), tracker_map, owning_subcontext, new_cache);
   }

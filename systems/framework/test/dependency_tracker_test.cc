@@ -149,7 +149,7 @@ TEST_F(HandBuiltDependencies, Construction) {
   EXPECT_EQ(tracker100.ticket(), 100);
 
   // Construct with assigned ticket (should get the next one).
-  const int num_trackers = graph.num_trackers();
+  const int num_trackers = graph.trackers_size();
   auto& tracker = graph.CreateNewDependencyTracker("tracker");
   EXPECT_EQ(tracker.ticket(), num_trackers);
 }
@@ -217,6 +217,14 @@ TEST_F(HandBuiltDependencies, Notify) {
 // Clone the dependency graph and make sure the clone works like the
 // original did, but on the new entities!
 TEST_F(HandBuiltDependencies, Clone) {
+  DependencyGraph& graph = context_.get_mutable_dependency_graph();
+
+  // Make up a ticket number that is guaranteed to leave a gap to make sure
+  // we test handling of missing trackers.
+  const DependencyTicket after_gap_ticket(graph.trackers_size()+3);
+  const DependencyTracker& after_gap = graph.CreateNewDependencyTracker(
+      after_gap_ticket, "after_gap");
+
   // Do some notifies in the old context so we can make sure all the stats
   // get cleared for the clone. (Previous test ensured these are propagated.)
   upstream1_->NoteValueChange(5LL);
@@ -225,12 +233,15 @@ TEST_F(HandBuiltDependencies, Clone) {
 
   // Create a clone of the dependency graph and exercise the pointer fixup code.
   auto clone_context = context_.Clone();
+
   // Now study the cloned graph to see if it got fixed up correctly.
-  const DependencyGraph& graph = context_.get_dependency_graph();
   DependencyGraph& clone_graph = clone_context->get_mutable_dependency_graph();
 
-  EXPECT_EQ(clone_graph.num_trackers(), graph.num_trackers());
-  for (DependencyTicket ticket(0); ticket < graph.num_trackers(); ++ticket) {
+  EXPECT_EQ(clone_graph.trackers_size(), graph.trackers_size());
+  for (DependencyTicket ticket(0); ticket < graph.trackers_size(); ++ticket) {
+    EXPECT_EQ(graph.has_tracker(ticket), clone_graph.has_tracker(ticket));
+    if (!graph.has_tracker(ticket)) continue;
+
     const auto& tracker = graph.get_tracker(ticket);
     const auto& clone_tracker = clone_graph.get_tracker(ticket);
     EXPECT_NE(&clone_tracker, &tracker);
@@ -264,28 +275,33 @@ TEST_F(HandBuiltDependencies, Clone) {
   auto& down1 = clone_graph.get_mutable_tracker(downstream1_->ticket());
   auto& down2 = clone_graph.get_mutable_tracker(downstream2_->ticket());
   auto& e0_tracker = clone_graph.get_mutable_tracker(entry0_->ticket());
+  auto& after_gap_clone = clone_graph.get_tracker(after_gap.ticket());
+
+  // Check that gaps in the tracker ticket numbering were preserved.
+  EXPECT_EQ(after_gap_clone.ticket(), after_gap_ticket);
+  EXPECT_FALSE(clone_graph.has_tracker(DependencyTicket(after_gap_ticket - 1)));
 
   // Find the cloned cache entry corresponding to entry0_.
   Cache& clone_cache = clone_context->get_mutable_cache();
   CacheEntryValue& clone_entry0 =
       clone_cache.get_mutable_cache_entry_value(entry0_->cache_index());
 
+  // Expected statistics for the cloned trackers; initially zero.
+  Stats tt_stats, up1_stats, up2_stats, mid1_stats, down1_stats,
+      down2_stats, entry0_stats;
+
   // All stats should have been cleared in the clone.
-  EXPECT_EQ(time1.num_notifications_received(), 0);
-  EXPECT_EQ(up1.num_notifications_received(), 0);
-  EXPECT_EQ(up2.num_notifications_received(), 0);
-  EXPECT_EQ(mid1.num_notifications_received(), 0);
-  EXPECT_EQ(down1.num_notifications_received(), 0);
-  EXPECT_EQ(down2.num_notifications_received(), 0);
-  EXPECT_EQ(e0_tracker.num_notifications_received(), 0);
+  ExpectStatsMatch(&time1, tt_stats);
+  ExpectStatsMatch(&up1, up1_stats);
+  ExpectStatsMatch(&up2, up2_stats);
+  ExpectStatsMatch(&mid1, mid1_stats);
+  ExpectStatsMatch(&down1, down1_stats);
+  ExpectStatsMatch(&down2, down2_stats);
+  ExpectStatsMatch(&e0_tracker, entry0_stats);
 
   EXPECT_FALSE(clone_entry0.is_up_to_date());
   clone_entry0.set_value(101);
   EXPECT_TRUE(clone_entry0.is_up_to_date());
-
-  // Expected statistics for the cloned trackers; initially zero.
-  Stats tt_stats, up1_stats, up2_stats, mid1_stats, down1_stats,
-      down2_stats, entry0_stats;
 
   // Upstream2 is prerequisite to middle1 which is prerequisite to down1,2 and
   // the cache entry, and down2 gets the cache entry again so should be
