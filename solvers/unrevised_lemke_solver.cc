@@ -133,7 +133,6 @@ template <typename Derived, typename T>
 void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
                      const std::vector<int>& rows,
                      const std::vector<int>& cols, MatrixX<T>* out) {
-  const int n = in.rows();
   const int num_rows = rows.size();
   const int num_cols = cols.size();
   out->resize(num_rows, num_cols);
@@ -142,8 +141,8 @@ void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
     const auto row_in = in.row(rows[i]);
     auto row_out = out->row(i);
     for (int j = 0; j < num_cols; j++) {
-      if (cols[j] < n) {
-        row_out(j) = row_in(cols[j]);
+      if (cols[j] > 0) {
+        row_out(j) = row_in(cols[j] - 1);
       } else {
         row_out(j) = 1.0;
       }
@@ -159,19 +158,18 @@ void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
 template <typename Derived, typename T>
 void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
                                  const std::vector<int>& rows,
-                                 int col, VectorX<T>* out) {
-  const int n = in.rows();
+                                 int column, VectorX<T>* out) {
   const int num_rows = rows.size();
   out->resize(num_rows);
 
   // Look for the covering vector first.
-  if (col == n) {
+  if (column == 0) {
     out->setOnes();
     return;
   } else {
+    const auto in_column = in.col(column - 1);
     for (int i = 0; i < num_rows; i++) {
-      const auto row_in = in.row(rows[i]);
-      (*out)[i] = row_in(col);
+      (*out)[i] = in_column[rows[i]];
     }
   }
 }
@@ -303,7 +301,7 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   variable_and_array_indices.clear();
   for (int i = 0; i < static_cast<int>(indep_variables_.size()); ++i) {
     if (!indep_variables_[i].z)
-      variable_and_array_indices.emplace_back(indep_variables_[i].index, i);
+      variable_and_array_indices.emplace_back(indep_variables_[i].index - 1, i);
   }
   std::sort(variable_and_array_indices.begin(),
             variable_and_array_indices.end());
@@ -318,7 +316,7 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   variable_and_array_indices.clear();
   for (int i = 0; i < static_cast<int>(dep_variables_.size()); ++i) {
     if (!dep_variables_[i].z)
-      variable_and_array_indices.emplace_back(dep_variables_[i].index, i);
+      variable_and_array_indices.emplace_back(dep_variables_[i].index - 1, i);
   }
   std::sort(variable_and_array_indices.begin(),
             variable_and_array_indices.end());
@@ -332,8 +330,9 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   // Prepare to determine beta and beta_prime.
   variable_and_array_indices.clear();
   for (int i = 0; i < static_cast<int>(dep_variables_.size()); ++i) {
-    if (dep_variables_[i].z)
+    if (dep_variables_[i].z) {
       variable_and_array_indices.emplace_back(dep_variables_[i].index, i);
+    }
   }
   std::sort(variable_and_array_indices.begin(),
             variable_and_array_indices.end());
@@ -346,8 +345,9 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   // Prepare to determine bar_beta and bar_beta_prime.
   variable_and_array_indices.clear();
   for (int i = 0; i < static_cast<int>(indep_variables_.size()); ++i) {
-    if (indep_variables_[i].z)
+    if (indep_variables_[i].z) {
       variable_and_array_indices.emplace_back(dep_variables_[i].index, i);
+    }
   }
   std::sort(variable_and_array_indices.begin(),
             variable_and_array_indices.end());
@@ -357,10 +357,6 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
     index_sets_.bar_beta_prime.push_back(variable_and_array_index_pair.second);
   }
 }
-
-
-// Gets the sub-vectors of q.
-
 
 // Verifies that each element of the pivoting set is unique for debugging
 // purposes. This is an expensive operation and should only be executed in
@@ -410,8 +406,7 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
     VectorX<T>* q_prime) const {
   DRAKE_DEMAND(q_prime);
 
-  const int n = q.rows();
-  const int kArtificial = n;
+  const int kArtificial = 0;
 
   // Verify that each member in the independent and dependent sets is unique.
   DRAKE_ASSERT(IsEachUnique(indep_variables_));
@@ -462,11 +457,14 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
   if (!indep_variables_[driving_index].z) {
     DRAKE_SPDLOG_DEBUG(log(), "Driving case #1: driving variable from w");
     // Case from Section 2.2.1.
-    // Determine gamma.
+    // Determine gamma by determining the position of the driving variable
+    // in INDEPENDENT W.
     int gamma = 0;
     for (int i = 0; i < driving_index; ++i) {
-      if (!indep_variables_[i].z)
-        ++gamma;
+      if (!indep_variables_[i].z) {
+        if (indep_variables_[i].index < indep_variables_[driving_index].index) 
+          ++gamma;
+      } 
     }
 
     // Set the unit vector.
@@ -492,7 +490,6 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
 
     // Equation (19).
     M_prime_driving_beta_prime_ = -fMab.Solve(g_alpha_);
-
 
     // Equation (20).
     M_prime_driving_bar_alpha_prime_ = g_bar_alpha_ +
@@ -648,6 +645,9 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
 template <class T>
 int UnrevisedLemkeSolver<T>::FindComplementIndex(
     const LCPVariable& query, const std::vector<LCPVariable>& indep_variables) {
+  // Verify that the query is not the artificial variable.
+  DRAKE_DEMAND(!(query.z && query.index == 0));
+
   for (int i = 0; i < static_cast<int>(indep_variables.size()); ++i) {
     if (indep_variables[i].z != query.z &&
         indep_variables[i].index == query.index) {
@@ -674,7 +674,7 @@ void UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
   z->setZero(n);
   for (int i = 0; i < static_cast<int>(dep_variables_.size()); ++i) {
     if (dep_variables_[i].z)
-      (*z)[dep_variables_[i].index] = q_prime[i];
+      (*z)[dep_variables_[i].index - 1] = q_prime[i];
   }
 }
 
@@ -707,7 +707,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   }
 
   // Denote the index of the artificial variable.
-  const int kArtificial = n;
+  const int kArtificial = 0;
 
   // Compute a sensible value for zero tolerance if none is given.
   T mod_zero_tol = zero_tol;
@@ -760,12 +760,13 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   for (int i = 0; i < n; ++i) {
     dep_variables_[i].z = false;
     indep_variables_[i].z = true;
-    indep_variables_[i].index = dep_variables_[i].index = i;
+    dep_variables_[i].index = i+1;
+    indep_variables_[i].index = i;
   }
 
-  // Store the artificial variable.
-  indep_variables_[kArtificial].z = true;
-  indep_variables_[kArtificial].index = kArtificial;
+  // z needs one more variable. 
+  indep_variables_[n].z = true;
+  indep_variables_[n].index = n;
 
   // Compute zn*, the smallest value of the artificial variable zn for which
   // w = q + zn >= 0. Let blocking denote a component of w that equals
@@ -785,11 +786,22 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   // Pivot blocking, artificial 
   LCPVariable blocking = dep_variables_[blocking_index];
   int driving_index = FindComplementIndex(blocking, indep_variables_);
-//  LCPVariable driving = indep_variables_[driving_index];
-  std::swap(dep_variables_[blocking_index], indep_variables_[kArtificial]);
+  std::swap(dep_variables_[blocking_index], indep_variables_[0]);
   DRAKE_SPDLOG_DEBUG(log(), "First blocking variable {}{}",
                      ((blocking.z) ? "z" : "w"), blocking.index);
   DRAKE_SPDLOG_DEBUG(log(), "First driving variable (artificial)");
+
+  // Output the independent and dependent variable tuples.
+  auto to_string = [](const std::vector<LCPVariable>& vars) -> std::string {
+    std::ostringstream oss;
+    for (int i = 0; i < static_cast<int>(vars.size()); ++i)
+      oss << ((vars[i].z) ? "z" : "w") << vars[i].index << " ";
+    return oss.str();
+  };
+  DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
+      to_string(indep_variables_));
+  DRAKE_SPDLOG_DEBUG(log(), "Dependent set variables: {}",
+      to_string(dep_variables_));
 
   // Pivot up to the maximum number of times.
   VectorX<T> q_prime(n), M_prime_col(n);
@@ -816,6 +828,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
     if (blocking_index < 0) {
       SPDLOG_DEBUG(log(), "driving variable is unblocked- algorithm failed");
+      z->setZero(n);
       return false;
     }
 
@@ -843,9 +856,15 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       // Make the driving variable the complement of the blocking variable.
       driving_index = FindComplementIndex(blocking, indep_variables_);
     }
+
+    DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
+        to_string(indep_variables_));
+    DRAKE_SPDLOG_DEBUG(log(), "Dependent set variables: {}",
+        to_string(dep_variables_));
   }
 
   // If here, the maximum number of pivots has been exceeded.
+  z->setZero(n);
   return false;
 }
 
