@@ -17,7 +17,7 @@ Quaternion<T> QuaternionFloatingMobilizer<T>::get_quaternion(
     const systems::Context<T>& context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
-  auto q = this->get_positions(mbt_context);
+  const auto q = this->get_positions(mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
   // Note: In the context we store the quaternion's components first, followed
   // by the position vector components. The quaternion components are stored as
@@ -34,7 +34,7 @@ Vector3<T> QuaternionFloatingMobilizer<T>::get_position(
     const systems::Context<T>& context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
-  auto q = this->get_positions(mbt_context);
+  const auto q = this->get_positions(mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
   // Note: In the context we store the quaternion's components first (q₀ to q₃),
   // followed by the position vector components (q₄ to q₆).

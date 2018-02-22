@@ -46,7 +46,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @param[in] inboard_frame_F
   ///   the inboard frame F.
   /// @param[in] outboard_frame_M
-  ///   the outboard frame M which can move freely with respect to frame M.
+  ///   the outboard frame M which can move freely with respect to frame F.
   QuaternionFloatingMobilizer(const Frame<T>& inboard_frame_F,
                 const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
