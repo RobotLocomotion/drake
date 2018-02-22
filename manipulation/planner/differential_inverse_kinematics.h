@@ -123,7 +123,7 @@ class DifferentialInverseKinematicsParameters {
    * @throws if @p nominal_joint_position's dimension differs.
    */
   void set_nominal_joint_position(
-      const VectorX<double>& nominal_joint_position) {
+      const Eigen::Ref<const VectorX<double>>& nominal_joint_position) {
     DRAKE_THROW_UNLESS(nominal_joint_position.size() == get_num_positions());
     nominal_joint_position_ = nominal_joint_position;
   }
@@ -224,8 +224,10 @@ class DifferentialInverseKinematicsParameters {
  * be set to v, otherwise it will be nullopt.
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const VectorX<double>& q_current, const VectorX<double>& v_current,
-    const VectorX<double>& V, const MatrixX<double>& J,
+    const Eigen::Ref<const VectorX<double>>& q_current,
+    const Eigen::Ref<const VectorX<double>>& v_current,
+    const Eigen::Ref<const VectorX<double>>& V,
+    const Eigen::Ref<const MatrixX<double>>& J,
     const DifferentialInverseKinematicsParameters& parameters);
 
 /**
@@ -300,8 +302,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
 /**
  * A wrapper over
- * DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E, params)
- * that tracks frame E's pose in the world frame.
+ * DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E,
+ * params) that tracks frame E's pose in the world frame.
  * q_current and v_current are taken from @p cache. V_WE is computed by
  * ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) / dt, where X_WE is computed
  * from @p context, and dt is taken from @p parameters.

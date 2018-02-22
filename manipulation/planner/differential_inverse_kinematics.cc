@@ -11,18 +11,19 @@ namespace planner {
 
 namespace {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const VectorX<double>& q_current, const VectorX<double>& v_current,
-    const Isometry3<double>& X_WE, const MatrixX<double>& J_WE,
+    const Eigen::Ref<const VectorX<double>>& q_current,
+    const Eigen::Ref<const VectorX<double>>& v_current,
+    const Isometry3<double>& X_WE,
+    const Eigen::Ref<const MatrixX<double>>& J_WE,
     const Vector6<double>& V_WE_desired,
     const DifferentialInverseKinematicsParameters& parameters) {
   Matrix6<double> R_EW = Matrix6<double>::Zero();
   R_EW.block<3, 3>(0, 0) = X_WE.linear().transpose();
   R_EW.block<3, 3>(3, 3) = R_EW.block<3, 3>(0, 0);
 
-  // Rotate the velocity into E frame.
-  MatrixX<double> J_WE_E = R_EW * J_WE;
-
-  Vector6<double> V_WE_E = R_EW * V_WE_desired;
+  // Rotate the velocity and Jacobian to E frame.
+  const MatrixX<double> J_WE_E = R_EW * J_WE;
+  const Vector6<double> V_WE_E = R_EW * V_WE_desired;
 
   Vector6<double> V_WE_E_scaled;
   MatrixX<double> J_WE_E_scaled{6, J_WE_E.cols()};
@@ -36,11 +37,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     }
   }
 
-  MatrixX<double> J = J_WE_E_scaled.topRows(num_cart_constraints);
-  VectorX<double> V = V_WE_E_scaled.head(num_cart_constraints);
-
-  return DoDifferentialInverseKinematics(q_current, v_current, V, J,
-                                         parameters);
+  return DoDifferentialInverseKinematics(
+      q_current, v_current, V_WE_E_scaled.head(num_cart_constraints),
+      J_WE_E_scaled.topRows(num_cart_constraints), parameters);
 }
 }  // namespace
 
@@ -80,8 +79,10 @@ DifferentialInverseKinematicsParameters::
       nominal_joint_position_(VectorX<double>::Zero(num_positions)) {}
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const VectorX<double>& q_current, const VectorX<double>& v_current,
-    const VectorX<double>& V, const MatrixX<double>& J,
+    const Eigen::Ref<const VectorX<double>>& q_current,
+    const Eigen::Ref<const VectorX<double>>& v_current,
+    const Eigen::Ref<const VectorX<double>>& V,
+    const Eigen::Ref<const MatrixX<double>>& J,
     const DifferentialInverseKinematicsParameters& parameters) {
   const int num_positions = parameters.get_num_positions();
   const int num_velocities = parameters.get_num_velocities();
@@ -97,8 +98,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable v_next =
       prog.NewContinuousVariables(num_velocities, "v_next");
-  solvers::VectorXDecisionVariable alpha =
-      prog.NewContinuousVariables(1, "alpha");
+  solvers::VectorDecisionVariable<1> alpha =
+      prog.NewContinuousVariables<1>("alpha");
 
   const solvers::QuadraticCost* cart_cost = nullptr;
 
