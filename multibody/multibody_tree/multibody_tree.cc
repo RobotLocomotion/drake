@@ -9,7 +9,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
@@ -47,37 +46,6 @@ template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
   world_body_ = &AddBody<RigidBody>(SpatialInertia<double>());
-}
-
-template <typename T>
-void MultibodyTree<T>:: AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
-  // Do not call on not finalized tree, thought it should be a no-op in that
-  // case?
-  DRAKE_DEMAND(!topology_is_valid());
-  // Skip the world.
-  for (BodyIndex body_index(1); body_index < get_num_bodies(); ++body_index) {
-    const Body<T>& body = get_body(body_index);
-    const BodyTopology& body_topology =
-        get_topology().get_body(body.get_index());
-    if (!body_topology.inboard_mobilizer.is_valid()) {
-      this->template AddMobilizer<QuaternionFloatingMobilizer>(
-          get_world_body().get_body_frame(), body.get_body_frame());
-    }
-  }
-}
-
-template <typename T>
-const QuaternionFloatingMobilizer<T>&
-MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
-    const Body<T>& body) const {
-  DRAKE_DEMAND(body.get_index() != world_index());
-  const BodyTopology& body_topology = get_topology().get_body(body.get_index());
-  const QuaternionFloatingMobilizer<T>* mobilizer =
-      dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
-          &get_mobilizer(body_topology.inboard_mobilizer));
-  // TODO: just do an if and throw with nice message.
-  DRAKE_THROW_UNLESS(mobilizer != nullptr);
-  return *mobilizer;
 }
 
 template <typename T>
@@ -156,10 +124,6 @@ void MultibodyTree<T>::Finalize() {
   for (auto& joint : owned_joints_) {
     internal::JointImplementationBuilder<T>::Build(joint.get(), this);
   }
-  // It is VERY important to add quaternions if needed only AFTER joints had a
-  // chance to get implemented with mobilizers. Therefore, do not change this
-  // order!
-  AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
   FinalizeTopology();
   FinalizeInternals();
 }
@@ -508,11 +472,9 @@ void MultibodyTree<T>::MapVelocityToQDot(
   DRAKE_DEMAND(qdot->size() == get_num_positions());
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  const int kMaxQdot = 7;
-  Eigen::Matrix<T, kMaxQdot, 1> qdot_mobilizer;
+  VectorUpTo6<T> qdot_mobilizer;
   for (const auto& mobilizer : owned_mobilizers_) {
     const auto v_mobilizer = mobilizer->get_velocities_from_array(v);
-    DRAKE_DEMAND(mobilizer->get_num_positions() <= kMaxQdot);
     qdot_mobilizer.resize(mobilizer->get_num_positions());
     mobilizer->MapVelocityToQDot(mbt_context, v_mobilizer, &qdot_mobilizer);
     mobilizer->get_mutable_positions_from_array(qdot) = qdot_mobilizer;

@@ -13,7 +13,6 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 
 namespace drake {
 namespace multibody {

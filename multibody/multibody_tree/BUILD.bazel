@@ -78,8 +78,6 @@ drake_cc_library(
         "mobilizer_impl.cc",
         "multibody_forces.cc",
         "multibody_tree.cc",
-        "quaternion_floating_mobilizer.cc",
-        "quaternion_mobilizer.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
@@ -100,8 +98,6 @@ drake_cc_library(
         "mobilizer_impl.h",
         "multibody_forces.h",
         "multibody_tree.h",
-        "quaternion_floating_mobilizer.h",
-        "quaternion_mobilizer.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
         "space_xyz_mobilizer.h",
@@ -184,32 +180,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":free_rotating_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/free_body",
-        "//drake/systems/analysis:simulator",
-    ],
-)
-
-drake_cc_library(
-    name = "floating_body_plant",
-    testonly = 1,
-    srcs = ["test/floating_body_plant.cc"],
-    hdrs = ["test/floating_body_plant.h"],
-    deps = [
-        "//drake/common:default_scalars",
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "floating_body_test",
-    size = "small",
-    srcs = [
-        "test/floating_body_test.cc",
-    ],
-    deps = [
-        ":floating_body_plant",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/benchmarks/free_body",
         "//drake/systems/analysis:simulator",
