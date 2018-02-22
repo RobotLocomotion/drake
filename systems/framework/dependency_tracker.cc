@@ -29,7 +29,7 @@ void DependencyTracker::NoteValueChange(int64_t change_event) const {
   if (last_change_event_ == change_event) {
     ++num_ignored_notifications_;
     DRAKE_SPDLOG_DEBUG(log(),
-                       "... ignoring repeated notification same change event.");
+        "... ignoring repeated value change notification same change event.");
     return;
   }
   last_change_event_ = change_event;
@@ -54,8 +54,8 @@ void DependencyTracker::NotePrerequisiteChange(
   ++num_prerequisite_notifications_received_;
   if (last_change_event_ == change_event) {
     ++num_ignored_notifications_;
-    DRAKE_SPDLOG_DEBUG(
-        log(), "{}... ignoring repeated notification same change event.",
+    DRAKE_SPDLOG_DEBUG(log(),
+        "{}... ignoring repeated prereq change notification same change event.",
         Indent(depth));
     return;
   }

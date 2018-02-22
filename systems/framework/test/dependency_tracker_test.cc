@@ -188,6 +188,12 @@ TEST_F(HandBuiltDependencies, Notify) {
   EXPECT_TRUE(entry0_->is_up_to_date());
   ExpectAllStatsMatch();
 
+  // A repeated notification (same change event) should be ignored.
+  downstream1_->NoteValueChange(1LL);
+  down1_stats_.value_change++;
+  down1_stats_.ignored++;
+  ExpectAllStatsMatch();
+
   // The cache entry depends directly on time.
   time_tracker_->NoteValueChange(2LL);
   tt_stats_.value_change++;
