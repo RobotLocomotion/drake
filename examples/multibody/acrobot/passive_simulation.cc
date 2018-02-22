@@ -68,21 +68,17 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
+  // Make and add the acrobot model.
   const AcrobotParameters acrobot_parameters; 
   const MultibodyPlant<double>& acrobot =
       *builder.AddSystem(
           MakeAcrobotPlant(acrobot_parameters, &geometry_system));
-  
-  //AcrobotPlant<double>& acrobot =
-    //  *builder.AddSystem<AcrobotPlant>(&geometry_system);
-  //acrobot.set_name("Acrobot");
-
-  // A constant source for a zero applied torque at the elbow joint.
-  //double applied_torque(0.0);
-  //auto torque_source =
-  //    builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
-  //torque_source->set_name("Applied Torque");
-  //builder.Connect(torque_source->get_output_port(), acrobot.get_input_port());
+  const RevoluteJoint<double>& shoulder =
+      acrobot.GetJointByName<RevoluteJoint>(
+          acrobot_parameters.shoulder_joint_name());
+  const RevoluteJoint<double>& elbow =
+      acrobot.GetJointByName<RevoluteJoint>(
+          acrobot_parameters.elbow_joint_name());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
@@ -125,12 +121,6 @@ int do_main() {
       diagram->GetMutableSubsystemContext(acrobot, diagram_context.get());
 
   // Set initial angles. Velocities are left to the default zero values.
-  const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.shoulder_joint_name());
-  const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.elbow_joint_name());
   shoulder.set_angle(&acrobot_context, 1.0);
   elbow.set_angle(&acrobot_context, 1.0);
 
