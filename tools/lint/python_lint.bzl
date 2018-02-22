@@ -26,10 +26,10 @@ def _python_lint(name_prefix, files, ignore):
     native.py_test(
         name = name_prefix + "_drakelint",
         size = "small",
-        srcs = ["//tools/lint:drakelint"],
+        srcs = ["@drake//tools/lint:drakelint"],
         data = files,
         args = locations,
-        main = "//tools/lint:drakelint.py",
+        main = "@drake//tools/lint:drakelint.py",
         tags = ["drakelint", "lint"]
     )
 
