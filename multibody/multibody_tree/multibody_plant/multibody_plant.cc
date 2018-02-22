@@ -1,6 +1,5 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
-//#include <Eigen/SparseCholesky>
 #include <memory>
 #include <vector>
 
@@ -43,12 +42,6 @@ using drake::multibody::SpatialForce;
 using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
-
-#include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-#define PRINT_VARn(a) (void)a;
-#define PRINT_VAR(a) (void)a;
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
@@ -180,8 +173,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
-  PRINT_VARn(M);
-
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
   // as output arrays. This means that both the array of applied body forces and
   // the array of applied generalized forces get overwritten on output. This is
@@ -200,11 +191,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
       &tau_array);
 
-  PRINT_VARn(tau_array.transpose());
-
   vdot = M.ldlt().solve(-tau_array);
-
-  PRINT_VARn(vdot.transpose());
 
   auto v = x.bottomRows(nv);
   VectorX<T> xdot(this->num_multibody_states());
@@ -327,9 +314,6 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const BodyIndex body_index = it.first;
     const Body<T>& body = model_->get_body(body_index);
     pose_data[pose_index++] = pc.get_X_WB(body.get_node_index());
-    //PRINT_VARn(pc.get_X_WB(body.get_node_index()).matrix());
-    PRINT_VAR(body_index);
-    PRINT_VAR(pc.get_X_WB(body.get_node_index()).matrix());
   }
 }
 

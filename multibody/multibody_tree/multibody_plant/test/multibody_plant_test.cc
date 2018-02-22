@@ -13,12 +13,9 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
-#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
-
-#include <iostream>
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace multibody {
@@ -123,7 +120,8 @@ class AcrobotPlantTests : public ::testing::Test {
     geometry_system_->set_name("geometry_system");
     const AcrobotParameters acrobot_parameters;
     plant_ = builder.AddSystem(MakeAcrobotPlant(parameters_, geometry_system_));
-    // Sanity check on the availability of the optional source id before using it.
+    // Sanity check on the availability of the optional source id before using
+    // it.
     DRAKE_DEMAND(!!plant_->get_source_id());
     builder.Connect(
         plant_->get_geometry_ids_output_port(),
@@ -131,7 +129,8 @@ class AcrobotPlantTests : public ::testing::Test {
             plant_->get_source_id().value()));
     builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        geometry_system_->get_source_pose_port(plant_->get_source_id().value()));
+        geometry_system_->get_source_pose_port(
+            plant_->get_source_id().value()));
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -277,10 +276,7 @@ TEST_F(AcrobotPlantTests, GeometryRegistration) {
       plant_->GetBodyFrameIdOrThrow(world_index()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "Body 'WorldBody' does not have geometry registered with it");
-
-  PRINT_VARn(poses.vector()[0].matrix());
-  PRINT_VARn(poses.vector()[1].matrix());
+      "Body 'WorldBody' does not have geometry registered with it.");
 }
 
 

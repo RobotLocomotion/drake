@@ -69,7 +69,7 @@ int do_main() {
   const double target_accuracy = 0.001;
 
   // Make and add the acrobot model.
-  const AcrobotParameters acrobot_parameters; 
+  const AcrobotParameters acrobot_parameters;
   const MultibodyPlant<double>& acrobot =
       *builder.AddSystem(
           MakeAcrobotPlant(acrobot_parameters, &geometry_system));

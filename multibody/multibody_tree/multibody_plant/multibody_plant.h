@@ -483,9 +483,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see Finalize().
   bool is_finalized() const { return model_->topology_is_valid(); }
 
-  /// This method must be called after all elements in the model (joints, bodies,
-  /// force elements, constraints, etc.) are added and before any computations
-  /// are performed.
+  /// This method must be called after all elements in the model (joints,
+  /// bodies, force elements, constraints, etc.) are added and before any
+  /// computations are performed.
   /// It essentially compiles all the necessary "topological information", i.e.
   /// how bodies, joints and, any other elements connect with each other, and
   /// performs all the required pre-processing to enable computations at a

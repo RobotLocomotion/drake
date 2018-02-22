@@ -29,7 +29,6 @@ MakeAcrobotPlant(
     const AcrobotParameters& params,
     geometry::GeometrySystem<double>* geometry_system) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
-  //plant->set_name("Acrobot");
 
   // COM's positions in each link (L1/L2) frame:
   // Frame L1's origin is located at the shoulder outboard frame.
