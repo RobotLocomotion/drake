@@ -421,6 +421,14 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("__pow__",
            [](const Monomial& self, const int p) { return pow(self, p); });
 
+  m.def("MonomialBasis",
+        [](const py::list& l, const int degree) {
+          return MonomialBasis(ToVariables(l), degree);
+        })
+      .def("MonomialBasis", [](const Variables& vars, const int degree) {
+        return MonomialBasis(vars, degree);
+      });
+
   py::class_<Polynomial>(m, "Polynomial")
       .def(py::init<>())
       .def(py::init<Polynomial::MapType>())
