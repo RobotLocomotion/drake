@@ -113,7 +113,7 @@ def install(src, dst):
             pass
 
 
-def fix_rpaths():
+def fix_rpaths_and_strip():
     # Add binary executables to list of files to be fixed up:
     find_binary_executables()
     # Only fix files that are installed now.
@@ -125,8 +125,12 @@ def fix_rpaths():
                  stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         if sys.platform == "darwin":
             macos_fix_rpaths(basename, dst_full)
+            check_call(['strip', '-x', dst_full])
         else:
             linux_fix_rpaths(dst_full)
+            # TODO(jamiesnape): Strip binaries on Linux once issues with
+            # versioned shared libraries are resolved.
+            # check_call(['strip', dst_full])
 
 
 def macos_fix_rpaths(basename, dst_full):
@@ -313,7 +317,7 @@ def main(args):
     <<actions>>
 
     # Libraries paths may need to be updated in libraries and executables.
-    fix_rpaths()
+    fix_rpaths_and_strip()
 
 
 if __name__ == "__main__":
