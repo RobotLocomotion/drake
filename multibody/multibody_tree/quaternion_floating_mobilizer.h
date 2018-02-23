@@ -229,12 +229,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
   // Helper to compute the kinematic map N(q) for which q̇ = N(q)v.
   // With L given by CalcLMatrix we have:
-  // N(q) = [L(q_FM/2) 0₄ₓ₃
+  // N(q) = [L(q_FM/2) 0₄ₓ₃]
   //        [     0₃ₓ₃   I₃]
   static Eigen::Matrix<T, 7, 6> CalcNMatrix(const Quaternion<T>& q);
   // Helper to compute the kinematic map N⁺(q) for which v = N⁺(q)q̇.
   // With L given by CalcLMatrix we have:
-  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃
+  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃]
   //         [     0₃ₓ₄    I₃]
   static Eigen::Matrix<T, 6, 7> CalcNplusMatrix(const Quaternion<T>& q);
 

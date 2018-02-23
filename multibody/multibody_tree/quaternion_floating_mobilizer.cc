@@ -214,10 +214,10 @@ template <typename T>
 Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
     const Quaternion<T>& q_FM) {
   // This L matrix helps us compute both N(q) and N⁺(q) since it turns out that:
-  //   N(q) = [L(q_FM/2) 0₄ₓ₃
+  //   N(q) = [L(q_FM/2) 0₄ₓ₃]
   //          [     0₃ₓ₃   I₃]
   // and:
-  //   N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃
+  //   N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃]
   //           [     0₃ₓ₄    I₃]
   //
   // See Eqs. 5 and 6 in Section 9.2 of Paul's book
@@ -258,7 +258,7 @@ template <typename T>
 Eigen::Matrix<T, 7, 6> QuaternionFloatingMobilizer<T>::CalcNMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
-  // N(q) = [L(q_FM/2) 0₄ₓ₃
+  // N(q) = [L(q_FM/2) 0₄ₓ₃]
   //        [     0₃ₓ₃   I₃]
   const Eigen::Matrix<T, 4, 3> L = CalcLMatrix(
       {q_FM.w() / 2.0, q_FM.x() / 2.0, q_FM.y() / 2.0, q_FM.z() / 2.0});
@@ -272,7 +272,7 @@ template <typename T>
 Eigen::Matrix<T, 6, 7> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
-  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃
+  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃]
   //         [     0₃ₓ₄    I₃]
   const Eigen::Matrix<T, 3, 4> LT =
       CalcLMatrix(
