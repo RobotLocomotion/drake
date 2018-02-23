@@ -16,7 +16,9 @@ namespace test {
 /// This plant models the free motion of a torque free body in space.
 /// This body is axially symmetric with rotational inertia about its axis of
 /// revolution J and with a rotational inertia I about any axis perpendicular to
-/// its axis of revolution.
+/// its axis of revolution. This particular case has a nice closed form
+/// analytical solution which we have implemented in
+/// drake::multibody::benchmarks::free_body::FreeBody.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -27,9 +29,9 @@ namespace test {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class FloatingBodyPlant final : public systems::LeafSystem<T> {
+class AxiallySymmetricFreeBodyPlant final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FloatingBodyPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant)
 
   /// Constructor from known rotational inertia values.
   /// Rotational inertia values have units of kg⋅m².
@@ -40,11 +42,15 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
   ///   revolution of the body.
   /// @param J
   ///   rotational inertia about the axis of revolution of the body.
-  FloatingBodyPlant(double mass, double I, double J, double g);
+  /// @param g
+  ///   Acceleration of gravity. In this model if `g > 0` the gravity vector
+  ///   points downward in the z-axis direction.
+  AxiallySymmetricFreeBodyPlant(double mass, double I, double J, double g);
 
   /// Scalar-converting copy constructor.
   template <typename U>
-  explicit FloatingBodyPlant(const FloatingBodyPlant<U>&);
+  explicit AxiallySymmetricFreeBodyPlant(
+      const AxiallySymmetricFreeBodyPlant<U>&);
 
   /// Sets `state` to a default value corresponding to a configuration in which
   /// the free body frame B is coincident with the world frame W and the angular

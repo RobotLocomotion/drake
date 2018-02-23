@@ -33,12 +33,12 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Initial position and translational velocity are zero; only rotations are
   // considered.
-  Vector3d p0_WBcm = Vector3d::Zero();
-  Vector3d v0_WBcm = Vector3d::Zero();
+  const Vector3d p0_WBcm = Vector3d::Zero();
+  const Vector3d v0_WBcm = Vector3d::Zero();
 
   // There are no external forces in this test, not even gravity.
   const double acceleration_of_gravity = 9.81;
-  Vector3d gravity_W = -acceleration_of_gravity * Vector3d::UnitZ();
+  const Vector3d gravity_W = -acceleration_of_gravity * Vector3d::UnitZ();
 
   // Body mass. Not important really since there is no friction.
   const double kMass = 1.0;
@@ -50,7 +50,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       p0_WBcm, v0_WBcm, gravity_W);
 
   // Instantiate the model for the free body in space.
-  FloatingBodyPlant<double> free_body_plant(
+  AxiallySymmetricFreeBodyPlant<double> free_body_plant(
       kMass, benchmark_.get_I(), benchmark_.get_J(), acceleration_of_gravity);
 
   // Simulator will create a Context by calling this system's
@@ -63,7 +63,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // The expected initial angular velocity with non-zero components in all three
   // axes, where B is the free body frame and W is the world frame.
-  Vector3d w0_WB_expected =
+  const Vector3d w0_WB_expected =
       free_body_plant.get_default_initial_angular_velocity();
 
   // Retrieve the angular velocity from the context, which ultimately was set by
@@ -93,10 +93,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   simulator.StepTo(kEndTime);
 
   // Get solution:
-  Isometry3d X_WB = free_body_plant.CalcPoseInWorldFrame(context);
-  Matrix3d R_WB = X_WB.linear();
-  Vector3d p_WBcm = X_WB.translation();
-  SpatialVelocity<double> V_WB =
+  const Isometry3d X_WB = free_body_plant.CalcPoseInWorldFrame(context);
+  const Matrix3d R_WB = X_WB.linear();
+  const Vector3d p_WBcm = X_WB.translation();
+  const SpatialVelocity<double> V_WB =
       free_body_plant.CalcSpatialVelocityInWorldFrame(context);
   const Vector3d& w_WB = V_WB.rotational();
   const Vector3d& v_WB = V_WB.translational();
@@ -109,8 +109,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       benchmark_.CalculateExactRotationalSolutionNB(kEndTime);
 
   Vector4d qv; qv << quat_WB_exact.w(), quat_WB_exact.vec();
-  Matrix3d R_WB_exact = math::quat2rotmat(qv);
-  Vector3d w_WB_exact = R_WB_exact * w_WB_B_exact;
+  const Matrix3d R_WB_exact = math::quat2rotmat(qv);
+  const Vector3d w_WB_exact = R_WB_exact * w_WB_B_exact;
   Vector3d p_WBcm_exact, v_WBcm_exact, a_WBcm_exact;
   std::tie(p_WBcm_exact, v_WBcm_exact, a_WBcm_exact) =
       benchmark_.CalculateExactTranslationalSolution(kEndTime);
