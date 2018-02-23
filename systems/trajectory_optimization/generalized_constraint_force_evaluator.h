@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 
 namespace drake {
@@ -116,6 +118,14 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
   const RigidBodyTree<double>* const tree_;
   const int lambda_size_;
 };
+
+/**
+ * This binding pairs the evaluator and the variables used by this evaluator in
+ * its Eval function.
+ */
+using GeneralizedConstraintForceEvaluatorBinding =
+    std::pair<std::unique_ptr<GeneralizedConstraintForceEvaluator>,
+              solvers::VectorXDecisionVariable>;
 }  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake
