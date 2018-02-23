@@ -15,6 +15,7 @@ namespace test {
 namespace {
 
 using benchmarks::free_body::FreeBody;
+using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
@@ -79,6 +80,32 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       mobilizer.get_translational_velocity(context), -3.5 * v0_WB_expected,
       kEpsilon, MatrixCompareType::relative));
 
+  // Unit test QuaternionFloatingMobilizer::SetFromRotationMatrix().
+  const Vector3d axis =
+      (1.5 * Vector3d::UnitX() +
+       2.0 * Vector3d::UnitY() +
+       3.0 * Vector3d::UnitZ()).normalized();
+  const Matrix3d R_WB_test = AngleAxisd(M_PI / 3.0, axis).toRotationMatrix();
+  mobilizer.SetFromRotationMatrix(&context, R_WB_test);
+  // Verify we get the right quaternion.
+  const Quaterniond q_WB_test = mobilizer.get_quaternion(context);
+  const Quaterniond q_WB_test_expected(R_WB_test);
+  EXPECT_TRUE(CompareMatrices(
+      q_WB_test.coeffs(), q_WB_test_expected.coeffs(),
+      5 * kEpsilon, MatrixCompareType::relative));
+
+  // Unit test QuaternionFloatingMobilizer quaternion setters/getters.
+  const Quaterniond q_WB_test2(AngleAxisd(M_PI / 5.0, axis).toRotationMatrix());
+  mobilizer.set_quaternion(&context, q_WB_test2);
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_quaternion(context).coeffs(), q_WB_test2.coeffs(),
+      kEpsilon, MatrixCompareType::relative));
+  const Vector3d p_WB_test(1, 2, 3);
+  mobilizer.set_position(&context, p_WB_test);
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_position(context), p_WB_test,
+      kEpsilon, MatrixCompareType::relative));
+
   // Reset state to that initially set by
   // AxiallySymmetricFreeBodyPlant::SetDefaultState().
   free_body_plant.SetDefaultState(context, &context.get_mutable_state());
@@ -87,6 +114,13 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       mobilizer.get_translational_velocity(context), v0_WB_expected,
+      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_quaternion(context).coeffs(),
+      Quaterniond::Identity().coeffs(),
+      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_position(context), Vector3d::Zero(),
       kEpsilon, MatrixCompareType::relative));
 
   EXPECT_EQ(context.get_continuous_state().size(), 13);
