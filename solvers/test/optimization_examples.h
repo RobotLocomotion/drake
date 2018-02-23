@@ -548,6 +548,27 @@ class ConvexCubicProgramExample : public MathematicalProgram {
   VectorDecisionVariable<1> x_;
 };
 
+/**
+ * A simple non-convex problem with a quadratic equality constraint
+ * min 0
+ * s.t xᵀx = 1
+ * This test is meant to verify that we can add a quadratic constraint to a 
+ * program, and solve it through nonlinear optimization.
+ */
+class UnitLengthProgramExample : public MathematicalProgram {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitLengthProgramExample)
+
+  UnitLengthProgramExample();
+
+  ~UnitLengthProgramExample() override {};
+
+  bool CheckSolution() const;
+
+ private:
+  VectorDecisionVariable<4> x_;
+};
+
 std::set<CostForm> linear_cost_form();
 
 std::set<CostForm> quadratic_cost_form();

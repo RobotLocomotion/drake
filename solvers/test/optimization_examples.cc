@@ -634,6 +634,19 @@ bool ConvexCubicProgramExample::CheckSolution() const {
   const auto x_val = GetSolution((x_(0)));
   return std::abs(x_val - 2) < 1E-6;
 }
+
+UnitLengthProgramExample::UnitLengthProgramExample()
+    : MathematicalProgram(), x_(NewContinuousVariables<4>()) {
+  auto unit_length_constraint = std::make_shared<QuadraticConstraint>(
+      2 * Eigen::Matrix4d::Identity(), Eigen::Vector4d::Zero(), 1, 1);
+  AddConstraint(unit_length_constraint, x_);
+}
+
+bool UnitLengthProgramExample::CheckSolution() const {
+  const auto x_val = GetSolution(x_);
+  const double tol{1E-12};
+  return std::abs(x_val.squaredNorm() - 1) < tol;
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
