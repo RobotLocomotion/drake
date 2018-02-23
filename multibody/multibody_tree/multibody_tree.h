@@ -16,8 +16,8 @@
 #include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/frame.h"
-#include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/joint_actuator.h"
+#include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
@@ -807,7 +807,8 @@ class MultibodyTree {
   /// @throws std::logic_error if there is no actuator with the requested name.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` model with a given specified name.
-  const JointActuator<T>& GetJointActuatorByName(const std::string& name) const {
+  const JointActuator<T>& GetJointActuatorByName(
+      const std::string& name) const {
     auto it = actuator_name_to_index_.find(name);
     if (it == actuator_name_to_index_.end()) {
       throw std::logic_error("There is no joint actuator named '" + name +

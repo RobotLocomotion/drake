@@ -11,7 +11,6 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 
@@ -30,8 +29,6 @@ using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using systems::AbstractValue;
 using systems::Context;
 using systems::ContinuousState;
-using systems::DiagramBuilder;
-using systems::Diagram;
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were

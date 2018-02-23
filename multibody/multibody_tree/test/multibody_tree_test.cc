@@ -111,8 +111,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
     EXPECT_EQ(joint.get_name(), joint_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
-      model.template GetJointByName<RevoluteJoint>(kInvalidName), std::logic_error,
-      "There is no joint named '.*' in the model.");
+      model.template GetJointByName<RevoluteJoint>(kInvalidName),
+      std::logic_error, "There is no joint named '.*' in the model.");
 
   // Get actuators by name.
   for (const std::string actuator_name : kActuatorNames) {
