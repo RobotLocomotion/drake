@@ -100,7 +100,7 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   /// the segment in the `state` corresponding to `this` mobilizer's generalized
   /// velocities.
-  Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_velocities(
+  Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::State<T>* state) const {
     Eigen::VectorBlock<VectorX<T>> xc =
         dynamic_cast<systems::BasicVector<T>&>(
