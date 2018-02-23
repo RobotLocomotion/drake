@@ -1,6 +1,6 @@
 #include "drake/bindings/pydrake/util/cpp_param_pybind.h"
 
-#include <pybind11/eval.h>
+#include "pybind11/eval.h"
 
 namespace drake {
 namespace pydrake {
