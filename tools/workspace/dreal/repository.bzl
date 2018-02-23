@@ -15,7 +15,7 @@ def dreal_repository(
         pkg_config_paths = [
             # TODO(soonho-tri): Remove the following line.
             "/opt/dreal/4.18.01.3/lib/pkgconfig",
-            "/opt/dreal/4.18.02.2/lib/pkgconfig",
+            "/opt/dreal/4.18.02.4/lib/pkgconfig",
             "/opt/libibex/2.6.5/share/pkgconfig",
             "/usr/local/opt/clp/lib/pkgconfig",
             "/usr/local/opt/coinutils/lib/pkgconfig",

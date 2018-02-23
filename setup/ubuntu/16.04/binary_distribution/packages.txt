@@ -1,5 +1,5 @@
 coinor-libipopt1v5
-dreal=4.18.02.2
+dreal=4.18.02.4
 libblas3
 libboost-all-dev
 libexpat1
