@@ -2310,6 +2310,37 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
+   * Evaluates the value of some constraint, for some input value for all
+   * decision variables.
+   * @param binding A Binding whose variables are decision variables in this
+   * program.
+   * @param prog_var_vals The value of all the decision variables in this
+   * program. @throw a runtime error if the size does not match.
+   */
+  template <typename C, typename DerivedX>
+  typename std::enable_if<is_eigen_vector<DerivedX>::value,
+                          VectorX<typename DerivedX::Scalar>>::type
+  EvalBinding(const Binding<C>& binding,
+              const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    using Scalar = typename DerivedX::Scalar;
+    if (prog_var_vals.rows() != num_vars()) {
+      std::ostringstream oss;
+      oss << "The input binding variable is not in the right size. Expect "
+          << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
+          << " rows.\n";
+      throw std::runtime_error(oss.str());
+    }
+    VectorX<Scalar> binding_x(binding.GetNumElements());
+    VectorX<Scalar> binding_y(binding.constraint()->num_constraints());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      binding_x(i) =
+          prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
+    }
+    binding.constraint()->Eval(binding_x, binding_y);
+    return binding_y;
+  }
+
+  /**
    * Evaluate the constraint in the Binding at the solution value.
    * @return The value of the constraint in the binding.
    * TODO(hongkai.dai): Do not use teample function, when the Binding is moved
