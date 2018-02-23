@@ -13,6 +13,7 @@ drake_cc_library(
         "//common:essential",
         "//math:autodiff",
         "//multibody:rigid_body_tree",
+        "//solvers:decision_variable",
         "//solvers:evaluator_base",
     ],
 )
