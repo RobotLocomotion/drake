@@ -69,8 +69,8 @@ GTEST_TEST(RotationMatrixTest, TestProjection) {
   // Non-rotation matrix in gets an orthonormal matrix out, using a full-rank
   // matrix with det(M) < 0.
   Matrix3d M2;
-  M2 << 1, 2, 3, 4, 5, 6, 7, 8, 10;
-  EXPECT_LT(M2.determinant(), 0);
+  M2 << 1, 2, 3, 4, 5, 6, -7, -8, -10;
+  EXPECT_GT(M2.determinant(), 0);
   // Check that we get SO(3) with Moakher's formulation.
   Matrix3d R2_SO3 = ProjectMatToRotMat(M2);
   EXPECT_TRUE(CompareMatrices(R2_SO3.transpose(), R2_SO3.inverse(), tol));
