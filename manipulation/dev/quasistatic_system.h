@@ -86,8 +86,8 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   VectorX<Scalar> GetRigidBodyTreePositionsFromQuasistaticSystemStates(
       const Eigen::Ref<const VectorX<Scalar>>& q_quasistatic_system) const;
 
-  // As half of the vectors that span the tangent spaces are the negative of
-  // the other half, half of the columns of Jf are also the negative of the
+  // As half of the vectors that span the tangent spaces are the negation of
+  // the other half, half of the columns of Jf are also the negation of the
   // other half. Jf_half is one of the two halfs of J.
   void CalcJf(const Eigen::Ref<const Eigen::MatrixXd>& Jf_half,
               Eigen::MatrixXd* const Jf_ptr) const;
