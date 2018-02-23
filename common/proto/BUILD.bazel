@@ -130,9 +130,6 @@ sh_test(
     # TODO(eric.cousineau): Find the source of (more) sporadic CI failures, but
     # after refactoring the script into Python.
     flaky = 1,
-    # Certain versions of Mac don't like this script using `ps`. For this
-    # reason, make the test run locally.
-    local = 1,
 )
 
 drake_cc_googletest(
