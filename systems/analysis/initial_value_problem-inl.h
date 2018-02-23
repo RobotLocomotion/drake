@@ -13,9 +13,11 @@
 namespace drake {
 namespace systems {
 
-/// A LeafSystem subclass used to describe general ODE systems
-/// i.e. d𝐱/dt = f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) where f : t ⨯ 𝐱 →  ℝ ⁿ, t ∈ ℝ ,
-/// 𝐱 ∈ ℝ ⁿ, 𝐤₀ ∈ ℝ ᵐ⁰, 𝐤₁ ∈ ℝ ᵐ¹, ..., 𝐤ₙ ∈ ℝ ᵐᶻ.
+/// A LeafSystem subclass used to describe general parameterized ODE systems
+/// i.e. d𝐱/dt = f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ ,
+/// 𝐱 ∈ ℝⁿ, 𝐤₀ ∈ ℝᵐ⁰, 𝐤₁ ∈ ℝᵐ¹, ..., 𝐤ₙ ∈ ℝᵐᶻ. The vector variable 𝐱
+/// becomes system state that is evolved through time t by the function f,
+/// in turn parameterized by an n-tuple of vector parameters 𝐤₀, 𝐤₁, ..., 𝐤ₙ.
 ///
 /// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
@@ -29,24 +31,26 @@ class AnySystem : public LeafSystem<T> {
   /// parameterized as described by the @p param_model, to compute the
   /// derivatives and advance the @p state_model.
   ///
+  /// @remarks Here, the 'model' term has been borrowed from LeafSystem
+  /// terminology, where these vectors are used both to provide initial
+  /// values and to convey information about the dimensionality of the
+  /// variables involved.
+  ///
   /// @param system_function The system function f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ).
   /// @param state_model The state model 𝐱₀, with initial values.
-  /// @param param_model The parameter sequence model 𝐤₀, 𝐤₁, ..., 𝐤ₙ, with
-  /// default values.
+  /// @param param_model The parameter n-tuple model 𝐤₀, 𝐤₁, ..., 𝐤ₙ, with
+  ///                    default values.
   AnySystem(const SystemFunction& system_function,
             const BasicVector<T>& state_model,
             const Parameters<T>& param_model);
 
  protected:
-  /// Calculates the time derivatives for this system.
-  /// @param context The current Context under integration.
-  /// @param derivatives The derivatives vector.
   void DoCalcTimeDerivatives(
       const Context<T>& context,
       ContinuousState<T>* derivatives) const override;
 
  private:
-  /// General ODE system d𝐱/dt = f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) function.
+  // General ODE system d𝐱/dt = f(t, 𝐱; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) function.
   const SystemFunction system_function_;
 };
 
