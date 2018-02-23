@@ -69,25 +69,16 @@ namespace multibody_plant {
 /// - Bodies: AddRigidBody().
 /// - Joints: AddJoint().
 ///
-/// @section mbp_geometry_registration Registering with a GeometrySystem
+/// @section mbp_geometry_registration
+/// Registering geometry with a GeometrySystem
 ///
 /// %MultibodyPlant users can register geometry with a GeometrySystem for
 /// essentially two purposes; a) visualization and, b) contact modeling.
-/// To add geometry for visualization %MultibodyPlant provides:
-/// - RegisterVisualGeometry() for dynamically moving geometry.
-/// - RegisterVisualAnchoredGeometry() for geometry that does not move but that
-///   is fixed to the world.
 ///
-/// The process of geometry registration includes:
-/// 1. If not done yet, the plant is registered as a source for the given
-///    GeometrySystem. This assigns a SourceId to the plant.
-/// 2. For the body on which geometry is being registered, a new frame is
-///    registered with GeometrySystem is not done already. Therefore, each body
-///    gets associated with a FrameId.
-/// 3. Finally, geometry is registered for the corresponding FrameId. This
-///    associates a GeometryId with the body FrameId.
-/// This entire process is controlled by the %MultibodyPlant's registration
-/// methods.
+/// If any geometry is registered for a given %MultibodyPlant, the plant will
+/// have a valid geometry::SourceId which can then be requested by
+/// get_source_id() in order to connect the plant to the GeometrySystem on which
+/// the geometry registration was performed.
 ///
 /// @section Finalize() stage
 ///
@@ -98,6 +89,11 @@ namespace multibody_plant {
 /// - declare the plant's state,
 /// - declare the plant's input and output ports,
 /// - declare input and output ports for communication with a GeometrySystem.
+/// @cond
+/// TODO(amcastro-tri): Consider making the geometry registration AFTER
+/// Finalize() so that we can tell if there are any bodies welded to the world
+/// to which we could just assign anchored geometry instead of dynamic geometry.
+/// @endcond
 ///
 /// @cond
 /// TODO(amcastro-tri): Add next section in future PR's as funcionality lands.
@@ -391,8 +387,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // visual properties.
   /// @{
 
-  /// This method allows to register (dynamic, i.e. moving) geometry with a
-  /// given geometry::Shape to be used for visualization of a given `body`.
+  /// This method registers geometry in a GeometrySystem with a given
+  /// geometry::Shape to be used for visualization of a given `body`.
   /// @param[in] body
   ///   The body for which geometry is being registered.
   /// @param[in] X_BG
@@ -448,7 +444,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// Returns the output port of frames' poses to communicate with a
   /// GeometrySystem.
-  /// @throws if this system was not registered with a GeometrySystem.
+  /// @throws if this system did not register geometry with a GeometrySystem.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @}
 
