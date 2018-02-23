@@ -42,7 +42,7 @@ class JointActuator final
   /// Default constructor for a generic force element.
   JointActuator(const std::string& name, const Joint<T>& joint);
 
-  const std::string& name() const { return name_; }
+  const std::string& get_name() const { return name_; }
 
   const Joint<T>& joint() const;
 
