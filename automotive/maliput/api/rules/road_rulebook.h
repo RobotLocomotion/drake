@@ -6,6 +6,7 @@
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/speed_limit_rule.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace maliput {
@@ -35,9 +36,18 @@ class RoadRulebook {
 
   /// Returns a QueryResults structure which contains any rules which are
   /// applicable to the provided `ranges`.
+  ///
+  /// `tolerance` is the acceptable linear-tolerance in longitudinal
+  /// s-coordinate in each range and must be non-negative.  A non-zero
+  /// `tolerance` makes the query more permissive.  However, a non-zero
+  /// `tolerance` does not permit matching across BranchPoints (past the
+  /// s-bounds of a Lane).
+  ///
+  /// @throws std::runtime_error if `tolerance` is negative.
   QueryResults FindRules(
-      const std::vector<LaneSRange>& ranges) const {
-    return DoFindRules(ranges);
+      const std::vector<LaneSRange>& ranges, double tolerance) const {
+    DRAKE_THROW_UNLESS(tolerance >= 0.);
+    return DoFindRules(ranges, tolerance);
   }
 
   /// Returns the RightOfWayRule with the specified `id`.
@@ -63,7 +73,7 @@ class RoadRulebook {
   // corresponding public methods.
   //@{
   virtual QueryResults DoFindRules(
-      const std::vector<LaneSRange>& ranges) const = 0;
+      const std::vector<LaneSRange>& ranges, double tolerance) const = 0;
   virtual RightOfWayRule DoGetRule(const RightOfWayRule::Id& id) const = 0;
   virtual SpeedLimitRule DoGetRule(const SpeedLimitRule::Id& id) const = 0;
   //@}
