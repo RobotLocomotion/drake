@@ -23,7 +23,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
@@ -579,15 +578,6 @@ class MultibodyTree {
     actuator_name_to_index_[name] = actuator_index;
     return *actuator;
   }
-
-  // This method adds a QuaternionFreeMobilizer to all bodies that do not have
-  // a mobilizer. The mobilizer is between each body and the world.
-  void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
-
-  // TODO: make it return a FloatingMobilizer from where
-  // QuaternionFloatingMobilizer and SpaceXYZFloatingMobilizer inherit.
-  const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
-      const Body<T>& body) const;
 
   /// @}
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
