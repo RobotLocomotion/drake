@@ -86,6 +86,28 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
       << gradients;
 }
 
+GTEST_TEST(DiscardGradientTest, discardGradient) {
+  // Test the double case:
+  Eigen::Matrix2d test = Eigen::Matrix2d::Identity();
+  EXPECT_TRUE(CompareMatrices(discardGradient(test), test));
+
+  Eigen::MatrixXd test2 = Eigen::Vector3d{1., 2., 3.};
+  EXPECT_TRUE(CompareMatrices(discardGradient(test2), test2));
+
+  // Test the AutoDiff case
+  Eigen::Matrix<AutoDiffXd, 3, 1> test3 = test2;
+  // Note:  Neither of these would compile:
+  //   Eigen::Vector3d test3out = test3;
+  //   Eigen::Vector3d test3out = test3.cast<double>();
+  // (so even compiling is a success).
+  Eigen::Vector3d test3out = discardGradient(test3);
+  EXPECT_TRUE(CompareMatrices(test3out, test2));
+
+  VectorX<AutoDiffUpTo73d> test4 = VectorX<AutoDiffUpTo73d>::Ones(4);
+  Eigen::Vector4d test4b = discardGradient(test4);
+  EXPECT_TRUE(CompareMatrices(test4b, Eigen::Vector4d::Ones()));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
