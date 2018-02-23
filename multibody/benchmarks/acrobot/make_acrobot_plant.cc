@@ -68,8 +68,9 @@ MakeAcrobotPlant(
     plant->RegisterVisualGeometry(
         link2, X_L2G2, Cylinder(params.r2(), params.l2()), geometry_system);
 
-    // Register some anchored geometry to the world.
-    plant->RegisterAnchoredVisualGeometry(
+    // Register some (anchored) geometry to the world.
+    plant->RegisterVisualGeometry(
+        plant->get_world_body(),
         Isometry3d::Identity(), /* X_WG */
         Sphere(params.l1() / 8.0), geometry_system);
   }

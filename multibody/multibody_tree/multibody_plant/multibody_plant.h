@@ -405,22 +405,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<double>* geometry_system);
 
-  /// This method allows to register anchored geometry to the world with a given
-  /// geometry::Shape. This geometry does not move and has a fixed pose `X_WG`
-  /// in the world frame W.
-  /// @param[in] X_WG
-  ///   The fixed pose of the geometry frame G in the world frame W.
-  /// @param[in] shape
-  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
-  ///   geometry::Cylinder.
-  /// @param[out] geometry_system
-  ///   A valid non nullptr to a GeometrySystem on which geometry will get
-  ///   registered.
-  /// @throws if `geometry_system` is the nullptr.
-  void RegisterAnchoredVisualGeometry(
-      const Isometry3<double>& X_WG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
-
   /// Returns the number of geometries registered for visualization.
   int get_num_visual_geometries() const {
     return static_cast<int>(geometry_id_to_visual_index_.size());
