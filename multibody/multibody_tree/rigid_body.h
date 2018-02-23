@@ -248,7 +248,8 @@ class RigidBody : public Body<T> {
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const {
     unused(tree_clone);
-    return std::make_unique<RigidBody<ToScalar>>(default_spatial_inertia_);
+    return std::make_unique<RigidBody<ToScalar>>(
+        this->get_name(), default_spatial_inertia_);
   }
 
   // Spatial inertia about the body frame origin Bo, expressed in B.

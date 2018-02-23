@@ -568,7 +568,7 @@ class MultibodyTree {
 
     if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more actuatros is not allowed. "
+                             "Therefore adding more actuators is not allowed. "
                              "See documentation for Finalize() for details.");
     }
 
@@ -607,8 +607,8 @@ class MultibodyTree {
   /// Returns the number of joints added with AddJoint() to the %MultibodyTree.
   int get_num_joints() const { return static_cast<int>(owned_joints_.size()); }
 
-  /// Returns the number of actuators in the %MultibodyTree.
-  /// @see AddJointActuator.
+  /// Returns the number of actuators in the model.
+  /// @see AddJointActuator().
   int get_num_actuators() const {
     return static_cast<int>(owned_actuators_.size());
   }
@@ -1673,11 +1673,16 @@ class MultibodyTree {
       tree_clone->CloneJointAndAdd(*joint);
     }
 
+    for (const auto& actuator : owned_actuators_) {
+      tree_clone->CloneActuatorAndAdd(*actuator);
+    }
+
     // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
     tree_clone->body_name_to_index_ = this->body_name_to_index_;
     tree_clone->joint_name_to_index_ = this->joint_name_to_index_;
+    tree_clone->actuator_name_to_index_ = this->actuator_name_to_index_;
 
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().
@@ -1859,6 +1864,18 @@ class MultibodyTree {
     joint_clone->set_parent_tree(this, joint_index);
     owned_joints_.push_back(std::move(joint_clone));
     return owned_joints_.back().get();
+  }
+
+  // Helper method to create a clone of `actuator` (which is templated on
+  // FromScalar) and add it to `this` tree (templated on T).
+  template <typename FromScalar>
+  void CloneActuatorAndAdd(
+      const JointActuator<FromScalar>& actuator) {
+    JointActuatorIndex actuator_index = actuator.get_index();
+    std::unique_ptr<JointActuator<T>> actuator_clone =
+        actuator.CloneToScalar(*this);
+    actuator_clone->set_parent_tree(this, actuator_index);
+    owned_actuators_.push_back(std::move(actuator_clone));
   }
 
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
