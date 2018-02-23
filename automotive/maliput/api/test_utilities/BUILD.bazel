@@ -30,8 +30,15 @@ drake_cc_library(
 drake_cc_library(
     name = "rules_test_utilities",
     testonly = 1,
-    srcs = [],
-    hdrs = ["rules_test_utilities.h"],
+    srcs = [
+        "rules_right_of_way_compare.cc",
+        "rules_speed_limit_compare.cc",
+    ],
+    hdrs = [
+        "rules_right_of_way_compare.h",
+        "rules_speed_limit_compare.h",
+        "rules_test_utilities.h",
+    ],
     deps = [
         "//automotive/maliput/api",
         "//common:essential",
