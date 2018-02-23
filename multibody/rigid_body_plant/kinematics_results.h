@@ -23,7 +23,8 @@ class KinematicsResults {
   /// Constructs a KinematicsResults object associated with @param tree.
   /// An alias to @param tree is maintained so that the tree's lifetime must
   /// exceed this object's lifetime.
-  explicit KinematicsResults(const RigidBodyTree<T>* tree);
+  // Note that the tree is a double, but the KinematicCache will be T.
+  explicit KinematicsResults(const RigidBodyTree<double>* tree);
 
   /// Updates the KinematicsResults object given the configuration vector
   /// @param q and velocity vector @param v.
@@ -90,7 +91,7 @@ class KinematicsResults {
   // cache this method won't be needed.
   void UpdateFromContext(const Context<T>& context);
 
-  const RigidBodyTree<T>* tree_;
+  const RigidBodyTree<double>* tree_;
   KinematicsCache<T> kinematics_cache_;
 };
 

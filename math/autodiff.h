@@ -35,6 +35,36 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
   return ret;
 }
 
+/** B = discardGradient(A) enables casting from a matrix of AutoDiffScalars
+ * down the the value type, explicitly throwing away any gradient information.
+ * For a matrix of type, e.g. MatrixX<AutoDiffXd> A, the comparable operation
+ *   B = A.cast<double>()
+ * should (and does) fail to compile.  Use discardGradient(A) if you want to
+ * force the cast (and explicitly declare that information is lost).
+ *
+ * This method is overloaded to permit the user to call it for double types and
+ * AutoDiffScalar types (to avoid the calling function having to handle the
+ * two cases differently).
+ */
+template <typename Derived>
+typename std::enable_if<
+    !std::is_same<typename Derived::Scalar, double>::value,
+    Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime,
+        Derived::ColsAtCompileTime>>::type
+discardGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
+  return autoDiffToValueMatrix(auto_diff_matrix);
+}
+
+/// @see discardGradient().
+template <typename Derived>
+typename std::enable_if<
+    std::is_same<typename Derived::Scalar, double>::value,
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>>::type
+discardGradient(const Eigen::MatrixBase<Derived>& matrix) {
+  return matrix;
+}
+
 /** \brief Initialize a single autodiff matrix given the corresponding value
  *matrix.
  *

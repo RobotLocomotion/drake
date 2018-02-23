@@ -33,6 +33,13 @@ class CompliantContactModel {
   /// Instantiates a %CompliantContactModel.
   CompliantContactModel() = default;
 
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit CompliantContactModel(const CompliantContactModel<U>& other)
+      : inv_v_stiction_tolerance_(other.inv_v_stiction_tolerance_),
+        characteristic_radius_(other.characteristic_radius_),
+        default_material_(other.default_material_) {}
+
   /// Computes the generalized forces on all bodies due to contact.
   ///
   /// @param tree           A Multibody Dynamics (MBD) model of the world.
@@ -43,10 +50,9 @@ class CompliantContactModel {
   ///                       port.
   /// @returns              The generalized forces across all the bodies due to
   ///                       contact response.
-  VectorX<T> ComputeContactForce(
-      const RigidBodyTree<T>& tree,
-      const KinematicsCache<T>& kinsol,
-      ContactResults<T>* contacts = nullptr) const;
+  VectorX<T> ComputeContactForce(const RigidBodyTree<double>& tree,
+                                 const KinematicsCache<T>& kinsol,
+                                 ContactResults<T>* contacts = nullptr) const;
 
   /// Defines the default material property values for this model instance.
   /// All elements with default-configured values will use the values in the
@@ -75,19 +81,17 @@ class CompliantContactModel {
   /// @param[out] parameters  The net _contact_ parameters.
   /// @retval sₐ  The "squish" factor of Element `a` -- the fraction of the full
   ///             penetration deformation that `a` experiences.
-  double CalcContactParameters(
-      const multibody::collision::Element& a,
-      const multibody::collision::Element& b,
-      CompliantMaterial* parameters) const;
+  double CalcContactParameters(const multibody::collision::Element& a,
+                               const multibody::collision::Element& b,
+                               CompliantMaterial* parameters) const;
 
  private:
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
   //
   // See contact_model_doxygen.h @section tangent_force for details.
-  T ComputeFrictionCoefficient(
-      const T& v_tangent_BAc,
-      const CompliantMaterial& parameters) const;
+  T ComputeFrictionCoefficient(const T& v_tangent_BAc,
+                               const CompliantMaterial& parameters) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
