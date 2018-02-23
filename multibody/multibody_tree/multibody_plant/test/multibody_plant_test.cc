@@ -26,7 +26,6 @@ using Eigen::VectorXd;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
-using systems::AbstractValue;
 using systems::Context;
 using systems::ContinuousState;
 

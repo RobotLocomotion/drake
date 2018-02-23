@@ -10,9 +10,6 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
-using Eigen::Vector3d;
 using drake::multibody::MultibodyForces;
 using drake::multibody::MultibodyTree;
 using drake::multibody::MultibodyTreeContext;
@@ -23,8 +20,6 @@ using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
 using systems::InputPortDescriptor;
-using systems::OutputPort;
-using systems::State;
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :

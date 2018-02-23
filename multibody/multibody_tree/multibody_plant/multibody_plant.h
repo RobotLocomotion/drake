@@ -451,10 +451,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Actuation input port:
   int actuation_port_{-1};
 
-  // Rigid contact constraint parameters.
-  double contact_penalty_stiffness_{0};
-  double contact_penalty_damping_{0};
-
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
   std::unique_ptr<PositionKinematicsCache<T>> pc_;

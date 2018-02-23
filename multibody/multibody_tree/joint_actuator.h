@@ -39,7 +39,7 @@ class JointActuator final
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
 
   /// Creates an actuator for `joint` with the given `name`.
-  /// The name must be unique withing the given MultibodyTree model. This is
+  /// The name must be unique within the given MultibodyTree model. This is
   /// guaranteed by MultibodyTree::AddJointActuator().
   JointActuator(const std::string& name, const Joint<T>& joint);
 
