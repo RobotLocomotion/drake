@@ -214,12 +214,9 @@ template <typename T>
 Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
     const Quaternion<T>& q_FM) {
   // This L matrix helps us compute both N(q) and N⁺(q) since it turns out that:
-  //   N(q) = [L(q_FM/2) 0₄ₓ₃]
-  //          [     0₃ₓ₃   I₃]
+  //   N(q) = L(q_FM/2)
   // and:
-  //   N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃]
-  //           [     0₃ₓ₄    I₃]
-  //
+  //   N⁺(q) = L(2 q_FM)ᵀ
   // See Eqs. 5 and 6 in Section 9.2 of Paul's book
   // [Mitiguy (August 7) 2017, §9.2], for the time derivative of the vector
   // component of the quaternion (Euler parameters). Notice however here we use
