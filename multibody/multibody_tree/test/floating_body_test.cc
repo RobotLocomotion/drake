@@ -59,12 +59,37 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   systems::Simulator<double> simulator(free_body_plant);
   systems::Context<double>& context = simulator.get_mutable_context();
 
-  EXPECT_EQ(context.get_continuous_state().size(), 13);
-
-  // The expected initial angular velocity with non-zero components in all three
+  // The expected initial velocities with non-zero components in all three
   // axes, where B is the free body frame and W is the world frame.
   const Vector3d w0_WB_expected =
       free_body_plant.get_default_initial_angular_velocity();
+  const Vector3d v0_WB_expected =
+      free_body_plant.get_default_initial_translational_velocity();
+
+  const QuaternionFloatingMobilizer<double>& mobilizer =
+      free_body_plant.mobilizer();
+
+  // Unit test QuaternionFloatingMobilizer context dependent setters/getters.
+  mobilizer.set_angular_velocity(&context, 2.0 * w0_WB_expected);
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_angular_velocity(context), 2.0 * w0_WB_expected,
+      kEpsilon, MatrixCompareType::relative));
+  mobilizer.set_translational_velocity(&context, -3.5 * v0_WB_expected);
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_translational_velocity(context), -3.5 * v0_WB_expected,
+      kEpsilon, MatrixCompareType::relative));
+
+  // Reset state to that initially set by
+  // AxiallySymmetricFreeBodyPlant::SetDefaultState().
+  free_body_plant.SetDefaultState(context, &context.get_mutable_state());
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_angular_velocity(context), w0_WB_expected,
+      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      mobilizer.get_translational_velocity(context), v0_WB_expected,
+      kEpsilon, MatrixCompareType::relative));
+
+  EXPECT_EQ(context.get_continuous_state().size(), 13);
 
   // Retrieve the angular velocity from the context, which ultimately was set by
   // FreeRotatingBodyPlant::SetDefaultState().

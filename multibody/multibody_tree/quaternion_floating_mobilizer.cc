@@ -1,7 +1,6 @@
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 
 #include <memory>
-#include <stdexcept>
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
@@ -145,7 +144,8 @@ template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_translational_velocity(
     systems::Context<T>* context, const Vector3<T>& v_FM) const {
-  return set_angular_velocity(*context, v_FM, &context->get_mutable_state());
+  return set_translational_velocity(
+      *context, v_FM, &context->get_mutable_state());
 }
 
 template <typename T>

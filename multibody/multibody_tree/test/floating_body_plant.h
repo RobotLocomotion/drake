@@ -85,6 +85,10 @@ class AxiallySymmetricFreeBodyPlant final : public systems::LeafSystem<T> {
   /// SetDefaultState(). Currently a non-zero value.
   static Vector3<double> get_default_initial_translational_velocity();
 
+  const QuaternionFloatingMobilizer<T>& mobilizer() const {
+    return *mobilizer_;
+  }
+
  private:
   // Override of context construction so that we can delegate it to
   // MultibodyTree.
