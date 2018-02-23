@@ -289,28 +289,19 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
         std::forward<Args>(args)...);
   }
 
-  /// Creates a rigid body model with the provided name and spatial inertia.
-  /// This method returns a constant reference to the body just added, which
-  /// will remain valid for the lifetime of `this` %MultibodyPlant.
-  ///
-  /// Example of usage:
-  /// @code
-  ///   MultibodyPlant<T> plant;
-  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
-  ///   const RigidBody<T>& body =
-  ///     plant.AddRigidBody("BodyName", spatial_inertia);
-  /// @endcode
+  /// Creates and adds a JointActuator model for an actuator acting on a given
+  /// joint.
+  /// This method returns a constant reference to the actuator just added, which
+  /// will remain valid for the lifetime of `this` plant.
   ///
   /// @param[in] name
-  ///   A string that uniquely identifies the new body to be added to `this`
-  ///   model. A std::runtime_error is thrown if a body named `name` already is
-  ///   part of the model. See HasBodyNamed(), Body::get_name().
-  /// @param[in] M_BBo_B
-  ///   The SpatialInertia of the new rigid body to be added to `this` model,
-  ///   computed about the body frame origin `Bo` and expressed in the body
-  ///   frame B.
-  /// @returns A constant reference to the new RigidBody just added, which will
-  ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  ///   A string that uniquely identifies the new actuator to be added to `this`
+  ///   model. A std::runtime_error is thrown if an actuator with the same name
+  ///   already exists in the model. See HasJointActuatorNamed().
+  /// @param[in] joint
+  ///   The Joint to be actuated by the new JointActuator.
+  /// @returns A constant reference to the new JointActuator just added, which
+  /// will remain valid for the lifetime of `this` plant.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
     return model_->AddJointActuator(name, joint);
@@ -336,6 +327,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) const {
     return model_->HasJointNamed(name);
+  }
+
+  /// @returns `true` if an actuator named `name` was added to the model.
+  /// @see AddJointActuator().
+  bool HasJointActuatorNamed(const std::string& name) const {
+    return model_->HasJointActuatorNamed(name);
   }
   /// @}
 

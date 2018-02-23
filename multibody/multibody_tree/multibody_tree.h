@@ -557,6 +557,19 @@ class MultibodyTree {
     return joint;
   }
 
+  /// Creates and adds a JointActuator model for an actuator acting on a given
+  /// joint.
+  /// This method returns a constant reference to the actuator just added, which
+  /// will remain valid for the lifetime of `this` %MultibodyTree.
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new actuator to be added to `this`
+  ///   model. A std::runtime_error is thrown if an actuator with the same name
+  ///   already exists in the model. See HasJointActuatorNamed().
+  /// @param[in] joint
+  ///   The Joint to be actuated by the new JointActuator.
+  /// @returns A constant reference to the new JointActuator just added, which
+  /// will remain valid for the lifetime of `this` %MultibodyTree.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
     if (HasJointActuatorNamed(name)) {

@@ -66,6 +66,9 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_TRUE(plant->HasJointNamed(parameters.elbow_joint_name()));
   EXPECT_FALSE(plant->HasJointNamed(kInvalidName));
 
+  EXPECT_TRUE(plant->HasJointActuatorNamed(parameters.actuator_name()));
+  EXPECT_FALSE(plant->HasJointActuatorNamed(kInvalidName));
+
   // Get links by name.
   const Body<double>& link1 = plant->GetBodyByName(parameters.link1_name());
   EXPECT_EQ(link1.get_name(), parameters.link1_name());
