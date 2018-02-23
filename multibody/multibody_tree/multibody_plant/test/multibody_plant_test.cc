@@ -7,7 +7,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
@@ -15,9 +14,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
-
-#include <iostream>
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -28,9 +24,6 @@ using Eigen::Matrix2d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-using geometry::FrameIdVector;
-using geometry::FramePoseVector;
-using geometry::GeometrySystem;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -117,25 +110,7 @@ class AcrobotPlantTests : public ::testing::Test {
  public:
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
-    systems::DiagramBuilder<double> builder;
-    geometry_system_ = builder.AddSystem<GeometrySystem>();
-    geometry_system_->set_name("geometry_system");
-    const AcrobotParameters acrobot_parameters;
-    plant_ = builder.AddSystem(MakeAcrobotPlant(parameters_, geometry_system_));
-    // Sanity check on the availability of the optional source id before using it.
-    DRAKE_DEMAND(!!plant_->get_source_id());
-    builder.Connect(
-        plant_->get_geometry_ids_output_port(),
-        geometry_system_->get_source_frame_id_port(
-            plant_->get_source_id().value()));
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        geometry_system_->get_source_pose_port(
-            plant_->get_source_id().value()));
-    builder.ExportInput(plant_->get_actuation_input_port());
-    // And build the Diagram:
-    diagram_ = builder.Build();
-
+    plant_ = MakeAcrobotPlant(parameters_);
     link1_ = &plant_->GetBodyByName(parameters_.link1_name());
     link2_ = &plant_->GetBodyByName(parameters_.link2_name());
     shoulder_ = &plant_->GetJointByName<RevoluteJoint>(
@@ -143,14 +118,11 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_ = &plant_->GetJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
-    context_ = diagram_->CreateDefaultContext();
-    derivatives_ = diagram_->AllocateTimeDerivatives();
+    context_ = plant_->CreateDefaultContext();
+    derivatives_ = plant_->AllocateTimeDerivatives();
 
     input_port_ = &context_->FixInputPort(
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
-
-    plant_context_ = &diagram_->GetMutableSubsystemContext(
-        *plant_, context_.get());
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
@@ -162,16 +134,16 @@ class AcrobotPlantTests : public ::testing::Test {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
-    shoulder_->set_angle(plant_context_, theta1);
-    elbow_->set_angle(plant_context_, theta2);
-    shoulder_->set_angular_rate(plant_context_, theta1dot);
-    elbow_->set_angular_rate(plant_context_, theta2dot);
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angular_rate(context_.get(), theta1dot);
+    elbow_->set_angular_rate(context_.get(), theta2dot);
 
     // Fix input port to a value before computing anything. In this case, zero
     // actuation.
     input_port_->GetMutableVectorData<double>()->SetAtIndex(0, input_torque);
 
-    diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
+    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
     const VectorXd xdot = derivatives_->CopyToVector();
 
     // Now compute inverse dynamics using our benchmark:
@@ -193,14 +165,9 @@ class AcrobotPlantTests : public ::testing::Test {
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
-  MultibodyPlant<double>* plant_;
-  // A GeometrySystem so that we can test geometry registration.
-  GeometrySystem<double>* geometry_system_;
-  // The Diagram containing both the MultibodyPlant and the GeometrySystem.
-  std::unique_ptr<Diagram<double>> diagram_;
+  std::unique_ptr<MultibodyPlant<double>> plant_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
-  Context<double>* plant_context_{nullptr};
   std::unique_ptr<ContinuousState<double>> derivatives_;
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
@@ -210,7 +177,7 @@ class AcrobotPlantTests : public ::testing::Test {
   // Input port for the actuation:
   systems::FreestandingInputPortValue* input_port_{nullptr};
 
-      // Reference benchmark for verification.
+  // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
       parameters_.m1(), parameters_.m2(),
@@ -242,49 +209,6 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       -1.5, -2.5,               /* joint's angular rates */
       2.0);                     /* Actuation torque */
 }
-
-TEST_F(AcrobotPlantTests, VerifyGeometryRegistration) {
-  EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
-  EXPECT_EQ(plant_->get_num_collision_geometries(), 0);
-  EXPECT_TRUE(plant_->get_source_id());
-
-  std::unique_ptr<systems::Context<double>> context =
-      plant_->CreateDefaultContext();
-  std::unique_ptr<systems::SystemOutput<double>> output =
-      plant_->AllocateOutput(*context);
-
-  std::unique_ptr<AbstractValue> ids_value =
-      plant_->get_geometry_ids_output_port().Allocate(*context);
-  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
-  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
-  EXPECT_EQ(ids.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
-
-  std::unique_ptr<AbstractValue> poses_value =
-      plant_->get_geometry_poses_output_port().Allocate(*context);
-  EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
-  const FramePoseVector<double>& poses =
-      poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(poses.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
-
-  //shoulder_->set_angle(context.get(), 0.0);
- // elbow_->set_angle(context.get(), 0.0);
-
-  PRINT_VARn(context->get_continuous_state_vector().CopyToVector());
-
-  plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
-
-  PRINT_VARn(poses.vector()[0].matrix());
-  PRINT_VARn(poses.vector()[1].matrix());
-
-#if 0
-  EXPECT_EQ(val->GetValueOrThrow<string>(), string("from calc_string"));
-  const AbstractValue& val_cached = port.Eval(context);
-  EXPECT_EQ(val_cached.GetValueOrThrow<string>(), string("from eval_string"));
-#endif
-}
-
 
 }  // namespace
 }  // namespace multibody_plant
