@@ -247,6 +247,10 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
   const T qs = q_FM.w();             // The scalar component.
   const Vector3<T> qv = q_FM.vec();  // The vector component.
   const Vector3<T> mqv = -qv;        // minus qv.
+
+  // NOTE: the rows of this matrix are in an order consistent with the order
+  // in which we store the quaternion in the state, with the scalar component
+  // first followed by the vector component.
   return (Eigen::Matrix<T, 4, 3>() <<
       mqv.transpose(),
       qs, qv.z(), mqv.y(),
@@ -255,33 +259,22 @@ Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcLMatrix(
 }
 
 template <typename T>
-Eigen::Matrix<T, 7, 6> QuaternionFloatingMobilizer<T>::CalcNMatrix(
+Eigen::Matrix<T, 4, 3> QuaternionFloatingMobilizer<T>::CalcNMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
-  // N(q) = [L(q_FM/2) 0₄ₓ₃]
-  //        [     0₃ₓ₃   I₃]
-  const Eigen::Matrix<T, 4, 3> L = CalcLMatrix(
+  // N(q) = L(q_FM/2)
+  return CalcLMatrix(
       {q_FM.w() / 2.0, q_FM.x() / 2.0, q_FM.y() / 2.0, q_FM.z() / 2.0});
-  Eigen::Matrix<T, 7, 6> N = Eigen::Matrix<T, 7, 6>::Zero();
-  N.template topLeftCorner<4, 3>() = L;
-  N.template bottomRightCorner<3, 3>() = Matrix3<T>::Identity();
-  return N;
 }
 
 template <typename T>
-Eigen::Matrix<T, 6, 7> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
+Eigen::Matrix<T, 3, 4> QuaternionFloatingMobilizer<T>::CalcNplusMatrix(
     const Quaternion<T>& q_FM) {
   // With L given by CalcLMatrix we have:
-  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃]
-  //         [     0₃ₓ₄    I₃]
-  const Eigen::Matrix<T, 3, 4> LT =
-      CalcLMatrix(
+  // N⁺(q) = L(2 q_FM)ᵀ
+  return CalcLMatrix(
           {2.0 * q_FM.w(), 2.0 * q_FM.x(), 2.0 * q_FM.y(), 2.0 * q_FM.z()}).
           transpose();
-  Eigen::Matrix<T, 6, 7> Nplus = Eigen::Matrix<T, 6, 7>::Zero();
-  Nplus.template topLeftCorner<3, 4>() = LT;
-  Nplus.template bottomRightCorner<3, 3>() = Matrix3<T>::Identity();
-  return Nplus;
 }
 
 template <typename T>
@@ -293,7 +286,10 @@ void QuaternionFloatingMobilizer<T>::MapVelocityToQDot(
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);
   const Quaternion<T> q_FM = get_quaternion(context);
-  *qdot = CalcNMatrix(q_FM) * v;
+  // Angular component, q̇_WB = N(q)⋅w_WB:
+  qdot->template head<4>() = CalcNMatrix(q_FM) * v.template head<3>();
+  // Translational component, ṗ_WB = v_WB:
+  qdot->template tail<3>() = v.template tail<3>();
 }
 
 template <typename T>
@@ -305,7 +301,10 @@ void QuaternionFloatingMobilizer<T>::MapQDotToVelocity(
   DRAKE_ASSERT(v != nullptr);
   DRAKE_ASSERT(v->size() == kNv);
   const Quaternion<T> q_FM = get_quaternion(context);
-  *v = CalcNplusMatrix(q_FM) * qdot;
+  // Angular component, w_WB = N⁺(q)⋅q̇_WB:
+  v->template head<3>() = CalcNplusMatrix(q_FM) * qdot.template head<4>();
+  // Translational component, v_WB = ṗ_WB:
+  v->template head<3>() = qdot.template head<3>();
 }
 
 template <typename T>
