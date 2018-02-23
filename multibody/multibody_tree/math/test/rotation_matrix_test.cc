@@ -279,7 +279,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon));
   EXPECT_TRUE(std::abs(quality_factor - 2.0) < 40*kEpsilon);
 
-  // Test a poor non-identity matrix.
+  // Test a 3x3 matrix that is far from orthonormal.
   m << 1, 0.1, 0.1, -0.2, 1.0, 0.1, 0.5, 0.6, 0.8;
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
@@ -287,23 +287,28 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // Singular values from MotionGenesis [1.405049, 1.061152, 0.4688222]
   EXPECT_TRUE(std::abs(quality_factor - 0.4688222) < 1E-5);
 
+  // Test another 3x3 matrix that is far from orthonormal.
   m << 1, 2, 3, 4, 5, 6, 7, 8, -10;
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [14.61524, 9.498744, 0.4105846]
   EXPECT_TRUE(std::abs(quality_factor - 14.61524) < 1E-5);
 
+  // Test another 3x3 matrix that is far from orthonormal.
   m << 1E-7, 2, 3, 4, 5, 6, 7, 8, -1E6;
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [1000000, 6.597777, 1.21254]
   EXPECT_TRUE(std::abs(quality_factor - 1000000) < 1E-1);
 
+  // Test a 3x3 zero matrix (very far from orthonormal).
   m << 0, 0, 0, 0, 0, 0, 0, 0, 0;
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [0, 0, 0]
   EXPECT_TRUE(std::abs(quality_factor - 0) < 1E-13);
+  EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),
+                                40 * kEpsilon));
 
   // Check that an exception is thrown if the rotation matrix is improper,
   // meaning that the determinant of m happens to be zero.

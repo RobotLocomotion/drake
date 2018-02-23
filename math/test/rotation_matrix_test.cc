@@ -52,33 +52,6 @@ GTEST_TEST(RotationMatrixTest, TestXYZ) {
       Eigen::DiagonalMatrix<double, 3>(-1, -1, 1) * ZRotation(0.3), tol));
 }
 
-GTEST_TEST(RotationMatrixTest, TestProjection) {
-  double tol = 1e-12;
-
-  // Identity => Identity
-  EXPECT_TRUE(CompareMatrices(ProjectMatToRotMat(Matrix3d::Identity()),
-                                Matrix3d::Identity(), tol));
-
-  // R1 (a valid rotation matrix) => R1
-  Matrix3d R1 = rpy2rotmat(Vector3d(0.1, 0.2, 0.3));
-  EXPECT_TRUE(CompareMatrices(ProjectMatToRotMat(R1), R1, tol));
-
-  // 2*R1 => R1 (linear scaling)
-  EXPECT_TRUE(CompareMatrices(ProjectMatToRotMat(2 * R1), R1, tol));
-
-  // Non-rotation matrix in gets an orthonormal matrix out, using a full-rank
-  // matrix with det(M) < 0.
-  Matrix3d M2;
-  M2 << 1, 2, 3, 4, 5, 6, 7, 8, 10;
-  EXPECT_LT(M2.determinant(), 0);
-  // Check that we get SO(3) with Moakher's formulation.
-  Matrix3d R2_SO3 = ProjectMatToRotMat(M2);
-  EXPECT_TRUE(CompareMatrices(R2_SO3.transpose(), R2_SO3.inverse(), tol));
-  EXPECT_NEAR(R2_SO3.determinant(), 1.0, tol);
-  // TODO(eric.cousineau): Check SO(3) projection against a nonlinear
-  // optimization for additional sanity check.
-}
-
 // Take many possible samples of the rotation angle θ, make sure the rotation
 // matrix as R[θ] = AngleAxis(θ, axis) has larger error than the projected
 // matrix R, namely
