@@ -38,7 +38,7 @@ void CompliantContactModel<T>::set_model_parameters(
 
 template <typename T>
 VectorX<T> CompliantContactModel<T>::ComputeContactForce(
-    const RigidBodyTree<T>& tree,
+    const RigidBodyTree<double>& tree,
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
   using std::sqrt;
 

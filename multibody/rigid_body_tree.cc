@@ -57,6 +57,7 @@ using drake::kSpaceDimension;
 using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
+using drake::math::discardGradient;
 using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
@@ -738,16 +739,19 @@ void RigidBodyTree<T>::updateCollisionElements(
 }
 
 template <typename T>
+template <typename U>
 void RigidBodyTree<T>::updateDynamicCollisionElements(
-    const KinematicsCache<double>& cache) {
+    const KinematicsCache<U>& cache) {
   CheckCacheValidity(cache);
   // todo: this is currently getting called many times with the same cache
   // object.  and it's presumably somewhat expensive.
   for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {
     const RigidBody<T>& body = **it;
     if (body.has_parent_body()) {
-      updateCollisionElements(
-          body, cache.get_element(body.get_body_index()).transform_to_world);
+      Isometry3d transform_to_world(
+          discardGradient(cache.get_element(body.get_body_index())
+                              .transform_to_world.matrix()));
+      updateCollisionElements(body, transform_to_world);
     }
   }
   collision_model_->UpdateModel();
@@ -988,9 +992,10 @@ bool RigidBodyTree<T>::collisionDetect(
 }
 
 template <typename T>
+template <typename U>
 std::vector<drake::multibody::collision::PointPair>
 RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
-    const KinematicsCache<double>& cache, bool use_margins) {
+    const KinematicsCache<U>& cache, bool use_margins) {
   updateDynamicCollisionElements(cache);
   vector<drake::multibody::collision::PointPair> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
@@ -1002,12 +1007,12 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     if (pair.elementA->CanCollideWith(pair.elementB)) {
       // Get bodies' transforms.
       const int bodyA_id = pair.elementA->get_body()->get_body_index();
-      const Isometry3d& TA =
-          cache.get_element(bodyA_id).transform_to_world;
+      const Isometry3d TA(discardGradient(
+          cache.get_element(bodyA_id).transform_to_world.matrix()));
 
       const int bodyB_id = pair.elementB->get_body()->get_body_index();
-      const Isometry3d& TB =
-          cache.get_element(bodyB_id).transform_to_world;
+      const Isometry3d TB(discardGradient(
+          cache.get_element(bodyB_id).transform_to_world.matrix()));
 
       // Transform to bodies' frames.
       // Note:
@@ -1570,10 +1575,12 @@ drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
 }
 
 template <typename T>
-VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
-    const KinematicsCache<T>& cache,
-    const VectorX<T>& v) {
-  VectorX<T> qdot(cache.get_num_positions());
+template <typename Derived>
+drake::VectorX<typename Derived::Scalar>
+RigidBodyTree<T>::transformVelocityToQDot(
+    const KinematicsCache<typename Derived::Scalar>& cache,
+    const Eigen::MatrixBase<Derived>& v) {
+  VectorX<typename Derived::Scalar> qdot(cache.get_num_positions());
   int qdot_start = 0;
   int v_start = 0;
   for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
@@ -1587,10 +1594,12 @@ VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
 }
 
 template <typename T>
-VectorX<T> RigidBodyTree<T>::transformQDotToVelocity(
-    const KinematicsCache<T>& cache,
-    const VectorX<T>& qdot) {
-  VectorX<T> v(cache.get_num_velocities());
+template <typename Derived>
+drake::VectorX<typename Derived::Scalar>
+RigidBodyTree<T>::transformQDotToVelocity(
+    const KinematicsCache<typename Derived::Scalar>& cache,
+    const Eigen::MatrixBase<Derived>& qdot) {
+  VectorX<typename Derived::Scalar> v(cache.get_num_velocities());
   int qdot_start = 0;
   int v_start = 0;
   for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
@@ -3291,6 +3300,34 @@ template Vector3d RigidBodyTree<double>::centerOfMass<double>(
     const KinematicsCache<double>&,
     set<int, less<int>, allocator<int>> const&) const;
 
+// Explicit template instantiations for transformVelocityToQDot.
+template VectorX<AutoDiffUpTo73d>
+RigidBodyTree<double>::transformVelocityToQDot<VectorX<AutoDiffUpTo73d>>(
+    const KinematicsCache<AutoDiffUpTo73d>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>>&);
+template VectorX<AutoDiffXd>
+RigidBodyTree<double>::transformVelocityToQDot<VectorX<AutoDiffXd>>(
+    const KinematicsCache<AutoDiffXd>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffXd>>&);
+template Eigen::VectorXd
+RigidBodyTree<double>::transformVelocityToQDot<Eigen::VectorXd>(
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<Eigen::VectorXd>&);
+
+// Explicit template instantiations for transformQDotToVelocity.
+template VectorX<AutoDiffUpTo73d>
+RigidBodyTree<double>::transformQDotToVelocity<VectorX<AutoDiffUpTo73d>>(
+    const KinematicsCache<AutoDiffUpTo73d>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>>&);
+template VectorX<AutoDiffXd>
+RigidBodyTree<double>::transformQDotToVelocity<VectorX<AutoDiffXd>>(
+    const KinematicsCache<AutoDiffXd>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffXd>>&);
+template Eigen::VectorXd
+RigidBodyTree<double>::transformQDotToVelocity<Eigen::VectorXd>(
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<Eigen::VectorXd>&);
+
 // Explicit template instantiations for GetVelocityToQDotMapping.
 template MatrixX<AutoDiffUpTo73d>
 RigidBodyTree<double>::GetVelocityToQDotMapping(
@@ -3774,6 +3811,17 @@ RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffXd>() const;
 template
 KinematicsCache<AutoDiffUpTo73d>
 RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
+
+// Explicit template instantiations for doKinematics(cache).
+template std::vector<drake::multibody::collision::PointPair>
+RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<AutoDiffUpTo73d>(
+    const KinematicsCache<AutoDiffUpTo73d>&, bool);
+template std::vector<drake::multibody::collision::PointPair>
+RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<AutoDiffXd>(
+    const KinematicsCache<AutoDiffXd>&, bool);
+template std::vector<drake::multibody::collision::PointPair>
+RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<double>(
+    const KinematicsCache<double>&, bool);
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyTree<double>;
