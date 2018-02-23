@@ -1,8 +1,18 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
 
 import unittest
 import numpy as np
 import pydrake.symbolic as sym
+
+
+# Define global variables to make the tests less verbose.
+x = sym.Variable("x")
+y = sym.Variable("y")
+z = sym.Variable("z")
+a = sym.Variable("a")
+b = sym.Variable("b")
+c = sym.Variable("c")
 
 
 class TestSymbolicVariables(unittest.TestCase):
@@ -74,6 +84,126 @@ class TestSymbolicVariables(unittest.TestCase):
                          "((y = 2) and (x >= 1) and (x <= 2))")
         self.assertEqual(str(sym.logical_or(x >= 1, x <= 2, y == 2)),
                          "((y = 2) or (x >= 1) or (x <= 2))")
+
+
+class TestSymbolicPolynomial(unittest.TestCase):
+    def test_default_constructor(self):
+        p = sym.Polynomial()
+        self.assertEqual(p.ToExpression(), sym.Expression())
+
+    def test_constructor_maptype(self):
+        m = {sym.Monomial(x): sym.Expression(3),
+             sym.Monomial(y): sym.Expression(2)}  # 3x + 2y
+        p = sym.Polynomial(m)
+        expected = 3 * x + 2 * y
+        self.assertEqual(p.ToExpression(), expected)
+
+    def test_constructor_expression(self):
+        e = 2 * x + 3 * y
+        p = sym.Polynomial(e)
+        self.assertEqual(p.ToExpression(), e)
+
+    def test_constructor_expression_indeterminates(self):
+        e = a * x + b * y + c * z
+        p = sym.Polynomial(e, sym.Variables([x, y, z]))
+        decision_vars = sym.Variables([a, b, c])
+        indeterminates = sym.Variables([x, y, z])
+        self.assertEqual(p.indeterminates(), indeterminates)
+        self.assertEqual(p.decision_variables(), decision_vars)
+
+    def test_degree_total_degree(self):
+        e = a * (x ** 2) + b * (y ** 3) + c * z
+        p = sym.Polynomial(e, [x, y, z])
+        self.assertEqual(p.Degree(x), 2)
+        self.assertEqual(p.TotalDegree(), 3)
+
+    def test_monomial_to_coefficient_map(self):
+        m = sym.Monomial(x, 2)
+        e = a * (x ** 2)
+        p = sym.Polynomial(e, [x])
+        the_map = p.monomial_to_coefficient_map()
+        self.assertEqual(the_map[m], a)
+
+    def test_differentiate(self):
+        e = a * (x ** 2)
+        p = sym.Polynomial(e, [x])  # p = ax²
+        result = p.Differentiate(x)  # = 2ax
+        self.assertEqual(result.ToExpression(), 2 * a * x)
+
+    def test_add_product(self):
+        p = sym.Polynomial()
+        m = sym.Monomial(x)
+        p.AddProduct(sym.Expression(3), m)  # p += 3 * x
+        self.assertEqual(p.ToExpression(), 3 * x)
+
+    def test_comparison(self):
+        p = sym.Polynomial()
+        self.assertTrue(p == p)
+        self.assertTrue(p.EqualTo(p))
+
+    def test_repr(self):
+        p = sym.Polynomial()
+        self.assertEqual(str(p), "0")
+
+    def test_addition(self):
+        p = sym.Polynomial()
+        self.assertEqual(p + p, p)
+        m = sym.Monomial(x)
+        self.assertEqual(m + p, sym.Polynomial(1 * x))
+        self.assertEqual(p + m, sym.Polynomial(1 * x))
+        self.assertEqual(p + 0, p)
+        self.assertEqual(0 + p, p)
+
+    def test_subtraction(self):
+        p = sym.Polynomial()
+        self.assertEqual(p - p, p)
+        m = sym.Monomial(x)
+        self.assertEqual(m - p, sym.Polynomial(1 * x))
+        self.assertEqual(p - m, sym.Polynomial(-1 * x))
+        self.assertEqual(p - 0, p)
+        self.assertEqual(0 - p, -p)
+
+    def test_multiplication(self):
+        p = sym.Polynomial()
+        self.assertEqual(p * p, p)
+        m = sym.Monomial(x)
+        self.assertEqual(m * p, p)
+        self.assertEqual(p * m, p)
+        self.assertEqual(p * 0, p)
+        self.assertEqual(0 * p, p)
+
+    def test_addition_assignment(self):
+        p = sym.Polynomial()
+        p += p
+        self.assertEqual(p, sym.Polynomial())
+        p += sym.Monomial(x)
+        self.assertEqual(p, sym.Polynomial(1 * x))
+        p += 3
+        self.assertEqual(p, sym.Polynomial(1 * x + 3))
+
+    def test_subtraction_assignment(self):
+        p = sym.Polynomial()
+        p -= p
+        self.assertEqual(p, sym.Polynomial())
+        p -= sym.Monomial(x)
+        self.assertEqual(p, sym.Polynomial(-1 * x))
+        p -= 3
+        self.assertEqual(p, sym.Polynomial(-1 * x - 3))
+
+    def test_multiplication_assignment(self):
+        p = sym.Polynomial()
+        p *= p
+        self.assertEqual(p, sym.Polynomial())
+        p *= sym.Monomial(x)
+        self.assertEqual(p, sym.Polynomial())
+        p *= 3
+        self.assertEqual(p, sym.Polynomial())
+
+    def test_pow(self):
+        e = a * (x ** 2)
+        p = sym.Polynomial(e, [x])  # p = ax²
+        p = pow(p, 2)  # p = a²x⁴
+        self.assertEqual(p.ToExpression(), (a ** 2) * (x ** 4))
 
 
 if __name__ == '__main__':
