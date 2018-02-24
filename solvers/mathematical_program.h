@@ -2310,7 +2310,7 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
-   * Evaluates the value of some constraint, for some input value for all
+   * Evaluates the value of some binding, for some input value for all
    * decision variables.
    * @param binding A Binding whose variables are decision variables in this
    * program.
@@ -2331,7 +2331,7 @@ class MathematicalProgram {
       throw std::runtime_error(oss.str());
     }
     VectorX<Scalar> binding_x(binding.GetNumElements());
-    VectorX<Scalar> binding_y(binding.constraint()->num_constraints());
+    VectorX<Scalar> binding_y(binding.constraint()->num_outputs());
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       binding_x(i) =
           prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
