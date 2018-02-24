@@ -149,6 +149,16 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   }
 };
 
+
+// Define additional options for input/output port specification.
+// TODO(russt): Move these to a more central location if they are useful in
+// other related methods.
+const int kNoInput = -1;
+const int kUseFirstInputIfItExists = -2;
+
+const int kNoOutput = -1;
+const int kUseFirstOutputIfItExists = -2;
+
 /// Takes the first-order Taylor expansion of a System around a nominal
 /// operating point (defined by the Context).
 ///
@@ -177,6 +187,8 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 ///
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
+    int input_port_index = kUseFirstInputIfItExists,
+    int output_port_index = kUseFirstOutputIfItExists,
     double equilibrium_check_tolerance = 1e-6);
 
 /// A first-order Taylor series approximation to a @p system in the neighborhood
@@ -207,8 +219,12 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 ///
 /// @ingroup primitive_systems
 ///
+// Note: The TypeSafeIndices (InputPortIndex and OutputPortIndex) didn't let
+// me handle the additional options without a lot of boilerplate.
 std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
-    const System<double>& system, const Context<double>& context);
+    const System<double>& system, const Context<double>& context,
+    int input_port_index = kUseFirstInputIfItExists,
+    int output_port_index = kUseFirstOutputIfItExists);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 /// @ingroup control_systems
