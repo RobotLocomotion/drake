@@ -542,7 +542,7 @@ class ConvexCubicProgramExample : public MathematicalProgram {
 
   ~ConvexCubicProgramExample() override {};
 
-  bool CheckSolution() const;
+  void CheckSolution() const;
 
  private:
   VectorDecisionVariable<1> x_;
@@ -563,7 +563,7 @@ class UnitLengthProgramExample : public MathematicalProgram {
 
   ~UnitLengthProgramExample() override {};
 
-  bool CheckSolution() const;
+  void CheckSolution() const;
 
  private:
   VectorDecisionVariable<4> x_;

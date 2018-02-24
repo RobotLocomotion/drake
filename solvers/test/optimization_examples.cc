@@ -630,9 +630,9 @@ ConvexCubicProgramExample::ConvexCubicProgramExample() {
   AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(), x_(0));
 }
 
-bool ConvexCubicProgramExample::CheckSolution() const {
+void ConvexCubicProgramExample::CheckSolution() const {
   const auto x_val = GetSolution((x_(0)));
-  return std::abs(x_val - 2) < 1E-6;
+  EXPECT_NEAR(x_val, 2, 1E-6);
 }
 
 UnitLengthProgramExample::UnitLengthProgramExample()
@@ -642,10 +642,10 @@ UnitLengthProgramExample::UnitLengthProgramExample()
   AddConstraint(unit_length_constraint, x_);
 }
 
-bool UnitLengthProgramExample::CheckSolution() const {
+void UnitLengthProgramExample::CheckSolution() const {
   const auto x_val = GetSolution(x_);
-  const double tol{1E-12};
-  return std::abs(x_val.squaredNorm() - 1) < tol;
+  const double tol{1E-8};
+  EXPECT_NEAR(x_val.squaredNorm(), 1, tol);
 }
 }  // namespace test
 }  // namespace solvers
