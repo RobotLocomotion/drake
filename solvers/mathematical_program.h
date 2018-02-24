@@ -2315,7 +2315,7 @@ class MathematicalProgram {
    * @param binding A Binding whose variables are decision variables in this
    * program.
    * @param prog_var_vals The value of all the decision variables in this
-   * program. @throw a runtime error if the size does not match.
+   * program. @throw a logic error if the size does not match.
    */
   template <typename C, typename DerivedX>
   typename std::enable_if<is_eigen_vector<DerivedX>::value,
@@ -2325,10 +2325,10 @@ class MathematicalProgram {
     using Scalar = typename DerivedX::Scalar;
     if (prog_var_vals.rows() != num_vars()) {
       std::ostringstream oss;
-      oss << "The input binding variable is not in the right size. Expect "
+      oss << "The input binding variable is not in the right size. Expects "
           << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
           << " rows.\n";
-      throw std::runtime_error(oss.str());
+      throw std::logic_error(oss.str());
     }
     VectorX<Scalar> binding_x(binding.GetNumElements());
     VectorX<Scalar> binding_y(binding.constraint()->num_outputs());

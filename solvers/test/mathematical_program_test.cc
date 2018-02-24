@@ -2701,7 +2701,7 @@ GTEST_TEST(testMathematicalProgram, testEvalBinding) {
   const Eigen::Vector3d x_val(1, 2, 3);
   // The linear constraint should evaluate to 5.
   // The quadratic constraint should evaluate to 30.
-  // The quadratic sots should evaluate to 7.
+  // The quadratic cost should evaluate to 7.
   EXPECT_TRUE(CompareMatrices(prog.EvalBinding(linear_constraint, x_val),
                               Vector1d(5), 1E-15, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_constraint, x_val),
@@ -2712,7 +2712,7 @@ GTEST_TEST(testMathematicalProgram, testEvalBinding) {
 
   // Pass in an incorrect size input.
   EXPECT_THROW(prog.EvalBinding(linear_constraint, Eigen::Vector2d::Zero()),
-               std::runtime_error);
+               std::logic_error);
 
   // Pass in some variable not registered in the program.
   symbolic::Variable y("y");
