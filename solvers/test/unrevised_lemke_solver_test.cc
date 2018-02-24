@@ -95,6 +95,24 @@ GTEST_TEST(testUnrevisedLCP, testCottle) {
   RunBasicLcp(M, q, expected_z);
 }
 
+GTEST_TEST(testUnrevisedLCP, testCycling) {
+  Eigen::Matrix<double, 3, 3> M;
+
+  // clang-format off
+  M <<
+    1, 2, 0,
+    0, 1, 2,
+    2, 0, 1;
+  // clang-format on
+
+  Eigen::Matrix<double, 3, 1> q;
+  q << -1, -1, -1; 
+
+  Eigen::VectorXd expected_z(3);
+  expected_z << 1.0/3, 1.0/3, 1.0/3; 
+  RunBasicLcp(M, q, expected_z);
+}
+
 GTEST_TEST(testUnrevisedLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
   // clang-format off

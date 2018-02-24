@@ -460,7 +460,7 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
     // Determine gamma by determining the position of the driving variable
     // in INDEPENDENT W.
     int gamma = 0;
-    for (int i = 0; i < driving_index; ++i) {
+    for (int i = 0; i < static_cast<int>(indep_variables_.size()); ++i) {
       if (!indep_variables_[i].z) {
         if (indep_variables_[i].index < indep_variables_[driving_index].index) 
           ++gamma;
@@ -503,141 +503,6 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
 
   DRAKE_SPDLOG_DEBUG(log(), "M' (driving): {}", M_prime_col->transpose());
 }
-
-/*
-template <typename T>
-void UnrevisedLemkeSolver<T>::LemkePivot(
-    const MatrixX<T>& M,
-    const VectorX<T>& q,
-    const std::vector<LCPVariable>& indep_variables,
-    int driving_index,
-    const std::vector<LCPVariable>& dep_variables,
-    VectorX<T>* M_prime_col,
-    VectorX<T>* q_bar) {
-  DRAKE_DEMAND(q_bar);
-
-  const int n = q.rows();
-  const int kArtificial = n;
-
-  // Verify that each member in the independent and dependent sets is unique.
-  DRAKE_ASSERT(IsEachUnique(indep_variables));
-  DRAKE_ASSERT(IsEachUnique(dep_variables));
-
-  // If the driving index does not correspond to the artificial variable,
-  // M_prime_col must be non-null.
-  if (!indep_variables[driving_index].z ||
-      indep_variables[driving_index].index != kArtificial) {
-    DRAKE_DEMAND(M_prime_col);
-  }
-
-  // Determine sets.
-  std::vector<int> w_vars_in_indep, w_vars_in_dep, z_vars_in_indep,
-      z_vars_in_dep;
-  for (int i = 0; i < indep_variables.size(); ++i) {
-    if (!indep_variables[i].z) {
-      w_vars_in_indep.push_back(indep_variables[i].index);
-    } else {
-      z_vars_in_indep.push_back(indep_variables[i].index);
-    }
-  }
-  for (int i = 0; i < dep_variables.size(); ++i) {
-    if (!dep_variables[i].z) {
-      w_vars_in_dep.push_back(dep_variables[i].index);
-    } else {
-      z_vars_in_dep.push_back(dep_variables[i].index);
-      if (z_vars_in_dep.back() )
-    }
-  }
-
-  // If α is empty, all z are on the right hand side (independent) and all
-  // w are on the left hand side (dependent). If α̅ is empty, all w are on the
-  // right hand side (independent) and all z are on the left hand side
-  // (dependent). Equation (9) from [Cottle 1992] p. 72 shows the dependent
-  // z and w variables on the left hand side and the independent z and w
-  // variables on the right hand side.
-
-  // Mαα comprises the submatrix corresponding to the dependent z variables /
-  // independent w variables. Due to Hongkai's Lemma, there can be at most n
-  // independent w variables, so we don't have to worry about whether we
-  // select using dependent z variables or independent w variables. We
-  // simultaneously determine the set of indices in α̅, which corresponds to
-  // independent z variables and dependent w variables. 
-
-  std::sort(w_vars_in_indep.begin(), w_vars_in_indep.end());
-  std::sort(z_vars_in_indep.begin(), z_vars_in_indep.end());
-  std::sort(w_vars_in_dep.begin(), w_vars_in_dep.end());
-  std::sort(z_vars_in_dep.begin(), z_vars_in_dep.end());
-
-  MatrixX<T> Maa, Mba;
-  SelectSubMatrixPlusCovering(M, w_vars_in_indep, z_vars_in_dep, &Maa);
-  SelectSubMatrixPlusCovering(M, w_vars_in_dep, z_vars_in_dep, &Mba);
-  LinearSolver<T> solver(Maa);
-
-  std::vector<int> alpha_indices, not_alpha_indices;
-  // qα comprises the components of q corresponding to the dependent z
-  // variables. qα̅ comprises the components of q corresponding to the
-  // independent z variables.
-  VectorX<T> q_alpha, q_not_alpha;
-  SelectSubVector(q, w_vars_in_indep, &q_alpha);
-  SelectSubVector(q, w_vars_in_dep, &q_not_alpha);
-  const VectorX<T> q_alpha_prime = -solver.Solve(q_alpha);
-  const VectorX<T> q_not_alpha_prime = q_not_alpha + Mba * q_alpha_prime;
-  q_bar->resize(n);
-  SetSubVector(z_vars_in_dep, q_alpha_prime, q_bar);
-  SetSubVector(w_vars_in_indep, q_not_alpha_prime, q_bar);
-
-//  q_bar->segment(0, alpha_indices.size()) = q_alpha_prime;
-//  q_bar->segment(alpha_indices.size(), not_alpha_indices.size()) =
-//      q_not_alpha_prime;
-
-  // If the driving index corresponds to the artificial variable, no need to
-  // perform an unnecessary calculation.
-  if (indep_variables[driving_index].z &&
-      indep_variables[driving_index].index == kArtificial) {
-    return;
-  }
-
-  // Reform not_alpha_indices, now using the artificial variable.
-//  not_alpha_indices.clear();
-//  for (int i = 0; i < indep_variables.size(); ++i) {
-//    if (indep_variables[i].z)
-//      not_alpha_indices.push_back(indep_variables[i].index);
-//  }
-
-  // There are two possible cases for the driving variable, depending on the
-  // driving variable index. If the index is less than the number of dependent
-  // z variables (i.e., the number of alpha indices), the column should either
-  // be drawn from the two left equations of (11) in [Cottle 1992] p. 72 or the
-  // two right equations. Note that we
-  // do not say that the latter should correspond to one of the dependent w
-  // variables, because we need to be able to include the covering vector.
-  VectorX<T> M_prime_alpha_prime, M_prime_not_alpha_prime;
-
-  // Get the column index, which must wrap around.
-  int col_index = indep_variables[driving_index].index + 1;
-  if (col_index > n)
-    col_index = 0;
-
-  if (!indep_variables[driving_index].z) {
-    // Left two equations.
-    const VectorX<T> unit = VectorX<T>::Unit(alpha_indices.size(), col_index);
-    M_prime_alpha_prime = solver.Solve(unit);
-    M_prime_not_alpha_prime = Mba * M_prime_alpha_prime;
-  } else {
-    // Right two equations.
-    VectorX<T> Mab, Mbb;
-    SelectSubColumnPlusCovering(M, alpha_indices, col_index, &Mab);
-    SelectSubColumnPlusCovering(M, not_alpha_indices, col_index, &Mbb);
-    M_prime_alpha_prime = -solver.Solve(Mab);
-    M_prime_not_alpha_prime = Mbb + Mba * M_prime_alpha_prime;
-  }
-
-  M_prime_col->resize(n);
-  M_prime_col->segment(0, alpha_indices.size()) = M_prime_alpha_prime;
-  M_prime_col->segment(alpha_indices.size(), not_alpha_indices.size()) =
-      M_prime_not_alpha_prime;
-}
-*/
 
 // O(n) method for finding the index of the complement of an LCP variable in
 // a set (strictly speaking, an unsorted vector) of indices. Aborts if the
@@ -692,7 +557,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       "q: {}, ", M, q.transpose());
 
   const int n = q.size();
-  const int max_pivots = std::min(1000, 50 * n);
+//  const int max_pivots = std::min(1000, 50 * n);
+  const int max_pivots = std::numeric_limits<int>::max();
 
   if (M.rows() != n || M.cols() != n)
     throw std::logic_error("M's dimensions do not match that of q.");
@@ -719,6 +585,9 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited");
     return true;
   }
+
+  // Clear the cyling selections.
+  selections_.clear();
 
   // If 'n' is identical to the size of the last problem solved, try using the
   // indices from the last problem solved.
@@ -817,8 +686,9 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     T min_ratio = std::numeric_limits<double>::infinity();
     blocking_index = -1;
     for (int i = 0; i < M_prime_col.size(); ++i) {
-      if (M_prime_col[i] < 0) {
+      if (M_prime_col[i] < -mod_zero_tol) {
         const T ratio = -q_prime[i] / M_prime_col[i];
+        DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratio);
         if (ratio < min_ratio) {
           min_ratio = ratio;
           blocking_index = i;
@@ -830,6 +700,26 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       SPDLOG_DEBUG(log(), "driving variable is unblocked- algorithm failed");
       z->setZero(n);
       return false;
+    }
+
+    // Determine all variables within the zero tolerance of the minimum ratio.
+    std::vector<int> blocking_indices;
+    for (int i = 0; i < M_prime_col.size(); ++i) {
+      if (M_prime_col[i] < -mod_zero_tol) {
+        const T ratio = -q_prime[i] / M_prime_col[i];
+        DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratio);
+        if (ratio < min_ratio + mod_zero_tol)
+          blocking_indices.push_back(i);
+      }
+    }
+
+    // If there are multiple blocking variables, replace the blocking index with
+    // the cycling selection. 
+    if (blocking_indices.size() > 1) {
+      auto& index = selections_[indep_variables_];
+      DRAKE_DEMAND(index < static_cast<int>(blocking_indices.size()));
+      blocking_index = blocking_indices[index];
+      ++index;
     }
 
     // Get the blocking variable.
