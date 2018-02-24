@@ -81,7 +81,9 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   DRAKE_DEMAND(context.has_only_continuous_state());
   // TODO(russt): Confirm behavior if Q is not PSD.
 
-  auto linear_system = Linearize(system, context);
+  // Use first input and no outputs (the output dynamics are irrelevant for
+  // LQR design).
+  auto linear_system = Linearize(system, context, 0, kNoOutput);
 
   LinearQuadraticRegulatorResult lqr_result =
       LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q, R, N);
