@@ -563,7 +563,7 @@ class UnitLengthProgramExample : public MathematicalProgram {
 
   ~UnitLengthProgramExample() override {};
 
-  void CheckSolution() const;
+  void CheckSolution(double tolerance) const;
 
  private:
   VectorDecisionVariable<4> x_;

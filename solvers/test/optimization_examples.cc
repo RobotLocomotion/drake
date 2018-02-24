@@ -637,15 +637,16 @@ void ConvexCubicProgramExample::CheckSolution() const {
 
 UnitLengthProgramExample::UnitLengthProgramExample()
     : MathematicalProgram(), x_(NewContinuousVariables<4>()) {
+  // Impose the unit length constraint xᵀx = 1, by writing it as a quadratic
+  // constraint 0.5xᵀQx + bᵀx = 1, where Q = 2I, and b = 0.
   auto unit_length_constraint = std::make_shared<QuadraticConstraint>(
       2 * Eigen::Matrix4d::Identity(), Eigen::Vector4d::Zero(), 1, 1);
   AddConstraint(unit_length_constraint, x_);
 }
 
-void UnitLengthProgramExample::CheckSolution() const {
+void UnitLengthProgramExample::CheckSolution(double tolerance) const {
   const auto x_val = GetSolution(x_);
-  const double tol{1E-8};
-  EXPECT_NEAR(x_val.squaredNorm(), 1, tol);
+  EXPECT_NEAR(x_val.squaredNorm(), 1, tolerance);
 }
 }  // namespace test
 }  // namespace solvers
