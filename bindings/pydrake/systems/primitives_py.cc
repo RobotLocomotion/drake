@@ -77,9 +77,14 @@ PYBIND11_MODULE(primitives, m) {
            py::arg("time_period") = 0.0);
 
   m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
+        py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
+        py::arg("output_port_index") = systems::kUseFirstOutputIfItExists,
         py::arg("equilibrium_check_tolerance") = 1e-6);
 
-  m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation);
+  m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation,
+        py::arg("system"), py::arg("context"),
+        py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
+        py::arg("output_port_index") = systems::kUseFirstOutputIfItExists);
 
   m.def("ControllabilityMatrix", &ControllabilityMatrix);
 
@@ -92,8 +97,8 @@ PYBIND11_MODULE(primitives, m) {
         py::arg("threshold") = nullopt);
 
   py::class_<PassThrough<T>, LeafSystem<T>>(m, "PassThrough")
-    .def(py::init<int>())
-    .def(py::init<const AbstractValue&>());
+      .def(py::init<int>())
+      .def(py::init<const AbstractValue&>());
 
   py::class_<SignalLogger<T>, LeafSystem<T>>(m, "SignalLogger")
       .def(py::init<int>())
