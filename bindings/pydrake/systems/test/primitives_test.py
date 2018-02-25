@@ -108,7 +108,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.time_period(), .1)
 
         context.FixInputPort(0, BasicVector([0]))
-        linearized = Linearize(system, context, 1e-6)
+        linearized = Linearize(system, context)
         self.assertTrue((linearized.A() == A).all())
         taylor = FirstOrderTaylorApproximation(system, context)
         self.assertTrue((taylor.y0() == y0).all())
