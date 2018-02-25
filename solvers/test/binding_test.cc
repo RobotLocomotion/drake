@@ -12,10 +12,10 @@ namespace test {
 
 using drake::symbolic::test::VarEqual;
 
-GTEST_TEST(TestBinding, constructBinding) {
-  symbolic::Variable x1("x1");
-  symbolic::Variable x2("x2");
-  symbolic::Variable x3("x3");
+GTEST_TEST(TestBinding, TestConstraint) {
+  const symbolic::Variable x1("x1");
+  const symbolic::Variable x2("x2");
+  const symbolic::Variable x3("x3");
   auto bb_con = std::make_shared<BoundingBoxConstraint>(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
 
@@ -40,9 +40,9 @@ GTEST_TEST(TestBinding, constructBinding) {
 
 GTEST_TEST(TestBinding, TestCost) {
   // Tests binding with a cost.
-  symbolic::Variable x1("x1");
-  symbolic::Variable x2("x2");
-  symbolic::Variable x3("x3");
+  const symbolic::Variable x1("x1");
+  const symbolic::Variable x2("x2");
+  const symbolic::Variable x3("x3");
   const VectorDecisionVariable<3> x(x1, x2, x3);
   auto cost = std::make_shared<LinearCost>(Eigen::Vector3d(1, 2, 3), 1);
   Binding<LinearCost> binding(cost, x);
@@ -78,9 +78,9 @@ class DummyEvaluator : public EvaluatorBase {
 
 GTEST_TEST(TestBinding, TestEvaluator) {
   // Tests binding with an evaluator.
-  symbolic::Variable x1("x1");
-  symbolic::Variable x2("x2");
-  symbolic::Variable x3("x3");
+  const symbolic::Variable x1("x1");
+  const symbolic::Variable x2("x2");
+  const symbolic::Variable x3("x3");
   const VectorDecisionVariable<3> x(x1, x2, x3);
   const auto evaluator = std::make_shared<DummyEvaluator>();
   Binding<DummyEvaluator> binding(evaluator, x);
