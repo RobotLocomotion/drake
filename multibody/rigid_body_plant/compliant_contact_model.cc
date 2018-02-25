@@ -47,7 +47,7 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   // when updating the collision element poses.
   // TODO(naveenoid) : This method call limits the template instanziation of
   // this class currently to T = double only.
-  std::vector<drake::multibody::collision::PointPair> pairs =
+  std::vector<drake::multibody::collision::PointPair<double>> pairs =
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kinsol, true);
 
