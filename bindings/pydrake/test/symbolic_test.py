@@ -86,6 +86,28 @@ class TestSymbolicVariables(unittest.TestCase):
                          "((y = 2) or (x >= 1) or (x <= 2))")
 
 
+class TestSymbolicExpression(unittest.TestCase):
+    def test_functions(self):
+        e_x = sym.Expression(x)
+        e_y = sym.Expression(y)
+        self.assertEqual(str(sym.sin(e_x)), "sin(x)")
+        self.assertEqual(str(sym.cos(e_x)), "cos(x)")
+        self.assertEqual(str(sym.tan(e_x)), "tan(x)")
+        self.assertEqual(str(sym.asin(e_x)), "asin(x)")
+        self.assertEqual(str(sym.acos(e_x)), "acos(x)")
+        self.assertEqual(str(sym.atan(e_x)), "atan(x)")
+        self.assertEqual(str(sym.atan2(e_x, e_y)), "atan2(x, y)")
+        self.assertEqual(str(sym.sinh(e_x)), "sinh(x)")
+        self.assertEqual(str(sym.cosh(e_x)), "cosh(x)")
+        self.assertEqual(str(sym.tanh(e_x)), "tanh(x)")
+        self.assertEqual(str(sym.min(e_x, e_y)), "min(x, y)")
+        self.assertEqual(str(sym.max(e_x, e_y)), "max(x, y)")
+        self.assertEqual(str(sym.ceil(e_x)), "ceil(x)")
+        self.assertEqual(str(sym.floor(e_x)), "floor(x)")
+        self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
+                         "(if (x > y) then x else y)")
+
+
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
         p = sym.Polynomial()
