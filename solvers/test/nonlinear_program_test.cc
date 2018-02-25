@@ -382,6 +382,18 @@ GTEST_TEST(testNonlinearProgram, ConvexCubicProgramExample) {
   prob.SetInitialGuessForAllVariables(Vector1d(1));
   RunNonlinearProgram(&prob, [&]() {prob.CheckSolution();});
 }
+
+GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
+  UnitLengthProgramExample prob;
+
+  prob.SetInitialGuessForAllVariables(Vector4d(1, 0, 0, 0));
+  RunNonlinearProgram(&prob, [&prob]() {prob.CheckSolution(1E-8);});
+
+  // Try a different initial guess, that doesn't satisfy the unit length
+  // constraint.
+  prob.SetInitialGuessForAllVariables(Vector4d(1, 2, 3, 4));
+  RunNonlinearProgram(&prob, [&prob]() {prob.CheckSolution(1E-8);});
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
