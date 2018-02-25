@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "drake/common/autodiff.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
 namespace drake {
@@ -204,6 +205,7 @@ void ContactResultantForceCalculator<T>::AccumulateForce(
 }
 
 template class ContactResultantForceCalculator<double>;
+template class ContactResultantForceCalculator<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

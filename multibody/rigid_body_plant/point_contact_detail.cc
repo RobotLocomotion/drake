@@ -1,5 +1,7 @@
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
+#include "drake/common/autodiff.h"
+
 namespace drake {
 namespace systems {
 
@@ -17,6 +19,7 @@ unique_ptr<ContactDetail<T>> PointContactDetail<T>::Clone() const {
 
 // Explicitly instantiates on the most common scalar types.
 template class PointContactDetail<double>;
+template class PointContactDetail<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

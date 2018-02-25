@@ -1,5 +1,7 @@
 #include "drake/multibody/rigid_body_plant/contact_info.h"
 
+#include "drake/common/autodiff.h"
+
 using std::move;
 
 namespace drake {
@@ -15,6 +17,7 @@ ContactInfo<T>::ContactInfo(drake::multibody::collision::ElementId element1,
 
 // Explicitly instantiates on the most common scalar types.
 template class ContactInfo<double>;
+template class ContactInfo<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
