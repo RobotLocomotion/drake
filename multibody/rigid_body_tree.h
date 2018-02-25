@@ -1116,7 +1116,7 @@ class RigidBodyTree {
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
    **/
-  std::vector<drake::multibody::collision::PointPair>
+  std::vector<drake::multibody::collision::PointPair<double>>
   ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
                                      bool use_margins = true);
 

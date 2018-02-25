@@ -809,7 +809,7 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
     vector<int>& body_idx, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
-  vector<drake::multibody::collision::PointPair> closest_points;
+  vector<drake::multibody::collision::PointPair<double>> closest_points;
 
   collision_model_->CollisionDetectFromPoints(points, use_margins,
                                               &closest_points);
@@ -874,7 +874,7 @@ bool RigidBodyTree<T>::collisionDetect(
     bool use_margins) {
   updateDynamicCollisionElements(cache);
 
-  vector<drake::multibody::collision::PointPair> points;
+  vector<drake::multibody::collision::PointPair<double>> points;
   bool points_found =
       collision_model_->ClosestPointsAllToAll(ids_to_check, use_margins,
                                               &points);
@@ -988,11 +988,11 @@ bool RigidBodyTree<T>::collisionDetect(
 }
 
 template <typename T>
-std::vector<drake::multibody::collision::PointPair>
+std::vector<drake::multibody::collision::PointPair<double>>
 RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {
   updateDynamicCollisionElements(cache);
-  vector<drake::multibody::collision::PointPair> contact_points;
+  vector<drake::multibody::collision::PointPair<double>> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
                                                        &contact_points);
   // For each contact pair, map contact point from world frame to each body's
@@ -1049,7 +1049,7 @@ bool RigidBodyTree<T>::allCollisions(
     Matrix3Xd& xB_in_world, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
-  vector<drake::multibody::collision::PointPair> points;
+  vector<drake::multibody::collision::PointPair<double>> points;
   bool points_found = collision_model_->ComputeMaximumDepthCollisionPoints(
       use_margins, &points);
 
