@@ -94,7 +94,7 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  std::vector<drake::multibody::collision::PointPair> collision_pairs =
+  std::vector<drake::multibody::collision::PointPair<double>> collision_pairs =
       tree_.ComputeMaximumDepthCollisionPoints(kinsol, false);
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
@@ -186,7 +186,7 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  std::vector<drake::multibody::collision::PointPair> collision_pairs =
+  std::vector<drake::multibody::collision::PointPair<double>> collision_pairs =
       tree_.ComputeMaximumDepthCollisionPoints(kinsol, false);
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,

@@ -105,7 +105,7 @@ class Model {
    @return Whether this method successfully ran. **/
   virtual bool ClosestPointsAllToAll(
       const std::vector<ElementId>& ids_to_check, bool use_margins,
-      std::vector<PointPair>* closest_points) = 0;
+      std::vector<PointPair<double>>* closest_points) = 0;
 
   /** Computes the point of closest approach between collision elements that
    are in contact.
@@ -118,7 +118,7 @@ class Model {
 
    @returns Whether this method successfully ran. **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins, std::vector<PointPair>* closest_points) = 0;
+      bool use_margins, std::vector<PointPair<double>>* closest_points) = 0;
 
   /** Computes the points of closest approach between specified pairs of
    collision elements.
@@ -136,7 +136,7 @@ class Model {
    @return Whether this method successfully ran. **/
   virtual bool ClosestPointsPairwise(
       const std::vector<ElementIdPair>& id_pairs, bool use_margins,
-      std::vector<PointPair>* closest_points) = 0;
+      std::vector<PointPair<double>>* closest_points) = 0;
 
   /** Clears possibly cached results so that a fresh computation can be
   performed.
@@ -167,7 +167,7 @@ class Model {
    i'th instance reports the query result for the i'th input point. **/
   virtual void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>* closest_points) = 0;
+      std::vector<PointPair<double>>* closest_points) = 0;
 
   // TODO(SeanCurtis-TRI): Add a C++ version of "collidingPointsTest.m". Once
   // such a test exists, update the @see reference to it below.

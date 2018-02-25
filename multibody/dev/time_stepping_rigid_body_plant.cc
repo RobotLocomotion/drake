@@ -49,7 +49,7 @@ TimeSteppingRigidBodyPlant<T>::TimeSteppingRigidBodyPlant(
 // geometries.
 template <class T>
 void TimeSteppingRigidBodyPlant<T>::CalcContactStiffnessAndDamping(
-    const drake::multibody::collision::PointPair&,
+    const drake::multibody::collision::PointPair<double>&,
     double*,
     double*) const {
   DRAKE_ABORT_MSG("CalcContactStiffnessAndDamping() not yet implemented.");
@@ -80,7 +80,7 @@ void TimeSteppingRigidBodyPlant<T>::UpdateGeneralizedForce(
 // contact normals.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>&,
     const VectorX<T>&) const {
   if (!contacts.empty())
@@ -92,7 +92,7 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
 // effect out on the generalized forces.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::N_transpose_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>& kcache,
     const VectorX<T>&) const {
   if (!contacts.empty())
@@ -104,7 +104,7 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_transpose_mult(
 // contact tangent directions.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::F_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>&,
     const VectorX<T>&) const {
   if (!contacts.empty())
@@ -116,7 +116,7 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::F_mult(
 // the effect out on the generalized forces.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::F_transpose_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>& kcache,
     const VectorX<T>&) const {
   if (!contacts.empty())
@@ -176,7 +176,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   if (num_actuators > 0) right_hand_side += tree.B * u;
 
   // Determine the set of contact points corresponding to the current q.
-  std::vector<drake::multibody::collision::PointPair> contacts =
+  std::vector<drake::multibody::collision::PointPair<double>> contacts =
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kcache, true);
 

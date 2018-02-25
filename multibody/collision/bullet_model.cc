@@ -495,7 +495,7 @@ void BulletModel::UpdateModel() {
   bullet_world_no_margin_.bt_collision_world->updateAabbs();
 }
 
-PointPair BulletModel::findClosestPointsBetweenElements(
+PointPair<double> BulletModel::findClosestPointsBetweenElements(
     ElementId idA, ElementId idB, bool use_margins) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
@@ -512,7 +512,7 @@ PointPair BulletModel::findClosestPointsBetweenElements(
         dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry())
             .radius;
     double distance = (xA_world - xB_world).norm();
-    return PointPair(
+    return PointPair<double>(
         elements[idA].get(), elements[idB].get(),
         elements[idA]->getLocalTransform() * TA_world.inverse() *
             (xA_world +
@@ -599,7 +599,7 @@ PointPair BulletModel::findClosestPointsBetweenElements(
       gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
 
   if (gjkOutput.m_hasResult) {
-    return PointPair(elements[idA].get(), elements[idB].get(),
+    return PointPair<double>(elements[idA].get(), elements[idB].get(),
                      point_on_A, point_on_B,
                      toVector3d(gjkOutput.m_normalOnBInWorld),
                      static_cast<double>(distance));
@@ -613,7 +613,7 @@ PointPair BulletModel::findClosestPointsBetweenElements(
 
 void BulletModel::CollisionDetectFromPoints(
     const Matrix3Xd& points, bool use_margins,
-    std::vector<PointPair>* closest_points) {
+    std::vector<PointPair<double>>* closest_points) {
   DRAKE_DEMAND(closest_points != nullptr);
   closest_points->resize(points.cols());
   VectorXd phi(points.cols());
@@ -671,7 +671,7 @@ void BulletModel::CollisionDetectFromPoints(
           Element *collision_element =
               static_cast<Element *>(bt_objB->getUserPointer());
           closest_points->at(i) =
-              PointPair(collision_element, collision_element,
+              PointPair<double>(collision_element, collision_element,
                         toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
                         toVector3d(gjkOutput.m_normalOnBInWorld), distance);
         }
@@ -686,7 +686,7 @@ void BulletModel::CollisionDetectFromPoints(
       // In case there are no other objects found, we report a null object
       // infinitely far away.
       phi[i] = inf;
-      closest_points->at(i) = PointPair();
+      closest_points->at(i) = PointPair<double>();
       closest_points->at(i).distance = inf;
       closest_points->at(i).normal = default_norm;
       closest_points->at(i).ptA = inf_vector;
@@ -780,7 +780,7 @@ bool BulletModel::CollisionRaycast(const Matrix3Xd& origins,
 
 bool BulletModel::ClosestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, bool use_margins,
-    std::vector<PointPair>* closest_points) {
+    std::vector<PointPair<double>>* closest_points) {
   DRAKE_DEMAND(closest_points != nullptr);
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kClosestPointsAllToAll;
@@ -804,7 +804,7 @@ bool BulletModel::ClosestPointsAllToAll(
 
 bool BulletModel::ClosestPointsPairwise(
     const std::vector<ElementIdPair>& id_pairs, bool use_margins,
-    std::vector<PointPair>* closest_points) {
+    std::vector<PointPair<double>>* closest_points) {
   DRAKE_DEMAND(closest_points != nullptr);
   closest_points->clear();
   for (const ElementIdPair& pair : id_pairs) {
@@ -819,7 +819,7 @@ bool BulletModel::ClosestPointsPairwise(
 }
 
 bool BulletModel::ComputeMaximumDepthCollisionPoints(
-    bool use_margins, std::vector<PointPair>* collision_points) {
+    bool use_margins, std::vector<PointPair<double>>* collision_points) {
   DRAKE_DEMAND(collision_points != nullptr);
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;

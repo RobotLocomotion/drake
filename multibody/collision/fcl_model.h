@@ -25,12 +25,12 @@ class FclModel : public Model {
 
   void DoAddElement(const Element& element) override;
   void DoRemoveElement(ElementId id) override;
-  bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                             bool use_margins,
-                             std::vector<PointPair>* closest_points) override;
-  bool ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             bool use_margins,
-                             std::vector<PointPair>* closest_points) override;
+  bool ClosestPointsAllToAll(
+      const std::vector<ElementId>& ids_to_check, bool use_margins,
+      std::vector<PointPair<double>>* closest_points) override;
+  bool ClosestPointsPairwise(
+      const std::vector<ElementIdPair>& id_pairs, bool use_margins,
+      std::vector<PointPair<double>>* closest_points) override;
   bool CollidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
@@ -39,14 +39,14 @@ class FclModel : public Model {
                         Eigen::VectorXd* distances,
                         Eigen::Matrix3Xd* normals) override;
   bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins, std::vector<PointPair>* points) override;
+      bool use_margins, std::vector<PointPair<double>>* points) override;
   std::vector<size_t> CollidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
   void ClearCachedResults(bool use_margins) override;
   void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>* closest_points) override;
+      std::vector<PointPair<double>>* closest_points) override;
   void UpdateModel() override;
   bool UpdateElementWorldTransform(
       ElementId, const Eigen::Isometry3d& T_local_to_world) override;

@@ -438,7 +438,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   void ExportModelInstanceCentricPorts();
 
   void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
-      const drake::multibody::collision::PointPair& contact,
+      const drake::multibody::collision::PointPair<double>& contact,
       double* stiffness,
       double* damping,
       double* mu,
@@ -453,25 +453,25 @@ class RigidBodyPlant : public LeafSystem<T> {
       const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
 
   VectorX<T> ContactNormalJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v) const;
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const VectorX<T>& q, const VectorX<T>& v) const;
 
   VectorX<T> TransposedContactNormalJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f) const;
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& f) const;
 
   VectorX<T> ContactTangentJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v,
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const VectorX<T>& q, const VectorX<T>& v,
       const std::vector<int>& half_num_cone_edges) const;
 
   VectorX<T> TransposedContactTangentJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f,
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& f,
       const std::vector<int>& half_num_cone_edges) const;
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
