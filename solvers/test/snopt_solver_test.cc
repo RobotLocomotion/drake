@@ -59,6 +59,38 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
     TestQPonUnitBallExample(solver);
   }
 }
+
+GTEST_TEST(SnoptTest, TestSetOption) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  // Solve a program
+  // min x(0) + x(1) + x(2)
+  // s.t xᵀx=1
+  prog.AddLinearCost(x.cast<symbolic::Expression>().sum());
+  prog.AddConstraint(
+      std::make_shared<QuadraticConstraint>(2 * Eigen::Matrix3d::Identity(),
+                                            Eigen::Vector3d::Zero(), 1, 1),
+      x);
+
+  // Arbitrary initial guess.
+  prog.SetInitialGuess(x, Eigen::Vector3d(10, 20, 30));
+
+  SnoptSolver solver;
+  if (solver.available()) {
+    // Make sure the default setting can solve the problem.
+    SolutionResult result = solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+
+    // The program is infeasible after one major iteration.
+    prog.SetSolverOption(SnoptSolver::id(), "Major iterations limit", 1);
+    result = solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kIterationLimit);
+
+    // This is to verify we can set the print out file.
+    prog.SetSolverOption(SnoptSolver::id(), "Print file", "snopt.out");
+    result = solver.Solve(prog);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
