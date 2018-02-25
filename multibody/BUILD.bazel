@@ -193,13 +193,10 @@ drake_cc_library(
     ],
 )
 
-# The rigid_body_tree.h implementation is in two files: rigid_body_tree.cc and
-# rigid_body_tree_contact.cc.  This is the rule for the first file.
 drake_cc_library(
-    name = "rigid_body_tree_cc",
+    name = "rigid_body_tree",
     srcs = ["rigid_body_tree.cc"],
     hdrs = ["rigid_body_tree.h"],
-    visibility = [],
     deps = [
         ":kinematics_cache",
         ":resolve_center_of_pressure",
@@ -216,38 +213,6 @@ drake_cc_library(
         "//drake/multibody/joints",
         "//drake/multibody/shapes",
         "//drake/util",
-    ],
-)
-
-# The rigid_body_tree.h implementation is in two files: rigid_body_tree.cc and
-# rigid_body_tree_contact.cc.  This is the rule for the second file.
-drake_cc_library(
-    name = "rigid_body_tree_contact",
-    srcs = ["rigid_body_tree_contact.cc"],
-    hdrs = ["rigid_body_tree.h"],
-    visibility = [],
-    deps = [
-        ":kinematics_cache",
-        ":rigid_body",
-        ":rigid_body_actuator",
-        ":rigid_body_frame",
-        ":rigid_body_loop",
-        ":rigid_body_tree_datatypes",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/collision",
-        "//drake/multibody/joints",
-        "//drake/multibody/shapes",
-    ],
-)
-
-# This provides a public label for the whole RigidBodyTree.
-drake_cc_library(
-    name = "rigid_body_tree",
-    deps = [
-        ":rigid_body_tree_cc",
-        ":rigid_body_tree_contact",
     ],
 )
 

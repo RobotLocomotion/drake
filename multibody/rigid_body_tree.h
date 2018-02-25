@@ -158,11 +158,6 @@ class RigidBodyTree {
    */
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
-  void surfaceTangents(
-      Eigen::Map<Eigen::Matrix3Xd> const& normals,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
-
   /**
    * Applies the given transform to the given @p body's collision elements,
    * displacing them from their current configurations.  These new poses
@@ -873,21 +868,6 @@ class RigidBodyTree {
                     int body_or_frame_ind) const;
 
   /**
-   * Computes the Jacobian for many points in the format currently used by
-   * MATLAB.  (possibly should be scheduled for deletion, taking
-   * accumulateContactJacobians() with it)
-   */
-  template <typename Scalar>
-  void computeContactJacobians(
-      const KinematicsCache<Scalar>& cache,
-      Eigen::Ref<const Eigen::VectorXi> const& idxA,
-      Eigen::Ref<const Eigen::VectorXi> const& idxB,
-      Eigen::Ref<const Eigen::Matrix3Xd> const& xA,
-      Eigen::Ref<const Eigen::Matrix3Xd> const& xB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
-
-  /**
    * Adds a new collision element to the tree.  The input @p element will be
    * copied and that copy will be stored in the tree, associated with the
    * given @p body.  This association is pending.  It is necessary to call
@@ -1558,15 +1538,6 @@ class RigidBodyTree {
 
   // The number of model instances in this rigid body tree.
   int num_model_instances_{};
-
-  // Helper functions for contactConstraints.
-  template <typename Scalar>
-  void accumulateContactJacobian(
-      const KinematicsCache<Scalar>& cache, const int bodyInd,
-      Eigen::Matrix3Xd const& bodyPoints, std::vector<size_t> const& cindA,
-      std::vector<size_t> const& cindB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   template <typename Scalar>
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
