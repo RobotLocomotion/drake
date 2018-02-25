@@ -2682,6 +2682,45 @@ GTEST_TEST(testMathematicalProgram, testClone) {
   EXPECT_TRUE(CompareMatrices(new_prog->initial_guess(), prog.initial_guess()));
   EXPECT_EQ(new_prog->GetSolverId(), prog.GetSolverId());
 }
+
+GTEST_TEST(testMathematicalProgram, testEvalBinding) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  // Add linear constraint x(0) + 2x(1) = 2
+  auto linear_constraint = prog.AddLinearEqualityConstraint(
+      Eigen::RowVector2d(1, 2), Vector1d(2), x.head<2>());
+  // Add constraint 0 ≤ x(1)² + 2x(2)² + x(1) + 2x(2) ≤ 1
+  auto quadratic_constraint =
+      prog.AddConstraint(std::make_shared<QuadraticConstraint>(
+                             (Eigen::Matrix2d() << 2, 0, 0, 4).finished(),
+                             Eigen::Vector2d(1, 2), 0, 1),
+                         x.tail<2>());
+  auto quadratic_cost = prog.AddQuadraticCost(x(1) * x(1) + x(2));
+
+  const Eigen::Vector3d x_val(1, 2, 3);
+  // The linear constraint should evaluate to 5.
+  // The quadratic constraint should evaluate to 30.
+  // The quadratic cost should evaluate to 7.
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(linear_constraint, x_val),
+                              Vector1d(5), 1E-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_constraint, x_val),
+                              Vector1d(30), 1E-15,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_cost, x_val),
+                              Vector1d(7), 1E-15, MatrixCompareType::absolute));
+
+  // Pass in an incorrect size input.
+  EXPECT_THROW(prog.EvalBinding(linear_constraint, Eigen::Vector2d::Zero()),
+               std::logic_error);
+
+  // Pass in some variable not registered in the program.
+  symbolic::Variable y("y");
+  Binding<QuadraticCost> quadratic_cost_y(
+      std::make_shared<QuadraticCost>(Vector1d(1), Vector1d(0)),
+      VectorDecisionVariable<1>(y));
+  EXPECT_THROW(prog.EvalBinding(quadratic_cost_y, x_val), std::runtime_error);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
