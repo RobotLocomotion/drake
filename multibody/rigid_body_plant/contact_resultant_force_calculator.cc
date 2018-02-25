@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
 namespace drake {
@@ -203,7 +204,9 @@ void ContactResultantForceCalculator<T>::AccumulateForce(
   }
 }
 
-template class ContactResultantForceCalculator<double>;
-
 }  // namespace systems
 }  // namespace drake
+
+// Explicitly instantiates on the most common scalar types.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::ContactResultantForceCalculator)
