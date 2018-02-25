@@ -23,6 +23,7 @@ class RigidBodyPlant;
 
  Instantiated templates for the following ScalarTypes are provided:
    - double
+   - AutoDiffXd
  */
 template <typename T>
 class ContactResults {
