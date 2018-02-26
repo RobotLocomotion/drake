@@ -152,6 +152,10 @@ def setup_pkg_config_repository(repository_ctx):
     includes = []
     hdrs_path = repository_ctx.path("include")
     for item in absolute_includes:
+        if item == "/usr/include" or item == "/usr/local/include":
+            print(("pkg-config of {} returned an include path that " +
+                   "contains {} that may contain unrelated headers").format(
+                       repository_ctx.attr.modname, item))
         symlink_dest = item.replace('/', '_')
         repository_ctx.symlink(
             repository_ctx.path(item),
