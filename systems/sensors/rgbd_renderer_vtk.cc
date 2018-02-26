@@ -378,7 +378,7 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
                               parent_->config().height);
     pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
     pipeline->filter->SetInput(pipeline->window.GetPointer());
-    pipeline->filter->SetMagnification(1);
+    pipeline->filter->SetScale(1);
     pipeline->filter->ReadFrontBufferOff();
     pipeline->filter->SetInputBufferTypeToRGBA();
     pipeline->filter->Update();
