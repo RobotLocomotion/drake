@@ -1503,30 +1503,81 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
-  /// Computes all the quantities that are required in the final pass of the
-  /// articulated body algorithm and stores them in the articulated body cache
-  /// `abc`.
+  /// Computes some quantities that are required in the final pass of the
+  /// articulated body algorithm which depend only on generalized positions and
+  /// stores them in the articulated body inertia cache `aic`.
   ///
   /// These include:
+  /// - Articulated body inertia `P_B_W` of the body taken about Bo and
+  ///   expressed in W.
   /// - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
   ///   articulated body inertia of parent body P as though it were inertialess,
   ///   but taken about Bo and expressed in W.
+  /// - LDLT factorization `ldlt_D_B` of the articulated body hinge inertia.
+  /// - The Kalman gain `g_PB_W` of the body.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
   /// @param[in] pc
   ///   A position kinematics cache object already updated to be in sync with
   ///   `context`.
-  /// @param[out] abc
-  ///   A pointer to a valid, non nullptr, articulated body cache. This method
-  ///   throws an exception if `abc` is a nullptr.
+  /// @param[out] aic
+  ///   A pointer to a valid, non nullptr, articulated body inertia cache. This
+  ///   method throws an exception if `aic` is a nullptr.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache() using the same `context`  .
+  /// call to CalcPositionKinematicsCache() using the same `context`.
   void CalcArticulatedBodyInertiaCache(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
-      ArticulatedBodyInertiaCache<T>* abc) const;
+      ArticulatedBodyInertiaCache<T>* aic) const;
+
+  /// Computes some quantities that are required in the final pass of the
+  /// articulated body algorithm which depend on both the generalized positions
+  /// and generalized velocities and stores them in the articulated body
+  /// algorithm cache.
+  ///
+  /// These include:
+  /// - The articulated body inertia residual force `zplus_PB_W` for this body
+  ///   projected across its inboard mobilizer to frame P.
+  /// - The Coriolis spatial acceleration `a_Bo_W` for this body due to the
+  ///   relative velocities of body B and body P.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] vc
+  ///   A velocity kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] aic
+  ///   An articulated body inertia cache object already updated to be in sync
+  ///   with `context`.
+  /// @param[in] forces
+  ///   A multibody forces object already updated to be in sync with `context`.
+  ///   This method will abort if the `forces` is not compatible with `this`
+  ///   %MultibodyTree, see MultibodyForces::CheckInvariants().
+  /// @param[out] aac
+  ///   A pointer to a valid, non nullptr, articulated body algorithm cache.
+  ///   This method throws an exception if `aac` is a nullptr.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache() using the same `context`.
+  /// @pre The velocity kinematics `vc` must have been previously updated with a
+  /// call to CalcVelocityKinematicsCache() using the same `context`.
+  /// @pre The articulated body inertia cache `aic` must have been previously
+  /// updated with a call to CalcArticulatedBodyInertiaCache() using the same
+  /// `context`.
+  /// @pre The multibody forces `forces` must have been previously updated with
+  /// a call to CalcForceElementsContribution() using the same `context`.
+  void CalcArticulatedBodyAlgorithmCache(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const ArticulatedBodyInertiaCache<T>& aic,
+      const MultibodyForces<T>& forces,
+      ArticulatedBodyAlgorithmCache<T>* aac) const;
 
   /// @}
   // Closes "Computational methods" Doxygen section.

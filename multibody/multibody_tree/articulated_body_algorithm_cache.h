@@ -1,0 +1,99 @@
+#pragma once
+
+#include <vector>
+
+#include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
+#include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/common/eigen_types.h"
+
+namespace drake {
+namespace multibody {
+
+/// This class is one of the cache entries in MultibodyTreeContext. It holds the
+/// results of computations that are used in the recursive implementation of the
+/// articulated body algorithm.
+///
+/// Articulated body algorithm cache entries include:
+/// - The articulated body inertia residual force `zplus_PB_W` for this body
+///   projected across its inboard mobilizer to frame P.
+/// - The Coriolis spatial acceleration `a_Bo_W` for this body due to the
+///   relative velocities of body B and body P.
+///
+/// @tparam T The mathematical type of the context, which must be a valid Eigen
+///           scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+/// - symbolic::Expression
+///
+/// They are already available to link against in the containing library.
+template<typename T>
+class ArticulatedBodyAlgorithmCache {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyAlgorithmCache)
+
+  /// Constructs an articulated body algorithm entry for the given
+  /// MultibodyTreeTopology.
+  explicit ArticulatedBodyAlgorithmCache(const MultibodyTreeTopology& topology) :
+      num_nodes_(topology.get_num_bodies()) {
+    Allocate();
+  }
+
+  /// The articulated body inertia residual force `zplus_PB_W` for this body
+  /// projected across its inboard mobilizer to frame P.
+  const SpatialForce<T>& get_zplus_PB_W(
+      BodyNodeIndex body_node_index) const {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return zplus_PB_W[body_node_index];
+  }
+
+  /// Mutable version of get_zplus_PB_W().
+  SpatialForce<T>& get_mutable_zplus_PB_W(
+      BodyNodeIndex body_node_index) {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return zplus_PB_W[body_node_index];
+  }
+
+  /// The Coriolis spatial acceleration `a_Bo_W` for this body due to the
+  /// relative velocities of body B and body P.
+  const SpatialAcceleration<T>& get_a_Bo_W(
+      BodyNodeIndex body_node_index) const {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return a_Bo_W[body_node_index];
+  }
+
+  /// Mutable version of get_a_Bo_W().
+  SpatialAcceleration<T>& get_mutable_a_Bo_W(
+      BodyNodeIndex body_node_index) {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return a_Bo_W[body_node_index];
+  }
+
+
+ private:
+  // The type of the pools for storing spatial forces.
+  typedef std::vector<SpatialForce<T>> SpatialForce_PoolType;
+
+  // The type of the pools for storing spatial accelerations.
+  typedef std::vector<SpatialAcceleration<T>> SpatialAcceleration_PoolType;
+
+  // Allocates resources for this articulated body cache.
+  void Allocate() {
+    zplus_PB_W.resize(num_nodes_);
+    a_Bo_W.resize(num_nodes_);
+  }
+
+  // Number of body nodes in the corresponding MultibodyTree.
+  int num_nodes_{0};
+
+  // Pools.
+  SpatialForce_PoolType zplus_PB_W{};  // Indexed by BodyNodeIndex.
+  SpatialAcceleration_PoolType a_Bo_W{};
+};
+
+}  // namespace multibody
+}  // namespace drake
