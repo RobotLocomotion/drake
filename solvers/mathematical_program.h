@@ -1985,9 +1985,9 @@ class MathematicalProgram {
                        double variable_guess_value);
 
   /**
-   * Sets the initial guess for the decision variables stored in @p var to be
-   * x0. Variables begin with a default initial guess of NaN to indicate that no
-   * guess is available.
+   * Sets the initial guess for the decision variables stored in
+   * @p decision_variable_mat to be @p x0. Variables begin with a default
+   * initial guess of NaN to indicate that no guess is available.
    */
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
