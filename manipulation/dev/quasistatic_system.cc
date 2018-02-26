@@ -589,12 +589,181 @@ double QuasistaticSystem<Scalar>::CalcBigM(
 }
 
 template <class Scalar>
+void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
+    VectorXd* const delta_q_value_ptr,
+    const Eigen::Ref<const Eigen::MatrixXd>& Jn,
+    const Eigen::Ref<const Eigen::MatrixXd>& Jf,
+    const Eigen::Ref<const Eigen::VectorXd>& z_n_value,
+    const Eigen::Ref<const Eigen::VectorXd>& z_f_value,
+    const Eigen::Ref<const Eigen::VectorXd>& z_gamma_value,
+    const Eigen::Ref<const Eigen::VectorXd>& phi,
+    KinematicsCache<double> *const cache) const {
+  VectorXd& delta_q_value = *delta_q_value_ptr;
+  solvers::MathematicalProgram prog_QP;
+  auto delta_qu_QP = prog_QP.NewContinuousVariables(nu_, "delta_qu_QP");
+  VectorXd Jna_times_delta_qa = VectorXd::Zero(nc_);
+  VectorXd Jfa_times_delta_qa = VectorXd::Zero(nd_);
+  VectorXd delta_phi_f_value = VectorXd::Zero(nd_);
+  for (int i = 0; i < na_; i++) {
+    int idx = idx_qa_in_q_[i];
+    Jna_times_delta_qa += Jn.col(idx_qa_[i]) * delta_q_value(idx);
+    Jfa_times_delta_qa += Jf.col(idx_qa_[i]) * delta_q_value(idx);
+  }
+  for (int i = 0; i < n1_; i++) {
+    delta_phi_f_value += Jf.col(idx_q_[i]) * delta_q_value(i);
+  }
+  // index of first row of Jf_i (corresponding to contact i) in Jf.
+  int idx_fi0 = 0;
+  for (int i = 0; i < nc_; i++) {
+    // row of Jn corresponding to contact i
+    MatrixXd Jnu_row;
+    Jnu_row.resize(1, nu_);
+    for (int j = 0; j < nu_; j++) {
+      Jnu_row(0, j) = Jn(i, idx_qu_[j]);
+    }
+    // if contact force == 0
+    if (z_n_value(i) > 0.5) {
+      // cout << "added phi(i)^{l+1} >= 0\n" << flush;
+      prog_QP.AddLinearConstraint(Jnu_row * delta_qu_QP +
+                                      Jna_times_delta_qa.segment(i, 1) >=
+                                  -phi.segment(i, 1));
+    } else {
+      // z_n_value(i) == 0 --> phi_n(i) == 0
+      prog_QP.AddLinearConstraint(Jnu_row * delta_qu_QP +
+                                      Jna_times_delta_qa.segment(i, 1) ==
+                                  -phi.segment(i, 1));
+      const int tangent_vector_half_count = nf_(i) / 2;
+      MatrixXd Jfu_half(tangent_vector_half_count, nu_);
+      MatrixXd Jfu(nf_(i), nu_);
+      for (int j = 0; j < nu_; j++) {
+        Jfu_half.col(j) =
+            Jf.block(idx_fi0, idx_qu_[j], tangent_vector_half_count, 1);
+        Jfu.col(j) = Jf.block(idx_fi0, idx_qu_[j], nf_(i), 1);
+      }
+      VectorXd Jfa_times_delta_qa_i =
+          Jfa_times_delta_qa.segment(idx_fi0, nf_(i));
+      // if contact i is not sliding
+      if (z_gamma_value(i) > 0.5) {
+        prog_QP.AddLinearConstraint(
+            Jfu_half * delta_qu_QP ==
+            -Jfa_times_delta_qa_i.segment(0, tangent_vector_half_count));
+
+      } else {
+        // if contact i is sliding
+        // 1. if lambda_f_ij <= M, the sliding velocity opposite to d_ij
+        // must be positive.
+
+        std::vector<int> non_zero_friction_idx;
+        int non_zero_friction_count = 0;
+
+        for (int j = 0; j < nf_(i); j++) {
+          MatrixXd Jfu_row(1, nu_);
+          Jfu_row = Jfu.row(j);
+          // cout << "z_f_value_i " << z_f_value(idx_fi0 + j) << endl;
+          if (z_f_value(idx_fi0 + j) < 0.5) {  // lambda_f_ij <= M
+            prog_QP.AddLinearConstraint(Jfu_row * delta_qu_QP <=
+                                        -Jfa_times_delta_qa_i.segment(j, 1));
+
+            non_zero_friction_count++;
+            non_zero_friction_idx.push_back(j);
+          }
+        }
+        // 2. if there are friction forces in two adjacent directions, the
+        // corresponding sliding velocities in those directions must be
+        // equal.
+        if (tangent_vector_half_count > 1) {
+          if (non_zero_friction_count == 1) {
+            const int j_opposite =
+                (non_zero_friction_idx[0] + tangent_vector_half_count) % nf_(i);
+            const int j_opposite_next = (j_opposite + 1) % nf_(i);
+            const int j_opposite_previous = (j_opposite - 1 + nf_(i)) % nf_(i);
+            MatrixXd Jfu_opposite_next(1, nu_);
+            MatrixXd Jfu_opposite_previous(1, nu_);
+            MatrixXd Jfu_opposite(1, nu_);
+            Jfu_opposite_next = Jfu.row(j_opposite_next);
+            Jfu_opposite_previous = Jfu.row(j_opposite_previous);
+            Jfu_opposite = Jfu.row(j_opposite);
+
+            VectorX<symbolic::Expression> delta_phi_f_ij_opposite(1);
+            VectorX<symbolic::Expression> delta_phi_f_ij_opposite_previous(1);
+            VectorX<symbolic::Expression> delta_phi_f_ij_opposite_next(1);
+            delta_phi_f_ij_opposite =
+                Jfu_opposite * delta_qu_QP +
+                Jfa_times_delta_qa_i.segment(j_opposite, 1);
+            delta_phi_f_ij_opposite_next =
+                Jfu_opposite_next * delta_qu_QP +
+                Jfa_times_delta_qa_i.segment(j_opposite_next, 1);
+            delta_phi_f_ij_opposite_previous =
+                Jfu_opposite_previous * delta_qu_QP +
+                Jfa_times_delta_qa_i.segment(j_opposite_previous, 1);
+            prog_QP.AddLinearConstraint(delta_phi_f_ij_opposite_next <=
+                                        delta_phi_f_ij_opposite);
+            prog_QP.AddLinearConstraint(delta_phi_f_ij_opposite_previous <=
+                                        delta_phi_f_ij_opposite);
+
+          } else if (non_zero_friction_count == 2) {
+            DRAKE_DEMAND(non_zero_friction_count == 2);
+            VectorX<symbolic::Expression> lhs(1);
+            VectorX<symbolic::Expression> rhs(1);
+            int j1 = non_zero_friction_idx[0];
+            int j2 = non_zero_friction_idx[1];
+            MatrixXd Jfu_row1(1, nu_);
+            MatrixXd Jfu_row2(1, nu_);
+            Jfu_row1 = Jfu.row(j1);
+            Jfu_row2 = Jfu.row(j2);
+            lhs = Jfa_times_delta_qa.segment(idx_fi0 + j1, 1) +
+                  Jfu_row1 * delta_qu_QP;
+            rhs = Jfa_times_delta_qa.segment(idx_fi0 + j2, 1) +
+                  Jfu_row2 * delta_qu_QP;
+            prog_QP.AddLinearConstraint(lhs == rhs);
+          }
+        }
+      }
+    }
+    idx_fi0 += nf_(i);
+    cout << endl << endl;
+  }
+  // cost
+  MatrixXd H(nu_, nu_);
+
+  H.setZero();
+  MatrixXd H_all = tree_->massMatrix(*cache);
+  for (int i = 0; i < nu_; i++) {
+    for (int j = 0; j < nu_; j++) {
+      H(i, j) = H_all(idx_qu_[i], idx_qu_[j]);
+    }
+  }
+
+  prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_, 0), delta_qu_QP);
+
+  // solve QP
+  prog_QP.SetSolverId(solvers::GurobiSolver::id());
+  prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
+
+  const auto result_QP = prog_QP.Solve();
+
+  // get QP solution
+  auto delta_qu_QP_value = prog_QP.GetSolution(delta_qu_QP);
+
+  // replace qu in the MIQP solution with the QP solution
+  if (result_QP == drake::solvers::kSolutionFound) {
+    for (int i = 0; i < nu_; i++) {
+      delta_q_value(idx_qu_in_q_[i]) = delta_qu_QP_value(i);
+    }
+  }
+}
+
+template <class Scalar>
 void QuasistaticSystem<Scalar>::StepForward(
-    const Eigen::MatrixXd& Wn, const Eigen::MatrixXd& Wf,
-    const Eigen::MatrixXd& Jn, const Eigen::MatrixXd& Jf,
-    const Eigen::MatrixXd& U, const Eigen::MatrixXd& E,
-    const drake::VectorX<Scalar>& phi, const Eigen::VectorXd& f,
-    const Eigen::VectorXd& qa_dot_d) const {
+    const Eigen::Ref<const Eigen::MatrixXd>& Wn,
+    const Eigen::Ref<const Eigen::MatrixXd>& Wf,
+    const Eigen::Ref<const Eigen::MatrixXd>& Jn,
+    const Eigen::Ref<const Eigen::MatrixXd>& Jf,
+    const Eigen::Ref<const Eigen::MatrixXd>& U,
+    const Eigen::Ref<const Eigen::MatrixXd>& E,
+    const Eigen::Ref<const Eigen::VectorXd>& phi,
+    const Eigen::Ref<const Eigen::VectorXd>& f,
+    const Eigen::Ref<const Eigen::VectorXd>& qa_dot_d) const {
   // upper bounds on delta_q
   const Scalar max_delta_q = 10 * period_sec_;  // The multiplier is arbitrary.
   const Scalar max_gamma = max_delta_q;
@@ -778,162 +947,9 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
 
   // second QP to minimize kinetic energy
   if (is_using_kinetic_energy_minimizing_QP_) {
-    drake::solvers::MathematicalProgram prog_QP;
-    auto delta_qu_QP = prog_QP.NewContinuousVariables(nu_, "delta_qu_QP");
-    VectorXd Jna_times_delta_qa = VectorXd::Zero(nc_);
-    VectorXd Jfa_times_delta_qa = VectorXd::Zero(nd_);
-    VectorXd delta_phi_f_value = VectorXd::Zero(nd_);
-    for (int i = 0; i < na_; i++) {
-      int idx = idx_qa_in_q_[i];
-      Jna_times_delta_qa += Jn.col(idx_qa_[i]) * delta_q_value(idx);
-      Jfa_times_delta_qa += Jf.col(idx_qa_[i]) * delta_q_value(idx);
-    }
-    for (int i = 0; i < n1_; i++) {
-      delta_phi_f_value += Jf.col(idx_q_[i]) * delta_q_value(i);
-    }
-    // index of first row of Jf_i (corresponding to contact i) in Jf.
-    int idx_fi0 = 0;
-    for (int i = 0; i < nc_; i++) {
-      // row of Jn corresponding to contact i
-      MatrixXd Jnu_row;
-      Jnu_row.resize(1, nu_);
-      for (int j = 0; j < nu_; j++) {
-        Jnu_row(0, j) = Jn(i, idx_qu_[j]);
-      }
-      // if contact force == 0
-      if (z_n_value(i) > 0.5) {
-        // cout << "added phi(i)^{l+1} >= 0\n" << flush;
-        prog_QP.AddLinearConstraint(Jnu_row * delta_qu_QP +
-                                        Jna_times_delta_qa.segment(i, 1) >=
-                                    -phi.segment(i, 1));
-      } else {
-        // z_n_value(i) == 0 --> phi_n(i) == 0
-        prog_QP.AddLinearConstraint(Jnu_row * delta_qu_QP +
-                                        Jna_times_delta_qa.segment(i, 1) ==
-                                    -phi.segment(i, 1));
-        const int tangent_vector_half_count = nf_(i) / 2;
-        MatrixXd Jfu_half(tangent_vector_half_count, nu_);
-        MatrixXd Jfu(nf_(i), nu_);
-        for (int j = 0; j < nu_; j++) {
-          Jfu_half.col(j) =
-              Jf.block(idx_fi0, idx_qu_[j], tangent_vector_half_count, 1);
-          Jfu.col(j) = Jf.block(idx_fi0, idx_qu_[j], nf_(i), 1);
-        }
-        VectorXd Jfa_times_delta_qa_i =
-            Jfa_times_delta_qa.segment(idx_fi0, nf_(i));
-        // if contact i is not sliding
-        if (z_gamma_value(i) > 0.5) {
-          prog_QP.AddLinearConstraint(
-              Jfu_half * delta_qu_QP ==
-              -Jfa_times_delta_qa_i.segment(0, tangent_vector_half_count));
-
-        } else {
-          // if contact i is sliding
-          // 1. if lambda_f_ij <= M, the sliding velocity opposite to d_ij
-          // must be positive.
-
-          std::vector<int> non_zero_friction_idx;
-          int non_zero_friction_count = 0;
-
-          for (int j = 0; j < nf_(i); j++) {
-            MatrixXd Jfu_row(1, nu_);
-            Jfu_row = Jfu.row(j);
-            // cout << "z_f_value_i " << z_f_value(idx_fi0 + j) << endl;
-            if (z_f_value(idx_fi0 + j) < 0.5) {  // lambda_f_ij <= M
-              prog_QP.AddLinearConstraint(Jfu_row * delta_qu_QP <=
-                                          -Jfa_times_delta_qa_i.segment(j, 1));
-
-              non_zero_friction_count++;
-              non_zero_friction_idx.push_back(j);
-            }
-          }
-          // 2. if there are friction forces in two adjacent directions, the
-          // corresponding sliding velocities in those directions must be
-          // equal.
-          if (tangent_vector_half_count > 1) {
-            if (non_zero_friction_count == 1) {
-              const int j_opposite =
-                  (non_zero_friction_idx[0] + tangent_vector_half_count) %
-                  nf_(i);
-              const int j_opposite_next = (j_opposite + 1) % nf_(i);
-              const int j_opposite_previous =
-                  (j_opposite - 1 + nf_(i)) % nf_(i);
-              MatrixXd Jfu_opposite_next(1, nu_);
-              MatrixXd Jfu_opposite_previous(1, nu_);
-              MatrixXd Jfu_opposite(1, nu_);
-              Jfu_opposite_next = Jfu.row(j_opposite_next);
-              Jfu_opposite_previous = Jfu.row(j_opposite_previous);
-              Jfu_opposite = Jfu.row(j_opposite);
-
-              VectorX<symbolic::Expression> delta_phi_f_ij_opposite(1);
-              VectorX<symbolic::Expression> delta_phi_f_ij_opposite_previous(1);
-              VectorX<symbolic::Expression> delta_phi_f_ij_opposite_next(1);
-              delta_phi_f_ij_opposite =
-                  Jfu_opposite * delta_qu_QP +
-                  Jfa_times_delta_qa_i.segment(j_opposite, 1);
-              delta_phi_f_ij_opposite_next =
-                  Jfu_opposite_next * delta_qu_QP +
-                  Jfa_times_delta_qa_i.segment(j_opposite_next, 1);
-              delta_phi_f_ij_opposite_previous =
-                  Jfu_opposite_previous * delta_qu_QP +
-                  Jfa_times_delta_qa_i.segment(j_opposite_previous, 1);
-              prog_QP.AddLinearConstraint(delta_phi_f_ij_opposite_next <=
-                                          delta_phi_f_ij_opposite);
-              prog_QP.AddLinearConstraint(delta_phi_f_ij_opposite_previous <=
-                                          delta_phi_f_ij_opposite);
-
-            } else if (non_zero_friction_count == 2) {
-              DRAKE_DEMAND(non_zero_friction_count == 2);
-              VectorX<symbolic::Expression> lhs(1);
-              VectorX<symbolic::Expression> rhs(1);
-              int j1 = non_zero_friction_idx[0];
-              int j2 = non_zero_friction_idx[1];
-              MatrixXd Jfu_row1(1, nu_);
-              MatrixXd Jfu_row2(1, nu_);
-              Jfu_row1 = Jfu.row(j1);
-              Jfu_row2 = Jfu.row(j2);
-              lhs = Jfa_times_delta_qa.segment(idx_fi0 + j1, 1) +
-                    Jfu_row1 * delta_qu_QP;
-              rhs = Jfa_times_delta_qa.segment(idx_fi0 + j2, 1) +
-                    Jfu_row2 * delta_qu_QP;
-              prog_QP.AddLinearConstraint(lhs == rhs);
-            }
-          }
-        }
-      }
-      idx_fi0 += nf_(i);
-      cout << endl << endl;
-    }
-    // cost
-    MatrixXd H(nu_, nu_);
-
-    H.setZero();
-    MatrixXd H_all = tree_->massMatrix(cache);
-    for (int i = 0; i < nu_; i++) {
-      for (int j = 0; j < nu_; j++) {
-        H(i, j) = H_all(idx_qu_[i], idx_qu_[j]);
-      }
-    }
-
-    prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_, 0), delta_qu_QP);
-
-    // solve QP
-    prog_QP.SetSolverId(solvers::GurobiSolver::id());
-    prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
-
-    const auto result_QP = prog_QP.Solve();
-
-    // get QP solution
-    auto delta_qu_QP_value = prog_QP.GetSolution(delta_qu_QP);
-
-    // replace qu in the MIQP solution with the QP solution
-    if (result_QP == drake::solvers::kSolutionFound) {
-      for (int i = 0; i < nu_; i++) {
-        delta_q_value(idx_qu_in_q_[i]) = delta_qu_QP_value(i);
-      }
-    }
+    MinimizeKineticEnergy(&delta_q_value, Jn, Jf, z_n_value, z_f_value,
+                          z_gamma_value, phi, &cache);
   }
-  /////////////////////////////////////// end of KE-minimizing QP
 
   // update quasistatic system configuration at time step l+1
   VectorXd ql1(n1_);

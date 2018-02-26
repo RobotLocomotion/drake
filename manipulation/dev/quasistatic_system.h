@@ -217,15 +217,38 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
     n_ = n1_ + 2 * n2_;
   }
 
+  // After solving the MIQP, it is possible there exist multiple feasible
+  // motions (delta_q) that satisfy the force balance and contact/friction
+  // constraints.
+  // By solving a QP that minimizes the kinetic energy of the systemn, this
+  // function finds the delta_q that results in a motion consistent with the
+  // MIQP solution, and at the same time minimizes the KE of the system.
+  void MinimizeKineticEnergy(
+      Eigen::VectorXd* const delta_q_value_ptr,
+      const Eigen::Ref<const Eigen::MatrixXd>& Jn,
+      const Eigen::Ref<const Eigen::MatrixXd>& Jf,
+      const Eigen::Ref<const Eigen::VectorXd>& z_n_value,
+      const Eigen::Ref<const Eigen::VectorXd>& z_f_value,
+      const Eigen::Ref<const Eigen::VectorXd>& z_gamma_value,
+      const Eigen::Ref<const Eigen::VectorXd>& phi,
+      KinematicsCache<double> *const cache) const;
+
+
+  // This function calculates the system configuration at the next time step
+  // given the system configuration at the current time step.
   // U: a diagonal matrix whose entries are the coefficient of friction for
   // each contact.
   // qa_dot_d: prescribed (commanded) change of the actuated DOFs over the
   // next time step.
-  void StepForward(const Eigen::MatrixXd& Wn, const Eigen::MatrixXd& Wf,
-                   const Eigen::MatrixXd& Jn, const Eigen::MatrixXd& Jf,
-                   const Eigen::MatrixXd& U, const Eigen::MatrixXd& E,
-                   const drake::VectorX<Scalar>& phi, const Eigen::VectorXd& f,
-                   const Eigen::VectorXd& qa_dot_d) const;
+  void StepForward(const Eigen::Ref<const Eigen::MatrixXd>& Wn,
+                   const Eigen::Ref<const Eigen::MatrixXd>& Wf,
+                   const Eigen::Ref<const Eigen::MatrixXd>& Jn,
+                   const Eigen::Ref<const Eigen::MatrixXd>& Jf,
+                   const Eigen::Ref<const Eigen::MatrixXd>& U,
+                   const Eigen::Ref<const Eigen::MatrixXd>& E,
+                   const Eigen::Ref<const Eigen::VectorXd>& phi,
+                   const Eigen::Ref<const Eigen::VectorXd>& f,
+                   const Eigen::Ref<const Eigen::VectorXd>& qa_dot_d) const;
 
   // initial guesses
   mutable Eigen::VectorXd lambda_n_start_;
