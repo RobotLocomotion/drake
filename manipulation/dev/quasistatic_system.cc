@@ -13,26 +13,15 @@ namespace manipulation {
 
 using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
+using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 using drake::MatrixX;
 using drake::VectorX;
 using std::cos;
-using std::cout;
-using std::endl;
-using std::flush;
 using std::sin;
 
 const double kInfinity = std::numeric_limits<double>::infinity();
-/*
-template <class T>
-void PrintStlVector(const std::vector<T>& v) {
-  for(const auto & e : v) {
-    cout << e << " ";
-  }
-  cout << endl;
-}
-*/
 
 template <typename T>
 T MaxStlVector(const std::vector<T>& v) {
@@ -597,7 +586,7 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
     const Eigen::Ref<const Eigen::VectorXd>& z_f_value,
     const Eigen::Ref<const Eigen::VectorXd>& z_gamma_value,
     const Eigen::Ref<const Eigen::VectorXd>& phi,
-    KinematicsCache<double> *const cache) const {
+    KinematicsCache<double>* const cache) const {
   VectorXd& delta_q_value = *delta_q_value_ptr;
   solvers::MathematicalProgram prog_QP;
   auto delta_qu_QP = prog_QP.NewContinuousVariables(nu_, "delta_qu_QP");
@@ -623,7 +612,6 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
     }
     // if contact force == 0
     if (z_n_value(i) > 0.5) {
-      // cout << "added phi(i)^{l+1} >= 0\n" << flush;
       prog_QP.AddLinearConstraint(Jnu_row * delta_qu_QP +
                                       Jna_times_delta_qa.segment(i, 1) >=
                                   -phi.segment(i, 1));
@@ -642,14 +630,14 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
       }
       VectorXd Jfa_times_delta_qa_i =
           Jfa_times_delta_qa.segment(idx_fi0, nf_(i));
-      // if contact i is not sliding
+      // if contact i is not sliding.
       if (z_gamma_value(i) > 0.5) {
         prog_QP.AddLinearConstraint(
             Jfu_half * delta_qu_QP ==
             -Jfa_times_delta_qa_i.segment(0, tangent_vector_half_count));
 
       } else {
-        // if contact i is sliding
+        // if contact i is sliding:
         // 1. if lambda_f_ij <= M, the sliding velocity opposite to d_ij
         // must be positive.
 
@@ -657,9 +645,8 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
         int non_zero_friction_count = 0;
 
         for (int j = 0; j < nf_(i); j++) {
-          MatrixXd Jfu_row(1, nu_);
+          RowVectorXd Jfu_row(nu_);
           Jfu_row = Jfu.row(j);
-          // cout << "z_f_value_i " << z_f_value(idx_fi0 + j) << endl;
           if (z_f_value(idx_fi0 + j) < 0.5) {  // lambda_f_ij <= M
             prog_QP.AddLinearConstraint(Jfu_row * delta_qu_QP <=
                                         -Jfa_times_delta_qa_i.segment(j, 1));
@@ -677,16 +664,16 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
                 (non_zero_friction_idx[0] + tangent_vector_half_count) % nf_(i);
             const int j_opposite_next = (j_opposite + 1) % nf_(i);
             const int j_opposite_previous = (j_opposite - 1 + nf_(i)) % nf_(i);
-            MatrixXd Jfu_opposite_next(1, nu_);
-            MatrixXd Jfu_opposite_previous(1, nu_);
-            MatrixXd Jfu_opposite(1, nu_);
+            RowVectorXd Jfu_opposite_next(nu_);
+            RowVectorXd Jfu_opposite_previous(nu_);
+            RowVectorXd Jfu_opposite(nu_);
             Jfu_opposite_next = Jfu.row(j_opposite_next);
             Jfu_opposite_previous = Jfu.row(j_opposite_previous);
             Jfu_opposite = Jfu.row(j_opposite);
 
-            VectorX<symbolic::Expression> delta_phi_f_ij_opposite(1);
-            VectorX<symbolic::Expression> delta_phi_f_ij_opposite_previous(1);
-            VectorX<symbolic::Expression> delta_phi_f_ij_opposite_next(1);
+            Vector1<symbolic::Expression> delta_phi_f_ij_opposite(1);
+            Vector1<symbolic::Expression> delta_phi_f_ij_opposite_previous(1);
+            Vector1<symbolic::Expression> delta_phi_f_ij_opposite_next(1);
             delta_phi_f_ij_opposite =
                 Jfu_opposite * delta_qu_QP +
                 Jfa_times_delta_qa_i.segment(j_opposite, 1);
@@ -703,12 +690,12 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
 
           } else if (non_zero_friction_count == 2) {
             DRAKE_DEMAND(non_zero_friction_count == 2);
-            VectorX<symbolic::Expression> lhs(1);
-            VectorX<symbolic::Expression> rhs(1);
+            Vector1<symbolic::Expression> lhs(1);
+            Vector1<symbolic::Expression> rhs(1);
             int j1 = non_zero_friction_idx[0];
             int j2 = non_zero_friction_idx[1];
-            MatrixXd Jfu_row1(1, nu_);
-            MatrixXd Jfu_row2(1, nu_);
+            RowVectorXd Jfu_row1(nu_);
+            RowVectorXd Jfu_row2(nu_);
             Jfu_row1 = Jfu.row(j1);
             Jfu_row2 = Jfu.row(j2);
             lhs = Jfa_times_delta_qa.segment(idx_fi0 + j1, 1) +
@@ -721,9 +708,8 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
       }
     }
     idx_fi0 += nf_(i);
-    cout << endl << endl;
   }
-  // cost
+  // cost = Δq_u' * H * Δq_u
   MatrixXd H(nu_, nu_);
 
   H.setZero();
@@ -737,10 +723,8 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
   prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_, 0), delta_qu_QP);
 
   // solve QP
-  prog_QP.SetSolverId(solvers::GurobiSolver::id());
   prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
-
-  const auto result_QP = prog_QP.Solve();
+  const auto result_QP = solver_.Solve(prog_QP);
 
   // get QP solution
   auto delta_qu_QP_value = prog_QP.GetSolution(delta_qu_QP);
@@ -775,7 +759,7 @@ void QuasistaticSystem<Scalar>::StepForward(
       max_impulse = period_sec_ * std::abs(f(i));
     }
   }
-  max_impulse *= 5;  // this upper bound is arbitrary.
+  max_impulse *= 5;  // This upper bound is arbitrary.
 
   // cacluate big M
   const Scalar kBigM =
@@ -818,55 +802,53 @@ void QuasistaticSystem<Scalar>::StepForward(
   }
   bounds_lambda_n_->UpdateLowerBound(lb_lambda_n);
 
-  //    delta_phi_n = Jn.col(idx_q_) * delta_q
-  //    delta_phi_f = Jf.col(idx_q_) * delta_q
+  // delta_phi_n = Jn.col(idx_q_) * delta_q
+  // delta_phi_f = Jf.col(idx_q_) * delta_q
 
-  // prog.AddLinearConstraint(delta_phi_n >= -phi);
+  // delta_phi_n >= -phi
   non_penetration_->UpdateCoefficients(Jn_q, -phi,
                                        VectorXd::Constant(nc_, kInfinity));
 
-  // prog.AddLinearConstraint(delta_phi_f >= -E * gamma);
+  // delta_phi_f >= -E * gamma
   coulomb_friction1_->UpdateCoefficients(
       (MatrixXd(nd_, n1_ + nc_) << Jf_q, E).finished(), VectorXd::Zero(nd_),
       VectorXd::Constant(nd_, kInfinity));
 
-  // prog.AddLinearConstraint(U * lambda_n >= E.transpose() * lambda_f);
+  // U * lambda_n >= E' * lambda_f
   coulomb_friction2_->UpdateCoefficients(
       (MatrixXd(nc_, nc_ + nd_) << U, -E.transpose()).finished(),
       VectorXd::Zero(nc_), VectorXd::Constant(nc_, kInfinity));
 
-  // prog.AddLinearConstraint(delta_phi_n + phi <= kBigM * z_n);
+  // delta_phi_n + phi <= kBigM * z_n
   non_penetration_complementary_->UpdateCoefficients(
       (MatrixXd(nc_, n1_ + nc_) << Jn_q, -kBigM * MatrixXd::Identity(nc_, nc_))
           .finished(),
       -VectorXd::Constant(nc_, kInfinity), -phi);
 
-  // prog.AddLinearConstraint(delta_phi_f + E * gamma <= kBigM * z_f);
+  // delta_phi_f + E * gamma <= kBigM * z_f
   coulomb_friction1_complementary_->UpdateCoefficients(
       (MatrixXd(nd_, n1_ + nc_ + nd_) << Jf_q, E,
        -kBigM * MatrixXd::Identity(nd_, nd_))
           .finished(),
       -VectorXd::Constant(nd_, kInfinity), VectorXd::Zero(nd_));
 
-  // prog.AddLinearConstraint(U * lambda_n - E.transpose() * lambda_f <=
-  //                         kBigM * z_gamma);
+  // U * lambda_n - E' * lambda_f <= kBigM * z_gamma
   coulomb_friction2_complementary_->UpdateCoefficients(
       (MatrixXd(nc_, nc_ + nd_ + nc_) << U, -E.transpose(),
        -kBigM * MatrixXd::Identity(nc_, nc_))
           .finished(),
       -VectorXd::Constant(nc_, kInfinity), VectorXd::Zero(nc_));
 
-  // prog.AddLinearConstraint(lambda_n <= kBigM * (VectorXd::Ones(nc_) -
-  // z_n)); prog.AddLinearConstraint(gamma <= kBigM *
-  // (VectorXd::Ones(nc_) - z_gamma)); prog.AddLinearConstraint(lambda_f
-  // <= kBigM * (VectorXd::Ones(nd_) - z_f));
+  // lambda_n <= kBigM * (1 - z_n))
+  // gamma <= kBigM * (1 - z_gamma))
+  // lambda_f <= kBigM * (1 - z_f))
   decision_variables_complementary_->UpdateCoefficients(
       (MatrixXd(n2_, n2_ * 2) << MatrixXd::Identity(n2_, n2_),
        kBigM * MatrixXd::Identity(n2_, n2_))
           .finished(),
       -VectorXd::Constant(n2_, kInfinity), kBigM * VectorXd::Ones(n2_));
 
-  // objective
+  // objective = ||Δq_a/period_sec_ - qa_dot_d||^2
   MatrixXd Q(n1_, n1_);
   Q.setZero();
   VectorXd b(n1_);

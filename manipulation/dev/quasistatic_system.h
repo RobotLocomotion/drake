@@ -217,7 +217,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
     n_ = n1_ + 2 * n2_;
   }
 
-  // After solving the MIQP, it is possible there exist multiple feasible
+  // After solving the MIQP, there could exist multiple feasible
   // motions (delta_q) that satisfy the force balance and contact/friction
   // constraints.
   // By solving a QP that minimizes the kinetic energy of the systemn, this
