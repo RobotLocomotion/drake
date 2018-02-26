@@ -1,3 +1,5 @@
+// This file test our snopt wrapper. We check if snopt solver is present at the
+// runtime, to set the snopt options in the test testSetOption
 #include "drake/solvers/snopt_solver.h"
 
 #include <gtest/gtest.h>
@@ -89,6 +91,8 @@ GTEST_TEST(SnoptTest, TestSetOption) {
     // This is to verify we can set the print out file.
     prog.SetSolverOption(SnoptSolver::id(), "Print file", "snopt.out");
     result = solver.Solve(prog);
+    // The user should find a file `snopt.out` in the directory, where the test
+    // is launched.
   }
 }
 }  // namespace test
