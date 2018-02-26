@@ -3,6 +3,7 @@
 #include "drake/solvers/snopt_solver.h"
 
 #include <gtest/gtest.h>
+#include <spruce.hh>
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -78,22 +79,22 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   prog.SetInitialGuess(x, Eigen::Vector3d(10, 20, 30));
 
   SnoptSolver solver;
-  if (solver.available()) {
-    // Make sure the default setting can solve the problem.
-    SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  // Make sure the default setting can solve the problem.
+  SolutionResult result = solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
-    // The program is infeasible after one major iteration.
-    prog.SetSolverOption(SnoptSolver::id(), "Major iterations limit", 1);
-    result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kIterationLimit);
+  // The program is infeasible after one major iteration.
+  prog.SetSolverOption(SnoptSolver::id(), "Major iterations limit", 1);
+  result = solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kIterationLimit);
 
-    // This is to verify we can set the print out file.
-    prog.SetSolverOption(SnoptSolver::id(), "Print file", "snopt.out");
-    result = solver.Solve(prog);
-    // The user should find a file `snopt.out` in the directory, where the test
-    // is launched.
-  }
+  // This is to verify we can set the print out file.
+  std::string print_file = std::string(::getenv("TEST_TMPDIR")) + "/snopt.out";
+  std::cout << print_file << std::endl;
+  EXPECT_FALSE(spruce::path(print_file).exists());
+  prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
+  result = solver.Solve(prog);
+  EXPECT_TRUE(spruce::path(print_file).exists());
 }
 }  // namespace test
 }  // namespace solvers

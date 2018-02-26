@@ -1093,6 +1093,7 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "@spruce",
     ],
 )
 

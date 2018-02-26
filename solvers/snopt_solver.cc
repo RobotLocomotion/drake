@@ -699,7 +699,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     std::string print_file_name(print_file_it->second);
     cur.iPrint = 9;
     snopt::integer print_file_name_len =
-        static_cast<snopt::integer>(print_file_it->second.length());
+        static_cast<snopt::integer>(print_file_name.length());
     snopt::integer inform;
     snopt::snopenappend_(&cur.iPrint, &(print_file_name[0]), &inform,
                          print_file_name_len);
