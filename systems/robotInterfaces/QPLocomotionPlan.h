@@ -6,7 +6,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
