@@ -694,6 +694,16 @@ double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
+double MathematicalProgram::GetInitialGuess(
+    const symbolic::Variable& decision_variable) const {
+  return x_initial_guess_[FindDecisionVariableIndex(decision_variable)];
+}
+
+void MathematicalProgram::SetInitialGuess(
+    const symbolic::Variable& decision_variable, double variable_guess_value) {
+  x_initial_guess_(FindDecisionVariableIndex(decision_variable)) =
+      variable_guess_value;
+}
 // Note that SetDecisionVariableValue and SetDecisionVariableValues are
 // implemented in mathematical_program_api.cc instead of this file.
 
