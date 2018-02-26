@@ -696,7 +696,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
       prog.GetSolverOptionsStr(id());
   const auto print_file_it = snopt_option_str.find("Print file");
   if (print_file_it != snopt_option_str.end()) {
-    char* print_file_name = const_cast<char*>(print_file_it->second.c_str());
+    char print_file_name[80];
+    print_file_it->second.copy(print_file_name, print_file_it->second.length());
+    print_file_name[print_file_it->second.length()] = '\0';
     cur.iPrint = 9;
     snopt::integer print_file_name_len =
         static_cast<snopt::integer>(print_file_it->second.length() + 1);
