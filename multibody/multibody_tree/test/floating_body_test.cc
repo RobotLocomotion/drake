@@ -24,7 +24,7 @@ using Eigen::Vector4d;
 using systems::Context;
 using systems::RungeKutta3Integrator;
 
-GTEST_TEST(QuaternionFloatingMobilizer, DISABLED_Simulation) {
+GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
   const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
   // The numerical tolerance accepted for these tests.

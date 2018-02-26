@@ -301,7 +301,7 @@ void QuaternionFloatingMobilizer<T>::MapQDotToVelocity(
   // Angular component, w_WB = N⁺(q)⋅q̇_WB:
   v->template head<3>() = CalcNplusMatrix(q_FM) * qdot.template head<4>();
   // Translational component, v_WB = ṗ_WB:
-  v->template head<3>() = qdot.template head<3>();
+  v->template tail<3>() = qdot.template tail<3>();
 }
 
 template <typename T>
