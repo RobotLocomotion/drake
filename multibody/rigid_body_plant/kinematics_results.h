@@ -15,6 +15,15 @@ class RigidBodyPlant;
 
 /// A class containing the kinematics results from a RigidBodyPlant system.
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following ScalarTypes are provided:
+///  - double
+///  - AutoDiffXd
+///
+/// Note: The templated ScalarTypes are used in the KinematicsCache, but all
+/// KinematicsResults use RigidBodyTree<double>.  This effectively implies
+/// that we can e.g. AutoDiffXd with respect to the configurations, but not
+/// the RigidBodyTree parameters.
 template <typename T>
 class KinematicsResults {
  public:
@@ -23,7 +32,7 @@ class KinematicsResults {
   /// Constructs a KinematicsResults object associated with @param tree.
   /// An alias to @param tree is maintained so that the tree's lifetime must
   /// exceed this object's lifetime.
-  explicit KinematicsResults(const RigidBodyTree<T>* tree);
+  explicit KinematicsResults(const RigidBodyTree<double>* tree);
 
   /// Updates the KinematicsResults object given the configuration vector
   /// @param q and velocity vector @param v.
@@ -90,7 +99,8 @@ class KinematicsResults {
   // cache this method won't be needed.
   void UpdateFromContext(const Context<T>& context);
 
-  const RigidBodyTree<T>* tree_;
+  // Note that the tree is a double, but the KinematicCache will be T.
+  const RigidBodyTree<double>* tree_;
   KinematicsCache<T> kinematics_cache_;
 };
 
