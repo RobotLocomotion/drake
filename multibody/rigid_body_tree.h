@@ -932,11 +932,32 @@ class RigidBodyTree {
     }
   }
 
+  /**
+   * Updates the collision elements registered with the collision detection 
+   * engine.  Note: If U is not a double and @p throw_if_missing_gradient
+   * is `false`, then the transforms from kinematics cache will be forcefully 
+   * cast to doubles (discarding e.g. any gradient information).  Callers that
+   * set this option to false are responsible for ensuring  that all gradients 
+   * are actually zero.  
+   * @see ComputeMaximumDepthCollisionPoints for an example.
+   * @throws std::runtime_error if gradients are requested that cannot be 
+   *  provided.
+   */
+  template <typename U>
   void updateCollisionElements(
       const RigidBody<T>& body,
-      const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
+      const Eigen::Transform<U, 3, Eigen::Isometry>& transform_to_world,
+      bool throw_if_missing_gradient = true);
 
-  void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
+  /**
+   * @see updateCollisionElements 
+   * @throws std::runtime_error if gradients are requested that cannot be 
+   *  provided.
+   */
+  template <typename U>
+  void updateDynamicCollisionElements(const KinematicsCache<U>& kin_cache,
+                                      bool throw_if_missing_gradient
+                                        = true);
 
   /**
    * Gets the contact points defined by a body's collision elements.
@@ -1113,12 +1134,20 @@ class RigidBodyTree {
    surface of each body is stored in the PointPair structure in the frame of the
    corresponding body.
 
-   @param use_margins[in] If `true` the model uses the representation with
+   @param[in] use_margins If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
+
+   @param[in] throw_if_missing_gradient If `true`, then the model will
+   throw a std::runtime_error if the scalar type U is non-double and
+   gradient information may have been lost.
+
+   @throws std::runtime_error per @p throw_if_missing_gradient.
    **/
-  std::vector<drake::multibody::collision::PointPair<double>>
-  ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
-                                     bool use_margins = true);
+  template <typename U>
+  std::vector<drake::multibody::collision::PointPair<U>>
+  ComputeMaximumDepthCollisionPoints(const KinematicsCache<U>& cache,
+                                     bool use_margins = true, bool
+                                     throw_if_missing_gradient = true);
 
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,

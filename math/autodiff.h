@@ -36,12 +36,12 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
   return ret;
 }
 
-/** `B = discardGradient(A)` enables casting from a matrix of AutoDiffScalars
+/** `B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
  * to AutoDiffScalar::Scalar type, explicitly throwing away any gradient
  * information. For a matrix of type, e.g. `MatrixX<AutoDiffXd> A`, the
  * comparable operation
  *   `B = A.cast<double>()`
- * should (and does) fail to compile.  Use discardGradient(A) if you want to
+ * should (and does) fail to compile.  Use `DiscardGradient(A)` if you want to
  * force the cast (and explicitly declare that information is lost).
  *
  * This method is overloaded to permit the user to call it for double types and
