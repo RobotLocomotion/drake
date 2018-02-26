@@ -57,6 +57,7 @@ using drake::kSpaceDimension;
 using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
+using drake::math::DiscardGradient;
 using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
@@ -738,8 +739,9 @@ void RigidBodyTree<T>::updateCollisionElements(
 }
 
 template <typename T>
+template <typename U>
 void RigidBodyTree<T>::updateDynamicCollisionElements(
-    const KinematicsCache<double>& cache) {
+    const KinematicsCache<U>& cache) {
   CheckCacheValidity(cache);
   // todo: this is currently getting called many times with the same cache
   // object.  and it's presumably somewhat expensive.
@@ -747,7 +749,9 @@ void RigidBodyTree<T>::updateDynamicCollisionElements(
     const RigidBody<T>& body = **it;
     if (body.has_parent_body()) {
       updateCollisionElements(
-          body, cache.get_element(body.get_body_index()).transform_to_world);
+          body,
+          DiscardGradient(
+              cache.get_element(body.get_body_index()).transform_to_world));
     }
   }
   collision_model_->UpdateModel();
@@ -988,35 +992,53 @@ bool RigidBodyTree<T>::collisionDetect(
 }
 
 template <typename T>
-std::vector<drake::multibody::collision::PointPair<double>>
+template <typename U>
+std::vector<drake::multibody::collision::PointPair<U>>
 RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
-    const KinematicsCache<double>& cache, bool use_margins) {
+    const KinematicsCache<U>& cache, bool use_margins,
+    bool throw_if_missing_gradient) {
   updateDynamicCollisionElements(cache);
   vector<drake::multibody::collision::PointPair<double>> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
                                                        &contact_points);
+
+  vector<drake::multibody::collision::PointPair<U>>
+      contact_points_in_body_frame;
+
   // For each contact pair, map contact point from world frame to each body's
   // frame.
   for (size_t i = 0; i < contact_points.size(); ++i) {
     auto& pair = contact_points[i];
     if (pair.elementA->CanCollideWith(pair.elementB)) {
+      // For the autodiff version, throw if gradient information may have
+      // been lost.
+      if (!std::is_same<U, double>::value && throw_if_missing_gradient) {
+        std::runtime_error(
+            "Potential collisions exist.  Gradient information"
+            " would have been inaccurate.");
+      }
+
+      drake::multibody::collision::PointPair<U> pair_in_body_frame(pair);
+
       // Get bodies' transforms.
       const int bodyA_id = pair.elementA->get_body()->get_body_index();
-      const Isometry3d& TA =
-          cache.get_element(bodyA_id).transform_to_world;
+      const Isometry3<U>& TA = cache.get_element(bodyA_id).transform_to_world;
 
       const int bodyB_id = pair.elementB->get_body()->get_body_index();
-      const Isometry3d& TB =
-          cache.get_element(bodyB_id).transform_to_world;
+      const Isometry3<U>& TB = cache.get_element(bodyB_id).transform_to_world;
 
       // Transform to bodies' frames.
-      // Note:
-      // Eigen assumes aliasing by default and therefore this operation is safe.
-      pair.ptA = TA.inverse() * contact_points[i].ptA;
-      pair.ptB = TB.inverse() * contact_points[i].ptB;
+      // Note: Eigen assumes aliasing by default and therefore this operation
+      // is safe.
+      pair_in_body_frame.ptA = TA.inverse() * contact_points[i].ptA.cast<U>();
+      pair_in_body_frame.ptB = TB.inverse() * contact_points[i].ptB.cast<U>();
+
+      // TODO(russt): Shouldn't the normal be transformed, too?
+
+      contact_points_in_body_frame.push_back(pair_in_body_frame);
     }
   }
-  return contact_points;
+  return contact_points_in_body_frame;
 }
 
 template <typename T>
@@ -3588,40 +3610,59 @@ RigidBodyTree<double>::transformQDotMappingToVelocityMapping<
 
 // Explicit template instantiations for transformPointsJacobian.
 template MatrixX<AutoDiffUpTo73d>
-RigidBodyTree<double>::transformPointsJacobian<AutoDiffUpTo73d, Matrix3Xd>(
+RigidBodyTree<double>::transformPointsJacobian<AutoDiffUpTo73d,
+                                               Matrix3X<AutoDiffUpTo73d>>(
     KinematicsCache<AutoDiffUpTo73d> const&,
-    Eigen::MatrixBase<Matrix3Xd> const&, int, int, bool) const;
+    Eigen::MatrixBase<Matrix3X<AutoDiffUpTo73d>> const&, int, int, bool) const;
+template MatrixX<AutoDiffXd> RigidBodyTree<double>::transformPointsJacobian<
+    AutoDiffXd, Matrix3X<AutoDiffXd>>(
+    KinematicsCache<AutoDiffXd> const&,
+    Eigen::MatrixBase<Matrix3X<AutoDiffXd>> const&, int, int, bool) const;
+template MatrixXd RigidBodyTree<double>::transformPointsJacobian<
+    double, Matrix3Xd>(KinematicsCache<double> const&,
+                       Eigen::MatrixBase<Matrix3Xd> const&, int, int,
+                       bool) const;
+template MatrixX<AutoDiffUpTo73d>
+RigidBodyTree<double>::transformPointsJacobian<AutoDiffUpTo73d,
+                                               Vector3<AutoDiffUpTo73d>>(
+    KinematicsCache<AutoDiffUpTo73d> const&,
+    Eigen::MatrixBase<Vector3<AutoDiffUpTo73d>> const&, int, int, bool) const;
 template MatrixX<AutoDiffXd>
-RigidBodyTree<double>::transformPointsJacobian<AutoDiffXd, Matrix3Xd>(
-    KinematicsCache<AutoDiffXd> const&, Eigen::MatrixBase<Matrix3Xd> const&,
+RigidBodyTree<double>::transformPointsJacobian<AutoDiffXd, Vector3<AutoDiffXd>>(
+    KinematicsCache<AutoDiffXd> const&,
+    Eigen::MatrixBase<Vector3<AutoDiffXd>> const&, int, int, bool) const;
+template MatrixXd RigidBodyTree<double>::transformPointsJacobian<
+    double, Vector3d>(KinematicsCache<double> const&,
+                      Eigen::MatrixBase<Vector3d> const&, int, int, bool) const;
+template MatrixX<AutoDiffUpTo73d>
+RigidBodyTree<AutoDiffUpTo73d>::transformPointsJacobian<
+    AutoDiffUpTo73d, Eigen::Block<Matrix3X<AutoDiffUpTo73d>, 3, 1, true>>(
+    KinematicsCache<AutoDiffUpTo73d> const&,
+    Eigen::MatrixBase<
+        Eigen::Block<Matrix3X<AutoDiffUpTo73d>, 3, 1, true>> const&,
     int, int, bool) const;
-template MatrixXd
-RigidBodyTree<double>::transformPointsJacobian<double, Matrix3Xd>(
-    KinematicsCache<double> const&, Eigen::MatrixBase<Matrix3Xd> const&, int,
-    int, bool) const;
-template MatrixXd
-RigidBodyTree<double>::transformPointsJacobian<double, Vector3d>(
-    KinematicsCache<double> const&, Eigen::MatrixBase<Vector3d> const&, int,
-    int, bool) const;
+template MatrixX<AutoDiffXd> RigidBodyTree<AutoDiffXd>::transformPointsJacobian<
+    AutoDiffXd, Eigen::Block<Matrix3X<AutoDiffXd>, 3, 1, true>>(
+    KinematicsCache<AutoDiffXd> const&,
+    Eigen::MatrixBase<Eigen::Block<Matrix3X<AutoDiffXd>, 3, 1, true>> const&,
+    int, int, bool) const;
 template MatrixXd RigidBodyTree<double>::transformPointsJacobian<
     double, Eigen::Block<Matrix3Xd, 3, 1, true>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Block<Matrix3Xd, 3, 1, true>> const&, int, int,
     bool) const;
 template MatrixX<AutoDiffUpTo73d>
-RigidBodyTree<double>::transformPointsJacobian<AutoDiffUpTo73d,
-                                               Eigen::Map<Matrix3Xd const>>(
+RigidBodyTree<double>::transformPointsJacobian<
+    AutoDiffUpTo73d, Eigen::Map<Matrix3X<AutoDiffUpTo73d> const>>(
     KinematicsCache<AutoDiffUpTo73d> const&,
-    Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
-    bool) const;
-template MatrixX<AutoDiffXd>
-RigidBodyTree<double>::transformPointsJacobian<
-    AutoDiffXd, Eigen::Map<Matrix3Xd const>>(
+    Eigen::MatrixBase<Eigen::Map<Matrix3X<AutoDiffUpTo73d> const>> const&, int,
+    int, bool) const;
+template MatrixX<AutoDiffXd> RigidBodyTree<double>::transformPointsJacobian<
+    AutoDiffXd, Eigen::Map<Matrix3X<AutoDiffXd> const>>(
     KinematicsCache<AutoDiffXd> const&,
-    Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
+    Eigen::MatrixBase<Eigen::Map<Matrix3X<AutoDiffXd> const>> const&, int, int,
     bool) const;
-template MatrixXd
-RigidBodyTree<double>::transformPointsJacobian<
+template MatrixXd RigidBodyTree<double>::transformPointsJacobian<
     double, Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
@@ -3774,6 +3815,17 @@ RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffXd>() const;
 template
 KinematicsCache<AutoDiffUpTo73d>
 RigidBodyTree<double>::CreateKinematicsCacheWithType<AutoDiffUpTo73d>() const;
+
+// Explicit template instantiations for ComputeMaximumDepthCollisionPoints.
+template std::vector<drake::multibody::collision::PointPair<AutoDiffUpTo73d>>
+RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<AutoDiffUpTo73d>(
+    const KinematicsCache<AutoDiffUpTo73d>&, bool, bool);
+template std::vector<drake::multibody::collision::PointPair<AutoDiffXd>>
+RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<AutoDiffXd>(
+    const KinematicsCache<AutoDiffXd>&, bool, bool);
+template std::vector<drake::multibody::collision::PointPair<double>>
+RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<double>(
+    const KinematicsCache<double>&, bool, bool);
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyTree<double>;

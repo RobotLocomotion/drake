@@ -936,7 +936,17 @@ class RigidBodyTree {
       const RigidBody<T>& body,
       const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
 
-  void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
+  /**
+   * Updates the collision elements registered with the collision detection 
+   * engine.  Note: If U is not a double, then the transforms from kinematics
+   * cache will be forcefully cast to doubles (discarding e.g. any gradient
+   * information).  Downstream users of the results of collision_model_ that
+   * use KinematicsCache<U> with U non-double must be careful to not assume 
+   * that all gradients are actually zero.  
+   * @see ComputeMaximumDepthCollisionPoints for an example.
+   */
+  template <typename U>
+  void updateDynamicCollisionElements(const KinematicsCache<U>& kin_cache);
 
   /**
    * Gets the contact points defined by a body's collision elements.
@@ -1115,10 +1125,18 @@ class RigidBodyTree {
 
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
+
+   @param throw_if_missing_gradient[in] If `true`, then the model will
+   throw a std::runtime_error if the scalar type U is non-double and
+   gradient information may have been lost.
+
+   @throws std::runtime_error per @p throw_if_missing_gradient.
    **/
-  std::vector<drake::multibody::collision::PointPair<double>>
-  ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
-                                     bool use_margins = true);
+  template <typename U>
+  std::vector<drake::multibody::collision::PointPair<U>>
+  ComputeMaximumDepthCollisionPoints(const KinematicsCache<U>& cache,
+                                     bool use_margins = true, bool
+                                     throw_if_missing_gradient = true);
 
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,

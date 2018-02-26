@@ -25,6 +25,12 @@ struct CompliantContactModelParameters {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+/// - AutoDiffXd
+///
+/// Note: The templated ScalarTypes are used in the KinematicsCache, but all
+/// CompliantContactModels use RigidBodyTree<double>.  This effectively implies
+/// that we can e.g. AutoDiffXd with respect to the configurations, but not
+/// the RigidBodyTree parameters.
 template <typename T>
 class CompliantContactModel {
  public:
@@ -32,6 +38,13 @@ class CompliantContactModel {
 
   /// Instantiates a %CompliantContactModel.
   CompliantContactModel() = default;
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit CompliantContactModel(const CompliantContactModel<U>& other)
+      : inv_v_stiction_tolerance_(other.inv_v_stiction_tolerance_),
+        characteristic_radius_(other.characteristic_radius_),
+        default_material_(other.default_material()) {}
 
   /// Computes the generalized forces on all bodies due to contact.
   ///
@@ -43,10 +56,11 @@ class CompliantContactModel {
   ///                       port.
   /// @returns              The generalized forces across all the bodies due to
   ///                       contact response.
-  VectorX<T> ComputeContactForce(
-      const RigidBodyTree<T>& tree,
-      const KinematicsCache<T>& kinsol,
-      ContactResults<T>* contacts = nullptr) const;
+  /// @throws std::runtime_error if T is non-double and potential gradient
+  ///                       information would have been lost.
+  VectorX<T> ComputeContactForce(const RigidBodyTree<double>& tree,
+                                 const KinematicsCache<T>& kinsol,
+                                 ContactResults<T>* contacts = nullptr) const;
 
   /// Defines the default material property values for this model instance.
   /// All elements with default-configured values will use the values in the
@@ -103,6 +117,10 @@ class CompliantContactModel {
   // The default compliant material properties for *this* model instance.
   // By default, it uses all hard-coded values.
   CompliantMaterial default_material_;
+
+  // For scalar-converting copy constructor.
+  template <typename U>
+  friend class CompliantContactModel;
 };
 
 }  // namespace systems
