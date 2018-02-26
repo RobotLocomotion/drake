@@ -1944,14 +1944,14 @@ class MathematicalProgram {
   // void addQuadraticCost ...
 
   /**
-   * Get the initial guess for a single variable.
+   * Gets the initial guess for a single variable.
    * @pre @p decision_variable has been registered in the optimization program.
    * @throw runtime error if the pre condition is not satisfied.
    */
   double GetInitialGuess(const symbolic::Variable& decision_variable) const;
 
   /**
-   * Get the initial guess for some variables.
+   * Gets the initial guess for some variables.
    * @pre Each variable in @p decision_variable_mat has been registered in the
    * optimization program.
    * @throw runtime error if the pre condition is not satisfied.
@@ -1977,7 +1977,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Set the initial guess for a single variable @p decision_variable.
+   * Sets the initial guess for a single variable @p decision_variable.
    * @pre decision_variable is a registered decision variable in the program.
    * @throw a runtime error if precondition is not satisfied.
    */
@@ -1985,8 +1985,8 @@ class MathematicalProgram {
                        double variable_guess_value);
 
   /**
-   * Set the initial guess for the decision variables stored in @p var to be x0.
-   * Variables begin with a default initial guess of NaN to indicate that no
+   * Sets the initial guess for the decision variables stored in @p var to be
+   * x0. Variables begin with a default initial guess of NaN to indicate that no
    * guess is available.
    */
   template <typename DerivedA, typename DerivedB>
