@@ -696,21 +696,12 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
       prog.GetSolverOptionsStr(id());
   const auto print_file_it = snopt_option_str.find("Print file");
   if (print_file_it != snopt_option_str.end()) {
-    constexpr int kMaxFileNameLength = 80;
-    if (print_file_it->second.length() >= kMaxFileNameLength) {
-      std::ostringstream oss;
-      oss << "The file name should be less than " << kMaxFileNameLength 
-          << " characters.\n";
-      throw std::logic_error(oss.str());
-    }
-    char print_file_name[kMaxFileNameLength];
-    print_file_it->second.copy(print_file_name, print_file_it->second.length());
-    print_file_name[print_file_it->second.length()] = '\0';
+    std::string print_file_name(print_file_it->second);
     cur.iPrint = 9;
     snopt::integer print_file_name_len =
         static_cast<snopt::integer>(print_file_it->second.length());
     snopt::integer inform;
-    snopt::snopenappend_(&cur.iPrint, print_file_name, &inform,
+    snopt::snopenappend_(&cur.iPrint, &(print_file_name[0]), &inform,
                          print_file_name_len);
     cur.snSeti("Major print level", static_cast<snopt::integer>(11));
     cur.snSeti("Print file", cur.iPrint);
