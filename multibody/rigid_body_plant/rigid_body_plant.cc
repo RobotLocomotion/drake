@@ -1253,7 +1253,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
   generalized_velocity->SetFromVector(
-      tree_->transformQDotToVelocity(kinsol, qdot));
+    tree_->transformQDotToVelocity(kinsol, qdot.eval()));
 }
 
 template <typename T>

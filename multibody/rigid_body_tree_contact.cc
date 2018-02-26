@@ -170,7 +170,8 @@ void RigidBodyTree<T>::accumulateContactJacobian(
   const size_t numCB = cindB.size();
   const size_t offset = 3 * numCA;
 
-  auto J_tmp = transformPointsJacobian(cache, bodyPoints, bodyInd, 0, true);
+  auto J_tmp = transformPointsJacobian(
+      cache, bodyPoints.template cast<Scalar>().eval(), bodyInd, 0, true);
 
   // add contributions from points in xA
   for (size_t x = 0; x < numCA; x++) {
