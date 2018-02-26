@@ -721,6 +721,7 @@ drake_cc_googletest(
     deps = [
         ":binding",
         ":constraint",
+        ":cost",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
