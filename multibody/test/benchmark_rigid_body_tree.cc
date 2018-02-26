@@ -69,8 +69,9 @@ void Scenario1(const RigidBodyTree<double>& model,
     cache.initialize(q);
     model.doKinematics(cache, false);
     for (const auto& pair : body_fixed_points) {
-      auto J = model.transformPointsJacobian(cache, pair.second, pair.first, 0,
-                                             false);
+      auto J = model.transformPointsJacobian(cache, pair.second.cast<Scalar>
+                                                 ().eval(),
+                                             pair.first, 0, false);
       if (uniform(generator) < 1e-15) {
         // print with some probability to avoid optimizing away
         printMatrix<decltype(J)::RowsAtCompileTime,

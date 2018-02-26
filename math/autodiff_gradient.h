@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
 
@@ -135,6 +136,78 @@ void gradientMatrixToAutoDiff(
           gradient.row(row + col * auto_diff_matrix.rows()).transpose();
     }
   }
+}
+
+/** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
+ * AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
+ * the gradient matrix is empty or zero.  For a matrix of type, e.g.
+ * `MatrixX<AutoDiffXd> A`, the comparable operation
+ *   `B = A.cast<double>()`
+ * should (and does) fail to compile.  Use `DiscardZeroGradient(A)` if you want
+ * to force the cast (and the check).
+ *
+ * This method is overloaded to permit the user to call it for double types and
+ * AutoDiffScalar types (to avoid the calling function having to handle the
+ * two cases differently).
+ *
+ * @param precision is passed to Eigen's isZero(precision) to evaluate whether 
+ * the gradients are zero.
+ * @throws std::runtime_error if the gradients were not empty nor zero.
+ *
+ * @see DiscardGradient
+ */
+template <typename Derived>
+typename std::enable_if<
+    !std::is_same<typename Derived::Scalar, double>::value,
+    Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
+                  Derived::MaxColsAtCompileTime>>::type
+DiscardZeroGradient(
+    const Eigen::MatrixBase<Derived>& auto_diff_matrix,
+    const typename Eigen::NumTraits<
+        typename Derived::Scalar::Scalar>::Real& precision =
+        Eigen::NumTraits<typename Derived::Scalar::Scalar>::dummy_precision()) {
+  const auto gradients = autoDiffToGradientMatrix(auto_diff_matrix);
+  if (gradients.size() == 0 || gradients.isZero(precision)) {
+    return autoDiffToValueMatrix(auto_diff_matrix);
+  }
+  throw std::runtime_error(
+      "Casting AutoDiff to value but gradients are not zero.");
+}
+
+/// @see DiscardZeroGradient().
+template <typename Derived>
+typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,
+                        const Eigen::MatrixBase<Derived>&>::type
+DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
+                   double precision = 0.) {
+  unused(precision);
+  return matrix;
+}
+
+/// @see DiscardZeroGradient().
+template <typename _Scalar, int _Dim, int _Mode, int _Options>
+typename std::enable_if<
+    !std::is_same<_Scalar, double>::value,
+    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>::type
+DiscardZeroGradient(
+    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& auto_diff_transform,
+    const typename Eigen::NumTraits<typename _Scalar::Scalar>::Real& precision =
+        Eigen::NumTraits<typename _Scalar::Scalar>::dummy_precision()) {
+  return Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>(
+      DiscardZeroGradient(auto_diff_transform.matrix(), precision));
+}
+
+/// @see DiscardZeroGradient().
+template <typename _Scalar, int _Dim, int _Mode, int _Options>
+typename std::enable_if<
+    std::is_same<_Scalar, double>::value,
+    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&>::type
+DiscardZeroGradient(
+    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& transform,
+    double precision = 0.) {
+  unused(precision);
+  return transform;
 }
 
 }  // namespace math

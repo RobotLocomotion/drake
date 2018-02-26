@@ -41,7 +41,7 @@ namespace {
 
 // Base class for testing the RigidBodyPlant's logic for populating its
 // output port for collision response data.
-class ContactResultTest : public ContactResultTestCommon {
+class ContactResultTest : public ContactResultTestCommon<double> {
  protected:
   // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
