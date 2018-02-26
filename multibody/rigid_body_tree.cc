@@ -105,9 +105,13 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree<double>& tree) {
   return os;
 }
 
+// Suppress deprecation warnings when constructing `bodies` and `frames`.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 RigidBodyTree<T>::RigidBodyTree()
     : collision_model_(drake::multibody::collision::newModel()) {
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
