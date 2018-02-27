@@ -9,6 +9,7 @@ load(
 )
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 
 drake_cc_library(
     name = "quasistatic_system",
@@ -28,12 +29,10 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
+drake_cc_googletest(
     name = "rod2d_time_stepping",
-    srcs = [
-        "rod2d_time_stepping.cc",
-    ],
     data = [":models"],
+    tags = gurobi_test_tags(),
     deps = [
         ":quasistatic_system",
         "//drake/common",

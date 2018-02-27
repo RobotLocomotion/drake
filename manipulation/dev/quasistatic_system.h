@@ -74,6 +74,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   const systems::OutputPort<Scalar>& state_output() const;
   const systems::OutputPort<Scalar>& decision_variables_output() const;
   double get_period_sec() const { return period_sec_; }
+  void set_analytic(bool is_analytic) {is_analytic_ = is_analytic; }
 
  protected:
   void Initialize();
@@ -161,7 +162,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
   // arithmetic based on bounds of all decision variables.
   const double kBigM_;
   // true if analytic expressions are available for Jn and Jf.
-  const bool is_analytic_;
+  bool is_analytic_;
   const bool is_using_kinetic_energy_minimizing_QP_;
 
   int nu_{0};           // number of underactuated DOFs, dim(qu).

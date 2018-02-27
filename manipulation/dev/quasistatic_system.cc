@@ -671,18 +671,15 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
             Jfu_opposite_previous = Jfu.row(j_opposite_previous);
             Jfu_opposite = Jfu.row(j_opposite);
 
-            Vector1<symbolic::Expression> delta_phi_f_ij_opposite(1);
-            Vector1<symbolic::Expression> delta_phi_f_ij_opposite_previous(1);
-            Vector1<symbolic::Expression> delta_phi_f_ij_opposite_next(1);
-            delta_phi_f_ij_opposite =
-                Jfu_opposite * delta_qu_QP +
-                Jfa_times_delta_qa_i.segment(j_opposite, 1);
-            delta_phi_f_ij_opposite_next =
-                Jfu_opposite_next * delta_qu_QP +
-                Jfa_times_delta_qa_i.segment(j_opposite_next, 1);
-            delta_phi_f_ij_opposite_previous =
-                Jfu_opposite_previous * delta_qu_QP +
-                Jfa_times_delta_qa_i.segment(j_opposite_previous, 1);
+            const symbolic::Expression delta_phi_f_ij_opposite =
+                Jfu_opposite.transpose().dot(delta_qu_QP) +
+                Jfa_times_delta_qa_i(j_opposite);
+            const symbolic::Expression delta_phi_f_ij_opposite_next =
+                Jfu_opposite_next.transpose().dot(delta_qu_QP) +
+                Jfa_times_delta_qa_i(j_opposite_next);
+            const symbolic::Expression delta_phi_f_ij_opposite_previous =
+                Jfu_opposite_previous.transpose().dot(delta_qu_QP) +
+                Jfa_times_delta_qa_i(j_opposite_previous);
             prog_QP.AddLinearConstraint(delta_phi_f_ij_opposite_next <=
                                         delta_phi_f_ij_opposite);
             prog_QP.AddLinearConstraint(delta_phi_f_ij_opposite_previous <=
@@ -690,18 +687,18 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
 
           } else if (non_zero_friction_count == 2) {
             DRAKE_DEMAND(non_zero_friction_count == 2);
-            Vector1<symbolic::Expression> lhs(1);
-            Vector1<symbolic::Expression> rhs(1);
             int j1 = non_zero_friction_idx[0];
             int j2 = non_zero_friction_idx[1];
             RowVectorXd Jfu_row1(nu_);
             RowVectorXd Jfu_row2(nu_);
             Jfu_row1 = Jfu.row(j1);
             Jfu_row2 = Jfu.row(j2);
-            lhs = Jfa_times_delta_qa.segment(idx_fi0 + j1, 1) +
-                  Jfu_row1 * delta_qu_QP;
-            rhs = Jfa_times_delta_qa.segment(idx_fi0 + j2, 1) +
-                  Jfu_row2 * delta_qu_QP;
+            const symbolic::Expression lhs =
+                Jfa_times_delta_qa(idx_fi0 + j1) +
+                  Jfu_row1.transpose().dot(delta_qu_QP);
+            const symbolic::Expression rhs =
+                Jfa_times_delta_qa(idx_fi0 + j2) +
+                  Jfu_row2.transpose().dot(delta_qu_QP);
             prog_QP.AddLinearConstraint(lhs == rhs);
           }
         }

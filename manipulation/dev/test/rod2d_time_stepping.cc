@@ -1,4 +1,4 @@
-#include <fstream>
+#include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
@@ -53,24 +53,22 @@ class Rod2DTimeStepping : public manipulation::QuasistaticSystem<double> {
 };
 
 const int Rod2DTimeStepping::idx_base = 3;
-const std::vector<int> Rod2DTimeStepping::idx_unactuated_bodies = {3};
-const std::vector<int> Rod2DTimeStepping::fixed_base_positions = {3};
-const std::vector<int> Rod2DTimeStepping::fixed_base_velocities = {3};
+const std::vector<int> Rod2DTimeStepping::idx_unactuated_bodies{3};
+const std::vector<int> Rod2DTimeStepping::fixed_base_positions{3};
+const std::vector<int> Rod2DTimeStepping::fixed_base_velocities{3};
 
 QuasistaticSystemOptions Rod2DTimeStepping::InitializeOptions() {
   QuasistaticSystemOptions options;
   options.period_sec = 0.05;
   options.is_contact_2d = {false, false, true, true};
   options.mu = 0.6;
+  options.is_using_kinetic_energy_minimizing_QP = true;
   return options;
 }
 
 Rod2DTimeStepping::Rod2DTimeStepping()
-    : QuasistaticSystem(idx_base,
-                        idx_unactuated_bodies,
-                        fixed_base_positions,
-                        fixed_base_velocities,
-                        InitializeOptions()) {
+    : QuasistaticSystem(idx_base, idx_unactuated_bodies, fixed_base_positions,
+                        fixed_base_velocities, InitializeOptions()) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree_.get());
   Initialize();
@@ -98,7 +96,11 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
   phi.resize(nc_);
   Jn.resize(nc_, nq_tree);
   Jf.resize(nd_, nq_tree);
+  Wn.resize(n_vu_, nc_);
+  Wf.resize(n_vu_, nd_);
   Jf.setZero();
+  Wn.setZero();
+  Wf.setZero();
 
   phi(3) = yc - s - r_ - qa_l;
   phi(2) = yc + s - r_ - qa_l;
@@ -126,15 +128,17 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
       1, 0, 0, 0, 0, s,    //
       -1, 0, 0, 0, 0, -s;  //
 
-  Wn = Jn.transpose().block(1, 0, 6, nc_);
-  Wf = Jf.transpose().block(1, 0, 6, nd_);
+  Wn << Jn.transpose().block(1, 0, 3, nc_), Jn.transpose().block(5, 0, 2, nc_);
+  Wf << Jf.transpose().block(1, 0, 3, nd_), Jf.transpose().block(5, 0, 2, nd_);
 }
 
-int do_main() {
+VectorXd RunSimulation(const bool is_analytic) {
   systems::DiagramBuilder<double> builder;
 
   // Initialize Rod2D quasistatic system.
   auto rod2d = builder.AddSystem<Rod2DTimeStepping>();
+  rod2d->set_analytic(is_analytic);
+
   // Initrialize RigidBodyTree from rod2d.urdf.
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -212,21 +216,51 @@ int do_main() {
 
   // test if the final system state is reasonable.
   VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(4,1)]
-  q_final_expected << 1, 0.0117, 1.01, 0.01, 0, 0, 0;
+  q_final_expected << 1, 0.0117, 1.01, 0.01, 0, 0, 0, 0;
 
-  const double error =
-      ((log_state->data().rightCols(1)).block(0, 0, n1, 1) - q_final_expected)
-          .matrix()
-          .norm();
-  cout << "final_state:\n" << log_state->data().rightCols(1) << endl;
-  cout << "error: " << error << endl;
-  DRAKE_DEMAND(error < 1e-3);
+  VectorXd q_final = (log_state->data().rightCols(1)).block(0, 0, n1, 1);
+  cout << "final state:\n" << q_final << endl;
+  //  const double error =
+  //      ((log_state->data().rightCols(1)).block(0, 0, n1, 1) -
+  //      q_final_expected)
+  //          .matrix()
+  //          .norm();
+  //  cout << "final_state:\n" << log_state->data().rightCols(1) << endl;
+  //  cout << "error: " << error << endl;
+  //  DRAKE_DEMAND(error < 1e-3);
 
-  return 0;
+  return q_final;
 }
+
+GTEST_TEST(rod2d_test, AnalyticSignedDistantceAndJacobians) {
+  VectorXd q_final = RunSimulation(true);
+  VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(3,1)]
+  q_final_expected << 1, 0.008, 1.01, 0.01, 0, 0, 0;
+  EXPECT_EQ(q_final.size(), q_final_expected.size());
+  const double error = (q_final - q_final_expected).matrix().norm();
+  EXPECT_LT(error, 1e-3);
+}
+
+GTEST_TEST(rod2d_test, RigidBodyTreeSignedDistantceAndJacobians) {
+  VectorXd q_final = RunSimulation(false);
+  VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(3,1)]
+  q_final_expected << 1, 0.011, 1.01, 0.01, 0, 0, 0;
+  EXPECT_EQ(q_final.size(), q_final_expected.size());
+  const double error = (q_final - q_final_expected).matrix().norm();
+  EXPECT_LT(error, 1e-3);
+}
+
 
 }  // namespace rod2d
 }  // namespace manipulation
 }  // namespace drake
 
-int main() { return drake::manipulation::rod2d::do_main(); }
+//int main() {
+//  // analytic
+//  // VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(3,1)]
+//  // q_final_expected << 1, 0.008, 1.01, 0.01, 0, 0, 0;
+//
+//  cout << "final state:\n"
+//       << drake::manipulation::rod2d::RunSimulation(true) << endl;
+//  return 0;
+//}
