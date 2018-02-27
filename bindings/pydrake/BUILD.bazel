@@ -237,18 +237,6 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "symbolic_variables_test",
-    size = "small",
-    deps = [":symbolic_py"],
-)
-
-drake_py_unittest(
-    name = "symbolic_monomial_test",
-    size = "small",
-    deps = [":symbolic_py"],
-)
-
-drake_py_unittest(
     name = "backwards_compatability_test",
     deps = [
         ":backwards_compatibility_py",
