@@ -353,6 +353,66 @@ class PendulumTests : public ::testing::Test {
         tau, rhs, kTolerance, MatrixCompareType::relative));
   }
 
+  // Compare forward dynamics computed using the articulated body algorithm
+  // against explicitly solving using the mass matrix.
+  void VerifyForwardDynamicsViaMassMatrix(double shoulder_angle,
+                                          double elbow_angle,
+                                          double shoulder_rate,
+                                          double elbow_rate) {
+    const double kTolerance = 10 * kEpsilon;
+
+    model_.shoulder().set_angle(context_.get(), shoulder_angle);
+    model_.elbow().set_angle(context_.get(), elbow_angle);
+
+    // Variables for temporary computation results.
+    PositionKinematicsCache<double> pc(tree_->get_topology());
+    VelocityKinematicsCache<double> vc(tree_->get_topology());
+    Matrix2d M;
+    Vector2d C;
+    VectorX<double> tau_applied(tree_->get_num_velocities());
+    std::vector<SpatialForce<double>> Fapplied_Bo_W_array(
+        static_cast<unsigned long>(tree_->get_num_bodies()));
+    std::vector<SpatialAcceleration<double>> A_WB_array(
+        static_cast<unsigned long>(tree_->get_num_bodies()));
+
+    Vector2d qddot;
+    Vector2d qddot_expected;
+
+    // Test with no angular velocity.
+    model_.shoulder().set_angular_rate(context_.get(), shoulder_rate);
+    model_.elbow().set_angular_rate(context_.get(), elbow_rate);
+
+    M = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
+    tree_->CalcPositionKinematicsCache(*context_, &pc);
+    tree_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+
+    MultibodyForces<double> forces(*tree_);
+    tree_->CalcForceElementsContribution(*context_, pc, vc, &forces);
+
+    // Compute qddot via articulated body algorithm.
+    ArticulatedBodyInertiaCache<double> aic(tree_->get_topology());
+    tree_->CalcArticulatedBodyInertiaCache(*context_, pc, &aic);
+
+    ArticulatedBodyAlgorithmCache<double> aac(tree_->get_topology());
+    tree_->CalcArticulatedBodyAlgorithmCache(
+        *context_, pc, vc, aic, forces, &aac);
+
+    tree_->CalcForwardDynamics(*context_, pc, aic, aac, &qddot);
+
+    //Compute qddot_expected via mass matrix solve.
+    Vector2d vdot = Vector2d::Zero();
+    Fapplied_Bo_W_array = forces.body_forces();
+    tau_applied = forces.generalized_forces();
+    tree_->CalcInverseDynamics(
+        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        &A_WB_array, &Fapplied_Bo_W_array, &C);
+    qddot_expected = M.llt().solve(-C);
+
+    // Compare qddot.
+    EXPECT_TRUE(CompareMatrices(
+        qddot, qddot_expected, kTolerance, MatrixCompareType::relative));
+  }
+
  protected:
   // The MultibodyTree model under test.
   DoublePendulumModel<double> model_;
@@ -487,6 +547,26 @@ TEST_F(PendulumTests, CalcForwardDynamicsViaExplicitMassMatrixSolve) {
       -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
       0.5, 1.0,                 /* joint's angular rates */
       -0.5, -1.0);              /* joint's torques */
+}
+
+TEST_F(PendulumTests, ForwardDynamicsCompare) {
+  VerifyForwardDynamicsViaMassMatrix(0.0, 0.0, 0.0, 0.0);
+  VerifyForwardDynamicsViaMassMatrix(0.0, 0.0, 1.0, 0.0);
+  VerifyForwardDynamicsViaMassMatrix(0.0, 0.0, 0.0, 1.0);
+  VerifyForwardDynamicsViaMassMatrix(0.0, 0.0, 1.0, 1.0);
+
+  VerifyForwardDynamicsViaMassMatrix(M_PI / 3.0, 0.0, 0.0, 0.0);
+  VerifyForwardDynamicsViaMassMatrix(M_PI / 3.0, 0.0, 1.0, 0.0);
+  VerifyForwardDynamicsViaMassMatrix(M_PI / 3.0, 0.0, 0.0, 1.0);
+  VerifyForwardDynamicsViaMassMatrix(M_PI / 3.0, 0.0, 1.0, 1.0);
+
+  VerifyForwardDynamicsViaMassMatrix(0.0, M_PI / 2.0, 1.0, 0.0);
+  VerifyForwardDynamicsViaMassMatrix(0.0, M_PI / 3.0, 0.0, 1.0);
+  VerifyForwardDynamicsViaMassMatrix(0.0, M_PI / 4.0, 1.0, 1.0);
+
+  VerifyForwardDynamicsViaMassMatrix(M_PI / 3.0, M_PI / 2.0, -1.0, 1.0);
+  VerifyForwardDynamicsViaMassMatrix(M_PI / 3.0, M_PI / 3.0, 0.0, -1.0);
+  VerifyForwardDynamicsViaMassMatrix(M_PI / 3.0, M_PI / 4.0, -1.0, 0.0);
 }
 
 }  // namespace
