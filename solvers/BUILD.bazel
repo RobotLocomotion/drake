@@ -1086,6 +1086,7 @@ drake_cc_googletest(
     srcs = [
         "test/snopt_solver_test.cc",
     ],
+    tags = ["snopt"],
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
