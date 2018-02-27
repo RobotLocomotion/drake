@@ -86,6 +86,81 @@ class TestSymbolicVariables(unittest.TestCase):
                          "((y = 2) or (x >= 1) or (x <= 2))")
 
 
+class TestSymbolicExpression(unittest.TestCase):
+    def test_functions_with_float(self):
+        v_x = 1.0
+        v_y = 1.0
+        self.assertEqual(sym.abs(v_x), np.abs(v_x))
+        self.assertEqual(sym.exp(v_x), np.exp(v_x))
+        self.assertEqual(sym.sqrt(v_x), np.sqrt(v_x))
+        self.assertEqual(sym.pow(v_x, v_y), v_x ** v_y)
+        self.assertEqual(sym.sin(v_x), np.sin(v_x))
+        self.assertEqual(sym.cos(v_x), np.cos(v_x))
+        self.assertEqual(sym.tan(v_x), np.tan(v_x))
+        self.assertEqual(sym.asin(v_x), np.arcsin(v_x))
+        self.assertEqual(sym.acos(v_x), np.arccos(v_x))
+        self.assertEqual(sym.atan(v_x), np.arctan(v_x))
+        self.assertEqual(sym.atan2(v_x, v_y), np.arctan2(v_x, v_y))
+        self.assertEqual(sym.sinh(v_x), np.sinh(v_x))
+        self.assertEqual(sym.cosh(v_x), np.cosh(v_x))
+        self.assertEqual(sym.tanh(v_x), np.tanh(v_x))
+        self.assertEqual(sym.min(v_x, v_y), min(v_x, v_y))
+        self.assertEqual(sym.max(v_x, v_y), max(v_x, v_y))
+        self.assertEqual(sym.ceil(v_x), np.ceil(v_x))
+        self.assertEqual(sym.floor(v_x), np.floor(v_x))
+        self.assertEqual(
+          sym.if_then_else(
+            sym.Expression(v_x) > sym.Expression(v_y),
+            v_x, v_y),
+          v_x if v_x > v_y else v_y)
+
+    def test_functions_with_variable(self):
+        self.assertEqual(str(sym.abs(x)), "abs(x)")
+        self.assertEqual(str(sym.exp(x)), "exp(x)")
+        self.assertEqual(str(sym.sqrt(x)), "sqrt(x)")
+        self.assertEqual(str(sym.pow(x, y)), "pow(x, y)")
+        self.assertEqual(str(sym.sin(x)), "sin(x)")
+        self.assertEqual(str(sym.cos(x)), "cos(x)")
+        self.assertEqual(str(sym.tan(x)), "tan(x)")
+        self.assertEqual(str(sym.asin(x)), "asin(x)")
+        self.assertEqual(str(sym.acos(x)), "acos(x)")
+        self.assertEqual(str(sym.atan(x)), "atan(x)")
+        self.assertEqual(str(sym.atan2(x, y)), "atan2(x, y)")
+        self.assertEqual(str(sym.sinh(x)), "sinh(x)")
+        self.assertEqual(str(sym.cosh(x)), "cosh(x)")
+        self.assertEqual(str(sym.tanh(x)), "tanh(x)")
+        self.assertEqual(str(sym.min(x, y)), "min(x, y)")
+        self.assertEqual(str(sym.max(x, y)), "max(x, y)")
+        self.assertEqual(str(sym.ceil(x)), "ceil(x)")
+        self.assertEqual(str(sym.floor(x)), "floor(x)")
+        self.assertEqual(str(sym.if_then_else(x > y, x, y)),
+                         "(if (x > y) then x else y)")
+
+    def test_functions_with_expression(self):
+        e_x = sym.Expression(x)
+        e_y = sym.Expression(y)
+        self.assertEqual(str(sym.abs(e_x)), "abs(x)")
+        self.assertEqual(str(sym.exp(e_x)), "exp(x)")
+        self.assertEqual(str(sym.sqrt(e_x)), "sqrt(x)")
+        self.assertEqual(str(sym.pow(e_x, e_y)), "pow(x, y)")
+        self.assertEqual(str(sym.sin(e_x)), "sin(x)")
+        self.assertEqual(str(sym.cos(e_x)), "cos(x)")
+        self.assertEqual(str(sym.tan(e_x)), "tan(x)")
+        self.assertEqual(str(sym.asin(e_x)), "asin(x)")
+        self.assertEqual(str(sym.acos(e_x)), "acos(x)")
+        self.assertEqual(str(sym.atan(e_x)), "atan(x)")
+        self.assertEqual(str(sym.atan2(e_x, e_y)), "atan2(x, y)")
+        self.assertEqual(str(sym.sinh(e_x)), "sinh(x)")
+        self.assertEqual(str(sym.cosh(e_x)), "cosh(x)")
+        self.assertEqual(str(sym.tanh(e_x)), "tanh(x)")
+        self.assertEqual(str(sym.min(e_x, e_y)), "min(x, y)")
+        self.assertEqual(str(sym.max(e_x, e_y)), "max(x, y)")
+        self.assertEqual(str(sym.ceil(e_x)), "ceil(x)")
+        self.assertEqual(str(sym.floor(e_x)), "floor(x)")
+        self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
+                         "(if (x > y) then x else y)")
+
+
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
         p = sym.Polynomial()
