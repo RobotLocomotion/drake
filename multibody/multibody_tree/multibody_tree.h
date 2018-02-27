@@ -1550,9 +1550,6 @@ class MultibodyTree {
   /// @param[in] pc
   ///   A position kinematics cache object already updated to be in sync with
   ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
   /// @param[in] aic
   ///   An articulated body inertia cache object already updated to be in sync
   ///   with `context`.

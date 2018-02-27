@@ -36,7 +36,7 @@ void TestKukaArmForwardDynamics(
       qDDt, qDDt_expected, kTolerance, MatrixCompareType::relative));
 }
 
-GTEST_TEST(KukaIIwaRobotKinematics, ForwardDynamicsTestA) {
+GTEST_TEST(KukaIIwaRobotKinematics, ForwardDynamicsTest) {
   // State variables and helper angles.
   Vector7d q, qdot;
   double q30 = M_PI / 6, q45 = M_PI / 4, q60 = M_PI / 3;

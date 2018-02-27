@@ -3,11 +3,11 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
-#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
