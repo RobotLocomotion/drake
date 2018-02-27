@@ -200,8 +200,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const Vector4<double> DtW_quat = qdot_from_v.head<4>();
   const Vector3<double> DtW_p_WBcm = qdot_from_v.tail<3>();
 
-  Quaterniond q_WB = mobilizer.get_quaternion(context);
-  Vector4d q_WB_vec4(q_WB.w(), q_WB.x(), q_WB.y(), q_WB.z());
+  const Quaterniond q_WB = mobilizer.get_quaternion(context);
+  const Vector4d q_WB_vec4(q_WB.w(), q_WB.x(), q_WB.y(), q_WB.z());
 
   // After numerical intergration, and with no projection, the quaternion
   // representing the body's orientation is no longer unit length, however close
@@ -266,8 +266,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
       (1.5 * Vector3d::UnitX() +
       2.0 * Vector3d::UnitY() +
       3.0 * Vector3d::UnitZ()).normalized();
-  const Matrix3d R_WB = AngleAxisd(M_PI / 3.0, axis_W).toRotationMatrix();
-  const Quaterniond q_WB(R_WB);
+  const Quaterniond q_WB(AngleAxisd(M_PI / 3.0, axis_W));
 
   // Verify we are using a proper unit quaternion or otherwise errors would
   // propagate to the time derivatives through the kinematic maps.
