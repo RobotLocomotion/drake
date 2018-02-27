@@ -21,6 +21,8 @@ namespace multibody {
 ///   projected across its inboard mobilizer to frame P.
 /// - The Coriolis spatial acceleration `a_Bo_W` for this body due to the
 ///   relative velocities of body B and body P.
+/// - The articulated body inertia innovations generalized force `e_B` for this
+///   body's mobilizer.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
@@ -38,24 +40,23 @@ class ArticulatedBodyAlgorithmCache {
 
   /// Constructs an articulated body algorithm entry for the given
   /// MultibodyTreeTopology.
-  explicit ArticulatedBodyAlgorithmCache(const MultibodyTreeTopology& topology) :
+  explicit ArticulatedBodyAlgorithmCache(
+      const MultibodyTreeTopology& topology) :
       num_nodes_(topology.get_num_bodies()) {
     Allocate();
   }
 
   /// The articulated body inertia residual force `zplus_PB_W` for this body
   /// projected across its inboard mobilizer to frame P.
-  const SpatialForce<T>& get_zplus_PB_W(
-      BodyNodeIndex body_node_index) const {
+  const SpatialForce<T>& get_zplus_PB_W(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return zplus_PB_W[body_node_index];
+    return zplus_PB_W_[body_node_index];
   }
 
   /// Mutable version of get_zplus_PB_W().
-  SpatialForce<T>& get_mutable_zplus_PB_W(
-      BodyNodeIndex body_node_index) {
+  SpatialForce<T>& get_mutable_zplus_PB_W(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return zplus_PB_W[body_node_index];
+    return zplus_PB_W_[body_node_index];
   }
 
   /// The Coriolis spatial acceleration `a_Bo_W` for this body due to the
@@ -63,14 +64,26 @@ class ArticulatedBodyAlgorithmCache {
   const SpatialAcceleration<T>& get_a_Bo_W(
       BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return a_Bo_W[body_node_index];
+    return a_Bo_W_[body_node_index];
   }
 
   /// Mutable version of get_a_Bo_W().
-  SpatialAcceleration<T>& get_mutable_a_Bo_W(
-      BodyNodeIndex body_node_index) {
+  SpatialAcceleration<T>& get_mutable_a_Bo_W(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return a_Bo_W[body_node_index];
+    return a_Bo_W_[body_node_index];
+  }
+
+  /// The articulated body inertia innovations generalized force `e_B` for this
+  /// body's mobilizer.
+  const VectorUpTo6<T>& get_e_B(BodyNodeIndex body_node_index) const {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return e_B_[body_node_index];
+  }
+
+  /// Mutable version of get_e_B().
+  VectorUpTo6<T>& get_mutable_e_B(BodyNodeIndex body_node_index) {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return e_B_[body_node_index];
   }
 
 
@@ -81,18 +94,23 @@ class ArticulatedBodyAlgorithmCache {
   // The type of the pools for storing spatial accelerations.
   typedef std::vector<SpatialAcceleration<T>> SpatialAcceleration_PoolType;
 
+  // The type of the pools for storing vectors up to 6x1.
+  typedef std::vector<VectorUpTo6<T>> VectorUpTo6_PoolType;
+
   // Allocates resources for this articulated body cache.
   void Allocate() {
-    zplus_PB_W.resize(num_nodes_);
-    a_Bo_W.resize(num_nodes_);
+    zplus_PB_W_.resize(num_nodes_);
+    a_Bo_W_.resize(num_nodes_);
+    e_B_.resize(num_nodes_);
   }
 
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
 
   // Pools.
-  SpatialForce_PoolType zplus_PB_W{};  // Indexed by BodyNodeIndex.
-  SpatialAcceleration_PoolType a_Bo_W{};
+  SpatialForce_PoolType zplus_PB_W_{};  // Indexed by BodyNodeIndex.
+  SpatialAcceleration_PoolType a_Bo_W_{};  // Indexed by BodyNodeIndex.
+  VectorUpTo6_PoolType e_B_{};  // Indexed by BodyNodeIndex.
 };
 
 }  // namespace multibody
