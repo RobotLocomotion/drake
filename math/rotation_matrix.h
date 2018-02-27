@@ -211,7 +211,8 @@ template <typename Derived>
 Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
     const Eigen::MatrixBase<Derived>& M) {
   using Scalar = typename Derived::Scalar;
-  return drake::multibody::RotationMatrix<Scalar>::ProjectToRotationMatrix(M,
+  const drake::Matrix3<Scalar> R = M;
+  return drake::multibody::RotationMatrix<Scalar>::ProjectToRotationMatrix(R,
       nullptr).matrix();
 }
 
@@ -221,7 +222,8 @@ template <typename Derived>
 Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
     const Eigen::MatrixBase<Derived>& M) {
   using Scalar = typename Derived::Scalar;
-  return drake::multibody::RotationMatrix<Scalar>::ProjectToRotationMatrix(M,
+  const drake::Matrix3<Scalar> R = M;
+  return drake::multibody::RotationMatrix<Scalar>::ProjectToRotationMatrix(R,
          nullptr).matrix();
 }
 
