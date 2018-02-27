@@ -9,13 +9,16 @@ _COMMIT = "3dcfcb00a440e858211661d179a15904586fb45f"
 
 _SHA256 = "f7ac23089450042ad8cd39bb2b58c14f7aa395683e60d57789aaae1335b21bbb"
 
-def pybind11_repository(name):
+def pybind11_repository(
+        name,
+        mirrors = None):
     github_archive(
         name = name,
         repository = _REPOSITORY,
         commit = _COMMIT,
         sha256 = _SHA256,
         build_file = "@drake//tools/workspace/pybind11:package.BUILD.bazel",
+        mirrors = mirrors,
     )
 
 def generate_pybind11_version_py_file(name):

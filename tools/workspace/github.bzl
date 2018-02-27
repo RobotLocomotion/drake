@@ -7,6 +7,7 @@ def github_archive(
         sha256 = None,
         build_file = None,
         local_repository_override = None,
+        mirrors = None,
         **kwargs):
     """A macro to be called in the WORKSPACE that adds an external from github
     using a workspace rule.
@@ -28,6 +29,11 @@ def github_archive(
     The optional local_repository_override= can be used for temporary local
     testing; instead of retrieving the code from github, the code is retrieved
     from the local filesystem path given in the argument.
+
+    The required mirrors= is a dict from string to list-of-string with key
+    "github", where the list-of-strings are URLs to use, formatted using
+    {repository} and {commit} string substitutions.  The mirrors.bzl file in
+    this directory provides a reasonable default value.
     """
     if repository == None:
         fail("Missing repository=")
@@ -37,14 +43,13 @@ def github_archive(
         # This is mostly-required, but we fallback to a wrong-default value to
         # allow the first attempt to fail and print the correct sha256.
         sha256 = "0" * 64
+    if mirrors == None:
+        fail("Missing mirrors=; see mirrors.bzl")
 
-    # Packages are mirrored from GitHub to CloudFront backed by an S3 bucket.
-    mirrors = [
-        "https://github.com/%s/archive/%s.tar.gz",
-        "https://drake-mirror.csail.mit.edu/github/%s/%s.tar.gz",
-        "https://s3.amazonaws.com/drake-mirror/github/%s/%s.tar.gz",
+    urls = [
+        x.format(repository = repository, commit = commit)
+        for x in mirrors.get("github")
     ]
-    urls = [mirror % (repository, commit) for mirror in mirrors]
 
     repository_split = repository.split("/")
     if len(repository_split) != 2:

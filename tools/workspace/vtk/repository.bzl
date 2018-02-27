@@ -8,8 +8,9 @@ unpacked. On macOS and OS X, VTK must be installed using Homebrew.
 
 Example:
     WORKSPACE:
+        load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
         load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
-        vtk_repository(name = "foo")
+        vtk_repository(name = "foo", mirrors = DEFAULT_MIRRORS)
 
     BUILD:
         cc_library(
@@ -89,8 +90,8 @@ def _impl(repository_ctx):
             fail("Operating system is NOT supported", attr = os_result)
 
         urls = [
-            "https://drake-packages.csail.mit.edu/vtk/{}".format(archive),
-            "https://s3.amazonaws.com/drake-packages/vtk/{}".format(archive),
+            x.format(archive = archive)
+            for x in repository_ctx.attr.mirrors.get("vtk")
         ]
         root_path = repository_ctx.path("")
 
@@ -571,4 +572,9 @@ install_files(
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
-vtk_repository = repository_rule(implementation = _impl)
+vtk_repository = repository_rule(
+    attrs = {
+        "mirrors": attr.string_list_dict(),
+    },
+    implementation = _impl,
+)
