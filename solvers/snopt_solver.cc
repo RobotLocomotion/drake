@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -689,13 +690,18 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   snopt::integer nS, nInf;
   snopt::doublereal sInf;
-  if (true) {  // print to output file (todo: make this an option)
+
+  // Determines if we should print out snopt debugging info.
+  const std::map<std::string, std::string>& snopt_option_str =
+      prog.GetSolverOptionsStr(id());
+  const auto print_file_it = snopt_option_str.find("Print file");
+  if (print_file_it != snopt_option_str.end()) {
+    std::string print_file_name(print_file_it->second);
     cur.iPrint = 9;
-    char print_file_name[50] = "snopt.out";
     snopt::integer print_file_name_len =
-        static_cast<snopt::integer>(strlen(print_file_name));
+        static_cast<snopt::integer>(print_file_name.length());
     snopt::integer inform;
-    snopt::snopenappend_(&cur.iPrint, print_file_name, &inform,
+    snopt::snopenappend_(&cur.iPrint, &(print_file_name[0]), &inform,
                          print_file_name_len);
     cur.snSeti("Major print level", static_cast<snopt::integer>(11));
     cur.snSeti("Print file", cur.iPrint);
@@ -761,6 +767,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     } else if (info >= 20 && info <= 22) {
       prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
       return SolutionResult::kUnbounded;
+    } else if (info >= 30 && info <= 32) {
+      return SolutionResult::kIterationLimit;
     } else if (info == 91) {
       return SolutionResult::kInvalidInput;
     }
