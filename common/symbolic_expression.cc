@@ -823,50 +823,6 @@ const Expression& get_else_expression(const Expression& e) {
   return to_if_then_else(e)->get_else_expression();
 }
 
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator+=(Expression& lhs, const Variable& rhs) {
-  return lhs += Expression{rhs};
-}
-Expression operator+(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} + Expression{rhs};
-}
-Expression operator+(Expression lhs, const Variable& rhs) { return lhs += rhs; }
-Expression operator+(const Variable& lhs, Expression rhs) { return rhs += lhs; }
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator-=(Expression& lhs, const Variable& rhs) {
-  return lhs -= Expression{rhs};
-}
-Expression operator-(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} - Expression{rhs};
-}
-Expression operator-(Expression lhs, const Variable& rhs) { return lhs -= rhs; }
-Expression operator-(const Variable& lhs, const Expression& rhs) {
-  return Expression(lhs) - rhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator*=(Expression& lhs, const Variable& rhs) {
-  return lhs *= Expression{rhs};
-}
-Expression operator*(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} * Expression{rhs};
-}
-Expression operator*(Expression lhs, const Variable& rhs) { return lhs *= rhs; }
-Expression operator*(const Variable& lhs, Expression rhs) { return rhs *= lhs; }
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator/=(Expression& lhs, const Variable& rhs) {
-  return lhs /= Expression{rhs};
-}
-Expression operator/(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} / Expression{rhs};
-}
-Expression operator/(Expression lhs, const Variable& rhs) { return lhs /= rhs; }
-Expression operator/(const Variable& lhs, const Expression& rhs) {
-  return Expression(lhs) / rhs;
-}
-
 Expression operator+(const Variable& var) { return Expression{var}; }
 Expression operator-(const Variable& var) { return -Expression{var}; }
 
