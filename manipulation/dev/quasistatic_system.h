@@ -60,7 +60,6 @@ struct QuasistaticSystemOptions {
 /// q_dot.
 ///
 /// γ ∈ R^{nc}: slack variables for all contacts.
-
 template <class Scalar>
 class QuasistaticSystem : public systems::LeafSystem<Scalar> {
  public:
