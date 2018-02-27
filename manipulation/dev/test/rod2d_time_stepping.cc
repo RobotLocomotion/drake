@@ -94,8 +94,6 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
   phi.resize(nc_);
   Jn.resize(nc_, nq_tree);
   Jf.resize(nd_, nq_tree);
-  Wn.resize(n_vu_, nc_);
-  Wf.resize(n_vu_, nd_);
   Jf.setZero();
   Wn.setZero();
   Wf.setZero();
@@ -110,10 +108,11 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
       -1, 0, 1, 0, 0, 0, c,    //
       -1, 0, 1, 0, 0, 0, -c;   //
 
-  Jf.block(0, 1, nd_, nu_ + 1) << 1, 0, 0, 0, 0, -s,  //
-      0, 1, 0, 0, 0, c,                               //
-      -1, 0, 0, 0, 0, s,                              //
-      0, -1, 0, 0, 0, -c,                             //
+  Jf.block(0, 1, nd_, nu_ + 1) <<  //
+      1, 0, 0, 0, 0, -s,      //
+      0, 1, 0, 0, 0, c,    //
+      -1, 0, 0, 0, 0, s,   //
+      0, -1, 0, 0, 0, -c,  //
 
       1, 0, 0, 0, 0, s,    //
       0, 1, 0, 0, 0, -c,   //
@@ -126,8 +125,15 @@ void Rod2DTimeStepping::DoCalcWnWfJnJfPhiAnalytic(
       1, 0, 0, 0, 0, s,    //
       -1, 0, 0, 0, 0, -s;  //
 
-  Wn << Jn.transpose().block(1, 0, 3, nc_), Jn.transpose().block(5, 0, 2, nc_);
-  Wf << Jf.transpose().block(1, 0, 3, nd_), Jf.transpose().block(5, 0, 2, nd_);
+  Wn.resize(nc_, n_vu_);
+  Wf.resize(nd_, n_vu_);
+  Wn.leftCols(3) = Jn.block(0, 1, nc_, 3);
+  Wn.rightCols(2) = Jn.rightCols(2);
+  Wn.transposeInPlace();
+
+  Wf.leftCols(3) = Jf.block(0, 1, nd_, 3);
+  Wf.rightCols(2) = Jf.rightCols(2);
+  Wf.transposeInPlace();
 }
 
 VectorXd RunSimulation(const bool is_analytic) {
@@ -204,6 +210,15 @@ VectorXd RunSimulation(const bool is_analytic) {
   return q_final;
 }
 
+GTEST_TEST(rod2d_test, RigidBodyTreeSignedDistantceAndJacobians) {
+  VectorXd q_final = RunSimulation(false);
+  VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(3,1)]
+  q_final_expected << 1, 0.011, 1.01, 0.01, 0, 0, 0;
+  EXPECT_EQ(q_final.size(), q_final_expected.size());
+  const double error = (q_final - q_final_expected).matrix().norm();
+  EXPECT_LT(error, 1e-3);
+}
+
 GTEST_TEST(rod2d_test, AnalyticSignedDistantceAndJacobians) {
   VectorXd q_final = RunSimulation(true);
   VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(3,1)]
@@ -213,14 +228,7 @@ GTEST_TEST(rod2d_test, AnalyticSignedDistantceAndJacobians) {
   EXPECT_LT(error, 1e-3);
 }
 
-GTEST_TEST(rod2d_test, RigidBodyTreeSignedDistantceAndJacobians) {
-  VectorXd q_final = RunSimulation(false);
-  VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(3,1)]
-  q_final_expected << 1, 0.011, 1.01, 0.01, 0, 0, 0;
-  EXPECT_EQ(q_final.size(), q_final_expected.size());
-  const double error = (q_final - q_final_expected).matrix().norm();
-  EXPECT_LT(error, 1e-3);
-}
+
 
 }  // namespace rod2d
 }  // namespace manipulation

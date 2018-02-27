@@ -758,7 +758,7 @@ void QuasistaticSystem<Scalar>::StepForward(
   }
   max_impulse *= 5;  // This upper bound is arbitrary.
 
-  // cacluate big M
+  // calcluate big M
   const Scalar kBigM =
       CalcBigM(max_impulse, max_delta_q, max_gamma, Jn, Jf, phi, qa_dot_d);
 
