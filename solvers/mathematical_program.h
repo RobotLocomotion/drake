@@ -2115,8 +2115,19 @@ class MathematicalProgram {
 
   /**
    * Sets the ID of the solver that was used to solve this program.
+   * @Note This method is only meant to be called by the solver, as a child
+   * class of MathematicalProgramSolverInterface. If you want to solve the 
+   * program using a specific solver, do
+   * \code{cc}
+   * solver.Solve(program);
+   * \endcode
+   *
+   * We use passkey idiom to restrict that this function can only be called
+   * inside MathematicalProgramSolverInterface. Notice that SetSolverIdKey
+   * has a private constructor, and it is a friend of
+   * MathematicalProgramSolverInterface.
    */
-  void SetSolverId(SolverId solver_id) { solver_id_ = solver_id; }
+  void SetSolverId(const SetSolverIdKey& key) { solver_id_ = key.solver_id(); }
 
   /**
    * Returns the ID of the solver that was used to solve this program.
