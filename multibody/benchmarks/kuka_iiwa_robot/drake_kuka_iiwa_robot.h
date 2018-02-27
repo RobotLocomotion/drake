@@ -217,6 +217,89 @@ class DrakeKukaIIwaRobot {
     return reaction_forces;
   }
 
+  /// This method calculates the forward dynamics for a 7-DOF KUKA iiwa robot
+  /// using the articulated body algorithm.
+  ///
+  /// @param[in] q robot's joint angles (generalized coordinates).
+  /// @param[in] qDt 1st-time-derivative of q.
+  /// @param[out] qDDt 2nd-time-derivative of q.
+  void CalcForwardDynamicsViaArticulatedBodyAlgorithm(
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      EigenPtr<VectorX<T>> qDDt) {
+    // Update joint positions and velocities.
+    SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
+
+    // Compute position and velocity cache.
+    PositionKinematicsCache<T> pc(model_->get_topology());
+    VelocityKinematicsCache<T> vc(model_->get_topology());
+    model_->CalcPositionKinematicsCache(*context_, &pc);
+    model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+
+    // Compute force element contributions.
+    MultibodyForces<T> forces(*model_);
+    model_->CalcForceElementsContribution(*context_, pc, vc, &forces);
+
+    // Compute articulated body inertia cache.
+    ArticulatedBodyInertiaCache<T> aic(model_->get_topology());
+    model_->CalcArticulatedBodyInertiaCache(*context_, pc, &aic);
+
+    // Compute articulated body algorithm cache.
+    ArticulatedBodyAlgorithmCache<T> aac(model_->get_topology());
+    model_->CalcArticulatedBodyAlgorithmCache(
+        *context_, pc, vc, aic, forces, &aac);
+
+    // Compute forward dynamics using articulated body algorithm.
+    model_->CalcForwardDynamics(*context_, pc, aic, aac, qDDt);
+  }
+
+  /// This method calculates the forward dynamics for a 7-DOF KUKA iiwa robot
+  /// by explicitly solving using the mass matrix.
+  ///
+  /// @param[in] q robot's joint angles (generalized coordinates).
+  /// @param[in] qDt 1st-time-derivative of q.
+  /// @param[out] qDDt 2nd-time-derivative of q.
+  void CalcForwardDynamicsViaMassMatrixSolve(
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      EigenPtr<VectorX<T>> qDDt) {
+    // Update joint positions and velocities.
+    SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
+
+    // Compute position and velocity cache.
+    PositionKinematicsCache<T> pc(model_->get_topology());
+    VelocityKinematicsCache<T> vc(model_->get_topology());
+    model_->CalcPositionKinematicsCache(*context_, &pc);
+    model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+
+    // Get model parameters.
+    const int nv = model_->get_num_velocities();
+    const int nq = model_->get_num_bodies();
+
+    // Compute force element contributions.
+    MultibodyForces<T> forces(*model_);
+    model_->CalcForceElementsContribution(*context_, pc, vc, &forces);
+
+    // Construct M, the mass matrix.
+    MatrixX<T> M(nv, nv);
+    model_->CalcMassMatrixViaInverseDynamics(*context_, &M);
+
+    // Construct C, the Coriolis term.
+    VectorX<T> C(nv);
+    std::vector<SpatialAcceleration<T>> A_WB_array(nq);
+    std::vector<SpatialForce<T>> F_BMo_W_array(nq);
+
+    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array =
+        forces.body_forces();
+    const VectorX<T>& tau_applied_array = forces.generalized_forces();
+    model_->CalcInverseDynamics(
+        *context_, pc, vc, VectorX<T>::Zero(nv), Fapplied_Bo_W_array,
+        tau_applied_array, &A_WB_array, &F_BMo_W_array, &C);
+
+    // Solve for qDDT.
+    *qDDt = M.llt().solve(-C);
+  }
+
  private:
   // This method sets the Kuka joint angles and their 1st and 2nd derivatives.
   // @param[in] q robot's joint angles (generalized coordinates).

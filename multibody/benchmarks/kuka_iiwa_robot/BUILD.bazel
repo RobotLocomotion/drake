@@ -58,4 +58,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "kuka_iiwa_robot_forward_dynamics_test",
+    size = "small",
+    deps = [
+        ":kuka_iiwa_robot_library",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 add_lint_tests()

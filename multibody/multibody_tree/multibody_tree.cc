@@ -923,6 +923,39 @@ void MultibodyTree<T>::CalcArticulatedBodyAlgorithmCache(
   }
 }
 
+template <typename T>
+void MultibodyTree<T>::CalcForwardDynamics(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const ArticulatedBodyInertiaCache<T>& aic,
+    const ArticulatedBodyAlgorithmCache<T>& aac,
+    EigenPtr<VectorX<T>> vdot) const {
+  DRAKE_DEMAND(vdot != nullptr);
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // TODO(bobbyluig): Eval H_PB_W from the cache.
+  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  // Create acceleration kinematics cache to hold results of recursion.
+  AccelerationKinematicsCache<T> ac(this->topology_);
+
+  // Perform base-to-tip recursion, skipping the world.
+  for (int depth = 1; depth < get_tree_height(); depth++) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+      // Get hinge mapping matrix.
+      const MatrixUpTo6<T> H_PB_W = node.GetJacobianFromArray(H_PB_W_cache);
+
+      node.CalcForwardDynamics_BaseToTip(
+          mbt_context, pc, aic, aac, H_PB_W, &ac, vdot);
+    }
+  }
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;

@@ -1542,6 +1542,8 @@ class MultibodyTree {
   ///   projected across its inboard mobilizer to frame P.
   /// - The Coriolis spatial acceleration `a_Bo_W` for this body due to the
   ///   relative velocities of body B and body P.
+  /// - The articulated body inertia innovations generalized force `e_B` for
+  ///   this body's mobilizer.
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
@@ -1578,6 +1580,42 @@ class MultibodyTree {
       const ArticulatedBodyInertiaCache<T>& aic,
       const MultibodyForces<T>& forces,
       ArticulatedBodyAlgorithmCache<T>* aac) const;
+
+  /// Compute the generalized accelerations for this %MultibodyTree model using
+  /// the articulated body algorithm.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] vc
+  ///   A velocity kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] aic
+  ///   An articulated body inertia cache object already updated to be in sync
+  ///   with `context`.
+  /// @param[in] aac
+  ///   An articulated body algorithm cache object already updated to be in sync
+  ///   with `context`.
+  /// @param[out] vdot
+  ///   A non-null pointer to a vector which will contain the generalized
+  ///   accelerations for the full %MultibodyTree model.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache() using the same `context`.
+  /// @pre The articulated body inertia cache `aic` must have been previously
+  /// updated with a call to CalcArticulatedBodyInertiaCache() using the same
+  /// `context`.
+  /// @pre The articulated body algorithm cache `aac` must have been previously
+  /// updated with a call to CalcArticulatedBodyAlgorithmCache() using the same
+  /// `context`.
+  void CalcForwardDynamics(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const ArticulatedBodyInertiaCache<T>& aic,
+      const ArticulatedBodyAlgorithmCache<T>& aac,
+      EigenPtr<VectorX<T>> vdot) const;
 
   /// @}
   // Closes "Computational methods" Doxygen section.
