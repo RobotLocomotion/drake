@@ -2721,6 +2721,25 @@ GTEST_TEST(testMathematicalProgram, testEvalBinding) {
       VectorDecisionVariable<1>(y));
   EXPECT_THROW(prog.EvalBinding(quadratic_cost_y, x_val), std::runtime_error);
 }
+
+GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+
+  // Set initial guess for a single variable.
+  prog.SetInitialGuess(x(1), 2);
+  EXPECT_EQ(prog.GetInitialGuess(x(1)), 2);
+
+  // Set initial guess for a vector of variables.
+  prog.SetInitialGuess(x.tail<2>(), Eigen::Vector2d(3, 4));
+  EXPECT_TRUE(CompareMatrices(prog.GetInitialGuess(x.tail<2>()),
+                              Eigen::Vector2d(3, 4)));
+
+  // Now set initial guess for a variable not registered.
+  symbolic::Variable y("y");
+  EXPECT_THROW(prog.SetInitialGuess(y, 1), std::runtime_error);
+  EXPECT_THROW(prog.GetInitialGuess(y), std::runtime_error);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
