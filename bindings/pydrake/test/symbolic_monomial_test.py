@@ -114,6 +114,13 @@ class TestSymbolicMonomial(unittest.TestCase):
         vars = m.GetVariables()  # = [x, y]
         self.assertEqual(vars.size(), 2)
 
+    def test_monomial_basis(self):
+        vars = sym.Variables([x, y, z])
+        basis1 = sym.MonomialBasis(vars, 3)
+        basis2 = sym.MonomialBasis([x, y, z], 3)
+        self.assertEqual(basis1.size, 20)
+        self.assertEqual(basis2.size, 20)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -24,7 +24,6 @@ cmake_configure_file(
         "CTRLC",
         "DFLOAT",
         "DLONG",
-        "ENABLE_MKL_PARDISO",
     ] + select({
         "@drake//tools/cc_toolchain:apple": [
             "IS_MAC",
@@ -38,12 +37,8 @@ cmake_configure_file(
 )
 
 cc_binary(
-    name = "libosqp.so",
+    name = "libdrake_osqp.so",
     srcs = glob([
-        "lin_sys/*.c",
-        "lin_sys/*.h",
-        "lin_sys/direct/pardiso/*.c",
-        "lin_sys/direct/pardiso/*.h",
         "lin_sys/direct/suitesparse/*.c",
         "lin_sys/direct/suitesparse/*.h",
         "lin_sys/direct/suitesparse/amd/src/*.c",
@@ -67,7 +62,7 @@ cc_binary(
 
 cc_library(
     name = "osqp",
-    srcs = [":libosqp.so"],
+    srcs = [":libdrake_osqp.so"],
     hdrs = glob([
         "include/*.h",
     ]) + ["include/glob_opts.h"],
@@ -78,7 +73,7 @@ cc_library(
 
 install(
     name = "install",
-    targets = [":libosqp.so"],
+    targets = [":libdrake_osqp.so"],
     docs = [
         "LICENSE",
         "lin_sys/direct/suitesparse/ldl/LICENSE",

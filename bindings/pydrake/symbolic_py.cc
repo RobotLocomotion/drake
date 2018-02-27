@@ -1,10 +1,10 @@
 #include <map>
 #include <sstream>
 
-#include <pybind11/eigen.h>
-#include <pybind11/operators.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/eigen.h"
+#include "pybind11/operators.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -20,7 +20,9 @@ PYBIND11_MODULE(_symbolic_py, m) {
   using std::map;
   using std::ostringstream;
 
-  m.doc() = "Symbolic variable, variables, monomial, expression, and formula";
+  m.doc() =
+      "Symbolic variable, variables, monomial, expression, polynomial, and "
+      "formula";
 
   py::class_<Variable>(m, "Variable")
       .def(py::init<const std::string&>())
@@ -246,6 +248,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
 
   py::class_<Expression>(m, "Expression")
       .def(py::init<>())
+      .def(py::init<double>())
       .def(py::init<const Variable&>())
       .def("__repr__", &Expression::to_string)
       .def("Expand", &Expression::Expand)
@@ -360,6 +363,28 @@ PYBIND11_MODULE(_symbolic_py, m) {
            },
            py::is_operator());
 
+  m.def("log", &symbolic::log)
+      .def("abs", &symbolic::abs)
+      .def("exp", &symbolic::exp)
+      .def("sqrt", &symbolic::sqrt)
+      .def("pow", py::overload_cast<const Expression&, const Expression&>(
+                      &symbolic::pow))
+      .def("sin", &symbolic::sin)
+      .def("cos", &symbolic::cos)
+      .def("tan", &symbolic::tan)
+      .def("asin", &symbolic::asin)
+      .def("acos", &symbolic::acos)
+      .def("atan", &symbolic::atan)
+      .def("atan2", &symbolic::atan2)
+      .def("sinh", &symbolic::sinh)
+      .def("cosh", &symbolic::cosh)
+      .def("tanh", &symbolic::tanh)
+      .def("min", &symbolic::min)
+      .def("max", &symbolic::max)
+      .def("ceil", &symbolic::ceil)
+      .def("floor", &symbolic::floor)
+      .def("if_then_else", &symbolic::if_then_else);
+
   py::class_<Formula>(m, "Formula").def("__repr__", &Formula::to_string);
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
@@ -390,6 +415,8 @@ PYBIND11_MODULE(_symbolic_py, m) {
            },
            py::is_operator())
       .def(py::self == py::self)
+      .def("__hash__",
+           [](const Monomial& self) { return std::hash<Monomial>{}(self); })
       .def(py::self != py::self)
       .def("__repr__",
            [](const Monomial& self) {
@@ -403,6 +430,63 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal)
       .def("__pow__",
            [](const Monomial& self, const int p) { return pow(self, p); });
+
+  m.def("MonomialBasis",
+        [](const Eigen::Ref<const VectorX<Variable>>& vars, const int degree) {
+          return MonomialBasis(Variables{vars}, degree);
+        })
+      .def("MonomialBasis", [](const Variables& vars, const int degree) {
+        return MonomialBasis(vars, degree);
+      });
+
+  py::class_<Polynomial>(m, "Polynomial")
+      .def(py::init<>())
+      .def(py::init<Polynomial::MapType>())
+      .def(py::init<const Monomial&>())
+      .def(py::init<const Expression&>())
+      .def(py::init<const Expression&, const Variables&>())
+      .def(py::init([](const Expression& e,
+                       const Eigen::Ref<const VectorX<Variable>>& vars) {
+        return Polynomial{e, Variables{vars}};
+      }))
+      .def("indeterminates", &Polynomial::indeterminates)
+      .def("decision_variables", &Polynomial::decision_variables)
+      .def("Degree", &Polynomial::Degree)
+      .def("TotalDegree", &Polynomial::TotalDegree)
+      .def("monomial_to_coefficient_map",
+           &Polynomial::monomial_to_coefficient_map)
+      .def("ToExpression", &Polynomial::ToExpression)
+      .def("Differentiate", &Polynomial::Differentiate)
+      .def("AddProduct", &Polynomial::AddProduct)
+      .def(py::self + py::self)
+      .def(py::self + Monomial())
+      .def(Monomial() + py::self)
+      .def(py::self + double())
+      .def(double() + py::self)
+      .def(py::self - py::self)
+      .def(py::self - Monomial())
+      .def(Monomial() - py::self)
+      .def(py::self - double())
+      .def(double() - py::self)
+      .def(py::self * py::self)
+      .def(py::self * Monomial())
+      .def(Monomial() * py::self)
+      .def(py::self * double())
+      .def(double() * py::self)
+      .def(-py::self)
+      .def("EqualTo", &Polynomial::EqualTo)
+      .def(py::self == py::self)
+      .def("__repr__",
+           [](const Polynomial& self) {
+             ostringstream oss;
+             oss << self;
+             return oss.str();
+           })
+      .def("__pow__",
+           [](const Polynomial& self, const int n) { return pow(self, n); });
+  py::implicitly_convertible<double, drake::symbolic::Expression>();
+  py::implicitly_convertible<drake::symbolic::Variable,
+                             drake::symbolic::Expression>();
 }
 
 }  // namespace pydrake

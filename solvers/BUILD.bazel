@@ -721,6 +721,7 @@ drake_cc_googletest(
     deps = [
         ":binding",
         ":constraint",
+        ":cost",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1086,6 +1087,7 @@ drake_cc_googletest(
     srcs = [
         "test/snopt_solver_test.cc",
     ],
+    tags = ["snopt"],
     deps = [
         ":linear_program_examples",
         ":mathematical_program",
@@ -1093,6 +1095,7 @@ drake_cc_googletest(
         ":optimization_examples",
         ":quadratic_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
+        "@spruce",
     ],
 )
 

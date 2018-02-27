@@ -295,6 +295,7 @@ toolchain {
   tool_path { name: "objdump" path: "/usr/bin/objdump" }
   tool_path { name: "strip" path: "/usr/bin/strip" }
   needsPic: false
+  compiler_flag: "-U_FORTIFY_SOURCE"
   compiler_flag: "-D_FORTIFY_SOURCE=1"
   compiler_flag: "-fstack-protector"
   compiler_flag: "-fcolor-diagnostics"
@@ -317,6 +318,7 @@ toolchain {
     mode: OPT
     compiler_flag: "-g0"
     compiler_flag: "-O2"
+    compiler_flag: "-U_FORTIFY_SOURCE"
     compiler_flag: "-D_FORTIFY_SOURCE=1"
     compiler_flag: "-DNDEBUG"
     compiler_flag: "-ffunction-sections"

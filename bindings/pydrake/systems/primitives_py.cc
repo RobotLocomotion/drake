@@ -1,5 +1,5 @@
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
+#include "pybind11/eigen.h"
+#include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
@@ -11,7 +11,9 @@
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
@@ -77,9 +79,14 @@ PYBIND11_MODULE(primitives, m) {
            py::arg("time_period") = 0.0);
 
   m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
+        py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
+        py::arg("output_port_index") = systems::kUseFirstOutputIfItExists,
         py::arg("equilibrium_check_tolerance") = 1e-6);
 
-  m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation);
+  m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation,
+        py::arg("system"), py::arg("context"),
+        py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
+        py::arg("output_port_index") = systems::kUseFirstOutputIfItExists);
 
   m.def("ControllabilityMatrix", &ControllabilityMatrix);
 
@@ -92,14 +99,22 @@ PYBIND11_MODULE(primitives, m) {
         py::arg("threshold") = nullopt);
 
   py::class_<PassThrough<T>, LeafSystem<T>>(m, "PassThrough")
-    .def(py::init<int>())
-    .def(py::init<const AbstractValue&>());
+      .def(py::init<int>())
+      .def(py::init<const AbstractValue&>());
+
+  py::class_<Saturation<T>, LeafSystem<T>>(m, "Saturation")
+      .def(py::init<const VectorX<T>&, const VectorX<T>&>(), py::arg
+    ("min_value"), py::arg("max_value"));
 
   py::class_<SignalLogger<T>, LeafSystem<T>>(m, "SignalLogger")
       .def(py::init<int>())
       .def(py::init<int, int>())
       .def("sample_times", &SignalLogger<T>::sample_times)
       .def("data", &SignalLogger<T>::data);
+
+  py::class_<WrapToSystem<T>, LeafSystem<T>>(m, "WrapToSystem")
+      .def(py::init<int>())
+      .def("set_interval", &WrapToSystem<T>::set_interval);
 
   py::class_<ZeroOrderHold<T>, LeafSystem<T>>(m, "ZeroOrderHold")
       .def(py::init<double, int>());

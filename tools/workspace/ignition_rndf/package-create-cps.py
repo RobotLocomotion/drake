@@ -25,7 +25,7 @@ content = """
   "Components": {
     "ignition-rndf0": {
       "Type": "dylib",
-      "Location": "@prefix@/lib/libignition_rndf.so",
+      "Location": "@prefix@/lib/libdrake_ignition_rndf0.so",
       "Includes": ["@prefix@/include/ignition-rndf0"],
       "Requires": ["ignition-math4:ignition-math4"]
     }

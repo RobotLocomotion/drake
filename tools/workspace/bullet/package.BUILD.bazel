@@ -26,7 +26,7 @@ LINEAR_MATH_HDRS = glob(["src/LinearMath/**/*.h"])
 LINEAR_MATH_DEFINES = ["BT_USE_DOUBLE_PRECISION"]
 
 cc_binary(
-    name = "libLinearMath.so",
+    name = "libdrake_bullet_linear_math.so",
     srcs = glob(["src/LinearMath/**/*.cpp"]) + LINEAR_MATH_HDRS,
     copts = BULLET_COPTS,
     defines = LINEAR_MATH_DEFINES,
@@ -37,7 +37,7 @@ cc_binary(
 
 cc_library(
     name = "LinearMath",
-    srcs = ["libLinearMath.so"],
+    srcs = ["libdrake_bullet_linear_math.so"],
     hdrs = LINEAR_MATH_HDRS,
     copts = BULLET_COPTS,
     defines = LINEAR_MATH_DEFINES,
@@ -50,7 +50,7 @@ BULLET_COLLISION_HDRS = glob(["src/BulletCollision/**/*.h"]) + [
 
 # BulletCollision contains LGPL code so only build shared library.
 cc_binary(
-    name = "libBulletCollision.so",
+    name = "libdrake_bullet_collision.so",
     srcs = glob(["src/BulletCollision/**/*.cpp"]) + BULLET_COLLISION_HDRS,
     copts = BULLET_COPTS,
     includes = BULLET_INCLUDES,
@@ -61,7 +61,7 @@ cc_binary(
 
 cc_library(
     name = "BulletCollision",
-    srcs = ["libBulletCollision.so"],
+    srcs = ["libdrake_bullet_collision.so"],
     hdrs = BULLET_COLLISION_HDRS,
     copts = BULLET_COPTS,
     includes = BULLET_INCLUDES,
@@ -79,8 +79,8 @@ install_cmake_config(package = "Bullet")
 install(
     name = "install",
     targets = [
-        ":libBulletCollision.so",
-        ":libLinearMath.so",
+        ":libdrake_bullet_collision.so",
+        ":libdrake_bullet_linear_math.so",
     ],
     hdr_dest = "include/bullet",
     hdr_strip_prefix = BULLET_INCLUDES,

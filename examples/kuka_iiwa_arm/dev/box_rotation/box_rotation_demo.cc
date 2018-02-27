@@ -9,7 +9,7 @@
 #include <string>
 
 #include <gflags/gflags.h>
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"

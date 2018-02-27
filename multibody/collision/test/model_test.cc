@@ -80,7 +80,7 @@ class ModelTestBase : public ::testing::Test {
   void CallUpdateModel() { model_->UpdateModel(); }
 
   void CallComputeMaximumDepthCollisionPoints() {
-    std::vector<PointPair> pairs;
+    std::vector<PointPair<double>> pairs;
     model_->ComputeMaximumDepthCollisionPoints(true, &pairs);
   }
 
@@ -189,13 +189,13 @@ class FclModelDeathTests : public ModelTestBase,
 
   void CallClosestPointsAllToAll() {
     std::vector<ElementId> ids;
-    std::vector<PointPair> pairs;
+    std::vector<PointPair<double>> pairs;
     model_->ClosestPointsAllToAll(ids, true, &pairs);
   }
 
   void CallCollisionDetectFromPoints() {
     Eigen::Matrix3Xd points;
-    std::vector<PointPair> closest_points;
+    std::vector<PointPair<double>> closest_points;
     model_->CollisionDetectFromPoints(points, false, &closest_points);
   }
 
@@ -335,7 +335,7 @@ std::ostream& operator<<(::std::ostream& os,
 // Verify that ComputeMaximumDepthCollisionPoints returns the expected results.
 TEST_P(ShapeVsShapeTest, ComputeMaximumDepthCollisionPoints) {
   // List of collision points.
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
 
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
@@ -569,7 +569,7 @@ GTEST_TEST(ModelTest, ClosestPointsAllToAll) {
 
   // Compute the closest points.
   const std::vector<ElementId> ids_to_check = {id1, id2, id3};
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
   model->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(3u, points.size());
 
@@ -728,7 +728,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   tolerance_ = 2.0e-9;
 
   // List of collision points.
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
 
   // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box_->getId(), sphere_->getId()};
@@ -841,7 +841,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   tolerance_ = 2.0e-9;
 
   // List of collision points.
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
 
   // Unfortunately drake::multibody::collision::Model is randomly selecting one
   // of the small box's corners instead of reporting a manifold describing the
@@ -960,7 +960,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   tolerance_ = 3.0e-9;
 
   // List of collision points.
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
 
   // Unfortunately drake::multibody::collision::Model is randomly selecting one
   // of the small box's corners instead of reporting a manifold describing the
@@ -1024,7 +1024,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   model_->UpdateElementWorldTransform(small_box_->getId(), small_box_pose);
 
   // List of collision points.
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
 
   // Not clearing cached results
   for (int i = 0; i < 4; ++i) {
@@ -1047,7 +1047,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   // If the model does not cache results there should only be one result.
   ASSERT_EQ(1u, points.size());
 
-  for (const PointPair& point : points) {
+  for (const PointPair<double>& point : points) {
     EXPECT_NEAR(-0.1, point.distance, tolerance_);
     EXPECT_TRUE(
         point.normal.isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
@@ -1105,7 +1105,7 @@ GTEST_TEST(ModelTest, AnchoredElements) {
   model->AddElement(move(ball4));
 
   // List of collision points.
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
 
   // Compute all points of contact.
   model->ComputeMaximumDepthCollisionPoints(false, &points);
@@ -1174,7 +1174,7 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   model->UpdateElementWorldTransform(cap->getId(), pose);
 
   // List of collision points.
-  std::vector<PointPair> points;
+  std::vector<PointPair<double>> points;
 
   // Computes all points of contact.
   model->ComputeMaximumDepthCollisionPoints(false, &points);
@@ -1221,7 +1221,7 @@ GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
   points.resize(Eigen::NoChange, kPointCount);
   points << cx, cy, cz;
 
-  std::vector<PointPair> results;
+  std::vector<PointPair<double>> results;
   model->CollisionDetectFromPoints(points, false, &results);
 
   ASSERT_EQ(results.size(), 4u);
@@ -1252,7 +1252,7 @@ GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
   points.resize(Eigen::NoChange, kPointCount);
   points << cx, cy, cz;
 
-  std::vector<PointPair> results;
+  std::vector<PointPair<double>> results;
   model->CollisionDetectFromPoints(points, false, &results);
 
   ASSERT_EQ(results.size(), 4u);
@@ -1298,7 +1298,7 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
   pose.translation() = Vector3d(0.0, 0.0, 0.0);
   model->UpdateElementWorldTransform(cap->getId(), pose);
 
-  std::vector<PointPair> results;
+  std::vector<PointPair<double>> results;
   std::vector<ElementIdPair> pairs;
   pairs.emplace_back(sphere->getId(), cap->getId());
   model->ClosestPointsPairwise(pairs, true, &results);

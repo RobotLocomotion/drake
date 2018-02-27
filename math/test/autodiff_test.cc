@@ -86,6 +86,41 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
       << gradients;
 }
 
+GTEST_TEST(DiscardGradientTest, discardGradient) {
+  // Test the double case:
+  Eigen::Matrix2d test = Eigen::Matrix2d::Identity();
+  EXPECT_TRUE(CompareMatrices(DiscardGradient(test), test));
+
+  Eigen::MatrixXd test2 = Eigen::Vector3d{1., 2., 3.};
+  EXPECT_TRUE(CompareMatrices(DiscardGradient(test2), test2));
+
+  // Test the AutoDiff case
+  Eigen::Matrix<AutoDiffXd, 3, 1> test3 = test2;
+  // Note:  Neither of these would compile:
+  //   Eigen::Vector3d test3out = test3;
+  //   Eigen::Vector3d test3out = test3.cast<double>();
+  // (so even compiling is a success).
+  Eigen::Vector3d test3out = DiscardGradient(test3);
+  EXPECT_TRUE(CompareMatrices(test3out, test2));
+
+  VectorX<AutoDiffUpTo73d> test4 = VectorX<AutoDiffUpTo73d>::Ones(4);
+  Eigen::Vector4d test4b = DiscardGradient(test4);
+  EXPECT_TRUE(CompareMatrices(test4b, Eigen::Vector4d::Ones()));
+
+  Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
+  EXPECT_TRUE(
+      CompareMatrices(DiscardGradient(test5).rotation(), test5.rotation()));
+  EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).translation(),
+                              test5.translation()));
+
+  Isometry3<AutoDiffXd> test6 = Isometry3<AutoDiffXd>::Identity();
+  test6.translate(Vector3<AutoDiffXd>{3., 2., 1.});
+  Eigen::Isometry3d test6b = DiscardGradient(test6);
+  EXPECT_TRUE(CompareMatrices(test6b.rotation(), Eigen::Matrix3d::Identity()));
+  EXPECT_TRUE(
+      CompareMatrices(test6b.translation(), Eigen::Vector3d{3., 2., 1.}));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

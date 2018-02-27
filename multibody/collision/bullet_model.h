@@ -76,12 +76,12 @@ class BulletModel : public Model {
    *
    * \return true if any points are found.
    */
-  bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                             bool use_margins,
-                             std::vector<PointPair>* closest_points) override;
+  bool ClosestPointsAllToAll(
+      const std::vector<ElementId>& ids_to_check, bool use_margins,
+      std::vector<PointPair<double>>* closest_points) override;
 
   bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins, std::vector<PointPair>* points) override;
+      bool use_margins, std::vector<PointPair<double>>* points) override;
 
   /**
    * Finds the points where each pair of elements in id_pairs are
@@ -89,9 +89,9 @@ class BulletModel : public Model {
    *
    * \return true if any points are found.
    */
-  bool ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             bool use_margins,
-                             std::vector<PointPair>* closest_points) override;
+  bool ClosestPointsPairwise(
+      const std::vector<ElementIdPair>& id_pairs, bool use_margins,
+      std::vector<PointPair<double>>* closest_points) override;
 
   /**
    * Computes the closest point in the collision world to each of a set of
@@ -124,7 +124,7 @@ class BulletModel : public Model {
    */
   void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>* closest_points) override;
+      std::vector<PointPair<double>>* closest_points) override;
 
   void ClearCachedResults(bool use_margins) override;
 
@@ -158,7 +158,7 @@ class BulletModel : public Model {
    * the closest points can be identified.  Otherwise emits nothing and
    * returns false.
    */
-  virtual PointPair findClosestPointsBetweenElements(
+  virtual PointPair<double> findClosestPointsBetweenElements(
       ElementId idA, ElementId idB, bool use_margins);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
