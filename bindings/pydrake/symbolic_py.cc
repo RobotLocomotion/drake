@@ -363,6 +363,28 @@ PYBIND11_MODULE(_symbolic_py, m) {
            },
            py::is_operator());
 
+  m.def("log", &symbolic::log)
+      .def("abs", &symbolic::abs)
+      .def("exp", &symbolic::exp)
+      .def("sqrt", &symbolic::sqrt)
+      .def("pow", py::overload_cast<const Expression&, const Expression&>(
+                      &symbolic::pow))
+      .def("sin", &symbolic::sin)
+      .def("cos", &symbolic::cos)
+      .def("tan", &symbolic::tan)
+      .def("asin", &symbolic::asin)
+      .def("acos", &symbolic::acos)
+      .def("atan", &symbolic::atan)
+      .def("atan2", &symbolic::atan2)
+      .def("sinh", &symbolic::sinh)
+      .def("cosh", &symbolic::cosh)
+      .def("tanh", &symbolic::tanh)
+      .def("min", &symbolic::min)
+      .def("max", &symbolic::max)
+      .def("ceil", &symbolic::ceil)
+      .def("floor", &symbolic::floor)
+      .def("if_then_else", &symbolic::if_then_else);
+
   py::class_<Formula>(m, "Formula").def("__repr__", &Formula::to_string);
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
@@ -462,6 +484,9 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__pow__",
            [](const Polynomial& self, const int n) { return pow(self, n); });
+  py::implicitly_convertible<double, drake::symbolic::Expression>();
+  py::implicitly_convertible<drake::symbolic::Variable,
+                             drake::symbolic::Expression>();
 }
 
 }  // namespace pydrake
