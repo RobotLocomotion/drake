@@ -22,8 +22,6 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using drake::systems::BasicVector;
 using std::cos;
-using std::cout;
-using std::endl;
 using std::sin;
 
 namespace drake {
@@ -144,16 +142,6 @@ VectorXd RunSimulation(const bool is_analytic) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
 
-  // Figure out the index of each joint.
-  cout << "number of states: " << tree->get_num_positions() << endl;
-  for (int i = 0; i < tree->get_num_positions(); i++) {
-    cout << "position name " << i << ": " << tree->get_position_name(i) << endl;
-  }
-  cout << "number of velocities: " << tree->get_num_velocities() << endl;
-  for (int i = 0; i < tree->get_num_velocities(); i++) {
-    cout << i << " " << tree->get_velocity_name(i) << endl;
-  }
-
   // Use matrix gain to connect the states to the correct output.
   const int n1 = rod2d->state_output().size();
   const int n_states = tree->get_num_positions() + tree->get_num_velocities();
@@ -200,35 +188,19 @@ VectorXd RunSimulation(const bool is_analytic) {
                                                 .get_mutable_vector();
 
   x0.SetZero();
-  cout << "discrete state vector size: " << x0.size() << endl;
   x0.SetAtIndex(0, 0.25);      // qa
   x0.SetAtIndex(1, 0.0);       // x
   x0.SetAtIndex(2, 0.5);       // y
   x0.SetAtIndex(3, 0.01);      // z = r
   x0.SetAtIndex(5, M_PI / 6);  // yaw
 
-  simulator.set_target_realtime_rate(1);
+  simulator.set_target_realtime_rate(0);
   const double h = rod2d->get_period_sec();
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
   simulator.StepTo(7.5);
-  cout << "done stepping" << endl;
-
-  // test if the final system state is reasonable.
-  VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(4,1)]
-  q_final_expected << 1, 0.0117, 1.01, 0.01, 0, 0, 0, 0;
 
   VectorXd q_final = (log_state->data().rightCols(1)).block(0, 0, n1, 1);
-  cout << "final state:\n" << q_final << endl;
-  //  const double error =
-  //      ((log_state->data().rightCols(1)).block(0, 0, n1, 1) -
-  //      q_final_expected)
-  //          .matrix()
-  //          .norm();
-  //  cout << "final_state:\n" << log_state->data().rightCols(1) << endl;
-  //  cout << "error: " << error << endl;
-  //  DRAKE_DEMAND(error < 1e-3);
-
   return q_final;
 }
 
@@ -250,17 +222,6 @@ GTEST_TEST(rod2d_test, RigidBodyTreeSignedDistantceAndJacobians) {
   EXPECT_LT(error, 1e-3);
 }
 
-
 }  // namespace rod2d
 }  // namespace manipulation
 }  // namespace drake
-
-//int main() {
-//  // analytic
-//  // VectorXd q_final_expected(7);  // [x,y,qa,theta, zeros(3,1)]
-//  // q_final_expected << 1, 0.008, 1.01, 0.01, 0, 0, 0;
-//
-//  cout << "final state:\n"
-//       << drake::manipulation::rod2d::RunSimulation(true) << endl;
-//  return 0;
-//}
