@@ -89,6 +89,9 @@ class AxiallySymmetricFreeBodyPlant final : public systems::LeafSystem<T> {
     return *mobilizer_;
   }
 
+  /// Returns a const reference to the MultibodyTree model for this plant.
+  const MultibodyTree<T>& model() const { return model_; }
+
  private:
   // Override of context construction so that we can delegate it to
   // MultibodyTree.
