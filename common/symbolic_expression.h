@@ -309,6 +309,8 @@ class Expression {
   Expression& operator++();
   /** Provides postfix increment operator (i.e. x++). */
   Expression operator++(int);
+  /** Provides unary plus operator. */
+  friend Expression operator+(const Expression& e);
 
   friend Expression operator-(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -470,6 +472,7 @@ class Expression {
 Expression operator+(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const Expression& rhs);
+Expression operator+(const Expression& e);
 Expression operator-(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs);

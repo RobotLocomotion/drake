@@ -260,6 +260,8 @@ Expression Expression::operator++(int) {
   return copy;
 }
 
+Expression operator+(const Expression& e) { return e; }
+
 Expression operator-(Expression lhs, const Expression& rhs) {
   lhs -= rhs;
   return lhs;
