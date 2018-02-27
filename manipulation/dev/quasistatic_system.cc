@@ -309,7 +309,6 @@ void QuasistaticSystem<Scalar>::Initialize() {
   objective_ = prog_->AddQuadraticCost(Q, b, delta_q_).constraint();
 
   // set solver options.
-  prog_->SetSolverId(solvers::GurobiSolver::id());
   prog_->SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
 }
 
@@ -865,7 +864,7 @@ void QuasistaticSystem<Scalar>::StepForward(
   prog_->SetInitialGuess(z_f_, z_f_start_);
   prog_->SetInitialGuess(z_gamma_, z_gamma_start_);
 
-  const auto result = prog_->Solve();
+  const auto result = solver_.Solve(*prog_);
   DRAKE_DEMAND(result == drake::solvers::kSolutionFound);
 }
 
