@@ -200,7 +200,7 @@ VectorXd RunSimulation(const bool is_analytic) {
   simulator.Initialize();
   simulator.StepTo(7.5);
 
-  VectorXd q_final = (log_state->data().rightCols(1)).block(0, 0, n1, 1);
+  VectorXd q_final = log_state->data().topRightCorner(n1, 1);
   return q_final;
 }
 
