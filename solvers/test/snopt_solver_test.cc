@@ -1,5 +1,3 @@
-// This file test our snopt wrapper. We check if snopt solver is present at the
-// runtime, to set the snopt options in the test testSetOption
 #include "drake/solvers/snopt_solver.h"
 
 #include <gtest/gtest.h>
