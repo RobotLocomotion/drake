@@ -371,9 +371,9 @@ class PendulumTests : public ::testing::Test {
     Vector2d C;
     VectorX<double> tau_applied(tree_->get_num_velocities());
     std::vector<SpatialForce<double>> Fapplied_Bo_W_array(
-        static_cast<unsigned long>(tree_->get_num_bodies()));
+        tree_->get_num_bodies());
     std::vector<SpatialAcceleration<double>> A_WB_array(
-        static_cast<unsigned long>(tree_->get_num_bodies()));
+        tree_->get_num_bodies());
 
     Vector2d qddot;
     Vector2d qddot_expected;
@@ -399,7 +399,7 @@ class PendulumTests : public ::testing::Test {
 
     tree_->CalcForwardDynamics(*context_, pc, aic, aac, &qddot);
 
-    //Compute qddot_expected via mass matrix solve.
+    // Compute qddot_expected via mass matrix solve.
     Vector2d vdot = Vector2d::Zero();
     Fapplied_Bo_W_array = forces.body_forces();
     tau_applied = forces.generalized_forces();
