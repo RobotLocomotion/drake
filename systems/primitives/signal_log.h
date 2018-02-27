@@ -34,6 +34,9 @@ class SignalLog {
     return const_cast<const MatrixX<T>&>(data_).leftCols(num_samples_);
   }
 
+  /** Reset the logged data. */
+  void reset() { num_samples_ = 0; }
+
   /** Adds a `sample` to the data set with the associated `time` value.
 
    @param time      The time value for this sample.

@@ -110,7 +110,8 @@ PYBIND11_MODULE(primitives, m) {
       .def(py::init<int>())
       .def(py::init<int, int>())
       .def("sample_times", &SignalLogger<T>::sample_times)
-      .def("data", &SignalLogger<T>::data);
+      .def("data", &SignalLogger<T>::data)
+      .def("reset", &SignalLogger<T>::reset);
 
   py::class_<WrapToSystem<T>, LeafSystem<T>>(m, "WrapToSystem")
       .def(py::init<int>())

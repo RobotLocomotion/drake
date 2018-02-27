@@ -64,6 +64,8 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(t.shape[0] == x.shape[1])
         self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
 
+        logger.reset()
+
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.
         A = np.identity(2)

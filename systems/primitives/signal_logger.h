@@ -52,6 +52,8 @@ class SignalLogger : public LeafSystem<T> {
     return log_.data();
   }
 
+  void reset() { log_.reset(); }
+
   /// Returns the only input port.
   const InputPortDescriptor<T>& get_input_port() const;
 

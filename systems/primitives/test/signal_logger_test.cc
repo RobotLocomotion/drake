@@ -63,6 +63,18 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   // Confirm that both loggers acquired the same data.
   EXPECT_TRUE(CompareMatrices(logger->sample_times(), logger2->sample_times()));
   EXPECT_TRUE(CompareMatrices(logger->data(), logger2->data()));
+
+  // Test that reset makes everything empty.
+  logger->reset();
+  EXPECT_EQ(logger->sample_times().size(), 0);
+  EXPECT_EQ(logger->data().cols(), 0);
+
+  const int num_prev_publishes = simulator.get_num_publishes();
+  simulator.StepTo(4.);
+
+  EXPECT_EQ(logger->sample_times().size(),
+            simulator.get_num_publishes() - num_prev_publishes);
+  EXPECT_EQ(logger->data().cols(), logger->sample_times().size());
 }
 
 }  // namespace
