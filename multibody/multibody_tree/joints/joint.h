@@ -102,22 +102,22 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   const std::string& name() const { return name_; }
 
   /// Returns a const reference to the parent body P.
-  const Body<T>& get_parent_body() const {
+  const Body<T>& parent_body() const {
     return frame_on_parent_.body();
   }
 
   /// Returns a const reference to the child body B.
-  const Body<T>& get_child_body() const {
+  const Body<T>& child_body() const {
     return frame_on_child_.body();
   }
 
   /// Returns a const reference to the frame F attached on the parent body P.
-  const Frame<T>& get_frame_on_parent() const {
+  const Frame<T>& frame_on_parent() const {
     return frame_on_parent_;
   }
 
   /// Returns a const reference to the frame M attached on the child body B.
-  const Frame<T>& get_frame_on_child() const {
+  const Frame<T>& frame_on_child() const {
     return frame_on_child_;
   }
 

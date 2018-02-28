@@ -143,7 +143,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns a constant reference to the unique parent body P of the body B
   /// associated with this node. This method aborts in Debug builds if called on
   /// the root node corresponding to the _world_ body.
-  const Body<T>& get_parent_body() const {
+  const Body<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
@@ -455,7 +455,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Body for this node's parent, or the parent body P. Its body frame is
     // also referred to as P whenever no ambiguity can arise.
-    const Body<T>& body_P = get_parent_body();
+    const Body<T>& body_P = parent_body();
 
     // Inboard frame F of this node's mobilizer.
     const Frame<T>& frame_F = get_inboard_frame();
@@ -1305,7 +1305,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Body<T>& body_B = body();
 
     // Body for this node's parent, or the parent body P.
-    const Body<T>& body_P = get_parent_body();
+    const Body<T>& body_P = parent_body();
 
     // Inboard/Outboard frames of this node's mobilizer.
     const Frame<T>& frame_F = get_mobilizer().get_inboard_frame();

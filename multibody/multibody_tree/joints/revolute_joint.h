@@ -171,7 +171,7 @@ class RevoluteJoint final : public Joint<T> {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     blue_print->mobilizers_.push_back(
         std::make_unique<RevoluteMobilizer<T>>(
-            this->get_frame_on_parent(), this->get_frame_on_child(), axis_));
+            this->frame_on_parent(), this->frame_on_child(), axis_));
     return std::move(blue_print);
   }
 

@@ -205,8 +205,8 @@ class PendulumTests : public ::testing::Test {
         *upper_link_, X_UEi_, /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
         Vector3d::UnitZ()     /* revolute axis */);
-    elbow_inboard_frame_ = &elbow_joint_->get_frame_on_parent();
-    elbow_outboard_frame_ = &elbow_joint_->get_frame_on_child();
+    elbow_inboard_frame_ = &elbow_joint_->frame_on_parent();
+    elbow_outboard_frame_ = &elbow_joint_->frame_on_child();
     EXPECT_EQ(elbow_joint_->name(), "ElbowJoint");
 
     // Assert that indeed the elbow joint's outboard frame IS the lower link
