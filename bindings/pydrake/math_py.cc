@@ -5,6 +5,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
+#include "drake/math/wrap_to.h"
 
 namespace drake {
 namespace pydrake {
@@ -19,6 +20,9 @@ PYBIND11_MODULE(math, m) {
   // In the future, we will bind more scalar types, and enable scalar
   // conversion.
   using T = double;
+
+  m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
+        py::arg("high"));
 
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh")
       .def(py::init<BarycentricMesh<T>::MeshGrid>())
