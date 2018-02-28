@@ -201,6 +201,13 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
   }
 }
 
+/**
+ * Assist MathematicalProgram::AddConstraint(...) to create a quadratic
+ * constraint binding.
+ */
+Binding<QuadraticConstraint> ParseQuadraticConstraint(
+    const symbolic::Expression& e, double lower_bound, double upper_bound);
+
 /*
  * Assist MathematicalProgram::AddPolynomialConstraint(...).
  * @note Non-symbolic, but this seems to have a separate purpose than general

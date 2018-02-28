@@ -1,5 +1,7 @@
 #include "drake/solvers/create_constraint.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -9,6 +11,65 @@ using drake::symbolic::Expression;
 namespace drake {
 namespace solvers {
 namespace {
+void CheckParseQuadraticConstraint(const Expression& e, double lb, double ub) {
+  Binding<QuadraticConstraint> binding =
+      internal::ParseQuadraticConstraint(e, lb, ub);
+
+  const Expression binding_expression{
+      0.5 *
+          binding.variables().dot(binding.constraint()->Q() *
+                                  binding.variables()) +
+      binding.constraint()->b().dot(binding.variables())};
+  if (!std::isinf(lb)) {
+    EXPECT_TRUE(symbolic::test::PolynomialEqual(
+        symbolic::Polynomial(e - lb),
+        symbolic::Polynomial(binding_expression -
+                             binding.constraint()->lower_bound()(0)),
+        1E-10));
+  } else {
+    EXPECT_TRUE(std::isinf(binding.constraint()->lower_bound()(0)));
+  }
+  if (!std::isinf(ub)) {
+    EXPECT_TRUE(symbolic::test::PolynomialEqual(
+        symbolic::Polynomial(e - ub),
+        symbolic::Polynomial(binding_expression -
+                             binding.constraint()->upper_bound()(0)),
+        1E-10));
+  } else {
+    EXPECT_TRUE(std::isinf(binding.constraint()->upper_bound()(0)));
+  }
+}
+
+class ParseQuadraticConstraintTest : public ::testing::Test {
+ public:
+  ParseQuadraticConstraintTest() : x0_{"x0"}, x1_{"x1"}, x2_{"x2"}, x3_{"x3"} {
+    x_ << x0_, x1_, x2_, x3_;
+  }
+
+ protected:
+  symbolic::Variable x0_;
+  symbolic::Variable x1_;
+  symbolic::Variable x2_;
+  symbolic::Variable x3_;
+  Vector4<symbolic::Variable> x_;
+};
+
+TEST_F(ParseQuadraticConstraintTest, Test0) {
+  const double kInf = std::numeric_limits<double>::infinity();
+  CheckParseQuadraticConstraint(x0_ * x0_, 1, 1);
+  CheckParseQuadraticConstraint(x0_ * x1_, 1, 1);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_, 0, 2);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ + 3, 0, 2);
+
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_,
+                                -kInf, 1);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_, 1,
+                                kInf);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_ + 2,
+                                1, kInf);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_ + 2,
+                                -kInf, 3);
+}
 
 void CheckParseLorentzConeConstraint(const Expression& linear_expression,
                                      const Expression& quadratic_expression) {

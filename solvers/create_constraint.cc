@@ -367,6 +367,26 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
   return CreateBinding(make_shared<LinearEqualityConstraint>(A, beq), vars);
 }
 
+Binding<QuadraticConstraint> ParseQuadraticConstraint(
+    const symbolic::Expression& e, double lower_bound, double upper_bound) {
+  // First build an Eigen vector, that contains all the bound variables.
+  auto p = ExtractVariablesFromExpression(e);
+  const auto& vars_vec = p.first;
+  const auto& map_var_to_index = p.second;
+
+  // Now decomposes the expression into coefficients and monomials.
+  const symbolic::Polynomial poly{e};
+
+  Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
+  Eigen::VectorXd b(vars_vec.size());
+  double constant_term;
+  DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b, &constant_term);
+  return CreateBinding(
+      make_shared<QuadraticConstraint>(Q, b, lower_bound - constant_term,
+                                       upper_bound - constant_term),
+      vars_vec);
+}
+
 shared_ptr<Constraint> MakePolynomialConstraint(
     const VectorXPoly& polynomials,
     const vector<Polynomiald::VarType>& poly_vars, const Eigen::VectorXd& lb,
