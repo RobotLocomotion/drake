@@ -43,7 +43,7 @@ class Frame : public FrameBase<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame)
 
   /// Returns a const reference to the body associated to this %Frame.
-  const Body<T>& get_body() const {
+  const Body<T>& body() const {
     return body_;
   }
 

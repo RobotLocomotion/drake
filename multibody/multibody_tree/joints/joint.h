@@ -103,12 +103,12 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   /// Returns a const reference to the parent body P.
   const Body<T>& get_parent_body() const {
-    return frame_on_parent_.get_body();
+    return frame_on_parent_.body();
   }
 
   /// Returns a const reference to the child body B.
   const Body<T>& get_child_body() const {
-    return frame_on_child_.get_body();
+    return frame_on_child_.body();
   }
 
   /// Returns a const reference to the frame F attached on the parent body P.

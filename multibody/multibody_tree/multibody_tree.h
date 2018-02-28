@@ -232,7 +232,7 @@ class MultibodyTree {
     if (frame == nullptr) {
       throw std::logic_error("Input frame is a nullptr.");
     }
-    FrameIndex frame_index = topology_.add_frame(frame->get_body().index());
+    FrameIndex frame_index = topology_.add_frame(frame->body().index());
     // This test MUST be performed BEFORE frames_.push_back() and
     // owned_frames_.push_back() below. Do not move it around!
     DRAKE_ASSERT(frame_index == get_num_frames());

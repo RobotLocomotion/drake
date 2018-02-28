@@ -324,10 +324,10 @@ TEST_F(PendulumTests, CreateModelBasics) {
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
-      shoulder_inboard_frame_->get_body().index(),
+      shoulder_inboard_frame_->body().index(),
       world_body_->index());
   EXPECT_EQ(
-      shoulder_outboard_frame_->get_body().index(),
+      shoulder_outboard_frame_->body().index(),
       upper_link_->index());
 
   // Checks that mobilizers connect the right frames.
@@ -343,8 +343,8 @@ TEST_F(PendulumTests, CreateModelBasics) {
             upper_link_->index());
 
   // Checks we can retrieve the body associated with a frame.
-  EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
-  EXPECT_EQ(&shoulder_outboard_frame_->get_body(), upper_link_);
+  EXPECT_EQ(&shoulder_inboard_frame_->body(), world_body_);
+  EXPECT_EQ(&shoulder_outboard_frame_->body(), upper_link_);
 
   // Checks we can request inboard/outboard bodies to a mobilizer.
   EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
@@ -361,9 +361,9 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(model_->get_num_mobilizers(), 2);
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
-      elbow_inboard_frame_->get_body().index(), upper_link_->index());
+      elbow_inboard_frame_->body().index(), upper_link_->index());
   EXPECT_EQ(
-      elbow_outboard_frame_->get_body().index(), lower_link_->index());
+      elbow_outboard_frame_->body().index(), lower_link_->index());
   // Checks that mobilizers connect the right frames.
   EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().index(),
             elbow_inboard_frame_->index());
@@ -375,8 +375,8 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(elbow_mobilizer_->get_outboard_body().index(),
             lower_link_->index());
   // Checks we can retrieve the body associated with a frame.
-  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
+  EXPECT_EQ(&elbow_inboard_frame_->body(), upper_link_);
+  EXPECT_EQ(&elbow_outboard_frame_->body(), lower_link_);
   // Checks we can request inboard/outboard bodies to a mobilizer.
   EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
   EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);

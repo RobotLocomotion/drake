@@ -556,10 +556,10 @@ Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const Frame<T>& frame_A, const Frame<T>& frame_B) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Isometry3<T>& X_WA =
-      pc.get_X_WB(frame_A.get_body().node_index()) *
+      pc.get_X_WB(frame_A.body().node_index()) *
       frame_A.CalcPoseInBodyFrame(context);
   const Isometry3<T>& X_WB =
-      pc.get_X_WB(frame_B.get_body().node_index()) *
+      pc.get_X_WB(frame_B.body().node_index()) *
       frame_B.CalcPoseInBodyFrame(context);
   return X_WA.inverse() * X_WB;
 }
@@ -643,7 +643,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   DRAKE_THROW_UNLESS(Jv_WQi->cols() == get_num_velocities());
 
   // Body to which frame B is attached to:
-  const Body<T>& body_B = frame_B.get_body();
+  const Body<T>& body_B = frame_B.body();
 
   // Compute kinematic path from body B to the world:
   std::vector<BodyNodeIndex> path_to_world;
@@ -708,7 +708,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   DRAKE_THROW_UNLESS(Jv_WF->cols() == get_num_velocities());
 
   // Body to which frame B is attached to:
-  const Body<T>& body_B = frame_B.get_body();
+  const Body<T>& body_B = frame_B.body();
 
   // Compute kinematic path from body B to the world:
   std::vector<BodyNodeIndex> path_to_world;

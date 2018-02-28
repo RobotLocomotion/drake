@@ -276,13 +276,13 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Returns a constant reference to the body associated with `this`
   /// mobilizer's inboard frame.
   const Body<T>& get_inboard_body() const {
-    return get_inboard_frame().get_body();
+    return get_inboard_frame().body();
   }
 
   /// Returns a constant reference to the body associated with `this`
   /// mobilizer's outboard frame.
   const Body<T>& get_outboard_body() const {
-    return get_outboard_frame().get_body();
+    return get_outboard_frame().body();
   }
 
   /// Returns the topology information for this mobilizer. Users should not
