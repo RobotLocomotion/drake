@@ -315,7 +315,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [kEpsilon, kEpsilon, kEpsilon]
-  EXPECT_TRUE(std::abs(quality_factor) < 64 * kEpsilon);
+  EXPECT_TRUE(quality_factor > 0 &&  quality_factor < 64 * kEpsilon);
   EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),
                                 64 * kEpsilon));
 
@@ -323,7 +323,8 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   m << kEpsilon, 0, 0,
       0, kEpsilon, 0,
       0, 0, -kEpsilon;
-  EXPECT_TRUE(std::abs(m.determinant()) < 64 * kEpsilon * kEpsilon * kEpsilon);
+  EXPECT_TRUE(m.determinant() < 0 &&
+              std::abs(m.determinant()) < 64 * kEpsilon * kEpsilon * kEpsilon);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
 
@@ -338,13 +339,26 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   // Check that an exception is thrown if the rotation matrix is improper,
   // meaning the determinant of m happens to be slightly negative (near zero).
   // One can see this matrix is nearly singular by noticing either:
-  // row(0) + row(2) = 2 * row(1)  or  col(0) + col(2) = 2 * col(1).
+  // row(0) + row(2) ≈ 2 * row(1)  or  col(0) + col(2) ≈ 2 * col(1).
   m << 1, 2, 3,
        4, 5, 6,
-       7, 8, 9 + 100 * kEpsilon;
-  EXPECT_TRUE(std::abs(m.determinant()) < 800 * kEpsilon);
+       7, 8, 9 + 400 * kEpsilon;
+  EXPECT_TRUE(m.determinant() < 0 &&
+              std::abs(m.determinant()) < 1600 * kEpsilon);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
+
+  // Check that no exception is thrown if the rotation matrix is proper,
+  // meaning the determinant of m happens to be slightly positive (near zero).
+  // One can see this matrix is nearly singular by noticing either:
+  // row(0) + row(2) ≈ 2 * row(1)  or  col(0) + col(2) ≈ 2 * col(1).
+  m << 1, 2, 3,
+       4, 5, 6,
+       7, 8, 9 - 400 * kEpsilon;
+  EXPECT_TRUE(m.determinant() > 0 &&
+              std::abs(m.determinant()) < 1600 * kEpsilon);
+  RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
+  EXPECT_TRUE(quality_factor > 0 && std::abs(quality_factor) < 1600 * kEpsilon);
 
   // Check that an exception is thrown if the rotation matrix is improper,
   // meaning that the determinant of m happens to be negative (det = -6).
