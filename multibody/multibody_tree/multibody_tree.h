@@ -572,6 +572,8 @@ class MultibodyTree {
   /// will remain valid for the lifetime of `this` %MultibodyTree.
   /// @throws if `this` model already contains a joint actuator with the given
   /// `name`. See HasJointActuatorNamed(), JointActuator::get_name().
+  // TODO(amcastro-tri): consider adding sugar method to declare an actuated
+  // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
     if (HasJointActuatorNamed(name)) {

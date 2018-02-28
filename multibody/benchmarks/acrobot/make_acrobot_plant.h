@@ -116,11 +116,11 @@ class AcrobotParameters {
       g_{nan()};                  // In m/s².
 
   // Modeling elements' names.
-  const std::string link1_name_{"Link1"};
-  const std::string link2_name_{"Link2"};
-  const std::string shoulder_joint_name_{"ShoulderJoint"};
-  const std::string elbow_joint_name_{"ElbowJoint"};
-  const std::string actuator_name_{"ElbowActuator"};
+  std::string link1_name_{"Link1"};
+  std::string link2_name_{"Link2"};
+  std::string shoulder_joint_name_{"ShoulderJoint"};
+  std::string elbow_joint_name_{"ElbowJoint"};
+  std::string actuator_name_{"ElbowActuator"};
 };
 
 /// This method makes a MultibodyPlant model of the Acrobot - a canonical
