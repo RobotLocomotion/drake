@@ -39,6 +39,7 @@ drake_cc_library(
         ":number_traits",
         ":polynomial",
         ":reinit_after_move",
+        ":reset_on_copy",
         ":scoped_singleton",
         ":sorted_vectors_have_intersection",
         ":symbolic",
@@ -330,6 +331,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "reset_on_copy",
+    hdrs = ["reset_on_copy.h"],
+)
+
+drake_cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
     deps = [
@@ -474,6 +480,13 @@ drake_cc_googletest(
     name = "reinit_after_move_test",
     deps = [
         ":reinit_after_move",
+    ],
+)
+
+drake_cc_googletest(
+    name = "reset_on_copy_test",
+    deps = [
+        ":reset_on_copy",
     ],
 )
 
