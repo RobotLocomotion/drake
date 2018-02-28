@@ -241,7 +241,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Update per-node kinematics.
       node.CalcPositionKinematicsCache_BaseToTip(mbt_context, pc);
@@ -272,7 +272,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Jacobian matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the
       // number of mobilities for this node. Therefore, the return is a
@@ -318,7 +318,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Update per-node kinematics.
       node.CalcSpatialAcceleration_BaseToTip(
@@ -396,7 +396,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Make a copy to the total applied forces since the call to
       // CalcInverseDynamics_TipToBase() below could overwrite the entry for the
@@ -676,7 +676,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     auto J_PBq_W = Jv_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
 
     // Position of this node's body Bi in the world W.
-    const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();
+    const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
     for (int ipoint = 0; ipoint < num_points; ++ipoint) {
       const auto p_WQi = p_WQi_set->col(ipoint);
@@ -748,7 +748,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
     auto J_PBf_W = Jv_WF->block(0, start_index_in_v, 6, num_velocities);
 
     // Position of this node's body Bi in the world W.
-    const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();
+    const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
     // Position of origin Fo measured from Bi, expressed in the world W.
     const Vector3<T> p_BiFo_W = p_WoFo_W - p_WBi;

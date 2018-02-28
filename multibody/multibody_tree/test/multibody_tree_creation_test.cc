@@ -103,13 +103,13 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
 
   // Body identifiers are unique and are assigned by MultibodyTree in increasing
   // order starting with index = 0 (world_index()) for the "world" body.
-  EXPECT_EQ(world_body.get_index(), world_index());
-  EXPECT_EQ(pendulum.get_index(), BodyIndex(1));
-  EXPECT_EQ(pendulum2.get_index(), BodyIndex(2));
+  EXPECT_EQ(world_body.index(), world_index());
+  EXPECT_EQ(pendulum.index(), BodyIndex(1));
+  EXPECT_EQ(pendulum2.index(), BodyIndex(2));
 
   // Tests API to access bodies.
-  EXPECT_EQ(model->get_body(BodyIndex(1)).get_index(), pendulum.get_index());
-  EXPECT_EQ(model->get_body(BodyIndex(2)).get_index(), pendulum2.get_index());
+  EXPECT_EQ(model->get_body(BodyIndex(1)).index(), pendulum.index());
+  EXPECT_EQ(model->get_body(BodyIndex(2)).index(), pendulum2.index());
 
   // Rigid bodies have no generalized coordinates.
   EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
@@ -447,8 +447,8 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     const MobilizerTopology& mobilizer_topology =
         mobilizers_[mobilizer_index]->get_topology();
 
-    EXPECT_EQ(body_index, bodies_[body_index]->get_index());
-    EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->get_index());
+    EXPECT_EQ(body_index, bodies_[body_index]->index());
+    EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->index());
 
     // Verify positions index.
     EXPECT_EQ(positions_index, node.mobilizer_positions_start);

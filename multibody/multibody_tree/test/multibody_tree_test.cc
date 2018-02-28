@@ -200,7 +200,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
     model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
-    return V_WB_array[end_effector_link_->get_index()].translational();
+    return V_WB_array[end_effector_link_->index()].translational();
   }
 
   // Computes spatial velocity `V_WE` of the end effector frame E in the world
@@ -211,7 +211,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
     model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
-    return V_WB_array[end_effector_link_->get_index()];
+    return V_WB_array[end_effector_link_->index()];
   }
 
   // Computes p_WEo, the position of the end effector frame's origin Eo.

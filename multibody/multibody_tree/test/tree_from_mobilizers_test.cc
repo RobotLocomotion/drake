@@ -211,8 +211,8 @@ class PendulumTests : public ::testing::Test {
 
     // Assert that indeed the elbow joint's outboard frame IS the lower link
     // frame.
-    ASSERT_EQ(elbow_outboard_frame_->get_index(),
-              lower_link_->get_body_frame().get_index());
+    ASSERT_EQ(elbow_outboard_frame_->index(),
+              lower_link_->get_body_frame().index());
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
@@ -230,7 +230,7 @@ class PendulumTests : public ::testing::Test {
       const Body<T>& body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
+    return pc.get_X_WB(topology.get_body(body.index()).body_node);
   }
 
   // Helper method to extract spatial velocity from the velocity kinematics
@@ -244,7 +244,7 @@ class PendulumTests : public ::testing::Test {
       const Body<double>& body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
+    return vc.get_V_WB(topology.get_body(body.index()).body_node);
   }
 
   // Helper method to extract spatial acceleration from the acceleration
@@ -258,7 +258,7 @@ class PendulumTests : public ::testing::Test {
       const Body<double>& body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.get_index()).body_node);
+    return ac.get_A_WB(topology.get_body(body.index()).body_node);
   }
 
  protected:
@@ -324,23 +324,23 @@ TEST_F(PendulumTests, CreateModelBasics) {
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
-      shoulder_inboard_frame_->get_body().get_index(),
-      world_body_->get_index());
+      shoulder_inboard_frame_->get_body().index(),
+      world_body_->index());
   EXPECT_EQ(
-      shoulder_outboard_frame_->get_body().get_index(),
-      upper_link_->get_index());
+      shoulder_outboard_frame_->get_body().index(),
+      upper_link_->index());
 
   // Checks that mobilizers connect the right frames.
-  EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().get_index(),
-            world_body_->get_body_frame().get_index());
-  EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().get_index(),
-            shoulder_outboard_frame_->get_index());
+  EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().index(),
+            world_body_->get_body_frame().index());
+  EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().index(),
+            shoulder_outboard_frame_->index());
 
   // Checks that mobilizers connect the right bodies.
-  EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().get_index(),
-            world_body_->get_index());
-  EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().get_index(),
-            upper_link_->get_index());
+  EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().index(),
+            world_body_->index());
+  EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().index(),
+            upper_link_->index());
 
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
@@ -361,19 +361,19 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(model_->get_num_mobilizers(), 2);
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
-      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
+      elbow_inboard_frame_->get_body().index(), upper_link_->index());
   EXPECT_EQ(
-      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
+      elbow_outboard_frame_->get_body().index(), lower_link_->index());
   // Checks that mobilizers connect the right frames.
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
-            elbow_inboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
-            elbow_outboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().index(),
+            elbow_inboard_frame_->index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().index(),
+            elbow_outboard_frame_->index());
   // Checks that mobilizers connect the right bodies.
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
-            upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
-            lower_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().index(),
+            upper_link_->index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().index(),
+            lower_link_->index());
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
   EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
@@ -394,15 +394,15 @@ TEST_F(PendulumTests, CreateModelBasics) {
 // assign these indexes.
 TEST_F(PendulumTests, Indexes) {
   CreatePendulumModel();
-  EXPECT_EQ(shoulder_inboard_frame_->get_index(), FrameIndex(0));
-  EXPECT_EQ(upper_link_->get_body_frame().get_index(), FrameIndex(1));
-  EXPECT_EQ(lower_link_->get_body_frame().get_index(), FrameIndex(2));
-  EXPECT_EQ(shoulder_outboard_frame_->get_index(), FrameIndex(3));
-  EXPECT_EQ(elbow_inboard_frame_->get_index(), FrameIndex(4));
-  EXPECT_EQ(elbow_outboard_frame_->get_index(), FrameIndex(2));
+  EXPECT_EQ(shoulder_inboard_frame_->index(), FrameIndex(0));
+  EXPECT_EQ(upper_link_->get_body_frame().index(), FrameIndex(1));
+  EXPECT_EQ(lower_link_->get_body_frame().index(), FrameIndex(2));
+  EXPECT_EQ(shoulder_outboard_frame_->index(), FrameIndex(3));
+  EXPECT_EQ(elbow_inboard_frame_->index(), FrameIndex(4));
+  EXPECT_EQ(elbow_outboard_frame_->index(), FrameIndex(2));
   // Verifies the elbow's outboard frame IS the lower link's frame.
-  EXPECT_EQ(elbow_outboard_frame_->get_index(),
-            lower_link_->get_body_frame().get_index());
+  EXPECT_EQ(elbow_outboard_frame_->index(),
+            lower_link_->get_body_frame().index());
 }
 
 // Asserts that the Finalize() stage is successful and that re-finalization is
@@ -448,9 +448,9 @@ TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   // ensure that bodies were not copied instead.
   // Unfortunately we need the ugly get() method since operator.() is not
   // overloaded.
-  EXPECT_EQ(&bodies[world_body_->get_index()].get(), world_body_);
-  EXPECT_EQ(&bodies[upper_link_->get_index()].get(), upper_link_);
-  EXPECT_EQ(&bodies[lower_link_->get_index()].get(), lower_link_);
+  EXPECT_EQ(&bodies[world_body_->index()].get(), world_body_);
+  EXPECT_EQ(&bodies[upper_link_->index()].get(), upper_link_);
+  EXPECT_EQ(&bodies[lower_link_->index()].get(), lower_link_);
 }
 
 TEST_F(PendulumTests, CreateContext) {

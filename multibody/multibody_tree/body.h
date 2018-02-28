@@ -242,7 +242,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_body(this->get_index());
+    topology_ = tree_topology.get_body(this->index());
     body_frame_.SetTopology(tree_topology);
   }
 

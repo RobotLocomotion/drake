@@ -191,7 +191,7 @@ class MultibodyTree {
           "Body names must be unique within a given model.");
     }
     const RigidBody<T>& body = this->template AddBody<RigidBody>(name, M_BBo_B);
-    body_name_to_index_[name] = body.get_index();
+    body_name_to_index_[name] = body.index();
     return body;
   }
 
@@ -232,7 +232,7 @@ class MultibodyTree {
     if (frame == nullptr) {
       throw std::logic_error("Input frame is a nullptr.");
     }
-    FrameIndex frame_index = topology_.add_frame(frame->get_body().get_index());
+    FrameIndex frame_index = topology_.add_frame(frame->get_body().index());
     // This test MUST be performed BEFORE frames_.push_back() and
     // owned_frames_.push_back() below. Do not move it around!
     DRAKE_ASSERT(frame_index == get_num_frames());
@@ -349,8 +349,8 @@ class MultibodyTree {
     const int num_positions = mobilizer->get_num_positions();
     const int num_velocities = mobilizer->get_num_velocities();
     MobilizerIndex mobilizer_index = topology_.add_mobilizer(
-        mobilizer->get_inboard_frame().get_index(),
-        mobilizer->get_outboard_frame().get_index(),
+        mobilizer->get_inboard_frame().index(),
+        mobilizer->get_outboard_frame().index(),
         num_positions, num_velocities);
 
     // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
@@ -552,7 +552,7 @@ class MultibodyTree {
             name,
             *frame_on_parent, *frame_on_child,
             std::forward<Args>(args)...));
-    joint_name_to_index_[name] = joint.get_index();
+    joint_name_to_index_[name] = joint.index();
     return joint;
   }
   /// @}
@@ -812,7 +812,7 @@ class MultibodyTree {
   /// @param[out] X_WB
   ///   On output this vector will contain the pose of each body in the model
   ///   ordered by BodyIndex. The index of a body in the model can be obtained
-  ///   with Body::get_index(). This method throws an exception if `X_WB` is
+  ///   with Body::index(). This method throws an exception if `X_WB` is
   ///   `nullptr`. Vector `X_WB` is resized when needed to have size
   ///   num_bodies().
   ///
@@ -831,7 +831,7 @@ class MultibodyTree {
   /// @param[out] V_WB
   ///   On output this vector will contain the spatial velocity of each body in
   ///   the model ordered by BodyIndex. The index of a body in the model can be
-  ///   obtained with Body::get_index(). This method throws an exception if
+  ///   obtained with Body::index(). This method throws an exception if
   ///   `V_WB` is `nullptr`. Vector `V_WB` is resized when needed to have size
   ///   num_bodies().
   ///
@@ -1713,7 +1713,7 @@ class MultibodyTree {
   // Helper method to create a clone of `frame` and add it to `this` tree.
   template <typename FromScalar>
   Frame<T>* CloneFrameAndAdd(const Frame<FromScalar>& frame) {
-    FrameIndex frame_index = frame.get_index();
+    FrameIndex frame_index = frame.index();
 
     auto frame_clone = frame.CloneToScalar(*this);
     frame_clone->set_parent_tree(this, frame_index);
@@ -1735,8 +1735,8 @@ class MultibodyTree {
   // in the source variant `body`.
   template <typename FromScalar>
   Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body) {
-    const BodyIndex body_index = body.get_index();
-    const FrameIndex body_frame_index = body.get_body_frame().get_index();
+    const BodyIndex body_index = body.index();
+    const FrameIndex body_frame_index = body.get_body_frame().index();
 
     auto body_clone = body.CloneToScalar(*this);
     body_clone->set_parent_tree(this, body_index);
@@ -1762,7 +1762,7 @@ class MultibodyTree {
   // Helper method to create a clone of `mobilizer` and add it to `this` tree.
   template <typename FromScalar>
   Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<FromScalar>& mobilizer) {
-    MobilizerIndex mobilizer_index = mobilizer.get_index();
+    MobilizerIndex mobilizer_index = mobilizer.index();
     auto mobilizer_clone = mobilizer.CloneToScalar(*this);
     mobilizer_clone->set_parent_tree(this, mobilizer_index);
     Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
@@ -1775,7 +1775,7 @@ class MultibodyTree {
   template <typename FromScalar>
   void CloneForceElementAndAdd(
       const ForceElement<FromScalar>& force_element) {
-    ForceElementIndex force_element_index = force_element.get_index();
+    ForceElementIndex force_element_index = force_element.index();
     auto force_element_clone = force_element.CloneToScalar(*this);
     force_element_clone->set_parent_tree(this, force_element_index);
     owned_force_elements_.push_back(std::move(force_element_clone));
@@ -1784,7 +1784,7 @@ class MultibodyTree {
   // Helper method to create a clone of `joint` and add it to `this` tree.
   template <typename FromScalar>
   Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
-    JointIndex joint_index = joint.get_index();
+    JointIndex joint_index = joint.index();
     auto joint_clone = joint.CloneToScalar(*this);
     joint_clone->set_parent_tree(this, joint_index);
     owned_joints_.push_back(std::move(joint_clone));
@@ -1800,7 +1800,7 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    FrameIndex frame_index = frame.get_index();
+    FrameIndex frame_index = frame.index();
     DRAKE_DEMAND(frame_index < get_num_frames());
     const FrameType<T>* frame_variant =
         dynamic_cast<const FrameType<T>*>(frames_[frame_index]);
@@ -1817,7 +1817,7 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    BodyIndex body_index = body.get_index();
+    BodyIndex body_index = body.index();
     DRAKE_DEMAND(body_index < get_num_bodies());
     const BodyType<T>* body_variant =
         dynamic_cast<const BodyType<T>*>(
@@ -1836,7 +1836,7 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    MobilizerIndex mobilizer_index = mobilizer.get_index();
+    MobilizerIndex mobilizer_index = mobilizer.index();
     DRAKE_DEMAND(mobilizer_index < get_num_mobilizers());
     const MobilizerType<T>* mobilizer_variant =
         dynamic_cast<const MobilizerType<T>*>(
@@ -1854,7 +1854,7 @@ class MultibodyTree {
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    JointIndex joint_index = joint.get_index();
+    JointIndex joint_index = joint.index();
     DRAKE_DEMAND(joint_index < get_num_joints());
     const JointType<T>* joint_variant =
         dynamic_cast<const JointType<T>*>(
