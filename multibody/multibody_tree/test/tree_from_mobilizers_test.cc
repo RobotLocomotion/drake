@@ -351,7 +351,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(&shoulder_mobilizer_->outboard_body(), upper_link_);
 
   // Request revolute mobilizers' axes.
-  EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(shoulder_mobilizer_->revolute_axis(), Vector3d::UnitZ());
 
   // We need to Finalize() our model before testing the elbow mobilizer was
   // created correctly. Joint implementations are created at Finalize().
@@ -381,7 +381,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(&elbow_mobilizer_->inboard_body(), upper_link_);
   EXPECT_EQ(&elbow_mobilizer_->outboard_body(), lower_link_);
   // Request revolute mobilizers' axes.
-  EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(elbow_mobilizer_->revolute_axis(), Vector3d::UnitZ());
 }
 
 // Frame indexes are assigned by MultibodyTree. The number of frames
@@ -934,7 +934,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // comparison with the benchmark.
       const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
       const Matrix3d R_WL = X_WL.linear();
-      const Vector3d p_LoLcm_L = lower_link_->get_default_com();
+      const Vector3d p_LoLcm_L = lower_link_->default_com();
       const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
       // ======================================================================
@@ -1194,7 +1194,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // spatial velocity to the center of mass frame for comparison with
           // the benchmark.
           const Matrix3d R_WL = X_WL_value.block<3, 3>(0, 0);
-          const Vector3d p_LoLcm_L = lower_link_->get_default_com();
+          const Vector3d p_LoLcm_L = lower_link_->default_com();
           const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
           // Asserts that the retrieved poses match with the ones specified by

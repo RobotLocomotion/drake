@@ -56,7 +56,7 @@ TEST_F(RevoluteJointTest, NumDOFs) {
 
 // Default axis accessor.
 TEST_F(RevoluteJointTest, GetAxis) {
-  EXPECT_EQ(joint1_->get_revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(joint1_->revolute_axis(), Vector3d::UnitZ());
 }
 
 // Context-dependent value access.
