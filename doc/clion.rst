@@ -52,13 +52,10 @@ Installing CLion
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
 The most recent versions that we have tested for compatibility are:
-  - CLion 2017.2.3
-  - Bazel 0.9.0
-  - "CLion with Bazel" plug-in 2018.01.02.0.1
+  - CLion 2017.3.3
+  - Bazel 0.10.1
+  - "CLion with Bazel" plug-in 2018.01.29.0.0.
 
-Note that as of this writing, CLion 2017.3.2 is not compatible.  For more
-details, see https://github.com/bazelbuild/intellij/issues/175.
-  
 Upgrading CLion
 ---------------
 
@@ -102,7 +99,7 @@ specified in the WORKSPACE file.
 1. ``File > Import Bazel Project``
 2. Select Workspace: Use an existing Bazel workspace, and provide the path to
    your ``drake`` directory.
-3. Select Project View: choose "Import from workspace", and
+3. Select Project View: choose "Import project view file", and
    select the file ``drake/.bazelproject``
 4. Project View: Pick a ``project data directory`` of your choice for the
    CLion project files. It must not be a subdirectory of ``drake``.
