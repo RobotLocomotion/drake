@@ -475,7 +475,7 @@ GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
   VectorXd q = state.topRows(8);
   VectorXd v = state.bottomRows(8);
   auto kinematics_cache = tree.doKinematics(q, v);
-  std::vector<PointPair> pairs =
+  std::vector<PointPair<double>> pairs =
       tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
   EXPECT_EQ(pairs.size(), 0u);
 }
@@ -497,7 +497,7 @@ GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
   VectorXd q = state.topRows(8);
   VectorXd v = state.bottomRows(8);
   auto kinematics_cache = tree.doKinematics(q, v);
-  std::vector<PointPair> pairs =
+  std::vector<PointPair<double>> pairs =
       tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
   EXPECT_EQ(pairs.size(), 0u);
 }

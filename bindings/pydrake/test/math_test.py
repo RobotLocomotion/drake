@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
-from pydrake._math import BarycentricMesh
+from pydrake.math import (BarycentricMesh, wrap_to)
 import numpy as np
 
 
@@ -22,6 +22,13 @@ class TestBarycentricMesh(unittest.TestCase):
         self.assertEquals(mesh.Eval(values, (1, 0))[0], 1)
         self.assertEquals(mesh.Eval(values, (0, 1))[0], 2)
         self.assertEquals(mesh.Eval(values, (1, 1))[0], 3)
+
+    def test_weight(self):
+        mesh = BarycentricMesh([{0, 1}, {0, 1}])
+
+        (Ti, T) = mesh.EvalBarycentricWeights((0., 1.))
+        np.testing.assert_equal(Ti, [2, 2, 0])
+        np.testing.assert_almost_equal(T, (1., 0., 0.))
 
     def test_mesh_values_from(self):
         mesh = BarycentricMesh([{0, 1}, {0, 1}])
@@ -48,6 +55,9 @@ class TestBarycentricMesh(unittest.TestCase):
         ax.plot_surface(X, Y, Z)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
+
+    def test_wrap_to(self):
+        self.assertEquals(wrap_to(1.5, 0., 1.), .5)
 
 
 if __name__ == '__main__':

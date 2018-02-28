@@ -1,8 +1,8 @@
-#include <pybind11/eigen.h>
-#include <pybind11/eval.h>
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/eigen.h"
+#include "pybind11/eval.h"
+#include "pybind11/functional.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -283,7 +283,16 @@ PYBIND11_MODULE(framework, m) {
         "EvalVectorInput",
         [](const System<T>* self, const Context<T>& arg1, int arg2) {
           return self->EvalVectorInput(arg1, arg2);
-        }, py_reference_internal)
+        }, py_reference,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+        py::keep_alive<0, 2>())
+    .def(
+        "EvalAbstractInput",
+        [](const System<T>* self, const Context<T>& arg1, int arg2) {
+          return self->EvalAbstractInput(arg1, arg2);
+        }, py_reference,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+        py::keep_alive<0, 2>())
     .def("CalcOutput", &System<T>::CalcOutput)
     // Sugar.
     .def(
@@ -352,8 +361,15 @@ PYBIND11_MODULE(framework, m) {
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort), py_reference_internal,
+             &Context<T>::FixInputPort),
+         py_reference_internal,
          // Keep alive, ownership: `BasicVector` keeps `self` alive.
+         py::keep_alive<3, 1>())
+    .def("FixInputPort",
+         py::overload_cast<int, unique_ptr<AbstractValue>>(
+             &Context<T>::FixInputPort),
+         py_reference_internal,
+         // Keep alive, ownership: `AbstractValue` keeps `self` alive.
          py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
     .def("set_time", &Context<T>::set_time)
@@ -434,14 +450,20 @@ PYBIND11_MODULE(framework, m) {
   // signatures(e.g. GetValue<T>()).
   py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
 
-  py::class_<OutputPort<T>>(m, "OutputPort");
+  py::class_<OutputPort<T>>(m, "OutputPort")
+    .def("size", &OutputPort<T>::size);
 
-  py::class_<SystemOutput<T>>(m, "SystemOutput")
+  py::class_<SystemOutput<T>> system_output(m, "SystemOutput");
+  DefClone(&system_output);
+  system_output
     .def("get_num_ports", &SystemOutput<T>::get_num_ports)
+    .def("get_data", &SystemOutput<T>::get_data,
+         py_reference_internal)
     .def("get_vector_data", &SystemOutput<T>::get_vector_data,
          py_reference_internal);
 
-  py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor");
+  py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor")
+    .def("size", &InputPortDescriptor<T>::size);
 
   // Value types.
   py::class_<VectorBase<T>>(m, "VectorBase")

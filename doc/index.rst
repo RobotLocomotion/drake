@@ -25,7 +25,7 @@ Here is a quick summary of capabilities:
 	* `Rigid-body kinematics and dynamics <http://drake.mit.edu/doxygen_cxx/group__rigid__body__systems.html>`_
 		* Rigorously designed and tested, well-documented `multi-body library <http://drake.mit.edu/doxygen_cxx/group__multibody__concepts.html>`_
 		* Load from :doc:`SDF / URDF models <models>` (+ a few custom tags)
-		* `Contact/collisions modeled with compliant contact <http://drake.mit.edu/doxygen_cxx/group__drake__contacts.html>`_ ; **Coming soon**: time-stepping and hybrid models for rigid contact
+		* Contact/collisions modeled with either `compliant <http://drake.mit.edu/doxygen_cxx/group__drake__contacts.html>`_  or rigid contact using continuous (differential equation) and discrete (difference equation, i.e., time stepping) models; **Coming soon**: hybrid models for rigid contact
 		* Geometry queries (e.g. collision detection, contact queries, and sensor queries) for simple geometries and convex meshes;  **Coming soon**: non-convex meshes and multi-contact
 		* `Rich library of kinematic and dynamic queries <http://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ (e.g. Centroidal dynamics, Center of Pressure, Kinematic Jacobians, ...)
 	* `Sensor models <http://drake.mit.edu/doxygen_cxx/group__sensor__systems.html>`_ (lidar, RGB-D camera, imu, contact force/torque)

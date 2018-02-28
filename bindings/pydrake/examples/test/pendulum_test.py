@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 
 import copy
@@ -12,9 +10,6 @@ from pydrake.examples.pendulum import (
     )
 from pydrake.systems.analysis import (
     Simulator
-    )
-from pydrake.systems.primitives import (
-    ConstantVectorSource,
     )
 
 

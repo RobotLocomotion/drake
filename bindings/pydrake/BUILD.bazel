@@ -83,7 +83,7 @@ drake_py_library(
 
 drake_pybind_library(
     name = "math_py",
-    cc_so_name = "_math",
+    cc_so_name = "math",
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -116,6 +116,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":math_py",
     ":symbolic_py",
     "//bindings/pydrake/examples",
+    "//bindings/pydrake/maliput",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
     "//bindings/pydrake/systems",
@@ -222,26 +223,34 @@ drake_py_test(
 )
 
 drake_py_test(
-    # Note the non-standard name due to #8041.
-    name = "test/math_test",
+    name = "math_test",
     size = "small",
-    srcs = ["test/math_test.py"],
-    main = "test/math_test.py",
     deps = [
         ":math_py",
     ],
 )
 
-alias(
-    name = "math_test",
-    actual = "test/math_test",
+drake_py_test(
+    name = "symbolic_test",
+    size = "small",
+    srcs = ["test/symbolic_test.py"],
+    main = "test/symbolic_test.py",
+    deps = [":symbolic_py"],
 )
 
 drake_py_test(
     name = "symbolic_variables_test",
     size = "small",
-    srcs = ["test/symbolic_test.py"],
-    main = "test/symbolic_test.py",
+    srcs = ["test/symbolic_variables_test.py"],
+    main = "test/symbolic_variables_test.py",
+    deps = [":symbolic_py"],
+)
+
+drake_py_test(
+    name = "symbolic_monomial_test",
+    size = "small",
+    srcs = ["test/symbolic_monomial_test.py"],
+    main = "test/symbolic_monomial_test.py",
     deps = [":symbolic_py"],
 )
 

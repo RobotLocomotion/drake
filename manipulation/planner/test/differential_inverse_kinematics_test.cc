@@ -12,6 +12,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
@@ -24,8 +25,9 @@ namespace planner {
 namespace {
 
 using examples::kuka_iiwa_arm::get_iiwa_max_joint_velocities;
-
-const char kEndEffectorFrameName[] = "iiwa_frame_ee";
+using multibody::MultibodyTree;
+using multibody::RevoluteJoint;
+using multibody::FixedOffsetFrame;
 
 std::unique_ptr<RigidBodyTree<double>> BuildTree() {
   const std::string iiwa_absolute_path = FindResourceOrThrow(
@@ -41,7 +43,11 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
  protected:
   void SetUp() {
     tree_ = BuildTree();
-    frame_E_ = tree_->findFrame(kEndEffectorFrameName);
+    const Isometry3<double> X_7E =
+        Translation3<double>(Vector3<double>(0.1, 0, 0)) *
+        AngleAxis<double>(M_PI, Vector3<double>::UnitZ());
+    frame_E_ = std::make_shared<RigidBodyFrame<double>>(
+        "frame_E", tree_->FindBody("iiwa_link_7"), X_7E);
 
     const int num_velocities{tree_->get_num_velocities()};
     std::default_random_engine rand{4};
@@ -64,12 +70,47 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     params_->set_timestep(1e-3);
     params_->set_joint_position_limits(q_bounds);
     params_->set_joint_velocity_limits(v_bounds);
+
+    // For the MBT version.
+    mbt_ = multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
+        false, 9.81);
+    frame_E_mbt_ = &mbt_->AddFrame<FixedOffsetFrame>(
+        mbt_->GetBodyByName("iiwa_link_7").get_body_frame(),
+        frame_E_->get_transform_to_body());
+    mbt_->Finalize();
+
+    context_ = mbt_->CreateDefaultContext();
+    joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_1"));
+    joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_2"));
+    joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_3"));
+    joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_4"));
+    joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_5"));
+    joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_6"));
+    joints_.push_back(&mbt_->GetJointByName<RevoluteJoint>("iiwa_joint_7"));
+
+    SetMBTState(q, v);
+  }
+
+  void SetMBTState(const VectorX<double>& q, const VectorX<double>& v) {
+    DRAKE_DEMAND(q.size() == mbt_->get_num_positions());
+    DRAKE_DEMAND(v.size() == mbt_->get_num_velocities());
+    int angle_index = 0;
+    for (const RevoluteJoint<double>* joint : joints_) {
+      joint->set_angle(context_.get(), q[angle_index]);
+      joint->set_angular_rate(context_.get(), v[angle_index]);
+      angle_index++;
+    }
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
   std::unique_ptr<KinematicsCache<double>> cache_;
   std::shared_ptr<RigidBodyFrame<double>> frame_E_;
   std::unique_ptr<DifferentialInverseKinematicsParameters> params_;
+
+  std::unique_ptr<MultibodyTree<double>> mbt_;
+  std::unique_ptr<systems::Context<double>> context_;
+  std::vector<const RevoluteJoint<double>*> joints_;
+  const FixedOffsetFrame<double>* frame_E_mbt_;
 };
 
 TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
@@ -111,6 +152,30 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
     EXPECT_GE((*function_result.joint_velocities)(i), v_bounds.first(i));
     EXPECT_LE((*function_result.joint_velocities)(i), v_bounds.second(i));
   }
+}
+
+TEST_F(DifferentialInverseKinematicsTest, MultiBodyTreeTest) {
+  auto V_WE = (Vector6<double>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
+  DifferentialInverseKinematicsResult rbt_result =
+      DoDifferentialInverseKinematics(*tree_, *cache_, V_WE, *frame_E_,
+                                      *params_);
+  DifferentialInverseKinematicsResult mbt_result =
+      DoDifferentialInverseKinematics(*mbt_, *context_, V_WE, *frame_E_mbt_,
+                                      *params_);
+  EXPECT_TRUE(CompareMatrices(rbt_result.joint_velocities.value(),
+                              mbt_result.joint_velocities.value(),
+                              10 * std::numeric_limits<double>::epsilon()));
+
+  Isometry3<double> X_WE_desired =
+      Translation3<double>(Vector3<double>(0.1, 0.2, 0.3)) *
+      AngleAxis<double>(3.44, Vector3<double>(0.3, -0.2, 0.1).normalized());
+  rbt_result = DoDifferentialInverseKinematics(*tree_, *cache_, X_WE_desired,
+                                               *frame_E_, *params_);
+  mbt_result = DoDifferentialInverseKinematics(*mbt_, *context_, X_WE_desired,
+                                               *frame_E_mbt_, *params_);
+  EXPECT_TRUE(CompareMatrices(rbt_result.joint_velocities.value(),
+                              mbt_result.joint_velocities.value(),
+                              10 * std::numeric_limits<double>::epsilon()));
 }
 
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
@@ -177,7 +242,7 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
   VectorX<double> q, v;
   Vector6<double> V_WE_desired;
   const double dt = params_->get_timestep();
-  do {
+  for (int iteration = 0; iteration < 900; iteration++) {
     DifferentialInverseKinematicsResult function_result =
         DoDifferentialInverseKinematics(*tree_, *cache_, X_WE_desired,
                                         *frame_E_, *params_);
@@ -188,7 +253,7 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
 
     q = cache_->getQ() + v * dt;
     *cache_ = tree_->doKinematics(q, v);
-  } while (v.norm() > 1e-6);
+  }
   X_WE = tree_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
   EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
                               MatrixCompareType::absolute));
@@ -208,18 +273,14 @@ GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {
 
   Vector6<double> gain;
   gain << 1, 2, 3, -4, 5, 6;
-  EXPECT_THROW(dut.set_end_effector_velocity_gain(gain),
-               std::exception);
+  EXPECT_THROW(dut.set_end_effector_velocity_gain(gain), std::exception);
 
   VectorX<double> l = VectorX<double>::Constant(1, 2);
   VectorX<double> h = VectorX<double>::Constant(1, -2);
 
-  EXPECT_THROW(dut.set_joint_position_limits({l, h}),
-               std::exception);
-  EXPECT_THROW(dut.set_joint_velocity_limits({l, h}),
-               std::exception);
-  EXPECT_THROW(dut.set_joint_acceleration_limits({l, h}),
-               std::exception);
+  EXPECT_THROW(dut.set_joint_position_limits({l, h}), std::exception);
+  EXPECT_THROW(dut.set_joint_velocity_limits({l, h}), std::exception);
+  EXPECT_THROW(dut.set_joint_acceleration_limits({l, h}), std::exception);
 
   EXPECT_THROW(dut.set_joint_position_limits({VectorX<double>(2), h}),
                std::exception);

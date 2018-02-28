@@ -16,7 +16,6 @@
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/discrete_values.h"
 #include "drake/systems/framework/state.h"

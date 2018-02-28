@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
@@ -597,12 +597,14 @@ void checkCentroidalMomentumMatchesTotalWrench(
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
     const RigidBodyTree<double>& robot) {
   auto id_map = std::unordered_map<std::string, int>();
-  for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
-    id_map[(*it)->get_name()] = it - robot.bodies.begin();
+  for (auto it = robot.get_bodies().begin(); it != robot.get_bodies().end();
+       ++it) {
+    id_map[(*it)->get_name()] = it - robot.get_bodies().begin();
   }
 
-  for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
-    id_map[(*it)->get_name()] = -(it - robot.frames.begin()) - 2;
+  for (auto it = robot.get_frames().begin(); it != robot.get_frames().end();
+       ++it) {
+    id_map[(*it)->get_name()] = -(it - robot.get_frames().begin()) - 2;
   }
   return id_map;
 }
@@ -822,7 +824,7 @@ int InstantaneousQPController::setupAndSolveQP(
     int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i =
         Map<const drake::WrenchVector<double>>(body_wrench_data.wrench);
-    external_wrenches.insert({robot->bodies[body_id].get(), f_ext_i});
+    external_wrenches.insert({robot->get_bodies()[body_id].get(), f_ext_i});
   }
 
   H = robot->massMatrix(cache);

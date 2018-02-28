@@ -117,7 +117,7 @@ void RgbdCamera::Init(const std::string& name) {
       rendering::PoseVector<double>(), &RgbdCamera::OutputPoseVector);
 
   // Creates rendering world.
-  for (const auto& body : tree_.bodies) {
+  for (const auto& body : tree_.get_bodies()) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
@@ -196,7 +196,7 @@ void RgbdCamera::UpdateModelPoses(
   }
 
   // Updates body poses.
-  for (const auto& body : tree_.bodies) {
+  for (const auto& body : tree_.get_bodies()) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
       continue;
     }
@@ -239,8 +239,8 @@ void RgbdCamera::OutputLabelImage(const Context<double>& context,
   renderer_->RenderLabelImage(label_image);
 }
 
-RgbdCameraDiscrete::RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
-                                       double period)
+RgbdCameraDiscrete::RgbdCameraDiscrete(
+    std::unique_ptr<RgbdCamera> camera, double period, bool render_label_image)
     : camera_(camera.get()), period_(period) {
   constexpr int width = kImageWidth;
   constexpr int height = kImageHeight;
@@ -266,12 +266,15 @@ RgbdCameraDiscrete::RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
   output_port_depth_image_ = builder.ExportOutput(zoh_depth->get_output_port());
 
   // Label image.
-  const Value<ImageLabel16I> image_label(width, height);
-  const auto* const zoh_label =
-      builder.AddSystem<ZeroOrderHold>(period_, image_label);
-  builder.Connect(camera_->label_image_output_port(),
-                  zoh_label->get_input_port());
-  output_port_label_image_ = builder.ExportOutput(zoh_label->get_output_port());
+  if (render_label_image) {
+    const Value<ImageLabel16I> image_label(width, height);
+    const auto* const zoh_label =
+        builder.AddSystem<ZeroOrderHold>(period_, image_label);
+    builder.Connect(camera_->label_image_output_port(),
+                    zoh_label->get_input_port());
+    output_port_label_image_ =
+        builder.ExportOutput(zoh_label->get_output_port());
+  }
 
   // No need to place a ZOH on pose output.
   output_port_pose_ =

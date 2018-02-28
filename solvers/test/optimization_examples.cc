@@ -88,6 +88,9 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     case SolverType::kNlopt : {
       return 1E-6;
     }
+    case SolverType::kOsqp : {
+      return 3E-6;
+    }
     case SolverType::kScs : {
       return 3E-5;  // Scs is not very accurate.
     }
@@ -627,9 +630,23 @@ ConvexCubicProgramExample::ConvexCubicProgramExample() {
   AddBoundingBoxConstraint(0, std::numeric_limits<double>::infinity(), x_(0));
 }
 
-bool ConvexCubicProgramExample::CheckSolution() const {
+void ConvexCubicProgramExample::CheckSolution() const {
   const auto x_val = GetSolution((x_(0)));
-  return std::abs(x_val - 2) < 1E-6;
+  EXPECT_NEAR(x_val, 2, 1E-6);
+}
+
+UnitLengthProgramExample::UnitLengthProgramExample()
+    : MathematicalProgram(), x_(NewContinuousVariables<4>()) {
+  // Impose the unit length constraint xᵀx = 1, by writing it as a quadratic
+  // constraint 0.5xᵀQx + bᵀx = 1, where Q = 2I, and b = 0.
+  auto unit_length_constraint = std::make_shared<QuadraticConstraint>(
+      2 * Eigen::Matrix4d::Identity(), Eigen::Vector4d::Zero(), 1, 1);
+  AddConstraint(unit_length_constraint, x_);
+}
+
+void UnitLengthProgramExample::CheckSolution(double tolerance) const {
+  const auto x_val = GetSolution(x_);
+  EXPECT_NEAR(x_val.squaredNorm(), 1, tolerance);
 }
 }  // namespace test
 }  // namespace solvers

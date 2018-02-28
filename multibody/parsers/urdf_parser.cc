@@ -745,8 +745,9 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   }
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
-  tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
+  tree->get_bodies()[child_index]->setJoint(move(joint_unique_ptr));
+  tree->get_bodies()[child_index]->set_parent(
+      tree->get_bodies()[parent_index].get());
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint
@@ -867,7 +868,7 @@ void ParseTransmission(RigidBodyTree<double>* tree,
   int body_index =
       tree->FindIndexOfChildBodyOfJoint(joint_name, model_instance_id);
 
-  if (tree->bodies[body_index]->getJoint().get_num_positions() == 0) {
+  if (tree->get_bodies()[body_index]->getJoint().get_num_positions() == 0) {
     cerr << string(__FILE__) + ": " + __func__ + ": WARNING: Skipping "
          << "transmission since it's attached to a fixed joint \""
          << joint_name << "\"." << endl;
@@ -895,9 +896,9 @@ void ParseTransmission(RigidBodyTree<double>* tree,
   }
 
   // Creates the actuator and adds it to the rigid body tree.
-  tree->actuators.push_back(RigidBodyActuator(actuator_name,
-                                              tree->bodies[body_index].get(),
-                                              gain, effort_min, effort_max));
+  tree->actuators.push_back(RigidBodyActuator(
+      actuator_name, tree->get_bodies()[body_index].get(),
+      gain, effort_min, effort_max));
 }
 
 void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
@@ -1104,7 +1105,8 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   // DEBUG
   // else {
   // cout << "Parsed link" << endl;
-  // cout << "model->bodies.size() = " << model->bodies.size() << endl;
+  // cout << "model->get_bodies().size() = " << model->get_bodies().size()
+  //     << endl;
   // cout << "model->num_bodies = " << model->num_bodies << endl;
   //}
   // END_DEBUG

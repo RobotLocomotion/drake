@@ -138,6 +138,16 @@ class RigidBodyTree {
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
   int get_number_of_model_instances() const;
 
+
+  /**
+   * Adds a frame.
+   *
+   * @param frame Frame to be added.
+   * @pre Neither a body nor frame with the same identifying information (name
+   * and model id / name) should already exist in the tree.
+   * @throws std::runtime_error if preconditions are not met.
+   */
+  // TODO(eric.cousineau): Rename to `AddFrame`.
   void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
   /**
@@ -903,7 +913,7 @@ class RigidBodyTree {
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
-    for (const auto& body_ptr : bodies) {
+    for (const auto& body_ptr : bodies_) {
       std::vector<std::string> names_of_groups_to_delete;
       for (const auto& group : body_ptr->get_group_to_collision_ids_map()) {
         const std::string& group_name = group.first;
@@ -1106,7 +1116,7 @@ class RigidBodyTree {
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
    **/
-  std::vector<drake::multibody::collision::PointPair>
+  std::vector<drake::multibody::collision::PointPair<double>>
   ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
                                      bool use_margins = true);
 
@@ -1371,7 +1381,7 @@ class RigidBodyTree {
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
          it != joint_path.end(); ++it) {
-      RigidBody<T>& body = *bodies[*it];
+      RigidBody<T>& body = *bodies_[*it];
       int ncols_joint = in_terms_of_qdot ? body.getJoint().get_num_positions()
                                          : body.getJoint().get_num_velocities();
       int col_start = in_terms_of_qdot ? body.get_position_start_index()
@@ -1389,16 +1399,21 @@ class RigidBodyTree {
   friend std::ostream& operator<<(std::ostream&, const RigidBodyTree<double>&);
 
   /**
-   * @brief Adds and takes ownership of a rigid body.
+   * @brief Adds and takes ownership of a rigid body. This also adds a frame
+   * whose pose is the same as the body's.
    *
    * A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
    * A body is assigned a unique id (RigidBody::id()) when added to a
-   * RigidBodyTree. This unique id can be use to access a body with the accessor
-   * RigidBodyTree::body.
+   * RigidBodyTree. This unique id can be use to access a body using
+   * RigidBodyTree::get_bodies()[id].
    *
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return A bare, unowned pointer to the @p body.
+   * @pre Neither a body nor frame with the same identifying information (name
+   * and model id / name) should already exist in the tree.
+   * @throws std::runtime_error if preconditions are not met.
    */
+  // TODO(eric.cousineau): Rename to `AddRigidBody`.
   RigidBody<T>* add_rigid_body(std::unique_ptr<RigidBody<T>> body);
 
   /**
@@ -1457,13 +1472,13 @@ class RigidBodyTree {
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  RigidBody<T>& world() { return *bodies[0]; }
+  RigidBody<T>& world() { return *bodies_[0]; }
 
   /**
    * @brief Returns a const reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  const RigidBody<T>& world() const { return *bodies[0]; }
+  const RigidBody<T>& world() const { return *bodies_[0]; }
 
   /**
    * Returns the number of position states outputted by this %RigidBodyTree.
@@ -1496,14 +1511,32 @@ class RigidBodyTree {
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
 
+ private:
   // Rigid body objects
-  // TODO(amcastro-tri): make private and start using accessors body(int).
-  // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
-  // accessors are used throughout the code.
-  std::vector<std::unique_ptr<RigidBody<T>>> bodies;
+  std::vector<std::unique_ptr<RigidBody<T>>> bodies_;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames_;
+
+ public:
+  DRAKE_DEPRECATED(
+      "Direct access to `bodies` has been deprecated, "
+      "mutable access has been removed. Use `get_bodies` and `add_rigid_body` "
+      "instead")
+  const std::vector<std::unique_ptr<RigidBody<T>>>& bodies{bodies_};
+
+  /// List of bodies.
+  // TODO(amcastro-tri): start using accessors body(int).
+  auto& get_bodies() const { return bodies_; }
+
+  DRAKE_DEPRECATED(
+      "Direct access to `frames` has been deprecated, "
+      "mutable access has been removed. Use `get_frames` and `addFrame` "
+      "instead")
+  const std::vector<std::shared_ptr<RigidBodyFrame<T>>>& frames{frames_};
+
+  /// List of frames.
+  auto& get_frames() const { return frames_; }
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
@@ -1557,7 +1590,7 @@ class RigidBodyTree {
                             std::set<int>* connected) const;
 
   // Reorder body list to ensure parents are before children in the list
-  // RigidBodyTree::bodies.
+  // of bodies.
   //
   // See RigidBodyTree::compile
   void SortTree();

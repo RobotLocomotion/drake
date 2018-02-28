@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -88,6 +87,9 @@ class TestValue(unittest.TestCase):
     def test_abstract_value_move_only(self):
         obj = MoveOnlyType(10)
         # This *always* clones `obj`.
+        self.assertEquals(
+            str(Value[MoveOnlyType]),
+            "<class 'pydrake.systems.framework.Value[MoveOnlyType]'>")
         value = Value[MoveOnlyType](obj)
         self.assertTrue(value.get_value() is not obj)
         self.assertEquals(value.get_value().x(), 10)

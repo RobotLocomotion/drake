@@ -87,7 +87,10 @@ endif()
 option(WITH_MATLAB "Build with support for MATLAB" OFF)
 
 if(WITH_MATLAB)
-  list(APPEND BAZEL_ARGS --define=NO_IPOPT=ON)
+  list(APPEND BAZEL_ARGS
+    --define=NO_IPOPT=ON
+    --define=NO_OSQP=ON
+  )
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)

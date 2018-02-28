@@ -114,6 +114,19 @@ TEST_F(KinematicsResultsTest, JointTest) {
       v_[7]);
 }
 
+GTEST_TEST(AdditionalKinematicsResultsTest, AutoDiffTest) {
+  // Make sure we can instantiate the AutoDiffXd scalar type.
+  const std::string file_name = FindResourceOrThrow(
+    "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+    file_name, multibody::joints::kRollPitchYaw, tree.get());
+
+  KinematicsResults<AutoDiffXd> results(tree.get());
+
+  EXPECT_EQ(results.get_num_bodies(), 4);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

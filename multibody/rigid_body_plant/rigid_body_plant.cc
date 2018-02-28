@@ -123,7 +123,7 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 
     // Now create the appropriate maps for the position and velocity
     // components.
-    for (const auto& body : tree_->bodies) {
+    for (const auto& body : tree_->get_bodies()) {
       if (!body->has_parent_body()) {
         continue;
       }
@@ -493,7 +493,7 @@ void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
 // Computes the stiffness, damping, and friction coefficient for a contact.
 template <typename T>
 void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
-      const drake::multibody::collision::PointPair& contact,
+      const drake::multibody::collision::PointPair<double>& contact,
       double* stiffness,
       double* damping,
       double* mu,
@@ -614,7 +614,7 @@ void RigidBodyPlant<T>::UpdateGeneralizedForce(
 // contact normals.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const VectorX<T>& q, const VectorX<T>& v) const {
   const auto& tree = this->get_rigid_body_tree();
   auto kinematics_cache = tree.doKinematics(q, v);
@@ -657,7 +657,7 @@ VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
 // effect out on the generalized forces.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>& kinematics_cache,
     const VectorX<T>& f) const {
   // Create a result vector.
@@ -695,7 +695,7 @@ VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
 // contact tangent directions.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const VectorX<T>& q, const VectorX<T>& v,
     const std::vector<int>& half_num_cone_edges) const {
   using std::cos;
@@ -770,7 +770,7 @@ VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
 // the effect out on the generalized forces.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactTangentJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>& kinematics_cache,
     const VectorX<T>& f,
     const std::vector<int>& half_num_cone_edges) const {
@@ -892,7 +892,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // TODO(amcastro-tri): Maybe move to
   // RBT::ComputeGeneralizedJointLimitForces(C)?
   {
-    for (auto const& b : tree_->bodies) {
+    for (auto const& b : tree_->get_bodies()) {
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       // Joint limit forces are only implemented for single-axis joints.
@@ -1003,7 +1003,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   if (num_actuators > 0) right_hand_side += tree.B * u;
 
   // Determine the set of contact points corresponding to the current q.
-  std::vector<drake::multibody::collision::PointPair> contacts =
+  std::vector<drake::multibody::collision::PointPair<double>> contacts =
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kinematics_cache, true);
 
@@ -1033,7 +1033,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Set the joint range of motion limits.
   std::vector<JointLimit> limits;
-  for (auto const& b : tree.bodies) {
+  for (auto const& b : tree.get_bodies()) {
     if (!b->has_parent_body()) continue;
     auto const& joint = b->getJoint();
 
@@ -1041,7 +1041,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
       const T qmin = joint.getJointLimitMin()(0);
       const T qmax = joint.getJointLimitMax()(0);
-      DRAKE_DEMAND(qmin < qmax);
+      DRAKE_DEMAND(qmin <= qmax);
 
       // Get the current joint position and velocity.
       const T& qjoint = q(b->get_position_start_index());
@@ -1296,7 +1296,7 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
                                      const T& velocity) {
   const T qmin = joint.getJointLimitMin()(0);
   const T qmax = joint.getJointLimitMax()(0);
-  DRAKE_DEMAND(qmin < qmax);
+  DRAKE_DEMAND(qmin <= qmax);
   const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
   DRAKE_DEMAND(joint_stiffness >= 0);
   const T joint_dissipation = joint.get_joint_limit_dissipation()(0);

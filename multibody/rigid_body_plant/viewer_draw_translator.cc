@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -19,10 +19,10 @@ ViewerDrawTranslator::ViewerDrawTranslator(
         tree.get_num_positions() + tree.get_num_velocities()),
     tree_(tree) {
   // Initializes the draw message.
-  draw_message_.num_links = tree_.bodies.size();
+  draw_message_.num_links = tree_.get_bodies().size();
   std::vector<float> position = {0, 0, 0};
   std::vector<float> quaternion = {0, 0, 0, 1};
-  for (const auto& body : tree_.bodies) {
+  for (const auto& body : tree_.get_bodies()) {
     draw_message_.link_name.push_back(body->get_name());
     draw_message_.robot_num.push_back(body->get_model_instance_id());
     draw_message_.position.push_back(position);
@@ -59,7 +59,7 @@ void ViewerDrawTranslator::Serialize(double time,
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
   // Saves the poses of each body in the lcmt_viewer_draw message.
-  for (size_t i = 0; i < tree_.bodies.size(); ++i) {
+  for (size_t i = 0; i < tree_.get_bodies().size(); ++i) {
     auto transform = tree_.relativeTransform(cache, 0, i);
     auto quat = drake::math::rotmat2quat(transform.linear());
     std::vector<float>& position = message.position[i];

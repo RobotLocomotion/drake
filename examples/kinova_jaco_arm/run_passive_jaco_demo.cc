@@ -105,7 +105,7 @@ int DoMain() {
 
   // Ensures the robot's joints are within their position limits.
   const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
-      plant->get_rigid_body_tree().bodies;
+      plant->get_rigid_body_tree().get_bodies();
   for (int state_index = 0, i = 0; i < static_cast<int>(bodies.size()); ++i) {
     // Skips rigid bodies without a parent. This includes the world.
     if (!bodies[i]->has_parent_body()) continue;

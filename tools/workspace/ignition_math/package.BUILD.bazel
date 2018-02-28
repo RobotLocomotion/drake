@@ -47,8 +47,7 @@ cmake_configure_file(
 )
 
 generate_file(
-    name = "export_genrule",
-    out = "include/ignition/math/Export.hh",
+    name = "include/ignition/math/Export.hh",
     content = """
 #pragma once
 
@@ -148,7 +147,7 @@ public_headers = public_headers_no_gen + [
 # upstream's explicitly listed sources plus private headers.  The explicitly
 # listed hdrs= matches upstream's public headers.
 cc_binary(
-    name = "libignition_math.so",
+    name = "libdrake_ignition_math4.so",
     srcs = [
         "src/Angle.cc",
         "src/Box.cc",
@@ -176,7 +175,7 @@ cc_binary(
 
 cc_library(
     name = "ignition_math",
-    srcs = ["libignition_math.so"],
+    srcs = ["libdrake_ignition_math4.so"],
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
@@ -196,7 +195,7 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":libignition_math.so"],
+    targets = [":libdrake_ignition_math4.so"],
     hdrs = public_headers,
     hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],

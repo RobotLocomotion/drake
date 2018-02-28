@@ -1,9 +1,9 @@
 #include <string>
 #include <vector>
 
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/eigen.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/util/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/util/type_pack.h"

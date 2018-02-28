@@ -98,6 +98,14 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </tr>
+ * <tr><td> <a href="https://github.com/oxfordcontrol/osqp">
+ *    OSQP</a></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ * </tr>
  * </table>
  *
  * <b>Mixed-Integer Convex Optimization</b>
@@ -291,10 +299,10 @@ class MathematicalProgram {
 
   /// The optimal cost is +∞ when the problem is globally infeasible.
   static constexpr double kGlobalInfeasibleCost =
-    std::numeric_limits<double>::infinity();
+      std::numeric_limits<double>::infinity();
   /// The optimal cost is -∞ when the problem is unbounded.
   static constexpr double kUnboundedCost =
-    -std::numeric_limits<double>::infinity();
+      -std::numeric_limits<double>::infinity();
 
   MathematicalProgram();
   virtual ~MathematicalProgram() {}
@@ -1936,9 +1944,50 @@ class MathematicalProgram {
   // void addQuadraticCost ...
 
   /**
-   * Set the initial guess for the decision variables stored in @p var to be x0.
-   * Variables begin with a default initial guess of NaN to indicate that no
-   * guess is available.
+   * Gets the initial guess for a single variable.
+   * @pre @p decision_variable has been registered in the optimization program.
+   * @throw runtime error if the pre condition is not satisfied.
+   */
+  double GetInitialGuess(const symbolic::Variable& decision_variable) const;
+
+  /**
+   * Gets the initial guess for some variables.
+   * @pre Each variable in @p decision_variable_mat has been registered in the
+   * optimization program.
+   * @throw runtime error if the pre condition is not satisfied.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                    Derived::ColsAtCompileTime>>::type
+  GetInitialGuess(
+      const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>
+        decision_variable_values(decision_variable_mat.rows(),
+                                 decision_variable_mat.cols());
+    for (int i = 0; i < decision_variable_mat.rows(); ++i) {
+      for (int j = 0; j < decision_variable_mat.cols(); ++j) {
+        decision_variable_values(i, j) =
+            GetInitialGuess(decision_variable_mat(i, j));
+      }
+    }
+    return decision_variable_values;
+  }
+
+  /**
+   * Sets the initial guess for a single variable @p decision_variable.
+   * @pre decision_variable is a registered decision variable in the program.
+   * @throw a runtime error if precondition is not satisfied.
+   */
+  void SetInitialGuess(const symbolic::Variable& decision_variable,
+                       double variable_guess_value);
+
+  /**
+   * Sets the initial guess for the decision variables stored in
+   * @p decision_variable_mat to be @p x0. Variables begin with a default
+   * initial guess of NaN to indicate that no guess is available.
    */
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
@@ -1947,8 +1996,7 @@ class MathematicalProgram {
     DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
-        x_initial_guess_(
-            FindDecisionVariableIndex(decision_variable_mat(i, j))) = x0(i, j);
+        SetInitialGuess(decision_variable_mat(i, j), x0(i, j));
       }
     }
   }
@@ -2243,6 +2291,17 @@ class MathematicalProgram {
   int FindDecisionVariableIndex(const symbolic::Variable& var) const;
 
   /**
+   * Returns the indices of the decision variables. Internally the solvers
+   * thinks all variables are stored in an array, and it acceses each individual
+   * variable using its index. This index is used when adding constraints
+   * and costs for each solver.
+   * @pre{@p vars are decision variables in the mathematical program, otherwise
+   * this function throws a runtime error.}
+   */
+  std::vector<int> FindDecisionVariableIndices(
+      const Eigen::Ref<const VectorXDecisionVariable>& vars) const;
+
+  /**
    * Gets the solution of an Eigen matrix of decision variables.
    * @tparam Derived An Eigen matrix containing Variable.
    * @param var The decision variables.
@@ -2267,7 +2326,6 @@ class MathematicalProgram {
    * @param var The decision variables.
    * @return The value of the decision variable after solving the problem.
    */
-
   template <typename Derived>
   typename std::enable_if<
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
@@ -2289,6 +2347,37 @@ class MathematicalProgram {
    * Gets the value of a single decision variable.
    */
   double GetSolution(const symbolic::Variable& var) const;
+
+  /**
+   * Evaluates the value of some binding, for some input value for all
+   * decision variables.
+   * @param binding A Binding whose variables are decision variables in this
+   * program.
+   * @param prog_var_vals The value of all the decision variables in this
+   * program. @throw a logic error if the size does not match.
+   */
+  template <typename C, typename DerivedX>
+  typename std::enable_if<is_eigen_vector<DerivedX>::value,
+                          VectorX<typename DerivedX::Scalar>>::type
+  EvalBinding(const Binding<C>& binding,
+              const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    using Scalar = typename DerivedX::Scalar;
+    if (prog_var_vals.rows() != num_vars()) {
+      std::ostringstream oss;
+      oss << "The input binding variable is not in the right size. Expects "
+          << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
+          << " rows.\n";
+      throw std::logic_error(oss.str());
+    }
+    VectorX<Scalar> binding_x(binding.GetNumElements());
+    VectorX<Scalar> binding_y(binding.constraint()->num_outputs());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      binding_x(i) =
+          prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
+    }
+    binding.constraint()->Eval(binding_x, binding_y);
+    return binding_y;
+  }
 
   /**
    * Evaluate the constraint in the Binding at the solution value.
@@ -2381,6 +2470,7 @@ class MathematicalProgram {
       equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> osqp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> scs_solver_;
 
   template <typename T>

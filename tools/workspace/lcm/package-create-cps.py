@@ -26,7 +26,7 @@ content = """
     "lcm": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/lcm"],
-      "Location": "@prefix@/lib/liblcm.so",
+      "Location": "@prefix@/lib/libdrake_lcm.so",
       "Requires": [":lcm-coretypes"]
     },
     "lcm-gen": {

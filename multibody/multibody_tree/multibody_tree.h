@@ -895,6 +895,33 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_BQi,
       const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const;
+
+  /// Evaluate the pose `X_WB` of a body B in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the %MultibodyTree model.
+  /// @param[in] body_B
+  ///   The body B for which the pose is requested.
+  /// @retval X_WB
+  ///   The pose of body frame B in the world frame W.
+  /// @throws if Finalize() was not called on `this` model or if `body_B` does
+  /// not belong to this model.
+  const Isometry3<T>& EvalBodyPoseInWorld(
+      const systems::Context<T>& context,
+      const Body<T>& body_B) const;
+
+  /// Evaluate the spatial velocity `V_WB` of a body B in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the %MultibodyTree model.
+  /// @param[in] body_B
+  ///   The body B for which the spatial velocity is requested.
+  /// @returns V_WB
+  ///   The spatial velocity of body frame B in the world frame W.
+  /// @throws if Finalize() was not called on `this` model or if `body_B` does
+  /// not belong to this model.
+  const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
+      const systems::Context<T>& context,
+      const Body<T>& body_B) const;
+
   /// @}
   // End of "Kinematic computations" section.
 
@@ -956,6 +983,51 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
       EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
+
+  /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
+  /// computes the geometric Jacobian `Jv_WF` defined by:
+  /// <pre>
+  ///   V_WF(q, v) = Jv_WF(q)⋅v
+  /// </pre>
+  /// where `V_WF(q, v)` is the spatial velocity of frame F measured and
+  /// expressed in the world frame W and q and v are the vectors of generalized
+  /// position and velocity, respectively. Since the spatial velocity of frame
+  /// F is linear in the generalized velocities, the geometric Jacobian `Jv_WF`
+  /// is a function of the generalized coordinates q only.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
+  /// @param[in] frame_B
+  ///   The position `p_BoFo_B` of frame F is measured and expressed in this
+  ///   frame B.
+  /// @param[in] p_BoFo_B
+  ///   The (fixed) position of frame F as measured and expressed in frame B.
+  /// @param[out] Jv_WF
+  ///   The geometric Jacobian `Jv_WF(q)`, function of the generalized positions
+  ///   q only. This Jacobian relates to the spatial velocity `V_WF` of frame F
+  ///   by: <pre>
+  ///     V_WF(q, v) = Jv_WF(q)⋅v
+  ///   </pre>
+  ///   Therefore `Jv_WF` is a matrix of size `6 x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `Jv_WF` **must**
+  ///   have size `6 x nv` or this method throws an exception. The top rows of
+  ///   this matrix (which can be accessed with Jv_WF.topRows<3>()) is the
+  ///   Jacobian `Hw_WF` related to the angular velocity of F in W by
+  ///   `w_WF = Hw_WF⋅v`. The bottom rows of this matrix (which can be accessed
+  ///   with Jv_WF.bottomRows<3>()) is the Jacobian `Hv_WF` related to the
+  ///   translational velocity of the origin of frame F in W by
+  ///   `v_WFo = Hw_WF⋅v`. This ordering is consistent with the internal storage
+  ///   of the SpatialVector class. Therefore the following operations results
+  ///   in a valid spatial velocity: <pre>
+  ///     SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
+  ///   </pre>
+  ///
+  /// @throws if `J_WF` is nullptr or if it is not of size `6 x nv`.
+  void CalcFrameGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
+      EigenPtr<MatrixX<T>> Jv_WF) const;
 
   /// @}
   // End of multibody Jacobian methods section.
@@ -1346,6 +1418,31 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
+  /// Computes all the quantities that are required in the final pass of the
+  /// articulated body algorithm and stores them in the articulated body cache
+  /// `abc`.
+  ///
+  /// These include:
+  /// - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
+  ///   articulated body inertia of parent body P as though it were inertialess,
+  ///   but taken about Bo and expressed in W.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[out] abc
+  ///   A pointer to a valid, non nullptr, articulated body cache. This method
+  ///   throws an exception if `abc` is a nullptr.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache() using the same `context`  .
+  void CalcArticulatedBodyInertiaCache(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      ArticulatedBodyInertiaCache<T>* abc) const;
+
   /// @}
   // Closes "Computational methods" Doxygen section.
 
@@ -1553,6 +1650,11 @@ class MultibodyTree {
   // This method will throw a std::logic_error if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
+
+  // Helper method for throwing an exception if Finalize() has not been called
+  // on this MultibodyTree model. The invoking method should pass it's name so
+  // that the error message can include that detail.
+  void ThrowIfNotFinalized(const char* source_method) const;
 
   // Computes the cache entry associated with the geometric Jacobian H_PB_W for
   // each node.

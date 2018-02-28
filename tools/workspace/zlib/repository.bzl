@@ -36,15 +36,12 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        repository_ctx.file("empty.cc", executable = False)
-
         repository_ctx.symlink("/usr/include/zlib.h", "include/zlib.h")
         repository_ctx.symlink("/usr/include/zconf.h", "include/zconf.h")
 
         file_content = """
 cc_library(
     name = "zlib",
-    srcs = ["empty.cc"],
     hdrs = [
       "include/zconf.h",
       "include/zlib.h",

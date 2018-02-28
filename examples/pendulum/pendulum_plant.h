@@ -68,10 +68,6 @@ class PendulumPlant : public systems::LeafSystem<T> {
     return get_mutable_state(&context->get_mutable_continuous_state());
   }
 
-  static PendulumState<T>* get_mutable_output(
-      systems::SystemOutput<T>* output) {
-    return dynamic_cast<PendulumState<T>*>(output->GetMutableVectorData(0));
-  }
 
   const PendulumParams<T>& get_parameters(
       const systems::Context<T>& context) const {
