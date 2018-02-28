@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include <Eigen/LU>
@@ -25,10 +26,14 @@ namespace solvers {
 
 namespace {
 
+// A linear system solver that accommodates the inability of the LU
+// factorization to be AutoDiff'd (true in Eigen 3, at least). For double types,
+// the faster LU factorization and solve is used. For other types, QR
+// factorization and solve is used.
 template <class T>
 class LinearSolver {
  public:
-  LinearSolver(const MatrixX<T>& m);
+  explicit LinearSolver(const MatrixX<T>& m);
 
   VectorX<T> Solve(const VectorX<T>& v) const;
   MatrixX<T> Solve(const MatrixX<T>& v) const;
@@ -91,6 +96,8 @@ MatrixX<double> LinearSolver<double>::Solve(
   return lu_.solve(m);
 }
 
+// Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
+// solves the LCP.
 template <typename Scalar>
 bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
                        VectorX<Scalar>* z) {
@@ -104,24 +111,35 @@ bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
   return false;
 }
 
-// Utility function for copying part of a matrix (designated by the indices
-// in rows and cols) from `in` to a target matrix, `out`. This template approach
-// allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
-template <typename Derived, typename T>
-void SelectSubMatrix(const Eigen::MatrixBase<Derived>& in,
-                     const std::vector<int>& rows,
-                     const std::vector<int>& cols, MatrixX<T>* out) {
-  const int num_rows = rows.size();
-  const int num_cols = cols.size();
-  out->resize(num_rows, num_cols);
+// Function for checking whether a set of indices that specify a view into
+// a vector is valid.
+bool ValidateIndices(const std::vector<int>& row_indices, int vector_size) {
+  // Don't check anything for empty vectors.
+  if (row_indices.empty())
+    return true;
 
-  for (int i = 0; i < num_rows; i++) {
-    const auto row_in = in.row(rows[i]);
-    auto row_out = out->row(i);
-    for (int j = 0; j < num_cols; j++)
-      row_out(j) = row_in(cols[j]);
-  }
+  // Sort the vector first.
+  std::vector<int> sorted_row_indices = row_indices;
+  std::sort(sorted_row_indices.begin(), sorted_row_indices.end());
+
+  // Validate the maximum and minimum elements.
+  if (sorted_row_indices.back() >= vector_size)
+    return false;
+  if (sorted_row_indices.front() < 0)
+    return false;
+
+  // Make sure that the vector is unique.
+  return std::unique(sorted_row_indices.begin(), sorted_row_indices.end()) ==
+         sorted_row_indices.end();
+}
+
+// Function for checking whether a set of indices that specify a view into
+// a matrix is valid.
+bool ValidateIndices(
+    const std::vector<int>& row_indices,
+    const std::vector<int>& col_indices, int num_rows, int num_cols) {
+  return ValidateIndices(row_indices, num_rows) &&
+         ValidateIndices(col_indices, num_cols);
 }
 
 // Utility function for copying part of a matrix (designated by the indices
@@ -135,10 +153,14 @@ void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
                      const std::vector<int>& cols, MatrixX<T>* out) {
   const int num_rows = rows.size();
   const int num_cols = cols.size();
+  DRAKE_ASSERT(ValidateIndices(rows, cols, in.rows(), in.cols() + 1));
   out->resize(num_rows, num_cols);
 
   for (int i = 0; i < num_rows; i++) {
     const auto row_in = in.row(rows[i]);
+
+    // row_out is a "view" into out: any modifications to row_out are reflected
+    // in out.
     auto row_out = out->row(i);
     for (int j = 0; j < num_cols; j++) {
       if (cols[j] > 0) {
@@ -154,12 +176,16 @@ void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
 // in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
 // the "covering vector"), to a target matrix, `out`. This template approach
 // allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
+// a dense matrix is returned. Since the matrix to be copied looks like this:
+// | 1 in |
+// selecting column 0, will return a vector of ones and selecting column i, for
+// i > 0, will return column i - 1 of `in`.
 template <typename Derived, typename T>
 void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
                                  const std::vector<int>& rows,
                                  int column, VectorX<T>* out) {
   const int num_rows = rows.size();
+  DRAKE_ASSERT(ValidateIndices(rows, in.rows()));
   out->resize(num_rows);
 
   // Look for the covering vector first.
@@ -174,23 +200,27 @@ void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
   }
 }
 
-// TODO(sammy-tri) this could also use a more efficient implementation.
+// Selects the dimensions of `in` in `rows`.
 template <typename T>
 void SelectSubVector(const VectorX<T>& in,
                      const std::vector<int>& rows, VectorX<T>* out) {
   const int num_rows = rows.size();
+  DRAKE_ASSERT(ValidateIndices(rows, in.rows()));
   out->resize(num_rows);
   for (int i = 0; i < num_rows; i++) {
     (*out)(i) = in(rows[i]);
   }
 }
 
+// Sets the dimensions of `v` specified in `indices` to the consecutive
+// entries of `v_sub`.
 template <typename T>
-void SetSubVector(const std::vector<int>& indices, const VectorX<T>& v_sub,
+void SetSubVector(const std::vector<int>& rows, const VectorX<T>& v_sub,
                   VectorX<T>* v) {
-  DRAKE_DEMAND(indices.size() == static_cast<size_t>(v_sub.size()));
-  for (size_t i = 0; i < indices.size(); ++i)
-    (*v)[indices[i]] = v_sub[i];
+  DRAKE_ASSERT(ValidateIndices(rows, v->rows()));
+  DRAKE_DEMAND(rows.size() == static_cast<size_t>(v_sub.size()));
+  for (size_t i = 0; i < rows.size(); ++i)
+    (*v)[rows[i]] = v_sub[i];
 }
 
 }  // anonymous namespace
@@ -206,7 +236,7 @@ SolutionResult
 }
 
 // TODO(edrumwri): Break the following code out into a special
-// MobyLcpMathematicalProgram class.
+// UnrevisedLemkeSolverMathematicalProgram class.
 template <typename T>
 // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
 SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
@@ -462,9 +492,9 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
     int gamma = 0;
     for (int i = 0; i < static_cast<int>(indep_variables_.size()); ++i) {
       if (!indep_variables_[i].z) {
-        if (indep_variables_[i].index < indep_variables_[driving_index].index) 
+        if (indep_variables_[i].index < indep_variables_[driving_index].index)
           ++gamma;
-      } 
+      }
     }
 
     // Set the unit vector.
@@ -633,7 +663,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     indep_variables_[i].index = i;
   }
 
-  // z needs one more variable. 
+  // z needs one more variable.
   indep_variables_[n].z = true;
   indep_variables_[n].index = n;
 
@@ -652,7 +682,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   }
   DRAKE_DEMAND(blocking_index >= 0);
 
-  // Pivot blocking, artificial 
+  // Pivot blocking, artificial
   LCPVariable blocking = dep_variables_[blocking_index];
   int driving_index = FindComplementIndex(blocking, indep_variables_);
   std::swap(dep_variables_[blocking_index], indep_variables_[0]);
@@ -714,7 +744,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     }
 
     // If there are multiple blocking variables, replace the blocking index with
-    // the cycling selection. 
+    // the cycling selection.
     if (blocking_indices.size() > 1) {
       auto& index = selections_[indep_variables_];
       DRAKE_DEMAND(index < static_cast<int>(blocking_indices.size()));
@@ -783,7 +813,8 @@ SolverId UnrevisedLemkeSolverId::id() {
 // Instantiate templates.
 template class UnrevisedLemkeSolver<double>;
 template class
-    drake::solvers::UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
+    drake::solvers::UnrevisedLemkeSolver<
+        Eigen::AutoDiffScalar<drake::Vector1d>>;
 
 }  // namespace solvers
 }  // namespace drake

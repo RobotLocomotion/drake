@@ -106,10 +106,10 @@ GTEST_TEST(testUnrevisedLCP, testCycling) {
   // clang-format on
 
   Eigen::Matrix<double, 3, 1> q;
-  q << -1, -1, -1; 
+  q << -1, -1, -1;
 
   Eigen::VectorXd expected_z(3);
-  expected_z << 1.0/3, 1.0/3, 1.0/3; 
+  expected_z << 1.0/3, 1.0/3, 1.0/3;
   RunBasicLcp(M, q, expected_z);
 }
 
