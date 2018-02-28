@@ -46,7 +46,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const std::string kInvalidName = "InvalidName";
 
   const AcrobotParameters parameters;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlant(parameters);
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, true /* Make a finalized plant. */);
 
   // MakeAcrobotPlant() has already called Finalize() on the new acrobot plant.
   // Therefore attempting to call this method again will throw an exception.
@@ -105,13 +106,15 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "The call to .* is invalid; You must call Finalize\\(\\) first.");
+      "Post-Finalize\\(\\) calls to '.*' are not allowed; "
+      "Calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_ERROR_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
           "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "The call to .* is invalid; You must call Finalize\\(\\) first.");
+      "Post-Finalize\\(\\) calls to '.*' are not allowed; "
+      "Calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
@@ -125,10 +128,33 @@ class AcrobotPlantTests : public ::testing::Test {
     geometry_system_ = builder.AddSystem<GeometrySystem>();
     geometry_system_->set_name("geometry_system");
     const AcrobotParameters acrobot_parameters;
-    plant_ = builder.AddSystem(MakeAcrobotPlant(parameters_, geometry_system_));
+    // Make a non-finalized plant so that we can tests methods with pre/post
+    // Finalize() conditions.
+    plant_ = builder.AddSystem(
+        MakeAcrobotPlant(parameters_, false, geometry_system_));
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(!!plant_->get_source_id());
+
+    // Verify that methods with pre-Finalize() conditions throw accordingly.
+    DRAKE_EXPECT_ERROR_MESSAGE(
+        plant_->get_geometry_ids_output_port(),
+        std::logic_error,
+        /* Verify this method is throwing for the right reasons. */
+        "Pre-Finalize\\(\\) calls to '.*' are not allowed; "
+        "You must call Finalize\\(\\) first.");
+
+    DRAKE_EXPECT_ERROR_MESSAGE(
+        plant_->get_geometry_poses_output_port(),
+        std::logic_error,
+        /* Verify this method is throwing for the right reasons. */
+        "Pre-Finalize\\(\\) calls to '.*' are not allowed; "
+        "You must call Finalize\\(\\) first.");
+
+    // Finalize() the plant before accessing its ports for communicating with
+    // GeometrySystem.
+    plant_->Finalize();
+
     builder.Connect(
         plant_->get_geometry_ids_output_port(),
         geometry_system_->get_source_frame_id_port(

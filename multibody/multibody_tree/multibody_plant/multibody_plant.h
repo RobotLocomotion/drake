@@ -22,6 +22,7 @@ namespace multibody_plant {
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
 #define MBP_THROW_IF_FINALIZED ThrowIfFinalized(__FUNCTION__);
+#define MBP_THROW_IF_NOT_FINALIZED ThrowIfNotFinalized(__FUNCTION__);
 /// @endcond
 
 /// %MultibodyPlant is a Drake system framework representation (see
@@ -340,7 +341,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// @name Retrieving multibody elements by name
   /// These methods allow a user to retrieve a reference to a multibody element
-  /// by its name. A std::logic_error is thrown if there is no element with the
+  /// by its name. An exception is thrown if there is no element with the
   /// requested name.
   /// These queries can be performed at any time during the lifetime of a
   /// %MultibodyPlant model, i.e. there is no restriction on whether they must
@@ -392,6 +393,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///      can be retrieved with get_geometry_ids_output_port().
   ///   2. A port with the pose for each of the geometries that was registered.
   ///      It can be retrieved with get_geometry_poses_output_port().
+  /// Calling any of these methods post-finalize is **not** allowed and an
+  /// exception is thrown if attempted.
   // TODO(amcastro-tri): When GS supports it, provide argument to specify
   // visual properties.
   /// @{
@@ -409,6 +412,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   A valid non nullptr to a GeometrySystem on which geometry will get
   ///   registered.
   /// @throws if `geometry_system` is the nullptr.
+  /// @throws an exception if called post-finalize.
   void RegisterVisualGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
@@ -433,11 +437,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Returns the output port of frame id's used to communicate poses to a
   /// GeometrySystem.
   /// @throws if this system was not registered with a GeometrySystem.
+  /// @throws if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_ids_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// GeometrySystem.
   /// @throws if this system did not register geometry with a GeometrySystem.
+  /// @throws if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @}
 
@@ -512,6 +518,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // not be called post-finalize. The invoking method should pass it's name so
   // that the error message can include that detail.
   void ThrowIfFinalized(const char* source_method) const;
+
+  // Helper method for throwing an exception within public methods that should
+  // not be called pre-finalize. The invoking method should pass it's name so
+  // that the error message can include that detail.
+  void ThrowIfNotFinalized(const char* source_method) const;
 
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.

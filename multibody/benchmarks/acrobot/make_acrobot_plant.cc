@@ -26,7 +26,7 @@ using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeAcrobotPlant(
-    const AcrobotParameters& params,
+    const AcrobotParameters& params, bool finalize,
     geometry::GeometrySystem<double>* geometry_system) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
@@ -98,7 +98,7 @@ MakeAcrobotPlant(
       -params.g() * Vector3d::UnitZ());
 
   // We are done creating the plant.
-  plant->Finalize();
+  if (finalize) plant->Finalize();
 
   return plant;
 }

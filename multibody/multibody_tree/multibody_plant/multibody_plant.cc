@@ -62,7 +62,7 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
-  DRAKE_THROW_UNLESS(!this->is_finalized());
+  MBP_THROW_IF_FINALIZED
   GeometryId id;
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
@@ -80,8 +80,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
-  DRAKE_THROW_UNLESS(!this->is_finalized());
-
+  MBP_THROW_IF_FINALIZED
   // If not already done, register with the provided geometry system.
   if (!geometry_source_is_registered())
     source_id_ = geometry_system->RegisterSource("MultibodyPlant");
@@ -109,8 +108,7 @@ template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
-  DRAKE_THROW_UNLESS(!this->is_finalized());
-
+  MBP_THROW_IF_FINALIZED
   // If not already done, register with the provided geometry system.
   if (!geometry_source_is_registered())
     source_id_ = geometry_system->RegisterSource("MultibodyPlant");
@@ -283,16 +281,14 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
 const {
-  DRAKE_THROW_UNLESS(is_finalized());
-  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  MBP_THROW_IF_NOT_FINALIZED
   return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
-  DRAKE_THROW_UNLESS(is_finalized());
-  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  MBP_THROW_IF_NOT_FINALIZED
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
@@ -325,8 +321,17 @@ template <typename T>
 void MultibodyPlant<T>::ThrowIfFinalized(const char* source_method) const {
   if (is_finalized()) {
     throw std::logic_error(
-        "The call to '" + std::string(source_method) + "' is invalid; "
-        "You must call Finalize() first.");
+        "Post-Finalize() calls to '" + std::string(source_method) + "()' are "
+        "not allowed; Calls to this method must happen before Finalize().");
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
+  if (!is_finalized()) {
+    throw std::logic_error(
+        "Pre-Finalize() calls to '" + std::string(source_method) + "()' are "
+        "not allowed; You must call Finalize() first.");
   }
 }
 
