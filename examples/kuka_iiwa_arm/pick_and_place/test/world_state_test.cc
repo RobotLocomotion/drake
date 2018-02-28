@@ -12,12 +12,8 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 namespace {
 
-const char* const kIiwaUrdf =
-    "drake/manipulation/models/iiwa_description/urdf/"
-    "iiwa14_polytope_collision.urdf";
-
 GTEST_TEST(PickAndPlaceWorldStateTest, EndEffectorTest) {
-  WorldState dut(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
+  WorldState dut;
 
   Isometry3<double> iiwa_base{Isometry3<double>::Identity()};
 
@@ -46,22 +42,6 @@ GTEST_TEST(PickAndPlaceWorldStateTest, EndEffectorTest) {
 
   EXPECT_EQ(dut.get_iiwa_time(), iiwa_msg.utime * 1e-6);
   EXPECT_TRUE(dut.get_iiwa_base().isApprox(Isometry3<double>::Identity()));
-
-  Eigen::Vector3d expected_pos(0.795266, -0.13633, 0.594652);
-  const auto translation = dut.get_iiwa_end_effector_pose().translation();
-  EXPECT_TRUE(CompareMatrices(translation, expected_pos, 1e-6));
-
-  // Create another world state and move the base.  We expect that the
-  // end effector pose will move by a comparable amount.
-  WorldState dut2(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
-  iiwa_base.translation().x() += 1;
-  expected_pos(0) += 1;
-
-  dut2.HandleIiwaStatus(iiwa_msg, iiwa_base);
-
-  EXPECT_EQ(dut2.get_iiwa_time(), iiwa_msg.utime * 1e-6);
-  const auto translation2 = dut2.get_iiwa_end_effector_pose().translation();
-  EXPECT_TRUE(CompareMatrices(translation2, expected_pos, 1e-6));
 }
 
 }  // namespace
