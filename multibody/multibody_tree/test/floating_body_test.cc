@@ -24,7 +24,7 @@ using Eigen::Vector4d;
 using systems::Context;
 using systems::RungeKutta3Integrator;
 
-GTEST_TEST(QuaternionFloatingMobilizer, DISABLED_Simulation) {
+GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
   const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
   // The numerical tolerance accepted for these tests.
@@ -185,8 +185,125 @@ GTEST_TEST(QuaternionFloatingMobilizer, DISABLED_Simulation) {
   EXPECT_TRUE(CompareMatrices(v_WB, v_WBcm_exact, kTolerance,
                               MatrixCompareType::relative));
 
+  // Verify MultibodyTree::MapVelocityToQDot() to compute the quaternion time
+  // derivative.
+  const MultibodyTree<double>& model = free_body_plant.model();
+  VectorX<double> qdot_from_v(model.get_num_positions());
+  // The generalized velocity computed last at time = kEndTime.
+  const VectorX<double> v =
+      context.get_continuous_state().get_generalized_velocity().CopyToVector();
+  model.MapVelocityToQDot(context, v, &qdot_from_v);
+  // MultibodyTree computes the time derivatives in the inboard frame which in
+  // this case happens to be the world frame W. Thus we use DtW to denote the
+  // time derivative in the world frame, see
+  // drake::math::ConvertTimeDerivativeToOtherFrame() for details.
+  const Vector4<double> DtW_quat = qdot_from_v.head<4>();
+  const Vector3<double> DtW_p_WBcm = qdot_from_v.tail<3>();
+
+  const Quaterniond q_WB = mobilizer.get_quaternion(context);
+  const Vector4d q_WB_vec4(q_WB.w(), q_WB.x(), q_WB.y(), q_WB.z());
+
+  // After numerical intergration, and with no projection, the quaternion
+  // representing the body's orientation is no longer unit length, however close
+  // to it by kNormalizationTolerance.
+  const double kNormalizationTolerance = 5e-9;
+  EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kNormalizationTolerance);
+
+  // Since the quaternion must live in the unit sphere (in 4D), we must have
+  // q.dot(Dt_q) = 0:
+  EXPECT_TRUE(std::abs(q_WB_vec4.dot(DtW_quat)) < 10 * kEpsilon);
+
+  // The time derivative of the quaternion component can only be expected to be
+  // accurate within kNormalizationTolerance due to the loss of normalization in
+  // the quaternion.
+  EXPECT_TRUE(CompareMatrices(DtW_quat, quatDt_WB_exact,
+                              kNormalizationTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(DtW_p_WBcm, v_WB, kEpsilon,
+                              MatrixCompareType::relative));
+
+  // Verify MultibodyTree::MapQDotToVelocity() does indeed map back to the
+  // original generalized velocities.
+  // Since the quaternion orientation in this test is the result of a numerical
+  // integration that introduces truncation errors, we can only expect this
+  // result to be within kNormalizationTolerance accurate.
+  VectorX<double> v_back(model.get_num_velocities());
+  model.MapQDotToVelocity(context, qdot_from_v, &v_back);
+  EXPECT_TRUE(CompareMatrices(v_back, v, kNormalizationTolerance,
+                              MatrixCompareType::relative));
+
   // TODO(amcastro-tri): Verify angular momentum is conserved.
   // TODO(amcastro-tri): Verify total energy is conserved.
+}
+
+
+// For a free body modeled with a QuaternionFloatingMobilizer, this unit test
+// verifies that converting from generalized velocities to time derivatives of
+// the generalized positions (with MultibodyTree::MapVelocityToQDot()) and back
+// to generalized velocities (with MultibodyTree::MapQDotToVelocity), recovers
+// the original generalized velocities (within machine precision).
+GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
+  const double kEpsilon = std::numeric_limits<double>::epsilon();
+  // Since these tests are purely kinematic, we use an arbitrary values for the
+  // rotational inertias, mass and, gravity in order to instantiate the model.
+  const double kInertia = 0.05;
+  const double kMass = 1.0;
+  const double acceleration_of_gravity = 9.81;
+
+  // Instantiate the model for the free body in space.
+  AxiallySymmetricFreeBodyPlant<double> free_body_plant(
+      kMass, kInertia, kInertia, acceleration_of_gravity);
+  const QuaternionFloatingMobilizer<double>& mobilizer =
+      free_body_plant.mobilizer();
+  const MultibodyTree<double>& model = free_body_plant.model();
+
+  std::unique_ptr<Context<double>> context =
+      free_body_plant.CreateDefaultContext();
+
+  // Set the pose of the body.
+  const Vector3d p_WB(1, 2, 3);  // Position in world.
+  const Vector3d axis_W =        // Orientation in world.
+      (1.5 * Vector3d::UnitX() +
+      2.0 * Vector3d::UnitY() +
+      3.0 * Vector3d::UnitZ()).normalized();
+  const Quaterniond q_WB(AngleAxisd(M_PI / 3.0, axis_W));
+
+  // Verify we are using a proper unit quaternion or otherwise errors would
+  // propagate to the time derivatives through the kinematic maps.
+  EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kEpsilon);
+
+  mobilizer.set_position(context.get(), p_WB);
+  mobilizer.set_quaternion(context.get(), q_WB);
+
+  // Set velocities.
+  const Vector3d w_WB(1.0, 2.0, 3.0);
+  const Vector3d v_WB(-1.0, 4.0, -0.5);
+  mobilizer.set_angular_velocity(context.get(), w_WB);
+  mobilizer.set_translational_velocity(context.get(), v_WB);
+
+  // Map generalized velocities to time derivatives of generalized positions.
+  VectorX<double> qdot_from_v(model.get_num_positions());
+  const VectorX<double> v =
+      context->get_continuous_state().get_generalized_velocity().CopyToVector();
+  model.MapVelocityToQDot(*context, v, &qdot_from_v);
+
+  // MultibodyTree computes the time derivatives in the inboard frame which in
+  // this case happens to be the world frame W. Thus we use DtW to denote the
+  // time derivative in the world frame, see
+  // drake::math::ConvertTimeDerivativeToOtherFrame() for details.
+  const Vector4<double> DtW_q_WB = qdot_from_v.head<4>();
+  Vector4d q_WB_vec4(q_WB.w(), q_WB.x(), q_WB.y(), q_WB.z());
+
+  // Since the quaternion must live in the unit sphere (in 4D), we must have
+  // q.dot(Dt_q) = 0:
+  EXPECT_TRUE(std::abs(q_WB_vec4.dot(DtW_q_WB)) < 10 * kEpsilon);
+
+  // Verify MultibodyTree::MapQDotToVelocity() does indeed map back to the
+  // original generalized velocities.
+  VectorX<double> v_back(model.get_num_velocities());
+  model.MapQDotToVelocity(*context, qdot_from_v, &v_back);
+  EXPECT_TRUE(CompareMatrices(v_back, v, 10 * kEpsilon,
+                              MatrixCompareType::relative));
 }
 
 }  // namespace
