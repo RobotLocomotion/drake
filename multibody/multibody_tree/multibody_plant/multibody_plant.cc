@@ -321,6 +321,15 @@ const VelocityKinematicsCache<T>& MultibodyPlant<T>::EvalVelocityKinematics(
   return *vc_;
 }
 
+template <typename T>
+void MultibodyPlant<T>::ThrowIfFinalized(const char* source_method) const {
+  if (is_finalized()) {
+    throw std::logic_error(
+        "The call to '" + std::string(source_method) + "' is invalid; "
+        "You must call Finalize() first.");
+  }
+}
+
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

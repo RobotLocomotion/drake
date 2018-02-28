@@ -101,11 +101,17 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
-  EXPECT_THROW(plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
-               std::logic_error);
-  EXPECT_THROW(plant->AddJoint<RevoluteJoint>(
-      "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
-               std::logic_error);
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "The call to .* is invalid; You must call Finalize\\(\\) first.");
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant->AddJoint<RevoluteJoint>(
+          "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "The call to .* is invalid; You must call Finalize\\(\\) first.");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }

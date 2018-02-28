@@ -18,6 +18,12 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
+/// @cond
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define MBP_THROW_IF_FINALIZED ThrowIfFinalized(__FUNCTION__);
+/// @endcond
+
 /// %MultibodyPlant is a Drake system framework representation (see
 /// systems::System) for the model of a physical system consisting of a
 /// collection of interconnected bodies.
@@ -175,8 +181,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// method **must** be called before invoking any %MultibodyPlant service to
   /// perform computations.
   /// An attempt to call any of these methods **after** a call to Finalize() on
-  /// the plant, will result on a std::runtime_error being thrown.
-  /// See Finalize() for details.
+  /// the plant, will result on an exception being thrown. See Finalize() for
+  /// details.
   /// @{
 
   /// Creates a rigid body model with the provided name and spatial inertia.
@@ -203,6 +209,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
+    MBP_THROW_IF_FINALIZED
     return model_->AddRigidBody(name, M_BBo_B);
   }
 
@@ -282,6 +289,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
+    MBP_THROW_IF_FINALIZED
     return model_->template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
   }
@@ -302,6 +310,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args) {
+    MBP_THROW_IF_FINALIZED
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
@@ -498,6 +507,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U> friend class MultibodyPlant;
+
+  // Helper method for throwing an exception within public methods that should
+  // not be called post-finalize. The invoking method should pass it's name so
+  // that the error message can include that detail.
+  void ThrowIfFinalized(const char* source_method) const;
 
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
