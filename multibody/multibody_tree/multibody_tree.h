@@ -537,14 +537,14 @@ class MultibodyTree {
     if (X_PF) {
       frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
     } else {
-      frame_on_parent = &parent.get_body_frame();
+      frame_on_parent = &parent.body_frame();
     }
 
     const Frame<T>* frame_on_child;
     if (X_BM) {
       frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
     } else {
-      frame_on_child = &child.get_body_frame();
+      frame_on_child = &child.body_frame();
     }
 
     const JointType<T>& joint = AddJoint(
@@ -624,7 +624,7 @@ class MultibodyTree {
 
   /// Returns a constant reference to the *world* frame.
   const BodyFrame<T>& get_world_frame() const {
-    return owned_bodies_[world_index()]->get_body_frame();
+    return owned_bodies_[world_index()]->body_frame();
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
@@ -1736,7 +1736,7 @@ class MultibodyTree {
   template <typename FromScalar>
   Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body) {
     const BodyIndex body_index = body.index();
-    const FrameIndex body_frame_index = body.get_body_frame().index();
+    const FrameIndex body_frame_index = body.body_frame().index();
 
     auto body_clone = body.CloneToScalar(*this);
     body_clone->set_parent_tree(this, body_index);

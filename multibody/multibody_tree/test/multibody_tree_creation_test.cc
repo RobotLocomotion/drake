@@ -59,35 +59,35 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
 
   // Adds a revolute mobilizer.
   EXPECT_NO_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      world_body.get_body_frame(), pendulum.get_body_frame(),
+      world_body.body_frame(), pendulum.body_frame(),
       Vector3d::UnitZ())));
 
   // We cannot add another mobilizer between the same two frames.
   EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      world_body.get_body_frame(), pendulum.get_body_frame(),
+      world_body.body_frame(), pendulum.body_frame(),
       Vector3d::UnitZ())), std::runtime_error);
 
   // Even if connected in the opposite order.
   EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      pendulum.get_body_frame(), world_body.get_body_frame(),
+      pendulum.body_frame(), world_body.body_frame(),
       Vector3d::UnitZ())), std::runtime_error);
 
   // Verify we cannot add a mobilizer between a frame and itself.
   EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      pendulum.get_body_frame(), pendulum.get_body_frame(),
+      pendulum.body_frame(), pendulum.body_frame(),
       Vector3d::UnitZ())), std::runtime_error);
 
   // Adds a second pendulum.
   const RigidBody<double>& pendulum2 = model->AddBody<RigidBody>(M_Bo_B);
   model->AddMobilizer<RevoluteMobilizer>(
-      model->get_world_frame(), pendulum2.get_body_frame(), Vector3d::UnitZ());
+      model->get_world_frame(), pendulum2.body_frame(), Vector3d::UnitZ());
 
   EXPECT_EQ(model->get_num_bodies(), 3);
   EXPECT_EQ(model->get_num_mobilizers(), 2);
 
   // Attempts to create a loop. Verify we gen an exception.
   EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      pendulum.get_body_frame(), pendulum2.get_body_frame(),
+      pendulum.body_frame(), pendulum2.body_frame(),
       Vector3d::UnitZ())), std::runtime_error);
 
   // Expect the number of bodies and mobilizers not to change after the above
@@ -142,15 +142,15 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   // Verifies we can add a mobilizer between body1 and the world of model1.
   const RevoluteMobilizer<double>& pin1 =
       model1->AddMobilizer<RevoluteMobilizer>(
-          model1->get_world_body().get_body_frame(), /*inboard frame*/
-          body1.get_body_frame() /*outboard frame*/,
+          model1->get_world_body().body_frame(), /*inboard frame*/
+          body1.body_frame() /*outboard frame*/,
           Vector3d::UnitZ() /*axis of rotation*/);
 
   // Verifies we cannot add a mobilizer between frames that belong to another
   // tree.
   EXPECT_THROW((model1->AddMobilizer<RevoluteMobilizer>(
-      model1->get_world_body().get_body_frame(), /*inboard frame*/
-      body2.get_body_frame() /*body2 belongs to model2, not model1!!!*/,
+      model1->get_world_body().body_frame(), /*inboard frame*/
+      body2.body_frame() /*body2 belongs to model2, not model1!!!*/,
       Vector3d::UnitZ() /*axis of rotation*/)), std::logic_error);
 
   // model1 is complete. Expect no-throw.
@@ -271,7 +271,7 @@ class TreeTopologyTests : public ::testing::Test {
     } else {
       const Mobilizer<double> *mobilizer =
           &model_->AddMobilizer<RevoluteMobilizer>(
-              inboard.get_body_frame(), outboard.get_body_frame(),
+              inboard.body_frame(), outboard.body_frame(),
               Vector3d::UnitZ());
       mobilizers_.push_back(mobilizer);
     }

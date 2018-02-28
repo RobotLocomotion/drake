@@ -222,9 +222,9 @@ class KukaIiwaModelTests : public ::testing::Test {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
     Vector3<T> p_WE;
     model_on_T.CalcPointsPositions(
-        context_on_T, linkG_on_T.get_body_frame(),
+        context_on_T, linkG_on_T.body_frame(),
         Vector3<T>::Zero(),  // position in frame G
-        model_on_T.get_world_body().get_body_frame(), &p_WE);
+        model_on_T.get_world_body().body_frame(), &p_WE);
     return p_WE;
   }
 
@@ -241,7 +241,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       MatrixX<T>* p_WPi, MatrixX<T>* Jv_WPi) const {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
     model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.get_body_frame(), p_EPi, p_WPi, Jv_WPi);
+        context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jv_WPi);
   }
 
  protected:
@@ -338,7 +338,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
   model_->CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, end_effector_link_->get_body_frame(),
+      *context_, end_effector_link_->body_frame(),
       Vector3<double>::Zero(), &p_WE, &Jv_WE);
 
   // Verify the computed Jacobian matches the one obtained using automatic
@@ -550,7 +550,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // the spatial velocity of frame F.
   model_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_,
-      end_effector_link_->get_body_frame(), p_EoFo_E, &Jv_WF);
+      end_effector_link_->body_frame(), p_EoFo_E, &Jv_WF);
 
   // Verify that V_WEf = Jv_WF * v:
   const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);

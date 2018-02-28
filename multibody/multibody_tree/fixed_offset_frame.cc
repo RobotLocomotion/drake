@@ -20,7 +20,7 @@ FixedOffsetFrame<T>::FixedOffsetFrame(
 template <typename T>
 FixedOffsetFrame<T>::FixedOffsetFrame(
     const Body<T>& B, const Isometry3<double>& X_BF) :
-    Frame<T>(B), parent_frame_(B.get_body_frame()), X_PF_(X_BF) {}
+    Frame<T>(B), parent_frame_(B.body_frame()), X_PF_(X_BF) {}
 
 template <typename T>
 template <typename ToScalar>

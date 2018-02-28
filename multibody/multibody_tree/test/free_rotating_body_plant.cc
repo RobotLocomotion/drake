@@ -41,7 +41,7 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
   mobilizer_ =
       &model_.template AddMobilizer<SpaceXYZMobilizer>(
-          model_.get_world_frame(), body_->get_body_frame());
+          model_.get_world_frame(), body_->body_frame());
 
   model_.Finalize();
 }

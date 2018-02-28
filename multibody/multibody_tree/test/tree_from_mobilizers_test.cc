@@ -172,7 +172,7 @@ class PendulumTests : public ::testing::Test {
     // upper_link.
     shoulder_outboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(
-            upper_link_->get_body_frame(), X_USo_);
+            upper_link_->body_frame(), X_USo_);
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -212,7 +212,7 @@ class PendulumTests : public ::testing::Test {
     // Assert that indeed the elbow joint's outboard frame IS the lower link
     // frame.
     ASSERT_EQ(elbow_outboard_frame_->index(),
-              lower_link_->get_body_frame().index());
+              lower_link_->body_frame().index());
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
@@ -332,7 +332,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
 
   // Checks that mobilizers connect the right frames.
   EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().index(),
-            world_body_->get_body_frame().index());
+            world_body_->body_frame().index());
   EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().index(),
             shoulder_outboard_frame_->index());
 
@@ -395,14 +395,14 @@ TEST_F(PendulumTests, CreateModelBasics) {
 TEST_F(PendulumTests, Indexes) {
   CreatePendulumModel();
   EXPECT_EQ(shoulder_inboard_frame_->index(), FrameIndex(0));
-  EXPECT_EQ(upper_link_->get_body_frame().index(), FrameIndex(1));
-  EXPECT_EQ(lower_link_->get_body_frame().index(), FrameIndex(2));
+  EXPECT_EQ(upper_link_->body_frame().index(), FrameIndex(1));
+  EXPECT_EQ(lower_link_->body_frame().index(), FrameIndex(2));
   EXPECT_EQ(shoulder_outboard_frame_->index(), FrameIndex(3));
   EXPECT_EQ(elbow_inboard_frame_->index(), FrameIndex(4));
   EXPECT_EQ(elbow_outboard_frame_->index(), FrameIndex(2));
   // Verifies the elbow's outboard frame IS the lower link's frame.
   EXPECT_EQ(elbow_outboard_frame_->index(),
-            lower_link_->get_body_frame().index());
+            lower_link_->body_frame().index());
 }
 
 // Asserts that the Finalize() stage is successful and that re-finalization is
@@ -1279,7 +1279,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   Matrix3X<double> p_WQi_set(3, 3);
   model_->CalcPointsPositions(
       *context_,
-      lower_link_->get_body_frame(), p_LQi_set,
+      lower_link_->body_frame(), p_LQi_set,
       model_->get_world_frame(), &p_WQi_set);
 
   Matrix3X<double> p_WQi_set_expected(3, 3);
@@ -1301,7 +1301,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   Matrix3X<double> p_WPi_set(3, 3);
   model_->CalcPointsPositions(
       *context_,
-      upper_link_->get_body_frame(), p_UPi_set,
+      upper_link_->body_frame(), p_UPi_set,
       model_->get_world_frame(), &p_WPi_set);
 
   Matrix3X<double> p_WPi_set_expected(3, 3);
@@ -1313,7 +1313,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
       p_WPi_set, p_WPi_set_expected, kTolerance, MatrixCompareType::relative));
 
   const Isometry3d X_UL = model_->CalcRelativeTransform(
-      *context_, upper_link_->get_body_frame(), lower_link_->get_body_frame());
+      *context_, upper_link_->body_frame(), lower_link_->body_frame());
   const Vector3d p_UL = X_UL.translation();
   const Matrix3d R_UL = X_UL.linear();
 
@@ -1340,7 +1340,7 @@ TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
   Matrix3X<double> p_WQi_set(3, 3);
   EXPECT_THROW(model_->CalcPointsPositions(
       *context_,
-      lower_link_->get_body_frame(), p_LQi_set,
+      lower_link_->body_frame(), p_LQi_set,
       model_->get_world_frame(), &p_WQi_set), std::runtime_error);
 }
 

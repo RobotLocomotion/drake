@@ -45,7 +45,7 @@ void AxiallySymmetricFreeBodyPlant<T>::BuildMultibodyTreeModel() {
 
   mobilizer_ =
       &model_.template AddMobilizer<QuaternionFloatingMobilizer>(
-          model_.get_world_frame(), body_->get_body_frame());
+          model_.get_world_frame(), body_->body_frame());
 
   model_.template AddForceElement<UniformGravityFieldElement>(
       -g_ * Vector3<double>::UnitZ());

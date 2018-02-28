@@ -48,7 +48,7 @@ template<typename T> class Body;
 /// without the other. Therefore, a %BodyFrame instance is constructed in
 /// conjunction with its Body and cannot be
 /// constructed anywhere else. However, you can still access the frame
-/// associated with a body, see Body::get_body_frame().
+/// associated with a body, see Body::body_frame().
 /// This access is more than a convenience; you can use the %BodyFrame to
 /// define other frames on the body and to attach other multibody elements
 /// to it.
@@ -165,7 +165,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   virtual int get_num_flexible_velocities() const = 0;
 
   /// Returns a const reference to the associated BodyFrame.
-  const BodyFrame<T>& get_body_frame() const {
+  const BodyFrame<T>& body_frame() const {
     return body_frame_;
   }
 

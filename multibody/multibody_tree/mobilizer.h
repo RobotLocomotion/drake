@@ -41,7 +41,7 @@ template<typename T> class BodyNode;
 /// // the pendulum body.
 /// FixedOffsetFrame<double>& pin_frame =
 ///   model.AddFrame<FixedOffsetFrame>(
-///     pendulum.get_body_frame(),
+///     pendulum.body_frame(),
 ///     X_BP /* pose of pin frame P in body frame B */);
 /// // The mobilizer connects the world frame and the pin frame effectively
 /// // adding the single degree of freedom describing this system. In this
