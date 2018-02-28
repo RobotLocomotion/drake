@@ -74,14 +74,14 @@ AcrobotPlant<T>::AcrobotPlant(
   BuildMultibodyTreeModel();
 
   // Some very basic verification that the model is what we expect it to be.
-  DRAKE_DEMAND(model_->get_num_positions() == 2);
-  DRAKE_DEMAND(model_->get_num_velocities() == 2);
+  DRAKE_DEMAND(model_->num_positions() == 2);
+  DRAKE_DEMAND(model_->num_velocities() == 2);
   DRAKE_DEMAND(model_->get_num_states() == 4);
 
   this->DeclareContinuousState(
       BasicVector<T>(model_->get_num_states()),
-      model_->get_num_positions(),
-      model_->get_num_velocities(), 0 /* num_z */);
+      model_->num_positions(),
+      model_->num_velocities(), 0 /* num_z */);
 
   // Declare a vector input of size one for an applied torque at the
   // elbow joint.
@@ -177,8 +177,8 @@ void AcrobotPlant<T>::CalcFramePoseOutput(
   std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
-  pose_data[0] = pc.get_X_WB(link1_->get_node_index());
-  pose_data[1] = pc.get_X_WB(link2_->get_node_index());
+  pose_data[0] = pc.get_X_WB(link1_->node_index());
+  pose_data[1] = pc.get_X_WB(link2_->node_index());
 }
 
 template <typename T>
@@ -322,7 +322,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
-  const int nv = model_->get_num_velocities();
+  const int nv = model_->num_velocities();
 
   // Mass matrix:
   MatrixX<T> M(nv, nv);

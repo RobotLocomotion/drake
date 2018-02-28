@@ -31,7 +31,8 @@ namespace multibody {
 /// to implement a custom Mobilizer class.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
-template <typename T, int num_positions, int num_velocities>
+template <typename T,
+    int compile_time_num_positions, int compile_time_num_velocities>
 class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl)
@@ -60,7 +61,8 @@ class MobilizerImpl : public Mobilizer<T> {
   // Handy enum to grant specific implementations compile time sizes.
   // static constexpr int i = 42; discouraged.  See answer in:
   // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {kNq = num_positions, kNv = num_velocities};
+  enum : int {
+    kNq = compile_time_num_positions, kNv = compile_time_num_velocities};
 
   /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 

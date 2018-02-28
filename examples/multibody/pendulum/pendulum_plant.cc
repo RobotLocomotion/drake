@@ -61,13 +61,13 @@ PendulumPlant<T>::PendulumPlant(
   BuildMultibodyTreeModel();
 
   // Some very basic verification that the model is what we expect it to be.
-  DRAKE_DEMAND(model_->get_num_positions() == 1);
-  DRAKE_DEMAND(model_->get_num_velocities() == 1);
+  DRAKE_DEMAND(model_->num_positions() == 1);
+  DRAKE_DEMAND(model_->num_velocities() == 1);
   DRAKE_DEMAND(model_->get_num_states() == 2);
 
   this->DeclareContinuousState(
-      model_->get_num_positions(),
-      model_->get_num_velocities(), 0 /* num_z */);
+      model_->num_positions(),
+      model_->num_velocities(), 0 /* num_z */);
 }
 
 template<typename T>
@@ -145,7 +145,7 @@ void PendulumPlant<T>::CalcFramePoseOutput(
   model_->CalcPositionKinematicsCache(context, &pc);
 
   std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
-  pose_data[0] = pc.get_X_WB(link_->get_node_index());
+  pose_data[0] = pc.get_X_WB(link_->node_index());
 }
 
 template <typename T>
@@ -248,7 +248,7 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
-  const int nv = model_->get_num_velocities();
+  const int nv = model_->num_velocities();
 
   // Mass matrix:
   MatrixX<T> M(nv, nv);
