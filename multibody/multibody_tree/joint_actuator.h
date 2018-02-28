@@ -83,9 +83,7 @@ class JointActuator final
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each actuator retrieves its topology
   // from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology&) final {
-    // So far this initial implementation has no topology counterpart.
-  }
+  void DoSetTopology(const MultibodyTreeTopology&) final {}
 
   // The actuator's unique name in the MultibodyTree model
   std::string name_;

@@ -564,12 +564,14 @@ class MultibodyTree {
   ///
   /// @param[in] name
   ///   A string that uniquely identifies the new actuator to be added to `this`
-  ///   model. A std::runtime_error is thrown if an actuator with the same name
+  ///   model. An exception is thrown if an actuator with the same name
   ///   already exists in the model. See HasJointActuatorNamed().
   /// @param[in] joint
   ///   The Joint to be actuated by the new JointActuator.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` %MultibodyTree.
+  /// @throws if `this` model already contains a joint actuator with the given
+  /// `name`. See HasJointActuatorNamed(), JointActuator::get_name().
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
     if (HasJointActuatorNamed(name)) {
@@ -671,8 +673,8 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
-  /// @throws std::runtime_error when `body_index` does not correspond to a body
-  /// in this multibody tree.
+  /// @throws if `body_index` does not correspond to a body in this multibody
+  /// tree.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_THROW_UNLESS(body_index < get_num_bodies());
     return *owned_bodies_[body_index];
@@ -688,8 +690,8 @@ class MultibodyTree {
 
   /// Returns a constant reference to the joint actuator with unique index
   /// `actuator_index`.
-  /// @throws std::runtime_error when `actuator_index` does not correspond to a
-  /// joint actuator in this multibody tree.
+  /// @throws if `actuator_index` does not correspond to a joint actuator in
+  /// this multibody tree.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
     DRAKE_THROW_UNLESS(actuator_index < get_num_actuators());
@@ -697,8 +699,8 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the frame with unique index `frame_index`.
-  /// @throws std::runtime_error when `frame_index` does not correspond to a
-  /// frame in `this` multibody tree.
+  /// @throws if `frame_index` does not correspond to a frame in `this`
+  /// multibody tree.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_THROW_UNLESS(frame_index < get_num_frames());
     return *frames_[frame_index];
@@ -809,7 +811,7 @@ class MultibodyTree {
   /// `this` model with a given specified name.
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
-    auto it = actuator_name_to_index_.find(name);
+    const auto it = actuator_name_to_index_.find(name);
     if (it == actuator_name_to_index_.end()) {
       throw std::logic_error("There is no joint actuator named '" + name +
           "' in the model.");
