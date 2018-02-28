@@ -60,7 +60,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "iiwa_actuator_6",
       "iiwa_actuator_7"};
 
-  // Model Size. Counting the world body, there should be three bodies.
+  // Model Size. Counting the world body, there should be eight bodies.
   EXPECT_EQ(model.get_num_bodies(), 8);  // It includes the "world" body.
   EXPECT_EQ(model.get_num_joints(), 7);
   EXPECT_EQ(model.get_num_actuators(), 7);
@@ -118,7 +118,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   for (const std::string actuator_name : kActuatorNames) {
     const JointActuator<T>& actuator =
         model.GetJointActuatorByName(actuator_name);
-    EXPECT_EQ(actuator.get_name(), actuator_name);
+    EXPECT_EQ(actuator.name(), actuator_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
       model.GetJointActuatorByName(kInvalidName), std::logic_error,

@@ -120,6 +120,7 @@ class AcrobotPlantTests : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
     derivatives_ = plant_->AllocateTimeDerivatives();
 
+    ASSERT_GT(plant_->num_actuators(), 0);
     input_port_ = &context_->FixInputPort(
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
   }

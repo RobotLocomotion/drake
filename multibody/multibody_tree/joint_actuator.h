@@ -19,7 +19,7 @@ template<typename T> class Joint;
 /// The %JointActuator class is mostly a simple bookkeeping structure to
 /// represent an actuator acting on a given Joint. When added to a MultibodyTree
 /// model, a %JointActuator gets assigned a JointActuatorIndex, which can be
-/// retrieved with JointActuator::get_index(). The %JointActuator class
+/// retrieved with JointActuator::index(). The %JointActuator class
 /// allows mapping this JointActuatorIndex to the Joint on which it actuates,
 /// which can be retrieved with JointActuator::joint().
 ///
@@ -40,11 +40,11 @@ class JointActuator final
 
   /// Creates an actuator for `joint` with the given `name`.
   /// The name must be unique within the given MultibodyTree model. This is
-  /// guaranteed by MultibodyTree::AddJointActuator().
+  /// enforced by MultibodyTree::AddJointActuator().
   JointActuator(const std::string& name, const Joint<T>& joint);
 
   /// Returns the name of the actuator.
-  const std::string& get_name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   /// Returns the joint actuated by this %JointActuator.
   const Joint<T>& joint() const;

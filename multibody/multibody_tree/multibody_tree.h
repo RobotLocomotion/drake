@@ -558,7 +558,7 @@ class MultibodyTree {
   }
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
-  /// joint.
+  /// `joint`.
   /// This method returns a constant reference to the actuator just added, which
   /// will remain valid for the lifetime of `this` %MultibodyTree.
   ///

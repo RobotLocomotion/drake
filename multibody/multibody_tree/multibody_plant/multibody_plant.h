@@ -290,7 +290,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
-  /// joint.
+  /// `joint`.
   /// This method returns a constant reference to the actuator just added, which
   /// will remain valid for the lifetime of `this` plant.
   ///
@@ -302,8 +302,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   The Joint to be actuated by the new JointActuator.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant.
+  /// @throws if `joint.num_dofs() > 1` since for now we only support actuators
+  /// for single dof joints.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
+    DRAKE_THROW_UNLESS(joint.num_dofs() == 1);
     return model_->AddJointActuator(name, joint);
   }
   /// @}
@@ -381,6 +384,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// Returns a constant reference to the input port for external actuation.
   /// This input port is a vector valued port, indexed by JointActuatorIndex.
+  /// A actuator's index can be obtained with JointActuator::index().
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws if called before Finalize() or if the model does not contain any
+  /// actuators. See AddJointActuator() and num_actuators().
   const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the *world* body.

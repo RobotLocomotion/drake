@@ -141,6 +141,8 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
 template <typename T>
 const systems::InputPortDescriptor<T>&
 MultibodyPlant<T>::get_actuation_input_port() const {
+  DRAKE_THROW_UNLESS(is_finalized());
+  DRAKE_THROW_UNLESS(num_actuators() > 0);
   return systems::System<T>::get_input_port(actuation_port_);
 }
 
