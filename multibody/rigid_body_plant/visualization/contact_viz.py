@@ -27,9 +27,6 @@ class ContactVisualizer(object):
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
-        # Limits the rate of message handling, since redrawing is done in the
-        # message handler.
-        self._sub.setSpeedLimit(30)
         print self._name + " subscriber added."
 
     def remove_subscriber(self):
@@ -52,6 +49,10 @@ class ContactVisualizer(object):
             self.remove_subscriber()
 
     def handle_message(self, msg):
+        # Limits the rate of message handling, since redrawing is done in the
+        # message handler.
+        self._sub.setSpeedLimit(30)
+
         # Removes the folder completely.
         om.removeFromObjectModel(om.findObjectByName(self._folder_name))
 
