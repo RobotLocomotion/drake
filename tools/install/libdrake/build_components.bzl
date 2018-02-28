@@ -74,6 +74,7 @@ LIBDRAKE_COMPONENTS = [
     "//common:number_traits",
     "//common:polynomial",
     "//common:reinit_after_move",
+    "//common:reset_on_copy",
     "//common:scoped_singleton",
     "//common:sorted_vectors_have_intersection",
     "//common:symbolic",

@@ -58,7 +58,7 @@ class reinit_after_move {
 
   /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
   /// MoveAssignable.
-  /** @{ */
+  //@{
   reinit_after_move(const reinit_after_move&) = default;
   reinit_after_move& operator=(const reinit_after_move&) = default;
   reinit_after_move(reinit_after_move&& other) {
@@ -72,14 +72,28 @@ class reinit_after_move {
     }
     return *this;
   }
-  /** @} */
+  //@}
 
-  /// @name Implicit conversion operators to make reinit_after_move<T> to act
+  /// @name Implicit conversion operators to make reinit_after_move<T> act
   /// as the wrapped type.
-  /** @{ */
+  //@{
   operator T&() { return value_; }
   operator const T&() const { return value_; }
-  /** @} */
+  //@}
+
+  /// @name Dereference operators available if type T is a pointer.
+  //@{
+  template <typename T1 = T>
+  std::enable_if_t<std::is_pointer<T1>::value, T> operator->() const {
+    return value_;
+  }
+  template <typename T1 = T>
+  std::enable_if_t<std::is_pointer<T1>::value,
+                   std::add_lvalue_reference_t<std::remove_pointer_t<T>>>
+  operator*() const {
+    return *value_;
+  }
+  //@}
 
  private:
   T value_{};
