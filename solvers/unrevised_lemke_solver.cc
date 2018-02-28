@@ -146,7 +146,10 @@ bool ValidateIndices(
 // in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
 // the "covering vector"), to a target matrix, `out`. This template approach
 // allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
+// a dense matrix is returned. Since the matrix to be copied looks like this:
+// | 1 in |
+// selecting column 0, will copy a vector of ones and selecting column i, for
+// i > 0, will copy column i - 1 of `in`.
 template <typename Derived, typename T>
 void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
                      const std::vector<int>& rows,
