@@ -109,14 +109,14 @@ GTEST_TEST(DiscardGradientTest, discardGradient) {
 
   Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
   EXPECT_TRUE(
-      CompareMatrices(DiscardGradient(test5).rotation(), test5.rotation()));
+      CompareMatrices(DiscardGradient(test5).linear(), test5.linear()));
   EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).translation(),
                               test5.translation()));
 
   Isometry3<AutoDiffXd> test6 = Isometry3<AutoDiffXd>::Identity();
   test6.translate(Vector3<AutoDiffXd>{3., 2., 1.});
   Eigen::Isometry3d test6b = DiscardGradient(test6);
-  EXPECT_TRUE(CompareMatrices(test6b.rotation(), Eigen::Matrix3d::Identity()));
+  EXPECT_TRUE(CompareMatrices(test6b.linear(), Eigen::Matrix3d::Identity()));
   EXPECT_TRUE(
       CompareMatrices(test6b.translation(), Eigen::Vector3d{3., 2., 1.}));
 }
