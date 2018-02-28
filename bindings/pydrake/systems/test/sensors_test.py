@@ -136,7 +136,3 @@ class TestSensors(unittest.TestCase):
             m.Label.kFlatTerrain,
         ]
         self.assertTrue(values)
-
-
-if __name__ == '__main__':
-    unittest.main()

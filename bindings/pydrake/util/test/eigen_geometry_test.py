@@ -111,7 +111,3 @@ class TestEigenGeometry(unittest.TestCase):
         value = test_util.create_translation()
         self.assertEquals(value.shape, (3,))
         test_util.check_translation(value)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -46,7 +46,3 @@ class TestForwardDiff(unittest.TestCase):
                                1)
         self.assertAlmostEqual(derivative(lambda x: 1.0 / x, x),
                                -1.0 / x**2)
-
-
-if __name__ == '__main__':
-    unittest.main()

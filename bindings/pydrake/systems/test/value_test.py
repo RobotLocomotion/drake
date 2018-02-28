@@ -183,7 +183,3 @@ class TestValue(unittest.TestCase):
             Parameters(vec=model_numeric.Clone()),
             Parameters(value=model_abstract.Clone()),
             ]
-
-
-if __name__ == '__main__':
-    unittest.main()

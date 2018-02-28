@@ -140,7 +140,3 @@ class TestGeneral(unittest.TestCase):
                            xc_initial)
             print("xc[t = {}] = {}".format(t, xc))
             self.assertTrue(np.allclose(xc, xc_expected))
-
-
-if __name__ == '__main__':
-    unittest.main()

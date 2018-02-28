@@ -81,7 +81,3 @@ class TestAcrobot(unittest.TestCase):
         self.assertLessEqual(acrobot.CalcPotentialEnergy(context) +
                              acrobot.CalcKineticEnergy(context),
                              initial_total_energy)
-
-
-if __name__ == '__main__':
-    unittest.main()

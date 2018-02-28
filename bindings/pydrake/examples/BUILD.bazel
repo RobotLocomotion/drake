@@ -10,9 +10,8 @@ load(
 )
 load(
     "//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 
 package(default_visibility = [
@@ -86,7 +85,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "pendulum_test",
     size = "small",
     deps = [
@@ -94,7 +93,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "acrobot_test",
     size = "small",
     deps = [

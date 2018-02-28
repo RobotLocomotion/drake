@@ -87,12 +87,35 @@ def drake_py_binary(
         data = data,
         **kwargs)
 
+def drake_py_unittest(
+        name,
+        srcs = [],
+        args = [],
+        **kwargs):
+    """Declares a unittest-based python test.
+
+    This macro should be preferred instead of the basic drake_py_test for tests
+    that use the unittest framework.  Tests that use this macro should *not*
+    contain a __main__ handler nor a shebang line.
+    """
+    helper = "//common/test_utilities:drake_py_unittest_main.py"
+    if not srcs:
+        srcs = ["test/%s.py" % name]
+    drake_py_test(
+        name = name,
+        srcs = srcs + [helper],
+        main = helper,
+        args = ["%s.py" % name] + args,
+        allow_import_unittest = True,
+        **kwargs)
+
 def drake_py_test(
         name,
         srcs = None,
         deps = None,
         data = None,
         isolate = True,
+        allow_import_unittest = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -104,6 +127,11 @@ def drake_py_test(
     if srcs == None:
         srcs = ["test/%s.py" % name]
     deps = adjust_labels_for_drake_hoist(deps)
+    if not allow_import_unittest:
+        # Error out on 'import unittest'.  This catches developer mistakes
+        # where they wrote unittest test cases but failed to declare them using
+        # drake_py_unittest.
+        deps = deps + ["//common/test_utilities:disable_python_unittest"]
     data = adjust_labels_for_drake_hoist(data)
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]

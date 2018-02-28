@@ -9,7 +9,7 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -935,23 +935,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "drake_cc_googletest_main_test",
+    name = "drake_cc_googletest_main_test_device",
     args = ["--magic_number=1.0"],
 )
 
 # Run test/drake_cc_googletest_main_test.py, a unit test written in Python that
 # covers the test/drake_cc_googletest_main.cc software.
-drake_py_test(
-    name = "drake_cc_googletest_main_test_py",
-    srcs = ["test/drake_cc_googletest_main_test.py"],
-    args = ["$(location :drake_cc_googletest_main_test)"],
-    data = [":drake_cc_googletest_main_test"],
-    main = "test/drake_cc_googletest_main_test.py",
+drake_py_unittest(
+    name = "drake_cc_googletest_main_test",
+    args = ["$(location :drake_cc_googletest_main_test_device)"],
+    data = [":drake_cc_googletest_main_test_device"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "cpplint_wrapper_test",
-    srcs = ["test/cpplint_wrapper_test.py"],
     args = [
         "$(location :cpplint_wrapper)",
         "$(location :eigen_types.h)",
@@ -963,9 +960,8 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "resource_tool_test",
-    srcs = ["test/resource_tool_test.py"],
     args = [
         "$(location :resource_tool)",
     ],
@@ -976,9 +972,8 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "resource_tool_installed_test",
-    srcs = ["test/resource_tool_installed_test.py"],
     args = [
         "$(location :install)",
     ],
