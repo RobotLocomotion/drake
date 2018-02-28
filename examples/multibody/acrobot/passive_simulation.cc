@@ -72,7 +72,9 @@ int do_main() {
   const AcrobotParameters acrobot_parameters;
   const MultibodyPlant<double>& acrobot =
       *builder.AddSystem(
-          MakeAcrobotPlant(acrobot_parameters, &geometry_system));
+          MakeAcrobotPlant(
+              acrobot_parameters, true /* Finalize the plant */,
+              &geometry_system));
   const RevoluteJoint<double>& shoulder =
       acrobot.GetJointByName<RevoluteJoint>(
           acrobot_parameters.shoulder_joint_name());

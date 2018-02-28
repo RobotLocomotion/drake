@@ -76,16 +76,22 @@ namespace multibody_plant {
 /// - Bodies: AddRigidBody().
 /// - Joints: AddJoint().
 ///
+/// All modeling elements **must** be added pre-finalize.
+///
 /// @section mbp_geometry_registration
 /// Registering geometry with a GeometrySystem
 ///
 /// %MultibodyPlant users can register geometry with a GeometrySystem for
 /// essentially two purposes; a) visualization and, b) contact modeling.
+// TODO(SeanCurtis-TRI): update this comment as the number of GeometrySystem
+// roles changes.
 ///
 /// If any geometry is registered for a given %MultibodyPlant, the plant will
 /// have a valid geometry::SourceId which can then be requested by
 /// get_source_id() in order to connect the plant to the GeometrySystem on which
 /// the geometry registration was performed.
+///
+/// All geometry registration **must** be performed pre-finalize.
 ///
 /// @section Finalize() stage
 ///
@@ -97,9 +103,11 @@ namespace multibody_plant {
 /// - declare the plant's input and output ports,
 /// - declare input and output ports for communication with a GeometrySystem.
 /// @cond
-/// TODO(amcastro-tri): Consider making the geometry registration AFTER
-/// Finalize() so that we can tell if there are any bodies welded to the world
-/// to which we could just assign anchored geometry instead of dynamic geometry.
+/// TODO(amcastro-tri): Consider making the actual geometry registration with GS
+/// AFTER Finalize() so that we can tell if there are any bodies welded to the
+/// world to which we could just assign anchored geometry instead of dynamic
+/// geometry. This is an optimization and the API, and pre/post-finalize
+/// conditions should not change.
 /// @endcond
 ///
 /// @cond
@@ -384,16 +392,14 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// @name Registering geometry for visualization
   /// These methods allow to register geometry with a GeometrySystem in order to
-  /// visualize a plant's model. At the time of the first registration, `this`
-  /// `MultibodyPlant` is registered with the provided GeometrySystem and gets
-  /// assigned a SourceId that can be retrieved with get_source_id().
-  /// At Finalize(), two output ports are declared to enable communication with
-  /// GeometrySystem:
-  ///   1. A port with the GeometryId for each geometry that was registered. It
-  ///      can be retrieved with get_geometry_ids_output_port().
-  ///   2. A port with the pose for each of the geometries that was registered.
-  ///      It can be retrieved with get_geometry_poses_output_port().
-  /// Calling any of these methods post-finalize is **not** allowed and an
+  /// visualize a plant's model.
+  /// Calling this any of these methods at least once is a prerequisite to
+  /// connecting this plant to an instance of GeometrySystem, i.e., accessing
+  /// the source id (get_source_id()) and GeometrySystem-compatible output ports
+  /// (get_geometry_ids_output_port() and get_geometry_poses_output_port()).
+  /// All of these calls **must** be performed on a same instance of
+  /// GeometrySystem.
+  /// Calling any of these methods post-Finalize() is **not** allowed and an
   /// exception is thrown if attempted.
   // TODO(amcastro-tri): When GS supports it, provide argument to specify
   // visual properties.
@@ -407,7 +413,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   The fixed pose of the geometry frame G in the body frame B.
   /// @param[in] shape
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
-  ///   geometry::Cylinder.
+  ///   geometry::Cylinder, etc.
   /// @param[out] geometry_system
   ///   A valid non nullptr to a GeometrySystem on which geometry will get
   ///   registered.

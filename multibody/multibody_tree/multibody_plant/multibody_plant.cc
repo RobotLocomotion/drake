@@ -14,11 +14,6 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
-using Eigen::Vector3d;
-
-using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::FrameIdVector;
 using geometry::FramePoseVector;
@@ -26,10 +21,6 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::GeometrySystem;
-using geometry::PenetrationAsPointPair;
-using geometry::SourceId;
-using geometry::Sphere;
-using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::State;
 

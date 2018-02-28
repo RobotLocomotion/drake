@@ -126,15 +126,13 @@ class AcrobotPlantTests : public ::testing::Test {
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
     geometry_system_ = builder.AddSystem<GeometrySystem>();
-    geometry_system_->set_name("geometry_system");
-    const AcrobotParameters acrobot_parameters;
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
     plant_ = builder.AddSystem(
         MakeAcrobotPlant(parameters_, false, geometry_system_));
     // Sanity check on the availability of the optional source id before using
     // it.
-    DRAKE_DEMAND(!!plant_->get_source_id());
+    DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
     // Verify that methods with pre-Finalize() conditions throw accordingly.
     DRAKE_EXPECT_ERROR_MESSAGE(
@@ -212,9 +210,9 @@ class AcrobotPlantTests : public ::testing::Test {
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
-  MultibodyPlant<double>* plant_;
+  MultibodyPlant<double>* plant_{nullptr};
   // A GeometrySystem so that we can test geometry registration.
-  GeometrySystem<double>* geometry_system_;
+  GeometrySystem<double>* geometry_system_{nullptr};
   // The Diagram containing both the MultibodyPlant and the GeometrySystem.
   std::unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:

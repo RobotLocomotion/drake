@@ -72,7 +72,8 @@ MakeAcrobotPlant(
     plant->RegisterVisualGeometry(
         plant->get_world_body(),
         Isometry3d::Identity(), /* X_WG */
-        Sphere(params.l1() / 8.0), geometry_system);
+        Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
+        geometry_system);
   }
 
   plant->AddJoint<RevoluteJoint>(
