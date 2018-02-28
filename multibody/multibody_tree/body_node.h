@@ -569,7 +569,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   guarantee these conditions are satisfied. This method will abort if the
   ///   the pointer is null.
   ///   To access a mobilizer's reaction force on a given body B, access this
-  ///   array with the index returned by Body::get_node_index().
+  ///   array with the index returned by Body::node_index().
   /// @param[out] tau_array
   ///   A non-null pointer to the output vector of generalized forces that would
   ///   result in body B having spatial acceleration `A_WB`. This method will

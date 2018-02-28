@@ -129,16 +129,16 @@ class DrakeKukaIIwaRobot {
 
     // Retrieve end-effector pose from position kinematics cache.
     model_->CalcPositionKinematicsCache(*context_, &pc);
-    const Isometry3<T>& X_NG = pc.get_X_WB(linkG_->get_node_index());
+    const Isometry3<T>& X_NG = pc.get_X_WB(linkG_->node_index());
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
-    const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->get_node_index());
+    const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->node_index());
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
     std::vector<SpatialAcceleration<T>> A_WB(model_->get_num_bodies());
     model_->CalcSpatialAccelerationsFromVdot(*context_, pc, vc, qDDt, &A_WB);
-    const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->get_node_index()];
+    const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->node_index()];
 
     // Create a class to return the results.
     return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
@@ -207,13 +207,13 @@ class DrakeKukaIIwaRobot {
 
     // Put joint reaction forces into return struct.
     KukaRobotJointReactionForces<T> reaction_forces;
-    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
-    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
-    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
-    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->get_node_index()];
-    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->get_node_index()];
-    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->get_node_index()];
-    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->get_node_index()];
+    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->node_index()];
+    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->node_index()];
+    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->node_index()];
+    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->node_index()];
+    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->node_index()];
+    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->node_index()];
+    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->node_index()];
     return reaction_forces;
   }
 

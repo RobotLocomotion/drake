@@ -143,7 +143,7 @@ class RigidBody : public Body<T> {
   //----------------------------------------------------------------------------
   const Isometry3<T>& get_pose_in_world(
       const PositionKinematicsCache<T>& pc) const {
-    return pc.get_X_WB(this->get_node_index());
+    return pc.get_X_WB(this->node_index());
   }
 
   /// Extract the rotation matrix relating the world frame to this body's frame.
@@ -178,7 +178,7 @@ class RigidBody : public Body<T> {
   //----------------------------------------------------------------------------
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
       const VelocityKinematicsCache<T>& vc) const {
-    return vc.get_V_WB(this->get_node_index());
+    return vc.get_V_WB(this->node_index());
   }
 
   /// Extract this body angular velocity in world, expressed in world.
@@ -211,7 +211,7 @@ class RigidBody : public Body<T> {
   //----------------------------------------------------------------------------
   const SpatialAcceleration<T>& get_spatial_acceleration_in_world(
       const AccelerationKinematicsCache<T>& ac) const {
-    return ac.get_A_WB(this->get_node_index());
+    return ac.get_A_WB(this->node_index());
   }
 
   /// Extract this body's angular acceleration in world, expressed in world.

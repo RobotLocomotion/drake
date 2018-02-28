@@ -1188,7 +1188,7 @@ class MultibodyTree {
   ///   applied forces. To apply non-zero forces, `Fapplied_Bo_W_array` must be
   ///   of size equal to the number of bodies in `this` %MultibodyTree model.
   ///   This array must be ordered by BodyNodeIndex, which for a given body can
-  ///   be retrieved with Body::get_node_index().
+  ///   be retrieved with Body::node_index().
   ///   This method will abort if provided with an array that does not have a
   ///   size of either `get_num_bodies()` or zero.
   /// @param[in] tau_applied_array
@@ -1210,7 +1210,7 @@ class MultibodyTree {
   ///   pointer is null or if `A_WB_array` is not of size `get_num_bodies()`.
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access the acceleration `A_WB` of given body B in this array, use the
-  ///   index returned by Body::get_node_index().
+  ///   index returned by Body::node_index().
   /// @param[out] F_BMo_W_array
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
@@ -1221,7 +1221,7 @@ class MultibodyTree {
   ///   is not of size `get_num_bodies()`.
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access a mobilizer's reaction force on given body B in this array,
-  ///   use the index returned by Body::get_node_index().
+  ///   use the index returned by Body::node_index().
   /// @param[out] tau_array
   ///   On output this array will contain the generalized forces that must be
   ///   applied in order to achieve the desired generalized accelerations given
@@ -1232,7 +1232,7 @@ class MultibodyTree {
   ///
   /// @warning There is no mechanism to assert that either `A_WB_array` nor
   ///   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
-  ///   Body::get_node_index() to obtain the node index for a given body.
+  ///   Body::node_index() to obtain the node index for a given body.
   ///
   /// @note This method uses `F_BMo_W_array` and `tau_array` as the only local
   /// temporaries and therefore no additional dynamic memory allocation is

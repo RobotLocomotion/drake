@@ -150,7 +150,7 @@ Isometry3<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
-  return pc.get_X_WB(body_->get_node_index());
+  return pc.get_X_WB(body_->node_index());
 }
 
 template<typename T>
@@ -160,7 +160,7 @@ SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
   model_.CalcPositionKinematicsCache(context, &pc);
   VelocityKinematicsCache<T> vc(model_.get_topology());
   model_.CalcVelocityKinematicsCache(context, pc, &vc);
-  return vc.get_V_WB(body_->get_node_index());
+  return vc.get_V_WB(body_->node_index());
 }
 
 }  // namespace test

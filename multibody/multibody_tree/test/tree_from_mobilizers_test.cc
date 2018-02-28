@@ -803,9 +803,9 @@ class PendulumKinematicTests : public PendulumTests {
         get_body_spatial_acceleration_in_world(ac, *lower_link_);
     // From inverse dynamics.
     const SpatialAcceleration<double>& A_WUcm_id =
-        A_WB_array[upper_link_->get_node_index()];
+        A_WB_array[upper_link_->node_index()];
     const SpatialAcceleration<double>& A_WL_id =
-        A_WB_array[lower_link_->get_node_index()];
+        A_WB_array[lower_link_->node_index()];
     EXPECT_TRUE(A_WUcm_id.IsApprox(A_WUcm_ac, kTolerance));
     EXPECT_TRUE(A_WL_id.IsApprox(A_WL_ac, kTolerance));
 

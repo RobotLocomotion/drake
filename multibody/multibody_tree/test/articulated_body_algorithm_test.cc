@@ -231,7 +231,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
       ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
-      abc.get_Pplus_PB_W(cylinder_link.get_node_index());
+      abc.get_Pplus_PB_W(cylinder_link.node_index());
   EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
       Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -246,7 +246,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
       ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
-      abc.get_Pplus_PB_W(box_link.get_node_index());
+      abc.get_Pplus_PB_W(box_link.node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
       P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
@@ -325,7 +325,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
       ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
-      abc.get_Pplus_PB_W(cylinder_link.get_node_index());
+      abc.get_Pplus_PB_W(cylinder_link.node_index());
   EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
       Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -350,7 +350,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
       ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
-      abc.get_Pplus_PB_W(box_link.get_node_index());
+      abc.get_Pplus_PB_W(box_link.node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
       P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
 }

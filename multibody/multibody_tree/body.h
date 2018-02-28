@@ -171,7 +171,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   /// Returns the index of the node in the underlying tree structure of
   /// the parent MultibodyTree to which this body belongs.
-  BodyNodeIndex get_node_index() const {
+  BodyNodeIndex node_index() const {
     return topology_.body_node;
   }
 

@@ -198,7 +198,7 @@ void MultibodyTree<T>::CalcAllBodyPosesInWorld(
   }
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index = get_body(body_index).get_node_index();
+    const BodyNodeIndex node_index = get_body(body_index).node_index();
     X_WB->at(body_index) = pc.get_X_WB(node_index);
   }
 }
@@ -213,7 +213,7 @@ void MultibodyTree<T>::CalcAllBodySpatialVelocitiesInWorld(
   }
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
-    const BodyNodeIndex node_index = get_body(body_index).get_node_index();
+    const BodyNodeIndex node_index = get_body(body_index).node_index();
     V_WB->at(body_index) = vc.get_V_WB(node_index);
   }
 }
@@ -556,10 +556,10 @@ Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const Frame<T>& frame_A, const Frame<T>& frame_B) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Isometry3<T>& X_WA =
-      pc.get_X_WB(frame_A.get_body().get_node_index()) *
+      pc.get_X_WB(frame_A.get_body().node_index()) *
       frame_A.CalcPoseInBodyFrame(context);
   const Isometry3<T>& X_WB =
-      pc.get_X_WB(frame_B.get_body().get_node_index()) *
+      pc.get_X_WB(frame_B.get_body().node_index()) *
       frame_B.CalcPoseInBodyFrame(context);
   return X_WA.inverse() * X_WB;
 }
@@ -588,7 +588,7 @@ const Isometry3<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const Body<T>& body_B) const {
   MBT_THROW_IF_NOT_FINALIZED
   body_B.HasThisParentTreeOrThrow(this);
-  return EvalPositionKinematics(context).get_X_WB(body_B.get_node_index());
+  return EvalPositionKinematics(context).get_X_WB(body_B.node_index());
 }
 
 template <typename T>
@@ -597,7 +597,7 @@ const SpatialVelocity<T>& MultibodyTree<T>::EvalBodySpatialVelocityInWorld(
     const Body<T>& body_B) const {
   MBT_THROW_IF_NOT_FINALIZED
   body_B.HasThisParentTreeOrThrow(this);
-  return EvalVelocityKinematics(context).get_V_WB(body_B.get_node_index());
+  return EvalVelocityKinematics(context).get_V_WB(body_B.node_index());
 }
 
 template <typename T>
@@ -647,7 +647,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 
   // Compute kinematic path from body B to the world:
   std::vector<BodyNodeIndex> path_to_world;
-  topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
+  topology_.GetKinematicPathToWorld(body_B.node_index(), &path_to_world);
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
@@ -712,7 +712,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 
   // Compute kinematic path from body B to the world:
   std::vector<BodyNodeIndex> path_to_world;
-  topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
+  topology_.GetKinematicPathToWorld(body_B.node_index(), &path_to_world);
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
