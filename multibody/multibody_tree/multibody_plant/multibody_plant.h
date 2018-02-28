@@ -171,7 +171,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @param[in] name
   ///   A string that uniquely identifies the new body to be added to `this`
   ///   model. A std::runtime_error is thrown if a body named `name` already is
-  ///   part of the model. See HasBodyNamed(), Body::get_name().
+  ///   part of the model. See HasBodyNamed(), Body::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this` model,
   ///   computed about the body frame origin `Bo` and expressed in the body
@@ -199,7 +199,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @param name
   ///   A string that uniquely identifies the new joint to be added to `this`
   ///   model. A std::runtime_error is thrown if a joint named `name` already is
-  ///   part of the model. See HasJointNamed(), Joint::get_name().
+  ///   part of the model. See HasJointNamed(), Joint::name().
   /// @param[in] parent
   ///   The parent body connected by the new joint.
   /// @param[in] X_PF
@@ -249,7 +249,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @endcode
   ///
   /// @throws if `this` model already contains a joint with the given `name`.
-  /// See HasJointNamed(), Joint::get_name().
+  /// See HasJointNamed(), Joint::name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.

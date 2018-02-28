@@ -99,7 +99,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   virtual ~Joint() {}
 
   /// Returns the name of this joint.
-  const std::string& get_name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   /// Returns a const reference to the parent body P.
   const Body<T>& get_parent_body() const {

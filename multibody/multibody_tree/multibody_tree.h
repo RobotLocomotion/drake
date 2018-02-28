@@ -176,7 +176,7 @@ class MultibodyTree {
   /// @param[in] name
   ///   A string that uniquely identifies the new body to be added to `this`
   ///   model. A std::runtime_error is thrown if a body named `name` already is
-  ///   part of the model. See HasBodyNamed(), Body::get_name().
+  ///   part of the model. See HasBodyNamed(), Body::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this` model,
   ///   computed about the body frame origin `Bo` and expressed in the body
@@ -515,7 +515,7 @@ class MultibodyTree {
   /// @endcode
   ///
   /// @throws if `this` model already contains a joint with the given `name`.
-  /// See HasJointNamed(), Joint::get_name().
+  /// See HasJointNamed(), Joint::name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.

@@ -154,7 +154,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   explicit Body(const std::string& name) : name_(name), body_frame_(*this) {}
 
   /// Gets the `name` associated with `this` body.
-  const std::string& get_name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   /// Returns the number of generalized positions q describing flexible
   /// deformations for this body. A rigid body will therefore return zero.

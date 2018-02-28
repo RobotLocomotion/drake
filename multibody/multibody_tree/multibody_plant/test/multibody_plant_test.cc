@@ -63,9 +63,9 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   // Get links by name.
   const Body<double>& link1 = plant->GetBodyByName(parameters.link1_name());
-  EXPECT_EQ(link1.get_name(), parameters.link1_name());
+  EXPECT_EQ(link1.name(), parameters.link1_name());
   const Body<double>& link2 = plant->GetBodyByName(parameters.link2_name());
-  EXPECT_EQ(link2.get_name(), parameters.link2_name());
+  EXPECT_EQ(link2.name(), parameters.link2_name());
 
   // Attempting to retrieve a link that is not part of the model should throw
   // an exception.
@@ -74,19 +74,19 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Get joints by name.
   const Joint<double>& shoulder_joint =
       plant->GetJointByName(parameters.shoulder_joint_name());
-  EXPECT_EQ(shoulder_joint.get_name(), parameters.shoulder_joint_name());
+  EXPECT_EQ(shoulder_joint.name(), parameters.shoulder_joint_name());
   const Joint<double>& elbow_joint =
       plant->GetJointByName(parameters.elbow_joint_name());
-  EXPECT_EQ(elbow_joint.get_name(), parameters.elbow_joint_name());
+  EXPECT_EQ(elbow_joint.name(), parameters.elbow_joint_name());
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // Templatized version to obtain retrieve a particular known type of joint.
   const RevoluteJoint<double>& shoulder =
       plant->GetJointByName<RevoluteJoint>(parameters.shoulder_joint_name());
-  EXPECT_EQ(shoulder.get_name(), parameters.shoulder_joint_name());
+  EXPECT_EQ(shoulder.name(), parameters.shoulder_joint_name());
   const RevoluteJoint<double>& elbow =
       plant->GetJointByName<RevoluteJoint>(parameters.elbow_joint_name());
-  EXPECT_EQ(elbow.get_name(), parameters.elbow_joint_name());
+  EXPECT_EQ(elbow.name(), parameters.elbow_joint_name());
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.

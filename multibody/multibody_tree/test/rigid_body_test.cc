@@ -43,7 +43,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructorWithName) {
   // important and therefore it is left uninitialized.
   const SpatialInertia<double> M_Bo_B;
   const RigidBody<double> B("LinkName", M_Bo_B);
-  EXPECT_EQ(B.get_name(), kLinkName);
+  EXPECT_EQ(B.name(), kLinkName);
 }
 
 }  // namespace

@@ -111,7 +111,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   // Get links by name.
   for (const std::string link_name : kLinkNames) {
     const Body<double>& link = model->GetBodyByName(link_name);
-    EXPECT_EQ(link.get_name(), link_name);
+    EXPECT_EQ(link.name(), link_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
       model->GetBodyByName(kInvalidName), std::logic_error,
@@ -120,7 +120,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   // Get joints by name.
   for (const std::string joint_name : kJointNames) {
     const Joint<double>& joint = model->GetJointByName(joint_name);
-    EXPECT_EQ(joint.get_name(), joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
       model->GetJointByName(kInvalidName), std::logic_error,
@@ -130,7 +130,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   for (const std::string joint_name : kJointNames) {
     const RevoluteJoint<double>& joint =
         model->GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_EQ(joint.get_name(), joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
       model->GetJointByName<RevoluteJoint>(kInvalidName), std::logic_error,

@@ -21,7 +21,7 @@ RevoluteJoint<T>::TemplatedDoCloneToScalar(
 
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<RevoluteJoint<ToScalar>>(
-      this->get_name(),
+      this->name(),
       frame_on_parent_body_clone, frame_on_child_body_clone,
       this->get_revolute_axis());
 
