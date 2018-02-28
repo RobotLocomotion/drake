@@ -63,7 +63,7 @@ PendulumPlant<T>::PendulumPlant(
   // Some very basic verification that the model is what we expect it to be.
   DRAKE_DEMAND(model_->num_positions() == 1);
   DRAKE_DEMAND(model_->num_velocities() == 1);
-  DRAKE_DEMAND(model_->get_num_states() == 2);
+  DRAKE_DEMAND(model_->num_states() == 2);
 
   this->DeclareContinuousState(
       model_->num_positions(),
@@ -139,7 +139,7 @@ template <typename T>
 void PendulumPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == 1);
-  DRAKE_ASSERT(model_->get_num_bodies() == 2);
+  DRAKE_ASSERT(model_->num_bodies() == 2);
 
   PositionKinematicsCache<T> pc(model_->get_topology());
   model_->CalcPositionKinematicsCache(context, &pc);
@@ -181,7 +181,7 @@ void PendulumPlant<T>::BuildMultibodyTreeModel() {
 
   joint_ = &model_->template AddJoint<RevoluteJoint>(
       "Joint",
-      model_->get_world_body(), {}, /* frame F IS the the world frame W. */
+      model_->world_body(), {}, /* frame F IS the the world frame W. */
       *link_, {}, /* frame M IS the the body frame B. */
       Vector3d::UnitY()); /* pendulum oscillates in the x-z plane. */
 
@@ -255,7 +255,7 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   // Forces:
   MultibodyForces<T> forces(*model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
   // Generalized accelerations:
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
@@ -292,7 +292,7 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   vdot = M.ldlt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-  VectorX<T> xdot(model_->get_num_states());
+  VectorX<T> xdot(model_->num_states());
   // For this simple model v = qdot.
   xdot << v, vdot;
   derivatives->SetFromVector(xdot);

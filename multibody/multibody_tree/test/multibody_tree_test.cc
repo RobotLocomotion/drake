@@ -73,8 +73,8 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
           /* Dummy frame definitions. Not relevant for this test. */
-          model->get_world_body(), {},
-          model->get_world_body(), {},
+          model->world_body(), {},
+          model->world_body(), {},
           Vector3<double>::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
@@ -89,13 +89,13 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   EXPECT_THROW(model->Finalize(), std::logic_error);
 
   // Model Size. Counting the world body, there should be three bodies.
-  EXPECT_EQ(model->get_num_bodies(), 8);  // It includes the "world" body.
-  EXPECT_EQ(model->get_num_joints(), 7);
+  EXPECT_EQ(model->num_bodies(), 8);  // It includes the "world" body.
+  EXPECT_EQ(model->num_joints(), 7);
 
   // State size.
   EXPECT_EQ(model->num_positions(), 7);
   EXPECT_EQ(model->num_velocities(), 7);
-  EXPECT_EQ(model->get_num_states(), 14);
+  EXPECT_EQ(model->num_states(), 14);
 
   // Query if elements exist in the model.
   for (const std::string link_name : kLinkNames) {
@@ -224,7 +224,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     model_on_T.CalcPointsPositions(
         context_on_T, linkG_on_T.body_frame(),
         Vector3<T>::Zero(),  // position in frame G
-        model_on_T.get_world_body().body_frame(), &p_WE);
+        model_on_T.world_body().body_frame(), &p_WE);
     return p_WE;
   }
 
@@ -279,12 +279,12 @@ class KukaIiwaModelTests : public ::testing::Test {
 TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = model_->num_positions();
-  const int kNumStates = model_->get_num_states();
+  const int kNumStates = model_->num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
   ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
-  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
   ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
@@ -500,12 +500,12 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = model_->num_positions();
-  const int kNumStates = model_->get_num_states();
+  const int kNumStates = model_->num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
   ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
-  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
   ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);

@@ -126,7 +126,7 @@ class PendulumTests : public ::testing::Test {
     model_ = std::make_unique<MultibodyTree<double>>();
 
     // Retrieves the world body.
-    world_body_ = &model_->get_world_body();
+    world_body_ = &model_->world_body();
   }
 
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
@@ -161,7 +161,7 @@ class PendulumTests : public ::testing::Test {
     // The shoulder is the mobilizer that connects the world to the upper link.
     // Its inboard frame, Si, is the world frame. Its outboard frame, So, a
     // fixed offset frame on the upper link.
-    shoulder_inboard_frame_ = &model_->get_world_frame();
+    shoulder_inboard_frame_ = &model_->world_frame();
 
     // The body frame of the upper link is U, and that of the lower link is L.
     // We will add a frame for the pendulum's shoulder. This will be the
@@ -310,17 +310,17 @@ class PendulumTests : public ::testing::Test {
 
 TEST_F(PendulumTests, CreateModelBasics) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->get_num_bodies(), 1);
+  EXPECT_EQ(model_->num_bodies(), 1);
   // And there is only one frame, the world frame.
-  EXPECT_EQ(model_->get_num_frames(), 1);
+  EXPECT_EQ(model_->num_frames(), 1);
 
   CreatePendulumModel();
 
   // Verifies the number of multibody elements is correct.
-  EXPECT_EQ(model_->get_num_bodies(), 3);
-  EXPECT_EQ(model_->get_num_frames(), 5);
+  EXPECT_EQ(model_->num_bodies(), 3);
+  EXPECT_EQ(model_->num_frames(), 5);
   // Joint has no implementation before finalize.
-  EXPECT_EQ(model_->get_num_mobilizers(), 1);
+  EXPECT_EQ(model_->num_mobilizers(), 1);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -358,7 +358,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
   ASSERT_NO_THROW(model_->Finalize());
   elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
 
-  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  EXPECT_EQ(model_->num_mobilizers(), 2);
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
       elbow_inboard_frame_->body().index(), upper_link_->index());
@@ -431,9 +431,9 @@ TEST_F(PendulumTests, Finalize) {
 // bodies in an array of references.
 TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->get_num_bodies(), 1);
+  EXPECT_EQ(model_->num_bodies(), 1);
   // And there is only one frame, the world frame.
-  EXPECT_EQ(model_->get_num_frames(), 1);
+  EXPECT_EQ(model_->num_frames(), 1);
   CreatePendulumModel();
 
   // Vector of references.
@@ -460,7 +460,7 @@ TEST_F(PendulumTests, CreateContext) {
   // - world_
   // - upper_link_
   // - lower_link_
-  EXPECT_EQ(model_->get_num_bodies(), 3);
+  EXPECT_EQ(model_->num_bodies(), 3);
 
   // Verify we cannot create a Context until we have a valid topology.
   EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
@@ -659,7 +659,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
-    vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(model_->num_bodies());
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
@@ -673,7 +673,7 @@ class PendulumKinematicTests : public PendulumTests {
     // then to have separate input/output arrays.
 
     const VectorXd vdot = VectorXd::Zero(model_->num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->num_bodies());
 
     // Aliases to external forcing arrays:
     std::vector<SpatialForce<double>>& Fapplied_Bo_W_array =
@@ -786,8 +786,8 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // Compute inverse dynamics.
     VectorXd tau(model_->num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
-    vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(model_->num_bodies());
     model_->CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
                                 &A_WB_array, &F_BMo_W_array, &tau);
 
@@ -1280,7 +1280,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   model_->CalcPointsPositions(
       *context_,
       lower_link_->body_frame(), p_LQi_set,
-      model_->get_world_frame(), &p_WQi_set);
+      model_->world_frame(), &p_WQi_set);
 
   Matrix3X<double> p_WQi_set_expected(3, 3);
   p_WQi_set_expected.col(0) << 2.0 + M_SQRT1_2, -M_SQRT1_2, 0.0;
@@ -1302,7 +1302,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   model_->CalcPointsPositions(
       *context_,
       upper_link_->body_frame(), p_UPi_set,
-      model_->get_world_frame(), &p_WPi_set);
+      model_->world_frame(), &p_WPi_set);
 
   Matrix3X<double> p_WPi_set_expected(3, 3);
   p_WPi_set_expected.col(0) = 0.5 * Vector3d(-M_SQRT1_2, M_SQRT1_2, 0.0);
@@ -1341,7 +1341,7 @@ TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
   EXPECT_THROW(model_->CalcPointsPositions(
       *context_,
       lower_link_->body_frame(), p_LQi_set,
-      model_->get_world_frame(), &p_WQi_set), std::runtime_error);
+      model_->world_frame(), &p_WQi_set), std::runtime_error);
 }
 
 }  // namespace

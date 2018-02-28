@@ -64,7 +64,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // Forces.
   MultibodyForces<T> forces(*model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
@@ -113,7 +113,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   DRAKE_DEMAND(this->is_finalized());
 
   this->DeclareContinuousState(
-      BasicVector<T>(model_->get_num_states()),
+      BasicVector<T>(model_->num_states()),
       model_->num_positions(),
       model_->num_velocities(), 0 /* num_z */);
 

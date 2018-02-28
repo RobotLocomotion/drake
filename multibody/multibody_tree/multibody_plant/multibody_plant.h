@@ -121,13 +121,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// which is always part of the model.
   /// @see AddRigidBody().
   int num_bodies() const {
-    return model_->get_num_bodies();
+    return model_->num_bodies();
   }
 
   /// Returns the number of joints in the model.
   /// @see AddJoint().
   int num_joints() const {
-    return model_->get_num_joints();
+    return model_->num_joints();
   }
 
   /// Returns the size of the generalized position vector `q` for `this` model.
@@ -143,7 +143,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Notice however that the state of a %MultibodyPlant, stored in its Context,
   /// can actually contain other variables such as integrated power and discrete
   /// states.
-  int num_multibody_states() const { return model_->get_num_states(); }
+  int num_multibody_states() const { return model_->num_states(); }
 
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
@@ -350,8 +350,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @}
 
   /// Returns a constant reference to the *world* body.
-  const RigidBody<T>& get_world_body() const {
-    return model_->get_world_body();
+  const RigidBody<T>& world_body() const {
+    return model_->world_body();
   }
 
   /// Returns `true` if this %MultibodyPlant was finalized with a call to

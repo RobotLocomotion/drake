@@ -196,7 +196,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Add box body and SpaceXYZ mobilizer.
   const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_Bcm);
-  const Frame<double>& world_frame = model.get_world_frame();
+  const Frame<double>& world_frame = model.world_frame();
   const Frame<double>& box_frame = box_link.body_frame();
   model.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
 
@@ -273,7 +273,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Add box body and SpaceXYZ mobilizer.
   const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_Bcm);
-  const Frame<double>& world_frame = model.get_world_frame();
+  const Frame<double>& world_frame = model.world_frame();
   const Frame<double>& box_frame = box_link.body_frame();
   const SpaceXYZMobilizer<double>& WB_mobilizer =
       model.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);

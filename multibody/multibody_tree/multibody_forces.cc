@@ -9,7 +9,7 @@ namespace multibody {
 template <typename T>
 MultibodyForces<T>::MultibodyForces(const MultibodyTree<T>& model) {
   DRAKE_DEMAND(model.topology_is_valid());
-  F_B_W_.resize(model.get_num_bodies(), SpatialForce<T>::Zero());
+  F_B_W_.resize(model.num_bodies(), SpatialForce<T>::Zero());
   tau_ = VectorX<T>::Zero(model.num_velocities());
 }
 
@@ -25,7 +25,7 @@ bool MultibodyForces<T>::CheckHasRightSizeForModel(
     const MultibodyTree<T> &model) const {
   return
       model.num_velocities() == num_velocities() &&
-      model.get_num_bodies() == num_bodies();
+      model.num_bodies() == num_bodies();
 }
 
 template <typename T>

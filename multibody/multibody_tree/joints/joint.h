@@ -60,7 +60,7 @@ class JointImplementationBuilder;
 /// const RevoluteJoint<double>& elbow =
 ///   model.AddJoint<RevoluteJoint>(
 ///     "Elbow",                /* joint name */
-///     model.get_world_body(), /* parent body */
+///     model.world_body(),     /* parent body */
 ///     {},                     /* frame F IS the world frame W */
 ///     pendulum,               /* child body, the pendulum */
 ///     X_BM,                   /* pose of frame M in the body frame B */
@@ -220,7 +220,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     }
 
     /// Returns the number of mobilizers in this implementation.
-    int get_num_mobilizers() const {
+    int num_mobilizers() const {
       return static_cast<int>(mobilizers_.size());
     }
 

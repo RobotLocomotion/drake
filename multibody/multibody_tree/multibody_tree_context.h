@@ -53,7 +53,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // Allocate continuous state.
     const int num_positions = topology_.num_positions();
     const int num_velocities = topology_.num_velocities();
-    const int num_states = topology_.get_num_states();
+    const int num_states = topology_.num_states();
 
     // TODO(amcastro-tri): Consider inheriting a more specific BasicVector.
     // See EndlessRoadCar<T>::AllocateContinuousState().

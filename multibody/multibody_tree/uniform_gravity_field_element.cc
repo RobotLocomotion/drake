@@ -33,13 +33,13 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
 
   // Temporary output vector of spatial forces for each body B at their inboard
   // frame Mo, expressed in the world W.
-  std::vector<SpatialForce<T>> F_BMo_W_array(model.get_num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_bodies());
 
   // Zero vector of generalized accelerations.
   const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
 
   // Temporary array for body accelerations.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model.get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_bodies());
 
   // Ouput vector of generalized forces:
   VectorX<T> tau_g(model.num_velocities());
@@ -74,7 +74,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   // Add the force of gravity contribution for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.get_num_bodies();
+  const int num_bodies = model.num_bodies();
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
     const Body<T>& body = model.get_body(body_index);
@@ -101,7 +101,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.get_num_bodies();
+  const int num_bodies = model.num_bodies();
   T TotalPotentialEnergy = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
@@ -131,7 +131,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.get_num_bodies();
+  const int num_bodies = model.num_bodies();
   T TotalConservativePower = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {

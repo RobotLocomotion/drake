@@ -21,7 +21,7 @@ AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
   BuildMultibodyTreeModel();
   DRAKE_DEMAND(model_.num_positions() == 7);
   DRAKE_DEMAND(model_.num_velocities() == 6);
-  DRAKE_DEMAND(model_.get_num_states() == 13);
+  DRAKE_DEMAND(model_.num_states() == 13);
   this->DeclareContinuousState(
       model_.num_positions(),
       model_.num_velocities(), 0 /* num_z */);
@@ -45,7 +45,7 @@ void AxiallySymmetricFreeBodyPlant<T>::BuildMultibodyTreeModel() {
 
   mobilizer_ =
       &model_.template AddMobilizer<QuaternionFloatingMobilizer>(
-          model_.get_world_frame(), body_->body_frame());
+          model_.world_frame(), body_->body_frame());
 
   model_.template AddForceElement<UniformGravityFieldElement>(
       -g_ * Vector3<double>::UnitZ());
@@ -88,7 +88,7 @@ void AxiallySymmetricFreeBodyPlant<T>::DoCalcTimeDerivatives(
   // Forces.
   MultibodyForces<T> forces(model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_.get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_.num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
@@ -114,7 +114,7 @@ void AxiallySymmetricFreeBodyPlant<T>::DoCalcTimeDerivatives(
   vdot = M.llt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-  VectorX<T> xdot(model_.get_num_states());
+  VectorX<T> xdot(model_.num_states());
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;

@@ -19,7 +19,7 @@ FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) :
   BuildMultibodyTreeModel();
   DRAKE_DEMAND(model_.num_positions() == 3);
   DRAKE_DEMAND(model_.num_velocities() == 3);
-  DRAKE_DEMAND(model_.get_num_states() == 6);
+  DRAKE_DEMAND(model_.num_states() == 6);
   this->DeclareContinuousState(
       model_.num_positions(),
       model_.num_velocities(), 0 /* num_z */);
@@ -41,7 +41,7 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
   mobilizer_ =
       &model_.template AddMobilizer<SpaceXYZMobilizer>(
-          model_.get_world_frame(), body_->body_frame());
+          model_.world_frame(), body_->body_frame());
 
   model_.Finalize();
 }
@@ -84,7 +84,7 @@ void FreeRotatingBodyPlant<T>::DoCalcTimeDerivatives(
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, v, &qdot);
 
-  VectorX<T> xdot(model_.get_num_states());
+  VectorX<T> xdot(model_.num_states());
 
   xdot << qdot, M.llt().solve(-C);
   derivatives->SetFromVector(xdot);

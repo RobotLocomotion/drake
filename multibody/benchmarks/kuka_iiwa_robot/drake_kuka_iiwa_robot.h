@@ -69,7 +69,7 @@ class DrakeKukaIIwaRobot {
     model_ = MakeKukaIiwaModel<T>(
         true /* finalized model */, gravity /* acceleration of gravity */);
 
-    linkN_ = &(model_->get_world_body());
+    linkN_ = &(model_->world_body());
 
     // Get this robot's seven links.
     linkA_ = &model_->GetBodyByName("iiwa_link_1");
@@ -102,7 +102,7 @@ class DrakeKukaIIwaRobot {
 
   /// This method gets the number of rigid bodies in this robot.
   /// @returns the number of rigid bodies in this robot.
-  int get_number_of_rigid_bodies() const  { return model_->get_num_bodies(); }
+  int get_number_of_rigid_bodies() const  { return model_->num_bodies(); }
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -136,7 +136,7 @@ class DrakeKukaIIwaRobot {
     const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->node_index());
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
-    std::vector<SpatialAcceleration<T>> A_WB(model_->get_num_bodies());
+    std::vector<SpatialAcceleration<T>> A_WB(model_->num_bodies());
     model_->CalcSpatialAccelerationsFromVdot(*context_, pc, vc, qDDt, &A_WB);
     const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->node_index()];
 

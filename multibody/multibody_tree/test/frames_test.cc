@@ -49,7 +49,7 @@ class FrameTests : public ::testing::Test {
     // The mobilizer is only needed because it is a requirement of MultibodyTree
     // that all bodies in the model must have an inboard mobilizer.
     model_->AddMobilizer<RevoluteMobilizer>(
-        model_->get_world_frame(), bodyB_->body_frame(),
+        model_->world_frame(), bodyB_->body_frame(),
         Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.

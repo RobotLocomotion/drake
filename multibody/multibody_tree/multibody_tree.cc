@@ -29,7 +29,7 @@ class JointImplementationBuilder {
     std::unique_ptr<JointBluePrint> blue_print =
         joint->MakeImplementationBlueprint();
     auto implementation = std::make_unique<JointImplementation>(*blue_print);
-    DRAKE_DEMAND(implementation->get_num_mobilizers() != 0);
+    DRAKE_DEMAND(implementation->num_mobilizers() != 0);
     for (auto& mobilizer : blue_print->mobilizers_) {
       tree->AddMobilizer(std::move(mobilizer));
     }
@@ -87,7 +87,7 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   // Create a list of body nodes organized by levels.
-  body_node_levels_.resize(topology_.get_tree_height());
+  body_node_levels_.resize(topology_.tree_height());
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     const BodyNodeTopology& node_topology =
@@ -138,7 +138,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWelded<T>>(&get_world_body());
+    body_node = std::make_unique<BodyNodeWelded<T>>(&world_body());
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());
@@ -193,11 +193,11 @@ void MultibodyTree<T>::CalcAllBodyPosesInWorld(
     const systems::Context<T>& context,
     std::vector<Isometry3<T>>* X_WB) const {
   DRAKE_THROW_UNLESS(X_WB != nullptr);
-  if (static_cast<int>(X_WB->size()) != get_num_bodies()) {
-    X_WB->resize(get_num_bodies(), Isometry3<T>::Identity());
+  if (static_cast<int>(X_WB->size()) != num_bodies()) {
+    X_WB->resize(num_bodies(), Isometry3<T>::Identity());
   }
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const BodyNodeIndex node_index = get_body(body_index).node_index();
     X_WB->at(body_index) = pc.get_X_WB(node_index);
   }
@@ -208,11 +208,11 @@ void MultibodyTree<T>::CalcAllBodySpatialVelocitiesInWorld(
     const systems::Context<T>& context,
     std::vector<SpatialVelocity<T>>* V_WB) const {
   DRAKE_THROW_UNLESS(V_WB != nullptr);
-  if (static_cast<int>(V_WB->size()) != get_num_bodies()) {
-    V_WB->resize(get_num_bodies(), SpatialVelocity<T>::Zero());
+  if (static_cast<int>(V_WB->size()) != num_bodies()) {
+    V_WB->resize(num_bodies(), SpatialVelocity<T>::Zero());
   }
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  for (BodyIndex body_index(0); body_index < get_num_bodies(); ++body_index) {
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const BodyNodeIndex node_index = get_body(body_index).node_index();
     V_WB->at(body_index) = vc.get_V_WB(node_index);
   }
@@ -236,7 +236,7 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
-  for (int level = 1; level < get_tree_height(); ++level) {
+  for (int level = 1; level < tree_height(); ++level) {
     for (BodyNodeIndex body_node_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
@@ -267,7 +267,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
 
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, depth = 0.
-  for (int depth = 1; depth < get_tree_height(); ++depth) {
+  for (int depth = 1; depth < tree_height(); ++depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
@@ -298,7 +298,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
     const VectorX<T>& known_vdot,
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   DRAKE_DEMAND(A_WB_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == num_bodies());
 
   DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
 
@@ -313,7 +313,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
 
   // Performs a base-to-tip recursion computing body accelerations.
   // This skips the world, depth = 0.
-  for (int depth = 1; depth < get_tree_height(); ++depth) {
+  for (int depth = 1; depth < tree_height(); ++depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
@@ -358,16 +358,16 @@ void MultibodyTree<T>::CalcInverseDynamics(
     EigenPtr<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(known_vdot.size() == num_velocities());
   const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
-  DRAKE_DEMAND(Fapplied_size == get_num_bodies() || Fapplied_size == 0);
+  DRAKE_DEMAND(Fapplied_size == num_bodies() || Fapplied_size == 0);
   const int tau_applied_size = tau_applied_array.size();
   DRAKE_DEMAND(
       tau_applied_size == num_velocities() || tau_applied_size == 0);
 
   DRAKE_DEMAND(A_WB_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == num_bodies());
 
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == num_bodies());
 
   DRAKE_DEMAND(tau_array->size() == num_velocities());
 
@@ -391,7 +391,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   // This includes the world (depth = 0) so that F_BMo_W_array[world_index()]
   // contains the total force of the bodies connected to the world by a
   // mobilizer.
-  for (int depth = get_tree_height() - 1; depth >= 0; --depth) {
+  for (int depth = tree_height() - 1; depth >= 0; --depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
@@ -509,8 +509,8 @@ void MultibodyTree<T>::DoCalcMassMatrixViaInverseDynamics(
   VectorX<T> vdot(nv);
   VectorX<T> tau(nv);
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
-  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
 
   for (int j = 0; j < nv; ++j) {
     vdot = VectorX<T>::Unit(nv, j);
@@ -542,8 +542,8 @@ void MultibodyTree<T>::DoCalcBiasTerm(
   const VectorX<T> vdot = VectorX<T>::Zero(nv);
 
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
-  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
 
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
@@ -612,7 +612,7 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   for (BodyNodeIndex node_index(1);
-       node_index < get_num_bodies(); ++node_index) {
+       node_index < num_bodies(); ++node_index) {
     const BodyNode<T>& node = *body_nodes_[node_index];
 
     // Jacobian matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the number
@@ -657,7 +657,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 
   CalcPointsPositions(context,
                       frame_B, p_BQi_set,            /* From frame B */
-                      get_world_frame(), p_WQi_set); /* To world frame W */
+                      world_frame(), p_WQi_set); /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from body_B to the
   // world computing each node's contribution to Jv_WQi.
@@ -724,7 +724,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   Vector3<T> p_WoFo_W;
   CalcPointsPositions(context,
                       frame_B, p_BoFo_B,             /* From frame B */
-                      get_world_frame(), &p_WoFo_W);  /* To world frame W */
+                      world_frame(), &p_WoFo_W);  /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from the world to
   // body_B, computing each node's contribution to Jv_WF.
@@ -867,7 +867,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
 
   // Perform tip-to-base recursion, skipping the world.
-  for (int depth = get_tree_height() - 1; depth > 0; depth--) {
+  for (int depth = tree_height() - 1; depth > 0; depth--) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 

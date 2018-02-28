@@ -401,17 +401,17 @@ class MultibodyTreeTopology {
   /// Returns the number of bodies in the multibody tree. This includes the
   /// "world" body and therefore the minimum number of bodies after
   /// MultibodyTree::Finalize() will always be one, not zero.
-  int get_num_bodies() const { return static_cast<int>(bodies_.size()); }
+  int num_bodies() const { return static_cast<int>(bodies_.size()); }
 
   /// Returns the number of physical frames in the multibody tree.
-  int get_num_frames() const {
+  int num_frames() const {
     return static_cast<int>(frames_.size());
   }
 
   /// Returns the number of mobilizers in the multibody tree. Since the "world"
   /// body does not have a mobilizer, the number of mobilizers will always equal
   /// the number of bodies minus one.
-  int get_num_mobilizers() const {
+  int num_mobilizers() const {
     return static_cast<int>(mobilizers_.size());
   }
 
@@ -421,33 +421,33 @@ class MultibodyTreeTopology {
   }
 
   /// Returns the number of force elements in the multibody tree.
-  int get_num_force_elements() const {
+  int num_force_elements() const {
     return static_cast<int>(force_elements_.size());
   }
 
   /// Returns the number of tree levels in the topology.
-  int get_tree_height() const {
+  int tree_height() const {
     return tree_height_;
   }
 
   /// Returns a constant reference to the corresponding FrameTopology given the
   /// FrameIndex.
   const FrameTopology& get_frame(FrameIndex index) const {
-    DRAKE_ASSERT(index < get_num_frames());
+    DRAKE_ASSERT(index < num_frames());
     return frames_[index];
   }
 
   /// Returns a constant reference to the corresponding BodyTopology given a
   /// BodyIndex.
   const BodyTopology& get_body(BodyIndex index) const {
-    DRAKE_ASSERT(index < get_num_bodies());
+    DRAKE_ASSERT(index < num_bodies());
     return bodies_[index];
   }
 
   /// Returns a constant reference to the corresponding BodyTopology given a
   /// BodyIndex.
   const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
-    DRAKE_ASSERT(index < get_num_mobilizers());
+    DRAKE_ASSERT(index < num_mobilizers());
     return mobilizers_[index];
   }
 
@@ -473,7 +473,7 @@ class MultibodyTreeTopology {
                              "Therefore adding more bodies is not allowed. "
                              "See documentation for Finalize() for details.");
     }
-    BodyIndex body_index = BodyIndex(get_num_bodies());
+    BodyIndex body_index = BodyIndex(num_bodies());
     FrameIndex body_frame_index = add_frame(body_index);
     bodies_.emplace_back(body_index, body_frame_index);
     return std::make_pair(body_index, body_frame_index);
@@ -492,7 +492,7 @@ class MultibodyTreeTopology {
                              "Therefore adding more frames is not allowed. "
                              "See documentation for Finalize() for details.");
     }
-    FrameIndex frame_index(get_num_frames());
+    FrameIndex frame_index(num_frames());
     frames_.emplace_back(frame_index, body_index);
     return frame_index;
   }
@@ -523,8 +523,8 @@ class MultibodyTreeTopology {
     // Note: MultibodyTree double checks the mobilizer's frames belong to that
     // tree. Therefore the validity of in_frame and out_frame is already
     // guaranteed. We add the checks here for additional security.
-    DRAKE_THROW_UNLESS(in_frame < get_num_frames());
-    DRAKE_THROW_UNLESS(out_frame < get_num_frames());
+    DRAKE_THROW_UNLESS(in_frame < num_frames());
+    DRAKE_THROW_UNLESS(out_frame < num_frames());
     if (in_frame == out_frame) {
       throw std::runtime_error(
           "Attempting to add a mobilizer between a frame and itself");
@@ -557,7 +557,7 @@ class MultibodyTreeTopology {
     // set within this method right after these checks.
     DRAKE_DEMAND(!bodies_[outboard_body].inboard_mobilizer.is_valid());
     DRAKE_DEMAND(!bodies_[outboard_body].parent_body.is_valid());
-    MobilizerIndex mobilizer_index(get_num_mobilizers());
+    MobilizerIndex mobilizer_index(num_mobilizers());
 
     // Make note of the inboard mobilizer for the outboard body.
     bodies_[outboard_body].inboard_mobilizer = mobilizer_index;
@@ -589,7 +589,7 @@ class MultibodyTreeTopology {
               "Therefore adding more force elements is not allowed. "
               "See documentation for Finalize() for details.");
     }
-    ForceElementIndex force_index(get_num_force_elements());
+    ForceElementIndex force_index(num_force_elements());
     force_elements_.emplace_back(force_index);
     return force_index;
   }
@@ -630,7 +630,7 @@ class MultibodyTreeTopology {
     tree_height_ = 1;  // At least one level with the world body at the root.
     // While at it, create body nodes and index them in this BFT order for
     // fast tree traversals of MultibodyTree recursive algorithms.
-    body_nodes_.reserve(get_num_bodies());
+    body_nodes_.reserve(num_bodies());
     while (!queue.empty()) {
       const BodyNodeIndex node(get_num_body_nodes());
       const BodyIndex current = queue.front();
@@ -679,7 +679,7 @@ class MultibodyTreeTopology {
     // TODO(amcastro-tri): this will stop at the first body that is not
     // connected to the tree. Add logic to emit a message with ALL bodies that
     // are not properly connected to the tree.
-    for (BodyIndex body(0); body < get_num_bodies(); ++body) {
+    for (BodyIndex body(0); body < num_bodies(); ++body) {
       if (bodies_[body].level < 0) {
         throw std::runtime_error("Body with index " + std::to_string(body) +
             " was not assigned a mobilizer");
@@ -688,7 +688,7 @@ class MultibodyTreeTopology {
 
     // After we checked all bodies were reached above, the number of tree nodes
     // should equal the number of bodies in the tree.
-    DRAKE_DEMAND(get_num_bodies() == get_num_body_nodes());
+    DRAKE_DEMAND(num_bodies() == get_num_body_nodes());
 
     // Compile information regarding the size of the system:
     // - Number of degrees of freedom (generalized positions and velocities).
@@ -753,7 +753,7 @@ class MultibodyTreeTopology {
   int num_velocities() const { return num_velocities_; }
 
   /// Returns the total size of the state vector in the model.
-  int get_num_states() const { return num_states_; }
+  int num_states() const { return num_states_; }
 
   /// Given a node in `this` topology, specified by its BodyNodeIndex `from`,
   /// this method computes the kinematic path formed by all the nodes in the

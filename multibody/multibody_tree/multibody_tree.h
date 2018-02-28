@@ -105,8 +105,8 @@ class MultibodyTree {
     std::tie(body_index, body_frame_index) = topology_.add_body();
     // These tests MUST be performed BEFORE frames_.push_back() and
     // owned_bodies_.push_back() below. Do not move them around!
-    DRAKE_ASSERT(body_index == get_num_bodies());
-    DRAKE_ASSERT(body_frame_index == get_num_frames());
+    DRAKE_ASSERT(body_index == num_bodies());
+    DRAKE_ASSERT(body_frame_index == num_frames());
 
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
@@ -235,7 +235,7 @@ class MultibodyTree {
     FrameIndex frame_index = topology_.add_frame(frame->body().index());
     // This test MUST be performed BEFORE frames_.push_back() and
     // owned_frames_.push_back() below. Do not move it around!
-    DRAKE_ASSERT(frame_index == get_num_frames());
+    DRAKE_ASSERT(frame_index == num_frames());
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
     frame->set_parent_tree(this, frame_index);
@@ -355,7 +355,7 @@ class MultibodyTree {
 
     // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
     // below. Do not move it around!
-    DRAKE_ASSERT(mobilizer_index == get_num_mobilizers());
+    DRAKE_ASSERT(mobilizer_index == num_mobilizers());
 
     // TODO(amcastro-tri): consider not depending on setting this pointer at
     // all. Consider also removing MultibodyTreeElement altogether.
@@ -436,7 +436,7 @@ class MultibodyTree {
     ForceElementIndex force_element_index = topology_.add_force_element();
     // This test MUST be performed BEFORE owned_force_elements_.push_back()
     // below. Do not move it around!
-    DRAKE_ASSERT(force_element_index == get_num_force_elements());
+    DRAKE_ASSERT(force_element_index == num_force_elements());
     force_element->set_parent_tree(this, force_element_index);
     ForceElementType<T>* raw_force_element_ptr = force_element.get();
     owned_force_elements_.push_back(std::move(force_element));
@@ -507,7 +507,7 @@ class MultibodyTree {
   ///   const RevoluteJoint<double>& elbow =
   ///     model.AddJoint<RevoluteJoint>(
   ///       "Elbow",                /* joint name */
-  ///       model.get_world_body(), /* parent body */
+  ///       model.world_body(), /* parent body */
   ///       {},                     /* frame F IS the parent body frame P */
   ///       pendulum,               /* child body, the pendulum */
   ///       X_BM,                   /* pose of frame M in the body frame B */
@@ -562,29 +562,29 @@ class MultibodyTree {
   /// Frames include body frames associated with each of the bodies in
   /// the %MultibodyTree including the _world_ body. Therefore the minimum
   /// number of frames in a %MultibodyTree is one.
-  int get_num_frames() const {
+  int num_frames() const {
     return static_cast<int>(frames_.size());
   }
 
   /// Returns the number of bodies in the %MultibodyTree including the *world*
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
-  int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
+  int num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
   /// Returns the number of joints added with AddJoint() to the %MultibodyTree.
-  int get_num_joints() const { return static_cast<int>(owned_joints_.size()); }
+  int num_joints() const { return static_cast<int>(owned_joints_.size()); }
 
   /// Returns the number of mobilizers in the %MultibodyTree. Since the world
   /// has no Mobilizer, the number of mobilizers equals the number of bodies
-  /// minus one, i.e. get_num_mobilizers() returns get_num_bodies() - 1.
+  /// minus one, i.e. num_mobilizers() returns num_bodies() - 1.
   // TODO(amcastro-tri): Consider adding a WorldMobilizer (0-dofs) for the world
   // body. This could be useful to query for reaction forces of the entire
   // model.
-  int get_num_mobilizers() const {
+  int num_mobilizers() const {
     return static_cast<int>(owned_mobilizers_.size());
   }
 
   /// Returns the number of ForceElement objects in the MultibodyTree.
-  int get_num_force_elements() const {
+  int num_force_elements() const {
     return static_cast<int>(owned_force_elements_.size());
   }
 
@@ -599,8 +599,8 @@ class MultibodyTree {
   }
 
   /// Returns the total size of the state vector in the model.
-  int get_num_states() const {
-    return topology_.get_num_states();
+  int num_states() const {
+    return topology_.num_states();
   }
 
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
@@ -610,12 +610,12 @@ class MultibodyTree {
   /// Kinematic paths are created by Mobilizer objects connecting a chain of
   /// frames. Therefore, this method does not count kinematic cycles, which
   /// could only be considered in the model using constraints.
-  int get_tree_height() const {
-    return topology_.get_tree_height();
+  int tree_height() const {
+    return topology_.tree_height();
   }
 
   /// Returns a constant reference to the *world* body.
-  const RigidBody<T>& get_world_body() const {
+  const RigidBody<T>& world_body() const {
     // world_body_ is set in the constructor. So this assert is here only to
     // verify future constructors do not mess that up.
     DRAKE_ASSERT(world_body_ != nullptr);
@@ -623,7 +623,7 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the *world* frame.
-  const BodyFrame<T>& get_world_frame() const {
+  const BodyFrame<T>& world_frame() const {
     return owned_bodies_[world_index()]->body_frame();
   }
 
@@ -631,7 +631,7 @@ class MultibodyTree {
   /// @throws std::runtime_error when `body_index` does not correspond to a body
   /// in this multibody tree.
   const Body<T>& get_body(BodyIndex body_index) const {
-    DRAKE_THROW_UNLESS(body_index < get_num_bodies());
+    DRAKE_THROW_UNLESS(body_index < num_bodies());
     return *owned_bodies_[body_index];
   }
 
@@ -639,7 +639,7 @@ class MultibodyTree {
   /// @throws std::runtime_error when `joint_index` does not correspond to a
   /// joint in this multibody tree.
   const Joint<T>& get_joint(JointIndex joint_index) const {
-    DRAKE_THROW_UNLESS(joint_index < get_num_joints());
+    DRAKE_THROW_UNLESS(joint_index < num_joints());
     return *owned_joints_[joint_index];
   }
 
@@ -647,7 +647,7 @@ class MultibodyTree {
   /// @throws std::runtime_error when `frame_index` does not correspond to a
   /// frame in `this` multibody tree.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
-    DRAKE_THROW_UNLESS(frame_index < get_num_frames());
+    DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
   }
 
@@ -656,7 +656,7 @@ class MultibodyTree {
   /// @throws std::runtime_error when `mobilizer_index` does not correspond to a
   /// mobilizer in this multibody tree.
   const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
-    DRAKE_THROW_UNLESS(mobilizer_index < get_num_mobilizers());
+    DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
   }
 
@@ -1129,7 +1129,7 @@ class MultibodyTree {
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
   ///   size equal to the number of bodies in the MultibodyTree. This method
   ///   will abort if the the pointer is null or if `A_WB_array` is not of size
-  ///   `get_num_bodies()`. On output, entries will be ordered by BodyNodeIndex.
+  ///   `num_bodies()`. On output, entries will be ordered by BodyNodeIndex.
   ///   These accelerations can be read in the proper order with
   ///   Body::get_from_spatial_acceleration_array().
   ///
@@ -1190,7 +1190,7 @@ class MultibodyTree {
   ///   This array must be ordered by BodyNodeIndex, which for a given body can
   ///   be retrieved with Body::node_index().
   ///   This method will abort if provided with an array that does not have a
-  ///   size of either `get_num_bodies()` or zero.
+  ///   size of either `num_bodies()` or zero.
   /// @param[in] tau_applied_array
   ///   An array of applied generalized forces for the entire model. For a
   ///   given mobilizer, entries in this array can be accessed using the method
@@ -1207,7 +1207,7 @@ class MultibodyTree {
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
   ///   size equal to the number of bodies. This method will abort if the the
-  ///   pointer is null or if `A_WB_array` is not of size `get_num_bodies()`.
+  ///   pointer is null or if `A_WB_array` is not of size `num_bodies()`.
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access the acceleration `A_WB` of given body B in this array, use the
   ///   index returned by Body::node_index().
@@ -1218,7 +1218,7 @@ class MultibodyTree {
   ///   `Mo` of the inboard mobilizer, expressed in the world frame W.
   ///   It must be of size equal to the number of bodies in the MultibodyTree.
   ///   This method will abort if the the pointer is null or if `F_BMo_W_array`
-  ///   is not of size `get_num_bodies()`.
+  ///   is not of size `num_bodies()`.
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access a mobilizer's reaction force on given body B in this array,
   ///   use the index returned by Body::node_index().
@@ -1570,9 +1570,9 @@ class MultibodyTree {
     }
     auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
 
-    tree_clone->frames_.resize(get_num_frames());
+    tree_clone->frames_.resize(num_frames());
     // Skipping the world body at body_index = 0.
-    for (BodyIndex body_index(1); body_index < get_num_bodies(); ++body_index) {
+    for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
       const Body<T>& body = get_body(body_index);
       tree_clone->CloneBodyAndAdd(body);
     }
@@ -1801,7 +1801,7 @@ class MultibodyTree {
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
     FrameIndex frame_index = frame.index();
-    DRAKE_DEMAND(frame_index < get_num_frames());
+    DRAKE_DEMAND(frame_index < num_frames());
     const FrameType<T>* frame_variant =
         dynamic_cast<const FrameType<T>*>(frames_[frame_index]);
     DRAKE_DEMAND(frame_variant != nullptr);
@@ -1818,7 +1818,7 @@ class MultibodyTree {
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
     BodyIndex body_index = body.index();
-    DRAKE_DEMAND(body_index < get_num_bodies());
+    DRAKE_DEMAND(body_index < num_bodies());
     const BodyType<T>* body_variant =
         dynamic_cast<const BodyType<T>*>(
             owned_bodies_[body_index].get());
@@ -1837,7 +1837,7 @@ class MultibodyTree {
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
     MobilizerIndex mobilizer_index = mobilizer.index();
-    DRAKE_DEMAND(mobilizer_index < get_num_mobilizers());
+    DRAKE_DEMAND(mobilizer_index < num_mobilizers());
     const MobilizerType<T>* mobilizer_variant =
         dynamic_cast<const MobilizerType<T>*>(
             owned_mobilizers_[mobilizer_index].get());
@@ -1855,7 +1855,7 @@ class MultibodyTree {
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
     JointIndex joint_index = joint.index();
-    DRAKE_DEMAND(joint_index < get_num_joints());
+    DRAKE_DEMAND(joint_index < num_joints());
     const JointType<T>* joint_variant =
         dynamic_cast<const JointType<T>*>(
             owned_joints_[joint_index].get());

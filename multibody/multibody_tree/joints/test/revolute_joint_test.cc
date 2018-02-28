@@ -33,7 +33,7 @@ class RevoluteJointTest : public ::testing::Test {
     // Add a revolute joint between the world and body1:
     joint1_ = &model_.AddJoint<RevoluteJoint>(
         "Joint1",
-        model_.get_world_body(), {}, *body1_, {}, Vector3d::UnitZ());
+        model_.world_body(), {}, *body1_, {}, Vector3d::UnitZ());
 
     // We are done adding modeling elements. Finalize the model:
     model_.Finalize();

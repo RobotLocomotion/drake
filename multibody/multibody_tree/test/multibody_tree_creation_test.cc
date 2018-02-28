@@ -42,10 +42,10 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   auto model = std::make_unique<MultibodyTree<double>>();
 
   // Initially there is only one body, the world.
-  EXPECT_EQ(model->get_num_bodies(), 1);
+  EXPECT_EQ(model->num_bodies(), 1);
 
   // Retrieves the world body.
-  const Body<double>& world_body = model->get_world_body();
+  const Body<double>& world_body = model->world_body();
 
   // Creates a NaN SpatialInertia to instantiate the RigidBody links of the
   // pendulum. Using a NaN spatial inertia is ok so far since we are still
@@ -80,10 +80,10 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   // Adds a second pendulum.
   const RigidBody<double>& pendulum2 = model->AddBody<RigidBody>(M_Bo_B);
   model->AddMobilizer<RevoluteMobilizer>(
-      model->get_world_frame(), pendulum2.body_frame(), Vector3d::UnitZ());
+      model->world_frame(), pendulum2.body_frame(), Vector3d::UnitZ());
 
-  EXPECT_EQ(model->get_num_bodies(), 3);
-  EXPECT_EQ(model->get_num_mobilizers(), 2);
+  EXPECT_EQ(model->num_bodies(), 3);
+  EXPECT_EQ(model->num_mobilizers(), 2);
 
   // Attempts to create a loop. Verify we gen an exception.
   EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
@@ -92,8 +92,8 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
 
   // Expect the number of bodies and mobilizers not to change after the above
   // (failed) call.
-  EXPECT_EQ(model->get_num_bodies(), 3);
-  EXPECT_EQ(model->get_num_mobilizers(), 2);
+  EXPECT_EQ(model->num_bodies(), 3);
+  EXPECT_EQ(model->num_mobilizers(), 2);
 
   // Topology is invalid before MultibodyTree::Finalize().
   EXPECT_FALSE(model->topology_is_valid());
@@ -142,14 +142,14 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
   // Verifies we can add a mobilizer between body1 and the world of model1.
   const RevoluteMobilizer<double>& pin1 =
       model1->AddMobilizer<RevoluteMobilizer>(
-          model1->get_world_body().body_frame(), /*inboard frame*/
+          model1->world_body().body_frame(), /*inboard frame*/
           body1.body_frame() /*outboard frame*/,
           Vector3d::UnitZ() /*axis of rotation*/);
 
   // Verifies we cannot add a mobilizer between frames that belong to another
   // tree.
   EXPECT_THROW((model1->AddMobilizer<RevoluteMobilizer>(
-      model1->get_world_body().body_frame(), /*inboard frame*/
+      model1->world_body().body_frame(), /*inboard frame*/
       body2.body_frame() /*body2 belongs to model2, not model1!!!*/,
       Vector3d::UnitZ() /*axis of rotation*/)), std::logic_error);
 
@@ -175,8 +175,8 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 
   // Tests the check to verify that two bodies belong to the same MultibodyTree.
   EXPECT_THROW(body1.HasSameParentTreeOrThrow(body2), std::logic_error);
-  EXPECT_NO_THROW(model1->get_world_body().HasSameParentTreeOrThrow(body1));
-  EXPECT_NO_THROW(model2->get_world_body().HasSameParentTreeOrThrow(body2));
+  EXPECT_NO_THROW(model1->world_body().HasSameParentTreeOrThrow(body1));
+  EXPECT_NO_THROW(model2->world_body().HasSameParentTreeOrThrow(body2));
 
   // Verifies bodies have the correct parent tree.
   EXPECT_NO_THROW(body1.HasThisParentTreeOrThrow(model1.get()));
@@ -227,7 +227,7 @@ class TreeTopologyTests : public ::testing::Test {
     model_ = std::make_unique<MultibodyTree<double>>();
 
     const int kNumBodies = 8;
-    bodies_.push_back(&model_->get_world_body());
+    bodies_.push_back(&model_->world_body());
     for (int i =1; i < kNumBodies; ++i)
       AddTestBody();
 
@@ -346,11 +346,11 @@ class TreeTopologyTests : public ::testing::Test {
   static void VerifyTopology(const MultibodyTreeTopology& topology) {
     const int kNumBodies = 8;
 
-    EXPECT_EQ(topology.get_num_bodies(), kNumBodies);
-    EXPECT_EQ(topology.get_num_mobilizers(), 7);
-    EXPECT_EQ(topology.get_num_force_elements(), 1);
+    EXPECT_EQ(topology.num_bodies(), kNumBodies);
+    EXPECT_EQ(topology.num_mobilizers(), 7);
+    EXPECT_EQ(topology.num_force_elements(), 1);
     EXPECT_EQ(topology.get_num_body_nodes(), kNumBodies);
-    EXPECT_EQ(topology.get_tree_height(), 4);
+    EXPECT_EQ(topology.tree_height(), 4);
 
     // These sets contain the indexes of the bodies in each tree level.
     // The order of these indexes in each set is not important, but only the
@@ -406,12 +406,12 @@ class TreeTopologyTests : public ::testing::Test {
 // This unit tests verifies that the multibody topology is properly compiled.
 TEST_F(TreeTopologyTests, Finalize) {
   model_->Finalize();
-  EXPECT_EQ(model_->get_num_bodies(), 8);
-  EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_bodies(), 8);
+  EXPECT_EQ(model_->num_mobilizers(), 7);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
-  EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
-  EXPECT_EQ(topology.get_tree_height(), 4);
+  EXPECT_EQ(topology.get_num_body_nodes(), model_->num_bodies());
+  EXPECT_EQ(topology.tree_height(), 4);
 
   VerifyTopology(topology);
 }
@@ -420,18 +420,18 @@ TEST_F(TreeTopologyTests, Finalize) {
 // velocities as well as the start indexes into the state vector.
 TEST_F(TreeTopologyTests, SizesAndIndexing) {
   FinalizeModel();
-  EXPECT_EQ(model_->get_num_bodies(), 8);
-  EXPECT_EQ(model_->get_num_mobilizers(), 7);
-  EXPECT_EQ(model_->get_num_joints(), 1);
+  EXPECT_EQ(model_->num_bodies(), 8);
+  EXPECT_EQ(model_->num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_joints(), 1);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
-  EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
-  EXPECT_EQ(topology.get_tree_height(), 4);
+  EXPECT_EQ(topology.get_num_body_nodes(), model_->num_bodies());
+  EXPECT_EQ(topology.tree_height(), 4);
 
   // Verifies the total number of generalized positions and velocities.
   EXPECT_EQ(topology.num_positions(), 7);
   EXPECT_EQ(topology.num_velocities(), 7);
-  EXPECT_EQ(topology.get_num_states(), 14);
+  EXPECT_EQ(topology.num_states(), 14);
 
   // Tip-to-Base recursion.
   // In this case all mobilizers are RevoluteMobilizer objects with one
@@ -465,7 +465,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     velocities_index += 1;
   }
   EXPECT_EQ(positions_index, topology.num_positions());
-  EXPECT_EQ(velocities_index, topology.get_num_states());
+  EXPECT_EQ(velocities_index, topology.num_states());
 }
 
 // Verifies that the clone of a given MultibodyTree model created with
@@ -473,15 +473,15 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
 // model.
 TEST_F(TreeTopologyTests, Clone) {
   model_->Finalize();
-  EXPECT_EQ(model_->get_num_bodies(), 8);
-  EXPECT_EQ(model_->get_num_mobilizers(), 7);
-  EXPECT_EQ(model_->get_num_force_elements(), 1);
+  EXPECT_EQ(model_->num_bodies(), 8);
+  EXPECT_EQ(model_->num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_force_elements(), 1);
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto cloned_model = model_->Clone();
-  EXPECT_EQ(cloned_model->get_num_bodies(), 8);
-  EXPECT_EQ(cloned_model->get_num_mobilizers(), 7);
-  EXPECT_EQ(cloned_model->get_num_force_elements(), 1);
+  EXPECT_EQ(cloned_model->num_bodies(), 8);
+  EXPECT_EQ(cloned_model->num_mobilizers(), 7);
+  EXPECT_EQ(cloned_model->num_force_elements(), 1);
   const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
 
   // Verify the cloned topology actually is a different object.
@@ -501,12 +501,12 @@ TEST_F(TreeTopologyTests, Clone) {
 // original model.
 TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   model_->Finalize();
-  EXPECT_EQ(model_->get_num_bodies(), 8);
-  EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  EXPECT_EQ(model_->num_bodies(), 8);
+  EXPECT_EQ(model_->num_mobilizers(), 7);
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto autodiff_model = model_->ToAutoDiffXd();
-  EXPECT_EQ(autodiff_model->get_num_bodies(), 8);
+  EXPECT_EQ(autodiff_model->num_bodies(), 8);
   const MultibodyTreeTopology& autodiff_topology =
       autodiff_model->get_topology();
 

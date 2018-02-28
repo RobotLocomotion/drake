@@ -194,7 +194,7 @@ class RevoluteJoint final : public Joint<T> {
   // However its public API should remain intact.
   const RevoluteMobilizer<T>* get_mobilizer() const {
     // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().get_num_mobilizers() == 1);
+    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
     const RevoluteMobilizer<T>* mobilizer =
         dynamic_cast<const RevoluteMobilizer<T>*>(
             this->get_implementation().mobilizers_[0]);
