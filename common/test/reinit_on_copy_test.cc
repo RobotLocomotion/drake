@@ -1,0 +1,174 @@
+#include "drake/common/reinit_on_copy.h"
+
+#include <gtest/gtest.h>
+
+#include "drake/common/drake_copyable.h"
+
+namespace drake {
+namespace {
+
+// A function that helps force an implicit conversion operator to int; without
+// it, EXPECT_EQ is underspecified whether we are unwrapping the first argument
+// or converting the second.
+int ForceInt(int value) {
+  return value;
+}
+
+// The example from the documentation, fleshed out a little.
+class Foo {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Foo)
+  Foo() : items_{1, 2, 3}, use_count_{25} {}
+  const std::vector<int>& items() const { return items_; }
+  int use_count() const { return use_count_; }
+
+ private:
+  std::vector<int> items_;
+  reinit_on_copy<int> use_count_;
+};
+
+GTEST_TEST(ReinitOnCopyTest, Constructor) {
+  EXPECT_EQ(reinit_on_copy<int>(), 0);
+  EXPECT_EQ(reinit_on_copy<int>(1), 1);
+}
+
+GTEST_TEST(ReinitOnCopyTest, Access) {
+  // Assignment from a RHS of int (versus reinit_on_copy<int>).
+  reinit_on_copy<int> x;
+  x = 1;
+
+  // Conversion operator, non-const value.
+  EXPECT_EQ(x, 1);
+  EXPECT_EQ(ForceInt(x), 1);
+
+  // Conversion operator, const.
+  const reinit_on_copy<int>& x_cref = x;
+  EXPECT_EQ(x_cref, 1);
+  EXPECT_EQ(ForceInt(x_cref), 1);
+
+  // Conversion operator, non-const reference.
+  int& x_value_ref = x;
+  EXPECT_EQ(x_value_ref, 1);
+  EXPECT_EQ(ForceInt(x_value_ref), 1);
+
+  // All values work okay.
+  x = 2;
+  EXPECT_EQ(x, 2);
+  EXPECT_EQ(ForceInt(x), 2);
+  EXPECT_EQ(x_cref, 2);
+  EXPECT_EQ(ForceInt(x_cref), 2);
+  EXPECT_EQ(x_value_ref, 2);
+  EXPECT_EQ(ForceInt(x_value_ref), 2);
+}
+
+GTEST_TEST(ReinitOnCopyTest, Pointers) {
+  int i = 5;
+  reinit_on_copy<int*> i_ptr{&i};
+  reinit_on_copy<const int*> i_cptr{&i};
+
+  EXPECT_EQ(*i_ptr, 5);
+  EXPECT_EQ(*i_cptr, 5);
+  *i_ptr = 6;
+  EXPECT_EQ(*i_ptr, 6);
+  EXPECT_EQ(*i_cptr, 6);
+
+  reinit_on_copy<int*> i_ptr2(i_ptr);
+  reinit_on_copy<const int*> i_cptr2(i_cptr);
+  EXPECT_EQ(i_ptr2, nullptr);
+  EXPECT_EQ(i_cptr2, nullptr);
+
+  Foo my_foo;
+  reinit_on_copy<Foo*> my_foo_ptr{&my_foo};
+
+  EXPECT_EQ(my_foo_ptr->use_count(), 25);
+  EXPECT_EQ((*my_foo_ptr).use_count(), 25);
+}
+
+GTEST_TEST(ReinitOnCopyTest, Copy) {
+  reinit_on_copy<int> x{1};
+  EXPECT_EQ(x, 1);
+
+  // Copy-construction (from non-const reference) and lack of aliasing.
+  reinit_on_copy<int> y{x};
+  EXPECT_EQ(x, 1);
+  EXPECT_EQ(y, 0);
+
+  // Copy-construction (from const reference) and lack of aliasing.
+  const reinit_on_copy<int>& x_cref = x;
+  reinit_on_copy<int> z{x_cref};
+  x = 3;
+  EXPECT_EQ(x, 3);
+  EXPECT_EQ(z, 0);
+
+  // Copy-assignment and lack of aliasing.
+  reinit_on_copy<int> w{22};
+  w = x;
+  EXPECT_EQ(x, 3);
+  EXPECT_EQ(w, 3);
+  w = 4;
+  EXPECT_EQ(x, 3);
+  EXPECT_EQ(w, 4);
+
+  // Self copy assignment preserves value.
+  w = w;
+  EXPECT_EQ(w, 4);
+
+  // Make sure the example works.
+  Foo source;
+  Foo copy(source);
+
+  EXPECT_EQ(source.items().size(), 3);
+  EXPECT_EQ(copy.items().size(), 3);
+  for (size_t i=0; i < 3; ++i) {
+    EXPECT_EQ(source.items()[i], i + 1);
+    EXPECT_EQ(copy.items()[i], i + 1);
+  }
+  EXPECT_EQ(source.use_count(), 25);
+  EXPECT_EQ(copy.use_count(), 0);
+}
+
+// We need to indirect self-move-assign through this function; doing it
+// directly in the test code generates a compiler warning.
+void MoveAssign(reinit_on_copy<int>* target, reinit_on_copy<int>* donor) {
+  *target = std::move(*donor);
+}
+
+GTEST_TEST(ReinitOnCopyTest, Move) {
+  reinit_on_copy<int> x{1};
+  EXPECT_EQ(x, 1);
+
+  // Move-construction and lack of aliasing.
+  reinit_on_copy<int> y{std::move(x)};
+  EXPECT_EQ(x, 1);
+  EXPECT_EQ(y, 1);
+  x = 2;
+  EXPECT_EQ(x, 2);
+  EXPECT_EQ(y, 1);
+
+  // Second move-construction and lack of aliasing.
+  reinit_on_copy<int> z{std::move(x)};
+  EXPECT_EQ(x, 2);
+  EXPECT_EQ(y, 1);
+  EXPECT_EQ(z, 2);
+
+  // Move-assignment and lack of aliasing.
+  reinit_on_copy<int> w{22};
+  x = 3;
+  w = std::move(x);
+  EXPECT_EQ(x, 3);
+  EXPECT_EQ(y, 1);
+  EXPECT_EQ(z, 2);
+  EXPECT_EQ(w, 3);
+  x = 4;
+  EXPECT_EQ(x, 4);
+  EXPECT_EQ(y, 1);
+  EXPECT_EQ(z, 2);
+  EXPECT_EQ(w, 3);
+
+  // Self-assignment during move.
+  MoveAssign(&w, &w);
+  EXPECT_EQ(w, 3);
+}
+
+}  // namespace
+}  // namespace drake
