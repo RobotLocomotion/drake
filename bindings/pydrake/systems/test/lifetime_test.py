@@ -113,7 +113,3 @@ class TestLifetime(unittest.TestCase):
         self.assertTrue(np.allclose(vector.get_value(), [0.]))
         vector.get_mutable_value()[:] = [10.]
         self.assertTrue(np.allclose(vector.get_value(), [10.]))
-
-
-assert __name__ == '__main__'
-unittest.main()

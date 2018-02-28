@@ -199,7 +199,3 @@ class TestMathematicalProgram(unittest.TestCase):
         tol = 1e-8
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
-
-
-if __name__ == '__main__':
-    unittest.main()

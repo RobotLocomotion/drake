@@ -69,7 +69,3 @@ class TestCppParam(unittest.TestCase):
         self._check_names("int", [int, np.int32, ctypes.c_int32])
         self._check_names("CustomPyType", [CustomPyType])
         self._check_names("1", [1])
-
-
-if __name__ == '__main__':
-    unittest.main()

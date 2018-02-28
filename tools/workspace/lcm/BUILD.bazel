@@ -3,7 +3,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 
 exports_files(
@@ -14,11 +14,9 @@ exports_files(
 # `//:install` is run in this test to verify that once installed
 # lcm-gen still works. Cannot be run on its own, needs to be
 # run as part of all the drake tests to have access to //:install
-drake_py_test(
+drake_py_unittest(
     name = "install_test",
     size = "large",
-    srcs = ["test/install_test.py"],
-    main = "test/install_test.py",
     deps = ["//tools/install:install_test_helper"],
 )
 

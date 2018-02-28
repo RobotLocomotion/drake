@@ -27,7 +27,3 @@ class TestIpoptSolver(unittest.TestCase):
         """Per the BUILD file, this test is only run when IPOPT is disabled."""
         solver = IpoptSolver()
         self.assertFalse(solver.available())
-
-
-if __name__ == '__main__':
-    unittest.main()

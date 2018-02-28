@@ -11,6 +11,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
+    "drake_py_unittest",
 )
 load(
     "//tools/skylark:pybind.bzl",
@@ -150,7 +151,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "all_test",
     data = ["//examples/pendulum:models"],
     deps = [":all_py"],
@@ -161,6 +162,8 @@ drake_py_test(
     size = "medium",
     # Increase the timeout so that debug builds are successful.
     timeout = "long",
+    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
+    allow_import_unittest = True,
     data = ["//:install"],
     deps = [
         "//tools/install:install_test_helper",
@@ -180,22 +183,19 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "odr_test",
     size = "small",
-    srcs = ["test/odr_test.py"],
     deps = [
         ":odr_test_module_py",
         ":symbolic_py",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "common_test",
     size = "small",
-    srcs = ["test/common_test.py"],
     data = ["//examples/atlas:models"],
-    main = "test/common_test.py",
     deps = [":common_py"],
 )
 
@@ -208,21 +208,21 @@ drake_py_test(
     size = "medium",
     # Increase the timeout so that debug builds are successful.
     timeout = "long",
+    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
+    allow_import_unittest = True,
     data = ["//:install"],
     deps = [
         "//tools/install:install_test_helper",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "forward_diff_test",
     size = "small",
-    srcs = ["test/forward_diff_test.py"],
-    main = "test/forward_diff_test.py",
     deps = [":autodiffutils_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "math_test",
     size = "small",
     deps = [
@@ -230,31 +230,25 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "symbolic_test",
     size = "small",
-    srcs = ["test/symbolic_test.py"],
-    main = "test/symbolic_test.py",
     deps = [":symbolic_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "symbolic_variables_test",
     size = "small",
-    srcs = ["test/symbolic_variables_test.py"],
-    main = "test/symbolic_variables_test.py",
     deps = [":symbolic_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "symbolic_monomial_test",
     size = "small",
-    srcs = ["test/symbolic_monomial_test.py"],
-    main = "test/symbolic_monomial_test.py",
     deps = [":symbolic_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "backwards_compatability_test",
     deps = [
         ":backwards_compatibility_py",
