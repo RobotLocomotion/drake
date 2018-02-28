@@ -93,8 +93,8 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   EXPECT_EQ(model->get_num_joints(), 7);
 
   // State size.
-  EXPECT_EQ(model->get_num_positions(), 7);
-  EXPECT_EQ(model->get_num_velocities(), 7);
+  EXPECT_EQ(model->num_positions(), 7);
+  EXPECT_EQ(model->num_velocities(), 7);
   EXPECT_EQ(model->get_num_states(), 14);
 
   // Query if elements exist in the model.
@@ -165,7 +165,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // rates are non-zero.
   void GetArbitraryNonZeroConfiguration(
       VectorX<double>* q, VectorX<double>* v) {
-    const int kNumPositions = model_->get_num_positions();
+    const int kNumPositions = model_->num_positions();
     q->resize(kNumPositions);
     v->resize(kNumPositions);  // q and v have the same dimension for kuka.
 
@@ -278,12 +278,12 @@ class KukaIiwaModelTests : public ::testing::Test {
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
-  const int kNumPositions = model_->get_num_positions();
+  const int kNumPositions = model_->num_positions();
   const int kNumStates = model_->get_num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
-  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
   ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
@@ -334,7 +334,7 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   EXPECT_EQ(v_WE_derivs.cols(), kNumPositions);
 
   Vector3<double> p_WE;
-  Matrix3X<double> Jv_WE(3, model_->get_num_velocities());
+  Matrix3X<double> Jv_WE(3, model_->num_velocities());
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
   model_->CalcPointsGeometricJacobianExpressedInWorld(
@@ -499,12 +499,12 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 
 TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
-  const int kNumPositions = model_->get_num_positions();
+  const int kNumPositions = model_->num_positions();
   const int kNumStates = model_->get_num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
-  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
   ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
@@ -545,7 +545,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // "shifting" from E by an offset p_EoFo.
   const SpatialVelocity<double> V_WEf = V_WE.Shift(p_EoFo_W);
 
-  MatrixX<double> Jv_WF(6, model_->get_num_velocities());
+  MatrixX<double> Jv_WF(6, model_->num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
   model_->CalcFrameGeometricJacobianExpressedInWorld(

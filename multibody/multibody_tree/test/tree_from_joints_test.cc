@@ -294,7 +294,7 @@ class PendulumTests : public ::testing::Test {
     const double kTolerance = 10 * kEpsilon;
 
     // Set up workspace:
-    const int nv = tree_->get_num_velocities();
+    const int nv = tree_->num_velocities();
     // External forces:
     MultibodyForces<double> forces(model_.get_tree());
     // Accelerations of the bodies:
@@ -331,7 +331,7 @@ class PendulumTests : public ::testing::Test {
 
     // Arrays for output forces:
     std::vector<SpatialForce<double>> F_BMo_W(tree_->get_num_bodies());
-    VectorX<double> tau(tree_->get_num_velocities());
+    VectorX<double> tau(tree_->num_velocities());
 
     // With vdot = 0, this computes:
     //   rhs = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.

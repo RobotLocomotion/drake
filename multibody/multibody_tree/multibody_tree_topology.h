@@ -747,10 +747,10 @@ class MultibodyTreeTopology {
   bool is_valid() const { return is_valid_; }
 
   /// Returns the total number of generalized positions in the model.
-  int get_num_positions() const { return num_positions_; }
+  int num_positions() const { return num_positions_; }
 
   /// Returns the total number of generalized velocities in the model.
-  int get_num_velocities() const { return num_velocities_; }
+  int num_velocities() const { return num_velocities_; }
 
   /// Returns the total size of the state vector in the model.
   int get_num_states() const { return num_states_; }

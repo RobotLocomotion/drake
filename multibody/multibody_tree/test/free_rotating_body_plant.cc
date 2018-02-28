@@ -17,12 +17,12 @@ template<typename T>
 FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) :
     I_(I), J_(J) {
   BuildMultibodyTreeModel();
-  DRAKE_DEMAND(model_.get_num_positions() == 3);
-  DRAKE_DEMAND(model_.get_num_velocities() == 3);
+  DRAKE_DEMAND(model_.num_positions() == 3);
+  DRAKE_DEMAND(model_.num_velocities() == 3);
   DRAKE_DEMAND(model_.get_num_states() == 6);
   this->DeclareContinuousState(
-      model_.get_num_positions(),
-      model_.get_num_velocities(), 0 /* num_z */);
+      model_.num_positions(),
+      model_.num_velocities(), 0 /* num_z */);
 }
 
 template<typename T>
@@ -66,8 +66,8 @@ void FreeRotatingBodyPlant<T>::DoCalcTimeDerivatives(
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   MatrixX<T> M(nv, nv);
   model_.CalcMassMatrixViaInverseDynamics(context, &M);
@@ -95,8 +95,8 @@ void FreeRotatingBodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
@@ -112,8 +112,8 @@ void FreeRotatingBodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);

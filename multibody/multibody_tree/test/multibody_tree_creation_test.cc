@@ -429,15 +429,15 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   EXPECT_EQ(topology.get_tree_height(), 4);
 
   // Verifies the total number of generalized positions and velocities.
-  EXPECT_EQ(topology.get_num_positions(), 7);
-  EXPECT_EQ(topology.get_num_velocities(), 7);
+  EXPECT_EQ(topology.num_positions(), 7);
+  EXPECT_EQ(topology.num_velocities(), 7);
   EXPECT_EQ(topology.get_num_states(), 14);
 
   // Tip-to-Base recursion.
   // In this case all mobilizers are RevoluteMobilizer objects with one
   // generalized position and one generalized velocity per mobilizer.
   int positions_index = 0;
-  int velocities_index = topology.get_num_positions();
+  int velocities_index = topology.num_positions();
   for (BodyNodeIndex node_index(1); /* Skips the world node. */
        node_index < topology.get_num_body_nodes(); ++node_index) {
     const BodyNodeTopology& node = topology.get_body_node(node_index);
@@ -464,7 +464,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     // For this case we know there is one generalized velocities per mobilizer.
     velocities_index += 1;
   }
-  EXPECT_EQ(positions_index, topology.get_num_positions());
+  EXPECT_EQ(positions_index, topology.num_positions());
   EXPECT_EQ(velocities_index, topology.get_num_states());
 }
 

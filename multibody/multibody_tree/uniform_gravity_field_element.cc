@@ -36,13 +36,13 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   std::vector<SpatialForce<T>> F_BMo_W_array(model.get_num_bodies());
 
   // Zero vector of generalized accelerations.
-  const VectorX<T> vdot = VectorX<T>::Zero(model.get_num_velocities());
+  const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
 
   // Temporary array for body accelerations.
   std::vector<SpatialAcceleration<T>> A_WB_array(model.get_num_bodies());
 
   // Ouput vector of generalized forces:
-  VectorX<T> tau_g(model.get_num_velocities());
+  VectorX<T> tau_g(model.num_velocities());
 
   // Compute inverse dynamics with zero generalized velocities and zero
   // generalized accelerations. Since inverse dynamics computes:
@@ -54,7 +54,7 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   // operator implementation, which would be more efficient.
   model.CalcInverseDynamics(
       context, pc, vc, /* state */
-      VectorX<T>::Zero(model.get_num_velocities()), /* vdot = 0 */
+      VectorX<T>::Zero(model.num_velocities()), /* vdot = 0 */
       /* Applied forces. In this case only gravity. */
       forces.body_forces(), forces.generalized_forces(),
       &A_WB_array, &F_BMo_W_array, /* temporary arrays. */

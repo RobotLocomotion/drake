@@ -182,7 +182,7 @@ class DrakeKukaIIwaRobot {
 
     // Output vector of generalized forces for calculated motor torques
     // required to drive the Kuka robot at its specified rate.
-    const int number_of_generalized_speeds = model_->get_num_velocities();
+    const int number_of_generalized_speeds = model_->num_velocities();
     VectorX<T> generalized_force_output(number_of_generalized_speeds);
 
     // Output vector of spatial forces for joint reaction force/torques for

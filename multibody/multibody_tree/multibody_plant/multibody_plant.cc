@@ -114,8 +114,8 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
 
   this->DeclareContinuousState(
       BasicVector<T>(model_->get_num_states()),
-      model_->get_num_positions(),
-      model_->get_num_velocities(), 0 /* num_z */);
+      model_->num_positions(),
+      model_->num_velocities(), 0 /* num_z */);
 
   // TODO(amcastro-tri): Declare input ports for actuators.
 

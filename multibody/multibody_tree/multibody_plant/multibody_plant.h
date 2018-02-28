@@ -131,10 +131,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
 
   /// Returns the size of the generalized position vector `q` for `this` model.
-  int num_positions() const { return model_->get_num_positions(); }
+  int num_positions() const { return model_->num_positions(); }
 
   /// Returns the size of the generalized velocity vector `v` for `this` model.
-  int num_velocities() const { return model_->get_num_velocities(); }
+  int num_velocities() const { return model_->num_velocities(); }
 
   /// Returns the size of the multibody system state vector `x = [q; v]` for
   /// `this` model. This will equal the number of generalized positions

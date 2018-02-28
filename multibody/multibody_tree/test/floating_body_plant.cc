@@ -19,12 +19,12 @@ AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
     double mass, double I, double J, double g)
     : mass_(mass), I_(I), J_(J), g_(g) {
   BuildMultibodyTreeModel();
-  DRAKE_DEMAND(model_.get_num_positions() == 7);
-  DRAKE_DEMAND(model_.get_num_velocities() == 6);
+  DRAKE_DEMAND(model_.num_positions() == 7);
+  DRAKE_DEMAND(model_.num_velocities() == 6);
   DRAKE_DEMAND(model_.get_num_states() == 13);
   this->DeclareContinuousState(
-      model_.get_num_positions(),
-      model_.get_num_velocities(), 0 /* num_z */);
+      model_.num_positions(),
+      model_.num_velocities(), 0 /* num_z */);
 }
 
 template<typename T>
@@ -79,8 +79,8 @@ void AxiallySymmetricFreeBodyPlant<T>::DoCalcTimeDerivatives(
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   // Allocate workspace. We might want to cache these to avoid allocations.
   // Mass matrix.
@@ -127,8 +127,8 @@ void AxiallySymmetricFreeBodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
   DRAKE_DEMAND(generalized_velocity->size() == nv);
@@ -142,8 +142,8 @@ void AxiallySymmetricFreeBodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);
   DRAKE_DEMAND(positions_derivative->size() == nq);

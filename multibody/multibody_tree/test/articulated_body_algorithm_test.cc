@@ -151,9 +151,9 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const {
     const Frame<ToScalar>& inboard_frame_clone =
-        tree_clone.get_variant(this->get_inboard_frame());
+        tree_clone.get_variant(this->inboard_frame());
     const Frame<ToScalar>& outboard_frame_clone =
-        tree_clone.get_variant(this->get_outboard_frame());
+        tree_clone.get_variant(this->outboard_frame());
     return std::make_unique<FeatherstoneMobilizer<ToScalar>>(
         inboard_frame_clone, outboard_frame_clone);
   }

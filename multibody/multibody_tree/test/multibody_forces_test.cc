@@ -56,7 +56,7 @@ TEST_F(MultibodyForcesTests, Construction) {
 
   // Test the API to retrieve sizes.
   EXPECT_EQ(forces->num_bodies(), model_.get_num_bodies());
-  EXPECT_EQ(forces->num_velocities(), model_.get_num_velocities());
+  EXPECT_EQ(forces->num_velocities(), model_.num_velocities());
 
   // Assess the constructor did zero the forces.
   EXPECT_TRUE(forces->generalized_forces() == Vector2d::Zero());

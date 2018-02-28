@@ -46,10 +46,10 @@ class MobilizerImpl : public Mobilizer<T> {
       Mobilizer<T>(inboard_frame, outboard_frame) {}
 
   /// Returns the number of generalized coordinates granted by this mobilizer.
-  int get_num_positions() const final { return kNq;}
+  int num_positions() const final { return kNq;}
 
   /// Returns the number of generalized velocities granted by this mobilizer.
-  int get_num_velocities() const final { return kNv;}
+  int num_velocities() const final { return kNv;}
 
   /// For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(

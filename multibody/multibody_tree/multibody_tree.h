@@ -344,13 +344,13 @@ class MultibodyTree {
     // to this tree. This is a pathological case, but in theory nothing
     // (but this test) stops a user from adding frames to a tree1 and attempting
     // later to define mobilizers between those frames in a second tree2.
-    mobilizer->get_inboard_frame().HasThisParentTreeOrThrow(this);
-    mobilizer->get_outboard_frame().HasThisParentTreeOrThrow(this);
-    const int num_positions = mobilizer->get_num_positions();
-    const int num_velocities = mobilizer->get_num_velocities();
+    mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);
+    mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);
+    const int num_positions = mobilizer->num_positions();
+    const int num_velocities = mobilizer->num_velocities();
     MobilizerIndex mobilizer_index = topology_.add_mobilizer(
-        mobilizer->get_inboard_frame().index(),
-        mobilizer->get_outboard_frame().index(),
+        mobilizer->inboard_frame().index(),
+        mobilizer->outboard_frame().index(),
         num_positions, num_velocities);
 
     // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
@@ -589,13 +589,13 @@ class MultibodyTree {
   }
 
   /// Returns the number of generalized positions of the model.
-  int get_num_positions() const {
-    return topology_.get_num_positions();
+  int num_positions() const {
+    return topology_.num_positions();
   }
 
   /// Returns the number of generalized velocities of the model.
-  int get_num_velocities() const {
-    return topology_.get_num_velocities();
+  int num_velocities() const {
+    return topology_.num_velocities();
   }
 
   /// Returns the total size of the state vector in the model.
@@ -1200,9 +1200,9 @@ class MultibodyTree {
   ///   `tau_applied_array` can have zero size, which means there are no applied
   ///   forces. To apply non-zero forces, `tau_applied_array` must be of size
   ///   equal to the number to the number of generalized velocities in the
-  ///   model, see MultibodyTree::get_num_velocities().
+  ///   model, see MultibodyTree::num_velocities().
   ///   This method will abort if provided with an array that does not have a
-  ///   size of either MultibodyTree::get_num_velocities() or zero.
+  ///   size of either MultibodyTree::num_velocities() or zero.
   /// @param[out] A_WB_array
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
@@ -1226,7 +1226,7 @@ class MultibodyTree {
   ///   On output this array will contain the generalized forces that must be
   ///   applied in order to achieve the desired generalized accelerations given
   ///   by the input argument `known_vdot`. It must not be nullptr and it
-  ///   must be of size MultibodyTree::get_num_velocities(). Generalized forces
+  ///   must be of size MultibodyTree::num_velocities(). Generalized forces
   ///   for each Mobilizer can be accessed with
   ///   Mobilizer::get_generalized_forces_from_array().
   ///
@@ -1319,7 +1319,7 @@ class MultibodyTree {
   ///   The context containing the state of the %MultibodyTree model.
   /// @param[out] H
   ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
-  ///   number of generalized velocities (get_num_velocities()) of the model.
+  ///   number of generalized velocities (num_velocities()) of the model.
   ///   This method aborts if H is nullptr or if it does not have the proper
   ///   size.
   ///
@@ -1361,7 +1361,7 @@ class MultibodyTree {
   /// @param[out] Cv
   ///   On output, `Cv` will contain the product `C(q, v)v`. It must be a valid
   ///   (non-null) pointer to a column vector in `ℛⁿ` with n the number of
-  ///   generalized velocities (get_num_velocities()) of the model.
+  ///   generalized velocities (num_velocities()) of the model.
   ///   This method aborts if Cv is nullptr or if it does not have the
   ///   proper size.
   void CalcBiasTerm(
@@ -1377,12 +1377,12 @@ class MultibodyTree {
   ///   The context containing the state of the %MultibodyTree model.
   /// @param[in] v
   ///   A vector of of generalized velocities for `this` %MultibodyTree model.
-  ///   This method aborts if v is not of size get_num_velocities().
+  ///   This method aborts if v is not of size num_velocities().
   /// @param[out] qdot
   ///   A valid (non-null) pointer to a vector in `ℝⁿ` with n being the number
   ///   of generalized positions in `this` %MultibodyTree model,
-  ///   given by `get_num_positions()`. This method aborts if `qdot` is nullptr
-  ///   or if it is not of size get_num_positions().
+  ///   given by `num_positions()`. This method aborts if `qdot` is nullptr
+  ///   or if it is not of size num_positions().
   ///
   /// @see MapQDotToVelocity()
   /// @see Mobilizer::MapVelocityToQDot()
@@ -1405,11 +1405,11 @@ class MultibodyTree {
   ///   The context containing the state of the %MultibodyTree model.
   /// @param[in] qdot
   ///   A vector containing the time derivatives of the generalized positions.
-  ///   This method aborts if `qdot` is not of size get_num_positions().
+  ///   This method aborts if `qdot` is not of size num_positions().
   /// @param[out] v
   ///   A valid (non-null) pointer to a vector in `ℛⁿ` with n the number of
   ///   generalized velocities. This method aborts if v is nullptr or if it
-  ///   is not of size get_num_velocities().
+  ///   is not of size num_velocities().
   ///
   /// @see MapVelocityToQDot()
   /// @see Mobilizer::MapQDotToVelocity()
@@ -1675,7 +1675,7 @@ class MultibodyTree {
   //  - The position kinematics cache object is already updated to be in sync
   //    with `context`.
   //  - H is not nullptr.
-  //  - H has storage for a square matrix of size get_num_velocities().
+  //  - H has storage for a square matrix of size num_velocities().
   void DoCalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -1688,7 +1688,7 @@ class MultibodyTree {
   //  - The velocity kinematics cache object is already updated to be in sync
   //    with `context`.
   //  - Cv is not nullptr.
-  //  - Cv has storage for a vector of size get_num_velocities().
+  //  - Cv has storage for a vector of size num_velocities().
   void DoCalcBiasTerm(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,

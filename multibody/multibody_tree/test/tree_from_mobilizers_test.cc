@@ -331,15 +331,15 @@ TEST_F(PendulumTests, CreateModelBasics) {
       upper_link_->index());
 
   // Checks that mobilizers connect the right frames.
-  EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().index(),
+  EXPECT_EQ(shoulder_mobilizer_->inboard_frame().index(),
             world_body_->body_frame().index());
-  EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().index(),
+  EXPECT_EQ(shoulder_mobilizer_->outboard_frame().index(),
             shoulder_outboard_frame_->index());
 
   // Checks that mobilizers connect the right bodies.
-  EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().index(),
+  EXPECT_EQ(shoulder_mobilizer_->inboard_body().index(),
             world_body_->index());
-  EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().index(),
+  EXPECT_EQ(shoulder_mobilizer_->outboard_body().index(),
             upper_link_->index());
 
   // Checks we can retrieve the body associated with a frame.
@@ -347,8 +347,8 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(&shoulder_outboard_frame_->body(), upper_link_);
 
   // Checks we can request inboard/outboard bodies to a mobilizer.
-  EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
-  EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
+  EXPECT_EQ(&shoulder_mobilizer_->inboard_body(), world_body_);
+  EXPECT_EQ(&shoulder_mobilizer_->outboard_body(), upper_link_);
 
   // Request revolute mobilizers' axes.
   EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
@@ -365,21 +365,21 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(
       elbow_outboard_frame_->body().index(), lower_link_->index());
   // Checks that mobilizers connect the right frames.
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().index(),
+  EXPECT_EQ(elbow_mobilizer_->inboard_frame().index(),
             elbow_inboard_frame_->index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().index(),
+  EXPECT_EQ(elbow_mobilizer_->outboard_frame().index(),
             elbow_outboard_frame_->index());
   // Checks that mobilizers connect the right bodies.
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().index(),
+  EXPECT_EQ(elbow_mobilizer_->inboard_body().index(),
             upper_link_->index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().index(),
+  EXPECT_EQ(elbow_mobilizer_->outboard_body().index(),
             lower_link_->index());
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&elbow_inboard_frame_->body(), upper_link_);
   EXPECT_EQ(&elbow_outboard_frame_->body(), lower_link_);
   // Checks we can request inboard/outboard bodies to a mobilizer.
-  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
+  EXPECT_EQ(&elbow_mobilizer_->inboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->outboard_body(), lower_link_);
   // Request revolute mobilizers' axes.
   EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
 }
@@ -617,7 +617,7 @@ class PendulumKinematicTests : public PendulumTests {
   /// drake::multibody::benchmarks::Acrobot.
   Vector2d VerifyGravityTerm(
       const Eigen::Ref<const VectorXd>& q) const {
-    DRAKE_DEMAND(q.size() == model_->get_num_positions());
+    DRAKE_DEMAND(q.size() == model_->num_positions());
 
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
@@ -655,7 +655,7 @@ class PendulumKinematicTests : public PendulumTests {
     // computed by CalcForceElementsContribution().
 
     // Output vector of generalized forces.
-    VectorXd tau(model_->get_num_velocities());
+    VectorXd tau(model_->num_velocities());
 
     // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
@@ -672,7 +672,7 @@ class PendulumKinematicTests : public PendulumTests {
     // However, the data given at input is lost on output. A user might choose
     // then to have separate input/output arrays.
 
-    const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
+    const VectorXd vdot = VectorXd::Zero(model_->num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
 
     // Aliases to external forcing arrays:
@@ -752,9 +752,9 @@ class PendulumKinematicTests : public PendulumTests {
       const Eigen::Ref<const VectorXd>& q,
       const Eigen::Ref<const VectorXd>& v,
       const Eigen::Ref<const VectorXd>& vdot) const {
-    DRAKE_DEMAND(q.size() == model_->get_num_positions());
-    DRAKE_DEMAND(v.size() == model_->get_num_velocities());
-    DRAKE_DEMAND(vdot.size() == model_->get_num_velocities());
+    DRAKE_DEMAND(q.size() == model_->num_positions());
+    DRAKE_DEMAND(v.size() == model_->num_velocities());
+    DRAKE_DEMAND(vdot.size() == model_->num_velocities());
 
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
@@ -785,7 +785,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute inverse dynamics.
-    VectorXd tau(model_->get_num_velocities());
+    VectorXd tau(model_->num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
     vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
     model_->CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
