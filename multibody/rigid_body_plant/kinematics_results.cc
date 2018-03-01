@@ -1,5 +1,6 @@
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -8,8 +9,8 @@ namespace drake {
 namespace systems {
 
 template<typename T>
-KinematicsResults<T>::KinematicsResults(const RigidBodyTree<T>* tree) :
-    tree_(tree), kinematics_cache_(tree_->CreateKinematicsCache()) {
+KinematicsResults<T>::KinematicsResults(const RigidBodyTree<double>* tree) :
+    tree_(tree), kinematics_cache_(tree_->CreateKinematicsCacheWithType<T>()) {
 }
 
 template <typename T>
@@ -114,9 +115,9 @@ Eigen::VectorBlock<const VectorX<T>> KinematicsResults<T>::get_joint_velocity(
                                           body.getJoint().get_num_velocities());
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class KinematicsResults<double>;
-
 }  // namespace systems
 }  // namespace drake
 
+// Explicitly instantiates on the most common scalar types.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::KinematicsResults)

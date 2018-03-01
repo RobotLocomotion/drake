@@ -238,7 +238,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   // Problem settings
   OSQPSettings* settings =
       static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
-  set_default_settings(settings);
+  osqp_set_default_settings(settings);
   // Default polish to true, to get an accurate solution.
   // TODO(hongkai.dai): add a setter so that we can turn off polishing.
   settings->polish = 1;

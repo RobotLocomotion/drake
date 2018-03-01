@@ -419,10 +419,20 @@ TEST_F(DrealSolverTest, UnsupportedFormulaFloor) {
                std::runtime_error);
 }
 
-TEST_F(DrealSolverTest, UnsupportedFormulaIfThenElse) {
-  EXPECT_THROW(DrealSolver::CheckSatisfiability(
-                   if_then_else(x_ > y_, x_, y_) == 0, delta_),
-               std::runtime_error);
+TEST_F(DrealSolverTest, IfThenElse1) {
+  const Formula f{x_ == 3 && y_ == 2 && z_ == if_then_else(x_ > y_, x_, y_)};
+  const auto result = DrealSolver::CheckSatisfiability(f, delta_);
+  ASSERT_TRUE(result);
+  const double z{result->at(z_).mid()};
+  EXPECT_EQ(z, 3);
+}
+
+TEST_F(DrealSolverTest, IfThenElse2) {
+  const Formula f{x_ == 2 && y_ == 3 && z_ == if_then_else(x_ > y_, x_, y_)};
+  const auto result = DrealSolver::CheckSatisfiability(f, delta_);
+  ASSERT_TRUE(result);
+  const double z{result->at(z_).mid()};
+  EXPECT_EQ(z, 3);
 }
 
 TEST_F(DrealSolverTest, UnsupportedFormulaUninterpretedFunction) {

@@ -901,7 +901,13 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
   EXPECT_EQ(hash_set.size(), exprs.size());
 }
 
+TEST_F(SymbolicExpressionTest, UnaryPlus) {
+  EXPECT_PRED2(ExprEqual, c3_, +c3_);
+  EXPECT_PRED2(ExprEqual, Expression(var_x_), +var_x_);
+}
+
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
+  EXPECT_PRED2(ExprEqual, -Expression(var_x_), -var_x_);
   EXPECT_PRED2(ExprNotEqual, c3_, -c3_);
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), -(-c3_).Evaluate());
   EXPECT_PRED2(ExprEqual, c3_, -(-c3_));

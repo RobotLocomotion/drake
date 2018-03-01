@@ -71,9 +71,7 @@ def _impl(repository_ctx):
                 fail("Could NOT change shared library identification name",
                      attr = result.stderr)
 
-        repository_ctx.file("empty.cc", executable = False)
-
-        srcs = ["empty.cc"]
+        srcs = []
 
         bin_path = repository_ctx.path("{}/bin".format(platform_prefix))
 

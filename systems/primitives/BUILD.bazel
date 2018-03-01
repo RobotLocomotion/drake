@@ -264,6 +264,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "wrap_to_system",
+    srcs = ["wrap_to_system.cc"],
+    hdrs = ["wrap_to_system.h"],
+    deps = [
+        "//math:wrap_to",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "zero_order_hold",
     srcs = ["zero_order_hold.cc"],
     hdrs = [
@@ -532,6 +542,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial_trajectory",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wrap_to_system_test",
+    deps = [
+        ":wrap_to_system",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

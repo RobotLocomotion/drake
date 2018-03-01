@@ -231,10 +231,18 @@ drake_py_test(
 )
 
 drake_py_test(
-    name = "symbolic_variables_test",
+    name = "symbolic_test",
     size = "small",
     srcs = ["test/symbolic_test.py"],
     main = "test/symbolic_test.py",
+    deps = [":symbolic_py"],
+)
+
+drake_py_test(
+    name = "symbolic_variables_test",
+    size = "small",
+    srcs = ["test/symbolic_variables_test.py"],
+    main = "test/symbolic_variables_test.py",
     deps = [":symbolic_py"],
 )
 

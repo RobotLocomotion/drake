@@ -70,7 +70,7 @@ class RevoluteJoint final : public Joint<T> {
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,
   /// `axis = axis_F = axis_M`.
-  const Vector3<double>& get_revolute_axis() const {
+  const Vector3<double>& revolute_axis() const {
     return axis_;
   }
 
@@ -171,7 +171,7 @@ class RevoluteJoint final : public Joint<T> {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     blue_print->mobilizers_.push_back(
         std::make_unique<RevoluteMobilizer<T>>(
-            this->get_frame_on_parent(), this->get_frame_on_child(), axis_));
+            this->frame_on_parent(), this->frame_on_child(), axis_));
     return std::move(blue_print);
   }
 
@@ -194,7 +194,7 @@ class RevoluteJoint final : public Joint<T> {
   // However its public API should remain intact.
   const RevoluteMobilizer<T>* get_mobilizer() const {
     // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().get_num_mobilizers() == 1);
+    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
     const RevoluteMobilizer<T>* mobilizer =
         dynamic_cast<const RevoluteMobilizer<T>*>(
             this->get_implementation().mobilizers_[0]);

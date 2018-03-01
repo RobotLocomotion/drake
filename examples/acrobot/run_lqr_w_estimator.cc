@@ -6,7 +6,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/proto/call_matlab.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
+#include "drake/examples/acrobot/gen/acrobot_state.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -60,12 +60,12 @@ int do_main(int argc, char* argv[]) {
   auto observer_acrobot = std::make_unique<AcrobotWEncoder<double>>();
   auto observer_context = observer_acrobot->CreateDefaultContext();
   {  // Set context to upright fixed point.
-    AcrobotStateVector<double>* x0 =
+    AcrobotState<double>& x0 =
         observer_acrobot->get_mutable_acrobot_state(observer_context.get());
-    x0->set_theta1(M_PI);
-    x0->set_theta2(0.0);
-    x0->set_theta1dot(0.0);
-    x0->set_theta2dot(0.0);
+    x0.set_theta1(M_PI);
+    x0.set_theta2(0.0);
+    x0.set_theta1dot(0.0);
+    x0.set_theta2dot(0.0);
     observer_context->FixInputPort(0, Vector1d::Constant(0.0));
   }
   // Make a linearization here for the exercise below.  Need to do it before I
@@ -113,14 +113,13 @@ int do_main(int argc, char* argv[]) {
   systems::Simulator<double> simulator(*diagram);
 
   // Set an initial condition near the upright fixed point.
-  auto x0 = acrobot_w_encoder->get_mutable_acrobot_state(
+  AcrobotState<double>& x0 = acrobot_w_encoder->get_mutable_acrobot_state(
       &(diagram->GetMutableSubsystemContext(*acrobot_w_encoder,
                                             &simulator.get_mutable_context())));
-  DRAKE_DEMAND(x0 != nullptr);
-  x0->set_theta1(M_PI + 0.1);
-  x0->set_theta2(-.1);
-  x0->set_theta1dot(0.0);
-  x0->set_theta2dot(0.0);
+  x0.set_theta1(M_PI + 0.1);
+  x0.set_theta2(-.1);
+  x0.set_theta1dot(0.0);
+  x0.set_theta2dot(0.0);
 
   // Set the initial conditions of the observer.
   auto& xhat0 = diagram

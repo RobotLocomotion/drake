@@ -6,7 +6,7 @@ def osqp_repository(name):
     github_archive(
         name = name,
         repository = "oxfordcontrol/osqp",
-        commit = "bdc96b409a1e1660e46dadc7f6e5ff1f37d24b89",
-        sha256 = "3bbed20b58eeb9c07be3f038dcfadd512f6f1cbbf52c8a55f0fe469ecfd327f6",  # noqa
+        commit = "c1d13d4b499243ea4afa0a321aa2226c6c1cd29a",
+        sha256 = "8886fbaa794effcc39bb11c2cb089b247de552e95b9ccdcda7baa9d973507ba4",  # noqa
         build_file = "@drake//tools/workspace/osqp:package.BUILD.bazel",
     )

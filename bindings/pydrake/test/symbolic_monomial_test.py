@@ -109,6 +109,18 @@ class TestSymbolicMonomial(unittest.TestCase):
         e = m.ToExpression()
         self.assertEqual(str(e), "(pow(x, 3) * y)")
 
+    def test_get_variables(self):
+        m = sym.Monomial(x, 3) * y  # m = x³y
+        vars = m.GetVariables()  # = [x, y]
+        self.assertEqual(vars.size(), 2)
+
+    def test_monomial_basis(self):
+        vars = sym.Variables([x, y, z])
+        basis1 = sym.MonomialBasis(vars, 3)
+        basis2 = sym.MonomialBasis([x, y, z], 3)
+        self.assertEqual(basis1.size, 20)
+        self.assertEqual(basis2.size, 20)
+
 
 if __name__ == '__main__':
     unittest.main()

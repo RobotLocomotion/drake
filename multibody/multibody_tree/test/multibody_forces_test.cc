@@ -32,7 +32,7 @@ class MultibodyForcesTests : public ::testing::Test {
     const RigidBody<double>& body1 = model_.AddBody<RigidBody>(M);
     const RigidBody<double>& body2 = model_.AddBody<RigidBody>(M);
     model_.AddJoint<RevoluteJoint>(
-        "Joint1", model_.get_world_body(), {}, body1, {}, Vector3d::UnitZ());
+        "Joint1", model_.world_body(), {}, body1, {}, Vector3d::UnitZ());
     model_.AddJoint<RevoluteJoint>(
         "Joint2", body1, {}, body2, {}, Vector3d::UnitZ());
     model_.Finalize();
@@ -55,8 +55,8 @@ TEST_F(MultibodyForcesTests, Construction) {
   EXPECT_TRUE(forces->CheckHasRightSizeForModel(model_));
 
   // Test the API to retrieve sizes.
-  EXPECT_EQ(forces->num_bodies(), model_.get_num_bodies());
-  EXPECT_EQ(forces->num_velocities(), model_.get_num_velocities());
+  EXPECT_EQ(forces->num_bodies(), model_.num_bodies());
+  EXPECT_EQ(forces->num_velocities(), model_.num_velocities());
 
   // Assess the constructor did zero the forces.
   EXPECT_TRUE(forces->generalized_forces() == Vector2d::Zero());

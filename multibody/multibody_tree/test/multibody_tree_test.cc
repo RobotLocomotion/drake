@@ -61,14 +61,14 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "iiwa_actuator_7"};
 
   // Model Size. Counting the world body, there should be eight bodies.
-  EXPECT_EQ(model.get_num_bodies(), 8);  // It includes the "world" body.
-  EXPECT_EQ(model.get_num_joints(), 7);
-  EXPECT_EQ(model.get_num_actuators(), 7);
+  EXPECT_EQ(model.num_bodies(), 8);  // It includes the "world" body.
+  EXPECT_EQ(model.num_joints(), 7);
+  EXPECT_EQ(model.num_actuators(), 7);
 
   // State size.
-  EXPECT_EQ(model.get_num_positions(), 7);
-  EXPECT_EQ(model.get_num_velocities(), 7);
-  EXPECT_EQ(model.get_num_states(), 14);
+  EXPECT_EQ(model.num_positions(), 7);
+  EXPECT_EQ(model.num_velocities(), 7);
+  EXPECT_EQ(model.num_states(), 14);
 
   // Query if elements exist in the model.
   for (const std::string link_name : kLinkNames) {
@@ -89,7 +89,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   // Get links by name.
   for (const std::string link_name : kLinkNames) {
     const Body<T>& link = model.GetBodyByName(link_name);
-    EXPECT_EQ(link.get_name(), link_name);
+    EXPECT_EQ(link.name(), link_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
       model.GetBodyByName(kInvalidName), std::logic_error,
@@ -98,7 +98,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   // Get joints by name.
   for (const std::string joint_name : kJointNames) {
     const Joint<T>& joint = model.GetJointByName(joint_name);
-    EXPECT_EQ(joint.get_name(), joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
       model.GetJointByName(kInvalidName), std::logic_error,
@@ -108,7 +108,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   for (const std::string joint_name : kJointNames) {
     const RevoluteJoint<T>& joint =
         model.template GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_EQ(joint.get_name(), joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
   }
   DRAKE_EXPECT_ERROR_MESSAGE(
       model.template GetJointByName<RevoluteJoint>(kInvalidName),
@@ -132,9 +132,9 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
     // We added actuators and joints in the same order. Assert this before
     // making that assumption in the test that follows.
     const Joint<T>& joint = actuator.joint();
-    ASSERT_EQ(actuator.get_index(), joint.get_index());
+    ASSERT_EQ(actuator.index(), joint.index());
     const std::string& joint_name = kJointNames[names_index];
-    EXPECT_EQ(joint.get_name(), joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
     ++names_index;
   }
 }
@@ -165,8 +165,8 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
           /* Dummy frame definitions. Not relevant for this test. */
-          model->get_world_body(), {},
-          model->get_world_body(), {},
+          model->world_body(), {},
+          model->world_body(), {},
           Vector3<double>::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
@@ -222,7 +222,7 @@ class KukaIiwaModelTests : public ::testing::Test {
   // rates are non-zero.
   void GetArbitraryNonZeroConfiguration(
       VectorX<double>* q, VectorX<double>* v) {
-    const int kNumPositions = model_->get_num_positions();
+    const int kNumPositions = model_->num_positions();
     q->resize(kNumPositions);
     v->resize(kNumPositions);  // q and v have the same dimension for kuka.
 
@@ -257,7 +257,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
     model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
-    return V_WB_array[end_effector_link_->get_index()].translational();
+    return V_WB_array[end_effector_link_->index()].translational();
   }
 
   // Computes spatial velocity `V_WE` of the end effector frame E in the world
@@ -268,7 +268,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
     model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
-    return V_WB_array[end_effector_link_->get_index()];
+    return V_WB_array[end_effector_link_->index()];
   }
 
   // Computes p_WEo, the position of the end effector frame's origin Eo.
@@ -279,9 +279,9 @@ class KukaIiwaModelTests : public ::testing::Test {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
     Vector3<T> p_WE;
     model_on_T.CalcPointsPositions(
-        context_on_T, linkG_on_T.get_body_frame(),
+        context_on_T, linkG_on_T.body_frame(),
         Vector3<T>::Zero(),  // position in frame G
-        model_on_T.get_world_body().get_body_frame(), &p_WE);
+        model_on_T.world_body().body_frame(), &p_WE);
     return p_WE;
   }
 
@@ -298,7 +298,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       MatrixX<T>* p_WPi, MatrixX<T>* Jv_WPi) const {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
     model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.get_body_frame(), p_EPi, p_WPi, Jv_WPi);
+        context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jv_WPi);
   }
 
  protected:
@@ -341,13 +341,13 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
-  const int kNumPositions = model_->get_num_positions();
-  const int kNumStates = model_->get_num_states();
+  const int kNumPositions = model_->num_positions();
+  const int kNumStates = model_->num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
-  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
-  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
   ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
@@ -397,11 +397,11 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   EXPECT_EQ(v_WE_derivs.cols(), kNumPositions);
 
   Vector3<double> p_WE;
-  Matrix3X<double> Jv_WE(3, model_->get_num_velocities());
+  Matrix3X<double> Jv_WE(3, model_->num_velocities());
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
   model_->CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, end_effector_link_->get_body_frame(),
+      *context_, end_effector_link_->body_frame(),
       Vector3<double>::Zero(), &p_WE, &Jv_WE);
 
   // Verify the computed Jacobian matches the one obtained using automatic
@@ -562,13 +562,13 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
 
 TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
-  const int kNumPositions = model_->get_num_positions();
-  const int kNumStates = model_->get_num_states();
+  const int kNumPositions = model_->num_positions();
+  const int kNumStates = model_->num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
-  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
-  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
   ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
@@ -608,12 +608,12 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   // "shifting" from E by an offset p_EoFo.
   const SpatialVelocity<double> V_WEf = V_WE.Shift(p_EoFo_W);
 
-  MatrixX<double> Jv_WF(6, model_->get_num_velocities());
+  MatrixX<double> Jv_WF(6, model_->num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
   model_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_,
-      end_effector_link_->get_body_frame(), p_EoFo_E, &Jv_WF);
+      end_effector_link_->body_frame(), p_EoFo_E, &Jv_WF);
 
   // Verify that V_WEf = Jv_WF * v:
   const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);

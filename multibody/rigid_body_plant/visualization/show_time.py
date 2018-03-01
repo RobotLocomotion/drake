@@ -5,11 +5,13 @@ from director import applogic
 import bot_core as lcmbotcore
 import time
 
+
 class TimeVisualizer(object):
+
     def __init__(self):
         self._name = "Time Visualizer"
-        self._real_time = [];
-        self._msg_time = [];
+        self._real_time = []
+        self._msg_time = []
         self._subscriber = None
         # Number of messages used to average for real time factor.
         self._num_msg_for_average = 50
@@ -22,8 +24,8 @@ class TimeVisualizer(object):
 
         self._subscriber = lcmUtils.addSubscriber(
             'DRAKE_VIEWER_DRAW',
-            messageClass = lcmbotcore.viewer_draw_t,
-            callback = self.handle_message)
+            messageClass=lcmbotcore.viewer_draw_t,
+            callback=self.handle_message)
 
     def remove_subscriber(self):
         if (self._subscriber is None):
@@ -43,7 +45,7 @@ class TimeVisualizer(object):
             self.remove_subscriber()
 
     def handle_message(self, msg):
-        msg_time = msg.timestamp * 1e-3 # convert from milliseconds
+        msg_time = msg.timestamp * 1e-3  # convert from milliseconds
         self._real_time.append(time.time())
         self._msg_time.append(msg_time)
 
@@ -62,6 +64,7 @@ class TimeVisualizer(object):
 
         vis.updateText(my_text, 'text')
 
+
 def init_visualizer():
     time_viz = TimeVisualizer()
 
@@ -70,6 +73,7 @@ def init_visualizer():
         'Tools', time_viz._name,
         time_viz.is_enabled, time_viz.set_enabled)
     return time_viz
+
 
 # Creates the visualizer when this script is executed.
 time_viz = init_visualizer()

@@ -10,7 +10,7 @@ namespace multibody {
 template <typename T>
 JointActuator<T>::JointActuator(
     const std::string& name, const Joint<T>& joint)
-    : name_(name), joint_index_(joint.get_index()) {}
+    : name_(name), joint_index_(joint.index()) {}
 
 template <typename T>
 const Joint<T>& JointActuator<T>::joint() const {

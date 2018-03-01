@@ -7,8 +7,8 @@
 #include <list>
 #include <memory>
 
-#include <lcm/lcm-cpp.hpp>
 #include "bot_core/robot_state_t.hpp"
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"

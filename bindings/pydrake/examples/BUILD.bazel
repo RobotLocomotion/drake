@@ -37,6 +37,20 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "acrobot_py",
+    cc_deps = [
+        "//examples/acrobot:acrobot_plant",
+    ],
+    cc_so_name = "acrobot",
+    cc_srcs = ["acrobot_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
         "//examples/pendulum:pendulum_plant",
@@ -51,6 +65,7 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":acrobot_py",
     ":pendulum_py",
 ]
 
@@ -76,6 +91,14 @@ drake_py_test(
     size = "small",
     deps = [
         ":pendulum_py",
+    ],
+)
+
+drake_py_test(
+    name = "acrobot_test",
+    size = "small",
+    deps = [
+        ":acrobot_py",
     ],
 )
 

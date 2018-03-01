@@ -69,7 +69,7 @@ class DrakeKukaIIwaRobot {
     model_ = MakeKukaIiwaModel<T>(
         true /* finalized model */, gravity /* acceleration of gravity */);
 
-    linkN_ = &(model_->get_world_body());
+    linkN_ = &(model_->world_body());
 
     // Get this robot's seven links.
     linkA_ = &model_->GetBodyByName("iiwa_link_1");
@@ -102,7 +102,7 @@ class DrakeKukaIIwaRobot {
 
   /// This method gets the number of rigid bodies in this robot.
   /// @returns the number of rigid bodies in this robot.
-  int get_number_of_rigid_bodies() const  { return model_->get_num_bodies(); }
+  int get_number_of_rigid_bodies() const  { return model_->num_bodies(); }
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -129,16 +129,16 @@ class DrakeKukaIIwaRobot {
 
     // Retrieve end-effector pose from position kinematics cache.
     model_->CalcPositionKinematicsCache(*context_, &pc);
-    const Isometry3<T>& X_NG = pc.get_X_WB(linkG_->get_node_index());
+    const Isometry3<T>& X_NG = pc.get_X_WB(linkG_->node_index());
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
-    const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->get_node_index());
+    const SpatialVelocity<T>& V_NG_N = vc.get_V_WB(linkG_->node_index());
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
-    std::vector<SpatialAcceleration<T>> A_WB(model_->get_num_bodies());
+    std::vector<SpatialAcceleration<T>> A_WB(model_->num_bodies());
     model_->CalcSpatialAccelerationsFromVdot(*context_, pc, vc, qDDt, &A_WB);
-    const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->get_node_index()];
+    const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->node_index()];
 
     // Create a class to return the results.
     return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
@@ -182,7 +182,7 @@ class DrakeKukaIIwaRobot {
 
     // Output vector of generalized forces for calculated motor torques
     // required to drive the Kuka robot at its specified rate.
-    const int number_of_generalized_speeds = model_->get_num_velocities();
+    const int number_of_generalized_speeds = model_->num_velocities();
     VectorX<T> generalized_force_output(number_of_generalized_speeds);
 
     // Output vector of spatial forces for joint reaction force/torques for
@@ -207,13 +207,13 @@ class DrakeKukaIIwaRobot {
 
     // Put joint reaction forces into return struct.
     KukaRobotJointReactionForces<T> reaction_forces;
-    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
-    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
-    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
-    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->get_node_index()];
-    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->get_node_index()];
-    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->get_node_index()];
-    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->get_node_index()];
+    reaction_forces.F_Ao_W = F_BMo_W_array[linkA_->node_index()];
+    reaction_forces.F_Bo_W = F_BMo_W_array[linkB_->node_index()];
+    reaction_forces.F_Co_W = F_BMo_W_array[linkC_->node_index()];
+    reaction_forces.F_Do_W = F_BMo_W_array[linkD_->node_index()];
+    reaction_forces.F_Eo_W = F_BMo_W_array[linkE_->node_index()];
+    reaction_forces.F_Fo_W = F_BMo_W_array[linkF_->node_index()];
+    reaction_forces.F_Go_W = F_BMo_W_array[linkG_->node_index()];
     return reaction_forces;
   }
 

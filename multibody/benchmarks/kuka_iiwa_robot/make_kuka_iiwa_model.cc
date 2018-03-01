@@ -109,7 +109,7 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
   // angles and a position vector. Alternately, frame An is regarded as
   // coincident with linkA.
   const Joint<T>* joint{nullptr};
-  const Body<T>& linkN = model->get_world_body();
+  const Body<T>& linkN = model->world_body();
   joint = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
       "iiwa_joint_1",
       linkN, joint_1_rpy_, joint_1_xyz_,

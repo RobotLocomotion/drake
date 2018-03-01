@@ -35,7 +35,7 @@ class ArticulatedBodyInertiaCache {
   /// Constructs an articulated body cache entry for the given
   /// MultibodyTreeTopology.
   explicit ArticulatedBodyInertiaCache(const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.get_num_bodies()) {
+      num_nodes_(topology.num_bodies()) {
     Allocate();
   }
 
