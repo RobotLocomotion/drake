@@ -9,6 +9,7 @@ py_binary(
     name = "drake_visualizer.impl",
     srcs = ["//tools/workspace/drake_visualizer:drake_visualizer.py"],
     data = [
+        "//automotive/models:prod_models",
         "//examples:prod_models",
         "@drake_visualizer",
     ],
