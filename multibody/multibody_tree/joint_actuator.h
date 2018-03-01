@@ -6,9 +6,11 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -17,11 +19,10 @@ namespace multibody {
 template<typename T> class Joint;
 
 /// The %JointActuator class is mostly a simple bookkeeping structure to
-/// represent an actuator acting on a given Joint. When added to a MultibodyTree
-/// model, a %JointActuator gets assigned a JointActuatorIndex, which can be
-/// retrieved with JointActuator::index(). The %JointActuator class
-/// allows mapping this JointActuatorIndex to the Joint on which it actuates,
-/// which can be retrieved with JointActuator::joint().
+/// represent an actuator acting on a given Joint.
+/// It helps to flag whether a given Joint is actuated or not so that
+/// MultibodyTree clients can apply forces on actuated joints through their
+/// actuators, see AddInOneForce().
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -48,6 +49,40 @@ class JointActuator final
 
   /// Returns the joint actuated by this %JointActuator.
   const Joint<T>& joint() const;
+
+  /// Adds into `forces` a force along one of the degrees of freedom of the
+  /// Joint actuated by `this` actuator.
+  /// The meaning for this degree of freedom, sign conventions and even its
+  /// dimensional units depend on the specific joint sub-class being actuated.
+  /// For a RevoluteJoint for instance, `joint_dof` can only be 0 since revolute
+  /// joints's motion subspace only has one degree of freedom, while the units
+  /// of `tau` are those of torque (N⋅m in the MKS system of units). For
+  /// multi-dof joints please refer to the documentation provided by specific
+  /// joint sub-classes regarding the meaning of `joint_dof`.
+  ///
+  /// @param[in] context
+  ///   The context storing the state and parameters for the model to which
+  ///   `this` joint belongs.
+  /// @param[in] joint_dof
+  ///   Index specifying one of the degress of freedom for this joint. The index
+  ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
+  ///   method will throw an exception.
+  /// @param[in] joint_tau
+  ///   Generalized force corresponding to the degree of freedom indicated by
+  ///   `joint_dof` to be added into `forces`. Refere to the specific Joint
+  ///   sub-class documentation for details on the meaning and units for this
+  ///   degree of freedom.
+  /// @param[out] forces
+  ///   On return, this method will add force `tau` for the degree of
+  ///   freedom `joint_dof` into the output `forces`. This method aborts if
+  ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
+  ///   accommodate a set of forces for the model to which this actuator
+  ///   belongs.
+  void AddInOneForce(
+      const systems::Context<T>& context,
+      int joint_dof,
+      const T& tau,
+      MultibodyForces<T>* forces) const;
 
   /// @cond
   // For internal use only.

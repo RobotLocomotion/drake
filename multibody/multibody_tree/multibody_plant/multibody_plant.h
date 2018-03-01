@@ -384,7 +384,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// Returns a constant reference to the input port for external actuation.
   /// This input port is a vector valued port, indexed by JointActuatorIndex.
-  /// A actuator's index can be obtained with JointActuator::index().
+  /// An actuator's index can be obtained with JointActuator::index().
   /// @pre Finalize() was already called on `this` plant.
   /// @throws if called before Finalize() or if the model does not contain any
   /// actuators. See AddJointActuator() and num_actuators().

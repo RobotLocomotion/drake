@@ -83,10 +83,9 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
          actuator_index < num_actuators(); ++actuator_index) {
       const JointActuator<T>& actuator =
           model().get_joint_actuator(actuator_index);
-      const Joint<T> &joint = actuator.joint();
       // We only support actuators on single dof joints for now.
-      DRAKE_DEMAND(joint.num_dofs() == 1);
-      joint.AddInOneForce(context, 0, u[actuator_index], &forces);
+      DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
+      actuator.AddInOneForce(context, 0, u[actuator_index], &forces);
     }
   }
 

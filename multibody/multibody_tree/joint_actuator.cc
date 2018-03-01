@@ -18,6 +18,18 @@ const Joint<T>& JointActuator<T>::joint() const {
 }
 
 template <typename T>
+void JointActuator<T>::AddInOneForce(
+    const systems::Context<T>& context,
+    int joint_dof,
+    const T& joint_tau,
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(0 <= joint_dof && joint_dof < joint().num_dofs());
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+  joint().AddInOneForce(context, joint_dof, joint_tau, forces);
+}
+
+template <typename T>
 std::unique_ptr<JointActuator<double>>
 JointActuator<T>::DoCloneToScalar(const MultibodyTree<double>&) const {
   return std::unique_ptr<JointActuator<double>>(
