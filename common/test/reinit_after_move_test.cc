@@ -46,6 +46,42 @@ GTEST_TEST(DefaultValueTest, Access) {
   EXPECT_EQ(ForceInt(x_value_ref), 2);
 }
 
+// For the next test.
+struct Thing {
+  int i{};
+};
+
+// Check that the dereferencing operators *ptr and ptr-> work for pointer types.
+GTEST_TEST(DefaultValueTest, Pointers) {
+  int i = 5;
+  reinit_after_move<int*> i_ptr{&i};
+  reinit_after_move<const int*> i_cptr{&i};
+
+  EXPECT_EQ(*i_ptr, 5);
+  EXPECT_EQ(*i_cptr, 5);
+  *i_ptr = 6;
+  EXPECT_EQ(*i_ptr, 6);
+  EXPECT_EQ(*i_cptr, 6);
+
+  reinit_after_move<int*> i_ptr2(std::move(i_ptr));
+  reinit_after_move<const int*> i_cptr2(std::move(i_cptr));
+  EXPECT_EQ(i_ptr2, &i);
+  EXPECT_EQ(i_cptr2, &i);
+  EXPECT_EQ(i_ptr, nullptr);
+  EXPECT_EQ(i_cptr, nullptr);
+
+  Thing thing;
+  reinit_after_move<Thing*> thing_ptr{&thing};
+  reinit_after_move<const Thing*> thing_cptr{&thing};
+
+  // Make sure there's no cloning happening.
+  EXPECT_EQ(&*thing_ptr, &thing);
+
+  thing_ptr->i = 10;
+  EXPECT_EQ(thing_ptr->i, 10);
+  EXPECT_EQ((*thing_ptr).i, 10);
+}
+
 GTEST_TEST(DefaultValueTest, Copy) {
   reinit_after_move<int> x{1};
   EXPECT_EQ(x, 1);
