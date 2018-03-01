@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
-from pydrake.math import BarycentricMesh
+from pydrake.math import (BarycentricMesh, wrap_to)
 import numpy as np
 
 
@@ -55,6 +55,9 @@ class TestBarycentricMesh(unittest.TestCase):
         ax.plot_surface(X, Y, Z)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
+
+    def test_wrap_to(self):
+        self.assertEquals(wrap_to(1.5, 0., 1.), .5)
 
 
 if __name__ == '__main__':

@@ -23,13 +23,13 @@ def _python_lint(name_prefix, files, ignore):
     )
 
     # Additional Drake lint.
-    native.py_test(
+    py_test_isolated(
         name = name_prefix + "_drakelint",
         size = "small",
-        srcs = ["//tools/lint:drakelint"],
+        srcs = ["@drake//tools/lint:drakelint"],
         data = files,
         args = locations,
-        main = "//tools/lint:drakelint.py",
+        main = "@drake//tools/lint:drakelint.py",
         tags = ["drakelint", "lint"]
     )
 

@@ -119,8 +119,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
            const Body<T>* body, const Mobilizer<T>* mobilizer) :
       parent_node_(parent_node), body_(body), mobilizer_(mobilizer) {
     DRAKE_DEMAND(!(parent_node == nullptr &&
-        body->get_index() != world_index()));
-    DRAKE_DEMAND(!(mobilizer == nullptr && body->get_index() != world_index()));
+        body->index() != world_index()));
+    DRAKE_DEMAND(!(mobilizer == nullptr && body->index() != world_index()));
   }
 
   /// Method to update the list of child body nodes maintained by this node,
@@ -135,7 +135,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// Returns a constant reference to the body B associated with this node.
-  const Body<T>& get_body() const {
+  const Body<T>& body() const {
     DRAKE_ASSERT(body_ != nullptr);
     return *body_;
   }
@@ -143,7 +143,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns a constant reference to the unique parent body P of the body B
   /// associated with this node. This method aborts in Debug builds if called on
   /// the root node corresponding to the _world_ body.
-  const Body<T>& get_parent_body() const {
+  const Body<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
@@ -451,18 +451,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Body for this node. Its body frame is also referred to as B whenever no
     // ambiguity can arise.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Body for this node's parent, or the parent body P. Its body frame is
     // also referred to as P whenever no ambiguity can arise.
-    const Body<T>& body_P = get_parent_body();
+    const Body<T>& body_P = parent_body();
 
     // Inboard frame F of this node's mobilizer.
-    const Frame<T>& frame_F = get_inboard_frame();
-    DRAKE_ASSERT(frame_F.get_body().get_index() == body_P.get_index());
+    const Frame<T>& frame_F = inboard_frame();
+    DRAKE_ASSERT(frame_F.body().index() == body_P.index());
     // Outboard frame M of this node's mobilizer.
-    const Frame<T>& frame_M = get_outboard_frame();
-    DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
+    const Frame<T>& frame_M = outboard_frame();
+    DRAKE_ASSERT(frame_M.body().index() == body_B.index());
 
     // =========================================================================
     // Computation of A_PB = DtP(V_PB), Eq. (4).
@@ -569,7 +569,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   guarantee these conditions are satisfied. This method will abort if the
   ///   the pointer is null.
   ///   To access a mobilizer's reaction force on a given body B, access this
-  ///   array with the index returned by Body::get_node_index().
+  ///   array with the index returned by Body::node_index().
   /// @param[out] tau_array
   ///   A non-null pointer to the output vector of generalized forces that would
   ///   result in body B having spatial acceleration `A_WB`. This method will
@@ -608,7 +608,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         tau_applied.size() == 0);
     DRAKE_DEMAND(tau_array != nullptr);
     DRAKE_DEMAND(tau_array->size() ==
-        this->get_parent_tree().get_num_velocities());
+        this->get_parent_tree().num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -660,7 +660,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // before the projection can be performed.
 
     // This node's body B.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Input spatial acceleration for this node's body B.
     const SpatialAcceleration<T>& A_WB = get_A_WB_from_array(A_WB_array);
@@ -674,8 +674,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
                                                     &Ftot_BBo_W);
 
     // Compute shift vector from Bo to Mo expressed in the world frame W.
-    const Frame<T>& frame_M = get_outboard_frame();
-    DRAKE_DEMAND(frame_M.get_body().get_index() == body_B.get_index());
+    const Frame<T>& frame_M = outboard_frame();
+    DRAKE_DEMAND(frame_M.body().index() == body_B.index());
     const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
     const Vector3<T>& p_BoMo_B = X_BM.translation();
     const Matrix3<T>& R_WB = get_X_WB(pc).linear();
@@ -683,7 +683,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Output spatial force that would need to be exerted by this node's
     // mobilizer in order to attain the prescribed acceleration A_WB.
-    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
+    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->index()];
 
     // Ensure this method was not called with an Fapplied_Bo_W being an entry
     // into F_BMo_W_array, otherwise we would be overwriting Fapplied_Bo_W.
@@ -692,7 +692,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
     for (const BodyNode<T>* child_node : children_) {
-      BodyNodeIndex child_node_index = child_node->get_index();
+      BodyNodeIndex child_node_index = child_node->index();
 
       // Pose of child body C in this node's body frame B.
       const Isometry3<T>& X_BC = child_node->get_X_PB(pc);
@@ -700,7 +700,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const Vector3<T> p_BoCo_W = R_WB * X_BC.translation();
 
       // p_CoMc_W:
-      const Frame<T>& frame_Mc = child_node->get_outboard_frame();
+      const Frame<T>& frame_Mc = child_node->outboard_frame();
       const Matrix3<T>& R_WC = child_node->get_X_WB(pc).linear();
       const Isometry3<T> X_CMc = frame_Mc.CalcPoseInBodyFrame(context);
       const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
@@ -733,7 +733,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Re-express F_BMo_W in the inboard frame F before projecting it onto the
     // sub-space generated by H_FM(q).
-    const Isometry3<T> X_PF = get_inboard_frame().CalcPoseInBodyFrame(context);
+    const Isometry3<T> X_PF = inboard_frame().CalcPoseInBodyFrame(context);
     const Isometry3<T>& X_WP = get_X_WP(pc);
     // TODO(amcastro-tri): consider caching X_WF since also used in position and
     // velocity kinematics.
@@ -789,9 +789,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_DEMAND(H_PB_W->cols() == get_num_mobilizer_velocites());
 
     // Inboard frame F of this node's mobilizer.
-    const Frame<T>& frame_F = get_inboard_frame();
+    const Frame<T>& frame_F = inboard_frame();
     // Outboard frame M of this node's mobilizer.
-    const Frame<T>& frame_M = get_outboard_frame();
+    const Frame<T>& frame_M = outboard_frame();
 
     const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
     const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
@@ -835,14 +835,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   `H_array` stores the columns of these matrices and therefore it consists
   ///   of a `std::vector` of vectors in ℝ⁶ with as many entries as the number
   ///   of generalized velocities in the model.
-  ///   `H_array` must be of size MultibodyTree::get_num_velocities().
+  ///   `H_array` must be of size MultibodyTree::num_velocities().
   /// @retval H
   ///   An Eigen::Map to a matrix of size `6 x nm` corresponding to the Jacobian
   ///   matrix for this node.
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
       const std::vector<Vector6<T>>& H_array) const {
     DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
-        this->get_parent_tree().get_num_velocities());
+        this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
     // The first column of this node's Jacobian matrix H_PB_W:
@@ -965,7 +965,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //              = P_B_W - g_PB_W * HTxP                                 (7)
 
     // Body for this node.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Get pose of B in W.
     const Isometry3<T>& X_WB = get_X_WB(pc);
@@ -1044,15 +1044,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the inboard frame F of this node's mobilizer.
   /// @throws std::runtime_error if called on the root node corresponding to
   /// the _world_ body.
-  const Frame<T>& get_inboard_frame() const {
-    return get_mobilizer().get_inboard_frame();
+  const Frame<T>& inboard_frame() const {
+    return get_mobilizer().inboard_frame();
   }
 
   /// Returns the outboard frame M of this node's mobilizer.
   /// @throws std::runtime_error if called on the root node corresponding to
   /// the _world_ body.
-  const Frame<T>& get_outboard_frame() const {
-    return get_mobilizer().get_outboard_frame();
+  const Frame<T>& outboard_frame() const {
+    return get_mobilizer().outboard_frame();
   }
 
  private:
@@ -1302,16 +1302,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const {
     // Body for this node.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Body for this node's parent, or the parent body P.
-    const Body<T>& body_P = get_parent_body();
+    const Body<T>& body_P = parent_body();
 
     // Inboard/Outboard frames of this node's mobilizer.
-    const Frame<T>& frame_F = get_mobilizer().get_inboard_frame();
-    DRAKE_ASSERT(frame_F.get_body().get_index() == body_P.get_index());
-    const Frame<T>& frame_M = get_mobilizer().get_outboard_frame();
-    DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
+    const Frame<T>& frame_F = get_mobilizer().inboard_frame();
+    DRAKE_ASSERT(frame_F.body().index() == body_P.index());
+    const Frame<T>& frame_M = get_mobilizer().outboard_frame();
+    DRAKE_ASSERT(frame_M.body().index() == body_B.index());
 
     // Input (const):
     // - X_PF(qb_P)
@@ -1396,7 +1396,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     SpatialForce<T>& Ftot_BBo_W = *Ftot_BBo_W_ptr;
 
     // Body for this node.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Pose of B in W.
     const Isometry3<T>& X_WB = get_X_WB(pc);
@@ -1439,7 +1439,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_body_node(this->get_index());
+    topology_ = tree_topology.get_body_node(this->index());
   }
 
   BodyNodeTopology topology_;

@@ -26,6 +26,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/math:orthonormal_basis",
         "//drake/multibody:rigid_body_tree",
@@ -314,4 +315,8 @@ filegroup(
     ]),
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = glob([
+        "visualization/*.py",
+    ]),
+)

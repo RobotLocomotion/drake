@@ -6,7 +6,7 @@ def godotengine_repository(name):
     github_archive(
         name = name,
         repository = "godotengine/godot",
-        commit = "06dd10b3905a7d48beffe0523b785d513747f511",
-        sha256 = "bb305dc5cec41ef379174162c62f7056f91ba7798324a9466592c0a3420c3105",  # noqa
+        commit = "9bd402698cfa299b79b9144f8d7744c308a4e085",
+        sha256 = "cbec9b48d79b1fdc16a253f438fb06544a59baf71cf2c1f47c193817f2127a10",  # noqa
         build_file = "@drake//tools/workspace/godotengine:package.BUILD.bazel",
     )

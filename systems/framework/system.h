@@ -19,7 +19,6 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
-#include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event_collection.h"
 #include "drake/systems/framework/input_port_descriptor.h"
@@ -682,11 +681,8 @@ class System {
   /// determine whether a system's dynamics are at least partially governed by
   /// difference equations and (2) to obtain the difference equation update
   /// times.
-  /// @param[out] periodic_attr Contains the periodic trigger attributes
-  ///             on return of `true` from this function; the value will be
-  ///             unchanged on return value `false`. Function aborts if null.
-  /// @returns `true` if there exists a unique periodic attribute that triggers
-  ///          one or more discrete update events and `false` otherwise.
+  /// @returns optional<PeriodicAttribute> Contains the periodic trigger
+  /// attributes if the unique periodic attribute exists, otherwise `nullopt`.
   optional<typename Event<T>::PeriodicAttribute>
       GetUniquePeriodicDiscreteUpdateAttribute() const {
     optional<typename Event<T>::PeriodicAttribute> saved_attr;

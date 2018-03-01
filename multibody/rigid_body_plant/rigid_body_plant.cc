@@ -493,7 +493,7 @@ void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
 // Computes the stiffness, damping, and friction coefficient for a contact.
 template <typename T>
 void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
-      const drake::multibody::collision::PointPair& contact,
+      const drake::multibody::collision::PointPair<double>& contact,
       double* stiffness,
       double* damping,
       double* mu,
@@ -614,7 +614,7 @@ void RigidBodyPlant<T>::UpdateGeneralizedForce(
 // contact normals.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const VectorX<T>& q, const VectorX<T>& v) const {
   const auto& tree = this->get_rigid_body_tree();
   auto kinematics_cache = tree.doKinematics(q, v);
@@ -657,7 +657,7 @@ VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
 // effect out on the generalized forces.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>& kinematics_cache,
     const VectorX<T>& f) const {
   // Create a result vector.
@@ -695,7 +695,7 @@ VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
 // contact tangent directions.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const VectorX<T>& q, const VectorX<T>& v,
     const std::vector<int>& half_num_cone_edges) const {
   using std::cos;
@@ -770,7 +770,7 @@ VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
 // the effect out on the generalized forces.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactTangentJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<double>>& contacts,
     const KinematicsCache<T>& kinematics_cache,
     const VectorX<T>& f,
     const std::vector<int>& half_num_cone_edges) const {
@@ -1003,7 +1003,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   if (num_actuators > 0) right_hand_side += tree.B * u;
 
   // Determine the set of contact points corresponding to the current q.
-  std::vector<drake::multibody::collision::PointPair> contacts =
+  std::vector<drake::multibody::collision::PointPair<double>> contacts =
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kinematics_cache, true);
 
@@ -1253,7 +1253,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
   generalized_velocity->SetFromVector(
-      tree_->transformQDotToVelocity(kinsol, qdot));
+    tree_->transformQDotToVelocity(kinsol, qdot.eval()));
 }
 
 template <typename T>

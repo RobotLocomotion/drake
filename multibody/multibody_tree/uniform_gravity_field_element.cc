@@ -33,16 +33,16 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
 
   // Temporary output vector of spatial forces for each body B at their inboard
   // frame Mo, expressed in the world W.
-  std::vector<SpatialForce<T>> F_BMo_W_array(model.get_num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(model.num_bodies());
 
   // Zero vector of generalized accelerations.
-  const VectorX<T> vdot = VectorX<T>::Zero(model.get_num_velocities());
+  const VectorX<T> vdot = VectorX<T>::Zero(model.num_velocities());
 
   // Temporary array for body accelerations.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model.get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model.num_bodies());
 
   // Ouput vector of generalized forces:
-  VectorX<T> tau_g(model.get_num_velocities());
+  VectorX<T> tau_g(model.num_velocities());
 
   // Compute inverse dynamics with zero generalized velocities and zero
   // generalized accelerations. Since inverse dynamics computes:
@@ -54,7 +54,7 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
   // operator implementation, which would be more efficient.
   model.CalcInverseDynamics(
       context, pc, vc, /* state */
-      VectorX<T>::Zero(model.get_num_velocities()), /* vdot = 0 */
+      VectorX<T>::Zero(model.num_velocities()), /* vdot = 0 */
       /* Applied forces. In this case only gravity. */
       forces.body_forces(), forces.generalized_forces(),
       &A_WB_array, &F_BMo_W_array, /* temporary arrays. */
@@ -74,11 +74,11 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   // Add the force of gravity contribution for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.get_num_bodies();
+  const int num_bodies = model.num_bodies();
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
     const Body<T>& body = model.get_body(body_index);
-    BodyNodeIndex node_index = body.get_node_index();
+    BodyNodeIndex node_index = body.node_index();
 
     // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
     // caching is in place.
@@ -101,7 +101,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.get_num_bodies();
+  const int num_bodies = model.num_bodies();
   T TotalPotentialEnergy = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
@@ -111,7 +111,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Isometry3<T>& X_WB = pc.get_X_WB(body.get_node_index());
+    const Isometry3<T>& X_WB = pc.get_X_WB(body.node_index());
     const Matrix3<T> R_WB = X_WB.linear();
     const Vector3<T> p_WBo = X_WB.translation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
@@ -131,7 +131,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.get_num_bodies();
+  const int num_bodies = model.num_bodies();
   T TotalConservativePower = 0.0;
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
@@ -141,12 +141,12 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Isometry3<T>& X_WB = pc.get_X_WB(body.get_node_index());
+    const Isometry3<T>& X_WB = pc.get_X_WB(body.node_index());
     const Matrix3<T> R_WB = X_WB.linear();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.get_node_index());
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.node_index());
     const SpatialVelocity<T> V_WBcm = V_WB.Shift(p_BoBcm_W);
     const Vector3<T>& v_WBcm = V_WBcm.translational();
 

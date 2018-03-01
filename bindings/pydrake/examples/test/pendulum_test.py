@@ -11,9 +11,6 @@ from pydrake.examples.pendulum import (
 from pydrake.systems.analysis import (
     Simulator
     )
-from pydrake.systems.primitives import (
-    ConstantVectorSource,
-    )
 
 
 class TestPendulum(unittest.TestCase):

@@ -16,7 +16,7 @@ content = """
   "Components": {
     "ignition-math4": {
       "Type": "dylib",
-      "Location": "@prefix@/lib/libignition_math.so",
+      "Location": "@prefix@/lib/libdrake_ignition_math4.so",
       "Includes": ["@prefix@/include/ignition-math4"]
     }
   },

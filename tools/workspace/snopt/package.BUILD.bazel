@@ -1,8 +1,11 @@
 # -*- python -*-
 
 config_setting(
-    name = "debug",
-    values = {"compilation_mode": "dbg"},
+    name = "linux_opt",
+    values = {
+        "compilation_mode": "opt",
+        "cpu": "k8",
+    },
 )
 
 # In some versions of SNOPT, this header provides the function declarations to
@@ -39,9 +42,10 @@ cc_library(
     linkopts = [
         "-lm",
     ] + select({
-        ":debug": [],
-        # Strip symbols in release mode per note (3) above.
-        "//conditions:default": ["-s"],
+        # Strip symbols in release mode where supported by the linker per note
+        # (3) above. Symbols are stripped during install on macOS.
+        ":linux_opt": ["-s"],
+        "//conditions:default": [],
     }),
     # Link statically per note (1) above.
     linkstatic = 1,
@@ -156,6 +160,7 @@ cc_library(
     hdrs = [":generated_headers"],
     copts = [
         "-DSkip_f2c_Undefs",
+        "-fvisibility=hidden",
         "-w",
     ],
     # Link statically so that Fortran MAIN__ resolution works on gcc.

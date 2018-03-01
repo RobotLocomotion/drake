@@ -21,13 +21,13 @@ content = """
   "Components": {
     "BulletCollision": {
       "Type": "dylib",
-      "Location": "@prefix@/lib/libBulletCollision.so",
+      "Location": "@prefix@/lib/libdrake_bullet_collision.so",
       "Includes": ["@prefix@/include/bullet"],
       "Requires": [":LinearMath"]
     },
     "LinearMath": {
       "Type": "dylib",
-      "Location": "@prefix@/lib/libLinearMath.so",
+      "Location": "@prefix@/lib/libdrake_bullet_linear_math.so",
       "Definitions": ["BT_USE_DOUBLE_PRECISION"],
       "Includes": ["@prefix@/include/bullet"]
     }

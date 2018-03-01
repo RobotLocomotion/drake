@@ -155,10 +155,15 @@ class TestLinearizeFromAffine : public ::testing::Test {
     D_ << 22, 23;
     y0_ << 24, 25;
 
-    continuous_system_.reset(new AffineSystem<double>(
-        A_, B_, f0_, C_, D_, y0_));
-    discrete_system_.reset(new AffineSystem<double>(
-        A_, B_, f0_, C_, D_, y0_, time_period_));
+    xstar_continuous_ = A_.colPivHouseholderQr().solve(-B_ * u0_ - f0_);
+    xstar_discrete_ = (Eigen::Matrix3d::Identity() - A_)
+                          .colPivHouseholderQr()
+                          .solve(B_ * u0_ + f0_);
+
+    continuous_system_.reset(
+        new AffineSystem<double>(A_, B_, f0_, C_, D_, y0_));
+    discrete_system_.reset(
+        new AffineSystem<double>(A_, B_, f0_, C_, D_, y0_, time_period_));
   }
 
   Eigen::Matrix3d A_;
@@ -170,6 +175,8 @@ class TestLinearizeFromAffine : public ::testing::Test {
 
   Eigen::Vector3d x0_{26, 27, 28};
   double u0_{29};
+  Eigen::Vector3d xstar_continuous_;
+  Eigen::Vector3d xstar_discrete_;
 
   const double time_period_ = 0.1;
 
@@ -184,8 +191,8 @@ TEST_F(TestLinearizeFromAffine, ContinuousAtEquilibrium) {
   context->FixInputPort(0, Vector1d::Constant(u0_));
 
   // Set x0 to the actual equilibrium point.
-  const Eigen::Vector3d x0 = A_.colPivHouseholderQr().solve(-B_ * u0_ - f0_);
-  context->get_mutable_continuous_state_vector().SetFromVector(x0);
+  context->get_mutable_continuous_state_vector().SetFromVector(
+      xstar_continuous_);
 
   auto linearized_system = Linearize(*continuous_system_, *context);
 
@@ -201,10 +208,8 @@ TEST_F(TestLinearizeFromAffine, ContinuousAtEquilibrium) {
 
   std::unique_ptr<AffineSystem<double>> affine_system =
       FirstOrderTaylorApproximation(*continuous_system_, *context);
-  // Verify that the affine term f0 is just the linear terms.
-  EXPECT_TRUE(CompareMatrices(-A_ * x0 - B_ * u0_, affine_system->f0(), tol,
+  EXPECT_TRUE(CompareMatrices(f0_, affine_system->f0(), tol,
                               MatrixCompareType::absolute));
-  // Verify that the affine term y0 is just the affine term.
   EXPECT_TRUE(CompareMatrices(y0_, affine_system->y0(), tol,
                               MatrixCompareType::absolute));
 }
@@ -244,12 +249,9 @@ TEST_F(TestLinearizeFromAffine, DiscreteAtEquilibrium) {
   context->FixInputPort(0, Vector1d::Constant(u0_));
 
   // Set x0 to the actual equilibrium point.
-  const Eigen::Matrix3d eye = Eigen::Matrix3d::Identity();
-  const Eigen::Vector3d x0 =
-      (eye - A_).colPivHouseholderQr().solve(B_ * u0_ + f0_);
   systems::BasicVector<double>& xd =
       context->get_mutable_discrete_state().get_mutable_vector();
-  xd.SetFromVector(x0);
+  xd.SetFromVector(xstar_discrete_);
 
   auto linearized_system = Linearize(*discrete_system_, *context);
 
@@ -266,10 +268,8 @@ TEST_F(TestLinearizeFromAffine, DiscreteAtEquilibrium) {
 
   std::unique_ptr<AffineSystem<double>> affine_system =
       FirstOrderTaylorApproximation(*discrete_system_, *context);
-  // Verify that the affine term f0 is just the linear terms.
-  EXPECT_TRUE(CompareMatrices(-A_ * x0 - B_ * u0_ + x0, affine_system->f0(),
-                              tol, MatrixCompareType::absolute));
-  // Verify that the affine term y0 is just the affine term.
+  EXPECT_TRUE(CompareMatrices(f0_, affine_system->f0(), tol,
+                              MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(y0_, affine_system->y0(), tol,
                               MatrixCompareType::absolute));
 }
@@ -522,6 +522,179 @@ TEST_F(LinearSystemTest, LinearizeSystemWithParameters) {
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, tol));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->C(), C, tol));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->D(), D, tol));
+}
+
+GTEST_TEST(LinearizeTest, NoState) {
+  const double tol = 1e-6;
+  const Eigen::Matrix<double, 0, 0> A;
+  const Eigen::Matrix<double, 0, 2> B;
+  const Eigen::Matrix<double, 0, 1> f0;
+  const Eigen::Matrix<double, 2, 0> C;
+  Eigen::Matrix2d D;
+  D << 1, 2, 3, 4;
+  Eigen::Vector2d y0;
+  y0 << 5, 6;
+
+  // Check that I get back the original system (continuous time).
+  const AffineSystem<double> sys(A, B, f0, C, D, y0);
+  auto context = sys.CreateDefaultContext();
+  context->FixInputPort(0, Eigen::Vector2d{7, 8});
+
+  const auto taylor_sys = FirstOrderTaylorApproximation(sys, *context);
+  EXPECT_TRUE(CompareMatrices(taylor_sys->A(), A, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys->B(), B, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys->f0(), f0, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys->C(), C, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys->D(), D, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys->y0(), y0, tol));
+
+  // Check that I get back the original system (discrete time).
+  const AffineSystem<double> sys2(A, B, f0, C, D, y0, 0.1);
+  auto context2 = sys2.CreateDefaultContext();
+  context2->FixInputPort(0, Eigen::Vector2d{7, 8});
+
+  const auto taylor_sys2 = FirstOrderTaylorApproximation(sys2, *context2);
+  EXPECT_TRUE(CompareMatrices(taylor_sys2->A(), A, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys2->B(), B, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys2->f0(), f0, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys2->C(), C, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys2->D(), D, tol));
+  EXPECT_TRUE(CompareMatrices(taylor_sys2->y0(), y0, tol));
+}
+
+// Simple linear system with multiple vector inputs and outputs.
+template <typename T>
+class MimoSystem final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MimoSystem);
+
+  explicit MimoSystem(bool is_discrete)
+      : LeafSystem<T>(SystemTypeTag<::drake::systems::MimoSystem>{}),
+        is_discrete_(is_discrete) {
+    this->DeclareInputPort(kVectorValued, 1);
+    this->DeclareInputPort(kVectorValued, 3);
+
+    if (is_discrete) {
+      this->DeclareDiscreteState(2);
+      this->DeclarePeriodicDiscreteUpdate(0.1, 0.0);
+    } else {
+      this->DeclareContinuousState(2);
+    }
+    this->DeclareVectorOutputPort(BasicVector<T>(1), &MimoSystem::CalcOutput0);
+    this->DeclareVectorOutputPort(BasicVector<T>(3), &MimoSystem::CalcOutput1);
+
+    A_ << 1, 2, 3, 4;
+    B0_ << 5, 6;
+    B1_ << 7, 8, 9, 10, 11, 12;
+    C0_ << 13, 14;
+    C1_ << 15, 16, 17, 18, 19, 19.5;
+    D00_ << 20;
+    D01_ << 21, 22, 23;
+    D10_ << 24, 25, 26;
+    D11_ << 27, 28, 29, 30, 31, 32, 33, 34, 35;
+  }
+
+  template <typename U>
+  explicit MimoSystem(const MimoSystem<U>& other)
+      : MimoSystem<T>(other.is_discrete_) {}
+
+  Vector2<T> get_state_vector(const Context<T>& context) const {
+    if (is_discrete_) {
+      return context.get_discrete_state(0).CopyToVector();
+    }
+    return context.get_continuous_state_vector().CopyToVector();
+  }
+
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const final {
+    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
+    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector2<T> x = get_state_vector(context);
+
+    derivatives->SetFromVector(A_ * x + B0_ * u0 + B1_ * u1);
+  }
+
+  void DoCalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      DiscreteValues<T>* discrete_state) const final {
+    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
+    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector2<T> x = get_state_vector(context);
+
+    discrete_state->get_mutable_vector(0).SetFromVector(A_ * x + B0_ * u0 +
+                                                        B1_ * u1);
+  }
+
+  void CalcOutput0(const Context<T>& context, BasicVector<T>* output) const {
+    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
+    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector2<T> x = get_state_vector(context);
+
+    output->SetFromVector(C0_ * x + D00_ * u0 + D01_ * u1);
+  }
+
+  void CalcOutput1(const Context<T>& context, BasicVector<T>* output) const {
+    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
+    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector2<T> x = get_state_vector(context);
+
+    output->SetFromVector(C1_ * x + D10_ * u0 + D11_ * u1);
+  }
+
+  Eigen::Matrix<double, 2, 2> A_;
+  Eigen::Matrix<double, 2, 1> B0_;
+  Eigen::Matrix<double, 2, 3> B1_;
+  Eigen::Matrix<double, 1, 2> C0_;
+  Eigen::Matrix<double, 3, 2> C1_;
+  Eigen::Matrix<double, 1, 1> D00_;
+  Eigen::Matrix<double, 1, 3> D01_;
+  Eigen::Matrix<double, 3, 1> D10_;
+  Eigen::Matrix<double, 3, 3> D11_;
+  const bool is_discrete_{false};
+};
+
+void TestMimo(bool is_discrete) {
+  MimoSystem<double> sys(is_discrete);
+  auto context = sys.CreateDefaultContext();
+  // System is linear, so input and state values don't matter.
+  context->FixInputPort(0, Vector1d::Zero());
+  context->FixInputPort(1, Eigen::Vector3d::Zero());
+
+  const double tol = 1e-8;
+
+  // First-input, first output.
+  auto sys00 = Linearize(sys, *context, 0, 0);
+  EXPECT_TRUE(CompareMatrices(sys00->A(), sys.A_, tol));
+  EXPECT_TRUE(CompareMatrices(sys00->B(), sys.B0_, tol));
+  EXPECT_TRUE(CompareMatrices(sys00->C(), sys.C0_, tol));
+  EXPECT_TRUE(CompareMatrices(sys00->D(), sys.D00_, tol));
+
+  auto sys01 = Linearize(sys, *context, 0, 1);
+  EXPECT_TRUE(CompareMatrices(sys01->A(), sys.A_, tol));
+  EXPECT_TRUE(CompareMatrices(sys01->B(), sys.B0_, tol));
+  EXPECT_TRUE(CompareMatrices(sys01->C(), sys.C1_, tol));
+  EXPECT_TRUE(CompareMatrices(sys01->D(), sys.D10_, tol));
+
+  auto sys10 = Linearize(sys, *context, 1, 0);
+  EXPECT_TRUE(CompareMatrices(sys10->A(), sys.A_, tol));
+  EXPECT_TRUE(CompareMatrices(sys10->B(), sys.B1_, tol));
+  EXPECT_TRUE(CompareMatrices(sys10->C(), sys.C0_, tol));
+  EXPECT_TRUE(CompareMatrices(sys10->D(), sys.D01_, tol));
+
+  auto sys11 = Linearize(sys, *context, 1, 1);
+  EXPECT_TRUE(CompareMatrices(sys11->A(), sys.A_, tol));
+  EXPECT_TRUE(CompareMatrices(sys11->B(), sys.B1_, tol));
+  EXPECT_TRUE(CompareMatrices(sys11->C(), sys.C1_, tol));
+  EXPECT_TRUE(CompareMatrices(sys11->D(), sys.D11_, tol));
+}
+
+GTEST_TEST(LinearizeTest, TestInputOutputPorts) {
+  // Continuous-time version.
+  TestMimo(false);
+
+  // Discrete-time version.
+  TestMimo(true);
 }
 
 }  // namespace

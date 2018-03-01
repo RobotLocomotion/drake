@@ -21,7 +21,7 @@ AcrobotStateReceiver::AcrobotStateReceiver() {
 }
 
 void AcrobotStateReceiver::CopyStateOut(
-    const Context<double>& context, AcrobotStateVector<double>* output) const {
+    const Context<double>& context, AcrobotState<double>* output) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& state = input->GetValue<lcmt_acrobot_x>();

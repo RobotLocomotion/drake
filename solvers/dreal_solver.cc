@@ -357,8 +357,11 @@ dreal::Expression DrealConverter::VisitFloor(const symbolic::Expression&) {
   throw runtime_error("Not supported.");
 }
 
-dreal::Expression DrealConverter::VisitIfThenElse(const symbolic::Expression&) {
-  throw runtime_error("Not supported.");
+dreal::Expression DrealConverter::VisitIfThenElse(
+    const symbolic::Expression& e) {
+  return if_then_else(Convert(get_conditional_formula(e)),
+                      Convert(get_then_expression(e)),
+                      Convert(get_else_expression(e)));
 }
 
 dreal::Expression DrealConverter::VisitUninterpretedFunction(

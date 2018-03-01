@@ -10,6 +10,7 @@ import drake as lcmdrakemsg
 
 
 class ContactVisualizer(object):
+
     def __init__(self):
         self._folder_name = 'Contact Results'
         self._name = "Contact Visualizer"
@@ -26,9 +27,6 @@ class ContactVisualizer(object):
             'CONTACT_RESULTS',
             messageClass=lcmdrakemsg.lcmt_contact_results_for_viz,
             callback=self.handle_message)
-        # Limits the rate of message handling, since redrawing is done in the
-        # message handler.
-        self._sub.setSpeedLimit(30)
         print self._name + " subscriber added."
 
     def remove_subscriber(self):
@@ -51,6 +49,10 @@ class ContactVisualizer(object):
             self.remove_subscriber()
 
     def handle_message(self, msg):
+        # Limits the rate of message handling, since redrawing is done in the
+        # message handler.
+        self._sub.setSpeedLimit(30)
+
         # Removes the folder completely.
         om.removeFromObjectModel(om.findObjectByName(self._folder_name))
 
@@ -103,6 +105,7 @@ def init_visualizer():
         'Tools', my_visualizer._name,
         my_visualizer.is_enabled, my_visualizer.set_enabled)
     return my_visualizer
+
 
 # Creates the visualizer when this script is executed.
 contact_viz = init_visualizer()
