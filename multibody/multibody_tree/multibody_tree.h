@@ -507,7 +507,7 @@ class MultibodyTree {
   ///   const RevoluteJoint<double>& elbow =
   ///     model.AddJoint<RevoluteJoint>(
   ///       "Elbow",                /* joint name */
-  ///       model.world_body(), /* parent body */
+  ///       model.world_body(),     /* parent body */
   ///       {},                     /* frame F IS the parent body frame P */
   ///       pendulum,               /* child body, the pendulum */
   ///       X_BM,                   /* pose of frame M in the body frame B */
