@@ -95,7 +95,3 @@ class TestAll(unittest.TestCase):
         for expected_symbol in expected_symbols:
             self.assertTrue(
                 expected_symbol in pydrake.all.__dict__, expected_symbol)
-
-
-if __name__ == '__main__':
-    unittest.main()

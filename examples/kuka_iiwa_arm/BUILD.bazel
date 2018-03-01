@@ -9,7 +9,7 @@ load(
 )
 load(
     "//tools/skylark:drake_py.bzl",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -275,13 +275,11 @@ install(
 # Run the installed flavor of the kuka simulation, to make sure it can locate
 # its resources, etc.  TODO(jwnimmer-tri) Refactor installed-test phrasing to
 # be more compact, convenient, and efficient such as #7774 proposes.
-drake_py_test(
+drake_py_unittest(
     name = "kuka_simulation_installed_test",
     size = "small",
     timeout = "long",
-    srcs = ["test/kuka_simulation_installed_test.py"],
     data = ["//:install"],
-    main = "test/kuka_simulation_installed_test.py",
     deps = [
         "//tools/install:install_test_helper",
     ],

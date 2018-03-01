@@ -2,8 +2,9 @@
 import os
 import shutil
 import subprocess
-import unittest
 import sys
+import unittest
+
 import install_test_helper
 
 
@@ -24,7 +25,3 @@ class TestKukaSimulation(unittest.TestCase):
             "share/drake/examples/kuka_iiwa_arm/kuka_simulation")
         self.assertTrue(os.path.exists(simulation), "Can't find " + simulation)
         subprocess.check_call([simulation, "--simulation_sec=0.01"], cwd="/")
-
-
-if __name__ == '__main__':
-    unittest.main()

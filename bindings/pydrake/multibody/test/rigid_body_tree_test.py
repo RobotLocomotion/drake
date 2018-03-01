@@ -214,7 +214,3 @@ class TestRigidBodyTree(unittest.TestCase):
             model, package_map=pm,
             floating_base_type=FloatingBaseType.kRollPitchYaw)
         self.assertEqual(tree.get_num_actuators(), 30)
-
-
-if __name__ == '__main__':
-    unittest.main()

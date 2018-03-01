@@ -107,7 +107,3 @@ class TestControllers(unittest.TestCase):
         context.FixInputPort(0, BasicVector([0]))
         controller = LinearQuadraticRegulator(double_integrator, context, Q, R)
         np.testing.assert_almost_equal(controller.D(), -K_expected)
-
-
-if __name__ == '__main__':
-    unittest.main()

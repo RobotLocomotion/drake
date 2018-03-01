@@ -58,7 +58,3 @@ class TestBarycentricMesh(unittest.TestCase):
 
     def test_wrap_to(self):
         self.assertEquals(wrap_to(1.5, 0., 1.), .5)
-
-
-if __name__ == '__main__':
-    unittest.main()

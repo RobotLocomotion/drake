@@ -119,8 +119,8 @@ drake_cc_googletest(
 
 drake_py_test(
     name = "import_lcm_test",
-    srcs = ["test/import_lcm_test.py"],
-    main = "test/import_lcm_test.py",
+    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
+    allow_import_unittest = True,
     deps = ["@lcm//:lcm-python"],
 )
 

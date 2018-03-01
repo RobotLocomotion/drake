@@ -130,7 +130,3 @@ class TestRBTIK(unittest.TestCase):
         # Test that construction doesn't fail with a given timespan.
         ik.MinDistanceConstraint(model, min_distance, active_bodies_idx,
                                  active_group_name, tspan)
-
-
-if __name__ == '__main__':
-    unittest.main()

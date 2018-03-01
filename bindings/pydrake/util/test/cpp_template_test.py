@@ -5,6 +5,8 @@ from types import ModuleType
 
 import pydrake.util.cpp_template as m
 
+_TEST_MODULE = "bindings.pydrake.util.test.cpp_template_test"
+
 
 class DummyA(object):
     pass
@@ -37,7 +39,8 @@ class DummyD(object):
 class TestCppTemplate(unittest.TestCase):
     def test_base(self):
         template = m.TemplateBase("BaseTpl")
-        self.assertEquals(str(template), "<TemplateBase __main__.BaseTpl>")
+        self.assertEquals(str(template), "<TemplateBase {}.BaseTpl>".format(
+            _TEST_MODULE))
 
         # Single arguments.
         template.add_instantiation(int, 1)
@@ -81,15 +84,18 @@ class TestCppTemplate(unittest.TestCase):
 
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
-        self.assertEquals(str(template), "<TemplateClass __main__.ClassTpl>")
+        self.assertEquals(str(template), "<TemplateClass {}.ClassTpl>".format(
+            _TEST_MODULE))
 
         template.add_instantiation(int, DummyA)
         template.add_instantiation(float, DummyB)
 
         self.assertEquals(template[int], DummyA)
-        self.assertEquals(str(DummyA), "<class '__main__.ClassTpl[int]'>")
+        self.assertEquals(str(DummyA), "<class '{}.ClassTpl[int]'>".format(
+            _TEST_MODULE))
         self.assertEquals(template[float], DummyB)
-        self.assertEquals(str(DummyB), "<class '__main__.ClassTpl[float]'>")
+        self.assertEquals(str(DummyB), "<class '{}.ClassTpl[float]'>".format(
+            _TEST_MODULE))
 
     def test_function(self):
         template = m.TemplateFunction("func")
@@ -99,7 +105,8 @@ class TestCppTemplate(unittest.TestCase):
 
         self.assertEquals(template[int](), 1)
         self.assertEquals(template[float](), 2)
-        self.assertEquals(str(template), "<TemplateFunction __main__.func>")
+        self.assertEquals(str(template), "<TemplateFunction {}.func>".format(
+            _TEST_MODULE))
 
     def test_method(self):
         DummyC.method = m.TemplateMethod("method", DummyC)
@@ -144,7 +151,3 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(str(tpl_1), "<unbound TemplateMethod DummyD.method>")
         tpl_2 = get_tpl_method()
         self.assertTrue(tpl_1 is tpl_2)
-
-
-if __name__ == '__main__':
-    unittest.main()
