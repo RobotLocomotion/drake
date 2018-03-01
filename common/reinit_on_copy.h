@@ -1,15 +1,15 @@
 #pragma once
 
 #include <type_traits>
-#include <utility>
 
 namespace drake {
 
 /// Type wrapper that performs value-initialization on the wrapped type, and
 /// guarantees that when copying from this type the copied object is reset
-/// to its value-initialized value. Assignment and move construction are
-/// unaffected. Note that value initialization means numeric types are set to
-/// zero and pointer types are set to nullptr.
+/// to its value-initialized value. Move assignment and construction are
+/// unaffected. Note that value initialization means the initialization
+/// performed when a variable is constructed with an empty initializer. For
+/// example, numeric types are set to zero and pointer types are set to nullptr.
 ///
 /// Background:
 ///
@@ -60,9 +60,18 @@ class reinit_on_copy {
   /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
   /// MoveAssignable.
   //@{
+  /// Copy constructor just value-initializes instead.
   reinit_on_copy(const reinit_on_copy&) {}
-  reinit_on_copy& operator=(const reinit_on_copy&) = default;
+
+  /// Copy assignment value-initializes _except_ for self-assignment.
+  reinit_on_copy& operator=(const reinit_on_copy& source) {
+    if (this != &source)
+      new (&value_) T{};  // Use placement new to reconstruct.
+    return *this;
+  }
+
   reinit_on_copy(reinit_on_copy&& other) = default;
+
   reinit_on_copy& operator=(reinit_on_copy&& other) = default;
   //@}
 

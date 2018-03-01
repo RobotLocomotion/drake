@@ -39,6 +39,7 @@ drake_cc_library(
         ":number_traits",
         ":polynomial",
         ":reinit_after_move",
+        ":reinit_on_copy",
         ":scoped_singleton",
         ":sorted_vectors_have_intersection",
         ":symbolic",

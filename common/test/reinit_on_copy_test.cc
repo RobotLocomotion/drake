@@ -80,6 +80,9 @@ GTEST_TEST(ReinitOnCopyTest, Pointers) {
   Foo my_foo;
   reinit_on_copy<Foo*> my_foo_ptr{&my_foo};
 
+  // Make sure there's no cloning happening.
+  EXPECT_EQ(&*my_foo_ptr, &my_foo);
+
   EXPECT_EQ(my_foo_ptr->use_count(), 25);
   EXPECT_EQ((*my_foo_ptr).use_count(), 25);
 }
@@ -102,9 +105,10 @@ GTEST_TEST(ReinitOnCopyTest, Copy) {
 
   // Copy-assignment and lack of aliasing.
   reinit_on_copy<int> w{22};
+  EXPECT_EQ(w, 22);
   w = x;
   EXPECT_EQ(x, 3);
-  EXPECT_EQ(w, 3);
+  EXPECT_EQ(w, 0);  // reset, not reinitialized to 22!
   w = 4;
   EXPECT_EQ(x, 3);
   EXPECT_EQ(w, 4);
