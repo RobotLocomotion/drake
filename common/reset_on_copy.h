@@ -42,6 +42,12 @@ namespace drake {
 /// `reset_on_copy` wrapper, `use_count_` would have been copied also,
 /// which we're assuming is not the desired behavior here.
 ///
+/// @note This is most useful for numeric and integer types but works for
+/// any type T for which `T{}` provides the behavior you want. Be aware that for
+/// class types T, the implementation of `T{}` (the default constructor, which
+/// may have been user-supplied) won't necessarily reset T's members to zero,
+/// nor even necessarily value-initialize T's members.
+///
 /// @tparam T must support CopyConstructible, CopyAssignable, MoveConstructible,
 /// and MoveAssignable.
 template <typename T>
@@ -63,10 +69,11 @@ class reset_on_copy {
   /// Copy constructor just value-initializes instead.
   reset_on_copy(const reset_on_copy&) {}
 
-  /// Copy assignment value-initializes _except_ for self-assignment.
+  /// Copy assignment uses T's copy assignment operator from a
+  /// value-initialized source, _except_ for self-assignment which does nothing.
   reset_on_copy& operator=(const reset_on_copy& source) {
     if (this != &source)
-      new (&value_) T{};  // Use placement new to reconstruct.
+      value_ = T{};
     return *this;
   }
 

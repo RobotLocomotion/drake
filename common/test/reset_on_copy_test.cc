@@ -174,5 +174,31 @@ GTEST_TEST(ReinitOnCopyTest, Move) {
   EXPECT_EQ(w, 3);
 }
 
+struct Bar {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Bar)
+  Bar() = default;
+  int i{10};
+};
+
+GTEST_TEST(ReinitOnCopyTest, NonPodData) {
+  reset_on_copy<Bar> reset_b;
+  Bar& b = static_cast<Bar&>(reset_b);
+  // Make sure that was a conversion, not a copy.
+  EXPECT_EQ(static_cast<void*>(&b), static_cast<void*>(&reset_b));
+  EXPECT_EQ(b.i, 10);
+
+  b.i = 15;
+  EXPECT_EQ(b.i, 15);
+
+  reset_on_copy<Bar> reset_b_cpy(reset_b);
+  Bar& b_cpy = static_cast<Bar&>(reset_b_cpy);
+  EXPECT_EQ(static_cast<void*>(&b_cpy), static_cast<void*>(&reset_b_cpy));
+  EXPECT_NE(&b_cpy, &b);
+
+  // Note: the *contained* numerical values are value-initialized to the
+  // declared default.
+  EXPECT_EQ(b_cpy.i, 10);
+}
+
 }  // namespace
 }  // namespace drake
