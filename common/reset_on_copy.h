@@ -33,49 +33,49 @@ namespace drake {
 ///
 ///  private:
 ///   std::vector<int> items_;
-///   reinit_on_copy<int> use_count_;
+///   reset_on_copy<int> use_count_;
 /// };
 /// </pre>
 ///
 /// When copying from `Foo`, the new object will contain a copy of `items_`
 /// but `use_count_` will be zero.  If `Foo` had not used the
-/// `reinit_on_copy` wrapper, `use_count_` would have been copied also,
+/// `reset_on_copy` wrapper, `use_count_` would have been copied also,
 /// which we're assuming is not the desired behavior here.
 ///
 /// @tparam T must support CopyConstructible, CopyAssignable, MoveConstructible,
 /// and MoveAssignable.
 template <typename T>
-class reinit_on_copy {
+class reset_on_copy {
  public:
-  /// Constructs a reinit_on_copy<T> with a value-initialized wrapped value.
+  /// Constructs a reset_on_copy<T> with a value-initialized wrapped value.
   /// See http://en.cppreference.com/w/cpp/language/value_initialization.
-  reinit_on_copy() {}
+  reset_on_copy() {}
 
-  /// Constructs a reinit_on_copy<T> with the given wrapped value.  This is
-  /// an implicit conversion, so that reinit_on_copy<T> behaves more like
+  /// Constructs a reset_on_copy<T> with the given wrapped value.  This is
+  /// an implicit conversion, so that reset_on_copy<T> behaves more like
   /// the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
-  reinit_on_copy(const T& value) : value_(value) {}
+  reset_on_copy(const T& value) : value_(value) {}
 
   /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
   /// MoveAssignable.
   //@{
   /// Copy constructor just value-initializes instead.
-  reinit_on_copy(const reinit_on_copy&) {}
+  reset_on_copy(const reset_on_copy&) {}
 
   /// Copy assignment value-initializes _except_ for self-assignment.
-  reinit_on_copy& operator=(const reinit_on_copy& source) {
+  reset_on_copy& operator=(const reset_on_copy& source) {
     if (this != &source)
       new (&value_) T{};  // Use placement new to reconstruct.
     return *this;
   }
 
-  reinit_on_copy(reinit_on_copy&& other) = default;
+  reset_on_copy(reset_on_copy&& other) = default;
 
-  reinit_on_copy& operator=(reinit_on_copy&& other) = default;
+  reset_on_copy& operator=(reset_on_copy&& other) = default;
   //@}
 
-  /// @name Implicit conversion operators to make reinit_on_copy<T> act
+  /// @name Implicit conversion operators to make reset_on_copy<T> act
   /// as the wrapped type.
   //@{
   operator T&() { return value_; }

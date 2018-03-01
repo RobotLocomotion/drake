@@ -39,7 +39,7 @@ drake_cc_library(
         ":number_traits",
         ":polynomial",
         ":reinit_after_move",
-        ":reinit_on_copy",
+        ":reset_on_copy",
         ":scoped_singleton",
         ":sorted_vectors_have_intersection",
         ":symbolic",
@@ -331,8 +331,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "reinit_on_copy",
-    hdrs = ["reinit_on_copy.h"],
+    name = "reset_on_copy",
+    hdrs = ["reset_on_copy.h"],
 )
 
 drake_cc_library(
@@ -484,9 +484,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "reinit_on_copy_test",
+    name = "reset_on_copy_test",
     deps = [
-        ":reinit_on_copy",
+        ":reset_on_copy",
     ],
 )
 
