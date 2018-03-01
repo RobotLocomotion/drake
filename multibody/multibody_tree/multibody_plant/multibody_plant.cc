@@ -65,7 +65,7 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
   GeometryId id;
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
-  if (body.get_index() == world_index()) {
+  if (body.index() == world_index()) {
     id = RegisterAnchoredGeometry(X_BG, shape, geometry_system);
   } else {
     id = RegisterGeometry(body, X_BG, shape, geometry_system);
@@ -86,20 +86,20 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
-    body_index_to_frame_id_[body.get_index()] =
+    body_index_to_frame_id_[body.index()] =
         geometry_system->RegisterFrame(
             source_id_.value(),
             GeometryFrame(
-                body.get_name(),
+                body.name(),
                 /* Initial pose: Not really used by GS. Will get removed. */
                 Isometry3<double>::Identity()));
   }
 
   // Register geometry in the body frame.
   GeometryId geometry_id = geometry_system->RegisterGeometry(
-      source_id_.value(), body_index_to_frame_id_[body.get_index()],
+      source_id_.value(), body_index_to_frame_id_[body.index()],
       std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
-  geometry_id_to_body_index_[geometry_id] = body.get_index();
+  geometry_id_to_body_index_[geometry_id] = body.index();
   return geometry_id;
 }
 
@@ -273,7 +273,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
   for (const auto it : body_index_to_frame_id_) {
     const BodyIndex body_index = it.first;
     const Body<T>& body = model_->get_body(body_index);
-    pose_data[pose_index++] = pc.get_X_WB(body.get_node_index());
+    pose_data[pose_index++] = pc.get_X_WB(body.node_index());
   }
 }
 

@@ -70,7 +70,7 @@ MakeAcrobotPlant(
 
     // Register some (anchored) geometry to the world.
     plant->RegisterVisualGeometry(
-        plant->get_world_body(),
+        plant->world_body(),
         Isometry3d::Identity(), /* X_WG */
         Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
         geometry_system);

@@ -469,7 +469,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
       throw std::logic_error(
-          "Body '" + model().get_body(body_index).get_name() +
+          "Body '" + model().get_body(body_index).name() +
           "' does not have geometry registered with it.");
     }
     return it->second;
@@ -586,7 +586,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       geometry::GeometrySystem<double>* geometry_system);
 
   bool body_has_registered_frame(const Body<T>& body) const {
-    return body_index_to_frame_id_.find(body.get_index()) !=
+    return body_index_to_frame_id_.find(body.index()) !=
         body_index_to_frame_id_.end();
   }
 
