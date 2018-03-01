@@ -21,8 +21,11 @@ namespace multibody_plant {
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
-#define MBP_THROW_IF_FINALIZED ThrowIfFinalized(__FUNCTION__);
-#define MBP_THROW_IF_NOT_FINALIZED ThrowIfNotFinalized(__FUNCTION__);
+#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__FUNCTION__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__FUNCTION__)
 /// @endcond
 
 /// %MultibodyPlant is a Drake system framework representation (see
@@ -218,7 +221,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    MBP_THROW_IF_FINALIZED
+    DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->AddRigidBody(name, M_BBo_B);
   }
 
@@ -298,7 +301,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
-    MBP_THROW_IF_FINALIZED
+    DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
   }
@@ -319,7 +322,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args) {
-    MBP_THROW_IF_FINALIZED
+    DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
@@ -391,13 +394,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @}
 
   /// @name Registering geometry for visualization
-  /// These methods allow to register geometry with a GeometrySystem in order to
+  /// These methods register geometry with a GeometrySystem in order to
   /// visualize a plant's model.
-  /// Calling this any of these methods at least once is a prerequisite to
+  /// Calling any of these methods at least once is a prerequisite to
   /// connecting this plant to an instance of GeometrySystem, i.e., accessing
   /// the source id (get_source_id()) and GeometrySystem-compatible output ports
   /// (get_geometry_ids_output_port() and get_geometry_poses_output_port()).
-  /// All of these calls **must** be performed on a same instance of
+  /// All of these calls **must** be performed on the same instance of
   /// GeometrySystem.
   /// Calling any of these methods post-Finalize() is **not** allowed and an
   /// exception is thrown if attempted.
@@ -521,7 +524,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   template <typename U> friend class MultibodyPlant;
 
   // Helper method for throwing an exception within public methods that should
-  // not be called post-finalize. The invoking method should pass it's name so
+  // not be called post-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfFinalized(const char* source_method) const;
 
@@ -638,6 +641,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   std::unique_ptr<PositionKinematicsCache<T>> pc_;
   std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
+
+/// @cond
+// Undef macros defined at the top of the file. From the GSG:
+// "Exporting macros from headers (i.e. defining them in a header without
+// #undefing them before the end of the header) is extremely strongly
+// discouraged."
+// This will require us to re-define them in the .cc file.
+#undef DRAKE_MBP_THROW_IF_FINALIZED
+#undef DRAKE_MBP_THROW_IF_NOT_FINALIZED
+/// @endcond
 
 }  // namespace multibody_plant
 }  // namespace multibody

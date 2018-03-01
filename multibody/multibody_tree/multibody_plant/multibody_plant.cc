@@ -14,6 +14,14 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__FUNCTION__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__FUNCTION__)
+
 using geometry::FrameId;
 using geometry::FrameIdVector;
 using geometry::FramePoseVector;
@@ -53,7 +61,7 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
-  MBP_THROW_IF_FINALIZED
+  DRAKE_MBP_THROW_IF_FINALIZED();
   GeometryId id;
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
@@ -71,7 +79,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
-  MBP_THROW_IF_FINALIZED
+  DRAKE_MBP_THROW_IF_FINALIZED();
   // If not already done, register with the provided geometry system.
   if (!geometry_source_is_registered())
     source_id_ = geometry_system->RegisterSource("MultibodyPlant");
@@ -99,7 +107,7 @@ template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
     geometry::GeometrySystem<double>* geometry_system) {
-  MBP_THROW_IF_FINALIZED
+  DRAKE_MBP_THROW_IF_FINALIZED();
   // If not already done, register with the provided geometry system.
   if (!geometry_source_is_registered())
     source_id_ = geometry_system->RegisterSource("MultibodyPlant");
@@ -272,14 +280,14 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
 const {
-  MBP_THROW_IF_NOT_FINALIZED
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
-  MBP_THROW_IF_NOT_FINALIZED
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
