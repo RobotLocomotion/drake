@@ -203,6 +203,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "floating_body_test",
     size = "small",
+    timeout = "moderate",
     srcs = [
         "test/floating_body_test.cc",
     ],
