@@ -43,6 +43,10 @@ namespace drake {
 /// @tparam T must support CopyConstructible, CopyAssignable, MoveConstructible,
 /// and MoveAssignable and must not throw exceptions during construction or
 /// assignment.
+/// @see reset_on_copy
+
+// TODO(sherm1) Rename this "reset_after_move".
+// TODO(sherm1) Upgrade this to match reset_on_copy (e.g. noexcept).
 template <typename T>
 class reinit_after_move {
  public:
@@ -81,7 +85,9 @@ class reinit_after_move {
   operator const T&() const { return value_; }
   //@}
 
-  /// @name Dereference operators available if type T is a pointer.
+  /// @name Dereference operators if T is a pointer type.
+  /// If type T is a pointer, these exist and return the pointed-to object.
+  /// For non-pointer types these methods are not instantiated.
   //@{
   template <typename T1 = T>
   std::enable_if_t<std::is_pointer<T1>::value, T> operator->() const {

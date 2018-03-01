@@ -37,7 +37,6 @@ GTEST_TEST(ResetOnCopyTest, Constructor) {
 GTEST_TEST(ResetOnCopyTest, Nothrow) {
   // Default constructor.
   EXPECT_TRUE(noexcept(reset_on_copy<int>()));
-  EXPECT_FALSE(noexcept(reset_on_copy<Foo>()));
   EXPECT_TRUE(noexcept(reset_on_copy<Foo*>()));
 
   // Initialize-from-lvalue constructor.
@@ -45,31 +44,24 @@ GTEST_TEST(ResetOnCopyTest, Nothrow) {
   Foo foo{};
   Foo* foo_ptr{};
   EXPECT_TRUE(noexcept(reset_on_copy<int>{i}));
-  EXPECT_FALSE(noexcept(reset_on_copy<Foo>{foo}));
   EXPECT_TRUE(noexcept(reset_on_copy<Foo*>{foo_ptr}));
 
   // Initialize-from-rvalue constructor.
   EXPECT_TRUE(noexcept(reset_on_copy<int>{5}));
-  EXPECT_FALSE(noexcept(reset_on_copy<Foo>{Foo{}}));
   EXPECT_TRUE(noexcept(reset_on_copy<Foo*>{&foo}));
 
   // Copy constructor & assignment (source must be lvalue).
   reset_on_copy<int> r_int, r_int2;
-  reset_on_copy<Foo> r_foo, r_foo2;
   reset_on_copy<Foo*> r_foo_ptr, r_foo_ptr2;
   EXPECT_TRUE(noexcept(reset_on_copy<int>{r_int}));
-  EXPECT_FALSE(noexcept(reset_on_copy<Foo>{r_foo}));
   EXPECT_TRUE(noexcept(reset_on_copy<Foo*>{r_foo_ptr}));
   EXPECT_TRUE(noexcept(r_int = r_int2));
-  EXPECT_FALSE(noexcept(r_foo = r_foo2));
   EXPECT_TRUE(noexcept(r_foo_ptr = r_foo_ptr2));
 
   // Move constructor & assignment.
   EXPECT_TRUE(noexcept(reset_on_copy<int>{std::move(r_int)}));
-  EXPECT_FALSE(noexcept(reset_on_copy<Foo>{std::move(r_foo)}));
   EXPECT_TRUE(noexcept(reset_on_copy<Foo*>{std::move(r_foo_ptr)}));
   EXPECT_TRUE(noexcept(r_int = std::move(r_int2)));
-  EXPECT_FALSE(noexcept(r_foo = std::move(r_foo2)));
   EXPECT_TRUE(noexcept(r_foo_ptr = std::move(r_foo_ptr2)));
 }
 
@@ -226,88 +218,6 @@ GTEST_TEST(ResetOnCopyTest, Move) {
   // Self-assignment during move.
   MoveAssign(&w, &w);
   EXPECT_EQ(w, 3);
-}
-
-
-// This test shows that use of reset_on_copy with non-scalar classes may
-// have surprising behavior. Here, while Bar{} gets value-initialized, that
-// doesn't mean its members get reset; they are at the mercy of Bar's default
-// constructor, which here initializes i to 10.
-struct Bar {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Bar)
-  Bar() = default;
-  int i{10};
-};
-
-GTEST_TEST(ResetOnCopyTest, NonPodData) {
-  reset_on_copy<Bar> reset_b;
-  Bar& b = static_cast<Bar&>(reset_b);
-  // Make sure that was a conversion, not a copy.
-  EXPECT_EQ(static_cast<void*>(&b), static_cast<void*>(&reset_b));
-  EXPECT_EQ(b.i, 10);
-
-  b.i = 15;
-  EXPECT_EQ(b.i, 15);
-
-  reset_on_copy<Bar> reset_b_cpy(reset_b);
-  Bar& b_cpy = static_cast<Bar&>(reset_b_cpy);
-  EXPECT_EQ(static_cast<void*>(&b_cpy), static_cast<void*>(&reset_b_cpy));
-  EXPECT_NE(&b_cpy, &b);
-
-  // Note: the *contained* numerical values are value-initialized to the
-  // declared default.
-  EXPECT_EQ(b_cpy.i, 10);
-}
-
-// std::vector when resizing has to move elements from the old memory to
-// the new memory. If there is a nothrow move constructor available, it will
-// use that. Otherwise it uses the copy constructor. That behavior should be
-// preserved through reset_on_copy.
-
-// This struct has a nothrow move constructor.
-struct CanMove {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CanMove)
-  explicit CanMove(int val) : i(val) {}
-  CanMove() = default;
-  reset_on_copy<int> i;
-};
-
-// This struct uses its copy constructor to perform move construction.
-struct NoMove {
-  // Declaring just the copy constructor suppresses the default move
-  // constructor so that copy will be used instead.
-  NoMove(const NoMove&) = default;
-  explicit NoMove(int val) : i(val) {}
-  NoMove() = default;
-  reset_on_copy<int> i;
-};
-
-GTEST_TEST(ResetOnCopyTest, StdVectorWorks) {
-  std::vector<reset_on_copy<CanMove>> v;
-  v.emplace_back(CanMove(1)); v.emplace_back(CanMove(2));
-  EXPECT_EQ(v[0]->i, 1);
-  EXPECT_EQ(v[1]->i, 2);
-  const size_t old_v_capacity = v.capacity();
-  v.resize(100);
-  EXPECT_GT(v.capacity(), old_v_capacity);  // Make sure it grew.
-  EXPECT_EQ(v[0]->i, 1);  // Moved, so preserved.
-  EXPECT_EQ(v[1]->i, 2);
-  EXPECT_EQ(v[99]->i, 0);  // Default constructed.
-
-  std::vector<reset_on_copy<NoMove>> vn;
-  vn.emplace_back(NoMove(1)); vn.emplace_back(NoMove(2));
-  EXPECT_EQ(vn[0]->i, 0);  // Used copy constructor.
-  EXPECT_EQ(vn[1]->i, 0);
-  vn[0]->i = 1;
-  vn[1]->i = 2;
-  EXPECT_EQ(vn[0]->i, 1);
-  EXPECT_EQ(vn[1]->i, 2);
-  const size_t old_vn_capacity = vn.capacity();
-  vn.resize(100);
-  EXPECT_GT(vn.capacity(), old_vn_capacity);  // Make sure it grew.
-  EXPECT_EQ(vn[0]->i, 0);  // Copied, so reset.
-  EXPECT_EQ(vn[1]->i, 0);
-  EXPECT_EQ(vn[99]->i, 0);  // Default constructed.
 }
 
 }  // namespace

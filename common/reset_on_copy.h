@@ -5,12 +5,20 @@
 
 namespace drake {
 
-/// Type wrapper that performs value-initialization on the wrapped type, and
-/// guarantees that when copying from this type the copied object is reset
-/// to its value-initialized value. Move assignment and construction are
-/// unaffected. Note that value initialization means the initialization
-/// performed when a variable is constructed with an empty initializer. For
-/// example, numeric types are set to zero and pointer types are set to nullptr.
+/// Type wrapper that performs value-initialization on copy construction or
+/// assignment.
+///
+/// Rather than copying the source supplied for copy construction or copy
+/// assignment, this wrapper instead value-initializes the destination object.
+/// Move assignment and construction preserve contents in the destination as
+/// usual, but reset the source to its value-initialized value.
+///
+/// Only types T that satisfy `std::is_scalar<T>` are currently
+/// permitted: integral and floating point types, enums, and pointers.
+/// Value initialization means the initialization performed when a variable is
+/// constructed with an empty initializer. Numeric types are set to zero and
+/// pointer types are set to nullptr.
+/// See http://en.cppreference.com/w/cpp/language/value_initialization.
 ///
 /// Background:
 ///
@@ -22,7 +30,12 @@ namespace drake {
 /// need to be set to null to avoid stale references. By wrapping those
 /// problematic data members in this adapter, default copy construction can
 /// continue to be used, with all data members copied properly except the
-/// designated ones, which are value-initialized instead.
+/// designated ones, which are value-initialized instead. The resetting of the
+/// source on move doesn't change semantics since the condition of the source
+/// after a move is generally undefined. It is instead opportunistic good
+/// hygiene for early detection of bugs, taking advantage of the fact that we
+/// know type T can be value-initialized. See reinit_after_move for more
+/// discussion.
 ///
 /// Example:
 ///
@@ -43,38 +56,47 @@ namespace drake {
 /// `reset_on_copy` wrapper, `use_count_` would have been copied also,
 /// which we're assuming is not the desired behavior here.
 ///
-/// @note This is most useful for numeric and integer types but works for
-/// any type T for which `T{}` provides the behavior you want. Be aware that for
-/// class types T, the implementation of `T{}` (the default constructor, which
-/// may have been user-supplied) won't necessarily reset T's members to zero,
-/// nor even necessarily value-initialize T's members.
+/// @note Enum types T are permitted, but be aware that they will be reset to
+/// zero, regardless of whether 0 is one of the specified enumeration values.
 ///
-/// @tparam T must support CopyConstructible, CopyAssignable, MoveConstructible,
-/// and MoveAssignable.
+/// @tparam T must satisfy `std::is_scalar<T>`.
+/// @see reinit_after_move
+
+// NOTE(sherm1) to future implementers: if you decide to extend this adapter for
+// use with class types, be sure to think carefully about the semantics of copy
+// and move and how to explain that to users. Be aware that for class types T,
+// the implementation of `T{}` (the default constructor, which may have been
+// user-supplied) won't necessarily reset T's members to zero, nor even
+// necessarily value-initialize T's members. Also, the "noexcept" reasoning
+// below is more than we need with the std::is_scalar<T> restriction, but is
+// strictly necessary for class types if you want std::vector to choose move
+// construction (content-preserving) over copy construction (resetting).
 template <typename T>
 class reset_on_copy {
+  static_assert(std::is_scalar<T>::value,
+                "reset_on_copy<T> is permitted only for integral, "
+                "floating point, and pointer types T.");
  public:
   /// Constructs a reset_on_copy<T> with a value-initialized wrapped value.
-  /// See http://en.cppreference.com/w/cpp/language/value_initialization.
   reset_on_copy() noexcept(std::is_nothrow_default_constructible<T>::value) {}
 
-  /// Constructs a reset_on_copy<T> with a copy of the given value. This is
-  /// an implicit conversion, so that reset_on_copy<T> behaves more like
+  /// Constructs a %reset_on_copy<T> with a copy of the given value. This is
+  /// an implicit conversion, so that %reset_on_copy<T> behaves more like
   /// the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
   reset_on_copy(const T& value) noexcept(
       std::is_nothrow_copy_constructible<T>::value)
       : value_(value) {}
 
-  /// Constructs a reset_on_copy<T> with the given wrapped value, by move
+  /// Constructs a %reset_on_copy<T> with the given wrapped value, by move
   /// construction if possible. This is an implicit conversion, so that
-  /// reset_on_copy<T> behaves more like the unwrapped type.
+  /// %reset_on_copy<T> behaves more like the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
   reset_on_copy(T&& value) noexcept(
       std::is_nothrow_move_constructible<T>::value)
       : value_(std::move(value)) {}
 
-  /// @name Implements copy/move construction/assignment.
+  /// @name Implements copy/move construction and assignment.
   /// These make %reset_on_copy objects CopyConstructible, CopyAssignable,
   /// MoveConstructible, and MoveAssignable. These methods will be noexcept
   /// if the required methods of type T are noexcept.
@@ -104,8 +126,9 @@ class reset_on_copy {
     source.destruct_and_reset_value();
   }
 
-  /// Move assignment uses T's move assignment, then destructs and
-  /// value initializes the source.
+  /// Move assignment uses T's move assignment, then destructs and value
+  /// initializes the source, _except_ for self-assignment which does nothing.
+  /// The source argument is otherwise ignored.
   reset_on_copy& operator=(reset_on_copy&& source) noexcept(
       std::is_nothrow_move_assignable<T>::value &&
           std::is_nothrow_destructible<T>::value &&
@@ -125,33 +148,26 @@ class reset_on_copy {
   operator const T&() const noexcept { return value_; }
   //@}
 
-  /// @name Dereference operators available for access to T.
-  /// If type T is a pointer, these return the pointed-to object. Otherwise
-  /// they provide access to the contained object.
+  /// @name Dereference operators if T is a pointer type.
+  /// If type T is a pointer, these exist and return the pointed-to object.
+  /// For non-pointer types these methods are not instantiated.
   //@{
   template <typename T1 = T>
   std::enable_if_t<std::is_pointer<T1>::value, T> operator->() const {
     return value_;
   }
-  template <typename T1 = T>
-  std::enable_if_t<!std::is_pointer<T1>::value, T*> operator->() {
-    return &value_;
-  }
+
   template <typename T1 = T>
   std::enable_if_t<std::is_pointer<T1>::value,
                    std::add_lvalue_reference_t<std::remove_pointer_t<T>>>
   operator*() const {
     return *value_;
   }
-  template <typename T1 = T>
-  std::enable_if_t<!std::is_pointer<T1>::value, std::add_lvalue_reference_t<T>>
-  operator*() {
-    return value_;
-  }
   //@}
 
  private:
   // Invokes T's destructor if there is one, then value-initializes.
+  // Yes, this works fine for built-in types. Thanks, C++ standards committee!
   void destruct_and_reset_value() { value_.~T(); new (&value_) T{}; }
 
   T value_{};
