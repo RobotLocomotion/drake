@@ -471,8 +471,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise this method throws
   /// an exception.
-  /// @throws if body with index `body_index` has not geometry registered with
-  /// it.
+  /// @throws if no geometry has been registered with the body indicated by
+  /// `body_index`.
   /// @throws if called pre-finalize.
   geometry::FrameId GetBodyFrameIdOrThrow(BodyIndex body_index) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();

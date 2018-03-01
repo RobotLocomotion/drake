@@ -106,15 +106,15 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "Post-Finalize\\(\\) calls to '.*' are not allowed; "
-      "Calls to this method must happen before Finalize\\(\\).");
+      "Post-finalize calls to '.*' are not allowed; "
+      "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_ERROR_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
           "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
-      "Post-Finalize\\(\\) calls to '.*' are not allowed; "
-      "Calls to this method must happen before Finalize\\(\\).");
+      "Post-finalize calls to '.*' are not allowed; "
+      "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
@@ -139,15 +139,15 @@ class AcrobotPlantTests : public ::testing::Test {
         plant_->get_geometry_ids_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
-        "Pre-Finalize\\(\\) calls to '.*' are not allowed; "
-        "You must call Finalize\\(\\) first.");
+        "Pre-finalize calls to '.*' are not allowed; "
+        "you must call Finalize\\(\\) first.");
 
     DRAKE_EXPECT_ERROR_MESSAGE(
         plant_->get_geometry_poses_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
-        "Pre-Finalize\\(\\) calls to '.*' are not allowed; "
-        "You must call Finalize\\(\\) first.");
+        "Pre-finalize calls to '.*' are not allowed; "
+        "you must call Finalize\\(\\) first.");
 
     // Finalize() the plant before accessing its ports for communicating with
     // GeometrySystem.

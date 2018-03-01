@@ -320,8 +320,8 @@ template <typename T>
 void MultibodyPlant<T>::ThrowIfFinalized(const char* source_method) const {
   if (is_finalized()) {
     throw std::logic_error(
-        "Post-Finalize() calls to '" + std::string(source_method) + "()' are "
-        "not allowed; Calls to this method must happen before Finalize().");
+        "Post-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; calls to this method must happen before Finalize().");
   }
 }
 
@@ -329,8 +329,8 @@ template <typename T>
 void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
   if (!is_finalized()) {
     throw std::logic_error(
-        "Pre-Finalize() calls to '" + std::string(source_method) + "()' are "
-        "not allowed; You must call Finalize() first.");
+        "Pre-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; you must call Finalize() first.");
   }
 }
 
