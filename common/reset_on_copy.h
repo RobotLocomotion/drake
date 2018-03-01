@@ -16,10 +16,11 @@ namespace drake {
 /// Only types T that satisfy `std::is_scalar<T>` are currently
 /// permitted: integral and floating point types, enums, and pointers.
 /// Value initialization means the initialization performed when a variable is
-/// constructed with an empty initializer. Numeric types are set to zero and
-/// pointer types are set to nullptr.
+/// constructed with an empty initializer `{}`. For the restricted set of types
+/// we support, that just means that numeric types are set to zero and pointer
+/// types are set to nullptr. Also, all the methods here are noexcept due to the
+/// `std::is_scalar<T>` restriction.
 /// See http://en.cppreference.com/w/cpp/language/value_initialization.
-/// All the methods here are noexcept under the `std::is_scalar<T>` restriction.
 ///
 /// Background:
 ///
