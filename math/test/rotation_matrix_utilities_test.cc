@@ -1,4 +1,4 @@
-#include "drake/math/rotation_matrix.h"
+#include "drake/math/rotation_matrix_utilities.h"
 
 #include <cmath>
 #include <iostream>
