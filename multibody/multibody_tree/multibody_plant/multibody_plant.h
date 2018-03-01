@@ -121,20 +121,20 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// which is always part of the model.
   /// @see AddRigidBody().
   int num_bodies() const {
-    return model_->get_num_bodies();
+    return model_->num_bodies();
   }
 
   /// Returns the number of joints in the model.
   /// @see AddJoint().
   int num_joints() const {
-    return model_->get_num_joints();
+    return model_->num_joints();
   }
 
   /// Returns the size of the generalized position vector `q` for `this` model.
-  int num_positions() const { return model_->get_num_positions(); }
+  int num_positions() const { return model_->num_positions(); }
 
   /// Returns the size of the generalized velocity vector `v` for `this` model.
-  int num_velocities() const { return model_->get_num_velocities(); }
+  int num_velocities() const { return model_->num_velocities(); }
 
   /// Returns the size of the multibody system state vector `x = [q; v]` for
   /// `this` model. This will equal the number of generalized positions
@@ -143,7 +143,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Notice however that the state of a %MultibodyPlant, stored in its Context,
   /// can actually contain other variables such as integrated power and discrete
   /// states.
-  int num_multibody_states() const { return model_->get_num_states(); }
+  int num_multibody_states() const { return model_->num_states(); }
 
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
@@ -171,7 +171,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @param[in] name
   ///   A string that uniquely identifies the new body to be added to `this`
   ///   model. A std::runtime_error is thrown if a body named `name` already is
-  ///   part of the model. See HasBodyNamed(), Body::get_name().
+  ///   part of the model. See HasBodyNamed(), Body::name().
   /// @param[in] M_BBo_B
   ///   The SpatialInertia of the new rigid body to be added to `this` model,
   ///   computed about the body frame origin `Bo` and expressed in the body
@@ -199,7 +199,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @param name
   ///   A string that uniquely identifies the new joint to be added to `this`
   ///   model. A std::runtime_error is thrown if a joint named `name` already is
-  ///   part of the model. See HasJointNamed(), Joint::get_name().
+  ///   part of the model. See HasJointNamed(), Joint::name().
   /// @param[in] parent
   ///   The parent body connected by the new joint.
   /// @param[in] X_PF
@@ -249,7 +249,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @endcode
   ///
   /// @throws if `this` model already contains a joint with the given `name`.
-  /// See HasJointNamed(), Joint::get_name().
+  /// See HasJointNamed(), Joint::name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
@@ -350,8 +350,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @}
 
   /// Returns a constant reference to the *world* body.
-  const RigidBody<T>& get_world_body() const {
-    return model_->get_world_body();
+  const RigidBody<T>& world_body() const {
+    return model_->world_body();
   }
 
   /// Returns `true` if this %MultibodyPlant was finalized with a call to

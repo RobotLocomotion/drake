@@ -48,7 +48,7 @@ template<typename T> class Body;
 /// without the other. Therefore, a %BodyFrame instance is constructed in
 /// conjunction with its Body and cannot be
 /// constructed anywhere else. However, you can still access the frame
-/// associated with a body, see Body::get_body_frame().
+/// associated with a body, see Body::body_frame().
 /// This access is more than a convenience; you can use the %BodyFrame to
 /// define other frames on the body and to attach other multibody elements
 /// to it.
@@ -154,7 +154,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   explicit Body(const std::string& name) : name_(name), body_frame_(*this) {}
 
   /// Gets the `name` associated with `this` body.
-  const std::string& get_name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   /// Returns the number of generalized positions q describing flexible
   /// deformations for this body. A rigid body will therefore return zero.
@@ -165,13 +165,13 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   virtual int get_num_flexible_velocities() const = 0;
 
   /// Returns a const reference to the associated BodyFrame.
-  const BodyFrame<T>& get_body_frame() const {
+  const BodyFrame<T>& body_frame() const {
     return body_frame_;
   }
 
   /// Returns the index of the node in the underlying tree structure of
   /// the parent MultibodyTree to which this body belongs.
-  BodyNodeIndex get_node_index() const {
+  BodyNodeIndex node_index() const {
     return topology_.body_node;
   }
 
@@ -242,7 +242,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_body(this->get_index());
+    topology_ = tree_topology.get_body(this->index());
     body_frame_.SetTopology(tree_topology);
   }
 

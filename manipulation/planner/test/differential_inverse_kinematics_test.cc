@@ -75,7 +75,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     mbt_ = multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
         false, 9.81);
     frame_E_mbt_ = &mbt_->AddFrame<FixedOffsetFrame>(
-        mbt_->GetBodyByName("iiwa_link_7").get_body_frame(),
+        mbt_->GetBodyByName("iiwa_link_7").body_frame(),
         frame_E_->get_transform_to_body());
     mbt_->Finalize();
 
@@ -92,8 +92,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
   }
 
   void SetMBTState(const VectorX<double>& q, const VectorX<double>& v) {
-    DRAKE_DEMAND(q.size() == mbt_->get_num_positions());
-    DRAKE_DEMAND(v.size() == mbt_->get_num_velocities());
+    DRAKE_DEMAND(q.size() == mbt_->num_positions());
+    DRAKE_DEMAND(v.size() == mbt_->num_velocities());
     int angle_index = 0;
     for (const RevoluteJoint<double>* joint : joints_) {
       joint->set_angle(context_.get(), q[angle_index]);

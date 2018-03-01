@@ -74,14 +74,14 @@ AcrobotPlant<T>::AcrobotPlant(
   BuildMultibodyTreeModel();
 
   // Some very basic verification that the model is what we expect it to be.
-  DRAKE_DEMAND(model_->get_num_positions() == 2);
-  DRAKE_DEMAND(model_->get_num_velocities() == 2);
-  DRAKE_DEMAND(model_->get_num_states() == 4);
+  DRAKE_DEMAND(model_->num_positions() == 2);
+  DRAKE_DEMAND(model_->num_velocities() == 2);
+  DRAKE_DEMAND(model_->num_states() == 4);
 
   this->DeclareContinuousState(
-      BasicVector<T>(model_->get_num_states()),
-      model_->get_num_positions(),
-      model_->get_num_velocities(), 0 /* num_z */);
+      BasicVector<T>(model_->num_states()),
+      model_->num_positions(),
+      model_->num_velocities(), 0 /* num_z */);
 
   // Declare a vector input of size one for an applied torque at the
   // elbow joint.
@@ -169,7 +169,7 @@ template <typename T>
 void AcrobotPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == 2);
-  DRAKE_ASSERT(model_->get_num_bodies() == 3);  // Includes the world body.
+  DRAKE_ASSERT(model_->num_bodies() == 3);  // Includes the world body.
 
   PositionKinematicsCache<T> pc(model_->get_topology());
   model_->CalcPositionKinematicsCache(context, &pc);
@@ -177,8 +177,8 @@ void AcrobotPlant<T>::CalcFramePoseOutput(
   std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
-  pose_data[0] = pc.get_X_WB(link1_->get_node_index());
-  pose_data[1] = pc.get_X_WB(link2_->get_node_index());
+  pose_data[0] = pc.get_X_WB(link1_->node_index());
+  pose_data[1] = pc.get_X_WB(link2_->node_index());
 }
 
 template <typename T>
@@ -241,7 +241,7 @@ void AcrobotPlant<T>::BuildMultibodyTreeModel() {
   shoulder_ = &model_->template AddJoint<RevoluteJoint>(
       "ShoulderJoint",
       /* Shoulder inboard frame Si IS the the world frame W. */
-      model_->get_world_body(), {},
+      model_->world_body(), {},
       /* Shoulder outboard frame So IS frame L1. */
       *link1_, {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
@@ -322,14 +322,14 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
-  const int nv = model_->get_num_velocities();
+  const int nv = model_->num_velocities();
 
   // Mass matrix:
   MatrixX<T> M(nv, nv);
   // Forces:
   MultibodyForces<T> forces(*model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
   // Generalized accelerations:
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
@@ -367,7 +367,7 @@ void AcrobotPlant<T>::DoCalcTimeDerivatives(
   vdot = M.ldlt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-  VectorX<T> xdot(model_->get_num_states());
+  VectorX<T> xdot(model_->num_states());
   // For this simple model v = qdot.
   xdot << v, vdot;
   derivatives->SetFromVector(xdot);

@@ -60,7 +60,7 @@ MakeAcrobotPlant(
   plant->AddJoint<RevoluteJoint>(
       params.shoulder_joint_name(),
       /* Shoulder inboard frame Si IS the the world frame W. */
-      plant->get_world_body(), {},
+      plant->world_body(), {},
       /* Shoulder outboard frame So IS frame L1. */
       link1, {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */

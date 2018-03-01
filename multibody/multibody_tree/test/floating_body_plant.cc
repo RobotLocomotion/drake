@@ -19,12 +19,12 @@ AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
     double mass, double I, double J, double g)
     : mass_(mass), I_(I), J_(J), g_(g) {
   BuildMultibodyTreeModel();
-  DRAKE_DEMAND(model_.get_num_positions() == 7);
-  DRAKE_DEMAND(model_.get_num_velocities() == 6);
-  DRAKE_DEMAND(model_.get_num_states() == 13);
+  DRAKE_DEMAND(model_.num_positions() == 7);
+  DRAKE_DEMAND(model_.num_velocities() == 6);
+  DRAKE_DEMAND(model_.num_states() == 13);
   this->DeclareContinuousState(
-      model_.get_num_positions(),
-      model_.get_num_velocities(), 0 /* num_z */);
+      model_.num_positions(),
+      model_.num_velocities(), 0 /* num_z */);
 }
 
 template<typename T>
@@ -45,7 +45,7 @@ void AxiallySymmetricFreeBodyPlant<T>::BuildMultibodyTreeModel() {
 
   mobilizer_ =
       &model_.template AddMobilizer<QuaternionFloatingMobilizer>(
-          model_.get_world_frame(), body_->get_body_frame());
+          model_.world_frame(), body_->body_frame());
 
   model_.template AddForceElement<UniformGravityFieldElement>(
       -g_ * Vector3<double>::UnitZ());
@@ -79,8 +79,8 @@ void AxiallySymmetricFreeBodyPlant<T>::DoCalcTimeDerivatives(
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   // Allocate workspace. We might want to cache these to avoid allocations.
   // Mass matrix.
@@ -88,7 +88,7 @@ void AxiallySymmetricFreeBodyPlant<T>::DoCalcTimeDerivatives(
   // Forces.
   MultibodyForces<T> forces(model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_.get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_.num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
@@ -114,7 +114,7 @@ void AxiallySymmetricFreeBodyPlant<T>::DoCalcTimeDerivatives(
   vdot = M.llt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-  VectorX<T> xdot(model_.get_num_states());
+  VectorX<T> xdot(model_.num_states());
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
@@ -127,8 +127,8 @@ void AxiallySymmetricFreeBodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
   DRAKE_DEMAND(generalized_velocity->size() == nv);
@@ -142,8 +142,8 @@ void AxiallySymmetricFreeBodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);
   DRAKE_DEMAND(positions_derivative->size() == nq);
@@ -180,7 +180,7 @@ Isometry3<T> AxiallySymmetricFreeBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
-  return pc.get_X_WB(body_->get_node_index());
+  return pc.get_X_WB(body_->node_index());
 }
 
 template<typename T>
@@ -191,7 +191,7 @@ AxiallySymmetricFreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
   model_.CalcPositionKinematicsCache(context, &pc);
   VelocityKinematicsCache<T> vc(model_.get_topology());
   model_.CalcVelocityKinematicsCache(context, pc, &vc);
-  return vc.get_V_WB(body_->get_node_index());
+  return vc.get_V_WB(body_->node_index());
 }
 
 }  // namespace test
