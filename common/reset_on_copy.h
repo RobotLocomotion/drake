@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <utility>
 
 namespace drake {
 
@@ -55,45 +56,86 @@ class reset_on_copy {
  public:
   /// Constructs a reset_on_copy<T> with a value-initialized wrapped value.
   /// See http://en.cppreference.com/w/cpp/language/value_initialization.
-  reset_on_copy() {}
+  reset_on_copy() noexcept(std::is_nothrow_default_constructible<T>::value) {}
 
-  /// Constructs a reset_on_copy<T> with the given wrapped value.  This is
+  /// Constructs a reset_on_copy<T> with a copy of the given value. This is
   /// an implicit conversion, so that reset_on_copy<T> behaves more like
   /// the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
-  reset_on_copy(const T& value) : value_(value) {}
+  reset_on_copy(const T& value) noexcept(
+      std::is_nothrow_copy_constructible<T>::value)
+      : value_(value) {}
 
-  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
-  /// MoveAssignable.
+  /// Constructs a reset_on_copy<T> with the given wrapped value, by move
+  /// construction if possible. This is an implicit conversion, so that
+  /// reset_on_copy<T> behaves more like the unwrapped type.
+  // NOLINTNEXTLINE(runtime/explicit)
+  reset_on_copy(T&& value) noexcept(
+      std::is_nothrow_move_constructible<T>::value)
+      : value_(std::move(value)) {}
+
+  /// @name Implements copy/move construction/assignment.
+  /// These make %reset_on_copy objects CopyConstructible, CopyAssignable,
+  /// MoveConstructible, and MoveAssignable. These methods will be noexcept
+  /// if the required methods of type T are noexcept.
   //@{
-  /// Copy constructor just value-initializes instead.
-  reset_on_copy(const reset_on_copy&) {}
+  /// Copy constructor just value-initializes instead; the source is ignored.
+  reset_on_copy(const reset_on_copy&) noexcept(
+      std::is_nothrow_default_constructible<T>::value) {}
 
-  /// Copy assignment uses T's copy assignment operator from a
-  /// value-initialized source, _except_ for self-assignment which does nothing.
-  reset_on_copy& operator=(const reset_on_copy& source) {
+  /// Copy assignment just destructs the contained value and then
+  /// value-initializes it, _except_ for self-assignment which does nothing.
+  /// The source argument is otherwise ignored.
+  reset_on_copy& operator=(const reset_on_copy& source) noexcept(
+  std::is_nothrow_destructible<T>::value &&
+      std::is_nothrow_default_constructible<T>::value) {
     if (this != &source)
-      value_ = T{};
+      destruct_and_reset_value();
     return *this;
   }
 
-  reset_on_copy(reset_on_copy&& other) = default;
+  /// Move construction uses T's move constructor, then destructs and
+  /// value initializes the source.
+  reset_on_copy(reset_on_copy&& source) noexcept(
+      std::is_nothrow_move_constructible<T>::value &&
+          std::is_nothrow_destructible<T>::value &&
+          std::is_nothrow_default_constructible<T>::value)
+      : value_(std::move(source.value_)) {
+    source.destruct_and_reset_value();
+  }
 
-  reset_on_copy& operator=(reset_on_copy&& other) = default;
+  /// Move assignment uses T's move assignment, then destructs and
+  /// value initializes the source.
+  reset_on_copy& operator=(reset_on_copy&& source) noexcept(
+      std::is_nothrow_move_assignable<T>::value &&
+          std::is_nothrow_destructible<T>::value &&
+          std::is_nothrow_default_constructible<T>::value) {
+    if (this != &source) {
+      value_ = std::move(source);
+      source.destruct_and_reset_value();
+    }
+    return *this;
+  }
   //@}
 
   /// @name Implicit conversion operators to make reset_on_copy<T> act
   /// as the wrapped type.
   //@{
-  operator T&() { return value_; }
-  operator const T&() const { return value_; }
+  operator T&() noexcept { return value_; }
+  operator const T&() const noexcept { return value_; }
   //@}
 
-  /// @name Dereference operators available if type T is a pointer.
+  /// @name Dereference operators available for access to T.
+  /// If type T is a pointer, these return the pointed-to object. Otherwise
+  /// they provide access to the contained object.
   //@{
   template <typename T1 = T>
   std::enable_if_t<std::is_pointer<T1>::value, T> operator->() const {
     return value_;
+  }
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_pointer<T1>::value, T*> operator->() {
+    return &value_;
   }
   template <typename T1 = T>
   std::enable_if_t<std::is_pointer<T1>::value,
@@ -101,9 +143,17 @@ class reset_on_copy {
   operator*() const {
     return *value_;
   }
+  template <typename T1 = T>
+  std::enable_if_t<!std::is_pointer<T1>::value, std::add_lvalue_reference_t<T>>
+  operator*() {
+    return value_;
+  }
   //@}
 
  private:
+  // Invokes T's destructor if there is one, then value-initializes.
+  void destruct_and_reset_value() { value_.~T(); new (&value_) T{}; }
+
   T value_{};
 };
 
