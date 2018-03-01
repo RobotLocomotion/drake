@@ -237,6 +237,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/analysis:explicit_euler_integrator",
     "//systems/analysis:implicit_euler_integrator",
     "//systems/analysis:integrator_base",
+    "//systems/analysis:lyapunov",
     "//systems/analysis:runge_kutta2_integrator",
     "//systems/analysis:runge_kutta3_integrator",
     "//systems/analysis:semi_explicit_euler_integrator",
