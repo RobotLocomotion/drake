@@ -7,7 +7,7 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 
 # TODO(jwnimmer-tri) This probably deserves to live in drake/common, since it
@@ -78,22 +78,19 @@ drake_py_binary(
 
 # === test ===
 
-drake_py_test(
+drake_py_unittest(
     name = "buildifier_test",
-    srcs = ["test/buildifier_test.py"],
     data = [":buildifier"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "find_data_test",
-    srcs = ["test/find_data_test.py"],
     data = ["test/find_data_test.txt"],
     deps = [":find_data"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "util_test",
-    srcs = ["test/util_test.py"],
     tags = [
         # This test looks outside the sandbox.
         "external",
@@ -102,9 +99,8 @@ drake_py_test(
     deps = [":util"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "formatter_test",
-    srcs = ["test/formatter_test.py"],
     deps = [":formatter"],
 )
 

@@ -89,7 +89,3 @@ class TestMaliput(unittest.TestCase):
         self.assertTrue(distance == 0.)
 
     # TODO(jadecastro) Add more maliput backends as needed.
-
-
-if __name__ == '__main__':
-    unittest.main()

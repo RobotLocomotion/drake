@@ -26,7 +26,3 @@ class TestBackwardsCompatibility(unittest.TestCase):
         # Test symbol forwarding.
         from pydrake.parsers import PackageMap
         self.assertTrue(PackageMap is not None)
-
-
-if __name__ == "__main__":
-    unittest.main()

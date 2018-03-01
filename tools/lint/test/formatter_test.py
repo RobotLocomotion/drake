@@ -302,10 +302,3 @@ namespace { }
         dut.format_includes()
         with self.assertRaisesRegexp(Exception, 'not just a shuffle'):
             dut.rewrite_file()
-
-
-# TODO(jwnimmer-tri) Omitting or mistyping these lines means that no tests get
-# run, and nobody notices.  We should probably have drake_py_unittest macro
-# that takes care of this, to be less brittle.
-if __name__ == '__main__':
-    unittest.main()

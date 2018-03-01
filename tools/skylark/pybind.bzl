@@ -254,4 +254,7 @@ def drake_pybind_cc_googletest(
         deps = [py_name],
         tags = tags,
         visibility = visibility,
+        # The C++ test isn't going to `import unittest`, but test dependencies
+        # such as numpy(!!) do so unconditionally.  We should allow that.
+        allow_import_unittest = True,
     )
