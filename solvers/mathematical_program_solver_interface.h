@@ -43,6 +43,31 @@ class MathematicalProgramSolverInterface {
 
   /// Returns the identifier of this solver.
   virtual SolverId solver_id() const = 0;
+
+  /// Sets the solver ID inside MathematicalProgram
+  void SetSolverIdInsideMathematicalProgram(MathematicalProgram* prog) const;
+};
+
+/**
+ * This class is used for calling MathematicalProgram::SetSolverId(...).
+ * It has private constuctor, and is a friend of
+ * MathematicalProgramSolverInterface, so only
+ * MathematicalProgramSolverInterface can call
+ * MathematicalProgram::SetSolverId()
+ */
+class SetSolverIdKey {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SetSolverIdKey)
+
+  SolverId solver_id() const { return solver_id_; }
+ private:
+  explicit SetSolverIdKey(const SolverId& id) : solver_id_(id) {}
+
+  SetSolverIdKey() = delete;
+
+  friend MathematicalProgramSolverInterface;
+
+  const SolverId solver_id_;
 };
 
 }  // namespace solvers

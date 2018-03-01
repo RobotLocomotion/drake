@@ -1,3 +1,13 @@
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
-// This is an empty file, to make sure the header parses on its own.
+#include "drake/solvers/mathematical_program.h"
+
+namespace drake {
+namespace solvers {
+void MathematicalProgramSolverInterface::SetSolverIdInsideMathematicalProgram(
+    MathematicalProgram* prog) const {
+  SetSolverIdKey key(solver_id());
+  prog->SetSolverId(key);
+}
+}  // namespace solvers
+}  // namespace drake

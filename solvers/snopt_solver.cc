@@ -754,7 +754,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   }
   prog.SetDecisionVariableValues(sol);
   prog.SetOptimalCost(*F);
-  prog.SetSolverId(id());
+  SetSolverIdInsideMathematicalProgram(&prog);
 
   // todo: extract the other useful quantities, too.
 

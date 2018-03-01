@@ -386,8 +386,6 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  IpoptCalculatedQuantities* ip_cq) {
     unused(z_L, z_U, m, g, lambda, ip_data, ip_cq);
 
-    problem_->SetSolverId(IpoptSolver::id());
-
     switch (status) {
       case Ipopt::SUCCESS: {
         result_ = SolutionResult::kSolutionFound;
@@ -539,6 +537,7 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   Ipopt::SmartPtr<IpoptSolver_NLP> nlp = new IpoptSolver_NLP(&prog);
   status = app->OptimizeTNLP(nlp);
 
+  SetSolverIdInsideMathematicalProgram(&prog);
   return nlp->result();
 }
 
