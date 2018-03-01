@@ -4,6 +4,7 @@
 current source tree.  It should be used to regularly update the version of
 build_components.bzl file that is present in git."""
 
+import argparse
 import os
 import subprocess
 import sys
@@ -37,9 +38,22 @@ def _find_libdrake_components():
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-f", "--force", action="store_true",
+        help="Overwrite existing `build_components.bzl`, rather than write " +
+             "to `build_components.bzl.new`.")
+    args = parser.parse_args()
+
     mydir = os.path.abspath(os.path.dirname(sys.argv[0]))
-    original_name = os.path.join(mydir, "build_components.bzl")
-    new_name = os.path.join(mydir, "build_components.bzl.new")
+    original_basename = "build_components.bzl"
+    original_name = os.path.join(mydir, original_basename)
+
+    if not args.force:
+        new_basename = original_basename + ".new"
+    else:
+        new_basename = original_basename
+    new_name = os.path.join(mydir, new_basename)
 
     # Read the original version.
     with open(original_name, "r") as original:
