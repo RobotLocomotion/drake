@@ -393,23 +393,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  /// @name Registering geometry for visualization
-  /// These methods register geometry with a GeometrySystem in order to
-  /// visualize a plant's model.
-  /// Calling any of these methods at least once is a prerequisite to
-  /// connecting this plant to an instance of GeometrySystem, i.e., accessing
-  /// the source id (get_source_id()) and GeometrySystem-compatible output ports
-  /// (get_geometry_ids_output_port() and get_geometry_poses_output_port()).
-  /// All of these calls **must** be performed on the same instance of
-  /// GeometrySystem.
-  /// Calling any of these methods post-Finalize() is **not** allowed and an
-  /// exception is thrown if attempted.
-  // TODO(amcastro-tri): When GS supports it, provide argument to specify
-  // visual properties.
-  /// @{
-
   /// This method registers geometry in a GeometrySystem with a given
   /// geometry::Shape to be used for visualization of a given `body`.
+  /// Calling this method at least once is a prerequisite to connecting `this`
+  /// plant to an instance of GeometrySystem, i.e., accessing the source id
+  /// (get_source_id()) and GeometrySystem-compatible output ports
+  /// (get_geometry_ids_output_port() and get_geometry_poses_output_port()).
+  /// All of these calls **must** be performed on the **same** instance of
+  /// GeometrySystem.
+  /// Calling this method post-Finalize() is **not** allowed and an exception
+  /// is thrown if attempted.
   /// @param[in] body
   ///   The body for which geometry is being registered.
   /// @param[in] X_BG
@@ -422,16 +415,20 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   registered.
   /// @throws if `geometry_system` is the nullptr.
   /// @throws an exception if called post-finalize.
+  // TODO(amcastro-tri): When GS supports it, provide argument to specify
+  // visual properties.
   void RegisterVisualGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<double>* geometry_system);
 
   /// Returns the number of geometries registered for visualization.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
   int get_num_visual_geometries() const {
     return static_cast<int>(geometry_id_to_visual_index_.size());
   }
-  /// @}
 
   /// @name Retrieving ports for communication with a GeometrySystem.
   /// @{
@@ -439,6 +436,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Returns the unique id identifying `this` plant as a source for a
   /// GeometrySystem.
   /// Returns `nullopt` if `this` plant did not register any geometry.
+  /// This method can be called at any time during the lifetime of `this` plant
+  /// to query if `this` plant has been registered with a GeometrySystem, either
+  /// pre- or post-finalize, see Finalize(). However, a geometry::SourceId is
+  /// only assigned once at the first call of any of this plant's geometry
+  /// registration methods, and it does not change after that.
+  /// Post-finalize calls will always return the same value.
   optional<geometry::SourceId> get_source_id() const {
     return source_id_;
   }
@@ -456,8 +459,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @}
 
-  /// @returns `true` if `this` %MultibodyPlant was registered with a
+  /// Returns `true` if `this` %MultibodyPlant was registered with a
   /// GeometrySystem.
+  /// This method can be called at any time during the lifetime of `this` plant
+  /// to query if `this` plant has been registered with a GeometrySystem, either
+  /// pre- or post-finalize, see Finalize().
   bool geometry_source_is_registered() const {
     return !!source_id_;
   }
@@ -465,7 +471,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise this method throws
   /// an exception.
+  /// @throws if body with index `body_index` has not geometry registered with
+  /// it.
+  /// @throws if called pre-finalize.
   geometry::FrameId GetBodyFrameIdOrThrow(BodyIndex body_index) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     const auto it = body_index_to_frame_id_.find(body_index);
     if (it == body_index_to_frame_id_.end()) {
       throw std::logic_error(
@@ -480,7 +490,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->world_body();
   }
 
-  const MultibodyTree<T>& model() const { return *model_; }
+  /// Returns a constant reference to the underlying MultibodyTree model for
+  /// `this` plant.
+  /// @throws if called pre-finalize. See Finalize().
+  const MultibodyTree<T>& model() const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return *model_;
+  }
 
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
@@ -512,8 +528,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
+  /// @throws if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(state != nullptr);
     model_->SetDefaultState(context, state);
   }
