@@ -133,7 +133,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// Returns the number of joint actuators in the model.
   /// @see AddJointActuator().
   int num_actuators() const {
-    return model_->get_num_actuators();
+    return model_->num_actuators();
   }
 
   /// Returns the size of the generalized position vector `q` for `this` model.
