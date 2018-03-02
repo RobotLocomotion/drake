@@ -60,7 +60,7 @@ template<typename T>
 void MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    geometry::GeometrySystem<double>* geometry_system) {
+    geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   GeometryId id;
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
@@ -78,7 +78,7 @@ template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    geometry::GeometrySystem<double>* geometry_system) {
+    geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   // If not already done, register with the provided geometry system.
   if (!geometry_source_is_registered())
@@ -106,7 +106,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
-    geometry::GeometrySystem<double>* geometry_system) {
+    geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   // If not already done, register with the provided geometry system.
   if (!geometry_source_is_registered())

@@ -394,6 +394,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
+  //geometry::SourceId RegisterAsSourceForGeometrySystem(
+    //  const std::string& source_name, geometry::GeometrySystem<T>*);
+  
   /// This method registers geometry in a GeometrySystem with a given
   /// geometry::Shape to be used for visualization of a given `body`.
   /// Calling this method at least once is a prerequisite to connecting `this`
@@ -421,7 +424,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void RegisterVisualGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
+      geometry::GeometrySystem<T>* geometry_system);
 
   /// Returns the number of geometries registered for visualization.
   /// This method can be called at any time during the lifetime of `this` plant,
@@ -592,7 +595,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   geometry::GeometryId RegisterGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
+      geometry::GeometrySystem<T>* geometry_system);
 
   // Helper method to register anchored geometry to the world, either visual or
   // collision. The anchored geometry registration includes:
@@ -602,7 +605,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   //    the world body.
   geometry::GeometryId RegisterAnchoredGeometry(
       const Isometry3<double>& X_WG, const geometry::Shape& shape,
-      geometry::GeometrySystem<double>* geometry_system);
+      geometry::GeometrySystem<T>* geometry_system);
 
   bool body_has_registered_frame(const Body<T>& body) const {
     return body_index_to_frame_id_.find(body.index()) !=
