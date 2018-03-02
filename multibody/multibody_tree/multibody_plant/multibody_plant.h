@@ -89,18 +89,20 @@ namespace multibody_plant {
 /// essentially two purposes; a) visualization and, b) contact modeling.
 // TODO(SeanCurtis-TRI): update this comment as the number of GeometrySystem
 // roles changes.
-///
-/// If any geometry is registered for a given %MultibodyPlant, the plant will
-/// have a valid geometry::SourceId which can then be requested by
-/// get_source_id() in order to connect the plant to the GeometrySystem on which
-/// the geometry registration was performed.
+/// Before any geometry registration takes place, a user **must** first make a
+/// call to RegisterAsSourceForGeometrySystem() in order to register the
+/// %MultibodyPlant as a client of a GeometrySystem instance, point at which the
+/// plant will have assigned a valid geometry::SourceId.
+/// At Finalize(), %MultibodyPlant will declare input/output ports as
+/// appropriate to communicate with the GeometrySystem instance on which
+/// registrations took place.
 ///
 /// All geometry registration **must** be performed pre-finalize.
 ///
 /// @section Finalize() stage
 ///
 /// Once the user is done adding modeling elements and registering geometry, a
-/// a call to Finalize() must be performed. This call will:
+/// call to Finalize() must be performed. This call will:
 /// - Build the underlying MultibodyTree topology, see MultibodyTree::Finalize()
 ///   for details,
 /// - declare the plant's state,
@@ -394,19 +396,28 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
-  //geometry::SourceId RegisterAsSourceForGeometrySystem(
-    //  const std::string& source_name, geometry::GeometrySystem<T>*);
-  
-  /// This method registers geometry in a GeometrySystem with a given
-  /// geometry::Shape to be used for visualization of a given `body`.
-  /// Calling this method at least once is a prerequisite to connecting `this`
-  /// plant to an instance of GeometrySystem, i.e., accessing the source id
-  /// (get_source_id()) and GeometrySystem-compatible output ports
-  /// (get_geometry_ids_output_port() and get_geometry_poses_output_port()).
-  /// All of these calls **must** be performed on the **same** instance of
-  /// GeometrySystem.
-  /// Calling this method post-Finalize() is **not** allowed and an exception
-  /// is thrown if attempted.
+  /// Registers `this` plant to serve as a source for an instance of
+  /// GeometrySystem. This registration allows %MultibodyPlant to
+  /// register geometry with `geometry_system` for visualization and/or
+  /// collision queries.
+  /// Successive registration calls with GeometrySystem **must** be performed on
+  /// the same instance to which the pointer argument `geometry_system` points
+  /// to. Failure to do so will result in runtime exceptions.
+  /// @param geometry_system
+  ///   A valid non nullptr to the GeometrySystem instance for which
+  ///   `this` plant will sever as a source, see GeometrySystem documentation
+  ///   for further details.
+  /// @returns the SourceId of `this` plant in `geometry_system`. It can also
+  /// later on be retrieved with get_source_id().
+  /// @throws if called post-finalize.
+  /// @throws if `geometry_system` is the nullptr.
+  /// @throws if called more than once.
+  geometry::SourceId RegisterAsSourceForGeometrySystem(
+      geometry::GeometrySystem<T>* geometry_system);
+
+  /// Registers geometry in a GeometrySystem with a given geometry::Shape to be
+  /// used for visualization of a given `body`.
+  ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
   /// @param[in] X_BG
@@ -418,7 +429,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   A valid non nullptr to a GeometrySystem on which geometry will get
   ///   registered.
   /// @throws if `geometry_system` is the nullptr.
-  /// @throws an exception if called post-finalize.
+  /// @throws if called post-finalize.
+  /// @throws if `geometry_system` does not correspond to the same instance with
+  /// which RegisterAsSourceForGeometrySystem() was called.
   // TODO(amcastro-tri): When GS supports it, provide argument to specify
   // visual properties.
   void RegisterVisualGeometry(
@@ -616,20 +629,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // with a GeometrySystem.
   void DeclareGeometrySystemPorts();
 
-  // Allocate the id output.
   geometry::FrameIdVector AllocateFrameIdOutput(
       const systems::Context<T>& context) const;
 
-  // Calculate the id output.
   void CalcFrameIdOutput(
       const systems::Context<T>& context,
       geometry::FrameIdVector* id_set) const;
 
-  // Allocate the frame pose set output port value.
   geometry::FramePoseVector<T> AllocateFramePoseOutput(
       const systems::Context<T>& context) const;
 
-  // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
@@ -658,6 +667,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Port handles for geometry:
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
+
+  // For geometry registration with a GS, we save a pointer to the GS instance
+  // on which this plants calls RegisterAsSourceForGeometrySystem(). This is
+  // ONLY (and it MUST ONLY be used) used to verify that successive registration
+  // calls are performed on the same instance of GS.
+  const geometry::GeometrySystem<T>* geometry_system_{nullptr};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

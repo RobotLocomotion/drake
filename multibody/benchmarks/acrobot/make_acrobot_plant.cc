@@ -56,6 +56,8 @@ MakeAcrobotPlant(
       params.link2_name(), M2_L2o);
 
   if (geometry_system != nullptr) {
+    plant->RegisterAsSourceForGeometrySystem(geometry_system);
+
     // Pose of the geometry for link 1 in the link's frame.
     const Isometry3d X_L1G1{
         Translation3d(-params.l1() / 2.0 * Vector3d::UnitZ())};

@@ -56,12 +56,33 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
   model_ = other.model_->template CloneToScalar<T>();
 }
 
+template <typename T>
+geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForGeometrySystem(
+    geometry::GeometrySystem<T>* geometry_system) {
+  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(!geometry_source_is_registered());
+  source_id_ = geometry_system->RegisterSource("MultibodyPlant");
+  // Save the GS pointer so that on later geometry registrations we can verify
+  // the user is making calls on the same GS instance. Only used for that
+  // purpose, it gests nullified at Finalize().
+  geometry_system_ = geometry_system;
+  return source_id_.value();
+}
+
 template<typename T>
 void MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  if (geometry_system != geometry_system_) {
+    throw std::logic_error(
+        "Geometry registration calls must be performed on the SAME instance of "
+        "GeometrySystem used on the first call to "
+        "RegisterAsSourceForGeometrySystem()");
+  }
   GeometryId id;
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
@@ -80,10 +101,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  // If not already done, register with the provided geometry system.
-  if (!geometry_source_is_registered())
-    source_id_ = geometry_system->RegisterSource("MultibodyPlant");
-
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
     body_index_to_frame_id_[body.index()] =
@@ -108,10 +126,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
     geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  // If not already done, register with the provided geometry system.
-  if (!geometry_source_is_registered())
-    source_id_ = geometry_system->RegisterSource("MultibodyPlant");
-
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
   GeometryId geometry_id = geometry_system->RegisterAnchoredGeometry(
       source_id_.value(),
       std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
@@ -127,6 +142,7 @@ void MultibodyPlant<T>::Finalize() {
   // provided with a valid source id.
   if (source_id_) DeclareGeometrySystemPorts();
   DeclareCacheEntries();
+  geometry_system_ = nullptr;  // must not be used after Finalize().
 }
 
 template<typename T>
