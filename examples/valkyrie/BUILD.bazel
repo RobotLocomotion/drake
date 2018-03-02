@@ -29,7 +29,6 @@ drake_cc_library(
         "//multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
         "//util",
-        "//util:lcm_util",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -89,7 +88,6 @@ drake_cc_library(
         "//multibody/rigid_body_plant",
         "//systems/controllers:side",
         "//util",
-        "//util:lcm_util",
     ],
 )
 

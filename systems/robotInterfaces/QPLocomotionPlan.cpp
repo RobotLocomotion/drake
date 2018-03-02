@@ -23,7 +23,6 @@
 #include "drake/systems/robotInterfaces/verify_subtype_sizes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
-#include "drake/util/lcmUtil.h"
 
 // TODO(tkoolen): discuss possibility of chatter in knee control
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,

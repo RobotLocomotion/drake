@@ -221,7 +221,6 @@ drake_cc_library(
         "//multibody/parsers",
         "//solvers:gurobi_qp",
         "//util",
-        "//util:lcm_util",
     ],
 )
 

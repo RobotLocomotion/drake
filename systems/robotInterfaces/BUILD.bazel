@@ -46,7 +46,6 @@ drake_cc_library(
         "//systems/controllers:side",
         "//systems/controllers:zmp_util",
         "//util",
-        "//util:lcm_util",
     ],
 )
 
