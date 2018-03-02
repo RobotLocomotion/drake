@@ -124,7 +124,8 @@ VectorX<T> InitialValueProblem<T>::Solve(
 
   if (!context_ || initial_time != current_initial_time_
       || initial_state != current_initial_state_
-      || parameters != current_parameters_) {
+      || parameters != current_parameters_
+      || time < context_->get_time()) {
     // Allocates a new integration context.
     std::unique_ptr<Context<T>> context =
         system_->CreateDefaultContext();
