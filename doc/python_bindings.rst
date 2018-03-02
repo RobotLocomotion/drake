@@ -71,10 +71,12 @@ To check this:
         This formula installs a python2 executable to /usr/local/bin.
         If you wish to have this formula's python executable in your PATH then
         add the following to ~/.bash_profile:
-          export PATH="/usr/local/opt/python/libexec/bin:$PATH"
+          export PATH="/usr/local/opt/python@2/libexec/bin:$PATH"
 
-    Once you have done this, if you would like to use ``jupyter`` then be sure to install it via ``pip install jupyter`` (*not* via Homebrew) to ensure that it uses the correct Python interpreter. 
-    
+    Once you have done this, if you would like to use ``jupyter`` then be sure
+    to install it via ``pip install jupyter`` (*not* via Homebrew) to ensure
+    that it uses the correct ``PYTHONPATH``.
+
     ..
         Developers: Ensure this is synchronized with the steps in
         ``install_prereqs_user_environment.sh``.
