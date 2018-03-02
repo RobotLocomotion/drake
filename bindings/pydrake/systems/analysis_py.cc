@@ -24,10 +24,14 @@ PYBIND11_MODULE(analysis, m) {
     .def("get_target_accuracy", &IntegratorBase<T>::get_target_accuracy)
     .def("set_maximum_step_size", &IntegratorBase<T>::set_maximum_step_size)
     .def("get_maximum_step_size", &IntegratorBase<T>::get_maximum_step_size)
-    .def("set_requested_minimum_step_size", &IntegratorBase<T>::set_requested_minimum_step_size)
-    .def("get_requested_minimum_step_size", &IntegratorBase<T>::get_requested_minimum_step_size)
-    .def("set_throw_on_minimum_step_size_violation", &IntegratorBase<T>::set_throw_on_minimum_step_size_violation)
-    .def("get_throw_on_minimum_step_size_violation", &IntegratorBase<T>::get_throw_on_minimum_step_size_violation);
+    .def("set_requested_minimum_step_size",
+         &IntegratorBase<T>::set_requested_minimum_step_size)
+    .def("get_requested_minimum_step_size",
+         &IntegratorBase<T>::get_requested_minimum_step_size)
+    .def("set_throw_on_minimum_step_size_violation",
+         &IntegratorBase<T>::set_throw_on_minimum_step_size_violation)
+    .def("get_throw_on_minimum_step_size_violation",
+         &IntegratorBase<T>::get_throw_on_minimum_step_size_violation);
 
   py::class_<Simulator<T>>(m, "Simulator")
     .def(py::init<const System<T>&>(),
@@ -45,11 +49,10 @@ PYBIND11_MODULE(analysis, m) {
     .def("get_mutable_context", &Simulator<T>::get_mutable_context,
          py_reference_internal)
     .def("get_mutable_integrator", &Simulator<T>::get_mutable_integrator,
-        py_reference_internal)
+         py_reference_internal)
     .def("set_publish_every_time_step",
          &Simulator<T>::set_publish_every_time_step)
     .def("set_target_realtime_rate", &Simulator<T>::set_target_realtime_rate);
-
 }
 
 }  // namespace pydrake
