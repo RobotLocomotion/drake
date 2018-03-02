@@ -47,7 +47,7 @@ class JointActuator final
   /// Returns the name of the actuator.
   const std::string& name() const { return name_; }
 
-  /// Returns the joint actuated by this %JointActuator.
+  /// Returns a reference to the joint actuated by this %JointActuator.
   const Joint<T>& joint() const;
 
   /// Adds into `forces` a force along one of the degrees of freedom of the
