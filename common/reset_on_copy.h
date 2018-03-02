@@ -36,7 +36,7 @@ namespace drake {
 /// source on move doesn't change semantics since the condition of the source
 /// after a move is generally undefined. It is instead opportunistic good
 /// hygiene for early detection of bugs, taking advantage of the fact that we
-/// know type T can be value-initialized. See reinit_after_move for more
+/// know type T can be value-initialized. See reset_after_move for more
 /// discussion.
 ///
 /// Example:
@@ -66,7 +66,7 @@ namespace drake {
 /// zero, regardless of whether 0 is one of the specified enumeration values.
 ///
 /// @tparam T must satisfy `std::is_scalar<T>`.
-/// @see reinit_after_move
+/// @see reset_after_move
 
 // NOTE(sherm1) to future implementers: if you decide to extend this adapter for
 // use with class types, be sure to think carefully about the semantics of copy
