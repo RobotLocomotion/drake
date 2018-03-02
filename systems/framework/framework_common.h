@@ -104,8 +104,23 @@ entries are allocated beginning with kNextAvailableTicket defined below. */
 enum BuiltInTicketNumbers {
   kNothingTicket        =  0,
   kTimeTicket           =  1,
-  // TODO(sherm1) Add in the rest of the built-in tickets here.
-  kNextAvailableTicket  = kTimeTicket + 1
+  kAccuracyTicket       =  2,
+  kQTicket              =  3,
+  kVTicket              =  4,
+  kZTicket              =  5,
+  kXcTicket             =  6,
+  kXdTicket             =  7,
+  kXaTicket             =  8,
+  kXTicket              =  9,
+  kConfigurationTicket  = 10,
+  kVelocityTicket       = 11,
+  kKinematicsTicket     = 12,
+  kAllParametersTicket  = 13,
+  kAllInputPortsTicket  = 14,
+  kAllSourcesTicket     = 15,
+  kXcdotTicket          = 16,
+  kXdhatTicket          = 17,
+  kNextAvailableTicket  = kXdhatTicket+1
 };
 
 }  // namespace internal

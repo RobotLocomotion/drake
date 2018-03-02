@@ -150,6 +150,17 @@ class DependencyTracker {
   DependencyGraph. The ticket is unique within the containing subcontext. */
   DependencyTicket ticket() const { return ticket_; }
 
+  /** Returns a pointer to the CacheEntryValue if this tracker is a cache
+  entry tracker, otherwise nullptr. */
+  // This is for validating that this tracker is associated with the right
+  // cache entry. Don't use this during runtime invalidation.
+  const CacheEntryValue* cache_entry_value() const {
+    DRAKE_DEMAND(cache_value_);
+    if (cache_value_ == &CacheEntryValue::dummy())
+      return nullptr;
+    return cache_value_;
+  }
+
   /** Notifies `this` %DependencyTracker that its managed value was directly
   modified or made available for mutable access. That is, this is the
   _initiating_ event of a value modification. All of our downstream

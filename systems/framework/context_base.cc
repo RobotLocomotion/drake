@@ -26,6 +26,16 @@ std::unique_ptr<ContextBase> ContextBase::Clone() const {
 
 ContextBase::~ContextBase() {}
 
+void ContextBase::SetIsCacheDisabled(bool is_disabled) const {
+  cache_.SetIsCacheDisabled(is_disabled);
+  // TODO(sherm1) Recursive update of descendents goes here.
+}
+
+void ContextBase::SetAllCacheEntriesOutOfDate() const {
+  cache_.SetAllEntriesOutOfDate();
+  // TODO(sherm1) Recursive update of descendents goes here.
+}
+
 std::string ContextBase::GetSystemPathname() const {
   // TODO(sherm1) Replace with the real pathname.
   return "/dummy/system/pathname";
@@ -40,11 +50,91 @@ void ContextBase::CreateBuiltInTrackers() {
   trackers.CreateNewDependencyTracker(
       DependencyTicket(internal::kNothingTicket), "nothing");
 
-  // Allocate time tracker. Ignoring return value.
-  trackers.CreateNewDependencyTracker(
+  // Allocate trackers for time, accuracy, q, v, z.
+  auto& time_tracker = trackers.CreateNewDependencyTracker(
       DependencyTicket(internal::kTimeTicket), "t");
+  auto& accuracy_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kAccuracyTicket), "accuracy");
+  auto& q_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kQTicket), "q");
+  auto& v_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kVTicket), "v");
+  auto& z_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kZTicket), "z");
 
-  // TODO(sherm1) Add the rest of the built-in tickets here.
+  // Continuous state xc depends on q, v, and z.
+  auto& xc_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kXcTicket), "xc");
+  xc_tracker.SubscribeToPrerequisite(&q_tracker);
+  xc_tracker.SubscribeToPrerequisite(&v_tracker);
+  xc_tracker.SubscribeToPrerequisite(&z_tracker);
+
+  // Allocate the "all discrete variables" xd tracker. The associated System is
+  // responsible for allocating the individual discrete variable group xdᵢ
+  // trackers and subscribing this one to each of those.
+  auto& xd_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kXdTicket), "xd");
+
+  // Allocate the "all abstract variables" xa tracker. The associated System is
+  // responsible for allocating the individual abstract variable xaᵢ
+  // trackers and subscribing this one to each of those.
+  auto& xa_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kXaTicket), "xa");
+
+  // The complete state x={xc,xd,xa}.
+  auto& x_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kXTicket), "x");
+  x_tracker.SubscribeToPrerequisite(&xc_tracker);
+  x_tracker.SubscribeToPrerequisite(&xd_tracker);
+  x_tracker.SubscribeToPrerequisite(&xa_tracker);
+
+  // Allocate the "all parameters" p tracker. The associated System is
+  // responsible for allocating the individual numeric parameter pnᵢ and
+  // abstract paraemter paᵢ trackers and subscribing this one to each of those.
+  auto& p_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kAllParametersTicket), "p");
+
+  // Allocate the "all input ports" u tracker. The associated System is
+  // responsible for allocating the individual input port uᵢ
+  // trackers and subscribing this one to each of those.
+  auto& u_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kAllInputPortsTicket), "u");
+
+  // Allocate the "all sources" tracker. The complete list of known sources
+  // is t,a,x,p, and u. Note that cache entries are not included. Under normal
+  // operation that doesn't matter because cache entries are invalidated only
+  // when one of these source values changes. Any computation that has
+  // declared "all sources" dependence will also have been invalidated for the
+  // same reason so doesn't need to explicitly list cache entries.
+  auto& all_sources_tracker = trackers.CreateNewDependencyTracker(
+      DependencyTicket(internal::kAllSourcesTicket), "all sources");
+  all_sources_tracker.SubscribeToPrerequisite(&time_tracker);
+  all_sources_tracker.SubscribeToPrerequisite(&accuracy_tracker);
+  all_sources_tracker.SubscribeToPrerequisite(&x_tracker);
+  all_sources_tracker.SubscribeToPrerequisite(&p_tracker);
+  all_sources_tracker.SubscribeToPrerequisite(&u_tracker);
+
+  // TODO(sherm1) Add the rest of the built-in trackers here.
+}
+
+void ContextBase::BuildTrackerPointerMap(
+    const ContextBase& clone,
+    DependencyTracker::PointerMap* tracker_map) const {
+  // First map the pointers local to this context.
+  graph_.AppendToTrackerPointerMap(clone.get_dependency_graph(),
+                                   &(*tracker_map));
+  // TODO(sherm1) Recursive update of descendents goes here.
+}
+
+void ContextBase::FixTrackerPointers(
+    const ContextBase& source,
+    const DependencyTracker::PointerMap& tracker_map) {
+  // First repair pointers local to this context.
+  graph_.RepairTrackerPointers(source.get_dependency_graph(), tracker_map, this,
+                               &cache_);
+  // Cache and only needs its back pointers set to this.
+  cache_.RepairCachePointers(this);
+  // TODO(sherm1) Recursive update of descendents goes here.
 }
 
 }  // namespace systems

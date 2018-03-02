@@ -60,8 +60,8 @@ void DependencyTracker::NotePrerequisiteChange(
     return;
   }
   last_change_event_ = change_event;
-  // Update associated value if any.
-  cache_value_->set_is_up_to_date(false);
+  // Invalidate associated cache entry value if any.
+  cache_value_->mark_out_of_date();
   // Follow up with downstream subscribers.
   NotifySubscribers(change_event, depth);
 }
