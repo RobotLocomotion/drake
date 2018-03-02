@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -639,7 +640,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
-  std::unordered_map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
+  // Iteraion order on this map DOES matter, and therefore we use an std::map.
+  std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
   // Map from GeometryId to BodyIndex. During contact queries, it allows to find
   // out to which body a given geometry corresponds to.

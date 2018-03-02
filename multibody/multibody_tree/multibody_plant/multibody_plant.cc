@@ -229,10 +229,9 @@ FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
   // User must be done adding elements to the model.
   DRAKE_DEMAND(model_->topology_is_valid());
   FrameIdVector ids(source_id_.value());
-  // Add a frame for the one single body in this model.
   // ids are ordered by body index. This must be consistent with the order in
   // which CalcFramePoseOutput() places the poses in its output.
-  // Not all bodies need go have geometry.
+  // Not all bodies need to have geometry.
   for (auto it : body_index_to_frame_id_)
     ids.AddFrameId(it.second);
   return ids;
@@ -240,11 +239,15 @@ FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
 
 template <typename T>
 void MultibodyPlant<T>::CalcFrameIdOutput(
-    const Context<T>&, FrameIdVector*) const {
+    const Context<T>&, FrameIdVector* ids_vector) const {
   // Just a sanity check.
   DRAKE_DEMAND(source_id_ != nullopt);
-  // NOTE: This only needs to do work if the topology changes. This system makes
-  // no topology changes.
+  // NOTE: we output ids sorted by BodyIndex and therefore the the loop here.
+  std::vector<FrameId> ids;
+  for (auto it : body_index_to_frame_id_) {
+    ids.push_back(it.second);
+  }
+  *ids_vector = FrameIdVector(source_id_.value(), ids);
 }
 
 template <typename T>
@@ -252,7 +255,7 @@ FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
   DRAKE_DEMAND(source_id_ != nullopt);
   FramePoseVector<T> poses(source_id_.value());
-  // Only the pose for bodies for which geometry has been regiestered needs to
+  // Only the pose for bodies for which geometry has been registered needs to
   // be placed in the output.
   const int num_bodies_with_geometry = body_index_to_frame_id_.size();
   poses.mutable_vector().resize(num_bodies_with_geometry);
@@ -262,7 +265,7 @@ FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
 template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
-  DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == (num_bodies() - 1));
+  DRAKE_ASSERT(poses->vector().size() == body_index_to_frame_id_.size());
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
