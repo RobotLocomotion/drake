@@ -521,9 +521,11 @@ class RigidBodyTree {
   /// @returns a `nv` dimensional vector, where `nv` is the dimension of the
   ///      generalized velocities.
   /// @sa transformVelocityToQDot()
-  static drake::VectorX<T> transformQDotToVelocity(
-      const KinematicsCache<T>& cache,
-      const drake::VectorX<T>& qdot);
+  template <typename Derived>
+  static drake::VectorX<typename Derived::Scalar>
+  transformQDotToVelocity(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& qdot);
 
   /// Converts a vector of generalized velocities (v) to the time
   /// derivative of generalized coordinates (qdot).
@@ -534,9 +536,11 @@ class RigidBodyTree {
   /// @retval qdot a `nq` dimensional vector, where `nq` is the dimension of the
   ///      generalized coordinates.
   /// @sa transformQDotToVelocity()
-  static drake::VectorX<T> transformVelocityToQDot(
-      const KinematicsCache<T>& cache,
-      const drake::VectorX<T>& v);
+  template <typename Derived>
+  static drake::VectorX<typename Derived::Scalar>
+  transformVelocityToQDot(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& v);
 
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
