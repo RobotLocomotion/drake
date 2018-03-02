@@ -20,4 +20,4 @@ if [[ ! -f /usr/include/expat.h || ! -f /usr/include/zlib.h ]]; then
   xcode-select --install
 fi
 
-pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+/usr/local/opt/python@2/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
