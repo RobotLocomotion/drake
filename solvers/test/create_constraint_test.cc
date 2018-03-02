@@ -43,16 +43,16 @@ void CheckParseQuadraticConstraint(const Expression& e, double lb, double ub) {
 
 class ParseQuadraticConstraintTest : public ::testing::Test {
  public:
-  ParseQuadraticConstraintTest() : x0_{"x0"}, x1_{"x1"}, x2_{"x2"}, x3_{"x3"} {
-    x_ << x0_, x1_, x2_, x3_;
+  ParseQuadraticConstraintTest() {
+    x0_ = symbolic::Variable("x0");
+    x1_ = symbolic::Variable("x1");
+    x_ << x0_, x1_;
   }
 
  protected:
   symbolic::Variable x0_;
   symbolic::Variable x1_;
-  symbolic::Variable x2_;
-  symbolic::Variable x3_;
-  Vector4<symbolic::Variable> x_;
+  Vector2<symbolic::Variable> x_;
 };
 
 TEST_F(ParseQuadraticConstraintTest, Test0) {

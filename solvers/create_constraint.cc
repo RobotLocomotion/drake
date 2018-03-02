@@ -380,7 +380,10 @@ Binding<QuadraticConstraint> ParseQuadraticConstraint(
   Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
   Eigen::VectorXd b(vars_vec.size());
   double constant_term;
+  // Decompose the polynoimial 0.5xᵀQx + bᵀx + k.
   DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b, &constant_term);
+  // The constraint to be imposed is
+  // lb - k ≤ 0.5 xᵀQx + bᵀx ≤ ub - k
   return CreateBinding(
       make_shared<QuadraticConstraint>(Q, b, lower_bound - constant_term,
                                        upper_bound - constant_term),
