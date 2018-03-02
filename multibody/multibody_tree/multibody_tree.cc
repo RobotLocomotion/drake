@@ -901,11 +901,11 @@ void MultibodyTree<T>::CalcArticulatedBodyAlgorithmCache(
   const std::vector<SpatialForce<T>>& body_forces = forces.body_forces();
 
   // TODO(bobbyluig): Eval H_PB_W from the cache.
-  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
 
   // Perform tip-to-base recursion, skipping the world.
-  for (int depth = get_tree_height() - 1; depth > 0; depth--) {
+  for (int depth = tree_height() - 1; depth > 0; depth--) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
@@ -936,14 +936,14 @@ void MultibodyTree<T>::CalcForwardDynamics(
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   // TODO(bobbyluig): Eval H_PB_W from the cache.
-  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
 
   // Create acceleration kinematics cache to hold results of recursion.
   AccelerationKinematicsCache<T> ac(this->topology_);
 
   // Perform base-to-tip recursion, skipping the world.
-  for (int depth = 1; depth < get_tree_height(); depth++) {
+  for (int depth = 1; depth < tree_height(); depth++) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 

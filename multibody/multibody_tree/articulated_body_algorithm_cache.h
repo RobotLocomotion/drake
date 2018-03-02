@@ -42,7 +42,7 @@ class ArticulatedBodyAlgorithmCache {
   /// MultibodyTreeTopology.
   explicit ArticulatedBodyAlgorithmCache(
       const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.get_num_bodies()) {
+      num_nodes_(topology.num_bodies()) {
     Allocate();
   }
 
