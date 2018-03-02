@@ -47,13 +47,18 @@ struct Stats {
 };
 
 void ExpectStatsMatch(const DependencyTracker* tracker, const Stats& expected) {
-  EXPECT_EQ(tracker->num_ignored_notifications(), expected.ignored);
-  EXPECT_EQ(tracker->num_notifications_sent(), expected.sent);
-  EXPECT_EQ(tracker->num_value_change_events(), expected.value_change);
-  EXPECT_EQ(tracker->num_prerequisite_change_events(), expected.prereq_change);
+  EXPECT_EQ(tracker->num_ignored_notifications(), expected.ignored)
+      << tracker->description();
+  EXPECT_EQ(tracker->num_notifications_sent(), expected.sent)
+      << tracker->description();
+  EXPECT_EQ(tracker->num_value_change_events(), expected.value_change)
+      << tracker->description();
+  EXPECT_EQ(tracker->num_prerequisite_change_events(), expected.prereq_change)
+      << tracker->description();
   EXPECT_EQ(tracker->num_notifications_received(),
             tracker->num_value_change_events() +
-                tracker->num_prerequisite_change_events());
+                tracker->num_prerequisite_change_events())
+      << tracker->description();
 }
 
 // Normally the dependency trackers are allocated automatically by the
@@ -70,10 +75,12 @@ void ExpectStatsMatch(const DependencyTracker* tracker, const Stats& expected) {
 //                          |                              +-->           |
 //     +-----------+        +--------------------------------->  entry0   |
 //     |  time     +------------------------------------------>           |
-//     +-----------+                                          +-----------+
+//     |           +---> others                               +-----------+
+//     +-----------+
 //
 // entry0 is a cache entry so we expect invalidation; the others are just
-// trackers with no associated values.
+// trackers with no associated values. Time is a built-in tracker and may
+// have other subscribers besides what we added here.
 class HandBuiltDependencies : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -98,7 +105,7 @@ class HandBuiltDependencies : public ::testing::Test {
     downstream2_->SubscribeToPrerequisite(middle1_);
 
     Cache& cache = context_.get_mutable_cache();
-    const CacheIndex index(cache.num_entries());
+    const CacheIndex index(cache.cache_size());
     entry0_ = &cache.CreateNewCacheEntryValue(
         index, next_ticket++, "entry0",
         {time_ticket_, middle1_->ticket(), downstream2_->ticket()}, &graph);
@@ -205,12 +212,12 @@ TEST_F(HandBuiltDependencies, Notify) {
   // The cache entry depends directly on time.
   time_tracker_->NoteValueChange(2LL);
   tt_stats_.value_change++;
-  tt_stats_.sent++;  // entry0
+  tt_stats_.sent += time_tracker_->num_subscribers();  // entry0, others
   entry0_stats_.prereq_change++;
   EXPECT_FALSE(entry0_->is_up_to_date());
   ExpectAllStatsMatch();
 
-  entry0_->set_is_up_to_date(true);
+  entry0_->mark_up_to_date();
   EXPECT_TRUE(entry0_->is_up_to_date());
 
   upstream1_->NoteValueChange(3LL);
