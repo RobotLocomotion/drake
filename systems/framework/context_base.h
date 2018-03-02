@@ -1,10 +1,19 @@
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/common/reset_on_copy.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -35,6 +44,29 @@ class ContextBase : public internal::SystemPathnameInterface {
   std::unique_ptr<ContextBase> Clone() const;
 
   virtual ~ContextBase();
+
+  /** (Debugging) Disables or re-enables caching, recursively for this context
+  and all its subcontexts. Disabling forces every `Eval()` method to perform a
+  full calculation rather than returning the cached one. Results should be
+  identical with or without caching, except for performance. If they are not,
+  there is likely a problem with (a) the specified dependencies for some
+  calculation, or (b) a misuse of references into cached values that hides
+  modifications from the caching system, or (c) a bug in the caching system. The
+  `is_disabled` flag is independent of the `is_up_to_date` flag, which continues
+  to be maintained even when caching is disabled (though it is ignored). Hence
+  re-enabling the cache with this method may result in some entries already
+  considered up to date. See SetAllCacheEntriesOutOfDate() if you want to ensure
+  that caching starts with everything out of date. */
+  void SetIsCacheDisabled(bool is_disabled) const;
+
+  /** (Debugging) Marks all cache entries out-of-date, recursively for this
+  context and all its subcontexts. This forces the next `Eval()` request for
+  each cache entry to perform a full calculation rather than returning the
+  cached one. After that, normal caching behavior resumes. Results should be
+  identical whether this is called or not, since the caching system should be
+  maintaining this flag correctly. If they are not, see the documentation for
+  SetIsCacheDisabled() for suggestions. */
+  void SetAllCacheEntriesOutOfDate() const;
 
   /** (Debugging) Returns the local name of the subsystem for which this is the
   Context. See GetSystemPathname() if you want the full name. */
@@ -93,7 +125,7 @@ class ContextBase : public internal::SystemPathnameInterface {
   q, all states, all inputs, etc.). We can't allocate trackers for individual
   discrete & abstract states, parameters, or input ports since we don't yet
   know how many there are. */
-  ContextBase() : graph_(this) {
+  ContextBase() : cache_(this), graph_(this) {
     CreateBuiltInTrackers();
   }
 
@@ -102,14 +134,11 @@ class ContextBase : public internal::SystemPathnameInterface {
   delegate to this one for use in their DoCloneWithoutPointers()
   implementations. The cache and dependency graph are copied, but any pointers
   contained in the source are left null in the copy. */
-  ContextBase(const ContextBase& source)
-      : cache_(source.cache_), graph_(source.graph_) {
-    // Everything else is left default-initialized.
-  }
+  ContextBase(const ContextBase&) = default;
 
   /** Clones a context but without any of its internal pointers. */
   std::unique_ptr<ContextBase> CloneWithoutPointers() const {
-    return DoCloneWithoutPointers();
+      return DoCloneWithoutPointers();
   }
 
   /** Derived classes must implement this so that it performs the complete
@@ -131,23 +160,13 @@ class ContextBase : public internal::SystemPathnameInterface {
   // outside of their containing subcontext.
   void BuildTrackerPointerMap(
       const ContextBase& clone,
-      DependencyTracker::PointerMap* tracker_map) const {
-    // First map the pointers local to this context.
-    graph_.AppendToTrackerPointerMap(clone.get_dependency_graph(),
-                                     &(*tracker_map));
-    // TODO(sherm1) Recursive update of descendents goes here.
-  }
+      DependencyTracker::PointerMap* tracker_map) const;
 
   // Assuming `this` is a recently-cloned Context containing stale references
   // to the source Context's trackers, repair those pointers using the given
   // map.
   void FixTrackerPointers(const ContextBase& source,
-                          const DependencyTracker::PointerMap& tracker_map) {
-    // First repair pointers local to this context.
-    graph_.RepairTrackerPointers(source.get_dependency_graph(),
-                                 tracker_map, this, &cache_);
-    // TODO(sherm1) Recursive update of descendents goes here.
-  }
+                          const DependencyTracker::PointerMap& tracker_map);
 
   // The cache of pre-computed values owned by this subcontext.
   mutable Cache cache_;
