@@ -477,7 +477,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   }
 
   prog.SetOptimalCost(minf);
-  prog.SetSolverId(id());
+  prog.SetSolverId(id(), CreatePassKey());
   return result;
 }
 

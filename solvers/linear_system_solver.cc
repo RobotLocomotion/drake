@@ -51,7 +51,8 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
   prog.SetDecisionVariableValues(least_square_sol);
 
-  prog.SetSolverId(id());
+  prog.SetSolverId(id(), CreatePassKey());
+
   if (beq.isApprox(Aeq * least_square_sol)) {
     prog.SetOptimalCost(0.);
     return SolutionResult::kSolutionFound;

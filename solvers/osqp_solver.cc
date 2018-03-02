@@ -299,7 +299,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_free(data);
   c_free(settings);
 
-  prog.SetSolverId(id());
+  prog.SetSolverId(id(), CreatePassKey());
   return solution_result;
 }
 }  // namespace solvers

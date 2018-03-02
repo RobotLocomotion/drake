@@ -215,7 +215,7 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverId(MobyLcpSolverId::id());
+  prog.SetSolverId(MobyLcpSolverId::id(), CreatePassKey());
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());

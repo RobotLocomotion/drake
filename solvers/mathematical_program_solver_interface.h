@@ -23,6 +23,28 @@ enum SolutionResult {
                          /// infer the status of the primal problem.
 };
 
+/**
+ * This class is used for calling these functions inside MathematicalProgram,
+ * that are only supposed to be called by MathematicalProgramSolverInterface.
+ * For example, MathematicalProgram::SetSolverId(...) should only be called by
+ * each solver.
+ * This has private constuctor, and is a friend of
+ * MathematicalProgramSolverInterface, so only
+ * MathematicalProgramSolverInterface can call
+ * MathematicalProgram::SetSolverId()
+ */
+class MathematicalProgramKey {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MathematicalProgramKey)
+
+  ~MathematicalProgramKey() {}
+
+ private:
+  MathematicalProgramKey() {}
+
+  friend class MathematicalProgramSolverInterface;
+};
+
 /// Interface used by implementations of individual solvers.
 class MathematicalProgramSolverInterface {
  public:
@@ -43,6 +65,12 @@ class MathematicalProgramSolverInterface {
 
   /// Returns the identifier of this solver.
   virtual SolverId solver_id() const = 0;
+
+ protected:
+  /// Creates the key to be used to call some functions in MathematicalProgram.
+  MathematicalProgramKey CreatePassKey() const {
+    return MathematicalProgramKey();
+  }
 };
 
 }  // namespace solvers

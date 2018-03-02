@@ -199,6 +199,7 @@ drake_cc_library(
         "//common:number_traits",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:unused",
     ],
 )
 
