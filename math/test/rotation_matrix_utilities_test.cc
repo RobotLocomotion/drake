@@ -1,5 +1,3 @@
-#include "drake/math/rotation_matrix.h"
-
 #include <cmath>
 #include <iostream>
 
@@ -8,6 +6,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
