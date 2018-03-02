@@ -70,8 +70,8 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
   } else {
     id = RegisterGeometry(body, X_BG, shape, geometry_system);
   }
-  geometry_id_to_visual_index_[id] =
-      static_cast<int>(geometry_id_to_visual_index_.size());
+  const int visual_index = geometry_id_to_visual_index_.size();
+  geometry_id_to_visual_index_[id] = visual_index;
 }
 
 template<typename T>
