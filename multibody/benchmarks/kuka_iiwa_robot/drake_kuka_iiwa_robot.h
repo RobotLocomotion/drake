@@ -273,8 +273,8 @@ class DrakeKukaIIwaRobot {
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // Get model parameters.
-    const int nv = model_->get_num_velocities();
-    const int nq = model_->get_num_bodies();
+    const int nv = model_->num_velocities();
+    const int nq = model_->num_bodies();
 
     // Compute force element contributions.
     MultibodyForces<T> forces(*model_);

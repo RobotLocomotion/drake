@@ -369,11 +369,11 @@ class PendulumTests : public ::testing::Test {
     VelocityKinematicsCache<double> vc(tree_->get_topology());
     Matrix2d M;
     Vector2d C;
-    VectorX<double> tau_applied(tree_->get_num_velocities());
+    VectorX<double> tau_applied(tree_->num_velocities());
     std::vector<SpatialForce<double>> Fapplied_Bo_W_array(
-        tree_->get_num_bodies());
+        tree_->num_bodies());
     std::vector<SpatialAcceleration<double>> A_WB_array(
-        tree_->get_num_bodies());
+        tree_->num_bodies());
 
     Vector2d qddot;
     Vector2d qddot_expected;

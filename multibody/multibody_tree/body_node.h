@@ -1156,7 +1156,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //   zplus_PB_W = z_B_W + g_PB_W e_B                                    (5)
 
     // Body for this node.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Body spatial velocity in W.
     const SpatialVelocity<T>& V_WB = get_V_WB(vc);
@@ -1193,8 +1193,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         .CalcAcrossMobilizerSpatialAcceleration(context, vmdot_zero);
 
     // Inboard frame F and outboard frame M of this node's mobilizer.
-    const Frame<T>& frame_F = get_inboard_frame();
-    const Frame<T>& frame_M = get_outboard_frame();
+    const Frame<T>& frame_F = inboard_frame();
+    const Frame<T>& frame_M = outboard_frame();
 
     // Compute X_PF and X_MB.
     const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
