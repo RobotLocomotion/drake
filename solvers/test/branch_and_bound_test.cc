@@ -1125,8 +1125,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestMultipleIntegralSolution2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding2) {
-  // Test the node callback to search an integral solution by rounding the
-  // fractional solution to binary values, and solve the continuous variables.
+  // Test searching an integral solution by rounding the fractional solution to
+  // binary values, and solve the continuous variables.
   // Test on prog2.
   auto prog = ConstructMathematicalProgram2();
   VectorDecisionVariable<5> x = prog->decision_variables();
@@ -1157,8 +1157,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding2) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding3) {
-  // Test the node callback to search an integral solution by rounding the
-  // fractional solution to binary values, and solve the continuous variables.
+  // Test searching an integral solution by rounding the fractional solution to
+  // binary values, and solve the continuous variables.
   // Test on prog3.
   auto prog = ConstructMathematicalProgram3();
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -1173,8 +1173,8 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding3) {
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding4) {
-  // Test the node callback to search an integral solution by rounding the
-  // fractional solution to binary values, and solve the continuous variables.
+  // Test searching an integral solution by rounding the fractional solution to
+  // binary values, and solve the continuous variables.
   // Test on prog4.
   auto prog = ConstructMathematicalProgram4();
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
@@ -1250,6 +1250,30 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest,
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
   // The left-most un-fathomed node is root->left.
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root()->left_child());
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, NodeCallbackTest) {
+  // Test node callback function.
+  // In this trivial test, we just count how many nodes has been explored.
+
+  int num_visited_nodes = 1;
+  auto call_back_fun = [&num_visited_nodes](
+      const MixedIntegerBranchAndBoundNode& node,
+      MixedIntegerBranchAndBound* bnb) { ++num_visited_nodes; };
+  auto prog = ConstructMathematicalProgram2();
+  MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
+  dut.bnb()->SetUserDefinedNodeCallbackFunction(call_back_fun);
+
+  // Initially, only the root node has been visited.
+  EXPECT_EQ(num_visited_nodes, 1);
+
+  VectorDecisionVariable<5> x = dut.bnb()->root()->prog()->decision_variables();
+  // Every branch increments the number of visited nodes by 2.
+  dut.BranchAndUpdate(dut.mutable_root(), x(0));
+  EXPECT_EQ(num_visited_nodes, 3);
+
+  dut.BranchAndUpdate(dut.mutable_root(), x(2));
+  EXPECT_EQ(num_visited_nodes, 5);
 }
 }  // namespace
 }  // namespace solvers

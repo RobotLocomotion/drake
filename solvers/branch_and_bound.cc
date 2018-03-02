@@ -25,6 +25,31 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
   return false;
 }
 
+namespace {
+std::unique_ptr<MathematicalProgramSolverInterface> MakeSolver(
+    const SolverId& solver_id) {
+  if (solver_id == GurobiSolver::id() || solver_id == ScsSolver::id()) {
+    if (solver_id == GurobiSolver::id()) {
+      auto solver = std::make_unique<GurobiSolver>();
+      if (!solver->available()) {
+        throw std::runtime_error("Gurobi is unavailable.");
+      }
+      return solver;
+    } else {
+      auto solver = std::make_unique<ScsSolver>();
+      if (!solver->available()) {
+        throw std::runtime_error("Scs is unavailable.");
+      }
+      return solver;
+    }
+  } else {
+    throw std::runtime_error(fmt::format(
+        "MixedIntegerBranchAndBoundNode does not support solver {}.",
+        solver_id.name()));
+  }
+}
+}  // namespace
+
 MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
     const MathematicalProgram& prog,
     const std::list<symbolic::Variable>& binary_variables,
@@ -39,22 +64,9 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       solution_result_{SolutionResult::kUnknownError},
       optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown},
       solver_id_{solver_id} {
-  if (solver_id != GurobiSolver::id() && solver_id != ScsSolver::id()) {
-    throw std::runtime_error(fmt::format(
-        "MixedIntegerBranchAndBoundNode does not support solver {}.",
-        solver_id.name()));
-    if (solver_id == GurobiSolver::id()) {
-      GurobiSolver solver;
-      if (!solver.available()) {
-        throw std::runtime_error("Gurobi is unavailable.");
-      }
-    } else if (solver_id == ScsSolver::id()) {
-      ScsSolver solver;
-      if (!solver.available()) {
-        throw std::runtime_error("Scs is unavailable.");
-      }
-    }
-  }
+  std::unique_ptr<MathematicalProgramSolverInterface> solver =
+      MakeSolver(solver_id);
+  DRAKE_ASSERT(solver.get());
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
   // Set Gurobi DualReductions to 0, to differentiate infeasible from unbounded.
@@ -107,14 +119,10 @@ void AddVectorOfConstraintsToProgram(
 
 SolutionResult SolveProgramWithSolver(MathematicalProgram* prog,
                                       const SolverId& solver_id) {
-  if (solver_id == GurobiSolver::id()) {
-    GurobiSolver solver;
-    return solver.Solve(*prog);
-  } else if (solver_id == ScsSolver::id()) {
-    ScsSolver solver;
-    return solver.Solve(*prog);
-  }
-  throw std::runtime_error("Unsupported solver.");
+  std::unique_ptr<MathematicalProgramSolverInterface> solver =
+      MakeSolver(solver_id);
+  DRAKE_ASSERT(solver.get());
+  return solver->Solve(*prog);
 }
 }  // namespace
 
@@ -708,18 +716,8 @@ void MixedIntegerBranchAndBound::UpdateIntegralSolution(
   for (const auto& cost_solution : solutions_) {
     // The same solution should have the same cost, up to some numerical
     // tolerance.
-    if (std::abs(cost_solution.first - cost) < tol) {
-      bool found_match_i = true;  // If solution matches with cost_solution;
-      for (int i = 0; i < root_->prog()->num_vars(); ++i) {
-        if (std::abs(solution(i) - cost_solution.second(i)) > tol) {
-          found_match_i = false;
-          break;
-        }
-      }
-      if (found_match_i) {
-        found_match = true;
-      }
-    }
+    found_match = std::abs(cost_solution.first - cost) < tol &&
+                  (cost_solution.second - solution).cwiseAbs().maxCoeff() < tol;
     if (found_match) {
       break;
     }
@@ -757,12 +755,13 @@ void MixedIntegerBranchAndBound::SearchIntegralSolutionByRounding(
     // problem is feasible, then the optimal solution is a feasible
     // solution to the MIP, and we get an upper bound on the MIP optimal cost.
     auto new_prog = node.prog()->Clone();
-    // Go through each remaining binary variables, constraint them to either 0
-    // or 1, by rounding the solution to the integer.
+    // Go through each remaining binary variables, and constrain them to either
+    // 0 or 1 by rounding the solution to the integer.
     for (const auto& remaining_binary_variable :
          node.remaining_binary_variables()) {
       // Notice that roundoff_integer_val is of type double here. This is
-      // because adding constraint requires the bound being of type double.
+      // because AddBoundingBoxConstraint(...) requires the bounds of type
+      // double.
       const double roundoff_integer_val =
           std::round(node.prog()->GetSolution(remaining_binary_variable));
       new_prog->AddBoundingBoxConstraint(roundoff_integer_val,
