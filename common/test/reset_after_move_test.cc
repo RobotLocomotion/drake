@@ -1,4 +1,4 @@
-#include "drake/common/reinit_after_move.h"
+#include "drake/common/reset_after_move.h"
 
 #include <gtest/gtest.h>
 
@@ -13,13 +13,13 @@ int ForceInt(int value) {
 }
 
 GTEST_TEST(DefaultValueTest, Constructor) {
-  EXPECT_EQ(reinit_after_move<int>(), 0);
-  EXPECT_EQ(reinit_after_move<int>(1), 1);
+  EXPECT_EQ(reset_after_move<int>(), 0);
+  EXPECT_EQ(reset_after_move<int>(1), 1);
 }
 
 GTEST_TEST(DefaultValueTest, Access) {
-  // Assignment from a RHS of int (versus reinit_after_move<int>).
-  reinit_after_move<int> x;
+  // Assignment from a RHS of int (versus reset_after_move<int>).
+  reset_after_move<int> x;
   x = 1;
 
   // Conversion operator, non-const value.
@@ -27,7 +27,7 @@ GTEST_TEST(DefaultValueTest, Access) {
   EXPECT_EQ(ForceInt(x), 1);
 
   // Conversion operator, const.
-  const reinit_after_move<int>& x_cref = x;
+  const reset_after_move<int>& x_cref = x;
   EXPECT_EQ(x_cref, 1);
   EXPECT_EQ(ForceInt(x_cref), 1);
 
@@ -54,8 +54,8 @@ struct Thing {
 // Check that the dereferencing operators *ptr and ptr-> work for pointer types.
 GTEST_TEST(DefaultValueTest, Pointers) {
   int i = 5;
-  reinit_after_move<int*> i_ptr{&i};
-  reinit_after_move<const int*> i_cptr{&i};
+  reset_after_move<int*> i_ptr{&i};
+  reset_after_move<const int*> i_cptr{&i};
 
   EXPECT_EQ(*i_ptr, 5);
   EXPECT_EQ(*i_cptr, 5);
@@ -63,16 +63,16 @@ GTEST_TEST(DefaultValueTest, Pointers) {
   EXPECT_EQ(*i_ptr, 6);
   EXPECT_EQ(*i_cptr, 6);
 
-  reinit_after_move<int*> i_ptr2(std::move(i_ptr));
-  reinit_after_move<const int*> i_cptr2(std::move(i_cptr));
+  reset_after_move<int*> i_ptr2(std::move(i_ptr));
+  reset_after_move<const int*> i_cptr2(std::move(i_cptr));
   EXPECT_EQ(i_ptr2, &i);
   EXPECT_EQ(i_cptr2, &i);
   EXPECT_EQ(i_ptr, nullptr);
   EXPECT_EQ(i_cptr, nullptr);
 
   Thing thing;
-  reinit_after_move<Thing*> thing_ptr{&thing};
-  reinit_after_move<const Thing*> thing_cptr{&thing};
+  reset_after_move<Thing*> thing_ptr{&thing};
+  reset_after_move<const Thing*> thing_cptr{&thing};
 
   // Make sure there's no cloning happening.
   EXPECT_EQ(&*thing_ptr, &thing);
@@ -83,11 +83,11 @@ GTEST_TEST(DefaultValueTest, Pointers) {
 }
 
 GTEST_TEST(DefaultValueTest, Copy) {
-  reinit_after_move<int> x{1};
+  reset_after_move<int> x{1};
   EXPECT_EQ(x, 1);
 
   // Copy-construction (from non-const reference) and lack of aliasing.
-  reinit_after_move<int> y{x};
+  reset_after_move<int> y{x};
   EXPECT_EQ(x, 1);
   EXPECT_EQ(y, 1);
   x = 2;
@@ -95,15 +95,15 @@ GTEST_TEST(DefaultValueTest, Copy) {
   EXPECT_EQ(y, 1);
 
   // Copy-construction (from const reference) and lack of aliasing.
-  const reinit_after_move<int>& x_cref = x;
-  reinit_after_move<int> z{x_cref};
+  const reset_after_move<int>& x_cref = x;
+  reset_after_move<int> z{x_cref};
   x = 3;
   EXPECT_EQ(x, 3);
   EXPECT_EQ(y, 1);
   EXPECT_EQ(z, 2);
 
   // Copy-assignment and lack of aliasing.
-  reinit_after_move<int> w{22};
+  reset_after_move<int> w{22};
   w = x;
   EXPECT_EQ(x, 3);
   EXPECT_EQ(w, 3);
@@ -114,16 +114,16 @@ GTEST_TEST(DefaultValueTest, Copy) {
 
 // We need to indirect self-move-assign through this function; doing it
 // directly in the test code generates a compiler warning.
-void MoveAssign(reinit_after_move<int>* target, reinit_after_move<int>* donor) {
+void MoveAssign(reset_after_move<int>* target, reset_after_move<int>* donor) {
   *target = std::move(*donor);
 }
 
 GTEST_TEST(DefaultValueTest, Move) {
-  reinit_after_move<int> x{1};
+  reset_after_move<int> x{1};
   EXPECT_EQ(x, 1);
 
   // Move-construction and lack of aliasing.
-  reinit_after_move<int> y{std::move(x)};
+  reset_after_move<int> y{std::move(x)};
   EXPECT_EQ(x, 0);
   EXPECT_EQ(y, 1);
   x = 2;
@@ -131,13 +131,13 @@ GTEST_TEST(DefaultValueTest, Move) {
   EXPECT_EQ(y, 1);
 
   // Second move-construction and lack of aliasing.
-  reinit_after_move<int> z{std::move(x)};
+  reset_after_move<int> z{std::move(x)};
   EXPECT_EQ(x, 0);
   EXPECT_EQ(y, 1);
   EXPECT_EQ(z, 2);
 
   // Move-assignment and lack of aliasing.
-  reinit_after_move<int> w{22};
+  reset_after_move<int> w{22};
   x = 3;
   w = std::move(x);
   EXPECT_EQ(x, 0);
