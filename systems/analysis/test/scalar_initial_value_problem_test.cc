@@ -5,14 +5,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/integrator_base.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/parameters.h"
 
 namespace drake {
 namespace systems {
 namespace {
 
-class ScalarInitialValueProblemTest
+class ScalarInitialValueProblemExampleTest
     : public ::testing::TestWithParam<double> {
  protected:
   void SetUp() {
@@ -27,7 +25,7 @@ class ScalarInitialValueProblemTest
 // Stored charge in an RC series circuit excited by an arbitrary
 // voltage source test, where dQ/dt = (E(t) - Q / Cs) / Rs and
 // Q(t₀; [Rs, Cs]) = Q₀.
-TEST_P(ScalarInitialValueProblemTest, StoredCharge) {
+TEST_P(ScalarInitialValueProblemExampleTest, StoredCharge) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
   // The initial stored charge Q₀ at time t₀.
@@ -36,17 +34,15 @@ TEST_P(ScalarInitialValueProblemTest, StoredCharge) {
   // of the capacitor.
   const double kInitialResistance = 1.0;
   const double kInitialCapacitance = 1.0;
-  const Parameters<double> kDefaultParameters(
-      BasicVector<double>::Make(kInitialResistance,
-                                kInitialCapacitance));
+  const VectorX<double> kDefaultParameters = (
+      VectorX<double>(2) << kInitialResistance,
+                            kInitialCapacitance).finished();
 
   ScalarInitialValueProblem<double> stored_charge_ivp(
       [](const double& t, const double& q,
-         const Parameters<double>& param) -> double {
-        const BasicVector<double>& param_vector =
-            param.get_numeric_parameter(0);
-        const double& Rs = param_vector[0];
-        const double& Cs = param_vector[1];
+         const VectorX<double>& k) -> double {
+        const double& Rs = k[0];
+        const double& Cs = k[1];
         return (std::sin(t) - q / Cs) / Rs;
       }, kInitialTime, kInitialStoredCharge, kDefaultParameters);
 
@@ -69,7 +65,8 @@ TEST_P(ScalarInitialValueProblemTest, StoredCharge) {
        r += kResistanceStep) {
     for (double c = kLowestCapacitance; c <= kHighestCapacitance ;
          c += kCapacitanceStep) {
-      const Parameters<double> p(BasicVector<double>::Make(r, c));
+      const VectorX<double> k = (VectorX<double>(2) << r, c).finished();
+
       const double tau = r * c;
       const double tau_sq = tau * tau;
       for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
@@ -78,7 +75,7 @@ TEST_P(ScalarInitialValueProblemTest, StoredCharge) {
             tau_sq / (1. + tau_sq) * std::exp(-t / tau)
             + tau / std::sqrt(1. + tau_sq)
             * std::sin(t - std::atan(tau))) / r;
-        EXPECT_NEAR(stored_charge_ivp.Solve(t, p),
+        EXPECT_NEAR(stored_charge_ivp.Solve(t, k),
                     exact_solution, integration_accuracy_)
             << "Failure solving dQ/dt = (sin(t) - Q / Cs) / Rs using Q("
             << kInitialTime << "; [Rs, Cs]) = " << kInitialStoredCharge
@@ -92,23 +89,21 @@ TEST_P(ScalarInitialValueProblemTest, StoredCharge) {
 
 // Population exponential growth problem test,
 // where dN/dt = r * N and N(t₀; r) = N₀.
-TEST_P(ScalarInitialValueProblemTest, PopulationGrowth) {
+TEST_P(ScalarInitialValueProblemExampleTest, PopulationGrowth) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
   // The initial population N₀ at time t₀.
   const double kInitialPopulation = 10.0;
   // The malthusian parameter r that shapes the growth of the
   // population.
-  const double KDefaultMalthusParam = 0.1;
-  const Parameters<double> kDefaultParameters(
-      BasicVector<double>::Make(KDefaultMalthusParam));
+  const double kDefaultMalthusParam = 0.1;
+  const VectorX<double> kDefaultParameters =
+      VectorX<double>::Constant(1, kDefaultMalthusParam);
 
   ScalarInitialValueProblem<double> population_growth_ivp(
       [](const double& t, const double& n,
-         const Parameters<double>& param) -> double {
-        const BasicVector<double>& param_vector =
-            param.get_numeric_parameter(0);
-        const double& r = param_vector[0];
+         const VectorX<double>& k) -> double {
+        const double& r = k[0];
         return r * n;
       }, kInitialTime, kInitialPopulation, kDefaultParameters);
 
@@ -125,10 +120,10 @@ TEST_P(ScalarInitialValueProblemTest, PopulationGrowth) {
 
   for (double r = kLowestMalthusParam; r <= kHighestMalthusParam;
        r += kMalthusParamStep) {
-    const Parameters<double> p(BasicVector<double>::Make(r));
+    const VectorX<double> k = VectorX<double>::Constant(1, r);
     for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
       const double exact_solution = kInitialPopulation * std::exp(r * t);
-      EXPECT_NEAR(population_growth_ivp.Solve(t, p), exact_solution,
+      EXPECT_NEAR(population_growth_ivp.Solve(t, k), exact_solution,
                   integration_accuracy_)
           << "Failure solving dN/dt = r * N using N("
           << kInitialTime << "; r) = " << kInitialPopulation
@@ -138,8 +133,8 @@ TEST_P(ScalarInitialValueProblemTest, PopulationGrowth) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(IncreasingAccuracyScalarInitialValueProblemTests,
-                        ScalarInitialValueProblemTest,
+INSTANTIATE_TEST_CASE_P(IncreasingAccuracyScalarInitialValueProblemExampleTests,
+                        ScalarInitialValueProblemExampleTest,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 
 }  // namespace

@@ -11,11 +11,11 @@ namespace systems {
 template <typename T>
 PrimitiveFunction<T>::PrimitiveFunction(
     const typename PrimitiveFunction<T>::IntegrandFunction& integrand_function,
-    const Parameters<T>& default_parameters) {
+    const VectorX<T>& default_parameters) {
   // Generalizes the given scalar integrand function to build a system.
   typename ScalarInitialValueProblem<T>::ScalarODEFunction
       scalar_ode_function = [integrand_function](const T& t, const T& x,
-                                                 const Parameters<T>& k) -> T {
+                                                 const VectorX<T>& k) -> T {
     unused(x);
     return integrand_function(t, k);
   };

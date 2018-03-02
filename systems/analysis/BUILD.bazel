@@ -117,8 +117,6 @@ drake_cc_library(
         ":initial_value_problem",
         "//drake/common:essential",
         "//drake/common:unused",
-        "//drake/systems/framework:parameters",
-        "//drake/systems/framework:vector",
     ],
 )
 
@@ -135,7 +133,6 @@ drake_cc_library(
         ":scalar_initial_value_problem",
         "//drake/common:essential",
         "//drake/common:unused",
-        "//drake/systems/framework:parameters",
     ],
 )
 

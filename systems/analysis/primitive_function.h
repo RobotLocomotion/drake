@@ -3,23 +3,22 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/scalar_initial_value_problem.h"
-#include "drake/systems/framework/parameters.h"
 
 namespace drake {
 namespace systems {
 
-/// A primitive function F(x; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) representation class, such that
-/// F'(x; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) = f(x; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) where f : ℝ  →  ℝ ,
-/// 𝐤₀ ∈ ℝ ᵐ⁰, 𝐤₁ ∈ ℝ ᵐ¹, ..., 𝐤ₙ ∈ ℝ ᵐⁿ. In short, this abstraction
-/// allows to perform quadrature on an arbitrary scalar function. Lower and
-/// upper integration bounds can be set independently.
+/// A primitive function F(x; 𝐤) representation class, such that
+/// F'(x; 𝐤) = f(x; 𝐤) where f : ℝ  →  ℝ , x ∈ ℝ, 𝐤 ∈ ℝᵐ. In short, this
+/// abstraction allows to perform quadrature on an arbitrary scalar function.
+/// Lower and upper integration bounds can be set independently.
 ///
 /// For further insight into its use, consider the following examples.
 ///
 /// - Solving the elliptic integral of the first kind
 ///   F(φ; k) = ∫ᵠ √(1 - k² sin² θ)⁻¹ dθ becomes straightforward by defining
-///   f(θ; k) ≜ √(1 - k² sin² θ)⁻¹, 𝐤₀ ≜ [k] and integrating from 0 to φ.
+///   f(θ; 𝐤) ≜ √(1 - 𝐤₁² sin² θ)⁻¹, 𝐤 ≜ [k] and integrating from 0 to φ.
 ///
 /// - As the bearings in a rotating machine age over time, these are more likely
 ///   to fail. Let γ be a random variable describing the time to first bearing
@@ -27,7 +26,7 @@ namespace systems {
 ///   parameterized by bearing load l. In this context, the probability of a
 ///   bearing under a load l₁ to fail in the first N months becomes
 ///   P(0 < y ≤ N mo.; l₁) = Fᵧ(N mo.; l₁) - Fᵧ(0; l₁), where
-///   F'ᵧ(x; l) = fᵧ(x; l). Therefore, f ≜ fᵧ, 𝐤₀ ≜ [l], and integrating from 0
+///   F'ᵧ(x; l) = fᵧ(x; l). Therefore, f ≜ fᵧ, 𝐤 ≜ [l], and integrating from 0
 ///   to N yields the result.
 ///
 /// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
@@ -40,26 +39,24 @@ class PrimitiveFunction {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrimitiveFunction);
 
-  /// Scalar integrand function F(x; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) type.
+  /// Scalar integrand function F(x; 𝐤) type.
   ///
   /// @param x The variable of integration x ∈ ℝ .
-  /// @param k The integrand parameters 𝐤₀ ∈ ℝ ᵐ⁰, 𝐤₁ ∈ ℝ ᵐ¹, ..., 𝐤ₙ ∈ ℝ ᵐⁿ.
+  /// @param k The integrand parameters vector 𝐤 ∈ ℝᵐ.
   /// @return The integrand value f(@p x ; @p k ).
-  typedef std::function<T(const T& x,
-                          const Parameters<T>& k)> IntegrandFunction;
+  typedef std::function<T(const T& x, const VectorX<T>& k)> IntegrandFunction;
 
   /// Constructs the primitive function of the given @p integrand_function,
   /// parameterized with @p default_parameters by default.
   ///
-  /// @param integrand_function The function F(x; 𝐤₀, 𝐤₁, ..., 𝐤ₙ) under the
-  /// integral sign.
-  /// @param default_parameters The default parameters 𝐤₀ ∈ ℝ ᵐ⁰, 𝐤₁ ∈ ℝ ᵐ¹,
-  /// ..., 𝐤ₙ ∈ ℝ ᵐⁿ. for the @p integrand_function.
+  /// @param integrand_function The function F(x; 𝐤) under the integral sign.
+  /// @param default_parameters The default parameters vector 𝐤₀ ∈ ℝᵐ for the
+  /// @p integrand_function.
   PrimitiveFunction(const IntegrandFunction& integrand_function,
-                    const Parameters<T>& default_parameters);
+                    const VectorX<T>& default_parameters);
 
   /// Evaluates the function by integrating from 0 to @p b using default
-  /// parameters.
+  /// parameters 𝐤₀.
   /// @param b The upper integration bound.
   /// @return The integration result.
   /// @pre The upper integration bound @p b is non-negative.
@@ -71,18 +68,18 @@ class PrimitiveFunction {
   /// Evaluates the function by integrating from 0 to @p b using given
   /// parameters @p k.
   /// @param b The upper integration bound.
-  /// @param k The integrand parameters 𝐤₀, 𝐤₁, ..., 𝐤ₙ.
+  /// @param k The integrand parameters vector.
   /// @return The integration result.
   /// @pre The upper integration bound @p b is non-negative.
-  ///  @pre The dimensions of the given @p p parameters must match that of
-  /// the default parameters vector given on construction.
+  /// @pre The dimensions of the given @p k parameters must match that of
+  ///      the default parameters vector 𝐤₀ given on construction.
   /// @warning This method will abort if preconditions are not met.
-  inline T Evaluate(const T& b, const Parameters<T>& p) const {
-    return scalar_ivp_->Solve(b, p);
+  inline T Evaluate(const T& b, const VectorX<T>& k) const {
+    return scalar_ivp_->Solve(b, k);
   }
 
-  /// Evaluates the function by integrating from @p a to @p b using default
-  /// parameters.
+  /// Evaluates the function by integrating from @p a to @p b using the default
+  /// parameters vector 𝐤₀.
   /// @param a The lower integration bound.
   /// @param b The upper integration bound.
   /// @return The integration result.
@@ -93,19 +90,19 @@ class PrimitiveFunction {
     return scalar_ivp_->Solve(a, b);
   }
 
-  /// Evaluates the function by integrating from @p a to @p b using given
-  /// parameters @p k.
+  /// Evaluates the function by integrating from @p a to @p b using the given
+  /// parameters vector @p k.
   ///
   /// @param a The lower integration bound.
   /// @param b The upper integration bound.
-  /// @param k The integrand parameters 𝐤₀, 𝐤₁, ..., 𝐤ₙ.
+  /// @param k The integrand parameters vector.
   /// @return The integration result.
   /// @pre The upper integration bound @p b is larger than the lower
-  /// integration bound @p a.
-  /// @pre The quantity and dimension of the given parameters @p p must match
-  /// that of the default parameters 𝐩₀ given on construction.
+  ///      integration bound @p a.
+  /// @pre The dimension of the given parameters vector @p k must match that
+  ///      of the default parameters vector 𝐤₀ given on construction.
   /// @warning This method will abort if preconditions are not met.
-  T Evaluate(const T& a, const T& b, const Parameters<T>& k) const {
+  T Evaluate(const T& a, const T& b, const VectorX<T>& k) const {
     return scalar_ivp_->Solve(a, b, k);
   }
 
