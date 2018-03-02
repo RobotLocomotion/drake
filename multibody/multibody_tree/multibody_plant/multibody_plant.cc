@@ -236,39 +236,37 @@ void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
       this->DeclareAbstractOutputPort(
           &MultibodyPlant::AllocateFramePoseOutput,
           &MultibodyPlant::CalcFramePoseOutput).get_index();
+  // Compute once, and for all, a vector of ids to be used in CalcFrameIdOuput.
+  // ids_ does not change after it is created here.
+  // NOTE: we output ids sorted by BodyIndex and therefore the the loop here.
+  for (auto it : body_index_to_frame_id_) {
+    ids_.push_back(it.second);
+  }
 }
 
 template <typename T>
 FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
     const Context<T>&) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(source_id_ != nullopt);
   // User must be done adding elements to the model.
   DRAKE_DEMAND(model_->topology_is_valid());
-  FrameIdVector ids(source_id_.value());
-  // ids are ordered by body index. This must be consistent with the order in
-  // which CalcFramePoseOutput() places the poses in its output.
-  // Not all bodies need to have geometry.
-  for (auto it : body_index_to_frame_id_)
-    ids.AddFrameId(it.second);
-  return ids;
+  return FrameIdVector(source_id_.value(), ids_);
 }
 
 template <typename T>
 void MultibodyPlant<T>::CalcFrameIdOutput(
     const Context<T>&, FrameIdVector* ids_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   // Just a sanity check.
   DRAKE_DEMAND(source_id_ != nullopt);
-  // NOTE: we output ids sorted by BodyIndex and therefore the the loop here.
-  std::vector<FrameId> ids;
-  for (auto it : body_index_to_frame_id_) {
-    ids.push_back(it.second);
-  }
-  *ids_vector = FrameIdVector(source_id_.value(), ids);
+  *ids_vector = FrameIdVector(source_id_.value(), ids_);
 }
 
 template <typename T>
 FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(source_id_ != nullopt);
   FramePoseVector<T> poses(source_id_.value());
   // Only the pose for bodies for which geometry has been registered needs to
@@ -281,11 +279,13 @@ FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
 template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
-  DRAKE_ASSERT(poses->vector().size() == body_index_to_frame_id_.size());
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(poses->get_source_id() == source_id_.value());
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
+  pose_data.resize(body_index_to_frame_id_.size());
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
   int pose_index = 0;

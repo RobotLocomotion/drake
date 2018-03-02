@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
@@ -654,6 +655,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Not all bodies need to be in this map.
   // Iteraion order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
+
+  // Vector of FrameId ordered by BodyIndex. Const post-finalize.
+  // This is the output of CalcFrameIdOutput(). Poses in CalcFramePoseOutput()
+  // correspond to frame ids in the same order as arranged in ids_.
+  std::vector<geometry::FrameId> ids_;
 
   // Map from GeometryId to BodyIndex. During contact queries, it allows to find
   // out to which body a given geometry corresponds to.
