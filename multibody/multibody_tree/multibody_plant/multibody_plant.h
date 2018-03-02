@@ -151,6 +151,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// states.
   int num_multibody_states() const { return model_->num_states(); }
 
+  /// Returns the total number of actuated degrees of freedom.
+  /// That is, the vector of actuation values u has this size.
+  /// See AddJointActuator().
+  int num_actuated_dofs() const { return model_->num_actuated_dofs(); }
+
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
   /// joints, force elements, constraints, etc, using one of these methods.

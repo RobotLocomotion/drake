@@ -588,7 +588,8 @@ class MultibodyTree {
                              "See documentation for Finalize() for details.");
     }
 
-    const JointActuatorIndex actuator_index(owned_actuators_.size());
+    const JointActuatorIndex actuator_index =
+        topology_.add_joint_actuator(joint.num_dofs());
     owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
     JointActuator<T>* actuator = owned_actuators_.back().get();
     actuator->set_parent_tree(this, actuator_index);
@@ -648,6 +649,12 @@ class MultibodyTree {
   /// Returns the total size of the state vector in the model.
   int num_states() const {
     return topology_.num_states();
+  }
+
+  /// Returns the total number of Joint degrees of freedom actuated by the set
+  /// of JointActuator elements added to `this` model.
+  int num_actuated_dofs() const {
+    return topology_.num_actuated_dofs();
   }
 
   /// Returns the height of the tree data structure of `this` %MultibodyTree.

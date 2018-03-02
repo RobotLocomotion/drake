@@ -64,6 +64,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   EXPECT_EQ(model.num_bodies(), 8);  // It includes the "world" body.
   EXPECT_EQ(model.num_joints(), 7);
   EXPECT_EQ(model.num_actuators(), 7);
+  EXPECT_EQ(model.num_actuated_dofs(), 7);
 
   // State size.
   EXPECT_EQ(model.num_positions(), 7);

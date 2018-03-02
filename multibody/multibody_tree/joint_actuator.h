@@ -84,6 +84,23 @@ class JointActuator final
       const T& tau,
       MultibodyForces<T>* forces) const;
 
+  /// Given the actuation values u for `this` actuator, this method sets the
+  /// actuation vector `mbt_u` for the entire %MultibodyTree model to which this
+  /// actuator belongs to.
+  /// @param[in] u_a
+  ///   Actuation values for `this` actuator. It must be of size equal to the
+  ///   number of degrees of freedom of the actuated Joint, see
+  ///   Joint::num_dofs(). For units and sign conventions refer to the specific
+  ///   Joint sub-class documentation.
+  /// @param[out] u
+  ///   The vector containing the actuation values for the entire MultibodyTree
+  ///   model to which `this` actuator belongs to.
+  /// @throws if `u_a.size() != this->joint().num_dofs()`.
+  /// @throws if u is nullptr.
+  /// @throws if `u.size() != this->get_parent_tree().num_actuated_dofs()`.
+  void set_actuation_vector(
+      const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const;
+
   /// @cond
   // For internal use only.
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -118,13 +135,16 @@ class JointActuator final
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each actuator retrieves its topology
   // from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology&) final {}
+  void DoSetTopology(const MultibodyTreeTopology&) final;
 
   // The actuator's unique name in the MultibodyTree model
   std::string name_;
 
   // The index of the joint on which this actuator acts.
   JointIndex joint_index_;
+
+  // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
+  JointActuatorTopology topology_;
 };
 
 }  // namespace multibody

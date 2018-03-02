@@ -47,6 +47,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_bodies(), 3);
   EXPECT_EQ(plant->num_joints(), 2);
   EXPECT_EQ(plant->num_actuators(), 1);
+  EXPECT_EQ(plant->num_actuated_dofs(), 1);
 
   // State size.
   EXPECT_EQ(plant->num_positions(), 2);

@@ -85,7 +85,10 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
           model().get_joint_actuator(actuator_index);
       // We only support actuators on single dof joints for now.
       DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
-      actuator.AddInOneForce(context, 0, u[actuator_index], &forces);
+      for (int joint_dof = 0;
+           joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
+        actuator.AddInOneForce(context, joint_dof, u[actuator_index], &forces);
+      }
     }
   }
 
@@ -131,7 +134,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   if (num_actuators() > 0) {
     actuation_port_ =
         this->DeclareVectorInputPort(
-            systems::BasicVector<T>(num_actuators())).get_index();
+            systems::BasicVector<T>(num_actuated_dofs())).get_index();
   }
 
   // TODO(amcastro-tri): Declare output port for the state.
