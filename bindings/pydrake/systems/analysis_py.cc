@@ -46,9 +46,9 @@ PYBIND11_MODULE(analysis, m) {
     .def("StepTo", &Simulator<T>::StepTo)
     .def("get_context", &Simulator<T>::get_context, py_reference_internal)
     .def("get_integrator", &Simulator<T>::get_integrator, py_reference_internal)
-    .def("get_mutable_context", &Simulator<T>::get_mutable_context,
-         py_reference_internal)
     .def("get_mutable_integrator", &Simulator<T>::get_mutable_integrator,
+         py_reference_internal)
+    .def("get_mutable_context", &Simulator<T>::get_mutable_context,
          py_reference_internal)
     .def("set_publish_every_time_step",
          &Simulator<T>::set_publish_every_time_step)

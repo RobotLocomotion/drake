@@ -171,7 +171,6 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(integrator.get_fixed_step_mode())
 
         const_integrator = simulator.get_integrator()
-        self.assertRaises(const_integrator.set_fixed_step_mode(True))
 
 
 if __name__ == '__main__':
