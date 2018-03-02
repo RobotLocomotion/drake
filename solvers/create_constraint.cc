@@ -369,12 +369,12 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
 
 Binding<QuadraticConstraint> ParseQuadraticConstraint(
     const symbolic::Expression& e, double lower_bound, double upper_bound) {
-  // First build an Eigen vector, that contains all the bound variables.
+  // First build an Eigen vector that contains all the bound variables.
   auto p = ExtractVariablesFromExpression(e);
   const auto& vars_vec = p.first;
   const auto& map_var_to_index = p.second;
 
-  // Now decomposes the expression into coefficients and monomials.
+  // Now decompose the expression into coefficients and monomials.
   const symbolic::Polynomial poly{e};
 
   Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());

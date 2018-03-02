@@ -11,6 +11,7 @@ using drake::symbolic::Expression;
 namespace drake {
 namespace solvers {
 namespace {
+
 void CheckParseQuadraticConstraint(const Expression& e, double lb, double ub) {
   Binding<QuadraticConstraint> binding =
       internal::ParseQuadraticConstraint(e, lb, ub);
