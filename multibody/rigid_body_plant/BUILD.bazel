@@ -270,6 +270,7 @@ drake_cc_googletest(
     name = "rigid_body_plant_test",
     data = [
         ":test_models",
+        "//drake/examples/pendulum:models",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/multibody:models",
         "//drake/multibody:test_models",
@@ -278,8 +279,10 @@ drake_cc_googletest(
         ":rigid_body_plant",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/examples/pendulum:pendulum_vector_types",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 

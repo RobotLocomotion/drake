@@ -20,6 +20,7 @@ drake_cc_vector_gen_library(
         "pendulum_params.named_vector",
         "pendulum_state.named_vector",
     ],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
