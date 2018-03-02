@@ -1,8 +1,8 @@
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/util/lcmUtil.h"
 
 namespace drake {
 namespace examples {

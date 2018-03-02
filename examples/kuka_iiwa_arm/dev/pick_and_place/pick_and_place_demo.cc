@@ -18,7 +18,7 @@
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
-#include "drake/util/lcmUtil.h"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 
 namespace drake {
 namespace examples {

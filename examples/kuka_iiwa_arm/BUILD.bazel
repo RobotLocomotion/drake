@@ -63,7 +63,6 @@ drake_cc_library(
     deps = [
         "//manipulation/util:robot_state_msg_translator",
         "//systems/framework:leaf_system",
-        "//util:lcm_util",
         "@lcmtypes_bot2_core",
     ],
 )

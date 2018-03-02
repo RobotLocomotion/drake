@@ -201,8 +201,8 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
 // Verifies that @p message_bytes is correct.
 void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   // TODO(liang.fok): Replace the following two lines with
-  // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts it
-  // into a std::vector<float>. Related issue: #3470.
+  // `Eigen::Quaterniond::Identity()` and a common helper method that converts
+  // it into a std::vector<float>. Related issue: #3470.
   const std::vector<float> zero_position = {0, 0, 0};
   const std::vector<float> zero_quaternion = {1, 0, 0, 0};
 
