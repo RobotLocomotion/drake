@@ -141,6 +141,38 @@ class TestGeneral(unittest.TestCase):
             print("xc[t = {}] = {}".format(t, xc))
             self.assertTrue(np.allclose(xc, xc_expected))
 
+    def test_simulator_integrator_manipulation(self):
+        system = ConstantVectorSource([1])
+
+        # Create simulator with basic constructor.
+        simulator = Simulator(system)
+        simulator.Initialize()
+        simulator.set_target_realtime_rate(0)
+
+        integrator = simulator.get_mutable_integrator()
+
+        target_accuracy = 1E-6
+        integrator.set_target_accuracy(target_accuracy)
+        self.assertEqual(integrator.get_target_accuracy(), target_accuracy)
+
+        maximum_step_size = 0.2
+        integrator.set_maximum_step_size(maximum_step_size)
+        self.assertEqual(integrator.get_maximum_step_size(), maximum_step_size)
+
+        minimum_step_size = 2E-2
+        integrator.set_requested_minimum_step_size(minimum_step_size)
+        self.assertEqual(integrator.get_requested_minimum_step_size(),
+                         minimum_step_size)
+
+        integrator.set_throw_on_minimum_step_size_violation(True)
+        self.assertTrue(integrator.get_throw_on_minimum_step_size_violation())
+
+        integrator.set_fixed_step_mode(True)
+        self.assertTrue(integrator.get_fixed_step_mode())
+
+        const_integrator = simulator.get_integrator()
+        self.assertTrue(const_integrator is integrator)
+
 
 if __name__ == '__main__':
     unittest.main()
