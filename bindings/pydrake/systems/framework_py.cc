@@ -77,6 +77,7 @@ class LeafSystemPublic : public LeafSystem<T> {
   using Base::DeclareContinuousState;
   using Base::DeclareDiscreteState;
   using Base::DeclarePeriodicDiscreteUpdate;
+  using Base::DeclareAbstractState;
 
   // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
   // this method in `PyLeafSystem`, expose the method here for direct(-ish)
@@ -355,7 +356,12 @@ PYBIND11_MODULE(framework, m) {
          &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
          py::arg("period_sec"), py::arg("offset_sec") = 0.)
     .def("_DoCalcDiscreteVariableUpdates",
-         &LeafSystemPublic::DoCalcDiscreteVariableUpdates);
+         &LeafSystemPublic::DoCalcDiscreteVariableUpdates)
+    // Abstract state.
+    .def("_DeclareAbstractState",
+         &LeafSystemPublic::DeclareAbstractState,
+         // Keep alive, ownership: `AbstractValue` keeps `self` alive.
+         py::keep_alive<2, 1>());
 
   py::class_<Context<T>>(m, "Context")
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
@@ -396,6 +402,28 @@ PYBIND11_MODULE(framework, m) {
     .def("get_mutable_discrete_state_vector",
          [](Context<T>* self) -> auto& {
            return self->get_mutable_discrete_state().get_mutable_vector();
+         },
+         py_reference_internal)
+    // - Abstract.
+    .def("get_num_abstract_states", &Context<T>::get_num_abstract_states)
+    .def("get_abstract_state",
+         [](const Context<T>* self) -> auto& {
+           return self->get_abstract_state();
+         },
+         py_reference_internal)
+    .def("get_abstract_state",
+         [](const Context<T>* self, int index) -> auto& {
+           return self->get_abstract_state().get_value(index);
+         },
+         py_reference_internal)
+    .def("get_mutable_abstract_state",
+         [](Context<T>* self) -> auto& {
+           return self->get_mutable_abstract_state();
+         },
+         py_reference_internal)
+    .def("get_mutable_abstract_state",
+         [](Context<T>* self, int index) -> auto& {
+           return self->get_mutable_abstract_state().get_mutable_value(index);
          },
          py_reference_internal);
 
@@ -647,7 +675,12 @@ PYBIND11_MODULE(framework, m) {
   DefClone(&abstract_values);
   abstract_values
     .def(py::init<>())
-    .def(py::init<AbstractValuePtrList>());
+    .def(py::init<AbstractValuePtrList>())
+    .def("size", &AbstractValues::size)
+    .def("get_value", &AbstractValues::get_value, py_reference_internal)
+    .def("get_mutable_value",
+         &AbstractValues::get_mutable_value, py_reference_internal)
+    .def("CopyFrom", &AbstractValues::CopyFrom);
 
   // Additional derivative Systems which are not glue, but do not fall under
   // `//systems/primitives`.
