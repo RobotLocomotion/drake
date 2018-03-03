@@ -14,6 +14,7 @@ if ! command -v brew &>/dev/null; then
   ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 fi
 
+brew update
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
 if [[ ! -f /usr/include/expat.h || ! -f /usr/include/zlib.h ]]; then
