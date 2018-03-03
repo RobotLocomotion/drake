@@ -110,6 +110,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:cpp_template_pybind",
     ],
     cc_so_name = "sensors",

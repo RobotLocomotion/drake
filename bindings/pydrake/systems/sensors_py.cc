@@ -6,6 +6,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/util/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/util/eigen_pybind.h"
 #include "drake/bindings/pydrake/util/type_pack.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
@@ -25,25 +26,6 @@ template <typename T, T ... Values>
 using constant_pack = type_pack<type_pack<constant<T, Values>>...>;
 
 using Eigen::Map;
-using Eigen::Ref;
-
-// TODO(eric.cousineau): Place in `pydrake_pybind.h`.
-template <typename T>
-py::object ToArray(T* ptr, int size, py::tuple shape) {
-  // Create flat array to be reshaped in numpy.
-  using Vector = VectorX<T>;
-  Map<Vector> data(ptr, size);
-  return py::cast(Ref<Vector>(data), py_reference).attr("reshape")(shape);
-}
-
-// `const` variant.
-template <typename T>
-py::object ToArray(const T* ptr, int size, py::tuple shape) {
-  // Create flat array to be reshaped in numpy.
-  using Vector = const VectorX<T>;
-  Map<Vector> data(ptr, size);
-  return py::cast(Ref<Vector>(data), py_reference).attr("reshape")(shape);
-}
 
 PYBIND11_MODULE(sensors, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
