@@ -419,7 +419,6 @@ filegroup(
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
     ],
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(
