@@ -227,14 +227,14 @@ has its _own_ space of collision filter group identifiers.
 Collision filter groups are instantiated by specifying them in URDF files as
 follows:
 
-<pre>
+```xml
     <collision_filter_group name="group1">
         <member link="body1"/>
         <member link="body2"/>
         <ignored_collision_filter_group collision_filter_group="group2"/>
         <ignored_collision_filter_group collision_filter_group="group3"/>
     </collision_filter_group>
-</pre>
+```
 
 This XML-snippet illustrates the syntax for declaring a collision filter group.
 It declares a collision filter group named `group1`. It has
@@ -327,7 +327,7 @@ definitions of groups in a URDF file.  In this case, we'll deal with a
 theoretical file with two groups (assuming all bodies/links have been
 properly defined prior to this XML snippet).
 
-<pre>
+```xml
     <collision_filter_group name="groupA">
         <member link="body1"/>
         <member link="body2"/>
@@ -338,7 +338,7 @@ properly defined prior to this XML snippet).
         <member link="body4"/>
         <ignored_collision_filter_group collision_filter_group="groupA"/>
     </collision_filter_group>
-</pre>
+```
 
 The filtering implications of these groups is that we filter collisions between
 all the collision elements of the bodies (1, 3), (1, 4), (2, 3), and (2, 4)
