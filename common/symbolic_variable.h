@@ -96,6 +96,94 @@ class Variable {
 
 std::ostream& operator<<(std::ostream& os, Variable::Type type);
 
+/// Creates a dynamically-sized Eigen vector of symbolic variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+/// @param type The type of variables in the vector.
+VectorX<Variable> MakeVectorVariable(int rows, const std::string& name,
+                                     Variable::Type type);
+
+/// Creates a dynamically-sized Eigen vector of symbolic Boolean variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorBooleanVariable(int rows, const std::string& name);
+
+/// Creates a dynamically-sized Eigen vector of symbolic binary variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorBinaryVariable(int rows, const std::string& name);
+
+/// Creates a dynamically-sized Eigen vector of symbolic continuous variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorContinuousVariable(int rows,
+                                               const std::string& name);
+
+/// Creates a dynamically-sized Eigen vector of symbolic integer variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorIntegerVariable(int rows, const std::string& name);
+
+/// Creates a static-sized Eigen vector of symbolic variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+/// @param type The type of variables in the vector.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorVariable(const std::string& name,
+                                                    Variable::Type type) {
+  Eigen::Matrix<Variable, rows, 1> vec;
+  for (int i = 0; i < rows; ++i) {
+    vec[i] = Variable{name + "(" + std::to_string(i) + ")", type};
+  }
+  return vec;
+}
+
+/// Creates a static-sized Eigen vector of symbolic Boolean variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorBooleanVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::BOOLEAN);
+}
+
+/// Creates a static-sized Eigen vector of symbolic binary variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorBinaryVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::BINARY);
+}
+
+/// Creates a static-sized Eigen vector of symbolic continuous variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorContinuousVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::CONTINUOUS);
+}
+
+/// Creates a static-sized Eigen vector of symbolic integer variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorIntegerVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::INTEGER);
+}
+
 }  // namespace symbolic
 }  // namespace drake
 

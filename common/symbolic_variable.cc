@@ -16,6 +16,7 @@ using std::move;
 using std::ostream;
 using std::ostringstream;
 using std::string;
+using std::to_string;
 
 namespace drake {
 namespace symbolic {
@@ -60,5 +61,34 @@ ostream& operator<<(ostream& os, Variable::Type type) {
   // Should be unreachable.
   DRAKE_ABORT();
 }
+
+VectorX<Variable> MakeVectorVariable(const int rows, const string& name,
+                                     const Variable::Type type) {
+  VectorX<Variable> vec{rows};
+  for (int i = 0; i < rows; ++i) {
+    vec[i] = Variable{name + "(" + to_string(i) + ")", type};
+  }
+  return vec;
+}
+
+VectorX<Variable> MakeVectorBooleanVariable(const int rows,
+                                            const string& name) {
+  return MakeVectorVariable(rows, name, Variable::Type::BOOLEAN);
+}
+
+VectorX<Variable> MakeVectorBinaryVariable(const int rows, const string& name) {
+  return MakeVectorVariable(rows, name, Variable::Type::BINARY);
+}
+
+VectorX<Variable> MakeVectorContinuousVariable(const int rows,
+                                               const string& name) {
+  return MakeVectorVariable(rows, name, Variable::Type::CONTINUOUS);
+}
+
+VectorX<Variable> MakeVectorIntegerVariable(const int rows,
+                                            const string& name) {
+  return MakeVectorVariable(rows, name, Variable::Type::INTEGER);
+}
+
 }  // namespace symbolic
 }  // namespace drake
