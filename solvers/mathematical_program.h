@@ -2116,15 +2116,15 @@ class MathematicalProgram {
 
   /**
    * Sets the ID of the solver that was used to solve this program.
-   * @Note This method is only meant to be called by the solver, as a child
+   * @note This method is only meant to be called by the solver, as a child
    * class of MathematicalProgramSolverInterface. If you want to solve the 
    * program using a specific solver, do
    * \code{cc}
    * solver.Solve(program);
    * \endcode
    *
-   * We use passkey idiom to restrict that this function can only be called
-   * inside MathematicalProgramSolverInterface. Notice that MathematicalProgramKey 
+   * We use the passkey idiom to restrict that this function can only be called
+   * inside MathematicalProgramSolverInterface. Notice that MathematicalProgramKey
    * has a private constructor, and it is a friend of
    * MathematicalProgramSolverInterface.
    */
