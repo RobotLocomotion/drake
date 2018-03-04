@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -10,12 +11,16 @@
 namespace drake {
 namespace multibody {
 
-/// This class is one of the cache entries in MultibodyTreeContext. It holds the
-/// results of computations that are used in the recursive implementation of the
-/// articulated body algorithm.
+/// This class is one of the cache entries in MultibodyTreeContext. It is used
+/// to store the results from the first pass of the articulated body algorithm
+/// for the computation of articulated body inertias. In addition to storing the
+/// articulated body inertias themselves, this cache entry also serves to store
+/// quantities computed during the first pass but that are also needed during
+/// the second pass. Quantities in this cache entry are function of the
+/// generalized position vector q only.
 ///
 /// Articulated body inertia cache entries include:
-/// - Articulated body inertia `P_B_W` of the body taken about Bo and expressed
+/// - Articulated body inertia `P_B_W` of body B taken about Bo and expressed
 ///   in W.
 /// - Articulated body inertia `Pplus_PB_W`, which can be thought of as the
 ///   articulated body inertia of parent body P as though it were inertialess,
@@ -79,28 +84,28 @@ class ArticulatedBodyInertiaCache {
   const Eigen::LDLT<MatrixUpTo6<T>>& get_ldlt_D_B(
       BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return ldlt_D_B[body_node_index];
+    return ldlt_D_B_[body_node_index];
   }
 
   /// Mutable version of get_ldlt_D_B().
   Eigen::LDLT<MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
       BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return ldlt_D_B[body_node_index];
+    return ldlt_D_B_[body_node_index];
   }
 
   /// The Kalman gain `g_PB_W` of the body.
   const MatrixUpTo6<T>& get_g_PB_W(
       BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return g_PB_W[body_node_index];
+    return g_PB_W_[body_node_index];
   }
 
   /// Mutable version of get_g_PB_W().
   MatrixUpTo6<T>& get_mutable_g_PB_W(
       BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return g_PB_W[body_node_index];
+    return g_PB_W_[body_node_index];
   }
 
 
@@ -119,9 +124,23 @@ class ArticulatedBodyInertiaCache {
   void Allocate() {
     P_B_W_.resize(num_nodes_);
     Pplus_PB_W_.resize(num_nodes_);
-    ldlt_D_B.resize(num_nodes_);
-    g_PB_W.resize(num_nodes_);
+    ldlt_D_B_.resize(num_nodes_);
+    g_PB_W_.resize(num_nodes_);
+
+    // Initialize entries corresponding to world index to NaNs, since they
+    // should not be used.
+    P_B_W_[world_index()] = ArticulatedBodyInertia<T>();
+    Pplus_PB_W_[world_index()] = ArticulatedBodyInertia<T>();
+    // TODO(bobbyluig): Initialize LDLT at world index to NaNs.
+    g_PB_W_[world_index()] = Matrix6<T>::Constant(nan());
   }
+
+  // Helper method for NaN initialization.
+  static constexpr T nan() {
+    return std::numeric_limits<
+        typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
+  }
+
 
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
@@ -129,8 +148,8 @@ class ArticulatedBodyInertiaCache {
   // Pools.
   ABI_PoolType P_B_W_{};  // Indexed by BodyNodeIndex.
   ABI_PoolType Pplus_PB_W_{};  // Indexed by BodyNodeIndex.
-  LDLT_MatrixUpTo6_PoolType ldlt_D_B{};  // Indexed by BodyNodeIndex.
-  MatrixUpTo6_PoolType g_PB_W{};  // Indexed by BodyNodeIndex.
+  LDLT_MatrixUpTo6_PoolType ldlt_D_B_{};  // Indexed by BodyNodeIndex.
+  MatrixUpTo6_PoolType g_PB_W_{};  // Indexed by BodyNodeIndex.
 };
 
 }  // namespace multibody

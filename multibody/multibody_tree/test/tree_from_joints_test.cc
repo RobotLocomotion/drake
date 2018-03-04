@@ -386,20 +386,14 @@ class PendulumTests : public ::testing::Test {
     tree_->CalcPositionKinematicsCache(*context_, &pc);
     tree_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
+    // Compute qddot via articulated body algorithm.
+    MultibodyForces<double> applied_forces(*tree_);
+    tree_->CalcForwardDynamics(*context_, applied_forces, &qddot);
+
+    // Compute qddot_expected via mass matrix solve.
     MultibodyForces<double> forces(*tree_);
     tree_->CalcForceElementsContribution(*context_, pc, vc, &forces);
 
-    // Compute qddot via articulated body algorithm.
-    ArticulatedBodyInertiaCache<double> aic(tree_->get_topology());
-    tree_->CalcArticulatedBodyInertiaCache(*context_, pc, &aic);
-
-    ArticulatedBodyAlgorithmCache<double> aac(tree_->get_topology());
-    tree_->CalcArticulatedBodyAlgorithmCache(
-        *context_, pc, vc, aic, forces, &aac);
-
-    tree_->CalcForwardDynamics(*context_, pc, aic, aac, &qddot);
-
-    // Compute qddot_expected via mass matrix solve.
     Vector2d vdot = Vector2d::Zero();
     Fapplied_Bo_W_array = forces.body_forces();
     tau_applied = forces.generalized_forces();
@@ -549,6 +543,8 @@ TEST_F(PendulumTests, CalcForwardDynamicsViaExplicitMassMatrixSolve) {
       -0.5, -1.0);              /* joint's torques */
 }
 
+// Compare the output of the articulated body algorithm against the solution
+// from using the mass matrix.
 TEST_F(PendulumTests, ForwardDynamicsCompare) {
   VerifyForwardDynamicsViaMassMatrix(0.0, 0.0, 0.0, 0.0);
   VerifyForwardDynamicsViaMassMatrix(0.0, 0.0, 1.0, 0.0);
