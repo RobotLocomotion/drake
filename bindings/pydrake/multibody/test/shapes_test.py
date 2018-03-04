@@ -44,7 +44,3 @@ class TestShapes(unittest.TestCase):
         self.assertTrue(np.allclose(mesh.scale, [1., 1., 1.]))
         self.assertEqual(mesh.uri, obj_mesh_uri)
         self.assertEqual(mesh.resolved_filename, obj_mesh_path)
-
-
-if __name__ == '__main__':
-    unittest.main()

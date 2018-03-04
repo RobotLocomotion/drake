@@ -109,7 +109,3 @@ class TestParsers(unittest.TestCase):
         self.assertTrue(pm.Contains("Atlas"))
         self.assertEqual(pm.GetPath("Atlas"), os.path.join(
             getDrakePath(), "examples", "atlas"))
-
-
-if __name__ == '__main__':
-    unittest.main()

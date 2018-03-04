@@ -279,7 +279,3 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p = sym.Polynomial(e, [x])  # p = ax²
         p = pow(p, 2)  # p = a²x⁴
         self.assertEqual(p.ToExpression(), (a ** 2) * (x ** 4))
-
-
-if __name__ == '__main__':
-    unittest.main()
