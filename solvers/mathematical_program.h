@@ -604,17 +604,33 @@ class MathematicalProgram {
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name = "a");
 
-  /** Returns a pair of a SOS polynomial p = xᵀQx of degree @p degree and a PSD
-   * constraint for the coefficients matrix Q, where x is a monomial basis over
-   * @p indeterminates of degree `@p degree / 2`. For example,
-   * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial p = Q₍₀,₀₎x⁴ +
-   * 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎ and a PSD constraint
-   * over Q.
+
+  /** Returns a pair of a SOS polynomial p = mᵀQm and a PSD constraint for
+   * a new coefficients matrix Q, where m is the @p monomial basis.
+   * For example, `NewSosPolynomial(Vector2<Monomial>{x,y})` returns a
+   * polynomial
+   *   p = Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y²
+   * and a PSD constraint over Q.
+   * Note: Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
+   * matrix.
+   */
+  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+  NewSosPolynomial(
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+
+  /** Returns a pair of a SOS polynomial p = m(x)ᵀQm(x) of degree @p degree
+   * and a PSD constraint for the coefficients matrix Q, where m(x) is the
+   * result of calling `MonomialBasis(indeterminates, degree/2)`. For example,
+   * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial
+   *   p = Q₍₀,₀₎x⁴ + 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎
+   * and a PSD constraint over Q.
    *
    * @throws std::runtime_error if @p degree is not a positive even integer.
+   * @see MonomialBasis.
    */
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
   NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
+
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -1915,18 +1931,47 @@ class MathematicalProgram {
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
-   * that is, @p p can be decomposed into `xᵀQx`. It returns a pair of
-   * constraint bindings expressing:
+   * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
+   * monomial_basis. It returns a pair of constraint bindings expressing:
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
             Binding<LinearEqualityConstraint>>
+  AddSosConstraint(
+      const symbolic::Polynomial& p,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+
+  /**
+   * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
+   * that is, @p p can be decomposed into `mᵀQm`, where m is the monomial
+   * basis of all indeterminates in the program with degree equal to half the
+   * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+      Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
+   * Adds constraints that a given symbolic expression @p e is a
+   * sums-of-squares (SOS), that is, @p p can be decomposed into `mᵀQm`,
+   * where m is the @p monomial_basis.  Note that it decomposes @p e into a
+   * polynomial with respect to `indeterminates()` in this mathematical
+   * program. It returns a pair of constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+      Binding<LinearEqualityConstraint>>
+  AddSosConstraint(
+      const symbolic::Expression& e,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+
+  /**
    * Adds constraints that a given symbolic expression @p e is a sums-of-squares
-   * (SOS), that is, @p e can be decomposed into `xTQx`. Note that it decomposes
+   * (SOS), that is, @p e can be decomposed into `mTQm`. Note that it decomposes
    * @p e into a polynomial with respect to `indeterminates()` in this
    * mathematical program. It returns a pair of
    * constraint bindings expressing:

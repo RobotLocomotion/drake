@@ -207,13 +207,11 @@ symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
   return p;
 }
 
-pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
-                                      const int degree) {
-  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
-  const drake::VectorX<symbolic::Monomial> x{
-      MonomialBasis(indeterminates, degree / 2)};
-  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
+std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+MathematicalProgram::NewSosPolynomial(
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  const MatrixXDecisionVariable Q{
+      NewSymmetricContinuousVariables(monomial_basis.size())};
   const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
   // Constructs a coefficient matrix of Polynomials Q_poly from Q. In the
   // process, we make sure that each Q_poly(i, j) is treated as a decision
@@ -222,8 +220,18 @@ MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
       Q.unaryExpr([](const Variable& q_i_j) {
         return symbolic::Polynomial{q_i_j /* coeff */, {} /* Monomial */};
       })};
-  const symbolic::Polynomial p{x.dot(Q_poly * x)};  // p = xᵀ * Q_poly * x.
+  // p = mᵀ * Q_poly * m.
+  const symbolic::Polynomial p{monomial_basis.dot(Q_poly * monomial_basis)};
   return make_pair(p, psd_binding);
+}
+
+pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
+                                      const int degree) {
+  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
+  const drake::VectorX<symbolic::Monomial> x{
+      MonomialBasis(indeterminates, degree / 2)};
+  return NewSosPolynomial(x);
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -675,13 +683,29 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 // mathematical_program_api.cc instead of this file.
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
-MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
-  const symbolic::Variables indeterminates{p.indeterminates()};
-  const auto pair = NewSosPolynomial(indeterminates, p.TotalDegree());
+MathematicalProgram::AddSosConstraint(
+    const symbolic::Polynomial& p,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  const auto pair = NewSosPolynomial(monomial_basis);
   const symbolic::Polynomial& sos_poly{pair.first};
   const Binding<PositiveSemidefiniteConstraint>& psd_binding{pair.second};
   const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
   return make_pair(psd_binding, leq_binding);
+}
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
+  return AddSosConstraint(p,
+                          MonomialBasis(p.indeterminates(), p.TotalDegree()/2));
+}
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(
+    const symbolic::Expression& e,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  return AddSosConstraint(
+      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}},
+                           monomial_basis);
 }
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
