@@ -164,7 +164,3 @@ class TestRigidBodyPlant(unittest.TestCase):
         # Test basic errors.
         with self.assertRaises(RuntimeError):
             material.set_friction(0.3, 0.4)
-
-
-if __name__ == '__main__':
-    unittest.main()

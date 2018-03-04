@@ -14,7 +14,3 @@ class TestPybind11Version(unittest.TestCase):
         self.assertTrue(isinstance(mut.repository, str))
         self.assertTrue(isinstance(mut.commit, str))
         self.assertTrue(isinstance(mut.sha256, str))
-
-
-if __name__ == '__main__':
-    unittest.main()

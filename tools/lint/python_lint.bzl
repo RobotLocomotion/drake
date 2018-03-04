@@ -3,8 +3,7 @@
 
 load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
-# Internal helper; set up test given name and list of files. Will do nothing
-# if no files given.
+# Internal helper.
 def _python_lint(name_prefix, files, ignore):
     if ignore:
         ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]

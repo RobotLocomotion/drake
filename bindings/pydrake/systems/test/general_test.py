@@ -172,7 +172,3 @@ class TestGeneral(unittest.TestCase):
 
         const_integrator = simulator.get_integrator()
         self.assertTrue(const_integrator is integrator)
-
-
-if __name__ == '__main__':
-    unittest.main()

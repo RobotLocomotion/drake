@@ -11,7 +11,7 @@ load(
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 
 package(default_visibility = [
@@ -110,7 +110,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "rigid_body_plant_test",
     size = "small",
     data = ["//examples/pendulum:models"],
@@ -119,7 +119,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "shapes_test",
     size = "small",
     data = ["//examples/quadrotor:models"],
@@ -128,7 +128,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "rigid_body_tree_test",
     size = "small",
     data = [
@@ -138,7 +138,7 @@ drake_py_test(
     deps = [":rigid_body_tree_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "parsers_test",
     size = "small",
     data = [
