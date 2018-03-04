@@ -753,6 +753,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
     const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
     // Position of origin Fo measured from Bi, expressed in the world W.
+    //
     const Vector3<T> p_BiFo_W = p_WoFo_W - p_WBi;
 
     // Mutable aliases to Hw_PBf_W and Hv_PBf_W. Hw (Hv) denotes the
@@ -858,8 +859,8 @@ template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
-    ArticulatedBodyInertiaCache<T>* aic) const {
-  DRAKE_DEMAND(aic != nullptr);
+    ArticulatedBodyInertiaCache<T>* abic) const {
+  DRAKE_DEMAND(abic != nullptr);
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -877,7 +878,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
       const MatrixUpTo6<T> H_PB_W = node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcArticulatedBodyInertiaCache_TipToBase(
-          mbt_context, pc, H_PB_W, aic);
+          mbt_context, pc, H_PB_W, abic);
     }
   }
 }
@@ -887,10 +888,10 @@ void MultibodyTree<T>::CalcArticulatedBodyAlgorithmCache(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    const ArticulatedBodyInertiaCache<T>& aic,
+    const ArticulatedBodyInertiaCache<T>& abic,
     const MultibodyForces<T>& forces,
-    ArticulatedBodyAlgorithmCache<T>* aac) const {
-  DRAKE_DEMAND(aac != nullptr);
+    ArticulatedBodyAlgorithmCache<T>* abac) const {
+  DRAKE_DEMAND(abac != nullptr);
   DRAKE_DEMAND(forces.CheckHasRightSizeForModel(*this));
 
   const auto& mbt_context =
@@ -918,7 +919,7 @@ void MultibodyTree<T>::CalcArticulatedBodyAlgorithmCache(
       const MatrixUpTo6<T> H_PB_W = node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcArticulatedBodyInertiaAlgorithm_TipToBase(
-          mbt_context, pc, vc, aic, Fapplied_Bo_W, tau_applied, H_PB_W, aac);
+          mbt_context, pc, vc, abic, Fapplied_Bo_W, tau_applied, H_PB_W, abac);
     }
   }
 }
@@ -926,18 +927,34 @@ void MultibodyTree<T>::CalcArticulatedBodyAlgorithmCache(
 template <typename T>
 void MultibodyTree<T>::CalcForwardDynamics(
     const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const ArticulatedBodyInertiaCache<T>& aic,
-    const ArticulatedBodyAlgorithmCache<T>& aac,
+    const MultibodyForces<T>& applied_forces,
     EigenPtr<VectorX<T>> vdot) const {
   DRAKE_DEMAND(vdot != nullptr);
+  DRAKE_DEMAND(applied_forces.CheckHasRightSizeForModel(*this));
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
+  // Get position and velocity kinematics from cache.
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
   // TODO(bobbyluig): Eval H_PB_W from the cache.
   std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  // Compute articulated body inertia cache.
+  ArticulatedBodyInertiaCache<T> abic(this->topology_);
+  CalcArticulatedBodyInertiaCache(context, pc, &abic);
+
+  // Calculate force element contribution and add in applied forces.
+  MultibodyForces<T> forces(*this);
+  CalcForceElementsContribution(context, pc, vc, &forces);
+  forces.AddInForces(applied_forces);
+
+  // Compute articulated body algorithm cache.
+  ArticulatedBodyAlgorithmCache<T> abac(this->topology_);
+  CalcArticulatedBodyAlgorithmCache(context, pc, vc, abic, forces, &abac);
 
   // Create acceleration kinematics cache to hold results of recursion.
   AccelerationKinematicsCache<T> ac(this->topology_);
@@ -951,7 +968,7 @@ void MultibodyTree<T>::CalcForwardDynamics(
       const MatrixUpTo6<T> H_PB_W = node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcForwardDynamics_BaseToTip(
-          mbt_context, pc, aic, aac, H_PB_W, &ac, vdot);
+          mbt_context, pc, abic, abac, H_PB_W, &ac, vdot);
     }
   }
 }
