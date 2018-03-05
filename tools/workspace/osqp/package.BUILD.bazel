@@ -21,7 +21,6 @@ cmake_configure_file(
     defines = [
         "PRINTING",
         "PROFILING",
-        "CTRLC",
         "DFLOAT",
         "DLONG",
     ] + select({
