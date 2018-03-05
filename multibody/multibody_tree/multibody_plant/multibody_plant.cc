@@ -100,7 +100,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<T>* geometry_system) {
-  DRAKE_ASSERT(is_finalized());
+  DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
   DRAKE_ASSERT(geometry_system == geometry_system_);
   // If not already done, register a frame for this body.
@@ -283,7 +283,6 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_DEMAND(poses->get_source_id() == source_id_.value());
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
