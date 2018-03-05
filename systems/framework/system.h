@@ -1338,13 +1338,13 @@ class System {
 
   //@}
 
-  /// Gets the witness functions active at the beginning of a continuous time
-  /// interval. DoGetWitnessFunctions() does the actual work.
+  /// Gets the witness functions active for the given state.
+  /// DoGetWitnessFunctions() does the actual work. The vector of active witness
+  /// functions are expected to change only upon an unrestricted update.
   /// @param context a valid context for the System (aborts if not true).
   /// @param[out] w a valid pointer to an empty vector that will store
-  ///             pointers to the witness functions active at the beginning of
-  ///             the continuous time interval. The method aborts if witnesses
-  ///             is null or non-empty.
+  ///             pointers to the witness functions active for the current
+  ///             state. The method aborts if witnesses is null or non-empty.
   void GetWitnessFunctions(const Context<T>& context,
                            std::vector<const WitnessFunction<T>*>* w) const {
     DRAKE_DEMAND(w);
@@ -1390,10 +1390,10 @@ class System {
       const WitnessFunction<T>& witness_func) const = 0;
 
   /// Derived classes can override this method to provide witness functions
-  /// active at the beginning of a continuous time interval. The default
-  /// implementation does nothing. On entry to this function, the context will
-  /// have already been validated and the vector of witness functions will have
-  /// been validated to be both empty and non-null.
+  /// active for the given state. The default implementation does nothing. On
+  /// entry to this function, the context will have already been validated and
+  /// the vector of witness functions will have been validated to be both empty
+  /// and non-null.
   virtual void DoGetWitnessFunctions(const Context<T>&,
       std::vector<const WitnessFunction<T>*>*) const {
   }
