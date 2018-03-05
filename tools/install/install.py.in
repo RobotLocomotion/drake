@@ -79,13 +79,13 @@ def install(src, dst):
     dst_full = os.path.join(prefix, dst)
     # Install file, if not up to date.
     if needs_install(src, dst):
-        print("[Installing] {}".format(dst))
+        print("-- Installing: {}".format(dst_full))
         if os.path.exists(dst_full):
             os.remove(dst_full)
         shutil.copy2(src, dst_full)
         installed = True
     else:
-        print("[Up to date] {}".format(dst))
+        print("-- Up-to-date: {}".format(dst_full))
     re_result = re.match(dylib_match, dst)
     if re_result is not None:  # It is a library
         basename = os.path.basename(re_result.group(0))
@@ -255,9 +255,11 @@ def create_java_launcher(filename, classpath, jvm_flags, main_class):
     if list_only:
         print(filename)
         return
-    print("[Generating] {}".format(filename))
-    # Make sure install directory exists.
+
     filename = os.path.join(prefix, filename)
+    print("-- Generating: {}".format(filename))
+
+     # Make sure install directory exists.
     filepath = os.path.dirname(filename)
     if not os.path.exists(filepath):
         os.makedirs(filepath)
@@ -304,6 +306,12 @@ def main(args):
     prefix = args.prefix
     list_only = args.list
 
+    # Transform install prefix if DESTDIR is set.
+    # https://www.gnu.org/prep/standards/html_node/DESTDIR.html
+    destdir = os.environ.get('DESTDIR')
+    if destdir:
+        prefix = destdir + prefix
+
     # Because Bazel executes us in a strange working directory and not the
     # working directory of the user's shell, enforce that the install
     # location is an absolute path so that the user is not surprised.
@@ -312,6 +320,9 @@ def main(args):
             "Install prefix must be an absolute path (got {})\n"
             .format(prefix))
         sys.exit(1)
+
+    # Match the output of the CMake install step.
+    print("Install the project...")
 
     # Execute the install actions.
     <<actions>>

@@ -38,6 +38,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lyapunov",
+    srcs = ["lyapunov.cc"],
+    hdrs = ["lyapunov.h"],
+    deps = [
+        "//common:essential",
+        "//math:autodiff",
+        "//math:gradient",
+        "//solvers:mathematical_program",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "runge_kutta2_integrator",
     srcs = [],
     hdrs = ["runge_kutta2_integrator.h"],
@@ -126,6 +139,14 @@ drake_cc_googletest(
         ":implicit_euler_integrator",
         "//drake/systems/analysis/test_utilities",
         "//drake/systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "lyapunov_test",
+    deps = [
+        ":lyapunov",
+        "//examples/pendulum:pendulum_plant",
     ],
 )
 

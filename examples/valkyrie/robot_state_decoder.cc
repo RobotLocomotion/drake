@@ -5,7 +5,6 @@
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/lcmUtil.h"
 
 namespace drake {
 namespace systems {

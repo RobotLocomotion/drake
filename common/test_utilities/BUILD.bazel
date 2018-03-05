@@ -5,9 +5,17 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "drake_py_unittest_main.py",
+])
 
 # This should encompass every cc_library in this package, except for items that
 # should only ever be linked into main() programs.
@@ -122,6 +130,12 @@ drake_cc_googletest(
     deps = [
         ":is_memcpy_movable",
     ],
+)
+
+drake_py_library(
+    name = "disable_python_unittest",
+    srcs = ["disable_python_unittest/unittest/__init__.py"],
+    imports = ["disable_python_unittest"],
 )
 
 add_lint_tests()

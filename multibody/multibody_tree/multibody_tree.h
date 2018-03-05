@@ -16,6 +16,7 @@
 #include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
@@ -555,8 +556,49 @@ class MultibodyTree {
     joint_name_to_index_[name] = joint.index();
     return joint;
   }
+
+  /// Creates and adds a JointActuator model for an actuator acting on a given
+  /// `joint`.
+  /// This method returns a constant reference to the actuator just added, which
+  /// will remain valid for the lifetime of `this` %MultibodyTree.
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new actuator to be added to `this`
+  ///   model. An exception is thrown if an actuator with the same name
+  ///   already exists in the model. See HasJointActuatorNamed().
+  /// @param[in] joint
+  ///   The Joint to be actuated by the new JointActuator.
+  /// @returns A constant reference to the new JointActuator just added, which
+  /// will remain valid for the lifetime of `this` %MultibodyTree.
+  /// @throws if `this` model already contains a joint actuator with the given
+  /// `name`. See HasJointActuatorNamed(), JointActuator::get_name().
+  // TODO(amcastro-tri): consider adding sugar method to declare an actuated
+  // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
+  const JointActuator<T>& AddJointActuator(
+      const std::string& name, const Joint<T>& joint) {
+    if (HasJointActuatorNamed(name)) {
+      throw std::logic_error(
+          "This model already contains a joint actuator named '" + name +
+          "'. Joint actuator names must be unique within a given model.");
+    }
+
+    if (topology_is_valid()) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more actuators is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+
+    const JointActuatorIndex actuator_index =
+        topology_.add_joint_actuator(joint.num_dofs());
+    owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
+    JointActuator<T>* actuator = owned_actuators_.back().get();
+    actuator->set_parent_tree(this, actuator_index);
+    actuator_name_to_index_[name] = actuator_index;
+    return *actuator;
+  }
+
   /// @}
-  // Closes Doxygen section.
+  // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
   /// Returns the number of Frame objects in the MultibodyTree.
   /// Frames include body frames associated with each of the bodies in
@@ -572,6 +614,12 @@ class MultibodyTree {
 
   /// Returns the number of joints added with AddJoint() to the %MultibodyTree.
   int num_joints() const { return static_cast<int>(owned_joints_.size()); }
+
+  /// Returns the number of actuators in the model.
+  /// @see AddJointActuator().
+  int num_actuators() const {
+    return static_cast<int>(owned_actuators_.size());
+  }
 
   /// Returns the number of mobilizers in the %MultibodyTree. Since the world
   /// has no Mobilizer, the number of mobilizers equals the number of bodies
@@ -603,6 +651,12 @@ class MultibodyTree {
     return topology_.num_states();
   }
 
+  /// Returns the total number of Joint degrees of freedom actuated by the set
+  /// of JointActuator elements added to `this` model.
+  int num_actuated_dofs() const {
+    return topology_.num_actuated_dofs();
+  }
+
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
   /// That is, the number of bodies in the longest kinematic path between the
   /// world and any other leaf body. For a model that only contains the _world_
@@ -628,8 +682,8 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the body with unique index `body_index`.
-  /// @throws std::runtime_error when `body_index` does not correspond to a body
-  /// in this multibody tree.
+  /// @throws if `body_index` does not correspond to a body in this multibody
+  /// tree.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_THROW_UNLESS(body_index < num_bodies());
     return *owned_bodies_[body_index];
@@ -643,9 +697,19 @@ class MultibodyTree {
     return *owned_joints_[joint_index];
   }
 
+  /// Returns a constant reference to the joint actuator with unique index
+  /// `actuator_index`.
+  /// @throws if `actuator_index` does not correspond to a joint actuator in
+  /// this multibody tree.
+  const JointActuator<T>& get_joint_actuator(
+      JointActuatorIndex actuator_index) const {
+    DRAKE_THROW_UNLESS(actuator_index < num_actuators());
+    return *owned_actuators_[actuator_index];
+  }
+
   /// Returns a constant reference to the frame with unique index `frame_index`.
-  /// @throws std::runtime_error when `frame_index` does not correspond to a
-  /// frame in `this` multibody tree.
+  /// @throws if `frame_index` does not correspond to a frame in `this`
+  /// multibody tree.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
@@ -679,6 +743,12 @@ class MultibodyTree {
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) const {
     return joint_name_to_index_.find(name) != joint_name_to_index_.end();
+  }
+
+  /// @returns `true` if a joint actuator named `name` was added to the model.
+  /// @see AddJointActuator().
+  bool HasJointActuatorNamed(const std::string& name) const {
+    return actuator_name_to_index_.find(name) != actuator_name_to_index_.end();
   }
   /// @}
 
@@ -741,6 +811,21 @@ class MultibodyTree {
           NiceTypeName::Get(GetJointByName(name)) + "'.");
     }
     return *joint;
+  }
+
+  /// Returns a constant reference to the actuator that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @see HasJointActuatorNamed() to query if there exists an actuator in
+  /// `this` model with a given specified name.
+  const JointActuator<T>& GetJointActuatorByName(
+      const std::string& name) const {
+    const auto it = actuator_name_to_index_.find(name);
+    if (it == actuator_name_to_index_.end()) {
+      throw std::logic_error("There is no joint actuator named '" + name +
+          "' in the model.");
+    }
+    return get_joint_actuator(it->second);
   }
   /// @}
 
@@ -1603,11 +1688,16 @@ class MultibodyTree {
       tree_clone->CloneJointAndAdd(*joint);
     }
 
+    for (const auto& actuator : owned_actuators_) {
+      tree_clone->CloneActuatorAndAdd(*actuator);
+    }
+
     // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
     tree_clone->body_name_to_index_ = this->body_name_to_index_;
     tree_clone->joint_name_to_index_ = this->joint_name_to_index_;
+    tree_clone->actuator_name_to_index_ = this->actuator_name_to_index_;
 
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().
@@ -1791,6 +1881,18 @@ class MultibodyTree {
     return owned_joints_.back().get();
   }
 
+  // Helper method to create a clone of `actuator` (which is templated on
+  // FromScalar) and add it to `this` tree (templated on T).
+  template <typename FromScalar>
+  void CloneActuatorAndAdd(
+      const JointActuator<FromScalar>& actuator) {
+    JointActuatorIndex actuator_index = actuator.index();
+    std::unique_ptr<JointActuator<T>> actuator_clone =
+        actuator.CloneToScalar(*this);
+    actuator_clone->set_parent_tree(this, actuator_index);
+    owned_actuators_.push_back(std::move(actuator_clone));
+  }
+
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
   // a MultibodyTree variant templated on Scalar.
   template <template <typename> class FrameType, typename Scalar>
@@ -1884,6 +1986,7 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
+  std::vector<std::unique_ptr<JointActuator<T>>> owned_actuators_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
 
   std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
@@ -1901,6 +2004,9 @@ class MultibodyTree {
 
   // Map used to find joint indexes by their joint name.
   std::unordered_map<std::string, JointIndex> joint_name_to_index_;
+
+  // Map used to find actuator indexes by their actuator name.
+  std::unordered_map<std::string, JointActuatorIndex> actuator_name_to_index_;
 
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes

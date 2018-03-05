@@ -1604,10 +1604,12 @@ drake::Matrix6<T> RigidBodyTree<T>::LumpedSpatialInertiaInWorldFrame(
 }
 
 template <typename T>
-VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
-    const KinematicsCache<T>& cache,
-    const VectorX<T>& v) {
-  VectorX<T> qdot(cache.get_num_positions());
+template <typename Derived>
+drake::VectorX<typename Derived::Scalar>
+RigidBodyTree<T>::transformVelocityToQDot(
+    const KinematicsCache<typename Derived::Scalar>& cache,
+    const Eigen::MatrixBase<Derived>& v) {
+  VectorX<typename Derived::Scalar> qdot(cache.get_num_positions());
   int qdot_start = 0;
   int v_start = 0;
   for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
@@ -1621,10 +1623,12 @@ VectorX<T> RigidBodyTree<T>::transformVelocityToQDot(
 }
 
 template <typename T>
-VectorX<T> RigidBodyTree<T>::transformQDotToVelocity(
-    const KinematicsCache<T>& cache,
-    const VectorX<T>& qdot) {
-  VectorX<T> v(cache.get_num_velocities());
+template <typename Derived>
+drake::VectorX<typename Derived::Scalar>
+RigidBodyTree<T>::transformQDotToVelocity(
+    const KinematicsCache<typename Derived::Scalar>& cache,
+    const Eigen::MatrixBase<Derived>& qdot) {
+  VectorX<typename Derived::Scalar> v(cache.get_num_velocities());
   int qdot_start = 0;
   int v_start = 0;
   for (int body_id = 0; body_id < cache.get_num_cache_elements(); ++body_id) {
@@ -3329,6 +3333,34 @@ template Vector3d RigidBodyTree<double>::centerOfMass<double>(
     const KinematicsCache<double>&,
     set<int, less<int>, allocator<int>> const&) const;
 
+// Explicit template instantiations for transformVelocityToQDot.
+template VectorX<AutoDiffUpTo73d>
+RigidBodyTree<double>::transformVelocityToQDot<VectorX<AutoDiffUpTo73d>>(
+    const KinematicsCache<AutoDiffUpTo73d>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>>&);
+template VectorX<AutoDiffXd>
+RigidBodyTree<double>::transformVelocityToQDot<VectorX<AutoDiffXd>>(
+    const KinematicsCache<AutoDiffXd>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffXd>>&);
+template Eigen::VectorXd
+RigidBodyTree<double>::transformVelocityToQDot<Eigen::VectorXd>(
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<Eigen::VectorXd>&);
+
+// Explicit template instantiations for transformQDotToVelocity.
+template VectorX<AutoDiffUpTo73d>
+RigidBodyTree<double>::transformQDotToVelocity<VectorX<AutoDiffUpTo73d>>(
+    const KinematicsCache<AutoDiffUpTo73d>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>>&);
+template VectorX<AutoDiffXd>
+RigidBodyTree<double>::transformQDotToVelocity<VectorX<AutoDiffXd>>(
+    const KinematicsCache<AutoDiffXd>&,
+    const Eigen::MatrixBase<VectorX<AutoDiffXd>>&);
+template Eigen::VectorXd
+RigidBodyTree<double>::transformQDotToVelocity<Eigen::VectorXd>(
+    const KinematicsCache<double>&,
+    const Eigen::MatrixBase<Eigen::VectorXd>&);
+
 // Explicit template instantiations for GetVelocityToQDotMapping.
 template MatrixX<AutoDiffUpTo73d>
 RigidBodyTree<double>::GetVelocityToQDotMapping(
@@ -3481,28 +3513,53 @@ RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<AutoDiffXd>(
 template TwistVector<double>
 RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
+
+// Explicit template instantiations for positionConstraints.
+template VectorX<AutoDiffUpTo73d>
+RigidBodyTree<double>::positionConstraints<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d> const&) const;
+template VectorX<AutoDiffXd>
+RigidBodyTree<double>::positionConstraints<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd> const&) const;
 template VectorXd
 RigidBodyTree<double>::positionConstraints<double>(
     KinematicsCache<double> const&) const;
 
 // Explicit template instantiations for positionConstraintsJacobian.
+template MatrixX<AutoDiffUpTo73d>
+RigidBodyTree<double>::positionConstraintsJacobian<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d> const&, bool) const;
+template MatrixX<AutoDiffXd>
+RigidBodyTree<double>::positionConstraintsJacobian<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd> const&, bool) const;
 template MatrixXd
 RigidBodyTree<double>::positionConstraintsJacobian<double>(
     KinematicsCache<double> const&, bool) const;
-template Matrix<AutoDiffXd, Eigen::Dynamic, Eigen::Dynamic>
-RigidBodyTree<double>::positionConstraintsJacobian<AutoDiffXd>(
-    KinematicsCache<AutoDiffXd> const&, bool) const;
 
 // Explicit template instantiations for positionConstraintsJacDotTimesV.
+template VectorX<AutoDiffUpTo73d>
+RigidBodyTree<double>::positionConstraintsJacDotTimesV<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d> const&) const;
+template VectorX<AutoDiffXd>
+RigidBodyTree<double>::positionConstraintsJacDotTimesV<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd> const&) const;
 template VectorXd
 RigidBodyTree<double>::positionConstraintsJacDotTimesV<double>(
     KinematicsCache<double> const&) const;
+
+// Explicit template instantiations for jointLimitConstriants.
 template void RigidBodyTree<double>::jointLimitConstraints<
     VectorXd, VectorXd, MatrixXd>(Eigen::MatrixBase<VectorXd> const&,
                                   Eigen::MatrixBase<VectorXd>&,
                                   Eigen::MatrixBase<MatrixXd>&) const;
 
 // Explicit template instantiations for relativeTwist.
+template TwistVector<AutoDiffUpTo73d>
+RigidBodyTree<double>::relativeTwist<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d> const&, int, int, int) const;
+template TwistVector<AutoDiffXd>
+RigidBodyTree<double>::relativeTwist<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd> const&, int, int, int) const;
 template TwistVector<double>
 RigidBodyTree<double>::relativeTwist<double>(
     KinematicsCache<double> const&, int, int, int) const;

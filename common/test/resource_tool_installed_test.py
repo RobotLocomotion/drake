@@ -8,16 +8,18 @@ import sys
 import unittest
 
 
-# Set on command-line to the location of common/install.
-_install_exe = None
-
-
 class TestResourceTool(unittest.TestCase):
+    def setUp(self):
+        self._install_exe, = sys.argv[1:]
+        self.assertTrue(
+            os.path.exists(self._install_exe),
+            "Could not find " + self._install_exe)
+
     def test_install_and_run(self):
         # Install into a temporary directory.
         os.mkdir("tmp")
         subprocess.check_call(
-            [_install_exe,
+            [self._install_exe,
              os.path.abspath("tmp"),
              ])
 
@@ -70,8 +72,3 @@ class TestResourceTool(unittest.TestCase):
             ).strip()
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), "tmp_resource")
-
-
-if __name__ == '__main__':
-    _install_exe = sys.argv.pop(1)
-    unittest.main()

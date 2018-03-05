@@ -41,6 +41,7 @@ using drake::multibody::SpatialForce;
 using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
+using systems::InputPortDescriptor;
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
@@ -180,8 +181,22 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // the forces to zero and adds in contributions due to force elements.
   model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
-  // TODO(amcastro-tri): Add in input forces with actuators.
-  // Like so: elbow_->AddInTorque(context, get_tau(context), &forces);
+  // If there is any input actuation, add it to the multibody forces.
+  if (num_actuators() > 0) {
+    Eigen::VectorBlock<const VectorX<T>> u =
+        this->EvalEigenVectorInput(context, actuation_port_);
+    for (JointActuatorIndex actuator_index(0);
+         actuator_index < num_actuators(); ++actuator_index) {
+      const JointActuator<T>& actuator =
+          model().get_joint_actuator(actuator_index);
+      // We only support actuators on single dof joints for now.
+      DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
+      for (int joint_dof = 0;
+           joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
+        actuator.AddInOneForce(context, joint_dof, u[actuator_index], &forces);
+      }
+    }
+  }
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -223,9 +238,21 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
       model_->num_positions(),
       model_->num_velocities(), 0 /* num_z */);
 
-  // TODO(amcastro-tri): Declare input ports for actuators.
+  if (num_actuators() > 0) {
+    actuation_port_ =
+        this->DeclareVectorInputPort(
+            systems::BasicVector<T>(num_actuated_dofs())).get_index();
+  }
 
   // TODO(amcastro-tri): Declare output port for the state.
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>&
+MultibodyPlant<T>::get_actuation_input_port() const {
+  DRAKE_THROW_UNLESS(is_finalized());
+  DRAKE_THROW_UNLESS(num_actuators() > 0);
+  return systems::System<T>::get_input_port(actuation_port_);
 }
 
 template<typename T>

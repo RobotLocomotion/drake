@@ -71,22 +71,24 @@ void MultibodyTree<T>::FinalizeInternals() {
         "MultibodyTree::FinalizeInternals().");
   }
 
-  // Give bodies the chance to perform any finalize-time setup.
+  // Give different multiobody elements the chance to perform any finalize-time
+  // setup.
   for (const auto& body : owned_bodies_) {
     body->SetTopology(topology_);
   }
-
-  // Give frames the chance to perform any finalize-time setup.
   for (const auto& frame : owned_frames_) {
     frame->SetTopology(topology_);
   }
-
-  // Give mobilizers the chance to perform any finalize-time setup.
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
   }
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->SetTopology(topology_);
+  }
+  for (const auto& actuator : owned_actuators_) {
+    actuator->SetTopology(topology_);
+  }
 
-  // Create a list of body nodes organized by levels.
   body_node_levels_.resize(topology_.tree_height());
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {

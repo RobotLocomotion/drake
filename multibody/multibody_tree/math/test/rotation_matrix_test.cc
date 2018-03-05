@@ -211,7 +211,7 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   EXPECT_TRUE(vC.isApprox(vC_expected));
 }
 
-// Test IsDeterminantPositive, IsOrthonormal, IsValid.
+// Test IsOrthonormal, IsValid.
 GTEST_TEST(RotationMatrix, IsValid) {
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
@@ -219,7 +219,7 @@ GTEST_TEST(RotationMatrix, IsValid) {
   m << 1, 0, 0,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_TRUE(RotationMatrix<double>::IsDeterminantPositive(m));
+  EXPECT_GT(m.determinant(), 0);
   EXPECT_TRUE(RotationMatrix<double>::IsOrthonormal(m, 5 * kEpsilon));
   EXPECT_TRUE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 
@@ -227,7 +227,7 @@ GTEST_TEST(RotationMatrix, IsValid) {
   m << 1, 10 * kEpsilon, 10 * kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_TRUE(RotationMatrix<double>::IsDeterminantPositive(m));
+  EXPECT_GT(m.determinant(), 0);
   EXPECT_FALSE(RotationMatrix<double>::IsOrthonormal(m, 5 * kEpsilon));
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 
@@ -235,7 +235,7 @@ GTEST_TEST(RotationMatrix, IsValid) {
   m << -1, 0, 0,
         0, cos_theta, sin_theta,
         0, -sin_theta, cos_theta;
-  EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
+  EXPECT_LT(m.determinant(), 0);
   EXPECT_TRUE(RotationMatrix<double>::IsOrthonormal(m, 5 * kEpsilon));
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 5 * kEpsilon));
 }
@@ -279,50 +279,111 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon));
   EXPECT_TRUE(std::abs(quality_factor - 2.0) < 40*kEpsilon);
 
-  // Test a poor non-identity matrix.
-  m << 1, 0.1, 0.1, -0.2, 1.0, 0.1, 0.5, 0.6, 0.8;
+  // Test a 3x3 matrix that is far from orthonormal.
+  m << 1,   0.1, 0.1,
+      -0.2, 1.0, 0.1,
+       0.5, 0.6, 0.8;
   EXPECT_FALSE(RotationMatrix<double>::IsValid(m, 64000 * kEpsilon));
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [1.405049, 1.061152, 0.4688222]
   EXPECT_TRUE(std::abs(quality_factor - 0.4688222) < 1E-5);
 
-  m << 1, 2, 3, 4, 5, 6, 7, 8, -10;
+  // Test another 3x3 matrix that is far from orthonormal.
+  m << 1, 2,  3,
+       4, 5,  6,
+       7, 8, -10;
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [14.61524, 9.498744, 0.4105846]
   EXPECT_TRUE(std::abs(quality_factor - 14.61524) < 1E-5);
 
-  m << 1E-7, 2, 3, 4, 5, 6, 7, 8, -1E6;
+  // Test another 3x3 matrix that is far from orthonormal.
+  m << 1E-7, 2, 3,
+          4, 5, 6,
+          7, 8, -1E6;
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
   // Singular values from MotionGenesis [1000000, 6.597777, 1.21254]
   EXPECT_TRUE(std::abs(quality_factor - 1000000) < 1E-1);
 
-  m << 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  // Test a 3x3 near-zero matrix whose determinant is positive (det = 1E-47).
+  m << kEpsilon, 0, 0,
+       0, kEpsilon, 0,
+       0, 0, kEpsilon;
+  EXPECT_TRUE(0 < m.determinant() &&
+              m.determinant() < 64 * kEpsilon * kEpsilon * kEpsilon);
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsValid());
-  // Singular values from MotionGenesis [0, 0, 0]
-  EXPECT_TRUE(std::abs(quality_factor - 0) < 1E-13);
+  // Singular values from MotionGenesis [kEpsilon, kEpsilon, kEpsilon]
+  EXPECT_TRUE(quality_factor > 0 &&  quality_factor < 64 * kEpsilon);
+  EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),
+                                64 * kEpsilon));
 
-  // Check that an exception is thrown if the rotation matrix is improper,
-  // meaning that the determinant of m happens to be zero.
-  m << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
+  // Test a 3x3 near-zero matrix whose determinant is negative (det = -1E-47).
+  m << kEpsilon, 0, 0,
+      0, kEpsilon, 0,
+      0, 0, -kEpsilon;
+  EXPECT_TRUE(-64 * kEpsilon * kEpsilon * kEpsilon < m.determinant() &&
+               m.determinant() < 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
 
-  // Check that an exception is thrown if the rotation matrix is improper,
-  // meaning that the determinant of m happens to be negative.
-  m << 1, 2, 3, 4, 5, 6, -7, -8, -7;
-  EXPECT_FALSE(RotationMatrix<double>::IsDeterminantPositive(m));
+  // Test a 3x3 orthogonal matrix but whose determinant is negative (-1).
+  m << 1, 0, 0,
+       0, 1, 0,
+       0, 0, -1;
+  EXPECT_TRUE(std::abs(m.determinant() + 1) < 64 * kEpsilon);
+  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
+               &quality_factor), std::logic_error);
+
+  // Check that an exception is thrown if the resulting rotation matrix would
+  // have been improper (the resulting rotation matrix would have a determinant
+  // of -1 instead of +1).  One way to generate an improper rotation matrix is
+  // to try to project a matrix m whose determinant is negative.  For the
+  // example below we use a matrix m that also happens to be near-singular,
+  // which means that it has a barely negative determinant [det(m) ≈ -3e-13].
+  // One can see that matrix m below is near singular by noticing either:
+  // row(0) + row(2) ≈ 2 * row(1)  or  col(0) + col(2) ≈ 2 * col(1).
+  m << 1, 2, 3,
+       4, 5, 6,
+       7, 8, 9 + 400 * kEpsilon;
+  EXPECT_TRUE(-1600 * kEpsilon < m.determinant() && m.determinant() < 0);
+  EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
+               &quality_factor), std::logic_error);
+
+  // Check that no exception is thrown if the resulting rotation matrix is a
+  // valid rotation matrix and is proper (meaning the resulting rotation matrix
+  // has a determinant of +1, not -1).  As long as a 3x3 matrix m is full rank
+  // and has a positive determinant, the test below should succeed.  For the
+  // example below, we use a matrix m that happens to be near-singular, which
+  // means that it has a barely positive determinant [det(m) ≈ 3e-13].
+  // One can see that matrix m below is near singular by noticing either:
+  // row(0) + row(2) ≈ 2 * row(1)  or  col(0) + col(2) ≈ 2 * col(1).
+  m << 1, 2, 3,
+       4, 5, 6,
+       7, 8, 9 - 400 * kEpsilon;
+  EXPECT_TRUE(0 < m.determinant() && m.determinant() < 1600 * kEpsilon);
+  RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
+  EXPECT_TRUE(quality_factor > 0 && std::abs(quality_factor) < 1600 * kEpsilon);
+
+  // Check that an exception is thrown if the resulting rotation matrix would
+  // have been improper (the resulting rotation matrix would have a determinant
+  // of -1 instead of +1).  One way to generate an improper rotation matrix is
+  // to try to project a matrix m whose determinant is negative [det(m) = -6].
+  m << 1, 2, 3,
+       4, 5, 6,
+      -7, -8, -7;
+  EXPECT_LT(m.determinant(), 0);
   EXPECT_THROW(RotationMatrix<double>::ProjectToRotationMatrix(m,
                &quality_factor), std::logic_error);
 
   // Check that returned rotation matrix is orthonormal.  In other words, its
   // transpose should be equal to its inverse so  that R * Rᵀ = IdentityMatrix.
-  m << 1, 2, 3, 4, 5, 6, 7, 8, 7;
-  EXPECT_TRUE(RotationMatrix<double>::IsDeterminantPositive(m));
+  m << 1, 2, 3,
+       4, 5, 6,
+       7, 8, 7;
+  EXPECT_GT(m.determinant(), 0);
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   const RotationMatrix<double> I = R * R.inverse();
   EXPECT_TRUE(I.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),

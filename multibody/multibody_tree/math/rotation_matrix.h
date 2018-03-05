@@ -280,19 +280,6 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
   }
 
-  /// Tests if the determinant of a generic Matrix3 is positive or negative.
-  /// @param[in] R an allegedly valid rotation matrix.
-  /// @returns `true` if the determinant of R is positive.
-  /// @internal The determinant of a proper rotation matrix is +1, whereas for
-  /// an improper rotation matrix it is -1.  To avoid testing near +1 (which
-  /// can return a false negative if the matrix is slightly non-orthonormal),
-  /// all that is needed is to ensure the matrix is reasonably proper is to
-  /// ensure the determinant is positive.  If the determinant is 0, it means
-  /// the basis vectors are not linearly independent (do not span 3D space).
-  static bool IsDeterminantPositive(const Matrix3<T>& R) {
-    return R.determinant() > 0;
-  }
-
   /// Tests if a generic Matrix3 has orthonormal vectors to within the threshold
   /// specified by `tolerance`.
   /// @param[in] R an allegedly orthonormal rotation matrix.
@@ -310,7 +297,7 @@ class RotationMatrix {
   /// and the identity matrix I (i.e., checks if `‖R ⋅ R⁻¹ - I‖∞ <= tolerance`).
   /// @returns `true` if R is a valid rotation matrix.
   static bool IsValid(const Matrix3<T>& R, double tolerance) {
-    return IsOrthonormal(R, tolerance) && IsDeterminantPositive(R);
+    return IsOrthonormal(R, tolerance) && R.determinant() > 0;
   }
 
   /// Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
@@ -472,7 +459,7 @@ class RotationMatrix {
   static void ThrowIfNotValid(const Matrix3<T>& R) {
     if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
       throw std::logic_error("Error: Rotation matrix is not orthonormal.");
-    if (!IsDeterminantPositive(R))
+    if (R.determinant() < 0)
       throw std::logic_error("Error: Rotation matrix determinant is negative. "
                              "It is possible a basis is left-handed");
   }

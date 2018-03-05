@@ -23,7 +23,6 @@
 #include "drake/systems/controllers/polynomial_encode_decode.h"
 #include "drake/systems/controllers/yaml_util.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/lcmUtil.h"
 
 const double REG = 1e-8;
 

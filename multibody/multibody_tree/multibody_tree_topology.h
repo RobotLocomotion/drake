@@ -249,6 +249,42 @@ struct ForceElementTopology {
   ForceElementIndex index{0};
 };
 
+/// Data structure to store the topological information associated with a
+/// JointActuator.
+struct JointActuatorTopology {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(JointActuatorTopology);
+
+  /// Default construction to an invalid configuration. This only exists to
+  /// satisfy demands of working with various container classes.
+  JointActuatorTopology() {}
+
+  /// Constructs a joint actuator topology with index `joint_actuator_index`.
+  JointActuatorTopology(
+      JointActuatorIndex joint_actuator_index,
+      int start_index, int ndofs) :
+      index(joint_actuator_index),
+      actuator_index_start(start_index),
+      num_dofs(ndofs) {}
+
+  /// Returns `true` if all members of `this` topology are exactly equal to the
+  /// members of `other`.
+  bool operator==(const JointActuatorTopology& other) const {
+    if (index != other.index) return false;
+    if (actuator_index_start != other.actuator_index_start) return false;
+    if (num_dofs != other.num_dofs) return false;
+    return true;
+  }
+
+  /// Unique index in the MultibodyTree.
+  JointActuatorIndex index{0};
+  /// For an actuator in a MultibodyTree model, this index corresponds to the
+  /// first entry in the global array u containing all actuation values for the
+  /// entire model.
+  int actuator_index_start{-1};
+  /// The number of dofs actuated by this actuator.
+  int num_dofs{-1};
+};
+
 /// Data structure to store the topological information associated with a tree
 /// node. A tree node essentially consists of a body and its inboard mobilizer.
 /// A body node is in charge of the computations associated to that body and
@@ -393,6 +429,8 @@ class MultibodyTreeTopology {
     if (bodies_ != other.bodies_) return false;
     if (frames_ != other.frames_) return false;
     if (mobilizers_ != other.mobilizers_) return false;
+    if (force_elements_ != other.force_elements_) return false;
+    if (joint_actuators_ != other.joint_actuators_) return false;
     if (body_nodes_ != other.body_nodes_) return false;
 
     return true;
@@ -420,9 +458,14 @@ class MultibodyTreeTopology {
     return static_cast<int>(body_nodes_.size());
   }
 
-  /// Returns the number of force elements in the multibody tree.
+  /// Returns the number of force elements in the topology.
   int num_force_elements() const {
     return static_cast<int>(force_elements_.size());
+  }
+
+  /// Returns the number of joint actuators in the topology.
+  int num_joint_actuators() const {
+    return static_cast<int>(joint_actuators_.size());
   }
 
   /// Returns the number of tree levels in the topology.
@@ -449,6 +492,14 @@ class MultibodyTreeTopology {
   const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
     DRAKE_ASSERT(index < num_mobilizers());
     return mobilizers_[index];
+  }
+
+  /// Returns a constant reference to the corresponding JointActuatorTopology
+  /// given a JointActuatorIndex.
+  const JointActuatorTopology& get_joint_actuator(
+      JointActuatorIndex index) const {
+    DRAKE_ASSERT(index < num_joint_actuators());
+    return joint_actuators_[index];
   }
 
   /// Returns a constant reference to the corresponding BodyNodeTopology given
@@ -592,6 +643,31 @@ class MultibodyTreeTopology {
     ForceElementIndex force_index(num_force_elements());
     force_elements_.emplace_back(force_index);
     return force_index;
+  }
+
+  /// Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
+  /// degrees of freedom.
+  /// @param[in] num_dofs
+  ///   The number of joint dofs actuated by this actuator.
+  ///
+  /// @throws std::logic_error if Finalize() was already called on `this`
+  /// topology.
+  ///
+  /// @returns The JointActuatorIndex assigned to the new JointActuatorTopology.
+  JointActuatorIndex add_joint_actuator(int num_dofs) {
+    DRAKE_ASSERT(num_dofs > 0);
+    if (is_valid()) {
+      throw std::logic_error(
+          "This MultibodyTreeTopology is finalized already. "
+          "Therefore adding more joint actuators is not allowed. "
+          "See documentation for Finalize() for details.");
+    }
+    const int actuator_index_start = num_actuated_dofs();
+    const JointActuatorIndex actuator_index(num_joint_actuators());
+    joint_actuators_.emplace_back(
+        actuator_index, actuator_index_start, num_dofs);
+    num_actuated_dofs_ += num_dofs;
+    return actuator_index;
   }
 
   /// This method must be called by MultibodyTree::Finalize() after all
@@ -755,6 +831,9 @@ class MultibodyTreeTopology {
   /// Returns the total size of the state vector in the model.
   int num_states() const { return num_states_; }
 
+  /// Returns the total number of actuated joint dofs in the model.
+  int num_actuated_dofs() const { return num_actuated_dofs_; }
+
   /// Given a node in `this` topology, specified by its BodyNodeIndex `from`,
   /// this method computes the kinematic path formed by all the nodes in the
   /// tree that connect `from` with the root (corresponding to the world).
@@ -822,6 +901,7 @@ class MultibodyTreeTopology {
   std::vector<BodyTopology> bodies_;
   std::vector<MobilizerTopology> mobilizers_;
   std::vector<ForceElementTopology> force_elements_;
+  std::vector<JointActuatorTopology> joint_actuators_;
   std::vector<BodyNodeTopology> body_nodes_;
 
   // Total number of generalized positions and velocities in the MultibodyTree
@@ -829,6 +909,7 @@ class MultibodyTreeTopology {
   int num_positions_{0};
   int num_velocities_{0};
   int num_states_{0};
+  int num_actuated_dofs_{0};
 };
 
 }  // namespace multibody

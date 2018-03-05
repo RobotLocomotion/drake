@@ -59,7 +59,3 @@ class TestPendulum(unittest.TestCase):
         initial_state = state.CopyToVector()
         simulator.StepTo(1.0)
         self.assertFalse((state.CopyToVector() == initial_state).any())
-
-
-if __name__ == '__main__':
-    unittest.main()

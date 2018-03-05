@@ -160,6 +160,21 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
                          "(if (x > y) then x else y)")
 
+    def test_jacobian(self):
+        # Jacobian([x * cos(y), x * sin(y), x ** 2], [x, y]) returns
+        # the following 3x2 matrix:
+        #
+        #  = |cos(y)   -x * sin(y)|
+        #    |sin(y)    x * cos(y)|
+        #    | 2 * x             0|
+        J = sym.Jacobian([x * sym.cos(y), x * sym.sin(y), x ** 2], [x, y])
+        self.assertEqual(J[0, 0], sym.cos(y))
+        self.assertEqual(J[1, 0], sym.sin(y))
+        self.assertEqual(J[2, 0], 2 * x)
+        self.assertEqual(J[0, 1], - x * sym.sin(y))
+        self.assertEqual(J[1, 1], x * sym.cos(y))
+        self.assertEqual(J[2, 1], 0)
+
 
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
@@ -280,6 +295,12 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p = pow(p, 2)  # p = a²x⁴
         self.assertEqual(p.ToExpression(), (a ** 2) * (x ** 4))
 
+    def test_jacobian(self):
+        e = 5 * x ** 2 + 4 * y ** 2 + 8 * x * y
+        p = sym.Polynomial(e, [x, y])                  # p = 5x² + 4y² + 8xy
+        p_dx = sym.Polynomial(10 * x + 8 * y, [x, y])  # ∂p/∂x = 10x + 8y
+        p_dy = sym.Polynomial(8 * y + 8 * x, [x, y])   # ∂p/∂y =  8y + 8x
 
-if __name__ == '__main__':
-    unittest.main()
+        J = p.Jacobian([x, y])
+        self.assertEqual(J[0], p_dx)
+        self.assertEqual(J[1], p_dy)

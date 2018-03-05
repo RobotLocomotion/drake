@@ -57,6 +57,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(plant->num_bodies(), 3);
   EXPECT_EQ(plant->num_joints(), 2);
+  EXPECT_EQ(plant->num_actuators(), 1);
+  EXPECT_EQ(plant->num_actuated_dofs(), 1);
 
   // State size.
   EXPECT_EQ(plant->num_positions(), 2);
@@ -71,6 +73,9 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_TRUE(plant->HasJointNamed(parameters.shoulder_joint_name()));
   EXPECT_TRUE(plant->HasJointNamed(parameters.elbow_joint_name()));
   EXPECT_FALSE(plant->HasJointNamed(kInvalidName));
+
+  EXPECT_TRUE(plant->HasJointActuatorNamed(parameters.actuator_name()));
+  EXPECT_FALSE(plant->HasJointActuatorNamed(kInvalidName));
 
   // Get links by name.
   const Body<double>& link1 = plant->GetBodyByName(parameters.link1_name());
@@ -173,13 +178,18 @@ class AcrobotPlantTests : public ::testing::Test {
 
     context_ = plant_->CreateDefaultContext();
     derivatives_ = plant_->AllocateTimeDerivatives();
+
+    ASSERT_GT(plant_->num_actuators(), 0);
+    input_port_ = &context_->FixInputPort(
+        plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
   // for the acrobot model. The comparison is carried out against a benchmark
   // with hand written dynamics.
   void VerifyCalcTimeDerivatives(double theta1, double theta2,
-                                 double theta1dot, double theta2dot) {
+                                 double theta1dot, double theta2dot,
+                                 double input_torque) {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
@@ -187,6 +197,10 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_->set_angle(context_.get(), theta2);
     shoulder_->set_angular_rate(context_.get(), theta1dot);
     elbow_->set_angular_rate(context_.get(), theta2dot);
+
+    // Fix input port to a value before computing anything. In this case, zero
+    // actuation.
+    input_port_->GetMutableVectorData<double>()->SetAtIndex(0, input_torque);
 
     plant_->CalcTimeDerivatives(*context_, derivatives_.get());
     const VectorXd xdot = derivatives_->CopyToVector();
@@ -196,7 +210,7 @@ class AcrobotPlantTests : public ::testing::Test {
         theta1, theta2, theta1dot, theta2dot);
     Vector2d tau_g_expected =
         acrobot_benchmark_.CalcGravityVector(theta1, theta2);
-    Vector2d rhs = tau_g_expected - C_expected;
+    Vector2d rhs = tau_g_expected - C_expected + Vector2d(0.0, input_torque);
     Matrix2d M_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
     Vector2d vdot_expected = M_expected.inverse() * rhs;
     VectorXd xdot_expected(4);
@@ -223,6 +237,8 @@ class AcrobotPlantTests : public ::testing::Test {
   const Body<double>* link2_{nullptr};
   const RevoluteJoint<double>* shoulder_{nullptr};
   const RevoluteJoint<double>* elbow_{nullptr};
+  // Input port for the actuation:
+  systems::FreestandingInputPortValue* input_port_{nullptr};
 
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
@@ -241,16 +257,20 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
   // Some random tests with non-zero state:
   VerifyCalcTimeDerivatives(
       -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
-      0.5, 1.0);                /* joint's angular rates */
+      0.5, 1.0,                 /* joint's angular rates */
+      -1.0);                    /* Actuation torque */
   VerifyCalcTimeDerivatives(
       M_PI / 3.0, -M_PI / 5.0,  /* joint's angles */
-      0.7, -1.0);               /* joint's angular rates */
+      0.7, -1.0,                /* joint's angular rates */
+      1.0);                     /* Actuation torque */
   VerifyCalcTimeDerivatives(
       M_PI / 4.0, -M_PI / 3.0,  /* joint's angles */
-      -0.5, 2.0);               /* joint's angular rates */
+      -0.5, 2.0,                /* joint's angular rates */
+      -1.5);                    /* Actuation torque */
   VerifyCalcTimeDerivatives(
       -M_PI, -M_PI / 2.0,       /* joint's angles */
-      -1.5, -2.5);              /* joint's angular rates */
+      -1.5, -2.5,               /* joint's angular rates */
+      2.0);                     /* Actuation torque */
 }
 
 // Verifies the process of geometry registration with a GeometrySystem for the

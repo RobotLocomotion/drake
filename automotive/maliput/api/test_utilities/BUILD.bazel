@@ -27,4 +27,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rules_test_utilities",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["rules_test_utilities.h"],
+    deps = [
+        "//automotive/maliput/api",
+        "//common:essential",
+        "@gtest//:without_main",
+    ],
+)
+
 add_lint_tests()
