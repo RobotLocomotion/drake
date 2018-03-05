@@ -54,6 +54,9 @@ class Polynomial {
   /// Constructs a polynomial from an expression @p e by decomposing it with
   /// respect to @p indeterminates.
   ///
+  /// @note It collects the intersection of the variables appeared in `e` and
+  /// the provided @p indeterminates.
+  ///
   /// @throws std::runtime_error if @p e is not a polynomial in @p
   /// indeterminates.
   Polynomial(const Expression& e, const Variables& indeterminates);
