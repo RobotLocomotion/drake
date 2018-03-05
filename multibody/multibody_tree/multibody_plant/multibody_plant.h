@@ -600,12 +600,15 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // Helper method to register geometry for a given body, either visual or
   // collision. The registration includes:
-  // 1. If not done yet, register this plant as a source for the given
-  //    GeometrySystem. This assigns a SourceId to this plant.
-  // 2. Register a frame for this body if not already done so. The body gets
+  // 1. Register a frame for this body if not already done so. The body gets
   //    associated with a FrameId.
-  // 3. Register geometry for the corresponding FrameId. This associates a
+  // 2. Register geometry for the corresponding FrameId. This associates a
   //    GeometryId with the body FrameId.
+  // This assumes:
+  // 1. Finalize() was called on `this` plant.
+  // 2. RegisterAsSourceForGeometrySystem() was called on `this` plant.
+  // 3. `geometry_system` points to the same GeometrySystem instance previously
+  //    passed to RegisterAsSourceForGeometrySystem().
   geometry::GeometryId RegisterGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,

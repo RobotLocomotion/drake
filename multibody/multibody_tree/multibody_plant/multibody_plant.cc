@@ -64,7 +64,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForGeometrySystem(
   source_id_ = geometry_system->RegisterSource();
   // Save the GS pointer so that on later geometry registrations we can verify
   // the user is making calls on the same GS instance. Only used for that
-  // purpose, it gests nullified at Finalize().
+  // purpose, it gets nullified at Finalize().
   geometry_system_ = geometry_system;
   return source_id_.value();
 }
@@ -100,8 +100,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     geometry::GeometrySystem<T>* geometry_system) {
-  DRAKE_MBP_THROW_IF_FINALIZED();
-  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  DRAKE_ASSERT(is_finalized());
+  DRAKE_ASSERT(geometry_source_is_registered());
+  DRAKE_ASSERT(geometry_system == geometry_system_);
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
     body_index_to_frame_id_[body.index()] =
@@ -238,7 +239,9 @@ void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
           &MultibodyPlant::CalcFramePoseOutput).get_index();
   // Compute once, and for all, a vector of ids to be used in CalcFrameIdOuput.
   // ids_ does not change after it is created here.
-  // NOTE: we output ids sorted by BodyIndex and therefore the the loop here.
+  // Note: the important bit here is that both, CalcFrameIdOutput() and
+  // CalcFramePoseOutput(), scan body_index_to_frame_id_ in the same order so
+  // that the ids port is consistent with the poses port.
   for (auto it : body_index_to_frame_id_) {
     ids_.push_back(it.second);
   }
