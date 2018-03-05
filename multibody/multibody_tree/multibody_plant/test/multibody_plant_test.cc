@@ -7,12 +7,15 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/geometry_system.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace multibody {
@@ -23,11 +26,18 @@ using Eigen::Matrix2d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::FrameId;
+using geometry::FrameIdVector;
+using geometry::FramePoseVector;
+using geometry::GeometrySystem;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using systems::AbstractValue;
 using systems::Context;
 using systems::ContinuousState;
+using systems::DiagramBuilder;
+using systems::Diagram;
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
@@ -36,7 +46,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const std::string kInvalidName = "InvalidName";
 
   const AcrobotParameters parameters;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlant(parameters);
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, true /* Make a finalized plant. */);
 
   // MakeAcrobotPlant() has already called Finalize() on the new acrobot plant.
   // Therefore attempting to call this method again will throw an exception.
@@ -96,11 +107,19 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
-  EXPECT_THROW(plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
-               std::logic_error);
-  EXPECT_THROW(plant->AddJoint<RevoluteJoint>(
-      "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
-               std::logic_error);
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "Post-finalize calls to '.*' are not allowed; "
+      "calls to this method must happen before Finalize\\(\\).");
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant->AddJoint<RevoluteJoint>(
+          "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "Post-finalize calls to '.*' are not allowed; "
+      "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
@@ -110,7 +129,46 @@ class AcrobotPlantTests : public ::testing::Test {
  public:
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
-    plant_ = MakeAcrobotPlant(parameters_);
+    systems::DiagramBuilder<double> builder;
+    geometry_system_ = builder.AddSystem<GeometrySystem>();
+    // Make a non-finalized plant so that we can tests methods with pre/post
+    // Finalize() conditions.
+    plant_ = builder.AddSystem(
+        MakeAcrobotPlant(parameters_, false, geometry_system_));
+    // Sanity check on the availability of the optional source id before using
+    // it.
+    DRAKE_DEMAND(plant_->get_source_id() != nullopt);
+
+    // Verify that methods with pre-Finalize() conditions throw accordingly.
+    DRAKE_EXPECT_ERROR_MESSAGE(
+        plant_->get_geometry_ids_output_port(),
+        std::logic_error,
+        /* Verify this method is throwing for the right reasons. */
+        "Pre-finalize calls to '.*' are not allowed; "
+        "you must call Finalize\\(\\) first.");
+
+    DRAKE_EXPECT_ERROR_MESSAGE(
+        plant_->get_geometry_poses_output_port(),
+        std::logic_error,
+        /* Verify this method is throwing for the right reasons. */
+        "Pre-finalize calls to '.*' are not allowed; "
+        "you must call Finalize\\(\\) first.");
+
+    // Finalize() the plant before accessing its ports for communicating with
+    // GeometrySystem.
+    plant_->Finalize();
+
+    builder.Connect(
+        plant_->get_geometry_ids_output_port(),
+        geometry_system_->get_source_frame_id_port(
+            plant_->get_source_id().value()));
+    builder.Connect(
+        plant_->get_geometry_poses_output_port(),
+        geometry_system_->get_source_pose_port(
+            plant_->get_source_id().value()));
+    // And build the Diagram:
+    diagram_ = builder.Build();
+
     link1_ = &plant_->GetBodyByName(parameters_.link1_name());
     link2_ = &plant_->GetBodyByName(parameters_.link2_name());
     shoulder_ = &plant_->GetJointByName<RevoluteJoint>(
@@ -166,7 +224,11 @@ class AcrobotPlantTests : public ::testing::Test {
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
-  std::unique_ptr<MultibodyPlant<double>> plant_;
+  MultibodyPlant<double>* plant_{nullptr};
+  // A GeometrySystem so that we can test geometry registration.
+  GeometrySystem<double>* geometry_system_{nullptr};
+  // The Diagram containing both the MultibodyPlant and the GeometrySystem.
+  std::unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
@@ -210,6 +272,63 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       -1.5, -2.5,               /* joint's angular rates */
       2.0);                     /* Actuation torque */
 }
+
+// Verifies the process of geometry registration with a GeometrySystem for the
+// acrobot model.
+TEST_F(AcrobotPlantTests, GeometryRegistration) {
+  EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
+  EXPECT_TRUE(plant_->geometry_source_is_registered());
+  EXPECT_TRUE(plant_->get_source_id());
+
+  // The default context gets initialized by a call to SetDefaultState(), which
+  // for a MultibodyPlant sets all revolute joints to have zero angles and zero
+  // angular velocity.
+  std::unique_ptr<systems::Context<double>> context =
+      plant_->CreateDefaultContext();
+
+  std::unique_ptr<AbstractValue> ids_value =
+      plant_->get_geometry_ids_output_port().Allocate(*context);
+  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
+  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
+  EXPECT_EQ(ids.get_source_id(), plant_->get_source_id());
+  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
+
+  std::unique_ptr<AbstractValue> poses_value =
+      plant_->get_geometry_poses_output_port().Allocate(*context);
+  EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
+  const FramePoseVector<double>& poses =
+      poses_value->GetValueOrThrow<FramePoseVector<double>>();
+  EXPECT_EQ(poses.get_source_id(), plant_->get_source_id());
+  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+
+  // Compute the poses for each geometry in the model.
+  plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
+
+  const MultibodyTree<double>& model = plant_->model();
+  std::vector<Isometry3<double >> X_WB_all;
+  model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  for (BodyIndex body_index(1);
+       body_index < plant_->num_bodies(); ++body_index) {
+    const FrameId frame_id = plant_->GetBodyFrameIdOrThrow(body_index);
+    const int id_index = ids.GetIndex(frame_id);
+    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
+    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
+                                kTolerance, MatrixCompareType::relative));
+  }
+
+  // GeometrySystem does not register a FrameId for the world. We use this fact
+  // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
+  // FrameId, even though in this model we register an anchored geometry to the
+  // world.
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant_->GetBodyFrameIdOrThrow(world_index()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "Body 'WorldBody' does not have geometry registered with it.");
+}
+
 
 }  // namespace
 }  // namespace multibody_plant

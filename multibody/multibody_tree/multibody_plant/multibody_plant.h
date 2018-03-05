@@ -1,12 +1,15 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -16,6 +19,16 @@
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
+
+/// @cond
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
+/// @endcond
 
 /// %MultibodyPlant is a Drake system framework representation (see
 /// systems::System) for the model of a physical system consisting of a
@@ -68,8 +81,40 @@ namespace multibody_plant {
 /// - Bodies: AddRigidBody().
 /// - Joints: AddJoint().
 ///
+/// All modeling elements **must** be added pre-finalize.
+///
+/// @section mbp_geometry_registration
+/// Registering geometry with a GeometrySystem
+///
+/// %MultibodyPlant users can register geometry with a GeometrySystem for
+/// essentially two purposes; a) visualization and, b) contact modeling.
+// TODO(SeanCurtis-TRI): update this comment as the number of GeometrySystem
+// roles changes.
+/// Before any geometry registration takes place, a user **must** first make a
+/// call to RegisterAsSourceForGeometrySystem() in order to register the
+/// %MultibodyPlant as a client of a GeometrySystem instance, point at which the
+/// plant will have assigned a valid geometry::SourceId.
+/// At Finalize(), %MultibodyPlant will declare input/output ports as
+/// appropriate to communicate with the GeometrySystem instance on which
+/// registrations took place.
+///
+/// All geometry registration **must** be performed pre-finalize.
+///
+/// @section Finalize() stage
+///
+/// Once the user is done adding modeling elements and registering geometry, a
+/// call to Finalize() must be performed. This call will:
+/// - Build the underlying MultibodyTree topology, see MultibodyTree::Finalize()
+///   for details,
+/// - declare the plant's state,
+/// - declare the plant's input and output ports,
+/// - declare input and output ports for communication with a GeometrySystem.
 /// @cond
-/// TODO(amcastro-tri): In subsequent PR add doc on how to register geometry.
+/// TODO(amcastro-tri): Consider making the actual geometry registration with GS
+/// AFTER Finalize() so that we can tell if there are any bodies welded to the
+/// world to which we could just assign anchored geometry instead of dynamic
+/// geometry. This is an optimization and the API, and pre/post-finalize
+/// conditions should not change.
 /// @endcond
 ///
 /// @cond
@@ -163,8 +208,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// method **must** be called before invoking any %MultibodyPlant service to
   /// perform computations.
   /// An attempt to call any of these methods **after** a call to Finalize() on
-  /// the plant, will result on a std::runtime_error being thrown.
-  /// See Finalize() for details.
+  /// the plant, will result on an exception being thrown. See Finalize() for
+  /// details.
   /// @{
 
   /// Creates a rigid body model with the provided name and spatial inertia.
@@ -191,6 +236,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->AddRigidBody(name, M_BBo_B);
   }
 
@@ -270,6 +316,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->template AddJoint<JointType>(
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
   }
@@ -290,6 +337,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
@@ -346,7 +394,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   /// @name Retrieving multibody elements by name
   /// These methods allow a user to retrieve a reference to a multibody element
-  /// by its name. A std::logic_error is thrown if there is no element with the
+  /// by its name. An exception is thrown if there is no element with the
   /// requested name.
   /// These queries can be performed at any time during the lifetime of a
   /// %MultibodyPlant model, i.e. there is no restriction on whether they must
@@ -387,9 +435,115 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
+  /// Registers `this` plant to serve as a source for an instance of
+  /// GeometrySystem. This registration allows %MultibodyPlant to
+  /// register geometry with `geometry_system` for visualization and/or
+  /// collision queries.
+  /// Successive registration calls with GeometrySystem **must** be performed on
+  /// the same instance to which the pointer argument `geometry_system` points
+  /// to. Failure to do so will result in runtime exceptions.
+  /// @param geometry_system
+  ///   A valid non nullptr to the GeometrySystem instance for which
+  ///   `this` plant will sever as a source, see GeometrySystem documentation
+  ///   for further details.
+  /// @returns the SourceId of `this` plant in `geometry_system`. It can also
+  /// later on be retrieved with get_source_id().
+  /// @throws if called post-finalize.
+  /// @throws if `geometry_system` is the nullptr.
+  /// @throws if called more than once.
+  geometry::SourceId RegisterAsSourceForGeometrySystem(
+      geometry::GeometrySystem<T>* geometry_system);
+
+  /// Registers geometry in a GeometrySystem with a given geometry::Shape to be
+  /// used for visualization of a given `body`.
+  ///
+  /// @param[in] body
+  ///   The body for which geometry is being registered.
+  /// @param[in] X_BG
+  ///   The fixed pose of the geometry frame G in the body frame B.
+  /// @param[in] shape
+  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
+  ///   geometry::Cylinder, etc.
+  /// @param[out] geometry_system
+  ///   A valid non nullptr to a GeometrySystem on which geometry will get
+  ///   registered.
+  /// @throws if `geometry_system` is the nullptr.
+  /// @throws if called post-finalize.
+  /// @throws if `geometry_system` does not correspond to the same instance with
+  /// which RegisterAsSourceForGeometrySystem() was called.
+  // TODO(amcastro-tri): When GS supports it, provide argument to specify
+  // visual properties.
+  void RegisterVisualGeometry(
+      const Body<T>& body,
+      const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      geometry::GeometrySystem<T>* geometry_system);
+
+  /// Returns the number of geometries registered for visualization.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
+  int get_num_visual_geometries() const {
+    return static_cast<int>(geometry_id_to_visual_index_.size());
+  }
+
+  /// @name Retrieving ports for communication with a GeometrySystem.
+  /// @{
+
+  /// Returns the unique id identifying `this` plant as a source for a
+  /// GeometrySystem.
+  /// Returns `nullopt` if `this` plant did not register any geometry.
+  /// This method can be called at any time during the lifetime of `this` plant
+  /// to query if `this` plant has been registered with a GeometrySystem, either
+  /// pre- or post-finalize, see Finalize(). However, a geometry::SourceId is
+  /// only assigned once at the first call of any of this plant's geometry
+  /// registration methods, and it does not change after that.
+  /// Post-finalize calls will always return the same value.
+  optional<geometry::SourceId> get_source_id() const {
+    return source_id_;
+  }
+
+  /// Returns the output port of frame id's used to communicate poses to a
+  /// GeometrySystem.
+  /// @throws if this system was not registered with a GeometrySystem.
+  /// @throws if called pre-finalize. See Finalize().
+  const systems::OutputPort<T>& get_geometry_ids_output_port() const;
+
+  /// Returns the output port of frames' poses to communicate with a
+  /// GeometrySystem.
+  /// @throws if this system did not register geometry with a GeometrySystem.
+  /// @throws if called pre-finalize. See Finalize().
+  const systems::OutputPort<T>& get_geometry_poses_output_port() const;
+  /// @}
+
+  /// Returns `true` if `this` %MultibodyPlant was registered with a
+  /// GeometrySystem.
+  /// This method can be called at any time during the lifetime of `this` plant
+  /// to query if `this` plant has been registered with a GeometrySystem, either
+  /// pre- or post-finalize, see Finalize().
+  bool geometry_source_is_registered() const {
+    return !!source_id_;
+  }
+
+  /// If the body with `body_index` has geometry registered with it, it returns
+  /// the geometry::FrameId associated with it. Otherwise this method throws
+  /// an exception.
+  /// @throws if no geometry has been registered with the body indicated by
+  /// `body_index`.
+  /// @throws if called pre-finalize.
+  geometry::FrameId GetBodyFrameIdOrThrow(BodyIndex body_index) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    const auto it = body_index_to_frame_id_.find(body_index);
+    if (it == body_index_to_frame_id_.end()) {
+      throw std::logic_error(
+          "Body '" + model().get_body(body_index).name() +
+          "' does not have geometry registered with it.");
+    }
+    return it->second;
+  }
+
   /// Returns a constant reference to the input port for external actuation.
-  /// This input port is a vector valued port, indexed by JointActuatorIndex.
-  /// An actuator's index can be obtained with JointActuator::index().
+  /// This input port is a vector valued port, which can be set with
+  /// JointActuator::set_actuation_vector().
   /// @pre Finalize() was already called on `this` plant.
   /// @throws if called before Finalize() or if the model does not contain any
   /// actuators. See AddJointActuator() and num_actuators().
@@ -400,16 +554,22 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->world_body();
   }
 
-  const MultibodyTree<T>& model() const { return *model_; }
+  /// Returns a constant reference to the underlying MultibodyTree model for
+  /// `this` plant.
+  /// @throws if called pre-finalize. See Finalize().
+  const MultibodyTree<T>& model() const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return *model_;
+  }
 
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
   /// @see Finalize().
   bool is_finalized() const { return model_->topology_is_valid(); }
 
-  /// This method must be called after all elements in the tree (joints, bodies,
-  /// force elements, constraints, etc.) are added and before any computations
-  /// are performed.
+  /// This method must be called after all elements in the model (joints,
+  /// bodies, force elements, constraints, etc.) are added and before any
+  /// computations are performed.
   /// It essentially compiles all the necessary "topological information", i.e.
   /// how bodies, joints and, any other elements connect with each other, and
   /// performs all the required pre-processing to enable computations at a
@@ -419,14 +579,41 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// is valid, meaning that the topology is up-to-date after this call.
   /// No more multibody elements can be added after a call to Finalize().
   ///
+  /// At Finalize(), state and input/output ports for `this` plant are declared.
+  /// If `this` plant registered geometry with a GeometrySystem, input and
+  /// output ports to enable communication with that GeometrySystem are declared
+  /// as well.
+  ///
+  /// @see is_finalized().
+  ///
   /// @throws std::logic_error if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
+
+  /// Sets the state in `context` so that generalized positions and velocities
+  /// are zero.
+  /// @throws if called pre-finalize. See Finalize().
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(state != nullptr);
+    model_->SetDefaultState(context, state);
+  }
 
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U> friend class MultibodyPlant;
+
+  // Helper method for throwing an exception within public methods that should
+  // not be called post-finalize. The invoking method should pass its name so
+  // that the error message can include that detail.
+  void ThrowIfFinalized(const char* source_method) const;
+
+  // Helper method for throwing an exception within public methods that should
+  // not be called pre-finalize. The invoking method should pass it's name so
+  // that the error message can include that detail.
+  void ThrowIfNotFinalized(const char* source_method) const;
 
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
@@ -457,8 +644,93 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const;
 
+  // Helper method to register geometry for a given body, either visual or
+  // collision. The registration includes:
+  // 1. Register a frame for this body if not already done so. The body gets
+  //    associated with a FrameId.
+  // 2. Register geometry for the corresponding FrameId. This associates a
+  //    GeometryId with the body FrameId.
+  // This assumes:
+  // 1. Finalize() was not called on `this` plant.
+  // 2. RegisterAsSourceForGeometrySystem() was called on `this` plant.
+  // 3. `geometry_system` points to the same GeometrySystem instance previously
+  //    passed to RegisterAsSourceForGeometrySystem().
+  geometry::GeometryId RegisterGeometry(
+      const Body<T>& body,
+      const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      geometry::GeometrySystem<T>* geometry_system);
+
+  // Helper method to register anchored geometry to the world, either visual or
+  // collision. This associates a GeometryId with the world body.
+  // This assumes:
+  // 1. Finalize() was not called on `this` plant.
+  // 2. RegisterAsSourceForGeometrySystem() was called on `this` plant.
+  // 3. `geometry_system` points to the same GeometrySystem instance previously
+  //    passed to RegisterAsSourceForGeometrySystem().
+  geometry::GeometryId RegisterAnchoredGeometry(
+      const Isometry3<double>& X_WG, const geometry::Shape& shape,
+      geometry::GeometrySystem<T>* geometry_system);
+
+  bool body_has_registered_frame(const Body<T>& body) const {
+    return body_index_to_frame_id_.find(body.index()) !=
+        body_index_to_frame_id_.end();
+  }
+
+  // Helper method to declare output ports used by this plant to communicate
+  // with a GeometrySystem.
+  void DeclareGeometrySystemPorts();
+
+  geometry::FrameIdVector AllocateFrameIdOutput(
+      const systems::Context<T>& context) const;
+
+  void CalcFrameIdOutput(
+      const systems::Context<T>& context,
+      geometry::FrameIdVector* id_set) const;
+
+  geometry::FramePoseVector<T> AllocateFramePoseOutput(
+      const systems::Context<T>& context) const;
+
+  void CalcFramePoseOutput(const systems::Context<T>& context,
+                           geometry::FramePoseVector<T>* poses) const;
+
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
+
+  // Geometry source identifier for this system to interact with geometry
+  // system. It is made optional for plants that do not register geometry
+  // (dynamics only).
+  optional<geometry::SourceId> source_id_{nullopt};
+
+  // Frame Id's for each body in the model:
+  // Not all bodies need to be in this map.
+  // Iteraion order on this map DOES matter, and therefore we use an std::map.
+  std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
+
+  // Vector of FrameId ordered by BodyIndex. Const post-finalize.
+  // This is the output of CalcFrameIdOutput(). Poses in CalcFramePoseOutput()
+  // correspond to frame ids in the same order as arranged in ids_.
+  std::vector<geometry::FrameId> ids_;
+
+  // Map from GeometryId to BodyIndex. During contact queries, it allows to find
+  // out to which body a given geometry corresponds to.
+  std::unordered_map<geometry::GeometryId, BodyIndex>
+      geometry_id_to_body_index_;
+
+  // Maps a GeometryId with a visual index. This allows, for instance, to find
+  // out visual properties for a given geometry.
+  // TODO(amcastro-tri): verify insertions were correct once visual_index gets
+  // used with the landing of visual properties in GeometrySystem.
+  std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
+
+  // Port handles for geometry:
+  int geometry_id_port_{-1};
+  int geometry_pose_port_{-1};
+
+  // For geometry registration with a GS, we save a pointer to the GS instance
+  // on which this plants calls RegisterAsSourceForGeometrySystem(). This is
+  // ONLY (and it MUST ONLY be used) used to verify that successive registration
+  // calls are performed on the same instance of GS.
+  const geometry::GeometrySystem<T>* geometry_system_{nullptr};
 
   // Actuation input port:
   int actuation_port_{-1};
@@ -468,6 +740,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   std::unique_ptr<PositionKinematicsCache<T>> pc_;
   std::unique_ptr<VelocityKinematicsCache<T>> vc_;
 };
+
+/// @cond
+// Undef macros defined at the top of the file. From the GSG:
+// "Exporting macros from headers (i.e. defining them in a header without
+// #undefing them before the end of the header) is extremely strongly
+// discouraged."
+// This will require us to re-define them in the .cc file.
+#undef DRAKE_MBP_THROW_IF_FINALIZED
+#undef DRAKE_MBP_THROW_IF_NOT_FINALIZED
+/// @endcond
 
 }  // namespace multibody_plant
 }  // namespace multibody

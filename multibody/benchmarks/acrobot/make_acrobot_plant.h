@@ -88,6 +88,9 @@ class AcrobotParameters {
   double b1() const { return b1_; }
   double b2() const { return b2_; }
   double g() const { return g_; }
+  // Radii of the cylinders used for visualization.
+  double r1() const { return 0.05; }
+  double r2() const { return 0.05; }
 
   // getters for modeling elements' names
   const std::string& link1_name() const { return link1_name_; }
@@ -132,14 +135,16 @@ class AcrobotParameters {
 ///   Default parameters of the model set at construction. These parameters
 ///   include masses, link lengths, rotational inertias, etc. Refer to the
 ///   documentation of AcrobotParameters for further details.
-/// @param[out] geometry_system
+/// @param[in] finalize
+///   If `true`, MultibodyPlant::Finalize() gets called on the new plant.
+/// @param geometry_system
 ///   If a GeometrySystem is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeAcrobotPlant(
-    const AcrobotParameters& default_parameters,
+    const AcrobotParameters& default_parameters, bool finalize,
     geometry::GeometrySystem<double>* geometry_system = nullptr);
 
 }  // namespace acrobot

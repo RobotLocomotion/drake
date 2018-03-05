@@ -5,10 +5,32 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
+#include "drake/geometry/frame_id_vector.h"
+#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_instance.h"
 
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
+
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
+
+using geometry::FrameId;
+using geometry::FrameIdVector;
+using geometry::FramePoseVector;
+using geometry::GeometryFrame;
+using geometry::GeometryId;
+using geometry::GeometryInstance;
+using geometry::GeometrySystem;
+using systems::OutputPort;
+using systems::State;
 
 using drake::multibody::MultibodyForces;
 using drake::multibody::MultibodyTree;
@@ -35,11 +57,95 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
   model_ = other.model_->template CloneToScalar<T>();
 }
 
+template <typename T>
+geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForGeometrySystem(
+    geometry::GeometrySystem<T>* geometry_system) {
+  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(!geometry_source_is_registered());
+  source_id_ = geometry_system->RegisterSource();
+  // Save the GS pointer so that on later geometry registrations we can verify
+  // the user is making calls on the same GS instance. Only used for that
+  // purpose, it gets nullified at Finalize().
+  geometry_system_ = geometry_system;
+  return source_id_.value();
+}
+
+template<typename T>
+void MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body,
+    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    geometry::GeometrySystem<T>* geometry_system) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  if (geometry_system != geometry_system_) {
+    throw std::logic_error(
+        "Geometry registration calls must be performed on the SAME instance of "
+        "GeometrySystem used on the first call to "
+        "RegisterAsSourceForGeometrySystem()");
+  }
+  GeometryId id;
+  // TODO(amcastro-tri): Consider doing this after finalize so that we can
+  // register anchored geometry on ANY body welded to the world.
+  if (body.index() == world_index()) {
+    id = RegisterAnchoredGeometry(X_BG, shape, geometry_system);
+  } else {
+    id = RegisterGeometry(body, X_BG, shape, geometry_system);
+  }
+  const int visual_index = geometry_id_to_visual_index_.size();
+  geometry_id_to_visual_index_[id] = visual_index;
+}
+
+template<typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
+    const Body<T>& body,
+    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    geometry::GeometrySystem<T>* geometry_system) {
+  DRAKE_ASSERT(!is_finalized());
+  DRAKE_ASSERT(geometry_source_is_registered());
+  DRAKE_ASSERT(geometry_system == geometry_system_);
+  // If not already done, register a frame for this body.
+  if (!body_has_registered_frame(body)) {
+    body_index_to_frame_id_[body.index()] =
+        geometry_system->RegisterFrame(
+            source_id_.value(),
+            GeometryFrame(
+                body.name(),
+                /* Initial pose: Not really used by GS. Will get removed. */
+                Isometry3<double>::Identity()));
+  }
+
+  // Register geometry in the body frame.
+  GeometryId geometry_id = geometry_system->RegisterGeometry(
+      source_id_.value(), body_index_to_frame_id_[body.index()],
+      std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
+  geometry_id_to_body_index_[geometry_id] = body.index();
+  return geometry_id;
+}
+
+template<typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
+    const Isometry3<double>& X_WG, const geometry::Shape& shape,
+    geometry::GeometrySystem<T>* geometry_system) {
+  DRAKE_ASSERT(!is_finalized());
+  DRAKE_ASSERT(geometry_source_is_registered());
+  DRAKE_ASSERT(geometry_system == geometry_system_);
+  GeometryId geometry_id = geometry_system->RegisterAnchoredGeometry(
+      source_id_.value(),
+      std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
+  geometry_id_to_body_index_[geometry_id] = world_index();
+  return geometry_id;
+}
+
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
   model_->Finalize();
   DeclareStateAndPorts();
+  // Only declare ports to communicate with a GeometrySystem if the plant is
+  // provided with a valid source id.
+  if (source_id_) DeclareGeometrySystemPorts();
   DeclareCacheEntries();
+  geometry_system_ = nullptr;  // must not be used after Finalize().
 }
 
 template<typename T>
@@ -104,6 +210,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
+
   model_->CalcInverseDynamics(
       context, pc, vc, vdot,
       F_BBo_W_array, tau_array,
@@ -149,6 +256,92 @@ MultibodyPlant<T>::get_actuation_input_port() const {
 }
 
 template<typename T>
+void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
+  geometry_id_port_ =
+      this->DeclareAbstractOutputPort(
+          &MultibodyPlant::AllocateFrameIdOutput,
+          &MultibodyPlant::CalcFrameIdOutput).get_index();
+  geometry_pose_port_ =
+      this->DeclareAbstractOutputPort(
+          &MultibodyPlant::AllocateFramePoseOutput,
+          &MultibodyPlant::CalcFramePoseOutput).get_index();
+  // Compute once, and for all, a vector of ids to be used in CalcFrameIdOuput.
+  // ids_ does not change after it is created here.
+  // Note: the important bit here is that both, CalcFrameIdOutput() and
+  // CalcFramePoseOutput(), scan body_index_to_frame_id_ in the same order so
+  // that the ids port is consistent with the poses port.
+  for (auto it : body_index_to_frame_id_) {
+    ids_.push_back(it.second);
+  }
+}
+
+template <typename T>
+FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
+    const Context<T>&) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(source_id_ != nullopt);
+  // User must be done adding elements to the model.
+  DRAKE_DEMAND(model_->topology_is_valid());
+  return FrameIdVector(source_id_.value(), ids_);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcFrameIdOutput(
+    const Context<T>&, FrameIdVector* ids_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  // Just a sanity check.
+  DRAKE_DEMAND(source_id_ != nullopt);
+  *ids_vector = FrameIdVector(source_id_.value(), ids_);
+}
+
+template <typename T>
+FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
+    const Context<T>&) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(source_id_ != nullopt);
+  FramePoseVector<T> poses(source_id_.value());
+  // Only the pose for bodies for which geometry has been registered needs to
+  // be placed in the output.
+  const int num_bodies_with_geometry = body_index_to_frame_id_.size();
+  poses.mutable_vector().resize(num_bodies_with_geometry);
+  return poses;
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcFramePoseOutput(
+    const Context<T>& context, FramePoseVector<T>* poses) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+
+  FramePoseVector<T> new_poses(get_source_id().value());
+  std::vector<Isometry3<T>>& pose_data = new_poses.mutable_vector();
+  pose_data.resize(body_index_to_frame_id_.size());
+  // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
+  // lands.
+  int pose_index = 0;
+  for (const auto it : body_index_to_frame_id_) {
+    const BodyIndex body_index = it.first;
+    const Body<T>& body = model_->get_body(body_index);
+    pose_data[pose_index++] = pc.get_X_WB(body.node_index());
+  }
+  *poses = new_poses;
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
+const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_output_port(geometry_id_port_);
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
+const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_output_port(geometry_pose_port_);
+}
+
+template<typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   // TODO(amcastro-tri): User proper System::Declare() infrastructure to
   // declare cache entries when that lands.
@@ -171,6 +364,24 @@ const VelocityKinematicsCache<T>& MultibodyPlant<T>::EvalVelocityKinematics(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   model_->CalcVelocityKinematicsCache(context, pc, vc_.get());
   return *vc_;
+}
+
+template <typename T>
+void MultibodyPlant<T>::ThrowIfFinalized(const char* source_method) const {
+  if (is_finalized()) {
+    throw std::logic_error(
+        "Post-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; calls to this method must happen before Finalize().");
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
+  if (!is_finalized()) {
+    throw std::logic_error(
+        "Pre-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; you must call Finalize() first.");
+  }
 }
 
 }  // namespace multibody_plant
