@@ -110,13 +110,12 @@ _MAYBE_MATH_H0 = glob([_LIBF2C + "math.h0"])
 _MAYBE_F2MATH_H = [_LIBF2C + "f2math.h"] if _MAYBE_MATH_H0 else []
 
 # Copy the file only if needed.
-if _MAYBE_F2MATH_H:
-    genrule(
-        name = "math",
-        srcs = _MAYBE_MATH_H0,
-        outs = _MAYBE_F2MATH_H,
-        cmd = "cp $< $(@)",
-    )
+genrule(
+    name = "math",
+    srcs = _MAYBE_MATH_H0,
+    outs = _MAYBE_F2MATH_H,
+    cmd = "cp $< $(@)" if _MAYBE_F2MATH_H else ":",
+)
 
 filegroup(
     name = "generated_headers",
