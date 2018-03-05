@@ -14,33 +14,46 @@ namespace {
 
 // Validates preconditions enforcement on any given IVP.
 GTEST_TEST(InitialValueProblemTest, PreconditionValidation) {
-  // The initial time t₀.
+  // The initial time t₀, for IVP definition only.
   const double kInitialTime = 0.0;
-  // The initial state 𝐱₀.
+  // The initial state 𝐱₀, for IVP definition only.
   const VectorX<double> kInitialState =
       VectorX<double>::Zero(2);
-  // The default parameters 𝐤₀.
+  // The default parameters 𝐤₀, for IVP definition only.
   const VectorX<double> kDefaultParameters =
       VectorX<double>::Constant(2, 1.0);
 
-  // Instantiates an IVP for test purposes only.
+  // Instantiates a generic IVP for test purposes only,
+  // using a generic ODE d𝐱/dt = 𝐤 * 𝐱, that does not
+  // model (nor attempts to model) any physical process.
   InitialValueProblem<double> ivp(
       [](const double& t, const VectorX<double>& x,
          const VectorX<double>& k) -> VectorX<double> {
-        return k[0] * t * x + k[1] * VectorX<double>::Ones(2);
+        return k * x;
       }, kInitialTime, kInitialState, kDefaultParameters);
 
-  // Valid and invalid times to solve for.
+  // Instantiates an invalid time for testing, i.e. a time to
+  // solve for that's in the past with respect to the IVP initial
+  // time.
   const double kInvalidTime = kInitialTime - 10.0;
+  // Instantiates a valid time for testing, i.e. a time to
+  // solve for that's in the future with respect to the IVP initial
+  // time.
   const double kValidTime = kInitialTime + 10.0;
-  // Valid and invalid parameter vectors to use.
+  // Instantiates an invalid parameter vector for testing, i.e. a
+  // parameter vector of a dimension other than the expected one.
   const VectorX<double> kInvalidParameters =
       VectorX<double>::Zero(3);
+  // Instantiates a valid parameter vector for testing, i.e. a
+  // parameter vector of the expected dimension.
   const VectorX<double> kValidParameters =
       VectorX<double>::Constant(2, 5.0);
-  // Valid and invalid state vectors to advance.
+  // Instantiates an invalid state vector for testing, i.e. a
+  // state vector of a dimension other than the expected one.
   const VectorX<double> kInvalidState =
       VectorX<double>::Constant(1, 0.0);
+  // Instantiates a valid state vector for testing, i.e. a
+  // state vector of the expected dimension.
   const VectorX<double> kValidState =
       VectorX<double>::Constant(2, 1.0);
 
@@ -58,6 +71,7 @@ GTEST_TEST(InitialValueProblemTest, PreconditionValidation) {
                          kValidTime, kInvalidParameters), std::runtime_error);
 }
 
+// Parameterized fixture for testing accuracy of IVP solutions.
 class InitialValueProblemExampleTest
     : public ::testing::TestWithParam<double> {
  protected:
@@ -67,12 +81,12 @@ class InitialValueProblemExampleTest
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
-  double integration_accuracy_{};
+  double integration_accuracy_;
 };
 
-// Momentum 𝐩 of a particle with mass m travelling through
-// a gas with dynamic viscosity μ test, where d𝐩/dt = -μ * 𝐩/m
-// and 𝐩(t₀; [m, μ]) = 𝐩₀.
+// Accuracy test of the solution for the momentum 𝐩 of a particle
+// with mass m travelling through a gas with dynamic viscosity μ,
+// where d𝐩/dt = -μ * 𝐩/m and 𝐩(t₀; [m, μ]) = 𝐩₀.
 TEST_P(InitialValueProblemExampleTest, ParticleInAGasMomentum) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
@@ -118,6 +132,9 @@ TEST_P(InitialValueProblemExampleTest, ParticleInAGasMomentum) {
       for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
         const VectorX<double> approximate_solution =
             particle_momentum_ivp.Solve(t, k);
+        // Tests are performed against the closed form
+        // solution for the IVP described above, which is
+        // 𝐩(t; [μ, m]) = 𝐩₀ * e^(-μ * (t - t₀) / m).
         const double& px = approximate_solution[0];
         const double& px0 = kInitialParticleMomentum[0];
         EXPECT_NEAR(px, px0 * std::exp(-mu * (t - t0) / m),
@@ -150,10 +167,10 @@ TEST_P(InitialValueProblemExampleTest, ParticleInAGasMomentum) {
   }
 }
 
-// Velocity 𝐯 of a particle with mass m travelling through
-// a gas with dynamic viscosity μ and being pushed by time
-// varying force 𝐅(t) test, where d𝐯/dt = (𝐅(t) - μ * 𝐯) / m
-// and 𝐯(t₀; [m, μ]) = 𝐯₀.
+// Accuracy test of the solution for the velocity 𝐯 of a particle
+// with mass m travelling through a gas with dynamic viscosity μ
+// and being pushed by time varying force 𝐅(t), where
+// d𝐯/dt = (𝐅(t) - μ * 𝐯) / m and 𝐯(t₀; [m, μ]) = 𝐯₀.
 TEST_P(InitialValueProblemExampleTest, ParticleInAGasForcedVelocity) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
@@ -205,6 +222,11 @@ TEST_P(InitialValueProblemExampleTest, ParticleInAGasForcedVelocity) {
             particle_velocity_ivp.Solve(t, k);
         const double& vx = approximate_solution[0];
         const double& vx0 = kInitialParticleVelocity[0];
+        // Tests are performed against the closed form
+        // solution for the IVP described above, which is
+        // 𝐯(t; [μ, m]) = 𝐯₀ * e^(-μ * (t - t₀) / m) +
+        //                𝐅 / μ * (1 - e^(-μ * (t - t₀) / m)).
+        // with 𝐅 = (0., 1., 0.).
         EXPECT_NEAR(vx, vx0 * std::exp(-mu * (t - t0) / m),
                     integration_accuracy_)
             << "Failure solving d𝐯x/dt = -μ * 𝐯x / m"

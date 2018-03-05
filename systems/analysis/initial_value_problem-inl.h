@@ -13,10 +13,10 @@
 namespace drake {
 namespace systems {
 
-/// A LeafSystem subclass used to describe general parameterized ODE systems
+/// A LeafSystem subclass used to describe parameterized ODE systems
 /// i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ. The
-/// vector variable 𝐱 becomes system state that is evolved through time t by
-/// the function f, in turn parameterized by a vector 𝐤.
+/// vector variable 𝐱 corresponds to the system state that is evolved through
+/// time t by the function f, which is in turn parameterized by a vector 𝐤.
 ///
 /// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
@@ -27,7 +27,7 @@ class AnySystem : public LeafSystem<T> {
   typedef typename InitialValueProblem<T>::ODEFunction SystemFunction;
 
   /// Constructs a system that will use the given @p system_function,
-  /// with aramparameterized as described by the @p param_model, to compute the
+  /// parameterized as described by the @p param_model, to compute the
   /// derivatives and advance the @p state_model.
   ///
   /// @remarks Here, the 'model' term has been borrowed from LeafSystem
@@ -67,17 +67,26 @@ AnySystem<T>::AnySystem(
 template <typename T>
 void AnySystem<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
-  // Retrieves state and parameter vectors.
-  const VectorBase<T>& state_vector =
-      context.get_continuous_state_vector();
+  // Retrieves the state vector. This cast is safe because the
+  // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
+  // a BasicVector<T>, and the implementation deals with LeafSystem<T>
+  // instances only by design.
+  const BasicVector<T>& state_vector = dynamic_cast<const BasicVector<T>&>(
+          context.get_continuous_state_vector());
+  // Retrieves the parameter vector.
   const BasicVector<T>& parameter_vector =
       context.get_numeric_parameter(0);
+
+  // Retrieves the derivatives vector. This cast is safe because the
+  // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
+  // a BasicVector<T>, and the implementation deals with LeafSystem<T>
+  // instances only by design.
+  BasicVector<T>& derivatives_vector =
+      dynamic_cast<BasicVector<T>&>(derivatives->get_mutable_vector());
   // Computes the derivatives vector using the given system function
   // for the given time and state and with the given parameterization.
-  VectorBase<T>& derivatives_vector =
-      derivatives->get_mutable_vector();
-  derivatives_vector.SetFromVector(system_function_(
-      context.get_time(), state_vector.CopyToVector(),
+  derivatives_vector.set_value(system_function_(
+      context.get_time(), state_vector.get_value(),
       parameter_vector.get_value()));
 }
 
@@ -127,20 +136,23 @@ VectorX<T> InitialValueProblem<T>::Solve(
       || parameters != current_parameters_
       || time < context_->get_time()) {
     // Allocates a new integration context.
-    std::unique_ptr<Context<T>> context =
+    std::unique_ptr<Context<T>> newly_allocated_context =
         system_->CreateDefaultContext();
 
     // Sets context (initial) time.
-    context->set_time(initial_time);
+    newly_allocated_context->set_time(initial_time);
 
-    // Sets context (initial) state.
-    VectorBase<T>& state_vector =
-        context->get_mutable_continuous_state_vector();
-    state_vector.SetFromVector(initial_state);
+    // Sets context (initial) state. This cast is safe because the
+    // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
+    // a BasicVector<T>, and the implementation deals with LeafSystem<T>
+    // instances only by design.
+    BasicVector<T>& state_vector = dynamic_cast<BasicVector<T>&>(
+        newly_allocated_context->get_mutable_continuous_state_vector());
+    state_vector.set_value(initial_state);
 
     // Sets context parameters.
     BasicVector<T>& parameter_vector =
-        context->get_mutable_numeric_parameter(0);
+        newly_allocated_context->get_mutable_numeric_parameter(0);
     parameter_vector.set_value(parameters);
 
     // Keeps track of current step size and accuracy settings.
@@ -150,7 +162,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
 
     // Resets the integrator internal state and context.
     integrator_->Reset();
-    integrator_->reset_context(context.get());
+    integrator_->reset_context(newly_allocated_context.get());
 
     // Reinitializes the integrator internal state and settings.
     integrator_->request_initial_step_size_target(initial_step_size);
@@ -165,7 +177,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
     current_parameters_ = parameters;
 
     // Takes ownership of the integration context.
-    context_ = std::move(context);
+    context_ = std::move(newly_allocated_context);
   }
 
   // Integrates up to the requested time.
@@ -180,7 +192,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
 
 template <typename T>
 template <typename I>
-IntegratorBase<T>* InitialValueProblem<T>::reset_integrator() {
+I* InitialValueProblem<T>::reset_integrator() {
   integrator_ = std::make_unique<I>(*system_);
   return static_cast<I*>(integrator_.get());
 }

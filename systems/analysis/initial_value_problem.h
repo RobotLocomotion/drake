@@ -13,14 +13,20 @@ namespace drake {
 namespace systems {
 
 /// A general initial value problem (or IVP) representation class, that allows
-/// for the evaluation of the 𝐱(t; 𝐤) solution function to the given ODE
+/// evaluating the 𝐱(t; 𝐤) solution function to the given ODE
 /// d𝐱/dt = f(t, 𝐱; 𝐤), where f : t ⨯ 𝐱 → ℝⁿ, t ∈ ℝ, 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ, provided an
 /// initial condition 𝐱(t₀; 𝐤) = 𝐱₀. The parameter vector 𝐤 allows for generic
-/// IVP definitions, particularized on evaluation.
+/// IVP definitions, which can later be solved for any instance of said vector.
+///
+/// Additionally, this class' current implementation performs basic computation
+/// caching, optimizing away repeated integration whenever the IVP is solved for
+/// increasing values of time t while both initial conditions and parameters are
+/// kept constant, e.g. if solved for t₁ > t₀ first, solving for t₂ > t₁ will
+/// only require integrating from t₁ on.
 ///
 /// For further insight into its use, consider the following examples:
 ///
-/// - The momentum 𝐩 of a particle of mass m that is travelling through a
+/// - The momentum 𝐩 of a particle of mass m that is traveling through a
 ///   volume of a gas with dynamic viscosity μ can be described by
 ///   d𝐩/dt = -μ * 𝐩/m. At time t₀, the particle carries an initial momentum
 ///   𝐩₀. In this context, t is unused (the ODE is autonomous), 𝐱 ≜ 𝐩,
@@ -72,78 +78,78 @@ class InitialValueProblem {
                       const VectorX<T>& default_initial_state,
                       const VectorX<T>& default_parameters);
 
-  /// Solves the IVP for the given time @p t , using default parameters vector
+  /// Solves the IVP for the given time @p t, using default parameters vector
   /// 𝐤₀ and default initial conditions (t₀, 𝐱₀).
   ///
   /// @param t The time t to solve the IVP for.
-  /// @return The IVP solution 𝐱(@p t ; 𝐤₀) for 𝐱(t₀ ; 𝐤₀) = 𝐱₀.
+  /// @return The IVP solution 𝐱(@p t; 𝐤₀) for 𝐱(t₀; 𝐤₀) = 𝐱₀.
   /// @pre The time @p t must be larger than or equal to the initial time t₀
   ///      given on construction.
-  /// @warning This method will abort if preconditions are not met.
+  /// @throw std::runtime_error If preconditions are not met.
   inline VectorX<T> Solve(const T& t) const {
     return this->Solve(default_initial_time_, t);
   }
 
-  /// Solves the IVP for the given time @p t , starting at the given initial
-  /// time @p t0 , and using default parameters vector 𝐤₀ and default initial
+  /// Solves the IVP for the given time @p t, starting at the given initial
+  /// time @p t0, and using default parameters vector 𝐤₀ and default initial
   /// state vector 𝐱₀.
   ///
   /// @param t0 The initial time for the IVP.
   /// @param t The time to solve the IVP for.
-  /// @return The IVP solution 𝐱(@p t ; 𝐤₀) for 𝐱(@p t0 ; 𝐤₀) = 𝐱₀.
+  /// @return The IVP solution 𝐱(@p t; 𝐤₀) for 𝐱(@p t0; 𝐤₀) = 𝐱₀.
   /// @pre The time @p t must be larger than or equal to the initial time
-  ///      @p t0 .
-  /// @warning This method will abort if preconditions are not met.
+  ///      @p t0.
+  /// @throw std::runtime_error If preconditions are not met.
   inline VectorX<T> Solve(const T& t0, const T& t) const {
     return this->Solve(t0, t, default_parameters_);
   }
 
   /// Solves the IVP for the given time @p t with default initial conditions
-  /// (t₀, 𝐱₀) and using the given parameters vector @p k .
+  /// (t₀, 𝐱₀) and using the given parameters vector @p k.
   ///
   /// @param t The time to solve the IVP for.
   /// @param k The parameters vector for the IVP.
-  /// @return The IVP solution 𝐱(@p t ; @p k ) for 𝐱(t₀; @p k ) = 𝐱₀.
+  /// @return The IVP solution 𝐱(@p t; @p k ) for 𝐱(t₀; @p k) = 𝐱₀.
   /// @pre The time @p t must be larger than or equal to the initial time t₀
   ///      given on construction.
   /// @pre The dimension of the given parameters vector @p k must match that
   ///      of the default parameters vector 𝐤₀ given on construction.
-  /// @warning This method will abort if preconditions are not met.
+  /// @throw std::runtime_error If preconditions are not met.
   inline VectorX<T> Solve(const T& t, const VectorX<T>& k) const {
     return this->Solve(default_initial_time_, t, k);
   }
 
   /// Solves the IVP starting at time @p t0 with default initial state vector
-  /// 𝐱₀ for the given time @p t and using the given parameters @p k .
+  /// 𝐱₀ for the given time @p t and using the given parameters @p k.
   ///
   /// @param t0 The initial time for the IVP.
   /// @param t The time to solve the IVP for.
   /// @param k The parameters vector for the IVP.
-  /// @return The IVP solution 𝐱(@p t ; @p k ) for 𝐱(@p t0 ; @p k ) = 𝐱₀.
+  /// @return The IVP solution 𝐱(@p t; @p k) for 𝐱(@p t0; @p k) = 𝐱₀.
   /// @pre The time @p t must be larger than or equal to the initial time
-  ///      @p t0 .
+  ///      @p t0.
   /// @pre The dimension of the given parameters vector @p k must match that
   ///      of the default parameters vector 𝐤₀ given on construction.
-  /// @warning This method will abort if preconditions are not met.
+  /// @throw std::runtime_error If preconditions are not met.
   inline VectorX<T> Solve(const T& t0, const T& t,
                           const VectorX<T>& k) const {
     return this->Solve(t0, default_initial_state_, t, k);
   }
 
   /// Solves the IVP starting at time @p t0 with default initial state @p x0
-  /// for the given time @p t , using the given parameters @p k .
+  /// for the given time @p t , using the given parameters @p k.
   ///
   /// @param t0 The initial time for the IVP.
   /// @param t The time to solve the IVP for.
   /// @param x0 The initial state vector of the IVP.
   /// @param k The parameter vector for the IVP.
-  /// @return The IVP solution 𝐱(@p t ; @p k ) for 𝐱(@p t0 ; @p k ) = @p x0 .
+  /// @return The IVP solution 𝐱(@p t; @p k) for 𝐱(@p t0; @p k) = @p x0.
   /// @pre The time @p t must be larger than or equal to the initial time @p t0.
   /// @pre The dimension of the given initial state @p x0 must match that of the
   ///      default initial state vector 𝐱₀ given on construction.
   /// @pre The dimension of the given parameters vector @p k must match that
   ///      of the default parameters vector 𝐤₀ given on construction.
-  /// @warning This method will abort if preconditions are not met.
+  /// @throw std::runtime_error If preconditions are not met.
   VectorX<T> Solve(const T& t0, const VectorX<T>& x0,
                    const T& t, const VectorX<T>& k) const;
 
@@ -151,7 +157,7 @@ class InitialValueProblem {
   /// @return The new integrator instance.
   /// @tparam I The integrator type, which must be an IntegratorBase subclass.
   template <typename I>
-  IntegratorBase<T>* reset_integrator();
+  I* reset_integrator();
 
   inline const IntegratorBase<T>* get_integrator() const {
     return integrator_.get();
@@ -168,6 +174,18 @@ class InitialValueProblem {
   const VectorX<T> default_initial_state_;
   // IVP default parameters 𝐤₀.
   const VectorX<T> default_parameters_;
+
+  // @name Caching support
+  //
+  // In order to provide basic computation caching, both cache
+  // initialization and cache invalidation must occur on IVP
+  // solution evaluation. The mutability of the cached results
+  // (and the conditions that must hold for them to be valid)
+  // is thus needed to express the fact that neither computation
+  // results nor IVP definition are affected by its modification,
+  // which is solely the chosen mechanism to propagate them from
+  // one call to the next.
+
   // IVP current initial time tᵢ (for caching).
   mutable T current_initial_time_;
   // IVP current initial state xᵢ (for caching).
@@ -176,6 +194,7 @@ class InitialValueProblem {
   mutable VectorX<T> current_parameters_;
   // IVP ODE solver integration context (for caching).
   mutable std::unique_ptr<Context<T>> context_;
+
   // IVP system representation used for ODE solving.
   std::unique_ptr<System<T>> system_;
   // Numerical integrator used for IVP ODE solving.
