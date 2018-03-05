@@ -61,7 +61,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForGeometrySystem(
     geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_THROW_UNLESS(geometry_system != nullptr);
   DRAKE_THROW_UNLESS(!geometry_source_is_registered());
-  source_id_ = geometry_system->RegisterSource("MultibodyPlant");
+  source_id_ = geometry_system->RegisterSource();
   // Save the GS pointer so that on later geometry registrations we can verify
   // the user is making calls on the same GS instance. Only used for that
   // purpose, it gests nullified at Finalize().
