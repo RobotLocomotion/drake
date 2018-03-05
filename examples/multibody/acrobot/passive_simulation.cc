@@ -82,6 +82,14 @@ int do_main() {
       acrobot.GetJointByName<RevoluteJoint>(
           acrobot_parameters.elbow_joint_name());
 
+  // A constant source for a zero applied torque at the elbow joint.
+  double applied_torque(0.0);
+  auto torque_source =
+      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
+  torque_source->set_name("Applied Torque");
+  builder.Connect(torque_source->get_output_port(),
+                  acrobot.get_actuation_input_port());
+
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
   DrakeLcm lcm;
