@@ -572,7 +572,7 @@ class MathematicalProgram {
   template <int rows>
   MatrixDecisionVariable<rows, rows> NewSymmetricContinuousVariables(
       const std::string& name = "Symmetric") {
-    std::array<std::string, rows*(rows + 1) / 2> names;
+    typename NewSymmetricVariableNames<rows>::type names;
     int var_count = 0;
     for (int j = 0; j < static_cast<int>(rows); ++j) {
       for (int i = j; i < static_cast<int>(rows); ++i) {
@@ -1890,8 +1890,8 @@ class MathematicalProgram {
     DRAKE_ASSERT(e == e.transpose());
     const int e_rows = Derived::RowsAtCompileTime;
     MatrixDecisionVariable<e_rows, e_rows> M{};
-    if (Derived::RowsAtCompileTime == Eigen::Dynamic) {
-      M = NewSymmetricContinuousVariables(e_rows);
+    if (e_rows == Eigen::Dynamic) {
+      M = NewSymmetricContinuousVariables(e.rows());
     } else {
       M = NewSymmetricContinuousVariables<e_rows>();
     }
