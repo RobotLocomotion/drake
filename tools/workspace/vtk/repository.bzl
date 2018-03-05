@@ -420,8 +420,10 @@ def _impl(repository_ctx):
         hdrs = [
             "vtkImageExport.h",
             "vtkImageReader2.h",
+            "vtkImageWriter.h",
             "vtkIOImageModule.h",
             "vtkPNGReader.h",
+            "vtkPNGWriter.h",
         ],
         deps = [
             ":vtkCommonCore",
