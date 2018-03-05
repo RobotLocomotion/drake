@@ -483,7 +483,12 @@ PYBIND11_MODULE(_symbolic_py, m) {
              return oss.str();
            })
       .def("__pow__",
-           [](const Polynomial& self, const int n) { return pow(self, n); });
+           [](const Polynomial& self, const int n) { return pow(self, n); })
+      .def("Jacobian", [](const Polynomial& p,
+                          const Eigen::Ref<const VectorX<Variable>>& vars) {
+        return p.Jacobian(vars);
+      });
+
   py::implicitly_convertible<double, drake::symbolic::Expression>();
   py::implicitly_convertible<drake::symbolic::Variable,
                              drake::symbolic::Expression>();
