@@ -10,6 +10,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+// Parameterized fixture for testing accuracy of scalar IVP solutions.
 class ScalarInitialValueProblemExampleTest
     : public ::testing::TestWithParam<double> {
  protected:
@@ -19,12 +20,12 @@ class ScalarInitialValueProblemExampleTest
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
-  double integration_accuracy_{};
+  double integration_accuracy_;
 };
 
-// Stored charge in an RC series circuit excited by an arbitrary
-// voltage source test, where dQ/dt = (E(t) - Q / Cs) / Rs and
-// Q(t₀; [Rs, Cs]) = Q₀.
+// Accuracy test of the solution for the stored charge Q in an RC
+// series circuit excited by a sinusoidal voltage source E(t),
+// where dQ/dt = (E(t) - Q / Cs) / Rs and Q(t₀; [Rs, Cs]) = Q₀.
 TEST_P(ScalarInitialValueProblemExampleTest, StoredCharge) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
@@ -70,7 +71,11 @@ TEST_P(ScalarInitialValueProblemExampleTest, StoredCharge) {
       const double tau = r * c;
       const double tau_sq = tau * tau;
       for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
-        // Exact solution worked out using Laplace transform.
+        // Tests are performed against the closed form
+        // solution for the scalar IVP described above, which is
+        // Q(t; [Rs, Cs]) = 1/Rs * (τ²/ (1 + τ²) * e^(-t / τ) +
+        //                  τ / √(1 + τ²) * sin(t - arctan(τ)))
+        // where τ = Rs * Cs for zero initial conditions.
         const double exact_solution = (
             tau_sq / (1. + tau_sq) * std::exp(-t / tau)
             + tau / std::sqrt(1. + tau_sq)
@@ -87,8 +92,8 @@ TEST_P(ScalarInitialValueProblemExampleTest, StoredCharge) {
   }
 }
 
-// Population exponential growth problem test,
-// where dN/dt = r * N and N(t₀; r) = N₀.
+// Accuracy test of the solution for population growth N, described
+// by dN/dt = r * N and N(t₀; r) = N₀.
 TEST_P(ScalarInitialValueProblemExampleTest, PopulationGrowth) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
@@ -122,6 +127,9 @@ TEST_P(ScalarInitialValueProblemExampleTest, PopulationGrowth) {
        r += kMalthusParamStep) {
     const VectorX<double> k = VectorX<double>::Constant(1, r);
     for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
+      // Tests are performed against the closed form
+      // solution for the IVP described above, which is
+      // N(t; [r]) = N₀ * e^(r * t).
       const double exact_solution = kInitialPopulation * std::exp(r * t);
       EXPECT_NEAR(population_growth_ivp.Solve(t, k), exact_solution,
                   integration_accuracy_)

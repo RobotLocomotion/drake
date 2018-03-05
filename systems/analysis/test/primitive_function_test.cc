@@ -19,10 +19,10 @@ class PrimitiveFunctionTest : public ::testing::TestWithParam<double> {
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
-  double integration_accuracy_{};
+  double integration_accuracy_;
 };
 
-// Numerical integration test for ∫xⁿ dx + C = (n + 1)⁻¹ xⁿ⁺¹,
+// Accuracy test for the numerical integration of ∫xⁿ dx,
 // parameterized in its order n.
 TEST_P(PrimitiveFunctionTest, NthPowerMonomialTestCase) {
   // The order n of the monomial.
@@ -51,6 +51,8 @@ TEST_P(PrimitiveFunctionTest, NthPowerMonomialTestCase) {
         1, static_cast<double>(n));
     for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
          x += kArgStep) {
+      // Tests are performed against the closed form solution of
+      // the integral, which is (n + 1)⁻¹ xⁿ⁺¹.
       const double exact_solution = std::pow(x, n + 1.) / (n + 1.);
       EXPECT_NEAR(primitive_function.Evaluate(x, k), exact_solution,
                   integration_accuracy_)
@@ -60,7 +62,7 @@ TEST_P(PrimitiveFunctionTest, NthPowerMonomialTestCase) {
   }
 }
 
-// Numerical integration test for ∫ tanh(a⋅x) dx + C = a⁻¹ ln(cosh(a⋅x)),
+// Accuracy test for the numerical integration of ∫ tanh(a⋅x) dx,
 // parameterized in its factor a.
 TEST_P(PrimitiveFunctionTest, HyperbolicTangentTestCase) {
   // The factor a in the tangent.
@@ -90,6 +92,8 @@ TEST_P(PrimitiveFunctionTest, HyperbolicTangentTestCase) {
     const VectorX<double> k = VectorX<double>::Constant(1, a);
 
     for (double x = kArgIntervalLBound; x < kArgIntervalUBound; x += kArgStep) {
+      // Tests are performed against the closed form solution of
+      // the integral, which is a⁻¹ ln(cosh(a⋅x)).
       const double exact_solution = std::log(std::cosh(a * x)) / a;
       EXPECT_NEAR(primitive_function.Evaluate(x, k), exact_solution,
                   integration_accuracy_)
@@ -99,9 +103,8 @@ TEST_P(PrimitiveFunctionTest, HyperbolicTangentTestCase) {
   }
 }
 
-// Numerical integration test for ∫ [(x + a)⋅(x + b)]⁻¹ dx =
-// (b - a)⁻¹ ln [(x + a) / (x + b)], parameterized in its denominator
-// roots (or function poles) a and b.
+// Accuracy test for the numerical integration of ∫ [(x + a)⋅(x + b)]⁻¹ dx,
+// parameterized in its denominator roots (or function poles) a and b.
 TEST_P(PrimitiveFunctionTest, SecondOrderRationalFunctionTestCase) {
   // The denominator roots a and b.
   const VectorX<double> kDefaultParameters = VectorX<double>::Zero(2);
@@ -135,6 +138,8 @@ TEST_P(PrimitiveFunctionTest, SecondOrderRationalFunctionTestCase) {
       const VectorX<double> k = (VectorX<double>(2) << a, b).finished();
       for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
            x += kArgStep) {
+        // Tests are performed against the closed form solution of
+        // the integral, which is (b - a)⁻¹ ln [(x + a) / (x + b)].
         const double exact_solution =
             std::log((b / a) * ((x + a) / (x + b))) / (b - a);
         EXPECT_NEAR(primitive_function.Evaluate(x, k), exact_solution,
@@ -147,7 +152,7 @@ TEST_P(PrimitiveFunctionTest, SecondOrderRationalFunctionTestCase) {
   }
 }
 
-// Numerical integration test for ∫ x eⁿˣ dx = (x/n - 1/n^2) * e^(n*x),
+// Accuracy test for the numerical integration of ∫ x eⁿˣ dx,
 // parameterized in its exponent factor n.
 TEST_P(PrimitiveFunctionTest, ExponentialFunctionTestCase) {
   // The exponent factor n.
@@ -177,6 +182,8 @@ TEST_P(PrimitiveFunctionTest, ExponentialFunctionTestCase) {
     const VectorX<double> k = VectorX<double>::Constant(1, n);
     for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
          x += kArgStep) {
+      // Tests are performed against the closed form solution of
+      // the integral, which is (x/n - 1/n^2) * e^(n*x).
       const double exact_solution =
           (x / n - 1. / (n * n)) * std::exp(n * x) + 1. / (n * n);
       EXPECT_NEAR(primitive_function.Evaluate(x, k), exact_solution,
@@ -187,8 +194,8 @@ TEST_P(PrimitiveFunctionTest, ExponentialFunctionTestCase) {
   }
 }
 
-// Numerical integration test for ∫ x⋅sin(a⋅x) dx =
-// -x⋅cos(a⋅x)/a + sin(a⋅x) / a² , parameterized in its factor a.
+// Accuracy test for the numerical integration of ∫ x⋅sin(a⋅x) dx,
+// parameterized in its factor a.
 TEST_P(PrimitiveFunctionTest, TrigonometricFunctionTestCase) {
   // The factor a in the sine.
   const VectorX<double> kDefaultParameters =
@@ -218,6 +225,8 @@ TEST_P(PrimitiveFunctionTest, TrigonometricFunctionTestCase) {
 
     for (double x = kArgIntervalLBound; x <= kArgIntervalUBound;
          x += kArgStep) {
+      // Tests are performed against the closed form solution of
+      // the integral, which is -x⋅cos(a⋅x)/a + sin(a⋅x) / a².
       const double exact_solution =
           -x * std::cos(a * x) / a + std::sin(a * x) / (a * a);
       EXPECT_NEAR(primitive_function.Evaluate(x, k), exact_solution,
