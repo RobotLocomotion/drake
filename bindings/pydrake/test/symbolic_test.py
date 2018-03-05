@@ -160,6 +160,21 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
                          "(if (x > y) then x else y)")
 
+    def test_jacobian(self):
+        # Jacobian([x * cos(y), x * sin(y), x ** 2], [x, y]) returns
+        # the following 3x2 matrix:
+        #
+        #  = |cos(y)   -x * sin(y)|
+        #    |sin(y)    x * cos(y)|
+        #    | 2 * x             0|
+        J = sym.Jacobian([x * sym.cos(y), x * sym.sin(y), x ** 2], [x, y])
+        self.assertEqual(J[0, 0], sym.cos(y))
+        self.assertEqual(J[1, 0], sym.sin(y))
+        self.assertEqual(J[2, 0], 2 * x)
+        self.assertEqual(J[0, 1], - x * sym.sin(y))
+        self.assertEqual(J[1, 1], x * sym.cos(y))
+        self.assertEqual(J[2, 1], 0)
+
 
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
