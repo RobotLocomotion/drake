@@ -6,10 +6,10 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/multibody/multibody_tree/math/rotation_matrix.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
-namespace multibody {
+namespace math {
 
 /// This class represents a rigid transform between two frames, which can be
 /// regarded in two ways.  It can be regarded as a distance-preserving linear
@@ -262,5 +262,5 @@ class Transform {
   Vector3<T> p_AoBo_A_;
 };
 
-}  // namespace multibody
+}  // namespace math
 }  // namespace drake
