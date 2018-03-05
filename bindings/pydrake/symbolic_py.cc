@@ -385,6 +385,11 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("floor", &symbolic::floor)
       .def("if_then_else", &symbolic::if_then_else);
 
+  m.def("Jacobian", [](const Eigen::Ref<const VectorX<Expression>>& f,
+                       const Eigen::Ref<const VectorX<Variable>>& vars) {
+    return Jacobian(f, vars);
+  });
+
   py::class_<Formula>(m, "Formula").def("__repr__", &Formula::to_string);
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
