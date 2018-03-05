@@ -205,6 +205,45 @@ hurt).
 
 \section cfg_impl The Implementation
 
+Collision filter groups are instantiated by specifying them in URDF files as
+follows:
+
+```xml
+    <collision_filter_group name="group1">
+        <member link="body1"/>
+        <member link="body2"/>
+        <ignored_collision_filter_group collision_filter_group="group2"/>
+        <ignored_collision_filter_group collision_filter_group="group3"/>
+    </collision_filter_group>
+```
+
+This XML-snippet illustrates the syntax for declaring a collision filter group.
+It declares a collision filter group named `group1`. It has
+two members, `body1` and `body2` (although it could have any number of links).
+This is short-hand for communicating that the _collision elements_ of `body1`
+and `body2` belong to `group1`. Furthermore, `group1` ignores two groups:
+`group2` and `group3`.  It is not considered an error to ignore a non-existing
+group, but it is considered an error to reference a link that hasn't been
+defined.
+
+One possible use of collision filter groups is to create a set of collision
+elements which _cannot_ collide with each other (i.e., no self-collisions in
+the group). This is achieved by having the group ignore _itself_. E.g.,
+
+```xml
+    <collision_filter_group name="no_self_collision_group">
+        <member link="body1"/>
+        <member link="body2"/>
+        <ignored_collision_filter_group collision_filter_group="no_self_collision_group"/>
+    </collision_filter_group>
+```
+
+@note Beyond instantiating the collision filter groups from parsing a URDF/SDF
+file, there is currently no interface for programmatically altering group
+membership or ignore relationships.
+
+\subsection cfg_impl_code In-code representation
+
 Collision filter groups are implemented as a pair of fixed-width bitmasks,
 stored with each collision element. Each
 collision filter group corresponds to a single bit.  One bitmask represents the
@@ -224,34 +263,9 @@ has its _own_ space of collision filter group identifiers.
  World. Each source of collision elements will get its own space of filters.
  Sources will need to be differentiated. -->
 
-Collision filter groups are instantiated by specifying them in URDF files as
-follows:
-
-<pre>
-    <collision_filter_group name="group1">
-        <member link="body1"/>
-        <member link="body2"/>
-        <ignored_collision_filter_group collision_filter_group="group2"/>
-        <ignored_collision_filter_group collision_filter_group="group3"/>
-    </collision_filter_group>
-</pre>
-
-This XML-snippet illustrates the syntax for declaring a collision filter group.
-It declares a collision filter group named `group1`. It has
-two members, `body1` and `body2` (although it could have any number of links).
-This is short-hand for communicating that the _collision elements_ of `body1`
-and `body2` belong to `group1`. Furthermore, `group1` ignores two groups:
-`group2` and `group3`.  It is not considered an error to ignore a non-existing
-group, but it is considered an error to reference a link that hasn't been
-defined.
-
 By default, all elements belong to a common, universal group which corresponds
 to bit zero. A collision element can be rendered "invisible" by assigning it
 to a group that ignores this universal group.
-
-@note Beyond instantiating the collision filter groups from parsing a URDF
-file, there is currently no interface for programmatically altering group
-membership or ignore relationships.
 
 Next topic: @ref collision_filter_mapping
 **/
@@ -327,7 +341,7 @@ definitions of groups in a URDF file.  In this case, we'll deal with a
 theoretical file with two groups (assuming all bodies/links have been
 properly defined prior to this XML snippet).
 
-<pre>
+```xml
     <collision_filter_group name="groupA">
         <member link="body1"/>
         <member link="body2"/>
@@ -338,7 +352,7 @@ properly defined prior to this XML snippet).
         <member link="body4"/>
         <ignored_collision_filter_group collision_filter_group="groupA"/>
     </collision_filter_group>
-</pre>
+```
 
 The filtering implications of these groups is that we filter collisions between
 all the collision elements of the bodies (1, 3), (1, 4), (2, 3), and (2, 4)
