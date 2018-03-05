@@ -263,7 +263,8 @@ struct JointActuatorTopology {
       JointActuatorIndex joint_actuator_index,
       int start_index, int ndofs) :
       index(joint_actuator_index),
-      actuator_index_start(start_index), num_dofs(ndofs) {}
+      actuator_index_start(start_index),
+      num_dofs(ndofs) {}
 
   /// Returns `true` if all members of `this` topology are exactly equal to the
   /// members of `other`.

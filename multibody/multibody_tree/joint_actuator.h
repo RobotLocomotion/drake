@@ -85,7 +85,7 @@ class JointActuator final
       MultibodyForces<T>* forces) const;
 
   /// Given the actuation values u for `this` actuator, this method sets the
-  /// actuation vector `mbt_u` for the entire %MultibodyTree model to which this
+  /// actuation vector u for the entire %MultibodyTree model to which this
   /// actuator belongs to.
   /// @param[in] u_a
   ///   Actuation values for `this` actuator. It must be of size equal to the
