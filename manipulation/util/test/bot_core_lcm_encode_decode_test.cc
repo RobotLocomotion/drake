@@ -1,6 +1,4 @@
-/* clang-format off to disable clang-format-includes */
-#include "drake/util/lcmUtil.h"
-/* clang-format on */
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 
 #include <gtest/gtest.h>
 

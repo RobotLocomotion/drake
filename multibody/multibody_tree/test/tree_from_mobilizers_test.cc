@@ -126,7 +126,7 @@ class PendulumTests : public ::testing::Test {
     model_ = std::make_unique<MultibodyTree<double>>();
 
     // Retrieves the world body.
-    world_body_ = &model_->get_world_body();
+    world_body_ = &model_->world_body();
   }
 
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
@@ -161,7 +161,7 @@ class PendulumTests : public ::testing::Test {
     // The shoulder is the mobilizer that connects the world to the upper link.
     // Its inboard frame, Si, is the world frame. Its outboard frame, So, a
     // fixed offset frame on the upper link.
-    shoulder_inboard_frame_ = &model_->get_world_frame();
+    shoulder_inboard_frame_ = &model_->world_frame();
 
     // The body frame of the upper link is U, and that of the lower link is L.
     // We will add a frame for the pendulum's shoulder. This will be the
@@ -172,7 +172,7 @@ class PendulumTests : public ::testing::Test {
     // upper_link.
     shoulder_outboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(
-            upper_link_->get_body_frame(), X_USo_);
+            upper_link_->body_frame(), X_USo_);
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -205,14 +205,14 @@ class PendulumTests : public ::testing::Test {
         *upper_link_, X_UEi_, /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
         Vector3d::UnitZ()     /* revolute axis */);
-    elbow_inboard_frame_ = &elbow_joint_->get_frame_on_parent();
-    elbow_outboard_frame_ = &elbow_joint_->get_frame_on_child();
-    EXPECT_EQ(elbow_joint_->get_name(), "ElbowJoint");
+    elbow_inboard_frame_ = &elbow_joint_->frame_on_parent();
+    elbow_outboard_frame_ = &elbow_joint_->frame_on_child();
+    EXPECT_EQ(elbow_joint_->name(), "ElbowJoint");
 
     // Assert that indeed the elbow joint's outboard frame IS the lower link
     // frame.
-    ASSERT_EQ(elbow_outboard_frame_->get_index(),
-              lower_link_->get_body_frame().get_index());
+    ASSERT_EQ(elbow_outboard_frame_->index(),
+              lower_link_->body_frame().index());
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
@@ -230,7 +230,7 @@ class PendulumTests : public ::testing::Test {
       const Body<T>& body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
+    return pc.get_X_WB(topology.get_body(body.index()).body_node);
   }
 
   // Helper method to extract spatial velocity from the velocity kinematics
@@ -244,7 +244,7 @@ class PendulumTests : public ::testing::Test {
       const Body<double>& body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
+    return vc.get_V_WB(topology.get_body(body.index()).body_node);
   }
 
   // Helper method to extract spatial acceleration from the acceleration
@@ -258,7 +258,7 @@ class PendulumTests : public ::testing::Test {
       const Body<double>& body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.get_index()).body_node);
+    return ac.get_A_WB(topology.get_body(body.index()).body_node);
   }
 
  protected:
@@ -310,78 +310,78 @@ class PendulumTests : public ::testing::Test {
 
 TEST_F(PendulumTests, CreateModelBasics) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->get_num_bodies(), 1);
+  EXPECT_EQ(model_->num_bodies(), 1);
   // And there is only one frame, the world frame.
-  EXPECT_EQ(model_->get_num_frames(), 1);
+  EXPECT_EQ(model_->num_frames(), 1);
 
   CreatePendulumModel();
 
   // Verifies the number of multibody elements is correct.
-  EXPECT_EQ(model_->get_num_bodies(), 3);
-  EXPECT_EQ(model_->get_num_frames(), 5);
+  EXPECT_EQ(model_->num_bodies(), 3);
+  EXPECT_EQ(model_->num_frames(), 5);
   // Joint has no implementation before finalize.
-  EXPECT_EQ(model_->get_num_mobilizers(), 1);
+  EXPECT_EQ(model_->num_mobilizers(), 1);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
-      shoulder_inboard_frame_->get_body().get_index(),
-      world_body_->get_index());
+      shoulder_inboard_frame_->body().index(),
+      world_body_->index());
   EXPECT_EQ(
-      shoulder_outboard_frame_->get_body().get_index(),
-      upper_link_->get_index());
+      shoulder_outboard_frame_->body().index(),
+      upper_link_->index());
 
   // Checks that mobilizers connect the right frames.
-  EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().get_index(),
-            world_body_->get_body_frame().get_index());
-  EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().get_index(),
-            shoulder_outboard_frame_->get_index());
+  EXPECT_EQ(shoulder_mobilizer_->inboard_frame().index(),
+            world_body_->body_frame().index());
+  EXPECT_EQ(shoulder_mobilizer_->outboard_frame().index(),
+            shoulder_outboard_frame_->index());
 
   // Checks that mobilizers connect the right bodies.
-  EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().get_index(),
-            world_body_->get_index());
-  EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().get_index(),
-            upper_link_->get_index());
+  EXPECT_EQ(shoulder_mobilizer_->inboard_body().index(),
+            world_body_->index());
+  EXPECT_EQ(shoulder_mobilizer_->outboard_body().index(),
+            upper_link_->index());
 
   // Checks we can retrieve the body associated with a frame.
-  EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
-  EXPECT_EQ(&shoulder_outboard_frame_->get_body(), upper_link_);
+  EXPECT_EQ(&shoulder_inboard_frame_->body(), world_body_);
+  EXPECT_EQ(&shoulder_outboard_frame_->body(), upper_link_);
 
   // Checks we can request inboard/outboard bodies to a mobilizer.
-  EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
-  EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
+  EXPECT_EQ(&shoulder_mobilizer_->inboard_body(), world_body_);
+  EXPECT_EQ(&shoulder_mobilizer_->outboard_body(), upper_link_);
 
   // Request revolute mobilizers' axes.
-  EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(shoulder_mobilizer_->revolute_axis(), Vector3d::UnitZ());
 
   // We need to Finalize() our model before testing the elbow mobilizer was
   // created correctly. Joint implementations are created at Finalize().
   ASSERT_NO_THROW(model_->Finalize());
   elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
 
-  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  EXPECT_EQ(model_->num_mobilizers(), 2);
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
-      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
+      elbow_inboard_frame_->body().index(), upper_link_->index());
   EXPECT_EQ(
-      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
+      elbow_outboard_frame_->body().index(), lower_link_->index());
   // Checks that mobilizers connect the right frames.
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
-            elbow_inboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
-            elbow_outboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->inboard_frame().index(),
+            elbow_inboard_frame_->index());
+  EXPECT_EQ(elbow_mobilizer_->outboard_frame().index(),
+            elbow_outboard_frame_->index());
   // Checks that mobilizers connect the right bodies.
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
-            upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
-            lower_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->inboard_body().index(),
+            upper_link_->index());
+  EXPECT_EQ(elbow_mobilizer_->outboard_body().index(),
+            lower_link_->index());
   // Checks we can retrieve the body associated with a frame.
-  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
+  EXPECT_EQ(&elbow_inboard_frame_->body(), upper_link_);
+  EXPECT_EQ(&elbow_outboard_frame_->body(), lower_link_);
   // Checks we can request inboard/outboard bodies to a mobilizer.
-  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
+  EXPECT_EQ(&elbow_mobilizer_->inboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->outboard_body(), lower_link_);
   // Request revolute mobilizers' axes.
-  EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(elbow_mobilizer_->revolute_axis(), Vector3d::UnitZ());
 }
 
 // Frame indexes are assigned by MultibodyTree. The number of frames
@@ -394,15 +394,15 @@ TEST_F(PendulumTests, CreateModelBasics) {
 // assign these indexes.
 TEST_F(PendulumTests, Indexes) {
   CreatePendulumModel();
-  EXPECT_EQ(shoulder_inboard_frame_->get_index(), FrameIndex(0));
-  EXPECT_EQ(upper_link_->get_body_frame().get_index(), FrameIndex(1));
-  EXPECT_EQ(lower_link_->get_body_frame().get_index(), FrameIndex(2));
-  EXPECT_EQ(shoulder_outboard_frame_->get_index(), FrameIndex(3));
-  EXPECT_EQ(elbow_inboard_frame_->get_index(), FrameIndex(4));
-  EXPECT_EQ(elbow_outboard_frame_->get_index(), FrameIndex(2));
+  EXPECT_EQ(shoulder_inboard_frame_->index(), FrameIndex(0));
+  EXPECT_EQ(upper_link_->body_frame().index(), FrameIndex(1));
+  EXPECT_EQ(lower_link_->body_frame().index(), FrameIndex(2));
+  EXPECT_EQ(shoulder_outboard_frame_->index(), FrameIndex(3));
+  EXPECT_EQ(elbow_inboard_frame_->index(), FrameIndex(4));
+  EXPECT_EQ(elbow_outboard_frame_->index(), FrameIndex(2));
   // Verifies the elbow's outboard frame IS the lower link's frame.
-  EXPECT_EQ(elbow_outboard_frame_->get_index(),
-            lower_link_->get_body_frame().get_index());
+  EXPECT_EQ(elbow_outboard_frame_->index(),
+            lower_link_->body_frame().index());
 }
 
 // Asserts that the Finalize() stage is successful and that re-finalization is
@@ -431,9 +431,9 @@ TEST_F(PendulumTests, Finalize) {
 // bodies in an array of references.
 TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   // Initially there is only one body, the world.
-  EXPECT_EQ(model_->get_num_bodies(), 1);
+  EXPECT_EQ(model_->num_bodies(), 1);
   // And there is only one frame, the world frame.
-  EXPECT_EQ(model_->get_num_frames(), 1);
+  EXPECT_EQ(model_->num_frames(), 1);
   CreatePendulumModel();
 
   // Vector of references.
@@ -448,9 +448,9 @@ TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   // ensure that bodies were not copied instead.
   // Unfortunately we need the ugly get() method since operator.() is not
   // overloaded.
-  EXPECT_EQ(&bodies[world_body_->get_index()].get(), world_body_);
-  EXPECT_EQ(&bodies[upper_link_->get_index()].get(), upper_link_);
-  EXPECT_EQ(&bodies[lower_link_->get_index()].get(), lower_link_);
+  EXPECT_EQ(&bodies[world_body_->index()].get(), world_body_);
+  EXPECT_EQ(&bodies[upper_link_->index()].get(), upper_link_);
+  EXPECT_EQ(&bodies[lower_link_->index()].get(), lower_link_);
 }
 
 TEST_F(PendulumTests, CreateContext) {
@@ -460,7 +460,7 @@ TEST_F(PendulumTests, CreateContext) {
   // - world_
   // - upper_link_
   // - lower_link_
-  EXPECT_EQ(model_->get_num_bodies(), 3);
+  EXPECT_EQ(model_->num_bodies(), 3);
 
   // Verify we cannot create a Context until we have a valid topology.
   EXPECT_FALSE(model_->topology_is_valid());  // Not valid before Finalize().
@@ -617,7 +617,7 @@ class PendulumKinematicTests : public PendulumTests {
   /// drake::multibody::benchmarks::Acrobot.
   Vector2d VerifyGravityTerm(
       const Eigen::Ref<const VectorXd>& q) const {
-    DRAKE_DEMAND(q.size() == model_->get_num_positions());
+    DRAKE_DEMAND(q.size() == model_->num_positions());
 
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
@@ -655,11 +655,11 @@ class PendulumKinematicTests : public PendulumTests {
     // computed by CalcForceElementsContribution().
 
     // Output vector of generalized forces.
-    VectorXd tau(model_->get_num_velocities());
+    VectorXd tau(model_->num_velocities());
 
     // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
-    vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(model_->num_bodies());
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
@@ -672,8 +672,8 @@ class PendulumKinematicTests : public PendulumTests {
     // However, the data given at input is lost on output. A user might choose
     // then to have separate input/output arrays.
 
-    const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
+    const VectorXd vdot = VectorXd::Zero(model_->num_velocities());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->num_bodies());
 
     // Aliases to external forcing arrays:
     std::vector<SpatialForce<double>>& Fapplied_Bo_W_array =
@@ -752,9 +752,9 @@ class PendulumKinematicTests : public PendulumTests {
       const Eigen::Ref<const VectorXd>& q,
       const Eigen::Ref<const VectorXd>& v,
       const Eigen::Ref<const VectorXd>& vdot) const {
-    DRAKE_DEMAND(q.size() == model_->get_num_positions());
-    DRAKE_DEMAND(v.size() == model_->get_num_velocities());
-    DRAKE_DEMAND(vdot.size() == model_->get_num_velocities());
+    DRAKE_DEMAND(q.size() == model_->num_positions());
+    DRAKE_DEMAND(v.size() == model_->num_velocities());
+    DRAKE_DEMAND(vdot.size() == model_->num_velocities());
 
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
@@ -785,9 +785,9 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute inverse dynamics.
-    VectorXd tau(model_->get_num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
-    vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
+    VectorXd tau(model_->num_velocities());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(model_->num_bodies());
     model_->CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
                                 &A_WB_array, &F_BMo_W_array, &tau);
 
@@ -803,9 +803,9 @@ class PendulumKinematicTests : public PendulumTests {
         get_body_spatial_acceleration_in_world(ac, *lower_link_);
     // From inverse dynamics.
     const SpatialAcceleration<double>& A_WUcm_id =
-        A_WB_array[upper_link_->get_node_index()];
+        A_WB_array[upper_link_->node_index()];
     const SpatialAcceleration<double>& A_WL_id =
-        A_WB_array[lower_link_->get_node_index()];
+        A_WB_array[lower_link_->node_index()];
     EXPECT_TRUE(A_WUcm_id.IsApprox(A_WUcm_ac, kTolerance));
     EXPECT_TRUE(A_WL_id.IsApprox(A_WL_ac, kTolerance));
 
@@ -934,7 +934,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // comparison with the benchmark.
       const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
       const Matrix3d R_WL = X_WL.linear();
-      const Vector3d p_LoLcm_L = lower_link_->get_default_com();
+      const Vector3d p_LoLcm_L = lower_link_->default_com();
       const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
       // ======================================================================
@@ -1194,7 +1194,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // spatial velocity to the center of mass frame for comparison with
           // the benchmark.
           const Matrix3d R_WL = X_WL_value.block<3, 3>(0, 0);
-          const Vector3d p_LoLcm_L = lower_link_->get_default_com();
+          const Vector3d p_LoLcm_L = lower_link_->default_com();
           const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
           // Asserts that the retrieved poses match with the ones specified by
@@ -1279,8 +1279,8 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   Matrix3X<double> p_WQi_set(3, 3);
   model_->CalcPointsPositions(
       *context_,
-      lower_link_->get_body_frame(), p_LQi_set,
-      model_->get_world_frame(), &p_WQi_set);
+      lower_link_->body_frame(), p_LQi_set,
+      model_->world_frame(), &p_WQi_set);
 
   Matrix3X<double> p_WQi_set_expected(3, 3);
   p_WQi_set_expected.col(0) << 2.0 + M_SQRT1_2, -M_SQRT1_2, 0.0;
@@ -1301,8 +1301,8 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   Matrix3X<double> p_WPi_set(3, 3);
   model_->CalcPointsPositions(
       *context_,
-      upper_link_->get_body_frame(), p_UPi_set,
-      model_->get_world_frame(), &p_WPi_set);
+      upper_link_->body_frame(), p_UPi_set,
+      model_->world_frame(), &p_WPi_set);
 
   Matrix3X<double> p_WPi_set_expected(3, 3);
   p_WPi_set_expected.col(0) = 0.5 * Vector3d(-M_SQRT1_2, M_SQRT1_2, 0.0);
@@ -1313,7 +1313,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
       p_WPi_set, p_WPi_set_expected, kTolerance, MatrixCompareType::relative));
 
   const Isometry3d X_UL = model_->CalcRelativeTransform(
-      *context_, upper_link_->get_body_frame(), lower_link_->get_body_frame());
+      *context_, upper_link_->body_frame(), lower_link_->body_frame());
   const Vector3d p_UL = X_UL.translation();
   const Matrix3d R_UL = X_UL.linear();
 
@@ -1340,8 +1340,8 @@ TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
   Matrix3X<double> p_WQi_set(3, 3);
   EXPECT_THROW(model_->CalcPointsPositions(
       *context_,
-      lower_link_->get_body_frame(), p_LQi_set,
-      model_->get_world_frame(), &p_WQi_set), std::runtime_error);
+      lower_link_->body_frame(), p_LQi_set,
+      model_->world_frame(), &p_WQi_set), std::runtime_error);
 }
 
 }  // namespace

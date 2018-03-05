@@ -188,7 +188,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // Verify MultibodyTree::MapVelocityToQDot() to compute the quaternion time
   // derivative.
   const MultibodyTree<double>& model = free_body_plant.model();
-  VectorX<double> qdot_from_v(model.get_num_positions());
+  VectorX<double> qdot_from_v(model.num_positions());
   // The generalized velocity computed last at time = kEndTime.
   const VectorX<double> v =
       context.get_continuous_state().get_generalized_velocity().CopyToVector();
@@ -227,7 +227,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // Since the quaternion orientation in this test is the result of a numerical
   // integration that introduces truncation errors, we can only expect this
   // result to be within kNormalizationTolerance accurate.
-  VectorX<double> v_back(model.get_num_velocities());
+  VectorX<double> v_back(model.num_velocities());
   model.MapQDotToVelocity(context, qdot_from_v, &v_back);
   EXPECT_TRUE(CompareMatrices(v_back, v, kNormalizationTolerance,
                               MatrixCompareType::relative));
@@ -282,7 +282,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   mobilizer.set_translational_velocity(context.get(), v_WB);
 
   // Map generalized velocities to time derivatives of generalized positions.
-  VectorX<double> qdot_from_v(model.get_num_positions());
+  VectorX<double> qdot_from_v(model.num_positions());
   const VectorX<double> v =
       context->get_continuous_state().get_generalized_velocity().CopyToVector();
   model.MapVelocityToQDot(*context, v, &qdot_from_v);
@@ -300,7 +300,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
 
   // Verify MultibodyTree::MapQDotToVelocity() does indeed map back to the
   // original generalized velocities.
-  VectorX<double> v_back(model.get_num_velocities());
+  VectorX<double> v_back(model.num_velocities());
   model.MapQDotToVelocity(*context, qdot_from_v, &v_back);
   EXPECT_TRUE(CompareMatrices(v_back, v, 10 * kEpsilon,
                               MatrixCompareType::relative));

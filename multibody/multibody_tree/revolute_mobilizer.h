@@ -68,7 +68,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /// @retval axis_F The rotation axis as a unit vector expressed in the inboard
   ///                frame F.
-  const Vector3<double>& get_revolute_axis() const { return axis_F_; }
+  const Vector3<double>& revolute_axis() const { return axis_F_; }
 
   /// Gets the rotation angle of `this` mobilizer from `context`. See class
   /// documentation for sign convention.
@@ -116,7 +116,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
-  /// about this mobilizer's axis (@see get_revolute_axis().)
+  /// about this mobilizer's axis (@see revolute_axis().)
   /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
   /// stored in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
@@ -126,7 +126,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   /// M measured and expressed in frame F as a function of the rotation angle
   /// and input angular velocity `v` about this mobilizer's axis
-  /// (@see get_revolute_axis()).
+  /// (@see revolute_axis()).
   /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
   /// stored in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
@@ -147,7 +147,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
   /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
-  /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
+  /// frame M onto its rotation axis (@see revolute_axis().) Mathematically:
   /// <pre>
   ///    tau = F_Mo_F.rotational().dot(axis_F)
   /// </pre>

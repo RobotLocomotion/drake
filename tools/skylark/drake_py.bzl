@@ -87,12 +87,33 @@ def drake_py_binary(
         data = data,
         **kwargs)
 
+def drake_py_unittest(
+        name,
+        srcs = [],
+        **kwargs):
+    """Declares a `unittest`-based python test.
+
+    This macro should be preferred instead of the basic drake_py_test for tests
+    that use the `unittest` framework.  Tests that use this macro should *not*
+    contain a __main__ handler nor a shebang line.
+    """
+    helper = "//common/test_utilities:drake_py_unittest_main.py"
+    if not srcs:
+        srcs = ["test/%s.py" % name]
+    drake_py_test(
+        name = name,
+        srcs = srcs + [helper],
+        main = helper,
+        allow_import_unittest = True,
+        **kwargs)
+
 def drake_py_test(
         name,
         srcs = None,
         deps = None,
         data = None,
         isolate = True,
+        allow_import_unittest = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -100,10 +121,20 @@ def drake_py_test(
         If True, the test binary will be placed in a folder isolated from the
         library code. This prevents submodules from leaking in as top-level
         submodules. For more detail, see #8041.
+
+    @param allow_import_unittest (optional, default is False)
+        If False, this test (and anything it imports) is prevented from doing
+        `import unittest`.  This is a guard against writing `unittest`-based
+        cases that accidentally never get run.  In general, `unittest`-based
+        tests should use the `drake_py_unittest` macro instead of this one
+        (thus disabling this interlock), but can override this parameter in
+        case something unique is happening and the other macro can't be used.
     """
     if srcs == None:
         srcs = ["test/%s.py" % name]
     deps = adjust_labels_for_drake_hoist(deps)
+    if not allow_import_unittest:
+        deps = deps + ["//common/test_utilities:disable_python_unittest"]
     data = adjust_labels_for_drake_hoist(data)
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]

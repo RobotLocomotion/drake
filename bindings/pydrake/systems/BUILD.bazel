@@ -16,7 +16,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 
 package(default_visibility = [
@@ -178,7 +178,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "general_test",
     size = "small",
     deps = [
@@ -217,7 +217,7 @@ drake_pybind_library(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "lifetime_test",
     deps = [
         ":analysis_py",
@@ -227,7 +227,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "custom_test",
     size = "small",
     deps = [
@@ -238,7 +238,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "value_test",
     size = "small",
     deps = [
@@ -247,7 +247,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "controllers_test",
     size = "small",
     deps = [
@@ -256,7 +256,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "primitives_test",
     size = "small",
     deps = [
@@ -266,7 +266,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "sensors_test",
     size = "small",
     deps = [
@@ -274,7 +274,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "rendering_test",
     size = "small",
     deps = [

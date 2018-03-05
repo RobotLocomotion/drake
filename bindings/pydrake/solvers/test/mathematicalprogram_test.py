@@ -185,6 +185,8 @@ class TestMathematicalProgram(unittest.TestCase):
             for j in range(2):
                 self.assertAlmostEqual(xval[i, j], 2 * i + j)
                 self.assertEqual(xval[i, j], prog.GetSolution(x[i, j]))
+        # Just check spelling.
+        y = prog.NewIndeterminates(2, 2, "y")
 
     def test_sdp(self):
         prog = mp.MathematicalProgram()
@@ -200,6 +202,22 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
-
-if __name__ == '__main__':
-    unittest.main()
+    def test_sos(self):
+        # Find a,b,c,d subject to
+        # a(0) + a(1)*x,
+        # b(0) + 2*b(1)*x + b(2)*x^2 is SOS,
+        # c(0)*x^2 + 2*c(1)*x*y + c(2)*y^2 is SOS,
+        # d(0)*x^2 is SOS.
+        # d(1)*x^2 is SOS.
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        poly = prog.NewFreePolynomial(sym.Variables(x), 1)
+        (poly, binding) = prog.NewSosPolynomial(sym.Variables(x), 2)
+        y = prog.NewIndeterminates(1, "y")
+        (poly, binding) = prog.NewSosPolynomial((sym.Monomial(x[0]),
+                                                 sym.Monomial(y[0])))
+        d = prog.NewContinuousVariables(2, "d")
+        prog.AddSosConstraint(d[0]*x.dot(x))
+        prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)

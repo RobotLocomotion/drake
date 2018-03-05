@@ -36,6 +36,7 @@ def _impl(repository_ctx):
         fail("Operating system is NOT supported",
              attr = repository_ctx.os.name)
 
+    # TODO(jwnimmer-tri) Port to use mirrors.bzl.
     url = "http://download.mosek.com/stable/{}/mosektools{}.tar.bz2".format(
         mosek_major_version, mosek_platform)
     root_path = repository_ctx.path("")

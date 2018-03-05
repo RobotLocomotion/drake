@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/reinit_after_move.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/systems/sensors/pixel_types.h"
 
 namespace drake {
@@ -145,8 +145,8 @@ class Image {
   }
 
  private:
-  reinit_after_move<int> width_;
-  reinit_after_move<int> height_;
+  reset_after_move<int> width_;
+  reset_after_move<int> height_;
   std::vector<T> data_;
 };
 

@@ -110,7 +110,3 @@ class TestSymbolicVariables(unittest.TestCase):
         vars2 = sym.Variables([y, w])
         vars3 = sym.intersect(vars1, vars2)  # = [y]
         self.assertEqual(vars3, sym.Variables([y]))
-
-
-if __name__ == '__main__':
-    unittest.main()

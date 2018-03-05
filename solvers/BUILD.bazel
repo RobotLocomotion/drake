@@ -132,7 +132,7 @@ drake_cc_library(
     hdrs = ["solver_id.h"],
     deps = [
         "//common:essential",
-        "//common:reinit_after_move",
+        "//common:reset_after_move",
     ],
 )
 

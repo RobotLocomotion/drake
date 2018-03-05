@@ -31,55 +31,74 @@ namespace drake {
 ///
 ///  private:
 ///   std::vector<int> items_;
-///   reinit_after_move<int> sum_;
+///   reset_after_move<int> sum_;
 /// };
 /// </pre>
 ///
 /// When moving from `Foo`, the donor object will reset to its default state:
 /// `items_` will be empty and `sum_` will be zero.  If `Foo` had not used the
-/// `reinit_after_move` wrapper, the `sum_` would remain intact (be copied)
+/// `reset_after_move` wrapper, the `sum_` would remain intact (be copied)
 /// while moving, even though `items_` was cleared.
 ///
 /// @tparam T must support CopyConstructible, CopyAssignable, MoveConstructible,
 /// and MoveAssignable and must not throw exceptions during construction or
 /// assignment.
-template <typename T>
-class reinit_after_move {
- public:
-  /// Constructs a reinit_after_move<T> with a value-initialized wrapped value.
-  /// See http://en.cppreference.com/w/cpp/language/value_initialization.
-  reinit_after_move() {}
+/// @see reset_on_copy
 
-  /// Constructs a reinit_after_move<T> with the given wrapped value.  This is
-  /// an implicit conversion, so that reinit_after_move<T> behaves more like
+// TODO(sherm1) Upgrade this to match reset_on_copy (e.g. noexcept).
+template <typename T>
+class reset_after_move {
+ public:
+  /// Constructs a reset_after_move<T> with a value-initialized wrapped value.
+  /// See http://en.cppreference.com/w/cpp/language/value_initialization.
+  reset_after_move() {}
+
+  /// Constructs a reset_after_move<T> with the given wrapped value.  This is
+  /// an implicit conversion, so that reset_after_move<T> behaves more like
   /// the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
-  reinit_after_move(const T& value) : value_(value) {}
+  reset_after_move(const T& value) : value_(value) {}
 
   /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
   /// MoveAssignable.
-  /** @{ */
-  reinit_after_move(const reinit_after_move&) = default;
-  reinit_after_move& operator=(const reinit_after_move&) = default;
-  reinit_after_move(reinit_after_move&& other) {
+  //@{
+  reset_after_move(const reset_after_move&) = default;
+  reset_after_move& operator=(const reset_after_move&) = default;
+  reset_after_move(reset_after_move&& other) {
     value_ = std::move(other.value_);
     other.value_ = T{};
   }
-  reinit_after_move& operator=(reinit_after_move&& other) {
+  reset_after_move& operator=(reset_after_move&& other) {
     if (this != &other) {
       value_ = std::move(other.value_);
       other.value_ = T{};
     }
     return *this;
   }
-  /** @} */
+  //@}
 
-  /// @name Implicit conversion operators to make reinit_after_move<T> to act
+  /// @name Implicit conversion operators to make reset_after_move<T> act
   /// as the wrapped type.
-  /** @{ */
+  //@{
   operator T&() { return value_; }
   operator const T&() const { return value_; }
-  /** @} */
+  //@}
+
+  /// @name Dereference operators if T is a pointer type.
+  /// If type T is a pointer, these exist and return the pointed-to object.
+  /// For non-pointer types these methods are not instantiated.
+  //@{
+  template <typename T1 = T>
+  std::enable_if_t<std::is_pointer<T1>::value, T> operator->() const {
+    return value_;
+  }
+  template <typename T1 = T>
+  std::enable_if_t<std::is_pointer<T1>::value,
+                   std::add_lvalue_reference_t<std::remove_pointer_t<T>>>
+  operator*() const {
+    return *value_;
+  }
+  //@}
 
  private:
   T value_{};

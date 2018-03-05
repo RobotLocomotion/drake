@@ -8,37 +8,6 @@ load(
     "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "@drake//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
-
-drake_cc_vector_gen_library(
-    name = "acrobot_vector_types",
-    srcs = [
-        "acrobot_state.named_vector",
-    ],
-)
-
-drake_cc_library(
-    name = "acrobot_plant",
-    srcs = [
-        "acrobot_plant.cc",
-    ],
-    hdrs = [
-        "acrobot_plant.h",
-    ],
-    deps = [
-        ":acrobot_vector_types",
-        "//common:default_scalars",
-        "//geometry:geometry_ids",
-        "//geometry:geometry_system",
-        "//math:geometric_transform",
-        "//multibody/multibody_tree",
-        "//systems/framework",
-        "//systems/framework:leaf_system",
-    ],
-)
 
 drake_cc_binary(
     name = "passive_simulation",
@@ -49,9 +18,9 @@ drake_cc_binary(
         "--target_realtime_rate=0.0",
     ],
     deps = [
-        ":acrobot_plant",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",

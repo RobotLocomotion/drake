@@ -167,7 +167,3 @@ class TestGeneral(unittest.TestCase):
 
         mytest((-1.5, 0.5), (-1.5, 1.5))
         mytest((.2, .3), (.2, 1.3))
-
-
-if __name__ == '__main__':
-    unittest.main()

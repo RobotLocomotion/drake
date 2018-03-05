@@ -9,7 +9,6 @@
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
-#include "drake/util/lcmUtil.h"
 
 using std::make_unique;
 using std::move;

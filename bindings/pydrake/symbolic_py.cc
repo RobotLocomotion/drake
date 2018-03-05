@@ -385,6 +385,11 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("floor", &symbolic::floor)
       .def("if_then_else", &symbolic::if_then_else);
 
+  m.def("Jacobian", [](const Eigen::Ref<const VectorX<Expression>>& f,
+                       const Eigen::Ref<const VectorX<Variable>>& vars) {
+    return Jacobian(f, vars);
+  });
+
   py::class_<Formula>(m, "Formula").def("__repr__", &Formula::to_string);
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
@@ -483,7 +488,12 @@ PYBIND11_MODULE(_symbolic_py, m) {
              return oss.str();
            })
       .def("__pow__",
-           [](const Polynomial& self, const int n) { return pow(self, n); });
+           [](const Polynomial& self, const int n) { return pow(self, n); })
+      .def("Jacobian", [](const Polynomial& p,
+                          const Eigen::Ref<const VectorX<Variable>>& vars) {
+        return p.Jacobian(vars);
+      });
+
   py::implicitly_convertible<double, drake::symbolic::Expression>();
   py::implicitly_convertible<drake::symbolic::Variable,
                              drake::symbolic::Expression>();

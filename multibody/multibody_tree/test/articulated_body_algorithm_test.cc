@@ -151,9 +151,9 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const {
     const Frame<ToScalar>& inboard_frame_clone =
-        tree_clone.get_variant(this->get_inboard_frame());
+        tree_clone.get_variant(this->inboard_frame());
     const Frame<ToScalar>& outboard_frame_clone =
-        tree_clone.get_variant(this->get_outboard_frame());
+        tree_clone.get_variant(this->outboard_frame());
     return std::make_unique<FeatherstoneMobilizer<ToScalar>>(
         inboard_frame_clone, outboard_frame_clone);
   }
@@ -196,13 +196,13 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 
   // Add box body and SpaceXYZ mobilizer.
   const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_Bcm);
-  const Frame<double>& world_frame = model.get_world_frame();
-  const Frame<double>& box_frame = box_link.get_body_frame();
+  const Frame<double>& world_frame = model.world_frame();
+  const Frame<double>& box_frame = box_link.body_frame();
   model.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
 
   // Add cylinder body and Featherstone mobilizer.
   const RigidBody<double>& cylinder_link = model.AddBody<RigidBody>(M_Ccm);
-  const Frame<double>& cylinder_frame = cylinder_link.get_body_frame();
+  const Frame<double>& cylinder_frame = cylinder_link.body_frame();
   model.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);
 
   // Finalize model.
@@ -231,7 +231,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
       ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
-      abc.get_Pplus_PB_W(cylinder_link.get_node_index());
+      abc.get_Pplus_PB_W(cylinder_link.node_index());
   EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
       Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -246,7 +246,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
       ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
-      abc.get_Pplus_PB_W(box_link.get_node_index());
+      abc.get_Pplus_PB_W(box_link.node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
       P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
@@ -273,14 +273,14 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
 
   // Add box body and SpaceXYZ mobilizer.
   const RigidBody<double>& box_link = model.AddBody<RigidBody>(M_Bcm);
-  const Frame<double>& world_frame = model.get_world_frame();
-  const Frame<double>& box_frame = box_link.get_body_frame();
+  const Frame<double>& world_frame = model.world_frame();
+  const Frame<double>& box_frame = box_link.body_frame();
   const SpaceXYZMobilizer<double>& WB_mobilizer =
       model.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
 
   // Add cylinder body and Featherstone mobilizer.
   const RigidBody<double>& cylinder_link = model.AddBody<RigidBody>(M_Ccm);
-  const Frame<double>& cylinder_frame = cylinder_link.get_body_frame();
+  const Frame<double>& cylinder_frame = cylinder_link.body_frame();
   const FeatherstoneMobilizer<double>& BC_mobilizer =
     model.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);
 
@@ -325,7 +325,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
       ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
   const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
-      abc.get_Pplus_PB_W(cylinder_link.get_node_index());
+      abc.get_Pplus_PB_W(cylinder_link.node_index());
   EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
       Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
 
@@ -350,7 +350,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   const ArticulatedBodyInertia<double>& P_WB_W_expected =
       ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
   const ArticulatedBodyInertia<double>& P_WB_W_actual =
-      abc.get_Pplus_PB_W(box_link.get_node_index());
+      abc.get_Pplus_PB_W(box_link.node_index());
   EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
       P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
