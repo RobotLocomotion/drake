@@ -225,9 +225,9 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_lcp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')
-        M = np.array([1,4,3,1])
-        M.resize(2,2)
-        q = np.array([-16,-15])
-        prog.AddLinearComplementarityConstraint(M,q,x)
+        M = np.array([1, 4, 3, 1])
+        M.resize(2, 2)
+        q = np.array([-16, -15])
+        prog.AddLinearComplementarityConstraint(M, q, x)
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
