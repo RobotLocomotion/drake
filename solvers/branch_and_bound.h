@@ -488,8 +488,7 @@ class MixedIntegerBranchAndBound {
 
   /**
    * The user can set a defined callback function in each node. This function is 
-   * called after the optimization is solved in each node, if the user has 
-   * called SetNodeCallbackMethod(NodeCallbackMethod::kUserDefined).
+   * called after the optimization is solved in each node.
    */
   void SetUserDefinedNodeCallbackFunction(NodeCallbackFun fun) {
     node_callback_userfun_ = fun;
@@ -614,8 +613,7 @@ class MixedIntegerBranchAndBound {
    * satisfied:
    * 1. The optimization problem in this node is feasible.
    * 2. The optimal solution to the problem in this node is not integral.
-   * 3. node_callback_method =
-   * NodeCallbackMethod::kSearchIntegralSolutionByRounding
+   * 3. The user called SetSearchIntegralSolutionByRounding(true);
    * @note This method will change the data field such as solutions_ and/or
    * best_upper_bound_, if an integral solution is found.
    */

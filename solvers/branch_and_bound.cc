@@ -64,9 +64,6 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       solution_result_{SolutionResult::kUnknownError},
       optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown},
       solver_id_{solver_id} {
-  std::unique_ptr<MathematicalProgramSolverInterface> solver =
-      MakeSolver(solver_id);
-  DRAKE_ASSERT(solver.get());
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
   // Set Gurobi DualReductions to 0, to differentiate infeasible from unbounded.
@@ -760,8 +757,7 @@ void MixedIntegerBranchAndBound::SearchIntegralSolutionByRounding(
     for (const auto& remaining_binary_variable :
          node.remaining_binary_variables()) {
       // Notice that roundoff_integer_val is of type double here. This is
-      // because AddBoundingBoxConstraint(...) requires the bounds of type
-      // double.
+      // because AddBoundingBoxConstraint(...) requires bounds of type double.
       const double roundoff_integer_val =
           std::round(node.prog()->GetSolution(remaining_binary_variable));
       new_prog->AddBoundingBoxConstraint(roundoff_integer_val,

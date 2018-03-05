@@ -1147,9 +1147,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, SearchIntegralSolutionByRounding2) {
   EXPECT_TRUE(CompareMatrices(dut.bnb()->GetSolution(x), x_expected, tol,
                               MatrixCompareType::absolute));
 
-  // Now test to solve the mip with the callback to search for integral solution
-  // by rounding. The branch-and-bound should terminate at the root node, as
-  // it should find the optimal integral solution at the root.
+  // Now test to solve the mip with searching for integral solution by rounding.
+  // The branch-and-bound should terminate at the root node, as it should find
+  // the optimal integral solution at the root.
   MixedIntegerBranchAndBound bnb(*prog, GurobiSolver::id());
   bnb.SetSearchIntegralSolutionByRounding(true);
   const SolutionResult result = bnb.Solve();
