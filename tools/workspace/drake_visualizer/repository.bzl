@@ -53,8 +53,8 @@ def _impl(repository_ctx):
         fail("Operating system is NOT supported", attr = os_result)
 
     urls = [
-        "https://drake-packages.csail.mit.edu/director/{}".format(archive),
-        "https://s3.amazonaws.com/drake-packages/director/{}".format(archive),
+        x.format(archive = archive)
+        for x in repository_ctx.attr.mirrors.get("director")
     ]
     root_path = repository_ctx.path("")
 
@@ -102,4 +102,9 @@ install_files(
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
-drake_visualizer_repository = repository_rule(implementation = _impl)
+drake_visualizer_repository = repository_rule(
+    attrs = {
+        "mirrors": attr.string_list_dict(),
+    },
+    implementation = _impl,
+)

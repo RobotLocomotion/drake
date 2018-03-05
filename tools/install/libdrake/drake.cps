@@ -99,6 +99,7 @@
     }
   },
   "X-CMake-Variables": {
+    "drake_PYTHON_DIRS": "${CMAKE_CURRENT_LIST_DIR}/../../python2.7/site-packages",
     "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
   },
   "X-CMake-Variables-Init": {

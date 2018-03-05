@@ -213,8 +213,8 @@ class RigidBody {
 
   // TODO(SeanCurtis-TRI): This shouldn't be called publicly. Collision elements
   // have to be processed in the context of the rigid body tree.  Long term,
-  // this will be displaced into GeometryWorld.  Short term, just don't call it.
-  // If you need to add a collision element to a body, add it through
+  // this will be displaced into GeometrySystem.  Short term, just don't call
+  // it. If you need to add a collision element to a body, add it through
   // RigidBodyTree::addCollisionElement.
   /**
    * Adds the given collision @p element to the body with the given group name.

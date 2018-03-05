@@ -20,16 +20,6 @@
 namespace drake {
 namespace solvers {
 namespace {
-std::vector<int> FindDecisionVariableIndices(
-    const MathematicalProgram& prog,
-    const Eigen::Ref<const VectorXDecisionVariable>& x) {
-  std::vector<int> x_indices(x.rows());
-  for (int i = 0; i < x.rows(); ++i) {
-    x_indices[i] = prog.FindDecisionVariableIndex(x(i));
-  }
-  return x_indices;
-}
-
 void ParseLinearCost(const MathematicalProgram& prog, std::vector<double>* c,
                      double* constant) {
   for (const auto& linear_cost : prog.linear_costs()) {
@@ -147,7 +137,7 @@ void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
     }
     // append the variable y to the end of x
     (*num_x)++;
-    std::vector<int> Ai_var_indices = FindDecisionVariableIndices(prog, z);
+    std::vector<int> Ai_var_indices = prog.FindDecisionVariableIndices(z);
     Ai_var_indices.push_back(*num_x - 1);
     // Set b_cone
     Eigen::VectorXd b_cone = Eigen::VectorXd::Zero(2 + C.rows());
@@ -239,7 +229,7 @@ void ParseLinearEqualityConstraint(
     const solvers::VectorXDecisionVariable& x =
         linear_equality_constraint.variables();
     // x_indices[i] is the index of x(i)
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     for (const auto& Ai_triplet : Ai_triplets) {
       A_triplets->emplace_back(Ai_triplet.row() + *A_row_count,
                                x_indices[Ai_triplet.col()], Ai_triplet.value());
@@ -304,7 +294,7 @@ void ParseSecondOrderConeConstraints(
   for (const auto& lorentz_cone_constraint : prog.lorentz_cone_constraints()) {
     // x_indices[i] is the index of x(i)
     const VectorXDecisionVariable& x = lorentz_cone_constraint.variables();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
         lorentz_cone_constraint.constraint()->A().sparseView();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
@@ -325,7 +315,7 @@ void ParseSecondOrderConeConstraints(
   for (const auto& rotated_lorentz_cone :
        prog.rotated_lorentz_cone_constraints()) {
     const VectorXDecisionVariable& x = rotated_lorentz_cone.variables();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
         rotated_lorentz_cone.constraint()->A().sparseView();
     const Eigen::VectorXd& bi = rotated_lorentz_cone.constraint()->b();
@@ -409,7 +399,7 @@ void ParsePositiveSemidefiniteConstraint(
     const std::vector<Eigen::MatrixXd>& F = lmi_constraint.constraint()->F();
     const VectorXDecisionVariable& x = lmi_constraint.variables();
     const int F_rows = lmi_constraint.constraint()->matrix_rows();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     int A_cone_row_count = 0;
     b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
     for (int j = 0; j < F_rows; ++j) {

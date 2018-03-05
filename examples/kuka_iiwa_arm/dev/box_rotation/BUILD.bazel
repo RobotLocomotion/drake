@@ -80,7 +80,6 @@ drake_cc_binary(
         "//systems/primitives:constant_vector_source",
         "//systems/sensors:optitrack_encoder",
         "//systems/sensors:optitrack_sender",
-        "//util:lcm_util",
         "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",

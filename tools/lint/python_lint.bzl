@@ -1,30 +1,41 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
-#------------------------------------------------------------------------------
-# Internal helper; set up test given name and list of files. Will do nothing
-# if no files given.
-def _python_lint(name, files, ignore):
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+
+# Internal helper.
+def _python_lint(name_prefix, files, ignore):
     if ignore:
         ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
 
-    native.py_test(
-        name = name,
+    # Pycodestyle.
+    locations = ["$(location %s)" % f for f in files]
+    py_test_isolated(
+        name = name_prefix + "_pycodestyle",
         size = "small",
         srcs = ["@pycodestyle//:pycodestyle"],
         data = files,
-        args = (ignore or []) + ["$(locations %s)" % f for f in files],
+        args = (ignore or []) + locations,
         main = "@pycodestyle//:pycodestyle.py",
         srcs_version = "PY2AND3",
-        tags = ["pycodestyle", "lint"],
+        tags = ["pycodestyle", "lint"]
     )
 
-#------------------------------------------------------------------------------
+    # Additional Drake lint.
+    py_test_isolated(
+        name = name_prefix + "_drakelint",
+        size = "small",
+        srcs = ["@drake//tools/lint:drakelint"],
+        data = files,
+        args = locations,
+        main = "@drake//tools/lint:drakelint.py",
+        tags = ["drakelint", "lint"]
+    )
+
 def python_lint(existing_rules = None, ignore = None, exclude = None,
                 extra_srcs = None):
-    """
-    Runs the pycodestyle PEP 8 code style checker on all Python source files
-    declared in rules in a BUILD file.
+    """Runs the pycodestyle PEP 8 code style checker on all Python source files
+    declared in rules in a BUILD file.  Also runs the drakelint.py linter.
 
     Args:
         existing_rules: The value of native.existing_result().values(), in case
@@ -68,13 +79,13 @@ def python_lint(existing_rules = None, ignore = None, exclude = None,
         # Add a lint test if necessary.
         if files:
             _python_lint(
-                name = rule["name"] + "_pycodestyle",
+                name_prefix = rule["name"],
                 files = files,
                 ignore = ignore,
             )
     if extra_srcs:
         _python_lint(
-            name = "extra_srcs_pycodestyle",
+            name_prefix = "extra_srcs",
             files = extra_srcs,
             ignore = ignore,
         )

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/orthonormal_basis.h"
@@ -32,10 +32,39 @@ const int kInvalidPortIdentifier = -1;
 }  // namespace
 
 template <typename T>
-RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
-                                  double timestep)
-    : tree_(move(tree)), timestep_(timestep), compliant_contact_model_(
-    std::make_unique<CompliantContactModel<T>>()) {
+RigidBodyPlant<T>::RigidBodyPlant(
+    std::unique_ptr<const RigidBodyTree<double>> tree, double timestep)
+    : LeafSystem<T>(SystemTypeTag<drake::systems::RigidBodyPlant>{}),
+      tree_(move(tree)),
+      timestep_(timestep),
+      compliant_contact_model_(std::make_unique<CompliantContactModel<T>>()) {
+  initialize();
+}
+
+template <typename T>
+RigidBodyPlant<T>::RigidBodyPlant(
+    SystemScalarConverter converter,
+    std::unique_ptr<const RigidBodyTree<double>> tree, double timestep)
+    : LeafSystem<T>(std::move(converter)),
+      tree_(move(tree)),
+      timestep_(timestep),
+      compliant_contact_model_(std::make_unique<CompliantContactModel<T>>()) {
+  initialize();
+}
+
+template <typename T>
+template <typename U>
+RigidBodyPlant<T>::RigidBodyPlant(const RigidBodyPlant<U>& other)
+    : LeafSystem<T>(SystemTypeTag<drake::systems::RigidBodyPlant>{}),
+      tree_(other.get_rigid_body_tree().Clone()),
+      timestep_(other.get_time_step()),
+      compliant_contact_model_(std::make_unique<CompliantContactModel<T>>(
+          *other.compliant_contact_model_)) {
+  initialize();
+}
+
+template <typename T>
+void RigidBodyPlant<T>::initialize() {
   DRAKE_DEMAND(tree_ != nullptr);
   state_output_port_index_ =
       this->DeclareVectorOutputPort(BasicVector<T>(get_num_states()),
@@ -53,8 +82,8 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
   contact_output_port_index_ = DeclareContactResultsOutputPort();
 
   // Schedule time stepping update.
-  if (timestep > 0.0)
-    this->DeclarePeriodicDiscreteUpdate(timestep);
+  if (timestep_ > 0.0)
+    this->DeclarePeriodicDiscreteUpdate(timestep_);
 }
 
 template <class T>
@@ -123,7 +152,7 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
 
     // Now create the appropriate maps for the position and velocity
     // components.
-    for (const auto& body : tree_->bodies) {
+    for (const auto& body : tree_->get_bodies()) {
       if (!body->has_parent_body()) {
         continue;
       }
@@ -193,7 +222,7 @@ optional<bool> RigidBodyPlant<T>::DoHasDirectFeedthrough(int, int) const {
 }
 
 template <typename T>
-const RigidBodyTree<T>& RigidBodyPlant<T>::get_rigid_body_tree() const {
+const RigidBodyTree<double>& RigidBodyPlant<T>::get_rigid_body_tree() const {
   return *tree_.get();
 }
 
@@ -272,6 +301,30 @@ void RigidBodyPlant<T>::set_position(Context<T>* context, int position_index,
     context->get_mutable_continuous_state()
         .get_mutable_generalized_position()
         .SetAtIndex(position_index, position);
+  }
+}
+
+template <typename T>
+void RigidBodyPlant<T>::SetModelInstancePositions(
+    Context<T>* context, int model_instance_id,
+    const Eigen::Ref<const VectorX<T>> positions) const {
+  DRAKE_ASSERT(context != nullptr);
+  const int num_positions = positions.size();
+  std::vector<const RigidBody<double>*> model_instance_bodies =
+      this->get_rigid_body_tree().FindModelInstanceBodies(model_instance_id);
+  std::vector<int> position_indices;
+  position_indices.reserve(num_positions);
+  for (const RigidBody<double>* body : model_instance_bodies) {
+    const int joint_num_positions = body->getJoint().get_num_positions();
+    const int position_start_index = body->get_position_start_index();
+    for (int i = 0; i < joint_num_positions; ++i) {
+      position_indices.push_back(position_start_index + i);
+    }
+  }
+  DRAKE_THROW_UNLESS(static_cast<int>(position_indices.size()) ==
+                     num_positions);
+  for (int i = 0; i < num_positions; ++i) {
+    set_position(context, position_indices[i], positions(i));
   }
 }
 
@@ -469,11 +522,8 @@ void RigidBodyPlant<T>::CalcKinematicsResultsOutput(
 // Computes the stiffness, damping, and friction coefficient for a contact.
 template <typename T>
 void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
-      const drake::multibody::collision::PointPair& contact,
-      double* stiffness,
-      double* damping,
-      double* mu,
-      int* num_half_cone_edges) const {
+    const drake::multibody::collision::PointPair<T>& contact, double* stiffness,
+    double* damping, double* mu, int* num_half_cone_edges) const {
   DRAKE_DEMAND(stiffness);
   DRAKE_DEMAND(damping);
   DRAKE_DEMAND(mu);
@@ -590,7 +640,7 @@ void RigidBodyPlant<T>::UpdateGeneralizedForce(
 // contact normals.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
     const VectorX<T>& q, const VectorX<T>& v) const {
   const auto& tree = this->get_rigid_body_tree();
   auto kinematics_cache = tree.doKinematics(q, v);
@@ -633,9 +683,8 @@ VectorX<T> RigidBodyPlant<T>::ContactNormalJacobianMult(
 // effect out on the generalized forces.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const KinematicsCache<T>& kinematics_cache,
-    const VectorX<T>& f) const {
+    const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
+    const KinematicsCache<T>& kinematics_cache, const VectorX<T>& f) const {
   // Create a result vector.
   VectorX<T> result = VectorX<T>::Zero(kinematics_cache.getV().size());
 
@@ -671,7 +720,7 @@ VectorX<T> RigidBodyPlant<T>::TransposedContactNormalJacobianMult(
 // contact tangent directions.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
     const VectorX<T>& q, const VectorX<T>& v,
     const std::vector<int>& half_num_cone_edges) const {
   using std::cos;
@@ -746,9 +795,8 @@ VectorX<T> RigidBodyPlant<T>::ContactTangentJacobianMult(
 // the effect out on the generalized forces.
 template <class T>
 VectorX<T> RigidBodyPlant<T>::TransposedContactTangentJacobianMult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const KinematicsCache<T>& kinematics_cache,
-    const VectorX<T>& f,
+    const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
+    const KinematicsCache<T>& kinematics_cache, const VectorX<T>& f,
     const std::vector<int>& half_num_cone_edges) const {
   std::vector<Vector3<T>> basis_vecs;
 
@@ -806,18 +854,9 @@ VectorX<T> RigidBodyPlant<T>::TransposedContactTangentJacobianMult(
   return result;
 }
 
-/*
- * TODO(hongkai.dai): This only works for templates on double, it does not
- * work for autodiff yet, I will add the code to compute the gradient of vdot
- * w.r.t. q and v. See issue
- * https://github.com/RobotLocomotion/drake/issues/4267.
- */
 template <typename T>
 void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
-  static_assert(std::is_same<double, T>::value,
-                "Only support templating on double for now");
-
   // No derivatives to compute if state is discrete.
   if (is_state_discrete()) return;
 
@@ -842,15 +881,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
 
-  // TODO(amcastro-tri): preallocate the optimization problem and constraints,
-  // and simply update them then solve on each function eval.
-  // How to place something like this in the context?
-  drake::solvers::MathematicalProgram prog;
-  drake::solvers::VectorXDecisionVariable vdot =
-      prog.NewContinuousVariables(nv, "vdot");
-
-  auto H = tree_->massMatrix(kinsol);
-  Eigen::MatrixXd H_and_neg_JT = H;
+  const MatrixX<T> M = tree_->massMatrix(kinsol);
 
   // There are no external wrenches, but it is a required argument in
   // dynamicsBiasTerm.
@@ -859,7 +890,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // of dynamicsBiasTerm().
   const typename RigidBodyTree<T>::BodyToWrenchMap no_external_wrenches;
   // right_hand_side is the right hand side of the system's equations:
-  // H*vdot -J^T*f = right_hand_side.
+  // M*vdot -J^T*f = right_hand_side.
   VectorX<T> right_hand_side =
       -tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
   if (num_actuators > 0) right_hand_side += tree_->B * u;
@@ -868,7 +899,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
   // TODO(amcastro-tri): Maybe move to
   // RBT::ComputeGeneralizedJointLimitForces(C)?
   {
-    for (auto const& b : tree_->bodies) {
+    for (auto const& b : tree_->get_bodies()) {
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       // Joint limit forces are only implemented for single-axis joints.
@@ -881,62 +912,63 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     }
   }
 
-  right_hand_side += compliant_contact_model_->ComputeContactForce(
-      *tree_.get(), kinsol);
+  right_hand_side +=
+      compliant_contact_model_->ComputeContactForce(*tree_.get(), kinsol);
 
-  solvers::VectorXDecisionVariable position_force{};
-
+  VectorX<T> vdot;
   if (tree_->getNumPositionConstraints()) {
-    size_t nc = tree_->getNumPositionConstraints();
     // 1/time constant of position constraint satisfaction.
     const T alpha = 5.0;
-
-    position_force =
-        prog.NewContinuousVariables(nc, "position constraint force");
 
     auto phi = tree_->positionConstraints(kinsol);
     auto J = tree_->positionConstraintsJacobian(kinsol, false);
     auto Jdotv = tree_->positionConstraintsJacDotTimesV(kinsol);
 
     // Critically damped stabilization term.
-    // phiddot = -2 * alpha * phidot - alpha^2 * phi.
-    prog.AddLinearEqualityConstraint(
-        J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), vdot);
-    H_and_neg_JT.conservativeResize(Eigen::NoChange,
-                                    H_and_neg_JT.cols() + J.rows());
-    H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
+    //   phiddot = -2 * alpha * phidot - alpha^2 * phi,
+    // implemented as
+    //   J*vdot = -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi) = k
+
+    // Solve [M,-J^T] * [vdot] = [ right_hand_side  ]
+    //       [J, 0  ]   [ f  ]   [ k ].
+    MatrixX<T> A(M.rows() + J.rows(),
+                 M.cols() + J.rows());
+    VectorX<T> b(M.rows() + J.rows());
+    // clang-format off
+    A << M, -J.transpose(),
+         J, MatrixX<T>::Zero(J.rows(), J.rows());
+    b << right_hand_side,
+         -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi);
+    // clang-format on
+    const VectorX<T> vdot_f =
+        A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
+    vdot = vdot_f.head(get_num_velocities());
+  } else {
+    // Solve M*vdot = right_hand_side.
+    vdot = M.llt().solve(right_hand_side);
   }
 
-  // Adds [H,-J^T] * [vdot;f] = -C.
-  prog.AddLinearEqualityConstraint(H_and_neg_JT, right_hand_side,
-                                   {vdot, position_force});
-
-  prog.Solve();
-
   VectorX<T> xdot(get_num_states());
-  const auto& vdot_value = prog.GetSolution(vdot);
-  xdot << tree_->transformVelocityToQDot(kinsol, v), vdot_value;
+  xdot << tree_->transformVelocityToQDot(kinsol, v), vdot;
   derivatives->SetFromVector(xdot);
 }
 
 template <typename T>
-void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
-    drake::systems::DiscreteValues<T>* updates) const {
+template <typename U>
+std::enable_if_t<std::is_same<U, double>::value, void>
+RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
+    const drake::systems::Context<U>& context,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,
+    drake::systems::DiscreteValues<U>* updates) const {
   using std::abs;
-
-  static_assert(std::is_same<double, T>::value,
-                "Only support templating on double for now");
 
   // If plant state is continuous, no discrete state to update.
   if (!is_state_discrete()) return;
 
   // Get the time step.
   const T t = context.get_discrete_state(1).get_value()[0];
-  double dt = context.get_time() - t;
-  if (dt <= 0.0)
-    dt = this->get_time_step();
+  T dt = context.get_time() - t;
+  if (dt <= 0.0) dt = this->get_time_step();
 
   VectorX<T> u = this->EvaluateActuatorInputs(context);
 
@@ -979,9 +1011,9 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   if (num_actuators > 0) right_hand_side += tree.B * u;
 
   // Determine the set of contact points corresponding to the current q.
-  std::vector<drake::multibody::collision::PointPair> contacts =
-      const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
-          kinematics_cache, true);
+  std::vector<drake::multibody::collision::PointPair<T>> contacts =
+      const_cast<RigidBodyTree<double>*>(&tree)
+          ->ComputeMaximumDepthCollisionPoints(kinematics_cache, true);
 
   // Set the stabilization term for contact normal direction (kN). Also,
   // determine the friction coefficients and (half) the number of friction cone
@@ -999,17 +1031,16 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     data.r[i] = half_friction_cone_edges;
 
     // Set cfm and erp parameters for contacts.
-    const double denom = dt * stiffness + damping;
-    const double cfm = 1.0 / denom;
-    const double erp = (dt * stiffness) / denom;
+    const T denom = dt * stiffness + damping;
+    const T cfm = 1.0 / denom;
+    const T erp = (dt * stiffness) / denom;
     data.gammaN[i] = cfm;
     data.kN[i] = erp * contacts[i].distance / dt;
   }
 
-
   // Set the joint range of motion limits.
   std::vector<JointLimit> limits;
-  for (auto const& b : tree.bodies) {
+  for (auto const& b : tree.get_bodies()) {
     if (!b->has_parent_body()) continue;
     auto const& joint = b->getJoint();
 
@@ -1017,7 +1048,7 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
       const T qmin = joint.getJointLimitMin()(0);
       const T qmax = joint.getJointLimitMax()(0);
-      DRAKE_DEMAND(qmin < qmax);
+      DRAKE_DEMAND(qmin <= qmax);
 
       // Get the current joint position and velocity.
       const T& qjoint = q(b->get_position_start_index());
@@ -1184,6 +1215,18 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 }
 
 template <typename T>
+template <typename U>
+std::enable_if_t<!std::is_same<U, double>::value, void>
+RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
+    const drake::systems::Context<U>&,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,
+    drake::systems::DiscreteValues<U>*) const {
+  throw std::runtime_error(
+      "RigidBodyPlant with discrete updates (time-stepping) currently only "
+          "supports T=double.");
+}
+
+template <typename T>
 int RigidBodyPlant<T>::FindInstancePositionIndexFromWorldIndex(
     int model_instance_id, int world_position_index) {
   DRAKE_ASSERT(get_num_model_instances() > model_instance_id);
@@ -1229,7 +1272,7 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // TODO(amcastro-tri): Remove .eval() below once RigidBodyTree is fully
   // templatized.
   generalized_velocity->SetFromVector(
-      tree_->transformQDotToVelocity(kinsol, qdot));
+    tree_->transformQDotToVelocity(kinsol, qdot.eval()));
 }
 
 template <typename T>
@@ -1272,7 +1315,7 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
                                      const T& velocity) {
   const T qmin = joint.getJointLimitMin()(0);
   const T qmax = joint.getJointLimitMax()(0);
-  DRAKE_DEMAND(qmin < qmax);
+  DRAKE_DEMAND(qmin <= qmax);
   const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
   DRAKE_DEMAND(joint_stiffness >= 0);
   const T joint_dissipation = joint.get_joint_limit_dissipation()(0);
@@ -1367,8 +1410,9 @@ VectorX<T> RigidBodyPlant<T>::EvaluateActuatorInputs(
   return u;
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class RigidBodyPlant<double>;
-
 }  // namespace systems
 }  // namespace drake
+
+// Explicitly instantiates on the most common scalar types.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::RigidBodyPlant)

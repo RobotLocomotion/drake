@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -18,8 +17,10 @@ from pydrake.systems.framework import (
     )
 from pydrake.systems.primitives import (
     Adder,
+    AffineSystem,
     ConstantVectorSource,
     Integrator,
+    LinearSystem,
     SignalLogger,
     )
 
@@ -49,6 +50,7 @@ class TestGeneral(unittest.TestCase):
 
         # Create simulator specifying context.
         context = system.CreateDefaultContext()
+        context.set_time(0.)
         # @note `simulator` now owns `context`.
         simulator = Simulator(system, context)
         self.assertTrue(simulator.get_context() is context)
@@ -139,32 +141,34 @@ class TestGeneral(unittest.TestCase):
             print("xc[t = {}] = {}".format(t, xc))
             self.assertTrue(np.allclose(xc, xc_expected))
 
-    def test_signal_logger(self):
-        # Log the output of a simple diagram containing a constant
-        # source and an integrator.
-        builder = DiagramBuilder()
-        kValue = 2.4
-        source = builder.AddSystem(ConstantVectorSource([kValue]))
-        kSize = 1
-        integrator = builder.AddSystem(Integrator(kSize))
-        logger = builder.AddSystem(SignalLogger(kSize))
-        builder.Connect(source.get_output_port(0),
-                        integrator.get_input_port(0))
-        builder.Connect(integrator.get_output_port(0),
-                        logger.get_input_port(0))
+    def test_simulator_integrator_manipulation(self):
+        system = ConstantVectorSource([1])
 
-        diagram = builder.Build()
-        simulator = Simulator(diagram)
+        # Create simulator with basic constructor.
+        simulator = Simulator(system)
+        simulator.Initialize()
+        simulator.set_target_realtime_rate(0)
 
-        simulator.StepTo(1)
+        integrator = simulator.get_mutable_integrator()
 
-        t = logger.sample_times()
-        x = logger.data()
+        target_accuracy = 1E-6
+        integrator.set_target_accuracy(target_accuracy)
+        self.assertEqual(integrator.get_target_accuracy(), target_accuracy)
 
-        self.assertTrue(t.shape[0] > 2)
-        self.assertTrue(t.shape[0] == x.shape[1])
-        self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
+        maximum_step_size = 0.2
+        integrator.set_maximum_step_size(maximum_step_size)
+        self.assertEqual(integrator.get_maximum_step_size(), maximum_step_size)
 
+        minimum_step_size = 2E-2
+        integrator.set_requested_minimum_step_size(minimum_step_size)
+        self.assertEqual(integrator.get_requested_minimum_step_size(),
+                         minimum_step_size)
 
-if __name__ == '__main__':
-    unittest.main()
+        integrator.set_throw_on_minimum_step_size_violation(True)
+        self.assertTrue(integrator.get_throw_on_minimum_step_size_violation())
+
+        integrator.set_fixed_step_mode(True)
+        self.assertTrue(integrator.get_fixed_step_mode())
+
+        const_integrator = simulator.get_integrator()
+        self.assertTrue(const_integrator is integrator)

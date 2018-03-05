@@ -7,8 +7,8 @@
 #include <list>
 #include <memory>
 
-#include <lcm/lcm-cpp.hpp>
 #include "bot_core/robot_state_t.hpp"
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -18,7 +18,7 @@
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
-#include "drake/util/lcmUtil.h"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 
 namespace drake {
 namespace examples {

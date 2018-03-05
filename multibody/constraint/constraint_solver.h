@@ -1054,7 +1054,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
-  const double max_dot = (zz.size() > 0) ?
+  const T max_dot = (zz.size() > 0) ?
                          (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
 
   // NOTE: This LCP should always be solvable.

@@ -8,6 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
@@ -19,14 +20,19 @@ namespace multibody {
 namespace multibody_model {
 namespace {
 
+using benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
+using benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
+using Eigen::Isometry3d;
 using Eigen::MatrixXd;
-using multibody::benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
+using Eigen::Vector3d;
+using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using systems::Context;
 using systems::ContinuousState;
 
-// This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
-// multibody elements by name or get exceptions accordingly.
-GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
+// Helper method to verify the integrity of a MultibodyTree model of a Kuka iiwa
+// arm.
+template <typename T>
+void VerifyModelBasics(const MultibodyTree<T>& model) {
   const std::string kInvalidName = "InvalidName";
   const std::vector<std::string> kLinkNames = {
       "iiwa_link_1",
@@ -45,6 +51,98 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
       "iiwa_joint_6",
       "iiwa_joint_7"};
 
+  const std::vector<std::string> kActuatorNames = {
+      "iiwa_actuator_1",
+      "iiwa_actuator_2",
+      "iiwa_actuator_3",
+      "iiwa_actuator_4",
+      "iiwa_actuator_5",
+      "iiwa_actuator_6",
+      "iiwa_actuator_7"};
+
+  // Model Size. Counting the world body, there should be eight bodies.
+  EXPECT_EQ(model.num_bodies(), 8);  // It includes the "world" body.
+  EXPECT_EQ(model.num_joints(), 7);
+  EXPECT_EQ(model.num_actuators(), 7);
+  EXPECT_EQ(model.num_actuated_dofs(), 7);
+
+  // State size.
+  EXPECT_EQ(model.num_positions(), 7);
+  EXPECT_EQ(model.num_velocities(), 7);
+  EXPECT_EQ(model.num_states(), 14);
+
+  // Query if elements exist in the model.
+  for (const std::string link_name : kLinkNames) {
+    EXPECT_TRUE(model.HasBodyNamed(link_name));
+  }
+  EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
+
+  for (const std::string joint_name : kJointNames) {
+    EXPECT_TRUE(model.HasJointNamed(joint_name));
+  }
+  EXPECT_FALSE(model.HasJointNamed(kInvalidName));
+
+  for (const std::string actuator_name : kActuatorNames) {
+    EXPECT_TRUE(model.HasJointActuatorNamed(actuator_name));
+  }
+  EXPECT_FALSE(model.HasJointActuatorNamed(kInvalidName));
+
+  // Get links by name.
+  for (const std::string link_name : kLinkNames) {
+    const Body<T>& link = model.GetBodyByName(link_name);
+    EXPECT_EQ(link.name(), link_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.GetBodyByName(kInvalidName), std::logic_error,
+      "There is no body named '.*' in the model.");
+
+  // Get joints by name.
+  for (const std::string joint_name : kJointNames) {
+    const Joint<T>& joint = model.GetJointByName(joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.GetJointByName(kInvalidName), std::logic_error,
+      "There is no joint named '.*' in the model.");
+
+  // Templatized version to obtain retrieve a particular known type of joint.
+  for (const std::string joint_name : kJointNames) {
+    const RevoluteJoint<T>& joint =
+        model.template GetJointByName<RevoluteJoint>(joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.template GetJointByName<RevoluteJoint>(kInvalidName),
+      std::logic_error, "There is no joint named '.*' in the model.");
+
+  // Get actuators by name.
+  for (const std::string actuator_name : kActuatorNames) {
+    const JointActuator<T>& actuator =
+        model.GetJointActuatorByName(actuator_name);
+    EXPECT_EQ(actuator.name(), actuator_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.GetJointActuatorByName(kInvalidName), std::logic_error,
+      "There is no joint actuator named '.*' in the model.");
+
+  // Test we can retrieve joints from the actuators.
+  int names_index = 0;
+  for (const std::string actuator_name : kActuatorNames) {
+    const JointActuator<T>& actuator =
+        model.GetJointActuatorByName(actuator_name);
+    // We added actuators and joints in the same order. Assert this before
+    // making that assumption in the test that follows.
+    const Joint<T>& joint = actuator.joint();
+    ASSERT_EQ(actuator.index(), joint.index());
+    const std::string& joint_name = kJointNames[names_index];
+    EXPECT_EQ(joint.name(), joint_name);
+    ++names_index;
+  }
+}
+
+// This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
+// multibody elements by name or get exceptions accordingly.
+GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // Create a non-finalized model of the arm so that we can test adding more
   // elements to it.
   std::unique_ptr<MultibodyTree<double>> model =
@@ -68,13 +166,24 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
           /* Dummy frame definitions. Not relevant for this test. */
-          model->get_world_body(), {},
-          model->get_world_body(), {},
+          model->world_body(), {},
+          model->world_body(), {},
           Vector3<double>::UnitZ()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
       "This model already contains a joint named 'iiwa_joint_4'. "
       "Joint names must be unique within a given model.");
+
+  // Attempt to add a joint having the same name as a joint already part of the
+  // model. This is not allowed and an exception should be thrown.
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model->AddJointActuator(
+          "iiwa_actuator_4",
+          model->GetJointByName("iiwa_joint_4")),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "This model already contains a joint actuator named 'iiwa_actuator_4'. "
+          "Joint actuator names must be unique within a given model.");
 
   // Now we tested we cannot add body or joints with an existing name, finalize
   // the model.
@@ -83,53 +192,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   // Another call to Finalize() is not allowed.
   EXPECT_THROW(model->Finalize(), std::logic_error);
 
-  // Model Size. Counting the world body, there should be three bodies.
-  EXPECT_EQ(model->get_num_bodies(), 8);  // It includes the "world" body.
-  EXPECT_EQ(model->get_num_joints(), 7);
-
-  // State size.
-  EXPECT_EQ(model->get_num_positions(), 7);
-  EXPECT_EQ(model->get_num_velocities(), 7);
-  EXPECT_EQ(model->get_num_states(), 14);
-
-  // Query if elements exist in the model.
-  for (const std::string link_name : kLinkNames) {
-    EXPECT_TRUE(model->HasBodyNamed(link_name));
-  }
-  EXPECT_FALSE(model->HasBodyNamed(kInvalidName));
-
-  for (const std::string joint_name : kJointNames) {
-    EXPECT_TRUE(model->HasJointNamed(joint_name));
-  }
-  EXPECT_FALSE(model->HasJointNamed(kInvalidName));
-
-  // Get links by name.
-  for (const std::string link_name : kLinkNames) {
-    const Body<double>& link = model->GetBodyByName(link_name);
-    EXPECT_EQ(link.get_name(), link_name);
-  }
-  DRAKE_EXPECT_ERROR_MESSAGE(
-      model->GetBodyByName(kInvalidName), std::logic_error,
-      "There is no body named '.*' in the model.");
-
-  // Get joints by name.
-  for (const std::string joint_name : kJointNames) {
-    const Joint<double>& joint = model->GetJointByName(joint_name);
-    EXPECT_EQ(joint.get_name(), joint_name);
-  }
-  DRAKE_EXPECT_ERROR_MESSAGE(
-      model->GetJointByName(kInvalidName), std::logic_error,
-      "There is no joint named '.*' in the model.");
-
-  // Templatized version to obtain retrieve a particular known type of joint.
-  for (const std::string joint_name : kJointNames) {
-    const RevoluteJoint<double>& joint =
-        model->GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_EQ(joint.get_name(), joint_name);
-  }
-  DRAKE_EXPECT_ERROR_MESSAGE(
-      model->GetJointByName<RevoluteJoint>(kInvalidName), std::logic_error,
-      "There is no joint named '.*' in the model.");
+  VerifyModelBasics(*model);
 }
 
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
@@ -137,7 +200,7 @@ class KukaIiwaModelTests : public ::testing::Test {
  public:
   /// Creates MultibodyTree for a KUKA Iiwa robot arm.
   void SetUp() override {
-    model_ = MakeKukaIiwaModel<double>();
+    model_ = MakeKukaIiwaModel<double>(true /* Finalize model */, gravity_);
 
     // Keep pointers to the modeling elements.
     end_effector_link_ = &model_->GetBodyByName("iiwa_link_7");
@@ -156,6 +219,37 @@ class KukaIiwaModelTests : public ::testing::Test {
     context_autodiff_ = model_autodiff_->CreateDefaultContext();
   }
 
+  // Gets an arm state to an arbitrary configuration in which joint angles and
+  // rates are non-zero.
+  void GetArbitraryNonZeroConfiguration(
+      VectorX<double>* q, VectorX<double>* v) {
+    const int kNumPositions = model_->num_positions();
+    q->resize(kNumPositions);
+    v->resize(kNumPositions);  // q and v have the same dimension for kuka.
+
+    // A set of values for the joint's angles chosen mainly to avoid in-plane
+    // motions.
+    const double q30 = M_PI / 6, q60 = M_PI / 3;
+    const double qA = q60;
+    const double qB = q30;
+    const double qC = q60;
+    const double qD = q30;
+    const double qE = q60;
+    const double qF = q30;
+    const double qG = q60;
+    *q << qA, qB, qC, qD, qE, qF, qG;
+
+    // A non-zero set of values for the joint's velocities.
+    const double vA = 0.1;
+    const double vB = 0.2;
+    const double vC = 0.3;
+    const double vD = 0.4;
+    const double vE = 0.5;
+    const double vF = 0.6;
+    const double vG = 0.7;
+    *v << vA, vB, vC, vD, vE, vF, vG;
+  }
+
   // Computes the translational velocity `v_WE` of the end effector frame E in
   // the world frame W.
   template <typename T>
@@ -164,7 +258,18 @@ class KukaIiwaModelTests : public ::testing::Test {
       const Context<T>& context_on_T) const {
     std::vector<SpatialVelocity<T>> V_WB_array;
     model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
-    return V_WB_array[end_effector_link_->get_index()].translational();
+    return V_WB_array[end_effector_link_->index()].translational();
+  }
+
+  // Computes spatial velocity `V_WE` of the end effector frame E in the world
+  // frame W.
+  template <typename T>
+  SpatialVelocity<T> CalcEndEffectorSpatialVelocity(
+      const MultibodyTree<T>& model_on_T,
+      const Context<T>& context_on_T) const {
+    std::vector<SpatialVelocity<T>> V_WB_array;
+    model_on_T.CalcAllBodySpatialVelocitiesInWorld(context_on_T, &V_WB_array);
+    return V_WB_array[end_effector_link_->index()];
   }
 
   // Computes p_WEo, the position of the end effector frame's origin Eo.
@@ -175,9 +280,9 @@ class KukaIiwaModelTests : public ::testing::Test {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
     Vector3<T> p_WE;
     model_on_T.CalcPointsPositions(
-        context_on_T, linkG_on_T.get_body_frame(),
+        context_on_T, linkG_on_T.body_frame(),
         Vector3<T>::Zero(),  // position in frame G
-        model_on_T.get_world_body().get_body_frame(), &p_WE);
+        model_on_T.world_body().body_frame(), &p_WE);
     return p_WE;
   }
 
@@ -194,10 +299,12 @@ class KukaIiwaModelTests : public ::testing::Test {
       MatrixX<T>* p_WPi, MatrixX<T>* Jv_WPi) const {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
     model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.get_body_frame(), p_EPi, p_WPi, Jv_WPi);
+        context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jv_WPi);
   }
 
  protected:
+  // Acceleration of gravity:
+  const double gravity_{9.81};
   // The model plant:
   std::unique_ptr<MultibodyTree<double>> model_;
   // Workspace including context and derivatives vector:
@@ -210,7 +317,16 @@ class KukaIiwaModelTests : public ::testing::Test {
   // AutoDiffXd model to compute automatic derivatives:
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff_;
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
+
+  // And independent benchmarking set of solutions.
+  const MGKukaIIwaRobot<double> benchmark_{gravity_};
 };
+
+// Verifies the integrity of a scalar converted MultibodyTree from <double> to
+// <AutoDiffXd>.
+TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
+  VerifyModelBasics(*model_autodiff_);
+}
 
 // This test is used to verify the correctness of the method
 // MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
@@ -226,13 +342,13 @@ class KukaIiwaModelTests : public ::testing::Test {
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
 TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
-  const int kNumPositions = model_->get_num_positions();
-  const int kNumStates = model_->get_num_states();
+  const int kNumPositions = model_->num_positions();
+  const int kNumStates = model_->num_states();
 
   ASSERT_EQ(kNumPositions, 7);
 
-  ASSERT_EQ(model_autodiff_->get_num_positions(), kNumPositions);
-  ASSERT_EQ(model_autodiff_->get_num_states(), kNumStates);
+  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
 
   ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
   ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
@@ -242,27 +358,8 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  const double q30 = M_PI / 6, q60 = M_PI / 3;
-  const double qA = q60;
-  const double qB = q30;
-  const double qC = q60;
-  const double qD = q30;
-  const double qE = q60;
-  const double qF = q30;
-  const double qG = q60;
-  VectorX<double> q(kNumPositions);
-  q << qA, qB, qC, qD, qE, qF, qG;
-
-  // A non-zero set of values for the joint's velocities.
-  const double vA = 0.1;
-  const double vB = 0.2;
-  const double vC = 0.3;
-  const double vD = 0.4;
-  const double vE = 0.5;
-  const double vF = 0.6;
-  const double vG = 0.7;
-  VectorX<double> v(kNumPositions);
-  v << vA, vB, vC, vD, vE, vF, vG;
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
 
   // Zero generalized positions and velocities.
   int angle_index = 0;
@@ -301,11 +398,11 @@ TEST_F(KukaIiwaModelTests, GeometricJacobian) {
   EXPECT_EQ(v_WE_derivs.cols(), kNumPositions);
 
   Vector3<double> p_WE;
-  Matrix3X<double> Jv_WE(3, model_->get_num_velocities());
+  Matrix3X<double> Jv_WE(3, model_->num_velocities());
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
   model_->CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, end_effector_link_->get_body_frame(),
+      *context_, end_effector_link_->body_frame(),
       Vector3<double>::Zero(), &p_WE, &Jv_WE);
 
   // Verify the computed Jacobian matches the one obtained using automatic
@@ -363,16 +460,8 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
 
   // A set of values for the joint's angles chosen mainly to avoid in-plane
   // motions.
-  const double q30 = M_PI / 6, q60 = M_PI / 3;
-  const double qA = q60;
-  const double qB = q30;
-  const double qC = q60;
-  const double qD = q30;
-  const double qE = q60;
-  const double qF = q30;
-  const double qG = q60;
-  VectorX<double> q0(kNumPositions);
-  q0 << qA, qB, qC, qD, qE, qF, qG;
+  VectorX<double> q0, v0;  // v0 will not be used in this test.
+  GetArbitraryNonZeroConfiguration(&q0, &v0);
 
   context_->get_mutable_continuous_state().
       get_mutable_generalized_position().SetFromVector(q0);
@@ -431,6 +520,106 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   // In this case analytic and geometric Jacobians are equal since v = q.
   EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
                               kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joints' angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set joint angles and rates.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Spatial velocity of the end effector in the world frame.
+  const SpatialVelocity<double>& V_WE =
+      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+
+  // Pose of the end effector in the world frame.
+  const Isometry3<double>& X_WE =
+      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+
+  // Independent benchmark solution.
+  const SpatialKinematicsPVA<double> MG_kinematics =
+      benchmark_.CalcEndEffectorKinematics(
+          q, v, VectorX<double>::Zero(7) /* vdot */);
+  const SpatialVelocity<double>& V_WE_benchmark =
+      MG_kinematics.spatial_velocity();
+  const Isometry3<double>& X_WE_benchmark = MG_kinematics.transform();
+
+  // Compare against benchmark.
+  EXPECT_TRUE(V_WE.IsApprox(V_WE_benchmark, kTolerance));
+  EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_benchmark.matrix(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = model_->num_positions();
+  const int kNumStates = model_->num_states();
+
+  ASSERT_EQ(kNumPositions, 7);
+
+  ASSERT_EQ(model_autodiff_->num_positions(), kNumPositions);
+  ASSERT_EQ(model_autodiff_->num_states(), kNumStates);
+
+  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  // A set of values for the joints' angles chosen mainly to avoid in-plane
+  // motions.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set joint angles and rates.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Spatial velocity of the end effector.
+  const SpatialVelocity<double>& V_WE =
+      model_->EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
+
+  // Pose of the end effector.
+  const Isometry3d& X_WE =
+      model_->EvalBodyPoseInWorld(*context_, *end_effector_link_);
+
+  // Position of a frame F measured and expressed in frame E.
+  const Vector3d p_EoFo_E = Vector3d(0.2, -0.1, 0.5);
+  // Express this same last vector in the world frame.
+  const Vector3d p_EoFo_W = X_WE.linear() * p_EoFo_E;
+
+  // The spatial velocity of a frame F moving with E can be obtained by
+  // "shifting" the spatial velocity of frame E from Eo to Fo.
+  // That is, frame F has the spatial velocity of a frame Ef obtained by
+  // "shifting" from E by an offset p_EoFo.
+  const SpatialVelocity<double> V_WEf = V_WE.Shift(p_EoFo_W);
+
+  MatrixX<double> Jv_WF(6, model_->num_velocities());
+  // Compute the Jacobian Jv_WF for that relate the generalized velocities with
+  // the spatial velocity of frame F.
+  model_->CalcFrameGeometricJacobianExpressedInWorld(
+      *context_,
+      end_effector_link_->body_frame(), p_EoFo_E, &Jv_WF);
+
+  // Verify that V_WEf = Jv_WF * v:
+  const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
+
+  EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
 }  // namespace

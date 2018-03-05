@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <pybind11/eigen.h>
+#include "pybind11/eigen.h"
 
 namespace drake {
 namespace pydrake {

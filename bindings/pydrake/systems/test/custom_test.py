@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -275,7 +274,3 @@ class TestCustom(unittest.TestCase):
             system = TrivialSystem(index)
             context = system.CreateDefaultContext()
             self.assertEquals(context.get_continuous_state_vector().size(), 6)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -50,6 +50,27 @@ using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 template <typename Scalar>
 using VectorUpTo6 = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, 6, 1>;
 
+/// A row vector of size 2, templated on scalar type.
+template <typename Scalar>
+using RowVector2 = Eigen::Matrix<Scalar, 1, 2>;
+
+/// A row vector of size 3, templated on scalar type.
+template <typename Scalar>
+using RowVector3 = Eigen::Matrix<Scalar, 1, 3>;
+
+/// A row vector of size 4, templated on scalar type.
+template <typename Scalar>
+using RowVector4 = Eigen::Matrix<Scalar, 1, 4>;
+
+/// A row vector of size 6.
+template <typename Scalar>
+using RowVector6 = Eigen::Matrix<Scalar, 1, 6>;
+
+/// A row vector of any size, templated on scalar type.
+template <typename Scalar>
+using RowVectorX = Eigen::Matrix<Scalar, 1, Eigen::Dynamic>;
+
+
 /// A matrix of 2 rows and 2 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;

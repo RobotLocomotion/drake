@@ -1,8 +1,8 @@
-#include <pybind11/eigen.h>
-#include <pybind11/eval.h>
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/eigen.h"
+#include "pybind11/eval.h"
+#include "pybind11/functional.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -31,6 +31,9 @@ namespace drake {
 namespace pydrake {
 
 namespace {
+
+// TODO(eric.cousineau): This file is growing in size. Consider delegating
+// these bindings to multiple source files.
 
 // TODO(eric.cousineau): At present, we only bind doubles.
 // In the future, we will bind more scalar types, and enable scalar
@@ -280,7 +283,16 @@ PYBIND11_MODULE(framework, m) {
         "EvalVectorInput",
         [](const System<T>* self, const Context<T>& arg1, int arg2) {
           return self->EvalVectorInput(arg1, arg2);
-        }, py_reference_internal)
+        }, py_reference,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+        py::keep_alive<0, 2>())
+    .def(
+        "EvalAbstractInput",
+        [](const System<T>* self, const Context<T>& arg1, int arg2) {
+          return self->EvalAbstractInput(arg1, arg2);
+        }, py_reference,
+        // Keep alive, ownership: `return` keeps `Context` alive.
+        py::keep_alive<0, 2>())
     .def("CalcOutput", &System<T>::CalcOutput)
     // Sugar.
     .def(
@@ -349,10 +361,18 @@ PYBIND11_MODULE(framework, m) {
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort), py_reference_internal,
+             &Context<T>::FixInputPort),
+         py_reference_internal,
          // Keep alive, ownership: `BasicVector` keeps `self` alive.
          py::keep_alive<3, 1>())
+    .def("FixInputPort",
+         py::overload_cast<int, unique_ptr<AbstractValue>>(
+             &Context<T>::FixInputPort),
+         py_reference_internal,
+         // Keep alive, ownership: `AbstractValue` keeps `self` alive.
+         py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
+    .def("set_time", &Context<T>::set_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
     .def("__deepcopy__", [](const Context<T>* self, py::dict /* memo */) {
@@ -430,14 +450,20 @@ PYBIND11_MODULE(framework, m) {
   // signatures(e.g. GetValue<T>()).
   py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
 
-  py::class_<OutputPort<T>>(m, "OutputPort");
+  py::class_<OutputPort<T>>(m, "OutputPort")
+    .def("size", &OutputPort<T>::size);
 
-  py::class_<SystemOutput<T>>(m, "SystemOutput")
+  py::class_<SystemOutput<T>> system_output(m, "SystemOutput");
+  DefClone(&system_output);
+  system_output
     .def("get_num_ports", &SystemOutput<T>::get_num_ports)
+    .def("get_data", &SystemOutput<T>::get_data,
+         py_reference_internal)
     .def("get_vector_data", &SystemOutput<T>::get_vector_data,
          py_reference_internal);
 
-  py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor");
+  py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor")
+    .def("size", &InputPortDescriptor<T>::size);
 
   // Value types.
   py::class_<VectorBase<T>>(m, "VectorBase")
@@ -530,8 +556,58 @@ PYBIND11_MODULE(framework, m) {
       });
 
   // Parameters.
-  // TODO(eric.cousineau): Fill this out.
-  py::class_<Parameters<T>>(m, "Parameters");
+  py::class_<Parameters<T>> parameters(m, "Parameters");
+  DefClone(&parameters);
+  using BasicVectorPtrList = vector<unique_ptr<BasicVector<T>>>;
+  using AbstractValuePtrList = vector<unique_ptr<AbstractValue>>;
+  parameters
+    .def(py::init<>())
+    // TODO(eric.cousineau): Ensure that we can respect keep alive behavior
+    // with lists of pointers.
+    .def(py::init<BasicVectorPtrList, AbstractValuePtrList>(),
+         py::arg("numeric"), py::arg("abstract"))
+    .def(py::init<BasicVectorPtrList>(), py::arg("numeric"))
+    .def(py::init<AbstractValuePtrList>(), py::arg("abstract"))
+    .def(py::init<unique_ptr<BasicVector<T>>>(), py::arg("vec"),
+         // Keep alive, ownership: `vec` keeps `self` alive.
+         py::keep_alive<2, 1>())
+    .def(py::init<unique_ptr<AbstractValue>>(), py::arg("value"),
+         // Keep alive, ownership: `value` keeps `self` alive.
+         py::keep_alive<2, 1>())
+    .def("num_numeric_parameters", &Parameters<T>::num_numeric_parameters)
+    .def("num_abstract_parameters", &Parameters<T>::num_abstract_parameters)
+    .def("get_numeric_parameter", &Parameters<T>::get_numeric_parameter,
+         py_reference_internal, py::arg("index"))
+    .def("get_mutable_numeric_parameter",
+         &Parameters<T>::get_mutable_numeric_parameter,
+         py_reference_internal, py::arg("index"))
+    .def("get_numeric_parameters", &Parameters<T>::get_numeric_parameters,
+         py_reference_internal)
+    // TODO(eric.cousineau): Should this C++ code constrain the number of
+    // parameters???
+    .def("set_numeric_parameters", &Parameters<T>::set_numeric_parameters,
+         // WARNING: This will DELETE the existing parameters. See C++
+         // `AddValueInstantiation` for more information.
+         // Keep alive, ownership: `value` keeps `self` alive.
+         py::keep_alive<2, 1>(), py::arg("numeric_params"))
+    .def("get_abstract_parameter",
+         [](const Parameters<T>* self, int index) -> auto& {
+           return self->get_abstract_parameter(index);
+         },
+         py_reference_internal, py::arg("index"))
+    .def("get_mutable_abstract_parameter",
+         [](Parameters<T>* self, int index) -> auto& {
+           return self->get_mutable_abstract_parameter(index);
+         },
+         py_reference_internal, py::arg("index"))
+    .def("get_abstract_parameters", &Parameters<T>::get_abstract_parameters,
+         py_reference_internal)
+    .def("set_abstract_parameters", &Parameters<T>::set_abstract_parameters,
+         // WARNING: This will DELETE the existing parameters. See C++
+         // `AddValueInstantiation` for more information.
+         // Keep alive, ownership: `value` keeps `self` alive.
+         py::keep_alive<2, 1>(), py::arg("abstract_params"))
+    .def("SetFrom", &Parameters<T>::SetFrom);
 
   // State.
   py::class_<State<T>>(m, "State")
@@ -550,7 +626,9 @@ PYBIND11_MODULE(framework, m) {
     .def("get_mutable_vector",
          &ContinuousState<T>::get_mutable_vector, py_reference_internal);
 
-  py::class_<DiscreteValues<T>>(m, "DiscreteValues")
+  py::class_<DiscreteValues<T>> discrete_values(m, "DiscreteValues");
+  DefClone(&discrete_values);
+  discrete_values
     .def("num_groups", &DiscreteValues<T>::num_groups)
     .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal)
     .def("get_vector",
@@ -562,7 +640,14 @@ PYBIND11_MODULE(framework, m) {
             &DiscreteValues<T>::get_mutable_vector),
          py_reference_internal, py::arg("index") = 0);
 
-  py::class_<AbstractValues>(m, "AbstractValues");
+  // N.B. `AbstractValues` provides the ability to reference non-owned values,
+  // without copying them. For consistency with other model-value Python
+  // bindings, only the ownership variant is exposed.
+  py::class_<AbstractValues> abstract_values(m, "AbstractValues");
+  DefClone(&abstract_values);
+  abstract_values
+    .def(py::init<>())
+    .def(py::init<AbstractValuePtrList>());
 
   // Additional derivative Systems which are not glue, but do not fall under
   // `//systems/primitives`.

@@ -57,7 +57,3 @@ class BuildifierTest(unittest.TestCase):
         self.assertIn(
             "do not use 'bazel run' for buildifier in fix mode",
             output)
-
-
-if __name__ == '__main__':
-    unittest.main()

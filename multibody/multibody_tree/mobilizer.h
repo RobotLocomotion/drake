@@ -41,7 +41,7 @@ template<typename T> class BodyNode;
 /// // the pendulum body.
 /// FixedOffsetFrame<double>& pin_frame =
 ///   model.AddFrame<FixedOffsetFrame>(
-///     pendulum.get_body_frame(),
+///     pendulum.body_frame(),
 ///     X_BP /* pose of pin frame P in body frame B */);
 /// // The mobilizer connects the world frame and the pin frame effectively
 /// // adding the single degree of freedom describing this system. In this
@@ -50,7 +50,7 @@ template<typename T> class BodyNode;
 /// // of freedom but the one permitting rotation about the z-axis.
 /// const RevoluteMobilizer<double>& revolute_mobilizer =
 ///   model.AddMobilizer<RevoluteMobilizer>(
-///     model.get_world_frame(), /* inboard frame */
+///     model.world_frame(), /* inboard frame */
 ///     pin_frame, /* outboard frame */
 ///     Vector3d::UnitZ() /* revolute axis in this case */));
 /// @endcode
@@ -242,47 +242,47 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// Returns the number of generalized coordinates granted by this mobilizer.
   /// As an example, consider RevoluteMobilizer, for which
-  /// `get_num_positions() == 1` since RevoluteMobilizer adds a single
+  /// `num_positions() == 1` since RevoluteMobilizer adds a single
   /// generalized coordinate representing the rotational degree of freedom about
   /// a given axis between the inboard and outboard frames. Another example
   /// would be a 6 DOF "free" mobilizer internally using a quaternion
   /// representation to parametrize free rotations and a position vector to
   /// parametrize free translations; this method would return 7 (a quaternion
   /// plus a position vector).
-  /// @see get_num_velocities()
-  virtual int get_num_positions() const = 0;
+  /// @see num_velocities()
+  virtual int num_positions() const = 0;
 
   /// Returns the number of generalized velocities granted by this mobilizer.
   /// Given that all physics occurs in the generalized velocities space, the
   /// number of generalized velocities exactly matches the number of degrees of
   /// freedom granted by the mobilizer.
   /// As an example, consider RevoluteMobilizer, for which
-  /// `get_num_velocities() == 1` since for RevoluteMobilizer its one and only
+  /// `num_velocities() == 1` since for RevoluteMobilizer its one and only
   /// generalized velocity describes the magnitude of the angular velocity about
   /// a given axis between the inboard and outboard frames.
-  /// @see get_num_positions()
-  virtual int get_num_velocities() const = 0;
+  /// @see num_positions()
+  virtual int num_velocities() const = 0;
 
   /// Returns a constant reference to the inboard frame.
-  const Frame<T>& get_inboard_frame() const {
+  const Frame<T>& inboard_frame() const {
     return inboard_frame_;
   }
 
   /// Returns a constant reference to the outboard frame.
-  const Frame<T>& get_outboard_frame() const {
+  const Frame<T>& outboard_frame() const {
     return outboard_frame_;
   }
 
   /// Returns a constant reference to the body associated with `this`
   /// mobilizer's inboard frame.
-  const Body<T>& get_inboard_body() const {
-    return get_inboard_frame().get_body();
+  const Body<T>& inboard_body() const {
+    return inboard_frame().body();
   }
 
   /// Returns a constant reference to the body associated with `this`
   /// mobilizer's outboard frame.
-  const Body<T>& get_outboard_body() const {
-    return get_outboard_frame().get_body();
+  const Body<T>& outboard_body() const {
+    return outboard_frame().body();
   }
 
   /// Returns the topology information for this mobilizer. Users should not
@@ -345,13 +345,13 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// to the input vector of generalized velocities `v`, i.e. the output of this
   /// method is the application `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where
   /// `nv` is the number of generalized velocities of this mobilizer (see
-  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
+  /// num_velocities()) and M⁶ is the vector space of "motion vectors" (be
   /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
   /// velocities in Drake are not Plücker vectors as in Featherstone's book).
   /// Therefore we say this method is the _operator form_ of the Jacobian
   /// matrix `H_FM(q)`.
   /// This method aborts in Debug builds if the dimension of the input vector of
-  /// generalized velocities has a size different from get_num_velocities().
+  /// generalized velocities has a size different from num_velocities().
   ///
   /// @param[in] context The context of the parent tree that owns this
   /// mobilizer. This mobilizer's generalized positions q are inferred from this
@@ -368,13 +368,13 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// This method can be thought of as the application of the operation
   /// `v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`, where
   /// `nv` is the number of generalized velocities of this mobilizer (see
-  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
+  /// num_velocities()) and M⁶ is the vector space of "motion vectors" (be
   /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
   /// vectors in Drake are not Plücker vectors as in Featherstone's book).
   /// Therefore, we say this method is in its _operator form_; the Jacobian
   /// matrix `H_FM(q)` is not explicitly formed.
   /// This method aborts in Debug builds if the dimension of the input vector of
-  /// generalized accelerations has a size different from get_num_velocities().
+  /// generalized accelerations has a size different from num_velocities().
   ///
   /// @param[in] context
   ///   The context of the parent tree that owns this mobilizer. This
@@ -401,13 +401,13 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// `H_FMᵀ(q)` to the input spatial force `F_Mo_F`, i.e. the output of this
   /// method is the application `F_Mo_F ∈ F⁶ → ℝⁿᵛ: tau = H_FMᵀ(q) * F_Mo_F`,
   /// where `nv` is the number of generalized velocities of this mobilizer (see
-  /// get_num_velocities()) and F⁶ is the vector space of "force vectors" (be
+  /// num_velocities()) and F⁶ is the vector space of "force vectors" (be
   /// aware that while F⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
   /// forces in Drake are not Plücker vectors as in Featherstone's book).
   /// Therefore we say this method is the _operator form_ of the Jacobian
   /// matrix transpose `H_FMᵀ(q)`.
   /// This method aborts in Debug builds if the dimension of the output vector
-  /// of generalized forces has a size different from get_num_velocities().
+  /// of generalized forces has a size different from num_velocities().
   ///
   /// @param[in] context
   ///   The context of the parent tree that owns this mobilizer. This
@@ -444,11 +444,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// for `this` mobilizer from a vector `q_array` of generalized positions for
   /// the entire MultibodyTree model.
   /// This method aborts if `q_array` is not of size
-  /// MultibodyTree::get_num_positions().
+  /// MultibodyTree::num_positions().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
   get_positions_from_array(const Eigen::Ref<const VectorX<T>>& q_array) const {
     DRAKE_DEMAND(
-        q_array.size() == this->get_parent_tree().get_num_positions());
+        q_array.size() == this->get_parent_tree().num_positions());
     return q_array.segment(topology_.positions_start,
                            topology_.num_positions);
   }
@@ -458,7 +458,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       EigenPtr<VectorX<T>> q_array) const {
     DRAKE_DEMAND(q_array != nullptr);
     DRAKE_DEMAND(
-        q_array->size() == this->get_parent_tree().get_num_positions());
+        q_array->size() == this->get_parent_tree().num_positions());
     return q_array->segment(topology_.positions_start,
                             topology_.num_positions);
   }
@@ -467,11 +467,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// for `this` mobilizer from a vector `v_array` of generalized velocities for
   /// the entire MultibodyTree model.
   /// This method aborts if the input array is not of size
-  /// MultibodyTree::get_num_velocities().
+  /// MultibodyTree::num_velocities().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
   get_velocities_from_array(const Eigen::Ref<const VectorX<T>>& v_array) const {
     DRAKE_DEMAND(
-        v_array.size() == this->get_parent_tree().get_num_velocities());
+        v_array.size() == this->get_parent_tree().num_velocities());
     return v_array.segment(topology_.velocities_start_in_v,
                            topology_.num_velocities);
   }
@@ -481,7 +481,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       EigenPtr<VectorX<T>> v_array) const {
     DRAKE_DEMAND(v_array != nullptr);
     DRAKE_DEMAND(
-        v_array->size() == this->get_parent_tree().get_num_velocities());
+        v_array->size() == this->get_parent_tree().num_velocities());
     return v_array->segment(topology_.velocities_start_in_v,
                             topology_.num_velocities);
   }
@@ -490,7 +490,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// accelerations for `this` mobilizer from a vector `vdot_array` of
   /// generalized accelerations for the entire MultibodyTree model.
   /// This method aborts if the input array is not of size
-  /// MultibodyTree::get_num_velocities().
+  /// MultibodyTree::num_velocities().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
   get_accelerations_from_array(
       const Eigen::Ref<const VectorX<T>>& vdot_array) const {
@@ -508,7 +508,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// for `this` mobilizer from a vector of generalized forces for the
   /// entire MultibodyTree model.
   /// This method aborts if the input array is not of size
-  /// MultibodyTree::get_num_velocities().
+  /// MultibodyTree::num_velocities().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
   get_generalized_forces_from_array(
       const Eigen::Ref<const VectorX<T>>& tau_array) const {
@@ -519,24 +519,6 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
   get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau_array) const {
-    return get_mutable_velocities_from_array(tau_array);
-  }
-
-  /// Returns a const Eigen expression of the vector of generalized velocities
-  /// for `this` mobilizer from a vector of generalized velocities for the
-  /// entire MultibodyTree model.
-  /// @note This same method can be used to access arrays of generalized
-  /// accelerations (v̇) and of generalized forces (τ) since they all have the
-  /// same dimensions and are indexed in the same way.
-  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
-      const VectorX<T>& tau_array) const {
-    return get_velocities_from_array(tau_array);
-  }
-
-  /// Mutable version of get_velocities_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
-  get_mutable_generalized_forces_from_array(
-      Eigen::Ref<VectorX<T>> tau_array) const {
     return get_mutable_velocities_from_array(tau_array);
   }
 
@@ -585,7 +567,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_mobilizer(this->get_index());
+    topology_ = tree_topology.get_mobilizer(this->index());
   }
 
   const Frame<T>& inboard_frame_;

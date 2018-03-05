@@ -309,6 +309,8 @@ class Expression {
   Expression& operator++();
   /** Provides postfix increment operator (i.e. x++). */
   Expression operator++(int);
+  /** Provides unary plus operator. */
+  friend Expression operator+(const Expression& e);
 
   friend Expression operator-(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -470,6 +472,7 @@ class Expression {
 Expression operator+(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const Expression& rhs);
+Expression operator+(const Expression& e);
 Expression operator-(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs);
@@ -666,30 +669,6 @@ typename std::enable_if<
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator+=(Expression& lhs, const Variable& rhs);
-Expression operator+(const Variable& lhs, const Variable& rhs);
-Expression operator+(Expression lhs, const Variable& rhs);
-Expression operator+(const Variable& lhs, Expression rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator-=(Expression& lhs, const Variable& rhs);
-Expression operator-(const Variable& lhs, const Variable& rhs);
-Expression operator-(Expression lhs, const Variable& rhs);
-Expression operator-(const Variable& lhs, const Expression& rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator*=(Expression& lhs, const Variable& rhs);
-Expression operator*(const Variable& lhs, const Variable& rhs);
-Expression operator*(Expression lhs, const Variable& rhs);
-Expression operator*(const Variable& lhs, Expression rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator/=(Expression& lhs, const Variable& rhs);
-Expression operator/(const Variable& lhs, const Variable& rhs);
-Expression operator/(Expression lhs, const Variable& rhs);
-Expression operator/(const Variable& lhs, const Expression& rhs);
 
 Expression operator+(const Variable& var);
 Expression operator-(const Variable& var);

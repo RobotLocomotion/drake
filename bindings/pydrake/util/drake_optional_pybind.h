@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pybind11/stl.h>
+#include "pybind11/stl.h"
 
 // TODO(eric.cousineau): Merge this with `pydrake_pybind` when it is available
 // (#7829).

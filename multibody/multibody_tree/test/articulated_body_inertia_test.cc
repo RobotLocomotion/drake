@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -43,6 +44,10 @@ GTEST_TEST(ArticulatedBodyInertia, ConstructionNonTrivial) {
   // Construct from spatial inertia.
   const ArticulatedBodyInertia<double> P(M);
   EXPECT_TRUE(P.CopyToFullMatrix6().isApprox(M.CopyToFullMatrix6(), kEpsilon));
+
+  // Construct from matrix.
+  const ArticulatedBodyInertia<double> P2(M.CopyToFullMatrix6());
+  EXPECT_TRUE(P2.CopyToFullMatrix6().isApprox(M.CopyToFullMatrix6(), kEpsilon));
 }
 
 // Tests that we can correctly cast a ArticulatedBodyInertia<double> to a
@@ -141,7 +146,7 @@ GTEST_TEST(ArticulatedBodyInertia, PlusEqualOperator) {
 
 // Test the times equal for operator for multiplying on the left and right
 // by arbitrary Eigen matrices of valid sizes.
-GTEST_TEST(ArticulatedBodyInertia, TimesEqualOperator) {
+GTEST_TEST(ArticulatedBodyInertia, TimesOperator) {
   // Spatial inertia for a cube C.
   double Lx = 1.0, Ly = 1.0, Lz = 1.0;  // Cube's lengths.
   double mass = 1.0;  // Cube's mass
@@ -175,6 +180,17 @@ GTEST_TEST(ArticulatedBodyInertia, TimesEqualOperator) {
   // right are the same as operating directly on the the matrix.
   EXPECT_TRUE((H2.transpose() * P_matrix * H2).isApprox(
       H2.transpose() * P * H2, kEpsilon));
+}
+
+// Tests support (though limited) for symbolic::Expression.
+GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
+  // IsPhysicallyValid() supported for numeric types.
+  ArticulatedBodyInertia<double> Pd;
+  EXPECT_NO_THROW(Pd.IsPhysicallyValid());
+
+  // IsPhysicallyValid() not supported for non-numeric types.
+  ArticulatedBodyInertia<symbolic::Expression> Ps;
+  EXPECT_ANY_THROW(Ps.IsPhysicallyValid());
 }
 
 }  // namespace

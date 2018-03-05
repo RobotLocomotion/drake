@@ -6,7 +6,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
@@ -139,8 +139,8 @@ struct QPLocomotionPlanSettings {
       RigidBodyTree<double>& robot,
       const std::vector<std::string>& joint_name_substrings) {
     std::vector<int> ret;
-    for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
-         ++body_it) {
+    for (auto body_it = robot.get_bodies().begin();
+         body_it != robot.get_bodies().end(); ++body_it) {
       RigidBody<double>& body = **body_it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();

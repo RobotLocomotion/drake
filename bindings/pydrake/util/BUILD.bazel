@@ -18,6 +18,11 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
+    "drake_py_unittest",
+)
+load(
+    "//tools/workspace/pybind11:repository.bzl",
+    "generate_pybind11_version_py_file",
 )
 
 package(default_visibility = [
@@ -132,6 +137,19 @@ drake_cc_library(
     hdrs = ["type_safe_index_pybind.h"],
 )
 
+generate_pybind11_version_py_file(
+    name = "pybind11_version.py",
+)
+
+drake_py_library(
+    name = "pybind11_version_py",
+    srcs = ["pybind11_version.py"],
+    tags = ["nolint"],  # Do not lint generated files.
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
@@ -142,6 +160,7 @@ PY_LIBRARIES = [
     ":cpp_template_py",
     ":module_py",
     ":module_shim_py",
+    ":pybind11_version_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -194,19 +213,20 @@ drake_py_library(
 drake_py_test(
     name = "module_shim_test",
     srcs = ["test/module_shim_test.py"],
+    allow_import_unittest = True,
     deps = [
         ":module_shim_example",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "cpp_const_test",
     deps = [
         ":cpp_const_py",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "cpp_param_test",
     deps = [
         ":cpp_param_py",
@@ -219,7 +239,7 @@ drake_pybind_cc_googletest(
     py_deps = [":cpp_param_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "cpp_template_test",
     deps = [
         ":cpp_template_py",
@@ -245,7 +265,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "eigen_geometry_test",
     deps = [
         ":eigen_geometry_py",
@@ -258,6 +278,13 @@ drake_pybind_cc_googletest(
     cc_deps = [
         ":type_safe_index_pybind",
         "//common:nice_type_name",
+    ],
+)
+
+drake_py_unittest(
+    name = "pybind11_version_test",
+    deps = [
+        ":pybind11_version_py",
     ],
 )
 

@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include <pybind11/pybind11.h>
+#include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"

@@ -54,6 +54,19 @@ VectorX<T> BarycentricMesh<T>::get_mesh_point(int index) const {
 }
 
 template <typename T>
+MatrixX<T> BarycentricMesh<T>::get_all_mesh_points() const {
+  const int M = get_input_size();
+  const int N = get_num_mesh_points();
+  VectorX<T> point(M);
+  MatrixX<T> points(M, N);
+  for (int i = 0; i < N; i++) {
+    get_mesh_point(i, &point);
+    points.col(i) = point;
+  }
+  return points;
+}
+
+template <typename T>
 void BarycentricMesh<T>::EvalBarycentricWeights(
     const Eigen::Ref<const VectorX<T>>& input,
     EigenPtr<Eigen::VectorXi> mesh_indices,
@@ -146,27 +159,14 @@ template <typename T>
 void BarycentricMesh<T>::Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
                               const Eigen::Ref<const VectorX<T>>& input,
                               EigenPtr<VectorX<T>> output) const {
-  DRAKE_DEMAND(input.size() == get_input_size());
-  DRAKE_DEMAND(mesh_values.cols() == get_num_mesh_points());
-
-  Eigen::VectorXi mesh_indices(num_interpolants_);
-  VectorX<T> weights(num_interpolants_);
-
-  EvalBarycentricWeights(input, &mesh_indices, &weights);
-
-  *output = weights[0] * mesh_values.col(mesh_indices[0]);
-  for (int i = 1; i < num_interpolants_; i++) {
-    *output += weights[i] * mesh_values.col(mesh_indices[i]);
-  }
+  EvalWithMixedScalars<T>(mesh_values, input, output);
 }
 
 template <typename T>
 VectorX<T> BarycentricMesh<T>::Eval(
     const Eigen::Ref<const MatrixX<T>>& mesh_values,
     const Eigen::Ref<const VectorX<T>>& input) const {
-  VectorX<T> output(mesh_values.rows());
-  Eval(mesh_values, input, &output);
-  return output;
+  return EvalWithMixedScalars<T>(mesh_values, input);
 }
 
 template <typename T>

@@ -16,7 +16,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 
 package(default_visibility = [
@@ -66,6 +66,9 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "primitives_py",
+    cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
+    ],
     cc_so_name = "primitives",
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -83,6 +86,24 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "controllers_py",
+    cc_deps = [
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:wrap_function",
+    ],
+    cc_so_name = "controllers",
+    cc_srcs = ["controllers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        ":primitives_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake:symbolic_py",
     ],
 )
 
@@ -125,6 +146,7 @@ drake_py_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
+    ":controllers_py",
     ":framework_py",
     ":primitives_py",
     ":rendering_py",
@@ -156,7 +178,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "general_test",
     size = "small",
     deps = [
@@ -195,7 +217,7 @@ drake_pybind_library(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "lifetime_test",
     deps = [
         ":analysis_py",
@@ -205,7 +227,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "custom_test",
     size = "small",
     deps = [
@@ -216,7 +238,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "value_test",
     size = "small",
     deps = [
@@ -225,7 +247,26 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
+    name = "controllers_test",
+    size = "small",
+    deps = [
+        ":controllers_py",
+        "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "primitives_test",
+    size = "small",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+    ],
+)
+
+drake_py_unittest(
     name = "sensors_test",
     size = "small",
     deps = [
@@ -233,7 +274,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "rendering_test",
     size = "small",
     deps = [

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 This tests ODR for how we wrap our Python.
 This is tested explicitly with symbolic::Variable, given that it has global
@@ -25,7 +23,3 @@ class TestODR(unittest.TestCase):
         x1 = sym.Variable('x')
         x2 = odr_test_module.new_variable('x')
         self.assertNotEqual(x1.get_id(), x2.get_id())
-
-
-if __name__ == '__main__':
-    unittest.main()

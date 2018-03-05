@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/primitives/affine_system.h"
 
@@ -87,8 +88,7 @@ class LinearSystem : public AffineSystem<T> {
                const Eigen::Ref<const Eigen::MatrixXd>& A,
                const Eigen::Ref<const Eigen::MatrixXd>& B,
                const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
-               double time_period);
+               const Eigen::Ref<const Eigen::MatrixXd>& D, double time_period);
 };
 
 /// Base class for a discrete or continuous linear time-varying (LTV) system.
@@ -131,11 +131,10 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   /// @param num_inputs size of the system's input vector
   /// @param num_outputs size of the system's output vector
   /// @param time_period discrete update period, or 0.0 to use continuous time
-  TimeVaryingLinearSystem(SystemScalarConverter converter,
-                          int num_states, int num_inputs, int num_outputs,
-                          double time_period) : TimeVaryingAffineSystem<T>(
-          std::move(converter), num_states, num_inputs, num_outputs,
-          time_period) {}
+  TimeVaryingLinearSystem(SystemScalarConverter converter, int num_states,
+                          int num_inputs, int num_outputs, double time_period)
+      : TimeVaryingAffineSystem<T>(std::move(converter), num_states, num_inputs,
+                                   num_outputs, time_period) {}
 
  private:
   // N.B. A linear system is simply a restricted form of an affine system with
@@ -148,20 +147,43 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   }
 };
 
+/// @defgroup Additional options for input/output port specification.
+/// @{
+// TODO(russt): Move these to a more central location if they are useful in
+// other related methods.
+const int kNoInput = -1;
+const int kUseFirstInputIfItExists = -2;
+
+const int kNoOutput = -3;
+const int kUseFirstOutputIfItExists = -4;
+/// @}
+
 /// Takes the first-order Taylor expansion of a System around a nominal
 /// operating point (defined by the Context).
+///
+/// This method currently supports linearizing around at most a single vector
+/// input port and at most a single vector output port.  For systems with
+/// more ports, use @p input_port_index and @p output_port_index to select
+/// the input for the newly constructed system.  Any additional input ports
+/// will be treated as constants (fixed at the value specified in @p context).
 ///
 /// @param system The system or subsystem to linearize.
 /// @param context Defines the nominal operating point about which the system
 /// should be linearized.  See note below.
+/// @param input_port_index A valid input port index for @p system or kNoInput
+/// or (default) kUseFirstInputIfItExists.
+/// @param output_port_index A valid output port index for @p system or
+/// kNoOutput or (default) kUseFirstOutputIfItExists.
 /// @param equilibrium_check_tolerance Specifies the tolerance on ensuring that
 /// the derivative vector isZero at the nominal operating point.  @default 1e-6.
 /// @returns A LinearSystem that approximates the original system in the
 /// vicinity of the operating point.  See note below.
 /// @throws std::runtime_error if the system the operating point is not an
 /// equilibrium point of the system (within the specified tolerance)
+/// @throws std::runtime_error if the system if the system is not (only)
+/// continuous or (only) discrete time with a single periodic update.
 ///
-/// Note: The inputs in the Context must be connected, either to the
+/// Note: All inputs in the Context must be connected, either to the
 /// output of some upstream System within a Diagram (e.g., if system is a
 /// reference to a subsystem in a Diagram), or to a constant value using, e.g.
 ///   context->FixInputPort(0,default_input);
@@ -176,6 +198,8 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 ///
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
+    int input_port_index = kUseFirstInputIfItExists,
+    int output_port_index = kUseFirstOutputIfItExists,
     double equilibrium_check_tolerance = 1e-6);
 
 /// A first-order Taylor series approximation to a @p system in the neighborhood
@@ -196,18 +220,34 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 /// where @f$ f0 = \dot{x0} - A x0 - B u0 @f$ (CT) and
 /// @f$ f0 = x0[n+1] - A x[n] - B u[n] @f$ (DT).
 ///
+/// This method currently supports approximating around at most a single vector
+/// input port and at most a single vector output port.  For systems with
+/// more ports, use @p input_port_index and @p output_port_index to select
+/// the input for the newly constructed system.  Any additional input ports
+/// will be treated as constants (fixed at the value specified in @p context).
+///
 /// @param system The system or subsystem to linearize.
 /// @param context Defines the nominal operating point about which the system
 /// should be linearized.
+/// @param input_port_index A valid input port index for @p system or kNoInput
+/// or (default) kUseFirstInputIfItExists.
+/// @param output_port_index A valid output port index for @p system or
+/// kNoOutput or (default) kUseFirstOutputIfItExists.
 /// @returns An AffineSystem at this linearization point.
+/// @throws std::runtime_error if the system if the system is not (only)
+/// continuous or (only) discrete time with a single periodic update.
 ///
 /// Note that x, u and y are in the same coordinate system as the original
 /// @p system, since the terms involving x0, u0 reside in f0.
 ///
 /// @ingroup primitive_systems
 ///
+// Note: The TypeSafeIndices (InputPortIndex and OutputPortIndex) didn't let
+// me handle the additional options without a lot of boilerplate.
 std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
-    const System<double>& system, const Context<double>& context);
+    const System<double>& system, const Context<double>& context,
+    int input_port_index = kUseFirstInputIfItExists,
+    int output_port_index = kUseFirstOutputIfItExists);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 /// @ingroup control_systems
@@ -216,7 +256,7 @@ Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys);
 /// Returns true iff the controllability matrix is full row rank.
 /// @ingroup control_systems
 bool IsControllable(const LinearSystem<double>& sys,
-                    double threshold = Eigen::Default);
+                    optional<double> threshold = nullopt);
 
 /// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
 /// @ingroup estimator_systems
@@ -225,7 +265,7 @@ Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys);
 /// Returns true iff the observability matrix is full column rank.
 /// @ingroup estimator_systems
 bool IsObservable(const LinearSystem<double>& sys,
-                  double threshold = Eigen::Default);
+                  optional<double> threshold = nullopt);
 
 }  // namespace systems
 }  // namespace drake

@@ -15,9 +15,7 @@ def _gurobi_impl(repository_ctx):
         gurobi_path = "/Library/gurobi752/mac64"
         repository_ctx.symlink(gurobi_path, "gurobi-distro")
         warning = "Gurobi 7.5.2 is not installed."
-
-        repository_ctx.file("empty.cc", executable = False)
-        srcs = ["empty.cc"]
+        srcs = []
 
         lib_path = repository_ctx.path("gurobi-distro/lib")
         linkopts = [

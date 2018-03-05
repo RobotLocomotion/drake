@@ -55,6 +55,7 @@ drake_cc_library(
         "random_rotation.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
+        "rotation_matrix_utilities.cc",
     ],
     hdrs = [
         "axis_angle.h",
@@ -64,10 +65,12 @@ drake_cc_library(
         "roll_pitch_yaw_not_using_quaternion.h",
         "roll_pitch_yaw_using_quaternion.h",
         "rotation_matrix.h",
+        "rotation_matrix_utilities.h",
     ],
     deps = [
         "//common:essential",
         "//common:is_approx_equal_abstol",
+        "//multibody/multibody_tree/math:rotation_matrix",
     ],
 )
 
@@ -192,6 +195,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "wrap_to",
+    srcs = [],
+    hdrs = ["wrap_to.h"],
+    deps = [
+        "//common:double",
+        "//common:essential",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -207,6 +220,7 @@ drake_cc_googletest(
     name = "barycentric_test",
     deps = [
         ":barycentric",
+        "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -335,7 +349,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rotation_matrix_test",
+    name = "rotation_matrix_utilities_test",
     deps = [
         ":geometric_transform",
         "//common/test_utilities:eigen_matrix_compare",
@@ -357,6 +371,13 @@ drake_cc_googletest(
         ":saturate",
         "//common:autodiff",
         "//common:symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wrap_to_test",
+    deps = [
+        ":wrap_to",
     ],
 )
 

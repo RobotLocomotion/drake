@@ -50,7 +50,3 @@ class TestRendering(unittest.TestCase):
         vector_expected = np.hstack((p, q.wxyz()))
         vector_actual = value.get_value()
         self.assertTrue(np.allclose(vector_actual, vector_expected))
-
-
-if __name__ == "__main__":
-    unittest.main()

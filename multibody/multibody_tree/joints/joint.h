@@ -60,7 +60,7 @@ class JointImplementationBuilder;
 /// const RevoluteJoint<double>& elbow =
 ///   model.AddJoint<RevoluteJoint>(
 ///     "Elbow",                /* joint name */
-///     model.get_world_body(), /* parent body */
+///     model.world_body(),     /* parent body */
 ///     {},                     /* frame F IS the world frame W */
 ///     pendulum,               /* child body, the pendulum */
 ///     X_BM,                   /* pose of frame M in the body frame B */
@@ -99,25 +99,25 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   virtual ~Joint() {}
 
   /// Returns the name of this joint.
-  const std::string& get_name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   /// Returns a const reference to the parent body P.
-  const Body<T>& get_parent_body() const {
-    return frame_on_parent_.get_body();
+  const Body<T>& parent_body() const {
+    return frame_on_parent_.body();
   }
 
   /// Returns a const reference to the child body B.
-  const Body<T>& get_child_body() const {
-    return frame_on_child_.get_body();
+  const Body<T>& child_body() const {
+    return frame_on_child_.body();
   }
 
   /// Returns a const reference to the frame F attached on the parent body P.
-  const Frame<T>& get_frame_on_parent() const {
+  const Frame<T>& frame_on_parent() const {
     return frame_on_parent_;
   }
 
   /// Returns a const reference to the frame M attached on the child body B.
-  const Frame<T>& get_frame_on_child() const {
+  const Frame<T>& frame_on_child() const {
     return frame_on_child_;
   }
 
@@ -220,7 +220,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     }
 
     /// Returns the number of mobilizers in this implementation.
-    int get_num_mobilizers() const {
+    int num_mobilizers() const {
       return static_cast<int>(mobilizers_.size());
     }
 

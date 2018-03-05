@@ -18,6 +18,9 @@ drake_cc_library(
         "lane.h",
         "lane_data.h",
         "road_geometry.h",
+        "rules/regions.h",
+        "rules/right_of_way_rule.h",
+        "rules/speed_limit_rule.h",
         "segment.h",
         "type_specific_identifier.h",
     ],
@@ -49,6 +52,19 @@ drake_cc_googletest(
     name = "type_specific_identifier_test",
     deps = [
         ":api",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rules_test",
+    srcs = [
+        "test/rules_regions_test.cc",
+        "test/rules_right_of_way_test.cc",
+        "test/rules_speed_limit_test.cc",
+    ],
+    deps = [
+        ":api",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )
 
