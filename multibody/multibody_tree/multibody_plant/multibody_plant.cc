@@ -16,11 +16,11 @@ namespace multibody_plant {
 
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
-#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__FUNCTION__)
+#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
 
 // Helper macro to throw an exception within methods that should not be called
 // pre-finalize.
-#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__FUNCTION__)
+#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 using geometry::FrameId;
 using geometry::FrameIdVector;
@@ -126,8 +126,9 @@ template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
     geometry::GeometrySystem<T>* geometry_system) {
-  DRAKE_MBP_THROW_IF_FINALIZED();
-  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  DRAKE_ASSERT(!is_finalized());
+  DRAKE_ASSERT(geometry_source_is_registered());
+  DRAKE_ASSERT(geometry_system == geometry_system_);
   GeometryId geometry_id = geometry_system->RegisterAnchoredGeometry(
       source_id_.value(),
       std::make_unique<GeometryInstance>(X_WG, shape.Clone()));

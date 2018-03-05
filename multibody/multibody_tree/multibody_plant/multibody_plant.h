@@ -23,11 +23,11 @@ namespace multibody_plant {
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
-#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__FUNCTION__)
+#define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
 
 // Helper macro to throw an exception within methods that should not be called
 // pre-finalize.
-#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__FUNCTION__)
+#define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 /// @endcond
 
 /// %MultibodyPlant is a Drake system framework representation (see
@@ -605,7 +605,7 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // 2. Register geometry for the corresponding FrameId. This associates a
   //    GeometryId with the body FrameId.
   // This assumes:
-  // 1. Finalize() was called on `this` plant.
+  // 1. Finalize() was not called on `this` plant.
   // 2. RegisterAsSourceForGeometrySystem() was called on `this` plant.
   // 3. `geometry_system` points to the same GeometrySystem instance previously
   //    passed to RegisterAsSourceForGeometrySystem().
@@ -615,11 +615,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       geometry::GeometrySystem<T>* geometry_system);
 
   // Helper method to register anchored geometry to the world, either visual or
-  // collision. The anchored geometry registration includes:
-  // 1. If not done yet, register this plant as a source for the given
-  //    GeometrySystem. This assigns a SourceId to this plant.
-  // 2. Register geometry for the world body. This associates a GeometryId with
-  //    the world body.
+  // collision. This associates a GeometryId with the world body.
+  // This assumes:
+  // 1. Finalize() was not called on `this` plant.
+  // 2. RegisterAsSourceForGeometrySystem() was called on `this` plant.
+  // 3. `geometry_system` points to the same GeometrySystem instance previously
+  //    passed to RegisterAsSourceForGeometrySystem().
   geometry::GeometryId RegisterAnchoredGeometry(
       const Isometry3<double>& X_WG, const geometry::Shape& shape,
       geometry::GeometrySystem<T>* geometry_system);
