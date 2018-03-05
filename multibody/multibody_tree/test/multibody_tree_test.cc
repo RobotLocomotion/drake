@@ -29,9 +29,10 @@ using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using systems::Context;
 using systems::ContinuousState;
 
-// This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
-// multibody elements by name or get exceptions accordingly.
-GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
+// Helper method to verify the integrity of a MultibodyTree model of a Kuka iiwa
+// arm.
+template <typename T>
+void VerifyModelBasics(const MultibodyTree<T>& model) {
   const std::string kInvalidName = "InvalidName";
   const std::vector<std::string> kLinkNames = {
       "iiwa_link_1",
@@ -50,6 +51,98 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
       "iiwa_joint_6",
       "iiwa_joint_7"};
 
+  const std::vector<std::string> kActuatorNames = {
+      "iiwa_actuator_1",
+      "iiwa_actuator_2",
+      "iiwa_actuator_3",
+      "iiwa_actuator_4",
+      "iiwa_actuator_5",
+      "iiwa_actuator_6",
+      "iiwa_actuator_7"};
+
+  // Model Size. Counting the world body, there should be eight bodies.
+  EXPECT_EQ(model.num_bodies(), 8);  // It includes the "world" body.
+  EXPECT_EQ(model.num_joints(), 7);
+  EXPECT_EQ(model.num_actuators(), 7);
+  EXPECT_EQ(model.num_actuated_dofs(), 7);
+
+  // State size.
+  EXPECT_EQ(model.num_positions(), 7);
+  EXPECT_EQ(model.num_velocities(), 7);
+  EXPECT_EQ(model.num_states(), 14);
+
+  // Query if elements exist in the model.
+  for (const std::string link_name : kLinkNames) {
+    EXPECT_TRUE(model.HasBodyNamed(link_name));
+  }
+  EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
+
+  for (const std::string joint_name : kJointNames) {
+    EXPECT_TRUE(model.HasJointNamed(joint_name));
+  }
+  EXPECT_FALSE(model.HasJointNamed(kInvalidName));
+
+  for (const std::string actuator_name : kActuatorNames) {
+    EXPECT_TRUE(model.HasJointActuatorNamed(actuator_name));
+  }
+  EXPECT_FALSE(model.HasJointActuatorNamed(kInvalidName));
+
+  // Get links by name.
+  for (const std::string link_name : kLinkNames) {
+    const Body<T>& link = model.GetBodyByName(link_name);
+    EXPECT_EQ(link.name(), link_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.GetBodyByName(kInvalidName), std::logic_error,
+      "There is no body named '.*' in the model.");
+
+  // Get joints by name.
+  for (const std::string joint_name : kJointNames) {
+    const Joint<T>& joint = model.GetJointByName(joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.GetJointByName(kInvalidName), std::logic_error,
+      "There is no joint named '.*' in the model.");
+
+  // Templatized version to obtain retrieve a particular known type of joint.
+  for (const std::string joint_name : kJointNames) {
+    const RevoluteJoint<T>& joint =
+        model.template GetJointByName<RevoluteJoint>(joint_name);
+    EXPECT_EQ(joint.name(), joint_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.template GetJointByName<RevoluteJoint>(kInvalidName),
+      std::logic_error, "There is no joint named '.*' in the model.");
+
+  // Get actuators by name.
+  for (const std::string actuator_name : kActuatorNames) {
+    const JointActuator<T>& actuator =
+        model.GetJointActuatorByName(actuator_name);
+    EXPECT_EQ(actuator.name(), actuator_name);
+  }
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model.GetJointActuatorByName(kInvalidName), std::logic_error,
+      "There is no joint actuator named '.*' in the model.");
+
+  // Test we can retrieve joints from the actuators.
+  int names_index = 0;
+  for (const std::string actuator_name : kActuatorNames) {
+    const JointActuator<T>& actuator =
+        model.GetJointActuatorByName(actuator_name);
+    // We added actuators and joints in the same order. Assert this before
+    // making that assumption in the test that follows.
+    const Joint<T>& joint = actuator.joint();
+    ASSERT_EQ(actuator.index(), joint.index());
+    const std::string& joint_name = kJointNames[names_index];
+    EXPECT_EQ(joint.name(), joint_name);
+    ++names_index;
+  }
+}
+
+// This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
+// multibody elements by name or get exceptions accordingly.
+GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // Create a non-finalized model of the arm so that we can test adding more
   // elements to it.
   std::unique_ptr<MultibodyTree<double>> model =
@@ -81,6 +174,17 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
       "This model already contains a joint named 'iiwa_joint_4'. "
       "Joint names must be unique within a given model.");
 
+  // Attempt to add a joint having the same name as a joint already part of the
+  // model. This is not allowed and an exception should be thrown.
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      model->AddJointActuator(
+          "iiwa_actuator_4",
+          model->GetJointByName("iiwa_joint_4")),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "This model already contains a joint actuator named 'iiwa_actuator_4'. "
+          "Joint actuator names must be unique within a given model.");
+
   // Now we tested we cannot add body or joints with an existing name, finalize
   // the model.
   EXPECT_NO_THROW(model->Finalize());
@@ -88,53 +192,7 @@ GTEST_TEST(MultibodyTree, RetrieveNamedElements) {
   // Another call to Finalize() is not allowed.
   EXPECT_THROW(model->Finalize(), std::logic_error);
 
-  // Model Size. Counting the world body, there should be three bodies.
-  EXPECT_EQ(model->num_bodies(), 8);  // It includes the "world" body.
-  EXPECT_EQ(model->num_joints(), 7);
-
-  // State size.
-  EXPECT_EQ(model->num_positions(), 7);
-  EXPECT_EQ(model->num_velocities(), 7);
-  EXPECT_EQ(model->num_states(), 14);
-
-  // Query if elements exist in the model.
-  for (const std::string link_name : kLinkNames) {
-    EXPECT_TRUE(model->HasBodyNamed(link_name));
-  }
-  EXPECT_FALSE(model->HasBodyNamed(kInvalidName));
-
-  for (const std::string joint_name : kJointNames) {
-    EXPECT_TRUE(model->HasJointNamed(joint_name));
-  }
-  EXPECT_FALSE(model->HasJointNamed(kInvalidName));
-
-  // Get links by name.
-  for (const std::string link_name : kLinkNames) {
-    const Body<double>& link = model->GetBodyByName(link_name);
-    EXPECT_EQ(link.name(), link_name);
-  }
-  DRAKE_EXPECT_ERROR_MESSAGE(
-      model->GetBodyByName(kInvalidName), std::logic_error,
-      "There is no body named '.*' in the model.");
-
-  // Get joints by name.
-  for (const std::string joint_name : kJointNames) {
-    const Joint<double>& joint = model->GetJointByName(joint_name);
-    EXPECT_EQ(joint.name(), joint_name);
-  }
-  DRAKE_EXPECT_ERROR_MESSAGE(
-      model->GetJointByName(kInvalidName), std::logic_error,
-      "There is no joint named '.*' in the model.");
-
-  // Templatized version to obtain retrieve a particular known type of joint.
-  for (const std::string joint_name : kJointNames) {
-    const RevoluteJoint<double>& joint =
-        model->GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_EQ(joint.name(), joint_name);
-  }
-  DRAKE_EXPECT_ERROR_MESSAGE(
-      model->GetJointByName<RevoluteJoint>(kInvalidName), std::logic_error,
-      "There is no joint named '.*' in the model.");
+  VerifyModelBasics(*model);
 }
 
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
@@ -263,6 +321,12 @@ class KukaIiwaModelTests : public ::testing::Test {
   // And independent benchmarking set of solutions.
   const MGKukaIIwaRobot<double> benchmark_{gravity_};
 };
+
+// Verifies the integrity of a scalar converted MultibodyTree from <double> to
+// <AutoDiffXd>.
+TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
+  VerifyModelBasics(*model_autodiff_);
+}
 
 // This test is used to verify the correctness of the method
 // MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().

@@ -144,9 +144,19 @@ class RevoluteJoint final : public Joint<T> {
     this->AddInOneForce(context, 0, torque, forces);
   }
 
- private:
-  // Joint<T> override called through public NVI. Therefore arguments were
-  // already checked to be valid.
+ protected:
+  /// Joint<T> override called through public NVI, Joint::AddInForce().
+  /// Therefore arguments were already checked to be valid.
+  /// For a %RevoluteJoint, we must always have `joint_dof = 0` since there is
+  /// only a single degree of freedom (get_num_dofs() == 1). `joint_tau` is the
+  /// torque applied about the joint's axis, on the body declared as child
+  /// (according to the revolute joint's constructor) at the origin of the child
+  /// frame (which is coincident with the origin of the parent frame at all
+  /// times). The torque is defined to be positive according to
+  /// the right-hand-rule with the thumb aligned in the direction of `this`
+  /// joint's axis. That is, a positive torque causes a positive rotational
+  /// acceleration (of the child body frame) according to the right-hand-rule
+  /// around the joint's axis.
   void DoAddInOneForce(
       const systems::Context<T>&,
       int joint_dof,
@@ -161,6 +171,7 @@ class RevoluteJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
+ private:
   int do_get_num_dofs() const override {
     return 1;
   }

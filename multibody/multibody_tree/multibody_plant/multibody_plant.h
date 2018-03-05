@@ -130,6 +130,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->num_joints();
   }
 
+  /// Returns the number of joint actuators in the model.
+  /// @see AddJointActuator().
+  int num_actuators() const {
+    return model_->num_actuators();
+  }
+
   /// Returns the size of the generalized position vector `q` for `this` model.
   int num_positions() const { return model_->num_positions(); }
 
@@ -144,6 +150,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// can actually contain other variables such as integrated power and discrete
   /// states.
   int num_multibody_states() const { return model_->num_states(); }
+
+  /// Returns the total number of actuated degrees of freedom.
+  /// That is, the vector of actuation values u has this size.
+  /// See AddJointActuator().
+  int num_actuated_dofs() const { return model_->num_actuated_dofs(); }
 
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
@@ -282,6 +293,27 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
+
+  /// Creates and adds a JointActuator model for an actuator acting on a given
+  /// `joint`.
+  /// This method returns a constant reference to the actuator just added, which
+  /// will remain valid for the lifetime of `this` plant.
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new actuator to be added to `this`
+  ///   model. A std::runtime_error is thrown if an actuator with the same name
+  ///   already exists in the model. See HasJointActuatorNamed().
+  /// @param[in] joint
+  ///   The Joint to be actuated by the new JointActuator.
+  /// @returns A constant reference to the new JointActuator just added, which
+  /// will remain valid for the lifetime of `this` plant.
+  /// @throws if `joint.num_dofs() > 1` since for now we only support actuators
+  /// for single dof joints.
+  const JointActuator<T>& AddJointActuator(
+      const std::string& name, const Joint<T>& joint) {
+    DRAKE_THROW_UNLESS(joint.num_dofs() == 1);
+    return model_->AddJointActuator(name, joint);
+  }
   /// @}
 
   /// @name Querying for multibody elements by name
@@ -303,6 +335,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) const {
     return model_->HasJointNamed(name);
+  }
+
+  /// @returns `true` if an actuator named `name` was added to the model.
+  /// @see AddJointActuator().
+  bool HasJointActuatorNamed(const std::string& name) const {
+    return model_->HasJointActuatorNamed(name);
   }
   /// @}
 
@@ -349,10 +387,20 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
   /// @}
 
+  /// Returns a constant reference to the input port for external actuation.
+  /// This input port is a vector valued port, indexed by JointActuatorIndex.
+  /// An actuator's index can be obtained with JointActuator::index().
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws if called before Finalize() or if the model does not contain any
+  /// actuators. See AddJointActuator() and num_actuators().
+  const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
   }
+
+  const MultibodyTree<T>& model() const { return *model_; }
 
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
@@ -411,6 +459,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
+
+  // Actuation input port:
+  int actuation_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
