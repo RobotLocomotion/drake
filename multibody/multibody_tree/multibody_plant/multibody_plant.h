@@ -542,8 +542,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   }
 
   /// Returns a constant reference to the input port for external actuation.
-  /// This input port is a vector valued port, indexed by JointActuatorIndex.
-  /// An actuator's index can be obtained with JointActuator::index().
+  /// This input port is a vector valued port, which can be set with
+  /// JointActuator::set_actuation_vector().
   /// @pre Finalize() was already called on `this` plant.
   /// @throws if called before Finalize() or if the model does not contain any
   /// actuators. See AddJointActuator() and num_actuators().
@@ -716,8 +716,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   std::unordered_map<geometry::GeometryId, BodyIndex>
       geometry_id_to_body_index_;
 
-  // Maps a GeometryId with a visual index. This allows, for intance, to find
+  // Maps a GeometryId with a visual index. This allows, for instance, to find
   // out visual properties for a given geometry.
+  // TODO(amcastro-tri): verify insertions were correct once visual_index gets
+  // used with the landing of visual properties in GeometrySystem.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
 
   // Port handles for geometry:

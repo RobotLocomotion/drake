@@ -311,10 +311,10 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
-  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
+  FramePoseVector<T> new_poses(get_source_id().value());
+  std::vector<Isometry3<T>>& pose_data = new_poses.mutable_vector();
   pose_data.resize(body_index_to_frame_id_.size());
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
@@ -324,6 +324,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const Body<T>& body = model_->get_body(body_index);
     pose_data[pose_index++] = pc.get_X_WB(body.node_index());
   }
+  *poses = new_poses;
 }
 
 template <typename T>
