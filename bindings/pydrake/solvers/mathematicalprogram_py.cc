@@ -175,7 +175,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                &MathematicalProgram::NewIndeterminates),
            py::arg("rows"), py::arg("cols"), py::arg("name") = "X")
       .def("AddLinearConstraint",
-           static_cast<Binding<LinearConstraint>(MathematicalProgram::*)(
+           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
                const Expression&, double, double)>(
                &MathematicalProgram::AddLinearConstraint))
       .def("AddLinearConstraint",
@@ -185,6 +185,11 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
            [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
              return self->AddPositiveSemidefiniteConstraint(vars);
+           })
+      .def("AddPositiveSemidefiniteConstraint",
+           [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixX<Expression>>& e) {
+             return self->AddPositiveSemidefiniteConstraint(e);
            })
       .def("AddLinearCost",
            static_cast<Binding<LinearCost> (MathematicalProgram::*)(

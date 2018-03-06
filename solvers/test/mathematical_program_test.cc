@@ -2293,6 +2293,10 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
                                                    A.transpose() * X + X * A);
 
+  // Test the MatrixX<Expression> version.
+  MatrixX<Expression> M = A.transpose() * X + X * A;
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, M);
+
   // Adds [X.topLeftCorner<2, 2>()  0                        ] is psd
   //      [ 0                     X.bottomRightCorner<2, 2>()]
   Eigen::Matrix<Expression, 4, 4> Y{};
