@@ -9,24 +9,24 @@ import pydrake.symbolic as sym
 
 class TestQP:
     def __init__(self):
-        # Create a simple QP that uses all deduced linear constraint types,
-        # along with a quadratic and linear cost.
-        # The solution should be [1, 1].
+#Create a simple QP that uses all deduced linear constraint types,
+#along with a quadratic and linear cost.
+#The solution should be[1, 1].
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         self.prog = prog
         self.x = x
         self.constraints = [
-            # Bounding box
+#Bounding box
             prog.AddLinearConstraint(x[0] >= 1),
-            # Bounding box
+#Bounding box
             prog.AddLinearConstraint(sym.logical_and(x[1] >= 1, x[1] <= 2.)),
-            # Linear inequality
+#Linear inequality
             prog.AddLinearConstraint(3 * x[0] - x[1] <= 2),
-            # Linaer equality
+#Linaer equality
             prog.AddLinearConstraint(x[0] + 2 * x[1] == 3)]
 
-        # TODO(eric.cousineau): Add constant terms
+#TODO(eric.cousineau) : Add constant terms
         self.costs = [prog.AddLinearCost(x[0] + x[1]),
                       prog.AddQuadraticCost(0.5 * (x[0]**2 + x[1]**2))]
 
@@ -50,11 +50,11 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         self.assertIsNotNone(prog.GetSolverId().name())
 
-        # Test that we got the right solution for all x
+#Test that we got the right solution for all x
         x_expected = np.array([1.0, 0.0, 1.0])
         self.assertTrue(np.all(np.isclose(prog.GetSolution(x), x_expected)))
 
-        # Also test by asking for the value of each element of x
+#Also test by asking for the value of each element of x
         for i in range(3):
             self.assertAlmostEqual(prog.GetSolution(x[i]), x_expected[i])
 
@@ -185,7 +185,7 @@ class TestMathematicalProgram(unittest.TestCase):
             for j in range(2):
                 self.assertAlmostEqual(xval[i, j], 2 * i + j)
                 self.assertEqual(xval[i, j], prog.GetSolution(x[i, j]))
-        # Just check spelling.
+#Just check spelling.
         y = prog.NewIndeterminates(2, 2, "y")
 
     def test_sdp(self):
@@ -204,12 +204,12 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(S[0, 1] >= -tol)
 
     def test_sos(self):
-        # Find a,b,c,d subject to
-        # a(0) + a(1)*x,
-        # b(0) + 2*b(1)*x + b(2)*x^2 is SOS,
-        # c(0)*x^2 + 2*c(1)*x*y + c(2)*y^2 is SOS,
-        # d(0)*x^2 is SOS.
-        # d(1)*x^2 is SOS.
+#Find a, b, c, d subject to
+#a(0) + a(1) * x,
+#b(0) + 2 * b(1) * x + b(2) * x ^ 2 is SOS,
+#c(0) * x ^ 2 + 2 * c(1) * x* y + c(2) * y ^ 2 is SOS,
+#d(0) * x ^ 2 is SOS.
+#d(1) * x ^ 2 is SOS.
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
@@ -226,9 +226,10 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_lcp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')
-        M = np.array([1, 4, 3, 1])
-        M.resize(2, 2)
+        M = np.array([[1, 3], [4, 1]])
         q = np.array([-16, -15])
-        prog.AddLinearComplementarityConstraint(M, q, x)
+        binding = prog.AddLinearComplementarityConstraint(M, q, x)
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        self.assertIsInstance(binding.constraint(),
+        mp.LinearComplementarityConstraint)
