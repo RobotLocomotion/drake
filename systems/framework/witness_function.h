@@ -1,7 +1,9 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "drake/common/symbolic.h"
@@ -54,20 +56,19 @@ enum class WitnessFunctionDirection {
 /// intervals [t₀, t₁] and [t₁, t₂], meaning that the zero occurs precisely at
 /// an interval endpoint, the witness function should trigger once. Similarly,
 /// the witness function should trigger exactly once if `w(t₀, x(t₀)) ≠ 0`,
-/// `w(t*, x(t*)) = 0`,
-/// and `w(t₁, x(t₁)) = 0`. We can define the trigger condition formally over
-/// interval `[t₀, t₁]` using the function:<pre>
+/// `w(t*, x(t*)) = 0`, and `w(t₁, x(t₁)) = 0`, for `t* ∈ (t₀, t₁)`. We can
+/// define the trigger condition formally over interval `[t₀, t₁]` using the
+/// function:<pre>
 /// T(w, t₀, x(t₀), t₁) =   1   if w(t₀, x(t₀)) ≠ 0 and
 ///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) ≤ 0
 ///                         0   if w(t₀, x(t₀)) = 0 or
 ///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) > 0
 /// </pre>
-/// where `x(tₑ)` for some `tₑ ≥ t₀` is the solution to the ODE or DAE initial
-/// value problem `ẋ = f(t, x)` for initial condition `x(t₀) = x₀` at time `tₑ`.
 /// We wish for the witness function to trigger if the trigger function
-/// evaluates to one. The trigger function can be further modified, if desired,
-/// to incorporate the constraint that the witness function should trigger only
-/// when crossing from positive values to negative values, or vice versa.
+/// evaluates to one. The trigger function can be further modified, if
+/// desired, to incorporate the constraint that the witness function should
+/// trigger only when crossing from positive values to negative values, or vice
+/// versa.
 ///
 /// A good witness function should not cross zero repeatedly over a small
 /// interval of time (relative to the maximum designated integration step size)
@@ -92,10 +93,38 @@ class WitnessFunction {
 
   virtual ~WitnessFunction() {}
 
-  /// Constructs the witness function with the given direction type.
-  WitnessFunction(const System<T>& system,
+  /// Constructs the witness function with the pointer to the given non-null
+  /// System, with the given direction type, and with no event type.
+  /// @note Constructing a witness function with no corresponding event forces
+  ///       Simulator's integration of an ODE to halt at the witness isolation
+  ///       time. For example, isolating a function's minimum or maximum values
+  ///       can be realized with a witness that triggers on a sign change of
+  ///       the function's time derivative, ensuring that the actual extreme
+  ///       value is present in the discretized trajectory.
+  /// @warning the pointer to the System must be valid as long or longer than
+  /// the lifetime of the witness function.
+  WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype) :
-                  system_(system), dir_type_(dtype) {}
+                  system_(system), dir_type_(dtype) { DRAKE_DEMAND(system); }
+
+  /// Constructs the witness function with the pointer to the given non-null
+  /// System, with the given direction type, and with a unique pointer to the
+  /// event that is to be dispatched when this witness function triggers.
+  /// Example events are publish, discrete variable update, unrestricted update
+  /// events.
+  /// @tparam EventType a class derived from Event<T>
+  /// @warning the pointer to the System must be valid as long or longer than
+  /// the lifetime of the witness function.
+  template <class EventType>
+  WitnessFunction(const System<T>* system,
+                  const WitnessFunctionDirection& dtype,
+                  std::unique_ptr<EventType> e) :
+                  system_(system), dir_type_(dtype) {
+    static_assert(std::is_base_of<Event<T>, EventType>::value,
+        "EventType must be a descendant of Event");
+    DRAKE_DEMAND(system);
+    event_ = std::move(e);
+  }
 
   /// Gets the name of this witness function (used primarily for logging and
   /// debugging).
@@ -104,21 +133,14 @@ class WitnessFunction {
   /// Sets the name of this witness function.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Adds the appropriate event that will be dispatched when this witness
-  /// function triggers.
-  void AddEvent(CompositeEventCollection<T>* events) const {
-    DRAKE_DEMAND(events);
-    DoAddEvent(events);
-  }
-
   /// Gets the direction(s) under which this witness function triggers.
   WitnessFunctionDirection get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
-  T Evaluate(const Context<T>& context) const;
+  T CalcWitnessValue(const Context <T>& context) const;
 
   /// Gets a reference to the System used by this witness function.
-  const System<T>& get_system() const { return system_; }
+  const System<T>& get_system() const { return *system_; }
 
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
@@ -146,28 +168,39 @@ class WitnessFunction {
     }
   }
 
+  /// Sets the event that will be dispatched when the witness function
+  /// triggers. If @p e is null, no event will be dispatched.
+  template <class EventType>
+  void set_event(std::unique_ptr<EventType> e) {
+    event_ = std::move(e);
+  }
+
+  /// Gets the event that will be dispatched when the witness function
+  /// triggers. A null pointer indicates that no event will be dispatched.
+  const Event<T>* get_event() const { return event_.get(); }
+
+  /// Gets a mutable pointer to the event that will occur when the witness
+  /// function triggers.
+  Event<T>* get_mutable_event() { return event_.get(); }
 
  protected:
-  /// Derived classes will override this function to add the appropriate event
-  /// that will be dispatched when this witness function triggers. Example
-  /// events are publish, perform a discrete variable update, and performing an
-  /// unrestricted update. @p events is guaranteed to be non-null on entry.
-  virtual void DoAddEvent(CompositeEventCollection<T>* events) const = 0;
-
   /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
   /// @param context an already-validated Context
-  virtual T DoEvaluate(const Context<T>& context) const = 0;
+  virtual T DoCalcWitnessValue(const Context <T>& context) const = 0;
 
   // The name of this witness function.
   std::string name_;
 
  private:
   // A reference to the system.
-  const System<T>& system_;
+  const System<T>* system_{nullptr};
 
   // Direction(s) under which this witness function triggers.
   WitnessFunctionDirection dir_type_;
+
+  // Unique pointer to the event.
+  std::unique_ptr<Event<T>> event_;
 };
 
 }  // namespace systems
