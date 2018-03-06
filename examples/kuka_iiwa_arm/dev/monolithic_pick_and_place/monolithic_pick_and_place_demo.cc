@@ -99,8 +99,9 @@ int DoMain(void) {
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the
-  // object is near the target.
-  const double simulation_step = 0.1;
+  // object is near the target.  If --quick is set, use a smaller
+  // increment to keep the test from taking too long in valgrind.
+  const double simulation_step = FLAGS_quick ? 0.01 : 0.1;
   bool done{false};
   while (!done) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
