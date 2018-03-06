@@ -59,9 +59,7 @@ could be a problem with the dependencies, or a bug in the caching system, or
 something more subtle in user code. */
 class CacheEntryValue {
  public:
-  /** @name  Does not allow move or assignment; copy constructor limited.
-  The copy constructor does not copy internal pointers so requires special
-  handling. */
+  /** @name  Does not allow move or assignment; copy constructor is private. */
   /** @{ */
   CacheEntryValue(CacheEntryValue&&) = delete;
   CacheEntryValue& operator=(const CacheEntryValue&) = delete;
@@ -338,19 +336,13 @@ class CacheEntryValue {
     return dummy.access();
   }
 
-  #ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Requires post-copy cleanup via set_owning_subcontext().
-  // Has to be public so copyable_unique_ptr can access it; making it a friend
-  // is not enough.
-  CacheEntryValue(const CacheEntryValue&) = default;
-  #endif
-
  private:
   // So Cache and no one else can construct and copy CacheEntryValues.
   friend class Cache;
 
-  // Allow never_destroyed to invoke the private constructor on our behalf.
+  // Allow these adapters access to our private constructors on our behalf.
   friend class never_destroyed<CacheEntryValue>;
+  friend class copyable_unique_ptr<CacheEntryValue>;
 
   // Default constructor can only be used privately to construct an empty
   // CacheEntryValue with description "DUMMY" and a meaningless value.
@@ -375,6 +367,10 @@ class CacheEntryValue {
     DRAKE_DEMAND(owning_subcontext != nullptr);
     // OK if initial_value is null here.
   }
+
+  // Copy constructor is private because it requires post-copy cleanup via
+  // set_owning_subcontext().
+  CacheEntryValue(const CacheEntryValue&) = default;
 
   // This is the post-copy cleanup method.
   void set_owning_subcontext(
