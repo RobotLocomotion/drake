@@ -1,4 +1,3 @@
-
 import unittest
 import numpy as np
 
@@ -8,7 +7,7 @@ from pydrake.systems.framework import (
     BasicVector,
     DiagramBuilder,
     VectorBase,
-    )
+)
 from pydrake.systems.primitives import (
     Adder,
     AffineSystem,
@@ -25,6 +24,10 @@ from pydrake.systems.primitives import (
     Saturation,
     SignalLogger,
     WrapToSystem,
+    Multiplexer,
+)
+from pydrake.systems.test.test_util import (
+    MyVector,
 )
 
 
@@ -167,3 +170,31 @@ class TestGeneral(unittest.TestCase):
 
         mytest((-1.5, 0.5), (-1.5, 1.5))
         mytest((.2, .3), (.2, 1.3))
+
+    def test_multiplexer(self):
+        my_vector = MyVector(data=[1., 2.])
+        test_cases = [
+            dict(mux=Multiplexer(num_scalar_inputs=4),
+                 data=[[5.], [3.], [4.], [2.]]),
+            dict(mux=Multiplexer(input_sizes=[2, 3]),
+                 data=[[8., 4.], [3., 6., 9.]]),
+            dict(mux=Multiplexer(model_vector=my_vector),
+                 data=[[42.], [3.]]),
+        ]
+        for i, case in enumerate(test_cases):
+            mux = case['mux']
+            port_size = sum([len(vec) for vec in case['data']])
+            self.assertEqual(mux.get_output_port(0).size(), port_size)
+            context = mux.CreateDefaultContext()
+            output = mux.AllocateOutput(context)
+            num_ports = len(case['data'])
+            self.assertEqual(context.get_num_input_ports(), num_ports)
+            for j, vec in enumerate(case['data']):
+                context.FixInputPort(j, BasicVector(vec))
+            mux.CalcOutput(context, output)
+            self.assertTrue(
+                np.allclose(output.get_vector_data(0).get_value(),
+                            [elem for vec in case['data'] for elem in vec]))
+            if i == 3:  # Check that it is of type MyVector.
+                value = output.get_vector_data(0)
+                self.assertTrue(isinstance(value, MyVector))

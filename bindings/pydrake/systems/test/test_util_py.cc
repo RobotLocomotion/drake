@@ -1,3 +1,4 @@
+#include "pybind11/eigen.h"
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 
@@ -64,6 +65,20 @@ class MoveOnlyType {
 
 struct UnknownType {};
 
+// A simple 2-dimensional subclass of BasicVector for testing.
+template <typename T>
+class MyVector : public BasicVector<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyVector)
+
+  explicit MyVector(const Vector2<T>& data) : BasicVector<T>(data) {}
+
+ private:
+  MyVector* DoClone() const override {
+    return new MyVector(this->get_value());
+  }
+};
+
 }  // namespace
 
 PYBIND11_MODULE(test_util, m) {
@@ -87,6 +102,10 @@ PYBIND11_MODULE(test_util, m) {
     .def("set_x", &MoveOnlyType::set_x);
   // Define `Value` instantiation.
   pysystems::AddValueInstantiation<MoveOnlyType>(m);
+
+  // A 2-dimensional subclass of BasicVector.
+  py::class_<MyVector<T>, BasicVector<T>>(m, "MyVector")
+      .def(py::init<const Eigen::Vector2d&>(), py::arg("data"));
 
   m.def("make_unknown_abstract_value", []() {
     return AbstractValue::Make(UnknownType{});

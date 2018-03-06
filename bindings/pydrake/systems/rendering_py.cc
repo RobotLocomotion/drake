@@ -50,7 +50,7 @@ PYBIND11_MODULE(rendering, m) {
   frame_velocity.attr("kSize") = int{FrameVelocity<T>::kSize};
 
   py::class_<PoseBundle<T>>(m, "PoseBundle")
-    .def(py::init<int>())
+    .def(py::init<int>(), py::arg("num_poses"))
     .def("get_num_poses", &PoseBundle<T>::get_num_poses)
     .def("get_pose", &PoseBundle<T>::get_pose)
     .def("set_pose", &PoseBundle<T>::set_pose)
