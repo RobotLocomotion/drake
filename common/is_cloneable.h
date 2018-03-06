@@ -51,11 +51,12 @@ struct is_cloneable_helper<
 
  __Definition of "cloneability"__
 
- To be cloneable, the class `Foo` must have a public method of the form:
-
+ To be cloneable, the class `Foo` must have a _public_ method of the form:
  @code
  unique_ptr<Foo> Foo::Clone() const;
  @endcode
+ Note that "friend" access for the %is_cloneable-using class is not sufficient.
+ The `Foo::Clone()` method must actually be public.
 
  The pointer contained in the returned `unique_ptr` must point to a
  heap-allocated deep copy of the _concrete_ object. This test can confirm the

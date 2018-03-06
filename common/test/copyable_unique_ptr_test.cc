@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/is_cloneable.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 
 namespace drake {
