@@ -231,5 +231,5 @@ class TestMathematicalProgram(unittest.TestCase):
         binding = prog.AddLinearComplementarityConstraint(M, q, x)
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
-        self.assertIsInstance(binding.constraint(),
+        self.assertIsInstance(binding.evaluator(),
                               mp.LinearComplementarityConstraint)
