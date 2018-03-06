@@ -1176,9 +1176,9 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.Mv = H * v + right_hand_side * dt;
 
   // Solve the rigid impact problem.
-  VectorX<T> new_velocity, contact_force;
-  constraint_solver_.SolveImpactProblem(data, &contact_force);
-  constraint_solver_.ComputeGeneralizedVelocityChange(data, contact_force,
+  VectorX<T> new_velocity, constraint_force;
+  constraint_solver_.SolveImpactProblem(data, &constraint_force);
+  constraint_solver_.ComputeGeneralizedVelocityChange(data, constraint_force,
       &new_velocity);
   SPDLOG_DEBUG(drake::log(), "Actuator forces: {} ", u.transpose());
   SPDLOG_DEBUG(drake::log(), "Transformed actuator forces: {} ",
@@ -1205,6 +1205,15 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   SPDLOG_DEBUG(drake::log(), "G * v: {} ", data.G_mult(v).transpose());
   SPDLOG_DEBUG(drake::log(), "g(): {}",
       tree.positionConstraints(kinematics_cache).transpose());
+
+  // TODO(edrumwri): Replace this block of code when caching is in place.
+  // Convert the contact forces to generalized forces, removing joint limit
+  // and bilateral constraint forces first.
+  const int limits_start = contacts.size() + total_friction_cone_edges;
+  constraint_force.segment(
+      limits_start, constraint_force.size() - limits_start).setZero();
+  constraint_solver_.ComputeGeneralizedImpulseFromConstraintImpulses(
+      data, constraint_force, &time_stepping_contact_force_);
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
@@ -1350,8 +1359,10 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
 
   // This code should do nothing if the state is discrete because the compliant
   // contact model will not be used to compute contact forces.
-  if (is_state_discrete())
+  if (is_state_discrete()) {
+    contacts->set_generalized_contact_force(time_stepping_contact_force_);
     return;
+  }
 
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is

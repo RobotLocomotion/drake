@@ -565,6 +565,13 @@ class RigidBodyPlant : public LeafSystem<T> {
   // Pointer to the class that encapsulates all the contact computations.
   const std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_;
 
+  // TODO(edrumwri): Remove this variable once caching is in place.
+  // This variable stores the generalized force due to contact from the last
+  // time stepping computation (in DoCalcDiscreteVariableUpdatesImpl()). The
+  // computation should remain valid since the first-order discretized version
+  // of this system is only evaluated monotonically forward in time.
+  mutable VectorX<T> time_stepping_contact_force_;
+
   // Structure for storing joint limit data for time stepping.
   struct JointLimit {
     // The index for the joint limit.
