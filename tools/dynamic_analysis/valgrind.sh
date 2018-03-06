@@ -13,4 +13,5 @@ valgrind \
     --track-origins=yes \
     --show-leak-kinds=definite,possible \
     --num-callers=16 \
+    --gen-suppressions=all \
     "$@"
