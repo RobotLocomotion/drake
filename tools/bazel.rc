@@ -9,6 +9,7 @@ build -c opt
 # Default build options.
 build --force_pic
 build --strip=never
+build --strict_system_includes
 
 # Default test options.
 test --test_output=errors
