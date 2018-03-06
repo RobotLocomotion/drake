@@ -4,6 +4,7 @@ import unittest
 import sys
 from types import ModuleType
 
+sys.stdout = sys.stderr
 
 class TestDeprecation(unittest.TestCase):
     """Tests module shim functionality. """
@@ -48,13 +49,16 @@ class TestDeprecation(unittest.TestCase):
         import deprecation_example.sub_module as new_sub
         self.assertTrue(isinstance(new_sub, ModuleType))
 
+    def test_module_import_from_all(self):
+        # N.B. This is done in another module because `from x import *` is not
+        # well supported for `exec`.
+        import deprecation_example.import_all
+        import deprecation_example
+        self.assertEquals(deprecation_example.import_type, "from_all")
 
-if __name__ == '__main__':
-    result = unittest.main(exit=False).result
-    assert result.wasSuccessful()
-
-    # test_module_import_from_all:
-    # This is not a function in the unittest class because `from x import *`
-    # is invalid syntax inside functions.
-    from deprecation_example import *
-    assert import_type == "from_all"
+    def test_module_import_exec(self):
+        # Test failure with `exec`; scope locals and globals to ensure we keep
+        # track of the ref count.
+        temp = {}
+        exec "from deprecation_example import *" in temp
+        self.assertEquals(temp["import_type"], "unknown")
