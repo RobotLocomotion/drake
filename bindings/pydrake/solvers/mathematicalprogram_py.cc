@@ -76,7 +76,7 @@ auto RegisterBinding(py::handle* pscope,
       py::class_<B>(scope, pyname.c_str())
           .def("evaluator", &B::evaluator)
           .def("constraint",
-               &B::constraint)  // TODO(Eric.Cousineau) deprecate this function.
+               &B::evaluator)  // TODO(Eric.Cousineau) deprecate this function.
           .def("variables", &B::variables);
   // Register overloads for MathematicalProgram class
   prog_cls
