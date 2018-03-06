@@ -202,18 +202,13 @@ drake_cc_googletest(
 drake_py_library(
     name = "deprecation_example",
     testonly = 1,
-    srcs = [
-        "test/deprecation_example/__init__.py",
-        "test/deprecation_example/sub_module.py",
-    ],
+    srcs = glob(["test/deprecation_example/*.py"]),
     imports = ["test"],
     deps = [":deprecation_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "deprecation_test",
-    srcs = ["test/deprecation_test.py"],
-    allow_import_unittest = True,
     deps = [
         ":deprecation_example",
     ],

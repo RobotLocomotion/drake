@@ -6,11 +6,13 @@ import traceback
 
 
 class ModuleShim(object):
-    """ Provide a shim for automatically resolving extra variables.
-    This can be used to deprecate import alias in modules, to simplify
+    """
+    Provides a shim for automatically resolving extra variables.
+    This can be used to deprecate import alias in modules to simplify
     dependencies.
 
-    @see https://stackoverflow.com/a/7668273/7829525 """
+    @see https://stackoverflow.com/a/7668273/7829525
+    """
 
     def __init__(self, orig_module, handler):
         assert hasattr(orig_module, "__all__"), (
@@ -46,6 +48,9 @@ class ModuleShim(object):
         # Check what kind of import type this came from.
         sub = traceback.extract_stack()[-3:-1]
         assert sub[1][2] == "__getattr__"
+        if sub[0][3] is None:
+            # This may happen when `eval` or `exec` is used.
+            return "unknown"
         caller_text = sub[0][3].strip()
         if caller_text.startswith("from "):
             if caller_text.endswith("*"):
