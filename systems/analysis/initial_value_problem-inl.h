@@ -106,13 +106,22 @@ InitialValueProblem<T>::InitialValueProblem(
     const VectorX<T>& default_parameters)
     : default_initial_time_(default_initial_time),
       default_initial_state_(default_initial_state),
-      default_parameters_(default_parameters) {
+      default_parameters_(default_parameters),
+      current_initial_time_(default_initial_time),
+      current_initial_state_(default_initial_state),
+      current_parameters_(default_parameters) {
   // Instantiates the system using the given defaults as models.
   system_ = std::make_unique<AnySystem<T>>(
       ode_function, default_initial_state_, default_parameters_);
 
+  // Allocates a new default integration context with the
+  // given default initial time.
+  context_ = system_->CreateDefaultContext();
+  context_->set_time(default_initial_time_);
+
   // Instantiates an explicit RK3 integrator by default.
-  integrator_ = std::make_unique<RungeKutta3Integrator<T>>(*system_);
+  integrator_ = std::make_unique<RungeKutta3Integrator<T>>(
+      *system_, context_.get());
 
   // Sets step size and accuracy defaults.
   integrator_->request_initial_step_size_target(
@@ -127,32 +136,38 @@ template <typename T>
 VectorX<T> InitialValueProblem<T>::Solve(
     const T& initial_time, const VectorX<T>& initial_state,
     const T& time, const VectorX<T>& parameters) const {
-  DRAKE_THROW_UNLESS(time >= initial_time);
-  DRAKE_THROW_UNLESS(initial_state.size() == default_initial_state_.size());
-  DRAKE_THROW_UNLESS(parameters.size() == default_parameters_.size());
-
-  if (!context_ || initial_time != current_initial_time_
+  if (time < initial_time) {
+    throw std::logic_error("Cannot solve IVP for a time"
+                           " before the initial condition.");
+  }
+  if (initial_state.size() != default_initial_state_.size()) {
+    throw std::logic_error("IVP initial state vector is"
+                           "of the wrong dimension.");
+  }
+  if (parameters.size() != default_parameters_.size()) {
+    throw std::logic_error("IVP parameters vector is "
+                           "of the wrong dimension");
+  }
+  // Performs cache invalidation and re-initializes both
+  // integrator and integration context if necessary.
+  if (initial_time != current_initial_time_
       || initial_state != current_initial_state_
       || parameters != current_parameters_
       || time < context_->get_time()) {
-    // Allocates a new integration context.
-    std::unique_ptr<Context<T>> newly_allocated_context =
-        system_->CreateDefaultContext();
-
     // Sets context (initial) time.
-    newly_allocated_context->set_time(initial_time);
+    context_->set_time(initial_time);
 
     // Sets context (initial) state. This cast is safe because the
     // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
     // a BasicVector<T>, and the implementation deals with LeafSystem<T>
     // instances only by design.
     BasicVector<T>& state_vector = dynamic_cast<BasicVector<T>&>(
-        newly_allocated_context->get_mutable_continuous_state_vector());
+        context_->get_mutable_continuous_state_vector());
     state_vector.set_value(initial_state);
 
     // Sets context parameters.
     BasicVector<T>& parameter_vector =
-        newly_allocated_context->get_mutable_numeric_parameter(0);
+        context_->get_mutable_numeric_parameter(0);
     parameter_vector.set_value(parameters);
 
     // Keeps track of current step size and accuracy settings.
@@ -160,40 +175,43 @@ VectorX<T> InitialValueProblem<T>::Solve(
     const T max_step_size = integrator_->get_maximum_step_size();
     const T target_accuracy = integrator_->get_target_accuracy();
 
-    // Resets the integrator internal state and context.
+    // Resets the integrator internal state.
     integrator_->Reset();
-    integrator_->reset_context(newly_allocated_context.get());
 
-    // Reinitializes the integrator internal state and settings.
+    // Sets integrator settings again.
     integrator_->request_initial_step_size_target(initial_step_size);
     integrator_->set_maximum_step_size(max_step_size);
     integrator_->set_target_accuracy(target_accuracy);
-    integrator_->Initialize();
 
     // Keeps track of the current initial conditions and parameters
-    // for future context invalidation.
+    // for future cache invalidation.
     current_initial_time_ = initial_time;
     current_initial_state_ = initial_state;
     current_parameters_ = parameters;
+  }
 
-    // Takes ownership of the integration context.
-    context_ = std::move(newly_allocated_context);
+  // Initializes integrator if necessary.
+  if (!integrator_->is_initialized()) {
+    integrator_->Initialize();
   }
 
   // Integrates up to the requested time.
   integrator_->IntegrateWithMultipleSteps(
       time - context_->get_time());
 
-  // Retrieves the system's continuous state vector.
-  const VectorBase<T>& state_vector =
-      context_->get_continuous_state_vector();
-  return state_vector.CopyToVector();
+  // Retrieves the system's state vector. This cast is safe because the
+  // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
+  // a BasicVector<T>, and the implementation deals with LeafSystem<T>
+  // instances only by design.
+  const BasicVector<T>& state_vector = dynamic_cast<const BasicVector<T>&>(
+      context_->get_continuous_state_vector());
+  return state_vector.get_value();
 }
 
 template <typename T>
 template <typename I>
 I* InitialValueProblem<T>::reset_integrator() {
-  integrator_ = std::make_unique<I>(*system_);
+  integrator_ = std::make_unique<I>(*system_, context_.get());
   return static_cast<I*>(integrator_.get());
 }
 

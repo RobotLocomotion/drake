@@ -57,18 +57,18 @@ GTEST_TEST(InitialValueProblemTest, PreconditionValidation) {
   const VectorX<double> kValidState =
       VectorX<double>::Constant(2, 1.0);
 
-  EXPECT_THROW(ivp.Solve(kInvalidTime), std::runtime_error);
-  EXPECT_THROW(ivp.Solve(kValidTime, kInvalidParameters), std::runtime_error);
+  EXPECT_THROW(ivp.Solve(kInvalidTime), std::logic_error);
+  EXPECT_THROW(ivp.Solve(kValidTime, kInvalidParameters), std::logic_error);
   EXPECT_THROW(ivp.Solve(kInitialTime, kInvalidTime,
-                         kValidParameters), std::runtime_error);
+                         kValidParameters), std::logic_error);
   EXPECT_THROW(ivp.Solve(kInitialTime, kValidTime,
-                         kInvalidParameters), std::runtime_error);
+                         kInvalidParameters), std::logic_error);
   EXPECT_THROW(ivp.Solve(kInitialTime, kInvalidState,
-                         kValidTime, kValidParameters), std::runtime_error);
+                         kValidTime, kValidParameters), std::logic_error);
   EXPECT_THROW(ivp.Solve(kInitialTime, kValidState,
-                         kInvalidTime, kValidParameters), std::runtime_error);
+                         kInvalidTime, kValidParameters), std::logic_error);
   EXPECT_THROW(ivp.Solve(kInitialTime, kValidState,
-                         kValidTime, kInvalidParameters), std::runtime_error);
+                         kValidTime, kInvalidParameters), std::logic_error);
 }
 
 // Parameterized fixture for testing accuracy of IVP solutions.

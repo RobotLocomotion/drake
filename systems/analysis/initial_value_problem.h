@@ -18,11 +18,11 @@ namespace systems {
 /// initial condition 𝐱(t₀; 𝐤) = 𝐱₀. The parameter vector 𝐤 allows for generic
 /// IVP definitions, which can later be solved for any instance of said vector.
 ///
-/// Additionally, this class' current implementation performs basic computation
-/// caching, optimizing away repeated integration whenever the IVP is solved for
+/// Additionally, this class' implementation performs basic computation caching,
+/// optimizing away repeated integration whenever the IVP is solved for
 /// increasing values of time t while both initial conditions and parameters are
 /// kept constant, e.g. if solved for t₁ > t₀ first, solving for t₂ > t₁ will
-/// only require integrating from t₁ on.
+/// only require integrating from t₁ onward.
 ///
 /// For further insight into its use, consider the following examples:
 ///
@@ -114,7 +114,7 @@ class InitialValueProblem {
   ///      given on construction.
   /// @pre The dimension of the given parameters vector @p k must match that
   ///      of the default parameters vector 𝐤₀ given on construction.
-  /// @throw std::runtime_error If preconditions are not met.
+  /// @throw std::logic_error If preconditions are not met.
   inline VectorX<T> Solve(const T& t, const VectorX<T>& k) const {
     return this->Solve(default_initial_time_, t, k);
   }
@@ -130,7 +130,7 @@ class InitialValueProblem {
   ///      @p t0.
   /// @pre The dimension of the given parameters vector @p k must match that
   ///      of the default parameters vector 𝐤₀ given on construction.
-  /// @throw std::runtime_error If preconditions are not met.
+  /// @throw std::logic_error If preconditions are not met.
   inline VectorX<T> Solve(const T& t0, const T& t,
                           const VectorX<T>& k) const {
     return this->Solve(t0, default_initial_state_, t, k);
@@ -149,7 +149,7 @@ class InitialValueProblem {
   ///      default initial state vector 𝐱₀ given on construction.
   /// @pre The dimension of the given parameters vector @p k must match that
   ///      of the default parameters vector 𝐤₀ given on construction.
-  /// @throw std::runtime_error If preconditions are not met.
+  /// @throw std::logic_error If preconditions are not met.
   VectorX<T> Solve(const T& t0, const VectorX<T>& x0,
                    const T& t, const VectorX<T>& k) const;
 
@@ -181,10 +181,8 @@ class InitialValueProblem {
   // initialization and cache invalidation must occur on IVP
   // solution evaluation. The mutability of the cached results
   // (and the conditions that must hold for them to be valid)
-  // is thus needed to express the fact that neither computation
-  // results nor IVP definition are affected by its modification,
-  // which is solely the chosen mechanism to propagate them from
-  // one call to the next.
+  // expresses the fact that neither computation results nor IVP
+  // definition are affected when these change.
 
   // IVP current initial time tᵢ (for caching).
   mutable T current_initial_time_;
@@ -192,9 +190,9 @@ class InitialValueProblem {
   mutable VectorX<T> current_initial_state_;
   // IVP current parameters 𝐤ᵢ(for caching).
   mutable VectorX<T> current_parameters_;
-  // IVP ODE solver integration context (for caching).
-  mutable std::unique_ptr<Context<T>> context_;
 
+  // IVP ODE solver integration context.
+  std::unique_ptr<Context<T>> context_;
   // IVP system representation used for ODE solving.
   std::unique_ptr<System<T>> system_;
   // Numerical integrator used for IVP ODE solving.
