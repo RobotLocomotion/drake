@@ -55,7 +55,6 @@ drake_cc_library(
         "random_rotation.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
-        "rotation_matrix_deprecated.cc",
     ],
     hdrs = [
         "axis_angle.h",
