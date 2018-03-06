@@ -1,5 +1,6 @@
 import sys
 import traceback
+import warnings
 
 # TODO(eric.cousineau): Make autocomplete ignore `ModuleShim` attributes
 # (e.g. `install`).
@@ -78,3 +79,47 @@ class ModuleShim(object):
         old_module = sys.modules[name]
         new_module = cls(old_module, handler)
         sys.modules[name] = new_module
+
+
+class _DeprecatedDescriptor(object):
+    """Wraps a descriptor to deprecate the value upon access."""
+
+    def __init__(self, original, message):
+        assert hasattr(original, '__get__'), "`original` must be a descriptor"
+        self._original = original
+        self.__doc__ = self._original.__doc__
+        self._message = message
+
+    def _warn(self):
+        warnings.warn(
+            self._message, category=DeprecationWarning, stacklevel=3)
+
+    def __get__(self, obj, objtype):
+        self._warn()
+        return self._original.__get__(obj, objtype)
+
+    def __set__(self, obj, value):
+        self._warn()
+        self._original.__set__(obj, value)
+
+    def __delete__(self, obj):
+        self._warn()
+        self._original.__delete__(obj)
+
+
+def deprecated(message):
+    """Decorator which deprecates a member of a class.
+    @param callback
+        Callback to be invoked the first time the deprecated member
+    is accessed.
+
+    Use `ModuleShim` for deprecating variables in a module."""
+    def wrapped(original):
+        return _DeprecatedDescriptor(original, message)
+
+    return wrapped
+
+
+# TODO(eric.cousineau): Find a better place to put this, such that we won't
+# have side effects.
+warnings.simplefilter('default', DeprecationWarning)

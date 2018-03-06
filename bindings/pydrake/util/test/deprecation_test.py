@@ -3,8 +3,8 @@ from __future__ import print_function
 import unittest
 import sys
 from types import ModuleType
+import warnings
 
-sys.stdout = sys.stderr
 
 class TestDeprecation(unittest.TestCase):
     """Tests module shim functionality. """
@@ -62,3 +62,42 @@ class TestDeprecation(unittest.TestCase):
         temp = {}
         exec "from deprecation_example import *" in temp
         self.assertEquals(temp["import_type"], "unknown")
+
+    def _check_warning(self, w, message_expected):
+        self.assertEquals(w.category, DeprecationWarning)
+        self.assertEquals(w.message.message, message_expected)
+
+    def test_member_deprecation(self):
+        from deprecation_example import ExampleClass
+
+        with warnings.catch_warnings(record=True) as w:
+            obj = ExampleClass()
+            # Call each deprecated method / propery repeatedly; it should only
+            # warn once per unique line of source code.
+            # - Method.
+            for i in range(3):
+                member = ExampleClass.deprecated_1
+                extra = ExampleClass.deprecated_1
+            self.assertEquals(member(obj), 1)
+            self.assertEquals(member.__doc__, ExampleClass.doc_1)
+            # - Property.
+            for i in range(3):
+                member = ExampleClass.deprecated_2
+                extra = ExampleClass.deprecated_2
+            self.assertEquals(member.__doc__, ExampleClass.doc_2)
+            self.assertEquals(member.__get__(obj), 2)
+            # Check warnings.
+            self.assertEquals(len(w), 4)
+            self._check_warning(w[0], ExampleClass.message_1)
+            self._check_warning(w[1], ExampleClass.message_1)
+            self._check_warning(w[2], ExampleClass.message_2)
+            self._check_warning(w[3], ExampleClass.message_2)
+
+        # Uncomment this to manually inspect the warnings.
+        show_warnings = False
+        if show_warnings:
+            warnings.resetwarnings()
+            member = ExampleClass.deprecated_1
+            extra = ExampleClass.deprecated_1
+            member = ExampleClass.deprecated_2
+            extra = ExampleClass.deprecated_2
