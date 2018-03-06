@@ -25,7 +25,7 @@ class Rod2dWitnessFunction : public systems::WitnessFunction<T> {
   Rod2dWitnessFunction(const Rod2D<T>* rod,
                        systems::WitnessFunctionDirection dir,
                        RodEndpoint endpoint) :
-      systems::WitnessFunction<T>(*rod, dir),
+      systems::WitnessFunction<T>(rod, dir),
       rod_(rod),
       endpoint_(endpoint) {
     event_ = std::make_unique<systems::UnrestrictedUpdateEvent<T>>(
@@ -39,12 +39,6 @@ class Rod2dWitnessFunction : public systems::WitnessFunction<T> {
   int get_endpoint() const { return endpoint_; }
 
  private:
-  void DoAddEvent(systems::CompositeEventCollection<T>* events) const override {
-    event_->set_attribute(
-        std::make_unique<systems::Value<const Rod2dWitnessFunction<T>*>>(this));
-    event_->add_to_composite(events);
-  }
-
   // Unique pointer to the event.
   std::unique_ptr<systems::UnrestrictedUpdateEvent<T>> event_;
 

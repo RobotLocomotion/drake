@@ -46,7 +46,7 @@ class SlidingWitness : public Rod2dWitnessFunction<T> {
   }
 
  private:
-  T DoEvaluate(const systems::Context<T>&) const override {
+  T DoCalcWitnessValue(const systems::Context<T>&) const override {
     // TODO(edrumwri): Flesh out this stub once PointContact class has been
     // introduced.
     DRAKE_ABORT();
