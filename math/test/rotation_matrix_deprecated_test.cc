@@ -1,5 +1,7 @@
-#include "drake/math/rotation_matrix_utilities.h"
-
+// Note: Although this file tests functionality in rotation_matrix_deprecated.h,
+// that file cannot be directly included (see rotation_matrix_deprecated.h for
+// details). Instead, rotation_matrix.h needs to be included and that #include
+// statement must be placed below to avoid erroneous drakeLint.py errors.
 #include <cmath>
 #include <iostream>
 
@@ -8,6 +10,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;

@@ -1,5 +1,14 @@
 #pragma once
 
+#ifndef DRAKE_MATH_ROTATION_MATRIX_DEPRECATED_HEADER_IS_ENABLED
+// TODO(mitiguy): Delete this file when:
+// * all the functions in this file have been updated/replaced by equivalent
+//   functionality in rotation_matrix.h
+// * all calls to the functions in the Drake code-base have been replaced by
+//   calls to the corresponding functionality in rotation_matrix.h.
+#error Include drake/math/rotation_matrix.h, not rotation_matrix_deprecated.h.
+#endif
+
 #include <cmath>
 #include <limits>
 
