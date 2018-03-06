@@ -10,6 +10,7 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/signal_logger.h"
@@ -119,6 +120,11 @@ PYBIND11_MODULE(primitives, m) {
 
   py::class_<ZeroOrderHold<T>, LeafSystem<T>>(m, "ZeroOrderHold")
       .def(py::init<double, int>());
+
+  py::class_<Multiplexer<T>, LeafSystem<T>>(m, "Multiplexer")
+      .def(py::init<int>(), py::arg("num_scalar_inputs"))
+      .def(py::init<std::vector<int>>(), py::arg("input_sizes"))
+      .def(py::init<const BasicVector<T>&>(), py::arg("model_vector"));
 
   // TODO(eric.cousineau): Add more systems as needed.
 }

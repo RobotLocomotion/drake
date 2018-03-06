@@ -1,4 +1,3 @@
-
 import unittest
 import numpy as np
 
@@ -8,7 +7,7 @@ from pydrake.systems.framework import (
     BasicVector,
     DiagramBuilder,
     VectorBase,
-    )
+)
 from pydrake.systems.primitives import (
     Adder,
     AffineSystem,
@@ -25,6 +24,10 @@ from pydrake.systems.primitives import (
     Saturation,
     SignalLogger,
     WrapToSystem,
+    Multiplexer,
+)
+from pydrake.systems.test.test_util import (
+    MyVector,
 )
 
 
@@ -167,3 +170,42 @@ class TestGeneral(unittest.TestCase):
 
         mytest((-1.5, 0.5), (-1.5, 1.5))
         mytest((.2, .3), (.2, 1.3))
+
+    def test_multiplexer_scalar_inputs(self):
+        mux = Multiplexer(num_scalar_inputs=3)
+        self.assertEqual(mux.get_output_port(0).size(), 3)
+        context = mux.CreateDefaultContext()
+        output = mux.AllocateOutput(context)
+        self.assertEqual(context.get_num_input_ports(), 3)
+        context.FixInputPort(0, BasicVector([5.]))
+        context.FixInputPort(1, BasicVector([3.]))
+        context.FixInputPort(2, BasicVector([4.]))
+        mux.CalcOutput(context, output)
+        self.assertTrue(
+            np.allclose(output.get_vector_data(0).get_value(), [5., 3., 4.]))
+
+    def test_multiplexer_vector_inputs(self):
+        mux = Multiplexer(input_sizes=[2, 3])
+        self.assertEqual(mux.get_output_port(0).size(), 5)
+        context = mux.CreateDefaultContext()
+        output = mux.AllocateOutput(context)
+        self.assertEqual(context.get_num_input_ports(), 2)
+        context.FixInputPort(0, BasicVector([5., 4.]))
+        context.FixInputPort(1, BasicVector([3., 6., 9.]))
+        mux.CalcOutput(context, output)
+        self.assertTrue(
+            np.allclose(output.get_vector_data(0).get_value(),
+                        [5., 4., 3., 6., 9.]))
+
+    def test_multiplexer_model_vector(self):
+        mux = Multiplexer(model_vector=MyVector(data=[1., 2.]))
+        self.assertEqual(mux.get_output_port(0).size(), 2)
+        context = mux.CreateDefaultContext()
+        output = mux.AllocateOutput(context)
+        self.assertEqual(context.get_num_input_ports(), 2)
+        context.FixInputPort(0, BasicVector([5.]))
+        context.FixInputPort(1, BasicVector([3.]))
+        mux.CalcOutput(context, output)
+        value = output.get_vector_data(0)
+        self.assertTrue(isinstance(value, MyVector))
+        self.assertTrue(np.allclose(value.get_value(), [5., 3.]))
