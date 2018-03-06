@@ -1,81 +1,48 @@
+// TODO(sherm1) Re-review this file in its entirety when the cache stubs are
+// replaced with real code in a subsequent PR.
+
 #include "drake/systems/framework/cache.h"
 
-#include <memory>
-#include <utility>
+#include "drake/systems/framework/dependency_tracker.h"
 
 namespace drake {
 namespace systems {
 
-namespace internal {
+CacheEntryValue& Cache::CreateNewCacheEntryValue(
+    CacheIndex index, DependencyTicket ticket,
+    const std::string& description,
+    const std::vector<DependencyTicket>& prerequisites,
+    DependencyGraph* trackers) {
+  DRAKE_DEMAND(trackers != nullptr);
+  DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
 
-CacheEntry::CacheEntry() {}
-CacheEntry::~CacheEntry() {}
+  // Make sure there is a place for this cache entry in the cache.
+  if (index >= num_entries())
+    store_.resize(index + 1);
 
-CacheEntry::CacheEntry(const CacheEntry& other) {
-  *this = other;
-}
+  // Create the new cache entry value and install it into this Cache. Note that
+  // indirection here means the CacheEntryValue object's address is stable
+  // even when store_ is resized.
+  DRAKE_DEMAND(store_[index] == nullptr);
+  store_[index] = std::make_unique<CacheEntryValue>(
+      index, ticket, description, nullptr /* no value yet */);
+  CacheEntryValue& value = *store_[index];
 
-CacheEntry& CacheEntry::operator=(const CacheEntry& other) {
-  is_valid_ = other.is_valid();
-  if (other.value() != nullptr) {
-    value_ = other.value()->Clone();
+  // Allocate a DependencyTracker for this cache entry. Note that a pointer
+  // to the new CacheEntryValue is retained so must have a lifetime matching
+  // the tracker. That requires that the Cache and DependencyGraph are contained
+  // in the same Context.
+  DependencyTracker& tracker = trackers->CreateNewDependencyTracker(
+      ticket,
+      "cache " + description,
+      &value);
+
+  // Subscribe to prerequisites (trackers must already exist).
+  for (auto prereq : prerequisites) {
+    auto& prereq_tracker = trackers->get_mutable_tracker(prereq);
+    tracker.SubscribeToPrerequisite(&prereq_tracker);
   }
-  dependents_ = other.dependents();
-  return *this;
-}
-
-}  // namespace internal
-
-using internal::CacheEntry;
-
-Cache::Cache() {}
-
-Cache::~Cache() {}
-
-CacheTicket Cache::MakeCacheTicket(const std::set<CacheTicket>& prerequisites) {
-  // Create a new ticket.
-  CacheTicket ticket = static_cast<int>(store_.size());
-
-  // Add the ticket to the dependency map. Because prerequisites may not be
-  // added after the fact, the dependency map is guaranteed acyclic.
-  for (const CacheTicket& prerequisite : prerequisites) {
-    store_[prerequisite].add_dependent(ticket);
-  }
-
-  // Reserve a null, invalid CacheEntry for this ticket.
-  store_.emplace_back();
-  return ticket;
-}
-
-void Cache::Invalidate(CacheTicket ticket) {
-  InvalidateRecursively({ticket});
-}
-
-void Cache::InvalidateRecursively(const std::set<CacheTicket>& to_invalidate) {
-  for (CacheTicket ticket : to_invalidate) {
-    // Invalidate the ticket.
-    store_[ticket].set_is_valid(false);
-    // Visit all the tickets that depend on this one.
-    InvalidateRecursively(store_[ticket].dependents());
-  }
-}
-
-AbstractValue* Cache::Init(CacheTicket ticket,
-                           std::unique_ptr<AbstractValue> value) {
-  DRAKE_DEMAND(ticket < static_cast<int>(store_.size()));
-  store_[ticket].set_is_valid(true);
-  store_[ticket].set_value(std::move(value));
-  InvalidateRecursively(store_[ticket].dependents());
-  return store_[ticket].value();
-}
-
-const AbstractValue* Cache::Get(CacheTicket ticket) const {
-  DRAKE_DEMAND(ticket < static_cast<int>(store_.size()));
-  if (store_[ticket].is_valid()) {
-    return store_[ticket].value();
-  } else {
-    return nullptr;
-  }
+  return value;
 }
 
 }  // namespace systems

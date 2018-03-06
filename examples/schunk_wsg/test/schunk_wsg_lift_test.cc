@@ -25,6 +25,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
@@ -101,7 +102,7 @@ class Sinusoid : public systems::LeafSystem<double> {
 class SchunkWsgLiftTest : public ::testing::TestWithParam<bool> {
  protected:
 
-  // Finds the single end-effector from a RigidBodyTree and returns it. Aborts 
+  // Finds the single end-effector from a RigidBodyTree and returns it. Aborts
   // if there is more than one end-effector or more than one base link.
   RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {
     // There should only be one base body.
@@ -224,7 +225,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   // trajectory or sinusoid) consist of an output and the time derivative of
   // that output. The PID controller requires the positional desireds to be
   // grouped together and the velocity desireds to also be grouped together;
-  // the control diagram uses demultiplexers and multiplexers for this purpose. 
+  // the control diagram uses demultiplexers and multiplexers for this purpose.
 
   // Build a trajectory and PID controller for the lifting joint.
   const auto& input_port =
@@ -232,7 +233,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   const auto& output_port =
       plant->model_instance_state_output_port(lifter_instance_id);
 
-  // Get the number of controllers. 
+  // Get the number of controllers.
   const int num_PID_controllers = plant->get_num_actuators() - 1;
 
   // Constants chosen arbitrarily.
@@ -365,7 +366,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   builder.Connect(plant->contact_results_output_port(),
                   contact_viz.get_input_port(0));
   builder.Connect(contact_viz.get_output_port(0),
-                  contact_results_publisher.get_input_port(0));
+                  contact_results_publisher.get_input_port());
 
   const int plant_output_port = builder.ExportOutput(plant->get_output_port(0));
 
@@ -381,36 +382,18 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
 
   const RigidBodyTreed& tree = plant->get_rigid_body_tree();
 
-  // Open the gripper.  Due to the number of links involved, this is
-  // surprisingly complicated.
-  systems::Context<double>& plant_context =
-      model->GetMutableSubsystemContext(
-          *plant, &simulator.get_mutable_context());
-  Eigen::VectorXd plant_initial_state =
-      Eigen::VectorXd::Zero(plant->get_num_states());
-  plant_initial_state.head(plant->get_num_positions())
-      = tree.getZeroConfiguration();
+  Context<double>& context = simulator.get_mutable_context();
+
+  // Open the gripper.
+  plant->SetModelInstancePositions(
+      &model->GetMutableSubsystemContext(*plant, &context), gripper_instance_id,
+      manipulation::schunk_wsg::GetSchunkWsgOpenPosition<double>());
 
   auto positions = tree.computePositionNameToIndexMap();
 
-  // The values below were extracted from the positions corresponding
-  // to an open gripper.  Dumping them here is significantly more
-  // magic than I (sam.creasey) would like.  If you find yourself
-  // tempted to cut and paste this, please consider creating a utility
-  // function which can set a segment of a state vector to an open
-  // gripper.
-  plant_initial_state(num_PID_controllers+0) = -0.0550667;
-  plant_initial_state(num_PID_controllers+1) = 0.009759;
-  plant_initial_state(num_PID_controllers+2) = 1.27982;
-  plant_initial_state(num_PID_controllers+3) = 0.0550667;
-  plant_initial_state(num_PID_controllers+4) = 0.009759;
-  plant->set_state_vector(&plant_context, plant_initial_state);
-
-  Context<double>& context = simulator.get_mutable_context();
-
   // Note: the RK2 is used instead of the RK3 here because error control
   // with our current models is yielding much slower running times without
-  // discernible improvements in accuracy. 
+  // discernible improvements in accuracy.
   const double dt = 1e-4;
   simulator.reset_integrator<RungeKutta2Integrator<double>>(
       *model, dt, &context);

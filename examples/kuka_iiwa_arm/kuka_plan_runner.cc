@@ -7,11 +7,14 @@
 ///
 /// When a plan is received, it will immediately begin executing that
 /// plan on the arm (replacing any plan in progress).
+///
+/// If a stop message is received, it will immediately discard the
+/// current plan and wait until a new plan is received.
 
 #include <iostream>
 #include <memory>
 
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
@@ -40,6 +43,7 @@ namespace {
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
+const char* const kLcmStopChannel = "STOP";
 const int kNumJoints = 7;
 
 typedef PiecewisePolynomial<double> PPType;
@@ -56,6 +60,8 @@ class RobotPlanRunner {
                     &RobotPlanRunner::HandleStatus, this);
     lcm_.subscribe(kLcmPlanChannel,
                     &RobotPlanRunner::HandlePlan, this);
+    lcm_.subscribe(kLcmStopChannel,
+                    &RobotPlanRunner::HandleStop, this);
   }
 
   void Run() {
@@ -157,6 +163,12 @@ class RobotPlanRunner {
         PiecewisePolynomial<double>::Cubic(input_time, knots,
                                            knot_dot, knot_dot)));
     ++plan_number_;
+  }
+
+  void HandleStop(const lcm::ReceiveBuffer*, const std::string&,
+                    const robotlocomotion::robot_plan_t*) {
+    std::cout << "Received stop command. Discarding plan." << std::endl;
+    plan_.reset();
   }
 
   lcm::LCM lcm_;

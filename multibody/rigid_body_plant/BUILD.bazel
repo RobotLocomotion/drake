@@ -26,6 +26,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/math:orthonormal_basis",
         "//drake/multibody:rigid_body_tree",
@@ -73,6 +74,17 @@ drake_cc_library(
         "//drake/multibody/constraint:constraint_solver",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_plant_bridge",
+    srcs = ["rigid_body_plant_bridge.cc"],
+    hdrs = ["rigid_body_plant_bridge.h"],
+    deps = [
+        "//drake/geometry:geometry_ids",
+        "//drake/geometry:geometry_system",
+        "//drake/multibody:rigid_body_tree",
     ],
 )
 
@@ -258,6 +270,7 @@ drake_cc_googletest(
     name = "rigid_body_plant_test",
     data = [
         ":test_models",
+        "//drake/examples/pendulum:models",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/multibody:models",
         "//drake/multibody:test_models",
@@ -266,8 +279,10 @@ drake_cc_googletest(
         ":rigid_body_plant",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/examples/pendulum:pendulum_vector_types",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
@@ -303,4 +318,8 @@ filegroup(
     ]),
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = glob([
+        "visualization/*.py",
+    ]),
+)

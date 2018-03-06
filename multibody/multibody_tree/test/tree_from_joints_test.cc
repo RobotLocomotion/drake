@@ -129,7 +129,7 @@ class DoublePendulumModel {
     // Adds the upper and lower links of the pendulum:
     link1_ = &tree_->template AddBody<RigidBody>(M1_L1);
     link2_ = &tree_->template AddBody<RigidBody>(M2_L2);
-    world_body_ = &tree_->get_world_body();
+    world_body_ = &tree_->world_body();
 
     // The shoulder joint connects the world with link 1.
     // Its inboard frame, Si, is the world frame.
@@ -167,8 +167,9 @@ class DoublePendulumModel {
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
-    tree_->template AddForceElement<UniformGravityFieldElement>(
-        Vector3d(0.0, -acceleration_of_gravity_, 0.0));
+    gravity_element_ =
+        &tree_->template AddForceElement<UniformGravityFieldElement>(
+            Vector3d(0.0, -acceleration_of_gravity_, 0.0));
 
     // We are done adding modeling elements.
     tree_->Finalize();
@@ -193,6 +194,10 @@ class DoublePendulumModel {
   const RevoluteJoint<T>& shoulder() const { return *shoulder_; }
   const RevoluteJoint<T>& elbow() const { return *elbow_; }
 
+  const UniformGravityFieldElement<T>& gravity_element() const {
+    return *gravity_element_;
+  }
+
  private:
   std::unique_ptr<MultibodyTree<T>> tree_;
   const Body<T>* world_body_{nullptr};
@@ -202,6 +207,9 @@ class DoublePendulumModel {
   // Joints:
   const RevoluteJoint<T>* shoulder_{nullptr};
   const RevoluteJoint<T>* elbow_{nullptr};
+
+  // Force elements:
+  const UniformGravityFieldElement<T>* gravity_element_{nullptr};
 
   // Pendulum parameters:
   const double length1_ = 1.0;
@@ -245,7 +253,31 @@ class PendulumTests : public ::testing::Test {
     // Benchmark mass matrix:
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
 
-    CompareMatrices(H, H_expected, kTolerance, MatrixCompareType::relative);
+    EXPECT_TRUE(CompareMatrices(
+        H, H_expected, kTolerance, MatrixCompareType::relative));
+  }
+
+  // For the double pendulum model under test, it verifies the result returned
+  // by UniformGravityFieldElement::CalcGravityGeneralizedForces() which
+  // computes the generalized forces tau_g due to a uniform gravity field force
+  // element. The results are verified against our Acrobot benchmark class which
+  // implements a handwritten computation of these forces.
+  void VerifyGravityGeneralizedForces(double theta1, double theta2) const {
+    const double kTolerance = 10 * kEpsilon;
+    model_.shoulder().set_angle(context_.get(), theta1);
+    model_.elbow().set_angle(context_.get(), theta2);
+
+    const UniformGravityFieldElement<double>& gravity_element =
+        model_.gravity_element();
+
+    Vector2d tau_g =
+        gravity_element.CalcGravityGeneralizedForces(*context_);
+
+    Vector2d tau_g_expected =
+        acrobot_benchmark_.CalcGravityVector(theta1, theta2);
+
+    EXPECT_TRUE(CompareMatrices(
+        tau_g, tau_g_expected, kTolerance, MatrixCompareType::relative));
   }
 
   // This test verifies the API to set joint forces and compute inverse dynamics
@@ -262,12 +294,12 @@ class PendulumTests : public ::testing::Test {
     const double kTolerance = 10 * kEpsilon;
 
     // Set up workspace:
-    const int nv = tree_->get_num_velocities();
+    const int nv = tree_->num_velocities();
     // External forces:
     MultibodyForces<double> forces(model_.get_tree());
     // Accelerations of the bodies:
     std::vector<SpatialAcceleration<double>> A_WB_array(
-        tree_->get_num_bodies());
+        tree_->num_bodies());
     // Generalized accelerations:
     VectorX<double> vdot = VectorX<double>::Zero(nv);
 
@@ -298,8 +330,8 @@ class PendulumTests : public ::testing::Test {
     model_.elbow().AddInTorque(*context_, tau2, &forces);
 
     // Arrays for output forces:
-    std::vector<SpatialForce<double>> F_BMo_W(tree_->get_num_bodies());
-    VectorX<double> tau(tree_->get_num_velocities());
+    std::vector<SpatialForce<double>> F_BMo_W(tree_->num_bodies());
+    VectorX<double> tau(tree_->num_velocities());
 
     // With vdot = 0, this computes:
     //   rhs = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
@@ -362,6 +394,25 @@ TEST_F(PendulumTests, CalcMassMatrixViaInverseDynamics) {
   VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 2.0);
   VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 3.0);
   VerifyCalcMassMatrixViaInverseDynamics(-M_PI / 7.0, M_PI / 4.0);
+}
+
+// Verify the correct result from
+// UniformGravityFieldElement::CalcGravityGeneralizedForces().
+TEST_F(PendulumTests, VerifyGravityGeneralizedForces) {
+  VerifyGravityGeneralizedForces(0.0, 0.0);
+  VerifyGravityGeneralizedForces(0.0, M_PI / 2.0);
+  VerifyGravityGeneralizedForces(0.0, M_PI / 3.0);
+  VerifyGravityGeneralizedForces(0.0, M_PI / 4.0);
+
+  VerifyGravityGeneralizedForces(M_PI / 3.0, 0.0);
+  VerifyGravityGeneralizedForces(M_PI / 3.0, M_PI / 2.0);
+  VerifyGravityGeneralizedForces(M_PI / 3.0, M_PI / 3.0);
+  VerifyGravityGeneralizedForces(M_PI / 3.0, M_PI / 4.0);
+
+  VerifyGravityGeneralizedForces(-M_PI / 7.0, 0.0);
+  VerifyGravityGeneralizedForces(-M_PI / 7.0, M_PI / 2.0);
+  VerifyGravityGeneralizedForces(-M_PI / 7.0, M_PI / 3.0);
+  VerifyGravityGeneralizedForces(-M_PI / 7.0, M_PI / 4.0);
 }
 
 // Compute forward dynamics by explicitly forming the mass matrix.

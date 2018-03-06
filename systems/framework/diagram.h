@@ -16,9 +16,10 @@
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
+#include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
@@ -85,7 +86,8 @@ class DiagramOutputPort : public OutputPort<T> {
     return source_output_port_->Allocate(subcontext);
   }
 
-  void DoCalc(const Context<T>& context, AbstractValue* value) const final {
+  void DoCalc(
+      const Context<T>& context, AbstractValue* value) const final {
     const Context<T>& subcontext = get_subcontext(context);
     return source_output_port_->Calc(subcontext, value);
   }
@@ -510,9 +512,9 @@ class Diagram : public System<T>,
     // Evaluate the derivatives of each constituent system.
     for (int i = 0; i < n; ++i) {
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      ContinuousState<T>* subderivatives =
+      ContinuousState<T>& subderivatives =
           diagram_derivatives->get_mutable_substate(i);
-      registered_systems_[i]->CalcTimeDerivatives(subcontext, subderivatives);
+      registered_systems_[i]->CalcTimeDerivatives(subcontext, &subderivatives);
     }
   }
 
@@ -527,7 +529,7 @@ class Diagram : public System<T>,
         dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
     DRAKE_DEMAND(diagram_derivatives != nullptr);
     const int i = GetSystemIndexOrAbort(subsystem);
-    return diagram_derivatives->get_substate(i);
+    return &diagram_derivatives->get_substate(i);
   }
 
   /// Returns a constant reference to the subcontext that corresponds to the
@@ -789,25 +791,51 @@ class Diagram : public System<T>,
   /// from @p context, passes the subcontext to @p witness_func' Evaulate
   /// method and returns the result. Aborts if the subsystem is not part of
   /// this Diagram.
-  T DoEvaluateWitness(const Context<T>& context,
-                      const WitnessFunction<T>& witness_func) const final {
+  T DoCalcWitnessValue(const Context<T>& context,
+                       const WitnessFunction<T>& witness_func) const final {
     const System<T>& system = witness_func.get_system();
     const Context<T>& subcontext = GetSubsystemContext(system, context);
-    return witness_func.Evaluate(subcontext);
+    return witness_func.CalcWitnessValue(subcontext);
   }
 
-  /// For the subsystem associated with @p witness_func, gets its mutable
-  /// sub composite event collection from @p events, and passes it to
-  /// @p witness_func's AddEvent method. Aborts if the subsystem is not part of
-  /// this Diagram.
+  /// For the subsystem associated with `witness_func`, gets its mutable
+  /// sub composite event collection from `events`, and passes it to
+  /// `witness_func`'s AddEventToCollection method. This method also modifies
+  /// `event` by updating the pointers to "diagram" continuous state to point to
+  /// the ContinuousState pointers for the associated subsystem instead. Aborts
+  /// if the subsystem is not part of this Diagram.
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>& witness_func,
+      Event<T>* event,
       CompositeEventCollection<T>* events) const final {
     DRAKE_DEMAND(events);
-    const System<T>& subsystem = witness_func.get_system();
+    DRAKE_DEMAND(event);
+    DRAKE_DEMAND(event->get_event_data());
+
+    // Get the event data- it will need to be modified.
+    auto data = dynamic_cast<WitnessTriggeredEventData<T>*>(
+        event->get_mutable_event_data());
+    DRAKE_DEMAND(data);
+
+    // Get the vector of events corresponding to the subsystem.
+    const System<T>& subsystem = data->triggered_witness()->get_system();
     CompositeEventCollection<T>& subevents =
         GetMutableSubsystemCompositeEventCollection(subsystem, events);
-    witness_func.AddEvent(&subevents);
+
+    // Get the continuous states at both window endpoints.
+    auto diagram_xc0 = dynamic_cast<const DiagramContinuousState<T>*>(
+        data->xc0());
+    DRAKE_DEMAND(diagram_xc0 != nullptr);
+    auto diagram_xcf = dynamic_cast<const DiagramContinuousState<T>*>(
+        data->xcf());
+    DRAKE_DEMAND(diagram_xcf != nullptr);
+
+    // Modify the pointer to the event data to point to the sub-system
+    // continuous states.
+    data->set_xc0(DoGetTargetSystemContinuousState(subsystem, diagram_xc0));
+    data->set_xcf(DoGetTargetSystemContinuousState(subsystem, diagram_xcf));
+
+    // Add the event to the collection.
+    event->add_to_composite(&subevents);
   }
 
   /// Provides witness functions of subsystems that are active at the beginning
@@ -872,6 +900,21 @@ class Diagram : public System<T>,
         target_system, state,
         &System<T>::DoGetMutableTargetSystemState,
         &DiagramState<T>::get_mutable_substate);
+  }
+
+  /// Returns a pointer to const state if @p target_system is a subsystem
+  /// of this, nullptr is returned otherwise.
+  const ContinuousState<T>* DoGetTargetSystemContinuousState(
+      const System<T>& target_system,
+      const ContinuousState<T>* xc) const final {
+    if (&target_system == this)
+      return xc;
+
+    return GetSubsystemStuff<const ContinuousState<T>,
+                             const DiagramContinuousState<T>>(
+        target_system, xc,
+        &System<T>::DoGetTargetSystemContinuousState,
+        &DiagramContinuousState<T>::get_substate);
   }
 
   /// Returns a pointer to const state if @p target_system is a subsystem
@@ -1364,11 +1407,11 @@ class Diagram : public System<T>,
     }
   }
 
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
-    std::map<typename Event<T>::PeriodicAttribute,
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+    std::map<PeriodicEventData,
         std::vector<const Event<T>*>,
-        PeriodicAttributeComparator<T>> periodic_events_map;
+        PeriodicEventDataComparator> periodic_events_map;
 
     for (int i = 0; i < num_subsystems(); ++i) {
       auto sub_map = registered_systems_[i]->GetPeriodicEvents();

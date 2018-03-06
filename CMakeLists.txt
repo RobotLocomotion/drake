@@ -14,7 +14,8 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
-find_package(Bazel 0.6.1 MODULE REQUIRED)
+# TODO(jamiesnape): Update to 0.10.1 after #8016 merges.
+find_package(Bazel 0.9.0 MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
 get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
@@ -86,7 +87,10 @@ endif()
 option(WITH_MATLAB "Build with support for MATLAB" OFF)
 
 if(WITH_MATLAB)
-  list(APPEND BAZEL_ARGS --define=NO_IPOPT=ON)
+  list(APPEND BAZEL_ARGS
+    --define=NO_IPOPT=ON
+    --define=NO_OSQP=ON
+  )
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
@@ -122,6 +126,28 @@ ExternalProject_Add(drake_cxx_python
   USES_TERMINAL_INSTALL 1
 )
 
+set(GIT_REVISION HEAD)
+
+find_package(Git)
+
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+  execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD
+    RESULT_VARIABLE GIT_REV_PARSE_RESULT_VARIABLE
+    OUTPUT_VARIABLE GIT_REV_PARSE_OUTPUT_VARIABLE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  if(GIT_REV_PARSE_RESULT_VARIABLE EQUAL 0)
+    set(GIT_REVISION "${GIT_REV_PARSE_OUTPUT_VARIABLE}")
+  endif()
+endif()
+
+string(TIMESTAMP BUILD_TIMESTAMP "%Y%m%d%H%M%S")
+
+configure_file(tools/install/libdrake/VERSION.TXT.in VERSION.TXT @ONLY)
+
+install(FILES "${PROJECT_BINARY_DIR}/VERSION.TXT" DESTINATION share/doc/drake)
+
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
 if(WITH_MATLAB)
@@ -141,3 +167,47 @@ if(WITH_MATLAB)
     BUILD_ALWAYS 1
   )
 endif()
+
+set(CPACK_GENERATOR TGZ)
+set(CPACK_INSTALLED_DIRECTORIES "${CMAKE_INSTALL_PREFIX}" .)
+set(CPACK_PACKAGE_CONTACT RobotLocomotion)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+  "Planning, control, and analysis toolbox for nonlinear dynamical systems"
+)
+set(CPACK_PACKAGE_VENDOR RobotLocomotion)
+set(CPACK_PACKAGE_VERSION_MAJOR 0)
+set(CPACK_PACKAGE_VERSION_MINOR 0)
+set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CPACK_PACKAGE_CHECKSUM SHA256)
+set(CPACK_SET_DESTDIR ON)
+set(CPACK_SOURCE_GENERATOR "")
+
+if(APPLE)
+  set(CPACK_SYSTEM_NAME mac)
+else()
+  string(TOLOWER "${CMAKE_SYSTEM_NAME}" CPACK_SYSTEM_NAME)
+
+  list(APPEND CPACK_GENERATOR DEB)
+
+  set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION ON)
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE http://drake.mit.edu/)
+  set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
+  set(CPACK_DEBIAN_PACKAGE_SECTION contrib/devel)
+
+  file(STRINGS setup/ubuntu/16.04/binary_distribution/packages.txt
+    CPACK_DEBIAN_PACKAGE_DEPENDS
+  )
+  string(REGEX REPLACE "([a-z0-9\\-]+)=([a-z0-9\\-\\.~]+)" "\\1 (= \\2)"
+    CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}"
+  )
+  string(REPLACE ";" ", " CPACK_DEBIAN_PACKAGE_DEPENDS
+    "${CPACK_DEBIAN_PACKAGE_DEPENDS}"
+  )
+endif()
+
+set(CPACK_PACKAGE_FILE_NAME
+  "${PROJECT_NAME}-${BUILD_TIMESTAMP}-${CPACK_SYSTEM_NAME}"
+)
+
+include(CPack)

@@ -23,7 +23,7 @@ SCS_HDRS = glob(["include/*.h"]) + ["linsys/amatrix.h"]
 # shared library for :scsdir.
 
 cc_binary(
-    name = "libscsdir.so",
+    name = "libdrake_scsdir.so",
     srcs = SCS_HDRS + glob([
         "linsys/*.c",
         "linsys/common.h",
@@ -31,8 +31,11 @@ cc_binary(
         "linsys/direct/**/*.h",
         "src/*.c",
     ]),
-    defines = ["LAPACK_LIB_FOUND=1"],
-    includes = ["include"],
+    defines = ["USE_LAPACK=1"],
+    includes = [
+        "include",
+        "linsys",
+    ],
     linkopts = select({
         ":darwin": ["-framework Accelerate"],
         ":linux": ["-lrt"],
@@ -51,15 +54,15 @@ cc_binary(
 
 cc_library(
     name = "scsdir",
-    srcs = [":libscsdir.so"],
+    srcs = [":libdrake_scsdir.so"],
     hdrs = SCS_HDRS,
-    defines = ["LAPACK_LIB_FOUND=1"],
+    defines = ["USE_LAPACK=1"],
     includes = ["include"],
 )
 
 install(
     name = "install",
-    targets = [":libscsdir.so"],
+    targets = [":libdrake_scsdir.so"],
     docs = [
         "LICENSE.txt",
         "linsys/direct/external/AMD_README.txt",

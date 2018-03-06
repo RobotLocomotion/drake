@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <typeindex>
 
 #include "drake/common/drake_assert.h"
@@ -10,7 +11,7 @@
 
 /** @file
  Provides the classes through which geometric shapes are introduced into
- GeometryWorld. This includes the specific classes which specify shapes as well
+ GeometrySystem. This includes the specific classes which specify shapes as well
  as an interface for _processing_ those specifications.
  */
 
@@ -122,19 +123,45 @@ class HalfSpace final : public Shape {
 
   HalfSpace();
 
-  /** Given a plane `normal_F` and a point on the plane `X_FP`, both expressed
-   in frame F, creates the transform `X_FC` from the half-space's canonical
-   space to frame F.
-   @param normal_F  A vector perpendicular to the half-space's plane boundary
-                    expressed in frame F. It must be a non-zero vector but need
-                    not be unit length.
-   @param r_FP      A point lying on the half-space's plane boundary measured
+  /** Creates the pose of a canonical half space in frame F.
+   The half space's normal is aligned to the positive z-axis of its canonical
+   frame C. Given the measure of that axis in frame F (Cz_F) and a position
+   vector to a point on the plane expressed in the same frame, `p_FC`, creates
+   the pose of the half space in frame F: `X_FC`.
+   @param Cz_F      The positive z-axis of the canonical frame expressed in
+                    frame F. It must be a non-zero vector but need not be unit
+                    length.
+   @param p_FC      A point lying on the half-space's boundary measured
                     and expressed in frame F.
    @retval `X_FC`   The pose of the canonical half-space in frame F.
    @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
                             ‖normal_F‖₂ < ε). */
-  static Isometry3<double> MakePose(const Vector3<double>& normal_F,
-                                    const Vector3<double>& r_FP);
+  static Isometry3<double> MakePose(const Vector3<double>& Cz_F,
+                                    const Vector3<double>& p_FC);
+};
+
+// TODO(SeanCurtis-TRI): Update documentation when the level of support for
+// meshes extends to collision/rendering.
+/** Limited support for meshes. Meshes declared as such will _not_ serve in
+ proximity queries or rendering queries. However, they _will_ be propagated
+ to drake_visualizer. The mesh is dispatched to drake visualizer via the
+ filename. The mesh is _not_ parsed/loaded by Drake. */
+class Mesh final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
+
+  /** Constructs a mesh specification from the mesh file located at the given
+   _absolute_ file path. Optionally uniformly scaled by the given scale factor.
+   */
+  explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
+
+  const std::string& filename() const { return filename_; }
+  double scale() const { return scale_; }
+
+ private:
+  // NOTE: Cannot be const to support default copy/move semantics.
+  std::string filename_;
+  double scale_;
 };
 
 /** The interface for converting shape descriptions to real shapes. Any entity
@@ -193,6 +220,7 @@ class ShapeReifier {
   virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
   virtual void ImplementGeometry(const HalfSpace& half_space,
                                  void* user_data) = 0;
+  virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
 };
 
 template <typename S>

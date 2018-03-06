@@ -61,13 +61,13 @@ PendulumPlant<T>::PendulumPlant(
   BuildMultibodyTreeModel();
 
   // Some very basic verification that the model is what we expect it to be.
-  DRAKE_DEMAND(model_->get_num_positions() == 1);
-  DRAKE_DEMAND(model_->get_num_velocities() == 1);
-  DRAKE_DEMAND(model_->get_num_states() == 2);
+  DRAKE_DEMAND(model_->num_positions() == 1);
+  DRAKE_DEMAND(model_->num_velocities() == 1);
+  DRAKE_DEMAND(model_->num_states() == 2);
 
   this->DeclareContinuousState(
-      model_->get_num_positions(),
-      model_->get_num_velocities(), 0 /* num_z */);
+      model_->num_positions(),
+      model_->num_velocities(), 0 /* num_z */);
 }
 
 template<typename T>
@@ -139,13 +139,13 @@ template <typename T>
 void PendulumPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == 1);
-  DRAKE_ASSERT(model_->get_num_bodies() == 2);
+  DRAKE_ASSERT(model_->num_bodies() == 2);
 
   PositionKinematicsCache<T> pc(model_->get_topology());
   model_->CalcPositionKinematicsCache(context, &pc);
 
   std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
-  pose_data[0] = pc.get_X_WB(link_->get_node_index());
+  pose_data[0] = pc.get_X_WB(link_->node_index());
 }
 
 template <typename T>
@@ -181,7 +181,7 @@ void PendulumPlant<T>::BuildMultibodyTreeModel() {
 
   joint_ = &model_->template AddJoint<RevoluteJoint>(
       "Joint",
-      model_->get_world_body(), {}, /* frame F IS the the world frame W. */
+      model_->world_body(), {}, /* frame F IS the the world frame W. */
       *link_, {}, /* frame M IS the the body frame B. */
       Vector3d::UnitY()); /* pendulum oscillates in the x-z plane. */
 
@@ -237,7 +237,7 @@ void PendulumPlant<T>::RegisterGeometry(
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-PendulumPlant<T>::DoMakeContext() const {
+PendulumPlant<T>::DoMakeLeafContext() const {
   return model_->CreateDefaultContext();
 }
 
@@ -248,14 +248,14 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
-  const int nv = model_->get_num_velocities();
+  const int nv = model_->num_velocities();
 
   // Mass matrix:
   MatrixX<T> M(nv, nv);
   // Forces:
   MultibodyForces<T> forces(*model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_->get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
   // Generalized accelerations:
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
@@ -292,7 +292,7 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   vdot = M.ldlt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-  VectorX<T> xdot(model_->get_num_states());
+  VectorX<T> xdot(model_->num_states());
   // For this simple model v = qdot.
   xdot << v, vdot;
   derivatives->SetFromVector(xdot);

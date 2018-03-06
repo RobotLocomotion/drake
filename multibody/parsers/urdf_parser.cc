@@ -548,60 +548,6 @@ void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
 }
 
 /**
- * Parses the URDF collision filter group specification. Attempts to add
- * collision filter groups (with their member lists and ignore lists) to the
- * tree specification.  Inconsistent definitions will lead to thrown
- * exceptions.
- *
- * @param tree                  The rigid body tree containing the bodies to
- *                              which the filters will be applied.
- * @param node                  The XML node containing the filter details.
- * @param model_instance_id     The id of the current model instance.
- */
-void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
-                               int model_instance_id) {
-  const char* attr = node->Attribute("drake_ignore");
-  if (attr && (std::strcmp(attr, "true") == 0)) return;
-
-  // TODO(SeanCurtis-TRI): After upgrading to newest tinyxml, add line numbers
-  // to error messages.
-  attr = node->Attribute("name");
-  if (!attr) {
-    throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: "
-        "Collision filter group specification missing name attribute.");
-  }
-  string group_name(attr);
-
-  tree->DefineCollisionFilterGroup(group_name);
-
-  for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
-       member_node = member_node->NextSiblingElement("member")) {
-    const char* link_name = member_node->Attribute("link");
-    if (!link_name) {
-      throw runtime_error(string(__FILE__) + ": " + __func__ + ": Collision "
-          "filter group " + group_name + " provides a member tag without "
-          "specifying the \"link\" attribute.");
-    }
-    tree->AddCollisionFilterGroupMember(group_name, link_name,
-                                        model_instance_id);
-  }
-
-  for (XMLElement* ignore_node =
-           node->FirstChildElement("ignored_collision_filter_group");
-       ignore_node; ignore_node = ignore_node->NextSiblingElement(
-                        "ignored_collision_filter_group")) {
-    const char* target_name = ignore_node->Attribute("collision_filter_group");
-    if (!target_name) {
-      throw runtime_error(
-          string(__FILE__) + ": " + __func__ + ": Collision filter group "
-          "provides a tag specifying a group to ignore without specifying the "
-          "\"collision_filter_group\" attribute.");
-    }
-    tree->AddCollisionFilterIgnoreTarget(group_name, target_name);
-  }
-}
-
-/**
  * Parses a joint URDF specification to obtain the names of the joint, parent
  * link, child link, and the joint type. An exception is thrown if any of these
  * names cannot be determined.
@@ -745,8 +691,9 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   }
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
-  tree->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  tree->bodies[child_index]->set_parent(tree->bodies[parent_index].get());
+  tree->get_bodies()[child_index]->setJoint(move(joint_unique_ptr));
+  tree->get_bodies()[child_index]->set_parent(
+      tree->get_bodies()[parent_index].get());
 }
 
 /* Searches through the URDF document looking for the effort limits of a joint
@@ -867,7 +814,7 @@ void ParseTransmission(RigidBodyTree<double>* tree,
   int body_index =
       tree->FindIndexOfChildBodyOfJoint(joint_name, model_instance_id);
 
-  if (tree->bodies[body_index]->getJoint().get_num_positions() == 0) {
+  if (tree->get_bodies()[body_index]->getJoint().get_num_positions() == 0) {
     cerr << string(__FILE__) + ": " + __func__ + ": WARNING: Skipping "
          << "transmission since it's attached to a fixed joint \""
          << joint_name << "\"." << endl;
@@ -895,9 +842,9 @@ void ParseTransmission(RigidBodyTree<double>* tree,
   }
 
   // Creates the actuator and adds it to the rigid body tree.
-  tree->actuators.push_back(RigidBodyActuator(actuator_name,
-                                              tree->bodies[body_index].get(),
-                                              gain, effort_min, effort_max));
+  tree->actuators.push_back(RigidBodyActuator(
+      actuator_name, tree->get_bodies()[body_index].get(),
+      gain, effort_min, effort_max));
 }
 
 void ParseLoop(RigidBodyTree<double>* tree, XMLElement* node,
@@ -1104,7 +1051,8 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
   // DEBUG
   // else {
   // cout << "Parsed link" << endl;
-  // cout << "model->bodies.size() = " << model->bodies.size() << endl;
+  // cout << "model->get_bodies().size() = " << model->get_bodies().size()
+  //     << endl;
   // cout << "model->num_bodies = " << model->num_bodies << endl;
   //}
   // END_DEBUG

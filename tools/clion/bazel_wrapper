@@ -1,25 +1,88 @@
 #!/usr/bin/env python
 
 import os
+import re
+import subprocess
 import sys
 
-# TODO(jwnimmer-tri) At some point, a Drake Developer who is a CLion user will
-# probably want to use the "CLion with Bazel" plug-in on a Bazel project that
-# does not involve Drake at all.  In that case, because the plug-in's path to
-# bazel is a global setting in CLion, this script would still be used and then
-# would fail to find `@drake`.  It would be nice to automatically sense whether
-# or not we should be substituting the aspect path, so that the user doesn't
-# have to reconfigure the path to bazel when they switch projects.
+# Always use stderr for diagnostics; somehow, stdout is silenced in CLion.
+# We avoid sys.stderr.write because we don't want line buffering, since we are
+# (more or less) just forwarding the output of our bazel subprocess.
+def _write_stderr(bytes):
+    os.write(2, bytes)
 
-if __name__ == "__main__":
+def main(argv, execvp, write_stderr, popen):
+    # Find the WORKSPACE file.  Bail out if its not Drake's workspace.  (Note
+    # that when calling execvp, our process is replaced with the bazel process;
+    # in other words, the execvp call never returns.)
+    workspace_contents = ""
+    try:
+        with open(os.path.join(os.getcwd(), "WORKSPACE"), "r") as f:
+            workspace_contents = f.read()
+    except Exception:
+        pass
+    if not workspace_contents:
+        write_stderr("Skipping drake/tools/clion/bazel_wrapper (empty)\n")
+        execvp("bazel", ["bazel"] + argv[1:])
+    if 'workspace(name = "drake")' not in workspace_contents:
+        write_stderr("Skipping drake/tools/clion/bazel_wrapper (non-drake)\n")
+        execvp("bazel", ["bazel"] + argv[1:])
+
     # Copy args for modification.
-    args = sys.argv[1:]
+    args = argv[1:]
 
-    # If this magic argument is found, replace it with our hooks instead.
+    # If this magic argument is found and we're in Drake's workspace, then
+    # replace it with Drake's hooks instead.
     old_magic = "--aspects=@intellij_aspect//:intellij_info_bundled.bzl%intellij_info_aspect"  # noqa
     new_magic = "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"
     if old_magic in args:
         args[args.index(old_magic)] = new_magic
 
-    # Delegate to bazel.
-    os.execvp("bazel", ["bazel"] + args)
+    # If stream editing is disabled, just delegate everything to Bazel.
+    nostream_magic = "--nodrake_error_rewriting"
+    if nostream_magic in args:
+        args.pop(args.index(nostream_magic))
+        execvp("bazel", ["bazel"] + args)
+
+    # Launch Bazel, rewriting its error messages to simplify paths.
+    bazel = popen(["bazel"] + args, stderr=subprocess.PIPE)
+
+    # Case 1: Compiler errors that name an included file.  The first group is
+    # prologue.  The second group is the filename to rewrite.  The third group
+    # is just the rest of the line.
+    prog1 = re.compile("^(In file included from )([0-9A-Za-z_./\\-]+)(.*)$")
+
+    # Case 2: Compiler details that name an included file and line numbers.
+    # The first group is prologue, either a path prefix, ANSI escape codes, or
+    # empty.  The second group is the filename to rewrite, locked to start with
+    # bazel-out (which is where the _virtual_includes end up).  The third group
+    # is just the rest of the line.
+    prog2 = re.compile("^([0-9A-Za-z_./\\-]+|(?:\x1b\[[01]m)+|)(bazel-out/[0-9A-Za-z_./\\-]+)(.*)$")  # noqa
+
+    # Read until EOF.
+    while True:
+        line = bazel.stderr.readline()
+        if line == b"":
+            break
+        match = prog1.match(line) or prog2.match(line)
+        if match is not None:
+            first, filename, rest = match.groups()
+            old_mention = os.path.join(".", filename)
+            if os.path.exists(old_mention):
+                new_mention = os.path.relpath(os.path.realpath(old_mention))
+                if not new_mention.startswith(".."):
+                    write_stderr(first)
+                    write_stderr(new_mention)
+                    write_stderr(rest)
+                    write_stderr("\n")
+                    continue
+        write_stderr(line)
+
+    # Cleanup.
+    bazel.terminate()
+    bazel.wait()
+    sys.exit(bazel.returncode)
+
+
+if __name__ == "__main__":
+    main(sys.argv, os.execvp, _write_stderr, subprocess.Popen)

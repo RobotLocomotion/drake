@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+
 # From https://bazel.build/versions/master/docs/be/c-cpp.html#cc_library.srcs
 _SOURCE_EXTENSIONS = [source_ext for source_ext in """
 .c
@@ -48,7 +50,6 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     # Common attributes for all of our py_test invocations.
     data = (data or [])
     size = "small"
-    tags = ["cpplint", "lint"]
 
     # For cpplint, require a top-level config file.  By default, also apply
     # configs from the current directory and test sub-directory when present.
@@ -63,25 +64,25 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     ])
 
     # Google cpplint.
-    native.py_test(
+    py_test_isolated(
         name = name + "_cpplint",
         srcs = ["@styleguide//:cpplint"],
         data = data + cpplint_cfg + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
         main = "@styleguide//:cpplint/cpplint.py",
         size = size,
-        tags = tags,
+        tags = ["cpplint", "lint"]
     )
 
     # Additional Drake lint.
-    native.py_test(
-        name = name + "_drake_lint",
+    py_test_isolated(
+        name = name + "_drakelint",
         srcs = ["@drake//tools/lint:drakelint"],
         data = data + source_labels,
         args = source_filenames,
         main = "@drake//tools/lint:drakelint.py",
         size = size,
-        tags = tags,
+        tags = ["drakelint", "lint"]
     )
 
 def cpplint(existing_rules = None, data = None, extra_srcs = None):

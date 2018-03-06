@@ -36,8 +36,8 @@ drake_cc_library(
     deps = [
         ":id_controller_config",
         ":qp_inverse_dynamics",
-        "//drake/common/proto:protobuf",
-        "//drake/multibody:rigid_body_tree_alias_groups",
+        "//common/proto:protobuf",
+        "//multibody:rigid_body_tree_alias_groups",
     ],
 )
 
@@ -50,7 +50,7 @@ drake_cc_library(
         "robot_kinematic_state.h",
     ],
     deps = [
-        "//drake/multibody:rigid_body_tree",
+        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -66,10 +66,10 @@ drake_cc_library(
     ],
     deps = [
         ":robot_kinematic_state",
-        "//drake/common:essential",
-        "//drake/math:gradient",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/solvers:mathematical_program",
+        "//common:essential",
+        "//math:gradient",
+        "//multibody:rigid_body_tree",
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -78,10 +78,10 @@ drake_cc_library(
     srcs = ["qp_inverse_dynamics_system.cc"],
     hdrs = ["qp_inverse_dynamics_system.h"],
     deps = [
-        "//drake/lcmtypes:inverse_dynamics_debug_info",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/controllers/qp_inverse_dynamics",
-        "//drake/systems/framework:leaf_system",
+        "//lcmtypes:inverse_dynamics_debug_info",
+        "//multibody:rigid_body_tree",
+        "//systems/controllers/qp_inverse_dynamics",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -91,15 +91,14 @@ drake_cc_library(
     hdrs = ["lcm_utils.h"],
     deps = [
         ":qp_inverse_dynamics",
-        "//drake/lcmtypes:body_acceleration",
-        "//drake/lcmtypes:constrained_values",
-        "//drake/lcmtypes:contact_information",
-        "//drake/lcmtypes:desired_body_motion",
-        "//drake/lcmtypes:desired_centroidal_momentum_dot",
-        "//drake/lcmtypes:desired_dof_motions",
-        "//drake/lcmtypes:qp_input",
-        "//drake/lcmtypes:resolved_contact",
-        "//drake/util:lcm_util",
+        "//lcmtypes:body_acceleration",
+        "//lcmtypes:constrained_values",
+        "//lcmtypes:contact_information",
+        "//lcmtypes:desired_body_motion",
+        "//lcmtypes:desired_centroidal_momentum_dot",
+        "//lcmtypes:desired_dof_motions",
+        "//lcmtypes:qp_input",
+        "//lcmtypes:resolved_contact",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -109,9 +108,9 @@ drake_cc_library(
     srcs = ["qp_output_translator_system.cc"],
     hdrs = ["qp_output_translator_system.h"],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/controllers/qp_inverse_dynamics",
-        "//drake/systems/framework:leaf_system",
+        "//multibody:rigid_body_tree",
+        "//systems/controllers/qp_inverse_dynamics",
+        "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -122,8 +121,8 @@ drake_cc_library(
     hdrs = ["robot_kinematic_state_translator_system.h"],
     deps = [
         ":robot_kinematic_state",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework:leaf_system",
+        "//multibody:rigid_body_tree",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -132,13 +131,13 @@ drake_cc_library(
 drake_cc_googletest(
     name = "lcm_utils_test",
     data = [
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     deps = [
         ":lcm_utils",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -148,14 +147,14 @@ drake_cc_googletest(
     data = [
         "test/params.alias_groups",
         "test/params.id_controller_config",
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     deps = [
         ":param_parser",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree_alias_groups",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree_alias_groups",
+        "//multibody/parsers",
     ],
 )
 
@@ -165,16 +164,16 @@ drake_cc_googletest(
     data = [
         "test/iiwa.alias_groups",
         "test/iiwa.id_controller_config",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
         ":param_parser",
         ":qp_inverse_dynamics",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
-        "//drake/systems/controllers:setpoint",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+        "//systems/controllers:setpoint",
     ],
 )
 
@@ -184,19 +183,19 @@ drake_cc_googletest(
     data = [
         "test/iiwa.alias_groups",
         "test/iiwa.id_controller_config",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
         ":qp_inverse_dynamics_system",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:constant_value_source",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+        "//systems/analysis:simulator",
+        "//systems/controllers:setpoint",
+        "//systems/controllers/qp_inverse_dynamics:param_parser",
+        "//systems/framework",
+        "//systems/primitives:constant_value_source",
     ],
 )
 
@@ -204,14 +203,14 @@ drake_cc_googletest(
     name = "qp_output_translator_system_test",
     srcs = ["test/qp_output_translator_system_test.cc"],
     data = [
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     deps = [
         ":qp_output_translator_system",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+        "//systems/framework",
     ],
 )
 
@@ -222,17 +221,17 @@ drake_cc_googletest(
     data = [
         "test/valkyrie.alias_groups",
         "test/valkyrie.id_controller_config",
-        "//drake/examples/valkyrie:models",
+        "//examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/examples/valkyrie:valkyrie_constants",
-        "//drake/multibody/parsers",
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/valkyrie:valkyrie_constants",
+        "//multibody/parsers",
+        "//systems/controllers:setpoint",
+        "//systems/controllers/qp_inverse_dynamics",
+        "//systems/controllers/qp_inverse_dynamics:param_parser",
     ],
 )
 

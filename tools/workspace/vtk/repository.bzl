@@ -8,8 +8,9 @@ unpacked. On macOS and OS X, VTK must be installed using Homebrew.
 
 Example:
     WORKSPACE:
+        load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
         load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
-        vtk_repository(name = "foo")
+        vtk_repository(name = "foo", mirrors = DEFAULT_MIRRORS)
 
     BUILD:
         cc_library(
@@ -50,8 +51,6 @@ def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
     srcs = []
 
     if os_name == "mac os x":
-        srcs = ["empty.cc"]
-
         if not header_only:
             linkopts = linkopts + [
                 "-L/usr/local/opt/vtk@{}/lib".format(VTK_MAJOR_MINOR_VERSION),
@@ -83,7 +82,6 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
             VTK_MAJOR_MINOR_VERSION), "include")
-        repository_ctx.file("empty.cc", executable = False)
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
             archive = "vtk-8.0.1-qt-5.5.1-xenial-x86_64.tar.gz"
@@ -92,8 +90,8 @@ def _impl(repository_ctx):
             fail("Operating system is NOT supported", attr = os_result)
 
         urls = [
-            "https://drake-packages.csail.mit.edu/vtk/{}".format(archive),
-            "https://s3.amazonaws.com/drake-packages/vtk/{}".format(archive),
+            x.format(archive = archive)
+            for x in repository_ctx.attr.mirrors.get("vtk")
         ]
         root_path = repository_ctx.path("")
 
@@ -422,8 +420,10 @@ def _impl(repository_ctx):
         hdrs = [
             "vtkImageExport.h",
             "vtkImageReader2.h",
+            "vtkImageWriter.h",
             "vtkIOImageModule.h",
             "vtkPNGReader.h",
+            "vtkPNGWriter.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -574,4 +574,9 @@ install_files(
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
-vtk_repository = repository_rule(implementation = _impl)
+vtk_repository = repository_rule(
+    attrs = {
+        "mirrors": attr.string_list_dict(),
+    },
+    implementation = _impl,
+)

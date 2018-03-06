@@ -10,7 +10,7 @@ drake_cc_library(
     srcs = ["continuity_constraint.cc"],
     hdrs = ["continuity_constraint.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -20,7 +20,7 @@ drake_cc_library(
     hdrs = ["spline_generation.h"],
     deps = [
         ":spline_information",
-        "//drake/common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -31,7 +31,7 @@ drake_cc_library(
     deps = [
         ":continuity_constraint",
         ":value_constraint",
-        "//drake/common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -40,7 +40,7 @@ drake_cc_library(
     srcs = ["value_constraint.cc"],
     hdrs = ["value_constraint.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 

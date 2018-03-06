@@ -86,7 +86,7 @@ class RigidBody : public Body<T> {
   /// Returns the default value of this body's mass.  This value is initially
   /// supplied at construction when specifying this body's SpatialInertia.
   /// @returns This body's default mass.
-  double get_default_mass() const {
+  double default_mass() const {
     return default_spatial_inertia_.get_mass();
   }
 
@@ -95,7 +95,7 @@ class RigidBody : public Body<T> {
   /// construction when specifying this body's SpatialInertia.
   /// @retval p_BoBcm_B The position of this rigid body B's center of mass `Bcm`
   /// measured from Bo (B's frame origin) and expressed in B (body B's frame).
-  const Vector3<double>& get_default_com() const {
+  const Vector3<double>& default_com() const {
     return default_spatial_inertia_.get_com();
   }
 
@@ -103,7 +103,7 @@ class RigidBody : public Body<T> {
   /// origin), expressed in B (this body's frame). This value is initially
   /// supplied at construction when specifying this body's SpatialInertia.
   /// @retval G_BBo_B rigid body B's unit inertia about Bo, expressed in B.
-  const UnitInertia<double>& get_default_unit_inertia() const {
+  const UnitInertia<double>& default_unit_inertia() const {
     return default_spatial_inertia_.get_unit_inertia();
   }
 
@@ -111,7 +111,7 @@ class RigidBody : public Body<T> {
   /// (B's origin), expressed in B (this body's frame). This value is calculated
   /// from the SpatialInertia supplied at construction of this body.
   /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
-  RotationalInertia<double> get_default_rotational_inertia()
+  RotationalInertia<double> default_rotational_inertia()
       const {
     return default_spatial_inertia_.CalcRotationalInertia();
   }
@@ -122,7 +122,7 @@ class RigidBody : public Body<T> {
 
   const Vector3<T> CalcCenterOfMassInBodyFrame(
       const MultibodyTreeContext<T>&) const final {
-    return get_default_com().template cast<T>();
+    return default_com().template cast<T>();
   }
 
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
@@ -143,7 +143,7 @@ class RigidBody : public Body<T> {
   //----------------------------------------------------------------------------
   const Isometry3<T>& get_pose_in_world(
       const PositionKinematicsCache<T>& pc) const {
-    return pc.get_X_WB(this->get_node_index());
+    return pc.get_X_WB(this->node_index());
   }
 
   /// Extract the rotation matrix relating the world frame to this body's frame.
@@ -178,7 +178,7 @@ class RigidBody : public Body<T> {
   //----------------------------------------------------------------------------
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
       const VelocityKinematicsCache<T>& vc) const {
-    return vc.get_V_WB(this->get_node_index());
+    return vc.get_V_WB(this->node_index());
   }
 
   /// Extract this body angular velocity in world, expressed in world.
@@ -211,7 +211,7 @@ class RigidBody : public Body<T> {
   //----------------------------------------------------------------------------
   const SpatialAcceleration<T>& get_spatial_acceleration_in_world(
       const AccelerationKinematicsCache<T>& ac) const {
-    return ac.get_A_WB(this->get_node_index());
+    return ac.get_A_WB(this->node_index());
   }
 
   /// Extract this body's angular acceleration in world, expressed in world.
@@ -248,7 +248,8 @@ class RigidBody : public Body<T> {
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const {
     unused(tree_clone);
-    return std::make_unique<RigidBody<ToScalar>>(default_spatial_inertia_);
+    return std::make_unique<RigidBody<ToScalar>>(
+        this->name(), default_spatial_inertia_);
   }
 
   // Spatial inertia about the body frame origin Bo, expressed in B.

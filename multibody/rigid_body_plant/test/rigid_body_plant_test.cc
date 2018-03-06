@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/examples/pendulum/gen/pendulum_params.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
@@ -16,6 +17,7 @@
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/systems/primitives/linear_system.h"
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -325,9 +327,8 @@ TEST_P(KukaArmTest, EvalOutput) {
   // Sets the state to a non-zero value.
   VectorXd desired_angles(kNumPositions_);
   desired_angles << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15;
-  for (int i = 0; i < kNumPositions_; ++i) {
-    kuka_plant_->set_position(context_.get(), i, desired_angles[i]);
-  }
+  kuka_plant_->SetModelInstancePositions(context_.get(), kModelInstanceId,
+                                        desired_angles);
   VectorXd desired_state(kNumStates_);
   desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
   auto x = kuka_plant_->GetStateVector(*context_);
@@ -646,8 +647,8 @@ class RigidBodyPlantTimeSteppingDataTest : public ::testing::Test {
 TEST_F(RigidBodyPlantTimeSteppingDataTest, NormalJacobian) {
   // Construct the contact; body A is the ball.
   const double radius = 0.05;
-  std::vector<multibody::collision::PointPair> contacts;
-  contacts.push_back(multibody::collision::PointPair());
+  std::vector<multibody::collision::PointPair<double>> contacts;
+  contacts.push_back(multibody::collision::PointPair<double>());
 
   // Contact point expressed in A's frame (p_AoC_A).
   contacts.back().ptA = Vector3<double>(0, 0, -radius);
@@ -708,8 +709,8 @@ TEST_F(RigidBodyPlantTimeSteppingDataTest, NormalJacobian) {
 TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
   // Construct the contact; body A is the ball.
   const double radius = 0.05;
-  std::vector<multibody::collision::PointPair> contacts;
-  contacts.push_back(multibody::collision::PointPair());
+  std::vector<multibody::collision::PointPair<double>> contacts;
+  contacts.push_back(multibody::collision::PointPair<double>());
 
   // Contact point expressed in A's frame (p_AoC_A).
   contacts.back().ptA = Vector3<double>(0, 0, -radius);
@@ -778,6 +779,141 @@ TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
       contacts, kinematics_cache, VectorX<double>::Unit(2, 1),
       half_num_cone_edges);
   EXPECT_LT((FT.transpose() - F).norm(), tol);
+}
+
+
+GTEST_TEST(RigidBodyPlantTest, LinearizePendulumTest) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      FindResourceOrThrow(
+          "drake/examples/pendulum/Pendulum.urdf"),
+      drake::multibody::joints::kFixed, tree_ptr.get());
+
+  RigidBodyPlant<double> pendulum(move(tree_ptr));
+  auto context = pendulum.CreateDefaultContext();
+  auto& state = context->get_mutable_continuous_state_vector();
+  state.SetFromVector(Eigen::Vector2d{M_PI, 0.});
+  context->FixInputPort(0, Vector1d{0.});
+
+  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+      systems::Linearize(pendulum, *context);
+
+  // Note: the default value of the params are kept in sync with the urdf
+  // parameters by the urdfDynamicsTest in the pendulum directory.
+  examples::pendulum::PendulumParams<double> params;
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+  // clang-format off
+  A << 0., 1.,
+      params.gravity() / params.length(), -params.damping() /
+              (params.mass() * params.length() * params.length());
+  B << 0,
+       1 / (params.mass()* params.length() * params.length());
+  // clang-format on
+
+  const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->C(),
+                              Eigen::Matrix2d::Identity(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->D(), Eigen::Vector2d::Zero(),
+                              kTolerance));
+}
+
+GTEST_TEST(RigidBodyPlantTest, TimesteppingAutoDiffThrows) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      FindResourceOrThrow("drake/multibody/models/box.urdf"),
+      drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
+      tree_ptr.get());
+
+  const double timestep = 0.1;
+  RigidBodyPlant<AutoDiffXd> time_stepping_plant(move(tree_ptr), timestep);
+
+  auto time_stepping_context = time_stepping_plant.CreateDefaultContext();
+
+  auto updates = time_stepping_plant.AllocateDiscreteVariables();
+  EXPECT_THROW(time_stepping_plant.CalcDiscreteVariableUpdates(
+                   *time_stepping_context, updates.get()),
+               std::runtime_error);
+}
+
+// Check that CalcTimeDerivatives throws iff there is contact between the
+// ball and the terrain.
+GTEST_TEST(RigidBodyPlantTest, BallAutoDiffThrowsTest) {
+  auto tree = make_unique<RigidBodyTree<double>>();
+  AddModelInstancesFromSdfFile(
+      FindResourceOrThrow("drake/multibody/rigid_body_plant/test/ball.sdf"),
+      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
+      tree.get());
+
+  // Add a geometry to the world
+  const double plane_len = 100;
+  multibody::AddFlatTerrainToWorld(tree.get(), plane_len, plane_len);
+
+  RigidBodyPlant<AutoDiffXd> plant(move(tree));
+
+  auto context = plant.CreateDefaultContext();
+
+  VectorBase<AutoDiffXd>& position = context->get_mutable_continuous_state()
+                                         .get_mutable_generalized_position();
+
+  auto derivatives = plant.AllocateTimeDerivatives();
+
+  // Set the position to be above the ground (no other variables should matter).
+  position.SetAtIndex(2, 10.);
+  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()));
+
+  // Set the position to be below the ground (no other variables should matter).
+  position.SetAtIndex(2, -10.);
+  EXPECT_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()),
+               std::runtime_error);
+}
+
+// Check that the gradients are returned correctly for a simple system (a
+// ball) with contact geometry, and a potential contact with the terrain, but
+// which is not currently making contact.
+GTEST_TEST(RigidBodyPlantTest, BallAutoDiffTest) {
+  auto tree = make_unique<RigidBodyTree<double>>();
+  AddModelInstancesFromSdfFile(
+      FindResourceOrThrow("drake/multibody/rigid_body_plant/test/ball.sdf"),
+      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
+      tree.get());
+
+  // Add a geometry to the world
+  const double plane_len = 100;
+  multibody::AddFlatTerrainToWorld(tree.get(), plane_len, plane_len);
+
+  RigidBodyPlant<double> plant(move(tree));
+
+  auto context = plant.CreateDefaultContext();
+
+  VectorBase<double>& position = context->get_mutable_continuous_state()
+                                     .get_mutable_generalized_position();
+
+  auto derivatives = plant.AllocateTimeDerivatives();
+
+  // Set the position to be above the ground (no other variables should matter).
+  position.SetAtIndex(2, 10.);
+
+  // Check the gradients.
+  std::unique_ptr<AffineSystem<double>> linearized_plant =
+      systems::FirstOrderTaylorApproximation(plant, *context);
+
+  Eigen::Matrix<double, 12, 12> A;
+  // clang-format off
+  A << Eigen::MatrixXd::Zero(6, 6), Eigen::MatrixXd::Identity(6, 6),
+       Eigen::MatrixXd::Zero(6, 12);
+  // clang-format on
+
+  const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(linearized_plant->A(), A, kTolerance));
+  EXPECT_EQ(linearized_plant->B().rows(), 12);
+  EXPECT_EQ(linearized_plant->B().cols(), 0);
+  EXPECT_TRUE(CompareMatrices(linearized_plant->C(),
+                              Eigen::MatrixXd::Identity(12, 12), kTolerance));
+  EXPECT_EQ(linearized_plant->D().rows(), 12);
+  EXPECT_EQ(linearized_plant->D().cols(), 0);
 }
 
 }  // namespace systems

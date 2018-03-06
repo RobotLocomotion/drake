@@ -23,7 +23,6 @@
 #include "drake/systems/robotInterfaces/verify_subtype_sizes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
-#include "drake/util/lcmUtil.h"
 
 // TODO(tkoolen): discuss possibility of chatter in knee control
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,
@@ -918,7 +917,8 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
   std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     int joint_id = robot.FindIndexOfChildBodyOfJoint(joint_names.at(*it));
-    joint_indices[*it] = robot.bodies[joint_id]->get_position_start_index();
+    joint_indices[*it] =
+        robot.get_bodies()[joint_id]->get_position_start_index();
   }
   return joint_indices;
 }

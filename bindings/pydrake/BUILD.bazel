@@ -11,6 +11,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
+    "drake_py_unittest",
 )
 load(
     "//tools/skylark:pybind.bzl",
@@ -18,21 +19,14 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
 
-package(default_visibility = adjust_labels_for_drake_hoist([
-    "//drake/bindings/pydrake:__subpackages__",
-]))
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
-PACKAGE_INFO = get_pybind_package_info(
-    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
+PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
 drake_cc_library(
     name = "pydrake_pybind",
@@ -88,6 +82,16 @@ drake_py_library(
     ],
 )
 
+drake_pybind_library(
+    name = "math_py",
+    cc_so_name = "math",
+    cc_srcs = ["math_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
+    ],
+)
+
 # TODO(eric.cousineau): Make private.
 drake_cc_library(
     name = "symbolic_types_pybind",
@@ -107,17 +111,19 @@ drake_pybind_library(
     py_srcs = ["symbolic.py"],
 )
 
-PY_LIBRARIES_WITH_INSTALL = adjust_labels_for_drake_hoist([
+PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":common_py",
+    ":math_py",
     ":symbolic_py",
-    "//drake/bindings/pydrake/examples",
-    "//drake/bindings/pydrake/multibody",
-    "//drake/bindings/pydrake/solvers",
-    "//drake/bindings/pydrake/systems",
-    "//drake/bindings/pydrake/third_party",
-    "//drake/bindings/pydrake/util",
-])
+    "//bindings/pydrake/examples",
+    "//bindings/pydrake/maliput",
+    "//bindings/pydrake/multibody",
+    "//bindings/pydrake/solvers",
+    "//bindings/pydrake/systems",
+    "//bindings/pydrake/third_party",
+    "//bindings/pydrake/util",
+]
 
 PY_LIBRARIES = [
     ":backwards_compatibility_py",
@@ -145,7 +151,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "all_test",
     data = ["//examples/pendulum:models"],
     deps = [":all_py"],
@@ -156,6 +162,8 @@ drake_py_test(
     size = "medium",
     # Increase the timeout so that debug builds are successful.
     timeout = "long",
+    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
+    allow_import_unittest = True,
     data = ["//:install"],
     deps = [
         "//tools/install:install_test_helper",
@@ -175,22 +183,19 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "odr_test",
     size = "small",
-    srcs = ["test/odr_test.py"],
     deps = [
         ":odr_test_module_py",
         ":symbolic_py",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "common_test",
     size = "small",
-    srcs = ["test/common_test.py"],
-    data = ["//drake/examples/atlas:models"],
-    main = "test/common_test.py",
+    data = ["//examples/atlas:models"],
     deps = [":common_py"],
 )
 
@@ -203,29 +208,35 @@ drake_py_test(
     size = "medium",
     # Increase the timeout so that debug builds are successful.
     timeout = "long",
+    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
+    allow_import_unittest = True,
     data = ["//:install"],
     deps = [
         "//tools/install:install_test_helper",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "forward_diff_test",
     size = "small",
-    srcs = ["test/forward_diff_test.py"],
-    main = "test/forward_diff_test.py",
     deps = [":autodiffutils_py"],
 )
 
-drake_py_test(
-    name = "symbolic_variables_test",
+drake_py_unittest(
+    name = "math_test",
     size = "small",
-    srcs = ["test/symbolic_test.py"],
-    main = "test/symbolic_test.py",
+    deps = [
+        ":math_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "symbolic_test",
+    size = "small",
     deps = [":symbolic_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "backwards_compatability_test",
     deps = [
         ":backwards_compatibility_py",

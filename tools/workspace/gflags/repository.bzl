@@ -64,6 +64,9 @@ cc_library(
 gflags_repository = repository_rule(
     attrs = {
         "modname": attr.string(default = "gflags"),
+        "pkg_config_paths": attr.string_list(
+            default = ["/usr/local/opt/gflags/lib/pkgconfig"],
+        ),
     },
     local = True,
     implementation = _impl,

@@ -278,6 +278,26 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   EXPECT_EQ(sxV.translational(), Vxs.translational());
 }
 
+// Test the unary minus operator on a spatial vector.
+TYPED_TEST(SpatialQuantityTest, UnaryMinusOperator) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+
+  // Two non-zero rotational and translational components.
+  const Vector3<T> w(1.0, 2.0, 3.0);
+  const Vector3<T> v(4.0, 5.0, 6.0);
+
+  // A spatial vector V from w and v.
+  const SpatialQuantity V(w, v);
+
+  // Negate V.
+  const SpatialQuantity Vminus = -V;
+
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V.rotational(), -Vminus.rotational());
+  EXPECT_EQ(V.translational(), -Vminus.translational());
+}
+
 // Re-express in another frame. Given a spatial vector V_F expressed in a frame
 // F, re-express this same spatial vector in another frame E as:
 //   V_E = R_EF * V_F

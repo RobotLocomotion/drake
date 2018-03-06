@@ -7,8 +7,9 @@ WORKSPACE.
 
 Example:
     WORKSPACE:
+        load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
         load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
-        buildifier_repository(name = "foo")
+        buildifier_repository(name = "foo", mirrors = DEFAULT_MIRRORS)
 
     BUILD:
         sh_binary(
@@ -40,13 +41,10 @@ def _impl(repository_ctx):
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
-    mirrors = [
-        "https://github.com/bazelbuild/buildtools/releases/download/%s/%s",
-        "https://drake-mirror.csail.mit.edu/github/bazelbuild/buildtools/releases/%s/%s",  # noqa
-        "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/buildtools/releases/%s/%s",  # noqa
+    urls = [
+        x.format(version = version, filename = filename)
+        for x in repository_ctx.attr.mirrors.get("buildifier")
     ]
-
-    urls = [mirror % (version, filename) for mirror in mirrors]
     output = repository_ctx.path("buildifier")
 
     repository_ctx.download(urls, output, sha256, executable = True)
@@ -59,4 +57,9 @@ exports_files(
 
     repository_ctx.file("BUILD.bazel", content, executable = False)
 
-buildifier_repository = repository_rule(implementation = _impl)
+buildifier_repository = repository_rule(
+    attrs = {
+        "mirrors": attr.string_list_dict(),
+    },
+    implementation = _impl,
+)

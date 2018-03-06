@@ -128,7 +128,7 @@ class RgbdCamera final : public LeafSystem<double> {
              double z_near = 0.5,
              double z_far = 5.0,
              double fov_y = M_PI_4,
-             bool show_window = true);
+             bool show_window = RenderingConfig::kDefaultShowWindow);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
@@ -167,7 +167,7 @@ class RgbdCamera final : public LeafSystem<double> {
              double z_near = 0.5,
              double z_far = 5.0,
              double fov_y = M_PI_4,
-             bool show_window = true);
+             bool show_window = RenderingConfig::kDefaultShowWindow);
 
   ~RgbdCamera() = default;
 
@@ -273,10 +273,18 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCameraDiscrete);
 
+  static constexpr double kDefaultPeriod = 1. / 30;
+
   /// Constructs a diagram containing a (non-registered) RgbdCamera that will
   /// update at a given rate.
+  /// @param period
+  ///   Update period (sec).
+  /// @param render_label_image
+  ///   If true, renders label image (which requires additional overhead). If
+  ///   false, `label_image_output_port` will raise an error if called.
   RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
-                     double period = 1. / 30);
+                     double period = kDefaultPeriod,
+                     bool render_label_image = true);
 
   /// Returns reference to RgbdCamera intsance.
   const RgbdCamera& camera() const { return *camera_; }

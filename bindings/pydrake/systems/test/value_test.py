@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 from __future__ import print_function
 
@@ -10,7 +9,9 @@ import numpy as np
 from pydrake.systems.framework import (
     AbstractValue,
     BasicVector,
+    Parameters,
     Value,
+    VectorBase,
     )
 from pydrake.systems.test.test_util import (
     make_unknown_abstract_value,
@@ -62,6 +63,15 @@ class TestValue(unittest.TestCase):
                 # Ensure we can construct from size.
                 value_data = BasicVector(n)
                 self.assertEquals(value_data.size(), n)
+                # Ensure we can clone.
+                value_copies = [
+                    value_data.Clone(),
+                    copy.copy(value_data),
+                    copy.deepcopy(value_data),
+                ]
+                for value_copy in value_copies:
+                    self.assertTrue(value_copy is not value_data)
+                    self.assertEquals(value_data.size(), n)
 
     def test_abstract_value_copyable(self):
         expected = "Hello world"
@@ -77,6 +87,9 @@ class TestValue(unittest.TestCase):
     def test_abstract_value_move_only(self):
         obj = MoveOnlyType(10)
         # This *always* clones `obj`.
+        self.assertEquals(
+            str(Value[MoveOnlyType]),
+            "<class 'pydrake.systems.framework.Value[MoveOnlyType]'>")
         value = Value[MoveOnlyType](obj)
         self.assertTrue(value.get_value() is not obj)
         self.assertEquals(value.get_value().x(), 10)
@@ -128,6 +141,45 @@ class TestValue(unittest.TestCase):
                 "AddValueInstantiation",
             ]), cm.exception.message)
 
+    def test_parameters_api(self):
 
-if __name__ == '__main__':
-    unittest.main()
+        def compare(actual, expected):
+            self.assertEquals(type(actual), type(expected))
+            if isinstance(actual, VectorBase):
+                self.assertTrue(
+                    np.allclose(actual.get_value(), expected.get_value()))
+            else:
+                self.assertEquals(actual.get_value(), expected.get_value())
+
+        model_numeric = BasicVector([0.])
+        model_abstract = AbstractValue.Make("Hello")
+
+        params = Parameters(
+            numeric=[model_numeric.Clone()], abstract=[model_abstract.Clone()])
+        self.assertEquals(params.num_numeric_parameters(), 1)
+        self.assertEquals(params.num_abstract_parameters(), 1)
+        # Numeric.
+        compare(params.get_numeric_parameter(index=0), model_numeric)
+        compare(params.get_mutable_numeric_parameter(index=0), model_numeric)
+        # WARNING: This will invalidate old references!
+        params.set_numeric_parameters(params.get_numeric_parameters().Clone())
+        # Abstract.
+        compare(params.get_abstract_parameter(index=0), model_abstract)
+        compare(params.get_mutable_abstract_parameter(index=0), model_abstract)
+        # WARNING: This will invalidate old references!
+        params.set_abstract_parameters(
+            params.get_abstract_parameters().Clone())
+        # WARNING: This may invalidate old references!
+        params.SetFrom(copy.deepcopy(params))
+
+        # Test alternative constructors.
+        ctor_test = [
+            Parameters(),
+            Parameters(numeric=[model_numeric.Clone()]),
+            Parameters(abstract=[model_abstract.Clone()]),
+            Parameters(
+                numeric=[model_numeric.Clone()],
+                abstract=[model_abstract.Clone()]),
+            Parameters(vec=model_numeric.Clone()),
+            Parameters(value=model_abstract.Clone()),
+            ]

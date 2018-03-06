@@ -1,140 +1,134 @@
 #pragma once
 
-#include <cstddef>
-#include <map>
+/** @file
+Declares CacheEntryValue and Cache, which is the container for cache entry
+values. */
+
+// TODO(sherm1) Re-review this file in its entirety when the cache stubs are
+// replaced with real code in a subsequent PR.
+
 #include <memory>
-#include <set>
-#include <tuple>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/never_destroyed.h"
+#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
 
-typedef int CacheTicket;
+class DependencyGraph;
 
-namespace internal {
+// TODO(sherm1) Stubbed for testing DependencyTracker; do not review.
 
-/// A single cached piece of data, its validity bit, and the set of other cache
-/// entries that depend on it.
-class CacheEntry {
+// These are stubs for the two classes that comprise the cache:
+// - CacheEntryValue representing a single cache entry and storing its
+//                   abtract value and "up-to-date" indicator.
+// - Cache the container for CacheEntryValues
+//
+// Note that a Cache is local to a particular Context; that is, when there is
+// a diagram, each Context within it has its own Cache object.
+#ifndef DRAKE_DOXYGEN_CXX  // Hide from Doxygen for now.
+class CacheEntryValue {
  public:
-  CacheEntry();
-  ~CacheEntry();
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CacheEntryValue)
 
-  // Implements CopyConstructible and CopyAssignable directly, and
-  // MoveConstructible and MoveAssignable indirectly via copying.
-  CacheEntry(const CacheEntry& other);
-  CacheEntry& operator=(const CacheEntry& other);
-
-  bool is_valid() const { return is_valid_; }
-  void set_is_valid(bool valid) { is_valid_ = valid; }
-
-  AbstractValue* value() const { return value_.get(); }
-
-  void set_value(std::unique_ptr<AbstractValue> value) {
-    value_ = std::move(value);
+  CacheEntryValue(CacheIndex index, DependencyTicket ticket,
+                  std::string description,
+                  std::unique_ptr<AbstractValue> initial_value)
+      : description_(std::move(description)),
+        cache_index_(index),
+        value_(std::move(initial_value)),
+        ticket_(ticket) {
+    DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
+    // OK if value is null here.
   }
 
-  std::unique_ptr<AbstractValue> release_value() {
-    set_is_valid(false);
-    return std::move(value_);
+  void SetInitialValue(std::unique_ptr<AbstractValue> init_value) {
+    value_ = std::move(init_value);
+    set_is_up_to_date(false);
   }
 
-  const std::set<CacheTicket>& dependents() const { return dependents_; }
-  void add_dependent(CacheTicket ticket) { dependents_.insert(ticket); }
+  template <typename V>
+  void set_value(const V& new_value) {
+    value_->SetValue<V>(new_value);
+    set_is_up_to_date(true);
+  }
+
+  bool is_up_to_date() const { return is_up_to_date_flag_; }
+
+  CacheIndex cache_index() const { return cache_index_; }
+
+  DependencyTicket ticket() const { return ticket_; }
+
+  void set_is_up_to_date(bool up_to_date) { is_up_to_date_flag_ = up_to_date; }
+
+  /** Returns a mutable reference to an unused cache entry value object, which
+  has no valid CacheIndex or DependencyTicket and has a meaningless value. The
+  reference is to a singleton %CacheEntryValue and will always return the same
+  address. You may invoke set_is_up_to_date() harmlessly on this object, but may
+  not depend on its contents in any way as they may change unexpectedly. The
+  intention is that this object is used as a common throw-away destination for
+  non-cache DependencyTracker invalidations so that invalidation can be done
+  unconditionally, and to the same memory location, for speed. */
+  static CacheEntryValue& dummy() {
+    static never_destroyed<CacheEntryValue> dummy;
+    return dummy.access();
+  }
 
  private:
-  bool is_valid_{false};
-  std::unique_ptr<AbstractValue> value_;
+  // Allow never_destroyed to invoke the private constructor on our behalf.
+  friend class never_destroyed<CacheEntryValue>;
 
-  // The set of cache tickets that are invalidated when the ticket corresponding
-  // to this entry is invalidated. This graph is directed and acyclic.
-  std::set<CacheTicket> dependents_;
+  // Default constructor can only be used privately to construct an empty
+  // CacheEntryValue with description "DUMMY" and a meaningless value.
+  CacheEntryValue()
+      : description_("DUMMY"), value_(AbstractValue::Make<int>(0)) {}
+
+  std::string description_;
+  CacheIndex cache_index_;
+  copyable_unique_ptr<AbstractValue> value_;
+  bool is_up_to_date_flag_{false};
+  DependencyTicket ticket_;
 };
 
-}  // namespace internal
-
-/// Cache is a key-value store used within the System2 framework to avoid
-/// computing intermediate data multiple times during simulation or analysis.
-/// It is not a general-purpose caching layer.
-///
-/// Every Cache will be private to a System, stored within and accessible via
-/// the System's Context. Its function is to return a previously-computed
-/// value X, so long as no other value upon which X depends has changed.
-/// The System declares the expensive values it will compute, and their
-/// dependencies, by calling MakeCacheTicket.  It provides type-erased
-/// storage for the value using Init - typically just once - and thereafter
-/// sets the value using Set, or retrieves it using Get.
-///
-/// Whenever Init or Set is called, all entries which depend on the
-/// ticket being written are "invalidated". Once a ticket is invalidated,
-/// calls to Get for that ticket will return nullptr until it itself is
-/// written again.  For this reason, a System must call Get whenever it
-/// needs access to a cached value; it must not hold the returned pointer.
-///
-/// Cache is not thread-safe. It is copyable, assignable, and movable.
+// TODO(sherm1) Stubbed for DependencyTracker/Graph review; don't review.
 class Cache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cache)
 
-  Cache();
-  ~Cache();
+  Cache() = default;
 
-  /// Creates a new cache ticket, which will be invalidated whenever any of
-  /// the @p prerequisites are invalidated.
-  CacheTicket MakeCacheTicket(const std::set<CacheTicket>& prerequisites);
+  // Allocates a new CacheEntryValue and corresponding DependencyTracker using
+  // the given CacheIndex and DependencyTicket number. The CacheEntryValue
+  // object is owned by this Cache and the returned reference remains valid
+  // if other cache entry values are created. The created DependencyTracker
+  // object is owned by the given DependencyGraph, which must be owned by
+  // the same Context that owns this Cache. The graph must already contain
+  // trackers for the indicated prerequisites. The new tracker will retain a
+  // pointer to the created CacheEntryValue for invalidation purposes.
+  CacheEntryValue& CreateNewCacheEntryValue(
+      CacheIndex index, DependencyTicket ticket,
+      const std::string& description,
+      const std::vector<DependencyTicket>& prerequisites,
+      DependencyGraph* graph);
 
-  /// Invalidates the value for @p ticket, and all entries that depend on it.
-  void Invalidate(CacheTicket ticket);
+  int num_entries() const { return static_cast<int>(store_.size()); }
 
-  /// Takes ownership of a cached item, and returns a bare pointer to the item.
-  /// Marks the entry itself as valid, and invalidates all entries that depend
-  /// on it.
-  ///
-  /// The bare pointer may be used to modify the entry immediately, but should
-  /// not be held, because it may become invalid if the ticket's prerequisites
-  /// are modified.  It will only actually be deleted on subsequent calls to
-  /// Init for this ticket, or on the deletion of the Cache itself;
-  /// however, only advanced, careful users should rely on that behavior.
-  AbstractValue* Init(CacheTicket ticket,
-                      std::unique_ptr<AbstractValue> value);
-
-  /// Sets a cache entry to the given @p value. Aborts if the value has not
-  /// already been initialized. May throw std::bad_cast if the value has been
-  /// initialized with a different type. Marks the entry itself as valid, and
-  /// invalidates all entries that depend on it.
-  ///
-  /// @tparam T The type of the value.
-  template <typename T>
-  void Set(CacheTicket ticket, const T& value) {
-    DRAKE_DEMAND(ticket >= 0 && ticket < static_cast<int>(store_.size()));
-
-    AbstractValue* entry = store_[ticket].value();
-    DRAKE_DEMAND(entry != nullptr);
-    entry->SetValue<T>(value);
-    store_[ticket].set_is_valid(true);
-    InvalidateRecursively(store_[ticket].dependents());
+  CacheEntryValue& get_mutable_cache_entry_value(CacheIndex index) {
+    CacheEntryValue& cache_value = *store_[index];
+    return cache_value;
   }
 
-  /// Returns the cached item for the given @p ticket, or nullptr if the item
-  /// has been invalidated.
-  ///
-  /// The bare pointer should not be held, because the data may become invalid
-  /// if the ticket's prerequisites are modified.
-  const AbstractValue* Get(CacheTicket ticket) const;
-
  private:
-  // Invalidates all tickets that depend on the tickets in @p to_invalidate.
-  void InvalidateRecursively(const std::set<CacheTicket>& to_invalidate);
-
-  // For each cache ticket, the stored value, and its validity bit.
-  std::vector<internal::CacheEntry> store_;
+  std::vector<copyable_unique_ptr<CacheEntryValue>> store_;
 };
+#endif  // Hiding from Doxygen.
 
 }  // namespace systems
 }  // namespace drake

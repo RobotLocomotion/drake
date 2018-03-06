@@ -45,7 +45,7 @@ class VelocityKinematicsCache {
   /// so that operations using this uninitialized cache entry fail fast, easing
   /// bug detection.
   explicit VelocityKinematicsCache(const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.get_num_bodies()) {
+      num_nodes_(topology.num_bodies()) {
     Allocate();
     DRAKE_ASSERT_VOID(InitializeToNaN());
     // Sets defaults.

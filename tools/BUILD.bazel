@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
 
 package(default_visibility = ["//visibility:public"])
@@ -9,18 +8,20 @@ package(default_visibility = ["//visibility:public"])
 py_binary(
     name = "drake_visualizer.impl",
     srcs = ["//tools/workspace/drake_visualizer:drake_visualizer.py"],
-    data = adjust_labels_for_drake_hoist([
-        "//drake/examples:prod_models",
+    data = [
+        "//automotive/models:prod_models",
+        "//examples:prod_models",
         "@drake_visualizer",
-    ]),
+    ],
     main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
     visibility = ["//visibility:private"],
     # Python libraries to import.
-    deps = adjust_labels_for_drake_hoist([
-        "//drake/bindings/pydrake",
-        "//drake/lcmtypes:lcmtypes_py",
+    deps = [
+        "//lcmtypes:lcmtypes_py",
+        "//tools/workspace/drake_visualizer:stub_pydrake",
+        "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
-    ]),
+    ],
 )
 
 drake_runfiles_binary(
@@ -63,6 +64,16 @@ config_setting(
 config_setting(
     name = "no_nlopt",
     values = {"define": "NO_NLOPT=ON"},
+)
+
+# OSQP is an open-source solver, and is included in the Drake build by
+# default. The OSQP solver is irrelvant to some users of MathematicalProgram,
+# so we provide a hidden switch to shut it off for developers who don't
+# actually need it.  This is not a supported configuration. Use at your own
+# risk: --define=NO_OSQP=ON
+config_setting(
+    name = "no_osqp",
+    values = {"define": "NO_OSQP=ON"},
 )
 
 # SCS is an open-source solver, and is included in the Drake build by default.

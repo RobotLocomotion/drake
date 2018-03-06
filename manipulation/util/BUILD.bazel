@@ -15,11 +15,22 @@ drake_cc_library(
     srcs = ["world_sim_tree_builder.cc"],
     hdrs = ["world_sim_tree_builder.h"],
     deps = [
-        "//drake/common:find_resource",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:compliant_contact_model",
+        "//common:find_resource",
+        "//multibody:rigid_body_tree",
+        "//multibody:rigid_body_tree_construction",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant:compliant_contact_model",
+    ],
+)
+
+drake_cc_library(
+    name = "bot_core_lcm_encode_decode",
+    srcs = ["bot_core_lcm_encode_decode.cc"],
+    hdrs = ["bot_core_lcm_encode_decode.h"],
+    deps = [
+        "//math:geometric_transform",
+        "@eigen",
+        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -28,9 +39,9 @@ drake_cc_library(
     srcs = ["robot_state_msg_translator.cc"],
     hdrs = ["robot_state_msg_translator.h"],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/util",
-        "//drake/util:lcm_util",
+        ":bot_core_lcm_encode_decode",
+        "//multibody:rigid_body_tree",
+        "//util",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -40,10 +51,10 @@ drake_cc_library(
     srcs = ["sim_diagram_builder.cc"],
     hdrs = ["sim_diagram_builder.h"],
     deps = [
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/controllers:state_feedback_controller_interface",
-        "//drake/systems/framework",
+        "//multibody/rigid_body_plant",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/controllers:state_feedback_controller_interface",
+        "//systems/framework",
     ],
 )
 
@@ -52,13 +63,13 @@ drake_cc_library(
     srcs = ["simple_tree_visualizer.cc"],
     hdrs = ["simple_tree_visualizer.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/lcm",
-        "//drake/lcmtypes:viewer",
-        "//drake/multibody/rigid_body_plant:create_load_robot_message",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/framework",
-        "//drake/systems/rendering:drake_visualizer_client",
+        "//common:essential",
+        "//lcm",
+        "//lcmtypes:viewer",
+        "//multibody/rigid_body_plant:create_load_robot_message",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/framework",
+        "//systems/rendering:drake_visualizer_client",
     ],
 )
 
@@ -71,9 +82,9 @@ drake_cc_library(
         "trajectory_utils.h",
     ],
     deps = [
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/math:geometric_transform",
+        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_quaternion",
+        "//math:geometric_transform",
     ],
 )
 
@@ -82,16 +93,16 @@ drake_cc_binary(
     srcs = ["simple_tree_visualizer_demo.cc"],
     add_test_rule = 1,
     data = [
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     test_rule_args = ["--num_configurations=1"],
     deps = [
         ":simple_tree_visualizer",
-        "//drake/common:essential",
-        "//drake/common:find_resource",
-        "//drake/lcm",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework",
+        "//common:essential",
+        "//common:find_resource",
+        "//lcm",
+        "//multibody/parsers",
+        "//systems/framework",
         "@gflags",
     ],
 )
@@ -101,7 +112,7 @@ drake_cc_library(
     name = "moving_average_filter",
     srcs = ["moving_average_filter.cc"],
     hdrs = ["moving_average_filter.h"],
-    deps = ["//drake/common:essential"],
+    deps = ["//common:essential"],
 )
 
 drake_cc_library(
@@ -109,33 +120,41 @@ drake_cc_library(
     srcs = ["frame_pose_tracker.cc"],
     hdrs = ["frame_pose_tracker.h"],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/multibody_tree/math:spatial_velocity",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/rendering:frame_velocity",
-        "//drake/systems/rendering:pose_bundle",
+        "//multibody:rigid_body_tree",
+        "//multibody/multibody_tree/math:spatial_velocity",
+        "//multibody/rigid_body_plant",
+        "//systems/framework:leaf_system",
+        "//systems/rendering:frame_velocity",
+        "//systems/rendering:pose_bundle",
     ],
 )
 
 # === test/ ===
 
 drake_cc_googletest(
+    name = "bot_core_lcm_encode_decode_test",
+    deps = [
+        ":bot_core_lcm_encode_decode",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "robot_state_msg_translator_test",
     # TODO(siyuan): we should eventually move the models for test outside of
     # /examples.
     data = [
-        "//drake/examples/valkyrie:models",
-        "//drake/manipulation/models/iiwa_description:models",
-        "//drake/manipulation/models/wsg_50_description:models",
+        "//examples/valkyrie:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":robot_state_msg_translator",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:geometric_transform",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody:rigid_body_tree_construction",
+        "//multibody/parsers",
     ],
 )
 
@@ -143,7 +162,7 @@ drake_cc_googletest(
     name = "trajectory_utils_test",
     deps = [
         ":trajectory_utils",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -152,43 +171,43 @@ drake_cc_googletest(
     srcs = ["test/moving_average_filter_test.cc"],
     deps = [
         ":moving_average_filter",
-        "//drake/common:essential",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
 drake_cc_googletest(
     name = "sim_diagram_builder_test",
     data = [
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/manipulation/models/iiwa_description:models",
-        "//drake/manipulation/models/wsg_50_description:models",
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":sim_diagram_builder",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/lcm",
-        "//drake/manipulation/util:world_sim_tree_builder",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/controllers:pid_controller",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:constant_vector_source",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//lcm",
+        "//manipulation/util:world_sim_tree_builder",
+        "//multibody/rigid_body_plant",
+        "//systems/analysis",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/controllers:pid_controller",
+        "//systems/framework",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 
 drake_cc_googletest(
     name = "frame_pose_tracker_test",
-    data = ["//drake/manipulation/models/iiwa_description:models"],
+    data = ["//manipulation/models/iiwa_description:models"],
     deps = [
         ":frame_pose_tracker",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_geometry_compare",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
+        "//systems/framework",
     ],
 )
 

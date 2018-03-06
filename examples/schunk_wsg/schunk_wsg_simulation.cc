@@ -76,7 +76,7 @@ int DoMain() {
       manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
   status_sender->set_name("status_sender");
 
-  builder.Connect(command_sub->get_output_port(0),
+  builder.Connect(command_sub->get_output_port(),
                   wsg_controller->get_command_input_port());
   builder.Connect(wsg_controller->get_output_port(0),
                   plant->actuator_command_input_port());

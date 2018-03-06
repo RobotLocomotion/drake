@@ -64,14 +64,18 @@ To check this:
 .. note::
 
     If you are on Mac, you must ensure that you have Homebrew Python installed,
-    and are using ``python2`` from Homebrew Python to execute these scripts.
+    and are using ``python@2`` from Homebrew Python to execute these scripts.
     You may do this by either explicitly using ``python2`` on the command line,
-    or follow the instructions from ``brew info python``::
+    or follow the instructions from ``brew info python@2``::
 
         This formula installs a python2 executable to /usr/local/bin.
         If you wish to have this formula's python executable in your PATH then
         add the following to ~/.bash_profile:
-          export PATH="/usr/local/opt/python/libexec/bin:$PATH"
+          export PATH="/usr/local/opt/python@2/libexec/bin:$PATH"
+
+    Once you have done this, if you would like to use ``jupyter`` then be sure
+    to install it via ``pip2 install jupyter`` (*not* via Homebrew) to ensure
+    that it uses the correct ``PYTHONPATH``.
 
     ..
         Developers: Ensure this is synchronized with the steps in
@@ -91,27 +95,11 @@ The most up-to-date demonstrations of what can be done using ``pydrake`` are
 the ``pydrake`` unit tests themselves. You can see all of them inside the
 ``drake/bindings/python/pydrake/test`` folder in the Drake source code.
 
-There are multiple levels of modules available from ``pydrake``. If you are
-experimenting with ``pydrake`` in a REPL environment (such as IPython  or
-Jupyter), consider importing from ``pydrake.all`` to reduce the number of
-import staments.
+Here's an example snippet of code from ``pydrake``:
 
 ..
-    Developers: Ensure this is synchronized with
-    ``//bindings/pydrake:all_test``, specifically the test cases
-    ``test_usage_all`` and ``test_usage_no_all``.
-
-As an example, the following code uses ``pydrake.all``:
-
-.. code-block:: python
-
-    from pydrake.all import *
-
-    tree = RigidBodyTree(
-        FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-    simulator = Simulator(RigidBodyPlant(tree))
-
-While this code does not:
+    Developers: Ensure these snippets are synchronized with
+    ``//bindings/pydrake:all_test``
 
 .. code-block:: python
 
@@ -124,5 +112,43 @@ While this code does not:
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
     simulator = Simulator(RigidBodyPlant(tree))
 
-For guidance on when to use ``pydrake.all`` when developing, please see
-``help(pydrake.all)``.
+If you are prototyping code in a REPL environment (such as IPython / Jupyter)
+and to reduce the number of import statements, consider using ``pydrake.all`` to
+import a subset of symbols from a flattened namespace or import all modules
+automatically. If you are writing non-prototype code, avoid using
+``pydrake.all``; for more details, see ``help(pydrake.all)``.
+
+In all cases, try to avoid using ``from pydrake.all import *``, as it may
+introduce symbol collisions that are difficiult to debug.
+
+An example of importing symbols directly from ``pydrake.all``:
+
+.. code-block:: python
+
+    from pydrake.all import (
+        FindResourceOrThrow, RigidBodyPlant, RigidBodyTree, Simulator)
+
+    tree = RigidBodyTree(
+        FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
+    simulator = Simulator(RigidBodyPlant(tree))
+
+An alternative is to use ``pydrake.all`` to import all modules, but then
+explicity refer to each symbol:
+
+.. code-block:: python
+
+    import pydrake.all
+
+    tree = pydrake.multibody.rigid_body_tree.RigidBodyTree(
+        pydrake.common.FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
+    simulator = pydrake.systems.analysis.Simulator(
+        pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
+
+For Developers
+==============
+
+If you are developing Python bindings, please see the Doxygen page for
+`Python Bindings <http://drake.mit.edu/doxygen_cxx/python_bindings.html>`_.
+This provides information on programming conventions as well as tips for
+debugging.

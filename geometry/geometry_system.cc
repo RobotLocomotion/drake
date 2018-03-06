@@ -330,14 +330,12 @@ void GeometrySystem<T>::FullPoseUpdate(
     }
   }
 
-  // TODO(SeanCurtis-TRI): Propagate changes to the geometry engine.
-  // Again, this will change significantly when caching becomes available.
-
+  mutable_state.FinalizePoseUpdate();
   // TODO(SeanCurtis-TRI): Add velocity as appropriate.
 }
 
 template <typename T>
-std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeContext() const {
+std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeLeafContext() const {
   // Disallow further geometry source additions.
   initial_state_ = nullptr;
   DRAKE_ASSERT(geometry_state_index_ >= 0);

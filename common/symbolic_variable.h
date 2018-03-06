@@ -96,6 +96,200 @@ class Variable {
 
 std::ostream& operator<<(std::ostream& os, Variable::Type type);
 
+/// Creates a dynamically-sized Eigen matrix of symbolic variables.
+/// @param rows The number of rows in the new matrix.
+/// @param cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+/// @param type The type of variables in the matrix.
+MatrixX<Variable> MakeMatrixVariable(int rows, int cols,
+                                     const std::string& name,
+                                     Variable::Type type);
+
+/// Creates a dynamically-sized Eigen matrix of symbolic Boolean variables.
+/// @param rows The number of rows in the new matrix.
+/// @param cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+MatrixX<Variable> MakeMatrixBooleanVariable(int rows, int cols,
+                                            const std::string& name);
+
+/// Creates a dynamically-sized Eigen matrix of symbolic binary variables.
+/// @param rows The number of rows in the new matrix.
+/// @param cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+MatrixX<Variable> MakeMatrixBinaryVariable(int rows, int cols,
+                                           const std::string& name);
+
+/// Creates a dynamically-sized Eigen matrix of symbolic continuous variables.
+/// @param rows The number of rows in the new matrix.
+/// @param cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+MatrixX<Variable> MakeMatrixContinuousVariable(int rows, int cols,
+                                               const std::string& name);
+
+/// Creates a dynamically-sized Eigen matrix of symbolic integer variables.
+/// @param rows The number of rows in the new matrix.
+/// @param cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+MatrixX<Variable> MakeMatrixIntegerVariable(int rows, int cols,
+                                            const std::string& name);
+
+/// Creates a static-sized Eigen matrix of symbolic variables.
+/// @tparam rows The number of rows in the new matrix.
+/// @tparam cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+/// @param type The type of variables in the matrix.
+template <int rows, int cols>
+Eigen::Matrix<Variable, rows, cols> MakeMatrixVariable(const std::string& name,
+                                                       Variable::Type type) {
+  Eigen::Matrix<Variable, rows, cols> m;
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      m(i, j) = Variable{
+          name + "(" + std::to_string(i) + ", " + std::to_string(j) + ")",
+          type};
+    }
+  }
+  return m;
+}
+
+/// Creates a static-sized Eigen matrix of symbolic Boolean variables.
+/// @tparam rows The number of rows in the new matrix.
+/// @tparam cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+template <int rows, int cols>
+Eigen::Matrix<Variable, rows, cols> MakeMatrixBooleanVariable(
+    const std::string& name) {
+  return MakeMatrixVariable<rows, cols>(name, Variable::Type::BOOLEAN);
+}
+
+/// Creates a static-sized Eigen matrix of symbolic binary variables.
+/// @tparam rows The number of rows in the new matrix.
+/// @tparam cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+template <int rows, int cols>
+Eigen::Matrix<Variable, rows, cols> MakeMatrixBinaryVariable(
+    const std::string& name) {
+  return MakeMatrixVariable<rows, cols>(name, Variable::Type::BINARY);
+}
+
+/// Creates a static-sized Eigen matrix of symbolic continuous variables.
+/// @tparam rows The number of rows in the new matrix.
+/// @tparam cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+template <int rows, int cols>
+Eigen::Matrix<Variable, rows, cols> MakeMatrixContinuousVariable(
+    const std::string& name) {
+  return MakeMatrixVariable<rows, cols>(name, Variable::Type::CONTINUOUS);
+}
+
+/// Creates a static-sized Eigen matrix of symbolic integer variables.
+/// @tparam rows The number of rows in the new matrix.
+/// @tparam cols The number of cols in the new matrix.
+/// @param name The common prefix for variables.
+///             The (i, j)-th element will be named as `name(i, j)`.
+template <int rows, int cols>
+Eigen::Matrix<Variable, rows, cols> MakeMatrixIntegerVariable(
+    const std::string& name) {
+  return MakeMatrixVariable<rows, cols>(name, Variable::Type::INTEGER);
+}
+
+/// Creates a dynamically-sized Eigen vector of symbolic variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+/// @param type The type of variables in the vector.
+VectorX<Variable> MakeVectorVariable(int rows, const std::string& name,
+                                     Variable::Type type);
+
+/// Creates a dynamically-sized Eigen vector of symbolic Boolean variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorBooleanVariable(int rows, const std::string& name);
+
+/// Creates a dynamically-sized Eigen vector of symbolic binary variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorBinaryVariable(int rows, const std::string& name);
+
+/// Creates a dynamically-sized Eigen vector of symbolic continuous variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorContinuousVariable(int rows,
+                                               const std::string& name);
+
+/// Creates a dynamically-sized Eigen vector of symbolic integer variables.
+/// @param rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+VectorX<Variable> MakeVectorIntegerVariable(int rows, const std::string& name);
+
+/// Creates a static-sized Eigen vector of symbolic variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+/// @param type The type of variables in the vector.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorVariable(const std::string& name,
+                                                    Variable::Type type) {
+  Eigen::Matrix<Variable, rows, 1> vec;
+  for (int i = 0; i < rows; ++i) {
+    vec[i] = Variable{name + "(" + std::to_string(i) + ")", type};
+  }
+  return vec;
+}
+
+/// Creates a static-sized Eigen vector of symbolic Boolean variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorBooleanVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::BOOLEAN);
+}
+
+/// Creates a static-sized Eigen vector of symbolic binary variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorBinaryVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::BINARY);
+}
+
+/// Creates a static-sized Eigen vector of symbolic continuous variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorContinuousVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::CONTINUOUS);
+}
+
+/// Creates a static-sized Eigen vector of symbolic integer variables.
+/// @tparam rows The size of vector.
+/// @param name The common prefix for variables.
+///             The i-th element will be named as `name(i)`.
+template <int rows>
+Eigen::Matrix<Variable, rows, 1> MakeVectorIntegerVariable(
+    const std::string& name) {
+  return MakeVectorVariable<rows>(name, Variable::Type::INTEGER);
+}
+
 }  // namespace symbolic
 }  // namespace drake
 

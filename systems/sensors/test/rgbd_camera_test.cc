@@ -42,7 +42,7 @@ namespace {
 // Linux and Mac OSX.
 constexpr double kTolerance = 1e-12;
 constexpr double kFovY = M_PI_4;
-constexpr bool kShowWindow = false;
+constexpr bool kShowWindow = RenderingConfig::kDefaultShowWindow;
 constexpr double kDepthRangeNear = 0.5;
 constexpr double kDepthRangeFar = 5.;
 constexpr int kWidth = 640;

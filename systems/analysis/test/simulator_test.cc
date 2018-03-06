@@ -150,8 +150,8 @@ class CompositeSystem : public LogisticSystem {
   CompositeSystem(double k, double alpha, double nu, double trigger_time) :
       LogisticSystem(k, alpha, nu) {
     this->DeclareContinuousState(1);
-    logistic_witness_ = std::make_unique<LogisticWitness>(*this);
-    clock_witness_ = std::make_unique<ClockWitness>(trigger_time, *this,
+    logistic_witness_ = std::make_unique<LogisticWitness>(this);
+    clock_witness_ = std::make_unique<ClockWitness>(trigger_time, this,
                           WitnessFunctionDirection::kCrossesZero);
   }
 
@@ -175,8 +175,8 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
 
   explicit TwoWitnessStatelessSystem(double off1, double off2) {
     const auto dir_type = WitnessFunctionDirection::kCrossesZero;
-    witness1_ = std::make_unique<ClockWitness>(off1, *this, dir_type);
-    witness2_ = std::make_unique<ClockWitness>(off2, *this, dir_type);
+    witness1_ = std::make_unique<ClockWitness>(off1, this, dir_type);
+    witness2_ = std::make_unique<ClockWitness>(off2, this, dir_type);
   }
 
   void set_publish_callback(
@@ -344,9 +344,9 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
     // Simulate to dt.
     simulator.StepTo(dt);
 
-    // Evaluate the witness function.
+    // CalcWitnessValue the witness function.
     context.set_time(publish_time);
-    double new_eval = witness.front()->Evaluate(context);
+    double new_eval = witness.front()->CalcWitnessValue(context);
 
     // Verify that the new evaluation is closer to zero than the old one.
     EXPECT_LT(new_eval, eval);
@@ -374,9 +374,9 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
     system.GetWitnessFunctions(context, &witnesses);
     DRAKE_DEMAND(witnesses.size() == 2);
 
-    // Evaluate them.
-    double clock_eval = witnesses.front()->Evaluate(context);
-    double logistic_eval = witnesses.back()->Evaluate(context);
+    // CalcWitnessValue them.
+    double clock_eval = witnesses.front()->CalcWitnessValue(context);
+    double logistic_eval = witnesses.back()->CalcWitnessValue(context);
 
     // Store the one that evaluates closest to zero.
     if (std::abs(clock_eval) < std::abs(logistic_eval)) {
@@ -434,9 +434,9 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
     system.GetWitnessFunctions(context, &witnesses);
     DRAKE_DEMAND(witnesses.size() == 2);
 
-    // Evaluate them.
-    double w1 = witnesses.front()->Evaluate(context);
-    double w2 = witnesses.back()->Evaluate(context);
+    // CalcWitnessValue them.
+    double w1 = witnesses.front()->CalcWitnessValue(context);
+    double w2 = witnesses.back()->CalcWitnessValue(context);
 
     // Verify both are equivalent.
     EXPECT_EQ(w1, w2);

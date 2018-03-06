@@ -8,10 +8,9 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,8 +25,8 @@ drake_cc_library(
         "generate_urdf.h",
     ],
     deps = [
-        "//drake/automotive/maliput/api",
-        "//drake/math:geometric_transform",
+        "//automotive/maliput/api",
+        "//math:geometric_transform",
         "@fmt",
     ],
 )
@@ -37,16 +36,14 @@ drake_cc_binary(
     srcs = ["yaml_to_obj.cc"],
     deps = [
         ":utility",
-        "//drake/automotive/maliput/monolane",
-        "//drake/common:text_logging_gflags",
+        "//automotive/maliput/monolane",
+        "//common:text_logging_gflags",
     ],
 )
 
 alias(
     name = "t_intersection.rndf",
-    actual = adjust_label_for_drake_hoist(
-        "//drake/automotive/maliput/rndf:test/maps/t_intersection.rndf",
-    ),
+    actual = "//automotive/maliput/rndf:test/maps/t_intersection.rndf",
 )
 
 drake_cc_binary(
@@ -65,8 +62,8 @@ drake_cc_binary(
     test_rule_size = "small",
     deps = [
         ":utility",
-        "//drake/automotive/maliput/rndf",
-        "//drake/common:text_logging_gflags",
+        "//automotive/maliput/rndf",
+        "//common:text_logging_gflags",
     ],
 )
 
@@ -85,8 +82,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":utility",
-        "//drake/automotive/maliput/monolane",
-        "//drake/common",
+        "//automotive/maliput/monolane",
+        "//common",
         "@spruce",
     ],
 )
@@ -95,19 +92,18 @@ drake_cc_googletest(
     name = "generate_urdf_test",
     deps = [
         ":utility",
-        "//drake/automotive/maliput/monolane",
+        "//automotive/maliput/monolane",
         "@spruce",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "yaml_to_obj_test",
     size = "medium",
-    srcs = ["test/yaml_to_obj_test.py"],
     args = ["$(location :yaml_to_obj)"],
     data = [
         ":yaml_to_obj",
-        "//drake/automotive/maliput/monolane:yamls",
+        "//automotive/maliput/monolane:yamls",
     ],
 )
 

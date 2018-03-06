@@ -2,11 +2,14 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def scs_repository(name):
+def scs_repository(
+        name,
+        mirrors = None):
     github_archive(
         name = name,
         repository = "cvxgrp/scs",
-        commit = "v1.2.6",
-        sha256 = "b4bebb43a1257b6e88a5f97c855c0559d6c8a8c0548d3156fc5a28d82bb9533f",  # noqa
+        commit = "v2.0.2",
+        sha256 = "8725291dfe952a1f117f1f725906843db392fe8d29eebd8feb14b49f25fc669e",  # noqa
         build_file = "@drake//tools/workspace/scs:package.BUILD.bazel",
+        mirrors = mirrors,
     )

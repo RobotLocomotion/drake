@@ -82,7 +82,7 @@ class FrameKinematicsVector {
   SourceId source_id_;
 };
 
-/** Class for communicating ordered _pose_ information to GeometryWorld/
+/** Class for communicating ordered _pose_ information to
  GeometrySystem for registered frames.
 
  @tparam T The scalar type. Must be a valid Eigen scalar.

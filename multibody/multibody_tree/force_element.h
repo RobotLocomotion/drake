@@ -68,7 +68,7 @@ class ForceElement : public
   void CalcAndAddForceContribution(const MultibodyTreeContext<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    const VelocityKinematicsCache<T>& vc,
-                                   MultibodyForces<T>* forces) {
+                                   MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoCalcAndAddForceContribution(context, pc, vc, forces);

@@ -16,23 +16,16 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
-)
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
+    "drake_py_unittest",
 )
 
-package(default_visibility = adjust_labels_for_drake_hoist([
-    "//drake/bindings/pydrake:__subpackages__",
-]))
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
-PACKAGE_INFO = get_pybind_package_info(
-    base_package = adjust_label_for_drake_hoist("//drake/bindings"),
-)
+PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
 # @note Symbols are NOT imported directly into
 # `__init__.py` to simplify dependency management, meaning that
@@ -60,6 +53,7 @@ drake_pybind_library(
         ":systems_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
+        "//bindings/pydrake/util:type_safe_index_pybind",
     ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
@@ -72,6 +66,9 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "primitives_py",
+    cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
+    ],
     cc_so_name = "primitives",
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -93,6 +90,24 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "controllers_py",
+    cc_deps = [
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:wrap_function",
+    ],
+    cc_so_name = "controllers",
+    cc_srcs = ["controllers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        ":primitives_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake:symbolic_py",
+    ],
+)
+
+drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
         "//bindings/pydrake/util:cpp_template_pybind",
@@ -107,6 +122,21 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "rendering_py",
+    cc_deps = [
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
+    cc_so_name = "rendering",
+    cc_srcs = ["rendering_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
@@ -116,8 +146,10 @@ drake_py_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
+    ":controllers_py",
     ":framework_py",
     ":primitives_py",
+    ":rendering_py",
     ":sensors_py",
 ]
 
@@ -146,7 +178,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "general_test",
     size = "small",
     deps = [
@@ -185,7 +217,7 @@ drake_pybind_library(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "lifetime_test",
     deps = [
         ":analysis_py",
@@ -195,7 +227,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "custom_test",
     size = "small",
     deps = [
@@ -206,7 +238,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "value_test",
     size = "small",
     deps = [
@@ -215,11 +247,38 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
+    name = "controllers_test",
+    size = "small",
+    deps = [
+        ":controllers_py",
+        "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "primitives_test",
+    size = "small",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+    ],
+)
+
+drake_py_unittest(
     name = "sensors_test",
     size = "small",
     deps = [
         ":sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "rendering_test",
+    size = "small",
+    deps = [
+        ":rendering_py",
     ],
 )
 

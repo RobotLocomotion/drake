@@ -13,23 +13,21 @@ drake_cc_library(
     hdrs = [
         "drakeGeometryUtil.h",
         "drakeUtil.h",
+        "lcmUtil.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
-        "//drake/math:gradient",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//math:gradient",
     ],
 )
 
+# TODO(jwnimmer-tri) Remove this forwarding header sometime after 2018-05-01.
 drake_cc_library(
     name = "lcm_util",
-    srcs = ["lcmUtil.cpp"],
     hdrs = ["lcmUtil.h"],
     deps = [
-        ":util",
-        "//drake/math:geometric_transform",
-        "@eigen",
-        "@lcmtypes_bot2_core",
+        "//manipulation/util:bot_core_lcm_encode_decode",
     ],
 )
 
@@ -40,18 +38,7 @@ drake_cc_googletest(
     srcs = ["test/testDrakeGeometryUtil.cpp"],
     deps = [
         ":util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "testLCMUtil",
-    srcs = ["test/testLCMUtil.cpp"],
-    deps = [
-        ":lcm_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:random_polynomial_matrix",
-        "//drake/common/trajectories:random_piecewise_polynomial",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

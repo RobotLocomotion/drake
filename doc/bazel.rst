@@ -104,7 +104,7 @@ Cheat sheet for operating on specific portions of the project::
 Debugging on macOS
 ------------------
 
-On macOS, DWARF debug symbols are emitted to a ``.dSYM`` file. The Bazel
+On macOS, DWARF debug symbols are emitted to a ``.dSYM`` file.  The Bazel
 ``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
 file, so we have implemented a workaround in Drake, ``--config=apple_debug``.
 This config turns off sandboxing, which allows a ``genrule`` to access the
@@ -152,7 +152,7 @@ Install on Ubuntu
 1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. Download ``gurobi7.5.2_linux64.tar.gz``.
-4. Unzip it. We suggest that you use ``/opt/gurobi752`` to simplify working with Drake installations.
+4. Unzip it.  We suggest that you use ``/opt/gurobi752`` to simplify working with Drake installations.
 5. ``export GUROBI_PATH=/opt/gurobi752/linux64``
 
 Install on macOS
@@ -167,15 +167,15 @@ To confirm that your setup was successful, run the tests that require Gurobi.
   ``bazel test --config gurobi --test_tag_filters=gurobi //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests. If you will be developing with Gurobi regularly, you may wish
+these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
 MOSEK 7.1
 ---------
 
-The Drake Bazel build system downloads MOSEK 7.1 automatically. No manual
-installation is required. Please obtain and save a license file at
+The Drake Bazel build system downloads MOSEK 7.1 automatically.  No manual
+installation is required.  Please obtain and save a license file at
 ``~/mosek/mosek.lic``.
 
 To confirm that your setup was successful, run the tests that require MOSEK.
@@ -183,22 +183,42 @@ To confirm that your setup was successful, run the tests that require MOSEK.
   ``bazel test --config mosek --test_tag_filters=mosek //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests. If you will be developing with MOSEK regularly, you may wish
+these tests.  If you will be developing with MOSEK regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
 SNOPT 7.2
 ---------
 
+Drake provides two mechanisms to include the SNOPT sources.  One mechanism is
+to provide your own SNOPT source archive.  The other mechanism is via access to
+a private RobotLocomotion git repository.
+
+Using your own source archive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Download the SNOPT sources from the distributor in ``.tar.gz`` format (e.g.,
+   named ``snopt7.5-1.4.tar.gz``).
+2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.5-1.4.tar.gz``
+
+Using the RobotLocomotion git repository
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
 2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
+
+The build will attempt to use this mechanism anytime SNOPT is enabled and a
+source archive has not been specified.
+
+Test the build (for either mechanism)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To confirm that your setup was successful, run the tests that require SNOPT.
 
   ``bazel test --config snopt --test_tag_filters=snopt //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
-these tests. If you will be developing with SNOPT regularly, you may wish
+these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
@@ -214,8 +234,8 @@ kcov
 ----
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
-debuggging symbols, and produce nicely formatted browse-able coverage
-reports. It is supported on Ubuntu and macOS only. Install ``kcov`` from source
+debuggging symbols, and produce nicely formatted browse-able coverage reports.
+It is supported on Ubuntu and macOS only.  Install ``kcov`` from source
 following the instructions here: :ref:`Building kcov <building-kcov>`.
 
 To analyze test coverage, run the tests under ``kcov``::
@@ -223,10 +243,10 @@ To analyze test coverage, run the tests under ``kcov``::
   bazel test --config kcov //...
 
 Note that it disables compiler-optimization (``-O0``) to have a better and more
-precise coverage report. If you have trouble with kcov and unoptimized programs,
+precise coverage report.  If you have trouble with kcov and unoptimized programs,
 you can turn it back on by also supplying ``--copt -O2``.
 
-The coverage report is written to the ``drake/bazel-kcov`` directory. To
+The coverage report is written to the ``drake/bazel-kcov`` directory.  To
 view it, browse to ``drake/bazel-kcov/index.html``.
 
 .. toctree::

@@ -1,14 +1,16 @@
 #pragma once
 
+#include <cmath>
 #include <limits>
+
+#include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
-#include "drake/math/roll_pitch_yaw.h"
-#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -62,8 +64,17 @@ class RotationMatrix {
   /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
   ///        ⎣ 0   sin(theta)    cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeRotationMatrixX(const T& theta) {
-    return RotationMatrix(math::XRotation(theta));
+  static RotationMatrix<T> MakeXRotation(const T& theta) {
+      Matrix3<T> R;
+      using std::sin;
+      using std::cos;
+      const T c = cos(theta), s = sin(theta);
+      // clang-format off
+      R << 1,  0,  0,
+           0,  c, -s,
+           0,  s,  c;
+      // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -77,8 +88,17 @@ class RotationMatrix {
   /// R_AB = ⎢          0    1           0  ⎥
   ///        ⎣ -sin(theta)   0   cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeRotationMatrixY(const T& theta) {
-    return RotationMatrix(math::YRotation(theta));
+  static RotationMatrix<T> MakeYRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R <<  c,  0,  s,
+          0,  1,  0,
+         -s,  0,  c;
+    // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -92,8 +112,17 @@ class RotationMatrix {
   /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
   ///        ⎣         0            0    1 ⎦
   /// ```
-  static RotationMatrix<T> MakeRotationMatrixZ(const T& theta) {
-    return RotationMatrix(math::ZRotation(theta));
+  static RotationMatrix<T> MakeZRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R << c, -s,  0,
+         s,  c,  0,
+         0,  0,  1;
+    // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
@@ -108,20 +137,21 @@ class RotationMatrix {
   ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
   ///      =       R_AB          *        R_BC          *        R_CD
   /// ```
+  /// Note: In this discussion, A is the Space frame and D is the Body frame.
   /// One way to visualize this rotation sequence is by introducing intermediate
   /// frames B and C (useful constructs to understand this rotation sequence).
   /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
   /// Then D is subjected to successive right-handed rotations relative to A.
   /// @li 1st rotation R_AB: Frames B, C, D collectively (as if welded together)
   /// rotate relative to frame A by a yaw angle `y` about `Az = Bz`.
-  /// @li 2nd rotation R_BC: Frames C, D collectively rotate relative to frame B
-  /// by a pitch angle `p` about `By = Cy`.
+  /// @li 2nd rotation R_BC: Frames C, D collectively (as if welded together)
+  /// rotate relative to frame B by a pitch angle `p` about `By = Cy`.
   /// @li 3rd rotation R_CD: %Frame D rotates relative to frame C by a roll
   /// angle `r` about `Cx = Dx`.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-  static RotationMatrix<T> MakeRotationMatrixBodyZYX(const Vector3<T>& ypr) {
+  static RotationMatrix<T> MakeBodyZYXRotation(const Vector3<T>& ypr) {
     const Vector3<T> roll_pitch_yaw(ypr(2), ypr(1), ypr(0));
-    return RotationMatrix<T>::MakeRotationMatrixSpaceXYZ(roll_pitch_yaw);
+    return RotationMatrix<T>::MakeSpaceXYZRotation(roll_pitch_yaw);
   }
 
   /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
@@ -136,19 +166,33 @@ class RotationMatrix {
   ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
   ///      =       R_AB          *        R_BC          *        R_CD
   /// ```
+  /// Note: In this discussion, A is the Space frame and D is the Body frame.
   /// One way to visualize this rotation sequence is by introducing intermediate
   /// frames B and C (useful constructs to understand this rotation sequence).
   /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
   /// Then D is subjected to successive right-handed rotations relative to A.
   /// @li 1st rotation R_CD: %Frame D rotates relative to frames C, B, A by a
-  /// roll angle `r` about `Dx = Cx`.  D and C are no longer aligned.
+  /// roll angle `r` about `Dx = Cx`.  Note: D and C are no longer aligned.
   /// @li 2nd rotation R_BC: Frames D, C (collectively -- as if welded together)
-  /// rotate relative to frame B by a pitch angle `p` about `Cy = By`.
+  /// rotate relative to frame B, A by a pitch angle `p` about `Cy = By`.
+  /// Note: C and B are no longer aligned.
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
+  /// Note: B and A are no longer aligned.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-  static RotationMatrix<T> MakeRotationMatrixSpaceXYZ(const Vector3<T>& rpy) {
-    return RotationMatrix(math::rpy2rotmat(rpy));
+  static RotationMatrix<T> MakeSpaceXYZRotation(const Vector3<T>& rpy) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c0 = cos(rpy(0)), s0 = sin(rpy(0));
+    const T c1 = cos(rpy(1)), s1 = sin(rpy(1));
+    const T c2 = cos(rpy(2)), s2 = sin(rpy(2));
+    // clang-format off
+    R << c2 * c1,  c2 * s1 * s0 - s2 * c0,  c2 * s1 * c0 + s2 * s0,
+         s2 * c1,  s2 * s1 * s0 + c2 * c0,  s2 * s1 * c0 - c2 * s0,
+        -s1,            c1 * s0,                 c1 * c0;
+    // clang-format on
+    return RotationMatrix(R);
   }
 
   /// Creates a %RotationMatrix templatized on a scalar type U from a
@@ -236,19 +280,6 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
   }
 
-  /// Tests if the determinant of a generic Matrix3 is positive or negative.
-  /// @param[in] R an allegedly valid rotation matrix.
-  /// @returns `true` if the determinant of R is positive.
-  /// @internal The determinant of a proper rotation matrix is +1, whereas for
-  /// an improper rotation matrix it is -1.  To avoid testing near +1 (which
-  /// can return a false negative if the matrix is slightly non-orthonormal),
-  /// all that is needed is to ensure the matrix is reasonably proper is to
-  /// ensure the determinant is positive.  If the determinant is 0, it means
-  /// the basis vectors are not linearly independent (do not span 3D space).
-  static bool IsDeterminantPositive(const Matrix3<T>& R) {
-    return R.determinant() > 0;
-  }
-
   /// Tests if a generic Matrix3 has orthonormal vectors to within the threshold
   /// specified by `tolerance`.
   /// @param[in] R an allegedly orthonormal rotation matrix.
@@ -266,7 +297,7 @@ class RotationMatrix {
   /// and the identity matrix I (i.e., checks if `‖R ⋅ R⁻¹ - I‖∞ <= tolerance`).
   /// @returns `true` if R is a valid rotation matrix.
   static bool IsValid(const Matrix3<T>& R, double tolerance) {
-    return IsOrthonormal(R, tolerance) && IsDeterminantPositive(R);
+    return IsOrthonormal(R, tolerance) && R.determinant() > 0;
   }
 
   /// Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
@@ -321,17 +352,45 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
 
-  /// Creates an orthonormal matrix R from a 3x3 matrix M by minimizing
-  /// `‖R - M‖²`  subject to  `R * Rᵀ = I`, where I is the 3x3 identity matrix.
+  /// Given an approximate rotation matrix M, finds the %RotationMatrix R
+  /// closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
+  /// with a Frobenius norm).  Hence, this method creates a %RotationMatrix R
+  /// from a 3x3 matrix M by minimizing `‖R - M‖₂` (the matrix-2 norm of (R-M))
+  /// subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
+  /// problem, closeness can also be measured by forming the orthonormal matrix
+  /// R whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
+  /// where `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of
+  /// this double-summation is called the Frobenius norm.
   /// @param[in] M a 3x3 matrix.
-  /// @returns proper orthonormal matrix R that is close to M.
-  /// @throws exception std::logic_error if M fails IsValid(M).
+  /// @param[out] quality_factor.  The quality of M as a rotation matrix.
+  /// `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
+  /// that when M multiplies a unit vector (magnitude 1), a vector of magnitude
+  /// as large as 1.25 may result.  `quality_factor` = 0.8 means that when M
+  /// multiplies a unit vector, a vector of magnitude as small as 0.8 may
+  /// result.  `quality_factor` = 0 means M is singular, so at least one of the
+  /// bases related by matrix M does not span 3D space (when M multiples a unit
+  /// vector, a vector of magnitude as small as 0 may result).
+  /// @returns proper orthonormal matrix R that is closest to M.
+  /// @throws exception std::logic_error if R fails IsValid(R).
+  /// @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
+  /// Institute) proved that for this problem, the same R that minimizes the
+  /// Frobenius norm also minimizes the matrix-2 norm (a.k.a an induced-2 norm),
+  /// which is defined [Dahleh, Section 4.2] as the column matrix u which
+  /// maximizes `‖(R - M) u‖ / ‖u‖`, where `u ≠ 0`.  Since the matrix-2 norm of
+  /// any matrix A is equal to the maximum singular value of A, minimizing the
+  /// matrix-2 norm of (R - M) is equivalent to minimizing the maximum singular
+  /// value of (R - M).
+  ///
+  /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
+  /// Engineering and Computer Science, Massachusetts Institute of Technology"
+  /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
   // @internal This function is not generated for symbolic Expression.
   // @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
   static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
-  ProjectToRotationMatrix(const Matrix3<S>& M) {
-    const Matrix3<S> M_orthonormalized = math::ProjectMatToOrthonormalMat(M);
+  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
+    const Matrix3<S> M_orthonormalized =
+        ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
     ThrowIfNotValid(M_orthonormalized);
     return RotationMatrix<S>(M_orthonormalized, true);
   }
@@ -400,9 +459,63 @@ class RotationMatrix {
   static void ThrowIfNotValid(const Matrix3<T>& R) {
     if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
       throw std::logic_error("Error: Rotation matrix is not orthonormal.");
-    if (!IsDeterminantPositive(R))
+    if (R.determinant() < 0)
       throw std::logic_error("Error: Rotation matrix determinant is negative. "
                              "It is possible a basis is left-handed");
+  }
+
+  // Given an approximate rotation matrix M, finds the orthonormal matrix R
+  // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
+  // with a Frobenius norm).  Hence, this method creates an orthonormal matrix R
+  // from a 3x3 matrix M by minimizing `‖R - M‖₂` (the matrix-2 norm of (R-M))
+  // subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
+  // problem, closeness can also be measured by forming the orthonormal matrix R
+  // whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
+  // where `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of
+  // this double-summation is called the Frobenius norm.
+  // @param[in] M a 3x3 matrix.
+  // @param[out] quality_factor.  The quality of M as a rotation matrix.
+  // `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
+  // that when M multiplies a unit vector (magnitude 1), a vector of magnitude
+  // as large as 1.25 may result.  `quality_factor` = -1 means M relates two
+  // perfectly orthonormal bases, but one is right-handed whereas the other is
+  // left-handed (M is a "reflection").  `quality_factor` = -0.8 means M
+  // relates a right-handed basis to a left-handed basis and when M multiplies
+  // a unit vector, a vector of magnitude as small as 0.8 may result.
+  // `quality_factor` = 0 means M is singular, so at least one of the bases
+  // related by matrix M does not span 3D space (when M multiples a unit vector,
+  // a vector of magnitude as small as 0 may result).
+  // @return orthonormal matrix R that is closest to M (note det(R) may be -1).
+  // @note The SVD part of this algorithm can be derived as a modification of
+  // section 3.2 in http://haralick.org/conferences/pose_estimation.pdf.
+  // @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
+  // Institute) proved that for this problem, the same R that minimizes the
+  // Frobenius norm also minimizes the matrix-2 norm (a.k.a an induced-2 norm),
+  // which is defined [Dahleh, Section 4.2] as the column matrix u which
+  // maximizes `‖(R - M) u‖ / ‖u‖`, where `u ≠ 0`.  Since the matrix-2 norm of
+  // any matrix A is equal to the maximum singular value of A, minimizing the
+  // matrix-2 norm of (R - M) is equivalent to minimizing the maximum singular
+  // value of (R - M).
+  //
+  // - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
+  // Engineering and Computer Science, Massachusetts Institute of Technology"
+  // https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
+  template <typename Derived>
+  static Matrix3<typename Derived::Scalar> ProjectMatrix3ToOrthonormalMatrix3(
+      const Eigen::MatrixBase<Derived>& M, T* quality_factor) {
+    DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
+    const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+    if (quality_factor != nullptr) {
+      // Singular values are always non-negative and sorted in decreasing order.
+      const auto singular_values = svd.singularValues();
+      const T s_max = singular_values(0);  // maximum singular value.
+      const T s_min = singular_values(2);  // minimum singular value.
+      const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
+      const T det = M.determinant();
+      const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
+      *quality_factor = s_f * sign_det;
+    }
+    return svd.matrixU() * svd.matrixV().transpose();
   }
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).

@@ -154,32 +154,31 @@ class EmptySystemDiagram : public Diagram<double> {
   }
 };
 
-template <typename T>
-void CheckPeriodAndOffset(const typename Event<T>::PeriodicAttribute& attr) {
-  EXPECT_EQ(attr.period_sec, 1.125);
-  EXPECT_EQ(attr.offset_sec, 2.25);
+void CheckPeriodAndOffset(const PeriodicEventData& data) {
+  EXPECT_EQ(data.period_sec(), 1.125);
+  EXPECT_EQ(data.offset_sec(), 2.25);
 }
 
 // Tests whether the diagram exhibits the correct behavior for
 // GetUniquePeriodicDiscreteUpdateAttribute().
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
   // Check diagrams with no recursion.
-  optional<Event<double>::PeriodicAttribute> periodic_attr;
+  optional<PeriodicEventData> periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, true);
   EmptySystemDiagram d_sys1upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys2, 0, true);
   EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0,
       true);
-  ASSERT_TRUE(periodic_attr =
+  ASSERT_TRUE(periodic_data =
       d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
-  CheckPeriodAndOffset<double>(periodic_attr.value());
-  ASSERT_TRUE(periodic_attr =
+  CheckPeriodAndOffset(periodic_data.value());
+  ASSERT_TRUE(periodic_data =
       d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
-  CheckPeriodAndOffset<double>(periodic_attr.value());
-  ASSERT_TRUE(periodic_attr =
+  CheckPeriodAndOffset(periodic_data.value());
+  ASSERT_TRUE(periodic_data =
       d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
-  CheckPeriodAndOffset<double>(periodic_attr.value());
+  CheckPeriodAndOffset(periodic_data.value());
 
   // Check systems with up to three levels of recursion.
   for (int i = 1; i <= 3; ++i) {
@@ -198,24 +197,24 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
         EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, true);
 
     // All of these should return "true". Check them.
-    ASSERT_TRUE(periodic_attr =
+    ASSERT_TRUE(periodic_data =
         d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
+    CheckPeriodAndOffset(periodic_data.value());
   }
 }
 
@@ -223,7 +222,7 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
 // GetUniquePeriodicDiscreteUpdateAttribute() with non-unique updates
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   // Check diagrams with no recursion.
-  Event<double>::PeriodicAttribute periodic_attr;
+  PeriodicEventData periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, false);
   EmptySystemDiagram d_sys1upd_zero(
@@ -442,7 +441,7 @@ TEST_F(DiagramTest, Witness) {
   EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
       wf.front()));
 
-  EXPECT_LT(diagram_->EvaluateWitness(*context_, *wf.front()), 0);
+  EXPECT_LT(diagram_->CalcWitnessValue(*context_, *wf.front()), 0);
 }
 
 // Tests that the diagram exports the correct topology.
@@ -1456,7 +1455,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
 
     // Verify that no periodic discrete updates are registered.
-    Event<double>::PeriodicAttribute attr;
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
   }
 
@@ -1942,7 +1940,6 @@ class MyEventTestSystem : public LeafSystem<double> {
       DeclarePeriodicPublish(p);
 
       // Verify that no periodic discrete updates are registered.
-      Event<double>::PeriodicAttribute attr;
       EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
     } else {
       DeclarePerStepEvent<PublishEvent<double>>(

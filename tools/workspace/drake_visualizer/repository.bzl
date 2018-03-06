@@ -53,14 +53,25 @@ def _impl(repository_ctx):
         fail("Operating system is NOT supported", attr = os_result)
 
     urls = [
-        "https://drake-packages.csail.mit.edu/director/{}".format(archive),
-        "https://s3.amazonaws.com/drake-packages/director/{}".format(archive),
+        x.format(archive = archive)
+        for x in repository_ctx.attr.mirrors.get("director")
     ]
     root_path = repository_ctx.path("")
 
     repository_ctx.download_and_extract(urls, root_path, sha256 = sha256)
 
     file_content = """
+py_library(
+    name = "drake_visualizer_python_deps",
+    deps = [
+        "@lcm//:lcm-python",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
+        # TODO(eric.cousineau): Expose VTK Python libraries here for Linux.
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 filegroup(
     name = "drake_visualizer",
     srcs = glob([
@@ -74,9 +85,7 @@ filegroup(
         "share/doc/director/LICENSE.txt",
     ],
     data = [
-        "@lcm//:lcm-python",
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+        ":drake_visualizer_python_deps",
         "@vtk",
     ],
     visibility = ["//visibility:public"],
@@ -93,4 +102,9 @@ install_files(
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
-drake_visualizer_repository = repository_rule(implementation = _impl)
+drake_visualizer_repository = repository_rule(
+    attrs = {
+        "mirrors": attr.string_list_dict(),
+    },
+    implementation = _impl,
+)
