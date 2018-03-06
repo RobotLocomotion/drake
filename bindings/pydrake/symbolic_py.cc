@@ -30,188 +30,66 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("__repr__", &Variable::to_string)
       .def("__hash__",
            [](const Variable& self) { return std::hash<Variable>{}(self); })
-      .def("__add__",
-           [](const Variable& self, const Variable& other) {
-             return Expression{self + other};
-           },
-           py::is_operator())
-      .def("__add__",
-           [](const Variable& self, double other) {
-             return Expression{self + other};
-           },
-           py::is_operator())
-      .def("__add__",
-           [](const Variable& self, const Expression& other) {
-             return Expression{self + other};
-           },
-           py::is_operator())
-      .def("__radd__",
-           [](const Variable& self, double other) {
-             return Expression{other + self};
-           },
-           py::is_operator())
-      .def("__sub__",
-           [](const Variable& self, const Variable& other) {
-             return Expression{self - other};
-           },
-           py::is_operator())
-      .def("__sub__",
-           [](const Variable& self, double other) {
-             return Expression{self - other};
-           },
-           py::is_operator())
-      .def("__sub__",
-           [](const Variable& self, const Expression& other) {
-             return Expression{self - other};
-           },
-           py::is_operator())
-      .def("__rsub__",
-           [](const Variable& self, double other) {
-             return Expression{other - self};
-           },
-           py::is_operator())
-      .def("__mul__",
-           [](const Variable& self, const Variable& other) {
-             return Expression{self * other};
-           },
-           py::is_operator())
-      .def("__mul__",
-           [](const Variable& self, double other) {
-             return Expression{self * other};
-           },
-           py::is_operator())
-      .def("__mul__",
-           [](const Variable& self, const Expression& other) {
-             return Expression{self * other};
-           },
-           py::is_operator())
-      .def("__mul__",
-           [](const Variable& self, const Monomial& other) {
-             return Monomial(self) * other;
-           },
-           py::is_operator())
-      .def("__rmul__",
-           [](const Variable& self, double other) {
-             return Expression{other * self};
-           },
-           py::is_operator())
-      .def("__truediv__",
-           [](const Variable& self, const Variable& other) {
-             return Expression{self / other};
-           },
-           py::is_operator())
-      .def("__truediv__",
-           [](const Variable& self, double other) {
-             return Expression{self / other};
-           },
-           py::is_operator())
-      .def("__truediv__",
-           [](const Variable& self, const Expression& other) {
-             return Expression{self / other};
-           },
-           py::is_operator())
-      .def("__rtruediv__",
-           [](const Variable& self, double other) {
-             return Expression{other / self};
-           },
-           py::is_operator())
+      // Addition.
+      .def(py::self + py::self)
+      .def(py::self + double())
+      .def(double() + py::self)
+      // Subtraction.
+      .def(py::self - py::self)
+      .def(py::self - double())
+      .def(double() - py::self)
+      // Multiplication.
+      .def(py::self * py::self)
+      .def(py::self * double())
+      .def(double() * py::self)
+      // Division.
+      .def(py::self / py::self)
+      .def(py::self / double())
+      .def(double() / py::self)
+      // Pow.
       .def("__pow__",
-           [](const Variable& self, int other) {
-             return Expression{pow(self, other)};
-           },
-           py::is_operator())
-      .def("__pow__",
-           [](const Variable& self, double other) {
-             return Expression{pow(self, other)};
-           },
+           [](const Variable& self, double other) { return pow(self, other); },
            py::is_operator())
       .def("__pow__",
            [](const Variable& self, const Variable& other) {
-             return Expression{pow(self, other)};
+             return pow(self, other);
            },
            py::is_operator())
       .def("__pow__",
            [](const Variable& self, const Expression& other) {
-             return Expression{pow(self, other)};
+             return pow(self, other);
            },
            py::is_operator())
-      .def("__neg__", [](const Variable& self) { return Expression{-self}; },
-           py::is_operator())
-      .def("__lt__",
-           [](const Variable& self, const Variable& other) {
-             return Formula{Expression(self) < Expression(other)};
-           },
-           py::is_operator())
-      .def("__lt__",
-           [](const Variable& self, double other) {
-             return Formula{Expression(self) < Expression(other)};
-           },
-           py::is_operator())
-      .def("__lt__",
-           [](const Variable& self, const Expression& other) {
-             return Formula{Expression(self) < other};
-           },
-           py::is_operator())
-      .def("__le__",
-           [](const Variable& self, const Variable& other) {
-             return Formula{Expression(self) <= Expression(other)};
-           },
-           py::is_operator())
-      .def("__le__",
-           [](const Variable& self, double other) {
-             return Formula{Expression(self) <= Expression(other)};
-           },
-           py::is_operator())
-      .def("__le__",
-           [](const Variable& self, const Expression& other) {
-             return Formula{Expression(self) <= other};
-           },
-           py::is_operator())
-      .def("__gt__",
-           [](const Variable& self, const Variable& other) {
-             return Formula{Expression(self) > Expression(other)};
-           },
-           py::is_operator())
-      .def("__gt__",
-           [](const Variable& self, double other) {
-             return Formula{Expression(self) > Expression(other)};
-           },
-           py::is_operator())
-      .def("__gt__",
-           [](const Variable& self, const Expression& other) {
-             return Formula{Expression(self) > other};
-           },
-           py::is_operator())
-      .def("__ge__",
-           [](const Variable& self, const Variable& other) {
-             return Formula{Expression(self) >= Expression(other)};
-           },
-           py::is_operator())
-      .def("__ge__",
-           [](const Variable& self, double other) {
-             return Formula{Expression(self) >= Expression(other)};
-           },
-           py::is_operator())
-      .def("__ge__",
-           [](const Variable& self, const Expression& other) {
-             return Formula{Expression(self) >= other};
-           },
-           py::is_operator())
-      .def("__eq__",
-           [](const Variable& self, const Variable& other) {
-             return Formula{Expression(self) == Expression(other)};
-           },
-           py::is_operator())
-      .def("__eq__",
-           [](const Variable& self, double other) {
-             return Formula{Expression(self) == Expression(other)};
-           },
-           py::is_operator())
-      .def("__eq__",
-           [](const Variable& self, const Expression& other) {
-             return Formula{Expression(self) == other};
-           },
-           py::is_operator());
+      // Unary Plus.
+      .def(+py::self)
+      // Unary Minus.
+      .def(-py::self)
+      // LT(<).
+      // Note that for `double < Variable` case, the reflected op ('>' in this
+      // case) is called. For example, `1 < x` will return `x > 1`.
+      .def(py::self < Expression())
+      .def(py::self < py::self)
+      .def(py::self < double())
+      // LE(<=).
+      .def(py::self <= Expression())
+      .def(py::self <= py::self)
+      .def(py::self <= double())
+      // GT(>).
+      .def(py::self > Expression())
+      .def(py::self > py::self)
+      .def(py::self > double())
+      // GE(>=).
+      .def(py::self >= Expression())
+      .def(py::self >= py::self)
+      .def(py::self >= double())
+      // EQ(==).
+      .def(py::self == Expression())
+      .def(py::self == py::self)
+      .def(py::self == double())
+      // NE(!=).
+      .def(py::self != Expression())
+      .def(py::self != py::self)
+      .def(py::self != double());
 
   py::class_<Variables>(m, "Variables")
       .def(py::init<>())
@@ -252,116 +130,80 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::init<const Variable&>())
       .def("__repr__", &Expression::to_string)
       .def("Expand", &Expression::Expand)
+      // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
       .def(py::self + double())
+      .def(Variable() + py::self)
       .def(double() + py::self)
+      .def(py::self += py::self)
+      .def(py::self += Variable())
+      .def(py::self += double())
+      // Subtraction.
       .def(py::self - py::self)
       .def(py::self - Variable())
       .def(py::self - double())
+      .def(Variable() - py::self)
       .def(double() - py::self)
+      .def(py::self -= py::self)
+      .def(py::self -= Variable())
+      .def(py::self -= double())
+      // Multiplication.
       .def(py::self * py::self)
       .def(py::self * Variable())
       .def(py::self * double())
+      .def(Variable() * py::self)
       .def(double() * py::self)
+      .def(py::self *= py::self)
+      .def(py::self *= Variable())
+      .def(py::self *= double())
+      // Division.
       .def(py::self / py::self)
       .def(py::self / Variable())
       .def(py::self / double())
+      .def(Variable() / py::self)
       .def(double() / py::self)
-      .def("__pow__",
-           [](const Expression& self, int other) { return pow(self, other); },
-           py::is_operator())
-      .def(
-          "__pow__",
-          [](const Expression& self, double other) { return pow(self, other); },
-          py::is_operator())
-      .def("__pow__",
-           [](const Expression& self, const Variable& other) {
-             return pow(self, other);
-           },
-           py::is_operator())
-      .def("__pow__",
-           [](const Expression& self, const Expression& other) {
-             return pow(self, other);
-           },
-           py::is_operator())
-      .def("__neg__", [](const Expression& self) { return -self; },
-           py::is_operator())
-      .def("__lt__",
-           [](const Expression& self, const Variable& other) {
-             return Formula{Expression(self) < Expression(other)};
-           },
-           py::is_operator())
-      .def("__lt__",
-           [](const Expression& self, const Expression& other) {
-             return Formula{Expression(self) < Expression(other)};
-           },
-           py::is_operator())
-      .def("__lt__",
-           [](const Expression& self, double other) {
-             return Formula{Expression(self) < Expression(other)};
-           },
-           py::is_operator())
-      .def("__le__",
-           [](const Expression& self, const Variable& other) {
-             return Formula{Expression(self) <= Expression(other)};
-           },
-           py::is_operator())
-      .def("__le__",
-           [](const Expression& self, const Expression& other) {
-             return Formula{Expression(self) <= Expression(other)};
-           },
-           py::is_operator())
-      .def("__le__",
-           [](const Expression& self, double other) {
-             return Formula{Expression(self) <= Expression(other)};
-           },
-           py::is_operator())
-      .def("__gt__",
-           [](const Expression& self, const Variable& other) {
-             return Formula{Expression(self) > Expression(other)};
-           },
-           py::is_operator())
-      .def("__gt__",
-           [](const Expression& self, const Expression& other) {
-             return Formula{Expression(self) > Expression(other)};
-           },
-           py::is_operator())
-      .def("__gt__",
-           [](const Expression& self, double other) {
-             return Formula{Expression(self) > Expression(other)};
-           },
-           py::is_operator())
-      .def("__ge__",
-           [](const Expression& self, const Variable& other) {
-             return Formula{Expression(self) >= Expression(other)};
-           },
-           py::is_operator())
-      .def("__ge__",
-           [](const Expression& self, const Expression& other) {
-             return Formula{Expression(self) >= Expression(other)};
-           },
-           py::is_operator())
-      .def("__ge__",
-           [](const Expression& self, double other) {
-             return Formula{Expression(self) >= Expression(other)};
-           },
-           py::is_operator())
-      .def("__eq__",
-           [](const Expression& self, const Variable& other) {
-             return Formula{Expression(self) == Expression(other)};
-           },
-           py::is_operator())
-      .def("__eq__",
-           [](const Expression& self, const Expression& other) {
-             return Formula{Expression(self) == Expression(other)};
-           },
-           py::is_operator())
-      .def("__eq__",
-           [](const Expression& self, double other) {
-             return Formula{Expression(self) == Expression(other)};
-           },
-           py::is_operator());
+      .def(py::self /= py::self)
+      .def(py::self /= Variable())
+      .def(py::self /= double())
+      // Pow.
+      .def("__pow__", [](const Expression& self,
+                         const double other) { return pow(self, other); })
+      .def("__pow__", [](const Expression& self,
+                         const Variable& other) { return pow(self, other); })
+      .def("__pow__", [](const Expression& self,
+                         const Expression& other) { return pow(self, other); })
+      // Unary Plus.
+      .def(+py::self)
+      // Unary Minus.
+      .def(-py::self)
+      // LT(<).
+      //
+      // Note that for `double < Expression` case, the reflected op ('>' in this
+      // case) is called. For example, `1 < x * y` will return `x * y > 1`.
+      .def(py::self < py::self)
+      .def(py::self < Variable())
+      .def(py::self < double())
+      // LE(<=).
+      .def(py::self <= py::self)
+      .def(py::self <= Variable())
+      .def(py::self <= double())
+      // GT(>).
+      .def(py::self > py::self)
+      .def(py::self > Variable())
+      .def(py::self > double())
+      // GE(>=).
+      .def(py::self >= py::self)
+      .def(py::self >= Variable())
+      .def(py::self >= double())
+      // EQ(==).
+      .def(py::self == py::self)
+      .def(py::self == Variable())
+      .def(py::self == double())
+      // NE(!=)
+      .def(py::self != py::self)
+      .def(py::self != Variable())
+      .def(py::self != double());
 
   m.def("log", &symbolic::log)
       .def("abs", &symbolic::abs)
@@ -414,12 +256,9 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("degree", &Monomial::degree)
       .def("total_degree", &Monomial::total_degree)
       .def(py::self * py::self)
-      .def("__mul__",
-           [](const Monomial& self, const Variable& other) {
-             return self * Monomial(other);
-           },
-           py::is_operator())
+      .def(py::self *= py::self)
       .def(py::self == py::self)
+      .def(py::self != py::self)
       .def("__hash__",
            [](const Monomial& self) { return std::hash<Monomial>{}(self); })
       .def(py::self != py::self)
@@ -497,6 +336,8 @@ PYBIND11_MODULE(_symbolic_py, m) {
   py::implicitly_convertible<double, drake::symbolic::Expression>();
   py::implicitly_convertible<drake::symbolic::Variable,
                              drake::symbolic::Expression>();
+  py::implicitly_convertible<drake::symbolic::Monomial,
+                             drake::symbolic::Polynomial>();
 }
 
 }  // namespace pydrake
