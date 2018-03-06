@@ -96,9 +96,16 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
   const std::vector<double> kTimes{0.0, 2.0, 5.0, 7.0, 9.0};
-  MatrixXd q0(tree->get_num_positions(), kTimes.size());
+  MatrixXd q_seed(tree->get_num_positions(), kTimes.size());
+  MatrixXd q_nom(tree->get_num_positions(), kTimes.size());
   for (size_t i = 0; i < kTimes.size(); ++i) {
-    q0.col(i) = zero_conf;
+    // Zero configuration is a bad initial guess for IK, to be solved through
+    // nonlinear optimization, as the robot configuration is in singularity,
+    // and the gradient is zero. So we add 0.1 as the arbitrary pertubation
+    // to the zero configuration.
+    q_seed.col(i) =
+        zero_conf + 0.1 * Eigen::VectorXd::Ones(tree->get_num_positions());
+    q_nom.col(i) = zero_conf;
   }
 
   std::vector<RigidBodyConstraint*> constraint_array;
@@ -112,7 +119,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   MatrixXd q_sol(tree->get_num_positions(), kTimes.size());
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(tree.get(), kTimes.size(), kTimes.data(), q0, q0,
+  inverseKinPointwise(tree.get(), kTimes.size(), kTimes.data(), q_seed, q_nom,
                       constraint_array.size(), constraint_array.data(),
                       ikoptions, &q_sol, info.data(), &infeasible_constraint);
   bool info_good = true;
