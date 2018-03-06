@@ -1,9 +1,9 @@
-<!-- NOTE: This should parallel filter_groups_in_file.urdf
- See the URDF for documentation on the purpose/structure of this file. -->
-<?xml version='1.0' ?>
-<sdf version='1.6'>
-    <model name='sphere_chain'>
-        <link name='sphereA'>
+<?xml version="1.0" ?>
+<sdf version="1.6">
+    <!-- NOTE: This should parallel filter_groups_in_file.urdf
+     See the URDF for documentation on the purpose/structure of this file. -->
+    <model name="sphere_chain">
+        <link name="sphereA">
             <collision>
                 <geometry>
                     <sphere>
@@ -12,7 +12,7 @@
                 </geometry>
             </collision>
         </link>
-        <link name='sphereB'>
+        <link name="sphereB">
             <collision>
                 <geometry>
                     <sphere>
@@ -21,7 +21,7 @@
                 </geometry>
             </collision>
         </link>
-        <link name='sphereC'>
+        <link name="sphereC">
             <collision>
                 <geometry>
                     <sphere>
@@ -30,7 +30,7 @@
                 </geometry>
             </collision>
         </link>
-        <link name='sphereD'>
+        <link name="sphereD">
             <collision>
                 <geometry>
                     <sphere>
@@ -40,15 +40,15 @@
             </collision>
         </link>
 
-        <joint name='jointAB' type='revolute'>
+        <joint name="jointAB" type="revolute">
             <parent>sphereA</parent>
             <child>sphereB</child>
         </joint>
-        <joint name='jointBC' type='revolute'>
+        <joint name="jointBC" type="revolute">
             <parent>sphereB</parent>
             <child>sphereC</child>
         </joint>
-        <joint name='jointCD' type='revolute'>
+        <joint name="jointCD" type="revolute">
             <parent>sphereC</parent>
             <child>sphereD</child>
         </joint>
