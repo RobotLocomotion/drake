@@ -21,20 +21,15 @@ template <class T>
 class LogisticWitness : public systems::WitnessFunction<T> {
  public:
   ~LogisticWitness() override {}
-  explicit LogisticWitness(const LogisticSystem<T>& system) :
-    systems::WitnessFunction<T>(
+  explicit LogisticWitness(const LogisticSystem<T>* system) :
+    WitnessFunction<T>(
         system,
-        systems::WitnessFunctionDirection::kCrossesZero) {
-  }
+        WitnessFunctionDirection::kCrossesZero,
+        std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness)) {}
 
  protected:
-  void DoAddEvent(systems::CompositeEventCollection<T>* events) const override {
-    events->add_publish_event(
-        std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness));
-  }
-
   // The witness function is simply the state value itself.
-  T DoEvaluate(const Context<T>& context) const override {
+  T DoCalcWitnessValue(const Context<T>& context) const override {
     return context.get_continuous_state()[0];
   }
 };
@@ -51,7 +46,7 @@ class LogisticSystem : public LeafSystem<T> {
   LogisticSystem(double k, double alpha, double nu) : k_(k), alpha_(alpha),
       nu_(nu) {
     this->DeclareContinuousState(1);
-    witness_ = std::make_unique<LogisticWitness<T>>(*this);
+    witness_ = std::make_unique<LogisticWitness<T>>(this);
   }
 
   void set_publish_callback(
