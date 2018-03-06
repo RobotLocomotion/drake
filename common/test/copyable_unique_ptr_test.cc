@@ -6,7 +6,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/is_cloneable.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace  {
@@ -72,7 +74,6 @@ struct CopyOnly : Base {
 // Confirms that a class with only a public copy constructor is considered
 // copyable and copies appropriately.
 GTEST_TEST(CopyableUniquePtrTest, CopyOnlySuccess) {
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CopyOnly>::value);
   cup<CopyOnly> ptr(new CopyOnly(1));
   EXPECT_EQ(ptr->origin, Origin::CONSTRUCT);
   cup<CopyOnly> copy(ptr);
@@ -80,6 +81,55 @@ GTEST_TEST(CopyableUniquePtrTest, CopyOnlySuccess) {
   EXPECT_EQ(copy->value, ptr->value);
   ++copy->value;
   EXPECT_NE(copy->value, ptr->value);
+}
+
+// This class has a private copy constructor but declares copyable_unique_ptr
+// to be a friend so it should still be copyable.
+class FriendsWithBenefitsCopy {
+ public:
+  explicit FriendsWithBenefitsCopy(int value) : value_(value) {}
+  int value() const {return value_;}
+
+ private:
+  friend class copyable_unique_ptr<FriendsWithBenefitsCopy>;
+  FriendsWithBenefitsCopy(const FriendsWithBenefitsCopy&) = default;
+
+  int value_{0};
+};
+
+// This class has no copy constructor and a private Clone() method but declares
+// copyable_unique_ptr to be a friend so it should still be copyable.
+class FriendsWithBenefitsClone {
+ public:
+  explicit FriendsWithBenefitsClone(int value) : value_(value) {}
+  int value() const {return value_;}
+  FriendsWithBenefitsClone(const FriendsWithBenefitsClone&) = delete;
+
+ private:
+  friend class copyable_unique_ptr<FriendsWithBenefitsClone>;
+  std::unique_ptr<FriendsWithBenefitsClone> Clone() const {
+    return std::make_unique<FriendsWithBenefitsClone>(value_);
+  }
+
+  int value_{0};
+};
+
+// Check that a friend declaration works to get copyable_unique_ptr access
+// to the needed copy constructor or Clone() method.
+GTEST_TEST(CopyableUniquePtrTest, FriendsWithBenefits) {
+  copyable_unique_ptr<FriendsWithBenefitsCopy> fwb(
+      new FriendsWithBenefitsCopy(10));
+  EXPECT_EQ(fwb->value(), 10);
+
+  copyable_unique_ptr<FriendsWithBenefitsCopy> fwb2(fwb);
+  EXPECT_EQ(fwb2->value(), 10);
+
+  copyable_unique_ptr<FriendsWithBenefitsClone> fwbc(
+      new FriendsWithBenefitsClone(20));
+  EXPECT_EQ(fwbc->value(), 20);
+
+  copyable_unique_ptr<FriendsWithBenefitsClone> fwbc2(fwbc);
+  EXPECT_EQ(fwbc2->value(), 20);
 }
 
 // A fully copyable class (has both copy constructor and Clone). Confirms that
@@ -95,7 +145,6 @@ struct FullyCopyable : Base {
 
 // Confirms that the copy constructor is preferred when both exist.
 GTEST_TEST(CopyableUniquePtrTest, FullyCopyableSuccess) {
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<FullyCopyable>::value);
   cup<FullyCopyable> ptr(new FullyCopyable(1));
   EXPECT_EQ(ptr->origin, Origin::CONSTRUCT);
   cup<FullyCopyable> copy(ptr);
@@ -121,7 +170,6 @@ struct CloneOnly : Base {
 // Confirms that a class that has a proper implementation of Clone, but no
 // copy constructor clones itself.
 GTEST_TEST(CopyableUniquePtrTest, CloneOnlySuccess) {
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CloneOnly>::value);
   cup<CloneOnly> ptr(new CloneOnly(1));
   EXPECT_EQ(ptr->origin, Origin::CONSTRUCT);
   cup<CloneOnly> copy(ptr);
@@ -204,30 +252,29 @@ GTEST_TEST(CopyableUniquePtrTest, PolymorphicCopyability) {
   // Case 1) Child with *only* Clone method.
   EXPECT_TRUE(is_cloneable<CloneOnlyChildWithClone>::value);
   EXPECT_FALSE(std::is_copy_constructible<CloneOnlyChildWithClone>::value);
-  EXPECT_TRUE(
-      is_copyable_unique_ptr_compatible<CloneOnlyChildWithClone>::value);
+  copyable_unique_ptr<CloneOnlyChildWithClone> ptr_1;
 
   // Case 2) Child with *only* Copy method but virtual DoClone().
   EXPECT_FALSE(is_cloneable<CloneOnlyChildWithCopyVClone>::value);
   EXPECT_TRUE(std::is_copy_constructible<CloneOnlyChildWithCopyVClone>::value);
-  EXPECT_TRUE(
-      is_copyable_unique_ptr_compatible<CloneOnlyChildWithCopyVClone>::value);
+  copyable_unique_ptr<CloneOnlyChildWithCopyVClone> ptr_2;
 
   // Case 3) Child with *only* Copy method.
   EXPECT_FALSE(is_cloneable<CloneOnlyChildWithCopy>::value);
   EXPECT_TRUE(std::is_copy_constructible<CloneOnlyChildWithCopy>::value);
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CloneOnlyChildWithCopy>::value);
+  copyable_unique_ptr<CloneOnlyChildWithCopy> ptr_3;
 
   // Case 4) Child with no copy and no clone.
   EXPECT_FALSE(is_cloneable<CloneOnlyChildUncopyable>::value);
   EXPECT_FALSE(std::is_copy_constructible<CloneOnlyChildUncopyable>::value);
-  EXPECT_FALSE(
-      is_copyable_unique_ptr_compatible<CloneOnlyChildUncopyable>::value);
+  // Can't make a cloneable_unique_ptr<CloneOnlyChildUncopyable>.
 
   // Case 5) Child with copy, derived from base with copy.
   EXPECT_FALSE(is_cloneable<CopyChild>::value);
   EXPECT_TRUE(std::is_copy_constructible<CopyChild>::value);
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CopyChild>::value);
+  copyable_unique_ptr<CopyChild> ptr_4;
+
+  unused(ptr_1, ptr_2, ptr_3, ptr_4);
 }
 
 // Utility test for the CopyTypeSlicing test. It is templated on the sub-class
@@ -301,22 +348,18 @@ GTEST_TEST(CopyableUniquePtrTest, CopyableAsExpected) {
   // Case 1) True || True --> True
   EXPECT_TRUE(is_cloneable<FullyCopyable>::value);
   EXPECT_TRUE(std::is_copy_constructible<FullyCopyable>::value);
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<FullyCopyable>::value);
 
   // Case 2) True || False --> True
   EXPECT_TRUE(is_cloneable<CloneOnly>::value);
   EXPECT_FALSE(std::is_copy_constructible<CloneOnly>::value);
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CloneOnly>::value);
 
   // Case 3) False || True --> True
   EXPECT_FALSE(is_cloneable<CopyOnly>::value);
   EXPECT_TRUE(std::is_copy_constructible<CopyOnly>::value);
-  EXPECT_TRUE(is_copyable_unique_ptr_compatible<CopyOnly>::value);
 
   // Case 4) False || False --> False
   EXPECT_FALSE(is_cloneable<Base>::value);
   EXPECT_FALSE(std::is_copy_constructible<Base>::value);
-  EXPECT_FALSE(is_copyable_unique_ptr_compatible<Base>::value);
 }
 
 // ------------------------ Constructor Tests ------------------------------
