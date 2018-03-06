@@ -1,4 +1,4 @@
-from pydrake.util.module_shim import ModuleShim
+from pydrake.util.deprecation import ModuleShim
 
 value = 1
 

@@ -41,7 +41,7 @@ drake_pybind_library(
     cc_srcs = ["common_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//bindings/pydrake/util:module_shim_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = [
         "__init__.py",
