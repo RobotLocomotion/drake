@@ -30,11 +30,12 @@ template <typename DerivedA, typename DerivedB>
 // RigidBodyPlant's logic for populating its output port for collision response
 // data.
 template <typename T>
-class ContactResultTestCommon : public ::testing::Test {
+class ContactResultTestCommon {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultTestCommon)
 
   ContactResultTestCommon() {}
+  virtual ~ContactResultTestCommon() {}
 
   /// Computes the default material properties for derived classes to set.
   CompliantMaterial MakeDefaultMaterial() {

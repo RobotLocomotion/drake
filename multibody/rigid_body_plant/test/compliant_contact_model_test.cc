@@ -46,7 +46,8 @@ namespace {
 // Base class for testing the CompliantContactModel logic for contact force
 // computations.
 template <typename T>
-class CompliantContactModelTest : public ContactResultTestCommon<T> {
+class CompliantContactModelTest : public ContactResultTestCommon<T>,
+                                  public ::testing::Test {
  protected:
   const ContactResults<T>& RunTest(double distance) override {
     unique_tree_ = this->GenerateTestTree(distance);

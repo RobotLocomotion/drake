@@ -41,12 +41,18 @@ namespace {
 
 // Base class for testing the RigidBodyPlant's logic for populating its
 // output port for collision response data.
-class ContactResultTest : public ContactResultTestCommon<double> {
+class ContactResultTest : public ContactResultTestCommon<double>,
+                          public ::testing::TestWithParam<bool> {
  protected:
   // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
+    // Set the time step, based on whether the continuous or discrete model is
+    // used. The nonzero value is arbitrary.
+    const double timestep = (GetParam()) ? 1e-5 : 0.0;
+
     // Populate the plant.
-    plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance));
+    plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance),
+        timestep);
 
     plant_->set_default_compliant_material(MakeDefaultMaterial());
 
@@ -57,6 +63,11 @@ class ContactResultTest : public ContactResultTestCommon<double> {
 
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
+
+    // TODO(edrumwri): Eliminate this call once the caching system is in place.
+    plant_->CalcDiscreteVariableUpdates(*context_,
+       &context_->get_mutable_discrete_state());
+
     plant_->CalcOutput(*context_.get(), output_.get());
 
     const int port_index = plant_->contact_results_output_port().get_index();
@@ -78,7 +89,7 @@ class ContactResultTest : public ContactResultTestCommon<double> {
 
 // Confirms a contact result for two non-colliding spheres -- expects no
 // reported collisions.
-TEST_F(ContactResultTest, NoCollision) {
+TEST_P(ContactResultTest, NoCollision) {
   auto& contact_results = RunTest(0.1);
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
@@ -86,13 +97,13 @@ TEST_F(ContactResultTest, NoCollision) {
 // Confirms a contact result for two touching spheres -- expects no reported
 // collisions. For now, osculation is not considered a "contact" for reporting
 // purposes. If the definition changes, this will likewise change.
-TEST_F(ContactResultTest, Touching) {
+TEST_P(ContactResultTest, Touching) {
   auto& contact_results = RunTest(0.0);
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
 
 // Confirms a contact result for two colliding spheres.
-TEST_F(ContactResultTest, SingleCollision) {
+TEST_P(ContactResultTest, SingleCollision) {
   double offset = 0.1;
   auto& contact_results = RunTest(-offset);
   ASSERT_EQ(contact_results.get_num_contacts(), 1);
@@ -146,6 +157,10 @@ GTEST_TEST(AdditionalContactResultsTest, AutoDiffTest) {
   ContactResults<AutoDiffXd> result;
   EXPECT_EQ(result.get_num_contacts(), 0);
 }
+
+// Instantiate the tests.
+INSTANTIATE_TEST_CASE_P(CompliantAndTimeSteppingTest, ContactResultTest,
+    ::testing::Bool());
 
 }  // namespace
 }  // namespace test

@@ -1207,13 +1207,42 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
       tree.positionConstraints(kinematics_cache).transpose());
 
   // TODO(edrumwri): Replace this block of code when caching is in place.
+  time_stepping_contact_results_.Clear();
+  for (const auto& contact : contacts) {
+    // Get the two body indices.
+    const int body_a_index = contact.elementA->get_body()->get_body_index();
+    const int body_b_index = contact.elementB->get_body()->get_body_index();
+
+    // The reported point on A's surface (As) in the world frame (W).
+    const Vector3<T> p_WAs =
+        kinematics_cache.get_element(body_a_index).transform_to_world *
+            contact.ptA;
+
+    // The reported point on B's surface (Bs) in the world frame (W).
+    const Vector3<T> p_WBs =
+        kinematics_cache.get_element(body_b_index).transform_to_world *
+            contact.ptB;
+
+    // Get the point halfway between the two in the world frame.
+    const Vector3<T> p_W = (p_WAs + p_WBs) * 0.5;
+
+    // Determine the contact force.
+    Vector3<T> normal(1, 0, 0), force;
+    ContactInfo<T>& contact_result = time_stepping_contact_results_.AddContact(
+        contact.elementA->getId(), contact.elementB->getId());
+    contact_result.set_resultant_force(ContactForce<T>(
+        p_W, contact.normal, force));
+  }
   // Convert the contact forces to generalized forces, removing joint limit
   // and bilateral constraint forces first.
+  VectorX<T> generalized_contact_force;
   const int limits_start = contacts.size() + total_friction_cone_edges;
   constraint_force.segment(
       limits_start, constraint_force.size() - limits_start).setZero();
   constraint_solver_.ComputeGeneralizedImpulseFromConstraintImpulses(
-      data, constraint_force, &time_stepping_contact_force_);
+      data, constraint_force, &generalized_contact_force);
+  time_stepping_contact_results_.set_generalized_contact_force(
+      generalized_contact_force);
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
@@ -1354,13 +1383,10 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
   contacts->set_generalized_contact_force(
       VectorX<T>::Zero(get_num_velocities()));
 
-  // TODO(siyuanfeng-tri): Need to correctly output contact results for time
-  // stepping.
-
   // This code should do nothing if the state is discrete because the compliant
   // contact model will not be used to compute contact forces.
   if (is_state_discrete()) {
-    contacts->set_generalized_contact_force(time_stepping_contact_force_);
+    *contacts = time_stepping_contact_results_;
     return;
   }
 

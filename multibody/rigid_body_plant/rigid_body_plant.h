@@ -570,7 +570,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   // time stepping computation (in DoCalcDiscreteVariableUpdatesImpl()). The
   // computation should remain valid since the first-order discretized version
   // of this system is only evaluated monotonically forward in time.
-  mutable VectorX<T> time_stepping_contact_force_;
+  mutable ContactResults<T> time_stepping_contact_results_;
 
   // Structure for storing joint limit data for time stepping.
   struct JointLimit {
