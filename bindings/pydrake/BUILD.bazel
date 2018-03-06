@@ -70,6 +70,16 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "automotive_py",
+    cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_so_name = "automotive",
+    cc_srcs = ["automotive_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
 drake_py_library(
     name = "backwards_compatibility_py",
     srcs = [
@@ -133,6 +143,7 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
+    ":automotive_py",
     ":common_py",
     ":lcm_py",
     ":math_py",
@@ -244,6 +255,18 @@ drake_py_unittest(
     name = "trajectories_test",
     size = "small",
     deps = [":trajectories_py"],
+)
+
+drake_py_unittest(
+    name = "automotive_test",
+    size = "small",
+    deps = [
+        ":automotive_py",
+        "//bindings/pydrake/maliput:api_py",
+        "//bindings/pydrake/maliput:dragway_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/systems",
+    ],
 )
 
 drake_py_unittest(

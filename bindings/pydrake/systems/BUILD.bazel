@@ -286,6 +286,7 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        ":test_util_py",
     ],
 )
 
