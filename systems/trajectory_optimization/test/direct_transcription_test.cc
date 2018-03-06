@@ -169,7 +169,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const Vector1d dynamic_constraint_val =
         prog.EvalBindingAtSolution(dynamic_constraints[i]) -
-        dynamic_constraints[i].constraint()->lower_bound();
+        dynamic_constraints[i].evaluator()->lower_bound();
     const Vector1d dynamic_constraint_expected =
         prog.GetSolution(prog.state(i + 1)) -
         system->A() * prog.GetSolution(prog.state(i)) -

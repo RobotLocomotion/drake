@@ -300,7 +300,7 @@ namespace {
 
 template <typename To, typename From>
 Binding<To> BindingDynamicCast(const Binding<From>& binding) {
-  auto constraint = std::dynamic_pointer_cast<To>(binding.constraint());
+  auto constraint = std::dynamic_pointer_cast<To>(binding.evaluator());
   DRAKE_DEMAND(constraint != nullptr);
   return Binding<To>(constraint, binding.variables());
 }
@@ -309,7 +309,7 @@ Binding<To> BindingDynamicCast(const Binding<From>& binding) {
 
 Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   // See AddCost(const Binding<Constraint>&) for explanation
-  Cost* cost = binding.constraint().get();
+  Cost* cost = binding.evaluator().get();
   if (dynamic_cast<QuadraticCost*>(cost)) {
     return AddCost(BindingDynamicCast<QuadraticCost>(binding));
   } else if (dynamic_cast<LinearCost*>(cost)) {
@@ -344,9 +344,9 @@ Binding<QuadraticCost> MathematicalProgram::AddCost(
     const Binding<QuadraticCost>& binding) {
   CheckBinding(binding);
   required_capabilities_ |= kQuadraticCost;
-  DRAKE_ASSERT(binding.constraint()->Q().rows() ==
+  DRAKE_ASSERT(binding.evaluator()->Q().rows() ==
                    static_cast<int>(binding.GetNumElements()) &&
-               binding.constraint()->b().rows() ==
+               binding.evaluator()->b().rows() ==
                    static_cast<int>(binding.GetNumElements()));
   quadratic_costs_.push_back(binding);
   return quadratic_costs_.back();
@@ -398,7 +398,7 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   // If we get here, then this was possibly a dynamically-simplified
   // constraint. Determine correct container. As last resort, add to generic
   // constraints.
-  Constraint* constraint = binding.constraint().get();
+  Constraint* constraint = binding.evaluator().get();
   // Check constraints types in reverse order, such that classes that inherit
   // from other classes will not be prematurely added to less specific (or
   // incorrect) container.
@@ -450,7 +450,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   // Because the ParseLinearConstraint methods can return instances of
   // LinearEqualityConstraint or BoundingBoxConstraint, do a dynamic check
   // here.
-  LinearConstraint* constraint = binding.constraint().get();
+  LinearConstraint* constraint = binding.evaluator().get();
   if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<BoundingBoxConstraint>(binding));
   } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
@@ -458,7 +458,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
-    DRAKE_ASSERT(binding.constraint()->A().cols() ==
+    DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     CheckBinding(binding);
     required_capabilities_ |= kLinearConstraint;
@@ -477,7 +477,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  DRAKE_ASSERT(binding.constraint()->A().cols() ==
+  DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                static_cast<int>(binding.GetNumElements()));
   CheckBinding(binding);
   required_capabilities_ |= kLinearEqualityConstraint;
@@ -512,7 +512,7 @@ MathematicalProgram::AddLinearEqualityConstraint(
 Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
   CheckBinding(binding);
-  DRAKE_ASSERT(binding.constraint()->num_constraints() ==
+  DRAKE_ASSERT(binding.evaluator()->num_outputs() ==
                static_cast<int>(binding.GetNumElements()));
   required_capabilities_ |= kLinearConstraint;
   bbox_constraints_.push_back(binding);
@@ -628,8 +628,8 @@ Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     const Binding<PositiveSemidefiniteConstraint>& binding) {
   CheckBinding(binding);
   DRAKE_ASSERT(math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
-      binding.variables().data(), binding.constraint()->matrix_rows(),
-      binding.constraint()->matrix_rows())));
+      binding.variables().data(), binding.evaluator()->matrix_rows(),
+      binding.evaluator()->matrix_rows())));
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   positive_semidefinite_constraint_.push_back(binding);
   return positive_semidefinite_constraint_.back();
@@ -661,7 +661,7 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
   CheckBinding(binding);
-  DRAKE_ASSERT(static_cast<int>(binding.constraint()->F().size()) ==
+  DRAKE_ASSERT(static_cast<int>(binding.evaluator()->F().size()) ==
                static_cast<int>(binding.GetNumElements()) + 1);
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   linear_matrix_inequality_constraint_.push_back(binding);

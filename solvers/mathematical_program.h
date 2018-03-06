@@ -1378,8 +1378,8 @@ class MathematicalProgram {
    * decision variables.
    * @param binding Binds a BoundingBoxConstraint with some decision variables,
    * such that
-   * binding.constraint()->lower_bound()(i) <= binding.variables()(i)
-   *                   <= binding.constraint().upper_bound()(i)
+   * binding.evaluator()->lower_bound()(i) <= binding.variables()(i)
+   *                   <= binding.evaluator().upper_bound()(i)
    */
   Binding<BoundingBoxConstraint> AddConstraint(
       const Binding<BoundingBoxConstraint>& binding);
@@ -2415,12 +2415,12 @@ class MathematicalProgram {
       throw std::logic_error(oss.str());
     }
     VectorX<Scalar> binding_x(binding.GetNumElements());
-    VectorX<Scalar> binding_y(binding.constraint()->num_outputs());
+    VectorX<Scalar> binding_y(binding.evaluator()->num_outputs());
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       binding_x(i) =
           prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
     }
-    binding.constraint()->Eval(binding_x, binding_y);
+    binding.evaluator()->Eval(binding_x, binding_y);
     return binding_y;
   }
 
@@ -2432,9 +2432,9 @@ class MathematicalProgram {
    */
   template <typename C>
   Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {
-    Eigen::VectorXd val(binding.constraint()->num_outputs());
+    Eigen::VectorXd val(binding.evaluator()->num_outputs());
     Eigen::VectorXd binding_var_vals = GetSolution(binding.variables());
-    binding.constraint()->Eval(binding_var_vals, val);
+    binding.evaluator()->Eval(binding_var_vals, val);
     return val;
   }
 

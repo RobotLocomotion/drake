@@ -73,7 +73,7 @@ auto RegisterBinding(py::handle* pscope,
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
   auto binding_cls = py::class_<B>(scope, pyname.c_str())
-    .def("constraint", &B::constraint)
+    .def("evaluator", &B::evaluator)
     .def("variables", &B::variables);
   // Register overloads for MathematicalProgram class
   prog_cls
