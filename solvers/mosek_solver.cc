@@ -24,7 +24,7 @@ MSKrescodee AddLinearConstraintsFromBindings(
     MSKtask_t* task, const std::vector<Binding<C>>& constraint_list,
     bool is_equality_constraint, const MathematicalProgram& prog) {
   for (const auto& binding : constraint_list) {
-    auto constraint = binding.constraint();
+    auto constraint = binding.evaluator();
     const Eigen::MatrixXd& A = constraint->A();
     const Eigen::VectorXd& lb = constraint->lower_bound();
     const Eigen::VectorXd& ub = constraint->upper_bound();
@@ -110,7 +110,7 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
   std::vector<double> x_lb(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> x_ub(num_vars, std::numeric_limits<double>::infinity());
   for (const auto& binding : prog.bounding_box_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.evaluator();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
 
@@ -174,8 +174,8 @@ MSKrescodee AddSecondOrderConeConstraints(
           prog.FindDecisionVariableIndex(binding.variables()(i));
     }
 
-    const auto& A = binding.constraint()->A();
-    const auto& b = binding.constraint()->b();
+    const auto& A = binding.evaluator()->A();
+    const auto& b = binding.evaluator()->b();
     const int num_z = A.rows();
     MSKint32t num_total_vars = 0;
     rescode = MSK_getnumvar(*task, &num_total_vars);
@@ -340,7 +340,7 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
     // Add S_bar as new variables. Mosek needs to create so called "bar
     // variable"
     // for matrix in positive semidefinite cones.
-    int matrix_rows = binding.constraint()->matrix_rows();
+    int matrix_rows = binding.evaluator()->matrix_rows();
 
     AddBarVariable(matrix_rows, task);
 
@@ -392,7 +392,7 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
       return rescode;
     }
 
-    int rows = binding.constraint()->matrix_rows();
+    int rows = binding.evaluator()->matrix_rows();
 
     AddBarVariable(rows, task);
 
@@ -404,7 +404,7 @@ MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
         int linear_constraint_index =
             num_linear_constraint + new_linear_constraint_count;
 
-        const auto& F = binding.constraint()->F();
+        const auto& F = binding.evaluator()->F();
         auto F_it = F.begin();
         rescode = MSK_putconbound(*task, linear_constraint_index, MSK_BK_FX,
                                   -(*F_it)(i, j), -(*F_it)(i, j));
@@ -448,7 +448,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   std::vector<Eigen::Triplet<double>> linear_term_triplets;
   double constant_cost = 0.;
   for (const auto& binding : prog.quadratic_costs()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.evaluator();
     // The quadratic cost is of form 0.5*x'*Q*x + b*x.
     const auto& Q = constraint->Q();
     const auto& b = constraint->b();
@@ -484,8 +484,8 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     }
   }
   for (const auto& binding : prog.linear_costs()) {
-    const auto& c = binding.constraint()->a();
-    constant_cost += binding.constraint()->b();
+    const auto& c = binding.evaluator()->a();
+    constant_cost += binding.evaluator()->b();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       if (std::abs(c(i)) > Eigen::NumTraits<double>::epsilon()) {
         linear_term_triplets.push_back(Eigen::Triplet<double>(

@@ -79,7 +79,7 @@ void PlotColumnVectorXYSlice(double z = 0.0, int fig_num = 1) {
   std::shared_ptr<LinearEqualityConstraint> feasibility_constraint =
       prog.AddLinearEqualityConstraint(Eigen::Matrix3d::Identity(),
                                        Eigen::Vector3d::Zero(), R.col(0))
-          .constraint();
+          .evaluator();
 
   const int num_samples_per_axis = 50;
   Eigen::Matrix2Xd feasible_points(2,

@@ -74,8 +74,8 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
           prog.SetDecisionVariableValues(vecR);
           for (const auto &b : bb_constraints) {
             Eigen::VectorXd x = prog.EvalBindingAtSolution(b);
-            const Eigen::VectorXd &lb = b.constraint()->lower_bound();
-            const Eigen::VectorXd &ub = b.constraint()->upper_bound();
+            const Eigen::VectorXd &lb = b.evaluator()->lower_bound();
+            const Eigen::VectorXd &ub = b.evaluator()->upper_bound();
             for (int i = 0; i < x.size(); i++) {
               EXPECT_GE(x(i), lb(i));
               EXPECT_LE(x(i), ub(i));
@@ -235,7 +235,7 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
   feasibility_constraint_{prog_.AddLinearEqualityConstraint(
       Eigen::Matrix<double, 9, 9>::Identity(),
       Eigen::Matrix<double, 9, 1>::Zero(),
-      {R_.col(0), R_.col(1), R_.col(2)}).constraint()} {
+      {R_.col(0), R_.col(1), R_.col(2)}).evaluator()} {
     if (replace_bilinear_product_) {
       AddRotationMatrixBilinearMcCormickMilpConstraints(
           &prog_, R_, num_intervals_per_half_axis_);

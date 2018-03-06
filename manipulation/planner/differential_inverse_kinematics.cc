@@ -118,7 +118,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     cart_cost =
         prog.AddQuadraticErrorCost(Vector1<double>(kCartesianTrackingWeight),
                                    Vector1<double>(V_mag), alpha)
-            .constraint()
+            .evaluator()
             .get();
 
     Eigen::JacobiSVD<MatrixX<double>> svd(J, Eigen::ComputeFullV);

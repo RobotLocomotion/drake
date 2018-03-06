@@ -89,18 +89,18 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertTrue(prog.linear_costs())
         for (i, binding) in enumerate(prog.linear_costs()):
-            cost = binding.constraint()
+            cost = binding.evaluator()
             self.assertTrue(np.allclose(cost.a(), np.ones((1, 2))))
 
         self.assertTrue(prog.quadratic_costs())
         for (i, binding) in enumerate(prog.quadratic_costs()):
-            cost = binding.constraint()
+            cost = binding.evaluator()
             self.assertTrue(np.allclose(cost.Q(), np.eye(2)))
             self.assertTrue(np.allclose(cost.b(), np.zeros(2)))
 
         self.assertTrue(prog.bounding_box_constraints())
         for (i, binding) in enumerate(prog.bounding_box_constraints()):
-            constraint = binding.constraint()
+            constraint = binding.evaluator()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[i]))
@@ -118,7 +118,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertTrue(prog.linear_constraints())
         for (i, binding) in enumerate(prog.linear_constraints()):
-            constraint = binding.constraint()
+            constraint = binding.evaluator()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[0]))
@@ -131,7 +131,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertTrue(prog.linear_equality_constraints())
         for (i, binding) in enumerate(prog.linear_equality_constraints()):
-            constraint = binding.constraint()
+            constraint = binding.evaluator()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[0]))

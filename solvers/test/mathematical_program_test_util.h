@@ -26,7 +26,7 @@ void RunSolver(MathematicalProgram* prog,
 template <typename Constraint>
 ::testing::AssertionResult IsBindingEqual(const Binding<Constraint>& binding1,
                                           const Binding<Constraint>& binding2) {
-  if (binding1.constraint() != binding2.constraint()) {
+  if (binding1.evaluator() != binding2.evaluator()) {
     return ::testing::AssertionFailure()
            << "Constraint pointers are not the same.";
   }

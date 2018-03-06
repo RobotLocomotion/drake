@@ -95,7 +95,7 @@ void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
       std::get<1>(result)[1];
   VectorDecisionVariable<2> z = std::get<2>(result);
   Vector3<symbolic::Expression> linear_constraint_expr =
-      linear_constraint.constraint()->A() * linear_constraint.variables();
+      linear_constraint.evaluator()->A() * linear_constraint.variables();
   Vector3<symbolic::Expression> linear_constraint_expr_expected;
   linear_constraint_expr_expected << z(0) - z(1) + p.dot(y),
       z(0) - 2 * x0.dot(Q1 * x), z(1) - 2 * x0.dot(Q2 * x);
@@ -111,9 +111,9 @@ void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
                     poly_tol));
   }
   const VectorX<symbolic::Expression> y_lorentz1 =
-      rotated_lorentz_cone_constraint1.constraint()->A() *
+      rotated_lorentz_cone_constraint1.evaluator()->A() *
           rotated_lorentz_cone_constraint1.variables() +
-      rotated_lorentz_cone_constraint1.constraint()->b();
+      rotated_lorentz_cone_constraint1.evaluator()->b();
   EXPECT_TRUE(
       PolynomialEqual(symbolic::Polynomial(y_lorentz1(0) * y_lorentz1(1)),
                       symbolic::Polynomial(z(0)), poly_tol));
@@ -123,9 +123,9 @@ void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
                       symbolic::Polynomial(x.dot(Q1 * x)), poly_tol));
 
   const VectorX<symbolic::Expression> y_lorentz2 =
-      rotated_lorentz_cone_constraint2.constraint()->A() *
+      rotated_lorentz_cone_constraint2.evaluator()->A() *
           rotated_lorentz_cone_constraint2.variables() +
-      rotated_lorentz_cone_constraint2.constraint()->b();
+      rotated_lorentz_cone_constraint2.evaluator()->b();
   EXPECT_TRUE(
       PolynomialEqual(symbolic::Polynomial(y_lorentz2(0) * y_lorentz2(1)),
                       symbolic::Polynomial(z(1)), poly_tol));
@@ -232,7 +232,7 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
 
   auto cost = prog->AddLinearCost(x.cast<symbolic::Expression>().sum());
   for (int i = 0; i < c.cols(); ++i) {
-    cost.constraint()->UpdateCoefficients(c.col(i).transpose());
+    cost.evaluator()->UpdateCoefficients(c.col(i).transpose());
     auto result = prog->Solve();
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
     auto x_sol = prog->GetSolution(x);
@@ -418,7 +418,7 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
   const VectorDecisionVariable<1> z = std::get<2>(relaxed_constraints);
   Vector2<symbolic::Expression> linear_expr, linear_expr_expected;
   linear_expr =
-      linear_constraint.constraint()->A() * linear_constraint.variables();
+      linear_constraint.evaluator()->A() * linear_constraint.variables();
   Eigen::Vector2d linear_lb_expected, linear_ub_expected;
   linear_lb_expected << x0.dot(Q * x0) - trust_region_gap, lb;
   linear_ub_expected << std::numeric_limits<double>::infinity(), ub;
@@ -427,10 +427,10 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
   } else {
     linear_expr_expected << 2 * x0.dot(Q1 * x) - z(0), p.dot(y) + z(0);
   }
-  EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->lower_bound(),
+  EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->lower_bound(),
                               linear_lb_expected, 1E-15,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->upper_bound(),
+  EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->upper_bound(),
                               linear_ub_expected, 1E-15,
                               MatrixCompareType::absolute));
   const double poly_tol{1E-10};
@@ -440,8 +440,8 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
                                 poly_tol));
   }
   VectorX<symbolic::Expression> y1 =
-      lorentz_cone1.constraint()->A() * lorentz_cone1.variables() +
-      lorentz_cone1.constraint()->b();
+      lorentz_cone1.evaluator()->A() * lorentz_cone1.variables() +
+      lorentz_cone1.evaluator()->b();
   EXPECT_TRUE(PolynomialEqual(symbolic::Polynomial(y1(0) * y1(1)),
                               symbolic::Polynomial(z(0)), poly_tol));
   EXPECT_TRUE(PolynomialEqual(
@@ -452,7 +452,7 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
   const double z_sign = Q1_is_zero ? -1 : 1;
   const double Q_sign = Q1_is_zero ? -1 : 1;
   for (int i = 0; i < c.cols(); ++i) {
-    cost.constraint()->UpdateCoefficients(c.col(i).transpose());
+    cost.evaluator()->UpdateCoefficients(c.col(i).transpose());
     auto result = prog->Solve();
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
     const double z_sol = prog->GetSolution(z(0));
