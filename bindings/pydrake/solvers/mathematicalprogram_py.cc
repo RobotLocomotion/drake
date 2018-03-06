@@ -25,6 +25,7 @@ using solvers::Cost;
 using solvers::EvaluatorBase;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
+using solvers::LinearComplementarityConstraint;
 using solvers::LinearEqualityConstraint;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramSolverInterface;
@@ -186,6 +187,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
              return self->AddPositiveSemidefiniteConstraint(vars);
            })
+      .def("AddLinearComplementarityConstraint",
+           static_cast<Binding<LinearComplementarityConstraint> (
+           MathematicalProgram::*)(
+               const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&)>(
+               &MathematicalProgram::AddLinearComplementarityConstraint))
       .def("AddPositiveSemidefiniteConstraint",
            [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixX<Expression>>& e) {
@@ -292,6 +300,10 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
              std::shared_ptr<PositiveSemidefiniteConstraint>>(
     m, "PositiveSemidefiniteConstraint");
 
+  py::class_<LinearComplementarityConstraint, Constraint,
+             std::shared_ptr<LinearComplementarityConstraint>>(
+      m, "LinearComplementarityConstraint");
+
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
@@ -299,6 +311,8 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                                          "BoundingBoxConstraint");
   RegisterBinding<PositiveSemidefiniteConstraint>(&m, &prog_cls,
     "PositiveSemidefiniteConstraint");
+  RegisterBinding<LinearComplementarityConstraint>(&m, &prog_cls,
+    "LinearComplementarityConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, std::shared_ptr<Cost>> cost(

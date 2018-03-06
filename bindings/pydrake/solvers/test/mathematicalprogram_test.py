@@ -222,3 +222,14 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+
+    def test_lcp(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        M = np.array([[1, 3], [4, 1]])
+        q = np.array([-16, -15])
+        binding = prog.AddLinearComplementarityConstraint(M, q, x)
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        self.assertIsInstance(binding.constraint(),
+                              mp.LinearComplementarityConstraint)
