@@ -596,6 +596,10 @@ Formula Polynomial::operator==(Polynomial p) const {
   return ret;
 }
 
+Formula Polynomial::operator!=(const Polynomial& p) const {
+  return !(*this == p);
+}
+
 Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
   CheckInvariant();
