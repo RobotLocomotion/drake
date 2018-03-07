@@ -35,6 +35,7 @@ drake_cc_library(
     deps = [
         "//automotive/maliput/api",
         "//common:essential",
+        "//common:unused",
         "@gtest//:without_main",
     ],
 )
