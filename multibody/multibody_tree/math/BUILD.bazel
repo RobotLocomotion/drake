@@ -89,6 +89,7 @@ drake_cc_googletest(
     name = "spatial_algebra_test",
     deps = [
         ":spatial_algebra",
+        "//common:symbolic",
         "//drake/common:autodiff",
     ],
 )

@@ -8,6 +8,8 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace multibody {
@@ -15,6 +17,8 @@ namespace math {
 namespace {
 
 using Eigen::AngleAxis;
+using symbolic::Expression;
+using symbolic::Variable;
 
 // Generic declaration boilerplate of a traits class for spatial vectors.
 // This is used by the (templated on SpatialQuantityUnderTest)
@@ -66,7 +70,10 @@ typedef ::testing::Types<
     SpatialAcceleration<double>,
     SpatialVelocity<AutoDiffXd>,
     SpatialForce<AutoDiffXd>,
-    SpatialAcceleration<AutoDiffXd>> SpatialQuantityTypes;
+    SpatialAcceleration<AutoDiffXd>,
+    SpatialVelocity<Expression>,
+    SpatialForce<Expression>,
+    SpatialAcceleration<Expression>> SpatialQuantityTypes;
 TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
@@ -132,8 +139,8 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromTwo3DVectors) {
   EXPECT_EQ(V_AB.size(), 6);
 
   // Comparison to Eigen::NumTraits<double>::epsilon() precision.
-  EXPECT_TRUE(V_AB.translational().isApprox(v_AB));
-  EXPECT_TRUE(V_AB.rotational().isApprox(w_AB));
+  EXPECT_TRUE(V_AB.translational() == v_AB);
+  EXPECT_TRUE(V_AB.rotational() == w_AB);
 }
 
 // Tests array accessors.
@@ -242,9 +249,13 @@ TYPED_TEST(SpatialQuantityTest, IsApprox) {
   const Vector3<T>& w = this->w_;
 
   const double precision = 1.0e-10;
+  const T max_v = v.template lpNorm<Eigen::Infinity>();
+  const T max_w = w.template lpNorm<Eigen::Infinity>();
+  using std::max;
+  const double max_V = ExtractDoubleOrThrow(max(max_v, max_w));
   SpatialQuantity other(
       (1.0 + precision) * w, (1.0 + precision) * v);
-  EXPECT_TRUE(V.IsApprox(other, (1.0 + 1.0e-7) * precision));
+  EXPECT_TRUE(V.IsApprox(other, (max_V + 1.0e-6) * precision));
   EXPECT_FALSE(V.IsApprox(other, precision));
 }
 
@@ -321,7 +332,7 @@ TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
 }
 
 // Create a list of scalar types for the unit tests that follow below.
-typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
+typedef ::testing::Types<double, AutoDiffXd, Expression> ScalarTypes;
 
 // SpatialVelocity specific unit tests.
 template <typename T>
@@ -638,6 +649,35 @@ TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
 
 // TODO(sherm1,mitiguy) Add independently-developed unit tests here by Mitiguy
 // for the scary Shift() and Compose() methods, just to double check!
+
+template <class SymbolicSpatialQuantityType>
+class SymbolicSpatialQuantityTest : public ::testing::Test {
+ protected:
+  // A translational component ∈ ℝ³.
+  Vector3<Expression> v_{Variable("vx"), Variable("vy"), Variable("vz")};
+
+  // A rotational component ∈ ℝ³.
+  Vector3<Expression> w_{Variable("wx"), Variable("wy"), Variable("wz")};
+
+  // A spatial quantity related to the above rotational and translational
+  // components.
+  SymbolicSpatialQuantityType V_{w_, v_};
+};
+
+// Create a list of SpatialVector with symbolic::Variable entries. These will
+// get tested through fixture SymbolicSpatialQuantityTest.
+typedef ::testing::Types<
+    SpatialVelocity<Expression>,
+    SpatialForce<Expression>,
+    SpatialAcceleration<Expression>> SymbolicSpatialQuantityTypes;
+TYPED_TEST_CASE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
+
+TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
+  std::stringstream stream;
+  stream << this->V_;
+  std::string expected_string = "[wx, wy, wz, vx, vy, vz]ᵀ";
+  EXPECT_EQ(expected_string, stream.str());
+}
 
 }  // namespace
 }  // namespace math

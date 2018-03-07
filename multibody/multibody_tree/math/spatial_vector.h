@@ -158,9 +158,9 @@ class SpatialVector {
   /// @returns `true` if the rotational part of `this` and `other` are equal
   /// within @p rotational_tolerance and the translational part of `this` and
   /// `other` are equal within @p translational_tolerance.
-  bool IsNearlyEqualWithinAbsoluteTolerance(
-      const SpatialQuantity& other, const T& rotational_tolerance,
-      const T& translational_tolerance) const {
+  decltype(T() < T()) IsNearlyEqualWithinAbsoluteTolerance(
+      const SpatialQuantity& other, double rotational_tolerance,
+      const double translational_tolerance) const {
     T w_max_difference, v_max_difference;
     std::tie(w_max_difference, v_max_difference) =
         GetMaximumAbsoluteDifferences(other);
@@ -169,15 +169,14 @@ class SpatialVector {
   }
 
   /// Compares `this` spatial vector to the provided spatial vector `other`
-  /// within a specified precision.
-  /// @returns `true` if `other` is within a precision given by @p tolerance.
-  /// The comparison is performed by comparing the translational component of
-  /// `this` spatial vector with the rotational component of @p other
-  /// using the fuzzy comparison provided by Eigen's method isApprox().
-  bool IsApprox(const SpatialQuantity& other,
-                double tolerance = Eigen::NumTraits<T>::epsilon()) const {
-    return translational().isApprox(other.translational(), tolerance) &&
-           rotational().isApprox(other.rotational(), tolerance);
+  /// within a specified tolerance.
+  /// Mathematically, if `this` is the spatial vector U and `other` is the
+  /// spatial vector V, then this method returns `true` if `‖U-V‖∞ < ε` and
+  /// `false` otherwise.
+  decltype(T() < T()) IsApprox(
+      const SpatialQuantity& other,
+      double tolerance = std::numeric_limits<double>::epsilon()) const {
+    return IsNearlyEqualWithinAbsoluteTolerance(other, tolerance, tolerance);
   }
 
   /// Sets all entries in `this` SpatialVector to NaN. Typically used to
