@@ -188,7 +188,7 @@ class DrakeJoint {
   /**
    * Returns `true` if this joint is a FixedJoint.
    */
-  bool is_fixed() const { return num_positions == 0; }
+  bool is_fixed() const { return num_positions_ == 0; }
 
   virtual Eigen::VectorXd zeroConfiguration() const = 0;
 
@@ -214,9 +214,9 @@ class DrakeJoint {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
-  const std::string name;
-  Eigen::VectorXd joint_limit_min;
-  Eigen::VectorXd joint_limit_max;
+  const std::string name_;
+  Eigen::VectorXd joint_limit_min_;
+  Eigen::VectorXd joint_limit_max_;
   Eigen::VectorXd joint_limit_stiffness_;
   Eigen::VectorXd joint_limit_dissipation_;
 
@@ -232,7 +232,7 @@ class DrakeJoint {
   virtual void DoInitializeClone(DrakeJoint* clone) const = 0;
 
  private:
-  const Eigen::Isometry3d transform_to_parent_body;
-  const int num_positions{};
-  const int num_velocities{};
+  const Eigen::Isometry3d transform_to_parent_body_;
+  const int num_positions_;
+  const int num_velocities_;
 };
