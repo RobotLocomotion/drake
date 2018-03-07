@@ -13,6 +13,12 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+DynamicProgrammingOptions::PeriodicBoundaryCondition::PeriodicBoundaryCondition(
+    int state_index_in, double low_in, double high_in)
+    : state_index(state_index_in), low(low_in), high(high_in) {
+  DRAKE_DEMAND(low_in < high_in);
+}
+
 std::pair<std::unique_ptr<BarycentricMeshSystem<double>>, Eigen::RowVectorXd>
 FittedValueIteration(
     Simulator<double>* simulator,
