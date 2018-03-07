@@ -18,8 +18,15 @@ namespace rendering {
 template <typename T>
 class PoseVector : public BasicVector<T> {
  public:
+  /// Default constructor.
   PoseVector();
   ~PoseVector() override;
+
+  /// Fully-parameterized constructor.
+  /// @param translation the translation p_WA.
+  /// @param rotation the rotation R_WA.
+  PoseVector(const Eigen::Translation<T, 3>& translation,
+             const Eigen::Quaternion<T>& rotation);
 
   /// Returns the transform X_WA.
   Isometry3<T> get_isometry() const;

@@ -10,6 +10,17 @@ namespace systems {
 namespace rendering {
 namespace {
 
+// Tests the fully-parameterized FrameVelocity.
+GTEST_TEST(FrameVelocity, FullyParameterizedCtor) {
+  Vector6<double> data;
+  data << 1, 2, 3, 4, 5, 6;
+  multibody::SpatialVelocity<double> vel(data);
+  FrameVelocity<double> vec(vel);
+  EXPECT_TRUE(CompareMatrices(data.head(3), vec.get_velocity().rotational()));
+  EXPECT_TRUE(CompareMatrices(data.tail(3),
+                              vec.get_velocity().translational()));
+}
+
 // Tests that a SpatialVelocity can be set from and read as a FrameVelocity.
 GTEST_TEST(FrameVelocityTest, SetAndRead) {
   // The velocity is initialized to zero.
