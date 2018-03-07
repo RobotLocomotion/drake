@@ -18,6 +18,7 @@ namespace {
 
 using Eigen::AngleAxis;
 using symbolic::Expression;
+using symbolic::MakeVectorContinuousVariable;
 using symbolic::Variable;
 
 // Generic declaration boilerplate of a traits class for spatial vectors.
@@ -662,6 +663,9 @@ class SymbolicSpatialQuantityTest : public ::testing::Test {
   // A spatial quantity related to the above rotational and translational
   // components.
   SymbolicSpatialQuantityType V_{w_, v_};
+
+  // A spatial quantity from a 6D vector of symbolic variables.
+  SymbolicSpatialQuantityType Q_{MakeVectorContinuousVariable(6, "Q")};
 };
 
 // Create a list of SpatialVector with symbolic::Variable entries. These will
@@ -673,10 +677,14 @@ typedef ::testing::Types<
 TYPED_TEST_CASE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
 
 TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
-  std::stringstream stream;
-  stream << this->V_;
-  std::string expected_string = "[wx, wy, wz, vx, vy, vz]ᵀ";
-  EXPECT_EQ(expected_string, stream.str());
+  std::stringstream V_stream;
+  V_stream << this->V_;
+  std::string V_expected_string = "[wx, wy, wz, vx, vy, vz]ᵀ";
+  EXPECT_EQ(V_expected_string, V_stream.str());
+  std::stringstream Q_stream;
+  Q_stream << this->Q_;
+  std::string Q_expected_string = "[Q(0), Q(1), Q(2), Q(3), Q(4), Q(5)]ᵀ";
+  EXPECT_EQ(Q_expected_string, Q_stream.str());
 }
 
 }  // namespace
