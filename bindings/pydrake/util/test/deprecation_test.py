@@ -3,8 +3,10 @@ from __future__ import print_function
 import unittest
 import sys
 from types import ModuleType
+import warnings
 
-sys.stdout = sys.stderr
+from pydrake.util.deprecation import DrakeDeprecationWarning
+
 
 class TestDeprecation(unittest.TestCase):
     """Tests module shim functionality. """
@@ -62,3 +64,62 @@ class TestDeprecation(unittest.TestCase):
         temp = {}
         exec "from deprecation_example import *" in temp
         self.assertEquals(temp["import_type"], "unknown")
+
+    def _check_warning(
+            self, item, message_expected, type=DrakeDeprecationWarning):
+        self.assertEquals(item.category, type)
+        self.assertEquals(item.message.message, message_expected)
+
+    def test_member_deprecation(self):
+        from deprecation_example import ExampleClass
+
+        def base_deprecation():
+            warnings.warn(
+                "Non-drake warning", category=DeprecationWarning, stacklevel=2)
+
+        with warnings.catch_warnings(record=True) as w:
+            base_deprecation()  # Should not appear.
+            obj = ExampleClass()
+            # Call each deprecated method / propery repeatedly; it should only
+            # warn once per unique line of source code.
+            # - Method.
+            for _ in range(3):
+                method = ExampleClass.deprecated_method
+                self.assertEquals(method(obj), 1)
+                self.assertEquals(obj.deprecated_method(), 1)
+            self.assertEquals(method.__doc__, ExampleClass.doc_method)
+            # - Property.
+            for _ in range(3):
+                prop = ExampleClass.deprecated_prop
+                self.assertEquals(prop.__get__(obj), 2)
+                self.assertEquals(obj.deprecated_prop, 2)
+            self.assertEquals(prop.__doc__, ExampleClass.doc_prop)
+            # Check warnings.
+            self.assertEquals(len(w), 4)
+            self._check_warning(w[0], ExampleClass.message_method)
+            self._check_warning(w[1], ExampleClass.message_method)
+            self._check_warning(w[2], ExampleClass.message_prop)
+            self._check_warning(w[3], ExampleClass.message_prop)
+
+        # Enable deprecation warnings as well.
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("default", DeprecationWarning)
+            base_deprecation()
+            method = ExampleClass.deprecated_method
+            self.assertEquals(len(w), 2)
+            self._check_warning(
+                w[0], "Non-drake warning", type=DeprecationWarning)
+            self._check_warning(w[1], ExampleClass.message_method)
+
+        # Edit the following flags to manually inspect the warnings generated.
+        show_warnings = False
+        if show_warnings:
+            include_base_deprecations = False
+            if include_base_deprecations:
+                warnings.simplefilter("default", DeprecationWarning)
+            for _ in range(3):
+                base_deprecation()
+                method = ExampleClass.deprecated_method
+                method_extra = ExampleClass.deprecated_method
+                prop = ExampleClass.deprecated_prop
+                prop_extra = ExampleClass.deprecated_prop
