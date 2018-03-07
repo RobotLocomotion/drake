@@ -220,11 +220,16 @@ class PrintInterface {
  public:
   virtual ~PrintInterface() {}
   virtual std::string print() const = 0;
+ protected:
+  PrintInterface() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PrintInterface)
 };
 
 // A trivial class that implements a trivial interface.
 class Point : public PrintInterface {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point)
+
   Point(int x, int y) : x_(x), y_(y) {}
   virtual ~Point() {}
 
