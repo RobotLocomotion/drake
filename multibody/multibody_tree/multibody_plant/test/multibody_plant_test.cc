@@ -17,11 +17,9 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
-namespace multibody {
-namespace multibody_plant {
-namespace {
 
 using Eigen::Matrix2d;
 using Eigen::Vector2d;
@@ -41,6 +39,12 @@ using systems::Context;
 using systems::ContinuousState;
 using systems::DiagramBuilder;
 using systems::Diagram;
+using systems::LinearSystem;
+using systems::Linearize;
+
+namespace multibody {
+namespace multibody_plant {
+namespace {
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
@@ -333,41 +337,48 @@ TEST_F(AcrobotPlantTests, GeometryRegistration) {
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
   PendulumParameters parameters;
   std::unique_ptr<MultibodyPlant<double>> pendulum =
       MakePendulumPlant(parameters);
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
   std::unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
-  pin.set_angle(context.get(), M_PI);
-  pin.set_angular_rate(context.get(), 0.0);
   context->FixInputPort(0, Vector1d{0.0});
 
-#if 0
-  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
-                                            systems::Linearize(pendulum, *context);
+  // First we will linearize about the unstable fixed point with the pendulum
+  // in its inverted position.
+  pin.set_angle(context.get(), M_PI);
+  pin.set_angular_rate(context.get(), 0.0);
 
-  // Note: the default value of the params are kept in sync with the urdf
-  // parameters by the urdfDynamicsTest in the pendulum directory.
-  examples::pendulum::PendulumParams<double> params;
+  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+      Linearize(*pendulum, *context,
+                pendulum->get_actuation_input_port().get_index(),
+                systems::kNoOutput);
+
+  // Compute the expected solution by hand.
   Eigen::Matrix2d A;
   Eigen::Vector2d B;
-  // clang-format off
-  A << 0., 1.,
-      params.gravity() / params.length(), -params.damping() /
-      (params.mass() * params.length() * params.length());
-  B << 0,
-      1 / (params.mass()* params.length() * params.length());
-  // clang-format on
-
-  const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+  A <<                            0.0, 1.0,
+      parameters.g() / parameters.l(), 0.0;
+  B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
-  EXPECT_TRUE(CompareMatrices(linearized_pendulum->C(),
-                              Eigen::Matrix2d::Identity(), kTolerance));
-  EXPECT_TRUE(CompareMatrices(linearized_pendulum->D(), Eigen::Vector2d::Zero(),
-                              kTolerance));
-#endif
+
+  // Now we linearize about the stable fixed point with the pendulum in its
+  // downward position.
+  pin.set_angle(context.get(), 0.0);
+  pin.set_angular_rate(context.get(), 0.0);
+  linearized_pendulum = Linearize(
+      *pendulum, *context,
+      pendulum->get_actuation_input_port().get_index(), systems::kNoOutput);
+  // Compute the expected solution by hand.
+  A <<                             0.0, 1.0,
+      -parameters.g() / parameters.l(), 0.0;
+  B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
 }
 
 }  // namespace

@@ -55,6 +55,15 @@ template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
   DRAKE_THROW_UNLESS(other.is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
+  // Copy of all members related with geometry registration.
+  source_id_ = other.source_id_;
+  body_index_to_frame_id_ = other.body_index_to_frame_id_;
+  geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+  geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
+  // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize() on
+  // the new MultibodyTree on U. Therefore we only Finilize the plant's
+  // internals (and not the MultibodyTree).
+  FinalizePlantOnly();
 }
 
 template <typename T>
@@ -140,6 +149,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
   model_->Finalize();
+  FinalizePlantOnly();
+}
+
+
+template<typename T>
+void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateAndPorts();
   // Only declare ports to communicate with a GeometrySystem if the plant is
   // provided with a valid source id.
