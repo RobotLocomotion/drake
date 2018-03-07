@@ -31,11 +31,11 @@ namespace {
 // `road_position` must not be nullptr.
 // `distance` must not be nullptr.
 void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
-                                  double linear_tolerance,
+                                  const double linear_tolerance,
                                   const api::Lane* const lane,
-                                  api::RoadPosition* road_position,
-                                  double* distance,
-                                  api::GeoPosition* nearest_position) {
+                                  api::RoadPosition* const road_position,
+                                  double* const distance,
+                                  api::GeoPosition* const nearest_position) {
   DRAKE_DEMAND(lane != nullptr);
   DRAKE_DEMAND(road_position != nullptr);
   DRAKE_DEMAND(distance != nullptr);
