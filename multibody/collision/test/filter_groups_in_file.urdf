@@ -18,8 +18,14 @@
         There is also an SDF version of this file: filter_groups_in_file.sdf.
         Both files should specify the same links, joints, and collision filter
         groups.
+
+        NOTE: Inertia values are introduced to prevent the parser from welding
+        links.
     -->
  <link name="sphereA">
+   <inertial>
+     <mass value="1"/>
+   </inertial>
    <collision>
      <geometry>
        <sphere radius="1" />
@@ -28,6 +34,9 @@
   </link>
 
   <link name="sphereB">
+    <inertial>
+        <mass value="1"/>
+    </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -37,6 +46,9 @@
   </link>
 
   <link name="sphereC">
+    <inertial>
+        <mass value="1"/>
+    </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -46,6 +58,9 @@
   </link>
 
   <link name="sphereD">
+    <inertial>
+        <mass value="1"/>
+    </inertial>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
