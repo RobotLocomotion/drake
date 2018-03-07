@@ -144,6 +144,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "lyapunov_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     deps = [
         ":lyapunov",
         "//examples/pendulum:pendulum_plant",
