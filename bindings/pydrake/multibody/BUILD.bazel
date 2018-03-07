@@ -85,6 +85,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":rigid_body_plant_py",
     ":rigid_body_tree_py",
     ":shapes_py",
+    "//bindings/pydrake/multibody/multibody_tree",
 ]
 
 PY_LIBRARIES = [

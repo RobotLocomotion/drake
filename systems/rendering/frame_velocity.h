@@ -21,8 +21,13 @@ namespace rendering {
 template <typename T>
 class FrameVelocity final : public BasicVector<T> {
  public:
+  /// Default constructor.
   FrameVelocity();
   ~FrameVelocity() override;
+
+  /// Fully-parameterized constructor.
+  /// @param velocity the entire spatial velocity Xdot_WA.
+  explicit FrameVelocity(const multibody::SpatialVelocity<T>& velocity);
 
   // FrameVelocity is final, so we can implement copy and assignment without
   // fear of object slicing. This is useful for including FrameVelocity in an

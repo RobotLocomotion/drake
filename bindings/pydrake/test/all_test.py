@@ -63,6 +63,8 @@ class TestAll(unittest.TestCase):
             # TODO(eric.cousineau): Avoid collision with `collision.Element`.
             # Import modules, since these names are generic.
             "Element",
+            # - multibody_tree
+            "SpatialVelocity",
             # solvers
             # - gurobi
             "GurobiSolver",
