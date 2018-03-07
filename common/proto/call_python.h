@@ -130,6 +130,8 @@ class PythonAccessor : public internal::PythonApi<PythonAccessor<Policy>> {
   PythonAccessor(PythonRemoteVariable obj, const KeyType& key)
       : obj_(obj), key_(key) {}
 
+  PythonAccessor(const PythonAccessor&) = default;
+
   operator PythonRemoteVariable() const { return value(); }
 
   PythonRemoteVariable operator=(const PythonAccessor& value) {
