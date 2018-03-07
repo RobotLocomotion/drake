@@ -10,10 +10,10 @@ using std::uniform_real_distribution;
 using std::vector;
 
 PiecewiseFunction::PiecewiseFunction(
-    std::vector<double> const& breaks_in)
-    : breaks(breaks_in) {
+    std::vector<double> const& breaks)
+    : breaks_(breaks) {
   for (int i = 1; i < getNumberOfSegments() + 1; i++) {
-    if (breaks[i] - breaks[i - 1] < kEpsilonTime)
+    if (breaks_[i] - breaks_[i - 1] < kEpsilonTime)
       throw std::runtime_error("times must be increasing.");
   }
 }
@@ -31,17 +31,17 @@ bool PiecewiseFunction::isTimeInRange(double time) const {
 }
 
 int PiecewiseFunction::getNumberOfSegments() const {
-  return static_cast<int>(breaks.size() - 1);
+  return static_cast<int>(breaks_.size() - 1);
 }
 
 double PiecewiseFunction::getStartTime(int segment_number) const {
   segmentNumberRangeCheck(segment_number);
-  return breaks[segment_number];
+  return breaks_[segment_number];
 }
 
 double PiecewiseFunction::getEndTime(int segment_number) const {
   segmentNumberRangeCheck(segment_number);
-  return breaks[segment_number + 1];
+  return breaks_[segment_number + 1];
 }
 
 double PiecewiseFunction::getDuration(int segment_number) const {
@@ -57,9 +57,9 @@ double PiecewiseFunction::getEndTime() const {
 int PiecewiseFunction::GetSegmentIndexRecursive(
     double time, int start, int end) const {
   DRAKE_DEMAND(end >= start);
-  DRAKE_DEMAND(end < static_cast<int>(breaks.size()));
+  DRAKE_DEMAND(end < static_cast<int>(breaks_.size()));
   DRAKE_DEMAND(start >= 0);
-  DRAKE_DEMAND(time <= breaks[end] && time >= breaks[start]);
+  DRAKE_DEMAND(time <= breaks_[end] && time >= breaks_[start]);
 
   int mid = (start + end) / 2;
 
@@ -67,25 +67,25 @@ int PiecewiseFunction::GetSegmentIndexRecursive(
   if (end - start <= 1)
     return start;
 
-  if (time < breaks[mid])
+  if (time < breaks_[mid])
     return GetSegmentIndexRecursive(time, start, mid);
-  else if (time > breaks[mid])
+  else if (time > breaks_[mid])
     return GetSegmentIndexRecursive(time, mid, end);
   else
     return mid;
 }
 
 int PiecewiseFunction::getSegmentIndex(double t) const {
-  if (breaks.empty())
+  if (breaks_.empty())
     return 0;
   // clip to min/max times
   t = std::min(std::max(t, getStartTime()), getEndTime());
   return GetSegmentIndexRecursive(
-      t, 0, static_cast<int>(breaks.size() - 1));
+      t, 0, static_cast<int>(breaks_.size() - 1));
 }
 
 const std::vector<double>& PiecewiseFunction::getSegmentTimes() const {
-  return breaks;
+  return breaks_;
 }
 
 void PiecewiseFunction::segmentNumberRangeCheck(int segment_number) const {
@@ -112,9 +112,9 @@ std::vector<double> PiecewiseFunction::randomSegmentTimes(
 
 bool PiecewiseFunction::segmentTimesEqual(const PiecewiseFunction& other,
                                           double tol) const {
-  if (breaks.size() != other.breaks.size()) return false;
-  for (size_t i = 0; i < breaks.size(); i++) {
-    if (std::abs(breaks[i] - other.breaks[i]) > tol) return false;
+  if (breaks_.size() != other.breaks_.size()) return false;
+  for (size_t i = 0; i < breaks_.size(); i++) {
+    if (std::abs(breaks_[i] - other.breaks_[i]) > tol) return false;
   }
   return true;
 }
