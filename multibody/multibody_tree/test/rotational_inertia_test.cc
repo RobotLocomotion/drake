@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
@@ -21,6 +22,8 @@ using Eigen::MatrixXd;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
+using symbolic::Expression;
+using symbolic::Variable;
 
 #ifdef DRAKE_ASSERT_IS_DISARMED
 // With assertion disarmed, expect no exception.
@@ -643,6 +646,28 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
       (AngleAxis<AutoDiff1d>(-angle, Vector3d::UnitZ())).toRotationMatrix();
   const RotationalInertia<AutoDiff1d> expectedI_B = I_W.ReExpress(R_BW);
   EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon));
+}
+
+GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {
+  const Variable Ixx("Ixx");
+  const Variable Iyy("Iyy");
+  const Variable Izz("Izz");
+  // Inertia of a body B, about its center of mass, expressed in a frame E.
+  const RotationalInertia<Expression> I_Bcm_E(Ixx, Iyy, Izz);
+  const Variable ell("L");
+  const Variable mass("m");
+  // Position vector from Bcm to a point Q, expressed in frame E.
+  const Vector3<Expression> p_BcmQ_E(ell, 0.0, 0.0);
+  // Same inertia but computed about point Q.
+  const RotationalInertia<Expression> I_BQ_E =
+      I_Bcm_E.ShiftFromCenterOfMass(mass, p_BcmQ_E);
+  // By the parallel axis theorem we should get:
+  const std::string Ixx_string("Ixx");
+  const std::string Iyy_string("(Iyy + (pow(L, 2) * m))");
+  const std::string Izz_string("(Izz + (pow(L, 2) * m))");
+  EXPECT_EQ(I_BQ_E(0, 0).to_string(), Ixx_string);
+  EXPECT_EQ(I_BQ_E(1, 1).to_string(), Iyy_string);
+  EXPECT_EQ(I_BQ_E(2, 2).to_string(), Izz_string);
 }
 
 }  // namespace
