@@ -125,8 +125,8 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
           "ERROR: joint_limit_min cannot be larger than joint_limit_max");
     }
 
-    DrakeJoint::joint_limit_min[0] = joint_limit_min;
-    DrakeJoint::joint_limit_max[0] = joint_limit_max;
+    DrakeJoint::joint_limit_min_[0] = joint_limit_min;
+    DrakeJoint::joint_limit_max_[0] = joint_limit_max;
   }
 
   void SetJointLimitDynamics(double joint_limit_stiffness,
@@ -142,32 +142,32 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   Eigen::VectorXd randomConfiguration(
       std::default_random_engine& generator) const override {
     Eigen::VectorXd q(1);
-    if (std::isfinite(DrakeJoint::joint_limit_min.value()) &&
-        std::isfinite(DrakeJoint::joint_limit_max.value())) {
+    if (std::isfinite(DrakeJoint::joint_limit_min_.value()) &&
+        std::isfinite(DrakeJoint::joint_limit_max_.value())) {
       std::uniform_real_distribution<double> distribution(
-          DrakeJoint::joint_limit_min.value(),
-          DrakeJoint::joint_limit_max.value());
+          DrakeJoint::joint_limit_min_.value(),
+          DrakeJoint::joint_limit_max_.value());
       q[0] = distribution(generator);
     } else {
       std::normal_distribution<double> distribution;
       double stddev = 1.0;
       double joint_limit_offset = 1.0;
-      if (std::isfinite(DrakeJoint::joint_limit_min.value())) {
+      if (std::isfinite(DrakeJoint::joint_limit_min_.value())) {
         distribution = std::normal_distribution<double>(
-            DrakeJoint::joint_limit_min.value() + joint_limit_offset, stddev);
-      } else if (std::isfinite(DrakeJoint::joint_limit_max.value())) {
+            DrakeJoint::joint_limit_min_.value() + joint_limit_offset, stddev);
+      } else if (std::isfinite(DrakeJoint::joint_limit_max_.value())) {
         distribution = std::normal_distribution<double>(
-            DrakeJoint::joint_limit_max.value() - joint_limit_offset, stddev);
+            DrakeJoint::joint_limit_max_.value() - joint_limit_offset, stddev);
       } else {
         distribution = std::normal_distribution<double>();
       }
 
       q[0] = distribution(generator);
-      if (q[0] < DrakeJoint::joint_limit_min.value()) {
-        q[0] = DrakeJoint::joint_limit_min.value();
+      if (q[0] < DrakeJoint::joint_limit_min_.value()) {
+        q[0] = DrakeJoint::joint_limit_min_.value();
       }
-      if (q[0] > DrakeJoint::joint_limit_max.value()) {
-        q[0] = DrakeJoint::joint_limit_max.value();
+      if (q[0] > DrakeJoint::joint_limit_max_.value()) {
+        q[0] = DrakeJoint::joint_limit_max_.value();
       }
     }
     return q;
@@ -183,7 +183,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
 
   std::string get_position_name(int index) const override {
     if (index != 0) throw std::runtime_error("bad index");
-    return DrakeJoint::name;
+    return DrakeJoint::name_;
   }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
