@@ -1,4 +1,4 @@
-#!/bin/bash -vx
+#!/bin/bash
 
 
 me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
