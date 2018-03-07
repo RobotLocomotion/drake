@@ -10,6 +10,7 @@
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
+#include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
@@ -33,6 +34,8 @@ using geometry::GeometrySystem;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using multibody::benchmarks::pendulum::MakePendulumPlant;
+using multibody::benchmarks::pendulum::PendulumParameters;
 using systems::AbstractValue;
 using systems::Context;
 using systems::ContinuousState;
@@ -329,6 +332,43 @@ TEST_F(AcrobotPlantTests, GeometryRegistration) {
       "Body 'WorldBody' does not have geometry registered with it.");
 }
 
+GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
+  PendulumParameters parameters;
+  std::unique_ptr<MultibodyPlant<double>> pendulum =
+      MakePendulumPlant(parameters);
+  const auto& pin =
+      pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
+  std::unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
+  pin.set_angle(context.get(), M_PI);
+  pin.set_angular_rate(context.get(), 0.0);
+  context->FixInputPort(0, Vector1d{0.0});
+
+#if 0
+  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+                                            systems::Linearize(pendulum, *context);
+
+  // Note: the default value of the params are kept in sync with the urdf
+  // parameters by the urdfDynamicsTest in the pendulum directory.
+  examples::pendulum::PendulumParams<double> params;
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+  // clang-format off
+  A << 0., 1.,
+      params.gravity() / params.length(), -params.damping() /
+      (params.mass() * params.length() * params.length());
+  B << 0,
+      1 / (params.mass()* params.length() * params.length());
+  // clang-format on
+
+  const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->C(),
+                              Eigen::Matrix2d::Identity(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->D(), Eigen::Vector2d::Zero(),
+                              kTolerance));
+#endif
+}
 
 }  // namespace
 }  // namespace multibody_plant

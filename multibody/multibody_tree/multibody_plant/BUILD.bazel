@@ -36,6 +36,7 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/benchmarks/acrobot",
         "//drake/multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//drake/multibody/benchmarks/pendulum:make_pendulum_plant",
         "//drake/multibody/multibody_tree/test_utilities:expect_error_message",
     ],
 )
