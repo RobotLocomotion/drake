@@ -6,9 +6,6 @@
 #include <Eigen/Core>
 
 class PiecewiseFunction {
- protected:
-  std::vector<double> breaks;
-
  public:
   /// Minimum delta quantity used for comparing time.
   static constexpr double kEpsilonTime = 1e-10;
@@ -58,6 +55,11 @@ class PiecewiseFunction {
 
   PiecewiseFunction();
 
+  const std::vector<double>& breaks() const { return breaks_; }
+  std::vector<double>& get_mutable_breaks() { return breaks_; }
+
  private:
   int GetSegmentIndexRecursive(double time, int start, int end) const;
+
+  std::vector<double> breaks_;
 };
