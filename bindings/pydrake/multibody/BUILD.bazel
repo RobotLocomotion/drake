@@ -66,6 +66,7 @@ drake_pybind_library(
         ":parsers_py",
         ":shapes_py",
         "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
 

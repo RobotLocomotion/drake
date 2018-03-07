@@ -10,6 +10,7 @@ from pydrake.systems.analysis import (
     Simulator,
     )
 from pydrake.systems.framework import (
+    AbstractValue,
     BasicVector,
     DiagramBuilder,
     LeafSystem,
@@ -221,12 +222,14 @@ class TestCustom(unittest.TestCase):
 
     def test_context_api(self):
         # Capture miscellaneous functions not yet tested.
+        model_value = AbstractValue.Make("Hello")
 
         class TrivialSystem(LeafSystem):
             def __init__(self):
                 LeafSystem.__init__(self)
                 self._DeclareContinuousState(1)
                 self._DeclareDiscreteState(2)
+                self._DeclareAbstractState(model_value.Clone())
 
         system = TrivialSystem()
         context = system.CreateDefaultContext()
@@ -238,7 +241,26 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(
             context.get_discrete_state_vector() is
             context.get_mutable_discrete_state_vector())
+        self.assertEquals(context.get_num_abstract_states(), 1)
+        self.assertTrue(
+            context.get_abstract_state() is
+            context.get_mutable_abstract_state())
+        self.assertTrue(
+            context.get_abstract_state(0) is
+            context.get_mutable_abstract_state(0))
+        self.assertEquals(
+            context.get_abstract_state(0).get_value(), model_value.get_value())
 
+        # Check AbstractValues API.
+        values = context.get_abstract_state()
+        self.assertEquals(values.size(), 1)
+        self.assertEquals(
+            values.get_value(0).get_value(), model_value.get_value())
+        self.assertEquals(
+            values.get_mutable_value(0).get_value(), model_value.get_value())
+        values.CopyFrom(values.Clone())
+
+        # - Check diagram context accessors.
         builder = DiagramBuilder()
         builder.AddSystem(system)
         diagram = builder.Build()

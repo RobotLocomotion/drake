@@ -110,7 +110,10 @@ drake_pybind_library(
 drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:cpp_template_pybind",
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+        "//bindings/pydrake/util:eigen_pybind",
     ],
     cc_so_name = "sensors",
     cc_srcs = ["sensors_py.cc"],
@@ -118,7 +121,9 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
         "//bindings/pydrake/util:cpp_template_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
 
@@ -269,6 +274,9 @@ drake_py_unittest(
 drake_py_unittest(
     name = "sensors_test",
     size = "small",
+    data = [
+        "//systems/sensors:test_models",
+    ],
     deps = [
         ":sensors_py",
     ],
