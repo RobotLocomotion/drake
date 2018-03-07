@@ -49,8 +49,6 @@ struct PickAndPlaceStateMachineSystem::InternalState {
         last_iiwa_plan(MakeDefaultIiwaPlan()),
         last_wsg_command(MakeDefaultWsgCommand()) {}
 
-  ~InternalState() {}
-
   pick_and_place::WorldState world_state;
   PickAndPlaceStateMachine state_machine;
   robotlocomotion::robot_plan_t last_iiwa_plan;
