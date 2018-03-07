@@ -356,7 +356,7 @@ def _install_impl(ctx):
 
     # Generate install script.
     # TODO(mwoehlke-kitware): Figure out a better way to generate this and run
-    # it via Python than `#!/usr/bin/env python`?
+    # it via Python than `#!/usr/bin/env python2.7`?
     ctx.template_action(
         template = ctx.executable.install_script_template,
         output = ctx.outputs.executable,
