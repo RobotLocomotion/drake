@@ -6,6 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -21,6 +22,9 @@ using Eigen::MatrixXd;
 using Eigen::NumTraits;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
+using symbolic::Environment;
+using symbolic::Expression;
+using symbolic::Variable;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -564,6 +568,31 @@ GTEST_TEST(UnitInertia, PlusEqualAnInertia) {
 
   // ... we cannot perform the same operation on a UnitInertia.
   EXPECT_FALSE(has_plus_equal<UnitInertia<double>>());
+}
+
+// Verify that UnitInertia works with symbolic::Expression.
+GTEST_TEST(UnitInertia, CompatibleWithSymbolicExpression) {
+  const Variable r("r");
+  const Variable L("L");
+  // Compute the unit inertia for a cylinder oriented along the z-axis
+  // (the default).
+  UnitInertia<Expression> Gz = UnitInertia<Expression>::SolidCylinder(r, L);
+
+  // Lets give the varaibles above some values.
+  const double r_value = 0.025;
+  const double L_value = 0.2;
+  // And the expected principal moments.
+  const double I_perp = (3.0 * r_value * r_value + L_value * L_value) / 12.0;
+  const double I_axial = r_value * r_value / 2.0;
+  // Create an environment in which variables have set values.
+  const Environment env{{r, r_value}, {L, L_value}};
+
+  EXPECT_NEAR(Gz(0, 0).Evaluate(env), I_perp,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(Gz(1, 1).Evaluate(env), I_perp,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(Gz(2, 2).Evaluate(env), I_axial,
+              std::numeric_limits<double>::epsilon());
 }
 
 }  // namespace

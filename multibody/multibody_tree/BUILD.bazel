@@ -147,6 +147,7 @@ drake_cc_library(
     hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
+        "//drake/common:default_scalars",
     ],
 )
 
