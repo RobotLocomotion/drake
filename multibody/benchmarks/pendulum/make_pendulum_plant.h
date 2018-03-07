@@ -26,31 +26,11 @@ class PendulumParameters {
   /// pendulum model.
   ///
   /// @param mass
-  ///   Mass of link 1 (kg).
-  /// @param m2
-  ///   Mass of link 2 (kg).
-  /// @param l1
-  ///   Length of link 1 (m).
-  /// @param l2
-  ///   Length of link 2 (m).
-  /// @param lc1
-  ///   Vertical distance from shoulder joint to center of mass of link 1 (m).
-  /// @param lc2
-  ///   Vertical distance from elbow joint to center of mass of link 2 (m).
-  /// @param Ic1
-  ///   Inertia of link 1 about the center of mass of link 1 (kg⋅m²).
-  /// @param Ic2
-  ///   Inertia of link 2 about the center of mass of link 2 (kg*m^2).
-  /// @param b1
-  ///   Damping coefficient of the shoulder joint (N⋅m⋅s).
-  /// @param b2
-  ///   Damping coefficient of the elbow joint (N⋅m⋅s).
-  /// @param g
+  ///   Value of the mass of the pendulum's point mass [kg].
+  /// @param length
+  ///   Length of the massless rod connecting the point mass to the world [m].
+  /// @param gravity
   ///   Gravitational constant (m/s²).
-  ///
-  ///  - [Spong 1994] Spong, M.W., 1994. Swing up control of the acrobot.
-  ///    In Robotics and Automation, 1994. Proceedings., 1994 IEEE International
-  ///    Conference on (pp. 2356-2361). IEEE.
   PendulumParameters(
       double mass = 1.0,
       double length = 0.5,
@@ -59,7 +39,7 @@ class PendulumParameters {
       length_(length),
       g_(gravity) {}
 
-  // getters for robot parameters
+  // getters for pendulum parameters
   double m() const { return mass_; }
   double l() const { return length_; }
   double g() const { return g_; }
@@ -92,7 +72,7 @@ class PendulumParameters {
 };
 
 /// This method makes a MultibodyPlant model of an idealized pendulum with a
-/// point mass on the end of a massless rigid rod.
+/// point mass at the end of a massless rigid rod.
 /// The pendulum oscillates in the x-z plane with its revolute axis coincident
 /// with the y-axis. Gravity points downwards in the -z axis direction.
 ///
