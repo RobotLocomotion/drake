@@ -75,9 +75,14 @@ auto RegisterBinding(py::handle* pscope,
   auto binding_cls =
       py::class_<B>(scope, pyname.c_str())
           .def("evaluator", &B::evaluator)
-          .def("constraint",
-               &B::evaluator)  // TODO(Eric.Cousineau) deprecate this function.
+          .def("constraint", &B::evaluator)
           .def("variables", &B::variables);
+  // Deprecate `constraint`.
+  py::module deprecation = py::module::import("pydrake.util.deprecation");
+  py::object deprecated = deprecation.attr("deprecated");
+  binding_cls.attr("constraint") =
+      deprecated("`constraint` is deprecated; please use `evaluator` instead.")
+      (binding_cls.attr("constraint"));
   // Register overloads for MathematicalProgram class
   prog_cls
     .def("EvalBindingAtSolution",
