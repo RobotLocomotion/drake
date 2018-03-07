@@ -30,7 +30,7 @@ class XMLElement;
 template <typename T>
 class RigidBodyFrame final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyFrame)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBodyFrame)
 
   /**
    * A constructor where the transform-to-body is specified using an
@@ -61,6 +61,7 @@ class RigidBodyFrame final {
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
 
+#if 0
   // TODO(liang.fok) Update this to return a unique_ptr. This is related to
   // #3093.
   /**
@@ -72,6 +73,7 @@ class RigidBodyFrame final {
    * This pointer must remain valid for the duration of the clone's lifetime.
    */
   std::shared_ptr<RigidBodyFrame<T>> Clone(RigidBody<T>* body) const;
+#endif
 
   /**
    * Returns the ID of the model instance to which this rigid body frame

@@ -180,6 +180,9 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
   }
 
   for (const auto& original_frame : frames_) {
+    auto cloned_frame =
+        std::make_shared<RigidBodyFrame<double>>(*original_frame);
+
     const RigidBody<double>& original_frame_body =
         original_frame->get_rigid_body();
     const int cloned_frame_body_index =
@@ -188,8 +191,8 @@ unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const {
     RigidBody<double>* cloned_frame_body =
         clone->get_mutable_body(cloned_frame_body_index);
     DRAKE_DEMAND(cloned_frame_body != nullptr);
-    std::shared_ptr<RigidBodyFrame<double>> cloned_frame =
-        original_frame->Clone(cloned_frame_body);
+    cloned_frame->set_rigid_body(cloned_frame_body);
+
     clone->frames_.push_back(cloned_frame);
   }
 
