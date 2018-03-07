@@ -1,9 +1,12 @@
 from __future__ import print_function, absolute_import
 
-import unittest
-import numpy as np
-import pydrake
 from pydrake.solvers import mathematicalprogram as mp
+
+import numpy as np
+import unittest
+import warnings
+
+import pydrake
 import pydrake.symbolic as sym
 
 
@@ -147,6 +150,11 @@ class TestMathematicalProgram(unittest.TestCase):
 
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
+        # Test deprecated method.
+        with warnings.catch_warnings(record=True) as w:
+            c = binding.constraint()
+            self.assertEquals(len(w), 1)
 
     def test_eval_binding(self):
         qp = TestQP()
