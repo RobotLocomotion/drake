@@ -26,7 +26,7 @@ CMAKE_PACKAGE = "fmt"
 cmake_config(
     package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/fmt:package-create-cps.py",
-    version_file = "CMakeLists.txt",
+    version_file = "fmt/format.h",
 )
 
 # Creates rule :install_cmake_config.
