@@ -1,5 +1,6 @@
 import sys
 import traceback
+import warnings
 
 # TODO(eric.cousineau): Make autocomplete ignore `ModuleShim` attributes
 # (e.g. `install`).
@@ -80,3 +81,54 @@ class ModuleShim(object):
         old_module = sys.modules[name]
         new_module = cls(old_module, handler)
         sys.modules[name] = new_module
+
+
+class DrakeDeprecationWarning(DeprecationWarning):
+    """Extends `DeprecationWarning` to permit Drake-specific warnings to
+    be filtered by default, without having side effects on other libraries."""
+    pass
+
+
+class _DeprecatedDescriptor(object):
+    """Wraps a descriptor to deprecate the value upon access."""
+
+    def __init__(self, original, message):
+        assert hasattr(original, '__get__'), "`original` must be a descriptor"
+        self._original = original
+        self.__doc__ = self._original.__doc__
+        self._message = message
+
+    def _warn(self):
+        warnings.warn(
+            self._message, category=DrakeDeprecationWarning, stacklevel=3)
+
+    def __get__(self, obj, objtype):
+        self._warn()
+        return self._original.__get__(obj, objtype)
+
+    def __set__(self, obj, value):
+        self._warn()
+        self._original.__set__(obj, value)
+
+    def __delete__(self, obj):
+        self._warn()
+        self._original.__delete__(obj)
+
+
+def deprecated(message):
+    """Decorator that deprecates a member of a class based on access.
+
+    @param message Warning message when member is accessed.
+
+    @note This differs from other implementations in that it warns on
+    access, not when the method is called. For other methods, see
+    the examples in https://stackoverflow.com/a/40301488/7829525.
+
+    Use `ModuleShim` for deprecating variables in a module."""
+    def wrapped(original):
+        return _DeprecatedDescriptor(original, message)
+
+    return wrapped
+
+
+warnings.simplefilter('default', DrakeDeprecationWarning)
