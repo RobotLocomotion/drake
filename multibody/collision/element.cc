@@ -16,9 +16,9 @@ Element::Element()
     : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr) {
 }
 
-Element::Element(const DrakeShapes::Geometry& geometry,
-                 const Isometry3d& T_element_to_local)
-    : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr) {
+Element::Element(const DrakeShapes::Geometry& geometry_in,
+                 const Isometry3d& T_element_to_local_in)
+    : DrakeShapes::Element(geometry_in, T_element_to_local_in), body_(nullptr) {
 }
 
 Element::Element(const Isometry3d& T_element_to_link,
@@ -26,10 +26,10 @@ Element::Element(const Isometry3d& T_element_to_link,
     : DrakeShapes::Element(T_element_to_link), body_(body) {
 }
 
-Element::Element(const DrakeShapes::Geometry& geometry,
+Element::Element(const DrakeShapes::Geometry& geometry_in,
                  const Isometry3d& T_element_to_link,
                  const RigidBody<double>* body)
-    : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
+    : DrakeShapes::Element(geometry_in, T_element_to_link), body_(body) {
 }
 
 Element* Element::clone() const { return new Element(*this); }
