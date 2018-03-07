@@ -42,7 +42,7 @@
  * enforced programmatically; TODO(ggould-tri) fix this in the future.
  */
 template <typename _CoefficientType = double>
-class TrigPoly {
+class TrigPoly final {
  public:
   typedef _CoefficientType CoefficientType;
   typedef Polynomial<CoefficientType> PolyType;
@@ -114,8 +114,6 @@ class TrigPoly {
     sc.c = c.GetSimpleVariable();
     sin_cos_map_[q.GetSimpleVariable()] = sc;
   }
-
-  virtual ~TrigPoly() {}
 
   /// Returns the underlying Polynomial for this TrigPoly.
   const PolyType& poly(void) const { return poly_; }
