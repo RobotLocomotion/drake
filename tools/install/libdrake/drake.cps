@@ -40,6 +40,10 @@
       "Hints": ["@prefix@/lib/cmake/optitrack"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "pybind11": {
+      "Hints": ["@prefix@/lib/cmake/pybind11"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "Protobuf": {
       "Version": "2.6.1",
       "X-CMake-Find-Args": ["MODULE"]

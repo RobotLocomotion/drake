@@ -15,7 +15,7 @@ content = """
   "Components": {
     "module": {
       "Type": "interface",
-      "Includes": ["@prefix@/include"],
+      "Includes": ["@prefix@/include/pybind11"],
       "Compile-Features": ["c++11"]
     }
   },
