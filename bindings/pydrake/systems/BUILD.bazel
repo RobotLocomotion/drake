@@ -130,6 +130,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
     ],
     cc_so_name = "rendering",
