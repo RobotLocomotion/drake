@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 """Command-line tool to generate Drake's Doxygen content.
 
