@@ -66,13 +66,13 @@ MakePendulumPlant(
 
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(
       params.pin_joint_name(),
-      /* Shoulder inboard frame IS the the world frame W. */
+      /* Shoulder inboard frame IS the world frame W. */
       plant->world_body(), {},
       /* Pin joint outboard frame IS the body frame B. */
       point_mass, {},
-      Vector3d::UnitY()); /* pendulum oscillates in the x-z plane. */
+      Vector3d::UnitY()); /* Pendulum oscillates in the x-z plane. */
 
-  // Add acrobot's actuator at the elbow joint.
+  // Add pendulum's actuator at the pin joint.
   plant->AddJointActuator(params.actuator_name(), pin);
 
   // Gravity acting in the -z direction.
