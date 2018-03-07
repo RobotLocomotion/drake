@@ -46,13 +46,11 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
       lane->ToLanePosition(geo_position, &new_nearest_position, &new_distance);
 
   // Replaces return values.
-  auto replace_values = [lane, road_position, distance, nearest_position](
-      double new_distance, const api::LanePosition& lane_position,
-      const api::GeoPosition& new_nearest_pos) {
+  auto replace_values = [&]() {
     *distance = new_distance;
     *road_position = api::RoadPosition{lane, lane_position};
     if (nearest_position != nullptr) {
-      *nearest_position = new_nearest_pos;
+      *nearest_position = new_nearest_position;
     }
   };
 
@@ -64,7 +62,7 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
   }
   if (delta < -linear_tolerance) {
     // It is a better match.
-    replace_values(new_distance, lane_position, new_nearest_position);
+    replace_values();
     return;
   }
   // They are almost equal so it is worth checking the lane bounds.
@@ -75,12 +73,12 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
       lane_position.r() < lane_bounds.max()) {
     // Given that `geo_position` is inside the lane_bounds and there is no
     // overlapping of lane_bounds, the road_position is returned.
-    replace_values(new_distance, lane_position, new_nearest_position);
+    replace_values();
   } else {
     // Compares the r coordinate and updates the closest_road_position if it
     // is a better match.
     if (std::abs(lane_position.r()) < std::abs(road_position->pos.r())) {
-      replace_values(new_distance, lane_position, new_nearest_position);
+      replace_values();
     }
   }
 }
