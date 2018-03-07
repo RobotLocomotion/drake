@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -65,24 +66,30 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
               static_cast<double>(b_vals_[i](0) ^ b_vals_[i](1));
           break;
       }
-      cost.constraint()->UpdateCoefficients(Vector1d(1));
-      b0_cnstr_.constraint()->UpdateLowerBound(Vector1d(b_vals_[i](0)));
-      b0_cnstr_.constraint()->UpdateUpperBound(Vector1d(b_vals_[i](0)));
-      b1_cnstr_.constraint()->UpdateLowerBound(Vector1d(b_vals_[i](1)));
-      b1_cnstr_.constraint()->UpdateUpperBound(Vector1d(b_vals_[i](1)));
+      cost.evaluator()->UpdateCoefficients(Vector1d(1));
+      b0_cnstr_.evaluator()->UpdateLowerBound(Vector1d(b_vals_[i](0)));
+      b0_cnstr_.evaluator()->UpdateUpperBound(Vector1d(b_vals_[i](0)));
+      b1_cnstr_.evaluator()->UpdateLowerBound(Vector1d(b_vals_[i](1)));
+      b1_cnstr_.evaluator()->UpdateUpperBound(Vector1d(b_vals_[i](1)));
       auto result = prog_.Solve();
       EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      double tol = 1E-3;
+      if (prog_.GetSolverId() == OsqpSolver::id()) {
+        // OSQP can solve linear program, but it is likely to fail in polishing,
+        // thus the solution is less accurate.
+        tol = 3E-3;
+      }
       EXPECT_NEAR(prog_.GetSolution(operand_result), operand_result_expected,
-                  1E-3);
+                  tol);
 
       // Now update the objective to
       // min -b_and
       // The solution should be the same.
-      cost.constraint()->UpdateCoefficients(Vector1d(-1));
+      cost.evaluator()->UpdateCoefficients(Vector1d(-1));
       result = prog_.Solve();
       EXPECT_EQ(result, SolutionResult::kSolutionFound);
       EXPECT_NEAR(prog_.GetSolution(operand_result), operand_result_expected,
-                  1E-3);
+                  tol);
     }
   }
 

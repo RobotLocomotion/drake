@@ -64,6 +64,7 @@ drake_cc_library(
         "roll_pitch_yaw_not_using_quaternion.h",
         "roll_pitch_yaw_using_quaternion.h",
         "rotation_matrix.h",
+        "rotation_matrix_deprecated.h",
     ],
     deps = [
         "//common:essential",
@@ -347,7 +348,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rotation_matrix_test",
+    name = "rotation_matrix_deprecated_test",
     deps = [
         ":geometric_transform",
         "//common/test_utilities:eigen_matrix_compare",

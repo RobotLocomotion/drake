@@ -117,7 +117,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.constraint()->A().rows();
+    num_constraints += binding.evaluator()->A().rows();
   }
 
   // Setup the quadratic cost matrix and linear cost vector.
@@ -125,9 +125,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   Eigen::VectorXd c = Eigen::VectorXd::Zero(prog.num_vars());
   double constant_term{0};
   for (auto const& binding : prog.quadratic_costs()) {
-    const auto& Q = binding.constraint()->Q();
-    const auto& b = binding.constraint()->b();
-    constant_term += binding.constraint()->c();
+    const auto& Q = binding.evaluator()->Q();
+    const auto& b = binding.evaluator()->b();
+    constant_term += binding.evaluator()->c();
     int num_v_variables = binding.variables().rows();
 
     std::vector<size_t> v_index(num_v_variables);
@@ -142,8 +142,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     }
   }
   for (const auto& binding : prog.linear_costs()) {
-    const auto& a = binding.constraint()->a();
-    constant_term += binding.constraint()->b();
+    const auto& a = binding.evaluator()->a();
+    constant_term += binding.evaluator()->b();
     int num_v_variables = binding.variables().rows();
 
     for (int i = 0; i < num_v_variables; ++i) {
@@ -160,7 +160,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
     int constraint_index = 0;
     for (auto const& binding : prog.linear_equality_constraints()) {
-      auto const& bc = binding.constraint();
+      auto const& bc = binding.evaluator();
       size_t n = bc->A().rows();
 
       int num_v_variables = binding.variables().rows();

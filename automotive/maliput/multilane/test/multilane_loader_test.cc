@@ -387,9 +387,9 @@ TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
   EXPECT_NE(rg, nullptr);
 
   // Finds a lane in a RoadGeometry by its id.
-  auto find_lane = [](const api::RoadGeometry& rg, const std::string& id) {
-    for (int i = 0; i < rg.num_junctions(); ++i) {
-      const api::Junction* junction = rg.junction(i);
+  auto find_lane = [&rg](const std::string& id) {
+    for (int i = 0; i < rg->num_junctions(); ++i) {
+      const api::Junction* junction = rg->junction(i);
       for (int j = 0; j < junction->num_segments(); ++j) {
         const api::Segment* segment = junction->segment(j);
         for (int k = 0; k < segment->num_lanes(); ++k) {
@@ -404,7 +404,7 @@ TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
 
   // Checks zero elevated linear lane elevation polynomial.
   const multilane::Lane* flat_planar_linear_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane(*rg, "l:s1_1"));
+      dynamic_cast<const multilane::Lane*>(find_lane("l:s1_1"));
   EXPECT_NE(flat_planar_linear_dut, nullptr);
   EXPECT_NEAR(flat_planar_linear_dut->elevation().a(), 0., kVeryExact);
   EXPECT_NEAR(flat_planar_linear_dut->elevation().b(), 0., kVeryExact);
@@ -413,7 +413,7 @@ TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
 
   // Checks zero elevated arc lane elevation polynomial.
   const multilane::Lane* flat_planar_arc_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane(*rg, "l:s5_1"));
+      dynamic_cast<const multilane::Lane*>(find_lane("l:s5_1"));
   EXPECT_NE(flat_planar_arc_dut, nullptr);
   EXPECT_NEAR(flat_planar_arc_dut->elevation().a(), 0., kVeryExact);
   EXPECT_NEAR(flat_planar_arc_dut->elevation().b(), 0., kVeryExact);
@@ -422,7 +422,7 @@ TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
 
   // Checks elevated planar linear lane elevation polynomial.
   const multilane::Lane* elevated_planar_linear_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane(*rg, "l:s12_0"));
+      dynamic_cast<const multilane::Lane*>(find_lane("l:s12_0"));
   EXPECT_NE(elevated_planar_linear_dut, nullptr);
   EXPECT_NEAR(elevated_planar_linear_dut->elevation().a(), 1. / 3., kVeryExact);
   EXPECT_NEAR(elevated_planar_linear_dut->elevation().b(), 0., kVeryExact);
@@ -431,7 +431,7 @@ TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
 
   // Checks elevated planar arc lane elevation polynomial.
   const multilane::Lane* elevated_planar_arc_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane(*rg, "l:s10_0"));
+      dynamic_cast<const multilane::Lane*>(find_lane("l:s10_0"));
   EXPECT_NE(elevated_planar_arc_dut, nullptr);
   EXPECT_NEAR(
       elevated_planar_arc_dut->elevation().a(), 0.318309886183791, kVeryExact);
@@ -441,7 +441,7 @@ TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
 
   // Checks elevated planar linear lane elevation polynomial.
   const multilane::Lane* complex_linear_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane(*rg, "l:s13_0"));
+      dynamic_cast<const multilane::Lane*>(find_lane("l:s13_0"));
   EXPECT_NE(complex_linear_dut, nullptr);
   EXPECT_NEAR(
       complex_linear_dut->elevation().a(), 0.666666666666667, kVeryExact);
@@ -452,7 +452,7 @@ TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
 
   // Checks elevated planar arc lane elevation polynomial.
   const multilane::Lane* complex_arc_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane(*rg, "l:s11_0"));
+      dynamic_cast<const multilane::Lane*>(find_lane("l:s11_0"));
   EXPECT_NE(complex_arc_dut, nullptr);
   EXPECT_NEAR(complex_arc_dut->elevation().a(), 0.318309886183791, kVeryExact);
   EXPECT_NEAR(complex_arc_dut->elevation().b(), 0., kVeryExact);

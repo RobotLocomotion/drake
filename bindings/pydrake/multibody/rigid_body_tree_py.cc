@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/eigen.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -24,6 +24,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
 
   py::module::import("pydrake.multibody.parsers");
   py::module::import("pydrake.multibody.shapes");
+  py::module::import("pydrake.util.eigen_geometry");
 
   py::enum_<FloatingBaseType>(m, "FloatingBaseType")
     .value("kFixed", FloatingBaseType::kFixed)
@@ -220,10 +221,23 @@ PYBIND11_MODULE(rigid_body_tree, m) {
 
   py::class_<RigidBodyFrame<double>,
              std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
-    .def(py::init<const std::string&,
-                  RigidBody<double>*,
-                  const Eigen::VectorXd&,
-                  const Eigen::VectorXd& >())
+    .def(
+        py::init<
+            const std::string&,
+            RigidBody<double>*,
+            const Eigen::VectorXd&,
+            const Eigen::VectorXd&>(),
+        py::arg("name"), py::arg("body"),
+        py::arg("xyz") = Eigen::Vector3d::Zero(),
+        py::arg("rpy") = Eigen::Vector3d::Zero())
+    .def(
+        py::init<
+            const std::string&,
+            RigidBody<double>*,
+            const Eigen::Isometry3d&>(),
+        py::arg("name"), py::arg("body"),
+        py::arg("transform_to_body"))
+    .def("get_name", &RigidBodyFrame<double>::get_name)
     .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index);
 
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",

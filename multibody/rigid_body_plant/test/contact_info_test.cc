@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
@@ -82,6 +83,11 @@ GTEST_TEST(ContactInfoTests, CloneDetails) {
   ContactInfo<double> info_assign(element_b, element_a);
   info_assign = contact_info;
   AssertValidCopy<double>(info_assign, contact_info);
+
+  // Fourth, proof-of-life for AutoDiffXd.
+  ContactInfo<AutoDiffXd> info_autodiff(element_a, element_b);
+  ASSERT_EQ(info_autodiff.get_element_id_1(), element_a);
+  ASSERT_EQ(info_autodiff.get_element_id_2(), element_b);
 }
 
 template <template <class> class Pointer>

@@ -8,14 +8,6 @@
 namespace drake {
 namespace automotive {
 
-/// If kCache, configures the calling system (e.g. IdmController, MobilPlanner)
-/// to declare an abstract state that caches the last-computed RoadPosition.
-/// If kExhaustiveSearch, then the system will contain no abstract states.  Note
-/// that the kCache option is for performance speedup (at the expense of
-/// optimizer compatibility) by preventing a potentially sizeable computation
-/// within RoadGeometry::ToRoadPosition().
-enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
-
 /// Given a PoseVector @p pose, find a car's current RoadGeometry via a search
 /// of immediate ongoing lanes, starting with the current one.  Uses the
 /// provided FrameVelocity @p velocity to determine which side of the lane

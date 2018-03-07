@@ -3,9 +3,9 @@
 #include <string>
 #include <utility>
 
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/functional.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 // `GetPyTypes` is implemented specifically for `cpp_template`; to simplify

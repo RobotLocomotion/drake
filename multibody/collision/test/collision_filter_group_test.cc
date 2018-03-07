@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/joints/drake_joints.h"
+#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -34,6 +35,7 @@ namespace test {
 namespace {
 
 using drake::FindResourceOrThrow;
+using drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using Eigen::Isometry3d;
 using Eigen::VectorXd;
@@ -458,16 +460,27 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
 
 //---------------------------------------------------------------------------
 
-// Parses a URDF file with an inherent geometric collision which is filtered
-// out using a single collision filter group with multiple members (which
-// ignores itself.)
-GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
+// These tests read the files `filter_groups_in_file.[sdf|urdf]`. Each file
+// represents an identical tree with built in collisions where all collisions
+// have been filtered out by different filter specification idioms. The
+// test confirms that no collisions are reported.
+
+// Utility function for running the same test on equivalent urdf and sdf files.
+void ExpectNoCollisions(const std::string extension) {
   RigidBodyTree<double> tree;
-  AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow(
-          "drake/multibody/collision/test/"
-          "collision_filter_group_test_multi_member.urdf"),
-      drake::multibody::joints::kRollPitchYaw, &tree);
+  const std::string file_name = "drake/multibody/collision/test/"
+      "filter_groups_in_file.";
+  if (extension == "urdf") {
+    AddModelInstanceFromUrdfFileToWorld(
+        FindResourceOrThrow(file_name + extension),
+        drake::multibody::joints::kRollPitchYaw, &tree);
+  } else if (extension == "sdf") {
+    AddModelInstancesFromSdfFileToWorld(
+        FindResourceOrThrow(file_name + extension),
+        drake::multibody::joints::kRollPitchYaw, &tree);
+  }  else {
+    GTEST_FAIL() << "Unexpected model extension: " << extension;
+  }
   Eigen::Matrix<double, 16, 1> state;
   state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
       0, 0, 0, 0, 0, 0, 0, 0;  // x_dot_0, omega_0, joint12_dot, joint23_dot
@@ -475,32 +488,19 @@ GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
   VectorXd q = state.topRows(8);
   VectorXd v = state.bottomRows(8);
   auto kinematics_cache = tree.doKinematics(q, v);
-  std::vector<PointPair> pairs =
+  std::vector<PointPair<double>> pairs =
       tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
   EXPECT_EQ(pairs.size(), 0u);
 }
 
-// Parses a URDF file with an inherent geometric collision which is filtered
-// out using one collision filter group which ignores multiple other collision
-// filter groups (each with a body in it).
-GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
-  RigidBodyTree<double> tree;
-  AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow(
-          "drake/multibody/collision/test/"
-          "collision_filter_group_test_multi_ignore.urdf"),
-      drake::multibody::joints::kRollPitchYaw, &tree);
-  Eigen::Matrix<double, 16, 1> state;
-  state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
-      0, 0, 0, 0, 0, 0, 0, 0;  // x_dot_0, omega_0, joint12_dot, joint23_dot
-
-  VectorXd q = state.topRows(8);
-  VectorXd v = state.bottomRows(8);
-  auto kinematics_cache = tree.doKinematics(q, v);
-  std::vector<PointPair> pairs =
-      tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
-  EXPECT_EQ(pairs.size(), 0u);
+GTEST_TEST(CollisionFilterGroupDefinition, TestCollisionFilterGroupSpecUrdf) {
+  ExpectNoCollisions("urdf");
 }
+
+GTEST_TEST(CollisionFilterGroupDefinition, TestCollisionFilterGroupSpecSdf) {
+  ExpectNoCollisions("sdf");
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace collision

@@ -1,10 +1,8 @@
 #include <random>
 #include <stdexcept>
 
-#include <lcm/lcm-cpp.hpp>
-// TODO(russt): Figure out why do I need the lcmtypes here.  Inconsistent with
-// https://github.com/mwoehlke-kitware/bot_core_lcmtypes/pull/1#issuecomment-269343143
-#include <lcmtypes/bot_core/pointcloud_t.hpp>
+#include "bot_core/pointcloud_t.hpp"
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"

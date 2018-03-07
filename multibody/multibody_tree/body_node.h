@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/math/spatial_algebra.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
@@ -118,8 +119,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
            const Body<T>* body, const Mobilizer<T>* mobilizer) :
       parent_node_(parent_node), body_(body), mobilizer_(mobilizer) {
     DRAKE_DEMAND(!(parent_node == nullptr &&
-        body->get_index() != world_index()));
-    DRAKE_DEMAND(!(mobilizer == nullptr && body->get_index() != world_index()));
+        body->index() != world_index()));
+    DRAKE_DEMAND(!(mobilizer == nullptr && body->index() != world_index()));
   }
 
   /// Method to update the list of child body nodes maintained by this node,
@@ -134,7 +135,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// Returns a constant reference to the body B associated with this node.
-  const Body<T>& get_body() const {
+  const Body<T>& body() const {
     DRAKE_ASSERT(body_ != nullptr);
     return *body_;
   }
@@ -142,7 +143,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns a constant reference to the unique parent body P of the body B
   /// associated with this node. This method aborts in Debug builds if called on
   /// the root node corresponding to the _world_ body.
-  const Body<T>& get_parent_body() const {
+  const Body<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
@@ -450,18 +451,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Body for this node. Its body frame is also referred to as B whenever no
     // ambiguity can arise.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Body for this node's parent, or the parent body P. Its body frame is
     // also referred to as P whenever no ambiguity can arise.
-    const Body<T>& body_P = get_parent_body();
+    const Body<T>& body_P = parent_body();
 
     // Inboard frame F of this node's mobilizer.
-    const Frame<T>& frame_F = get_inboard_frame();
-    DRAKE_ASSERT(frame_F.get_body().get_index() == body_P.get_index());
+    const Frame<T>& frame_F = inboard_frame();
+    DRAKE_ASSERT(frame_F.body().index() == body_P.index());
     // Outboard frame M of this node's mobilizer.
-    const Frame<T>& frame_M = get_outboard_frame();
-    DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
+    const Frame<T>& frame_M = outboard_frame();
+    DRAKE_ASSERT(frame_M.body().index() == body_B.index());
 
     // =========================================================================
     // Computation of A_PB = DtP(V_PB), Eq. (4).
@@ -568,7 +569,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   guarantee these conditions are satisfied. This method will abort if the
   ///   the pointer is null.
   ///   To access a mobilizer's reaction force on a given body B, access this
-  ///   array with the index returned by Body::get_node_index().
+  ///   array with the index returned by Body::node_index().
   /// @param[out] tau_array
   ///   A non-null pointer to the output vector of generalized forces that would
   ///   result in body B having spatial acceleration `A_WB`. This method will
@@ -607,7 +608,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         tau_applied.size() == 0);
     DRAKE_DEMAND(tau_array != nullptr);
     DRAKE_DEMAND(tau_array->size() ==
-        this->get_parent_tree().get_num_velocities());
+        this->get_parent_tree().num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -659,7 +660,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // before the projection can be performed.
 
     // This node's body B.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Input spatial acceleration for this node's body B.
     const SpatialAcceleration<T>& A_WB = get_A_WB_from_array(A_WB_array);
@@ -673,8 +674,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
                                                     &Ftot_BBo_W);
 
     // Compute shift vector from Bo to Mo expressed in the world frame W.
-    const Frame<T>& frame_M = get_outboard_frame();
-    DRAKE_DEMAND(frame_M.get_body().get_index() == body_B.get_index());
+    const Frame<T>& frame_M = outboard_frame();
+    DRAKE_DEMAND(frame_M.body().index() == body_B.index());
     const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
     const Vector3<T>& p_BoMo_B = X_BM.translation();
     const Matrix3<T>& R_WB = get_X_WB(pc).linear();
@@ -682,7 +683,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Output spatial force that would need to be exerted by this node's
     // mobilizer in order to attain the prescribed acceleration A_WB.
-    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
+    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->index()];
 
     // Ensure this method was not called with an Fapplied_Bo_W being an entry
     // into F_BMo_W_array, otherwise we would be overwriting Fapplied_Bo_W.
@@ -691,7 +692,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
     for (const BodyNode<T>* child_node : children_) {
-      BodyNodeIndex child_node_index = child_node->get_index();
+      BodyNodeIndex child_node_index = child_node->index();
 
       // Pose of child body C in this node's body frame B.
       const Isometry3<T>& X_BC = child_node->get_X_PB(pc);
@@ -699,7 +700,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const Vector3<T> p_BoCo_W = R_WB * X_BC.translation();
 
       // p_CoMc_W:
-      const Frame<T>& frame_Mc = child_node->get_outboard_frame();
+      const Frame<T>& frame_Mc = child_node->outboard_frame();
       const Matrix3<T>& R_WC = child_node->get_X_WB(pc).linear();
       const Isometry3<T> X_CMc = frame_Mc.CalcPoseInBodyFrame(context);
       const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
@@ -732,7 +733,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
     // Re-express F_BMo_W in the inboard frame F before projecting it onto the
     // sub-space generated by H_FM(q).
-    const Isometry3<T> X_PF = get_inboard_frame().CalcPoseInBodyFrame(context);
+    const Isometry3<T> X_PF = inboard_frame().CalcPoseInBodyFrame(context);
     const Isometry3<T>& X_WP = get_X_WP(pc);
     // TODO(amcastro-tri): consider caching X_WF since also used in position and
     // velocity kinematics.
@@ -788,9 +789,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_DEMAND(H_PB_W->cols() == get_num_mobilizer_velocites());
 
     // Inboard frame F of this node's mobilizer.
-    const Frame<T>& frame_F = get_inboard_frame();
+    const Frame<T>& frame_F = inboard_frame();
     // Outboard frame M of this node's mobilizer.
-    const Frame<T>& frame_M = get_outboard_frame();
+    const Frame<T>& frame_M = outboard_frame();
 
     const Isometry3<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
     const Isometry3<T> X_MB = frame_M.CalcPoseInBodyFrame(context).inverse();
@@ -834,14 +835,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   `H_array` stores the columns of these matrices and therefore it consists
   ///   of a `std::vector` of vectors in ℝ⁶ with as many entries as the number
   ///   of generalized velocities in the model.
-  ///   `H_array` must be of size MultibodyTree::get_num_velocities().
+  ///   `H_array` must be of size MultibodyTree::num_velocities().
   /// @retval H
   ///   An Eigen::Map to a matrix of size `6 x nm` corresponding to the Jacobian
   ///   matrix for this node.
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
       const std::vector<Vector6<T>>& H_array) const {
     DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
-        this->get_parent_tree().get_num_velocities());
+        this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
     const int num_velocities = get_topology().num_mobilizer_velocities;
     // The first column of this node's Jacobian matrix H_PB_W:
@@ -861,19 +862,197 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return Eigen::Map<MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
+  /// This method is used by MultibodyTree within a tip-to-base loop to compute
+  /// this node's articulated body inertia quantities that depend only on the
+  /// generalized positions.
+  ///
+  /// @param[in] context
+  ///   The context with the state of the MultibodyTree model.
+  /// @param[in] pc
+  ///   An already updated position kinematics cache in sync with `context`.
+  /// @param[in] H_PB_W
+  ///   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
+  ///   of this node's body B in its parent node body P, expressed in the world
+  ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
+  ///   by `V_PB_W = H_PB_W⋅v_B`.
+  /// @param[out] abc
+  ///   A pointer to a valid, non nullptr, articulated body cache.
+  ///
+  /// @pre The position kinematics cache `pc` was already updated to be in sync
+  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  /// @pre CalcArticulatedBodyInertiaCache_TipToBase() must have already been
+  /// called for all the child nodes of `this` node (and, by recursive
+  /// precondition, all successor nodes in the tree.)
+  ///
+  /// @throws when called on the _root_ node or `abc` is nullptr.
+  void CalcArticulatedBodyInertiaCache_TipToBase(
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
+      ArticulatedBodyInertiaCache<T>* abc) const {
+    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(abc != nullptr);
+
+    // As a guideline for developers, a summary of the computations performed in
+    // this method is provided:
+    // Notation:
+    //  - B body frame associated with this node.
+    //  - P ("parent") body frame associated with this node's parent. This is
+    //    not to be confused with the articulated body inertia, which is also
+    //    named P.
+    //  - C within a loop over children, one of body B's children.
+    //  - P_B_W for the articulated body inertia of body B, about Bo, and
+    //    expressed in world frame W.
+    //  - Pplus_PB_W for the same articulated body inertia P_B_W but projected
+    //    across B's inboard mobilizer to frame P so that instead of
+    //    F_Bo_W = P_B_W A_WB + z_Bo_W, we can write
+    //    F_Bo_W = Pplus_PB_W Aplus_WP + zplus_Bo_W where Aplus_WP is defined
+    //    in Section 6.2.2, Page 101 of [Jain 2010] and zplus_Bo_W is defined
+    //    in Section 6.3, Page 108 of [Jain 2010].
+    //  - Φ(p_PQ) for Jain's rigid body transformation operator. In code,
+    //    V_MQ = Φᵀ(p_PQ) V_MP is equivalent to V_MP.Shift(p_PQ).
+    //
+    // The goal is to populate the articulated body cache with values necessary
+    // for computing generalized accelerations in the second pass of the
+    // articulated body algorithm. This computation is recursive, and assumes
+    // that required articulated body quantities are already computed for all
+    // children.
+    //
+    // We compute the articulated inertia of the current body by summing
+    // contributions from all its children with its own spatial inertia. Note
+    // that Φ is the is the rigid body shift operator as defined in [Jain 2010]
+    // (Φ(P, Q) in Jain's book corresponds to Φ(p_PQ) in the notation used
+    // here).
+    //   P_B_W = Σᵢ(Φ(p_BCᵢ_W) Pplus_BCᵢ_W Φ(p_BCᵢ_W)ᵀ) + M_B_W
+    //         = Σᵢ(Pplus_BCᵢb_W) + M_B_W                                   (1)
+    // where Pplus_BCᵢb_W is the articulated body inertia of the child body Cᵢ,
+    // projected across its inboard mobilizer to frame B, shifted to frame B,
+    // and expressed in the world frame W.
+    //
+    // From P_B_W, we can obtain Pplus_PB_W by projecting the articulated body
+    // inertia for this node across its mobilizer.
+    //   Pplus_PB_W = (I - P_B_W H_PB_W (H_PB_Wᵀ P_B_W H_PB_W)⁻¹ H_PB_Wᵀ)
+    //                  P_B_W                                               (2)
+    // where H_PB_W is the hinge mapping matrix.
+    //
+    // A few quantities are required in the second pass. We write them out
+    // explicitly so we can cache them and simplify the expression for P_PB_W.
+    //   D_B = H_PB_Wᵀ P_B_W H_PB_W                                         (3)
+    //   g_PB_W = P_B_W H_PB_W D_B⁻¹                                        (4)
+    // where D_B is the articulated body hinge inertia and g_PB_W is the
+    // Kalman gain.
+    //
+    // With D_B, it is possible to view equation (2) in another manner. D_B
+    // relates mobility-space forces to mobility-space accelerations. We can
+    // view Pplus_PB_W as subtracting the mobilizer space inertia that
+    // results from expanding D_B into an articulated body inertia from B's
+    // articulated body inertia.
+    //
+    // In order to reduce the number of computations, we can save the common
+    // factor HTxP = H_PB_Wᵀ P_B_W. We then can write:
+    //   D_B = HTxP H_PB_W                                                  (5)
+    // and for g,
+    //   g_PB_Wᵀ = (D_B⁻¹)ᵀ H_PB_Wᵀ P_B_Wᵀ
+    //           = (D_Bᵀ)⁻¹ H_PB_Wᵀ P_B_W
+    //           = D_B⁻¹ HTxP                                               (6)
+    // where we used the fact that both D and P are symmetric. Notice in the
+    // last expression for g_PB_Wᵀ we are reusing the common factor HTxP.
+    //
+    // Given the articulated body hinge inertia and Kalman gain, we can simplify
+    // the equation in (2).
+    //   Pplus_PB_W = (I - g_PB_W H_PB_Wᵀ) P_B_W
+    //              = P_B_W - g_PB_W H_PB_Wᵀ P_B_W
+    //              = P_B_W - g_PB_W * HTxP                                 (7)
+
+    // Body for this node.
+    const Body<T>& body_B = body();
+
+    // Get pose of B in W.
+    const Isometry3<T>& X_WB = get_X_WB(pc);
+
+    // Get R_WB.
+    const Matrix3<T> R_WB = X_WB.linear();
+
+    // Compute the spatial inertia for this body and re-express in W frame.
+    const SpatialInertia<T> M_B = body_B.CalcSpatialInertiaInBodyFrame(context);
+    const SpatialInertia<T> M_B_W = M_B.ReExpress(R_WB);
+
+    // Compute articulated body inertia for body using (1).
+    ArticulatedBodyInertia<T> P_B_W = ArticulatedBodyInertia<T>(M_B_W);
+
+    // Add articulated body inertia contributions from all children.
+    for (const BodyNode<T>* child : children_) {
+      // Get X_BC (which is X_PB for child).
+      const Isometry3<T>& X_BC = child->get_X_PB(pc);
+
+      // Compute shift vector p_CoBo_W.
+      const Vector3<T> p_CoBo_B = -X_BC.translation();
+      const Vector3<T> p_CoBo_W = R_WB * p_CoBo_B;
+
+      // Pull Pplus_BC_W from cache (which is Pplus_PB_W for child).
+      const ArticulatedBodyInertia<T>& Pplus_BC_W = child->get_Pplus_PB_W(*abc);
+
+      // Shift Pplus_BC_W to Pplus_BCb_W.
+      const ArticulatedBodyInertia<T> Pplus_BCb_W = Pplus_BC_W.Shift(p_CoBo_W);
+
+      // Add Pplus_BCb_W contribution to articulated body inertia.
+      P_B_W += Pplus_BCb_W;
+    }
+
+    // Get the number of mobilizer velocities (number of columns of H_PB_W).
+    const int nv = get_num_mobilizer_velocites();
+
+    // Compute common term HTxP.
+    const MatrixUpTo6<T> HTxP = H_PB_W.transpose() * P_B_W;
+
+    // Compute the articulated body hinge inertia, D_B, using (5).
+    MatrixUpTo6<T> D_B(nv, nv);
+    D_B.template triangularView<Eigen::Lower>() = HTxP * H_PB_W;
+
+    // Compute the LDLT factorization of D_B as ldlt_D_B.
+    // TODO(bobbyluig): Test performance against inverse().
+    const auto ldlt_D_B =
+        D_B.template selfadjointView<Eigen::Lower>().ldlt();
+
+    // Ensure that D_B is not singular.
+    // Singularity means that a non-physical hinge mapping matrix was used or
+    // that this articulated body inertia has some non-physical quantities
+    // (such as zero moment of inertia along an axis which the hinge mapping
+    // matrix permits motion).
+    if (ldlt_D_B.info() != Eigen::Success) {
+      std::stringstream message;
+      message << "Encountered singular articulated body hinge inertia "
+              << "for body node index " << topology_.index << ". "
+              << "Please ensure that this body has non-zero inertia "
+              << "along all axes of motion.";
+      throw std::runtime_error(message.str());
+    }
+
+    // Compute the Kalman gain, g_PB_W, using (6).
+    const MatrixUpTo6<T> g_PB_W = ldlt_D_B.solve(HTxP).transpose();
+
+    // Project P_B_W using (7) to obtain Pplus_PB_W, the articulated body
+    // inertia of this body B as felt by body P and expressed in frame W.
+    // Symmetrize the computation to reduce floating point errors.
+    // TODO(bobbyluig): Only compute lower-triangular region.
+    const Matrix6<T> Pplus_PB_W_mat = P_B_W.CopyToFullMatrix6() - g_PB_W * HTxP;
+    get_mutable_Pplus_PB_W(abc) = ArticulatedBodyInertia<T>(
+        0.5 * (Pplus_PB_W_mat + Pplus_PB_W_mat.transpose()));
+  }
+
  protected:
   /// Returns the inboard frame F of this node's mobilizer.
   /// @throws std::runtime_error if called on the root node corresponding to
   /// the _world_ body.
-  const Frame<T>& get_inboard_frame() const {
-    return get_mobilizer().get_inboard_frame();
+  const Frame<T>& inboard_frame() const {
+    return get_mobilizer().inboard_frame();
   }
 
   /// Returns the outboard frame M of this node's mobilizer.
   /// @throws std::runtime_error if called on the root node corresponding to
   /// the _world_ body.
-  const Frame<T>& get_outboard_frame() const {
-    return get_mobilizer().get_outboard_frame();
+  const Frame<T>& outboard_frame() const {
+    return get_mobilizer().outboard_frame();
   }
 
  private:
@@ -1020,6 +1199,23 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   // =========================================================================
+  // ArticulatedBodyInertiaCache Accessors and Mutators.
+
+  /// Returns a const reference to the articulated body inertia `Pplus_PB_W`,
+  /// which can be thought of as the articulated body inertia of parent body P
+  /// as though it were inertialess, but taken about Bo and expressed in W.
+  const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
+      const ArticulatedBodyInertiaCache<T>& abc) const {
+    return abc.get_Pplus_PB_W(topology_.index);
+  }
+
+  /// Mutable version of get_Pplus_PB_W().
+  ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
+      ArticulatedBodyInertiaCache<T>* abc) const {
+    return abc->get_mutable_Pplus_PB_W(topology_.index);
+  }
+
+  // =========================================================================
   // Per Node Array Accessors.
   // Quantities are ordered by BodyNodeIndex unless otherwise specified.
 
@@ -1106,16 +1302,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const MultibodyTreeContext<T>& context,
       PositionKinematicsCache<T>* pc) const {
     // Body for this node.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Body for this node's parent, or the parent body P.
-    const Body<T>& body_P = get_parent_body();
+    const Body<T>& body_P = parent_body();
 
     // Inboard/Outboard frames of this node's mobilizer.
-    const Frame<T>& frame_F = get_mobilizer().get_inboard_frame();
-    DRAKE_ASSERT(frame_F.get_body().get_index() == body_P.get_index());
-    const Frame<T>& frame_M = get_mobilizer().get_outboard_frame();
-    DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
+    const Frame<T>& frame_F = get_mobilizer().inboard_frame();
+    DRAKE_ASSERT(frame_F.body().index() == body_P.index());
+    const Frame<T>& frame_M = get_mobilizer().outboard_frame();
+    DRAKE_ASSERT(frame_M.body().index() == body_B.index());
 
     // Input (const):
     // - X_PF(qb_P)
@@ -1200,7 +1396,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     SpatialForce<T>& Ftot_BBo_W = *Ftot_BBo_W_ptr;
 
     // Body for this node.
-    const Body<T>& body_B = get_body();
+    const Body<T>& body_B = body();
 
     // Pose of B in W.
     const Isometry3<T>& X_WB = get_X_WB(pc);
@@ -1243,7 +1439,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_body_node(this->get_index());
+    topology_ = tree_topology.get_body_node(this->index());
   }
 
   BodyNodeTopology topology_;

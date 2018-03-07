@@ -159,7 +159,7 @@ int AddFloatingJoint(
   if (weld_to_frame == nullptr) {
     // If weld_to_frame is not specified, weld the newly added model(s) to the
     // world with zero offset.
-    weld_to_body = tree->bodies[0].get();
+    weld_to_body = tree->get_bodies()[0].get();
     floating_joint_name = FloatingJointConstants::kFloatingJointName;
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
@@ -174,7 +174,7 @@ int AddFloatingJoint(
             "AddFloatingJoint: Attempted to weld robot to the world while "
             "specifying a body link!");
       }
-      weld_to_body = tree->bodies[0].get();  // the world's body
+      weld_to_body = tree->get_bodies()[0].get();  // the world's body
       floating_joint_name = FloatingJointConstants::kFloatingJointName;
     } else {
       weld_to_body = weld_to_frame->get_mutable_rigid_body();
@@ -186,33 +186,33 @@ int AddFloatingJoint(
   int num_floating_joints_added = 0;
 
   for (auto i : body_indices) {
-    if (tree->bodies[i]->get_parent() == nullptr) {
+    if (tree->get_bodies()[i]->get_parent() == nullptr) {
       // The following code connects the parent-less link to the rigid body tree
       // using a floating joint.
-      tree->bodies[i]->set_parent(weld_to_body);
+      tree->get_bodies()[i]->set_parent(weld_to_body);
 
       Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();
       if (pose_map != nullptr &&
-          pose_map->find(tree->bodies[i]->get_name()) != pose_map->end())
-        transform_to_model = pose_map->at(tree->bodies[i]->get_name());
+          pose_map->find(tree->get_bodies()[i]->get_name()) != pose_map->end())
+        transform_to_model = pose_map->at(tree->get_bodies()[i]->get_name());
 
       switch (floating_base_type) {
         case kFixed: {
           unique_ptr<DrakeJoint> joint(new FixedJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          tree->bodies[i]->setJoint(move(joint));
+          tree->get_bodies()[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case kRollPitchYaw: {
           unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          tree->bodies[i]->setJoint(move(joint));
+          tree->get_bodies()[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case kQuaternion: {
           unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          tree->bodies[i]->setJoint(move(joint));
+          tree->get_bodies()[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         default:
@@ -280,6 +280,49 @@ CompliantMaterial ParseCollisionCompliance(XMLElement* node) {
     }
   }
   return material;
+}
+
+void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
+                               int model_instance_id) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && (std::strcmp(attr, "true") == 0)) return;
+
+  // TODO(SeanCurtis-TRI): After upgrading to newest tinyxml, add line numbers
+  // to error messages.
+  attr = node->Attribute("name");
+  if (!attr) {
+    throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: "
+        "Collision filter group specification missing name attribute.");
+  }
+  string group_name(attr);
+
+  tree->DefineCollisionFilterGroup(group_name);
+
+  for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
+       member_node = member_node->NextSiblingElement("member")) {
+    const char* link_name = member_node->Attribute("link");
+    if (!link_name) {
+      throw runtime_error(string(__FILE__) + ": " + __func__ + ": Collision "
+          "filter group " + group_name + " provides a member tag without "
+          "specifying the \"link\" attribute.");
+    }
+    tree->AddCollisionFilterGroupMember(group_name, link_name,
+                                        model_instance_id);
+  }
+
+  for (XMLElement* ignore_node =
+      node->FirstChildElement("ignored_collision_filter_group");
+       ignore_node; ignore_node = ignore_node->NextSiblingElement(
+      "ignored_collision_filter_group")) {
+    const char* target_name = ignore_node->Attribute("collision_filter_group");
+    if (!target_name) {
+      throw runtime_error(
+          string(__FILE__) + ": " + __func__ + ": Collision filter group "
+              "provides a tag specifying a group to ignore without specifying "
+              "the \"collision_filter_group\" attribute.");
+    }
+    tree->AddCollisionFilterIgnoreTarget(group_name, target_name);
+  }
 }
 
 }  // namespace parsers

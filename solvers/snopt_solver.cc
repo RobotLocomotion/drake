@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -275,7 +276,7 @@ void EvaluateNonlinearConstraints(
     const Eigen::VectorXd& xvec) {
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
-    const auto& c = binding.constraint();
+    const auto& c = binding.evaluator();
     int num_constraints = SingleNonlinearConstraintSize(*c);
 
     int num_v_variables = binding.GetNumElements();
@@ -333,7 +334,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   AutoDiffVecXd ty(1);
 
   for (auto const& binding : current_problem->GetAllCosts()) {
-    auto const& obj = binding.constraint();
+    auto const& obj = binding.evaluator();
 
     int num_v_variables = binding.GetNumElements();
     this_x.resize(num_v_variables);
@@ -387,7 +388,7 @@ void UpdateNumNonlinearConstraintsAndGradients(
     const std::vector<Binding<C>>& constraint_list,
     int* num_nonlinear_constraints, int* max_num_gradients) {
   for (auto const& binding : constraint_list) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.evaluator();
     int n = c->num_constraints();
     *max_num_gradients += n * binding.GetNumElements();
     *num_nonlinear_constraints += n;
@@ -406,7 +407,7 @@ void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
     int* num_nonlinear_constraints, int* max_num_gradients) {
   *num_nonlinear_constraints += constraint_list.size();
   for (const auto& binding : constraint_list) {
-    *max_num_gradients += binding.constraint()->M().rows();
+    *max_num_gradients += binding.evaluator()->M().rows();
   }
 }
 
@@ -417,7 +418,7 @@ void UpdateConstraintBoundsAndGradients(
     snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar,
     size_t* constraint_index, size_t* grad_index) {
   for (auto const& binding : constraint_list) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.evaluator();
     int n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
@@ -454,7 +455,7 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
   for (const auto& binding : constraint_list) {
     Flow[*constraint_index] = 0;
     Fupp[*constraint_index] = 0;
-    for (int j = 0; j < binding.constraint()->M().rows(); ++j) {
+    for (int j = 0; j < binding.evaluator()->M().rows(); ++j) {
       iGfun[*grad_index] = *constraint_index + 1;
       jGvar[*grad_index] =
           prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
@@ -518,7 +519,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
                             size_t* constraint_index,
                             size_t* linear_constraint_index) {
   for (auto const& binding : linear_constraints) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.evaluator();
     int n = LinearConstraintSize(*c);
 
     const Eigen::SparseMatrix<double> A_constraint = LinearConstraintA(*c);
@@ -569,7 +570,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
         std::numeric_limits<double>::infinity());
   }
   for (auto const& binding : prog.bounding_box_constraints()) {
-    const auto& c = binding.constraint();
+    const auto& c = binding.evaluator();
     const auto& lb = c->lower_bound();
     const auto& ub = c->upper_bound();
 
@@ -612,7 +613,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   int num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
-    num_linear_constraints += binding.constraint()->num_constraints();
+    num_linear_constraints += binding.evaluator()->num_constraints();
   }
 
   // For linear complementary condition
@@ -620,7 +621,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   // The linear constraint we add is Mx + q >= 0, so we will append
   // M.rows() rows to the linear constraints.
   for (const auto& binding : prog.linear_complementarity_constraints()) {
-    num_linear_constraints += binding.constraint()->M().rows();
+    num_linear_constraints += binding.evaluator()->M().rows();
   }
 
   snopt::integer nF = 1 + num_nonlinear_constraints + num_linear_constraints;
@@ -689,13 +690,18 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   snopt::integer nS, nInf;
   snopt::doublereal sInf;
-  if (true) {  // print to output file (todo: make this an option)
+
+  // Determines if we should print out snopt debugging info.
+  const std::map<std::string, std::string>& snopt_option_str =
+      prog.GetSolverOptionsStr(id());
+  const auto print_file_it = snopt_option_str.find("Print file");
+  if (print_file_it != snopt_option_str.end()) {
+    std::string print_file_name(print_file_it->second);
     cur.iPrint = 9;
-    char print_file_name[50] = "snopt.out";
     snopt::integer print_file_name_len =
-        static_cast<snopt::integer>(strlen(print_file_name));
+        static_cast<snopt::integer>(print_file_name.length());
     snopt::integer inform;
-    snopt::snopenappend_(&cur.iPrint, print_file_name, &inform,
+    snopt::snopenappend_(&cur.iPrint, &(print_file_name[0]), &inform,
                          print_file_name_len);
     cur.snSeti("Major print level", static_cast<snopt::integer>(11));
     cur.snSeti("Print file", cur.iPrint);
@@ -761,6 +767,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     } else if (info >= 20 && info <= 22) {
       prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
       return SolutionResult::kUnbounded;
+    } else if (info >= 30 && info <= 32) {
+      return SolutionResult::kIterationLimit;
     } else if (info == 91) {
       return SolutionResult::kInvalidInput;
     }

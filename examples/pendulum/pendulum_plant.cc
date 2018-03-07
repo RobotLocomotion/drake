@@ -48,8 +48,7 @@ template <typename T>
 T PendulumPlant<T>::CalcTotalEnergy(const systems::Context<T>& context) const {
   using std::pow;
   const PendulumState<T>& state = get_state(context);
-  const PendulumParams<T>& params =
-      this->template GetNumericParameter<PendulumParams>(context, 0);
+  const PendulumParams<T>& params = get_parameters(context);
   // Kinetic energy = 1/2 m l² θ̇ ².
   const T kinetic_energy =
       0.5 * params.mass() * pow(params.length() * state.thetadot(), 2);

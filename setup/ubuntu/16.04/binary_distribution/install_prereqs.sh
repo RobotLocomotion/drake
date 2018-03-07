@@ -11,50 +11,55 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 apt update
-apt install --no-install-recommends apt-transport-https ca-certificates wget
+apt install --no-install-recommends $(tr '\n' ' ' <<EOF
+apt-transport-https
+ca-certificates
+lsb-release
+EOF
+)
 
-wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu xenial main' > /etc/apt/sources.list.d/drake.list
+if [[ "$(lsb_release -sc)" != 'xenial' ]]; then
+  echo 'This script requires Ubuntu 16.04 (Xenial)' >&2
+  exit 2
+fi
 
-apt update
+# TODO(jwnimmer-tri) Remove this cleanup step sometime after 2018-09-01.
+# This script used to install some custom packages directly; here, we'll set
+# them to `auto` mode so that Ubuntu will suggest to remove them if nothing
+# else is using them.
+mark_auto() {
+  package="$1"
+  shift
+
+  installed=$(dpkg-query --showformat='${Version}\n' --show "${package}" 2>/dev/null || true)
+  if [[ -z "${installed}" ]]; then
+    return
+  fi
+
+  for version in "$@"; do
+    if [[ "${version}" == "${installed}" ]]; then
+      apt-mark auto "${package}"
+      return
+    fi
+  done
+}
+mark_auto \
+  dreal \
+  4.17.12.2 \
+  4.17.12.3 \
+  4.18.01.3 \
+  4.18.02.2 \
+  4.18.02.4
+mark_auto \
+  libibex-dev \
+  2.6.3 \
+  2.6.5.20180123154310.gitf618c7b296182f90a84d54936d144b87df0747b9~16.04 \
+  2.6.5.20180211084215.gitd1419538b4d818ed1cf21a01896bc5eaae5d1d57~16.04
+
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 build-essential
 cmake
-coinor-libipopt1v5
-dreal=4.18.02.2
-libblas3
-libboost-all-dev
-libexpat1
-libgflags-dev
-libgl1-mesa-glx
-libglib2.0-0
-libhdf5-10
-libibex-dev=2.6.5.20180211084215.gitd1419538b4d818ed1cf21a01896bc5eaae5d1d57~16.04
-libjpeg8
-libjsoncpp1
-liblapack3
-libnetcdf-c++4
-libnetcdf11
-libnlopt0
-libogg0
-libpng12-0
-libprotobuf-dev
-libqt5multimedia5
-libqt5x11extras5
-libtheora0
-libtiff5
-libtinyxml2-dev
-libtinyxml2.6.2v5
-libxml2
-libxt6
-libyaml-cpp0.5v5
-openjdk-8-jre
-python
-python-lxml
-python-numpy
-python-scipy
-python-yaml
-qtbase5-dev
-zlib1g
 EOF
 )
+
+apt install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')

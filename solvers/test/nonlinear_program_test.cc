@@ -210,7 +210,7 @@ class SixHumpCamelCost {
 GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost(), x).constraint();
+  auto cost = prog.AddCost(SixHumpCamelCost(), x).evaluator();
 
   prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(&prog, [&]() {
@@ -251,7 +251,7 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
                                       Vector1d::Constant(2), x_var)
-             .constraint();
+             .evaluator();
   // Check that the resulting constraint is a LinearConstraint.
   EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(resulting_constraint));
   // Check that it gives the correct answer as well.
@@ -381,6 +381,18 @@ GTEST_TEST(testNonlinearProgram, ConvexCubicProgramExample) {
   ConvexCubicProgramExample prob;
   prob.SetInitialGuessForAllVariables(Vector1d(1));
   RunNonlinearProgram(&prob, [&]() {prob.CheckSolution();});
+}
+
+GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
+  UnitLengthProgramExample prob;
+
+  prob.SetInitialGuessForAllVariables(Vector4d(1, 0, 0, 0));
+  RunNonlinearProgram(&prob, [&prob]() {prob.CheckSolution(1E-8);});
+
+  // Try a different initial guess, that doesn't satisfy the unit length
+  // constraint.
+  prob.SetInitialGuessForAllVariables(Vector4d(1, 2, 3, 4));
+  RunNonlinearProgram(&prob, [&prob]() {prob.CheckSolution(1E-8);});
 }
 }  // namespace test
 }  // namespace solvers

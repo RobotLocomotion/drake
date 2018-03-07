@@ -265,6 +265,7 @@ bool PiecewisePolynomial<CoefficientType>::isApprox(
 
 template <typename CoefficientType>
 void PiecewisePolynomial<CoefficientType>::shiftRight(double offset) {
+  std::vector<double>& breaks = get_mutable_breaks();
   for (auto it = breaks.begin(); it != breaks.end(); ++it) {
     *it += offset;
   }
@@ -287,7 +288,7 @@ PiecewisePolynomial<CoefficientType>::slice(int start_segment_index,
   segmentNumberRangeCheck(start_segment_index);
   segmentNumberRangeCheck(start_segment_index + num_segments - 1);
 
-  auto breaks_start_it = breaks.begin() + start_segment_index;
+  auto breaks_start_it = breaks().begin() + start_segment_index;
   auto breaks_slice = vector<double>(
       breaks_start_it,
       breaks_start_it + num_segments +

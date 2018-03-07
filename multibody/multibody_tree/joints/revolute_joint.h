@@ -70,7 +70,7 @@ class RevoluteJoint final : public Joint<T> {
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,
   /// `axis = axis_F = axis_M`.
-  const Vector3<double>& get_revolute_axis() const {
+  const Vector3<double>& revolute_axis() const {
     return axis_;
   }
 
@@ -144,9 +144,19 @@ class RevoluteJoint final : public Joint<T> {
     this->AddInOneForce(context, 0, torque, forces);
   }
 
- private:
-  // Joint<T> override called through public NVI. Therefore arguments were
-  // already checked to be valid.
+ protected:
+  /// Joint<T> override called through public NVI, Joint::AddInForce().
+  /// Therefore arguments were already checked to be valid.
+  /// For a %RevoluteJoint, we must always have `joint_dof = 0` since there is
+  /// only a single degree of freedom (get_num_dofs() == 1). `joint_tau` is the
+  /// torque applied about the joint's axis, on the body declared as child
+  /// (according to the revolute joint's constructor) at the origin of the child
+  /// frame (which is coincident with the origin of the parent frame at all
+  /// times). The torque is defined to be positive according to
+  /// the right-hand-rule with the thumb aligned in the direction of `this`
+  /// joint's axis. That is, a positive torque causes a positive rotational
+  /// acceleration (of the child body frame) according to the right-hand-rule
+  /// around the joint's axis.
   void DoAddInOneForce(
       const systems::Context<T>&,
       int joint_dof,
@@ -161,6 +171,7 @@ class RevoluteJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
+ private:
   int do_get_num_dofs() const override {
     return 1;
   }
@@ -171,7 +182,7 @@ class RevoluteJoint final : public Joint<T> {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     blue_print->mobilizers_.push_back(
         std::make_unique<RevoluteMobilizer<T>>(
-            this->get_frame_on_parent(), this->get_frame_on_child(), axis_));
+            this->frame_on_parent(), this->frame_on_child(), axis_));
     return std::move(blue_print);
   }
 
@@ -194,7 +205,7 @@ class RevoluteJoint final : public Joint<T> {
   // However its public API should remain intact.
   const RevoluteMobilizer<T>* get_mobilizer() const {
     // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().get_num_mobilizers() == 1);
+    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
     const RevoluteMobilizer<T>* mobilizer =
         dynamic_cast<const RevoluteMobilizer<T>*>(
             this->get_implementation().mobilizers_[0]);

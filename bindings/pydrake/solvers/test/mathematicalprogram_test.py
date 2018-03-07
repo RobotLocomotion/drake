@@ -89,18 +89,18 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertTrue(prog.linear_costs())
         for (i, binding) in enumerate(prog.linear_costs()):
-            cost = binding.constraint()
+            cost = binding.evaluator()
             self.assertTrue(np.allclose(cost.a(), np.ones((1, 2))))
 
         self.assertTrue(prog.quadratic_costs())
         for (i, binding) in enumerate(prog.quadratic_costs()):
-            cost = binding.constraint()
+            cost = binding.evaluator()
             self.assertTrue(np.allclose(cost.Q(), np.eye(2)))
             self.assertTrue(np.allclose(cost.b(), np.zeros(2)))
 
         self.assertTrue(prog.bounding_box_constraints())
         for (i, binding) in enumerate(prog.bounding_box_constraints()):
-            constraint = binding.constraint()
+            constraint = binding.evaluator()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[i]))
@@ -118,7 +118,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertTrue(prog.linear_constraints())
         for (i, binding) in enumerate(prog.linear_constraints()):
-            constraint = binding.constraint()
+            constraint = binding.evaluator()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[0]))
@@ -131,7 +131,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         self.assertTrue(prog.linear_equality_constraints())
         for (i, binding) in enumerate(prog.linear_equality_constraints()):
-            constraint = binding.constraint()
+            constraint = binding.evaluator()
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[0]),
                 prog.FindDecisionVariableIndex(x[0]))
@@ -185,12 +185,15 @@ class TestMathematicalProgram(unittest.TestCase):
             for j in range(2):
                 self.assertAlmostEqual(xval[i, j], 2 * i + j)
                 self.assertEqual(xval[i, j], prog.GetSolution(x[i, j]))
+        # Just check spelling.
+        y = prog.NewIndeterminates(2, 2, "y")
 
     def test_sdp(self):
         prog = mp.MathematicalProgram()
         S = prog.NewSymmetricContinuousVariables(3, "S")
         prog.AddLinearConstraint(S[0, 1] >= 1)
         prog.AddPositiveSemidefiniteConstraint(S)
+        prog.AddPositiveSemidefiniteConstraint(S+S)
         prog.AddLinearCost(np.trace(S))
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
@@ -200,6 +203,33 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
+    def test_sos(self):
+        # Find a,b,c,d subject to
+        # a(0) + a(1)*x,
+        # b(0) + 2*b(1)*x + b(2)*x^2 is SOS,
+        # c(0)*x^2 + 2*c(1)*x*y + c(2)*y^2 is SOS,
+        # d(0)*x^2 is SOS.
+        # d(1)*x^2 is SOS.
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        poly = prog.NewFreePolynomial(sym.Variables(x), 1)
+        (poly, binding) = prog.NewSosPolynomial(sym.Variables(x), 2)
+        y = prog.NewIndeterminates(1, "y")
+        (poly, binding) = prog.NewSosPolynomial((sym.Monomial(x[0]),
+                                                 sym.Monomial(y[0])))
+        d = prog.NewContinuousVariables(2, "d")
+        prog.AddSosConstraint(d[0]*x.dot(x))
+        prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_lcp(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        M = np.array([[1, 3], [4, 1]])
+        q = np.array([-16, -15])
+        binding = prog.AddLinearComplementarityConstraint(M, q, x)
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        self.assertIsInstance(binding.evaluator(),
+                              mp.LinearComplementarityConstraint)

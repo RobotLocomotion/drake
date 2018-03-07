@@ -99,7 +99,6 @@ drake_cc_library(
         "//lcmtypes:desired_dof_motions",
         "//lcmtypes:qp_input",
         "//lcmtypes:resolved_contact",
-        "//util:lcm_util",
         "@lcmtypes_bot2_core",
     ],
 )

@@ -7,9 +7,9 @@ namespace drake {
 namespace systems {
 
 template <class T>
-T WitnessFunction<T>::Evaluate(const Context<T>& context) const {
-  DRAKE_ASSERT_VOID(system_.CheckValidContext(context));
-  return DoEvaluate(context);
+T WitnessFunction<T>::CalcWitnessValue(const Context <T>& context) const {
+  DRAKE_ASSERT_VOID(system_->CheckValidContext(context));
+  return DoCalcWitnessValue(context);
 }
 
 // The Vector2/3 instantiations here are for the benefit of some

@@ -44,7 +44,7 @@ void SplineInformation::addContinuityConstraint(
 }
 
 std::vector<double> const& SplineInformation::getSegmentTimes() const {
-  return breaks;
+  return breaks();
 }
 
 int SplineInformation::getSegmentPolynomialDegree(int segment_number,

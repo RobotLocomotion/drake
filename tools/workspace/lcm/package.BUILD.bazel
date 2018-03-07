@@ -70,7 +70,7 @@ LCM_PUBLIC_HEADER_INCLUDES = [
 # linked dynamically.  The `name = "lcm"` rule below provides the compile-time
 # artifact that combines the shared library with its headers.
 cc_binary(
-    name = "liblcm.so",
+    name = "libdrake_lcm.so",
     srcs = [
         # Sources
         "lcm/eventlog.c",
@@ -107,7 +107,7 @@ cc_binary(
 # This is the compile-time target for liblcm.  See above for details.
 cc_library(
     name = "lcm",
-    srcs = ["liblcm.so"],
+    srcs = ["libdrake_lcm.so"],
     hdrs = LCM_PUBLIC_HEADERS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
 )
@@ -207,8 +207,7 @@ cc_binary(
 # that, we pre-load the shared library before calling the upstream __init__,
 # using python ctypes with the realpath to the shared library.
 generate_file(
-    name = "init_genrule",
-    out = "__init__.py",
+    name = "__init__.py",
     content = """
 import ctypes
 import os.path
@@ -304,7 +303,7 @@ install(
         ":lcm-logplayer-gui-launcher",
         ":lcm-spy",
         ":lcm-spy-launcher",
-        ":liblcm.so",
+        ":libdrake_lcm.so",
     ],
     py_strip_prefix = ["lcm-python"],
     hdrs = LCM_PUBLIC_HEADERS,

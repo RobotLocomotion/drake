@@ -9,8 +9,8 @@ namespace systems {
 namespace controllers {
 
 struct LinearQuadraticRegulatorResult {
-  Eigen::MatrixXd S;
   Eigen::MatrixXd K;
+  Eigen::MatrixXd S;
 };
 
 /// Computes the optimal feedback controller, u=-Kx

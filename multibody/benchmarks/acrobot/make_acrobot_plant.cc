@@ -26,7 +26,8 @@ using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeAcrobotPlant(
-    const AcrobotParameters& params, geometry::GeometrySystem<double>*) {
+    const AcrobotParameters& params, bool finalize,
+    geometry::GeometrySystem<double>* geometry_system) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   // COM's positions in each link (L1/L2) frame:
@@ -54,18 +55,38 @@ MakeAcrobotPlant(
   const RigidBody<double>& link2 = plant->AddRigidBody(
       params.link2_name(), M2_L2o);
 
-  // TODO(amcastro-tri): Register geometry if a valid GeometrySystem is
-  // provided.
+  if (geometry_system != nullptr) {
+    plant->RegisterAsSourceForGeometrySystem(geometry_system);
+
+    // Pose of the geometry for link 1 in the link's frame.
+    const Isometry3d X_L1G1{
+        Translation3d(-params.l1() / 2.0 * Vector3d::UnitZ())};
+    plant->RegisterVisualGeometry(
+        link1, X_L1G1, Cylinder(params.r1(), params.l1()), geometry_system);
+
+    // Pose of the geometry for link 2 in the link's frame.
+    const Isometry3d X_L2G2{
+        Translation3d(-params.l2() / 2.0 * Vector3d::UnitZ())};
+    plant->RegisterVisualGeometry(
+        link2, X_L2G2, Cylinder(params.r2(), params.l2()), geometry_system);
+
+    // Register some (anchored) geometry to the world.
+    plant->RegisterVisualGeometry(
+        plant->world_body(),
+        Isometry3d::Identity(), /* X_WG */
+        Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
+        geometry_system);
+  }
 
   plant->AddJoint<RevoluteJoint>(
       params.shoulder_joint_name(),
       /* Shoulder inboard frame Si IS the the world frame W. */
-      plant->get_world_body(), {},
+      plant->world_body(), {},
       /* Shoulder outboard frame So IS frame L1. */
       link1, {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
-  plant->AddJoint<RevoluteJoint>(
+  const RevoluteJoint<double>& elbow = plant->AddJoint<RevoluteJoint>(
       params.elbow_joint_name(),
       link1,
       /* Pose of the elbow inboard frame Ei in Link 1's frame. */
@@ -75,12 +96,15 @@ MakeAcrobotPlant(
       {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
+  // Add acrobot's actuator at the elbow joint.
+  plant->AddJointActuator(params.actuator_name(), elbow);
+
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(
       -params.g() * Vector3d::UnitZ());
 
   // We are done creating the plant.
-  plant->Finalize();
+  if (finalize) plant->Finalize();
 
   return plant;
 }

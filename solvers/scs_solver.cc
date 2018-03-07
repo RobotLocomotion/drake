@@ -20,26 +20,16 @@
 namespace drake {
 namespace solvers {
 namespace {
-std::vector<int> FindDecisionVariableIndices(
-    const MathematicalProgram& prog,
-    const Eigen::Ref<const VectorXDecisionVariable>& x) {
-  std::vector<int> x_indices(x.rows());
-  for (int i = 0; i < x.rows(); ++i) {
-    x_indices[i] = prog.FindDecisionVariableIndex(x(i));
-  }
-  return x_indices;
-}
-
 void ParseLinearCost(const MathematicalProgram& prog, std::vector<double>* c,
                      double* constant) {
   for (const auto& linear_cost : prog.linear_costs()) {
     // Each linear cost is in the form of aᵀx + b
-    const auto& a = linear_cost.constraint()->a();
+    const auto& a = linear_cost.evaluator()->a();
     const VectorXDecisionVariable& x = linear_cost.variables();
     for (int i = 0; i < a.rows(); ++i) {
       (*c)[prog.FindDecisionVariableIndex(x(i))] += a(i);
     }
-    (*constant) += linear_cost.constraint()->b();
+    (*constant) += linear_cost.evaluator()->b();
   }
 }
 
@@ -132,10 +122,10 @@ void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
     std::vector<Eigen::Triplet<double>> Ai_triplets;
     Ai_triplets.emplace_back(0, y_index, 1);
     for (int i = 0; i < z.rows(); ++i) {
-      Ai_triplets.emplace_back(0, i, -cost.constraint()->b()(i));
+      Ai_triplets.emplace_back(0, i, -cost.evaluator()->b()(i));
     }
     // Decompose Q to Cᵀ*C
-    const Eigen::MatrixXd& Q = cost.constraint()->Q();
+    const Eigen::MatrixXd& Q = cost.evaluator()->Q();
     const Eigen::MatrixXd C =
         math::DecomposePSDmatrixIntoXtransposeTimesX(Q, 1E-10);
     for (int i = 0; i < C.rows(); ++i) {
@@ -147,11 +137,11 @@ void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
     }
     // append the variable y to the end of x
     (*num_x)++;
-    std::vector<int> Ai_var_indices = FindDecisionVariableIndices(prog, z);
+    std::vector<int> Ai_var_indices = prog.FindDecisionVariableIndices(z);
     Ai_var_indices.push_back(*num_x - 1);
     // Set b_cone
     Eigen::VectorXd b_cone = Eigen::VectorXd::Zero(2 + C.rows());
-    b_cone(0) = -cost.constraint()->c();
+    b_cone(0) = -cost.evaluator()->c();
     b_cone(1) = 2;
     // Add the rotated Lorentz cone constraint
     ParseRotatedLorentzConeConstraint(Ai_triplets, b_cone, Ai_var_indices,
@@ -177,11 +167,11 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
   // aᵀx + s = ub, s in the positive cone.
   int num_linear_constraint_rows = 0;
   for (const auto& linear_constraint : prog.linear_constraints()) {
-    const Eigen::VectorXd& ub = linear_constraint.constraint()->upper_bound();
-    const Eigen::VectorXd& lb = linear_constraint.constraint()->lower_bound();
+    const Eigen::VectorXd& ub = linear_constraint.evaluator()->upper_bound();
+    const Eigen::VectorXd& lb = linear_constraint.evaluator()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
-    const Eigen::MatrixXd& Ai = linear_constraint.constraint()->A();
-    for (int i = 0; i < linear_constraint.constraint()->num_constraints();
+    const Eigen::MatrixXd& Ai = linear_constraint.evaluator()->A();
+    for (int i = 0; i < linear_constraint.evaluator()->num_constraints();
          ++i) {
       const bool is_ub_finite{!std::isinf(ub(i))};
       const bool is_lb_finite{!std::isinf(lb(i))};
@@ -232,23 +222,23 @@ void ParseLinearEqualityConstraint(
   for (const auto& linear_equality_constraint :
        prog.linear_equality_constraints()) {
     const Eigen::SparseMatrix<double> Ai =
-        linear_equality_constraint.constraint()->GetSparseMatrix();
+        linear_equality_constraint.evaluator()->GetSparseMatrix();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     A_triplets->reserve(A_triplets->size() + Ai_triplets.size());
     const solvers::VectorXDecisionVariable& x =
         linear_equality_constraint.variables();
     // x_indices[i] is the index of x(i)
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     for (const auto& Ai_triplet : Ai_triplets) {
       A_triplets->emplace_back(Ai_triplet.row() + *A_row_count,
                                x_indices[Ai_triplet.col()], Ai_triplet.value());
     }
     const int num_Ai_rows =
-        linear_equality_constraint.constraint()->num_constraints();
+        linear_equality_constraint.evaluator()->num_constraints();
     b->reserve(b->size() + num_Ai_rows);
     for (int i = 0; i < num_Ai_rows; ++i) {
-      b->push_back(linear_equality_constraint.constraint()->lower_bound()(i));
+      b->push_back(linear_equality_constraint.evaluator()->lower_bound()(i));
     }
     *A_row_count += num_Ai_rows;
     num_linear_equality_constraints_rows += num_Ai_rows;
@@ -272,20 +262,20 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
     A_triplets->reserve(A_triplets->size() + 2 * num_xi_rows);
     b->reserve(b->size() + 2 * num_xi_rows);
     for (int i = 0; i < num_xi_rows; ++i) {
-      if (!std::isinf(bounding_box_constraint.constraint()->upper_bound()(i))) {
+      if (!std::isinf(bounding_box_constraint.evaluator()->upper_bound()(i))) {
         // if ub != ∞, then add the constraint x + s1 = ub, s1 in the positive
         // cone.
         A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
                                  prog.FindDecisionVariableIndex(xi(i)), 1);
-        b->push_back(bounding_box_constraint.constraint()->upper_bound()(i));
+        b->push_back(bounding_box_constraint.evaluator()->upper_bound()(i));
         ++num_scs_new_constraint;
       }
-      if (!std::isinf(bounding_box_constraint.constraint()->lower_bound()(i))) {
+      if (!std::isinf(bounding_box_constraint.evaluator()->lower_bound()(i))) {
         // if lb != -∞, then add the constraint -x + s2 = -lb, s2 in the
         // positive cone.
         A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
                                  prog.FindDecisionVariableIndex(xi(i)), -1);
-        b->push_back(-bounding_box_constraint.constraint()->lower_bound()(i));
+        b->push_back(-bounding_box_constraint.evaluator()->lower_bound()(i));
         ++num_scs_new_constraint;
       }
     }
@@ -304,9 +294,9 @@ void ParseSecondOrderConeConstraints(
   for (const auto& lorentz_cone_constraint : prog.lorentz_cone_constraints()) {
     // x_indices[i] is the index of x(i)
     const VectorXDecisionVariable& x = lorentz_cone_constraint.variables();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
-        lorentz_cone_constraint.constraint()->A().sparseView();
+        lorentz_cone_constraint.evaluator()->A().sparseView();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     for (const auto& Ai_triplet : Ai_triplets) {
@@ -314,9 +304,9 @@ void ParseSecondOrderConeConstraints(
                                x_indices[Ai_triplet.col()],
                                -Ai_triplet.value());
     }
-    const int num_Ai_rows = lorentz_cone_constraint.constraint()->A().rows();
+    const int num_Ai_rows = lorentz_cone_constraint.evaluator()->A().rows();
     for (int i = 0; i < num_Ai_rows; ++i) {
-      b->push_back(lorentz_cone_constraint.constraint()->b()(i));
+      b->push_back(lorentz_cone_constraint.evaluator()->b()(i));
     }
     lorentz_cone_length->push_back(num_Ai_rows);
     *A_row_count += num_Ai_rows;
@@ -325,10 +315,10 @@ void ParseSecondOrderConeConstraints(
   for (const auto& rotated_lorentz_cone :
        prog.rotated_lorentz_cone_constraints()) {
     const VectorXDecisionVariable& x = rotated_lorentz_cone.variables();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
-        rotated_lorentz_cone.constraint()->A().sparseView();
-    const Eigen::VectorXd& bi = rotated_lorentz_cone.constraint()->b();
+        rotated_lorentz_cone.evaluator()->A().sparseView();
+    const Eigen::VectorXd& bi = rotated_lorentz_cone.evaluator()->b();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     ParseRotatedLorentzConeConstraint(Ai_triplets, bi, x_indices, A_triplets, b,
@@ -361,7 +351,7 @@ void ParsePositiveSemidefiniteConstraint(
     // explained in https://github.com/cvxgrp/scs
     // x is the stacked column vector of the lower triangular part of the
     // symmetric matrix X.
-    const int X_rows = psd_constraint.constraint()->matrix_rows();
+    const int X_rows = psd_constraint.evaluator()->matrix_rows();
     int x_index_count = 0;
     const VectorXDecisionVariable& flat_X = psd_constraint.variables();
     DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
@@ -406,10 +396,10 @@ void ParsePositiveSemidefiniteConstraint(
     //   x = [x₁; x₂; ... ; xₙ].
     // As explained above, the off-diagonal rows are scaled by √2. Please refer
     // to https://github.com/cvxgrp/scs about the scaling factor √2.
-    const std::vector<Eigen::MatrixXd>& F = lmi_constraint.constraint()->F();
+    const std::vector<Eigen::MatrixXd>& F = lmi_constraint.evaluator()->F();
     const VectorXDecisionVariable& x = lmi_constraint.variables();
-    const int F_rows = lmi_constraint.constraint()->matrix_rows();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const int F_rows = lmi_constraint.evaluator()->matrix_rows();
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     int A_cone_row_count = 0;
     b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
     for (int j = 0; j < F_rows; ++j) {

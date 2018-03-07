@@ -1,11 +1,25 @@
+import pydrake.systems.sensors as mut
+
 import numpy as np
 import unittest
 
-import pydrake.systems.sensors as m
+from pydrake.common import FindResourceOrThrow
+from pydrake.multibody.rigid_body_tree import (
+    AddModelInstancesFromSdfString,
+    FloatingBaseType,
+    RigidBodyTree,
+    RigidBodyFrame,
+    )
+from pydrake.systems.framework import (
+    InputPortDescriptor,
+    OutputPort,
+    Value,
+    )
+from pydrake.util.eigen_geometry import Isometry3
 
 # Shorthand aliases, to reduce verbosity.
-pt = m.PixelType
-pf = m.PixelFormat
+pt = mut.PixelType
+pf = mut.PixelFormat
 
 # Available image / pixel types.
 pixel_types = [
@@ -16,26 +30,27 @@ pixel_types = [
 
 # Convenience aliases.
 image_type_aliases = [
-    m.ImageRgba8U,
-    m.ImageDepth32F,
-    m.ImageLabel16I,
+    mut.ImageRgba8U,
+    mut.ImageDepth32F,
+    mut.ImageLabel16I,
 ]
 
 
 class TestSensors(unittest.TestCase):
+
     def test_image_traits(self):
         # Test instantiations of ImageTraits<>.
-        t = m.ImageTraits[pt.kRgba8U]
+        t = mut.ImageTraits[pt.kRgba8U]
         self.assertEquals(t.kNumChannels, 4)
         self.assertEquals(t.ChannelType, np.uint8)
         self.assertEquals(t.kPixelFormat, pf.kRgba)
 
-        t = m.ImageTraits[pt.kDepth32F]
+        t = mut.ImageTraits[pt.kDepth32F]
         self.assertEquals(t.kNumChannels, 1)
         self.assertEquals(t.ChannelType, np.float32)
         self.assertEquals(t.kPixelFormat, pf.kDepth)
 
-        t = m.ImageTraits[pt.kLabel16I]
+        t = mut.ImageTraits[pt.kLabel16I]
         self.assertEquals(t.kNumChannels, 1)
         self.assertEquals(t.ChannelType, np.int16)
         self.assertEquals(t.kPixelFormat, pf.kLabel)
@@ -44,8 +59,8 @@ class TestSensors(unittest.TestCase):
         # Test instantiations of Image<>.
         for pixel_type, image_type_alias in (
                 zip(pixel_types, image_type_aliases)):
-            ImageT = m.Image[pixel_type]
-            self.assertEquals(ImageT.Traits, m.ImageTraits[pixel_type])
+            ImageT = mut.Image[pixel_type]
+            self.assertEquals(ImageT.Traits, mut.ImageTraits[pixel_type])
             self.assertEquals(ImageT, image_type_alias)
 
             w = 640
@@ -76,7 +91,7 @@ class TestSensors(unittest.TestCase):
             w = 8
             h = 6
             channel_default = 1
-            ImageT = m.Image[pixel_type]
+            ImageT = mut.Image[pixel_type]
             image = ImageT(w, h, channel_default)
             nc = ImageT.Traits.kNumChannels
 
@@ -130,13 +145,93 @@ class TestSensors(unittest.TestCase):
     def test_constants(self):
         # Simply ensure we can access the constants.
         values = [
-            m.InvalidDepth.kTooFar,
-            m.InvalidDepth.kTooClose,
-            m.Label.kNoBody,
-            m.Label.kFlatTerrain,
+            mut.InvalidDepth.kTooFar,
+            mut.InvalidDepth.kTooClose,
+            mut.Label.kNoBody,
+            mut.Label.kFlatTerrain,
         ]
         self.assertTrue(values)
 
+    def test_camera_info(self):
+        width = 640
+        height = 480
+        fov_y = np.pi / 4
+        focal_y = height / 2 / np.tan(fov_y / 2)
+        focal_x = focal_y
+        center_x = width / 2
+        center_y = height / 2
+        intrinsic_matrix = np.array([
+            [focal_x, 0, center_x],
+            [0, focal_y, center_y],
+            [0, 0, 1]])
 
-if __name__ == '__main__':
-    unittest.main()
+        infos = [
+            mut.CameraInfo(width=width, height=height, fov_y=fov_y),
+            mut.CameraInfo(
+                width=width, height=height, focal_x=focal_x, focal_y=focal_y,
+                center_x=center_x, center_y=center_y),
+        ]
+
+        for info in infos:
+            self.assertEquals(info.width(), width)
+            self.assertEquals(info.height(), height)
+            self.assertEquals(info.focal_x(), focal_x)
+            self.assertEquals(info.focal_y(), focal_y)
+            self.assertEquals(info.center_x(), center_x)
+            self.assertEquals(info.center_y(), center_y)
+            self.assertTrue(
+                (info.intrinsic_matrix() == intrinsic_matrix).all())
+
+    def _check_input(self, value):
+        self.assertIsInstance(value, InputPortDescriptor)
+
+    def _check_output(self, value):
+        self.assertIsInstance(value, OutputPort)
+
+    def _check_ports(self, system):
+        self._check_input(system.state_input_port())
+        self._check_output(system.color_image_output_port())
+        self._check_output(system.depth_image_output_port())
+        self._check_output(system.label_image_output_port())
+        self._check_output(system.camera_base_pose_output_port())
+
+    def test_rgbd_camera(self):
+        sdf_path = FindResourceOrThrow(
+            "drake/systems/sensors/test/models/nothing.sdf")
+        tree = RigidBodyTree()
+        with open(sdf_path) as f:
+            sdf_string = f.read()
+        AddModelInstancesFromSdfString(
+            sdf_string, FloatingBaseType.kFixed, None, tree)
+        frame = RigidBodyFrame("rgbd camera frame", tree.FindBody("link"))
+        tree.addFrame(frame)
+
+        camera = mut.RgbdCamera(
+            name="camera", tree=tree, frame=frame,
+            z_near=0.5, z_far=5.0,
+            fov_y=np.pi / 4, show_window=False)
+
+        self.assertIsInstance(camera.color_camera_info(), mut.CameraInfo)
+        self.assertIsInstance(camera.depth_camera_info(), mut.CameraInfo)
+        self.assertIsInstance(camera.color_camera_optical_pose(), Isometry3)
+        self.assertIsInstance(camera.depth_camera_optical_pose(), Isometry3)
+        self.assertTrue(camera.tree() is tree)
+        # N.B. `RgbdCamera` copies the input frame.
+        self.assertEquals(camera.frame().get_name(), frame.get_name())
+        self._check_ports(camera)
+
+        # Test discrete camera.
+        period = mut.RgbdCameraDiscrete.kDefaultPeriod
+        discrete = mut.RgbdCameraDiscrete(
+            camera=camera, period=period, render_label_image=True)
+        self.assertTrue(discrete.camera() is camera)
+        self.assertTrue(discrete.mutable_camera() is camera)
+        self.assertEquals(discrete.period(), period)
+        self._check_ports(discrete)
+
+        # That we can access the state as images.
+        context = discrete.CreateDefaultContext()
+        values = context.get_abstract_state()
+        self.assertIsInstance(values.get_value(0), Value[mut.ImageRgba8U])
+        self.assertIsInstance(values.get_value(1), Value[mut.ImageDepth32F])
+        self.assertIsInstance(values.get_value(2), Value[mut.ImageLabel16I])

@@ -11,7 +11,7 @@
 #include <utility>
 
 #include <Eigen/Dense>
-#include <pybind11/eigen.h>
+#include "pybind11/eigen.h"
 
 #include "drake/common/drake_assert.h"
 

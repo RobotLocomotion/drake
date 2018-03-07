@@ -14,10 +14,16 @@ endif()
 find_package(drake CONFIG REQUIRED
   NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
 )
-find_package(Eigen3 3.3.3 CONFIG REQUIRED
-  NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
-)
-find_package(Matlab ${MINIMUM_MATLAB_VERSION} MODULE REQUIRED
+find_package(Matlab MODULE REQUIRED
   COMPONENTS MAIN_PROGRAM MEX_COMPILER MX_LIBRARY
 )
+
+if(Matlab_VERSION_STRING STREQUAL unknown)
+  message(WARNING "Could NOT determine MATLAB version")
+elseif(Matlab_VERSION_STRING VERSION_LESS ${MINIMUM_MATLAB_VERSION})
+  message(FATAL_ERROR
+    "Could NOT find MATLAB: Found unsuitable version ${Matlab_VERSION_STRING}, but required is at least ${MINIMUM_MATLAB_VERSION}"
+  )
+endif()
+
 find_package(Protobuf ${MINIMUM_PROTOBUF_VERSION} MODULE REQUIRED)

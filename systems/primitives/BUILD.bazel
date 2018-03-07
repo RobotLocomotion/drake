@@ -135,6 +135,7 @@ drake_cc_library(
     hdrs = ["linear_system.h"],
     deps = [
         ":affine_system",
+        "//common:essential",
         "//common:symbolic",
         "//common:symbolic_decompose",
         "//math:autodiff",
@@ -258,6 +259,16 @@ drake_cc_library(
     hdrs = ["trajectory_source.h"],
     deps = [
         "//common/trajectories:trajectory",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "wrap_to_system",
+    srcs = ["wrap_to_system.cc"],
+    hdrs = ["wrap_to_system.h"],
+    deps = [
+        "//math:wrap_to",
         "//systems/framework",
     ],
 )
@@ -531,6 +542,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial_trajectory",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wrap_to_system_test",
+    deps = [
+        ":wrap_to_system",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

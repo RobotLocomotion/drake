@@ -27,6 +27,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcmtypes_bot2_core",
     "lcmtypes_robotlocomotion",
     "octomap",
+    "osqp",
     "pybind11",
     "scs",
     "sdformat",
@@ -37,6 +38,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "tinyobjloader",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
+    "dreal",
     "net_sf_jchart2d",
     "find_protobuf_cmake",
     "optitrack_driver",

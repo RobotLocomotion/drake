@@ -748,6 +748,14 @@ void ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
     }
   }
 
+  // Parses the collision filter groups.
+  for (XMLElement* group_node =
+      node->FirstChildElement("collision_filter_group");
+       group_node;
+       group_node = group_node->NextSiblingElement("collision_filter_group")) {
+    ParseCollisionFilterGroup(tree, group_node, model_instance_id);
+  }
+
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint")) {

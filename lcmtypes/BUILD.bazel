@@ -395,14 +395,13 @@ install(
 drake_py_test(
     name = "drake-lcm-spy_install_test",
     size = "large",
-    srcs = ["test/drake-lcm-spy_install_test.py"],
-    main = "test/drake-lcm-spy_install_test.py",
+    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
+    allow_import_unittest = True,
     deps = ["//tools/install:install_test_helper"],
 )
 
 drake_py_test(
     name = "polynomial_matrix_test",
-    srcs = ["test/polynomial_matrix_test.py"],
     deps = [
         ":lcmtypes_py",
     ],
