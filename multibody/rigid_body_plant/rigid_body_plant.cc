@@ -12,6 +12,7 @@
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
+#include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 #include "drake/solvers/mathematical_program.h"
 
 using std::make_unique;
@@ -539,9 +540,8 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   // radius. See @ref hunt_crossley (in contact_model_doxygen.h) for a lengthy
   // discussion on converting Young's Modulus to a stiffness.
   // The "length" will be incorporated using the contact depth.
-  // TODO(edrumwri): Make characteristic radius user settable.
-  const double characteristic_radius = 1e-2;  // 1 cm.
-  *stiffness = material.youngs_modulus() * characteristic_radius;
+  *stiffness = material.youngs_modulus() *
+      compliant_contact_model_->characteristic_radius();
 
   // Get the damping value (b) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975] yields b = 3/2 * α * k * x. We can assume
@@ -1206,7 +1206,10 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   SPDLOG_DEBUG(drake::log(), "g(): {}",
       tree.positionConstraints(kinematics_cache).transpose());
 
-  // TODO(edrumwri): Replace this block of code when caching is in place.
+  // TODO(edrumwri): Relocate this block of code to the contact output function
+  // when caching is in place.
+  int normal_force_index = 0;
+  int frictional_force_index = static_cast<int>(contacts.size());
   time_stepping_contact_results_.Clear();
   for (const auto& contact : contacts) {
     // Get the two body indices.
@@ -1226,13 +1229,41 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     // Get the point halfway between the two in the world frame.
     const Vector3<T> p_W = (p_WAs + p_WBs) * 0.5;
 
-    // Determine the contact force.
-    Vector3<T> normal(1, 0, 0), force;
+    // Initialize the contact result.
     ContactInfo<T>& contact_result = time_stepping_contact_results_.AddContact(
         contact.elementA->getId(), contact.elementB->getId());
-    contact_result.set_resultant_force(ContactForce<T>(
-        p_W, contact.normal, force));
+
+    // Compute an orthonormal basis.
+    const int kXAxisIndex = 0, kYAxisIndex = 1, kZAxisIndex = 2;
+    auto R_WC = math::ComputeBasisFromAxis(kXAxisIndex, contact.normal);
+    const Vector3<T> tan1_dir = R_WC.col(kYAxisIndex);
+    const Vector3<T> tan2_dir = R_WC.col(kZAxisIndex);
+
+    // Determine the contact force.
+    std::vector<std::unique_ptr<ContactDetail<T>>> contact_details;
+    Vector3<T> force = contact.normal * constraint_force[normal_force_index];
+    if (data.r[normal_force_index] == 2) {
+      // Special case: pyramid friction.
+      force += tan1_dir * constraint_force[frictional_force_index++];
+      force += tan2_dir * constraint_force[frictional_force_index++];
+    } else {
+      for (int j = 0; j < data.r[normal_force_index]; ++j) {
+        double theta = M_PI * j /
+            (static_cast<double>(data.r[normal_force_index]) - 1);
+        const double cth = cos(theta);
+        const double sth = sin(theta);
+        force += tan1_dir * cth * constraint_force[frictional_force_index++];
+        force += tan2_dir * sth * constraint_force[frictional_force_index++];
+      }
+    }
+
+    ++normal_force_index;
+    const ContactForce<T> resultant_force(p_W, contact.normal, force);
+    contact_result.set_resultant_force(resultant_force);
+    contact_details.emplace_back(new PointContactDetail<T>(resultant_force));
+    contact_result.set_contact_details(std::move(contact_details));
   }
+
   // Convert the contact forces to generalized forces, removing joint limit
   // and bilateral constraint forces first.
   VectorX<T> generalized_contact_force;
@@ -1242,7 +1273,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   constraint_solver_.ComputeGeneralizedImpulseFromConstraintImpulses(
       data, constraint_force, &generalized_contact_force);
   time_stepping_contact_results_.set_generalized_contact_force(
-      generalized_contact_force);
+      generalized_contact_force / dt);
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());

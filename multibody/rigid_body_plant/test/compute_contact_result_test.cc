@@ -47,8 +47,12 @@ class ContactResultTest : public ContactResultTestCommon<double>,
   // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
     // Set the time step, based on whether the continuous or discrete model is
-    // used. The nonzero value is arbitrary.
-    const double timestep = (GetParam()) ? 1e-5 : 0.0;
+    // used. The nonzero value is arbitrary. The absurdly low step size is
+    // necessary for the test to pass to the requisite precision (the force
+    // depends on the step size).
+    // TODO(edrumwri): Reference constraint documentation which explains this
+    // relationship.
+    const double timestep = (GetParam()) ? 1e-18 : 0.0;
 
     // Populate the plant.
     plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance),
@@ -64,7 +68,8 @@ class ContactResultTest : public ContactResultTestCommon<double>,
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
 
-    // TODO(edrumwri): Eliminate this call once the caching system is in place.
+    // TODO(edrumwri): Eliminate this call once the caching system is in place-
+    // it will then no longer be necessary.
     plant_->CalcDiscreteVariableUpdates(*context_,
        &context_->get_mutable_discrete_state());
 

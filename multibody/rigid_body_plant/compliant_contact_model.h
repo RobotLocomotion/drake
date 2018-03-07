@@ -96,6 +96,10 @@ class CompliantContactModel {
       const multibody::collision::Element& b,
       CompliantMaterial* parameters) const;
 
+  /// Gets the characteristic radius used to convert between stifness and
+  /// elastic modulus.
+  double characteristic_radius() const { return characteristic_radius_; }
+
  private:
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on A relative to B (expressed in B), v_BAc.

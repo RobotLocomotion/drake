@@ -51,7 +51,7 @@ class ContactResultTestCommon {
   // to make sure they are not confused as contact parameters in derived tests
   // (see below).
   const double kYoungsModulus = 150;  // Pa
-  const double kDissipation = 2.0;  // s/m
+  const double kDissipation = 0.0;  // s/m
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
 
