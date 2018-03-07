@@ -45,6 +45,9 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial() {
 }
 
 template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType>::~PiecewisePolynomial() {}
+
+template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>
 PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
   DRAKE_DEMAND(derivative_order >= 0);

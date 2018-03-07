@@ -4,13 +4,14 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_function.h"
 
 class PiecewisePolynomialBase : public PiecewiseFunction {
  public:
   explicit PiecewisePolynomialBase(std::vector<double> const& breaks);
 
-  virtual ~PiecewisePolynomialBase();
+  ~PiecewisePolynomialBase() override;
 
   virtual int getSegmentPolynomialDegree(int segment_number,
                                          Eigen::Index row = 0,
@@ -24,4 +25,6 @@ class PiecewisePolynomialBase : public PiecewiseFunction {
 
  protected:
   PiecewisePolynomialBase();
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomialBase)
 };

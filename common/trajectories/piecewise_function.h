@@ -5,6 +5,8 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
+
 class PiecewiseFunction {
  public:
   /// Minimum delta quantity used for comparing time.
@@ -48,6 +50,8 @@ class PiecewiseFunction {
       int num_segments, std::default_random_engine& generator);
 
  protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseFunction)
+
   bool segmentTimesEqual(const PiecewiseFunction& b,
       double tol = kEpsilonTime) const;
 

@@ -47,8 +47,6 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
 
-  virtual ~PiecewisePolynomial() {}
-
   // default constructor; just leaves segment_times and polynomials empty
   PiecewisePolynomial();
 
@@ -67,6 +65,8 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
   // Scalar constructor
   PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
                       std::vector<double> const& breaks);
+
+  ~PiecewisePolynomial() override;
 
   /**
    * Constructs a piecewise constant PiecewisePolynomial.

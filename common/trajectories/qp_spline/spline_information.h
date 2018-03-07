@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial_base.h"
 #include "drake/common/trajectories/qp_spline/continuity_constraint.h"
 #include "drake/common/trajectories/qp_spline/value_constraint.h"
@@ -13,17 +14,19 @@ class SplineInformation : public PiecewisePolynomialBase {
   std::vector<ContinuityConstraint> continuity_constraints;
 
  public:
-  virtual ~SplineInformation() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SplineInformation)
 
   SplineInformation(std::vector<int> const& segment_polynomial_orders,
                     std::vector<double> const& breaks);
 
-  virtual int getSegmentPolynomialDegree(int segment_number, Eigen::Index row,
-                                         Eigen::Index cols) const;
+  ~SplineInformation() override;
 
-  virtual Eigen::Index rows() const;
+  int getSegmentPolynomialDegree(int segment_number, Eigen::Index row,
+                                 Eigen::Index cols) const override;
 
-  virtual Eigen::Index cols() const;
+  Eigen::Index rows() const override;
+
+  Eigen::Index cols() const override;
 
   std::vector<ValueConstraint> const& getValueConstraints(
       int segment_number) const;

@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
 /**
@@ -12,7 +13,7 @@
  */
 
 template <typename CoefficientType = double>
-class ExponentialPlusPiecewisePolynomial : public PiecewiseFunction {
+class ExponentialPlusPiecewisePolynomial final : public PiecewiseFunction {
  public:
   typedef Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>
       MatrixX;
@@ -26,6 +27,8 @@ class ExponentialPlusPiecewisePolynomial : public PiecewiseFunction {
   PiecewisePolynomial<CoefficientType> piecewise_polynomial_part_;
 
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExponentialPlusPiecewisePolynomial)
+
   ExponentialPlusPiecewisePolynomial();
 
   template <typename DerivedK, typename DerivedA, typename DerivedAlpha>
@@ -52,6 +55,8 @@ class ExponentialPlusPiecewisePolynomial : public PiecewiseFunction {
   // from PiecewisePolynomial
   ExponentialPlusPiecewisePolynomial(
       const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part);
+
+  ~ExponentialPlusPiecewisePolynomial() override;
 
   // TODO(tkoolen): fix return type (handle complex etc.)
   ValueType value(double t) const;

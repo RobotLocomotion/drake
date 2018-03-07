@@ -13,6 +13,8 @@ SplineInformation::SplineInformation(
   value_constraints.resize(getNumberOfSegments());
 }
 
+SplineInformation::~SplineInformation() {}
+
 void SplineInformation::addValueConstraint(int segment_index,
                                            ValueConstraint const& constraint) {
   value_constraints[segment_index].push_back(constraint);

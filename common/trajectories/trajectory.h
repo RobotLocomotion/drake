@@ -4,12 +4,13 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
 
 /**
- * A Trajectory represents a time-varying matrix of doubles. 
+ * A Trajectory represents a time-varying matrix of doubles.
  */
 class Trajectory {
  public:
@@ -49,6 +50,10 @@ class Trajectory {
 
   virtual double get_start_time() const = 0;
   virtual double get_end_time() const = 0;
+
+ protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory)
+  Trajectory() = default;
 };
 
 }  // namespace drake

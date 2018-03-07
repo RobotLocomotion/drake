@@ -5,6 +5,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/trajectory.h"
 
@@ -14,13 +15,17 @@ namespace drake {
  * A PiecewisePolynomialTrajectory is a Trajectory that is represented by
  * (implemented in terms of) a PiecewisePolynomial.
  */
-class PiecewisePolynomialTrajectory : public Trajectory {
+class PiecewisePolynomialTrajectory final : public Trajectory {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomialTrajectory)
+
   /**
    * Construct a PiecewisePolynomialTrajectory from a PiecewisePolynomial.
    */
   explicit PiecewisePolynomialTrajectory(const PiecewisePolynomial<double>& pp)
       : pp_(pp) {}
+
+  ~PiecewisePolynomialTrajectory();
 
   std::unique_ptr<Trajectory> Clone() const override {
     return std::make_unique<PiecewisePolynomialTrajectory>(pp_);
