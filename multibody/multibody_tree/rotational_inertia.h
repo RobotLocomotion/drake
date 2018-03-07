@@ -216,7 +216,8 @@ class RotationalInertia {
   ///    in `this` and `other` can be converted to a double (discarding
   ///    supplemental scalar data such as derivatives of an AutoDiffScalar).
   ///    It fails at runtime if type T cannot be converted to `double`.
-  bool IsNearlyEqualTo(const RotationalInertia& other, double precision) const {
+  decltype(T() < T()) IsNearlyEqualTo(
+      const RotationalInertia& other, double precision) const {
     using std::min;
     const T I_maxA = CalcMaximumPossibleMomentOfInertia();
     const T I_maxB = other.CalcMaximumPossibleMomentOfInertia();
@@ -472,12 +473,18 @@ class RotationalInertia {
   /// center of mass).  Note: this class does not know its about-point or its
   /// center of mass location.
   ///
+  /// @warning This method is only supported for types that are
+  /// drake::is_numeric. For non-numeric types this method throws an exception
+  /// at runtime.
+  ///
   /// @return `true` for a plausible rotational inertia passing the above
   ///          necessary but insufficient checks and `false` otherwise.
   /// @throws std::runtime_error if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
-  bool CouldBePhysicallyValid() const {
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value, bool>::type
+  CouldBePhysicallyValid() const {
     if (IsNaN()) return false;
 
     // All the moments of inertia should be non-negative, so the maximum moment
@@ -503,6 +510,17 @@ class RotationalInertia {
     const Vector3<double> p = CalcPrincipalMomentsOfInertia();
     return AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
         p(0), p(1), p(2), epsilon);
+  }
+
+  // This method throws an exception for non-numeric types.
+  // @tparam T1 SFINAE boilerplate.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value, decltype(T() < T())>::type
+  CouldBePhysicallyValid() const {
+    DRAKE_ABORT_MSG(
+        "RotationalInertia<T>::CouldBePhysicallyValid "
+        "only works with types that are drake::is_numeric.");
+    return T(1) < T(2);  // Return something so that the compiler doesn't bark.
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
@@ -840,8 +858,8 @@ class RotationalInertia {
   //          product absolute value in `other`.  Otherwise returns `false`.
   // @note Trace() / 2 is a rotational inertia's maximum possible element,
   // e.g., consider: epsilon = 1E-9 * Trace()  (where 1E-9 is a heuristic).
-  bool IsApproxMomentsAndProducts(const RotationalInertia& other,
-                                  const T& epsilon) const {
+  decltype(T() < T()) IsApproxMomentsAndProducts(
+      const RotationalInertia& other, const T& epsilon) const {
     const Vector3<T> moment_difference = get_moments() - other.get_moments();
     const Vector3<T> product_difference = get_products() - other.get_products();
     const T moment_max = moment_difference.template lpNorm<Eigen::Infinity>();
@@ -867,11 +885,12 @@ class RotationalInertia {
   //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
-  static bool AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+  static decltype(T() < T())
+  AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
-    const bool are_moments_near_positive = AreMomentsOfInertiaNearPositive(
+    const auto are_moments_near_positive = AreMomentsOfInertiaNearPositive(
         Ixx, Iyy, Izz, epsilon);
-    const bool is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
+    const auto is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
                                                    Ixx + Iyy + epsilon >= Iyy &&
                                                    Iyy + Izz + epsilon >= Ixx;
     return are_moments_near_positive && is_triangle_inequality_satisified;
@@ -885,7 +904,7 @@ class RotationalInertia {
   // @param epsilon Real positive number that is significantly smaller than the
   //        largest possible element in a valid rotational inertia.
   //        Heuristically, `epsilon` is a small multiplier of Trace() / 2.
-  static bool AreMomentsOfInertiaNearPositive(
+  static decltype(T() < T()) AreMomentsOfInertiaNearPositive(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
   }
