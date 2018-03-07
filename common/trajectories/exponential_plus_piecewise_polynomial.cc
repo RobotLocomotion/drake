@@ -71,6 +71,7 @@ Eigen::Index ExponentialPlusPiecewisePolynomial<CoefficientType>::cols() const {
 template <typename CoefficientType>
 void ExponentialPlusPiecewisePolynomial<CoefficientType>::shiftRight(
     double offset) {
+  std::vector<double>& breaks = get_mutable_breaks();
   for (auto it = breaks.begin(); it != breaks.end(); ++it) {
     *it += offset;
   }
