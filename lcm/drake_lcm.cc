@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace lcm {
@@ -45,11 +46,13 @@ void DrakeLcm::StopReceiveThread() {
 
 void DrakeLcm::Publish(const std::string& channel, const void* data,
                        int data_size, double) {
+  DRAKE_THROW_UNLESS(!channel.empty());
   lcm_.publish(channel, data, data_size);
 }
 
 void DrakeLcm::Subscribe(const std::string& channel,
                          DrakeLcmMessageHandlerInterface* handler) {
+  DRAKE_THROW_UNLESS(!channel.empty());
   auto subscriber = std::make_unique<Subscriber>(handler);
   auto sub =
       lcm_.subscribe(channel, &Subscriber::LcmCallback, subscriber.get());
