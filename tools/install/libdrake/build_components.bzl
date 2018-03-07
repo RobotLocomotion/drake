@@ -113,7 +113,6 @@ LIBDRAKE_COMPONENTS = [
     "//manipulation/schunk_wsg:schunk_wsg_controller",
     "//manipulation/schunk_wsg:schunk_wsg_lcm",
     "//manipulation/sensors:xtion",
-    "//manipulation/util:bot_core_lcm_encode_decode",
     "//manipulation/util:frame_pose_tracker",
     "//manipulation/util:moving_average_filter",
     "//manipulation/util:robot_state_msg_translator",
