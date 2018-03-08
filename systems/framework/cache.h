@@ -4,6 +4,7 @@
 Declares CacheEntryValue and Cache, which is the container for cache entry
 values. */
 
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -33,7 +34,7 @@ an `out_of_date` flag, and a DependencyTracker ticket. Details:
   computed, and thus must be recomputed prior to use. On the other hand, if the
   entry is _not_ out of date, then it is "up to date" meaning that if you were
   to recompute it using the current Context values you would get the identical
-  value (so don't bother!).
+  result (so don't bother!).
 - The "serial number" is an integer that is incremented whenever the value is
   modified, or made available for mutable access. You can use it to recognize
   that you are looking at the same value as you saw at some earlier time. It is
@@ -58,8 +59,9 @@ described above, which is still expected to be operational when caching is
 disabled. However, when caching is disabled the Eval() methods will recompute
 the contained value even if it is not marked out of date. That should have no
 effect other than to slow down computation; if it does, something is wrong.
-There could be a problem with the dependencies, or a bug in the caching system,
-or something more subtle in user code. */
+There could be a problem with the specification of dependencies, a bug in user
+code such as improper retention of a stale reference, or a bug in the caching
+system. */
 class CacheEntryValue {
  public:
   /** @name  Does not allow move or assignment; copy constructor is private. */
@@ -91,7 +93,7 @@ class CacheEntryValue {
   These are the recommended methods for accessing and modifying the cache entry
   value. They unconditionally check all the relevant preconditions to catch
   usage errors. In particular, access is prevented when the value is out of
-  date, and modification is permitted only when the value is already out of
+  date, and modification is permitted only when the value is _already_ out of
   date. For performance-sensitive code, you may need to use the parallel set
   of methods below that check preconditions only in Debug builds, but be sure
   you are gaining significant performance before giving up on Release-build
@@ -108,7 +110,7 @@ class CacheEntryValue {
     return GetAbstractValueOrThrowHelper(__func__);
   }
 
-  /** Provides a const reference to the contained value of known type V. It is
+  /** Returns a const reference to the contained value of known type V. It is
   an error to call this if there is no stored value, or the value is out of
   date, or the value doesn't actually have type V.
   @throws std::logic_error if there is no stored value, or if it is out of
@@ -119,13 +121,20 @@ class CacheEntryValue {
     return GetValueOrThrowHelper<V>(__func__);
   }
 
-  /** This is the preferred method for assigning a new value to a cache entry.
+  /** Assigns a new value to a cache entry and marks it up to date.
   The cache entry must already contain a value object of type V to which the
   new value is assigned, and that value must currently be marked out of date.
   The new value is assumed to be up to date with its prerequisites, so the
   `out_of_date` flag is cleared. No out-of-date notifications are issued by
   this method; we assume downstream dependents were marked out of date at the
   time this value went out of date. The serial number is incremented.
+
+  This method is the safest and most convenient way to assign a new value.
+  However it requires that a new value be computed and then copied into the
+  cache entry, which is fine for small types V but may be too expensive for
+  large ones. You can alternatively obtain a mutable reference to the value
+  already contained in the cache entry and update it in place via
+  GetMutableValueOrThrow().
   @throws std::logic_error if there is no value, or the value is already up
                            to date, of it doesn't actually have type V.
   @see set_value(), GetMutableValueOrThrow() */
@@ -136,8 +145,9 @@ class CacheEntryValue {
     mark_up_to_date();
   }
 
-  /** (Advanced) Provides direct mutable access to the contained value, for the
-  purpose of performing an update or extended computation in place. This is only
+  /** (Advanced) Returns a mutable reference to the contained value, for the
+  purpose of performing an update or extended computation in place. (Prefer
+  SetValueOrThrow() if you can use it.) Mutable access is only
   permitted if the value is already marked out of date (meaning that all
   downstream dependents have already been notified). It is an error to call
   this if there is no stored value, or it is already up to date. Since this is
@@ -153,7 +163,7 @@ class CacheEntryValue {
     return GetMutableAbstractValueOrThrowHelper(__func__);
   }
 
-  /** (Advanced) Convenience method that provides mutable access to the
+  /** (Advanced) Convenience method that returns a mutable reference to the
   contained value downcast to its known concrete type. Throws an exception if
   the contained value does not have the indicated concrete type. Note that you
   must call mark_up_to_date() after modifying the value through the returned
@@ -202,10 +212,10 @@ class CacheEntryValue {
   is a substantial fraction of the total code being executed there. */
   //@{
 
-  /** Provides fast, const access to the contained abstract value, which must
-  not be out of date with respect to all of its prerequisites. It is an error
+  /** Returns a const reference to the contained abstract value, which must
+  not be out of date with respect to any of its prerequisites. It is an error
   to call this if there is no stored value, or it is out of date. Because this
-  is often used in performance-critical contexts, these requirements will be
+  is used in performance-critical contexts, these requirements will be
   checked only in Debug builds. If you are not in a performance-critical
   situation (and you probably are not!), use GetAbstractValueOrThrow()
   instead. */
@@ -217,7 +227,7 @@ class CacheEntryValue {
 #endif
   }
 
-  /** Provides fast, const access to the contained value of known type V. It is
+  /** Returns a const reference to the contained value of known type V. It is
   an error to call this if there is no stored value, or the value is out of
   date, or the value doesn't actually have type V. Because this is expected to
   be used in performance-critical, inner-loop circumstances, these requirements
@@ -233,11 +243,11 @@ class CacheEntryValue {
 #endif
   }
 
-  /** This is the normal method for assigning a new value to a cache entry.
+  /** Assigns a new value to a cache entry and marks it up to date.
   The cache value must already have a value object of type V to which the
   new value is assigned, and that value must not already be up to date.
   The new value is assumed to be up to date with its prerequisites, so the
-  up-to-date flag is set. No out-of-date notifications are issued by this
+  `out_of_date` flag is cleared. No out-of-date notifications are issued by this
   method; we assume downstream dependents were marked out of date at the time
   this value went out of date. The serial number is incremented. If you are not
   in a performance-critical situation (and you probably are not!), use
@@ -282,7 +292,6 @@ class CacheEntryValue {
     DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
     return (flags_ & kValueIsOutOfDate) != 0;
   }
-
 
   /** Returns `true` if either (a) the value is out of date, or (b) caching
   is disabled for this entry. This is a _very_ fast inline method intended
@@ -357,16 +366,17 @@ class CacheEntryValue {
   enabled together using higher-level methods that invoke these ones, but you
   can disable just a single entry if necessary. */
   //@{
-  /** (Advanced) Disable caching for just this cache entry value. When disabled,
-  the corresponding entry's Eval() method will unconditionally invoke Calc() to
-  recompute the value, regardless of the setting of the `out_of_date` flag. The
-  `disabled` flag is independent of the `out_of_date` flag, which will continue
-  to be managed even if caching is disabled. */
+
+  /** (Advanced) Disables caching for just this cache entry value. When
+  disabled, the corresponding entry's Eval() method will unconditionally invoke
+  Calc() to recompute the value, regardless of the setting of the `out_of_date`
+  flag. The `disabled` flag is independent of the `out_of_date` flag, which
+  will continue to be managed even if caching is disabled. */
   void disable_caching() {
     flags_ |= kCacheEntryIsDisabled;
   }
 
-  /** (Advanced) Enable caching for this cache entry value if it was previously
+  /** (Advanced) Enables caching for this cache entry value if it was previously
   disabled. When enabled (the default condition) the corresponding entry's
   Eval() method will check the `out_of_date` flag and invoke Calc() only if the
   entry is marked out of date. */
@@ -414,7 +424,7 @@ class CacheEntryValue {
   CacheEntryValue()
       : description_("DUMMY"), value_(AbstractValue::Make<int>(0)) {}
 
-  // Create a new cache value with the given human-readable description and
+  // Creates a new cache value with the given human-readable description and
   // (optionally) an abstract value that defines the right concrete type for
   // this value. The given cache index and dependency ticket must be valid and
   // are recorded here. Unless you have a good reason to do otherwise, make the
@@ -555,14 +565,12 @@ of CacheEntryValue objects are stable once allocated, but CacheIndex numbers are
 stable even after a Context has been copied so should be preferred. */
 class Cache {
  public:
-  /** @name  Does not allow move or assignment; copy constructor limited.
-  The copy constructor does not copy internal pointers so requires special
-  handling. */
-  /** @{ */
+  /** @name  Does not allow move or assignment; copy constructor is private. */
+  //@{
   Cache(Cache&&) = delete;
   Cache& operator=(const Cache&) = delete;
   Cache& operator=(Cache&&) = delete;
-  /** @} */
+  //@}
 
   /** Constructor creates an empty cache referencing the system pathname
   service of its owning subcontext. The supplied pointer must not be null. */
@@ -604,7 +612,9 @@ class Cache {
   int cache_size() const { return static_cast<int>(store_.size()); }
 
   /** Returns a const CacheEntryValue given an index. This is very fast.
-  Behavior is undefined if the ticket is out of range [0..cache_size()-1]. */
+  Behavior is undefined if the index is out of range [0..cache_size()-1] or
+  if there is no CacheEntryValue with that index. Use has_cache_entry_value()
+  first if you aren't sure. */
   const CacheEntryValue& get_cache_entry_value(CacheIndex index) const {
     DRAKE_ASSERT(has_cache_entry_value(index));
     const CacheEntryValue& cache_value = *store_[index];
@@ -613,15 +623,17 @@ class Cache {
   }
 
   /** Returns a mutable CacheEntryValue given an index. This is very fast.
-  Behavior is undefined if the index is out of range [0..cache_size()-1]. */
+  Behavior is undefined if the index is out of range [0..cache_size()-1] or
+  if there is no CacheEntryValue with that index. Use has_cache_entry_value()
+  first if you aren't sure.  */
   CacheEntryValue& get_mutable_cache_entry_value(CacheIndex index) {
     return const_cast<CacheEntryValue&>(get_cache_entry_value(index));
   }
 
-  /** (Advanced) Enable or disable caching for all the entries in this %Cache.
+  /** (Advanced) Enables or disables caching for all the entries in this %Cache.
   Note that this is done by setting or clearing individual `is_disabled` flags
   in the entries, so it can be changed on a per-entry basis later. This has no
-  effect on the `up_to_date` flags. */
+  effect on the `out_of_date` flags. */
   void SetIsCacheDisabled(bool disabled);
 
   /** (Advanced) Mark every entry in this cache as "out of date". This forces
@@ -647,7 +659,8 @@ class Cache {
   void RepairCachePointers(
       const internal::SystemPathnameInterface* owning_subcontext);
 
-  // The system name service of the subcontext that owns this cache.
+  // The system name service of the subcontext that owns this cache. This should
+  // not be copied since it would still refer to the source subcontext.
   reset_on_copy<const internal::SystemPathnameInterface*>
       owning_subcontext_;
 
