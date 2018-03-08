@@ -3,8 +3,35 @@
 
 """
 Makes selected VTK headers and precompiled shared libraries available to be
-used as a C/C++ dependency. On Ubuntu Xenial, a VTK archive is downloaded and
-unpacked. On macOS and OS X, VTK must be installed using Homebrew.
+used as a C++ dependency. On Ubuntu Xenial, a VTK archive is downloaded and
+unpacked. On macOS, VTK must be installed from the robotlocomotion/director tap
+(https://git.io/vN6ft) using Homebrew.
+
+Archive naming convention:
+    vtk-v<version>-qt-<qt version>-xenial-<arch>
+
+Build configuration:
+    BUILD_TESTING=OFF
+    BUILD_SHARED_LIBS=ON
+    CMAKE_BUILD_TYPE=Release
+    Module_vtkGUISupportQt=ON
+    VTK_LEGACY_REMOVE=ON
+    VTK_OPENGL_HAS_OSMESA=ON
+    VTK_QT_VERSION=5
+    VTK_USE_SYSTEM_EXPAT=ON
+    VTK_USE_SYSTEM_FREETYPE=ON
+    VTK_USE_SYSTEM_HDF5=ON
+    VTK_USE_SYSTEM_JPEG=ON
+    VTK_USE_SYSTEM_JSONCPP=ON
+    VTK_USE_SYSTEM_LIBXML2=ON
+    VTK_USE_SYSTEM_LZ4=ON
+    VTK_USE_SYSTEM_NETCDF=ON
+    VTK_USE_SYSTEM_NETCDFCPP=ON
+    VTK_USE_SYSTEM_OGGTHEORA=ON
+    VTK_USE_SYSTEM_PNG=ON
+    VTK_USE_SYSTEM_TIFF=ON
+    VTK_USE_SYSTEM_ZLIB=ON
+    VTK_WRAP_PYTHON=ON
 
 Example:
     WORKSPACE:
@@ -25,7 +52,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "8.0"
+VTK_MAJOR_MINOR_VERSION = "8.1"
 
 def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
                     header_only = False, linkopts = []):
@@ -84,8 +111,8 @@ def _impl(repository_ctx):
             VTK_MAJOR_MINOR_VERSION), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-8.0.1-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "095a88c14c44b8f2655c5932f21ccbfeca840e5815f14b153bc5d5a102940527"  # noqa
+            archive = "vtk-v8.1.0-qt-5.5.1-xenial-x86_64.tar.gz"
+            sha256 = "768faf503dc8b0ec78bbf159498d83ca36a0c5d2eefa8a981905feeca9eb6f0c"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -546,7 +573,7 @@ def _impl(repository_ctx):
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtksys")
 
-    # Glob all files for the data dependency of drake-visualizer.
+    # Glob all files for the data dependency of //tools:drake_visualizer.
     file_content += """
 filegroup(
     name = "vtk",
