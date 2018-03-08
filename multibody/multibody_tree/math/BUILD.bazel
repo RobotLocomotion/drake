@@ -22,20 +22,23 @@ drake_cc_library(
 
 drake_cc_library(
     name = "spatial_velocity",
-    srcs = [],
+    srcs = ["spatial_velocity.cc"],
     hdrs = ["spatial_velocity.h"],
     deps = [
         ":spatial_vector",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
 
 drake_cc_library(
     name = "spatial_acceleration",
-    srcs = [],
+    srcs = ["spatial_acceleration.cc"],
     hdrs = ["spatial_acceleration.h"],
     deps = [
         ":spatial_vector",
+        ":spatial_velocity",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/math:vector3_util",
     ],
@@ -43,10 +46,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "spatial_force",
-    srcs = [],
+    srcs = ["spatial_force.cc"],
     hdrs = ["spatial_force.h"],
     deps = [
         ":spatial_vector",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -89,6 +93,7 @@ drake_cc_googletest(
     name = "spatial_algebra_test",
     deps = [
         ":spatial_algebra",
+        "//common:symbolic",
         "//drake/common:autodiff",
     ],
 )
