@@ -203,10 +203,14 @@ one model to the first group, and all elements of the second model to the second
 group.  Set either group to _ignore_ the other (or both, redundancy doesn't
 hurt).
 
-\section cfg_impl The Implementation
+\section cfg_impl Declaring Collision Filter Groups
 
-Collision filter groups are instantiated by specifying them in URDF files as
-follows:
+\subsection cfg_impl_in_file Declaring collision filter groups in URDF/SDF files
+
+Collision filter groups can be instantiated by specifying them in URDF/SDF
+files.
+
+_Declaration_
 
 ```xml
     <collision_filter_group name="group1">
@@ -238,9 +242,55 @@ the group). This is achieved by having the group ignore _itself_. E.g.,
     </collision_filter_group>
 ```
 
-@note Beyond instantiating the collision filter groups from parsing a URDF/SDF
-file, there is currently no interface for programmatically altering group
-membership or ignore relationships.
+Urdf files support the definition of a single robot. As such, all
+`<collision_filter_group>` (`<cfg>` for brevity) tags are children of the
+ `<robot>` tag.
+
+Sdf files support the definition of multiple robots (aka "models"). As such, the
+`<cfg>` tags are children of each `<model>` tag. The `<cfg>` tags can only
+include links that are defined *in that model* in its membership lists. The
+implication of that is collision filter groups defined in sdf files contain
+bodies from a single model only. However, a collision filter group in *one*
+model can ignore a collision filter group in another model. See
+<a href="https://github.com/RobotLocomotion/drake/blob/master/multibody/collision/test/multi_model_groups.sdf">multi_model_groups.sdf</a>
+for an example.
+
+\subsection cfg_impl_in_code Declaring collision filter groups in code
+
+In addition to parsing the collision filter groups from the urdf/sdf files,
+there is an API on the RigidBodyTree that allows manipulation. However, the API
+is constrained. The workflow is as follows:
+
+ - Add one or more bodies
+ - Add one or more collision filter groups
+ - Add bodies to the collision filter groups
+ - Add groups to the "ignore set" of the created groups
+ - Compile the tree
+
+Once a body in the tree has been through the compilation process, it _cannot_
+have its collision filters modified. In the historical workflow, the act of
+parsing a URDF/SDF file implicitly ends with compiling the tree. So, using the
+standard parsing API means that the bodies parsed from a file cannot be
+programmatically altered.
+
+There is a _second_ parsing API that allows for suppressing the automatic
+tree compilation. If there is a need to augment or modify the collision filter
+groups declared in a parsed file, pass `false` into this alternate API.
+By doing so, you can invoke methods to create and modify collision filter groups
+for those bodies that have not been compiled yet. However, the caller has the
+responsibility to make sure that RigidBodyTree::compile() is invoked before
+doing any work on the tree. For example:
+
+```
+ const bool do_compile = false;
+ const std::string file_name = "some_file.urdf";
+ RigidBodyTree<double> tree;
+ AddModelInstanceFromUrdfFileToWorld(file_name, kRollPitchYaw, do_compile, &tree);
+ tree.DefineCollisionFilterGroup("new_group");  // doesn't already exist.
+ tree.AddCollisionFilterGroupMember("new_group", "body1", 0); // Assumes known body name and model instance id.
+ tree.AddCollisionFilterIgnoreTarget("new_group", "group_from_urdf");
+ tree.compile();
+```
 
 \subsection cfg_impl_code In-code representation
 

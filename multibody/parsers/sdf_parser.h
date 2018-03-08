@@ -26,6 +26,12 @@ namespace sdf {
  * meet these requirements should instead use
  * AddModelInstancesFromSdfFileToWorldSearchingInRosPackages().
  *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
+ *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
  *
@@ -44,6 +50,12 @@ AddModelInstancesFromSdfFileToWorld(
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable
+AddModelInstancesFromSdfFileToWorld(
+    const std::string& filename,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 /**
  * Adds the model or models defined within an SDF file to a rigid body tree.
  * One instance of each model is added. The models in the SDF are assumed to be
@@ -55,6 +67,12 @@ AddModelInstancesFromSdfFileToWorld(
  * `package://`, or if the package can be found by crawling up the directory
  * tree, the SDF could instead be loaded using
  * AddModelInstancesFromSdfFileToWorld().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
@@ -77,6 +95,12 @@ AddModelInstancesFromSdfFileToWorldSearchingInRosPackages(
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable
+AddModelInstancesFromSdfFileToWorldSearchingInRosPackages(
+    const std::string& filename, const PackageMap& package_map,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 /**
  * Adds the model or models defined within an SDF file to a rigid body tree.
  * One instance of each model is added.
@@ -87,6 +111,12 @@ AddModelInstancesFromSdfFileToWorldSearchingInRosPackages(
  * @p filename. SDF files that contain `package://` references to do not
  * meet these requirements should instead use
  * AddModelInstancesFromSdfFileSearchingInRosPackages().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
@@ -108,6 +138,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable AddModelInstancesFromSdfFile(
+    const std::string& filename,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 /**
  * Adds the model or models defined within an SDF file to @p tree. One instance
  * of each model is added.
@@ -118,6 +154,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  * `package://`, or if the package can be found by crawling up the directory
  * tree, the SDF could instead be loaded using
  * AddModelInstancesFromSdfFile().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] filename The name of the SDF file containing the model to be
  * added.
@@ -142,6 +184,11 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
+    const std::string& filename, const PackageMap& package_map,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
 
 /**
  * Adds the model or models defined within an SDF description to @p tree. One
@@ -153,6 +200,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileSearchingInRosPackages(
  * @p filename. SDF files that contain `package://` references to do not
  * meet these requirements should instead use
  * AddModelInstancesFromSdfStringSearchingInRosPackages().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] sdf_string The SDF description of one or more models.
  *
@@ -173,6 +226,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable AddModelInstancesFromSdfString(
+    const std::string& sdf_string,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 /**
  * Adds the model or models defined within an SDF description to @p tree. One
  * instance of each model is added.
@@ -183,6 +242,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
  * `package://`, or if the package can be found by crawling up the directory
  * tree, the SDF could instead be loaded using
  * AddModelInstancesFromSdfFile().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] sdf_string The SDF description of one or more models.
  *
@@ -205,6 +270,12 @@ ModelInstanceIdTable AddModelInstancesFromSdfStringSearchingInRosPackages(
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
+
+ModelInstanceIdTable AddModelInstancesFromSdfStringSearchingInRosPackages(
+    const std::string& sdf_string, const PackageMap& package_map,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
 
 }  // namespace sdf
 }  // namespace parsers
