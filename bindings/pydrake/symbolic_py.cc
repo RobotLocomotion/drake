@@ -320,6 +320,9 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(-py::self)
       .def("EqualTo", &Polynomial::EqualTo)
       .def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("__hash__",
+           [](const Polynomial& self) { return std::hash<Polynomial>{}(self); })
       .def("__repr__",
            [](const Polynomial& self) {
              ostringstream oss;

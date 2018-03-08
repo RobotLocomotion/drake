@@ -651,3 +651,12 @@ class TestSymbolicPolynomial(unittest.TestCase):
         J = p.Jacobian([x, y])
         self.assertEqual(J[0], p_dx)
         self.assertEqual(J[1], p_dy)
+
+    def test_hash(self):
+        p1 = sym.Polynomial(x * x, [x])
+        p2 = sym.Polynomial(x * x, [x])
+        self.assertEqual(p1, p2)
+        self.assertEqual(hash(p1), hash(p2))
+        p1 += 1
+        self.assertNotEqual(p1, p2)
+        self.assertNotEqual(hash(p1), hash(p2))
