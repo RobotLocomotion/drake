@@ -1557,7 +1557,7 @@ void ConstraintSolver<T>::CheckVelConstraintMatrix(
   ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
 
   // Determine the zero tolerance.
-  const double zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
+  const T zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
       MM.rows();
 
   // Check that the blocks are nearly equal.

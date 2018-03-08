@@ -486,14 +486,12 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
-  template <typename U = T>
-  std::enable_if_t<std::is_same<U, double>::value, void>
-  ComputeTimeSteppingContactResults(
-      const std::vector<multibody::collision::PointPair<U>>& contacts,
-      const multibody::constraint::ConstraintVelProblemData<U>& data,
-      const KinematicsCache<U>& kinematics_cache,
-      const VectorX<U>& constraint_force,
-      ContactResults<U>* contact_results) const;
+  void ComputeTimeSteppingContactResults(
+      const std::vector<multibody::collision::PointPair<T>>& contacts,
+      const multibody::constraint::ConstraintVelProblemData<T>& data,
+      const KinematicsCache<T>& kinematics_cache,
+      const VectorX<T>& constraint_force,
+      ContactResults<T>* contact_results) const;
 
     void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
       const drake::multibody::collision::PointPair<T>& contact,
@@ -533,7 +531,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   std::unique_ptr<const RigidBodyTree<double>> tree_;
 
   // Object that performs all constraint computations.
-  multibody::constraint::ConstraintSolver<double> constraint_solver_;
+  multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
   OutputPortIndex kinematics_output_port_index_{};

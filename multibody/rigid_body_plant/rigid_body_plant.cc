@@ -1230,16 +1230,14 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
 // Populates `contact_results` for the time stepping calculation using the
 // geometric data (`contacts`), the time stepping problem data, and the computed
-// contact force (impulse) solution.
+// contact force (impulse) solution. Note: we
 template <typename T>
-template <typename U>
-std::enable_if_t<std::is_same<U, double>::value, void>
-RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
-    const std::vector<multibody::collision::PointPair<U>>& contacts,
-    const multibody::constraint::ConstraintVelProblemData<U>& data,
-    const KinematicsCache<U>& kinematics_cache,
-    const VectorX<U>& constraint_force,
-    ContactResults<U>* contact_results) const {
+void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
+    const std::vector<multibody::collision::PointPair<T>>& contacts,
+    const multibody::constraint::ConstraintVelProblemData<T>& data,
+    const KinematicsCache<T>& kinematics_cache,
+    const VectorX<T>& constraint_force,
+    ContactResults<T>* contact_results) const {
   const int total_friction_cone_edges = std::accumulate(
       data.r.begin(), data.r.end(), 0);
 
