@@ -668,6 +668,9 @@ GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {
   EXPECT_EQ(I_BQ_E(0, 0).to_string(), Ixx_string);
   EXPECT_EQ(I_BQ_E(1, 1).to_string(), Iyy_string);
   EXPECT_EQ(I_BQ_E(2, 2).to_string(), Izz_string);
+
+  // Currently, we do not support CouldBePhysicallyValid() for T = Expression.
+  EXPECT_THROW(I_BQ_E.CouldBePhysicallyValid(), std::logic_error);
 }
 
 }  // namespace
