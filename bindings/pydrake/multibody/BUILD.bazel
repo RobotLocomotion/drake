@@ -43,12 +43,16 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "rigid_body_plant_py",
+    cc_deps = [
+        "//lcmtypes:viewer",
+    ],
     cc_so_name = "rigid_body_plant",
     cc_srcs = ["rigid_body_plant_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
         ":rigid_body_tree_py",
+        "//bindings/pydrake:lcm_py",
         "//bindings/pydrake/systems:framework_py",
     ],
 )

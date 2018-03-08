@@ -303,7 +303,10 @@ PYBIND11_MODULE(framework, m) {
           // casting this using `py::str` does not work, but directly
           // calling the Python function (`str_py`) does.
           return str_py(self->GetGraphvizString());
-        });
+        })
+    // Events.
+    .def("Publish",
+         overload_cast_explicit<void, const Context<T>&>(&System<T>::Publish));
 
   // Don't use a const-rvalue as a function handle parameter, as pybind11 wants
   // to copy it?

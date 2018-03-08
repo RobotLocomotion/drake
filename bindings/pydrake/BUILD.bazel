@@ -83,6 +83,16 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "lcm_py",
+    cc_so_name = "lcm",
+    cc_srcs = ["lcm_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
+    ],
+)
+
+drake_pybind_library(
     name = "math_py",
     cc_so_name = "math",
     cc_srcs = ["math_py.cc"],
@@ -114,6 +124,7 @@ drake_pybind_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":common_py",
+    ":lcm_py",
     ":math_py",
     ":symbolic_py",
     "//bindings/pydrake/examples",
@@ -220,6 +231,14 @@ drake_py_unittest(
     name = "forward_diff_test",
     size = "small",
     deps = [":autodiffutils_py"],
+)
+
+drake_py_unittest(
+    name = "lcm_test",
+    size = "small",
+    deps = [
+        ":lcm_py",
+    ],
 )
 
 drake_py_unittest(
