@@ -229,6 +229,16 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
   EXPECT_NE(kMessageSize, handler.get_buffer_size());
 }
 
+GTEST_TEST(DrakeMockLcmTest, EmptyChannelTest) {
+  DrakeMockLcm dut;
+
+  MockMessageHandler handler;
+  EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
+
+  const uint8_t buffer{};
+  EXPECT_THROW(dut.Publish("", &buffer, 1), std::exception);
+}
+
 }  // namespace
 }  // namespace lcm
 }  // namespace drake
