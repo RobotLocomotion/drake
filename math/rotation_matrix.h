@@ -71,8 +71,8 @@ class RotationMatrix {
     const T c = cos(theta), s = sin(theta);
     // clang-format off
     R << 1,  0,  0,
-        0,  c, -s,
-        0,  s,  c;
+         0,  c, -s,
+         0,  s,  c;
     // clang-format on
     return RotationMatrix(R);
   }
@@ -95,8 +95,8 @@ class RotationMatrix {
     const T c = cos(theta), s = sin(theta);
     // clang-format off
     R <<  c,  0,  s,
-        0,  1,  0,
-        -s,  0,  c;
+          0,  1,  0,
+         -s,  0,  c;
     // clang-format on
     return RotationMatrix(R);
   }
@@ -119,8 +119,8 @@ class RotationMatrix {
     const T c = cos(theta), s = sin(theta);
     // clang-format off
     R << c, -s,  0,
-        s,  c,  0,
-        0,  0,  1;
+         s,  c,  0,
+         0,  0,  1;
     // clang-format on
     return RotationMatrix(R);
   }
@@ -189,7 +189,7 @@ class RotationMatrix {
     const T c2 = cos(rpy(2)), s2 = sin(rpy(2));
     // clang-format off
     R << c2 * c1,  c2 * s1 * s0 - s2 * c0,  c2 * s1 * c0 + s2 * s0,
-        s2 * c1,  s2 * s1 * s0 + c2 * c0,  s2 * s1 * c0 - c2 * s0,
+         s2 * c1,  s2 * s1 * s0 + c2 * c0,  s2 * s1 * c0 - c2 * s0,
         -s1,            c1 * s0,                 c1 * c0;
     // clang-format on
     return RotationMatrix(R);
@@ -223,15 +223,13 @@ class RotationMatrix {
   }
 
   /// Returns the 3x3 identity %RotationMatrix.
-  /// @returns the 3x3 identity %RotationMatrix.
   // @internal This method's name was chosen to mimic Eigen's Identity().
   static const RotationMatrix<T>& Identity() {
     static const never_destroyed<RotationMatrix<T>> kIdentity;
     return kIdentity.access();
   }
 
-  /// Forms `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
-  /// @retval `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
+  /// Returns `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
   /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
   // @internal This method's name was chosen to mimic Eigen's inverse().
   RotationMatrix<T> inverse() const {
@@ -239,7 +237,6 @@ class RotationMatrix {
   }
 
   /// Returns the Matrix3 underlying a %RotationMatrix.
-  /// @returns the Matrix3 underlying a %RotationMatrix.
   const Matrix3<T>& matrix() const { return R_AB_; }
 
   /// In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
@@ -271,10 +268,10 @@ class RotationMatrix {
   }
 
   /// Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
-  /// computing `‖R ⋅ R⁻¹ - I‖∞` (i.e., the maximum absolute value of the
-  /// difference between the elements of R ⋅ R⁻¹ and the 3x3 identity matrix).
+  /// computing `‖R ⋅ Rᵀ - I‖∞` (i.e., the maximum absolute value of the
+  /// difference between the elements of R ⋅ Rᵀ and the 3x3 identity matrix).
   /// @param[in] R matrix being checked for orthonormality.
-  /// @returns `‖R ⋅ R⁻¹ - I‖∞`
+  /// @returns `‖R ⋅ Rᵀ - I‖∞`
   static T GetMeasureOfOrthonormality(const Matrix3<T>& R) {
     const Matrix3<T> m = R * R.transpose();
     return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
@@ -283,8 +280,8 @@ class RotationMatrix {
   /// Tests if a generic Matrix3 has orthonormal vectors to within the threshold
   /// specified by `tolerance`.
   /// @param[in] R an allegedly orthonormal rotation matrix.
-  /// @param[in] tolerance maximum allowable absolute difference between R * R⁻¹
-  /// and the identity matrix I, i.e., checks if `‖R ⋅ R⁻¹ - I‖∞ <= tolerance`.
+  /// @param[in] tolerance maximum allowable absolute difference between R * Rᵀ
+  /// and the identity matrix I, i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`.
   /// @returns `true` if R is an orthonormal matrix.
   static bool IsOrthonormal(const Matrix3<T>& R, double tolerance) {
     return GetMeasureOfOrthonormality(R) <= tolerance;
@@ -293,8 +290,8 @@ class RotationMatrix {
   /// Tests if a generic Matrix3 seems to be a proper orthonormal rotation
   /// matrix to within the threshold specified by `tolerance`.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @param[in] tolerance maximum allowable absolute difference of `R * R⁻¹`
-  /// and the identity matrix I (i.e., checks if `‖R ⋅ R⁻¹ - I‖∞ <= tolerance`).
+  /// @param[in] tolerance maximum allowable absolute difference of `R * Rᵀ`
+  /// and the identity matrix I (i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`).
   /// @returns `true` if R is a valid rotation matrix.
   static bool IsValid(const Matrix3<T>& R, double tolerance) {
     return IsOrthonormal(R, tolerance) && R.determinant() > 0;
@@ -314,11 +311,9 @@ class RotationMatrix {
   bool IsValid() const { return IsValid(matrix()); }
 
   /// Returns `true` if `this` is exactly equal to the identity matrix.
-  /// @returns `true` if `this` is exactly equal to the identity matrix.
   bool IsExactlyIdentity() const { return matrix() == Matrix3<T>::Identity(); }
 
-  /// Returns true if `this` is within tolerance of the identity matrix.
-  /// @returns `true` if `this` is equal to the identity matrix to within the
+  /// Returns true if `this` is equal to the identity matrix to within the
   /// threshold of get_internal_tolerance_for_orthonormality().
   bool IsIdentityToInternalTolerance() const {
     return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
