@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -30,7 +31,7 @@ namespace systems {
 ///   volume of a gas with dynamic viscosity μ can be described by
 ///   d𝐩/dt = -μ * 𝐩/m. At time t₀, the particle carries an initial momentum
 ///   𝐩₀. In this context, t is unused (the ODE is autonomous), 𝐱 ≜ 𝐩,
-///   𝐤 ≜ [m, μ], t₀ = 0, 𝐱₀ ≜  𝐩₀, d𝐱/dt = f(t, 𝐱; 𝐤) = -k₂ * 𝐱 / k₁.
+///   𝐤 ≜ [m, μ], t₀ = 0, 𝐱₀ ≜ 𝐩₀, d𝐱/dt = f(t, 𝐱; 𝐤) = -k₂ * 𝐱 / k₁.
 ///
 /// - The velocity 𝐯 of the same particle in the same exact conditions as
 ///   before, but when a time varying force 𝐅(t) is applied to it, can be
@@ -56,7 +57,7 @@ class InitialValueProblem {
 
   /// General ODE system d𝐱/dt = f(t, 𝐱; 𝐤) function type.
   ///
-  /// @param t The independent scalar variable t ∈ ℝ .
+  /// @param t The independent scalar variable t ∈ ℝ.
   /// @param x The dependent vector variable 𝐱 ∈ ℝⁿ.
   /// @param k The vector of parameters 𝐤 ∈ ℝᵐ.
   /// @return The derivative vector d𝐱/dt ∈ ℝⁿ.
@@ -154,15 +155,32 @@ class InitialValueProblem {
                    const T& t, const VectorX<T>& k) const;
 
   /// Resets the internal integrator instance.
+  ///
+  /// A usage example is shown below.
+  /// @code{.cpp}
+  ///    ivp.reset_integrator<RungeKutta2Integrator<T>>(max_step);
+  /// @endcode
+  ///
+  /// @param args The integrator type-specific arguments.
   /// @return The new integrator instance.
   /// @tparam I The integrator type, which must be an IntegratorBase subclass.
-  template <typename I>
-  I* reset_integrator();
+  /// @tparam Args The integrator specific argument types.
+  /// @warning This operation invalidates pointers returned by
+  ///          InitialValueProblem::get_integrator() and
+  ///          InitialValueProblem::get_mutable_integrator().
+  template <typename I, typename... Args>
+  I* reset_integrator(Args&&... args) {
+    integrator_ = std::make_unique<I>(*system_, std::forward<Args>(args)...);
+    integrator_->reset_context(context_.get());
+    return static_cast<I*>(integrator_.get());
+  }
 
+  /// Gets a pointer to the internal integrator instance.
   inline const IntegratorBase<T>* get_integrator() const {
     return integrator_.get();
   }
 
+  /// Gets a pointer to the internal mutable integrator instance.
   inline IntegratorBase<T>* get_mutable_integrator() {
     return integrator_.get();
   }
@@ -188,7 +206,7 @@ class InitialValueProblem {
   mutable T current_initial_time_;
   // IVP current initial state xᵢ (for caching).
   mutable VectorX<T> current_initial_state_;
-  // IVP current parameters 𝐤ᵢ(for caching).
+  // IVP current parameters 𝐤ᵢ (for caching).
   mutable VectorX<T> current_parameters_;
 
   // IVP ODE solver integration context.

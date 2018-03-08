@@ -13,6 +13,8 @@
 namespace drake {
 namespace systems {
 
+namespace detail {
+
 /// A LeafSystem subclass used to describe parameterized ODE systems
 /// i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ. The
 /// vector variable 𝐱 corresponds to the system state that is evolved through
@@ -20,9 +22,9 @@ namespace systems {
 ///
 /// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
-class AnySystem : public LeafSystem<T> {
+class ODESystem : public LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AnySystem);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ODESystem);
 
   typedef typename InitialValueProblem<T>::ODEFunction SystemFunction;
 
@@ -38,7 +40,7 @@ class AnySystem : public LeafSystem<T> {
   /// @param system_function The system function f(t, 𝐱; 𝐤).
   /// @param state_model The state model vector 𝐱₀, with initial values.
   /// @param param_model The parameter model vector 𝐤₀, with default values.
-  AnySystem(const SystemFunction& system_function,
+  ODESystem(const SystemFunction& system_function,
             const VectorX<T>& state_model,
             const VectorX<T>& param_model);
 
@@ -54,8 +56,8 @@ class AnySystem : public LeafSystem<T> {
 
 
 template <typename T>
-AnySystem<T>::AnySystem(
-    const typename AnySystem<T>::SystemFunction& system_function,
+ODESystem<T>::ODESystem(
+    const typename ODESystem<T>::SystemFunction& system_function,
     const VectorX<T>& state_model, const VectorX<T>& param_model)
     : system_function_(system_function) {
   // Models system state after the given state model.
@@ -65,7 +67,7 @@ AnySystem<T>::AnySystem(
 }
 
 template <typename T>
-void AnySystem<T>::DoCalcTimeDerivatives(
+void ODESystem<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   // Retrieves the state vector. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
@@ -90,6 +92,8 @@ void AnySystem<T>::DoCalcTimeDerivatives(
       parameter_vector.get_value()));
 }
 
+}  // namespace detail
+
 template<typename T>
 const T InitialValueProblem<T>::kDefaultAccuracy = static_cast<T>(1e-4);
 
@@ -111,7 +115,7 @@ InitialValueProblem<T>::InitialValueProblem(
       current_initial_state_(default_initial_state),
       current_parameters_(default_parameters) {
   // Instantiates the system using the given defaults as models.
-  system_ = std::make_unique<AnySystem<T>>(
+  system_ = std::make_unique<detail::ODESystem<T>>(
       ode_function, default_initial_state_, default_parameters_);
 
   // Allocates a new default integration context with the
@@ -170,18 +174,22 @@ VectorX<T> InitialValueProblem<T>::Solve(
         context_->get_mutable_numeric_parameter(0);
     parameter_vector.set_value(parameters);
 
-    // Keeps track of current step size and accuracy settings.
-    const T initial_step_size = integrator_->get_initial_step_size_target();
+    // Keeps track of current step size and accuracy settings (regardless
+    // of whether these are actually used by the integrator instance or not).
     const T max_step_size = integrator_->get_maximum_step_size();
+    const T initial_step_size = integrator_->get_initial_step_size_target();
     const T target_accuracy = integrator_->get_target_accuracy();
 
     // Resets the integrator internal state.
     integrator_->Reset();
 
     // Sets integrator settings again.
-    integrator_->request_initial_step_size_target(initial_step_size);
     integrator_->set_maximum_step_size(max_step_size);
-    integrator_->set_target_accuracy(target_accuracy);
+    if (integrator_->supports_error_estimation()) {
+      // Specifies initial step and accuracy setting only if necessary.
+      integrator_->request_initial_step_size_target(initial_step_size);
+      integrator_->set_target_accuracy(target_accuracy);
+    }
 
     // Keeps track of the current initial conditions and parameters
     // for future cache invalidation.
@@ -206,13 +214,6 @@ VectorX<T> InitialValueProblem<T>::Solve(
   const BasicVector<T>& state_vector = dynamic_cast<const BasicVector<T>&>(
       context_->get_continuous_state_vector());
   return state_vector.get_value();
-}
-
-template <typename T>
-template <typename I>
-I* InitialValueProblem<T>::reset_integrator() {
-  integrator_ = std::make_unique<I>(*system_, context_.get());
-  return static_cast<I*>(integrator_.get());
 }
 
 }  // namespace systems

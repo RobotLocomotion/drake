@@ -95,7 +95,6 @@ drake_cc_library(
     deps = [
         ":runge_kutta3_integrator",
         "//drake/common:essential",
-        "//drake/common:unused",
         "//drake/systems/framework:context",
         "//drake/systems/framework:continuous_state",
         "//drake/systems/framework:leaf_system",
@@ -189,6 +188,8 @@ drake_cc_googletest(
     size = "small",
     deps = [
         ":initial_value_problem",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

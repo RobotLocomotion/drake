@@ -4,13 +4,63 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/parameters.h"
 
 namespace drake {
 namespace systems {
 namespace {
+
+// Checks IVP solver usage with multiple integrators.
+GTEST_TEST(InitialValueProblemTest, UsingMultipleIntegrators) {
+  // Accuracy upper bound, as not all the integrators used below support
+  // error control.
+  const double kAccuracy = 1e-2;
+  // The initial time t₀, for IVP definition only.
+  const double kInitialTime = 0.0;
+  // The initial state 𝐱₀, for IVP definition only.
+  const VectorX<double> kInitialState =
+      VectorX<double>::Zero(2);
+  // The default parameters 𝐤₀, for IVP definition only.
+  const VectorX<double> kDefaultParameters =
+      VectorX<double>::Constant(2, 1.0);
+
+  // Instantiates a generic IVP for test purposes only,
+  // using a generic ODE d𝐱/dt = -𝐱 + 𝐤, that does not
+  // model (nor attempts to model) any physical process.
+  InitialValueProblem<double> ivp(
+      [](const double& t, const VectorX<double>& x,
+         const VectorX<double>& k) -> VectorX<double> {
+        return -x + k;
+      }, kInitialTime, kInitialState, kDefaultParameters);
+
+  // Testing against closed form solution of above's IVP, which can be written
+  // as 𝐱(t; 𝐤) = 𝐤 + (𝐱₀ - 𝐤) * e^(-(t - t₀)).
+  const double t1 = kInitialTime + 1.0;
+  const double t0 = kInitialTime;
+  const VectorX<double>& x0 = kInitialState;
+  const VectorX<double>& k1 = kDefaultParameters;
+  EXPECT_TRUE(CompareMatrices(
+      ivp.Solve(t1, k1), k1 + (x0 - k1) * std::exp(-(t1 - t0)), kAccuracy));
+
+  // Replaces default integrator.
+  const double kMaximumStep = 0.1;
+  const IntegratorBase<double>* default_integrator = ivp.get_integrator();
+  IntegratorBase<double>* configured_integrator =
+      ivp.reset_integrator<RungeKutta2Integrator<double>>(kMaximumStep);
+  EXPECT_NE(configured_integrator, default_integrator);
+  EXPECT_EQ(configured_integrator, ivp.get_integrator());
+
+  // Testing against closed form solution of above's IVP, which can be written
+  // as 𝐱(t; 𝐤) = 𝐤 + (𝐱₀ - 𝐤) * e^(-(t - t₀)).
+  const double t2 = kInitialTime + 0.3;
+  const VectorX<double> k2 = VectorX<double>::Constant(2, 5.0);
+  EXPECT_TRUE(CompareMatrices(
+      ivp.Solve(t2, k2), k2 + (x0 - k2) * std::exp(-(t2 - t0)), kAccuracy));
+}
 
 // Validates preconditions enforcement on any given IVP.
 GTEST_TEST(InitialValueProblemTest, PreconditionValidation) {
@@ -24,12 +74,12 @@ GTEST_TEST(InitialValueProblemTest, PreconditionValidation) {
       VectorX<double>::Constant(2, 1.0);
 
   // Instantiates a generic IVP for test purposes only,
-  // using a generic ODE d𝐱/dt = 𝐤 * 𝐱, that does not
+  // using a generic ODE d𝐱/dt = -𝐱 + 𝐤, that does not
   // model (nor attempts to model) any physical process.
   InitialValueProblem<double> ivp(
       [](const double& t, const VectorX<double>& x,
          const VectorX<double>& k) -> VectorX<double> {
-        return k * x;
+        return -x + k;
       }, kInitialTime, kInitialState, kDefaultParameters);
 
   // Instantiates an invalid time for testing, i.e. a time to
@@ -72,7 +122,7 @@ GTEST_TEST(InitialValueProblemTest, PreconditionValidation) {
 }
 
 // Parameterized fixture for testing accuracy of IVP solutions.
-class InitialValueProblemExampleTest
+class InitialValueProblemAccuracyTest
     : public ::testing::TestWithParam<double> {
  protected:
   void SetUp() {
@@ -87,7 +137,7 @@ class InitialValueProblemExampleTest
 // Accuracy test of the solution for the momentum 𝐩 of a particle
 // with mass m travelling through a gas with dynamic viscosity μ,
 // where d𝐩/dt = -μ * 𝐩/m and 𝐩(t₀; [m, μ]) = 𝐩₀.
-TEST_P(InitialValueProblemExampleTest, ParticleInAGasMomentum) {
+TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
   // The initial velocity 𝐯₀ of the particle at time t₀.
@@ -123,7 +173,7 @@ TEST_P(InitialValueProblemExampleTest, ParticleInAGasMomentum) {
   const double kTotalTime = 1.0;
   const double kTimeStep = 0.1;
 
-  const double& t0 = kInitialTime;
+  const double t0 = kInitialTime;
   for (double mu = kLowestGasViscosity; mu <= kHighestGasViscosity;
        mu += kGasViscosityStep) {
     for (double m = kLowestParticleMass; m <= kHighestParticleMass;
@@ -171,7 +221,7 @@ TEST_P(InitialValueProblemExampleTest, ParticleInAGasMomentum) {
 // with mass m travelling through a gas with dynamic viscosity μ
 // and being pushed by time varying force 𝐅(t), where
 // d𝐯/dt = (𝐅(t) - μ * 𝐯) / m and 𝐯(t₀; [m, μ]) = 𝐯₀.
-TEST_P(InitialValueProblemExampleTest, ParticleInAGasForcedVelocity) {
+TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
   // The initial velocity 𝐯₀ of the particle at time t₀.
@@ -210,7 +260,7 @@ TEST_P(InitialValueProblemExampleTest, ParticleInAGasForcedVelocity) {
   const double kTotalTime = 1.0;
   const double kTimeStep = 0.1;
 
-  const double& t0 = kInitialTime;
+  const double t0 = kInitialTime;
   for (double mu = kLowestGasViscosity; mu <= kHighestGasViscosity;
        mu += kGasViscosityStep) {
     for (double m = kLowestParticleMass; m <= kHighestParticleMass;
@@ -258,8 +308,8 @@ TEST_P(InitialValueProblemExampleTest, ParticleInAGasForcedVelocity) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(IncreasingAccuracyInitialValueProblemExampleTests,
-                        InitialValueProblemExampleTest,
+INSTANTIATE_TEST_CASE_P(IncreasingAccuracyInitialValueProblemTests,
+                        InitialValueProblemAccuracyTest,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 
 }  // namespace
