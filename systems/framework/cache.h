@@ -4,20 +4,16 @@
 Declares CacheEntryValue and Cache, which is the container for cache entry
 values. */
 
-#include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <string>
-#include <typeindex>
-#include <typeinfo>
 #include <utility>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/reset_on_copy.h"
-#include "drake/common/text_logging.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
@@ -31,32 +27,39 @@ class DependencyGraph;
 //==============================================================================
 /** This is the representation in the Context for the value of one of a System's
 CacheEntry objects. It consists of a single type-erased value, a serial number,
-an "is-up-to-date" flag, and a DependencyTracker ticket. Details:
-- "Up to date" means that the stored value is up to date with its prerequisites;
-  that is, if you were to recompute it using the current Context values you
-  would get the identical value (so don't bother!).
-- The "serial number" is incremented whenever the value is modified, or made
-  available for mutable access. You can use it to recognize that you are looking
-  at the same value as you saw at some earlier time. It is also useful for
-  performance studies since it is a count of how many times this value was
-  recomputed. Note that marking the value "out of date" is _not_ a modification;
-  that does not change the serial number.
-- The associated DependencyTracker maintains lists of all upstream prerequisites
-  and downstream dependents of the value stored here, and also has a pointer to
-  this %CacheEntryValue that it uses for invalidation. Upstream modifications
-  cause the DependencyTracker to clear the up-to-date flag here, and mark all
-  downstream dependents out of date also. The ticket is always interpreted
-  within the same subcontext that owns the Cache that owns this
-  %CacheEntryValue.
+an `out_of_date` flag, and a DependencyTracker ticket. Details:
+- "Out of date" means that some prerequisite of this cache entry's computation
+  has been changed in the current Context since the stored value was last
+  computed, and thus must be recomputed prior to use. On the other hand, if the
+  entry is _not_ out of date, then it is "up to date" meaning that if you were
+  to recompute it using the current Context values you would get the identical
+  value (so don't bother!).
+- The "serial number" is an integer that is incremented whenever the value is
+  modified, or made available for mutable access. You can use it to recognize
+  that you are looking at the same value as you saw at some earlier time. It is
+  also useful for performance studies since it is a count of how many times this
+  value was recomputed. Note that marking the value "out of date" is _not_ a
+  modification; that does not change the serial number. The serial number is
+  maintained internally and cannot be user-modified.
+- The DependencyTicket ("ticket") stored here identifies the DependencyTracker
+  ("tracker") associated with this cache entry. The tracker maintains lists of
+  all upstream prerequisites and downstream dependents of the value stored here,
+  and also has a pointer to this %CacheEntryValue that it uses for invalidation.
+  Upstream modifications cause the tracker to set the `out_of_date` flag here,
+  and mark all downstream dependents out of date also. The tracker is always in
+  the same subcontext that owns the Cache that owns this %CacheEntryValue.
+
+We sometimes use the terms "invalid" and "invalidate" as synonyms for "out of
+date" and "mark out of date".
 
 For debugging purposes, caching may be disabled for an entire Context or for
-particular cache entry values. This is independent of the up-to-date flag
+particular cache entry values. This is independent of the `out_of_date` flag
 described above, which is still expected to be operational when caching is
 disabled. However, when caching is disabled the Eval() methods will recompute
-the contained value even if it is marked up-to-date. That should have no effect
-other than to slow down computation; if it does, something is wrong. There
-could be a problem with the dependencies, or a bug in the caching system, or
-something more subtle in user code. */
+the contained value even if it is not marked out of date. That should have no
+effect other than to slow down computation; if it does, something is wrong.
+There could be a problem with the dependencies, or a bug in the caching system,
+or something more subtle in user code. */
 class CacheEntryValue {
  public:
   /** @name  Does not allow move or assignment; copy constructor is private. */
@@ -72,7 +75,7 @@ class CacheEntryValue {
 
   /** Defines the concrete value type by providing an initial AbstractValue
   object containing an object of the appropriate concrete type. This value
-  is _not_ marked up-to-date. It is an error to call this if there is already
+  is marked out of date. It is an error to call this if there is already
   a value here; use has_value() if you want to check first. The serial number
   is set to 1. No out-of-date notifications are sent to downstream
   dependents.
@@ -84,8 +87,123 @@ class CacheEntryValue {
     mark_out_of_date();
   }
 
+  /** @name      Safe methods for value access and modification
+  These are the recommended methods for accessing and modifying the cache entry
+  value. They unconditionally check all the relevant preconditions to catch
+  usage errors. In particular, access is prevented when the value is out of
+  date, and modification is permitted only when the value is already out of
+  date. For performance-sensitive code, you may need to use the parallel set
+  of methods below that check preconditions only in Debug builds, but be sure
+  you are gaining significant performance before giving up on Release-build
+  validation. */
+  //@{
+
+  /** Returns a const reference to the contained abstract value, which must
+  not be out of date with respect to any of its prerequisites. It is
+  an error to call this if there is no stored value object, or if the value is
+  out of date.
+  @throws std::logic_error if there is no value or it is out of date.
+  @see get_abstract_value() */
+  const AbstractValue& GetAbstractValueOrThrow() const {
+    return GetAbstractValueOrThrowHelper(__func__);
+  }
+
+  /** Provides a const reference to the contained value of known type V. It is
+  an error to call this if there is no stored value, or the value is out of
+  date, or the value doesn't actually have type V.
+  @throws std::logic_error if there is no stored value, or if it is out of
+                           date, or it doesn't actually have type V.
+  @see get_value() */
+  template <typename V>
+  const V& GetValueOrThrow() const {
+    return GetValueOrThrowHelper<V>(__func__);
+  }
+
+  /** This is the preferred method for assigning a new value to a cache entry.
+  The cache entry must already contain a value object of type V to which the
+  new value is assigned, and that value must currently be marked out of date.
+  The new value is assumed to be up to date with its prerequisites, so the
+  `out_of_date` flag is cleared. No out-of-date notifications are issued by
+  this method; we assume downstream dependents were marked out of date at the
+  time this value went out of date. The serial number is incremented.
+  @throws std::logic_error if there is no value, or the value is already up
+                           to date, of it doesn't actually have type V.
+  @see set_value(), GetMutableValueOrThrow() */
+  template <typename V>
+  void SetValueOrThrow(const V& new_value) {
+    SetValueOrThrowHelper<V>(__func__, new_value);
+    ++serial_number_;
+    mark_up_to_date();
+  }
+
+  /** (Advanced) Provides direct mutable access to the contained value, for the
+  purpose of performing an update or extended computation in place. This is only
+  permitted if the value is already marked out of date (meaning that all
+  downstream dependents have already been notified). It is an error to call
+  this if there is no stored value, or it is already up to date. Since this is
+  intended for relatively expensive computations, these preconditions are
+  checked even in Release builds. If you have a small, fast computation to
+  perform, use set_value() instead. If your computation completes successfully,
+  you must mark the entry up to date yourself use mark_up_to_date() if you want
+  anyone to be able to use the new value. The serial number is incremented.
+  @throws std::logic_error if there is no value, or if the value is already
+                           up to date.
+  @see SetValueOrThrow(), set_value(), mark_up_to_date() */
+  AbstractValue& GetMutableAbstractValueOrThrow() {
+    return GetMutableAbstractValueOrThrowHelper(__func__);
+  }
+
+  /** (Advanced) Convenience method that provides mutable access to the
+  contained value downcast to its known concrete type. Throws an exception if
+  the contained value does not have the indicated concrete type. Note that you
+  must call mark_up_to_date() after modifying the value through the returned
+  reference. See GetMutableAbstractValueOrThrow() above for more information.
+  @throws std::logic_error if there is no value, or if the value is already
+                           up to date, of it doesn't actually have type V.
+  @see SetValueOrThrow(), set_value(), mark_up_to_date()
+  @tparam V The known actual value type. */
+  template <typename V>
+  V& GetMutableValueOrThrow() {
+    AbstractValue& value = GetMutableAbstractValueOrThrowHelper(__func__);
+    return value.GetMutableValueOrThrow<V>();
+  }
+
+  /** (Advanced) Returns a reference to the contained value _without_ checking
+  whether the value is out of date. This can be used to check type and size
+  information but should not be used to look at the value unless you _really_
+  know what you're doing.
+  @throws std::logic_error if there is no contained value. */
+  const AbstractValue& PeekAbstractValueOrThrow() const {
+    ThrowIfNoValue(__func__);
+    return *value_;
+  }
+
+  /** (Advanced) Convenience method that provides access to the contained value
+  downcast to its known concrete type, _without_ checking whether the value is
+  out of date. This can be used to check type and size information but should
+  not be used to look at the value unless you _really_ know what you're doing.
+  @throws std::logic_error if there is no contained value, or if the contained
+                           value does not actually have type V.
+  @tparam V The known actual value type. */
+  template <typename V>
+  const V& PeekValueOrThrow() const {
+    ThrowIfNoValue(__func__);
+    return value_->GetMutableValueOrThrow<V>();
+  }
+  //@}
+
+  /** @name    Fast-but-dangerous methods for highest performance
+  These methods check for errors only in Debug builds, and instead plunge
+  blindly onward in Release builds so that they will execute as fast as
+  possible. You should use them only in places where performance requirements
+  preclude Release-build checks. The best way to determine that is to time the
+  code using the always-checked methods vs. these ones. If that's not practical,
+  use these only when the containing code is in a very high-rate loop, and
+  is a substantial fraction of the total code being executed there. */
+  //@{
+
   /** Provides fast, const access to the contained abstract value, which must
-  already be up to date with respect to all of its prerequisites. It is an error
+  not be out of date with respect to all of its prerequisites. It is an error
   to call this if there is no stored value, or it is out of date. Because this
   is often used in performance-critical contexts, these requirements will be
   checked only in Debug builds. If you are not in a performance-critical
@@ -99,19 +217,11 @@ class CacheEntryValue {
 #endif
   }
 
-  /** Returns a const reference to this %CacheEntryValue's abstract value. It is
-  an error to call this if there is no stored value object, or if the value is
-  not up to date.
-  @throws std::logic_error if there is no value or it is out of date. */
-  const AbstractValue& GetAbstractValueOrThrow() const {
-    return GetAbstractValueOrThrowHelper(__func__);
-  }
-
   /** Provides fast, const access to the contained value of known type V. It is
-  an error to call this if there is no stored value, or it is out of date, or it
-  doesn't actually have type V. Because this is expected to be used in
-  performance-critical, inner-loop circumstances, these requirements will be
-  checked only in Debug builds. If you are not in a performance-critical
+  an error to call this if there is no stored value, or the value is out of
+  date, or the value doesn't actually have type V. Because this is expected to
+  be used in performance-critical, inner-loop circumstances, these requirements
+  will be checked only in Debug builds. If you are not in a performance-critical
   situation (and you probably are not!), use `GetValueOrThrow<V>`() instead.
   @tparam V The known actual value type. */
   template <typename V>
@@ -121,15 +231,6 @@ class CacheEntryValue {
 #else
     return value_->GetValue<V>();
 #endif
-  }
-
-  /** Same as get_value() but validates all preconditions even in Release
-  builds.
-  @throws std::logic_error if there is no stored value, or if it is out of
-                           date, or it doesn't actually have type V. */
-  template <typename V>
-  const V& GetValueOrThrow() const {
-    return GetValueOrThrowHelper<V>(__func__);
   }
 
   /** This is the normal method for assigning a new value to a cache entry.
@@ -153,124 +254,49 @@ class CacheEntryValue {
     mark_up_to_date();
   }
 
-  /** Same as set_value() but validates all preconditions even in Release
-  builds.
-  @throws std::logic_error if there is no value, or the value is already up
-                           to date, of it doesn't actually have type V. */
-  template <typename V>
-  void SetValueOrThrow(const V& new_value) {
-    SetValueOrThrowHelper<V>(__func__, new_value);
-    ++serial_number_;
-    mark_up_to_date();
-  }
-
-  /** Returns the human-readable description for this %CacheEntryValue. */
-  const std::string& description() const { return description_; }
-
-  /** Returns the description, preceded by the full pathname of the subsystem
-  associated with the owning subcontext. */
-  std::string GetPathDescription() const;
-
-  /** Returns `true` if this %CacheEntryValue currently contains a value object
-  at all, regardless of whether it is up to date. There will be no value object
-  after default construction, prior to SetInitialValue(). */
-  bool has_value() const { return value_ != nullptr; }
-
-  /** Returns `true` if the current value is up to date with respect to all its
-  prerequisites. This refers only to the up-to-date flag and is independent of
-  whether caching is enabled or disabled. Don't call this if there is no value
-  here; use has_value() if you aren't sure.
-  @see needs_recomputation() */
-  bool is_up_to_date() const {
+  /** (Advanced) Swaps ownership of the stored value object with the given
+  one. The value is marked out of date and the serial number is incremented.
+  This is useful for discrete updates of abstract state variables that contain
+  large objects. Both values must be non-null and of the same concrete type but
+  we won't check for errors except in Debug builds. */
+  void swap_value(std::unique_ptr<AbstractValue>* other_value) {
     DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
-    return (flags_ & kValueIsOutOfDate) == 0;
+    DRAKE_ASSERT_VOID(ThrowIfBadOtherValue(__func__, other_value));
+    value_.swap(*other_value);
+    ++serial_number_;
+    mark_out_of_date();
+  }
+  //@}
+
+  /** @name                  Dependency management
+  Methods here deal with management of the `out_of_date` flag and determining
+  whether the contained value must be recomputed before use. */
+  //@{
+
+  /** Returns `true` if the current value is out of date with respect to any of
+  its prerequisites. This refers only to the `out_of_date` flag and is
+  independent of whether caching is enabled or disabled. Don't call this if
+  there is no value here; use has_value() if you aren't sure.
+  @see needs_recomputation() */
+  bool is_out_of_date() const {
+    DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
+    return (flags_ & kValueIsOutOfDate) != 0;
   }
 
-  /** (Advanced) Returns `true` if caching is disabled for this cache entry.
-  This is independent of the up-to-date flag. */
-  bool is_entry_disabled() const {
-    return (flags_ & kCacheEntryIsDisabled) != 0;
-  }
 
-  /** Returns `true` if either (a) the value is not up to date, or (b) caching
+  /** Returns `true` if either (a) the value is out of date, or (b) caching
   is disabled for this entry. This is a _very_ fast inline method intended
   to be called every time a cache value is obtained with Eval(). This is
-  equivalent to `!is_up_to_date() || is_entry_disabled()` but faster.  Don't
+  equivalent to `is_out_of_date() || is_entry_disabled()` but faster.  Don't
   call this if there is no value here; use has_value() if you aren't sure.*/
   bool needs_recomputation() const {
     DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
     return flags_ != 0;
   }
 
-  /** Returns the serial number of the contained value. This counts up every
-  time the contained value changes, or whenever mutable access is granted. */
-  int64_t serial_number() const { return serial_number_; }
-
-  /** Returns the CacheIndex used to locate this %CacheEntryValue within its
-  containing subcontext. */
-  CacheIndex cache_index() const {return cache_index_;}
-
-  /** Returns the DependencyTicket used to locate the DependencyTracker that
-  manages dependencies for this %CacheEntryValue. The ticket refers to a
-  tracker that is owned by the same subcontext that owns this
-  %CacheEntryValue. */
-  DependencyTicket ticket() const {return ticket_;}
-
-  /** (Advanced) Provides direct mutable access to the contained value, for the
-  purpose of performing an update or extended computation in place. This is only
-  permitted if the value is already marked out of date (meaning that all
-  downstream dependents have already been notified). It is an error to call
-  this if there is no stored value, or it is already up to date. Since this is
-  intended for relatively expensive computations, these preconditions are
-  checked even in Release builds. If you have a small, fast computation to
-  perform, use set_value() instead. If your computation completes successfully,
-  you must mark the entry up to date yourself if you want anyone to be able to
-  use the new value. The serial number is incremented.
-  @throws std::logic_error if there is no value, or if the value is already
-                           up to date.
-  @see set_value(), mark_up_to_date() */
-  AbstractValue& GetMutableAbstractValueOrThrow() {
-    return GetMutableAbstractValueOrThrowHelper(__func__);
-  }
-
-  /** (Advanced) Convenience method that provides mutable access to the
-  contained value downcast to its known concrete type. Throws an exception if
-  the contained value does not have the indicated concrete type.
-  @throws std::logic_error if there is no value, or if the value is already
-                           up to date, of it doesn't actually have type V.
-  @see GetMutableAbstractValueOrThrow() for more information.
-  @tparam V The known actual value type. */
-  template <typename V>
-  V& GetMutableValueOrThrow() {
-    AbstractValue& value = GetMutableAbstractValueOrThrowHelper(__func__);
-    return value.GetMutableValueOrThrow<V>();
-  }
-
-  /** (Advanced) Returns a reference to the contained value _without_ checking
-  whether the value is up to date. This can be used to check type and size
-  information but should not be used to look at the value unless you _really_
-  know what you're doing.
-  @throws std::logic_error if there is no contained value. */
-  const AbstractValue& PeekAbstractValueOrThrow() const {
-    ThrowIfNoValue(__func__);
-    return *value_;
-  }
-
-  /** (Advanced) Convenience method that provides access to the contained value
-  downcast to its known concrete type, _without_ checking whether the value is
-  up to date.
-  @throws std::logic_error if there is no contained value, or if the contained
-                           value does not actually have type V.
-  @see PeekAbstractValueOrThrow() for more information.
-  @tparam V The known actual value type. */
-  template <typename V>
-  const V& PeekValueOrThrow() const {
-    ThrowIfNoValue(__func__);
-    return value_->GetMutableValueOrThrow<V>();
-  }
-
-  /** (Advanced) Marks the cache entry value as _up-to-date_ with respect to
-  its prerequisites, with no other effects. In particular, this method does not
+  /** (Advanced) Marks the cache entry value as up to date with respect to
+  its prerequisites, with no other effects. That is, this method clears the
+  `out_of_date` flag. In particular, this method does not
   modify the value, does not change the serial number, and does not notify
   downstream dependents of anything. This is a very dangerous method since it
   enables access to the value but can't independently determine whether it is
@@ -293,10 +319,48 @@ class CacheEntryValue {
     flags_ |= kValueIsOutOfDate;
   }
 
+  /** Returns the serial number of the contained value. This counts up every
+  time the contained value changes, or whenever mutable access is granted. */
+  int64_t serial_number() const { return serial_number_; }
+  //@}
+
+  /** @name                 Bookkeeping methods
+  Miscellaneous methods of limited use to most users. */
+  //@{
+
+  /** Returns the human-readable description for this %CacheEntryValue. */
+  const std::string& description() const { return description_; }
+
+  /** Returns the description, preceded by the full pathname of the subsystem
+  associated with the owning subcontext. */
+  std::string GetPathDescription() const;
+
+  /** Returns `true` if this %CacheEntryValue currently contains a value object
+  at all, regardless of whether it is up to date. There will be no value object
+  after default construction, prior to SetInitialValue(). */
+  bool has_value() const { return value_ != nullptr; }
+
+  /** Returns the CacheIndex used to locate this %CacheEntryValue within its
+  containing subcontext. */
+  CacheIndex cache_index() const { return cache_index_; }
+
+  /** Returns the DependencyTicket used to locate the DependencyTracker that
+  manages dependencies for this %CacheEntryValue. The ticket refers to a
+  tracker that is owned by the same subcontext that owns this
+  %CacheEntryValue. */
+  DependencyTicket ticket() const { return ticket_; }
+  //@}
+
+  /** @name                  Debugging utilities
+  These are used for disabling and re-enabling caching to determine correctness
+  and effectiveness of caching. Usually all cache entries are disabled or
+  enabled together using higher-level methods that invoke these ones, but you
+  can disable just a single entry if necessary. */
+  //@{
   /** (Advanced) Disable caching for just this cache entry value. When disabled,
   the corresponding entry's Eval() method will unconditionally invoke Calc() to
-  recompute the value, regardless of the setting of the `up-to-date` flag. The
-  `disabled` flag is independent of the `up-to-date` flag, which will continue
+  recompute the value, regardless of the setting of the `out_of_date` flag. The
+  `disabled` flag is independent of the `out_of_date` flag, which will continue
   to be managed even if caching is disabled. */
   void disable_caching() {
     flags_ |= kCacheEntryIsDisabled;
@@ -304,43 +368,44 @@ class CacheEntryValue {
 
   /** (Advanced) Enable caching for this cache entry value if it was previously
   disabled. When enabled (the default condition) the corresponding entry's
-  Eval() method will check the `up-to-date` flag and invoke Calc() only if the
+  Eval() method will check the `out_of_date` flag and invoke Calc() only if the
   entry is marked out of date. */
   void enable_caching() {
     flags_ &= ~kCacheEntryIsDisabled;
   }
 
-  /** (Advanced) Swaps ownership of the stored value object with the given
-  one. The value is marked out-of-date and the serial number is incremented.
-  This is useful for discrete updates of abstract state variables that contain
-  large objects. Both values must be non-null and of the same concrete type but
-  we won't check for errors except in Debug builds. */
-  void swap_value(std::unique_ptr<AbstractValue>* other_value) {
-    DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
-    DRAKE_ASSERT_VOID(ThrowIfBadOtherValue(__func__, other_value));
-    value_.swap(*other_value);
-    ++serial_number_;
-    mark_out_of_date();
+  /** (Advanced) Returns `true` if caching is disabled for this cache entry.
+  This is independent of the `out_of_date` flag. */
+  bool is_entry_disabled() const {
+    return (flags_ & kCacheEntryIsDisabled) != 0;
   }
+  //@}
 
-  /** Returns a mutable reference to an unused cache entry value object, which
-  has no valid CacheIndex or DependencyTicket and has a meaningless value. The
-  reference is to a singleton %CacheEntryValue and will always return the same
-  address. You may invoke mark_up_to_date() harmlessly on this object, but may
-  not depend on its contents in any way as they may change unexpectedly. The
-  intention is that this object is used as a common throw-away destination for
-  non-cache DependencyTracker invalidations so that invalidation can be done
-  unconditionally, and to the same memory location, for speed. */
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Returns a mutable reference to an unused cache entry
+  // value object, which has no valid CacheIndex or DependencyTicket and has a
+  // meaningless value. The reference is to a singleton %CacheEntryValue and
+  // will always return the same address. You may invoke mark_up_to_date()
+  // harmlessly on this object, but may not depend on its contents in any way as
+  // they may change unexpectedly. The intention is that this object is used as
+  // a common throw-away destination for non-cache DependencyTracker
+  // invalidations so that invalidation can be done unconditionally, and to the
+  // same memory location, for speed.
   static CacheEntryValue& dummy() {
     static never_destroyed<CacheEntryValue> dummy;
     return dummy.access();
   }
+#endif
 
  private:
   // So Cache and no one else can construct and copy CacheEntryValues.
   friend class Cache;
 
   // Allow these adapters access to our private constructors on our behalf.
+  // TODO(sherm1) These friend declarations allow us to hide constructors we
+  //   don't want users to call. But there is still a loophole in that a user
+  //   could create objects of these types and get access indirectly. Consider
+  //   whether that is a real problem that needs to be solved and if so fix it.
   friend class never_destroyed<CacheEntryValue>;
   friend class copyable_unique_ptr<CacheEntryValue>;
 
@@ -410,13 +475,12 @@ class CacheEntryValue {
     return value_->SetValueOrThrow<T>(new_value);
   }
 
-
   void ThrowIfNoValue(const char* api) const {
     if (!has_value())
       throw std::logic_error(FormatName(api) + "no value is present.");
   }
 
-  void ThrowIfHasValue(const char* api) {
+  void ThrowIfHasValue(const char* api) const {
     if (has_value()) {
       throw std::logic_error(FormatName(api) +
           "there is already a value object in this CacheEntryValue.");
@@ -425,23 +489,26 @@ class CacheEntryValue {
 
   // Throws if "other" doesn't have the same concrete type as this value.
   // Don't call this unless you've already verified that there is a value.
-  void ThrowIfBadOtherValue(const char* api,
-                            std::unique_ptr<AbstractValue>* other_value_ptr);
+  void ThrowIfBadOtherValue(
+      const char* api,
+      const std::unique_ptr<AbstractValue>* other_value_ptr) const;
 
   // This means literally that the out-of-date bit is set; it does not look
   // at whether caching is disabled.
   void ThrowIfOutOfDate(const char* api) const {
-    if (!is_up_to_date())
+    if (is_out_of_date()) {
       throw std::logic_error(FormatName(api) +
                              "the current value is out of date.");
+    }
   }
 
   // This checks that there is *some* reason to recompute -- either out-of-date
   // or caching is disabled.
   void ThrowIfAlreadyComputed(const char* api) const {
-    if (!needs_recomputation())
+    if (!needs_recomputation()) {
       throw std::logic_error(FormatName(api) +
-                             "the current value is already up to date.");
+          "the current value is already up to date.");
+    }
   }
 
   // Provides an identifying prefix for error messages.
@@ -585,7 +652,7 @@ class Cache {
       owning_subcontext_;
 
   // All CacheEntryValue objects, indexed by CacheIndex.
-  std::vector<drake::copyable_unique_ptr<CacheEntryValue>> store_;
+  std::vector<copyable_unique_ptr<CacheEntryValue>> store_;
 };
 
 }  // namespace systems
