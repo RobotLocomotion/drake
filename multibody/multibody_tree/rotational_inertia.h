@@ -910,12 +910,29 @@ class RotationalInertia {
   }
 
   // Throws an exception if a rotational inertia is not physically valid.
-  void ThrowIfNotPhysicallyValid() {
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value>::type
+  ThrowIfNotPhysicallyValid() {
     if (!CouldBePhysicallyValid()) {
       throw std::logic_error("Error: Rotational inertia did not pass test: "
                              "CouldBePhysicallyValid().");
     }
   }
+
+  // This method is used to demand the physical validity of a RotationalInertia
+  // at either construction or after an operation that could lead to
+  // non-physical results when a user provides data that is not valid. For
+  // numerical T-types this would imply computing the rotational inertia
+  // eigenvalues and checking if they are positive and satisfy the triangle
+  // inequality. For non-numeric values the right thing to do is not as clear.
+  // Consider the case for symbolic::Variable as a typical case of a non-numeric
+  // T-type.
+  // Given this is meant to be called in assertions or demands, we do not try
+  // to attempt a smart way throw based on given a symbolic::Formula but instead
+  // we make this method a no-throw for non-numeric types.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value>::type
+  ThrowIfNotPhysicallyValid() {}
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.
