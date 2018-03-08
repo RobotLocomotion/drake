@@ -107,7 +107,7 @@ GTEST_TEST(testIK, iiwaIK) {
   inverseKin(model.get(), q0, q0, constraint_array.size(),
              constraint_array.data(), ikoptions, &q_sol, &info,
              &infeasible_constraint);
-  EXPECT_EQ(info, 1);
+  ASSERT_EQ(info, 1);
 
   // Check that our constrained joint is within where we tried to constrain it.
   EXPECT_GE(q_sol(joint_position_start_idx(0)), joint_lb(0));
@@ -117,7 +117,7 @@ GTEST_TEST(testIK, iiwaIK) {
   const KinematicsCache<double> cache = model->doKinematics(q_sol);
   EXPECT_TRUE(CompareMatrices(
       pos_end, model->relativeTransform(cache, 0, link_7_idx).translation(),
-      pos_tol + 1e-6, MatrixCompareType::absolute));
+      pos_tol + 2e-6, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(testIK, iiwaIKInfeasible) {
