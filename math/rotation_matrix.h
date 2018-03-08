@@ -429,7 +429,7 @@ class RotationMatrix {
   // value of the difference between the elements of R and `other`).
   // @param[in] R matrix from which `other` is subtracted.
   // @param[in] other matrix to subtract from R.
-  // @returns `‖R - `other`‖∞`
+  // @returns `‖R - other‖∞`
   static T GetMaximumAbsoluteDifference(const Matrix3<T>& R,
                                         const Matrix3<T>& other) {
     const Matrix3<T> R_difference = R - other;
