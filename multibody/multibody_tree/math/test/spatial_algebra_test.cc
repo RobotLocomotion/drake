@@ -139,7 +139,6 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromTwo3DVectors) {
   // Verify compile-time size.
   EXPECT_EQ(V_AB.size(), 6);
 
-  // Comparison to Eigen::NumTraits<double>::epsilon() precision.
   EXPECT_TRUE(V_AB.translational() == v_AB);
   EXPECT_TRUE(V_AB.rotational() == w_AB);
 }

@@ -160,7 +160,7 @@ class SpatialVector {
   /// `other` are equal within @p translational_tolerance.
   decltype(T() < T()) IsNearlyEqualWithinAbsoluteTolerance(
       const SpatialQuantity& other, double rotational_tolerance,
-      const double translational_tolerance) const {
+      double translational_tolerance) const {
     T w_max_difference, v_max_difference;
     std::tie(w_max_difference, v_max_difference) =
         GetMaximumAbsoluteDifferences(other);
