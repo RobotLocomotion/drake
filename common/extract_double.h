@@ -23,7 +23,7 @@ namespace drake {
 /// See symbolic_expression.h to use this with symbolic::Expression.
 /// See number_traits.h for specifying which ScalarTypes are numeric.
 template <typename T>
-double ExtractDoubleOrThrow(const T& scalar) {
+double ExtractDoubleOrThrow(const T&) {
   static_assert(!is_numeric<T>::value,
                 "Numeric scalar types should overload this function");
   throw std::runtime_error(NiceTypeName::Get<T>() +
