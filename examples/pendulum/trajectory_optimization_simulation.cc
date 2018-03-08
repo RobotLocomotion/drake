@@ -22,6 +22,10 @@ using drake::solvers::SolutionResult;
 namespace drake {
 namespace examples {
 namespace pendulum {
+
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
+
 namespace {
 
 DEFINE_double(target_realtime_rate, 1.0,
@@ -38,10 +42,10 @@ int DoMain() {
 
   const int kNumTimeSamples = 21;
   const double kMinimumTimeStep = 0.2;
-  const double kMaximumSampleTime = 0.5;
+  const double kMaximumTimeStep = 0.5;
   systems::trajectory_optimization::DirectCollocation dircol(
       pendulum.get(), *context, kNumTimeSamples, kMinimumTimeStep,
-      kMaximumSampleTime);
+      kMaximumTimeStep);
 
   dircol.AddEqualTimeIntervalsConstraints();
 

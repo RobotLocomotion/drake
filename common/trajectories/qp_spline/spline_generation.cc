@@ -38,7 +38,7 @@ void setConstraintMatrixPart(
   }
 }
 
-PiecewisePolynomial<double> generateSpline(
+drake::trajectories::PiecewisePolynomial<double> generateSpline(
     const SplineInformation& spline_information) {
   int num_segments = spline_information.getNumberOfSegments();
   int num_constraints = spline_information.getNumberOfConstraints();
@@ -132,11 +132,11 @@ PiecewisePolynomial<double> generateSpline(
   }
 
   // return a PiecewisePolynomial
-  return PiecewisePolynomial<double>(polynomials,
+  return drake::trajectories::PiecewisePolynomial<double>(polynomials,
                                      spline_information.getSegmentTimes());
 }
 
-PiecewisePolynomial<double> nWaypointCubicSpline(
+drake::trajectories::PiecewisePolynomial<double> nWaypointCubicSpline(
     const vector<double>& segment_times, double x0, double xd0, double xf,
     double xdf, const Ref<const VectorXd>& xi) {
   const int num_segments = static_cast<int>(xi.size() + 1);

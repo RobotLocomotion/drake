@@ -46,6 +46,8 @@ const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 const char* const kLcmStopChannel = "STOP";
 const int kNumJoints = 7;
 
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
 typedef PiecewisePolynomial<double> PPType;
 typedef PPType::PolynomialType PPPoly;
 typedef PPType::PolynomialMatrix PPMatrix;

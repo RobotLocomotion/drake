@@ -9,6 +9,7 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
+namespace trajectories {
 namespace {
 
 // Returns q1 = quat(omega * dt) * q0
@@ -192,4 +193,5 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestIsApprox) {
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

@@ -6,7 +6,7 @@
 #include "drake/common/trajectories/qp_spline/continuity_constraint.h"
 #include "drake/common/trajectories/qp_spline/value_constraint.h"
 
-class SplineInformation : public PiecewisePolynomialBase {
+class SplineInformation : public drake::trajectories::PiecewisePolynomialBase {
  private:
   std::vector<int> segment_polynomial_degrees;
   std::vector<std::vector<ValueConstraint> > value_constraints;

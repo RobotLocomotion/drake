@@ -16,6 +16,8 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+using trajectories::PiecewisePolynomial;
+
 // For readability of long lines, these single-letter variables names are
 // sometimes used:
 // N number of timesteps/samples

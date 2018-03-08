@@ -9,6 +9,7 @@
 #include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
+namespace trajectories {
 
 /**
  * A PiecewisePolynomialTrajectory is a Trajectory that is represented by
@@ -19,7 +20,7 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   /**
    * Construct a PiecewisePolynomialTrajectory from a PiecewisePolynomial.
    */
-  explicit PiecewisePolynomialTrajectory(const PiecewisePolynomial<double>& pp)
+  explicit PiecewisePolynomialTrajectory(const PiecewisePolynomial<double> &pp)
       : pp_(pp) {}
 
   std::unique_ptr<Trajectory> Clone() const override {
@@ -70,7 +71,7 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   /**
    * @return A reference to the underlying piecewise polynomial.
    */
-  const PiecewisePolynomial<double>& get_piecewise_polynomial() const {
+  const PiecewisePolynomial<double> &get_piecewise_polynomial() const {
     return pp_;
   }
 
@@ -78,4 +79,5 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   PiecewisePolynomial<double> pp_;
 };
 
+}  // namespace trajectories
 }  // namespace drake

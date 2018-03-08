@@ -6,6 +6,8 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+using trajectories::PiecewisePolynomial;
+
 ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
                               const Eigen::Vector4d& x0, double dt,
                               double extra_time_at_the_end) {

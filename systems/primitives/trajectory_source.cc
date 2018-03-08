@@ -5,6 +5,8 @@
 namespace drake {
 namespace systems {
 
+using trajectories::Trajectory;
+
 template <typename T>
 TrajectorySource<T>::TrajectorySource(const Trajectory& trajectory,
                                       int output_derivative_order,

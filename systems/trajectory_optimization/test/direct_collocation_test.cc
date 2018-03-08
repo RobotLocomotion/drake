@@ -13,6 +13,10 @@
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
+
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
+
 namespace {
 
 std::unique_ptr<LinearSystem<double>> MakeSimpleLinearSystem() {

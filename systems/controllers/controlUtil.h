@@ -11,6 +11,8 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/rigid_body_tree.h"
 
+using drake::trajectories::PiecewisePolynomial;
+
 const int m_surface_tangents =
     2;  // number of faces in the friction cone approx
 

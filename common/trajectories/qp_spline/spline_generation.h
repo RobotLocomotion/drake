@@ -12,9 +12,9 @@ class ConstraintMatrixSingularError : public std::runtime_error {
       : runtime_error("Constraint matrix is singular!"){}
 };
 
-PiecewisePolynomial<double> generateSpline(
+drake::trajectories::PiecewisePolynomial<double> generateSpline(
     const SplineInformation& spline_information);
 
-PiecewisePolynomial<double> nWaypointCubicSpline(
+drake::trajectories::PiecewisePolynomial<double> nWaypointCubicSpline(
     const std::vector<double>& segment_times, double x0, double xd0, double xf,
     double xdf, const Eigen::Ref<const Eigen::VectorXd>& xi);

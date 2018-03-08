@@ -9,6 +9,9 @@
 namespace drake {
 namespace systems {
 
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
+
 namespace internal {
 
 // Return a vector of the given size, with result[i] == i * step.

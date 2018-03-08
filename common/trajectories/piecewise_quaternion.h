@@ -8,6 +8,7 @@
 #include "drake/common/trajectories/piecewise_function.h"
 
 namespace drake {
+namespace trajectories {
 
 /**
  * A class representing a trajectory for quaternions that are interpolated
@@ -28,7 +29,7 @@ namespace drake {
  *
  */
 // TODO(siyuan.feng): check if this works for AutoDiffScalar.
-template <typename Scalar = double>
+template<typename Scalar = double>
 class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseQuaternionSlerp)
@@ -41,8 +42,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
-      const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions);
+      const std::vector<double> &breaks,
+      const eigen_aligned_std_vector<Quaternion<Scalar>> &quaternions);
 
   /*
    * Builds a PiecewiseQuaternionSlerp.
@@ -50,8 +51,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
-      const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<Matrix3<Scalar>>& rot_matrices);
+      const std::vector<double> &breaks,
+      const eigen_aligned_std_vector<Matrix3<Scalar>> &rot_matrices);
 
   /*
    * Builds a PiecewiseQuaternionSlerp.
@@ -59,10 +60,11 @@ class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
    * or breaks have length < 2.
    */
   PiecewiseQuaternionSlerp(
-      const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axes);
+      const std::vector<double> &breaks,
+      const eigen_aligned_std_vector<AngleAxis<Scalar>> &ang_axes);
 
   Eigen::Index rows() const override { return 4; }
+
   Eigen::Index cols() const override { return 1; }
 
   /**
@@ -96,8 +98,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
    *
    * @return the internal knot points.
    */
-  const eigen_aligned_std_vector<Quaternion<Scalar>>& get_quaternion_knots()
-      const {
+  const eigen_aligned_std_vector<Quaternion<Scalar>> &get_quaternion_knots()
+  const {
     return quaternions_;
   }
 
@@ -106,14 +108,14 @@ class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
    * @p tol seconds, and the angle difference between the corresponding
    * quaternion knot points are within @p tol.
    */
-  bool is_approx(const PiecewiseQuaternionSlerp<Scalar>& other,
-                 const Scalar& tol) const;
+  bool is_approx(const PiecewiseQuaternionSlerp<Scalar> &other,
+                 const Scalar &tol) const;
 
  private:
   // Initialize quaternions_ and computes angular velocity for each segment.
   void Initialize(
-      const std::vector<double>& breaks,
-      const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions);
+      const std::vector<double> &breaks,
+      const eigen_aligned_std_vector<Quaternion<Scalar>> &quaternions);
 
   // Computes angular velocity for each segment.
   void ComputeAngularVelocities();
@@ -125,4 +127,5 @@ class PiecewiseQuaternionSlerp final : public PiecewiseFunction {
   eigen_aligned_std_vector<Vector3<Scalar>> angular_velocities_;
 };
 
+}  // namespace trajectories
 }  // namespace drake

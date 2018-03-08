@@ -8,6 +8,10 @@
 namespace drake {
 namespace systems {
 namespace controllers {
+
+using trajectories::ExponentialPlusPiecewisePolynomial;
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 class ZMPPlannerTest : public ::testing::Test {

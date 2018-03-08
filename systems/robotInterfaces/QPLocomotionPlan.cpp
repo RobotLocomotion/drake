@@ -55,6 +55,9 @@ using drake::math::initializeAutoDiffGivenGradientMatrix;
 using drake::math::quat2expmap;
 using drake::math::quatRotateVec;
 
+using drake::trajectories::ExponentialPlusPiecewisePolynomial;
+using drake::trajectories::PiecewisePolynomial;
+
 using std::allocator;
 using std::cerr;
 using std::endl;

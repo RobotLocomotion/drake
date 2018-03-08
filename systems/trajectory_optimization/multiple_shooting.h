@@ -203,8 +203,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// different start and end times.
   // TODO(russt): Consider taking the actual breakpoints from
   // traj_init_{u,x} iff they match the number of sample times.
-  void SetInitialTrajectory(const PiecewisePolynomial<double>& traj_init_u,
-                            const PiecewisePolynomial<double>& traj_init_x);
+  void SetInitialTrajectory(
+      const trajectories::PiecewisePolynomial<double>& traj_init_u,
+      const trajectories::PiecewisePolynomial<double>& traj_init_x);
 
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
@@ -220,11 +221,13 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Gets the input trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  virtual PiecewisePolynomialTrajectory ReconstructInputTrajectory() const = 0;
+  virtual trajectories::PiecewisePolynomialTrajectory
+  ReconstructInputTrajectory() const = 0;
 
   /// Gets the state trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const = 0;
+  virtual trajectories::PiecewisePolynomialTrajectory
+  ReconstructStateTrajectory() const = 0;
 
   double fixed_timestep() const {
     DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);

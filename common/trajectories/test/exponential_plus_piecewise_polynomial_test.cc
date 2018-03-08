@@ -12,6 +12,8 @@ using std::default_random_engine;
 using std::uniform_real_distribution;
 
 namespace drake {
+namespace trajectories {
+
 namespace {
 
 template <typename CoefficientType>
@@ -57,4 +59,5 @@ GTEST_TEST(testExponentialPlusPiecewisePolynomial, BasicTest) {
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

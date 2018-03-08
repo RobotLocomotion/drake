@@ -10,6 +10,9 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial_base.h"
 
+namespace drake {
+namespace trajectories {
+
 /// A scalar multi-variate piecewise polynomial.
 /**
  * PiecewisePolynomial represents a list of contiguous segments in time with a
@@ -27,7 +30,7 @@
  * {
  *   if (x<0) {
  *     return -x;
-     }
+ *   }
  *   else return x;
  * }
  * @endcode
@@ -36,7 +39,7 @@
  * They cannot be divided because Polynomials are not closed
  * under division.
  */
-template <typename CoefficientType = double>
+template<typename CoefficientType = double>
 class PiecewisePolynomial final : public PiecewisePolynomialBase {
  public:
   typedef Polynomial<CoefficientType> PolynomialType;
@@ -53,20 +56,20 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
   PiecewisePolynomial();
 
   // single segment and/or constant value constructor
-  template <typename Derived>
-  explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value)
+  template<typename Derived>
+  explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived> &value)
       : PiecewisePolynomialBase(std::vector<double>(
-            {{0.0, std::numeric_limits<double>::infinity()}})) {
+      {{0.0, std::numeric_limits<double>::infinity()}})) {
     polynomials_.push_back(value.template cast<PolynomialType>());
   }
 
   // Matrix constructor
-  PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials,
-                      std::vector<double> const& breaks);
+  PiecewisePolynomial(std::vector<PolynomialMatrix> const &polynomials,
+                      std::vector<double> const &breaks);
 
   // Scalar constructor
-  PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
-                      std::vector<double> const& breaks);
+  PiecewisePolynomial(std::vector<PolynomialType> const &polynomials,
+                      std::vector<double> const &breaks);
 
   /**
    * Constructs a piecewise constant PiecewisePolynomial.
@@ -81,8 +84,8 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    *    `breaks` has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> ZeroOrderHold(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots);
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots);
 
   /**
    * Constructs a piecewise linear PiecewisePolynomial.
@@ -97,8 +100,8 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
   // accepts Eigen vectors instead of std::vector, and the
   // CoefficientMatrix can be generalized to an Eigen::Ref.
   static PiecewisePolynomial<CoefficientType> FirstOrderHold(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots);
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots);
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
@@ -137,8 +140,8 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    *    true.
    */
   static PiecewisePolynomial<CoefficientType> Pchip(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots,
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots,
       bool zero_end_point_derivatives = false);
 
   /**
@@ -157,10 +160,10 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    *    `breaks` has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots,
-      const CoefficientMatrix& knot_dot_start,
-      const CoefficientMatrix& knot_dot_end);
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots,
+      const CoefficientMatrix &knot_dot_start,
+      const CoefficientMatrix &knot_dot_end);
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks`, `knots` and
@@ -177,9 +180,9 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    *    `breaks` has length smaller than 2.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots,
-      const std::vector<CoefficientMatrix>& knots_dot);
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots,
+      const std::vector<CoefficientMatrix> &knots_dot);
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
@@ -203,8 +206,8 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    *    `breaks` has length smaller than 3.
    */
   static PiecewisePolynomial<CoefficientType> Cubic(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots);
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots);
 
   /// Takes the derivative of this PiecewisePolynomial.
   /**
@@ -241,7 +244,7 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    * (zeroth-order coefficient) of the resulting Polynomial.
    */
   PiecewisePolynomial integral(
-      const CoefficientMatrixRef& value_at_start_time) const;
+      const CoefficientMatrixRef &value_at_start_time) const;
 
   bool empty() const { return polynomials_.empty(); }
 
@@ -255,9 +258,9 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    */
   drake::MatrixX<double> value(double t) const;
 
-  const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
+  const PolynomialMatrix &getPolynomialMatrix(int segment_index) const;
 
-  const PolynomialType& getPolynomial(int segment_index, Eigen::Index row = 0,
+  const PolynomialType &getPolynomial(int segment_index, Eigen::Index row = 0,
                                       Eigen::Index col = 0) const;
 
   int getSegmentPolynomialDegree(int segment_index, Eigen::Index row = 0,
@@ -269,43 +272,43 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
 
   /// @throws std::runtime_error if other.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
+  PiecewisePolynomial &operator+=(const PiecewisePolynomial &other);
 
   /// @throws std::runtime_error if other.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  PiecewisePolynomial& operator-=(const PiecewisePolynomial& other);
+  PiecewisePolynomial &operator-=(const PiecewisePolynomial &other);
 
   /// @throws std::runtime_error if other.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
+  PiecewisePolynomial &operator*=(const PiecewisePolynomial &other);
 
   /// @throws std::runtime_error if offset.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  PiecewisePolynomial& operator+=(const CoefficientMatrix& offset);
+  PiecewisePolynomial &operator+=(const CoefficientMatrix &offset);
 
   /// @throws std::runtime_error if offset.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  PiecewisePolynomial& operator-=(const CoefficientMatrix& offset);
+  PiecewisePolynomial &operator-=(const CoefficientMatrix &offset);
 
   /// @throws std::runtime_error if other.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  const PiecewisePolynomial operator+(const PiecewisePolynomial& other) const;
+  const PiecewisePolynomial operator+(const PiecewisePolynomial &other) const;
 
   /// @throws std::runtime_error if other.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
+  const PiecewisePolynomial operator-(const PiecewisePolynomial &other) const;
 
   /// @throws std::runtime_error if other.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
+  const PiecewisePolynomial operator*(const PiecewisePolynomial &other) const;
 
   /// @throws std::runtime_error if offset.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  const PiecewisePolynomial operator+(const CoefficientMatrix& offset) const;
+  const PiecewisePolynomial operator+(const CoefficientMatrix &offset) const;
 
   /// @throws std::runtime_error if offset.segment_times is not within
   /// PiecewiseFunction::kEpsilonTime from this->segment_times.
-  const PiecewisePolynomial operator-(const CoefficientMatrix& offset) const;
+  const PiecewisePolynomial operator-(const CoefficientMatrix &offset) const;
 
   /// Checks if a PiecewisePolynomial is approximately equal to this one.
   /**
@@ -313,11 +316,11 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    * corresponding coefficient of this PiecewisePolynomial. Throws an exception
    * if any Polynomial in either PiecewisePolynomial is not univariate.
    */
-  bool isApprox(const PiecewisePolynomial& other, double tol) const;
+  bool isApprox(const PiecewisePolynomial &other, double tol) const;
 
   void shiftRight(double offset);
 
-  void setPolynomialMatrixBlock(const PolynomialMatrix& replacement,
+  void setPolynomialMatrixBlock(const PolynomialMatrix &replacement,
                                 int segment_number, Eigen::Index row_start = 0,
                                 Eigen::Index col_start = 0);
 
@@ -367,15 +370,15 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
   // by various end point conditions (velocity at the end points /
   // "not-a-knot" / etc). These will be specified by the callers.
   static int SetupCubicSplineInteriorCoeffsLinearSystem(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots, int row, int col,
-      drake::MatrixX<CoefficientType>* A, drake::VectorX<CoefficientType>* b);
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots, int row, int col,
+      drake::MatrixX<CoefficientType> *A, drake::VectorX<CoefficientType> *b);
 
   // Computes the first derivative at the end point using a non-centered,
   // shape-preserving three-point formulae.
   static CoefficientMatrix ComputePchipEndSlope(
-      double dt0, double dt1, const CoefficientMatrix& slope0,
-      const CoefficientMatrix& slope1);
+      double dt0, double dt1, const CoefficientMatrix &slope0,
+      const CoefficientMatrix &slope1);
 
   // Throws std::runtime_error if
   // `breaks` and `knots` have different length,
@@ -383,6 +386,9 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
   // `knots` has inconsistent dimensions,
   // `breaks` has length smaller than min_length.
   static void CheckSplineGenerationInputValidityOrThrow(
-      const std::vector<double>& breaks,
-      const std::vector<CoefficientMatrix>& knots, int min_length);
+      const std::vector<double> &breaks,
+      const std::vector<CoefficientMatrix> &knots, int min_length);
 };
+
+}  // namespace trajectories
+}  // namespace drake

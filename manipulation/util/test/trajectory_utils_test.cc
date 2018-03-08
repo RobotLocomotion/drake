@@ -7,6 +7,9 @@
 namespace drake {
 namespace manipulation {
 
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewiseQuaternionSlerp;
+
 class PiecewiseCubicTrajectoryTest : public ::testing::Test {
  protected:
   void SetUp() override {

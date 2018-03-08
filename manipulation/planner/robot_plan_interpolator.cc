@@ -19,6 +19,9 @@ using robotlocomotion::robot_plan_t;
 namespace drake {
 namespace manipulation {
 namespace planner {
+
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 // This corresponds to the actual plan.

@@ -16,6 +16,8 @@ namespace {
 using manipulation::util::ModelInstanceInfo;
 using manipulation::util::WorldSimTreeBuilder;
 using manipulation::util::SimDiagramBuilder;
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
 
 std::unique_ptr<RigidBodyTree<double>> build_tree(
     int num_pairs, std::vector<ModelInstanceInfo<double>>* iiwa,
