@@ -101,11 +101,43 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
 
   dut.Update(world_state, iiwa_callback, wsg_callback);
 
+  // Check that we get the expected behavior through the planning phase. Because
+  // of implementation differences in std::default_random_engine, the planner
+  // may require different numbers of random re-starts on different platforms.
+  int step_count = 0;
+  while (dut.state() == PickAndPlaceState::kOpenGripper ||
+         dut.state() == PickAndPlaceState::kPlan) {
+    EXPECT_EQ(iiwa_plan_count, 0);
+    EXPECT_EQ(wsg_command_count, 1);
+    drake::log()->info("asdfasd: {}", static_cast<int>(dut.state()));
+    if (step_count < 2) {
+      EXPECT_EQ(dut.state(), PickAndPlaceState::kOpenGripper);
+    } else {
+      EXPECT_EQ(dut.state(), PickAndPlaceState::kPlan);
+    }
+    // Steps are long (5 seconds) so actions always complete in a
+    // small number of steps.
+    iiwa_msg.utime += 5000000;
+    if (!iiwa_plan.plan.empty()) {
+      for (int i = 0; i < kIiwaArmNumJoints; ++i) {
+        iiwa_msg.joint_position_measured[i] =
+            iiwa_plan.plan.back().joint_position[i];
+      }
+    }
+    world_state.HandleIiwaStatus(iiwa_msg, iiwa_base);
+
+    wsg_msg.utime = iiwa_msg.utime;
+    wsg_msg.actual_position_mm = wsg_command.target_position_mm;
+    world_state.HandleWsgStatus(wsg_msg);
+
+    dut.Update(world_state, iiwa_callback, wsg_callback);
+    step_count++;
+  }
+  // Check that it didn't take too many tries to find a plan.
+  EXPECT_LE(step_count, 10);
+
+  // Now check that we get the expected behavior for the rest of the states.
   std::vector<TestStep> steps;
-  steps.push_back(TestStep{0, 1, PickAndPlaceState::kOpenGripper});
-  steps.push_back(TestStep{0, 1, PickAndPlaceState::kPlan});
-  steps.push_back(TestStep{0, 1, PickAndPlaceState::kPlan});
-  steps.push_back(TestStep{0, 1, PickAndPlaceState::kApproachPickPregrasp});
   steps.push_back(TestStep{1, 1, PickAndPlaceState::kApproachPickPregrasp});
   steps.push_back(TestStep{1, 1, PickAndPlaceState::kApproachPick});
   steps.push_back(TestStep{2, 1, PickAndPlaceState::kApproachPick});
