@@ -525,7 +525,8 @@ class RotationalInertia {
     throw std::logic_error(
         "RotationalInertia<T>::CouldBePhysicallyValid() only works with types "
         "that are drake::is_numeric.");
-    return T(1) < T(2);  // Return something so that the compiler doesn't bark.
+    // Return something so that the compiler doesn't bark at us.
+    return decltype(T() < T())();
   }
 #endif
 
