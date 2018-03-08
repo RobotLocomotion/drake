@@ -105,15 +105,13 @@ class RotationalInertia {
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with each product of inertia set to zero.
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
+  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz)
       : RotationalInertia(Ixx, Iyy, Izz, 0.0, 0.0, 0.0) {}
 
   /// Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   /// and with products of inertia `Ixy`, `Ixz`, `Iyz`.
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
+  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
                     const T& Ixy, const T& Ixz, const T& Iyz) {
     set_moments_and_products_no_validity_check(Ixx, Iyy, Izz,
@@ -123,13 +121,12 @@ class RotationalInertia {
 
   /// Constructs a rotational inertia for a particle Q of mass `mass`, whose
   /// position vector from about-point P is p_PQ_E (E is expressed-in frame).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// constructed from these arguments violates CouldBePhysicallyValid().
   /// This std::logic_error exception only occurs if `mass` < 0.
   /// @param mass The mass of particle Q.
   /// @param p_PQ_E Position from about-point P to Q, expressed-in frame E.
   /// @retval I_QP_E, Q's rotational inertia about-point P expressed-in frame E.
   /// @remark Negating the position vector p_PQ_E has no affect on the result.
+  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
   RotationalInertia(const T& mass, const Vector3<T>& p_PQ_E)
       : RotationalInertia(mass * p_PQ_E, p_PQ_E) {}
 
@@ -258,13 +255,12 @@ class RotationalInertia {
   /// This method requires both rotational inertias (`I_BP_E` and `this`)
   /// to have the same about-point P and the same expressed-in frame E.
   /// The -= operator updates `this` so `I_BP_E` is subtracted from `this`.
-  /// In debug builds, throws std::logic_error if rotational inertia that this
-  /// operator produces violates CouldBePhysicallyValid().
   /// @param I_BP_E Rotational inertia of a body (or composite body) B to
   ///        be subtracted from `this` rotational inertia. `I_BP_E` and `this`
   ///        must have the same about-point P and expressed-in frame E.
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since rotational inertia `I_BP_E` has been subtracted from it.
+  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
   /// @see operator-().
   /// @note This subtract operator is useful for computing rotational inertia
   /// of a body with a hole.  First the rotational inertia of a fully solid
@@ -281,12 +277,11 @@ class RotationalInertia {
   /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   /// This method requires both rotational inertias (`I_BP_E` and `this`)
   /// to have the same about-point P and the same expressed-in frame E.
-  /// In debug builds, throws std::logic_error if rotational inertia that this
-  /// operator produces violates CouldBePhysicallyValid().
   /// @param I_BP_E Rotational inertia of a body (or composite body) B to
   ///        be subtracted from `this` rotational inertia. `I_BP_E` and `this`
   ///        must have the same about-point P and expressed-in frame E.
   /// @return The subtraction of `I_BP_E` from `this` rotational inertia.
+  /// @throws std::logic_error for Debug builds if not CouldBePhysicallyValid().
   /// @see operator-=().
   /// @warning See warning and documentation for operator-=().
   RotationalInertia<T> operator-(const RotationalInertia<T>& I_BP_E) const {
@@ -482,6 +477,7 @@ class RotationalInertia {
   /// @throws std::runtime_error if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
+  /// @throws std::logic_error if drake::is_numeric<T>::value is `false`.
 #ifdef DRAKE_DOXYGEN_CXX
   bool
 #else
@@ -535,11 +531,11 @@ class RotationalInertia {
   /// composite body) B about-point P expressed-in frame E and re-expresses
   /// to B's rotational inertia about-point P expressed-in frame A, i.e.,
   /// `I_BP_A = R_AE * I_BP_E * (R_AE)ᵀ`.
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @param R_AE Rotation matrix from frame A to frame E.
   /// @return A reference to `this` rotational inertia about-point P, but
   ///         with `this` expressed in frame A (instead of frame E).
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
   RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
     // There is an interesting discussion on Eigen's forum here:
@@ -567,10 +563,10 @@ class RotationalInertia {
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @param R_AE Rotation matrix from frame A to frame E.
   /// @retval I_BP_A Rotational inertia of B about-point P expressed-in frame A.
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpressInPlace()
   RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const
                                           __attribute__((warn_unused_result)) {
@@ -591,14 +587,14 @@ class RotationalInertia {
   /// Shifts `this` rotational inertia for a body (or composite body) B
   /// from about-point Bcm (B's center of mass) to about-point Q.
   /// I.e., shifts `I_BBcm_E` to `I_BQ_E` (both are expressed-in frame E).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// shifted to about-point Q violates CouldBePhysicallyValid().
   /// @param mass The mass of body (or composite body) B.
   /// @param p_BcmQ_E Position vector from Bcm to Q, expressed-in frame E.
   /// @return A reference to `this` rotational inertia expressed-in frame E,
   ///         but with `this` shifted from about-point Bcm to about-point Q.
   ///         i.e., returns I_BQ_E,  B's rotational inertia about-point Bcm
   ///         expressed-in frame E.
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
   RotationalInertia<T>& ShiftFromCenterOfMassInPlace(
       const T& mass,
@@ -611,11 +607,11 @@ class RotationalInertia {
   /// rotational inertia for a body (or composite body) B
   /// from about-point Bcm (B's center of mass) to about-point Q.
   /// I.e., shifts `I_BBcm_E` to `I_BQ_E` (both are expressed-in frame E).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// shifted to about-point Q violates CouldBePhysicallyValid().
   /// @param mass The mass of body (or composite body) B.
   /// @param p_BcmQ_E Position vector from Bcm to Q, expressed-in frame E.
   /// @retval I_BQ_E B's rotational inertia about-point Q expressed-in frame E.
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
   RotationalInertia<T> ShiftFromCenterOfMass(const T& mass,
                                              const Vector3<T>& p_BcmQ_E) const
@@ -625,17 +621,18 @@ class RotationalInertia {
   }
 
   /// Shifts `this` rotational inertia for a body (or composite body) B
-  /// from about-point Q to about-point Bcm (B's center of mass).
+  /// from about-point Q to about-point `Bcm` (B's center of mass).
   /// I.e., shifts `I_BQ_E` to `I_BBcm_E` (both are expressed-in frame E).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// shifted to about-point Bcm violates CouldBePhysicallyValid().
   /// @param mass The mass of body (or composite body) B.
-  /// @param p_QBcm_E Position vector from Q to Bcm, expressed-in frame E.
+  /// @param p_QBcm_E Position vector from Q to `Bcm`, expressed-in frame E.
   /// @return A reference to `this` rotational inertia expressed-in frame E,
-  ///         but with `this` shifted from about-point Q to about-point Bcm,
-  ///         i.e., returns I_BBcm_E, B's rotational inertia about-point Bcm
+  ///         but with `this` shifted from about-point Q to about-point `Bcm`,
+  ///         i.e., returns `I_BBcm_E`, B's rotational inertia about-point `Bcm`
   ///         expressed-in frame E.
-  /// @remark Negating the position vector p_QBcm_E has no affect on the result.
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
+  /// @remark Negating the position vector `p_QBcm_E` has no affect on the
+  /// result.
   RotationalInertia<T>& ShiftToCenterOfMassInPlace(const T& mass,
                                                    const Vector3<T>& p_QBcm_E) {
     *this -= RotationalInertia(mass, p_QBcm_E);
@@ -644,15 +641,16 @@ class RotationalInertia {
 
   /// Calculates the rotational inertia that results from shifting `this`
   /// rotational inertia for a body (or composite body) B
-  /// from about-point Q to about-point Bcm (B's center of mass).
+  /// from about-point Q to about-point `Bcm` (B's center of mass).
   /// I.e., shifts `I_BQ_E` to `I_BBcm_E` (both are expressed-in frame E).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// shifted to about-point Bcm violates CouldBePhysicallyValid().
   /// @param mass The mass of body (or composite body) B.
-  /// @param p_QBcm_E Position vector from Q to Bcm, expressed-in frame E.
-  /// @retval I_BBcm_E B's rotational inertia about-point Bcm
-  ///         expressed-in frame E.
-  /// @remark Negating the position vector p_QBcm_E has no affect on the result.
+  /// @param p_QBcm_E Position vector from Q to `Bcm`, expressed-in frame E.
+  /// @retval I_BBcm_E B's rotational inertia about-point `Bcm` expressed-in
+  /// frame E.
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
+  /// @remark Negating the position vector `p_QBcm_E` has no affect on the
+  /// result.
   RotationalInertia<T> ShiftToCenterOfMass(const T& mass,
                                            const Vector3<T>& p_QBcm_E) const
                                            __attribute__((warn_unused_result)) {
@@ -662,8 +660,6 @@ class RotationalInertia {
   /// Shifts `this` rotational inertia for a body (or composite body) B
   /// from about-point P to about-point Q via Bcm (B's center of mass).
   /// I.e., shifts `I_BP_E` to `I_BQ_E` (both are expressed-in frame E).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// shifted to about-point Q violates CouldBePhysicallyValid().
   /// @param mass The mass of body (or composite body) B.
   /// @param p_PBcm_E Position vector from P to Bcm, expressed-in frame E.
   /// @param p_QBcm_E Position vector from Q to Bcm, expressed-in frame E.
@@ -671,6 +667,8 @@ class RotationalInertia {
   ///         but with `this` shifted from about-point P to about-point Q,
   ///         i.e., returns I_BQ_E, B's rotational inertia about-point Q
   ///         expressed-in frame E.
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
   /// @remark This method is more efficient (by 6 multiplications) than first
@@ -689,12 +687,12 @@ class RotationalInertia {
   /// rotational inertia for a body (or composite body) B
   /// from about-point P to about-point Q via Bcm (B's center of mass).
   /// I.e., shifts `I_BP_E` to `I_BQ_E` (both are expressed-in frame E).
-  /// In debug builds, throws std::logic_error if rotational inertia that is
-  /// shifted to about-point Q violates CouldBePhysicallyValid().
   /// @param mass The mass of body (or composite body) B.
   /// @param p_PBcm_E Position vector from P to Bcm, expressed-in frame E.
   /// @param p_QBcm_E Position vector from Q to Bcm, expressed-in frame E.
   /// @retval I_BQ_E, B's rotational inertia about-point Q expressed-in frame E.
+  /// @throws std::logic_error for Debug builds if the rotational inertia that
+  /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
   RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
