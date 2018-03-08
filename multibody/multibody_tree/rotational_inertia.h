@@ -517,9 +517,9 @@ class RotationalInertia {
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value, decltype(T() < T())>::type
   CouldBePhysicallyValid() const {
-    DRAKE_ABORT_MSG(
-        "RotationalInertia<T>::CouldBePhysicallyValid "
-        "only works with types that are drake::is_numeric.");
+    throw std::logic_error(
+        "RotationalInertia<T>::CouldBePhysicallyValid() only works with types "
+        "that are drake::is_numeric.");
     return T(1) < T(2);  // Return something so that the compiler doesn't bark.
   }
 
