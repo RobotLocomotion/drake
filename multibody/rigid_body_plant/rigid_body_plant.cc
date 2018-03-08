@@ -1266,13 +1266,15 @@ void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     ContactInfo<T>& contact_result = contact_results->AddContact(
         contact.elementA->getId(), contact.elementB->getId());
 
-    // Compute an orthonormal basis.
+    // Compute an orthonormal basis, the contact frame.
     const int kXAxisIndex = 0, kYAxisIndex = 1, kZAxisIndex = 2;
     auto R_WC = math::ComputeBasisFromAxis(kXAxisIndex, contact.normal);
     const Vector3<T> tan1_dir = R_WC.col(kYAxisIndex);
     const Vector3<T> tan2_dir = R_WC.col(kZAxisIndex);
 
-    // Determine the contact force.
+    // Determine the contact force. This computation requires knowledge of the
+    // packed format used for the constraint force calculations. See
+    // ConstraintSolver::SolveImpactProblem().
     std::vector<std::unique_ptr<ContactDetail<T>>> contact_details;
     Vector3<T> force = contact.normal * constraint_force[normal_force_index];
     if (data.r[normal_force_index] == 2) {
@@ -1291,13 +1293,13 @@ void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     }
 
     ++normal_force_index;
-    const ContactForce<T> resultant_force(p_W, contact.normal, force);
+    const ContactForce<T> resultant_force(p_W, contact.normal, force / dt);
     contact_result.set_resultant_force(resultant_force);
     contact_details.emplace_back(new PointContactDetail<T>(resultant_force));
     contact_result.set_contact_details(std::move(contact_details));
   }
 
-  // Convert the contact forces to generalized forces, removing joint limit
+  // Convert the contact forces to generalized forces by zeroing joint limit
   // and bilateral constraint forces first.
   VectorX<T> generalized_contact_force;
   const int limits_start = contacts.size() + total_friction_cone_edges;
@@ -1305,7 +1307,7 @@ void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
   contact_force.segment(
       limits_start, constraint_force.size() - limits_start).setZero();
   constraint_solver_.ComputeGeneralizedImpulseFromConstraintImpulses(
-      data, contact_force, &generalized_contact_force);
+      data, contact_force / dt, &generalized_contact_force);
   contact_results->set_generalized_contact_force(
       generalized_contact_force);
 }
