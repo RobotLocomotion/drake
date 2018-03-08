@@ -482,8 +482,12 @@ class RotationalInertia {
   /// @throws std::runtime_error if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
+#ifdef DRAKE_DOXYGEN_CXX
+  bool
+#else
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value, bool>::type
+#endif
   CouldBePhysicallyValid() const {
     if (IsNaN()) return false;
 
@@ -514,6 +518,7 @@ class RotationalInertia {
 
   // This method throws an exception for non-numeric types.
   // @tparam T1 SFINAE boilerplate.
+#ifndef DRAKE_DOXYGEN_CXX
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value, decltype(T() < T())>::type
   CouldBePhysicallyValid() const {
@@ -522,6 +527,7 @@ class RotationalInertia {
         "that are drake::is_numeric.");
     return T(1) < T(2);  // Return something so that the compiler doesn't bark.
   }
+#endif
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
   /// In other words, starts with `this` rotational inertia of a body (or
