@@ -1,5 +1,8 @@
 #include "drake/systems/framework/cache.h"
 
+#include <typeindex>
+#include <typeinfo>
+
 #include "drake/systems/framework/dependency_tracker.h"
 
 namespace drake {
@@ -12,7 +15,8 @@ std::string CacheEntryValue::GetPathDescription() const {
 }
 
 void CacheEntryValue::ThrowIfBadOtherValue(
-    const char* api, std::unique_ptr<AbstractValue>* other_value_ptr) {
+    const char* api,
+    const std::unique_ptr<AbstractValue>* other_value_ptr) const {
   if (other_value_ptr == nullptr)
     throw std::logic_error(FormatName(api) + "null other_value pointer.");
 
