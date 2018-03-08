@@ -1,9 +1,8 @@
-#include "drake/multibody/multibody_tree/math/rotation_matrix.h"
+#include "drake/math/rotation_matrix.h"
 
 #include <gtest/gtest.h>
 
 namespace drake {
-namespace multibody {
 namespace math {
 namespace {
 
@@ -415,5 +414,4 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
 
 }  // namespace
 }  // namespace math
-}  // namespace multibody
 }  // namespace drake

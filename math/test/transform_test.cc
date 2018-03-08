@@ -1,9 +1,8 @@
-#include "drake/multibody/multibody_tree/math/transform.h"
+#include "drake/math/transform.h"
 
 #include <gtest/gtest.h>
 
 namespace drake {
-namespace multibody {
 namespace math {
 namespace {
 
@@ -303,5 +302,4 @@ GTEST_TEST(Transform, CastFromDoubleToAutoDiffXd) {
 
 }  // namespace
 }  // namespace math
-}  // namespace multibody
 }  // namespace drake
