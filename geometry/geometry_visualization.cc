@@ -21,7 +21,7 @@ namespace {
 // Simple class for converting shape specifications into LCM-compatible shapes.
 class ShapeToLcm : public ShapeReifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeToLcm)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShapeToLcm)
 
   ShapeToLcm() = default;
   ~ShapeToLcm() override = default;
