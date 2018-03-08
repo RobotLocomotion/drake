@@ -5,6 +5,9 @@
 
 #include <Eigen/Core>
 
+namespace drake {
+namespace trajectories {
+
 class PiecewiseFunction {
  public:
   /// Minimum delta quantity used for comparing time.
@@ -63,3 +66,6 @@ class PiecewiseFunction {
 
   std::vector<double> breaks_;
 };
+
+}  // namespace trajectories
+}  // namespace drake

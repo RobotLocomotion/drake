@@ -39,6 +39,9 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
+
 const char* kRelUrdfPath =
     "drake/manipulation/models/jaco_description/urdf/j2n6s300.urdf";
 

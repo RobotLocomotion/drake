@@ -6,6 +6,9 @@
 
 #include "drake/common/trajectories/piecewise_function.h"
 
+namespace drake {
+namespace trajectories {
+
 class PiecewisePolynomialBase : public PiecewiseFunction {
  public:
   explicit PiecewisePolynomialBase(std::vector<double> const& breaks);
@@ -25,3 +28,6 @@ class PiecewisePolynomialBase : public PiecewiseFunction {
  protected:
   PiecewisePolynomialBase();
 };
+
+}  // namespace trajectories
+}  // namespace drake

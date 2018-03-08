@@ -43,6 +43,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 using manipulation::util::SimDiagramBuilder;
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
 
 const char kUrdfPath[] =
     "drake/manipulation/models/iiwa_description/urdf/"

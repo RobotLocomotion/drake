@@ -7,7 +7,7 @@
 SplineInformation::SplineInformation(
     std::vector<int> const& segment_polynomial_orders,
     std::vector<double> const& breaks)
-    : PiecewisePolynomialBase(breaks),
+    : drake::trajectories::PiecewisePolynomialBase(breaks),
       segment_polynomial_degrees(segment_polynomial_orders) {
   DRAKE_ASSERT(breaks.size() == segment_polynomial_orders.size() + 1);
   value_constraints.resize(getNumberOfSegments());

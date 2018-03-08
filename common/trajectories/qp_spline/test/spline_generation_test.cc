@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 namespace drake {
+namespace trajectories {
 namespace {
 
 GTEST_TEST(testSplineGeneration, BasicTest) {
@@ -48,6 +49,7 @@ GTEST_TEST(testSplineGeneration, BasicTest) {
               tol);
 
   EXPECT_NEAR(result.scalarValue(result.getStartTime(1)), x1, tol);
+
   EXPECT_NEAR(result.scalarValue(result.getStartTime(2)), x2, tol);
 
   // Check continuity constraints.
@@ -65,4 +67,5 @@ GTEST_TEST(testSplineGeneration, BasicTest) {
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

@@ -16,6 +16,8 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+using trajectories::PiecewisePolynomialTrajectory;
+
 namespace {
 
 class DiscreteTimeSystemConstraint : public solvers::Constraint {
@@ -171,7 +173,8 @@ void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   }
 }
 
-PiecewisePolynomialTrajectory DirectTranscription::ReconstructInputTrajectory()
+PiecewisePolynomialTrajectory
+DirectTranscription::ReconstructInputTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());

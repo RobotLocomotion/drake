@@ -106,7 +106,7 @@ class DrakeVisualizer : public LeafSystem<double> {
    * Plays back (at real time) a trajectory representing the input signal.
    */
   void PlaybackTrajectory(
-      const PiecewisePolynomial<double>& input_trajectory) const;
+      const trajectories::PiecewisePolynomial<double>& input_trajectory) const;
 
  private:
   // TODO(siyuan): Split DoPublish into individual callbacks for different

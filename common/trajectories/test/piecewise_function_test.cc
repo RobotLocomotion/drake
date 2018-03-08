@@ -6,6 +6,12 @@
 
 #include "drake/common/drake_assert.h"
 
+namespace drake {
+namespace trajectories {
+
+namespace {
+
+
 // Dummy implementation of PiecewiseFunction to test the basic indexing
 // functions.
 class PiecewiseFunctionTester : public PiecewiseFunction {
@@ -88,3 +94,7 @@ GTEST_TEST(PiecewiseFunctionTest, GetIndexTest) {
 
   TestPiecewiseFunctionTimeRelatedGetters(traj, time);
 }
+
+}  // namespace
+}  // namespace trajectories
+}  // namespace drake

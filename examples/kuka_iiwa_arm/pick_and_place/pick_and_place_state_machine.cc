@@ -23,6 +23,7 @@ namespace pick_and_place {
 namespace {
 
 using manipulation::util::WorldSimTreeBuilder;
+using trajectories::PiecewisePolynomial;
 
 const char kGraspFrameName[] = "grasp_frame";
 

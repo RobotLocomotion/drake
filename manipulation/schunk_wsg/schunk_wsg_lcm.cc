@@ -168,8 +168,8 @@ void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
     knots.push_back(Eigen::Vector2d(target_position, 0));
     times.push_back(kTimeToMaxVelocity + time_at_max + kTimeToMaxVelocity);
   }
-  trajectory_.reset(new PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
+  trajectory_.reset(new trajectories::PiecewisePolynomialTrajectory(
+      trajectories::PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
 }
 
 SchunkWsgStatusSender::SchunkWsgStatusSender(int input_state_size,
