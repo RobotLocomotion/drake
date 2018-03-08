@@ -57,6 +57,8 @@ using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
 using drake::systems::Context;
 using drake::systems::BasicVector;
+using drake::trajectories::PiecewisePolynomial;
+using drake::trajectories::PiecewisePolynomialTrajectory;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.

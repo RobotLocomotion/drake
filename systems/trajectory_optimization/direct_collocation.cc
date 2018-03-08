@@ -12,6 +12,9 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
+
 namespace {
 
 // Note that the DirectCollocation implementation below allocates
@@ -178,7 +181,8 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
           SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
-PiecewisePolynomialTrajectory DirectCollocation::ReconstructInputTrajectory()
+PiecewisePolynomialTrajectory
+DirectCollocation::ReconstructInputTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -192,7 +196,8 @@ PiecewisePolynomialTrajectory DirectCollocation::ReconstructInputTrajectory()
       PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs));
 }
 
-PiecewisePolynomialTrajectory DirectCollocation::ReconstructStateTrajectory()
+PiecewisePolynomialTrajectory
+DirectCollocation::ReconstructStateTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());

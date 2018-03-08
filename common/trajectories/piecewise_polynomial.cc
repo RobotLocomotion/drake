@@ -7,6 +7,9 @@
 using std::runtime_error;
 using std::vector;
 
+namespace drake {
+namespace trajectories {
+
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
     std::vector<PolynomialMatrix> const& polynomials,
@@ -815,3 +818,6 @@ PiecewisePolynomial<CoefficientType>::ComputeCubicSplineCoeffs(
 template class PiecewisePolynomial<double>;
 // doesn't work yet
 // template class PiecewisePolynomial<std::complex<double>>;
+
+}  // namespace trajectories
+}  // namespace drake

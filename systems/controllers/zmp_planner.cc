@@ -11,6 +11,9 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+using trajectories::ExponentialPlusPiecewisePolynomial;
+using trajectories::PiecewisePolynomial;
+
 Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
     double time, const Eigen::Vector4d& x) const {
   DRAKE_DEMAND(planned_);

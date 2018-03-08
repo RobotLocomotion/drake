@@ -19,6 +19,8 @@ namespace {
 // TODO(russt): MathematicalProgram should provide this number for each solver.
 const double kSolverTolerance = 1e-6;
 
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
 class MyDirectTrajOpt : public MultipleShooting {

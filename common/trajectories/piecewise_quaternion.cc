@@ -5,6 +5,7 @@
 #include "drake/math/quaternion.h"
 
 namespace drake {
+namespace trajectories {
 
 template <typename Scalar>
 bool PiecewiseQuaternionSlerp<Scalar>::is_approx(
@@ -142,4 +143,5 @@ Vector3<Scalar> PiecewiseQuaternionSlerp<Scalar>::angular_acceleration(
 
 template class PiecewiseQuaternionSlerp<double>;
 
+}  // namespace trajectories
 }  // namespace drake

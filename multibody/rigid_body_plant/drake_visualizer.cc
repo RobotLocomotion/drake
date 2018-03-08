@@ -63,7 +63,8 @@ void DrakeVisualizer::ReplayCachedSimulation() const {
     for (int c : included_times) {
       knots.push_back(sample_data.col(c));
     }
-    auto func = PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
+    auto func =
+        trajectories::PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
 
     PlaybackTrajectory(func);
   } else {
@@ -75,7 +76,7 @@ void DrakeVisualizer::ReplayCachedSimulation() const {
 }
 
 void DrakeVisualizer::PlaybackTrajectory(
-    const PiecewisePolynomial<double>& input_trajectory) const {
+    const trajectories::PiecewisePolynomial<double>& input_trajectory) const {
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;

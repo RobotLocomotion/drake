@@ -14,6 +14,8 @@ using Eigen::MatrixXd;
 using Eigen::Ref;
 using Eigen::VectorXd;
 using std::vector;
+using drake::trajectories::ExponentialPlusPiecewisePolynomial;
+using drake::trajectories::PiecewisePolynomial;
 
 ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     const TVLQRData& sys, const PiecewisePolynomial<double>& zmp_trajectory,

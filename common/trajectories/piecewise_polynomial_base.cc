@@ -4,6 +4,9 @@
 #include <sstream>
 #include <stdexcept>
 
+namespace drake {
+namespace trajectories {
+
 PiecewisePolynomialBase::PiecewisePolynomialBase(
     std::vector<double> const& breaks)
     : PiecewiseFunction(breaks) {
@@ -33,3 +36,6 @@ int PiecewisePolynomialBase::getTotalNumberOfCoefficients(
   }
   return ret;
 }
+
+}  // namespace trajectories
+}  // namespace drake

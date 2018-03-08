@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 
 namespace drake {
+namespace trajectories {
 
 /**
  * A Trajectory represents a time-varying matrix of doubles. 
@@ -48,7 +49,9 @@ class Trajectory {
   virtual Eigen::Index cols() const = 0;
 
   virtual double get_start_time() const = 0;
+
   virtual double get_end_time() const = 0;
 };
 
+}  // namespace trajectories
 }  // namespace drake

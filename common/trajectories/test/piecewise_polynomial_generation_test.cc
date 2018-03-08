@@ -14,6 +14,7 @@
 using std::default_random_engine;
 
 namespace drake {
+namespace trajectories {
 namespace {
 
 // Computes the maximum or minimum velocity in interval [0, t].
@@ -600,4 +601,5 @@ GTEST_TEST(SplineTests, TestException) {
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

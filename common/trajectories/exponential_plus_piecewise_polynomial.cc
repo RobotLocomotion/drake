@@ -9,6 +9,9 @@
 using Eigen::Dynamic;
 using Eigen::Matrix;
 
+namespace drake {
+namespace trajectories {
+
 template <typename CoefficientType>
 ExponentialPlusPiecewisePolynomial<
     CoefficientType>::ExponentialPlusPiecewisePolynomial() {
@@ -79,3 +82,6 @@ void ExponentialPlusPiecewisePolynomial<CoefficientType>::shiftRight(
 }
 
 template class ExponentialPlusPiecewisePolynomial<double>;
+
+}  // namespace trajectories
+}  // namespace drake

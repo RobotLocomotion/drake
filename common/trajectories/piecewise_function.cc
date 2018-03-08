@@ -9,6 +9,9 @@
 using std::uniform_real_distribution;
 using std::vector;
 
+namespace drake {
+namespace trajectories {
+
 PiecewiseFunction::PiecewiseFunction(
     std::vector<double> const& breaks)
     : breaks_(breaks) {
@@ -124,3 +127,6 @@ void PiecewiseFunction::checkScalarValued() const {
     throw std::runtime_error("Not scalar valued.");
   }
 }
+
+}  // namespace trajectories
+}  // namespace drake

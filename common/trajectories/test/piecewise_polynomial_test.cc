@@ -20,9 +20,10 @@ using std::normal_distribution;
 using std::uniform_int_distribution;
 
 namespace drake {
+namespace trajectories {
 namespace {
 
-template <typename CoefficientType>
+template<typename CoefficientType>
 void testIntegralAndDerivative() {
   int num_coefficients = 5;
   int num_segments = 3;
@@ -61,12 +62,12 @@ void testIntegralAndDerivative() {
   // check continuity at knot points
   for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
     EXPECT_EQ(integral.getPolynomial(i)
-              .EvaluateUnivariate(integral.getDuration(i)),
+                  .EvaluateUnivariate(integral.getDuration(i)),
               integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
   }
 }
 
-template <typename CoefficientType>
+template<typename CoefficientType>
 void testBasicFunctionality() {
   int max_num_coefficients = 6;
   int num_tests = 100;
@@ -135,7 +136,7 @@ void testBasicFunctionality() {
   }
 }
 
-template <typename CoefficientType>
+template<typename CoefficientType>
 void testValueOutsideOfRange() {
   typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
 
@@ -155,11 +156,15 @@ void testValueOutsideOfRange() {
                               1e-10, MatrixCompareType::absolute));
 }
 
-GTEST_TEST(testPiecewisePolynomial, AllTests) {
-  testIntegralAndDerivative<double>();
-  testBasicFunctionality<double>();
-  testValueOutsideOfRange<double>();
+GTEST_TEST(testPiecewisePolynomial, AllTests
+) {
+testIntegralAndDerivative<double>();
+
+testBasicFunctionality<double>();
+
+testValueOutsideOfRange<double>();
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

@@ -7,6 +7,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
+namespace drake {
+namespace trajectories {
+
 /**
  * y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)
  */
@@ -64,3 +67,6 @@ class ExponentialPlusPiecewisePolynomial : public PiecewiseFunction {
 
   void shiftRight(double offset);
 };
+
+}  // namespace trajectories
+}  // namespace drake

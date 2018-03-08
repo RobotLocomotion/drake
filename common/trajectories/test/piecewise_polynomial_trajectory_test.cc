@@ -9,7 +9,7 @@
 using Eigen::MatrixXd;
 
 namespace drake {
-namespace systems {
+namespace trajectories {
 namespace {
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
@@ -147,5 +147,5 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, PPAccessor) {
 }
 
 }  // namespace
-}  // namespace systems
+}  // namespace trajectories
 }  // namespace drake

@@ -17,6 +17,10 @@ using std::make_unique;
 
 namespace drake {
 namespace systems {
+
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewisePolynomialTrajectory;
+
 namespace {
 
 class TrajectorySourceTest : public ::testing::Test {

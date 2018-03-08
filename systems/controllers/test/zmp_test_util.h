@@ -63,7 +63,7 @@ ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
  * @param single_support_duration, Duration for single support.
  * @return Three trajectories: 0 is zero-order-hold, 1 is linear, 2 is cubic.
  */
-std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
+std::vector<trajectories::PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
     double double_support_duration, double single_support_duration);
 

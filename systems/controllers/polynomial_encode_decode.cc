@@ -7,6 +7,7 @@
 using Eigen::Dynamic;
 using Eigen::Map;
 using Eigen::VectorXd;
+using drake::trajectories::PiecewisePolynomial;
 
 void encodePolynomial(const Polynomial<double>& polynomial,
                       // NOLINTNEXTLINE(runtime/references)

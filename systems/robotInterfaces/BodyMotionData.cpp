@@ -1,5 +1,7 @@
 #include "drake/systems/robotInterfaces/BodyMotionData.h"
 
+using drake::trajectories::PiecewisePolynomial;
+
 int BodyMotionData::findSegmentIndex(double t) const {
   return trajectory.getSegmentIndex(t);
 }
