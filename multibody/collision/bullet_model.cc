@@ -900,17 +900,9 @@ BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {
 }
 
 UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape)
-    : runtime_error("") {
-  std::ostringstream ostr;
-  ostr << shape;
-  this->shape_name_ = ostr.str();
-}
-
-const char* UnknownShapeException::what() const throw() {
-  return ("Unknown collision shape: " + shape_name_ +
-          ". Ignoring this collision element")
-      .c_str();
-}
+    : runtime_error("Unknown collision shape: " +
+                    DrakeShapes::ShapeToString(shape) +
+                    ". Ignoring this collision element.") {}
 
 }  // namespace collision
 }  // namespace multibody
