@@ -28,13 +28,13 @@ namespace systems {
 namespace {
 
 // See above for why this is here.
-class MyContextBase : public ContextBase {
+class MyContextBase final : public ContextBase {
  public:
   MyContextBase() {}
   MyContextBase(const MyContextBase&) = default;
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
-    return std::unique_ptr<ContextBase>(new MyContextBase(*this));
+    return std::make_unique<MyContextBase>(*this);
   }
 };
 
@@ -186,11 +186,11 @@ TEST_F(HandBuiltDependencies, Unsubscribe) {
 TEST_F(HandBuiltDependencies, Notify) {
   // Just-allocated cache entries are not up to date. We're not using the
   // cache entry API here -- just playing with the underlying "up to date" flag.
-  EXPECT_FALSE(entry0_->is_up_to_date());
+  EXPECT_TRUE(entry0_->is_out_of_date());
 
   // set_value() sets the up-to-date flag.
   entry0_->set_value(1125);
-  EXPECT_TRUE(entry0_->is_up_to_date());
+  EXPECT_FALSE(entry0_->is_out_of_date());
 
   // Refer to diagram above to decipher the expected stats below.
 
@@ -200,7 +200,7 @@ TEST_F(HandBuiltDependencies, Notify) {
   // The cache entry does not depend on downstream1.
   downstream1_->NoteValueChange(1LL);
   down1_stats_.value_change++;  // No dependents.
-  EXPECT_TRUE(entry0_->is_up_to_date());
+  EXPECT_FALSE(entry0_->is_out_of_date());
   ExpectAllStatsMatch();
 
   // A repeated notification (same change event) should be ignored.
@@ -214,11 +214,11 @@ TEST_F(HandBuiltDependencies, Notify) {
   tt_stats_.value_change++;
   tt_stats_.sent += time_tracker_->num_subscribers();  // entry0, others
   entry0_stats_.prereq_change++;
-  EXPECT_FALSE(entry0_->is_up_to_date());
+  EXPECT_TRUE(entry0_->is_out_of_date());
   ExpectAllStatsMatch();
 
   entry0_->mark_up_to_date();
-  EXPECT_TRUE(entry0_->is_up_to_date());
+  EXPECT_FALSE(entry0_->is_out_of_date());
 
   upstream1_->NoteValueChange(3LL);
   up1_stats_.value_change++;
@@ -231,7 +231,7 @@ TEST_F(HandBuiltDependencies, Notify) {
   down2_stats_.sent++;  // entry0
   entry0_stats_.prereq_change += 2;
   entry0_stats_.ignored++;
-  EXPECT_FALSE(entry0_->is_up_to_date());
+  EXPECT_TRUE(entry0_->is_out_of_date());
   ExpectAllStatsMatch();
 }
 
@@ -320,9 +320,9 @@ TEST_F(HandBuiltDependencies, Clone) {
   ExpectStatsMatch(&down2, down2_stats);
   ExpectStatsMatch(&e0_tracker, entry0_stats);
 
-  EXPECT_FALSE(clone_entry0.is_up_to_date());
+  EXPECT_TRUE(clone_entry0.is_out_of_date());
   clone_entry0.set_value(101);
-  EXPECT_TRUE(clone_entry0.is_up_to_date());
+  EXPECT_FALSE(clone_entry0.is_out_of_date());
 
   // Upstream2 is prerequisite to middle1 which is prerequisite to down1,2 and
   // the cache entry, and down2 gets the cache entry again so should be

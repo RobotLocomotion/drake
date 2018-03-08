@@ -7,13 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/reset_on_copy.h"
-#include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -52,20 +47,23 @@ class ContextBase : public internal::SystemPathnameInterface {
   there is likely a problem with (a) the specified dependencies for some
   calculation, or (b) a misuse of references into cached values that hides
   modifications from the caching system, or (c) a bug in the caching system. The
-  `is_disabled` flag is independent of the `is_up_to_date` flag, which continues
+  `is_disabled` flag is independent of the `out_of_date` flag, which continues
   to be maintained even when caching is disabled (though it is ignored). Hence
   re-enabling the cache with this method may result in some entries already
   considered up to date. See SetAllCacheEntriesOutOfDate() if you want to ensure
-  that caching starts with everything out of date. */
+  that caching starts with everything out of date. You might want to do that,
+  for example, for repeatability or because you modified something in the
+  debugger and want to make sure it gets used. */
   void SetIsCacheDisabled(bool is_disabled) const;
 
-  /** (Debugging) Marks all cache entries out-of-date, recursively for this
+  /** (Debugging) Marks all cache entries out of date, recursively for this
   context and all its subcontexts. This forces the next `Eval()` request for
   each cache entry to perform a full calculation rather than returning the
-  cached one. After that, normal caching behavior resumes. Results should be
-  identical whether this is called or not, since the caching system should be
-  maintaining this flag correctly. If they are not, see the documentation for
-  SetIsCacheDisabled() for suggestions. */
+  cached one. After that first recalculation, normal caching behavior resumes
+  (assuming the cache is not disabled). Results should be identical whether this
+  is called or not, since the caching system should be maintaining this flag
+  correctly. If they are not, see the documentation for SetIsCacheDisabled() for
+  suggestions. */
   void SetAllCacheEntriesOutOfDate() const;
 
   /** (Debugging) Returns the local name of the subsystem for which this is the
