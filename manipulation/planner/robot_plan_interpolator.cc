@@ -36,7 +36,6 @@ constexpr double RobotPlanInterpolator::kDefaultPlanUpdateInterval;
 // of multiple polynomials below.
 struct RobotPlanInterpolator::PlanData {
   PlanData() {}
-  ~PlanData() {}
 
   double start_time{0};
   std::vector<char> encoded_msg;
