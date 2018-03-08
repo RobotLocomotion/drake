@@ -342,7 +342,7 @@ class RotationMatrix {
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RotationMatrix to subtract from `this`.
-  /// @returns `‖`this` - `other`‖∞`
+  /// @returns `‖this - other‖∞`
   T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
