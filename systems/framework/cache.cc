@@ -1,18 +1,45 @@
 #include "drake/systems/framework/cache.h"
 
+#include <typeindex>
+#include <typeinfo>
+
 #include "drake/systems/framework/dependency_tracker.h"
 
 namespace drake {
 namespace systems {
-
 
 std::string CacheEntryValue::GetPathDescription() const {
   DRAKE_DEMAND(owning_subcontext_!= nullptr);
   return owning_subcontext_->GetSystemPathname() + ":" + description();
 }
 
+void CacheEntryValue::ThrowIfBadCacheEntryValue(
+    const internal::SystemPathnameInterface* owning_subcontext) const {
+  if (owning_subcontext_ == nullptr) {
+    // Can't use fancy formatting because that depends on us having an owning
+    // context to talk to.
+    throw std::logic_error("CacheEntryValue(" + description() + ")::" +
+                           __func__ + "(): entry has no owning subcontext.");
+  }
+  if (owning_subcontext && owning_subcontext_ != owning_subcontext) {
+    throw std::logic_error(FormatName(__func__) + "wrong owning subcontext.");
+  }
+  if ((flags_ & ~(kValueIsOutOfDate | kCacheEntryIsDisabled)) != 0) {
+    throw std::logic_error(FormatName(__func__) +
+                           "flags value is out of range.");
+  }
+  if (serial_number() < 0) {
+    throw std::logic_error(FormatName(__func__) + "serial number is negative.");
+  }
+  if (!(cache_index_.is_valid() && ticket_.is_valid())) {
+    throw std::logic_error(FormatName(__func__) +
+                           "cache index or dependency ticket invalid.");
+  }
+}
+
 void CacheEntryValue::ThrowIfBadOtherValue(
-    const char* api, std::unique_ptr<AbstractValue>* other_value_ptr) {
+    const char* api,
+    const std::unique_ptr<AbstractValue>* other_value_ptr) const {
   if (other_value_ptr == nullptr)
     throw std::logic_error(FormatName(api) + "null other_value pointer.");
 

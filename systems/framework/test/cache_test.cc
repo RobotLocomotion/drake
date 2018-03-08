@@ -12,7 +12,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/text_logging.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
@@ -27,14 +26,14 @@ namespace {
 
 // This is so we can use the contained cache & dependency graph objects, and
 // so we can use the ContextBase cloning infrastructure to clone the cache.
-class MyContextBase : public ContextBase {
+class MyContextBase final : public ContextBase {
  public:
   MyContextBase() = default;
   MyContextBase(const MyContextBase&) = default;
 
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
-    return std::unique_ptr<ContextBase>(new MyContextBase(*this));
+    return std::make_unique<MyContextBase>(*this);
   }
 };
 
@@ -70,20 +69,20 @@ class CacheTest : public ::testing::Test {
 
     index0_ = next_cache_index_++;
     cache().CreateNewCacheEntryValue(index0_, next_ticket_++, "entry0",
-                                     {all_sources_ticket_}, &trackers());
+                                     {all_sources_ticket_}, &graph());
     cache_value(index0_).SetInitialValue(PackValue(0));
 
     index1_ = next_cache_index_++;
     cache().CreateNewCacheEntryValue(index1_, next_ticket_++, "entry1",
                                      {cache_value(index0_).ticket()},
-                                     &trackers());
+                                     &graph());
     cache_value(index1_).SetInitialValue(PackValue(1));
 
     index2_ = next_cache_index_++;
     cache().CreateNewCacheEntryValue(
         index2_, next_ticket_++, "entry2",
         {cache_value(index0_).ticket(), cache_value(index1_).ticket()},
-        &trackers());
+        &graph());
     cache_value(index2_).SetInitialValue(PackValue(2));
 
     // Make the initial values up to date.
@@ -94,29 +93,29 @@ class CacheTest : public ::testing::Test {
     string_index_ = next_cache_index_++;
     cache().CreateNewCacheEntryValue(string_index_, next_ticket_++,
                                      "string thing", {time_ticket_},
-                                     &trackers());
+                                     &graph());
     cache_value(string_index_)
         .SetInitialValue(AbstractValue::Make<string>("initial"));
-    EXPECT_FALSE(cache_value(string_index_).is_up_to_date());
+    EXPECT_TRUE(cache_value(string_index_).is_out_of_date());
     cache_value(string_index_).mark_up_to_date();
 
     vector_index_ = next_cache_index_++;
     cache().CreateNewCacheEntryValue(
         vector_index_, next_ticket_++, "vector thing",
-        {xc_ticket_, cache_value(string_index_).ticket()}, &trackers());
+        {xc_ticket_, cache_value(string_index_).ticket()}, &graph());
     const MyVector3d my_vec(Vector3d(0, 0, 0));
     cache_value(vector_index_)
         .SetInitialValue(AbstractValue::Make<MyVector3d>(my_vec));
-    EXPECT_FALSE(cache_value(vector_index_).is_up_to_date());
+    EXPECT_TRUE(cache_value(vector_index_).is_out_of_date());
     // set_value() should mark this up to date as a side effect.
     cache_value(vector_index_).set_value(MyVector3d(Vector3d(99., 98., 97.)));
 
     // Everything should be up to date to start out.
-    EXPECT_TRUE(cache_value(index0_).is_up_to_date());
-    EXPECT_TRUE(cache_value(index1_).is_up_to_date());
-    EXPECT_TRUE(cache_value(index2_).is_up_to_date());
-    EXPECT_TRUE(cache_value(string_index_).is_up_to_date());
-    EXPECT_TRUE(cache_value(vector_index_).is_up_to_date());
+    EXPECT_FALSE(cache_value(index0_).is_out_of_date());
+    EXPECT_FALSE(cache_value(index1_).is_out_of_date());
+    EXPECT_FALSE(cache_value(index2_).is_out_of_date());
+    EXPECT_FALSE(cache_value(string_index_).is_out_of_date());
+    EXPECT_FALSE(cache_value(vector_index_).is_out_of_date());
   }
 
   // Some sugar methods to shorten the calls. These default to the local Context
@@ -140,7 +139,7 @@ class CacheTest : public ::testing::Test {
     return context_ptr->get_mutable_cache();
   }
 
-  DependencyGraph& trackers(ContextBase* context_ptr = nullptr) {
+  DependencyGraph& graph(ContextBase* context_ptr = nullptr) {
     if (!context_ptr) context_ptr = &context_;
     return context_ptr->get_mutable_dependency_graph();
   }
@@ -148,7 +147,7 @@ class CacheTest : public ::testing::Test {
   DependencyTracker& tracker(DependencyTicket ticket,
                              ContextBase* context_ptr = nullptr) {
     if (!context_ptr) context_ptr = &context_;
-    return trackers(&*context_ptr).get_mutable_tracker(ticket);
+    return graph(&*context_ptr).get_mutable_tracker(ticket);
   }
 
   std::unique_ptr<MyContextBase> context_ptr_ =
@@ -167,74 +166,95 @@ class CacheTest : public ::testing::Test {
   CacheIndex next_cache_index_{cache().cache_size()};
 };
 
+// Check that SetInitialValue works and fails properly.
+TEST_F(CacheTest, SetInitialValueWorks) {
+  // Check that a value got set properly. (Others are checked below.)
+  EXPECT_EQ(cache_value(index2_).GetValueOrThrow<int>(), 2);
+
+  // Check that trying to provide another initial value fails.
+  EXPECT_THROW(cache_value(index2_).SetInitialValue(PackValue(5)),
+               std::logic_error);
+  EXPECT_EQ(cache_value(index2_).GetValueOrThrow<int>(), 2);  // No change.
+
+  // Check that an initial null value isn't allowed.
+  CacheIndex index(next_cache_index_++);
+  CacheEntryValue& value = cache().CreateNewCacheEntryValue(
+      index, next_ticket_++, "null value", {nothing_ticket_}, &graph());
+  EXPECT_FALSE(value.has_value());
+  EXPECT_THROW(
+      cache_value(index).SetInitialValue(std::unique_ptr<AbstractValue>()),
+      std::logic_error);
+  EXPECT_FALSE(value.has_value());  // No change.
+}
+
 // Check that a chain of dependent cache entries gets invalidated properly.
 // More extensive testing of dependency tracking is in the unit test for
 // dependency trackers.
 TEST_F(CacheTest, InvalidationWorks) {
   // Everything starts out up to date. This should invalidate everything.
   tracker(time_ticket_).NoteValueChange(99);
-  EXPECT_FALSE(cache_value(index0_).is_up_to_date());
-  EXPECT_FALSE(cache_value(index1_).is_up_to_date());
-  EXPECT_FALSE(cache_value(index2_).is_up_to_date());
-  EXPECT_FALSE(cache_value(string_index_).is_up_to_date());
-  EXPECT_FALSE(cache_value(vector_index_).is_up_to_date());
+  EXPECT_TRUE(cache_value(index0_).is_out_of_date());
+  EXPECT_TRUE(cache_value(index1_).is_out_of_date());
+  EXPECT_TRUE(cache_value(index2_).is_out_of_date());
+  EXPECT_TRUE(cache_value(string_index_).is_out_of_date());
+  EXPECT_TRUE(cache_value(vector_index_).is_out_of_date());
 }
 
 // Make sure the debugging routine that invalidates everything works.
 TEST_F(CacheTest, InvalidateAllWorks) {
   // Everything starts out up to date. This should invalidate everything.
   context_.SetAllCacheEntriesOutOfDate();
-  EXPECT_FALSE(cache_value(index0_).is_up_to_date());
-  EXPECT_FALSE(cache_value(index1_).is_up_to_date());
-  EXPECT_FALSE(cache_value(index2_).is_up_to_date());
-  EXPECT_FALSE(cache_value(string_index_).is_up_to_date());
-  EXPECT_FALSE(cache_value(vector_index_).is_up_to_date());
+  EXPECT_TRUE(cache_value(index0_).is_out_of_date());
+  EXPECT_TRUE(cache_value(index1_).is_out_of_date());
+  EXPECT_TRUE(cache_value(index2_).is_out_of_date());
+  EXPECT_TRUE(cache_value(string_index_).is_out_of_date());
+  EXPECT_TRUE(cache_value(vector_index_).is_out_of_date());
 }
 
 // Make sure the debugging routine to disable the cache works, and is
 // independent of the up-to-date flags.
 TEST_F(CacheTest, DisableCacheWorks) {
-  CacheEntryValue& ival = cache_value(index1_);
-  CacheEntryValue& sval = cache_value(string_index_);
-  CacheEntryValue& vval = cache_value(vector_index_);
+  CacheEntryValue& int_val = cache_value(index1_);
+  CacheEntryValue& str_val = cache_value(string_index_);
+  CacheEntryValue& vec_val = cache_value(vector_index_);
 
   // Everything starts out up to date. Memorize serial numbers.
-  int64_t ser_int = ival.serial_number();
-  int64_t ser_str = sval.serial_number();
-  int64_t ser_vec = vval.serial_number();
+  int64_t ser_int = int_val.serial_number();
+  int64_t ser_str = str_val.serial_number();
+  int64_t ser_vec = vec_val.serial_number();
 
-  EXPECT_FALSE(ival.needs_recomputation());
-  EXPECT_FALSE(sval.needs_recomputation());
-  EXPECT_FALSE(vval.needs_recomputation());
+  EXPECT_FALSE(int_val.needs_recomputation());
+  EXPECT_FALSE(str_val.needs_recomputation());
+  EXPECT_FALSE(vec_val.needs_recomputation());
 
   context_.SetIsCacheDisabled(true);
   // Up-to-date shouldn't be affected, but now we need recomputation.
-  EXPECT_TRUE(ival.is_up_to_date());
-  EXPECT_TRUE(sval.is_up_to_date());
-  EXPECT_TRUE(vval.is_up_to_date());
-  EXPECT_TRUE(ival.needs_recomputation());
-  EXPECT_TRUE(sval.needs_recomputation());
-  EXPECT_TRUE(vval.needs_recomputation());
+  EXPECT_FALSE(int_val.is_out_of_date());
+  EXPECT_FALSE(str_val.is_out_of_date());
+  EXPECT_FALSE(vec_val.is_out_of_date());
+  EXPECT_TRUE(int_val.needs_recomputation());
+  EXPECT_TRUE(str_val.needs_recomputation());
+  EXPECT_TRUE(vec_val.needs_recomputation());
 
   // Flags are still supposed to be functioning while caching is disabled,
   // even though they are mostly ignored. (The Get() method still depends
   // on them.)
-  ival.mark_out_of_date();
-  sval.mark_out_of_date();
-  vval.mark_out_of_date();
+  int_val.mark_out_of_date();
+  str_val.mark_out_of_date();
+  vec_val.mark_out_of_date();
 
   // Eval() should recalculate and set up-to-date flags.
   cache_value(index1_).set_value(101);
   cache_value(string_index_).set_value(string("hello there"));
   cache_value(vector_index_).set_value(MyVector3d(Vector3d(4., 5., 6.)));
 
-  EXPECT_TRUE(ival.is_up_to_date());
-  EXPECT_TRUE(sval.is_up_to_date());
-  EXPECT_TRUE(vval.is_up_to_date());
+  EXPECT_FALSE(int_val.is_out_of_date());
+  EXPECT_FALSE(str_val.is_out_of_date());
+  EXPECT_FALSE(vec_val.is_out_of_date());
 
-  EXPECT_EQ(ival.serial_number(), ser_int + 1);
-  EXPECT_EQ(sval.serial_number(), ser_str + 1);
-  EXPECT_EQ(vval.serial_number(), ser_vec + 1);
+  EXPECT_EQ(int_val.serial_number(), ser_int + 1);
+  EXPECT_EQ(str_val.serial_number(), ser_str + 1);
+  EXPECT_EQ(vec_val.serial_number(), ser_vec + 1);
 
   EXPECT_EQ(cache_value(index1_).get_value<int>(), 101);
   EXPECT_EQ(cache_value(string_index_).get_value<string>(), "hello there");
@@ -245,8 +265,8 @@ TEST_F(CacheTest, DisableCacheWorks) {
 // Test that the vector-valued cache entry works and preserved the underlying
 // concrete type.
 TEST_F(CacheTest, VectorCacheEntryWorks) {
-  auto& entry_value = cache_value(vector_index_);
-  EXPECT_TRUE(entry_value.is_up_to_date());  // We set it during construction.
+  CacheEntryValue& entry_value = cache_value(vector_index_);
+  EXPECT_FALSE(entry_value.is_out_of_date());  // We set it during construction.
   const MyVector3d& contents = entry_value.get_value<MyVector3d>();
   Vector3d eigen_contents = contents.get_value();
   EXPECT_EQ(eigen_contents, Vector3d(99., 98., 97.));
@@ -254,9 +274,9 @@ TEST_F(CacheTest, VectorCacheEntryWorks) {
   // Invalidate by pretending we modified a z, which should
   // invalidate this xc-dependent cache entry.
   tracker(z_ticket_).NoteValueChange(1001);
-  EXPECT_FALSE(entry_value.is_up_to_date());
+  EXPECT_TRUE(entry_value.is_out_of_date());
   entry_value.set_value(MyVector3d(Vector3d(3., 2., 1.)));
-  EXPECT_TRUE(entry_value.is_up_to_date());
+  EXPECT_FALSE(entry_value.is_out_of_date());
   const MyVector3d& contents2 = entry_value.get_value<MyVector3d>();
   Vector3d eigen_contents2 = contents2.get_value();
   EXPECT_EQ(eigen_contents2, Vector3d(3., 2., 1.));
@@ -270,13 +290,13 @@ TEST_F(CacheTest, VectorCacheEntryWorks) {
 // test that we throw if the swapped-in value is null or has the
 // wrong type.
 TEST_F(CacheTest, CanSwapValue) {
-  auto& entry_value = cache_value(string_index_);
-  EXPECT_TRUE(entry_value.is_up_to_date());  // Set to "initial".
+  CacheEntryValue& entry_value = cache_value(string_index_);
+  EXPECT_FALSE(entry_value.is_out_of_date());  // Set to "initial".
   EXPECT_EQ(entry_value.get_value<string>(), "initial");
   auto new_value = AbstractValue::Make<string>("new value");
   entry_value.swap_value(&new_value);
   EXPECT_EQ(new_value->GetValue<string>(), "initial");
-  EXPECT_FALSE(entry_value.is_up_to_date());
+  EXPECT_TRUE(entry_value.is_out_of_date());
   entry_value.mark_up_to_date();
   EXPECT_EQ(entry_value.get_value<string>(), "new value");
 
@@ -295,8 +315,8 @@ TEST_F(CacheTest, InvalidationIsRecursive) {
 
   EXPECT_EQ(0, cache_value(index0_).get_value<int>());
   EXPECT_EQ(0, cache_value(index0_).GetValueOrThrow<int>());
-  EXPECT_FALSE(cache_value(index1_).is_up_to_date());
-  EXPECT_FALSE(cache_value(index2_).is_up_to_date());
+  EXPECT_TRUE(cache_value(index1_).is_out_of_date());
+  EXPECT_TRUE(cache_value(index2_).is_out_of_date());
 }
 
 TEST_F(CacheTest, Clone) {
@@ -306,9 +326,9 @@ TEST_F(CacheTest, Clone) {
   CacheIndex last_index(next_cache_index_++);
   cache().CreateNewCacheEntryValue(last_index, next_ticket_++,
                                    "last entry", {nothing_ticket_},
-                                   &trackers());
+                                   &graph());
   cache_value(last_index).SetInitialValue(PackValue(42));
-  EXPECT_FALSE(cache_value(last_index).is_up_to_date());
+  EXPECT_TRUE(cache_value(last_index).is_out_of_date());
   cache_value(last_index).mark_up_to_date();
 
   // Create a clone of the cache and dependency graph.
@@ -320,37 +340,47 @@ TEST_F(CacheTest, Clone) {
   // Now study the copied cache to see if it got copied correctly.
 
   // The copy should have the same size as the original, including empty slots.
-  EXPECT_EQ(clone_cache.cache_size(), cache().cache_size());
+  // Can't go on if this fails so ASSERT.
+  ASSERT_EQ(clone_cache.cache_size(), cache().cache_size());
   for (CacheIndex index(0); index < cache().cache_size(); ++index) {
     EXPECT_EQ(cache().has_cache_entry_value(index),
               clone_cache.has_cache_entry_value(index));
     if (!cache().has_cache_entry_value(index)) continue;
 
-    const auto& ce_value = cache().get_cache_entry_value(index);
-    const auto& clone_ce_value = clone_cache.get_cache_entry_value(index);
-    EXPECT_NE(&clone_ce_value, &ce_value);
+    const CacheEntryValue& value = cache().get_cache_entry_value(index);
+    const CacheEntryValue& clone_value =
+        clone_cache.get_cache_entry_value(index);
+    EXPECT_NE(&clone_value, &value);
 
-    EXPECT_EQ(clone_ce_value.description(), ce_value.description());
-    EXPECT_EQ(clone_ce_value.has_value(), ce_value.has_value());
-    EXPECT_EQ(clone_ce_value.cache_index(), ce_value.cache_index());
-    EXPECT_EQ(clone_ce_value.ticket(), ce_value.ticket());
-    EXPECT_EQ(clone_ce_value.serial_number(), ce_value.serial_number());
+    // Test that the new cache entry is valid and is owned by the new context.
+    // This is also a unit test for ThrowIfBadCacheEntryValue().
+    EXPECT_NO_THROW(value.ThrowIfBadCacheEntryValue(&context_));
+    EXPECT_NO_THROW(clone_value.ThrowIfBadCacheEntryValue(&clone_context));
+    EXPECT_THROW(clone_value.ThrowIfBadCacheEntryValue(&context_),
+                 std::logic_error);
+
+    EXPECT_EQ(clone_value.description(), value.description());
+    EXPECT_EQ(clone_value.has_value(), value.has_value());
+    EXPECT_EQ(clone_value.cache_index(), value.cache_index());
+    EXPECT_EQ(clone_value.ticket(), value.ticket());
+    EXPECT_EQ(clone_value.serial_number(), value.serial_number());
 
     // If there is a value, the clone_cache should not have the same memory
     // address.
-    if (ce_value.has_value()) {
-      EXPECT_NE(&clone_ce_value.get_abstract_value(),
-                &ce_value.get_abstract_value());
+    if (value.has_value()) {
+      EXPECT_NE(&clone_value.get_abstract_value(),
+                &value.get_abstract_value());
     }
 
     // Make sure the tracker got copied and that the new one refers to the
     // new cache entry, not the old one. OTOH the ticket should be unchanged.
-    const auto& dtracker = tracker(ce_value.ticket());
-    const auto& clone_dtracker = tracker(ce_value.ticket(), &clone_context);
-    EXPECT_EQ(dtracker.cache_entry_value(), &ce_value);
-    EXPECT_EQ(clone_dtracker.cache_entry_value(), &clone_ce_value);
-    EXPECT_EQ(dtracker.ticket(), ce_value.ticket());
-    EXPECT_EQ(clone_dtracker.ticket(), ce_value.ticket());
+    const DependencyTracker& value_tracker = tracker(value.ticket());
+    const DependencyTracker& clone_value_tracker =
+        tracker(value.ticket(), &clone_context);
+    EXPECT_EQ(value_tracker.cache_entry_value(), &value);
+    EXPECT_EQ(clone_value_tracker.cache_entry_value(), &clone_value);
+    EXPECT_EQ(value_tracker.ticket(), value.ticket());
+    EXPECT_EQ(clone_value_tracker.ticket(), value.ticket());
   }
 
   // The clone_cache should have the same values.
@@ -380,17 +410,17 @@ TEST_F(CacheTest, Clone) {
   // This should invalidate everything in the original cache, but nothing
   // in the clone_cache. Just check one entry as representative.
   tracker(time_ticket_).NoteValueChange(10);
-  EXPECT_FALSE(cache_value(string_index_).is_up_to_date());
-  EXPECT_TRUE(cache_value(string_index_, &clone_cache).is_up_to_date());
+  EXPECT_TRUE(cache_value(string_index_).is_out_of_date());
+  EXPECT_FALSE(cache_value(string_index_, &clone_cache).is_out_of_date());
 
   // Try an invalidation in the clone_cache to make sure the dependency graph is
   // operational there.
   tracker(xc_ticket_, &clone_context).NoteValueChange(10);
-  EXPECT_TRUE(cache_value(string_index_, &clone_cache).is_up_to_date());
-  EXPECT_FALSE(cache_value(vector_index_, &clone_cache).is_up_to_date());
-  EXPECT_FALSE(cache_value(index0_, &clone_cache).is_up_to_date());
-  EXPECT_FALSE(cache_value(index1_, &clone_cache).is_up_to_date());
-  EXPECT_FALSE(cache_value(index2_, &clone_cache).is_up_to_date());
+  EXPECT_FALSE(cache_value(string_index_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(vector_index_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(index0_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(index1_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(index2_, &clone_cache).is_out_of_date());
 }
 
 // Test that the Get(), Set(), GetMutable() and Peek() methods work and catch
@@ -400,98 +430,98 @@ TEST_F(CacheTest, ValueMethodsWork) {
   CacheIndex index(next_cache_index_++);
   cache().CreateNewCacheEntryValue(index, next_ticket_++,
                                    "get test", {nothing_ticket_},
-                                   &trackers());
-  CacheEntryValue& ce_value = cache_value(index);
-  EXPECT_EQ(ce_value.cache_index(), index);
-  EXPECT_EQ(ce_value.ticket(), next_ticket_-1);
-  EXPECT_EQ(ce_value.description(), "get test");
+                                   &graph());
+  CacheEntryValue& value = cache_value(index);
+  EXPECT_EQ(value.cache_index(), index);
+  EXPECT_EQ(value.ticket(), next_ticket_-1);
+  EXPECT_EQ(value.description(), "get test");
 
   auto swap_with_me = AbstractValue::Make<int>(29);
 
   // There is currently no value stored in the new entry. All "throw" methods
   // should fail, and fast methods should fail in Debug builds.
 
-  EXPECT_THROW(ce_value.GetAbstractValueOrThrow(), std::logic_error);
-  EXPECT_THROW(ce_value.GetValueOrThrow<int>(), std::logic_error);
-  EXPECT_THROW(ce_value.SetValueOrThrow<int>(5), std::logic_error);
-  EXPECT_THROW(ce_value.GetMutableAbstractValueOrThrow(), std::logic_error);
-  EXPECT_THROW(ce_value.GetMutableValueOrThrow<int>(), std::logic_error);
-  EXPECT_THROW(ce_value.PeekAbstractValueOrThrow(), std::logic_error);
-  EXPECT_THROW(ce_value.PeekValueOrThrow<int>(), std::logic_error);
+  EXPECT_THROW(value.GetAbstractValueOrThrow(), std::logic_error);
+  EXPECT_THROW(value.GetValueOrThrow<int>(), std::logic_error);
+  EXPECT_THROW(value.SetValueOrThrow<int>(5), std::logic_error);
+  EXPECT_THROW(value.GetMutableAbstractValueOrThrow(), std::logic_error);
+  EXPECT_THROW(value.GetMutableValueOrThrow<int>(), std::logic_error);
+  EXPECT_THROW(value.PeekAbstractValueOrThrow(), std::logic_error);
+  EXPECT_THROW(value.PeekValueOrThrow<int>(), std::logic_error);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(ce_value.get_abstract_value(), std::logic_error);
-  EXPECT_THROW(ce_value.get_value<int>(), std::logic_error);
-  EXPECT_THROW(ce_value.set_value<int>(5), std::logic_error);
-  EXPECT_THROW(ce_value.is_up_to_date(), std::logic_error);
-  EXPECT_THROW(ce_value.needs_recomputation(), std::logic_error);
-  EXPECT_THROW(ce_value.mark_up_to_date(), std::logic_error);
-  EXPECT_THROW(ce_value.swap_value(&swap_with_me), std::logic_error);
+  EXPECT_THROW(value.get_abstract_value(), std::logic_error);
+  EXPECT_THROW(value.get_value<int>(), std::logic_error);
+  EXPECT_THROW(value.set_value<int>(5), std::logic_error);
+  EXPECT_THROW(value.is_out_of_date(), std::logic_error);
+  EXPECT_THROW(value.needs_recomputation(), std::logic_error);
+  EXPECT_THROW(value.mark_up_to_date(), std::logic_error);
+  EXPECT_THROW(value.swap_value(&swap_with_me), std::logic_error);
 #endif
 
   // Now provide an initial value (not yet up to date).
-  ce_value.SetInitialValue(PackValue(42));
+  value.SetInitialValue(PackValue(42));
   // Nope, only allowed once.
-  EXPECT_THROW(ce_value.SetInitialValue(PackValue(42)), std::logic_error);
+  EXPECT_THROW(value.SetInitialValue(PackValue(42)), std::logic_error);
 
-  EXPECT_FALSE(ce_value.is_up_to_date());  // Initial value is not up to date.
+  EXPECT_TRUE(value.is_out_of_date());  // Initial value is not up to date.
   // "Get" methods should fail, "GetMutable" and "Peek" succeed.
-  EXPECT_THROW(ce_value.GetValueOrThrow<int>(), std::logic_error);
-  EXPECT_THROW(ce_value.GetAbstractValueOrThrow(), std::logic_error);
-  EXPECT_NO_THROW(ce_value.GetMutableValueOrThrow<int>());
-  EXPECT_NO_THROW(ce_value.GetMutableAbstractValueOrThrow());
-  EXPECT_NO_THROW(ce_value.PeekValueOrThrow<int>());
-  EXPECT_NO_THROW(ce_value.PeekAbstractValueOrThrow());
+  EXPECT_THROW(value.GetValueOrThrow<int>(), std::logic_error);
+  EXPECT_THROW(value.GetAbstractValueOrThrow(), std::logic_error);
+  EXPECT_NO_THROW(value.GetMutableValueOrThrow<int>());
+  EXPECT_NO_THROW(value.GetMutableAbstractValueOrThrow());
+  EXPECT_NO_THROW(value.PeekValueOrThrow<int>());
+  EXPECT_NO_THROW(value.PeekAbstractValueOrThrow());
 
   // The fast "get" methods must check for up to date in Debug builds.
 #ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(ce_value.get_value<int>(), std::logic_error);
-  EXPECT_THROW(ce_value.get_abstract_value(), std::logic_error);
+  EXPECT_THROW(value.get_value<int>(), std::logic_error);
+  EXPECT_THROW(value.get_abstract_value(), std::logic_error);
 #endif
 
   // Swap doesn't care about up to date or not, but always marks the swapped-in
   // value out of date.
-  ce_value.swap_value(&swap_with_me);
-  EXPECT_FALSE(ce_value.is_up_to_date());  // Still out of date.
-  EXPECT_EQ(ce_value.PeekValueOrThrow<int>(), 29);
+  value.swap_value(&swap_with_me);
+  EXPECT_TRUE(value.is_out_of_date());  // Still out of date.
+  EXPECT_EQ(value.PeekValueOrThrow<int>(), 29);
   EXPECT_EQ(swap_with_me->GetValueOrThrow<int>(), 42);
 
-  ce_value.GetMutableValueOrThrow<int>() = 43;
-  EXPECT_EQ(ce_value.PeekValueOrThrow<int>(), 43);
-  ce_value.set_value<int>(44);
-  EXPECT_EQ(ce_value.PeekValueOrThrow<int>(), 44);
+  value.GetMutableValueOrThrow<int>() = 43;
+  EXPECT_EQ(value.PeekValueOrThrow<int>(), 43);
+  value.set_value<int>(44);
+  EXPECT_EQ(value.PeekValueOrThrow<int>(), 44);
 
   // Next, mark this up to date and check behavior. Now "Get" and "Peek"
   // methods should succeed but "GetMutable" and "Set" methods should fail.
-  ce_value.mark_up_to_date();
+  value.mark_up_to_date();
 
-  EXPECT_NO_THROW(ce_value.get_abstract_value());
-  EXPECT_NO_THROW(ce_value.get_value<int>());
-  EXPECT_NO_THROW(ce_value.GetValueOrThrow<int>());
-  EXPECT_NO_THROW(ce_value.GetAbstractValueOrThrow());
-  EXPECT_NO_THROW(ce_value.PeekValueOrThrow<int>());
-  EXPECT_NO_THROW(ce_value.PeekAbstractValueOrThrow());
-  EXPECT_THROW(ce_value.GetMutableValueOrThrow<int>(), std::logic_error);
-  EXPECT_THROW(ce_value.GetMutableAbstractValueOrThrow(), std::logic_error);
-  EXPECT_THROW(ce_value.SetValueOrThrow<int>(5), std::logic_error);
+  EXPECT_NO_THROW(value.get_abstract_value());
+  EXPECT_NO_THROW(value.get_value<int>());
+  EXPECT_NO_THROW(value.GetValueOrThrow<int>());
+  EXPECT_NO_THROW(value.GetAbstractValueOrThrow());
+  EXPECT_NO_THROW(value.PeekValueOrThrow<int>());
+  EXPECT_NO_THROW(value.PeekAbstractValueOrThrow());
+  EXPECT_THROW(value.GetMutableValueOrThrow<int>(), std::logic_error);
+  EXPECT_THROW(value.GetMutableAbstractValueOrThrow(), std::logic_error);
+  EXPECT_THROW(value.SetValueOrThrow<int>(5), std::logic_error);
 
   // The fast "set" method must check for up to date in Debug builds.
 #ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(ce_value.set_value<int>(5), std::logic_error);
+  EXPECT_THROW(value.set_value<int>(5), std::logic_error);
 #endif
 
   // And "swap" still doesn't care about up to date on entry.
-  ce_value.swap_value(&swap_with_me);
-  EXPECT_FALSE(ce_value.is_up_to_date());  // Should have changed.
-  EXPECT_EQ(ce_value.PeekValueOrThrow<int>(), 42);
+  value.swap_value(&swap_with_me);
+  EXPECT_TRUE(value.is_out_of_date());  // Should have changed.
+  EXPECT_EQ(value.PeekValueOrThrow<int>(), 42);
   EXPECT_EQ(swap_with_me->GetValueOrThrow<int>(), 44);
-  ce_value.mark_up_to_date();
+  value.mark_up_to_date();
 
   // Get the same value as concrete or abstract type.
-  EXPECT_EQ(42, ce_value.get_value<int>());
-  const AbstractValue& value =
+  EXPECT_EQ(42, value.get_value<int>());
+  const AbstractValue& abstract_value =
       cache().get_cache_entry_value(index).GetAbstractValueOrThrow();
-  EXPECT_EQ(42, UnpackIntValue(value));
+  EXPECT_EQ(42, UnpackIntValue(abstract_value));
 
   CacheEntryValue& string_value = cache_value(string_index_);
   EXPECT_EQ(string_value.GetValueOrThrow<string>(), "initial");

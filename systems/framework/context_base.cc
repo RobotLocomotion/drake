@@ -44,26 +44,26 @@ std::string ContextBase::GetSystemPathname() const {
 // Set up trackers for independent sources: time, accuracy, state, parameters,
 // and input ports.
 void ContextBase::CreateBuiltInTrackers() {
-  DependencyGraph& trackers = graph_;
+  DependencyGraph& graph = graph_;
   // This is the dummy "tracker" used for constants and anything else that has
   // no dependencies on any Context source. Ignoring return value.
-  trackers.CreateNewDependencyTracker(
+  graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kNothingTicket), "nothing");
 
   // Allocate trackers for time, accuracy, q, v, z.
-  auto& time_tracker = trackers.CreateNewDependencyTracker(
+  auto& time_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kTimeTicket), "t");
-  auto& accuracy_tracker = trackers.CreateNewDependencyTracker(
+  auto& accuracy_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAccuracyTicket), "accuracy");
-  auto& q_tracker = trackers.CreateNewDependencyTracker(
+  auto& q_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kQTicket), "q");
-  auto& v_tracker = trackers.CreateNewDependencyTracker(
+  auto& v_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kVTicket), "v");
-  auto& z_tracker = trackers.CreateNewDependencyTracker(
+  auto& z_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kZTicket), "z");
 
   // Continuous state xc depends on q, v, and z.
-  auto& xc_tracker = trackers.CreateNewDependencyTracker(
+  auto& xc_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXcTicket), "xc");
   xc_tracker.SubscribeToPrerequisite(&q_tracker);
   xc_tracker.SubscribeToPrerequisite(&v_tracker);
@@ -72,17 +72,17 @@ void ContextBase::CreateBuiltInTrackers() {
   // Allocate the "all discrete variables" xd tracker. The associated System is
   // responsible for allocating the individual discrete variable group xdᵢ
   // trackers and subscribing this one to each of those.
-  auto& xd_tracker = trackers.CreateNewDependencyTracker(
+  auto& xd_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXdTicket), "xd");
 
   // Allocate the "all abstract variables" xa tracker. The associated System is
   // responsible for allocating the individual abstract variable xaᵢ
   // trackers and subscribing this one to each of those.
-  auto& xa_tracker = trackers.CreateNewDependencyTracker(
+  auto& xa_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXaTicket), "xa");
 
   // The complete state x={xc,xd,xa}.
-  auto& x_tracker = trackers.CreateNewDependencyTracker(
+  auto& x_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXTicket), "x");
   x_tracker.SubscribeToPrerequisite(&xc_tracker);
   x_tracker.SubscribeToPrerequisite(&xd_tracker);
@@ -91,22 +91,22 @@ void ContextBase::CreateBuiltInTrackers() {
   // Allocate the "all parameters" p tracker. The associated System is
   // responsible for allocating the individual numeric parameter pnᵢ and
   // abstract paraemter paᵢ trackers and subscribing this one to each of those.
-  auto& p_tracker = trackers.CreateNewDependencyTracker(
+  auto& p_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllParametersTicket), "p");
 
   // Allocate the "all input ports" u tracker. The associated System is
   // responsible for allocating the individual input port uᵢ
   // trackers and subscribing this one to each of those.
-  auto& u_tracker = trackers.CreateNewDependencyTracker(
+  auto& u_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllInputPortsTicket), "u");
 
   // Allocate the "all sources" tracker. The complete list of known sources
-  // is t,a,x,p, and u. Note that cache entries are not included. Under normal
+  // is t,a,x,p,u. Note that cache entries are not included. Under normal
   // operation that doesn't matter because cache entries are invalidated only
   // when one of these source values changes. Any computation that has
   // declared "all sources" dependence will also have been invalidated for the
   // same reason so doesn't need to explicitly list cache entries.
-  auto& all_sources_tracker = trackers.CreateNewDependencyTracker(
+  auto& all_sources_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllSourcesTicket), "all sources");
   all_sources_tracker.SubscribeToPrerequisite(&time_tracker);
   all_sources_tracker.SubscribeToPrerequisite(&accuracy_tracker);
