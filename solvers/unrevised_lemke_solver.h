@@ -141,8 +141,8 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // A structure for holding a linear complementarity problem variable.
   struct LCPVariable {
     bool z{true};        // Is this a z variable or a w variable?
-    int index{-1};       // Index of the variable in the problem, 0...n. n
-                         // indicates that the variable is artificial.
+    int index{-1};       // Index of the variable in the problem, 0...n. Index 0
+                         // with z=true corresponds to the artificial variable.
   };
 
   static bool IsEachUnique(const std::vector<LCPVariable>& vars);
