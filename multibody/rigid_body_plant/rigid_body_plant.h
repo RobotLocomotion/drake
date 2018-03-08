@@ -524,7 +524,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   std::unique_ptr<const RigidBodyTree<double>> tree_;
 
   // Object that performs all constraint computations.
-  multibody::constraint::ConstraintSolver<double> constraint_solver_;
+  multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
   OutputPortIndex kinematics_output_port_index_{};

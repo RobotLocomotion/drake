@@ -150,7 +150,7 @@ void MobyLCPSolver<T>::ClearIndexVectors() const {
 
 template <>
 SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
-// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
+  // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
     MathematicalProgram&) const {
   DRAKE_ABORT_MSG("MobyLCPSolver cannot yet be used in a MathematicalProgram "
                   "while templatized as an AutoDiff");
@@ -1052,13 +1052,15 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
 }
 
 template <typename T>
-bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
-                                     const Eigen::VectorXd& q,
-                                     Eigen::VectorXd* z,
-                                     double piv_tol, double zero_tol) const {
-  Eigen::VectorXd x, dl, result, z0, xj, dj, u, Be;
-  Eigen::SparseMatrix<double> sBl;
-  Eigen::SparseMatrix<double> MMs, MMx;
+template <typename U>
+std::enable_if_t<std::is_same<U, double>::value, bool>
+MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<U>& M,
+                                     const VectorX<U>& q,
+                                     VectorX<U>* z,
+                                     U piv_tol, U zero_tol) const {
+  VectorX<U> x, dl, result, z0, xj, dj, u, Be;
+  Eigen::SparseMatrix<U> sBl;
+  Eigen::SparseMatrix<U> MMs, MMx;
 
   if (log_enabled_) {
     Log() << "MobyLCPSolver::SolveLcpLemke() entered" << std::endl;
@@ -1079,7 +1081,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   }
 
   // come up with a sensible value for zero tolerance if none is given
-  if (zero_tol <= static_cast<double>(0.0)) {
+  if (zero_tol <= static_cast<U>(0.0)) {
     Eigen::MatrixXd dense_M = M;
     zero_tol = ComputeZeroTolerance(dense_M);
   }
@@ -1124,12 +1126,12 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   }
 
   // determine initial values
-  sBl = Eigen::SparseMatrix<double>(n, n);
+  sBl = Eigen::SparseMatrix<U>(n, n);
   if (!bas_.empty()) {
-    typedef Eigen::Triplet<double> Triplet;
+    typedef Eigen::Triplet<U> Triplet;
     std::vector<Triplet> triplet_list;
     for (int i = 0; i < M.outerSize(); i++) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(M, i); it; ++it) {
+      for (typename Eigen::SparseMatrix<U>::InnerIterator it(M, i); it; ++it) {
         int j = it.col();
         std::vector<unsigned>::const_iterator j_it =
             std::find(bas_.begin(), bas_.end(), j);
@@ -1151,8 +1153,8 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   }
 
   // solve B*x = -q
-  std::unique_ptr<Eigen::SparseLU<Eigen::SparseMatrix<double>>> solver;
-  solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<double>>);
+  std::unique_ptr<Eigen::SparseLU<Eigen::SparseMatrix<U>>> solver;
+  solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<U>>);
   solver->analyzePattern(sBl);
   solver->factorize(sBl);
   if (solver->info() != Eigen::ComputationInfo::Success) {
@@ -1180,8 +1182,8 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
   // determine initial leaving variable
   Eigen::Index min_x;
-  const double min_x_val = x.topRows(n).minCoeff(&min_x);
-  double tval = -min_x_val;
+  const U min_x_val = x.topRows(n).minCoeff(&min_x);
+  U tval = -min_x_val;
   for (size_t i = 0; i < nonbas_.size(); i++) {
     bas_.push_back(nonbas_[i] + n);
   }
@@ -1220,7 +1222,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
       entering = leaving - n;
       Be = M.col(entering);
     }
-    solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<double>>);
+    solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<U>>);
     solver->analyzePattern(sBl);
     solver->factorize(sBl);
 
@@ -1234,9 +1236,9 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     dl = solver->solve(Be);
 
     // use a new pivot tolerance if necessary
-    const double mod_piv_tol = (piv_tol > static_cast<double>(0.0)) ? piv_tol :
-                                 (std::numeric_limits<double>::epsilon() * n *
-                                  std::max(1.0, Be.lpNorm<Eigen::Infinity>()));
+    const U mod_piv_tol = (piv_tol > static_cast<U>(0.0)) ? piv_tol :
+                          (std::numeric_limits<U>::epsilon() * n *
+                          std::max(1.0, Be.template lpNorm<Eigen::Infinity>()));
 
     // ** find new leaving variable
     j_.clear();
@@ -1266,7 +1268,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     result.fill(zero_tol);
     result = xj.eval().array() + result.array();
     result = result.eval().array() / dj.array();
-    double theta = result.minCoeff();
+    U theta = result.minCoeff();
 
     // NOTE: lexicographic ordering does not appear to be used here to prevent
     // cycling (see [Cottle 1992], pp. 340-342)
@@ -1313,7 +1315,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     leaving = *iiter;
 
     // ** perform pivot
-    double ratio = x[lvindex] / dl[lvindex];
+    U ratio = x[lvindex] / dl[lvindex];
     dl *= ratio;
     x -= dl;
     x[lvindex] = ratio;
@@ -1330,12 +1332,14 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 }
 
 template <typename T>
-bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
-    const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
-    Eigen::VectorXd* z, int min_exp, unsigned step_exp, int max_exp,
-    double piv_tol, double zero_tol) const {
-  Eigen::VectorXd x, wx;
-  Eigen::SparseMatrix<double> MMx, eye, diag_lambda;
+template <typename U>
+std::enable_if_t<std::is_same<U, double>::value, bool>
+MobyLCPSolver<T>::SolveLcpLemkeRegularized(
+    const Eigen::SparseMatrix<U>& M, const VectorX<U>& q,
+    VectorX<U>* z, int min_exp, unsigned step_exp, int max_exp,
+    U piv_tol, U zero_tol) const {
+  VectorX<U> x, wx;
+  Eigen::SparseMatrix<U> MMx, eye, diag_lambda;
 
   Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() entered" << std::endl;
 
@@ -1346,12 +1350,12 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
   }
 
   // copy MM
-  Eigen::SparseMatrix<double> MMs = M;
+  Eigen::SparseMatrix<U> MMs = M;
 
   // Assign value for zero tolerance, if necessary. See discussion in
   // SolveLcpFastRegularized() to see why this tolerance is computed here once,
   // rather than for each regularized version of M.
-  const double mod_zero_tol = (zero_tol > 0) ? zero_tol : q.size() * kSqrtEps;
+  const U mod_zero_tol = (zero_tol > 0) ? zero_tol : q.size() * kSqrtEps;
 
   // try non-regularized version first
   bool result = SolveLcpLemke(MMs, q, z, piv_tol, mod_zero_tol);
@@ -1363,8 +1367,8 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
       if (wx.minCoeff() >= -mod_zero_tol) {
         // Check element-wise operation of z*wx.
         wx = z->array() * wx.eval().array();
-        const double wx_min = wx.minCoeff();
-        const double wx_max = wx.maxCoeff();
+        const U wx_min = wx.minCoeff();
+        const U wx_max = wx.maxCoeff();
         if (wx_min >= -mod_zero_tol && wx_max < mod_zero_tol) {
           Log() << "  solved with no regularization necessary!" << std::endl;
           Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited"
@@ -1388,8 +1392,7 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
   int rf = min_exp;
   while (rf < max_exp) {
     // setup regularization factor
-    double lambda =
-        std::pow(static_cast<double>(10.0), static_cast<double>(rf));
+    U lambda = std::pow(static_cast<U>(10.0), static_cast<U>(rf));
     (diag_lambda = eye) *= lambda;
 
     // regularize M
