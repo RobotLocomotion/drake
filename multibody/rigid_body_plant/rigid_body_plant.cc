@@ -82,6 +82,14 @@ void RigidBodyPlant<T>::initialize() {
   // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = DeclareContactResultsOutputPort();
 
+  // @TODO(edrumwri): Remove this once the time stepping constraint force
+  //                  results have been cached (which will allow us to compute
+  //                  the contact force outputs the "proper" way and obviate the
+  //                  need to initialize the generalized contact force vector in
+  //                  this way).
+  time_stepping_contact_results_.set_generalized_contact_force(
+      VectorX<T>::Zero(tree_->get_num_velocities()));
+
   // Schedule time stepping update.
   if (timestep_ > 0.0)
     this->DeclarePeriodicDiscreteUpdate(timestep_);
@@ -1208,9 +1216,36 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // TODO(edrumwri): Relocate this block of code to the contact output function
   // when caching is in place.
+  ComputeTimeSteppingContactResults(contacts, data, kinematics_cache,
+                                    constraint_force,
+                                    &time_stepping_contact_results_);
+
+  // qn = q + dt*qdot.
+  VectorX<T> xn(this->get_num_states());
+  xn << q + dt * tree.transformVelocityToQDot(kinematics_cache, new_velocity),
+      new_velocity;
+  updates->get_mutable_vector(0).SetFromVector(xn);
+  updates->get_mutable_vector(1)[0] = t + dt;
+}
+
+// Populates `contact_results` for the time stepping calculation using the
+// geometric data (`contacts`), the time stepping problem data, and the computed
+// contact force (impulse) solution.
+template <typename T>
+template <typename U>
+std::enable_if_t<std::is_same<U, double>::value, void>
+RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
+    const std::vector<multibody::collision::PointPair<U>>& contacts,
+    const multibody::constraint::ConstraintVelProblemData<U>& data,
+    const KinematicsCache<U>& kinematics_cache,
+    const VectorX<U>& constraint_force,
+    ContactResults<U>* contact_results) const {
+  const int total_friction_cone_edges = std::accumulate(
+      data.r.begin(), data.r.end(), 0);
+
   int normal_force_index = 0;
   int frictional_force_index = static_cast<int>(contacts.size());
-  time_stepping_contact_results_.Clear();
+  contact_results->Clear();
   for (const auto& contact : contacts) {
     // Get the two body indices.
     const int body_a_index = contact.elementA->get_body()->get_body_index();
@@ -1230,7 +1265,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const Vector3<T> p_W = (p_WAs + p_WBs) * 0.5;
 
     // Initialize the contact result.
-    ContactInfo<T>& contact_result = time_stepping_contact_results_.AddContact(
+    ContactInfo<T>& contact_result = contact_results->AddContact(
         contact.elementA->getId(), contact.elementB->getId());
 
     // Compute an orthonormal basis.
@@ -1268,19 +1303,13 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   // and bilateral constraint forces first.
   VectorX<T> generalized_contact_force;
   const int limits_start = contacts.size() + total_friction_cone_edges;
-  constraint_force.segment(
+  VectorX<T> contact_force = constraint_force;
+  contact_force.segment(
       limits_start, constraint_force.size() - limits_start).setZero();
   constraint_solver_.ComputeGeneralizedImpulseFromConstraintImpulses(
-      data, constraint_force, &generalized_contact_force);
-  time_stepping_contact_results_.set_generalized_contact_force(
-      generalized_contact_force / dt);
-
-  // qn = q + dt*qdot.
-  VectorX<T> xn(this->get_num_states());
-  xn << q + dt * tree.transformVelocityToQDot(kinematics_cache, new_velocity),
-      new_velocity;
-  updates->get_mutable_vector(0).SetFromVector(xn);
-  updates->get_mutable_vector(1)[0] = t + dt;
+      data, contact_force, &generalized_contact_force);
+  contact_results->set_generalized_contact_force(
+      generalized_contact_force);
 }
 
 template <typename T>

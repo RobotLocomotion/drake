@@ -486,7 +486,16 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
-  void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
+  template <typename U = T>
+  std::enable_if_t<std::is_same<U, double>::value, void>
+  ComputeTimeSteppingContactResults(
+      const std::vector<multibody::collision::PointPair<U>>& contacts,
+      const multibody::constraint::ConstraintVelProblemData<U>& data,
+      const KinematicsCache<U>& kinematics_cache,
+      const VectorX<U>& constraint_force,
+      ContactResults<U>* contact_results) const;
+
+    void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
       const drake::multibody::collision::PointPair<T>& contact,
       double* stiffness, double* damping, double* mu,
       int* num_cone_edges) const;
