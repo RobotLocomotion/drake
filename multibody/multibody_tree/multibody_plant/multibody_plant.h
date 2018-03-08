@@ -615,6 +615,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
 
+  // Helper method that is used to finalize the plant's internals after
+  // MultibodyTree::Finalize() was called.
+  void FinalizePlantOnly();
+
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
