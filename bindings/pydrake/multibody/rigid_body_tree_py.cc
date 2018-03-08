@@ -240,18 +240,29 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_name", &RigidBodyFrame<double>::get_name)
     .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index);
 
-  m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
-        &drake::parsers::urdf::\
-          AddModelInstanceFromUrdfStringSearchingInRosPackages);
-  m.def("AddModelInstancesFromSdfString",
-        &sdf::AddModelInstancesFromSdfString);
+  m.def(
+      "AddModelInstanceFromUrdfStringSearchingInRosPackages",
+      py::overload_cast<
+          const std::string&, const drake::parsers::PackageMap&,
+          const std::string&, const drake::multibody::joints::FloatingBaseType,
+          std::shared_ptr<RigidBodyFrame<double>>, RigidBodyTree<double>*>(&
+          drake::parsers::urdf::
+              AddModelInstanceFromUrdfStringSearchingInRosPackages));
+  m.def(
+      "AddModelInstancesFromSdfString",
+      py::overload_cast<
+          const std::string&, const drake::multibody::joints::FloatingBaseType,
+          std::shared_ptr<RigidBodyFrame<double>>, RigidBodyTree<double>*>(
+          &sdf::AddModelInstancesFromSdfString));
   m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
-        &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages),
-  m.def("AddFlatTerrainToWorld",
-        &drake::multibody::AddFlatTerrainToWorld,
-        py::arg("tree"),
-        py::arg("box_size") = 1000,
-        py::arg("box_depth") = 10);
+        py::overload_cast<const std::string&, const drake::parsers::PackageMap&,
+                          const drake::multibody::joints::FloatingBaseType,
+                          std::shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages)),
+      m.def("AddFlatTerrainToWorld", &drake::multibody::AddFlatTerrainToWorld,
+            py::arg("tree"), py::arg("box_size") = 1000,
+            py::arg("box_depth") = 10);
 }
 
 }  // namespace pydrake
