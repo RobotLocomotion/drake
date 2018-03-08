@@ -208,7 +208,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          [](const RigidBodyTree<double>* self, const VectorX<double>& v) {
            return self->frictionTorques(v);
          })
-    .def_readonly("B", &RigidBodyTree<double>::B);
+    .def_readonly("B", &RigidBodyTree<double>::B)
+    .def_readonly("joint_limit_min", &RigidBodyTree<double>::joint_limit_min)
+    .def_readonly("joint_limit_max", &RigidBodyTree<double>::joint_limit_max);
 
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
