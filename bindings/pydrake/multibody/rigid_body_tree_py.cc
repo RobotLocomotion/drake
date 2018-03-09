@@ -21,6 +21,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   using drake::multibody::joints::FloatingBaseType;
   using drake::parsers::PackageMap;
   namespace sdf = drake::parsers::sdf;
+  using std::shared_ptr;
 
   py::module::import("pydrake.multibody.parsers");
   py::module::import("pydrake.multibody.shapes");
@@ -220,7 +221,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_visual_elements", &RigidBody<double>::get_visual_elements);
 
   py::class_<RigidBodyFrame<double>,
-             std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
+             shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
     .def(
         py::init<
             const std::string&,
@@ -241,16 +242,24 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index);
 
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
-        &drake::parsers::urdf::\
-          AddModelInstanceFromUrdfStringSearchingInRosPackages);
+        py::overload_cast<const std::string&, const PackageMap&,
+                          const std::string&, const FloatingBaseType,
+                          shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &parsers::urdf::
+                AddModelInstanceFromUrdfStringSearchingInRosPackages));
   m.def("AddModelInstancesFromSdfString",
-        &sdf::AddModelInstancesFromSdfString);
+        py::overload_cast<const std::string&, const FloatingBaseType,
+                          shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &sdf::AddModelInstancesFromSdfString));
   m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
-        &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages),
-  m.def("AddFlatTerrainToWorld",
-        &drake::multibody::AddFlatTerrainToWorld,
-        py::arg("tree"),
-        py::arg("box_size") = 1000,
+        py::overload_cast<
+            const std::string&, const PackageMap&, const FloatingBaseType,
+            shared_ptr<RigidBodyFrame<double>>, RigidBodyTree<double>*>(
+            &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages)),
+  m.def("AddFlatTerrainToWorld", &multibody::AddFlatTerrainToWorld,
+        py::arg("tree"), py::arg("box_size") = 1000,
         py::arg("box_depth") = 10);
 }
 

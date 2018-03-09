@@ -4,7 +4,10 @@
      See the URDF for documentation on the purpose/structure of this file. -->
     <model name="sphere_chain">
         <link name="sphereA">
-            <collision>
+            <inertial>
+                <mass>1.</mass>
+            </inertial>
+            <collision name="collideA">
                 <geometry>
                     <sphere>
                         <radius>1</radius>
@@ -13,7 +16,10 @@
             </collision>
         </link>
         <link name="sphereB">
-            <collision>
+            <inertial>
+                <mass>1.</mass>
+            </inertial>
+            <collision name="collideB">
                 <geometry>
                     <sphere>
                         <radius>1</radius>
@@ -22,7 +28,10 @@
             </collision>
         </link>
         <link name="sphereC">
-            <collision>
+            <inertial>
+                <mass>1.</mass>
+            </inertial>
+            <collision name="collideC">
                 <geometry>
                     <sphere>
                         <radius>1</radius>
@@ -31,7 +40,10 @@
             </collision>
         </link>
         <link name="sphereD">
-            <collision>
+            <inertial>
+                <mass>1.</mass>
+            </inertial>
+            <collision name="collideD">
                 <geometry>
                     <sphere>
                         <radius>1</radius>
