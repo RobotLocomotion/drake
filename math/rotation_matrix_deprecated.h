@@ -15,6 +15,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
@@ -215,8 +216,10 @@ Matrix3<T> ZRotation(const T& theta) {
 }
 
 /// (Deprecated), use @ref math::RotationMatrix::ProjectToRotationMatrix
-// TODO(Mitiguy) Remove this method (replace calls to this method).
+// TODO(mitiguy) This code was deprecated on March 9, 2018.
+// Delete this code in accordance with issue #8323.
 template <typename Derived>
+DRAKE_DEPRECATED("Use RotationMatrix::ProjectToRotationMatrix().")
 Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
     const Eigen::MatrixBase<Derived>& M) {
   using Scalar = typename Derived::Scalar;
@@ -226,8 +229,10 @@ Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
 }
 
 /// (Deprecated), use @ref math::RotationMatrix::ProjectToRotationMatrix
-// TODO(Mitiguy) Remove this method (replace calls to this method).
+// TODO(mitiguy) This code was deprecated on March 9, 2018.
+// Delete this code in accordance with issue #8323.
 template <typename Derived>
+DRAKE_DEPRECATED("Use RotationMatrix::ProjectToRotationMatrix().")
 Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
     const Eigen::MatrixBase<Derived>& M) {
   using Scalar = typename Derived::Scalar;
