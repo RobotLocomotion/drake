@@ -62,30 +62,31 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
   const double kTotalTime = 1.0;
   const double kTimeStep = 0.1;
 
-  for (double r = kLowestResistance; r <= kHighestResistance ;
-       r += kResistanceStep) {
-    for (double c = kLowestCapacitance; c <= kHighestCapacitance ;
-         c += kCapacitanceStep) {
-      const VectorX<double> k = (VectorX<double>(2) << r, c).finished();
+  for (double Rs = kLowestResistance; Rs <= kHighestResistance ;
+       Rs += kResistanceStep) {
+    for (double Cs = kLowestCapacitance; Cs <= kHighestCapacitance ;
+         Cs += kCapacitanceStep) {
+      const VectorX<double> k = (VectorX<double>(2) << Rs, Cs).finished();
 
-      const double tau = r * c;
+      const double tau = Rs * Cs;
       const double tau_sq = tau * tau;
-      for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
+      for (double tf = kInitialTime; tf <= kTotalTime; tf += kTimeStep) {
         // Tests are performed against the closed form
         // solution for the scalar IVP described above, which is
         // Q(t; [Rs, Cs]) = 1/Rs * (τ²/ (1 + τ²) * e^(-t / τ) +
         //                  τ / √(1 + τ²) * sin(t - arctan(τ)))
-        // where τ = Rs * Cs for zero initial conditions.
+        // where τ = Rs * Cs for Q(t₀ = 0; [Rs, Cs]) = Q₀ = 0, i.e.
+        // zero initial conditions.
         const double exact_solution = (
-            tau_sq / (1. + tau_sq) * std::exp(-t / tau)
+            tau_sq / (1. + tau_sq) * std::exp(-tf / tau)
             + tau / std::sqrt(1. + tau_sq)
-            * std::sin(t - std::atan(tau))) / r;
-        EXPECT_NEAR(stored_charge_ivp.Solve(t, k),
+            * std::sin(tf - std::atan(tau))) / Rs;
+        EXPECT_NEAR(stored_charge_ivp.Solve(tf, k),
                     exact_solution, integration_accuracy_)
-            << "Failure solving dQ/dt = (sin(t) - Q / Cs) / Rs using Q("
+            << "Failure solving dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
             << kInitialTime << "; [Rs, Cs]) = " << kInitialStoredCharge
-            << " for t = " << t << ", Rs = " << r
-            << " and Cs = " << c << " with an accuracy of "
+            << " for tf = " << tf << ", Rs = " << Rs
+            << " and Cs = " << Cs << " with an accuracy of "
             << integration_accuracy_;
       }
     }
@@ -99,7 +100,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   const double kInitialTime = 0.0;
   // The initial population N₀ at time t₀.
   const double kInitialPopulation = 10.0;
-  // The malthusian parameter r that shapes the growth of the
+  // The Malthusian parameter r that shapes the growth of the
   // population.
   const double kDefaultMalthusParam = 0.1;
   const VectorX<double> kDefaultParameters =
@@ -126,14 +127,14 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   for (double r = kLowestMalthusParam; r <= kHighestMalthusParam;
        r += kMalthusParamStep) {
     const VectorX<double> k = VectorX<double>::Constant(1, r);
-    for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
+    for (double tf = kInitialTime; tf <= kTotalTime; tf += kTimeStep) {
       // Tests are performed against the closed form
       // solution for the IVP described above, which is
-      // N(t; [r]) = N₀ * e^(r * t).
-      const double exact_solution = kInitialPopulation * std::exp(r * t);
-      EXPECT_NEAR(population_growth_ivp.Solve(t, k), exact_solution,
+      // N(t; r) = N₀ * e^(r * t).
+      const double exact_solution = kInitialPopulation * std::exp(r * tf);
+      EXPECT_NEAR(population_growth_ivp.Solve(tf, k), exact_solution,
                   integration_accuracy_)
-          << "Failure solving dN/dt = r * N using N("
+          << "Failure solving dN/dt = r * N using N(t₀ = "
           << kInitialTime << "; r) = " << kInitialPopulation
           << " for r = " << r << " with an accuracy of "
           << integration_accuracy_;
