@@ -8,7 +8,7 @@ unpacked. On macOS, VTK must be installed from the robotlocomotion/director tap
 (https://git.io/vN6ft) using Homebrew.
 
 Archive naming convention:
-    vtk-v<version>-qt-<qt version>-xenial-<arch>
+    vtk-v<version>-qt-<qt version>-xenial-<arch>[-<rebuild>]
 
 Build configuration:
     BUILD_TESTING=OFF
@@ -52,7 +52,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "8.1"
+VTK_MAJOR_MINOR_VERSION = "8.0"
 
 def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
                     header_only = False, linkopts = []):
@@ -111,8 +111,8 @@ def _impl(repository_ctx):
             VTK_MAJOR_MINOR_VERSION), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-v8.1.0-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "768faf503dc8b0ec78bbf159498d83ca36a0c5d2eefa8a981905feeca9eb6f0c"  # noqa
+            archive = "vtk-v8.0.1-qt-5.5.1-xenial-x86_64-1.tar.gz"
+            sha256 = "ca4c0e6e857220a48d1055bf21420eb130cf17f7a301a762ba38a5dd07345edc"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
