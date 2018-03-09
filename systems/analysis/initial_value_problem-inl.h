@@ -16,9 +16,10 @@ namespace systems {
 namespace detail {
 
 /// A LeafSystem subclass used to describe parameterized ODE systems
-/// i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ. The
-/// vector variable 𝐱 corresponds to the system state that is evolved through
-/// time t by the function f, which is in turn parameterized by a vector 𝐤.
+/// i.e. d𝐱/dt = f(t, 𝐱; 𝐤) where f : t ⨯ 𝐱 →  ℝⁿ, t ∈ ℝ , 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ.
+/// The vector variable 𝐱 corresponds to the system state that is evolved
+/// through time t by the function f, which is in turn parameterized by a
+/// vector 𝐤.
 ///
 /// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 template <typename T>
