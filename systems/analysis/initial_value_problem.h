@@ -15,9 +15,10 @@ namespace systems {
 
 /// A general initial value problem (or IVP) representation class, that allows
 /// evaluating the 𝐱(t; 𝐤) solution function to the given ODE
-/// d𝐱/dt = f(t, 𝐱; 𝐤), where f : t ⨯ 𝐱 → ℝⁿ, t ∈ ℝ, 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ, provided an
-/// initial condition 𝐱(t₀; 𝐤) = 𝐱₀. The parameter vector 𝐤 allows for generic
-/// IVP definitions, which can later be solved for any instance of said vector.
+/// d𝐱/dt = f(t, 𝐱; 𝐤), where f : t ⨯ 𝐱 → ℝⁿ, t ∈ ℝ, 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ,
+/// provided an initial condition 𝐱(t₀; 𝐤) = 𝐱₀. The parameter vector 𝐤
+/// allows for generic IVP definitions, which can later be solved for any
+/// instance of said vector.
 ///
 /// Additionally, this class' implementation performs basic computation caching,
 /// optimizing away repeated integration whenever the IVP is solved for
