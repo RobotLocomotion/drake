@@ -68,7 +68,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
    * constraint_force_evaluator_bindings will transfer the ownership of the
    * evaluators to the newly constructed object.
    */
-  static std::unique_ptr<DirectTranscriptionConstraint> Create(
+  static solvers::Binding<DirectTranscriptionConstraint> Make(
       const RigidBodyTree<double>& tree,
       std::shared_ptr<plants::KinematicsCacheWithVHelper<AutoDiffXd>>
           kinematics_helper,
@@ -78,14 +78,10 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& q_r,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& v_r,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& u_r,
-      std::vector<GeneralizedConstraintForceEvaluatorBinding>*
+      const std::vector<solvers::Binding<GeneralizedConstraintForceEvaluator>>&
           constraint_force_evaluator_bindings);
 
   ~DirectTranscriptionConstraint() override = default;
-
-  const solvers::VectorXDecisionVariable& GetAggregatedVariables() const {
-    return aggregated_variables_;
-  }
 
   const GeneralizedConstraintForceEvaluator*
   generalized_constraint_force_evaluator(int index) const {
@@ -109,7 +105,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& v_r,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& u_r,
       const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
-      std::vector<GeneralizedConstraintForceEvaluatorBinding>*
+      const std::vector<solvers::Binding<GeneralizedConstraintForceEvaluator>>&
           constraint_force_evaluator_bindings);
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -126,7 +122,6 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   // Stores the kinematics cache at the right knot point.
   mutable std::shared_ptr<plants::KinematicsCacheWithVHelper<AutoDiffXd>>
       kinematics_helper1_;
-  solvers::VectorXDecisionVariable aggregated_variables_;
   // The indices of h, q_l, v_l, q_r, v_r, u_r in the aggregated_variables_.
   int h_index_;
   std::vector<int> q_l_indices_;
@@ -140,7 +135,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   // aggregated_variables_[generalized_constraint_force_evaluator_bindings_[i].second]
   // are the variables bound with the evaluator
   // generalized_constraint_force_evaluator_bindings_[i].first
-  std::vector<std::pair<std::unique_ptr<GeneralizedConstraintForceEvaluator>,
+  std::vector<std::pair<std::shared_ptr<GeneralizedConstraintForceEvaluator>,
                         std::vector<int>>>
       generalized_constraint_force_evaluator_bindings_;
 };

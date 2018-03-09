@@ -29,23 +29,33 @@ namespace {
 void AddVariableToMap(
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars,
     bool error_for_duplicate_variable,
-    std::unordered_map<symbolic::Variable::Id, int>* map_variable_to_index) {
+    std::unordered_map<symbolic::Variable::Id, int>* map_variable_to_index,
+    solvers::VectorXDecisionVariable* aggregated_vars) {
+  const int num_existing_aggregated_vars = aggregated_vars->rows();
+  aggregated_vars->conservativeResize(num_existing_aggregated_vars +
+                                      vars.rows());
   for (int i = 0; i < vars.rows(); ++i) {
     const auto it = map_variable_to_index->find(vars(i).get_id());
-    if (it != map_variable_to_index->end() && error_for_duplicate_variable) {
-      throw std::runtime_error("This variable exists in the map already.");
+    if (it != map_variable_to_index->end()) {
+      if (error_for_duplicate_variable) {
+        throw std::runtime_error("This variable exists in the map already.");
+      }
+    } else {
+      const int variable_count = map_variable_to_index->size();
+      map_variable_to_index->emplace_hint(it, vars(i).get_id(), variable_count);
+      (*aggregated_vars)(variable_count) = vars(i);
     }
-    const int variable_count = map_variable_to_index->size();
-    map_variable_to_index->emplace_hint(it, vars(i).get_id(), variable_count);
   }
+  aggregated_vars->conservativeResize(map_variable_to_index->size());
 }
 
 /**
  * This function returns the mapping, that maps all the variables bound with
  * the DirectTranscriptionConstraint to the index in the aggregated bound
- * variables.
+ * variables. The aggregated variables is returned as the second argument.
  */
-std::unordered_map<symbolic::Variable::Id, int>
+std::pair<std::unordered_map<symbolic::Variable::Id, int>,
+          solvers::VectorXDecisionVariable>
 GetVariableIndicesInDirectTranscriptionConstraint(
     const symbolic::Variable& h,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& q_l,
@@ -53,18 +63,22 @@ GetVariableIndicesInDirectTranscriptionConstraint(
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& q_r,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& v_r,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& u_r,
-    const std::vector<GeneralizedConstraintForceEvaluatorBinding>& bindings) {
+    const std::vector<solvers::Binding<GeneralizedConstraintForceEvaluator>>&
+        bindings) {
   std::unordered_map<symbolic::Variable::Id, int> map_variable_to_index;
   map_variable_to_index.emplace(h.get_id(), 0);
-  AddVariableToMap(q_l, true, &map_variable_to_index);
-  AddVariableToMap(v_l, true, &map_variable_to_index);
-  AddVariableToMap(q_r, true, &map_variable_to_index);
-  AddVariableToMap(v_r, true, &map_variable_to_index);
-  AddVariableToMap(u_r, true, &map_variable_to_index);
+  solvers::VectorXDecisionVariable aggregated_vars(1);
+  aggregated_vars << h;
+  AddVariableToMap(q_l, true, &map_variable_to_index, &aggregated_vars);
+  AddVariableToMap(v_l, true, &map_variable_to_index, &aggregated_vars);
+  AddVariableToMap(q_r, true, &map_variable_to_index, &aggregated_vars);
+  AddVariableToMap(v_r, true, &map_variable_to_index, &aggregated_vars);
+  AddVariableToMap(u_r, true, &map_variable_to_index, &aggregated_vars);
   for (const auto& binding : bindings) {
-    AddVariableToMap(binding.second, false, &map_variable_to_index);
+    AddVariableToMap(binding.variables(), false, &map_variable_to_index,
+                     &aggregated_vars);
   }
-  return map_variable_to_index;
+  return std::make_pair(map_variable_to_index, aggregated_vars);
 }
 }  // namespace
 
@@ -86,8 +100,8 @@ GetVariableIndicesInDirectTranscriptionConstraint(
  * c(qᵣ, vᵣ): The Coriolis, gravity and centripedal force on the right knot.
  * h: The duration between the left and right knot.
  */
-std::unique_ptr<DirectTranscriptionConstraint>
-DirectTranscriptionConstraint::Create(
+solvers::Binding<DirectTranscriptionConstraint>
+DirectTranscriptionConstraint::Make(
     const RigidBodyTree<double>& tree,
     std::shared_ptr<plants::KinematicsCacheWithVHelper<AutoDiffXd>>
         kinematics_helper,
@@ -97,15 +111,19 @@ DirectTranscriptionConstraint::Create(
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& q_r,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& v_r,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& u_r,
-    std::vector<GeneralizedConstraintForceEvaluatorBinding>*
+    const std::vector<solvers::Binding<GeneralizedConstraintForceEvaluator>>&
         constraint_force_evaluator_bindings) {
-  const auto& map_var_to_index =
+  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
+  solvers::VectorXDecisionVariable aggregated_vars;
+  std::tie(map_var_to_index, aggregated_vars) =
       GetVariableIndicesInDirectTranscriptionConstraint(
-          h, q_l, v_l, q_r, v_r, u_r, *constraint_force_evaluator_bindings);
-  return std::unique_ptr<DirectTranscriptionConstraint>(
+          h, q_l, v_l, q_r, v_r, u_r, constraint_force_evaluator_bindings);
+  std::shared_ptr<DirectTranscriptionConstraint> constraint{
       new DirectTranscriptionConstraint(tree, kinematics_helper, h, q_l, v_l,
                                         q_r, v_r, u_r, map_var_to_index,
-                                        constraint_force_evaluator_bindings));
+                                        constraint_force_evaluator_bindings)};
+  return solvers::Binding<DirectTranscriptionConstraint>(constraint,
+                                                         aggregated_vars);
 }
 
 DirectTranscriptionConstraint::DirectTranscriptionConstraint(
@@ -118,7 +136,7 @@ DirectTranscriptionConstraint::DirectTranscriptionConstraint(
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& v_r,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& u_r,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
-    std::vector<GeneralizedConstraintForceEvaluatorBinding>*
+    const std::vector<solvers::Binding<GeneralizedConstraintForceEvaluator>>&
         constraint_force_evaluator_bindings)
     : Constraint(
           tree.get_num_positions() + tree.get_num_velocities(),  // output size
@@ -132,28 +150,6 @@ DirectTranscriptionConstraint::DirectTranscriptionConstraint(
       num_velocities_{tree.get_num_velocities()},
       num_actuators_{tree.get_num_actuators()},
       kinematics_helper1_{kinematics_helper} {
-  // Fill in aggregated_variables_.
-  aggregated_variables_.resize(map_var_to_index.size());
-
-  auto FillInAggregatedVariables = [&map_var_to_index](
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars,
-      solvers::VectorXDecisionVariable* aggregated_variables) {
-    for (int i = 0; i < vars.rows(); ++i) {
-      const auto it = map_var_to_index.find(vars(i).get_id());
-      (*aggregated_variables)(it->second) = vars(i);
-    }
-  };
-
-  aggregated_variables_(map_var_to_index.at(h.get_id())) = h;
-  FillInAggregatedVariables(q_l, &aggregated_variables_);
-  FillInAggregatedVariables(v_l, &aggregated_variables_);
-  FillInAggregatedVariables(q_r, &aggregated_variables_);
-  FillInAggregatedVariables(v_r, &aggregated_variables_);
-  FillInAggregatedVariables(u_r, &aggregated_variables_);
-  for (const auto& binding : *constraint_force_evaluator_bindings) {
-    FillInAggregatedVariables(binding.second, &aggregated_variables_);
-  }
-
   // Obtain the indices of each variable vector in aggregated_variables_
   auto FindVariableIndices = [&map_var_to_index](
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars,
@@ -170,12 +166,12 @@ DirectTranscriptionConstraint::DirectTranscriptionConstraint(
   FindVariableIndices(v_r, &v_r_indices_);
   FindVariableIndices(u_r, &u_r_indices_);
   generalized_constraint_force_evaluator_bindings_.reserve(
-      constraint_force_evaluator_bindings->size());
-  for (auto& binding : *constraint_force_evaluator_bindings) {
+      constraint_force_evaluator_bindings.size());
+  for (const auto& binding : constraint_force_evaluator_bindings) {
     std::vector<int> evaluator_vars_indices;
-    FindVariableIndices(binding.second, &evaluator_vars_indices);
+    FindVariableIndices(binding.variables(), &evaluator_vars_indices);
     generalized_constraint_force_evaluator_bindings_.emplace_back(
-        std::move(binding.first), evaluator_vars_indices);
+        binding.evaluator(), evaluator_vars_indices);
   }
 }
 
@@ -403,15 +399,11 @@ RigidBodyTreeMultipleShooting::AddJointLimitImplicitConstraint(
 void RigidBodyTreeMultipleShooting::Compile() {
   for (int i = 0; i < N() - 1; ++i) {
     // Build direct transcription constraint
-    std::shared_ptr<DirectTranscriptionConstraint>
-        direct_transcription_constraint(DirectTranscriptionConstraint::Create(
-            *tree_, kinematics_cache_with_v_helpers_[i + 1], h_vars()(i),
-            q_vars_.col(i), v_vars_.col(i), q_vars_.col(i + 1),
-            v_vars_.col(i + 1),
-            u_vars().segment((i + 1) * num_actuators_, num_actuators_),
-            &(constraint_force_evaluator_bindings[i + 1])));
-    AddConstraint(direct_transcription_constraint,
-                  direct_transcription_constraint->GetAggregatedVariables());
+    AddConstraint(DirectTranscriptionConstraint::Make(
+        *tree_, kinematics_cache_with_v_helpers_[i + 1], h_vars()(i),
+        q_vars_.col(i), v_vars_.col(i), q_vars_.col(i + 1), v_vars_.col(i + 1),
+        u_vars().segment((i + 1) * num_actuators_, num_actuators_),
+        constraint_force_evaluator_bindings[i + 1]));
   }
 }
 

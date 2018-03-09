@@ -43,21 +43,23 @@ class DirectTranscriptionConstraintTest : public ::testing::Test {
                 *tree_)),
         kinematics_cache_with_v_helper_(
             std::make_shared<plants::KinematicsCacheWithVHelper<AutoDiffXd>>(
-                *tree_)) {
+                *tree_)) {}
+
+  solvers::Binding<DirectTranscriptionConstraint>
+  CreateDirectTranscriptionConstraint() {
     auto position_constraint_force_evaluator =
-        std::make_unique<PositionConstraintForceEvaluator>(
+        std::make_shared<PositionConstraintForceEvaluator>(
             *tree_, kinematics_cache_helper_);
     const solvers::VectorXDecisionVariable evaluator_vars =
         position_constraint_force_evaluator->ComposeEvalInputVector(q_r_,
                                                                     lambda_r_);
-    std::vector<GeneralizedConstraintForceEvaluatorBinding> evaluator_bindings;
-    evaluator_bindings.emplace_back(
-        std::move(position_constraint_force_evaluator), evaluator_vars);
-
-    direct_transcription_constraint_ =
-        DirectTranscriptionConstraint::Create(
-            *tree_, kinematics_cache_with_v_helper_, h_, q_l_, v_l_, q_r_, v_r_,
-            u_r_, &evaluator_bindings);
+    std::vector<solvers::Binding<GeneralizedConstraintForceEvaluator>>
+        evaluator_bindings;
+    evaluator_bindings.emplace_back(position_constraint_force_evaluator,
+                                    evaluator_vars);
+    return DirectTranscriptionConstraint::Make(
+        *tree_, kinematics_cache_with_v_helper_, h_, q_l_, v_l_, q_r_, v_r_,
+        u_r_, evaluator_bindings);
   }
 
  protected:
@@ -75,31 +77,35 @@ class DirectTranscriptionConstraintTest : public ::testing::Test {
       kinematics_cache_helper_;
   std::shared_ptr<plants::KinematicsCacheWithVHelper<AutoDiffXd>>
       kinematics_cache_with_v_helper_;
-  std::shared_ptr<DirectTranscriptionConstraint>
-      direct_transcription_constraint_;
 };
 
 TEST_F(DirectTranscriptionConstraintTest, TestConstructor) {
+  const auto direct_transcription_constraint =
+      CreateDirectTranscriptionConstraint();
   const int nq = tree_->get_num_positions();
   const int nv = tree_->get_num_velocities();
   const int nu = tree_->get_num_actuators();
 
-  EXPECT_EQ(direct_transcription_constraint_->num_constraints(), nq + nv);
-  EXPECT_EQ(direct_transcription_constraint_->num_vars(),
+  EXPECT_EQ(direct_transcription_constraint.evaluator()->num_constraints(),
+            nq + nv);
+  EXPECT_EQ(direct_transcription_constraint.evaluator()->num_vars(),
             1 + nq + nv + nq + nv + nu + tree_->getNumPositionConstraints());
 
   solvers::VectorXDecisionVariable bound_vars_expected(
-      direct_transcription_constraint_->num_vars());
+      direct_transcription_constraint.evaluator()->num_vars());
   bound_vars_expected << h_, q_l_, v_l_, q_r_, v_r_, u_r_, lambda_r_;
-  for (int i = 0; i < direct_transcription_constraint_->num_vars(); ++i) {
+  for (int i = 0; i < direct_transcription_constraint.evaluator()->num_vars();
+       ++i) {
     EXPECT_TRUE(bound_vars_expected(i).equal_to(
-        direct_transcription_constraint_->GetAggregatedVariables()(i)));
+        direct_transcription_constraint.variables()(i)));
   }
 }
 
 TEST_F(DirectTranscriptionConstraintTest, TestEval) {
   // Set position, velocity, actuator input and contact forces to arbitrary
   // values.
+  const auto direct_transcription_constraint =
+      CreateDirectTranscriptionConstraint();
   const int nq = tree_->get_num_positions();
   const int nv = tree_->get_num_velocities();
   const int nu = tree_->get_num_actuators();
@@ -112,16 +118,17 @@ TEST_F(DirectTranscriptionConstraintTest, TestEval) {
   const Eigen::VectorXd lambda_r_val =
       Eigen::VectorXd::LinSpaced(tree_->getNumPositionConstraints(), 0, -1);
   const std::vector<Eigen::VectorXd> bound_variable_val = {
-      direct_transcription_constraint_
+      direct_transcription_constraint.evaluator()
           ->generalized_constraint_force_evaluator(0)
           ->ComposeEvalInputVector(q_r_val, lambda_r_val)};
-  Eigen::VectorXd x_val(direct_transcription_constraint_->num_vars());
+  Eigen::VectorXd x_val(
+      direct_transcription_constraint.evaluator()->num_vars());
   x_val << h_val, q_l_val, v_l_val, q_r_val, v_r_val, u_r_val, lambda_r_val;
   Eigen::VectorXd y_val;
-  direct_transcription_constraint_->Eval(x_val, y_val);
+  direct_transcription_constraint.evaluator()->Eval(x_val, y_val);
 
   Eigen::VectorXd y_val_expected(
-      direct_transcription_constraint_->num_constraints());
+      direct_transcription_constraint.evaluator()->num_constraints());
   KinematicsCache<double> cache = tree_->CreateKinematicsCache();
   cache.initialize(q_r_val, v_r_val);
   tree_->doKinematics(cache, true);
