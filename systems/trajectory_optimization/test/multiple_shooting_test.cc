@@ -20,7 +20,6 @@ namespace {
 const double kSolverTolerance = 1e-6;
 
 using trajectories::PiecewisePolynomial;
-using trajectories::PiecewisePolynomialTrajectory;
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
 class MyDirectTrajOpt : public MultipleShooting {
@@ -36,12 +35,12 @@ class MyDirectTrajOpt : public MultipleShooting {
       : MultipleShooting(num_inputs, num_states, num_time_samples, min_timestep,
                          max_timestep) {}
 
-  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override {
-    return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>());
+  PiecewisePolynomial<double> ReconstructInputTrajectory() const override {
+    return PiecewisePolynomial<double>();
   };
 
-  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override {
-    return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>());
+  PiecewisePolynomial<double> ReconstructStateTrajectory() const override {
+    return PiecewisePolynomial<double>();
   };
 
   // Expose for unit testing.

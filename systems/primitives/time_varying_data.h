@@ -4,13 +4,12 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 
 namespace drake {
 namespace systems {
 
 using trajectories::PiecewisePolynomial;
-using trajectories::PiecewisePolynomialTrajectory;
 
 namespace internal {
 
@@ -37,10 +36,10 @@ inline std::vector<Eigen::MatrixXd> eigen_vector_zeros(int size, int rows) {
 // Eigen::MatrixXd stored in pp.  The vectors are padded with zeros.
 inline PiecewisePolynomial<double> MakeZeroedPiecewisePolynomial(
     const PiecewisePolynomial<double>& pp) {
-  const double time_period = pp.getEndTime(0) - pp.getStartTime(0);
+  const double time_period = pp.end_time(0) - pp.start_time(0);
   return PiecewisePolynomial<double>::FirstOrderHold(
-      vector_iota(pp.getNumberOfSegments() + 1, time_period),
-      eigen_vector_zeros(pp.getNumberOfSegments() + 1, pp.rows()));
+      vector_iota(pp.get_number_of_segments() + 1, time_period),
+      eigen_vector_zeros(pp.get_number_of_segments() + 1, pp.rows()));
 }
 
 }  // namespace internal
@@ -85,12 +84,12 @@ struct TimeVaryingData {
                   const PiecewisePolynomial<double>& D,
                   const PiecewisePolynomial<double>& y0);
 
-  PiecewisePolynomialTrajectory A{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory B{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory f0{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory C{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory D{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory y0{PiecewisePolynomial<double>()};
+  PiecewisePolynomial<double> A{};
+  PiecewisePolynomial<double> B{};
+  PiecewisePolynomial<double> f0{};
+  PiecewisePolynomial<double> C{};
+  PiecewisePolynomial<double> D{};
+  PiecewisePolynomial<double> y0{};
 };
 
 /// Stores matrix data necessary to construct a linear time varying system as a

@@ -20,7 +20,7 @@ using drake::trajectories::PiecewisePolynomial;
 ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     const TVLQRData& sys, const PiecewisePolynomial<double>& zmp_trajectory,
     const Ref<const MatrixXd>& S) {
-  size_t n = static_cast<size_t>(zmp_trajectory.getNumberOfSegments());
+  size_t n = static_cast<size_t>(zmp_trajectory.get_number_of_segments());
   int d = zmp_trajectory.getSegmentPolynomialDegree(0);
   int k = d + 1;
 
@@ -29,13 +29,13 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
   }
 
   VectorXd dt(n);
-  std::vector<double> breaks = zmp_trajectory.getSegmentTimes();
+  std::vector<double> breaks = zmp_trajectory.get_segment_times();
 
   for (size_t i = 0; i < n; i++) {
     dt(i) = breaks[i + 1] - breaks[i];
   }
 
-  MatrixXd zmp_tf = zmp_trajectory.value(zmp_trajectory.getEndTime());
+  MatrixXd zmp_tf = zmp_trajectory.value(zmp_trajectory.end_time());
   PiecewisePolynomial<double> zbar_pp = zmp_trajectory - zmp_tf;
 
   Matrix2d R1i = sys.R1.inverse();

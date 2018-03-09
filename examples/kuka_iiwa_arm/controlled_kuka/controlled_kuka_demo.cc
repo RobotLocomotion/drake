@@ -13,7 +13,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
@@ -44,13 +44,12 @@ namespace kuka_iiwa_arm {
 namespace {
 using manipulation::util::SimDiagramBuilder;
 using trajectories::PiecewisePolynomial;
-using trajectories::PiecewisePolynomialTrajectory;
 
 const char kUrdfPath[] =
     "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
-unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
+PiecewisePolynomial<double> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
@@ -145,8 +144,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
     knots[i] = q_sol.col(i);
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(
-      PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots));
+  return PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots);
 }
 
 int DoMain() {
@@ -155,7 +153,7 @@ int DoMain() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   CreateTreedFromFixedModelAtPose(FindResourceOrThrow(kUrdfPath), tree.get());
 
-  std::unique_ptr<PiecewisePolynomialTrajectory> traj = MakePlan();
+  PiecewisePolynomial<double> traj = MakePlan();
 
   drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
@@ -178,7 +176,7 @@ int DoMain() {
       builder.get_mutable_builder();
   auto traj_src =
       diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
-          *traj, 1 /* outputs q + v */);
+          traj, 1 /* outputs q + v */);
   traj_src->set_name("trajectory_source");
 
   diagram_builder->Connect(traj_src->get_output_port(),

@@ -16,7 +16,7 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
-using trajectories::PiecewisePolynomialTrajectory;
+using trajectories::PiecewisePolynomial;
 
 namespace {
 
@@ -173,7 +173,7 @@ void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   }
 }
 
-PiecewisePolynomialTrajectory
+PiecewisePolynomial<double>
 DirectTranscription::ReconstructInputTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
@@ -185,11 +185,10 @@ DirectTranscription::ReconstructInputTrajectory()
     inputs[i] = GetSolution(input(i));
   }
   // TODO(russt): Implement DTTrajectories and return one of those instead.
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs));
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
 }
 
-PiecewisePolynomialTrajectory DirectTranscription::ReconstructStateTrajectory()
+PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -200,8 +199,7 @@ PiecewisePolynomialTrajectory DirectTranscription::ReconstructStateTrajectory()
     states[i] = GetSolution(state(i));
   }
   // TODO(russt): Implement DTTrajectories and return one of those instead.
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states));
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
 }
 
 bool DirectTranscription::AddSymbolicDynamicConstraints(

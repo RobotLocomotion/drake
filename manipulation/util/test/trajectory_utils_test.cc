@@ -55,7 +55,7 @@ TEST_F(PiecewiseCubicTrajectoryTest, GetPosition) {
 TEST_F(PiecewiseCubicTrajectoryTest, GetVelocity) {
   for (double time : test_times_) {
     VectorX<double> expected = vel_.value(time);
-    if (!pos_.isTimeInRange(time)) expected.setZero();
+    if (!pos_.is_time_in_range(time)) expected.setZero();
 
     EXPECT_TRUE(drake::CompareMatrices(expected, dut_.get_velocity(time), 1e-12,
                                        drake::MatrixCompareType::absolute));
@@ -67,7 +67,7 @@ TEST_F(PiecewiseCubicTrajectoryTest, GetVelocity) {
 TEST_F(PiecewiseCubicTrajectoryTest, GetAcceleration) {
   for (double time : test_times_) {
     VectorX<double> expected = acc_.value(time);
-    if (!pos_.isTimeInRange(time)) expected.setZero();
+    if (!pos_.is_time_in_range(time)) expected.setZero();
 
     EXPECT_TRUE(drake::CompareMatrices(expected, dut_.get_acceleration(time),
                                        1e-12,
@@ -84,8 +84,8 @@ TEST_F(PiecewiseCubicTrajectoryTest, GetTrajectories) {
 
 // Tests get_x_time().
 TEST_F(PiecewiseCubicTrajectoryTest, GetEndTimes) {
-  EXPECT_EQ(dut_.get_start_time(), pos_.getStartTime());
-  EXPECT_EQ(dut_.get_end_time(), pos_.getEndTime());
+  EXPECT_EQ(dut_.get_start_time(), pos_.start_time());
+  EXPECT_EQ(dut_.get_end_time(), pos_.end_time());
 }
 
 // Tests is_approx().
@@ -176,7 +176,7 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestVelocity) {
     expected.head<3>() = orientation_.angular_velocity(time);
     expected.tail<3>() = position_.get_velocity(time);
 
-    if (!orientation_.isTimeInRange(time)) expected.head<3>().setZero();
+    if (!orientation_.is_time_in_range(time)) expected.head<3>().setZero();
 
     EXPECT_TRUE(drake::CompareMatrices(dut_.get_velocity(time), expected, 1e-12,
                                        drake::MatrixCompareType::absolute));
