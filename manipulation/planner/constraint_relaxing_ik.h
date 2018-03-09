@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/rigid_body_ik.h"
 
 namespace drake {

@@ -15,7 +15,6 @@ namespace systems {
 namespace trajectory_optimization {
 
 using trajectories::PiecewisePolynomial;
-using trajectories::PiecewisePolynomialTrajectory;
 
 namespace {
 
@@ -90,9 +89,9 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   prog.SetDecisionVariableValues(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
-  const PiecewisePolynomialTrajectory input_spline =
+  const PiecewisePolynomial<double> input_spline =
       prog.ReconstructInputTrajectory();
-  const PiecewisePolynomialTrajectory state_spline =
+  const PiecewisePolynomial<double> state_spline =
       prog.ReconstructStateTrajectory();
   const auto derivative_spline = state_spline.derivative();
 
@@ -106,7 +105,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
     EXPECT_TRUE(
         CompareMatrices(system->A() * prog.GetSolution(prog.state(i)) +
                             system->B() * prog.GetSolution(prog.input(i)),
-                        derivative_spline->value(time), 1e-6));
+                        derivative_spline.value(time), 1e-6));
 
     if (i < (kNumSampleTimes - 1)) {
       time += prog.GetSolution(prog.timestep(i).coeff(0));
@@ -123,7 +122,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
 
     const auto& binding = collocation_constraints[i];
     Eigen::Vector2d defect =
-        derivative_spline->value(collocation_time) -
+        derivative_spline.value(collocation_time) -
         system->A() * state_spline.value(collocation_time) -
         system->B() * input_spline.value(collocation_time);
     EXPECT_TRUE(

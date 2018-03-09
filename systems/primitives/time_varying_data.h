@@ -4,13 +4,12 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 
 namespace drake {
 namespace systems {
 
 using trajectories::PiecewisePolynomial;
-using trajectories::PiecewisePolynomialTrajectory;
 
 namespace internal {
 
@@ -37,10 +36,10 @@ inline std::vector<Eigen::MatrixXd> eigen_vector_zeros(int size, int rows) {
 // Eigen::MatrixXd stored in pp.  The vectors are padded with zeros.
 inline PiecewisePolynomial<double> MakeZeroedPiecewisePolynomial(
     const PiecewisePolynomial<double>& pp) {
-  const double time_period = pp.getEndTime(0) - pp.getStartTime(0);
+  const double time_period = pp.end_time(0) - pp.start_time(0);
   return PiecewisePolynomial<double>::FirstOrderHold(
-      vector_iota(pp.getNumberOfSegments() + 1, time_period),
-      eigen_vector_zeros(pp.getNumberOfSegments() + 1, pp.rows()));
+      vector_iota(pp.get_number_of_segments() + 1, time_period),
+      eigen_vector_zeros(pp.get_number_of_segments() + 1, pp.rows()));
 }
 
 }  // namespace internal
@@ -99,38 +98,38 @@ struct TimeVaryingData {
                   const PiecewisePolynomial<double>& Cin,
                   const PiecewisePolynomial<double>& Din,
                   const PiecewisePolynomial<double>& y0in)
-      : A(PiecewisePolynomialTrajectory(Ain)),
-        B(PiecewisePolynomialTrajectory(Bin)),
-        f0(PiecewisePolynomialTrajectory(f0in)),
-        C(PiecewisePolynomialTrajectory(Cin)),
-        D(PiecewisePolynomialTrajectory(Din)),
-        y0(PiecewisePolynomialTrajectory(y0in)) {
-    DRAKE_DEMAND(A.get_piecewise_polynomial().getNumberOfSegments() ==
-                 B.get_piecewise_polynomial().getNumberOfSegments());
-    DRAKE_DEMAND(A.get_piecewise_polynomial().getNumberOfSegments() ==
-                 C.get_piecewise_polynomial().getNumberOfSegments());
-    DRAKE_DEMAND(A.get_piecewise_polynomial().getNumberOfSegments() ==
-                 D.get_piecewise_polynomial().getNumberOfSegments());
+      : A(Ain),
+        B(Bin),
+        f0(f0in),
+        C(Cin),
+        D(Din),
+        y0(y0in) {
+    DRAKE_DEMAND(A.get_number_of_segments() ==
+                 B.get_number_of_segments());
+    DRAKE_DEMAND(A.get_number_of_segments() ==
+                 C.get_number_of_segments());
+    DRAKE_DEMAND(A.get_number_of_segments() ==
+                 D.get_number_of_segments());
     DRAKE_DEMAND(A.rows() == A.cols());
     DRAKE_DEMAND(B.rows() == A.cols());
     DRAKE_DEMAND(C.cols() == A.cols());
     DRAKE_DEMAND(D.rows() == C.rows());
     DRAKE_DEMAND(D.cols() == B.cols());
 
-    DRAKE_DEMAND(f0.get_piecewise_polynomial().getNumberOfSegments() ==
-                 A.get_piecewise_polynomial().getNumberOfSegments());
+    DRAKE_DEMAND(f0.get_number_of_segments() ==
+                 A.get_number_of_segments());
     DRAKE_DEMAND(f0.rows() == A.cols());
-    DRAKE_DEMAND(y0.get_piecewise_polynomial().getNumberOfSegments() ==
-                 A.get_piecewise_polynomial().getNumberOfSegments());
+    DRAKE_DEMAND(y0.get_number_of_segments() ==
+                 A.get_number_of_segments());
     DRAKE_DEMAND(y0.rows() == C.rows());
   }
 
-  PiecewisePolynomialTrajectory A{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory B{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory f0{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory C{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory D{PiecewisePolynomial<double>()};
-  PiecewisePolynomialTrajectory y0{PiecewisePolynomial<double>()};
+  PiecewisePolynomial<double> A{};
+  PiecewisePolynomial<double> B{};
+  PiecewisePolynomial<double> f0{};
+  PiecewisePolynomial<double> C{};
+  PiecewisePolynomial<double> D{};
+  PiecewisePolynomial<double> y0{};
 };
 
 /// Stores matrix data necessary to construct a linear time varying system as a

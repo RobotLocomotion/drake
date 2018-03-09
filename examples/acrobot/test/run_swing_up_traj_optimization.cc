@@ -72,7 +72,7 @@ int do_main() {
     return 1;
   }
 
-  const trajectories::PiecewisePolynomialTrajectory pp_xtraj =
+  const trajectories::PiecewisePolynomial<double> pp_xtraj =
       dircol.ReconstructStateTrajectory();
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
@@ -100,7 +100,7 @@ int do_main() {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.StepTo(pp_xtraj.get_end_time());
+  simulator.StepTo(pp_xtraj.end_time());
   return 0;
 }
 

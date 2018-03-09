@@ -53,12 +53,12 @@ class DirectCollocation : public MultipleShooting {
 
   /// Get the input trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  trajectories::PiecewisePolynomialTrajectory ReconstructInputTrajectory()
+  trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
   const override;
 
   /// Get the state trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  trajectories::PiecewisePolynomialTrajectory ReconstructStateTrajectory()
+  trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
   const override;
 
  private:

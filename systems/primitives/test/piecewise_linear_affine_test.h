@@ -11,7 +11,7 @@ namespace test {
 
 static constexpr double kDiscreteTimeStep = 0.1;
 
-// A helper for accessing the underlying PiecewisePolynomialTrajectory data.
+// A helper for accessing the underlying PiecewisePolynomial data.
 struct MatrixData {
   MatrixData() {}
   /// Fully-parameterized constructor.

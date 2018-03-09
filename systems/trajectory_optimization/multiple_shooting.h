@@ -10,7 +10,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -221,12 +220,12 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Gets the input trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  virtual trajectories::PiecewisePolynomialTrajectory
+  virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
 
   /// Gets the state trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  virtual trajectories::PiecewisePolynomialTrajectory
+  virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
 
   double fixed_timestep() const {

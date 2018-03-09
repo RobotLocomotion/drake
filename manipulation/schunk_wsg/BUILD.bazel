@@ -35,7 +35,7 @@ drake_cc_library(
     hdrs = ["schunk_wsg_lcm.h"],
     deps = [
         ":schunk_wsg_trajectory_generator_state_vector",
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:trajectory",
         "//lcmtypes:schunk",
         "//systems/framework:leaf_system",
