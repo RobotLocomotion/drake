@@ -276,6 +276,13 @@ class Expression {
    */
   Expression Differentiate(const Variable& x) const;
 
+  /** Let `f` be this Expression, computes a row vector of derivatives,
+   * `[∂f/∂vars(0), ... , ∂f/∂vars(n-1)]` with respect to the variables
+   * @p vars.
+   */
+  RowVectorX<Expression> Jacobian(
+      const Eigen::Ref<const VectorX<Variable>>& vars) const;
+
   /** Returns string representation of Expression. */
   std::string to_string() const;
 

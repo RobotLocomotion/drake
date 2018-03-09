@@ -81,18 +81,24 @@ def get_python_executable():
         return sys.executable
 
 
-def run_and_kill(cmd, timeout=2.0):
+def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     """Convenient function to start a command and kill it automatically.
 
     This function starts a given command and kills it after the given
     `timeout`. This is useful if one needs to test a command that doesn't
-    terminate on its own.
+    terminate on its own. The current working directory is set to '/' when
+    running the given command.
 
     `cmd` is a list of a command and its arguments such as what is expected
     by `subprocess.Popen` (See `subprocess` documentation).
+
+    If `from_install_dir` is True (default), the first argument of the command
+    line is prepended with the install directory (found with
+    `get_install_dir()`).
     """
-    cmd[0] = os.path.join(get_install_dir(), cmd[0])
-    proc = subprocess.Popen(cmd)
+    if from_install_dir:
+        cmd[0] = os.path.join(get_install_dir(), cmd[0])
+    proc = subprocess.Popen(cmd, cwd='/')
     start = time.time()
     while time.time() - start < timeout:
         time.sleep(0.5)

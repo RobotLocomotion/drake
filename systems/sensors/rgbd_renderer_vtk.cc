@@ -420,7 +420,7 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
   const DrakeShapes::Geometry& geometry = visual.getGeometry();
   switch (visual.getShape()) {
     case DrakeShapes::BOX: {
-      auto box = dynamic_cast<const DrakeShapes::Box&>(geometry);
+      const auto& box = dynamic_cast<const DrakeShapes::Box&>(geometry);
       vtkNew<vtkCubeSource> vtk_cube;
       vtk_cube->SetXLength(box.size(0));
       vtk_cube->SetYLength(box.size(1));
@@ -432,7 +432,7 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       break;
     }
     case DrakeShapes::SPHERE: {
-      auto sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
+      const auto& sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
       vtkNew<vtkSphereSource> vtk_sphere;
       vtk_sphere->SetRadius(sphere.radius);
       vtk_sphere->SetThetaResolution(50);
@@ -444,7 +444,8 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
       break;
     }
     case DrakeShapes::CYLINDER: {
-      auto cylinder = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
+      const auto& cylinder =
+          dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
       vtkNew<vtkCylinderSource> vtk_cylinder;
       vtk_cylinder->SetHeight(cylinder.length);
       vtk_cylinder->SetRadius(cylinder.radius);

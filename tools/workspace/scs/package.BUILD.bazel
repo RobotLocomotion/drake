@@ -38,7 +38,10 @@ cc_binary(
     ],
     linkopts = select({
         ":darwin": ["-framework Accelerate"],
-        ":linux": ["-lrt"],
+        ":linux": [
+            "-lrt",
+            "-Wl,-soname,libdrake_scsdir.so",
+        ],
         "@//conditions:default": [],
     }),
     linkshared = 1,

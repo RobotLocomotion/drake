@@ -20,7 +20,8 @@ class TestInstallTestHelperTest(unittest.TestCase):
     def test_run_and_kill(self):
         python = install_test_helper.get_python_executable()
         install_test_helper.run_and_kill([python, "-c",
-                                         "import time; time.sleep(5)"], 0.5)
+                                         "import time; time.sleep(5)"], 0.5,
+                                         from_install_dir=False)
 
     def test_check_call(self):
         python = install_test_helper.get_python_executable()
