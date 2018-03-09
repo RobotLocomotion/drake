@@ -487,6 +487,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   void ExportModelInstanceCentricPorts();
 
   void ComputeTimeSteppingContactResults(
+      const T& dt,
       const std::vector<multibody::collision::PointPair<T>>& contacts,
       const multibody::constraint::ConstraintVelProblemData<T>& data,
       const KinematicsCache<T>& kinematics_cache,

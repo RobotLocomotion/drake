@@ -135,6 +135,9 @@ TEST_P(ContactResultTest, SingleCollision) {
   // Note: This is fragile. It assumes a particular collision model.  Once the
   // model has been generalized, this will have to adapt to account for that.
 
+  // Get the force scalar.
+  const double scaling = GetParam() ? plant_->get_time_step() : 1;
+
   // NOTE: the *effective* Young's modulus of the contact is half of the
   // material Young's modulus.
   const double effective_elasticity = kContactYoungsModulus * 0.5;
@@ -144,12 +147,13 @@ TEST_P(ContactResultTest, SingleCollision) {
   double force = effective_elasticity * offset * 2;
   expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
   ASSERT_TRUE(
-      CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
+      CompareMatrices(resultant.get_spatial_force() * scaling,
+                      expected_spatial_force));
 
   const auto& details = info.get_contact_details();
   ASSERT_EQ(details.size(), 1u);
   auto detail_force = details[0]->ComputeContactForce();
-  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
+  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force() * scaling,
                               expected_spatial_force));
   Vector3<double> expected_point;
   expected_point << x_anchor_, 0, 0;

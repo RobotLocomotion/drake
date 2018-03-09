@@ -1216,7 +1216,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // TODO(edrumwri): Relocate this block of code to the contact output function
   // when caching is in place.
-  ComputeTimeSteppingContactResults(contacts, data, kinematics_cache,
+  ComputeTimeSteppingContactResults(dt, contacts, data, kinematics_cache,
                                     constraint_force,
                                     &time_stepping_contact_results_);
 
@@ -1233,6 +1233,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 // contact force (impulse) solution. Note: we
 template <typename T>
 void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
+    const T& dt,
     const std::vector<multibody::collision::PointPair<T>>& contacts,
     const multibody::constraint::ConstraintVelProblemData<T>& data,
     const KinematicsCache<T>& kinematics_cache,
