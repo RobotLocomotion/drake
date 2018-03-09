@@ -388,7 +388,9 @@ class PendulumTests : public ::testing::Test {
 
     // Compute qddot via articulated body algorithm.
     MultibodyForces<double> applied_forces(*tree_);
-    tree_->CalcForwardDynamics(*context_, applied_forces, &qddot);
+    AccelerationKinematicsCache<double> ac(tree_->get_topology());
+    tree_->CalcForwardDynamics(*context_, applied_forces, &ac);
+    qddot = ac.get_vdot();
 
     // Compute qddot_expected via mass matrix solve.
     MultibodyForces<double> forces(*tree_);

@@ -225,7 +225,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// are composed, frame B is located with its origin `Bo` at `p_PoBo` from P's
   /// origin Po.
   ///
-  /// This operation can be written in a more compact fom in terms of the
+  /// This operation can be written in a more compact form in terms of the
   /// rigid shift operator `Φᵀ(p_PoBo)` (see SpatialVelocity::Shift()) as: <pre>
   ///   A_WB = Φᵀ(p_PoBo)A_WP + Ac_WB(w_WP, V_PB) + A_PB_W
   /// </pre>
