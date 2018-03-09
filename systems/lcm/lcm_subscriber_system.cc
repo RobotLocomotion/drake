@@ -308,6 +308,9 @@ int LcmSubscriberSystem::WaitForMessage(int old_message_count) const {
   // for thread safety, these need to be properly protected by a mutex.
   std::unique_lock<std::mutex> lock(received_message_mutex_);
 
+  if (old_message_count == -1)
+    old_message_count = received_message_count_;
+
   // This while loop is necessary to guard for spurious wakeup:
   // https://en.wikipedia.org/wiki/Spurious_wakeup
   while (old_message_count == received_message_count_)
