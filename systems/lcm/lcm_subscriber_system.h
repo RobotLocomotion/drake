@@ -148,8 +148,11 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    * internally.
    * @param old_message_count Internal message counter. If -1, will be set to
    * current value, and thus should wait until a new message is received.
+   * @param message If non-null, will return the received message.
+   * @pre If `message` is specified, this system must be abstract-valued.
    */
-  int WaitForMessage(int old_message_count) const;
+  int WaitForMessage(
+      int old_message_count, AbstractValue* message = nullptr) const;
 
   /**
    * Returns the message counter stored in @p context.
