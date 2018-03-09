@@ -398,7 +398,9 @@ def drake_cc_binary(
         linkopts = select({
             "//tools/cc_toolchain:apple": linkopts,
             "//conditions:default": linkopts + [
-                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
+                "-Wl,--disable-new-dtags",
+                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu",
+                "-Wl,-soname," + name,
             ],
         })
 
