@@ -44,6 +44,11 @@ class OptitrackPoseTest : public ::testing::Test {
     return output_value->GetValue<Isometry3<double>>();
   }
 
+  Isometry3<double> GetPose(const optitrack::optitrack_frame_t& input_frame) {
+    auto test_frame_abstract = systems::AbstractValue::Make(input_frame);
+    return dut_->GetPose(*test_frame_abstract);
+  }
+
  private:
   std::unique_ptr<OptitrackPoseExtractor> dut_;
   std::unique_ptr<systems::Context<double>> context_;
@@ -120,6 +125,12 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
   // Compare quaternions.
   EXPECT_TRUE(CompareMatrices(extracted_pose.linear(), test_pose.linear(),
                               1e-3, MatrixCompareType::absolute));
+
+  // Compare output from `GetPose`.
+  Isometry3<double> extracted_pose_direct = GetPose(test_frame);
+  EXPECT_TRUE(CompareMatrices(
+      extracted_pose_direct.matrix(), extracted_pose.matrix(),
+      1e-3, MatrixCompareType::absolute));
 }
 
 TEST_F(OptitrackPoseTest, PoseInReferenceFrameTest) {
