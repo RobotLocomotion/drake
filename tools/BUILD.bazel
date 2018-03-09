@@ -30,6 +30,18 @@ drake_runfiles_binary(
     target = ":drake_visualizer_py",
 )
 
+sh_test(
+    name = "drake_visualizer_test",
+    srcs = [":drake_visualizer"],
+    # This argument is not present in the output of `--help`, but does take
+    # effect. Unfortunately, this does create a graphical window.
+    args = ["--testing"],
+    # Without `local` on Ubuntu, we get errors from OpenGL.
+    # TODO(eric.cousineau): This may be resolved by OSMesa (#7851), but since
+    # this does not presently work on Ubuntu (#8322), I cannot confirm.
+    tags = ["local"],
+)
+
 # === config_setting rules ===
 
 config_setting(
