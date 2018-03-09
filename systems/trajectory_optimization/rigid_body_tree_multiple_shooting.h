@@ -126,7 +126,8 @@ class RigidBodyTreeMultipleShooting : public MultipleShooting {
   // constraint_force_evaluator_bindings[i] stores the evaluator that computes
   // one generalized constraint force Jᵀλ at knot i, together with the variables
   // bound with the evaluator
-  std::vector<std::vector<GeneralizedConstraintForceEvaluatorBinding>>
+  std::vector<
+      std::vector<solvers::Binding<GeneralizedConstraintForceEvaluator>>>
       constraint_force_evaluator_bindings;
   std::vector<std::shared_ptr<plants::KinematicsCacheHelper<AutoDiffXd>>>
       kinematics_cache_helpers_;
