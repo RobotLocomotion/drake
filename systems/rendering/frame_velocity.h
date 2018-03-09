@@ -26,7 +26,7 @@ class FrameVelocity final : public BasicVector<T> {
   ~FrameVelocity() override;
 
   /// Fully-parameterized constructor.
-  /// @param velocity the entire spatial velocity Xdot_WA.
+  /// @param velocity the entire spatial velocity V_WA.
   explicit FrameVelocity(const multibody::SpatialVelocity<T>& velocity);
 
   // FrameVelocity is final, so we can implement copy and assignment without
@@ -35,9 +35,9 @@ class FrameVelocity final : public BasicVector<T> {
   FrameVelocity(const FrameVelocity<T>& other);
   FrameVelocity<T>& operator=(const FrameVelocity<T>& other);
 
-  /// Returns the entire spatial velocity Xdot_WA.
+  /// Returns the entire spatial velocity V_WA.
   multibody::SpatialVelocity<T> get_velocity() const;
-  /// Assigns the entire spatial velocity Xdot_WA.
+  /// Assigns the entire spatial velocity V_WA.
   void set_velocity(const multibody::SpatialVelocity<T>& velocity);
 
   static constexpr int kSize = 6;

@@ -39,9 +39,6 @@ PYBIND11_MODULE(rendering, m) {
 
   pose_vector.attr("kSize") = int{PoseVector<T>::kSize};
 
-  // N.B. We simplify the get/set signatures below to temporarily sidestep
-  // dependence on multibody.
-  // TODO(jadecastro) Revert this once the bindings for SpatialVelocity exist.
   py::class_<FrameVelocity<T>, BasicVector<T>> frame_velocity(
       m, "FrameVelocity");
   frame_velocity
