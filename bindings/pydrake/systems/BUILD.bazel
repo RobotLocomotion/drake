@@ -130,6 +130,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
     ],
     cc_so_name = "rendering",
@@ -287,6 +288,7 @@ drake_py_unittest(
     size = "small",
     deps = [
         ":rendering_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
 )
 

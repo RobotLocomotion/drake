@@ -494,7 +494,8 @@ PYBIND11_MODULE(framework, m) {
          py_reference_internal);
 
   py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor")
-    .def("size", &InputPortDescriptor<T>::size);
+    .def("size", &InputPortDescriptor<T>::size)
+    .def("get_data_type", &InputPortDescriptor<T>::get_data_type);
 
   // Value types.
   py::class_<VectorBase<T>>(m, "VectorBase")
