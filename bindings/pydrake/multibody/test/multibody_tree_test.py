@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 
 
-class TestMultiBodyTree(unittest.TestCase):
+class TestMath(unittest.TestCase):
     def test_spatial_velocity(self):
         velocity = SpatialVelocity()
         # - Accessors.
