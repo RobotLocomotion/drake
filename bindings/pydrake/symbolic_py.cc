@@ -203,7 +203,9 @@ PYBIND11_MODULE(_symbolic_py, m) {
       // NE(!=)
       .def(py::self != py::self)
       .def(py::self != Variable())
-      .def(py::self != double());
+      .def(py::self != double())
+      .def("Differentiate", &Expression::Differentiate)
+      .def("Jacobian", &Expression::Jacobian);
 
   m.def("log", &symbolic::log)
       .def("abs", &symbolic::abs)

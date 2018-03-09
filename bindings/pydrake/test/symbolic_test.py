@@ -396,7 +396,7 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
                          "(if (x > y) then x else y)")
 
-    def test_jacobian(self):
+    def test_non_method_jacobian(self):
         # Jacobian([x * cos(y), x * sin(y), x ** 2], [x, y]) returns
         # the following 3x2 matrix:
         #
@@ -410,6 +410,16 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(J[0, 1], - x * sym.sin(y))
         self.assertEqual(J[1, 1], x * sym.cos(y))
         self.assertEqual(J[2, 1], 0)
+
+    def test_method_jacobian(self):
+        # (x * cos(y)).Jacobian([x, y]) returns [cos(y), -x * sin(y)].
+        J = (x * sym.cos(y)).Jacobian([x, y])
+        self.assertEqual(J[0], sym.cos(y))
+        self.assertEqual(J[1], -x * sym.sin(y))
+
+    def test_differentiate(self):
+        e = x * x
+        self.assertEqual(e.Differentiate(x), 2 * x)
 
 
 class TestSymbolicMonomial(unittest.TestCase):

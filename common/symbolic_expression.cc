@@ -196,6 +196,15 @@ Expression Expression::Differentiate(const Variable& x) const {
   return ptr_->Differentiate(x);
 }
 
+RowVectorX<Expression> Expression::Jacobian(
+    const Eigen::Ref<const VectorX<Variable>>& vars) const {
+  RowVectorX<Expression> J(vars.size());
+  for (VectorX<Variable>::Index i = 0; i < vars.size(); ++i) {
+    J(i) = Differentiate(vars(i));
+  }
+  return J;
+}
+
 string Expression::to_string() const {
   ostringstream oss;
   oss << *this;
