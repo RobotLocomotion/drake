@@ -5,28 +5,56 @@ load("//tools/skylark:drake_runfiles_binary.bzl", "drake_runfiles_binary")
 
 package(default_visibility = ["//visibility:public"])
 
-py_binary(
-    name = "drake_visualizer.impl",
-    srcs = ["//tools/workspace/drake_visualizer:drake_visualizer.py"],
+py_library(
+    name = "drake_visualizer_base",
     data = [
         "//automotive/models:prod_models",
         "//examples:prod_models",
         "@drake_visualizer",
     ],
-    main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
     visibility = ["//visibility:private"],
     # Python libraries to import.
     deps = [
         "//lcmtypes:lcmtypes_py",
-        "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
+    ],
+)
+
+# `drake_visualizer` implementation, using stubbed pydrake.
+py_binary(
+    name = "drake_visualizer.impl",
+    srcs = ["//tools/workspace/drake_visualizer:drake_visualizer.py"],
+    main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":drake_visualizer_base",
+        # N.B. `stub_pydrake` should ONLY be used by this target. Any other
+        # usages are defects.
+        "//tools/workspace/drake_visualizer:stub_pydrake",
     ],
 )
 
 drake_runfiles_binary(
     name = "drake_visualizer",
     target = ":drake_visualizer.impl",
+)
+
+# `drake_visualizer` implementation, using actual pydrake.
+py_binary(
+    name = "drake_visualizer_pydrake.impl",
+    srcs = ["//tools/workspace/drake_visualizer:drake_visualizer.py"],
+    main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":drake_visualizer_base",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_runfiles_binary(
+    name = "drake_visualizer_pydrake",
+    target = ":drake_visualizer_pydrake.impl",
 )
 
 # === config_setting rules ===
