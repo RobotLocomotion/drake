@@ -30,6 +30,7 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   DrakeMockLcm dut;
 
   dut.StartReceiveThread();
+  EXPECT_TRUE(dut.IsReceiveThreadRunning());
   dut.Publish(channel_name, &message_bytes[0], message_size);
 
   // Verifies that the message was "published".

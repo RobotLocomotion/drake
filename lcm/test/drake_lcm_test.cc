@@ -103,6 +103,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
   // the resources it relies on are destroyed, a segmentation fault may occur.
   dut.StartReceiveThread();
+  EXPECT_TRUE(dut.IsReceiveThreadRunning());
 
   // Records whether the receiver received an LCM message published by the DUT.
   bool done = false;

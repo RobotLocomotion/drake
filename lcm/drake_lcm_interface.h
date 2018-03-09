@@ -40,6 +40,11 @@ class DrakeLcmInterface {
   virtual void StopReceiveThread() = 0;
 
   /**
+   * Indicates that the receiving thread is running.
+   */
+  virtual bool IsReceiveThreadRunning() const = 0;
+
+  /**
    * Publishes an LCM message on channel @p channel.
    *
    * @param[in] channel The channel on which to publish the message.

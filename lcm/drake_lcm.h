@@ -32,6 +32,10 @@ class DrakeLcm : public DrakeLcmInterface {
 
   void StopReceiveThread() override;
 
+  bool IsReceiveThreadRunning() const override {
+    return receive_thread_->IsRunning();
+  }
+
   /**
    * An accessor to the real LCM instance encapsulated by this object. The
    * returned pointer is guaranteed to be valid for the duration of this

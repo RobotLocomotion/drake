@@ -40,6 +40,10 @@ class DrakeMockLcm : public DrakeLcmInterface {
 
   void StopReceiveThread() override;
 
+  bool IsReceiveThreadRunning() const override {
+    return receive_thread_started_;
+  }
+
   void Publish(const std::string& channel, const void* data,
                int data_size, double time_sec = 0) override;
 

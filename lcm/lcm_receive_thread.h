@@ -38,6 +38,10 @@ class LcmReceiveThread {
    */
   void Stop();
 
+  bool IsRunning() const {
+    return lcm_thread_.get_id() != std::thread::id{};
+  }
+
  private:
   // Loops waiting for LCM messages and dispatching them to the appropriate
   // subscriber message handlers when they arrive.
