@@ -150,17 +150,6 @@ class DependencyTracker {
   DependencyGraph. The ticket is unique within the containing subcontext. */
   DependencyTicket ticket() const { return ticket_; }
 
-  /** Returns a pointer to the CacheEntryValue if this tracker is a cache
-  entry tracker, otherwise nullptr. */
-  // This is for validating that this tracker is associated with the right
-  // cache entry. Don't use this during runtime invalidation.
-  const CacheEntryValue* cache_entry_value() const {
-    DRAKE_DEMAND(cache_value_);
-    if (cache_value_ == &CacheEntryValue::dummy())
-      return nullptr;
-    return cache_value_;
-  }
-
   /** Notifies `this` %DependencyTracker that its managed value was directly
   modified or made available for mutable access. That is, this is the
   _initiating_ event of a value modification. All of our downstream
@@ -274,6 +263,24 @@ class DependencyTracker {
   }
   //@}
 
+  /** @name                Testing/debugging utilities
+  Methods used in test cases or for debugging. */
+  //@{
+
+  /** Throws an std::logic_error if there is something clearly wrong with this
+  %DependencyTracker object. If the owning subcontext is known, provide a
+  pointer to it here and we'll check that this tracker agrees. If you know which
+  cache entry is supposed to be associated with this tracker, supply a pointer
+  to that and we'll check it (trackers that are not associated with a real cache
+  entry are still associated with the CacheEntryValue::dummy()). In addition we
+  check for other internal inconsistencies.
+  @throws std::logic_error for anything that goes wrong, with an appropriate
+                           explanatory message. */
+  void ThrowIfBadDependencyTracker(
+      const internal::SystemPathnameInterface* owning_subcontext = nullptr,
+      const CacheEntryValue* cache_value = nullptr) const;
+  //@}
+
  private:
   friend class DependencyGraph;
 
@@ -344,6 +351,11 @@ class DependencyTracker {
   std::string GetSystemPathname() const {
     DRAKE_DEMAND(owning_subcontext_!= nullptr);
     return owning_subcontext_->GetSystemPathname();
+  }
+
+  // Provides an identifying prefix for error messages.
+  std::string FormatName(const char* api) const {
+    return "DependencyTracker(" + GetPathDescription() + ")::" + api + "(): ";
   }
 
   // This tracker's index within its owning DependencyGraph.
