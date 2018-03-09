@@ -65,7 +65,9 @@ class KukaIiwaModelForwardDynamicsTests : public ::testing::Test {
     MultibodyForces<double> applied_forces(*model_);
 
     // Compute forward dynamics using articulated body algorithm.
-    model_->CalcForwardDynamics(*context_, applied_forces, vdot);
+    AccelerationKinematicsCache<double> ac(model_->get_topology());
+    model_->CalcForwardDynamics(*context_, applied_forces, &ac);
+    *vdot = ac.get_vdot();
   }
 
   /// This method calculates the forward dynamics for a 7-DOF KUKA iiwa robot

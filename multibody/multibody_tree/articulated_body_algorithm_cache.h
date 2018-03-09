@@ -86,7 +86,6 @@ class ArticulatedBodyAlgorithmCache {
     return e_B_[body_node_index];
   }
 
-
  private:
   // The type of the pools for storing spatial forces.
   typedef std::vector<SpatialForce<T>> SpatialForce_PoolType;
@@ -107,10 +106,10 @@ class ArticulatedBodyAlgorithmCache {
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
 
-  // Pools.
-  SpatialForce_PoolType zplus_PB_W_{};  // Indexed by BodyNodeIndex.
-  SpatialAcceleration_PoolType a_Bo_W_{};  // Indexed by BodyNodeIndex.
-  VectorUpTo6_PoolType e_B_{};  // Indexed by BodyNodeIndex.
+  // Pools indexed by BodyNodeIndex.
+  SpatialForce_PoolType zplus_PB_W_{};
+  SpatialAcceleration_PoolType a_Bo_W_{};
+  VectorUpTo6_PoolType e_B_{};
 };
 
 }  // namespace multibody

@@ -1045,7 +1045,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// This method is used by MultibodyTree within a tip-to-base loop to compute
-  /// this node's articulated body algorithm quantities that depend only both
+  /// this node's articulated body algorithm quantities that depend on both
   /// the generalized positions and generalized velocities.
   ///
   /// @param[in] context
@@ -1183,8 +1183,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const UnitInertia<T>& G_B_W = M_B_W.get_unit_inertia();
 
     // Compute the gyroscopic spatial force using (2).
-    // TODO(bobbyluig): Get value from cache when available.
-    SpatialForce<T> b_Bo_W = mass *
+    // TODO(bobbyluig): Get value from cache when available, since this is
+    // computed in BodyNode::CalcBodySpatialForceGivenItsSpatialAcceleration().
+    const SpatialForce<T> b_Bo_W = mass *
         SpatialForce<T>(w_WB.cross(G_B_W * w_WB),
                         w_WB.cross(w_WB.cross(p_BoBcm_W)));
 
@@ -1276,7 +1277,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
-  /// the generalized accelerations `vdot` and the acceleration kinematis cache.
+  /// the generalized accelerations `vdot` and the spatial accelerations `A_WB`
+  /// in the acceleration kinematics cache.
   ///
   /// @param[in] context
   ///   The context with the state of the MultibodyTree model.
@@ -1295,10 +1297,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   by `V_PB_W = H_PB_W⋅v_B`.
   /// @param[out] ac
   ///   A pointer to a valid, non nullptr, acceleration kinematics cache.
-  /// @param[out] vdot
-  ///   A non-null pointer to the output vector of generalized accelerations.
-  ///   The calling MultibodyTree method must guarantee the size of the array is
-  ///   the number of generalized accelerations in the model.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
@@ -1319,10 +1317,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const ArticulatedBodyInertiaCache<T>& abic,
       const ArticulatedBodyAlgorithmCache<T>& abac,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      AccelerationKinematicsCache<T>* ac,
-      EigenPtr<VectorX<T>> vdot) const {
+      AccelerationKinematicsCache<T>* ac) const {
     DRAKE_THROW_UNLESS(ac != nullptr);
-    DRAKE_THROW_UNLESS(vdot != nullptr);
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -1381,7 +1377,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         A_WP.translational() + A_WP.rotational().cross(p_PoBo_W));
 
     // Compute the generalized acceleration using (2).
-    auto vmdot = get_mutable_velocities_from_array(vdot);
+    auto vmdot = get_mutable_accelerations(ac);
     vmdot = nu_B - get_g_PB_W(abic).transpose() * Aplus_WP.get_coeffs();
 
     // Compute the spatial acceleration of the current body using (3).
@@ -1547,56 +1543,73 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return ac.get_A_WB(topology_.parent_body_node);
   }
 
+  // Returns an Eigen expression of the vector of generalized accelerations
+  // for this node's inboard mobilizer from the vector of generalized
+  // accelerations for the entire model.
+  Eigen::VectorBlock<const VectorX<T>> get_accelerations(
+      AccelerationKinematicsCache<T>* ac) const {
+    const VectorX<T>& vdot = ac->get_vdot();
+    return get_velocities_from_array(vdot);
+  }
+
+  // Mutable version of get_accelerations_from_array().
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_accelerations(
+      AccelerationKinematicsCache<T>* ac) const {
+    VectorX<T>& vdot = ac->get_mutable_vdot();
+    return get_mutable_velocities_from_array(&vdot);
+  }
+
+
   // =========================================================================
   // ArticulatedBodyInertiaCache Accessors and Mutators.
 
-  /// Returns a const reference to the articulated body inertia `P_B_W` of the
-  /// body taken about Bo and expressed in W.
+  // Returns a const reference to the articulated body inertia `P_B_W` of the
+  // body taken about Bo and expressed in W.
   const ArticulatedBodyInertia<T>& get_P_B_W(
       const ArticulatedBodyInertiaCache<T>& abic) const {
     return abic.get_P_B_W(topology_.index);
   }
 
-  /// Mutable version of get_P_B_W().
+  // Mutable version of get_P_B_W().
   ArticulatedBodyInertia<T>& get_mutable_P_B_W(
       ArticulatedBodyInertiaCache<T>* abic) const {
     return abic->get_mutable_P_B_W(topology_.index);
   }
 
-  /// Returns a const reference to the articulated body inertia `Pplus_PB_W`,
-  /// which can be thought of as the articulated body inertia of parent body P
-  /// as though it were inertialess, but taken about Bo and expressed in W.
+  // Returns a const reference to the articulated body inertia `Pplus_PB_W`,
+  // which can be thought of as the articulated body inertia of parent body P
+  // as though it were inertialess, but taken about Bo and expressed in W.
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(
       const ArticulatedBodyInertiaCache<T>& abic) const {
     return abic.get_Pplus_PB_W(topology_.index);
   }
 
-  /// Mutable version of get_Pplus_PB_W().
+  // Mutable version of get_Pplus_PB_W().
   ArticulatedBodyInertia<T>& get_mutable_Pplus_PB_W(
       ArticulatedBodyInertiaCache<T>* abic) const {
     return abic->get_mutable_Pplus_PB_W(topology_.index);
   }
 
-  /// Returns a const reference to the LDLT factorization `ldlt_D_B` of the
-  /// articulated body hinge inertia.
+  // Returns a const reference to the LDLT factorization `ldlt_D_B` of the
+  // articulated body hinge inertia.
   const Eigen::LDLT<MatrixUpTo6<T>>& get_ldlt_D_B(
       const ArticulatedBodyInertiaCache<T>& abic) const {
     return abic.get_ldlt_D_B(topology_.index);
   }
 
-  /// Mutable version of get_ldlt_D_B().
+  // Mutable version of get_ldlt_D_B().
   Eigen::LDLT<MatrixUpTo6<T>>& get_mutable_ldlt_D_B(
       ArticulatedBodyInertiaCache<T>* abic) const {
     return abic->get_mutable_ldlt_D_B(topology_.index);
   }
 
-  /// Returns a const reference to the Kalman gain `g_PB_W` of the body.
+  // Returns a const reference to the Kalman gain `g_PB_W` of the body.
   const MatrixUpTo6<T>& get_g_PB_W(
       const ArticulatedBodyInertiaCache<T>& abic) const {
     return abic.get_g_PB_W(topology_.index);
   }
 
-  /// Mutable version of get_g_PB_W().
+  // Mutable version of get_g_PB_W().
   MatrixUpTo6<T>& get_mutable_g_PB_W(
       ArticulatedBodyInertiaCache<T>* abic) const {
     return abic->get_mutable_g_PB_W(topology_.index);
@@ -1605,41 +1618,41 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // =========================================================================
   // ArticulatedBodyAlgorithmCache Accessors and Mutators.
 
-  /// Returns a const reference to the articulated body inertia residual force
-  /// `zplus_PB_W` for this body projected across its inboard mobilizer to
-  /// frame P.
+  // Returns a const reference to the articulated body inertia residual force
+  // `zplus_PB_W` for this body projected across its inboard mobilizer to
+  // frame P.
   const SpatialForce<T>& get_zplus_PB_W(
       const ArticulatedBodyAlgorithmCache<T>& abac) const {
     return abac.get_zplus_PB_W(topology_.index);
   }
 
-  /// Mutable version of get_zplus_PB_W().
+  // Mutable version of get_zplus_PB_W().
   SpatialForce<T>& get_mutable_zplus_PB_W(
       ArticulatedBodyAlgorithmCache<T>* abac) const {
     return abac->get_mutable_zplus_PB_W(topology_.index);
   }
 
-  /// Returns a const reference to the Coriolis spatial acceleration `a_Bo_W`
-  /// for this body due to the relative velocities of body B and body P.
+  // Returns a const reference to the Coriolis spatial acceleration `a_Bo_W`
+  // for this body due to the relative velocities of body B and body P.
   const SpatialAcceleration<T>& get_a_Bo_W(
       const ArticulatedBodyAlgorithmCache<T>& abac) const {
     return abac.get_a_Bo_W(topology_.index);
   }
 
-  /// Mutable version of get_a_Bo_W().
+  // Mutable version of get_a_Bo_W().
   SpatialAcceleration<T>& get_mutable_a_Bo_W(
       ArticulatedBodyAlgorithmCache<T>* abac) const {
     return abac->get_mutable_a_Bo_W(topology_.index);
   }
 
-  /// Returns a const reference to the Coriolis spatial acceleration `a_Bo_W`
-  /// for this body due to the relative velocities of body B and body P.
+  // Returns a const reference to the Coriolis spatial acceleration `a_Bo_W`
+  // for this body due to the relative velocities of body B and body P.
   const VectorUpTo6<T>& get_e_B(
       const ArticulatedBodyAlgorithmCache<T>& abac) const {
     return abac.get_e_B(topology_.index);
   }
 
-  /// Mutable version of get_e_B().
+  // Mutable version of get_e_B().
   VectorUpTo6<T>& get_mutable_e_B(
       ArticulatedBodyAlgorithmCache<T>* abac) const {
     return abac->get_mutable_e_B(topology_.index);

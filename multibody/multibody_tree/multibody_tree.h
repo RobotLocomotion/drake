@@ -1516,9 +1516,9 @@ class MultibodyTree {
   ///   A multibody forces object representing external forces on `this` model.
   ///   This method will abort if the `applied_forces` is not compatible with
   ///   `this` %MultibodyTree. See MultibodyForces::CheckInvariants().
-  /// @param[out] vdot
-  ///   A non-null pointer to a vector which will contain the generalized
-  ///   accelerations for the full %MultibodyTree model.
+  /// @param[out] ac
+  ///   A pointer to a valid, non nullptr, acceleration kinematics cache. This
+  ///   method aborts if `ac` is nullptr.
   ///
   /// References:
   /// - [Featherstone 1983] Featherstone, R., 1983. The calculation of robot
@@ -1527,13 +1527,11 @@ class MultibodyTree {
   ///                       pp. 13-30.
   /// - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
   ///               algorithms. Springer Science & Business Media, pp. 123-130.
-  /// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
-  ///                       algorithms. Springer, pp. 119-139.
   ///
   void CalcForwardDynamics(
       const systems::Context<T>& context,
       const MultibodyForces<T>& applied_forces,
-      EigenPtr<VectorX<T>> vdot) const;
+      AccelerationKinematicsCache<T>* ac) const;
 
   /// @}
   // Closes "Computational methods" Doxygen section.

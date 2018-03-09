@@ -753,7 +753,6 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
     const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
     // Position of origin Fo measured from Bi, expressed in the world W.
-    //
     const Vector3<T> p_BiFo_W = p_WoFo_W - p_WBi;
 
     // Mutable aliases to Hw_PBf_W and Hv_PBf_W. Hw (Hv) denotes the
@@ -928,8 +927,8 @@ template <typename T>
 void MultibodyTree<T>::CalcForwardDynamics(
     const systems::Context<T>& context,
     const MultibodyForces<T>& applied_forces,
-    EigenPtr<VectorX<T>> vdot) const {
-  DRAKE_DEMAND(vdot != nullptr);
+    AccelerationKinematicsCache<T>* ac) const {
+  DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(applied_forces.CheckHasRightSizeForModel(*this));
 
   const auto& mbt_context =
@@ -956,9 +955,6 @@ void MultibodyTree<T>::CalcForwardDynamics(
   ArticulatedBodyAlgorithmCache<T> abac(this->topology_);
   CalcArticulatedBodyAlgorithmCache(context, pc, vc, abic, forces, &abac);
 
-  // Create acceleration kinematics cache to hold results of recursion.
-  AccelerationKinematicsCache<T> ac(this->topology_);
-
   // Perform base-to-tip recursion, skipping the world.
   for (int depth = 1; depth < tree_height(); depth++) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
@@ -968,7 +964,7 @@ void MultibodyTree<T>::CalcForwardDynamics(
       const MatrixUpTo6<T> H_PB_W = node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcForwardDynamics_BaseToTip(
-          mbt_context, pc, abic, abac, H_PB_W, &ac, vdot);
+          mbt_context, pc, abic, abac, H_PB_W, ac);
     }
   }
 }
