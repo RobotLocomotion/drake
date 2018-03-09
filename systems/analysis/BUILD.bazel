@@ -132,6 +132,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "primitive_function",
+    srcs = [
+        "primitive_function.cc",
+    ],
+    hdrs = [
+        "primitive_function.h",
+    ],
+    deps = [
+        ":scalar_initial_value_problem",
+        "//drake/common:essential",
+        "//drake/common:unused",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
@@ -236,6 +251,14 @@ drake_cc_googletest(
     size = "small",
     deps = [
         ":scalar_initial_value_problem",
+    ],
+)
+
+drake_cc_googletest(
+    name = "primitive_function_test",
+    size = "small",
+    deps = [
+        ":primitive_function",
     ],
 )
 
