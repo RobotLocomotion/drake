@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/common/text_logging.h"
@@ -34,20 +35,9 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
 }
 
-void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
-    const systems::Context<double>& context,
-    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-    systems::State<double>* state) const {
-  // Extract Internal state.
-  Isometry3<double>& internal_state =
-      state->get_mutable_abstract_state<Isometry3<double>>(0);
-
-  // Update world state from inputs.
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& pose_message = input->GetValue<optitrack::optitrack_frame_t>();
-
-  internal_state = Isometry3<double>::Identity();
+Isometry3<double> OptitrackPoseExtractor::GetPose(
+    const systems::AbstractValue& message) const {
+  const auto& pose_message = message.GetValue<optitrack::optitrack_frame_t>();
 
   std::vector<optitrack::optitrack_rigid_body_t> rigid_bodies =
       pose_message.rigid_bodies;
@@ -61,7 +51,10 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
       break;
     }
   }
-  DRAKE_THROW_UNLESS(body_exists);
+  if (!body_exists) {
+    throw std::runtime_error(fmt::format(
+        "optitrack: id {} not found", object_id_));
+  }
 
   // The optitrack quaternion ordering is X-Y-Z-W and this needs fitting into
   // Eigen's W-X-Y-Z ordering.
@@ -78,8 +71,21 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
 
   X_OB.makeAffine();
   Isometry3<double> X_WB = X_WO_ * X_OB;
+  return X_WB;
+}
 
-  internal_state = X_WB;
+void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
+    const systems::Context<double>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+    systems::State<double>* state) const {
+  // Extract Internal state.
+  Isometry3<double>& internal_state =
+      state->get_mutable_abstract_state<Isometry3<double>>(0);
+
+  // Update world state from inputs.
+  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  DRAKE_ASSERT(input != nullptr);
+  internal_state = GetPose(*input);
 }
 
 void OptitrackPoseExtractor::OutputMeasuredPose(

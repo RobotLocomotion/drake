@@ -16,6 +16,11 @@ namespace drake {
 namespace manipulation {
 namespace perception {
 
+// @note This tolerance is relatively loose (most likely) because the Optitrack
+// LCM message types use single- rather than double-precision floating point
+// types for quaternions.
+constexpr double kTolerance = 1e-6;
+
 class OptitrackPoseTest : public ::testing::Test {
  public:
   void Initialize(int object_id = 0,
@@ -42,6 +47,11 @@ class OptitrackPoseTest : public ::testing::Test {
     auto output_value = output_->get_data(0);
 
     return output_value->GetValue<Isometry3<double>>();
+  }
+
+  Isometry3<double> GetPose(const optitrack::optitrack_frame_t& input_frame) {
+    auto test_frame_abstract = systems::AbstractValue::Make(input_frame);
+    return dut_->GetPose(*test_frame_abstract);
   }
 
  private:
@@ -114,12 +124,18 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
 
   // Compare translation.
   EXPECT_TRUE(CompareMatrices(extracted_pose.translation(),
-                              test_pose.translation(), 1e-3,
+                              test_pose.translation(), kTolerance,
                               MatrixCompareType::absolute));
 
   // Compare quaternions.
   EXPECT_TRUE(CompareMatrices(extracted_pose.linear(), test_pose.linear(),
-                              1e-3, MatrixCompareType::absolute));
+                              kTolerance, MatrixCompareType::absolute));
+
+  // Compare output from `GetPose`.
+  Isometry3<double> extracted_pose_direct = GetPose(test_frame);
+  EXPECT_TRUE(CompareMatrices(
+      extracted_pose_direct.matrix(), extracted_pose.matrix(),
+      kTolerance, MatrixCompareType::absolute));
 }
 
 TEST_F(OptitrackPoseTest, PoseInReferenceFrameTest) {
@@ -160,12 +176,12 @@ TEST_F(OptitrackPoseTest, PoseInReferenceFrameTest) {
   EXPECT_NO_THROW(extracted_pose = UpdateStateCalcOutput(test_frame));
 
   EXPECT_TRUE(CompareMatrices(extracted_pose.translation(),
-                              transformed_test_pose.translation(), 1e-3,
+                              transformed_test_pose.translation(), kTolerance,
                               MatrixCompareType::absolute));
 
   // Compare quaternions.
   EXPECT_TRUE(CompareMatrices(extracted_pose.linear(),
-                              transformed_test_pose.linear(), 1e-3,
+                              transformed_test_pose.linear(), kTolerance,
                               MatrixCompareType::absolute));
 }
 

@@ -35,6 +35,12 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
     return this->get_output_port(measured_pose_output_port_);
   }
 
+  /**
+   * Gets the pose of the object in the world frame, given an abstract value
+   * containing the LCM message.
+   */
+  Isometry3<double> GetPose(const systems::AbstractValue& message) const;
+
  private:
   void DoCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
