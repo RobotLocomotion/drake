@@ -61,6 +61,102 @@ void ExpectStatsMatch(const DependencyTracker* tracker, const Stats& expected) {
       << tracker->description();
 }
 
+// Test that the built-in trackers exist and are wired up correctly. See
+// framework_common.h for the built-in tracker ticket numbers and make sure
+// they are all tested here. User-friendly access to tickets is provided by
+// SystemBase methods; we have to construct them manually here.
+GTEST_TEST(DependencyTracker, BuiltInTrackers) {
+  MyContextBase context, context2;
+
+  // Make sure each tracker knows its own ticket and looks reasonable. This is
+  // also a unit test for ThrowIfBadDependencyTracker().
+  for (int ticket_int = 0; ticket_int < internal::kNextAvailableTicket;
+       ++ticket_int) {
+    const DependencyTicket ticket(ticket_int);
+    auto& tracker = context.get_tracker(ticket);
+    EXPECT_EQ(tracker.ticket(), ticket);
+    EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
+        &context, &CacheEntryValue::dummy()));
+    EXPECT_THROW(tracker.ThrowIfBadDependencyTracker(&context2),
+                 std::logic_error);
+  }
+
+  // Now check that each built-in tracker has the expected prerequisites and
+  // dependents.
+  using DT = DependencyTicket;  // Reduce clutter.
+  auto& nothing = context.get_tracker(DT(internal::kNothingTicket));
+  auto& time = context.get_tracker(DT(internal::kTimeTicket));
+  auto& accuracy = context.get_tracker(DT(internal::kAccuracyTicket));
+  auto& q = context.get_tracker(DT(internal::kQTicket));
+  auto& v = context.get_tracker(DT(internal::kVTicket));
+  auto& z = context.get_tracker(DT(internal::kZTicket));
+  auto& xc = context.get_tracker(DT(internal::kXcTicket));
+  auto& xd = context.get_tracker(DT(internal::kXdTicket));
+  auto& xa = context.get_tracker(DT(internal::kXaTicket));
+  auto& x = context.get_tracker(DT(internal::kXTicket));
+  auto& p = context.get_tracker(DT(internal::kAllParametersTicket));
+  auto& u = context.get_tracker(DT(internal::kAllInputPortsTicket));
+  auto& all_sources = context.get_tracker(DT(internal::kAllSourcesTicket));
+
+  // "nothing" has no prerequisites or subscribers.
+  EXPECT_EQ(nothing.prerequisites().size(), 0);
+  EXPECT_EQ(nothing.subscribers().size(), 0);
+
+  // time and accuracy are independent but all_sources subscribes.
+  EXPECT_EQ(time.prerequisites().size(), 0);
+  ASSERT_EQ(time.subscribers().size(), 1);
+  EXPECT_EQ(time.subscribers()[0], &all_sources);
+  EXPECT_EQ(accuracy.prerequisites().size(), 0);
+  ASSERT_EQ(accuracy.subscribers().size(), 1);
+  EXPECT_EQ(accuracy.subscribers()[0], &all_sources);
+
+  // q, v, z are independent but continuous variables xc subscribes.
+  EXPECT_EQ(q.prerequisites().size(), 0);
+  ASSERT_EQ(q.subscribers().size(), 1);
+  EXPECT_EQ(q.subscribers()[0], &xc);
+  EXPECT_EQ(v.prerequisites().size(), 0);
+  ASSERT_EQ(v.subscribers().size(), 1);
+  EXPECT_EQ(v.subscribers()[0], &xc);
+  EXPECT_EQ(z.prerequisites().size(), 0);
+  ASSERT_EQ(z.subscribers().size(), 1);
+  EXPECT_EQ(z.subscribers()[0], &xc);
+
+  // xc depends on q, v, and z and x subscribes.
+  ASSERT_EQ(xc.prerequisites().size(), 3);
+  EXPECT_EQ(xc.prerequisites()[0], &q);
+  EXPECT_EQ(xc.prerequisites()[1], &v);
+  EXPECT_EQ(xc.prerequisites()[2], &z);
+  ASSERT_EQ(xc.subscribers().size(), 1);
+  EXPECT_EQ(xc.subscribers()[0], &x);
+
+  // No discrete variables so xd is independent; x subscribes.
+  EXPECT_EQ(xd.prerequisites().size(), 0);
+  ASSERT_EQ(xd.subscribers().size(), 1);
+  EXPECT_EQ(xd.subscribers()[0], &x);
+
+  // No abstract variables so xa is independent; x subscribes.
+  EXPECT_EQ(xa.prerequisites().size(), 0);
+  ASSERT_EQ(xa.subscribers().size(), 1);
+  EXPECT_EQ(xa.subscribers()[0], &x);
+
+  // No parameters or inputs so p,u independent; all_sources subscribes.
+  EXPECT_EQ(p.prerequisites().size(), 0);
+  ASSERT_EQ(p.subscribers().size(), 1);
+  EXPECT_EQ(p.subscribers()[0], &all_sources);
+  EXPECT_EQ(u.prerequisites().size(), 0);
+  ASSERT_EQ(u.subscribers().size(), 1);
+  EXPECT_EQ(u.subscribers()[0], &all_sources);
+
+  // All sources depends on time, accuracy, x, p, u; no subscribers.
+  ASSERT_EQ(all_sources.prerequisites().size(), 5);
+  EXPECT_EQ(all_sources.prerequisites()[0], &time);
+  EXPECT_EQ(all_sources.prerequisites()[1], &accuracy);
+  EXPECT_EQ(all_sources.prerequisites()[2], &x);
+  EXPECT_EQ(all_sources.prerequisites()[3], &p);
+  EXPECT_EQ(all_sources.prerequisites()[4], &u);
+  EXPECT_EQ(all_sources.subscribers().size(), 0);
+}
+
 // Normally the dependency trackers are allocated automatically by the
 // System framework. Here we try to use as little of the framework as possible
 // and cobble together the following dependency graph by hand:

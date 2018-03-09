@@ -377,8 +377,10 @@ TEST_F(CacheTest, Clone) {
     const DependencyTracker& value_tracker = tracker(value.ticket());
     const DependencyTracker& clone_value_tracker =
         tracker(value.ticket(), &clone_context);
-    EXPECT_EQ(value_tracker.cache_entry_value(), &value);
-    EXPECT_EQ(clone_value_tracker.cache_entry_value(), &clone_value);
+    EXPECT_NO_THROW(
+        value_tracker.ThrowIfBadDependencyTracker(&context_, &value));
+    EXPECT_NO_THROW(clone_value_tracker.ThrowIfBadDependencyTracker(
+        &clone_context, &clone_value));
     EXPECT_EQ(value_tracker.ticket(), value.ticket());
     EXPECT_EQ(clone_value_tracker.ticket(), value.ticket());
   }

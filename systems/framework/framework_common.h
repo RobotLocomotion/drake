@@ -112,15 +112,11 @@ enum BuiltInTicketNumbers {
   kXdTicket             =  7,
   kXaTicket             =  8,
   kXTicket              =  9,
-  kConfigurationTicket  = 10,
-  kVelocityTicket       = 11,
-  kKinematicsTicket     = 12,
-  kAllParametersTicket  = 13,
-  kAllInputPortsTicket  = 14,
-  kAllSourcesTicket     = 15,
-  kXcdotTicket          = 16,
-  kXdhatTicket          = 17,
-  kNextAvailableTicket  = kXdhatTicket+1
+  kAllParametersTicket  = 10,
+  kAllInputPortsTicket  = 11,
+  kAllSourcesTicket     = 12,
+  kNextAvailableTicket  = kAllSourcesTicket+1
+  // TODO(sherm1) Add the rest of the built-in tickets here.
 };
 
 }  // namespace internal
