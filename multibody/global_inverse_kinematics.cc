@@ -180,7 +180,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
       // p_WBi is the position of the body frame in the world frame.
       const Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
       const Matrix3d normalized_rotmat =
-          math::RotationMatrix<double>::ProjectToRotationMatrix(R_WC);
+          math::RotationMatrix<double>::ProjectToRotationMatrix(R_WC).matrix();
 
       q.segment<3>(body.get_position_start_index()) = p_WBi;
       if (num_positions == 6) {
