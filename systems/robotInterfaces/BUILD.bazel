@@ -34,7 +34,6 @@ drake_cc_library(
         "//common:essential",
         "//common:unused",
         "//common/trajectories:piecewise_polynomial",
-        "//common/trajectories/qp_spline:spline_generation",
         "//examples/atlas:atlas_util",
         "//lcmtypes:qp_controller_input",
         "//math:autodiff",

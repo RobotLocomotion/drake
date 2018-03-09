@@ -10,24 +10,31 @@ namespace drake {
 namespace trajectories {
 
 /**
- * A Trajectory represents a time-varying matrix of doubles. 
+ * A Trajectory represents a time-varying matrix, indexed by a single
+ * scalar double time.
+ *
+ * @tparam T is a Scalar type for the data that is returned.
  */
+template <typename T>
 class Trajectory {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory)
+
+  Trajectory() {}
   virtual ~Trajectory() {}
 
   /**
    *
    * @return A deep copy of this Trajectory.
    */
-  virtual std::unique_ptr<Trajectory> Clone() const = 0;
+  virtual std::unique_ptr<Trajectory<T>> Clone() const = 0;
 
   /**
    * Evaluates the trajectory at the given time \p t.
    * @param t The time at which to evaluate the trajectory.
    * @return The matrix of evaluated values.
    */
-  virtual drake::MatrixX<double> value(double t) const = 0;
+  virtual MatrixX<T> value(double t) const = 0;
 
   /**
    * Takes the derivative of this Trajectory.
@@ -35,7 +42,7 @@ class Trajectory {
    * returning.
    * @return The nth derivative of this object.
    */
-  virtual std::unique_ptr<Trajectory> derivative(
+  virtual std::unique_ptr<Trajectory<T>> MakeDerivative(
       int derivative_order = 1) const = 0;
 
   /**
@@ -48,9 +55,9 @@ class Trajectory {
    */
   virtual Eigen::Index cols() const = 0;
 
-  virtual double get_start_time() const = 0;
+  virtual double start_time() const = 0;
 
-  virtual double get_end_time() const = 0;
+  virtual double end_time() const = 0;
 };
 
 }  // namespace trajectories

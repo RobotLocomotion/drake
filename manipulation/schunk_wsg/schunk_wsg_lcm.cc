@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
@@ -168,7 +168,7 @@ void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
     knots.push_back(Eigen::Vector2d(target_position, 0));
     times.push_back(kTimeToMaxVelocity + time_at_max + kTimeToMaxVelocity);
   }
-  trajectory_.reset(new trajectories::PiecewisePolynomialTrajectory(
+  trajectory_.reset(new trajectories::PiecewisePolynomial<double>(
       trajectories::PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
 }
 

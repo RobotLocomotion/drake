@@ -208,7 +208,7 @@ class ZMPPlanner {
 
   Eigen::Vector2d get_final_desired_zmp() const {
     DRAKE_DEMAND(planned_);
-    return zmp_d_.value(zmp_d_.getEndTime());
+    return zmp_d_.value(zmp_d_.end_time());
   }
 
   /**

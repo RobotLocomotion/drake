@@ -20,7 +20,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -47,7 +46,6 @@ const char* const kLcmStopChannel = "STOP";
 const int kNumJoints = 7;
 
 using trajectories::PiecewisePolynomial;
-using trajectories::PiecewisePolynomialTrajectory;
 typedef PiecewisePolynomial<double> PPType;
 typedef PPType::PolynomialType PPPoly;
 typedef PPType::PolynomialMatrix PPMatrix;
@@ -161,7 +159,7 @@ class RobotPlanRunner {
       input_time.push_back(plan->plan[k].utime / 1e6);
     }
     const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumJoints, 1);
-    plan_.reset(new PiecewisePolynomialTrajectory(
+    plan_.reset(new PiecewisePolynomial<double>(
         PiecewisePolynomial<double>::Cubic(input_time, knots,
                                            knot_dot, knot_dot)));
     ++plan_number_;
@@ -176,7 +174,7 @@ class RobotPlanRunner {
   lcm::LCM lcm_;
   const RigidBodyTree<double>& tree_;
   int plan_number_{};
-  std::unique_ptr<PiecewisePolynomialTrajectory> plan_;
+  std::unique_ptr<PiecewisePolynomial<double>> plan_;
   lcmt_iiwa_status iiwa_status_;
 };
 

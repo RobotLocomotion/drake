@@ -48,7 +48,7 @@ class PiecewiseCubicTrajectory {
    */
   MatrixX<T> get_velocity(double time) const {
     MatrixX<T> ret = qd_.value(time);
-    if (!q_.isTimeInRange(time)) ret.setZero();
+    if (!q_.is_time_in_range(time)) ret.setZero();
     return ret;
   }
 
@@ -58,19 +58,19 @@ class PiecewiseCubicTrajectory {
    */
   MatrixX<T> get_acceleration(double time) const {
     MatrixX<T> ret = qdd_.value(time);
-    if (!q_.isTimeInRange(time)) ret.setZero();
+    if (!q_.is_time_in_range(time)) ret.setZero();
     return ret;
   }
 
   /**
    * Returns the start time of this trajectory.
    */
-  double get_start_time() const { return q_.getStartTime(); }
+  double get_start_time() const { return q_.start_time(); }
 
   /**
    * Returns the end time of this trajectory.
    */
-  double get_end_time() const { return q_.getEndTime(); }
+  double get_end_time() const { return q_.end_time(); }
 
   /**
    * Returns true if the position trajectory and its first and second
@@ -192,7 +192,7 @@ class PiecewiseCartesianTrajectory {
    */
   Vector6<T> get_velocity(double time) const {
     Vector6<T> velocity;
-    if (orientation_.isTimeInRange(time)) {
+    if (orientation_.is_time_in_range(time)) {
       velocity.template head<3>() = orientation_.angular_velocity(time);
     } else {
       velocity.template head<3>().setZero();
@@ -207,7 +207,7 @@ class PiecewiseCartesianTrajectory {
    */
   Vector6<T> get_acceleration(double time) const {
     Vector6<T> acceleration;
-    if (orientation_.isTimeInRange(time)) {
+    if (orientation_.is_time_in_range(time)) {
       acceleration.template head<3>() = orientation_.angular_acceleration(time);
     } else {
       acceleration.template head<3>().setZero();

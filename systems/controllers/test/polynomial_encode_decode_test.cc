@@ -12,7 +12,7 @@ using Eigen::VectorXd;
 namespace drake {
 
 using trajectories::test::MakeRandomPiecewisePolynomial;
-using drake::trajectories::PiecewiseFunction;
+using drake::trajectories::PiecewiseTrajectory;
 using drake::trajectories::PiecewisePolynomial;
 
 namespace {
@@ -56,7 +56,7 @@ GTEST_TEST(TestLcmUtil, testPiecewisePolynomial) {
   int cols = 7;
   int num_coefficients = 3;
   std::vector<double> segment_times =
-      PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+      PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
   PiecewisePolynomial<double> piecewise_polynomial =
       MakeRandomPiecewisePolynomial<double>(
           rows, cols, num_coefficients, segment_times);

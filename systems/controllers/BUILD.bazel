@@ -60,7 +60,7 @@ drake_cc_library(
     srcs = ["linear_model_predictive_controller.cc"],
     hdrs = ["linear_model_predictive_controller.h"],
     deps = [
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
         "//systems/primitives:linear_system",
         "//systems/trajectory_optimization:direct_transcription",
     ],

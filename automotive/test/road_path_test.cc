@@ -104,7 +104,7 @@ GTEST_TEST(IdmControllerTest, ConstructOpposingSegments) {
                        kStepSize,        /* step_size */
                        100);             /* num_breaks */
   ASSERT_LE(kTotalRoadLength,
-            path.get_path().getEndTime() - path.get_path().getStartTime());
+            path.get_path().end_time() - path.get_path().start_time());
 
   // Expect the lane boundary values to match.
   Vector3<double> expected_value{};
@@ -117,12 +117,12 @@ GTEST_TEST(IdmControllerTest, ConstructOpposingSegments) {
   // Derive s-position of the straight road segment from the number of break
   // point steps taken to reach  kStraightRoadLength from the end of the road.
   const double straight_length{
-      path.get_path().getStartTime(std::ceil(kStraightRoadLength / kStepSize))};
+      path.get_path().start_time(std::ceil(kStraightRoadLength / kStepSize))};
   expected_value << 10., 0., 0.;
   actual_value = path.get_path().value(straight_length);
   EXPECT_TRUE(CompareMatrices(expected_value, actual_value, 1e-3));
 
-  const double total_length{path.get_path().getEndTime()};
+  const double total_length{path.get_path().end_time()};
   expected_value << 20., 10., 0.;
   actual_value = path.get_path().value(total_length);
   EXPECT_TRUE(CompareMatrices(expected_value, actual_value, 1e-3));
@@ -140,7 +140,7 @@ GTEST_TEST(IdmControllerTest, ConstructOpposingSegments) {
 
   // Check that the number of segments created is well below the max
   // number specified.
-  EXPECT_GT(1000, path.get_path().getNumberOfSegments());
+  EXPECT_GT(1000, path.get_path().get_number_of_segments());
 }
 
 GTEST_TEST(IdmControllerTest, ConstructConfluentSegments) {
@@ -158,7 +158,7 @@ GTEST_TEST(IdmControllerTest, ConstructConfluentSegments) {
                        kStepSize,        /* step_size */
                        100);             /* num_breaks */
   ASSERT_LE(kTotalRoadLength,
-            path.get_path().getEndTime() - path.get_path().getStartTime());
+            path.get_path().end_time() - path.get_path().start_time());
 
   // Expect the lane boundary values to match.
   Vector3<double> expected_value{};
@@ -167,11 +167,11 @@ GTEST_TEST(IdmControllerTest, ConstructConfluentSegments) {
   actual_value = path.get_path().value(0.);
   EXPECT_TRUE(CompareMatrices(expected_value, actual_value, 1e-3));
 
-  double total_length{path.get_path().getEndTime()};
+  double total_length{path.get_path().end_time()};
   // Derive s-position of the straight road segment from the number of break
   // point steps taken to reach kStraightRoadLength from the start of the road.
   double straight_length{
-      path.get_path().getEndTime(std::ceil(kStraightRoadLength / kStepSize))};
+      path.get_path().end_time(std::ceil(kStraightRoadLength / kStepSize))};
   double curved_length{total_length - straight_length};
   expected_value << 10., 0., 0.;
   actual_value = path.get_path().value(curved_length);
