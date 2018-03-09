@@ -32,6 +32,20 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "multibody_tree_py",
+    cc_deps = [
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
+    cc_so_name = "multibody_tree",
+    cc_srcs = ["multibody_tree_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
     name = "parsers_py",
     cc_so_name = "parsers",
     cc_srcs = ["parsers_py.cc"],
@@ -81,11 +95,11 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":multibody_tree_py",
     ":parsers_py",
     ":rigid_body_plant_py",
     ":rigid_body_tree_py",
     ":shapes_py",
-    "//bindings/pydrake/multibody/multibody_tree",
 ]
 
 PY_LIBRARIES = [
@@ -151,6 +165,14 @@ drake_py_unittest(
     deps = [
         ":parsers_py",
         ":rigid_body_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "multibody_tree_test",
+    size = "small",
+    deps = [
+        ":multibody_tree_py",
     ],
 )
 

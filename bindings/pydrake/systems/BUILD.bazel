@@ -288,7 +288,7 @@ drake_py_unittest(
     size = "small",
     deps = [
         ":rendering_py",
-        "//bindings/pydrake/multibody/multibody_tree:math_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
 )
 
