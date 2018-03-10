@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
@@ -17,7 +18,7 @@ namespace trajectories {
  */
 
 template <typename T>
-class ExponentialPlusPiecewisePolynomial
+class ExponentialPlusPiecewisePolynomial final
     : public PiecewiseTrajectory<T> {
  public:
   typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>
@@ -30,6 +31,9 @@ class ExponentialPlusPiecewisePolynomial
   PiecewisePolynomial<T> piecewise_polynomial_part_;
 
  public:
+  // We are final, so this is okay.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExponentialPlusPiecewisePolynomial)
+
   ExponentialPlusPiecewisePolynomial();
 
   template <typename DerivedK, typename DerivedA, typename DerivedAlpha>
@@ -57,7 +61,7 @@ class ExponentialPlusPiecewisePolynomial
   ExponentialPlusPiecewisePolynomial(
       const PiecewisePolynomial<T>& piecewise_polynomial_part);
 
-  virtual ~ExponentialPlusPiecewisePolynomial() {}
+  ~ExponentialPlusPiecewisePolynomial() override = default;
 
   std::unique_ptr<Trajectory<T>> Clone() const override;
 

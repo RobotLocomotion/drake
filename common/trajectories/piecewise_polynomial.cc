@@ -50,7 +50,7 @@ PiecewisePolynomial<T>::PiecewisePolynomial() : PiecewiseTrajectory<T>() {
 
 template <typename T>
 std::unique_ptr<Trajectory<T>> PiecewisePolynomial<T>::Clone() const {
-  return std::make_unique<PiecewisePolynomial<T>>(polynomials_, this->breaks());
+  return std::make_unique<PiecewisePolynomial<T>>(*this);
 }
 
 template <typename T>

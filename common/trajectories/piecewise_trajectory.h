@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <random>
 #include <vector>
 
@@ -19,15 +20,15 @@ namespace trajectories {
 template <typename T>
 class PiecewiseTrajectory : public Trajectory<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseTrajectory)
-
   /// Minimum delta quantity used for comparing time.
   static constexpr double kEpsilonTime = 1e-10;
 
   /// @p breaks increments must be greater or equal to kEpsilonTime.
   explicit PiecewiseTrajectory(std::vector<double> const& breaks);
 
-  virtual ~PiecewiseTrajectory();
+  ~PiecewiseTrajectory() override;
+
+  // N.B. No Clone() override here because we are an abstract class.
 
   int get_number_of_segments() const;
 
@@ -57,6 +58,9 @@ class PiecewiseTrajectory : public Trajectory<T> {
       int num_segments, std::default_random_engine &generator);
 
  protected:
+  // Final subclasses are allowed to make copy/move/assign public.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseTrajectory)
+
   bool SegmentTimesEqual(const PiecewiseTrajectory &b,
                          double tol = kEpsilonTime) const;
 
