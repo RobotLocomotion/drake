@@ -16,7 +16,7 @@ std::string CacheEntryValue::GetPathDescription() const {
 void CacheEntryValue::ThrowIfBadCacheEntryValue(
     const internal::SystemPathnameInterface* owning_subcontext) const {
   if (owning_subcontext_ == nullptr) {
-    // Can't use fancy formatting because that depends on us having an owning
+    // Can't use FormatName() here because that depends on us having an owning
     // context to talk to.
     throw std::logic_error("CacheEntryValue(" + description() + ")::" +
                            __func__ + "(): entry has no owning subcontext.");
@@ -100,14 +100,15 @@ CacheEntryValue& Cache::CreateNewCacheEntryValue(
   return value;
 }
 
-void Cache::SetIsCacheDisabled(bool disabled) {
-  if (disabled) {
-    for (auto& entry : store_)
-      if (entry) entry->disable_caching();
-  } else {
-    for (auto& entry : store_)
-      if (entry) entry->enable_caching();
-  }
+void Cache::DisableCaching() {
+  for (auto& entry : store_)
+    if (entry) entry->disable_caching();
+}
+
+
+void Cache::EnableCaching() {
+  for (auto& entry : store_)
+    if (entry) entry->enable_caching();
 }
 
 void Cache::SetAllEntriesOutOfDate() {

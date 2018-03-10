@@ -211,9 +211,9 @@ TEST_F(CacheTest, InvalidateAllWorks) {
   EXPECT_TRUE(cache_value(vector_index_).is_out_of_date());
 }
 
-// Make sure the debugging routine to disable the cache works, and is
-// independent of the up-to-date flags.
-TEST_F(CacheTest, DisableCacheWorks) {
+// Make sure the debugging routines to disable and re-enable caching work, and
+// are independent of the out of date flags.
+TEST_F(CacheTest, DisableCachingWorks) {
   CacheEntryValue& int_val = cache_value(index1_);
   CacheEntryValue& str_val = cache_value(string_index_);
   CacheEntryValue& vec_val = cache_value(vector_index_);
@@ -227,8 +227,10 @@ TEST_F(CacheTest, DisableCacheWorks) {
   EXPECT_FALSE(str_val.needs_recomputation());
   EXPECT_FALSE(vec_val.needs_recomputation());
 
-  context_.SetIsCacheDisabled(true);
-  // Up-to-date shouldn't be affected, but now we need recomputation.
+  context_.DisableCaching();
+  EXPECT_TRUE(int_val.is_cache_entry_disabled());  // Just check one.
+
+  // The out_of_date flag shouldn't be affected, but now we need recomputation.
   EXPECT_FALSE(int_val.is_out_of_date());
   EXPECT_FALSE(str_val.is_out_of_date());
   EXPECT_FALSE(vec_val.is_out_of_date());
@@ -243,30 +245,62 @@ TEST_F(CacheTest, DisableCacheWorks) {
   str_val.mark_out_of_date();
   vec_val.mark_out_of_date();
 
-  // Eval() should recalculate and set up-to-date flags.
-  cache_value(index1_).set_value(101);
-  cache_value(string_index_).set_value(string("hello there"));
+  // Eval() should recalculate and mark entries up to date..
+  int_val.set_value(101);
+  str_val.set_value(string("hello there"));
   cache_value(vector_index_).set_value(MyVector3d(Vector3d(4., 5., 6.)));
 
   EXPECT_FALSE(int_val.is_out_of_date());
   EXPECT_FALSE(str_val.is_out_of_date());
   EXPECT_FALSE(vec_val.is_out_of_date());
 
-  EXPECT_EQ(int_val.serial_number(), ser_int + 1);
-  EXPECT_EQ(str_val.serial_number(), ser_str + 1);
-  EXPECT_EQ(vec_val.serial_number(), ser_vec + 1);
+  ++ser_int; ++ser_str; ++ser_vec;
+  EXPECT_EQ(int_val.serial_number(), ser_int);
+  EXPECT_EQ(str_val.serial_number(), ser_str);
+  EXPECT_EQ(vec_val.serial_number(), ser_vec);
 
-  EXPECT_EQ(cache_value(index1_).get_value<int>(), 101);
-  EXPECT_EQ(cache_value(string_index_).get_value<string>(), "hello there");
-  EXPECT_EQ(cache_value(vector_index_).get_value<MyVector3d>().get_value(),
+  EXPECT_EQ(int_val.get_value<int>(), 101);
+  EXPECT_EQ(str_val.get_value<string>(), "hello there");
+  EXPECT_EQ(vec_val.get_value<MyVector3d>().get_value(),
             Vector3d(4., 5., 6.));
+
+  // Should still need recomputation even though we just did it.
+  EXPECT_TRUE(int_val.needs_recomputation());
+  EXPECT_TRUE(str_val.needs_recomputation());
+  EXPECT_TRUE(vec_val.needs_recomputation());
+
+  // Now re-enable caching and verify that it works.
+  context_.EnableCaching();
+  EXPECT_FALSE(int_val.is_cache_entry_disabled());  // Just check one.
+
+  // Since the out_of_date flag was still functioning with caching disabled,
+  // we don't need to recompute now.
+  EXPECT_FALSE(int_val.needs_recomputation());
+  EXPECT_FALSE(str_val.needs_recomputation());
+  EXPECT_FALSE(vec_val.needs_recomputation());
+
+  // And we can still grab the previously-computed values.
+  EXPECT_EQ(int_val.get_value<int>(), 101);
+  EXPECT_EQ(str_val.get_value<string>(), "hello there");
+  EXPECT_EQ(vec_val.get_value<MyVector3d>().get_value(),
+            Vector3d(4., 5., 6.));
+
+  // Blanket forced recomputation should work though.
+  context_.SetAllCacheEntriesOutOfDate();
+  EXPECT_TRUE(int_val.needs_recomputation());
+  EXPECT_TRUE(str_val.needs_recomputation());
+  EXPECT_TRUE(vec_val.needs_recomputation());
+  EXPECT_TRUE(int_val.is_out_of_date());
+  EXPECT_TRUE(str_val.is_out_of_date());
+  EXPECT_TRUE(vec_val.is_out_of_date());
 }
 
 // Test that the vector-valued cache entry works and preserved the underlying
 // concrete type.
 TEST_F(CacheTest, VectorCacheEntryWorks) {
   CacheEntryValue& entry_value = cache_value(vector_index_);
-  EXPECT_FALSE(entry_value.is_out_of_date());  // We set it during construction.
+  // Entry was marked up to date during construction.
+  EXPECT_FALSE(entry_value.is_out_of_date());
   const MyVector3d& contents = entry_value.get_value<MyVector3d>();
   Vector3d eigen_contents = contents.get_value();
   EXPECT_EQ(eigen_contents, Vector3d(99., 98., 97.));

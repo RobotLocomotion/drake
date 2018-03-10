@@ -26,9 +26,14 @@ std::unique_ptr<ContextBase> ContextBase::Clone() const {
 
 ContextBase::~ContextBase() {}
 
-void ContextBase::SetIsCacheDisabled(bool is_disabled) const {
-  cache_.SetIsCacheDisabled(is_disabled);
-  // TODO(sherm1) Recursive update of descendents goes here.
+void ContextBase::DisableCaching() const {
+  cache_.DisableCaching();
+  // TODO(sherm1) Recursive disabling of descendents goes here.
+}
+
+void ContextBase::EnableCaching() const {
+  cache_.EnableCaching();
+  // TODO(sherm1) Recursive enabling of descendents goes here.
 }
 
 void ContextBase::SetAllCacheEntriesOutOfDate() const {

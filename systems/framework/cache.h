@@ -47,7 +47,7 @@ an `out_of_date` flag, and a DependencyTracker ticket. Details:
   all upstream prerequisites and downstream dependents of the value stored here,
   and also has a pointer to this %CacheEntryValue that it uses for invalidation.
   Upstream modifications cause the tracker to set the `out_of_date` flag here,
-  and mark all downstream dependents out of date also. The tracker is always in
+  and mark all downstream dependents out of date also. The tracker lives in
   the same subcontext that owns the Cache that owns this %CacheEntryValue.
 
 We sometimes use the terms "invalid" and "invalidate" as synonyms for "out of
@@ -58,7 +58,7 @@ particular cache entry values. This is independent of the `out_of_date` flag
 described above, which is still expected to be operational when caching is
 disabled. However, when caching is disabled the Eval() methods will recompute
 the contained value even if it is not marked out of date. That should have no
-effect other than to slow down computation; if it does, something is wrong.
+effect other than to slow computation; if results change, something is wrong.
 There could be a problem with the specification of dependencies, a bug in user
 code such as improper retention of a stale reference, or a bug in the caching
 system. */
@@ -88,7 +88,7 @@ class CacheEntryValue {
     if (init_value == nullptr)
       throw std::logic_error(FormatName(__func__) +
                              "initial value may not be null.");
-    ThrowIfHasValue(__func__);
+    ThrowIfValuePresent(__func__);
     value_ = std::move(init_value);
     serial_number_ = 1;
     mark_out_of_date();
@@ -99,11 +99,12 @@ class CacheEntryValue {
   These are the recommended methods for accessing and modifying the cache entry
   value. They unconditionally check all the relevant preconditions to catch
   usage errors. In particular, access is prevented when the value is out of
-  date, and modification is permitted only when the value is _already_ out of
-  date. For performance-sensitive code, you may need to use the parallel set
-  of methods below that check preconditions only in Debug builds, but be sure
-  you are gaining significant performance before giving up on Release-build
-  validation. */
+  date, and modification is permitted only when (a) the value is _already_ out
+  of date (typically because a prerequisite changed), or (b) caching is
+  disabled for this entry. For performance-sensitive code, you may need to use
+  the parallel set of methods below that check preconditions only in Debug
+  builds, but be sure you are gaining significant performance before giving up
+  on Release-build validation. */
   //@{
 
   /** Returns a const reference to the contained abstract value, which must
@@ -153,17 +154,18 @@ class CacheEntryValue {
     mark_up_to_date();
   }
 
-  /** (Advanced) Returns a mutable reference to the contained value, for the
-  purpose of performing an update or extended computation in place. (Prefer
-  SetValueOrThrow() if you can use it.) Mutable access is only
-  permitted if the value is already marked out of date (meaning that all
-  downstream dependents have already been notified). It is an error to call
-  this if there is no stored value, or it is already up to date. Since this is
-  intended for relatively expensive computations, these preconditions are
+  /** (Advanced) Returns a mutable reference to the contained value after
+  incrementing the serial number. This is for the purpose of performing an
+  update or extended computation in place. If possible, use the safer and more
+  straightforward method SetValueOrThrow() rather than this method. Mutable
+  access is only permitted if the value is already marked out of date (meaning
+  that all downstream dependents have already been notified). It is an error to
+  call this if there is no stored value, or it is already up to date. Since this
+  is intended for relatively expensive computations, these preconditions are
   checked even in Release builds. If you have a small, fast computation to
   perform, use set_value() instead. If your computation completes successfully,
-  you must mark the entry up to date yourself use mark_up_to_date() if you want
-  anyone to be able to use the new value. The serial number is incremented.
+  you must mark the entry up to date yourself using mark_up_to_date() if you
+  want anyone to be able to use the new value.
   @throws std::logic_error if there is no value, or if the value is already
                            up to date.
   @see SetValueOrThrow(), set_value(), mark_up_to_date() */
@@ -192,7 +194,7 @@ class CacheEntryValue {
   know what you're doing.
   @throws std::logic_error if there is no contained value. */
   const AbstractValue& PeekAbstractValueOrThrow() const {
-    ThrowIfNoValue(__func__);
+    ThrowIfNoValuePresent(__func__);
     return *value_;
   }
 
@@ -205,13 +207,13 @@ class CacheEntryValue {
   @tparam V The known actual value type. */
   template <typename V>
   const V& PeekValueOrThrow() const {
-    ThrowIfNoValue(__func__);
+    ThrowIfNoValuePresent(__func__);
     return value_->GetMutableValueOrThrow<V>();
   }
   //@}
 
   /** @name    Fast-but-dangerous methods for highest performance
-  These methods check for errors only in Debug builds, and instead plunge
+  These methods check for errors only in Debug builds, but plunge
   blindly onward in Release builds so that they will execute as fast as
   possible. You should use them only in places where performance requirements
   preclude Release-build checks. The best way to determine that is to time the
@@ -278,7 +280,7 @@ class CacheEntryValue {
   large objects. Both values must be non-null and of the same concrete type but
   we won't check for errors except in Debug builds. */
   void swap_value(std::unique_ptr<AbstractValue>* other_value) {
-    DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
+    DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
     DRAKE_ASSERT_VOID(ThrowIfBadOtherValue(__func__, other_value));
     value_.swap(*other_value);
     ++serial_number_;
@@ -297,7 +299,7 @@ class CacheEntryValue {
   there is no value here; use has_value() if you aren't sure.
   @see needs_recomputation() */
   bool is_out_of_date() const {
-    DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
+    DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
     return (flags_ & kValueIsOutOfDate) != 0;
   }
 
@@ -307,8 +309,8 @@ class CacheEntryValue {
   equivalent to `is_out_of_date() || is_entry_disabled()` but faster.  Don't
   call this if there is no value here; use has_value() if you aren't sure.*/
   bool needs_recomputation() const {
-    DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
-    return flags_ != 0;
+    DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
+    return flags_ != kReadyToUse;
   }
 
   /** (Advanced) Marks the cache entry value as up to date with respect to
@@ -322,7 +324,7 @@ class CacheEntryValue {
   value object; use has_value() if you aren't sure. This is intended
   to be very fast so doesn't check for a value object except in Debug builds. */
   void mark_up_to_date() {
-    DRAKE_ASSERT_VOID(ThrowIfNoValue(__func__));
+    DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
     flags_ &= ~kValueIsOutOfDate;
   }
 
@@ -404,7 +406,7 @@ class CacheEntryValue {
 
   /** (Advanced) Returns `true` if caching is disabled for this cache entry.
   This is independent of the `out_of_date` flag. */
-  bool is_entry_disabled() const {
+  bool is_cache_entry_disabled() const {
     return (flags_ & kCacheEntryIsDisabled) != 0;
   }
   //@}
@@ -475,7 +477,7 @@ class CacheEntryValue {
 
   // Fully-checked method with API name to use in error messages.
   const AbstractValue& GetAbstractValueOrThrowHelper(const char* api) const {
-    ThrowIfNoValue(api);
+    ThrowIfNoValuePresent(api);
     ThrowIfOutOfDate(api);  // Must *not* be out of date!
     return *value_;
   }
@@ -483,7 +485,7 @@ class CacheEntryValue {
   // Note that serial number is incremented here since caller will be stomping
   // on this value.
   AbstractValue& GetMutableAbstractValueOrThrowHelper(const char* api) {
-    ThrowIfNoValue(api);
+    ThrowIfNoValuePresent(api);
     ThrowIfAlreadyComputed(api);  // *Must* be out of date!
     ++serial_number_;
     return *value_;
@@ -498,17 +500,17 @@ class CacheEntryValue {
   // Fully-checked method with API name to use in error messages.
   template <typename T>
   void SetValueOrThrowHelper(const char* api, const T& new_value) const {
-    ThrowIfNoValue(api);
+    ThrowIfNoValuePresent(api);
     ThrowIfAlreadyComputed(api);
     return value_->SetValueOrThrow<T>(new_value);
   }
 
-  void ThrowIfNoValue(const char* api) const {
+  void ThrowIfNoValuePresent(const char* api) const {
     if (!has_value())
       throw std::logic_error(FormatName(api) + "no value is present.");
   }
 
-  void ThrowIfHasValue(const char* api) const {
+  void ThrowIfValuePresent(const char* api) const {
     if (has_value()) {
       throw std::logic_error(FormatName(api) +
           "there is already a value object in this CacheEntryValue.");
@@ -544,10 +546,11 @@ class CacheEntryValue {
     return "CacheEntryValue(" + GetPathDescription() + ")::" + api + "(): ";
   }
 
-  // The sense of these flag bits is chosen so that Eval() can check
-  // in a single instruction whether it must recalculate. Only if flags==0 can
+  // The sense of these flag bits is chosen so that Eval() can check in a single
+  // instruction whether it must recalculate. Only if flags==0 (kReadyToUse) can
   // we reuse the existing value. See needs_recomputation() above.
   enum Flags : int {
+    kReadyToUse           = 0b00,
     kValueIsOutOfDate     = 0b01,
     kCacheEntryIsDisabled = 0b10
   };
@@ -568,7 +571,9 @@ class CacheEntryValue {
   reset_on_copy<const internal::SystemPathnameInterface*>
       owning_subcontext_;
 
-  // The value, its serial number, and its validity.
+  // The value, its serial number, and its validity. The value is copyable so
+  // that we can use a default copy constructor. The serial number is
+  // 0 on construction but is always >= 1 once we get an initial value.
   copyable_unique_ptr<AbstractValue> value_;
   int64_t serial_number_{0};
   int flags_{kValueIsOutOfDate};
@@ -649,11 +654,19 @@ class Cache {
     return const_cast<CacheEntryValue&>(get_cache_entry_value(index));
   }
 
-  /** (Advanced) Enables or disables caching for all the entries in this %Cache.
-  Note that this is done by setting or clearing individual `is_disabled` flags
-  in the entries, so it can be changed on a per-entry basis later. This has no
-  effect on the `out_of_date` flags. */
-  void SetIsCacheDisabled(bool disabled);
+  /** (Advanced) Disables caching for all the entries in this %Cache. Note that
+  this is done by setting individual `is_disabled` flags in the entries, so it
+  can be changed on a per-entry basis later. This has no effect on the
+  `out_of_date` flags. */
+  void DisableCaching();
+
+  /** (Advanced) Re-enables caching for all entries in this %Cache if any were
+  previously disabled. Note that this is done by clearing individual
+  `is_disabled` flags in the entries, so it overrides any disabling that may
+  have been done to individual entries. This has no effect on the `out_of_date`
+  flags so subsequent Eval() calls might not initiate recomputation. Use
+  SetAllEntriesOutOfDate() if you want to force recomputation. */
+  void EnableCaching();
 
   /** (Advanced) Mark every entry in this cache as "out of date". This forces
   the next Eval() request for an entry to perform a recalculation. After that

@@ -175,7 +175,7 @@ void DependencyTracker::ThrowIfBadDependencyTracker(
     const internal::SystemPathnameInterface* owning_subcontext,
     const CacheEntryValue* cache_value) const {
   if (owning_subcontext_ == nullptr) {
-    // Can't use fancy formatting because that depends on us having an owning
+    // Can't use FormatName() here because that depends on us having an owning
     // context to talk to.
     throw std::logic_error("DependencyTracker(" + description() + ")::" +
         __func__ +

@@ -40,21 +40,27 @@ class ContextBase : public internal::SystemPathnameInterface {
 
   virtual ~ContextBase();
 
-  /** (Debugging) Disables or re-enables caching, recursively for this context
+  /** (Debugging) Disables caching recursively for this context
   and all its subcontexts. Disabling forces every `Eval()` method to perform a
   full calculation rather than returning the cached one. Results should be
   identical with or without caching, except for performance. If they are not,
   there is likely a problem with (a) the specified dependencies for some
   calculation, or (b) a misuse of references into cached values that hides
   modifications from the caching system, or (c) a bug in the caching system. The
-  `is_disabled` flag is independent of the `out_of_date` flag, which continues
-  to be maintained even when caching is disabled (though it is ignored). Hence
-  re-enabling the cache with this method may result in some entries already
-  considered up to date. See SetAllCacheEntriesOutOfDate() if you want to ensure
-  that caching starts with everything out of date. You might want to do that,
-  for example, for repeatability or because you modified something in the
-  debugger and want to make sure it gets used. */
-  void SetIsCacheDisabled(bool is_disabled) const;
+  `is_disabled` flags are independent of the `out_of_date` flags, which continue
+  to be maintained even when caching is disabled (though they are ignored). */
+  void DisableCaching() const;
+
+  /** (Debugging) Re-enables caching recursively for this context and all its
+  subcontexts. The `is_disabled` flags are independent of the `out_of_date`
+  flags, which continue to be maintained even when caching is disabled (though
+  they are ignored). Hence re-enabling the cache with this method may result in
+  some entries being already considered up to date. See
+  SetAllCacheEntriesOutOfDate() if you want to ensure that caching restarts with
+  everything out of date. You might want to do that, for example, for
+  repeatability or because you modified something in the debugger and want to
+  make sure it gets used. */
+  void EnableCaching() const;
 
   /** (Debugging) Marks all cache entries out of date, recursively for this
   context and all its subcontexts. This forces the next `Eval()` request for
