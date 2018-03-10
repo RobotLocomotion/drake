@@ -14,7 +14,23 @@ PYBIND11_MODULE(trajectories, m) {
 
   using T = double;
 
-  py::class_<PiecewisePolynomial<T>>(m, "PiecewisePolynomial")
+  py::class_<PiecewiseTrajectory<T>>(m, "PiecewiseTrajectory")
+      .def("get_number_of_segments",
+           &PiecewiseTrajectory<T>::get_number_of_segments)
+      .def("start_time", overload_cast_explicit<double, int>(
+                             &PiecewiseTrajectory<T>::start_time))
+      .def("end_time", overload_cast_explicit<double, int>(
+                           &PiecewiseTrajectory<T>::end_time))
+      .def("duration", &PiecewiseTrajectory<T>::duration)
+      .def("start_time",
+           overload_cast_explicit<double>(&PiecewiseTrajectory<T>::start_time))
+      .def("end_time",
+           overload_cast_explicit<double>(&PiecewiseTrajectory<T>::end_time))
+      .def("get_segment_index", &PiecewiseTrajectory<T>::get_segment_index)
+      .def("get_segment_times", &PiecewiseTrajectory<T>::get_segment_times);
+
+  py::class_<PiecewisePolynomial<T>, PiecewiseTrajectory<T>>(
+      m, "PiecewisePolynomial")
       .def(py::init<>())
       .def(py::init<const Eigen::Ref<const MatrixX<T>>&>())
       .def_static("ZeroOrderHold", &PiecewisePolynomial<T>::ZeroOrderHold)
