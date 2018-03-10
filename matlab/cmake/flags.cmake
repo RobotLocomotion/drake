@@ -30,6 +30,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     -Werror=old-style-cast
     -Werror=overloaded-virtual
     -Werror=return-local-addr
+    -Werror=shadow
     -Werror=unused-but-set-parameter
   )
 endif()
