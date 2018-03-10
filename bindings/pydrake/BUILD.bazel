@@ -121,12 +121,23 @@ drake_pybind_library(
     py_srcs = ["symbolic.py"],
 )
 
+drake_pybind_library(
+    name = "trajectories_py",
+    cc_so_name = "trajectories",
+    cc_srcs = ["trajectories_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":common_py",
     ":lcm_py",
     ":math_py",
     ":symbolic_py",
+    ":trajectories_py",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/maliput",
     "//bindings/pydrake/multibody",
@@ -227,6 +238,12 @@ drake_py_unittest(
     name = "symbolic_test",
     size = "small",
     deps = [":symbolic_py"],
+)
+
+drake_py_unittest(
+    name = "trajectories_test",
+    size = "small",
+    deps = [":trajectories_py"],
 )
 
 drake_py_unittest(
