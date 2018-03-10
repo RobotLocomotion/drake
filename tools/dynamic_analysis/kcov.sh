@@ -10,7 +10,15 @@ if [ ! -f "${WORKSPACE}/WORKSPACE" ]; then
   exit 1
 fi
 
-kcov \
+# There must be kcov (it is declared as a "data = []" dependency for ":kcov"
+# in our BUILD file).
+KCOV="${PWD}/external/kcov/kcov"
+if [ ! -x "${KCOV}" ]; then
+  echo "Kcov binary not found at ${kcov}"
+  exit 1
+fi
+
+"$KCOV" \
     --include-path=$WORKSPACE \
     --exclude-pattern=third_party \
     $WORKSPACE/bazel-kcov \
