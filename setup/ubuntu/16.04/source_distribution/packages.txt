@@ -53,5 +53,6 @@ python-pygame
 python-sphinx
 python-tk
 valgrind
+wget
 zip
 zlib1g-dev
