@@ -54,7 +54,12 @@ namespace math {
    at x.
  */
 template <int MaxChunkSize = 10, class F, class Arg>
-decltype(auto) jacobian(F &&f, Arg &&x) {
+#ifdef DRAKE_DOXYGEN_CXX
+decltype(auto) jacobian(F&& f, Arg&& x) {
+#else
+// "x_arg" works around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67273.
+decltype(auto) jacobian(F&& f, Arg&& x_arg) {
+#endif
   using Eigen::AutoDiffScalar;
   using Eigen::Index;
   using Eigen::Matrix;
@@ -71,7 +76,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
 
   // Return type of this function.
   using ReturnArgAutoDiffType =
-      decltype(x.template cast<ReturnArgAutoDiffScalar>().eval());
+      decltype(x_arg.template cast<ReturnArgAutoDiffScalar>().eval());
   using ReturnType = decltype(f(std::declval<ReturnArgAutoDiffType>()));
 
   // Scalar type of chunk arguments.
@@ -84,7 +89,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
 
   // Compute derivatives chunk by chunk.
   constexpr Index kMaxChunkSize = MaxChunkSize;
-  Index num_derivs = x.size();
+  Index num_derivs = x_arg.size();
   bool values_initialized = false;
   for (Index deriv_num_start = 0; deriv_num_start < num_derivs;
        deriv_num_start += kMaxChunkSize) {
@@ -93,8 +98,8 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
     Index chunk_size = std::min(kMaxChunkSize, num_derivs_to_go);
 
     // Initialize chunk argument.
-    auto chunk_arg = x.template cast<ChunkArgAutoDiffScalar>().eval();
-    for (Index i = 0; i < x.size(); i++) {
+    auto chunk_arg = x_arg.template cast<ChunkArgAutoDiffScalar>().eval();
+    for (Index i = 0; i < x_arg.size(); i++) {
       chunk_arg(i).derivatives().setZero(chunk_size);
     }
     for (Index i = 0; i < chunk_size; i++) {

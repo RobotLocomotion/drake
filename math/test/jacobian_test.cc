@@ -37,12 +37,12 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
     return (x.transpose() * A.cast<Scalar>().eval() * x).eval();
   };
 
-  Vector3d x;
-  FillWithNumbersIncreasingFromZero(x);
-  auto jac_chunk_size_default = jacobian(quadratic_form, x);
-  auto jac_chunk_size_1 = jacobian<1>(quadratic_form, x);
-  auto jac_chunk_size_3 = jacobian<3>(quadratic_form, x);
-  auto jac_chunk_size_6 = jacobian<6>(quadratic_form, x);
+  Vector3d example_x;
+  FillWithNumbersIncreasingFromZero(example_x);
+  auto jac_chunk_size_default = jacobian(quadratic_form, example_x);
+  auto jac_chunk_size_1 = jacobian<1>(quadratic_form, example_x);
+  auto jac_chunk_size_3 = jacobian<3>(quadratic_form, example_x);
+  auto jac_chunk_size_6 = jacobian<6>(quadratic_form, example_x);
 
   // Ensure that chunk size has no effect on output type.
   static_assert(std::is_same<decltype(jac_chunk_size_default),
@@ -61,14 +61,14 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
   EXPECT_TRUE(jac_chunk_size_default == jac_chunk_size_6);
 
   // Ensure that value is correct.
-  auto value_expected = quadratic_form(x);
+  auto value_expected = quadratic_form(example_x);
   auto value = autoDiffToValueMatrix(jac_chunk_size_default);
   EXPECT_TRUE(CompareMatrices(value_expected, value, 1e-12,
                               MatrixCompareType::absolute));
 
   // Ensure that Jacobian is correct.
   auto jac = autoDiffToGradientMatrix(jac_chunk_size_default);
-  auto jac_expected = (x.transpose() * (A + A.transpose())).eval();
+  auto jac_expected = (example_x.transpose() * (A + A.transpose())).eval();
   EXPECT_TRUE(
       CompareMatrices(jac_expected, jac, 1e-12, MatrixCompareType::absolute));
 }
@@ -105,11 +105,11 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
         .eval();
   };
 
-  VectorXd x(m);
-  FillWithNumbersIncreasingFromZero(x);
+  VectorXd example_x(m);
+  FillWithNumbersIncreasingFromZero(example_x);
 
-  auto hess_chunk_size_default = hessian(quadratic_function, x);
-  auto hess_chunk_size_2_4 = hessian<2, 4>(quadratic_function, x);
+  auto hess_chunk_size_default = hessian(quadratic_function, example_x);
+  auto hess_chunk_size_2_4 = hessian<2, 4>(quadratic_function, example_x);
 
   // Ensure that chunk size has no effect on output type.
   static_assert(std::is_same<decltype(hess_chunk_size_default),
@@ -120,7 +120,7 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   EXPECT_TRUE(hess_chunk_size_default == hess_chunk_size_2_4);
 
   // Ensure that value is correct.
-  auto value_expected = quadratic_function(x);
+  auto value_expected = quadratic_function(example_x);
   auto value_autodiff = autoDiffToValueMatrix(hess_chunk_size_default);
   auto value = autoDiffToValueMatrix(value_autodiff);
   EXPECT_TRUE(CompareMatrices(value_expected, value, 1e-12,
@@ -133,8 +133,8 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   EXPECT_TRUE(jac1 == jac2);
 
   // Ensure that the Jacobian is correct.
-  auto jac_expected = ((A * x + b).transpose() * C * D +
-                       (D * x + e).transpose() * C.transpose() * A)
+  auto jac_expected = ((A * example_x + b).transpose() * C * D +
+                       (D * example_x + e).transpose() * C.transpose() * A)
                           .eval();
   EXPECT_TRUE(
       CompareMatrices(jac_expected, jac1, 1e-12, MatrixCompareType::absolute));
