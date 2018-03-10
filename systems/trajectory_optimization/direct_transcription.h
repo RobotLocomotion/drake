@@ -79,15 +79,17 @@ class DirectTranscription : public MultipleShooting {
 
   ~DirectTranscription() override {}
 
-  /// Get the input trajectory at the solution as a
-  /// PiecewisePolynomialTrajectory.  The order of the trajectory
-  /// will be determined by the integrator used in the dynamic constraints.
-  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override;
+  /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
+  /// order of the trajectory will be determined by the integrator used in
+  /// the dynamic constraints.
+  trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
+  const override;
 
-  /// Get the state trajectory at the solution as a
-  /// PiecewisePolynomialTrajectory.  The order of the trajectory
-  /// will be determined by the integrator used in the dynamic constraints.
-  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
+  /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
+  /// order of the trajectory will be determined by the integrator used in
+  /// the dynamic constraints.
+  trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
+  const override;
 
  private:
   // Implements a running cost at all timesteps.

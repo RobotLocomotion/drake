@@ -9,6 +9,7 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
+namespace trajectories {
 namespace {
 
 // Returns q1 = quat(omega * dt) * q0
@@ -46,16 +47,16 @@ bool CheckClosest(
 template <typename Scalar>
 bool CheckSlerpInterpolation(const PiecewiseQuaternionSlerp<Scalar>& spline,
                              double t) {
-  t = std::min(t, spline.getEndTime());
-  t = std::max(t, spline.getStartTime());
+  t = std::min(t, spline.end_time());
+  t = std::max(t, spline.start_time());
 
-  int i = spline.getSegmentIndex(t);
-  double t0 = spline.getStartTime(i);
-  double t1 = spline.getEndTime(i);
+  int i = spline.get_segment_index(t);
+  double t0 = spline.start_time(i);
+  double t1 = spline.end_time(i);
   t = std::min(t, t1);
   t = std::max(t, t0);
   double dt = t - t0;
-  DRAKE_DEMAND(dt <= spline.getDuration(i));
+  DRAKE_DEMAND(dt <= spline.duration(i));
 
   Quaternion<Scalar> q_spline = spline.orientation(t);
 
@@ -92,7 +93,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   std::default_random_engine generator(123);
   int N = 10000;
   std::vector<double> time =
-      PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+      PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
   eigen_aligned_std_vector<Quaternion<double>> quat =
       GenerateRandomQuaternions<double>(N, &generator);
 
@@ -192,4 +193,5 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestIsApprox) {
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

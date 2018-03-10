@@ -249,7 +249,7 @@ drake_cc_library(
     hdrs = ["time_varying_data.h"],
     deps = [
         "//common:essential",
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -540,7 +540,7 @@ drake_cc_googletest(
     deps = [
         ":trajectory_source",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
         "//systems/framework",
     ],
 )

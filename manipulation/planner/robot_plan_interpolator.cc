@@ -19,6 +19,9 @@ using robotlocomotion::robot_plan_t;
 namespace drake {
 namespace manipulation {
 namespace planner {
+
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 // This corresponds to the actual plan.
@@ -129,7 +132,7 @@ void RobotPlanInterpolator::OutputAccel(
   output_acceleration_vec = plan.pp_double_deriv.value(current_plan_time);
 
   // Stop outputting accelerations at the end of the plan.
-  if (current_plan_time > plan.pp_double_deriv.getEndTime()) {
+  if (current_plan_time > plan.pp_double_deriv.end_time()) {
     output_acceleration_vec.fill(0);
   }
 }

@@ -5,13 +5,14 @@
 #include "drake/math/quaternion.h"
 
 namespace drake {
+namespace trajectories {
 
-template <typename Scalar>
-bool PiecewiseQuaternionSlerp<Scalar>::is_approx(
-    const PiecewiseQuaternionSlerp<Scalar>& other, const Scalar& tol) const {
+template <typename T>
+bool PiecewiseQuaternionSlerp<T>::is_approx(
+    const PiecewiseQuaternionSlerp<T>& other, const T& tol) const {
   // Velocities are derived from the quaternions, and I don't want to
   // overload units for tol, so I am skipping the checks on velocities.
-  if (!this->segmentTimesEqual(other, tol))
+  if (!this->SegmentTimesEqual(other, tol))
     return false;
 
   if (quaternions_.size() != other.quaternions_.size())
@@ -21,7 +22,7 @@ bool PiecewiseQuaternionSlerp<Scalar>::is_approx(
     // A quick reference:
     // Page "Metric on sphere of unit quaternions" from
     // http://www.cs.cmu.edu/afs/cs/academic/class/16741-s07/www/Lecture8.pdf
-    Scalar dot = std::abs(quaternions_[i].dot(other.quaternions_[i]));
+    T dot = std::abs(quaternions_[i].dot(other.quaternions_[i]));
     if (dot < std::cos(tol / 2)) {
       return false;
     }
@@ -30,27 +31,28 @@ bool PiecewiseQuaternionSlerp<Scalar>::is_approx(
   return true;
 }
 
-template <typename Scalar>
-void PiecewiseQuaternionSlerp<Scalar>::ComputeAngularVelocities() {
+template <typename T>
+void PiecewiseQuaternionSlerp<T>::ComputeAngularVelocities() {
   if (quaternions_.empty()) return;
 
   angular_velocities_.resize(quaternions_.size() - 1);
 
-  AngleAxis<Scalar> angle_axis_diff;
+  AngleAxis<T> angle_axis_diff;
   // Computes q[t+1] = q_delta * q[t] first, turn q_delta into an axis, which
   // turns into an angular velocity.
   for (size_t i = 1; i < quaternions_.size(); ++i) {
     angle_axis_diff =
-        AngleAxis<Scalar>(quaternions_[i] * quaternions_[i - 1].inverse());
-    angular_velocities_[i - 1] =
-        angle_axis_diff.axis() * angle_axis_diff.angle() / getDuration(i - 1);
+        AngleAxis<T>(quaternions_[i] * quaternions_[i - 1].inverse());
+    angular_velocities_[i - 1] = angle_axis_diff.axis() *
+                                 angle_axis_diff.angle() /
+                                 this->duration(i - 1);
   }
 }
 
-template <typename Scalar>
-void PiecewiseQuaternionSlerp<Scalar>::Initialize(
+template <typename T>
+void PiecewiseQuaternionSlerp<T>::Initialize(
     const std::vector<double>& breaks,
-    const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions) {
+    const eigen_aligned_std_vector<Quaternion<T>>& quaternions) {
   if (quaternions.size() != breaks.size()) {
     throw std::runtime_error("Quaternions and breaks length mismatch.");
   }
@@ -71,54 +73,55 @@ void PiecewiseQuaternionSlerp<Scalar>::Initialize(
   ComputeAngularVelocities();
 }
 
-template <typename Scalar>
-PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
+template <typename T>
+PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
     const std::vector<double>& breaks,
-    const eigen_aligned_std_vector<Quaternion<Scalar>>& quaternions)
-    : PiecewiseFunction(breaks) {
+    const eigen_aligned_std_vector<Quaternion<T>>& quaternions)
+    : PiecewiseTrajectory<T>(breaks) {
   Initialize(breaks, quaternions);
 }
 
-template <typename Scalar>
-PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
+template <typename T>
+PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
     const std::vector<double>& breaks,
-    const eigen_aligned_std_vector<Matrix3<Scalar>>& rot_matrices)
-    : PiecewiseFunction(breaks) {
-  eigen_aligned_std_vector<Quaternion<Scalar>> quaternions(rot_matrices.size());
+    const eigen_aligned_std_vector<Matrix3<T>>& rot_matrices)
+    : PiecewiseTrajectory<T>(breaks) {
+  eigen_aligned_std_vector<Quaternion<T>> quaternions(rot_matrices.size());
   for (size_t i = 0; i < rot_matrices.size(); ++i) {
-    quaternions[i] = Quaternion<Scalar>(rot_matrices[i]);
+    quaternions[i] = Quaternion<T>(rot_matrices[i]);
   }
   Initialize(breaks, quaternions);
 }
 
-template <typename Scalar>
-PiecewiseQuaternionSlerp<Scalar>::PiecewiseQuaternionSlerp(
+template <typename T>
+PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
     const std::vector<double>& breaks,
-    const eigen_aligned_std_vector<AngleAxis<Scalar>>& ang_axes)
-    : PiecewiseFunction(breaks) {
-  eigen_aligned_std_vector<Quaternion<Scalar>> quaternions(ang_axes.size());
+    const eigen_aligned_std_vector<AngleAxis<T>>& ang_axes)
+    : PiecewiseTrajectory<T>(breaks) {
+  eigen_aligned_std_vector<Quaternion<T>> quaternions(ang_axes.size());
   for (size_t i = 0; i < ang_axes.size(); ++i) {
-    quaternions[i] = Quaternion<Scalar>(ang_axes[i]);
+    quaternions[i] = Quaternion<T>(ang_axes[i]);
   }
   Initialize(breaks, quaternions);
 }
 
-template <typename Scalar>
-double PiecewiseQuaternionSlerp<Scalar>::ComputeInterpTime(int segment_index,
+template <typename T>
+double PiecewiseQuaternionSlerp<T>::ComputeInterpTime(int segment_index,
                                                            double time) const {
-  time = (time - getStartTime(segment_index)) / getDuration(segment_index);
+  time =
+      (time - this->start_time(segment_index)) / this->duration(segment_index);
   time = std::max(time, 0.0);
   time = std::min(time, 1.0);
   return time;
 }
 
-template <typename Scalar>
-Quaternion<Scalar> PiecewiseQuaternionSlerp<Scalar>::orientation(
+template <typename T>
+Quaternion<T> PiecewiseQuaternionSlerp<T>::orientation(
     double t) const {
-  int segment_index = getSegmentIndex(t);
+  int segment_index = this->get_segment_index(t);
   t = ComputeInterpTime(segment_index, t);
 
-  Quaternion<Scalar> q1 = quaternions_.at(segment_index)
+  Quaternion<T> q1 = quaternions_.at(segment_index)
                               .slerp(t, quaternions_.at(segment_index + 1));
 
   q1.normalize();
@@ -126,20 +129,28 @@ Quaternion<Scalar> PiecewiseQuaternionSlerp<Scalar>::orientation(
   return q1;
 }
 
-template <typename Scalar>
-Vector3<Scalar> PiecewiseQuaternionSlerp<Scalar>::angular_velocity(
+template <typename T>
+Vector3<T> PiecewiseQuaternionSlerp<T>::angular_velocity(
     double t) const {
-  int segment_index = getSegmentIndex(t);
+  int segment_index = this->get_segment_index(t);
 
   return angular_velocities_.at(segment_index);
 }
 
-template <typename Scalar>
-Vector3<Scalar> PiecewiseQuaternionSlerp<Scalar>::angular_acceleration(
+template <typename T>
+std::unique_ptr<Trajectory<T>> PiecewiseQuaternionSlerp<T>::MakeDerivative(
+    int) const {
+  throw std::runtime_error("Derivatives of PiecewiseQuaternionSlerp are not "
+                               "implemented yet.");
+}
+
+template <typename T>
+Vector3<T> PiecewiseQuaternionSlerp<T>::angular_acceleration(
     double) const {
-  return Vector3<Scalar>::Zero();
+  return Vector3<T>::Zero();
 }
 
 template class PiecewiseQuaternionSlerp<double>;
 
+}  // namespace trajectories
 }  // namespace drake
