@@ -8,7 +8,7 @@ from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
-    DirectCollocation, DirectTranscription
+    DirectCollocation, DirectTranscription,
 )
 
 
