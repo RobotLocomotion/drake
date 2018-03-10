@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   set(CXX_FLAGS
     -Werror=all
+    -Werror=deprecated
     -Werror=deprecated-declarations
     -Werror=ignored-qualifiers
     -Werror=inconsistent-missing-override
@@ -20,6 +21,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang OR CMAKE_CXX_COMPILER_ID STREQUAL C
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
   set(CXX_FLAGS
     -Werror=all
+    -Werror=deprecated
     -Werror=deprecated-declarations
     -Werror=extra
     -Werror=ignored-qualifiers
