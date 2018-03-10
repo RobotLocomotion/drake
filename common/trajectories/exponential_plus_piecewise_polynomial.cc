@@ -4,26 +4,18 @@
 
 #include <unsupported/Eigen/MatrixFunctions>
 
-using Eigen::Dynamic;
-using Eigen::Matrix;
-
 namespace drake {
 namespace trajectories {
-
-template <typename T>
-ExponentialPlusPiecewisePolynomial<T>::ExponentialPlusPiecewisePolynomial() {
-  // empty
-}
 
 template <typename T>
 ExponentialPlusPiecewisePolynomial<T>::
     ExponentialPlusPiecewisePolynomial(
         const PiecewisePolynomial<T>& piecewise_polynomial_part)
     : PiecewiseTrajectory<T>(piecewise_polynomial_part),
-      K_(Matrix<T, Dynamic, Dynamic>::Zero(
+      K_(MatrixX<T>::Zero(
           piecewise_polynomial_part.rows(), 1)),
-      A_(Matrix<T, Dynamic, Dynamic>::Zero(1, 1)),
-      alpha_(Matrix<T, Dynamic, Dynamic>::Zero(
+      A_(MatrixX<T>::Zero(1, 1)),
+      alpha_(MatrixX<T>::Zero(
           1, piecewise_polynomial_part.get_number_of_segments())),
       piecewise_polynomial_part_(piecewise_polynomial_part) {
   DRAKE_ASSERT(piecewise_polynomial_part.cols() == 1);
@@ -32,16 +24,13 @@ ExponentialPlusPiecewisePolynomial<T>::
 template <typename T>
 std::unique_ptr<Trajectory<T>> ExponentialPlusPiecewisePolynomial<T>::Clone()
     const {
-  return std::make_unique<ExponentialPlusPiecewisePolynomial<T>>(
-      K_, A_, alpha_, piecewise_polynomial_part_);
+  return std::make_unique<ExponentialPlusPiecewisePolynomial<T>>(*this);
 }
 
 template <typename T>
 MatrixX<T> ExponentialPlusPiecewisePolynomial<T>::value(double t) const {
   int segment_index = this->get_segment_index(t);
-
-  Eigen::Matrix<double, Eigen::Dynamic, 1> ret =
-      piecewise_polynomial_part_.value(t);
+  MatrixX<T> ret = piecewise_polynomial_part_.value(t);
   double tj = this->start_time(segment_index);
   auto exponential = (A_ * (t - tj)).eval().exp().eval();
   ret.noalias() += K_ * exponential * alpha_.col(segment_index);
@@ -50,12 +39,11 @@ MatrixX<T> ExponentialPlusPiecewisePolynomial<T>::value(double t) const {
 
 template <typename T>
 ExponentialPlusPiecewisePolynomial<T>
-ExponentialPlusPiecewisePolynomial<T>::derivative(
-    int derivative_order) const {
+ExponentialPlusPiecewisePolynomial<T>::derivative(int derivative_order) const {
   DRAKE_ASSERT(derivative_order >= 0);
   // quite inefficient, especially for high order derivatives due to all the
   // temporaries...
-  MatrixX K_new = K_;
+  MatrixX<T> K_new = K_;
   for (int i = 0; i < derivative_order; i++) {
     K_new = K_new * A_;
   }

@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
@@ -15,22 +16,14 @@ namespace trajectories {
 /**
  * y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)
  */
-
 template <typename T>
-class ExponentialPlusPiecewisePolynomial
+class ExponentialPlusPiecewisePolynomial final
     : public PiecewiseTrajectory<T> {
  public:
-  typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>
-      MatrixX;
+  // We are final, so this is okay.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExponentialPlusPiecewisePolynomial)
 
- private:
-  MatrixX K_;
-  MatrixX A_;
-  MatrixX alpha_;
-  PiecewisePolynomial<T> piecewise_polynomial_part_;
-
- public:
-  ExponentialPlusPiecewisePolynomial();
+  ExponentialPlusPiecewisePolynomial() = default;
 
   template <typename DerivedK, typename DerivedA, typename DerivedAlpha>
   ExponentialPlusPiecewisePolynomial(
@@ -57,13 +50,11 @@ class ExponentialPlusPiecewisePolynomial
   ExponentialPlusPiecewisePolynomial(
       const PiecewisePolynomial<T>& piecewise_polynomial_part);
 
-  virtual ~ExponentialPlusPiecewisePolynomial() {}
+  ~ExponentialPlusPiecewisePolynomial() override = default;
 
   std::unique_ptr<Trajectory<T>> Clone() const override;
 
-  // TODO(tkoolen): fix return type (handle complex etc.)
-  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> value(
-      double t) const override;
+  MatrixX<T> value(double t) const override;
 
   ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
 
@@ -77,6 +68,12 @@ class ExponentialPlusPiecewisePolynomial
   Eigen::Index cols() const override;
 
   void shiftRight(double offset);
+
+ private:
+  MatrixX<T> K_;
+  MatrixX<T> A_;
+  MatrixX<T> alpha_;
+  PiecewisePolynomial<T> piecewise_polynomial_part_;
 };
 
 }  // namespace trajectories

@@ -103,7 +103,7 @@ class PiecewiseCartesianTrajectoryTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::vector<double> times = {1, 2};
-    eigen_aligned_std_vector<AngleAxis<double>> rot_knots(times.size());
+    std::vector<AngleAxis<double>> rot_knots(times.size());
     std::vector<MatrixX<double>> pos_knots(times.size(), MatrixX<double>(3, 1));
 
     rot_knots[0] = AngleAxis<double>(0.3, Vector3<double>::UnitX());
@@ -222,7 +222,7 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestConstructor) {
 // Tests is_approx().
 TEST_F(PiecewiseCartesianTrajectoryTest, TestIsApprox) {
   std::vector<double> times = {1, 2, 3};
-  eigen_aligned_std_vector<AngleAxis<double>> rot_knots(times.size());
+  std::vector<AngleAxis<double>> rot_knots(times.size());
   std::vector<MatrixX<double>> pos_knots(times.size(), MatrixX<double>(3, 1));
   pos_knots[0] << -3, 1, 0;
   pos_knots[1] << -2, -1, 5;

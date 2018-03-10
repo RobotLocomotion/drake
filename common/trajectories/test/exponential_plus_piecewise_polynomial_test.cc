@@ -16,31 +16,27 @@ namespace trajectories {
 
 namespace {
 
-template <typename CoefficientType>
+template <typename T>
 void testSimpleCase() {
-  typedef ExponentialPlusPiecewisePolynomial<CoefficientType>
-      ExponentialPlusPiecewisePolynomialType;
-  typedef typename ExponentialPlusPiecewisePolynomialType::MatrixX MatrixX;
-
   int num_coefficients = 5;
   int num_segments = 1;
 
-  MatrixX K = MatrixX::Random(1, 1);
-  MatrixX A = MatrixX::Random(1, 1);
-  MatrixX alpha = MatrixX::Random(1, 1);
+  MatrixX<T> K = MatrixX<T>::Random(1, 1);
+  MatrixX<T> A = MatrixX<T>::Random(1, 1);
+  MatrixX<T> alpha = MatrixX<T>::Random(1, 1);
 
   default_random_engine generator;
   auto segment_times =
       PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
-  auto polynomial_part = test::MakeRandomPiecewisePolynomial<CoefficientType>(
+  auto polynomial_part = test::MakeRandomPiecewisePolynomial<T>(
       1, 1, num_coefficients, segment_times);
 
-  ExponentialPlusPiecewisePolynomial<CoefficientType> expPlusPp(
+  ExponentialPlusPiecewisePolynomial<T> expPlusPp(
       K, A, alpha, polynomial_part);
-  ExponentialPlusPiecewisePolynomial<CoefficientType> derivative =
+  ExponentialPlusPiecewisePolynomial<T> derivative =
       expPlusPp.derivative();
 
-  uniform_real_distribution<CoefficientType> uniform(expPlusPp.start_time(),
+  uniform_real_distribution<T> uniform(expPlusPp.start_time(),
                                                      expPlusPp.end_time());
   double t = uniform(generator);
   auto check =

@@ -137,7 +137,7 @@ class PiecewiseCartesianTrajectory {
       const std::vector<T>& times, const std::vector<Isometry3<T>>& poses,
       const Vector3<T>& vel0, const Vector3<T>& vel1) {
     std::vector<MatrixX<T>> pos_knots(poses.size());
-    eigen_aligned_std_vector<Matrix3<T>> rot_knots(poses.size());
+    std::vector<Matrix3<T>> rot_knots(poses.size());
     for (size_t i = 0; i < poses.size(); ++i) {
       pos_knots[i] = poses[i].translation();
       rot_knots[i] = poses[i].linear();
