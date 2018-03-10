@@ -71,16 +71,20 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            &MultipleShooting::ReconstructStateTrajectory);
   py::class_<DirectCollocation, MultipleShooting>(m, "DirectCollocation")
       .def(py::init<const systems::System<double>*,
-                    const systems::Context<double>&, int, double, double>())
+                    const systems::Context<double>&, int, double, double>(),
+           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+           py::arg("minimum_timestep"), py::arg("maximum_timestep"))
       .def("ReconstructInputTrajectory",
            &DirectCollocation::ReconstructInputTrajectory)
       .def("ReconstructStateTrajectory",
            &DirectCollocation::ReconstructStateTrajectory);
   py::class_<DirectTranscription, MultipleShooting>(m, "DirectTranscription")
       .def(py::init<const systems::System<double>*,
-                    const systems::Context<double>&, int>())
+                    const systems::Context<double>&, int>(),
+           py::arg("system"), py::arg("context"), py::arg("num_time_samples"))
       .def(py::init<const systems::LinearSystem<double>*,
-                    const systems::Context<double>&, int>())
+                    const systems::Context<double>&, int>(),
+           py::arg("system"), py::arg("context"), py::arg("num_time_samples"))
       // TODO(russt): Add this once TimeVaryingLinearSystem is bound.
       //      .def(py::init<const TimeVaryingLinearSystem<double>*,
       //                    const Context<double>&, int>())

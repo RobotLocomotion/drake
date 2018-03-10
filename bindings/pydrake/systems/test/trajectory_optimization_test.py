@@ -8,7 +8,7 @@ from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
-    DirectCollocation, DirectTranscription
+    DirectCollocation, DirectTranscription,
 )
 
 
@@ -17,11 +17,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
 
-        kNumTimeSamples = 21
-        kMinimumTimeStep = 0.2
-        kMaximumTimeStep = 0.5
-        dircol = DirectCollocation(plant, context, kNumTimeSamples,
-                                   kMinimumTimeStep, kMaximumTimeStep)
+        dircol = DirectCollocation(plant, context, num_time_samples=21,
+                                   minimum_timestep=0.2, maximum_timestep=0.5)
 
         # Spell out most of the methods, regardless of whether they make sense
         # as a consistent optimization.  The goal is to check the bindings,
@@ -59,8 +56,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         plant = LinearSystem(A=[0.], B=[1.], C=[1.], D=[0.], time_period=0.1)
         context = plant.CreateDefaultContext()
 
-        kNumTimeSamples = 21
-        dirtran = DirectTranscription(plant, context, kNumTimeSamples)
+        dirtran = DirectTranscription(plant, context, num_time_samples=21)
 
         # Spell out most of the methods, regardless of whether they make sense
         # as a consistent optimization.  The goal is to check the bindings,

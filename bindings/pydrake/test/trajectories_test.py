@@ -23,6 +23,14 @@ class TestTrajectories(unittest.TestCase):
         x = [[1., 2.], [3., 4.], [5., 6.]]
         pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], x)
         np.testing.assert_equal(np.array([[1.], [2.]]), pp.value(.5))
+        self.assertEqual(pp.get_number_of_segments(), 2)
+        self.assertEqual(pp.start_time(), 0.)
+        self.assertEqual(pp.end_time(), 2.)
+        self.assertEqual(pp.start_time(0), 0.)
+        self.assertEqual(pp.end_time(0), 1.)
+        self.assertEqual(pp.duration(0), 1.)
+        self.assertEqual(pp.get_segment_index(1.5), 1)
+        self.assertEqual(pp.get_segment_times(), [0., 1., 2.])
 
     def test_first_order_hold(self):
         x = [[1., 2.], [3., 4.], [5., 6.]]
