@@ -43,19 +43,51 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "schunk_wsg_low_level_controller",
+    srcs = ["schunk_wsg_low_level_controller.cc"],
+    hdrs = ["schunk_wsg_low_level_controller.h"],
+    deps = [
+        ":schunk_wsg_constants",
+        ":schunk_wsg_lcm",
+        "//drake/common:essential",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives",
+    ],
+)
+
+drake_cc_library(
+    name = "schunk_wsg_position_controller",
+    srcs = ["schunk_wsg_position_controller.cc"],
+    hdrs = ["schunk_wsg_position_controller.h"],
+    deps = [
+        ":schunk_wsg_low_level_controller",
+    ],
+)
+
+drake_cc_library(
     name = "schunk_wsg_controller",
     srcs = ["schunk_wsg_controller.cc"],
     hdrs = ["schunk_wsg_controller.h"],
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_lcm",
-        "//common:essential",
-        "//systems/controllers:pid_controller",
-        "//systems/framework:diagram",
-        "//systems/framework:diagram_builder",
-        "//systems/primitives:gain",
-        "//systems/primitives:pass_through",
-        "//systems/primitives:saturation",
+        ":schunk_wsg_position_controller",
+        "//drake/common:essential",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_schunk_wsg_controller",
+    srcs = ["lcm_schunk_wsg_controller.cc"],
+    hdrs = ["lcm_schunk_wsg_controller.h"],
+    deps = [
+        ":schunk_wsg_controller",
     ],
 )
 
@@ -76,10 +108,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "schunk_wsg_controller_test",
+    name = "lcm_schunk_wsg_controller_test",
     deps = [
         ":schunk_wsg_constants",
-        ":schunk_wsg_controller",
+        ":lcm_schunk_wsg_controller",
         "//systems/analysis:simulator",
     ],
 )

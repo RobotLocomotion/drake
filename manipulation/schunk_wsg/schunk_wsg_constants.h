@@ -16,9 +16,9 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-constexpr int kSchunkWsgNumActuators = 1;
-constexpr int kSchunkWsgNumPositions = 5;
-constexpr int kSchunkWsgNumVelocities = 5;
+constexpr int kSchunkWsgNumActuators = 2;
+constexpr int kSchunkWsgNumPositions = 2;
+constexpr int kSchunkWsgNumVelocities = 2;
 
 constexpr int kSchunkWsgPositionIndex = 0;
 constexpr int kSchunkWsgVelocityIndex =
@@ -53,10 +53,7 @@ VectorX<T> GetSchunkWsgOpenPosition() {
   // clang-format off
   return (VectorX<T>(kSchunkWsgNumPositions) <<
       -0.0550667,
-       0.009759,
-       1.27982,
-       0.0550667,
-       0.009759) .finished();
+       0.0550667) .finished();
   // clang-format on
 }
 

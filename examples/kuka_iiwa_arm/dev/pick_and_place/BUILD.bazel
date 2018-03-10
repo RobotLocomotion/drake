@@ -29,7 +29,7 @@ drake_cc_library(
         "//examples/kuka_iiwa_arm:iiwa_lcm",
         "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
-        "//manipulation/schunk_wsg:schunk_wsg_controller",
+        "//manipulation/schunk_wsg:lcm_schunk_wsg_controller",
         "//manipulation/util:frame_pose_tracker",
         "//systems/sensors:optitrack_encoder",
         "//systems/sensors:optitrack_sender",
@@ -134,7 +134,7 @@ drake_cc_binary(
         "//lcmtypes:iiwa",
         "//lcmtypes:viewer",
         "//manipulation/planner:robot_plan_interpolator",
-        "//manipulation/schunk_wsg:schunk_wsg_controller",
+        "//manipulation/schunk_wsg:lcm_schunk_wsg_controller",
         "//manipulation/util:world_sim_tree_builder",
         "//multibody/rigid_body_plant:contact_results_to_lcm",
         "//multibody/rigid_body_plant:create_load_robot_message",

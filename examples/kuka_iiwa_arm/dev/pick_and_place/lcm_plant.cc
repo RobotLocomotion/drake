@@ -9,7 +9,7 @@
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
-#include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
+#include "drake/manipulation/schunk_wsg/lcm_schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/manipulation/util/frame_pose_tracker.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -22,7 +22,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
-using manipulation::schunk_wsg::SchunkWsgController;
+using manipulation::schunk_wsg::LcmSchunkWsgController;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using manipulation::util::FramePoseTracker;
 using manipulation::util::ModelInstanceInfo;
@@ -278,7 +278,7 @@ LcmPlant::LcmPlant(
     output_port_iiwa_status_.push_back(
         builder.ExportOutput(iiwa_status_sender->get_output_port(0)));
 
-    auto wsg_controller = builder.AddSystem<SchunkWsgController>();
+    auto wsg_controller = builder.AddSystem<LcmSchunkWsgController>();
     wsg_controller->set_name("wsg_controller" + suffix);
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_state(i),
                     wsg_controller->get_state_input_port());

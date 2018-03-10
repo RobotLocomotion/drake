@@ -16,8 +16,8 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
+#include "drake/manipulation/schunk_wsg/lcm_schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
-#include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -37,7 +37,7 @@ namespace schunk_wsg {
 namespace {
 
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
-using manipulation::schunk_wsg::SchunkWsgController;
+using manipulation::schunk_wsg::LcmSchunkWsgController;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -60,7 +60,7 @@ int DoMain() {
           "SCHUNK_WSG_COMMAND", &lcm));
   command_sub->set_name("command_subscriber");
 
-  auto wsg_controller = builder.AddSystem<SchunkWsgController>();
+  auto wsg_controller = builder.AddSystem<LcmSchunkWsgController>();
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
