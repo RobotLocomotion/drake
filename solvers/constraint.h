@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -16,6 +17,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"
 
@@ -777,6 +780,49 @@ class LinearMatrixInequalityConstraint : public Constraint {
  private:
   std::vector<Eigen::MatrixXd> F_;
   const int matrix_rows_{};
+};
+
+
+/**
+ * Impose a generic (potentially nonlinear) constraint represented as a
+ * vector of symbolic Expression.  Expression::Evaluate is called on every
+ * constraint evaluation.
+ *
+ * Uses symbolic::Jacobian to provide the gradients to the AutoDiff method.
+ */
+class ExpressionConstraint : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionConstraint)
+
+  ExpressionConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+                       const Eigen::Ref<const Eigen::VectorXd>& lb,
+                       const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /**
+   * @return the list of the variables involved in the vector of expressions,
+   * in the order that they are expected to be received during DoEval.
+   * Any Binding that connects this constraint to decision variables should
+   * pass this list of variables to the Binding.
+   */
+  const VectorXDecisionVariable& vars() const { return vars_; }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
+
+ private:
+  VectorX<symbolic::Expression> expressions_{0};
+  MatrixX<symbolic::Expression> derivatives_{0, 0};
+
+  // map_var_to_index_[vars_(i).get_id()] = i.
+  VectorXDecisionVariable vars_{0};
+  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index_;
+
+  // Only for caching, does not carrying hidden state.
+  mutable symbolic::Environment environment_;
 };
 
 }  // namespace solvers

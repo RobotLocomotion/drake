@@ -855,6 +855,18 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars) {
   return Jacobian(f, vector<Variable>(vars.data(), vars.data() + vars.size()));
 }
+
+Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
+  Variables vars{};
+  // Note: Default storage order for Eigen is column-major.
+  for (int j = 0; j < v.cols(); j++) {
+    for (int i = 0; i < v.rows(); i++) {
+      vars.insert(v(i, j).GetVariables());
+    }
+  }
+  return vars;
+}
+
 }  // namespace symbolic
 
 double ExtractDoubleOrThrow(const symbolic::Expression& e) {

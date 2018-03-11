@@ -136,7 +136,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
       // For now, non-linear constraints can be added by users by simply adding
       // the constraint manually for each
       // time index in a loop.
-      AddLinearConstraint(SubstitutePlaceholderVariables(f, i));
+      AddConstraint(SubstitutePlaceholderVariables(f, i));
     }
   }
 
