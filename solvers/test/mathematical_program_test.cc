@@ -25,6 +25,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/test/generic_trivial_constraints.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -2744,6 +2745,32 @@ GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
   EXPECT_THROW(prog.SetInitialGuess(y, 1), std::runtime_error);
   EXPECT_THROW(prog.GetInitialGuess(y), std::runtime_error);
 }
+
+GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
+  // min ∑ x , subject to x'x = 1.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddConstraint(x.transpose()*x == 1.);
+
+  if (SnoptSolver().available()) {
+    // Add equivalent constraints using all of the other entry points.
+    // Note: restricted to SNOPT because IPOPT complains about the redundant
+    // constraints.
+    prog.AddConstraint(x.transpose()*x >= 1.);
+    prog.AddConstraint(x.transpose()*x <= 1.);
+    prog.AddConstraint((x.transpose()*x)(0), 1., 1.);
+    prog.AddConstraint(x.transpose()*x, Vector1d{1.}, Vector1d{1.});
+  }
+
+  prog.AddCost(x(0) + x(1));
+  prog.SetInitialGuess(x, Vector2d{-.5, -.5});
+  SolutionResult result = prog.Solve();
+  EXPECT_EQ(result, kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x),
+                              Vector2d::Constant(-std::sqrt(2.)/2.), 1e-6));
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
