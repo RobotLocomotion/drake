@@ -99,7 +99,7 @@ class LeafContext : public Context<T> {
         clone->input_values_.emplace_back(nullptr);
       } else {
         clone->input_values_.emplace_back(new FreestandingInputPortValue(
-            port->template get_abstract_data()->Clone()));
+            port->get_abstract_data()->Clone()));
       }
     }
 
