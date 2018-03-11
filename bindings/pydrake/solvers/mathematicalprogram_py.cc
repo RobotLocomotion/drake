@@ -178,6 +178,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                int, int, const std::string&)>(
                &MathematicalProgram::NewIndeterminates),
            py::arg("rows"), py::arg("cols"), py::arg("name") = "X")
+      .def("AddConstraint",
+           static_cast<Binding<Constraint> (MathematicalProgram::*)(
+               const Expression&, double, double)>(
+               &MathematicalProgram::AddConstraint))
+      .def("AddConstraint",
+           static_cast<Binding<Constraint> (MathematicalProgram::*)(
+               const Formula&)>(&MathematicalProgram::AddConstraint))
       .def("AddLinearConstraint",
            static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
                const Expression&, double, double)>(
@@ -307,6 +314,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
              std::shared_ptr<LinearComplementarityConstraint>>(
       m, "LinearComplementarityConstraint");
 
+  RegisterBinding<Constraint>(&m, &prog_cls, "Constraint");
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
