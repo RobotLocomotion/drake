@@ -1899,6 +1899,15 @@ TEST_F(SymbolicExpressionTest, Jacobian) {
   EXPECT_EQ(J2(1), J1(1));
 }
 
+TEST_F(SymbolicExpressionTest, CountDistinctVariables) {
+  EXPECT_EQ(CountDistinctVariables(Vector1<Expression>{x_plus_y_}), 2);
+  EXPECT_EQ(CountDistinctVariables(Vector1<Expression>{x_plus_z_}), 2);
+  EXPECT_EQ(CountDistinctVariables(Vector2<Expression>{x_plus_y_, x_plus_z_}),
+            3);
+  EXPECT_EQ(CountDistinctVariables(RowVector2<Expression>{x_plus_z_, e_cos_}),
+            2);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
