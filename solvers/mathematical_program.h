@@ -1033,6 +1033,102 @@ class MathematicalProgram {
   Binding<Constraint> AddConstraint(const Binding<Constraint>& binding);
 
   /**
+   * Adds one row of constraint lb <= e <= ub where @p e is a symbolic
+   * expression. Throws an exception if
+   *  1. <tt>lb <= e <= ub</tt> is a trivial constraint such as 1 <= 2 <= 3.
+   *  2. <tt>lb <= e <= ub</tt> is unsatisfiable such as 1 <= -5 <= 3
+   *
+   * @param e A symbolic expression of the the decision variables.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound.
+   *
+   * The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
+   * LinearEqualityConstraint, or ExpressionConstraint, depending on the
+   * arguments.  Constraints of the form x == 1 (which could be created as a
+   * BoundingBoxConstraint or LinearEqualityConstraint) will be
+   * constructed as a LinearEqualityConstraint.
+   */
+  Binding<Constraint> AddConstraint(const symbolic::Expression& e, double lb,
+                                    double ub);
+
+  /**
+   * Adds constraints represented by symbolic expressions to the program. It
+   * throws if <tt>lb <= v <= ub</tt> includes trivial/unsatisfiable
+   * constraints.
+   *
+   * @overload Binding<Constraint> AddConstraint(const symbolic::Expression& e,
+   *    double lb, double ub)
+   */
+  Binding<Constraint> AddConstraint(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /**
+   * Add a constraint represented by a symbolic formula to the program. The
+   * input formula @p f can be of the following forms:
+   *
+   *  1. e1 <= e2
+   *  2. e1 >= e2
+   *  3. e1 == e2
+   *  4. A conjunction of relational formulas where each conjunct is
+   *     a relational formula matched by 1, 2, or 3.
+   *
+   * Note that first two cases might return an object of
+   * Binding<BoundingBoxConstraint>, Binding<LinearConstraint>, or
+   * Binding<ExpressionConstraint>, depending
+   * on @p f. Also the third case might return an object of
+   * Binding<LinearEqualityConstraint> or Binding<ExpressionConstraint>.
+   *
+   * It throws an exception if
+   *  1. @p f is not matched with one of the above patterns. Especially, strict
+   *     inequalities (<, >) are not allowed.
+   *  2. @p f is either a trivial constraint such as "1 <= 2" or an
+   *     unsatisfiable constraint such as "2 <= 1".
+   *  3. It is not possible to find numerical bounds of `e1` and `e2` where @p f
+   *     = e1 ≃ e2. We allow `e1` and `e2` to be infinite but only if there are
+   *     no other terms. For example, `x <= ∞` is allowed. However, `x - ∞ <= 0`
+   *     is not allowed because `x ↦ ∞` introduces `nan` in the evaluation.
+   */
+  Binding<Constraint> AddConstraint(const symbolic::Formula& f);
+
+  /**
+   * Add a constraint represented by an Eigen::Array<symbolic::Formula>
+   * to the program. A common use-case of this function is to add a constraint
+   * with the element-wise comparison between two Eigen matrices,
+   * using `A.array() <= B.array()`. See the following example.
+   *
+   * @code
+   *   MathematicalProgram prog;
+   *   Eigen::Matrix<double, 2, 2> A;
+   *   auto x = prog.NewContinuousVariables(2, "x");
+   *   Eigen::Vector2d b;
+   *   ... // set up A and b
+   *   prog.AddConstraint((A * x).array() <= b.array());
+   * @endcode
+   *
+   * A formula in @p formulas can be of the following forms:
+   *
+   *  1. e1 <= e2
+   *  2. e1 >= e2
+   *  3. e1 == e2
+   *
+   * It throws an exception if AddConstraint(const symbolic::Formula& f)
+   * throws an exception for f ∈ @p formulas.
+   *
+   * @overload Binding<Constraint> AddConstraint(const symbolic::Formula& f)
+   *
+   * @tparam Derived An Eigen Array type of Formula.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      is_eigen_scalar_same<Derived, symbolic::Formula>::value,
+      Binding<Constraint>>::type
+  AddConstraint(const Eigen::ArrayBase<Derived>& formulas) {
+    return AddConstraint(internal::ParseConstraint(formulas));
+  }
+
+  /**
    * Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
@@ -1198,7 +1294,17 @@ class MathematicalProgram {
       is_eigen_scalar_same<Derived, symbolic::Formula>::value,
       Binding<LinearConstraint>>::type
   AddLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
-    return AddConstraint(internal::ParseLinearConstraint(formulas));
+    Binding<Constraint> binding = internal::ParseConstraint(formulas);
+    Constraint* constraint = binding.evaluator().get();
+    if (dynamic_cast<LinearConstraint*>(constraint)) {
+      return AddConstraint(
+          internal::BindingDynamicCast<LinearConstraint>(binding));
+    } else {
+      std::stringstream oss;
+      oss << "Formulas are non-linear.";
+      throw std::runtime_error("AddLinearConstraint called but formulas are "
+                                   "non-linear");
+    }
   }
 
   /**
@@ -2663,11 +2769,11 @@ class MathematicalProgram {
     CheckIsDecisionVariable(binding.variables());
   }
 
-  // Adds a linear constraint represented by a set of symbolic formulas to the
+  // Adds a constraint represented by a set of symbolic formulas to the
   // program.
   //
   // Precondition: ∀ f ∈ formulas, is_relational(f).
-  Binding<LinearConstraint> AddLinearConstraint(
+  Binding<Constraint> AddConstraint(
       const std::set<symbolic::Formula>& formulas);
 
   // Adds a linear-equality constraint represented by a set of symbolic formulas
