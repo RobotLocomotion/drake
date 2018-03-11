@@ -37,7 +37,6 @@ class DirectTranscription : public MultipleShooting {
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
-  /// @throws std::runtime_error If the system is not discrete time (only).
   DirectTranscription(const System<double>* system,
                       const Context<double>& context, int num_time_samples);
 
@@ -53,8 +52,6 @@ class DirectTranscription : public MultipleShooting {
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
-  /// @throws std::runtime_error If the system is not discrete time (only).
-
   DirectTranscription(const LinearSystem<double>* system,
                       const Context<double>& context, int num_time_samples);
 
@@ -70,7 +67,6 @@ class DirectTranscription : public MultipleShooting {
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
-  /// @throws std::runtime_error If the system is not discrete time (only).
   DirectTranscription(const TimeVaryingLinearSystem<double>* system,
                       const Context<double>& context, int num_time_samples);
 
