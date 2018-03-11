@@ -7,8 +7,8 @@ import unittest
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.controllers import (
-    DynamicProgrammingOptions, FittedValueIteration,
-    LinearQuadraticRegulator,
+    DiscreteTimeLinearQuadraticRegulator, DynamicProgrammingOptions,
+    FittedValueIteration, LinearQuadraticRegulator,
     LinearProgrammingApproximateDynamicProgramming,
     PeriodicBoundaryCondition
 )
@@ -107,3 +107,12 @@ class TestControllers(unittest.TestCase):
         context.FixInputPort(0, BasicVector([0]))
         controller = LinearQuadraticRegulator(double_integrator, context, Q, R)
         np.testing.assert_almost_equal(controller.D(), -K_expected)
+
+    def test_discrete_time_linear_quadratic_regulator(self):
+        A = np.array([[1, 1], [0, 1]])
+        B = np.array([[0], [1]])
+        Q = np.identity(2)
+        R = np.identity(1)
+        (K, S) = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R)
+        self.assertEqual(K.shape, (1, 2))
+        self.assertEqual(S.shape, (2, 2))
