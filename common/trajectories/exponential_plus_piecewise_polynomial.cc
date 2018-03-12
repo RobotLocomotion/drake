@@ -32,8 +32,7 @@ ExponentialPlusPiecewisePolynomial<T>::
 template <typename T>
 std::unique_ptr<Trajectory<T>> ExponentialPlusPiecewisePolynomial<T>::Clone()
     const {
-  return std::make_unique<ExponentialPlusPiecewisePolynomial<T>>(
-      K_, A_, alpha_, piecewise_polynomial_part_);
+  return std::make_unique<ExponentialPlusPiecewisePolynomial<T>>(*this);
 }
 
 template <typename T>

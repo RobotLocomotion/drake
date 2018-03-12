@@ -13,6 +13,8 @@ load(
 # building with any compiler.
 CXX_FLAGS = [
     "-Werror=all",
+    "-Werror=deprecated",
+    "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
     "-Werror=overloaded-virtual",
     "-Werror=old-style-cast",

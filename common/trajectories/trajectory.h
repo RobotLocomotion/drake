@@ -4,6 +4,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -18,10 +19,7 @@ namespace trajectories {
 template <typename T>
 class Trajectory {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory)
-
-  Trajectory() {}
-  virtual ~Trajectory() {}
+  virtual ~Trajectory() = default;
 
   /**
    *
@@ -58,6 +56,11 @@ class Trajectory {
   virtual double start_time() const = 0;
 
   virtual double end_time() const = 0;
+
+ protected:
+  // Final subclasses are allowed to make copy/move/assign public.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory)
+  Trajectory() = default;
 };
 
 }  // namespace trajectories
