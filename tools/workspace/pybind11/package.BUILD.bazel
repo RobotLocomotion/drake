@@ -69,6 +69,7 @@ install_files(
 install(
     name = "install",
     targets = [":pybind11"],
+    hdr_dest = "include/pybind11",
     hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE"],
