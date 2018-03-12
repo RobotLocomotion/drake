@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from drake.tools.install.cpsutils import read_defs
 
@@ -15,7 +15,7 @@ content = """
   "Components": {
     "module": {
       "Type": "interface",
-      "Includes": ["@prefix@/include"],
+      "Includes": ["@prefix@/include/pybind11"],
       "Compile-Features": ["c++11"]
     }
   },
