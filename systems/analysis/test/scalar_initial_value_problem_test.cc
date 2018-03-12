@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/unused.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -20,7 +21,7 @@ class ScalarInitialValueProblemAccuracyTest
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
-  double integration_accuracy_;
+  double integration_accuracy_{0.};
 };
 
 // Accuracy test of the solution for the stored charge Q in an RC
@@ -42,8 +43,8 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
   ScalarInitialValueProblem<double> stored_charge_ivp(
       [](const double& t, const double& q,
          const VectorX<double>& k) -> double {
-        const double& Rs = k[0];
-        const double& Cs = k[1];
+        const double Rs = k[0];
+        const double Cs = k[1];
         return (std::sin(t) - q / Cs) / Rs;
       }, kInitialTime, kInitialStoredCharge, kDefaultParameters);
 
@@ -76,7 +77,8 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
         // Q(t; [Rs, Cs]) = 1/Rs * (τ²/ (1 + τ²) * e^(-t / τ) +
         //                  τ / √(1 + τ²) * sin(t - arctan(τ)))
         // where τ = Rs * Cs for Q(t₀ = 0; [Rs, Cs]) = Q₀ = 0, i.e.
-        // zero initial conditions.
+        // zero initial conditions (provided as defaults at IVP
+        // construction above).
         const double exact_solution = (
             tau_sq / (1. + tau_sq) * std::exp(-tf / tau)
             + tau / std::sqrt(1. + tau_sq)
@@ -109,7 +111,8 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   ScalarInitialValueProblem<double> population_growth_ivp(
       [](const double& t, const double& n,
          const VectorX<double>& k) -> double {
-        const double& r = k[0];
+        unused(t);
+        const double r = k[0];
         return r * n;
       }, kInitialTime, kInitialPopulation, kDefaultParameters);
 

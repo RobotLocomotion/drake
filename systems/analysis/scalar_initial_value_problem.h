@@ -76,7 +76,7 @@ class ScalarInitialValueProblem {
   /// @pre The time @p tf must be larger than or equal to the default initial
   ///      time t₀ specified at construction.
   /// @throw std::logic_error if preconditions are not met.
-  inline T Solve(const T& tf) const {
+  T Solve(const T& tf) const {
     const VectorX<T> solution =
         this->vector_ivp_->Solve(tf);
     return solution[0];
@@ -92,7 +92,7 @@ class ScalarInitialValueProblem {
   /// @pre The time @p tf must be larger than or equal to the initial time
   ///      @p t0.
   /// @throw std::logic_error if preconditions are not met.
-  inline T Solve(const T& t0, const T& tf) const {
+  T Solve(const T& t0, const T& tf) const {
     const VectorX<T> solution =
         this->vector_ivp_->Solve(t0, tf);
     return solution[0];
@@ -109,7 +109,7 @@ class ScalarInitialValueProblem {
   /// @pre The dimension of @p k must match that of the default parameters
   ///      vector 𝐤₀ specified at construction.
   /// @throw std::logic_error if preconditions are not met.
-  inline T Solve(const T& tf, const VectorX<T>& k) const {
+  T Solve(const T& tf, const VectorX<T>& k) const {
     const VectorX<T> solution =
         this->vector_ivp_->Solve(tf, k);
     return solution[0];
@@ -128,7 +128,7 @@ class ScalarInitialValueProblem {
   /// @pre The dimension of @p k must match that of the default parameter
   ///      vector 𝐤₀ given on construction.
   /// @throw std::logic_error if preconditions are not met.
-  inline T Solve(const T& t0, const T& tf, const VectorX<T>& k) const {
+  T Solve(const T& t0, const T& tf, const VectorX<T>& k) const {
     const VectorX<T> solution =
         this->vector_ivp_->Solve(t0, tf, k);
     return solution[0];
@@ -147,7 +147,7 @@ class ScalarInitialValueProblem {
   /// @pre The dimension of @p k must match that of the default parameter
   ///      vector 𝐤₀ specified at construction.
   /// @throw std::logic_error if preconditions are not met.
-  inline T Solve(const T& t0, const T& x0,
+  T Solve(const T& t0, const T& x0,
                  const T& tf, const VectorX<T>& k) const {
     const VectorX<T> solution = this->vector_ivp_->Solve(
         t0, VectorX<T>::Constant(1, x0), tf, k);
@@ -169,18 +169,18 @@ class ScalarInitialValueProblem {
   ///          ScalarInitialValueProblem::get_integrator() and
   ///          ScalarInitialValueProblem::get_mutable_integrator().
   template <typename I, typename... Args>
-  inline I* reset_integrator(Args&&... args) {
+  I* reset_integrator(Args&&... args) {
     return vector_ivp_->template reset_integrator(
         std::forward<Args>(args)...);
   }
 
   /// Gets a pointer to the internal integrator instance.
-  inline const IntegratorBase<T>* get_integrator() const {
+  const IntegratorBase<T>* get_integrator() const {
     return vector_ivp_->get_integrator();
   }
 
   /// Gets a pointer to the internal mutable integrator instance.
-  inline IntegratorBase<T>* get_mutable_integrator() {
+  IntegratorBase<T>* get_mutable_integrator() {
     return vector_ivp_->get_mutable_integrator();
   }
 
