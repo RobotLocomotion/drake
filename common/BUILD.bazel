@@ -611,6 +611,16 @@ sh_test(
     ],
 )
 
+# Test library for `find_loaded_library_test` and
+# `find_resource_relative_path`.
+drake_cc_binary(
+    name = "libfind_resource_test_example.so",
+    testonly = 1,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+    deps = [":find_resource"],
+)
+
 drake_cc_googletest(
     name = "is_cloneable_test",
     deps = [
@@ -712,25 +722,12 @@ drake_cc_googletest(
     ],
 )
 
-# Test library for `find_loaded_library_test`.
-drake_cc_binary(
-    name = "lib_is_real.so",
-    testonly = 1,
-    srcs = [
-        "test/lib_is_real.cc",
-    ],
-    linkshared = 1,
-    visibility = ["//visibility:private"],
-)
-
 drake_cc_googletest(
     name = "find_loaded_library_test",
     srcs = [
+        "find_loaded_library.h",
         "test/find_loaded_library_test.cc",
-        ":lib_is_real.so",
-    ],
-    deps = [
-        ":find_resource",
+        ":libfind_resource_test_example.so",
     ],
 )
 
@@ -1046,6 +1043,9 @@ drake_py_unittest(
 # - cpplint_wrapper_test.py
 
 add_lint_tests(
+    cpplint_extra_srcs = [
+        ":test/find_resource_relative_path_test.cc",
+    ],
     python_lint_extra_srcs = [
         ":test/resource_tool_installed_test.py",
     ],
