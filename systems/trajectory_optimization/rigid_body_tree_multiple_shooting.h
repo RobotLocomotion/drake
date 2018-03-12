@@ -48,9 +48,11 @@ class RigidBodyTreeMultipleShooting : public MultipleShooting {
                                 int num_time_samples, double minimum_timestep,
                                 double maximum_timestep);
 
-  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override;
+  trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
+      const override;
 
-  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
+  trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
+      const override;
 
   const solvers::MatrixXDecisionVariable& GeneralizedPositions() const {
     return q_vars_;

@@ -269,9 +269,9 @@ class JointLimitsComplementarityConstraint : public solvers::Constraint {
         joint_upper_bound_(joint_upper_bound) {}
 
   template <typename Scalar>
-  Vector3<Scalar> ComposeEvalInputVector(const Scalar& q,
-                                     const Scalar joint_lower_bound_force,
-                                     const Scalar& joint_upper_bound_force) {
+  Vector3<Scalar> ComposeEvalInputVector(
+      const Scalar& q, const Scalar joint_lower_bound_force,
+      const Scalar& joint_upper_bound_force) {
     return Vector3<Scalar>(q, joint_upper_bound_force, joint_lower_bound_force);
   }
 
@@ -428,7 +428,7 @@ void RigidBodyTreeMultipleShooting::DoAddRunningCost(
   }
 }
 
-PiecewisePolynomialTrajectory
+trajectories::PiecewisePolynomial<double>
 RigidBodyTreeMultipleShooting::ReconstructStateTrajectory() const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -438,11 +438,11 @@ RigidBodyTreeMultipleShooting::ReconstructStateTrajectory() const {
     times_vec[i] = times(i);
     states[i] = GetSolution(state(i));
   }
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::FirstOrderHold(times_vec, states));
+  return trajectories::PiecewisePolynomial<double>::FirstOrderHold(times_vec,
+                                                                   states);
 }
 
-PiecewisePolynomialTrajectory
+trajectories::PiecewisePolynomial<double>
 RigidBodyTreeMultipleShooting::ReconstructInputTrajectory() const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -452,8 +452,8 @@ RigidBodyTreeMultipleShooting::ReconstructInputTrajectory() const {
     times_vec[i] = times(i);
     inputs[i] = GetSolution(input(i));
   }
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs));
+  return trajectories::PiecewisePolynomial<double>::ZeroOrderHold(times_vec,
+                                                                  inputs);
 }
 
 }  // namespace trajectory_optimization
