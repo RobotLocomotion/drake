@@ -3,7 +3,10 @@
 #include <ostream>
 #include <string>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/solvers/solver_id.h"
 
 namespace drake {
@@ -21,6 +24,46 @@ enum SolutionResult {
   kIterationLimit = -6,  ///< Reaches the iteration limits.
   kDualInfeasible = -7,  ///< Dual problem is infeasible. In this case we cannot
                          /// infer the status of the primal problem.
+};
+
+/**
+ * Each solver should report its result to MathematicalProgram. The result is
+ * aggregated into a struct SolverResult.
+ */
+class SolverResult {
+ public:
+  explicit SolverResult(const SolverId& solver_id)
+    : solver_id_(solver_id) {}
+
+  const SolverId& solver_id() const { return solver_id_; }
+
+  optional<Eigen::VectorXd>& get_mutable_decision_variable_values() {
+    return decision_variable_values_;
+  }
+
+  const optional<Eigen::VectorXd>& decision_variable_values() const {
+    return decision_variable_values_;
+  }
+
+  void set_optimal_cost(double optimal_cost) {
+    optimal_cost_ = optimal_cost;
+  }
+
+  const optional<double>& optimal_cost() const { return optimal_cost_; }
+
+  void set_optimal_cost_lower_bound(double val) {
+    optimal_cost_lower_bound_ = val;
+  }
+
+  const optional<double>& optimal_cost_lower_bound() const {
+    return optimal_cost_lower_bound_;
+  }
+
+ private:
+  SolverId solver_id_;
+  optional<Eigen::VectorXd> decision_variable_values_;
+  optional<double> optimal_cost_;
+  optional<double> optimal_cost_lower_bound_;
 };
 
 /// Interface used by implementations of individual solvers.

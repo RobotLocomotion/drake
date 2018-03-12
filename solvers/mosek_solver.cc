@@ -611,9 +611,7 @@ class MosekSolver::License {
     mosek_env_ = nullptr;  // Fail-fast if accidentally used after destruction.
   }
 
-  MSKenv_t mosek_env() const {
-    return mosek_env_;
-  }
+  MSKenv_t mosek_env() const { return mosek_env_; }
 
  private:
   MSKenv_t mosek_env_{nullptr};
@@ -721,6 +719,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
+  SolverResult solver_result(id());
   // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {
@@ -750,13 +749,14 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            prog.SetDecisionVariableValues(sol_vector);
+            solver_result.get_mutable_decision_variable_values().emplace(
+                sol_vector);
           }
           MSKrealt optimal_cost;
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            prog.SetOptimalCost(optimal_cost);
+            solver_result.set_optimal_cost(optimal_cost);
           }
           break;
         }
@@ -777,7 +777,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverId(id());
+  prog.SetSolverResult(solver_result);
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

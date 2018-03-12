@@ -401,9 +401,12 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
   const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
-  prog.SetDecisionVariableValues(Vector3<double>::Zero());
+  SolverResult solver_result(SnoptSolver::id());
+  solver_result.get_mutable_decision_variable_values().emplace(
+      Vector3<double>(1, 2, 3));
+  prog.SetSolverResult(solver_result);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
+    EXPECT_EQ(prog.GetSolution(vars_expected(i)), i + 1);
     EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
   }
 }
@@ -421,7 +424,10 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
-  prog.SetDecisionVariableValues(Vector6<double>::Zero());
+  SolverResult solver_result(SnoptSolver::id());
+  solver_result.get_mutable_decision_variable_values().emplace(
+      Vector6<double>::Zero());
+  prog.SetSolverResult(solver_result);
   VectorDecisionVariable<6> vars_expected;
   vars_expected << y, x0, x1, x2;
   for (int i = 0; i < 6; ++i) {
@@ -594,12 +600,26 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   X2_value = -X1_value;
   Eigen::Vector4d x3_value(3, 4, 5, 6);
   Eigen::Vector4d x4_value = -x3_value;
-  for (int i = 0; i < 3; ++i) {
-    prog.SetDecisionVariableValues(X1.col(i), X1_value.col(i));
-    prog.SetDecisionVariableValues(X2.col(i), X2_value.col(i));
-  }
-  prog.SetDecisionVariableValues(x3, x3_value);
-  prog.SetDecisionVariableValues(x4, x4_value);
+
+  SolverResult solver_result(SnoptSolver::id());
+  solver_result.get_mutable_decision_variable_values().emplace(prog.num_vars());
+  auto SetDecisionVariableValue = [&prog, &solver_result](
+      const Eigen::Ref<const MatrixXDecisionVariable>& variable,
+      const Eigen::Ref<const Eigen::MatrixXd>& val) {
+    for (int i = 0; i < variable.rows(); ++i) {
+      for (int j = 0; j < variable.cols(); ++j) {
+        const int variable_index =
+            prog.FindDecisionVariableIndex(variable(i, j));
+        solver_result.get_mutable_decision_variable_values().value()(
+            variable_index) = val(i, j);
+      }
+    }
+  };
+  SetDecisionVariableValue(X1, X1_value);
+  SetDecisionVariableValue(X2, X2_value);
+  SetDecisionVariableValue(x3, x3_value);
+  SetDecisionVariableValue(x4, x4_value);
+  prog.SetSolverResult(solver_result);
 
   CheckGetSolution(prog, X1, X1_value);
   CheckGetSolution(prog, X2, X2_value);
@@ -1020,10 +1040,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
   EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
             binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
-  EXPECT_TRUE(
-      CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(1)));
-  EXPECT_TRUE(
-      CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(2)));
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(2)));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
@@ -1130,8 +1148,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
   prog.AddLinearConstraint(expr, Vector2d(1, 2), Vector2d(3, 4));
   EXPECT_EQ(prog.linear_constraints().size(), 2);
   binding = prog.linear_constraints().back();
-  EXPECT_TRUE(
-      CompareMatrices(binding.evaluator()->A(), Eigen::Vector2d(0, 1)));
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->A(), Eigen::Vector2d(0, 1)));
   EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(),
                               Eigen::Vector2d(-1, 2)));
   EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(),
@@ -2219,8 +2236,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
   EXPECT_EQ(binding.evaluator(),
             prog.rotated_lorentz_cone_constraints().back().evaluator());
   const VectorX<Expression> z =
-      binding.evaluator()->A() * binding.variables() +
-      binding.evaluator()->b();
+      binding.evaluator()->A() * binding.variables() + binding.evaluator()->b();
   const double tol{1E-10};
   EXPECT_TRUE(
       symbolic::test::PolynomialEqual(symbolic::Polynomial(linear_expression1),
@@ -2247,9 +2263,8 @@ CheckAddedSymbolicPositiveSemidefiniteConstraint(
             prog->positive_semidefinite_constraints().size());
   EXPECT_EQ(num_lin_eq_cnstr + 1, prog->linear_equality_constraints().size());
   // Check if the returned binding is the correct one.
-  EXPECT_EQ(
-      binding.evaluator().get(),
-      prog->positive_semidefinite_constraints().back().evaluator().get());
+  EXPECT_EQ(binding.evaluator().get(),
+            prog->positive_semidefinite_constraints().back().evaluator().get());
   // Check if the added linear constraint is correct. M is the newly added
   // variables representing the psd matrix.
   const Eigen::Map<const MatrixX<Variable>> M(&binding.variables()(0), V.rows(),

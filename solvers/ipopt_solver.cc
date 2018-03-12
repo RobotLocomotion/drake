@@ -324,12 +324,12 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       DRAKE_ASSERT(jCol != nullptr);
 
       int constraint_idx = 0;  // Passed into GetGradientMatrix as
-                                  // the starting row number for the
-                                  // constraint being described.
+                               // the starting row number for the
+                               // constraint being described.
       int grad_idx = 0;        // Offset into iRow, jCol output variables.
-                                  // Incremented by the number of triplets
-                                  // populated by each call to
-                                  // GetGradientMatrix.
+                               // Incremented by the number of triplets
+                               // populated by each call to
+                               // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
         grad_idx +=
             GetGradientMatrix(*problem_, *(c.evaluator()), c.variables(),
@@ -385,8 +385,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  Number obj_value, const IpoptData* ip_data,
                                  IpoptCalculatedQuantities* ip_cq) {
     unused(z_L, z_U, m, g, lambda, ip_data, ip_cq);
-
-    problem_->SetSolverId(IpoptSolver::id());
+    SolverResult solver_result(IpoptSolver::id());
 
     switch (status) {
       case Ipopt::SUCCESS: {
@@ -420,8 +419,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     for (Index i = 0; i < n; i++) {
       solution(i) = x[i];
     }
-    problem_->SetDecisionVariableValues(solution);
-    problem_->SetOptimalCost(obj_value);
+    solver_result.get_mutable_decision_variable_values() = solution;
+    solver_result.set_optimal_cost(obj_value);
+    problem_->SetSolverResult(solver_result);
   }
 
   SolutionResult result() const { return result_; }
