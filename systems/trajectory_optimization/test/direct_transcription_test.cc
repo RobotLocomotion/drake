@@ -20,18 +20,6 @@ namespace {
 using symbolic::Variable;
 using symbolic::Expression;
 
-GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstructorThrows) {
-  // Construct a trivial continuous time system.
-  const Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
-  const Eigen::Matrix<double, 2, 0> B;
-  const Eigen::Matrix<double, 0, 2> C;
-  const Eigen::Matrix<double, 0, 0> D;
-  LinearSystem<double> system(A, B, C, D);
-
-  const auto context = system.CreateDefaultContext();
-  EXPECT_THROW(DirectTranscription(&system, *context, 3), std::runtime_error);
-}
-
 namespace {
 
 template <typename T>
