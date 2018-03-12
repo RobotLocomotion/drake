@@ -86,6 +86,19 @@ objects from one container to another (e.g. transfering all `System`s
 from `DiagramBuilder` to `Diagram` when calling
 `DiagramBuilder.Build()`).
 
+## Function Overloads
+
+To bind function overloads, please try the following (in order):
+- `py::overload_cast<Args>(func)`: See [the pybind11 documentation](http://pybind11.readthedocs.io/en/stable/classes.html#overloaded-methods).
+This works about 80% of the time.
+- `pydrake::overload_cast_explicit<Return, Args...>(func)`: When
+`py::overload_cast` does not work (not always guaranteed to work).
+- Lambdas, e.g. `[](Args... args) -> auto&& { return func(args...); }`
+(using perfect forwarding when appropriate). This is more verbose, but gets the
+job done. For methods, ensure that you include the `self` argument.
+- If, for whatever reason, you wish to avoid lambdas, then use the
+`static_cast` approach mentioned in the pybind11 documentation.
+
 # Interactive Debugging with Bazel
 
 If you would like to interactively debug binding code (using IPython for
