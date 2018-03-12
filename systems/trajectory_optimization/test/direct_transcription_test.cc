@@ -81,8 +81,9 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
     discrete_state->get_mutable_vector(0).SetAtIndex(
-        0, context.get_numeric_parameter(0).GetAtIndex(0) *
-               context.get_discrete_state(0).GetAtIndex(0));
+        0,
+        context.get_numeric_parameter(0).GetAtIndex(0) *
+            context.get_discrete_state(0).GetAtIndex(0));
   }
 };
 
@@ -113,7 +114,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   // EXPECT_EQ(prog.fixed_timestep(),kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
-  prog.SetDecisionVariableValues(
+  prog.SetInitialGuessForAllVariables(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   // Constructor should add dynamic constraints, and these are the
@@ -124,9 +125,11 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
 
   using std::pow;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    EXPECT_EQ(prog.EvalBindingAtSolution(dynamic_constraints[i])[0],
-              prog.GetSolution(prog.state(i + 1)[0]) -
-                  pow(prog.GetSolution(prog.state(i)[0]), 3.0));
+    EXPECT_EQ(
+        prog.EvalBinding(dynamic_constraints[i],
+                         prog.GetInitialGuess(prog.decision_variables()))[0],
+        prog.GetInitialGuess(prog.state(i + 1)[0]) -
+            pow(prog.GetInitialGuess(prog.state(i)[0]), 3.0));
   }
 }
 
@@ -143,7 +146,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   // EXPECT_EQ(prog.fixed_timestep(),kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
-  prog.SetDecisionVariableValues(
+  prog.SetInitialGuessForAllVariables(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   // Constructor should add dynamic constraints, and these should have been
@@ -156,13 +159,13 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
 
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const Vector1d dynamic_constraint_val =
-        prog.EvalBindingAtSolution(dynamic_constraints[i]) -
+        prog.EvalBinding(dynamic_constraints[i],
+                         prog.GetInitialGuess(prog.decision_variables())) -
         dynamic_constraints[i].evaluator()->lower_bound();
     const Vector1d dynamic_constraint_expected =
-        prog.GetSolution(prog.state(i + 1)) -
-        system->A() * prog.GetSolution(prog.state(i)) -
-        system->B() * prog.GetSolution(prog.input(i)) -
-        system->f0();
+        prog.GetInitialGuess(prog.state(i + 1)) -
+        system->A() * prog.GetInitialGuess(prog.state(i)) -
+        system->B() * prog.GetInitialGuess(prog.input(i)) - system->f0();
 
     // Check that the system's state equation still holds with equality,
     // regardless of the specific encoding MathematicalProgram chooses.
@@ -192,7 +195,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
   EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
-  prog.SetDecisionVariableValues(
+  prog.SetInitialGuessForAllVariables(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   // Constructor should add dynamic constraints, and these should have been
@@ -205,19 +208,20 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
 
   const double kNumericalTolerance = 1e-10;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    EXPECT_TRUE(
-        CompareMatrices(prog.EvalBindingAtSolution(dynamic_constraints[i]),
-                        prog.GetSolution(prog.state(i + 1)) -
-                          A * prog.GetSolution(prog.state(i)) -
-                          B * prog.GetSolution(prog.input(i)),
-                        kNumericalTolerance));
+    EXPECT_TRUE(CompareMatrices(
+        prog.EvalBinding(dynamic_constraints[i],
+                         prog.GetInitialGuess(prog.decision_variables())),
+        prog.GetInitialGuess(prog.state(i + 1)) -
+            A * prog.GetInitialGuess(prog.state(i)) -
+            B * prog.GetInitialGuess(prog.input(i)),
+        kNumericalTolerance));
   }
 }
 
 // This example tests the TimeVaryingLinearSystem specialization of the
 // constructor.
 GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
-  const std::vector<double> times {0., 1.};
+  const std::vector<double> times{0., 1.};
   std::vector<Eigen::MatrixXd> Avec(times.size());
   std::vector<Eigen::MatrixXd> Bvec(times.size());
   std::vector<Eigen::MatrixXd> Cvec(times.size());
@@ -251,7 +255,7 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
-  prog.SetDecisionVariableValues(
+  prog.SetInitialGuessForAllVariables(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   // Constructor should add dynamic constraints, and these should have been
@@ -265,12 +269,13 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   const double kNumericalTolerance = 1e-10;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const double t = system.time_period() * i;
-    EXPECT_TRUE(
-        CompareMatrices(prog.EvalBindingAtSolution(dynamic_constraints[i]),
-                        prog.GetSolution(prog.state(i + 1)) -
-                          A.value(t) * prog.GetSolution(prog.state(i)) -
-                          B.value(t) * prog.GetSolution(prog.input(i)),
-                        kNumericalTolerance));
+    EXPECT_TRUE(CompareMatrices(
+        prog.EvalBinding(dynamic_constraints[i],
+                         prog.GetInitialGuess(prog.decision_variables())),
+        prog.GetInitialGuess(prog.state(i + 1)) -
+            A.value(t) * prog.GetInitialGuess(prog.state(i)) -
+            B.value(t) * prog.GetInitialGuess(prog.input(i)),
+        kNumericalTolerance));
   }
 }
 
@@ -316,7 +321,7 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
   DirectTranscription prog(&system, *context, kNumSampleTimes);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
-  prog.SetDecisionVariableValues(
+  prog.SetInitialGuessForAllVariables(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   // Constructor should add dynamic constraints, and these are the
@@ -327,9 +332,11 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
 
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     // Checks that x[n+1] = kGain*x[n].
-    EXPECT_EQ(prog.EvalBindingAtSolution(dynamic_constraints[i])[0],
-              prog.GetSolution(prog.state(i + 1)[0]) -
-                  kGain * prog.GetSolution(prog.state(i)[0]));
+    EXPECT_EQ(
+        prog.EvalBinding(dynamic_constraints[i],
+                         prog.GetInitialGuess(prog.decision_variables()))[0],
+        prog.GetInitialGuess(prog.state(i + 1)[0]) -
+            kGain * prog.GetInitialGuess(prog.state(i)[0]));
   }
 }
 

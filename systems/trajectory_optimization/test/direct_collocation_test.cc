@@ -62,14 +62,16 @@ GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const auto& binding = collocation_constraints[i];
 
-    prog.SetDecisionVariableValues(prog.timestep(i), Vector1d(kTimeStep));
-    prog.SetDecisionVariableValues(prog.input(i), u0);
-    prog.SetDecisionVariableValues(prog.input(i + 1), u1);
-    prog.SetDecisionVariableValues(prog.state(i), x0);
-    prog.SetDecisionVariableValues(prog.state(i + 1), x1);
+    prog.SetInitialGuess(prog.timestep(i), Vector1d(kTimeStep));
+    prog.SetInitialGuess(prog.input(i), u0);
+    prog.SetInitialGuess(prog.input(i + 1), u1);
+    prog.SetInitialGuess(prog.state(i), x0);
+    prog.SetInitialGuess(prog.state(i + 1), x1);
 
-    EXPECT_TRUE(
-        CompareMatrices(prog.EvalBindingAtSolution(binding), defect, 1e-6));
+    EXPECT_TRUE(CompareMatrices(
+        prog.EvalBinding(binding,
+                         prog.GetInitialGuess(prog.decision_variables())),
+        defect, 1e-6));
   }
 }
 
@@ -86,7 +88,9 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
                          kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
-  prog.SetDecisionVariableValues(
+  // Pretends that the solver has solved the optimization problem, and set the
+  // decision variable to some user-specified values.
+  prog.GetResultReportingInterface()->SetDecisionVariableValues(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   const PiecewisePolynomial<double> input_spline =
