@@ -45,8 +45,7 @@ class ModuleShim(object):
         else:
             # Otherwise, use the handler, and store the result.
             try:
-                import_type = self._get_import_type()
-                value = self._handler(name, import_type)
+                value = self._handler(name)
             except AttributeError as e:
                 if e.message:
                     raise e
@@ -64,24 +63,6 @@ class ModuleShim(object):
         # Redirect deletions to the original module.
         delattr(self._orig_module, name)
 
-    def _get_import_type(self):
-        # Check what kind of import type this came from.
-        sub = traceback.extract_stack()[-3:-1]
-        calling_function = sub[1][2]
-        assert calling_function == "__getattr__"
-        user_code = sub[0][3]
-        if user_code is None:
-            # This may happen when `eval` or `exec` is used.
-            return "unknown"
-        user_code = user_code.strip()
-        if user_code.startswith("from "):
-            if user_code.endswith("*"):
-                return "from_all"
-            else:
-                return "from_direct"
-        else:
-            return "direct"
-
     def __repr__(self):
         return repr(self._orig_module)
 
@@ -91,11 +72,8 @@ class ModuleShim(object):
         @param name
             Module name. Generally should be __name__.
         @param handler
-            Function of the form `handler(var, import_type)`, where `var` is
-            the variable name and `import_type` is the type of import:
-              "direct" implies this is called via `import mod; mod.{var}`
-              "from_direct" implies this is called via `from mod import {var}`
-              "from_all" implies this is called via `from mod import *`
+            Function of the form `handler(var)`, where `var` is
+            the variable name.
         """
         old_module = sys.modules[name]
         new_module = cls(old_module, handler)
