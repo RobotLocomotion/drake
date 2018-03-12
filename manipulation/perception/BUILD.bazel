@@ -26,6 +26,7 @@ drake_cc_library(
     name = "pose_smoother",
     srcs = ["pose_smoother.cc"],
     hdrs = ["pose_smoother.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//manipulation/util:moving_average_filter",
         "//math:geometric_transform",

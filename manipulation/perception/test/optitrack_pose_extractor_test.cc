@@ -16,6 +16,11 @@ namespace drake {
 namespace manipulation {
 namespace perception {
 
+// @note This tolerance is relatively loose (most likely) because the Optitrack
+// LCM message types use single- rather than double-precision floating point
+// types for quaternions.
+constexpr double kTolerance = 1e-6;
+
 class OptitrackPoseTest : public ::testing::Test {
  public:
   void Initialize(int object_id = 0,
@@ -51,7 +56,8 @@ class OptitrackPoseTest : public ::testing::Test {
 };
 
 TEST_F(OptitrackPoseTest, InvalidObjectTest) {
-  Initialize(2 /* object_id */);
+  const int object_id = 2;
+  Initialize(object_id);
   optitrack::optitrack_frame_t test_frame{};
   optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
@@ -71,7 +77,8 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
 }
 
 TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
-  Initialize(1 /* object_id */);
+  const int object_id = 1;
+  Initialize(object_id);
   optitrack::optitrack_frame_t test_frame{};
   optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
@@ -84,23 +91,29 @@ TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
 }
 
 TEST_F(OptitrackPoseTest, PoseComparisonTest) {
-  Initialize(0 /* object_id */);
+  const int object_id = 0;
+  Isometry3<double> X_WO;
+  X_WO.translation() << 1, 2, 3;
+  X_WO.linear() =
+      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitX()).matrix();
+  X_WO.makeAffine();
+  Initialize(object_id, X_WO);
   optitrack::optitrack_frame_t test_frame{};
   optitrack::optitrack_rigid_body_t default_body{};
 
   // An arbitrarily chosen test pose is assigned to the default_body.
-  Isometry3<double> test_pose;
-  test_pose.translation() << 0.01, -5.0, 10.10;
-
-  test_pose.linear() =
+  Isometry3<double> X_OB_expected;
+  X_OB_expected.translation() << 0.01, -5.0, 10.10;
+  X_OB_expected.linear() =
       Eigen::AngleAxisd(0.75 * M_PI, Eigen::Vector3d::UnitX()) *
       Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitY()).matrix();
+  X_OB_expected.makeAffine();
 
-  default_body.xyz[0] = test_pose.translation()[0];
-  default_body.xyz[1] = test_pose.translation()[1];
-  default_body.xyz[2] = test_pose.translation()[2];
+  default_body.xyz[0] = X_OB_expected.translation()[0];
+  default_body.xyz[1] = X_OB_expected.translation()[1];
+  default_body.xyz[2] = X_OB_expected.translation()[2];
 
-  Eigen::Quaterniond test_pose_quaternion(test_pose.linear());
+  Eigen::Quaterniond test_pose_quaternion(X_OB_expected.linear());
   default_body.quat[0] = test_pose_quaternion.x();
   default_body.quat[1] = test_pose_quaternion.y();
   default_body.quat[2] = test_pose_quaternion.z();
@@ -109,64 +122,49 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
 
   test_frame.rigid_bodies.push_back(default_body);
 
-  Isometry3<double> extracted_pose;
-  EXPECT_NO_THROW(extracted_pose = UpdateStateCalcOutput(test_frame));
+  // Non-systems tests.
 
-  // Compare translation.
-  EXPECT_TRUE(CompareMatrices(extracted_pose.translation(),
-                              test_pose.translation(), 1e-3,
-                              MatrixCompareType::absolute));
+  // - `ExtractPose`.
+  Isometry3<double> X_OB_direct =
+      ExtractOptitrackPose(*FindOptitrackBody(test_frame, object_id));
+  EXPECT_TRUE(CompareMatrices(
+      X_OB_direct.matrix(), X_OB_expected.matrix(),
+      kTolerance, MatrixCompareType::absolute));
 
-  // Compare quaternions.
-  EXPECT_TRUE(CompareMatrices(extracted_pose.linear(), test_pose.linear(),
-                              1e-3, MatrixCompareType::absolute));
+  // - `ExtractOptitrackPoses`.
+  using Map = std::map<int, Isometry3<double>>;
+  const Map all_poses = ExtractOptitrackPoses(test_frame);
+  const Map all_poses_expected = {{0, X_OB_expected}};
+  EXPECT_EQ(all_poses.size(), all_poses_expected.size());
+  for (auto& pair : all_poses) {
+    Isometry3<double> X_OBi = pair.second;
+    Isometry3<double> X_OBi_expected = all_poses_expected.at(pair.first);
+    EXPECT_TRUE(CompareMatrices(
+        X_OBi.matrix(), X_OBi_expected.matrix(),
+        kTolerance, MatrixCompareType::absolute));
+  }
+
+  // - Negative test for `FindOptitrackBody`.
+  EXPECT_FALSE(FindOptitrackBody(test_frame, 999).has_value());
+
+  // Systems test.
+  const Isometry3<double> X_WB_expected = X_WO * X_OB_expected;
+  Isometry3<double> X_WB;
+  EXPECT_NO_THROW(X_WB = UpdateStateCalcOutput(test_frame));
+
+  // Compare.
+  EXPECT_TRUE(CompareMatrices(
+      X_WB.matrix(), X_WB_expected.matrix(),
+      kTolerance, MatrixCompareType::absolute));
 }
 
-TEST_F(OptitrackPoseTest, PoseInReferenceFrameTest) {
-  // Arbitrarily chosen Transform from Drake World frame to Optitrack Frame.
-  Isometry3<double> X_WOp;
-  X_WOp.translation() << 7, 10, -4.5;
-  X_WOp.linear() =
-      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitX()).matrix();
-  Initialize(0 /* object_id */, X_WOp);
+TEST_F(OptitrackPoseTest, FindObject) {
+  optitrack::optitrack_data_descriptions_t message;
+  message.rigid_bodies = {{"test", 10}};
+  message.num_rigid_bodies = message.rigid_bodies.size();
 
-  optitrack::optitrack_frame_t test_frame{};
-  optitrack::optitrack_rigid_body_t default_body{};
-
-  // An arbitrarily chosen test pose is assigned to the default_body.
-  Isometry3<double> test_pose;
-  test_pose.translation() << 0.01, -5.0, 10.10;
-
-  test_pose.linear() =
-      Eigen::AngleAxisd(0.75 * M_PI, Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitY()).matrix();
-
-  default_body.xyz[0] = test_pose.translation()[0];
-  default_body.xyz[1] = test_pose.translation()[1];
-  default_body.xyz[2] = test_pose.translation()[2];
-
-  Eigen::Quaterniond test_pose_quaternion(test_pose.linear());
-  default_body.quat[0] = test_pose_quaternion.x();
-  default_body.quat[1] = test_pose_quaternion.y();
-  default_body.quat[2] = test_pose_quaternion.z();
-  default_body.quat[3] = test_pose_quaternion.w();
-  default_body.id = 0;
-
-  test_frame.rigid_bodies.push_back(default_body);
-
-  Isometry3<double> transformed_test_pose = X_WOp * test_pose;
-
-  Isometry3<double> extracted_pose;
-  EXPECT_NO_THROW(extracted_pose = UpdateStateCalcOutput(test_frame));
-
-  EXPECT_TRUE(CompareMatrices(extracted_pose.translation(),
-                              transformed_test_pose.translation(), 1e-3,
-                              MatrixCompareType::absolute));
-
-  // Compare quaternions.
-  EXPECT_TRUE(CompareMatrices(extracted_pose.linear(),
-                              transformed_test_pose.linear(), 1e-3,
-                              MatrixCompareType::absolute));
+  EXPECT_EQ(*FindOptitrackObjectId(message, "test"), 10);
+  EXPECT_FALSE(FindOptitrackObjectId(message, "blergh").has_value());
 }
 
 }  // namespace perception

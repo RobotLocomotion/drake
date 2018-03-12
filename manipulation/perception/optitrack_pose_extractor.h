@@ -1,14 +1,52 @@
 #pragma once
 
+#include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
+#include "optitrack/optitrack_data_descriptions_t.hpp"
+#include "optitrack/optitrack_frame_t.hpp"
+
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace manipulation {
 namespace perception {
+
+/**
+ * Gets the pose of an Optitrack rigid body.
+ * @returns X_OB, the pose of the body `B` in the optitrack frame `O`.
+ */
+Isometry3<double> ExtractOptitrackPose(
+    const optitrack::optitrack_rigid_body_t& message);
+
+/**
+ * Extracts poses of all objects from an Optitrack message.
+ * @returns Mapping from object ID to pose.
+ */
+std::map<int, Isometry3<double>> ExtractOptitrackPoses(
+    const optitrack::optitrack_frame_t& frame);
+
+/**
+ * Gets a rigid body from an optitrack frame message given an object ID.
+ * @param message Optitrack message.
+ * @param object_id ID to be searched for in the frame message.
+ * @returns Rigid body object, or `nullopt` if not found.
+ */
+optional<optitrack::optitrack_rigid_body_t> FindOptitrackBody(
+      const optitrack::optitrack_frame_t& message, int object_id);
+
+/**
+ * Gets the object ID from an Optitrack description message.
+ * @param message Description message.
+ * @returns Object ID if found, or `nullopt` if not found.
+ */
+optional<int> FindOptitrackObjectId(
+    const optitrack::optitrack_data_descriptions_t& message,
+    const std::string& object_name);
 
 /**
  * Extracts and provides an output of the pose of a desired object as an
