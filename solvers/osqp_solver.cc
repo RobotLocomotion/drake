@@ -262,15 +262,18 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
       case OSQP_SOLVED_INACCURATE: {
         const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
             work->solution->x, prog.num_vars());
-        prog.SetDecisionVariableValues(osqp_sol.cast<double>());
-        prog.SetOptimalCost(work->info->obj_val + constant_cost_term);
+        prog.GetResultReportingInterface()->SetDecisionVariableValues(
+            osqp_sol.cast<double>());
+        prog.GetResultReportingInterface()->SetOptimalCost(work->info->obj_val +
+                                                           constant_cost_term);
         solution_result = SolutionResult::kSolutionFound;
         break;
       }
       case OSQP_PRIMAL_INFEASIBLE:
       case OSQP_PRIMAL_INFEASIBLE_INACCURATE: {
         solution_result = SolutionResult::kInfeasibleConstraints;
-        prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+        prog.GetResultReportingInterface()->SetOptimalCost(
+            MathematicalProgram::kGlobalInfeasibleCost);
         break;
       }
       case OSQP_DUAL_INFEASIBLE:
@@ -299,7 +302,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_free(data);
   c_free(settings);
 
-  prog.SetSolverId(id());
+  prog.GetResultReportingInterface()->SetSolverId(id());
   return solution_result;
 }
 }  // namespace solvers

@@ -611,9 +611,7 @@ class MosekSolver::License {
     mosek_env_ = nullptr;  // Fail-fast if accidentally used after destruction.
   }
 
-  MSKenv_t mosek_env() const {
-    return mosek_env_;
-  }
+  MSKenv_t mosek_env() const { return mosek_env_; }
 
  private:
   MSKenv_t mosek_env_{nullptr};
@@ -750,13 +748,14 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            prog.SetDecisionVariableValues(sol_vector);
+            prog.GetResultReportingInterface()->SetDecisionVariableValues(
+                sol_vector);
           }
           MSKrealt optimal_cost;
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            prog.SetOptimalCost(optimal_cost);
+            prog.GetResultReportingInterface()->SetOptimalCost(optimal_cost);
           }
           break;
         }
@@ -777,7 +776,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverId(id());
+  prog.GetResultReportingInterface()->SetSolverId(id());
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

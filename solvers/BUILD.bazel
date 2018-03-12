@@ -409,6 +409,7 @@ drake_cc_library(
     ],
     hdrs = [
         "mathematical_program.h",
+        "mathematical_program_result_reporting_interface.h",
         "mathematical_program_solver_interface.h",
     ],
     deps = [

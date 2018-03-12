@@ -33,6 +33,7 @@
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
 #include "drake/solvers/indeterminate.h"
+#include "drake/solvers/mathematical_program_result_reporting_interface.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
@@ -292,7 +293,8 @@ struct assert_if_is_constraint {
 };
 }  // namespace detail
 
-class MathematicalProgram {
+class MathematicalProgram
+    : private MathematicalProgramResultReportingInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
   using VarType = symbolic::Variable::Type;
@@ -604,7 +606,6 @@ class MathematicalProgram {
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name = "a");
 
-
   /** Returns a pair of a SOS polynomial p = mᵀQm and a PSD constraint for
    * a new coefficients matrix Q, where m is the @p monomial basis.
    * For example, `NewSosPolynomial(Vector2<Monomial>{x,y})` returns a
@@ -630,7 +631,6 @@ class MathematicalProgram {
    */
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
   NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
-
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -2057,7 +2057,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
@@ -2070,7 +2070,7 @@ class MathematicalProgram {
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
-      Binding<LinearEqualityConstraint>>
+            Binding<LinearEqualityConstraint>>
   AddSosConstraint(
       const symbolic::Expression& e,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
@@ -2187,31 +2187,6 @@ class MathematicalProgram {
   }
 
   /**
-   * Sets the values of all decision variables, such that the value of
-   * \p decision_variables_(i) is \p values(i).
-   * @param values The values set to all the decision variables.
-   */
-  void SetDecisionVariableValues(
-      const Eigen::Ref<const Eigen::VectorXd>& values);
-
-  /**
-   * Sets the value of some decision variables, such that the value of
-   * \p variables(i) is \p values(i).
-   * @param variables The value of these decision variables will be set.
-   * @param values The values set to the decision variables.
-   */
-  void SetDecisionVariableValues(
-      const Eigen::Ref<const VectorXDecisionVariable>& variables,
-      const Eigen::Ref<const Eigen::VectorXd>& values);
-
-  /**
-   * Sets the value of a single decision variable in the optimization program.
-   * @param var A decision variable in the program.
-   * @param value The value of that decision variable.
-   */
-  void SetDecisionVariableValue(const symbolic::Variable& var, double value);
-
-  /**
    * Set an option for a particular solver.  This interface does not
    * do any verification of solver parameters beyond what an
    * individual solver does for itself.  It does not even verify that
@@ -2265,11 +2240,6 @@ class MathematicalProgram {
   }
 
   /**
-   * Sets the ID of the solver that was used to solve this program.
-   */
-  void SetSolverId(SolverId solver_id) { solver_id_ = solver_id; }
-
-  /**
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
@@ -2287,24 +2257,11 @@ class MathematicalProgram {
    */
   double GetOptimalCost() const { return optimal_cost_; }
 
-  void SetOptimalCost(double optimal_cost) { optimal_cost_ = optimal_cost; }
-
   /**
    * Getter for lower bound on optimal cost. Defaults to -Infinity
    * if a lower bound has not been found.
    */
   double GetLowerBoundCost() const { return lower_bound_cost_; }
-  /**
-   * Setter for lower bound on optimal cost. This function is meant
-   * to be called by the appropriate solver, not by the user. It sets
-   * the lower bound of the cost found by the solver, during the optimization
-   * process. For example, for mixed-integer optimization, the branch-and-bound
-   * algorithm can find the lower bound of the optimal cost, during the
-   * branching process.
-   */
-  void SetLowerBoundCost(double lower_bound_cost) {
-    lower_bound_cost_ = lower_bound_cost;
-  }
 
   /**
    * Getter for all generic costs.
@@ -2562,7 +2519,58 @@ class MathematicalProgram {
     return indeterminates_(i);
   }
 
+  MathematicalProgramResultReportingInterface* GetResultReportingInterface() {
+    return this;
+  }
+
  private:
+  /**
+   * Sets the ID of the solver that was used to solve this program.
+   */
+  void SetSolverId(SolverId solver_id) override { solver_id_ = solver_id; }
+
+  void SetOptimalCost(double optimal_cost) override {
+    optimal_cost_ = optimal_cost;
+  }
+
+  /**
+   * Setter for lower bound on optimal cost. This function is meant
+   * to be called by the appropriate solver, not by the user. It sets
+   * the lower bound of the cost found by the solver, during the optimization
+   * process. For example, for mixed-integer optimization, the branch-and-bound
+   * algorithm can find the lower bound of the optimal cost, during the
+   * branching process.
+   */
+  void SetLowerBoundCost(double lower_bound_cost) override {
+    lower_bound_cost_ = lower_bound_cost;
+  }
+
+  /**
+   * Sets the values of all decision variables, such that the value of
+   * \p decision_variables_(i) is \p values(i).
+   * @param values The values set to all the decision variables.
+   */
+  void SetDecisionVariableValues(
+      const Eigen::Ref<const Eigen::VectorXd>& values) override;
+
+  /**
+   * Sets the value of some decision variables, such that the value of
+   * \p variables(i) is \p values(i).
+   * @param variables The value of these decision variables will be set.
+   * @param values The values set to the decision variables.
+   */
+  void SetDecisionVariableValues(
+      const Eigen::Ref<const VectorXDecisionVariable>& variables,
+      const Eigen::Ref<const Eigen::VectorXd>& values) override;
+
+  /**
+   * Sets the value of a single decision variable in the optimization program.
+   * @param var A decision variable in the program.
+   * @param value The value of that decision variable.
+   */
+  void SetDecisionVariableValue(const symbolic::Variable& var,
+                                double value) override;
+
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
