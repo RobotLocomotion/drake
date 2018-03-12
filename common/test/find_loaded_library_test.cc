@@ -19,6 +19,7 @@ GTEST_TEST(FindLibraryTest, Library) {
   // Test wether or not `LoadedLibraryPath()` can find the path to a library
   // loaded by the process.
   optional<string> library_path = LoadedLibraryPath("lib_is_real.so");
+  EXPECT_EQ((*library_path)[0], '/');
   EXPECT_TRUE(library_path);
   library_path = LoadedLibraryPath("lib_not_real.so");
   EXPECT_FALSE(library_path);

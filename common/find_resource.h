@@ -76,7 +76,8 @@ class FindResourceResult {
 /// are accumulated each time this function is called. It is searched after the
 /// path given by the environment variable but before the path that can be
 /// found with the sentinel `.drake-resource-sentinel`. This can be used to
-/// find data in installed distributions of drake (or in `pydrake`).
+/// find data in installed distributions of drake (or in `pydrake`). The given
+/// path must be absolute or else throws runtime_error.
 void AddResourceSearchPath(std::string root_directory);
 
 /// Gets current root directory value from a persistent variable.
