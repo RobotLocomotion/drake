@@ -1,5 +1,9 @@
 from __future__ import absolute_import
 
+import warnings
+
+from pydrake.util.deprecation import DrakeDeprecationWarning
+
 # N.B. This is a shim that will be removed soon-ish.
 
 # TODO(eric.cousineau): On 06/02/2018 (after the underactuated course is done),
@@ -11,6 +15,15 @@ from .multibody.rigid_body_tree import *
 # TODO(eric.cousineau): Remove this direct import and ask users to import
 # pydrake.parsers.PackageMap instead
 from .multibody.parsers import PackageMap
+
+# N.B. `stacklevel` is a bit difficult here, because it could be triggered by
+# `import pydrake.rbtree` (module import) or
+# `from pydrake import rbtree` (ModuleShim).
+warnings.warn(
+    "`import pydrake; pydrake.rbtree` will soon be deprecated." +
+    "\n  Please use `import pydrake.rbtree` or `from pydrake " +
+    "import rbtree` instead.\n",
+    category=DrakeDeprecationWarning)
 
 # TODO(eric.cousineau): remove these direct imports and leave the constants
 # inside the FloatingBaseType enum class (#4950).
