@@ -8,8 +8,9 @@ def fcl_repository(
     github_archive(
         name = name,
         repository = "flexible-collision-library/fcl",
-        commit = "43048336c34a01156dc216e8534ffb2788675ddf",
-        sha256 = "fd74916b92ed58e77c06097dc18f545462417daa8c96fa8ea2a5c81cd3205917",  # noqa
+        local_repository_override = "/home/amcastro/FCL/fcl",
+        commit = "e683dfed7fecc617261e0308250fad8b7ea1d277",
+        sha256 = "e88785232d3a7df64b8319ec8a045afc5de10c8bc8ec7fc04fa3ef4118c100e0",  # noqa
         build_file = "@drake//tools/workspace/fcl:package.BUILD.bazel",
         mirrors = mirrors,
     )
