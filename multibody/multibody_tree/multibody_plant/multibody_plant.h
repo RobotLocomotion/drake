@@ -182,12 +182,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return model_->num_actuators();
   }
 
-  /// Returns the number of joint actuators in the model.
-  /// @see AddJointActuator().
-  int num_actuators() const {
-    return model_->get_num_actuators();
-  }
-
   /// Returns the size of the generalized position vector `q` for `this` model.
   int num_positions() const { return model_->num_positions(); }
 
@@ -593,8 +587,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return *model_;
   }
 
-  const MultibodyTree<T>& model() const { return *model_; }
-
   /// Returns `true` if this %MultibodyPlant was finalized with a call to
   /// Finalize().
   /// @see Finalize().
@@ -771,9 +763,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
 
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
-
-  // Actuation input port:
-  int actuation_port_{-1};
 
   // Rigid contact constraint parameters.
   double contact_penalty_stiffness_{0};
