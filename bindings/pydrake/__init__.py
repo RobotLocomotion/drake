@@ -17,7 +17,7 @@ def getDrakePath():
 __all__ = ['common', 'getDrakePath']
 
 
-def _getattr_handler(name, import_type):
+def _getattr_handler(name):
     # Deprecate direct usage of "rbtree" without having imported the module.
     if name == "rbtree":
         # N.B. Calling `from . import rbtree` will cause recursion, because

@@ -27,24 +27,22 @@ class TestDeprecation(unittest.TestCase):
         self.assertEqual(mod.value, 11)
         mod.something_new = 10
         self.assertEqual(mod.something_new, 10)
-        self.assertEqual(mod.__all__, ["value", "import_type", "sub_module"])
+        self.assertEqual(mod.__all__, ["value", "sub_module"])
         self.assertTrue(
             str(mod).startswith("<module 'deprecation_example' from"))
 
     def test_module_import_direct(self):
         # Test an import with direct access.
         import deprecation_example as mod
-        self.assertEqual(mod.import_type, "direct")
-        # Check submodule.
+        # Check submodule access as a non-import.
         self.assertTrue(isinstance(mod.sub_module, str))
 
     def test_module_import_from_direct(self):
         # Test an import via `from`.
-        # N.B. This is import because `from {mod} import {var}` could end up
-        # resolving `{var}` as a module.
+        # N.B. This is imported first because `from {mod} import {var}` could
+        # end up resolving `{var}` as a module.
         # @ref https://docs.python.org/3/reference/simple_stmts.html#import
-        from deprecation_example import import_type
-        self.assertEqual(import_type, "from_direct")
+        import deprecation_example
         # Test submodule behavior.
         # `from_direct` should use the `getattr` overload.
         from deprecation_example import sub_module as sub
@@ -59,14 +57,13 @@ class TestDeprecation(unittest.TestCase):
         # well supported for `exec`.
         import deprecation_example.import_all
         import deprecation_example
-        self.assertEquals(deprecation_example.import_type, "from_all")
+        self.assertIsInstance(deprecation_example.sub_module, str)
 
     def test_module_import_exec(self):
-        # Test failure with `exec`; scope locals and globals to ensure we keep
-        # track of the ref count.
+        # Test `exec` workflow.
         temp = {}
         exec "from deprecation_example import *" in temp
-        self.assertEquals(temp["import_type"], "unknown")
+        self.assertIsInstance(temp["sub_module"], str)
 
     def _check_warning(
             self, item, message_expected, type=DrakeDeprecationWarning):
