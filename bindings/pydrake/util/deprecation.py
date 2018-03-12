@@ -60,6 +60,10 @@ class ModuleShim(object):
         # Redirect writes to the original module.
         setattr(self._orig_module, name, value)
 
+    def __delattr__(self, name):
+        # Redirect deletions to the original module.
+        delattr(self._orig_module, name)
+
     def _get_import_type(self):
         # Check what kind of import type this came from.
         sub = traceback.extract_stack()[-3:-1]
