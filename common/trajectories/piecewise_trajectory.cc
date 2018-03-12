@@ -21,16 +21,6 @@ PiecewiseTrajectory<T>::PiecewiseTrajectory(std::vector<double> const& breaks)
 }
 
 template <typename T>
-PiecewiseTrajectory<T>::PiecewiseTrajectory() : Trajectory<T>() {
-  // empty
-}
-
-template <typename T>
-PiecewiseTrajectory<T>::~PiecewiseTrajectory() {
-  // empty
-}
-
-template <typename T>
 bool PiecewiseTrajectory<T>::is_time_in_range(double time) const {
   return (time >= start_time() && time <= end_time());
 }

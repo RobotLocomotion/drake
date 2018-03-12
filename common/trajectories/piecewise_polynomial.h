@@ -46,18 +46,16 @@ namespace trajectories {
 template <typename T>
 class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
  public:
+  // We are final, so this is okay.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
+
   typedef Polynomial<T> PolynomialType;
   typedef drake::MatrixX<PolynomialType> PolynomialMatrix;
   typedef drake::MatrixX<T> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
-
-  virtual ~PiecewisePolynomial() {}
-
   // default constructor; just leaves segment_times and polynomials empty
-  PiecewisePolynomial();
+  PiecewisePolynomial() = default;
 
   // single segment and/or constant value constructor
   template <typename Derived>
@@ -74,6 +72,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // Scalar constructor
   PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
                       std::vector<double> const& breaks);
+
+  ~PiecewisePolynomial() override = default;
 
   std::unique_ptr<Trajectory<T>> Clone() const override;
 
