@@ -400,6 +400,56 @@ class RotationMatrix {
     return kInternalToleranceForOrthonormality_;
   }
 
+  /// Returns a quaternion q that represent `this` %RotationMatrix.  Since the
+  /// quaternion `q` and `-q` represent the same %RotationMatrix, the quaternion
+  /// returned by this method chooses the quaternion with q(0) > 0.
+  // @internal This implementation is adapted from simbody at
+  // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
+  Vector4<T> ToQuaternion() const {
+    Vector4<T> q;
+    const Matrix3<T>& M = R_AB_;
+
+    const T trace = M.trace();
+    if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) {
+      // This branch occurs if the trace is larger than any diagonal element.
+      q(0) = T(1) + trace;
+      q(1) = M(2, 1) - M(1, 2);
+      q(2) = M(0, 2) - M(2, 0);
+      q(3) = M(1, 0) - M(0, 1);
+    } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
+      // This branch occurs if  R(0,0) is largest among the diagonal elements.
+      q(0) = M(2, 1) - M(1, 2);
+      q(1) = T(1) - (trace - 2 * M(0, 0));
+      q(2) = M(0, 1) + M(1, 0);
+      q(3) = M(0, 2) + M(2, 0);
+    } else if (M(1, 1) >= M(2, 2)) {
+      // This branch occurs if  R(1,1) is largest among the diagonal elements.
+      q(0) = M(0, 2) - M(2, 0);
+      q(1) = M(0, 1) + M(1, 0);
+      q(2) = T(1) - (trace - 2 * M(1, 1));
+      q(3) = M(1, 2) + M(2, 1);
+    } else {
+      // This branch occurs if  R(2,2) is largest among the diagonal elements.
+      q(0) = M(1, 0) - M(0, 1);
+      q(1) = M(0, 2) + M(2, 0);
+      q(2) = M(1, 2) + M(2, 1);
+      q(3) = T(1) - (trace - 2 * M(2, 2));
+    }
+
+    // Since the quaternions q and -q correspond to the same rotation matrix,
+    // choose a "canonical" quaternion with q(0) > 0.
+    const T canonical_factor = (q[0] < 0) ? T(-1) : T(1);
+
+    // The quantity q calculated thus far in this algorithm is not a quaternion
+    // with magnitude 1.  It differs from a quaternion in that all elements of q
+    // are scaled by the same factor (the value of this factor depends on which
+    // branch of the if/else-statements was used). To return a valid quaternion,
+    // the quantity q must be normalized so q(0)^2 + q(1)^2 + q(2)^2 = 1.
+    const T scale = canonical_factor * q.norm();
+
+    return q / scale;
+  }
+
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
   // %RotationMatrix templatized on any other typename T.
