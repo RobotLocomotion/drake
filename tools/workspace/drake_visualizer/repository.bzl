@@ -46,11 +46,11 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-282-g1a968bd-qt-5.10.0-vtk-8.1.0-mac-x86_64.tar.gz"
-        sha256 = "2dee827345d5696b0097024a24be710a4aa9703480860c93ce528771372b0aab"  # noqa
+        archive = "dv-0.1.0-286-g10f57e8-qt-5.10.1-vtk-8.0.1-mac-x86_64.tar.gz"
+        sha256 = "faf89ee8bca61afc17be5e4231b6e8094752014e562411b0a4a4b07d69038063"  # noqa
     elif os_result.ubuntu_release == "16.04":
-        archive = "dv-0.1.0-282-g1a968bd-qt-5.5.1-vtk-8.1.0-xenial-x86_64.tar.gz"  # noqa
-        sha256 = "9612d2d923280b0d76aed3f44dce575e0962e3c72ecdf0b8799532a5df203ebd"  # noqa
+        archive = "dv-0.1.0-286-g10f57e8-qt-5.5.1-vtk-8.0.1-xenial-x86_64.tar.gz"  # noqa
+        sha256 = "66fb82efa163ce10e665319c2628dbce2aac7698e0bd53965bdc05bbc5abe7b5"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 

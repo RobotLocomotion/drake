@@ -15,7 +15,6 @@ libnetcdf-c++4
 libnetcdf11
 libnlopt0
 libogg0
-libosmesa6
 libpng12-0
 libprotobuf-dev
 libqt5multimedia5
