@@ -116,6 +116,32 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
 }
 
 template<typename T>
+void MultibodyPlant<T>::RegisterCollisionGeometry(
+    const Body<T>& body,
+    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    geometry::GeometrySystem<T>* geometry_system) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  if (geometry_system != geometry_system_) {
+    throw std::logic_error(
+        "Geometry registration calls must be performed on the SAME instance of "
+        "GeometrySystem used on the first call to "
+        "RegisterAsSourceForGeometrySystem()");
+  }
+  GeometryId id;
+  // TODO(amcastro-tri): Consider doing this after finalize so that we can
+  // register anchored geometry on ANY body welded to the world.
+  if (body.index() == world_index()) {
+    id = RegisterAnchoredGeometry(X_BG, shape, geometry_system);
+  } else {
+    id = RegisterGeometry(body, X_BG, shape, geometry_system);
+  }
+  const int collision_index = geometry_id_to_collision_index_.size();
+  geometry_id_to_collision_index_[id] = collision_index;
+}
+
+template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
@@ -238,7 +264,9 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
 
   // Compute contact forces on each body by penalty method.
-  CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
+  if (get_num_collision_geometries() > 0) {
+    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
+  }
 
   model_->CalcInverseDynamics(
       context, pc, vc, vdot,

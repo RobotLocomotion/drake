@@ -479,6 +479,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<T>* geometry_system);
 
+  void RegisterCollisionGeometry(
+      const Body<T>& body,
+      const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      geometry::GeometrySystem<T>* geometry_system);
+
   /// Returns the number of geometries registered for visualization.
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().

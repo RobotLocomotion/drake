@@ -37,6 +37,8 @@ MakeObjectsFallingPlant(
 
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
+  plant->RegisterAsSourceForGeometrySystem(geometry_system);
+
   // The world's geometry.
   // Projection aligned with xhat, at theta from x-y plane.
   Matrix3d R = AngleAxisd(2.0 * M_PI / nplanes, Vector3d::UnitZ()).matrix();
@@ -44,11 +46,13 @@ MakeObjectsFallingPlant(
   Vector3d ni = n1;
   for (int i = 0; i < nplanes; ++i) {
     Vector3<double> point_W(0, 0, -0.2);
-    plant->RegisterAnchoredGeometry(
+    plant->RegisterCollisionGeometry(
+        plant->world_body(),
         HalfSpace::MakePose(ni, point_W), HalfSpace(), geometry_system);
     ni = R * ni;
   }
-  plant->RegisterAnchoredGeometry(
+  plant->RegisterCollisionGeometry(
+      plant->world_body(),
       HalfSpace::MakePose(Vector3<double>::UnitZ(), Vector3<double>::Zero()),
       HalfSpace(), geometry_system);
 #if 0
@@ -70,7 +74,7 @@ MakeObjectsFallingPlant(
     std:: string name = "Ball" + std::to_string(i);
     const RigidBody<double> &ball = plant->AddRigidBody(name, M_Bcm);
     // Add sphere geometry for the ball.
-    plant->RegisterGeometry(
+    plant->RegisterCollisionGeometry(
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         Isometry3d::Identity(),
@@ -81,7 +85,7 @@ MakeObjectsFallingPlant(
     std:: string name = "Cylinder" + std::to_string(i);
     const RigidBody<double> &ball = plant->AddRigidBody(name, M_Bcm);
     // Add sphere geometry for the ball.
-    plant->RegisterGeometry(
+    plant->RegisterCollisionGeometry(
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         Isometry3d::Identity(),

@@ -34,15 +34,18 @@ MakeBouncingBallPlant(double radius, double mass, const Vector3<double>& gravity
   const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_Bcm);
 
   if (geometry_system != nullptr) {
+    plant->RegisterAsSourceForGeometrySystem(geometry_system);
+
     Vector3<double> normal_W(0, 0, 1);
     Vector3<double> point_W(0, 0, 0);
 
     // A sphere at the world's origin.
-    plant->RegisterAnchoredGeometry(
+    plant->RegisterCollisionGeometry(
+        plant->world_body(),
         HalfSpace::MakePose(normal_W, point_W), HalfSpace(), geometry_system);
 
     // Add sphere geometry for the ball.
-    plant->RegisterGeometry(
+    plant->RegisterCollisionGeometry(
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         Isometry3d::Identity(),
