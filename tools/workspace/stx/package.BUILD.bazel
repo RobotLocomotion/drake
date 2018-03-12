@@ -9,6 +9,13 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+# Expose header file to be able to compile
+# `find_resource_relative_path_test.cc` while running a test.
+exports_files(
+    ["include/stx/optional.hpp"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "stx",
     hdrs = ["include/stx/optional.hpp"],

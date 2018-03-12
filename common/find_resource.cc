@@ -234,6 +234,8 @@ std::vector<string> GetResourceSearchPaths() {
 }
 
 void AddResourceSearchPath(string search_path) {
+  // Throw an error if path is relative.
+  DRAKE_THROW_UNLESS(!IsRelativePath(search_path));
   GetMutableResourceSearchPaths().push_back(std::move(search_path));
 }
 

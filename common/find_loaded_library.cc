@@ -1,14 +1,19 @@
 #include "drake/common/find_loaded_library.h"
 
+#include "drake/common/drake_throw.h"
+
 #ifdef __APPLE__
 #include <dlfcn.h>
 
 #include <mach-o/dyld.h>
 #include <mach-o/dyld_images.h>
 #else  // Not __APPLE__
+#include <libgen.h>  // dirname
 #include <string.h>
+#include <unistd.h>
 
 #include <link.h>
+#include <linux/limits.h>  // PATH_MAX
 #endif
 
 using std::string;
@@ -69,6 +74,7 @@ optional<string> LoadedLibraryPath(const string& library_name) {
     for (uint32_t i=0; i < infos->infoArrayCount; i++) {
       const char * pos_slash = strrchr(info[i].imageFilePath, '/');
       if (!strcmp(pos_slash + 1, library_name.c_str())) {
+        // Path is always absolute on MacOS
         return string(info[i].imageFilePath,
           pos_slash - info[i].imageFilePath);
       }
@@ -95,7 +101,15 @@ optional<string> LoadedLibraryPath(const std::string& library_name) {
     // [1] http://man7.org/linux/man-pages/man3/basename.3.html#DESCRIPTION
     const char* pos_slash = strrchr(map->l_name, '/');
     if (pos_slash && !strcmp(pos_slash + 1, library_name.c_str())) {
-      return string(map->l_name, pos_slash - map->l_name);
+      // Check if path is relative. If so, make it absolute.
+      if (map->l_name[0] != '/') {
+        char buf[PATH_MAX];
+        DRAKE_THROW_UNLESS(readlink("/proc/self/exe", buf, sizeof(buf)) >= 0);
+        return string(dirname(buf)) + "/" +
+              string(map->l_name, pos_slash - map->l_name);
+      } else {
+        return string(map->l_name, pos_slash - map->l_name);
+      }
     }
     map = map->l_next;
   }

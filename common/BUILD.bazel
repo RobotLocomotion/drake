@@ -576,6 +576,36 @@ sh_test(
     ],
 )
 
+# Test library for `find_loaded_library_test` and
+# `find_resource_relative_path`.
+drake_cc_binary(
+    name = "libfind_resource.so",
+    testonly = 1,
+    linkshared = 1,
+    visibility = ["//visibility:private"],
+    deps = [":find_resource"],
+)
+
+# Functional test that resource can be found with library linked with
+# relative path.
+sh_test(
+    name = "find_resource_relative_path",
+    srcs = ["test/find_resource_relative_path.sh"],
+    args = [
+        "$(location :capture_cc.env)",
+        "$(location :libfind_resource.so)",
+        "$(location :test/find_resource_relative_path_test.cc)",
+    ],
+    data = [
+        "capture_cc.env",
+        ":libfind_resource.so",
+        "test/find_resource_relative_path_test.cc",
+        "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
+        "//tools/cc_toolchain:osx_cc_wrapper.sh",
+        "@stx//:include/stx/optional.hpp",
+    ] + glob(["*.h"]),
+)
+
 drake_cc_googletest(
     name = "is_cloneable_test",
     deps = [
@@ -670,25 +700,12 @@ drake_cc_googletest(
     ],
 )
 
-# Test library for `find_loaded_library_test`.
-drake_cc_binary(
-    name = "lib_is_real.so",
-    testonly = 1,
-    srcs = [
-        "test/lib_is_real.cc",
-    ],
-    linkshared = 1,
-    visibility = ["//visibility:private"],
-)
-
 drake_cc_googletest(
     name = "find_loaded_library_test",
     srcs = [
+        "find_loaded_library.h",
         "test/find_loaded_library_test.cc",
-        ":lib_is_real.so",
-    ],
-    deps = [
-        ":find_resource",
+        ":libfind_resource.so",
     ],
 )
 
@@ -995,6 +1012,9 @@ drake_py_unittest(
 # - cpplint_wrapper_test.py
 
 add_lint_tests(
+    cpplint_extra_srcs = [
+        ":test/find_resource_relative_path_test.cc",
+    ],
     python_lint_extra_srcs = [
         ":test/resource_tool_installed_test.py",
     ],
