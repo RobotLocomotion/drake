@@ -269,7 +269,7 @@ class JointLimitsComplementarityConstraint : public solvers::Constraint {
         joint_upper_bound_(joint_upper_bound) {}
 
   template <typename Scalar>
-  Vector3<Scalar> CompositeEvalInput(const Scalar& q,
+  Vector3<Scalar> ComposeEvalInputVector(const Scalar& q,
                                      const Scalar joint_lower_bound_force,
                                      const Scalar& joint_upper_bound_force) {
     return Vector3<Scalar>(q, joint_upper_bound_force, joint_lower_bound_force);
@@ -335,7 +335,7 @@ RigidBodyTreeMultipleShooting::RigidBodyTreeMultipleShooting(
     auto position_constraint_force_evaluator =
         std::make_unique<PositionConstraintForceEvaluator>(
             *tree_, kinematics_cache_helpers_[i]);
-    solvers::VectorXDecisionVariable evaluator_variables =
+    const solvers::VectorXDecisionVariable evaluator_variables =
         position_constraint_force_evaluator->ComposeEvalInputVector(
             q_vars_.col(i), position_constraint_lambda_vars_.col(i));
     constraint_force_evaluator_bindings[i].emplace_back(
@@ -389,7 +389,7 @@ RigidBodyTreeMultipleShooting::AddJointLimitImplicitConstraint(
       std::make_shared<JointLimitsComplementarityConstraint>(joint_lower_bound,
                                                              joint_upper_bound);
   const auto joint_complementary_vars =
-      joint_complementary_constraint->CompositeEvalInput(
+      joint_complementary_constraint->ComposeEvalInputVector(
           q_vars_(joint_position_index, right_knot_index),
           lower_limit_force_lambda, upper_limit_force_lambda);
   AddConstraint(joint_complementary_constraint, joint_complementary_vars);
