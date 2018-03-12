@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -14,6 +15,23 @@ namespace systems {
 namespace rendering {
 
 namespace pose_aggregator_detail { struct InputRecord; }
+
+/// A container with references to the input port descriptor for the pose input,
+/// and a reference to an input port descriptor for the velocity input.
+template <typename T>
+struct PoseVelocityInputPortDescriptors {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseVelocityInputPortDescriptors)
+
+  PoseVelocityInputPortDescriptors(
+      const InputPortDescriptor<T>& pose_descriptor_in,
+      const InputPortDescriptor<T>& velocity_descriptor_in)
+  : pose_descriptor(pose_descriptor_in),
+    velocity_descriptor(velocity_descriptor_in) {}
+
+  const std::reference_wrapper<const InputPortDescriptor<T>> pose_descriptor;
+  const std::reference_wrapper<
+    const InputPortDescriptor<T>> velocity_descriptor;
+};
 
 // TODO(david-german-tri, SeanCurtis-TRI): Evolve PoseAggregator into
 // GeometrySystem as it becomes available.
@@ -90,10 +108,9 @@ class PoseAggregator : public LeafSystem<T> {
   /// FrameVelocity. @p name must be unique for all inputs with the same
   /// @p model_instance_id.
   ///
-  /// @return A pair where the first element is the descriptor for the pose
-  ///         input, and the second element is the descriptor for the velocity
-  ///         input.
-  std::pair<const InputPortDescriptor<T>&, const InputPortDescriptor<T>&>
+  /// @return A PoseVelocityInputPortDescriptors container with descriptors for
+  ///         both pose and velocity.
+  PoseVelocityInputPortDescriptors<T>
   AddSinglePoseAndVelocityInput(const std::string& name, int model_instance_id);
 
   /// Adds an input for a PoseBundle containing @p num_poses poses.

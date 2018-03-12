@@ -134,12 +134,13 @@ class TestRendering(unittest.TestCase):
         instance_id2 = 42  # Supply another random, but unique, id.
         ports2 = aggregator.AddSinglePoseAndVelocityInput(
             "pose_and_velocity", instance_id2)
-        self.assertEqual(
-            ports2[0].get_data_type(), PortDataType.kVectorValued)
-        self.assertEqual(ports2[0].size(), PoseVector.kSize)
-        self.assertEqual(
-            ports2[1].get_data_type(), PortDataType.kVectorValued)
-        self.assertEqual(ports2[1].size(), FrameVelocity.kSize)
+        self.assertEqual(ports2.pose_descriptor().get_data_type(),
+                         PortDataType.kVectorValued)
+        self.assertEqual(ports2.pose_descriptor().size(), PoseVector.kSize)
+        self.assertEqual(ports2.velocity_descriptor().get_data_type(),
+                         PortDataType.kVectorValued)
+        self.assertEqual(ports2.velocity_descriptor().size(),
+                         FrameVelocity.kSize)
         num_poses = 1
         port3 = aggregator.AddBundleInput("pose_bundle", num_poses)
         self.assertEqual(port3.get_data_type(), PortDataType.kAbstractValued)
