@@ -11,9 +11,6 @@ from pydrake.examples.pendulum import (
 from pydrake.systems.analysis import (
     Simulator
     )
-from pydrake.systems.primitives import (
-    ConstantVectorSource,
-    )
 
 
 class TestPendulum(unittest.TestCase):
@@ -62,7 +59,3 @@ class TestPendulum(unittest.TestCase):
         initial_state = state.CopyToVector()
         simulator.StepTo(1.0)
         self.assertFalse((state.CopyToVector() == initial_state).any())
-
-
-if __name__ == '__main__':
-    unittest.main()

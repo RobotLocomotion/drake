@@ -12,6 +12,8 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 // Note that the DirectCollocation implementation below allocates
@@ -178,7 +180,8 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
           SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
-PiecewisePolynomialTrajectory DirectCollocation::ReconstructInputTrajectory()
+PiecewisePolynomial<double>
+DirectCollocation::ReconstructInputTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -188,11 +191,11 @@ PiecewisePolynomialTrajectory DirectCollocation::ReconstructInputTrajectory()
     times_vec[i] = times(i);
     inputs[i] = GetSolution(input(i));
   }
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs));
+  return PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs);
 }
 
-PiecewisePolynomialTrajectory DirectCollocation::ReconstructStateTrajectory()
+PiecewisePolynomial<double>
+DirectCollocation::ReconstructStateTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -208,8 +211,7 @@ PiecewisePolynomialTrajectory DirectCollocation::ReconstructStateTrajectory()
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();
   }
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives));
+  return PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives);
 }
 
 }  // namespace trajectory_optimization

@@ -1,13 +1,9 @@
 #include "drake/multibody/multibody_tree/test/floating_body_plant.h"
 
-#include <limits>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
-
-#include <iostream>
-//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-#define PRINT_VARn(a) (void)a;
 
 namespace drake {
 namespace multibody {
@@ -19,25 +15,28 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 template<typename T>
-FloatingBodyPlant<T>::FloatingBodyPlant(double mass, double I, double J, double g) :
-    mass_(mass), I_(I), J_(J), g_(g) {
+AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
+    double mass, double I, double J, double g)
+    : mass_(mass), I_(I), J_(J), g_(g) {
   BuildMultibodyTreeModel();
-  DRAKE_DEMAND(model_.get_num_positions() == 7);
-  DRAKE_DEMAND(model_.get_num_velocities() == 6);
-  DRAKE_DEMAND(model_.get_num_states() == 13);
+  DRAKE_DEMAND(model_.num_positions() == 7);
+  DRAKE_DEMAND(model_.num_velocities() == 6);
+  DRAKE_DEMAND(model_.num_states() == 13);
   this->DeclareContinuousState(
-      model_.get_num_positions(),
-      model_.get_num_velocities(), 0 /* num_z */);
+      model_.num_positions(),
+      model_.num_velocities(), 0 /* num_z */);
 }
 
 template<typename T>
 template<typename U>
-FloatingBodyPlant<T>::FloatingBodyPlant(
-    const FloatingBodyPlant<U> &other) :
-    FloatingBodyPlant<T>(other.mass_, other.I_, other.J_) {}
+AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
+    const AxiallySymmetricFreeBodyPlant<U> &other) :
+    AxiallySymmetricFreeBodyPlant<T>(
+    other.mass_, other.I_, other.J_, other.g_) {}
 
 template<typename T>
-void FloatingBodyPlant<T>::BuildMultibodyTreeModel() {
+void AxiallySymmetricFreeBodyPlant<T>::BuildMultibodyTreeModel() {
+  // Create the spatial inertia M_Bcm of body B, about Bcm, expressed in B.
   UnitInertia<double> G_Bcm =
       UnitInertia<double>::AxiallySymmetric(J_, I_, Vector3<double>::UnitZ());
   SpatialInertia<double> M_Bcm(mass_, Vector3<double>::Zero(), G_Bcm);
@@ -46,7 +45,7 @@ void FloatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
   mobilizer_ =
       &model_.template AddMobilizer<QuaternionFloatingMobilizer>(
-          model_.get_world_frame(), body_->get_body_frame());
+          model_.world_frame(), body_->body_frame());
 
   model_.template AddForceElement<UniformGravityFieldElement>(
       -g_ * Vector3<double>::UnitZ());
@@ -56,34 +55,32 @@ void FloatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
 template<typename T>
 Vector3<double>
-FloatingBodyPlant<T>::get_default_initial_angular_velocity() const {
+AxiallySymmetricFreeBodyPlant<T>::get_default_initial_angular_velocity() {
   return Vector3d::UnitX() + Vector3d::UnitY() + Vector3d::UnitZ();
 }
 
 template<typename T>
 Vector3<double>
-FloatingBodyPlant<T>::get_default_initial_translational_velocity() const {
+AxiallySymmetricFreeBodyPlant<T>::get_default_initial_translational_velocity() {
   return Vector3d::UnitX();
 }
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-FloatingBodyPlant<T>::DoMakeLeafContext() const {
+AxiallySymmetricFreeBodyPlant<T>::DoMakeLeafContext() const {
   return model_.CreateDefaultContext();
 }
 
 template<typename T>
-void FloatingBodyPlant<T>::DoCalcTimeDerivatives(
+void AxiallySymmetricFreeBodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
     systems::ContinuousState<T> *derivatives) const {
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
-  PRINT_VARn("DoCalcTimeDerivatives()");
-
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   // Allocate workspace. We might want to cache these to avoid allocations.
   // Mass matrix.
@@ -91,20 +88,11 @@ void FloatingBodyPlant<T>::DoCalcTimeDerivatives(
   // Forces.
   MultibodyForces<T> forces(model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_.get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_.num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
   model_.CalcMassMatrixViaInverseDynamics(context, &M);
-
-  // Check if M is symmetric.
-  const T err_sym = (M - M.transpose()).norm();
-
-  PRINT_VARn(M);
-  PRINT_VARn(err_sym);
-
-  DRAKE_DEMAND(err_sym < 10 * std::numeric_limits<double>::epsilon());
-
 
   PositionKinematicsCache<T> pc(model_.get_topology());
   VelocityKinematicsCache<T> vc(model_.get_topology());
@@ -113,7 +101,7 @@ void FloatingBodyPlant<T>::DoCalcTimeDerivatives(
   model_.CalcForceElementsContribution(context, pc, vc, &forces);
 
   // With vdot = 0, this computes:
-  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  //   tau = C(q, v)v - tau_g(q).
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
   model_.CalcInverseDynamics(
@@ -123,72 +111,49 @@ void FloatingBodyPlant<T>::DoCalcTimeDerivatives(
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
       &tau_array);
 
-  PRINT_VARn(tau_array.transpose());
-
-  vdot = M.ldlt().solve(-tau_array);
-
-  PRINT_VARn(vdot.transpose());
+  vdot = M.llt().solve(-tau_array);
 
   auto v = x.bottomRows(nv);
-  VectorX<T> xdot(model_.get_num_states());
+  VectorX<T> xdot(model_.num_states());
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
-
-  PRINT_VARn(xdot.transpose());
 
   derivatives->SetFromVector(xdot);
 }
 
 template<typename T>
-void FloatingBodyPlant<T>::DoMapQDotToVelocity(
+void AxiallySymmetricFreeBodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
-
-
-  PRINT_VARn("DoMapQDotToVelocity()");
-
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
   DRAKE_DEMAND(generalized_velocity->size() == nv);
-
   VectorX<T> v(nv);
   model_.MapQDotToVelocity(context, qdot, &v);
-
-  PRINT_VARn(qdot.transpose());
-  PRINT_VARn(v.transpose());
-
   generalized_velocity->SetFromVector(v);
 }
 
 template<typename T>
-void FloatingBodyPlant<T>::DoMapVelocityToQDot(
+void AxiallySymmetricFreeBodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
-
-  PRINT_VARn("DoMapVelocityToQDot()");
-
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);
   DRAKE_DEMAND(positions_derivative->size() == nq);
-
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, generalized_velocity, &qdot);
-
-  PRINT_VARn(generalized_velocity.transpose());
-  PRINT_VARn(qdot.transpose());
-
   positions_derivative->SetFromVector(qdot);
 }
 
 template<typename T>
-void FloatingBodyPlant<T>::SetDefaultState(
+void AxiallySymmetricFreeBodyPlant<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   model_.SetDefaultState(context, state);
@@ -199,39 +164,34 @@ void FloatingBodyPlant<T>::SetDefaultState(
 }
 
 template<typename T>
-Vector3<T> FloatingBodyPlant<T>::get_angular_velocity(
+Vector3<T> AxiallySymmetricFreeBodyPlant<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
   return mobilizer_->get_angular_velocity(context);
 }
 
 template<typename T>
-Vector3<T> FloatingBodyPlant<T>::get_translational_velocity(
+Vector3<T> AxiallySymmetricFreeBodyPlant<T>::get_translational_velocity(
     const systems::Context<T>& context) const {
   return mobilizer_->get_translational_velocity(context);
 }
 
 template<typename T>
-void FloatingBodyPlant<T>::set_angular_velocity(
-    systems::Context<T>* context, const Vector3<T>& w_WB) const {
-  mobilizer_->set_angular_velocity(context, w_WB);
-}
-
-template<typename T>
-Isometry3<T> FloatingBodyPlant<T>::CalcPoseInWorldFrame(
+Isometry3<T> AxiallySymmetricFreeBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
-  return pc.get_X_WB(body_->get_node_index());
+  return pc.get_X_WB(body_->node_index());
 }
 
 template<typename T>
-SpatialVelocity<T> FloatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
+SpatialVelocity<T>
+AxiallySymmetricFreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
   VelocityKinematicsCache<T> vc(model_.get_topology());
   model_.CalcVelocityKinematicsCache(context, pc, &vc);
-  return vc.get_V_WB(body_->get_node_index());
+  return vc.get_V_WB(body_->node_index());
 }
 
 }  // namespace test
@@ -240,4 +200,5 @@ SpatialVelocity<T> FloatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::multibody_tree::test::FloatingBodyPlant)
+    class ::drake::multibody::multibody_tree::test::
+    AxiallySymmetricFreeBodyPlant)

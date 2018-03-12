@@ -140,7 +140,3 @@ class TestCppConst(unittest.TestCase):
             obj_const.mutate_indirect_2()
         with self._ex():
             obj_const._values["c"] = 2
-
-
-if __name__ == "__main__":
-    unittest.main()

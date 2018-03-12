@@ -22,6 +22,12 @@ load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 PROJECT_NAME = "ignition-rndf"
 
 PROJECT_MAJOR = 0
@@ -123,7 +129,7 @@ public_headers = public_headers_no_gen + [
 ]
 
 cc_binary(
-    name = "libignition_rndf.so",
+    name = "libdrake_ignition_rndf0.so",
     srcs = [
         "src/Checkpoint.cc",
         "src/Exit.cc",
@@ -143,6 +149,10 @@ cc_binary(
         "-w",
     ],
     includes = ["include"],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_ignition_rndf0.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
     deps = [
@@ -152,7 +162,7 @@ cc_binary(
 
 cc_library(
     name = "ignition_rndf",
-    srcs = ["libignition_rndf.so"],
+    srcs = ["libdrake_ignition_rndf0.so"],
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
@@ -176,7 +186,7 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":libignition_rndf.so"],
+    targets = [":libdrake_ignition_rndf0.so"],
     hdrs = public_headers,
     hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],

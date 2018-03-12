@@ -152,6 +152,10 @@ class MixedIntegerBranchAndBoundNode {
    */
   bool optimal_solution_is_integral() const;
 
+  /** Getter for solver id. */
+  const SolverId& solver_id() const { return solver_id_; }
+
+ private:
   /**
    * If the solution to a binary variable is either less than integral_tol or
    * larger than 1 - integral_tol, then we regard the solution to be binary.
@@ -268,6 +272,9 @@ class MixedIntegerBranchAndBound {
       const MixedIntegerBranchAndBound&)>;
   using VariableSelectFun = std::function<const symbolic::Variable*(
       const MixedIntegerBranchAndBoundNode&)>;
+  /** The function signature for user defined node callback function. */
+  using NodeCallbackFun = std::function<void(
+      const MixedIntegerBranchAndBoundNode&, MixedIntegerBranchAndBound* bnb)>;
 
   /**
    * Construct a branch-and-bound tree from a mixed-integer optimization
@@ -467,6 +474,26 @@ class MixedIntegerBranchAndBound {
     variable_selection_userfun_ = fun;
   }
 
+  /** Set the flag to true if the user wants to search an integral solution
+   * in each node, after the optimization problem in that node is solved.
+   * The program can search for an integral solution based on the solution to
+   * the optimization program in the node, by rounding the binary variables
+   * to the nearest integer value, and solve for the continuous variables.
+   * If a solution is obtained in this new program, then this solution is
+   * an integral solution to the mixed-integer program.
+   */
+  void SetSearchIntegralSolutionByRounding(bool flag) {
+    search_integral_solution_by_rounding_ = flag;
+  }
+
+  /**
+   * The user can set a defined callback function in each node. This function is 
+   * called after the optimization is solved in each node.
+   */
+  void SetUserDefinedNodeCallbackFunction(NodeCallbackFun fun) {
+    node_callback_userfun_ = fun;
+  }
+
   /**
    * If a leaf node is fathomed, then there is no need to branch on this node
    * any more. A leaf node is fathomed is any of the following conditions are
@@ -572,14 +599,26 @@ class MixedIntegerBranchAndBound {
    */
   bool HasConverged() const;
 
+  /** Call the callback function in each node. */
+  void NodeCallback(const MixedIntegerBranchAndBoundNode& node);
+
   /**
    * Search for an integral solution satisfying all the constraints in this
    * node, together with the integral constraints in the original mixed-integer
-   * program.
+   * program. It will construct a new optimization program, same as the one
+   * in this node, but the remaining binary variables are all rounded to
+   * the binary value that is closest to the solution of the optimization
+   * program in this node.
+   * @Note this function is only called if the following conditions are
+   * satisfied:
+   * 1. The optimization problem in this node is feasible.
+   * 2. The optimal solution to the problem in this node is not integral.
+   * 3. The user called SetSearchIntegralSolutionByRounding(true);
    * @note This method will change the data field such as solutions_ and/or
    * best_upper_bound_, if an integral solution is found.
    */
-  void SearchIntegralSolution(const MixedIntegerBranchAndBoundNode& node);
+  void SearchIntegralSolutionByRounding(
+      const MixedIntegerBranchAndBoundNode& node);
 
   // The root node of the tree.
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root_;
@@ -626,11 +665,16 @@ class MixedIntegerBranchAndBound {
   NodeSelectionMethod node_selection_method_ =
       NodeSelectionMethod::kMinLowerBound;
 
+  bool search_integral_solution_by_rounding_ = false;
+
   // The user defined function to pick a branching variable. Default is null.
   VariableSelectFun variable_selection_userfun_ = nullptr;
 
   // The user defined function to pick a branching node. Default is null.
   NodeSelectFun node_selection_userfun_ = nullptr;
+
+  // The user defined callback function in each node. Default is null.
+  NodeCallbackFun node_callback_userfun_ = nullptr;
 };
 }  // namespace solvers
 }  // namespace drake

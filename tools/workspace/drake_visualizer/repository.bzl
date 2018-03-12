@@ -3,7 +3,8 @@
 
 """
 Downloads and unpacks a precompiled version of drake-visualizer (a subset of
-Director) and makes it available to be used as a dependency of shell scripts.
+Director, https://git.io/vNKjq) and makes it available to be used as a
+dependency of shell scripts.
 
 Archive naming convention:
     dv-<version>-g<commit>-qt-<qt version>-vtk-<vtk version>-<platform>-<arch>
@@ -12,6 +13,7 @@ Build configuration:
     BUILD_SHARED_LIBS=OFF
     CMAKE_BUILD_TYPE=Release
     DD_QT_VERSION=5
+    USE_EXTERNAL_INSTALL=ON
     USE_LCM=ON
     USE_SYSTEM_VTK=ON
 
@@ -44,17 +46,17 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-173-g6e49220-qt-5.9.1-vtk-8.0.1-mac-x86_64.tar.gz"
-        sha256 = "65b78914327c82bb8fd7cf2182dedc2a45edeafc44fc229415528ee2180bf9a4"  # noqa
+        archive = "dv-0.1.0-282-g1a968bd-qt-5.10.0-vtk-8.1.0-mac-x86_64.tar.gz"
+        sha256 = "2dee827345d5696b0097024a24be710a4aa9703480860c93ce528771372b0aab"  # noqa
     elif os_result.ubuntu_release == "16.04":
-        archive = "dv-0.1.0-173-g6e49220-qt-5.5.1-vtk-8.0.1-xenial-x86_64.tar.gz"  # noqa
-        sha256 = "57ebe3cef758b42bdc1affb50e371a1e5224e73e3c2ebe25dcbba7697b66d24d"  # noqa
+        archive = "dv-0.1.0-282-g1a968bd-qt-5.5.1-vtk-8.1.0-xenial-x86_64.tar.gz"  # noqa
+        sha256 = "9612d2d923280b0d76aed3f44dce575e0962e3c72ecdf0b8799532a5df203ebd"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
     urls = [
-        "https://drake-packages.csail.mit.edu/director/{}".format(archive),
-        "https://s3.amazonaws.com/drake-packages/director/{}".format(archive),
+        x.format(archive = archive)
+        for x in repository_ctx.attr.mirrors.get("director")
     ]
     root_path = repository_ctx.path("")
 
@@ -77,9 +79,9 @@ filegroup(
     srcs = glob([
         "lib/libPythonQt.*",
         "lib/libddApp.*",
-        "lib/python2.7/dist-packages/director/**/*.py",
-        "lib/python2.7/dist-packages/director/**/*.so",
-        "lib/python2.7/dist-packages/urdf_parser_py/**/*.py",
+        "lib/python2.7/site-packages/director/**/*.py",
+        "lib/python2.7/site-packages/director/**/*.so",
+        "lib/python2.7/site-packages/urdf_parser_py/**/*.py",
     ]) + [
         "bin/drake-visualizer",
         "share/doc/director/LICENSE.txt",
@@ -102,4 +104,9 @@ install_files(
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
-drake_visualizer_repository = repository_rule(implementation = _impl)
+drake_visualizer_repository = repository_rule(
+    attrs = {
+        "mirrors": attr.string_list_dict(),
+    },
+    implementation = _impl,
+)

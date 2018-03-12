@@ -41,7 +41,7 @@ namespace {
 
 // Base class for testing the RigidBodyPlant's logic for populating its
 // output port for collision response data.
-class ContactResultTest : public ContactResultTestCommon {
+class ContactResultTest : public ContactResultTestCommon<double> {
  protected:
   // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
@@ -140,6 +140,13 @@ TEST_F(ContactResultTest, SingleCollision) {
   ASSERT_TRUE(
       CompareMatrices(detail_force.get_application_point(), expected_point));
 }
+
+GTEST_TEST(AdditionalContactResultsTest, AutoDiffTest) {
+  // Simply test that I can instantiate the AutoDiffXd type.
+  ContactResults<AutoDiffXd> result;
+  EXPECT_EQ(result.get_num_contacts(), 0);
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace rigid_body_plant

@@ -80,7 +80,6 @@ drake_cc_library(
         "multibody_forces.cc",
         "multibody_tree.cc",
         "quaternion_floating_mobilizer.cc",
-        "quaternion_mobilizer.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
@@ -103,7 +102,6 @@ drake_cc_library(
         "multibody_forces.h",
         "multibody_tree.h",
         "quaternion_floating_mobilizer.h",
-        "quaternion_mobilizer.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
         "space_xyz_mobilizer.h",
@@ -116,7 +114,6 @@ drake_cc_library(
         ":spatial_inertia",
         "//drake/common:autodiff",
         "//drake/math:geometric_transform",
-        "//drake/multibody/multibody_tree/math:rotation_matrix",
     ],
 )
 
@@ -207,6 +204,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "floating_body_test",
     size = "small",
+    timeout = "moderate",
     srcs = [
         "test/floating_body_test.cc",
     ],

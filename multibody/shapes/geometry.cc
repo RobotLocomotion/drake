@@ -49,8 +49,6 @@ string ShapeToString(Shape ss) {
 
 Geometry::Geometry() : shape(UNKNOWN) {}
 
-Geometry::Geometry(const Geometry& other) { shape = other.getShape(); }
-
 Geometry::Geometry(Shape shape_in) : shape(shape_in) {}
 
 Shape Geometry::getShape() const { return shape; }
@@ -348,18 +346,20 @@ void Mesh::LoadObjFile(PointsVector* vertices, TrianglesVector* triangles,
   int maximum_index = 0;
 
   // Iterate over the shapes.
-  for (auto const& shape : shapes) {
+  for (const auto& one_shape : shapes) {
+    const tinyobj::mesh_t& mesh = one_shape.mesh;
     int index_offset = 0;
 
     // For each face in the shape.
     for (int face = 0;
-         face < static_cast<int>(shape.mesh.num_face_vertices.size()); ++face) {
-      const int vert_count = shape.mesh.num_face_vertices[face];
+         face < static_cast<int>(mesh.num_face_vertices.size());
+         ++face) {
+      const int vert_count = mesh.num_face_vertices[face];
 
       std::vector<int> indices;
       for (int vert = 0; vert < vert_count; ++vert) {
         // Store the vertex index.
-        int vertex_index = shape.mesh.indices[index_offset + vert].vertex_index;
+        int vertex_index = mesh.indices[index_offset + vert].vertex_index;
         maximum_index = std::max(maximum_index, vertex_index);
         indices.push_back(vertex_index);
       }

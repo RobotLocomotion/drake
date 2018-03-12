@@ -521,9 +521,11 @@ class RigidBodyTree {
   /// @returns a `nv` dimensional vector, where `nv` is the dimension of the
   ///      generalized velocities.
   /// @sa transformVelocityToQDot()
-  static drake::VectorX<T> transformQDotToVelocity(
-      const KinematicsCache<T>& cache,
-      const drake::VectorX<T>& qdot);
+  template <typename Derived>
+  static drake::VectorX<typename Derived::Scalar>
+  transformQDotToVelocity(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& qdot);
 
   /// Converts a vector of generalized velocities (v) to the time
   /// derivative of generalized coordinates (qdot).
@@ -534,9 +536,11 @@ class RigidBodyTree {
   /// @retval qdot a `nq` dimensional vector, where `nq` is the dimension of the
   ///      generalized coordinates.
   /// @sa transformQDotToVelocity()
-  static drake::VectorX<T> transformVelocityToQDot(
-      const KinematicsCache<T>& cache,
-      const drake::VectorX<T>& v);
+  template <typename Derived>
+  static drake::VectorX<typename Derived::Scalar>
+  transformVelocityToQDot(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& v);
 
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
@@ -932,11 +936,33 @@ class RigidBodyTree {
     }
   }
 
+  /**
+   * Updates the collision elements registered with the collision detection 
+   * engine.  Note: If U is not a double then the transforms from kinematics
+   * cache will be forcefully cast to doubles (discarding any gradient
+   * information).  Callers that set @p throw_if_missing_gradient to
+   * `false` are responsible for ensuring that future code is secure despite all
+   * gradients with respect to the collision engine being arbitrarily set to
+   * zero.
+   * @see ComputeMaximumDepthCollisionPoints for an example.
+   *
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   * only if @p throws_if_missing_gradient is true.
+   */
+  template <typename U>
   void updateCollisionElements(
       const RigidBody<T>& body,
-      const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
+      const Eigen::Transform<U, 3, Eigen::Isometry>& transform_to_world,
+      bool throw_if_missing_gradient = true);
 
-  void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
+  /**
+   * @see updateCollisionElements 
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   * only if @p throws_if_missing_gradient is true.
+   */
+  template <typename U>
+  void updateDynamicCollisionElements(const KinematicsCache<U>& kin_cache,
+                                      bool throw_if_missing_gradient = true);
 
   /**
    * Gets the contact points defined by a body's collision elements.
@@ -1113,12 +1139,17 @@ class RigidBodyTree {
    surface of each body is stored in the PointPair structure in the frame of the
    corresponding body.
 
-   @param use_margins[in] If `true` the model uses the representation with
+   @param[in] use_margins If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
+
+   @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   only if @p throws_if_missing_gradient is true.
    **/
-  std::vector<drake::multibody::collision::PointPair>
-  ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
-                                     bool use_margins = true);
+  template <typename U>
+  std::vector<drake::multibody::collision::PointPair<U>>
+  ComputeMaximumDepthCollisionPoints(const KinematicsCache<U>& cache,
+                                     bool use_margins = true, bool
+                                     throw_if_missing_gradient = true);
 
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,

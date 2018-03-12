@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pybind11/pybind11.h>
+#include "pybind11/pybind11.h"
 
 // N.B. Avoid including other headers, such as `pybind11/eigen.sh` or
 // `pybind11/functional.sh`, such that modules can opt-in to (and pay the cost

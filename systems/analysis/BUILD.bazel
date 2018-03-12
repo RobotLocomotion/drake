@@ -38,6 +38,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lyapunov",
+    srcs = ["lyapunov.cc"],
+    hdrs = ["lyapunov.h"],
+    deps = [
+        "//common:essential",
+        "//math:autodiff",
+        "//math:gradient",
+        "//solvers:mathematical_program",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "runge_kutta2_integrator",
     srcs = [],
     hdrs = ["runge_kutta2_integrator.h"],
@@ -96,6 +109,26 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "initial_value_problem",
+    srcs = [
+        "initial_value_problem.cc",
+    ],
+    hdrs = [
+        "initial_value_problem.h",
+        "initial_value_problem-inl.h",
+    ],
+    deps = [
+        ":runge_kutta3_integrator",
+        "//drake/common:essential",
+        "//drake/systems/framework:context",
+        "//drake/systems/framework:continuous_state",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/framework:parameters",
+        "//drake/systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
@@ -142,6 +175,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "lyapunov_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
+    deps = [
+        ":lyapunov",
+        "//examples/pendulum:pendulum_plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "runge_kutta2_integrator_test",
     deps = [
         ":runge_kutta2_integrator",
@@ -172,6 +215,16 @@ drake_cc_googletest(
         "//drake/multibody/joints",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "initial_value_problem_test",
+    size = "small",
+    deps = [
+        ":initial_value_problem",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -70,6 +70,7 @@ void TestLQRLinearSystemAgainstKnownSolution(
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(linear_lqr->D(), -K_known, tolerance,
                               MatrixCompareType::absolute));
+  EXPECT_EQ(linear_lqr->time_period(), sys.time_period());
 }
 
 void TestLQRAffineSystemAgainstKnownSolution(
@@ -88,7 +89,11 @@ void TestLQRAffineSystemAgainstKnownSolution(
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(m);
 
   context->FixInputPort(0, u0);
-  context->get_mutable_continuous_state().SetFromVector(x0);
+  if (sys.time_period() == 0.0) {
+    context->get_mutable_continuous_state().SetFromVector(x0);
+  } else {
+    context->get_mutable_discrete_state(0).SetFromVector(x0);
+  }
   std::unique_ptr<AffineSystem<double>> lqr =
       LinearQuadraticRegulator(sys, *context, Q, R, N);
 
@@ -104,6 +109,7 @@ void TestLQRAffineSystemAgainstKnownSolution(
                               tolerance, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->y0(), u0 + K_known * x0,
                               tolerance, MatrixCompareType::absolute));
+  EXPECT_EQ(lqr->time_period(), sys.time_period());
 }
 
 GTEST_TEST(TestLQR, DoubleIntegrator) {
@@ -151,6 +157,43 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
 
   // Test AffineSystem version of the LQR
   TestLQRAffineSystemAgainstKnownSolution(tol, sys, K, Q, R, N);
+}
+
+GTEST_TEST(TestLQR, DiscreteDoubleIntegrator) {
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+  A << 1, 1, 0, 1;
+  B << 0, 1;
+
+  // Trivial cost:
+  Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
+  Vector1d R = Vector1d::Identity();
+
+  // Solution from dlqr in Matlab.
+  Eigen::RowVector2d K;
+  K << 0.422082440385453, 1.243928853903714;
+
+  Eigen::Matrix2d S;
+  // clang-format off
+  S << 2.947122966707012, 2.369205407092467,
+       2.369205407092467, 4.613134260996183;
+  // clang-format on
+
+  LinearQuadraticRegulatorResult result =
+      DiscreteTimeLinearQuadraticRegulator(A, B, Q, R);
+
+  const double tol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(result.K, K, tol));
+  EXPECT_TRUE(CompareMatrices(result.S, S, tol));
+
+  LinearSystem<double> sys(A, B, Eigen::Matrix<double, 0, 2>::Zero(),
+                           Eigen::Matrix<double, 0, 1>::Zero(), 0.1);
+
+  // Test LinearSystem version of the LQR
+  TestLQRLinearSystemAgainstKnownSolution(tol, sys, K, Q, R);
+
+  // Test AffineSystem version of the LQR
+  TestLQRAffineSystemAgainstKnownSolution(tol, sys, K, Q, R);
 }
 
 }  // namespace

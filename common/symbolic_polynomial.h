@@ -5,6 +5,7 @@
 #warning Do not directly include this file. Include "drake/common/symbolic.h".
 #endif
 
+#include <functional>
 #include <ostream>
 #include <unordered_map>
 
@@ -53,6 +54,9 @@ class Polynomial {
 
   /// Constructs a polynomial from an expression @p e by decomposing it with
   /// respect to @p indeterminates.
+  ///
+  /// @note It collects the intersection of the variables appeared in `e` and
+  /// the provided @p indeterminates.
   ///
   /// @throws std::runtime_error if @p e is not a polynomial in @p
   /// indeterminates.
@@ -136,7 +140,22 @@ class Polynomial {
 
   /// Returns a symbolic formula representing the condition where this
   /// polynomial and @p p are the same.
-  Formula operator==(Polynomial p) const;
+  Formula operator==(const Polynomial& p) const;
+
+  /// Returns a symbolic formula representing the condition where this
+  /// polynomial and @p p are not the same.
+  Formula operator!=(const Polynomial& p) const;
+
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Polynomial& item) noexcept {
+    using drake::hash_append;
+    for (const auto& p : item.monomial_to_coefficient_map_) {
+      hash_append(hasher, p.first);
+      hash_append(hasher, p.second);
+    }
+  }
 
  private:
   // Throws std::runtime_error if there is a variable appeared in both of
@@ -230,6 +249,20 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
 #endif
 }  // namespace symbolic
 }  // namespace drake
+
+namespace std {
+/* Provides std::hash<drake::symbolic::Polynomial>. */
+template <>
+struct hash<drake::symbolic::Polynomial> : public drake::DefaultHash {};
+#if defined(__GLIBCXX__)
+// Inform GCC that this hash function is not so fast (i.e. for-loop inside).
+// This will enforce caching of hash results. See
+// https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
+// for details.
+template <>
+struct __is_fast_hash<hash<drake::symbolic::Polynomial>> : std::false_type {};
+#endif
+}  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {

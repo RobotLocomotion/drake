@@ -11,6 +11,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
+    "drake_py_unittest",
 )
 load(
     "//tools/skylark:pybind.bzl",
@@ -82,6 +83,16 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "lcm_py",
+    cc_so_name = "lcm",
+    cc_srcs = ["lcm_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
+    ],
+)
+
+drake_pybind_library(
     name = "math_py",
     cc_so_name = "math",
     cc_srcs = ["math_py.cc"],
@@ -113,6 +124,7 @@ drake_pybind_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":common_py",
+    ":lcm_py",
     ":math_py",
     ":symbolic_py",
     "//bindings/pydrake/examples",
@@ -144,27 +156,20 @@ drake_py_library(
 
 install(
     name = "install",
+    install_tests = [
+        ":test/all_install_test.py",
+        ":test/common_install_test.py",
+    ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     visibility = ["//visibility:public"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "all_test",
     data = ["//examples/pendulum:models"],
     deps = [":all_py"],
-)
-
-drake_py_test(
-    name = "all_install_test",
-    size = "medium",
-    # Increase the timeout so that debug builds are successful.
-    timeout = "long",
-    data = ["//:install"],
-    deps = [
-        "//tools/install:install_test_helper",
-    ],
 )
 
 # Test ODR (One Definition Rule).
@@ -180,49 +185,37 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "odr_test",
     size = "small",
-    srcs = ["test/odr_test.py"],
     deps = [
         ":odr_test_module_py",
         ":symbolic_py",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "common_test",
     size = "small",
-    srcs = ["test/common_test.py"],
     data = ["//examples/atlas:models"],
-    main = "test/common_test.py",
     deps = [":common_py"],
 )
 
-# `//:install` is run in this test to verify that once installed
-# pydrake still works. This test is implemented in a separate file from
-# common_test to be able to remove files in the sandbox without
-# interfering with other tests.
-drake_py_test(
-    name = "common_install_test",
-    size = "medium",
-    # Increase the timeout so that debug builds are successful.
-    timeout = "long",
-    data = ["//:install"],
-    deps = [
-        "//tools/install:install_test_helper",
-    ],
-)
-
-drake_py_test(
+drake_py_unittest(
     name = "forward_diff_test",
     size = "small",
-    srcs = ["test/forward_diff_test.py"],
-    main = "test/forward_diff_test.py",
     deps = [":autodiffutils_py"],
 )
 
-drake_py_test(
+drake_py_unittest(
+    name = "lcm_test",
+    size = "small",
+    deps = [
+        ":lcm_py",
+    ],
+)
+
+drake_py_unittest(
     name = "math_test",
     size = "small",
     deps = [
@@ -230,27 +223,22 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
-    name = "symbolic_variables_test",
+drake_py_unittest(
+    name = "symbolic_test",
     size = "small",
-    srcs = ["test/symbolic_test.py"],
-    main = "test/symbolic_test.py",
     deps = [":symbolic_py"],
 )
 
-drake_py_test(
-    name = "symbolic_monomial_test",
-    size = "small",
-    srcs = ["test/symbolic_monomial_test.py"],
-    main = "test/symbolic_monomial_test.py",
-    deps = [":symbolic_py"],
-)
-
-drake_py_test(
+drake_py_unittest(
     name = "backwards_compatability_test",
     deps = [
         ":backwards_compatibility_py",
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/all_install_test.py",
+        ":test/common_install_test.py",
+    ],
+)

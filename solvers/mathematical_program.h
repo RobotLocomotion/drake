@@ -572,7 +572,7 @@ class MathematicalProgram {
   template <int rows>
   MatrixDecisionVariable<rows, rows> NewSymmetricContinuousVariables(
       const std::string& name = "Symmetric") {
-    std::array<std::string, rows*(rows + 1) / 2> names;
+    typename NewSymmetricVariableNames<rows>::type names;
     int var_count = 0;
     for (int j = 0; j < static_cast<int>(rows); ++j) {
       for (int i = j; i < static_cast<int>(rows); ++i) {
@@ -604,17 +604,33 @@ class MathematicalProgram {
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name = "a");
 
-  /** Returns a pair of a SOS polynomial p = xᵀQx of degree @p degree and a PSD
-   * constraint for the coefficients matrix Q, where x is a monomial basis over
-   * @p indeterminates of degree `@p degree / 2`. For example,
-   * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial p = Q₍₀,₀₎x⁴ +
-   * 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎ and a PSD constraint
-   * over Q.
+
+  /** Returns a pair of a SOS polynomial p = mᵀQm and a PSD constraint for
+   * a new coefficients matrix Q, where m is the @p monomial basis.
+   * For example, `NewSosPolynomial(Vector2<Monomial>{x,y})` returns a
+   * polynomial
+   *   p = Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y²
+   * and a PSD constraint over Q.
+   * Note: Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
+   * matrix.
+   */
+  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+  NewSosPolynomial(
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+
+  /** Returns a pair of a SOS polynomial p = m(x)ᵀQm(x) of degree @p degree
+   * and a PSD constraint for the coefficients matrix Q, where m(x) is the
+   * result of calling `MonomialBasis(indeterminates, degree/2)`. For example,
+   * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial
+   *   p = Q₍₀,₀₎x⁴ + 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎
+   * and a PSD constraint over Q.
    *
    * @throws std::runtime_error if @p degree is not a positive even integer.
+   * @see MonomialBasis.
    */
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
   NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
+
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -1362,8 +1378,8 @@ class MathematicalProgram {
    * decision variables.
    * @param binding Binds a BoundingBoxConstraint with some decision variables,
    * such that
-   * binding.constraint()->lower_bound()(i) <= binding.variables()(i)
-   *                   <= binding.constraint().upper_bound()(i)
+   * binding.evaluator()->lower_bound()(i) <= binding.variables()(i)
+   *                   <= binding.evaluator().upper_bound()(i)
    */
   Binding<BoundingBoxConstraint> AddConstraint(
       const Binding<BoundingBoxConstraint>& binding);
@@ -1874,8 +1890,8 @@ class MathematicalProgram {
     DRAKE_ASSERT(e == e.transpose());
     const int e_rows = Derived::RowsAtCompileTime;
     MatrixDecisionVariable<e_rows, e_rows> M{};
-    if (Derived::RowsAtCompileTime == Eigen::Dynamic) {
-      M = NewSymmetricContinuousVariables(e_rows);
+    if (e_rows == Eigen::Dynamic) {
+      M = NewSymmetricContinuousVariables(e.rows());
     } else {
       M = NewSymmetricContinuousVariables<e_rows>();
     }
@@ -1915,18 +1931,47 @@ class MathematicalProgram {
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
-   * that is, @p p can be decomposed into `xᵀQx`. It returns a pair of
-   * constraint bindings expressing:
+   * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
+   * monomial_basis. It returns a pair of constraint bindings expressing:
    *  - The coefficients matrix Q is PSD (positive semidefinite).
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<Binding<PositiveSemidefiniteConstraint>,
             Binding<LinearEqualityConstraint>>
+  AddSosConstraint(
+      const symbolic::Polynomial& p,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+
+  /**
+   * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
+   * that is, @p p can be decomposed into `mᵀQm`, where m is the monomial
+   * basis of all indeterminates in the program with degree equal to half the
+   * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+      Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
+   * Adds constraints that a given symbolic expression @p e is a
+   * sums-of-squares (SOS), that is, @p p can be decomposed into `mᵀQm`,
+   * where m is the @p monomial_basis.  Note that it decomposes @p e into a
+   * polynomial with respect to `indeterminates()` in this mathematical
+   * program. It returns a pair of constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+      Binding<LinearEqualityConstraint>>
+  AddSosConstraint(
+      const symbolic::Expression& e,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+
+  /**
    * Adds constraints that a given symbolic expression @p e is a sums-of-squares
-   * (SOS), that is, @p e can be decomposed into `xTQx`. Note that it decomposes
+   * (SOS), that is, @p e can be decomposed into `mTQm`. Note that it decomposes
    * @p e into a polynomial with respect to `indeterminates()` in this
    * mathematical program. It returns a pair of
    * constraint bindings expressing:
@@ -1944,9 +1989,50 @@ class MathematicalProgram {
   // void addQuadraticCost ...
 
   /**
-   * Set the initial guess for the decision variables stored in @p var to be x0.
-   * Variables begin with a default initial guess of NaN to indicate that no
-   * guess is available.
+   * Gets the initial guess for a single variable.
+   * @pre @p decision_variable has been registered in the optimization program.
+   * @throw runtime error if the pre condition is not satisfied.
+   */
+  double GetInitialGuess(const symbolic::Variable& decision_variable) const;
+
+  /**
+   * Gets the initial guess for some variables.
+   * @pre Each variable in @p decision_variable_mat has been registered in the
+   * optimization program.
+   * @throw runtime error if the pre condition is not satisfied.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                    Derived::ColsAtCompileTime>>::type
+  GetInitialGuess(
+      const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>
+        decision_variable_values(decision_variable_mat.rows(),
+                                 decision_variable_mat.cols());
+    for (int i = 0; i < decision_variable_mat.rows(); ++i) {
+      for (int j = 0; j < decision_variable_mat.cols(); ++j) {
+        decision_variable_values(i, j) =
+            GetInitialGuess(decision_variable_mat(i, j));
+      }
+    }
+    return decision_variable_values;
+  }
+
+  /**
+   * Sets the initial guess for a single variable @p decision_variable.
+   * @pre decision_variable is a registered decision variable in the program.
+   * @throw a runtime error if precondition is not satisfied.
+   */
+  void SetInitialGuess(const symbolic::Variable& decision_variable,
+                       double variable_guess_value);
+
+  /**
+   * Sets the initial guess for the decision variables stored in
+   * @p decision_variable_mat to be @p x0. Variables begin with a default
+   * initial guess of NaN to indicate that no guess is available.
    */
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
@@ -1955,8 +2041,7 @@ class MathematicalProgram {
     DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
-        x_initial_guess_(
-            FindDecisionVariableIndex(decision_variable_mat(i, j))) = x0(i, j);
+        SetInitialGuess(decision_variable_mat(i, j), x0(i, j));
       }
     }
   }
@@ -2286,7 +2371,6 @@ class MathematicalProgram {
    * @param var The decision variables.
    * @return The value of the decision variable after solving the problem.
    */
-
   template <typename Derived>
   typename std::enable_if<
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
@@ -2310,6 +2394,37 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
+   * Evaluates the value of some binding, for some input value for all
+   * decision variables.
+   * @param binding A Binding whose variables are decision variables in this
+   * program.
+   * @param prog_var_vals The value of all the decision variables in this
+   * program. @throw a logic error if the size does not match.
+   */
+  template <typename C, typename DerivedX>
+  typename std::enable_if<is_eigen_vector<DerivedX>::value,
+                          VectorX<typename DerivedX::Scalar>>::type
+  EvalBinding(const Binding<C>& binding,
+              const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    using Scalar = typename DerivedX::Scalar;
+    if (prog_var_vals.rows() != num_vars()) {
+      std::ostringstream oss;
+      oss << "The input binding variable is not in the right size. Expects "
+          << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
+          << " rows.\n";
+      throw std::logic_error(oss.str());
+    }
+    VectorX<Scalar> binding_x(binding.GetNumElements());
+    VectorX<Scalar> binding_y(binding.evaluator()->num_outputs());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      binding_x(i) =
+          prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
+    }
+    binding.evaluator()->Eval(binding_x, binding_y);
+    return binding_y;
+  }
+
+  /**
    * Evaluate the constraint in the Binding at the solution value.
    * @return The value of the constraint in the binding.
    * TODO(hongkai.dai): Do not use teample function, when the Binding is moved
@@ -2317,9 +2432,9 @@ class MathematicalProgram {
    */
   template <typename C>
   Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {
-    Eigen::VectorXd val(binding.constraint()->num_outputs());
+    Eigen::VectorXd val(binding.evaluator()->num_outputs());
     Eigen::VectorXd binding_var_vals = GetSolution(binding.variables());
-    binding.constraint()->Eval(binding_var_vals, val);
+    binding.evaluator()->Eval(binding_var_vals, val);
     return val;
   }
 

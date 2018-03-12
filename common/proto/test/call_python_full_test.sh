@@ -7,6 +7,11 @@ set -e -u
 # TODO(eric.cousineau): Rewrite this in Python for an easier-to-understand
 # testing API (#7703).
 
+if [[ "${OSTYPE}" == "darwin"* ]]; then
+    echo "Skipping $(basename $0) on Mac" >&2
+    exit 0
+fi
+
 no_plotting=
 # By default, set backend so that the test does not open windows.
 export MPLBACKEND="ps"
@@ -32,17 +37,6 @@ py_client_cli=${cur}/call_python_client_cli
 # uses.
 filename=$(mktemp)
 done_file=${filename}_done
-
-is_mac=
-if [[ "${OSTYPE}" == "darwin"* ]]; then
-    is_mac=1
-    # Do not test if Mac has matplotlib 2.1.0:
-    # @ref https://github.com/matplotlib/matplotlib/issues/9345
-    mpl_ver=$(python -c "import matplotlib as mpl; print(mpl.__version__)")
-    if [[ ${mpl_ver} == "2.1.0" ]]; then
-        no_plotting=1
-    fi
-fi
 
 cc_bin_flags=
 if [[ ${no_plotting} == 1 ]]; then
@@ -192,14 +186,7 @@ threading-wait() {
     fi
     py-check wait ${pid}
 }
-# TODO(eric.cousineau): Re-enable this on Mac once the root cause is identified
-# for failure on CI machines.
-if [[ -z ${is_mac} ]]; then
-    sub-tests threading-wait
-else
-    echo "SKIPPING: sub-tests threading-wait"
-fi
-
+sub-tests threading-wait
 
 # Execute tests without FIFO.
 use_fifo=0

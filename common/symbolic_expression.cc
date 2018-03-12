@@ -196,6 +196,15 @@ Expression Expression::Differentiate(const Variable& x) const {
   return ptr_->Differentiate(x);
 }
 
+RowVectorX<Expression> Expression::Jacobian(
+    const Eigen::Ref<const VectorX<Variable>>& vars) const {
+  RowVectorX<Expression> J(vars.size());
+  for (VectorX<Variable>::Index i = 0; i < vars.size(); ++i) {
+    J(i) = Differentiate(vars(i));
+  }
+  return J;
+}
+
 string Expression::to_string() const {
   ostringstream oss;
   oss << *this;
@@ -259,6 +268,8 @@ Expression Expression::operator++(int) {
   ++*this;
   return copy;
 }
+
+Expression operator+(const Expression& e) { return e; }
 
 Expression operator-(Expression lhs, const Expression& rhs) {
   lhs -= rhs;
@@ -821,50 +832,6 @@ const Expression& get_then_expression(const Expression& e) {
 
 const Expression& get_else_expression(const Expression& e) {
   return to_if_then_else(e)->get_else_expression();
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator+=(Expression& lhs, const Variable& rhs) {
-  return lhs += Expression{rhs};
-}
-Expression operator+(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} + Expression{rhs};
-}
-Expression operator+(Expression lhs, const Variable& rhs) { return lhs += rhs; }
-Expression operator+(const Variable& lhs, Expression rhs) { return rhs += lhs; }
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator-=(Expression& lhs, const Variable& rhs) {
-  return lhs -= Expression{rhs};
-}
-Expression operator-(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} - Expression{rhs};
-}
-Expression operator-(Expression lhs, const Variable& rhs) { return lhs -= rhs; }
-Expression operator-(const Variable& lhs, const Expression& rhs) {
-  return Expression(lhs) - rhs;
-}
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator*=(Expression& lhs, const Variable& rhs) {
-  return lhs *= Expression{rhs};
-}
-Expression operator*(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} * Expression{rhs};
-}
-Expression operator*(Expression lhs, const Variable& rhs) { return lhs *= rhs; }
-Expression operator*(const Variable& lhs, Expression rhs) { return rhs *= lhs; }
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator/=(Expression& lhs, const Variable& rhs) {
-  return lhs /= Expression{rhs};
-}
-Expression operator/(const Variable& lhs, const Variable& rhs) {
-  return Expression{lhs} / Expression{rhs};
-}
-Expression operator/(Expression lhs, const Variable& rhs) { return lhs /= rhs; }
-Expression operator/(const Variable& lhs, const Expression& rhs) {
-  return Expression(lhs) / rhs;
 }
 
 Expression operator+(const Variable& var) { return Expression{var}; }

@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -213,6 +214,16 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 
   dut.StopReceiveThread();
   EXPECT_TRUE(done);
+}
+
+TEST_F(DrakeLcmTest, EmptyChannelTest) {
+  DrakeLcm dut;
+
+  MessageHandler handler;
+  EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
+
+  const uint8_t buffer{};
+  EXPECT_THROW(dut.Publish("", &buffer, 1), std::exception);
 }
 
 }  // namespace

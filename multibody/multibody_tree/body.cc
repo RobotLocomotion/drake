@@ -13,7 +13,7 @@ template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> BodyFrame<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Body<ToScalar>& body_clone =
-      tree_clone.get_body(this->get_body().get_index());
+      tree_clone.get_body(this->body().index());
   // BodyFrame's constructor cannot be called from std::make_unique since it is
   // private and therefore we use "new".
   return std::unique_ptr<BodyFrame<ToScalar>>(

@@ -7,9 +7,9 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <pybind11/embed.h>
-#include <pybind11/eval.h>
-#include <pybind11/pybind11.h>
+#include "pybind11/embed.h"
+#include "pybind11/eval.h"
+#include "pybind11/pybind11.h"
 
 using std::string;
 using std::vector;

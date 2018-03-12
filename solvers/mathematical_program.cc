@@ -207,13 +207,11 @@ symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
   return p;
 }
 
-pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
-                                      const int degree) {
-  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
-  const drake::VectorX<symbolic::Monomial> x{
-      MonomialBasis(indeterminates, degree / 2)};
-  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
+std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+MathematicalProgram::NewSosPolynomial(
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  const MatrixXDecisionVariable Q{
+      NewSymmetricContinuousVariables(monomial_basis.size())};
   const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
   // Constructs a coefficient matrix of Polynomials Q_poly from Q. In the
   // process, we make sure that each Q_poly(i, j) is treated as a decision
@@ -222,8 +220,18 @@ MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
       Q.unaryExpr([](const Variable& q_i_j) {
         return symbolic::Polynomial{q_i_j /* coeff */, {} /* Monomial */};
       })};
-  const symbolic::Polynomial p{x.dot(Q_poly * x)};  // p = xᵀ * Q_poly * x.
+  // p = mᵀ * Q_poly * m.
+  const symbolic::Polynomial p{monomial_basis.dot(Q_poly * monomial_basis)};
   return make_pair(p, psd_binding);
+}
+
+pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
+                                      const int degree) {
+  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
+  const drake::VectorX<symbolic::Monomial> x{
+      MonomialBasis(indeterminates, degree / 2)};
+  return NewSosPolynomial(x);
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -292,7 +300,7 @@ namespace {
 
 template <typename To, typename From>
 Binding<To> BindingDynamicCast(const Binding<From>& binding) {
-  auto constraint = std::dynamic_pointer_cast<To>(binding.constraint());
+  auto constraint = std::dynamic_pointer_cast<To>(binding.evaluator());
   DRAKE_DEMAND(constraint != nullptr);
   return Binding<To>(constraint, binding.variables());
 }
@@ -301,7 +309,7 @@ Binding<To> BindingDynamicCast(const Binding<From>& binding) {
 
 Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   // See AddCost(const Binding<Constraint>&) for explanation
-  Cost* cost = binding.constraint().get();
+  Cost* cost = binding.evaluator().get();
   if (dynamic_cast<QuadraticCost*>(cost)) {
     return AddCost(BindingDynamicCast<QuadraticCost>(binding));
   } else if (dynamic_cast<LinearCost*>(cost)) {
@@ -336,9 +344,9 @@ Binding<QuadraticCost> MathematicalProgram::AddCost(
     const Binding<QuadraticCost>& binding) {
   CheckBinding(binding);
   required_capabilities_ |= kQuadraticCost;
-  DRAKE_ASSERT(binding.constraint()->Q().rows() ==
+  DRAKE_ASSERT(binding.evaluator()->Q().rows() ==
                    static_cast<int>(binding.GetNumElements()) &&
-               binding.constraint()->b().rows() ==
+               binding.evaluator()->b().rows() ==
                    static_cast<int>(binding.GetNumElements()));
   quadratic_costs_.push_back(binding);
   return quadratic_costs_.back();
@@ -390,7 +398,7 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   // If we get here, then this was possibly a dynamically-simplified
   // constraint. Determine correct container. As last resort, add to generic
   // constraints.
-  Constraint* constraint = binding.constraint().get();
+  Constraint* constraint = binding.evaluator().get();
   // Check constraints types in reverse order, such that classes that inherit
   // from other classes will not be prematurely added to less specific (or
   // incorrect) container.
@@ -442,7 +450,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   // Because the ParseLinearConstraint methods can return instances of
   // LinearEqualityConstraint or BoundingBoxConstraint, do a dynamic check
   // here.
-  LinearConstraint* constraint = binding.constraint().get();
+  LinearConstraint* constraint = binding.evaluator().get();
   if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<BoundingBoxConstraint>(binding));
   } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
@@ -450,7 +458,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
-    DRAKE_ASSERT(binding.constraint()->A().cols() ==
+    DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     CheckBinding(binding);
     required_capabilities_ |= kLinearConstraint;
@@ -469,7 +477,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  DRAKE_ASSERT(binding.constraint()->A().cols() ==
+  DRAKE_ASSERT(binding.evaluator()->A().cols() ==
                static_cast<int>(binding.GetNumElements()));
   CheckBinding(binding);
   required_capabilities_ |= kLinearEqualityConstraint;
@@ -504,7 +512,7 @@ MathematicalProgram::AddLinearEqualityConstraint(
 Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
   CheckBinding(binding);
-  DRAKE_ASSERT(binding.constraint()->num_constraints() ==
+  DRAKE_ASSERT(binding.evaluator()->num_outputs() ==
                static_cast<int>(binding.GetNumElements()));
   required_capabilities_ |= kLinearConstraint;
   bbox_constraints_.push_back(binding);
@@ -620,8 +628,8 @@ Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     const Binding<PositiveSemidefiniteConstraint>& binding) {
   CheckBinding(binding);
   DRAKE_ASSERT(math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
-      binding.variables().data(), binding.constraint()->matrix_rows(),
-      binding.constraint()->matrix_rows())));
+      binding.variables().data(), binding.evaluator()->matrix_rows(),
+      binding.evaluator()->matrix_rows())));
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   positive_semidefinite_constraint_.push_back(binding);
   return positive_semidefinite_constraint_.back();
@@ -653,7 +661,7 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
   CheckBinding(binding);
-  DRAKE_ASSERT(static_cast<int>(binding.constraint()->F().size()) ==
+  DRAKE_ASSERT(static_cast<int>(binding.evaluator()->F().size()) ==
                static_cast<int>(binding.GetNumElements()) + 1);
   required_capabilities_ |= kPositiveSemidefiniteConstraint;
   linear_matrix_inequality_constraint_.push_back(binding);
@@ -675,13 +683,29 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 // mathematical_program_api.cc instead of this file.
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
-MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
-  const symbolic::Variables indeterminates{p.indeterminates()};
-  const auto pair = NewSosPolynomial(indeterminates, p.TotalDegree());
+MathematicalProgram::AddSosConstraint(
+    const symbolic::Polynomial& p,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  const auto pair = NewSosPolynomial(monomial_basis);
   const symbolic::Polynomial& sos_poly{pair.first};
   const Binding<PositiveSemidefiniteConstraint>& psd_binding{pair.second};
   const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
   return make_pair(psd_binding, leq_binding);
+}
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
+  return AddSosConstraint(p,
+                          MonomialBasis(p.indeterminates(), p.TotalDegree()/2));
+}
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(
+    const symbolic::Expression& e,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  return AddSosConstraint(
+      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}},
+                           monomial_basis);
 }
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
@@ -694,6 +718,16 @@ double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
+double MathematicalProgram::GetInitialGuess(
+    const symbolic::Variable& decision_variable) const {
+  return x_initial_guess_[FindDecisionVariableIndex(decision_variable)];
+}
+
+void MathematicalProgram::SetInitialGuess(
+    const symbolic::Variable& decision_variable, double variable_guess_value) {
+  x_initial_guess_(FindDecisionVariableIndex(decision_variable)) =
+      variable_guess_value;
+}
 // Note that SetDecisionVariableValue and SetDecisionVariableValues are
 // implemented in mathematical_program_api.cc instead of this file.
 
@@ -721,7 +755,8 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kOsqpCapabilities) &&
+  } else if ((required_capabilities_ & kQuadraticCost) &&
+             is_satisfied(required_capabilities_, kOsqpCapabilities) &&
              osqp_solver_->available()) {
     return osqp_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&

@@ -21,7 +21,7 @@ namespace systems {
 namespace rendering {
 namespace {
 
-/// Tests that the PoseVector is initialized to identity.
+// Tests that the default PoseVector is initialized to identity.
 GTEST_TEST(PoseVector, InitiallyIdentity) {
   const PoseVector<double> vec;
   EXPECT_TRUE(CompareMatrices(Isometry3<double>::Identity().matrix(),
@@ -40,6 +40,22 @@ GTEST_TEST(PoseVector, InitiallyIdentity) {
     // The imaginary parts of R_WA are sin(0) = 0.
     EXPECT_EQ(0.0, vec[i]);
   }
+}
+
+// Tests the fully-parameterized PoseVector.
+GTEST_TEST(PoseVector, FullyParameterizedCtor) {
+  const Eigen::Quaternion<double> rotation(0.5, 0.5, 0.5, 0.5);
+  const Eigen::Translation3d translation(1.0, 2.0, 3.0);
+  const PoseVector<double> vec(rotation, translation);
+
+  Eigen::Isometry3d isometry_expected(translation);
+  isometry_expected.rotate(rotation);
+  EXPECT_TRUE(CompareMatrices(isometry_expected.matrix(),
+                              vec.get_isometry().matrix()));
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Isometry3d(translation).matrix(),
+      Eigen::Isometry3d(vec.get_translation()).matrix()));
+  EXPECT_TRUE(CompareMatrices(rotation.matrix(), vec.get_rotation().matrix()));
 }
 
 GTEST_TEST(PoseVector, Rotation) {

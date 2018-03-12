@@ -6,9 +6,11 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -17,11 +19,10 @@ namespace multibody {
 template<typename T> class Joint;
 
 /// The %JointActuator class is mostly a simple bookkeeping structure to
-/// represent an actuator acting on a given Joint. When added to a MultibodyTree
-/// model, a %JointActuator gets assigned a JointActuatorIndex, which can be
-/// retrieved with JointActuator::get_index(). The %JointActuator class
-/// allows mapping this JointActuatorIndex to the Joint on which it actuates,
-/// which can be retrieved with JointActuator::joint().
+/// represent an actuator acting on a given Joint.
+/// It helps to flag whether a given Joint is actuated or not so that
+/// MultibodyTree clients can apply forces on actuated joints through their
+/// actuators, see AddInOneForce().
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -39,15 +40,66 @@ class JointActuator final
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
 
   /// Creates an actuator for `joint` with the given `name`.
-  /// The name must be unique withing the given MultibodyTree model. This is
-  /// guaranteed by MultibodyTree::AddJointActuator().
+  /// The name must be unique within the given MultibodyTree model. This is
+  /// enforced by MultibodyTree::AddJointActuator().
   JointActuator(const std::string& name, const Joint<T>& joint);
 
   /// Returns the name of the actuator.
-  const std::string& get_name() const { return name_; }
+  const std::string& name() const { return name_; }
 
-  /// Returns the joint actuated by this %JointActuator.
+  /// Returns a reference to the joint actuated by this %JointActuator.
   const Joint<T>& joint() const;
+
+  /// Adds into `forces` a force along one of the degrees of freedom of the
+  /// Joint actuated by `this` actuator.
+  /// The meaning for this degree of freedom, sign conventions and even its
+  /// dimensional units depend on the specific joint sub-class being actuated.
+  /// For a RevoluteJoint for instance, `joint_dof` can only be 0 since revolute
+  /// joints's motion subspace only has one degree of freedom, while the units
+  /// of `tau` are those of torque (N⋅m in the MKS system of units). For
+  /// multi-dof joints please refer to the documentation provided by specific
+  /// joint sub-classes regarding the meaning of `joint_dof`.
+  ///
+  /// @param[in] context
+  ///   The context storing the state and parameters for the model to which
+  ///   `this` joint belongs.
+  /// @param[in] joint_dof
+  ///   Index specifying one of the degress of freedom for this joint. The index
+  ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
+  ///   method will throw an exception.
+  /// @param[in] joint_tau
+  ///   Generalized force corresponding to the degree of freedom indicated by
+  ///   `joint_dof` to be added into `forces`. Refere to the specific Joint
+  ///   sub-class documentation for details on the meaning and units for this
+  ///   degree of freedom.
+  /// @param[out] forces
+  ///   On return, this method will add force `tau` for the degree of
+  ///   freedom `joint_dof` into the output `forces`. This method aborts if
+  ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
+  ///   accommodate a set of forces for the model to which this actuator
+  ///   belongs.
+  void AddInOneForce(
+      const systems::Context<T>& context,
+      int joint_dof,
+      const T& tau,
+      MultibodyForces<T>* forces) const;
+
+  /// Given the actuation values u for `this` actuator, this method sets the
+  /// actuation vector u for the entire %MultibodyTree model to which this
+  /// actuator belongs to.
+  /// @param[in] u_a
+  ///   Actuation values for `this` actuator. It must be of size equal to the
+  ///   number of degrees of freedom of the actuated Joint, see
+  ///   Joint::num_dofs(). For units and sign conventions refer to the specific
+  ///   Joint sub-class documentation.
+  /// @param[out] u
+  ///   The vector containing the actuation values for the entire MultibodyTree
+  ///   model to which `this` actuator belongs to.
+  /// @throws if `u_a.size() != this->joint().num_dofs()`.
+  /// @throws if u is nullptr.
+  /// @throws if `u.size() != this->get_parent_tree().num_actuated_dofs()`.
+  void set_actuation_vector(
+      const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const;
 
   /// @cond
   // For internal use only.
@@ -83,15 +135,16 @@ class JointActuator final
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each actuator retrieves its topology
   // from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology&) final {
-    // So far this initial implementation has no topology counterpart.
-  }
+  void DoSetTopology(const MultibodyTreeTopology&) final;
 
   // The actuator's unique name in the MultibodyTree model
   std::string name_;
 
   // The index of the joint on which this actuator acts.
   JointIndex joint_index_;
+
+  // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
+  JointActuatorTopology topology_;
 };
 
 }  // namespace multibody

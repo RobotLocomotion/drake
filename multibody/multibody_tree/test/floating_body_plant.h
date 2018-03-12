@@ -13,10 +13,12 @@ namespace multibody {
 namespace multibody_tree {
 namespace test {
 
-/// This plant models the rotational motion of a torque free body in space.
+/// This plant models the free motion of a torque free body in space.
 /// This body is axially symmetric with rotational inertia about its axis of
 /// revolution J and with a rotational inertia I about any axis perpendicular to
-/// its axis of revolution.
+/// its axis of revolution. This particular case has a nice closed form
+/// analytical solution which we have implemented in
+/// drake::multibody::benchmarks::free_body::FreeBody.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -27,9 +29,9 @@ namespace test {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class FloatingBodyPlant final : public systems::LeafSystem<T> {
+class AxiallySymmetricFreeBodyPlant final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FloatingBodyPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant)
 
   /// Constructor from known rotational inertia values.
   /// Rotational inertia values have units of kg⋅m².
@@ -40,16 +42,21 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
   ///   revolution of the body.
   /// @param J
   ///   rotational inertia about the axis of revolution of the body.
-  FloatingBodyPlant(double mass, double I, double J, double g);
+  /// @param g
+  ///   Acceleration of gravity. In this model if `g > 0` the gravity vector
+  ///   points downward in the z-axis direction.
+  AxiallySymmetricFreeBodyPlant(double mass, double I, double J, double g);
 
   /// Scalar-converting copy constructor.
   template <typename U>
-  explicit FloatingBodyPlant(const FloatingBodyPlant<U>&);
+  explicit AxiallySymmetricFreeBodyPlant(
+      const AxiallySymmetricFreeBodyPlant<U>&);
 
   /// Sets `state` to a default value corresponding to a configuration in which
   /// the free body frame B is coincident with the world frame W and the angular
-  /// velocity has a value as returned by
-  /// get_default_initial_angular_velocity().
+  /// and translational velocities have a value as returned by
+  /// get_default_initial_angular_velocity() and
+  /// get_default_initial_translational_velocity(), respectively.
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
@@ -57,12 +64,10 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
   /// in the world frame W.
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
-  Vector3<T> get_translational_velocity(const systems::Context<T>& context) const;
-
-  /// Stores in `context` the value of the angular velocity `w_WB` of the body
-  /// in the world frame W.
-  void set_angular_velocity(
-      systems::Context<T>* context, const Vector3<T>& w_WB) const;
+  /// Returns the translational velocity `v_WB` stored in `context` of the free
+  /// body B in the world frame W.
+  Vector3<T> get_translational_velocity(
+      const systems::Context<T>& context) const;
 
   /// Computes the pose `X_WB` of the body in the world frame.
   Isometry3<T> CalcPoseInWorldFrame(
@@ -74,11 +79,18 @@ class FloatingBodyPlant final : public systems::LeafSystem<T> {
 
   /// Returns the default value of the angular velocity set by default by
   /// SetDefaultState(). Currently a non-zero value.
-  Vector3<double> get_default_initial_angular_velocity() const;
+  static Vector3<double> get_default_initial_angular_velocity();
 
   /// Returns the default value of the translational velocity set by default by
   /// SetDefaultState(). Currently a non-zero value.
-  Vector3<double> get_default_initial_translational_velocity() const;
+  static Vector3<double> get_default_initial_translational_velocity();
+
+  const QuaternionFloatingMobilizer<T>& mobilizer() const {
+    return *mobilizer_;
+  }
+
+  /// Returns a const reference to the MultibodyTree model for this plant.
+  const MultibodyTree<T>& model() const { return model_; }
 
  private:
   // Override of context construction so that we can delegate it to

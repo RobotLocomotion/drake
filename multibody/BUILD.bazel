@@ -589,14 +589,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rigid_body_frame_test",
-    deps = [
-        ":rigid_body_frame_compare_to_clone",
-        ":rigid_body_tree",
-    ],
-)
-
-drake_cc_googletest(
     name = "rigid_body_tree_alias_groups_test",
     srcs = ["test/rigid_body_tree_alias_groups_test.cc"],
     data = [

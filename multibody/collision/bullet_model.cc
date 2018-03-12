@@ -257,25 +257,25 @@ void BulletModel::DoAddElement(const Element& element) {
     std::unique_ptr<btCollisionShape> bt_shape_no_margin;
     switch (element.getShape()) {
       case DrakeShapes::BOX: {
-        const auto box =
+        const auto& box =
             static_cast<const DrakeShapes::Box&>(element.getGeometry());
         bt_shape = newBulletBoxShape(box, true);
         bt_shape_no_margin = newBulletBoxShape(box, false);
       } break;
       case DrakeShapes::SPHERE: {
-        const auto sphere = static_cast<const DrakeShapes::Sphere&>(
+        const auto& sphere = static_cast<const DrakeShapes::Sphere&>(
             element.getGeometry());
         bt_shape = newBulletSphereShape(sphere, true);
         bt_shape_no_margin = newBulletSphereShape(sphere, false);
       } break;
       case DrakeShapes::CYLINDER: {
-        const auto cylinder = static_cast<const DrakeShapes::Cylinder&>(
+        const auto& cylinder = static_cast<const DrakeShapes::Cylinder&>(
             element.getGeometry());
         bt_shape = newBulletCylinderShape(cylinder, true);
         bt_shape_no_margin = newBulletCylinderShape(cylinder, false);
       } break;
       case DrakeShapes::MESH: {
-        const auto mesh =
+        const auto& mesh =
             static_cast<const DrakeShapes::Mesh&>(element.getGeometry());
         if (element.is_anchored()) {
           // Meshes are only allowed for anchored geometry.
@@ -287,13 +287,13 @@ void BulletModel::DoAddElement(const Element& element) {
         }
       } break;
       case DrakeShapes::MESH_POINTS: {
-        const auto mesh = static_cast<const DrakeShapes::MeshPoints&>(
+        const auto& mesh = static_cast<const DrakeShapes::MeshPoints&>(
             element.getGeometry());
         bt_shape = newBulletMeshPointsShape(mesh, true);
         bt_shape_no_margin = newBulletMeshPointsShape(mesh, false);
       } break;
       case DrakeShapes::CAPSULE: {
-        const auto capsule = static_cast<const DrakeShapes::Capsule&>(
+        const auto& capsule = static_cast<const DrakeShapes::Capsule&>(
             element.getGeometry());
         bt_shape = newBulletCapsuleShape(capsule, true);
         bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
@@ -495,7 +495,7 @@ void BulletModel::UpdateModel() {
   bullet_world_no_margin_.bt_collision_world->updateAabbs();
 }
 
-PointPair BulletModel::findClosestPointsBetweenElements(
+PointPair<double> BulletModel::findClosestPointsBetweenElements(
     ElementId idA, ElementId idB, bool use_margins) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
@@ -512,7 +512,7 @@ PointPair BulletModel::findClosestPointsBetweenElements(
         dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry())
             .radius;
     double distance = (xA_world - xB_world).norm();
-    return PointPair(
+    return PointPair<double>(
         elements[idA].get(), elements[idB].get(),
         elements[idA]->getLocalTransform() * TA_world.inverse() *
             (xA_world +
@@ -599,7 +599,7 @@ PointPair BulletModel::findClosestPointsBetweenElements(
       gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
 
   if (gjkOutput.m_hasResult) {
-    return PointPair(elements[idA].get(), elements[idB].get(),
+    return PointPair<double>(elements[idA].get(), elements[idB].get(),
                      point_on_A, point_on_B,
                      toVector3d(gjkOutput.m_normalOnBInWorld),
                      static_cast<double>(distance));
@@ -613,7 +613,7 @@ PointPair BulletModel::findClosestPointsBetweenElements(
 
 void BulletModel::CollisionDetectFromPoints(
     const Matrix3Xd& points, bool use_margins,
-    std::vector<PointPair>* closest_points) {
+    std::vector<PointPair<double>>* closest_points) {
   DRAKE_DEMAND(closest_points != nullptr);
   closest_points->resize(points.cols());
   VectorXd phi(points.cols());
@@ -671,7 +671,7 @@ void BulletModel::CollisionDetectFromPoints(
           Element *collision_element =
               static_cast<Element *>(bt_objB->getUserPointer());
           closest_points->at(i) =
-              PointPair(collision_element, collision_element,
+              PointPair<double>(collision_element, collision_element,
                         toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
                         toVector3d(gjkOutput.m_normalOnBInWorld), distance);
         }
@@ -686,7 +686,7 @@ void BulletModel::CollisionDetectFromPoints(
       // In case there are no other objects found, we report a null object
       // infinitely far away.
       phi[i] = inf;
-      closest_points->at(i) = PointPair();
+      closest_points->at(i) = PointPair<double>();
       closest_points->at(i).distance = inf;
       closest_points->at(i).normal = default_norm;
       closest_points->at(i).ptA = inf_vector;
@@ -780,7 +780,7 @@ bool BulletModel::CollisionRaycast(const Matrix3Xd& origins,
 
 bool BulletModel::ClosestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, bool use_margins,
-    std::vector<PointPair>* closest_points) {
+    std::vector<PointPair<double>>* closest_points) {
   DRAKE_DEMAND(closest_points != nullptr);
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kClosestPointsAllToAll;
@@ -804,7 +804,7 @@ bool BulletModel::ClosestPointsAllToAll(
 
 bool BulletModel::ClosestPointsPairwise(
     const std::vector<ElementIdPair>& id_pairs, bool use_margins,
-    std::vector<PointPair>* closest_points) {
+    std::vector<PointPair<double>>* closest_points) {
   DRAKE_DEMAND(closest_points != nullptr);
   closest_points->clear();
   for (const ElementIdPair& pair : id_pairs) {
@@ -819,7 +819,7 @@ bool BulletModel::ClosestPointsPairwise(
 }
 
 bool BulletModel::ComputeMaximumDepthCollisionPoints(
-    bool use_margins, std::vector<PointPair>* collision_points) {
+    bool use_margins, std::vector<PointPair<double>>* collision_points) {
   DRAKE_DEMAND(collision_points != nullptr);
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;
@@ -900,17 +900,9 @@ BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {
 }
 
 UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape)
-    : runtime_error("") {
-  std::ostringstream ostr;
-  ostr << shape;
-  this->shape_name_ = ostr.str();
-}
-
-const char* UnknownShapeException::what() const throw() {
-  return ("Unknown collision shape: " + shape_name_ +
-          ". Ignoring this collision element")
-      .c_str();
-}
+    : runtime_error("Unknown collision shape: " +
+                    DrakeShapes::ShapeToString(shape) +
+                    ". Ignoring this collision element.") {}
 
 }  // namespace collision
 }  // namespace multibody

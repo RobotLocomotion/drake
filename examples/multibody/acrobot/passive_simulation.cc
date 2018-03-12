@@ -4,7 +4,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/multibody/acrobot/acrobot_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
@@ -69,21 +68,27 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  const AcrobotParameters acrobot_parameters; 
+  // Make and add the acrobot model.
+  const AcrobotParameters acrobot_parameters;
   const MultibodyPlant<double>& acrobot =
       *builder.AddSystem(
-          MakeAcrobotPlant(acrobot_parameters, &geometry_system));
-  
-  //AcrobotPlant<double>& acrobot =
-    //  *builder.AddSystem<AcrobotPlant>(&geometry_system);
-  //acrobot.set_name("Acrobot");
+          MakeAcrobotPlant(
+              acrobot_parameters, true /* Finalize the plant */,
+              &geometry_system));
+  const RevoluteJoint<double>& shoulder =
+      acrobot.GetJointByName<RevoluteJoint>(
+          acrobot_parameters.shoulder_joint_name());
+  const RevoluteJoint<double>& elbow =
+      acrobot.GetJointByName<RevoluteJoint>(
+          acrobot_parameters.elbow_joint_name());
 
   // A constant source for a zero applied torque at the elbow joint.
-  //double applied_torque(0.0);
-  //auto torque_source =
-  //    builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
-  //torque_source->set_name("Applied Torque");
-  //builder.Connect(torque_source->get_output_port(), acrobot.get_input_port());
+  double applied_torque(0.0);
+  auto torque_source =
+      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
+  torque_source->set_name("Applied Torque");
+  builder.Connect(torque_source->get_output_port(),
+                  acrobot.get_actuation_input_port());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.

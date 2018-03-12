@@ -13,6 +13,7 @@ namespace {
 using drake::symbolic::Expression;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
+using drake::symbolic::Monomial;
 
 class SosConstraintTest : public ::testing::Test {
  public:
@@ -66,7 +67,7 @@ class SosConstraintTest : public ::testing::Test {
     const VectorXDecisionVariable& variables{psd_binding.variables()};
     const auto values = prog_.GetSolution(variables);
     Eigen::VectorXd eigen_values;
-    psd_binding.constraint()->Eval(values, eigen_values);
+    psd_binding.evaluator()->Eval(values, eigen_values);
     EXPECT_TRUE((eigen_values.array() >= -eps).all());
   }
 
@@ -162,6 +163,18 @@ TEST_F(SosConstraintTest, NewSosPolynomialMultivariate2) {
   CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
 }
 
+TEST_F(SosConstraintTest, NewSosPolynomialViaMonomialBasis) {
+  const auto& x0 = x_(0);
+  const auto& x1 = x_(1);
+  Vector2<Monomial> basis{ x0, x1 };
+  const auto p = prog_.NewSosPolynomial(basis);
+  const symbolic::Polynomial& poly{p.first};
+  const VectorXDecisionVariable& Qvec = p.second.variables();
+  const symbolic::Polynomial expected_poly{ Qvec(0)*x0*x0 + 2*Qvec(1)*x0*x1 +
+                                                Qvec(3)*x1*x1 };
+  EXPECT_TRUE(poly.ToExpression().EqualTo(expected_poly.ToExpression()));
+}
+
 // Shows that f(x) = x² + 2x + 1 is SOS.
 TEST_F(SosConstraintTest, AddSosConstraintUnivariate1) {
   const auto& x = x_(0);
@@ -194,6 +207,17 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
   const auto binding_pair =
       prog_.AddSosConstraint(2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
                              pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4));
+  const auto result = prog_.Solve();
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  CheckPsdBinding(binding_pair.first);
+}
+
+
+TEST_F(SosConstraintTest, AddSosPolynomialViaMonomialBasis) {
+  const auto& x = x_(0);
+  Vector2<Monomial> basis{ 1, x };
+  const auto binding_pair = prog_.AddSosConstraint(2 * pow(x, 2) + 2 * x + 1,
+                                                   basis);
   const auto result = prog_.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   CheckPsdBinding(binding_pair.first);

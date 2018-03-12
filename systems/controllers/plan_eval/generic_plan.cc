@@ -9,6 +9,8 @@ namespace systems {
 namespace controllers {
 namespace plan_eval {
 
+using trajectories::PiecewisePolynomial;
+
 template <typename T>
 std::unique_ptr<GenericPlan<T>> GenericPlan<T>::Clone() const {
   return std::unique_ptr<GenericPlan<T>>(CloneGenericPlanDerived());

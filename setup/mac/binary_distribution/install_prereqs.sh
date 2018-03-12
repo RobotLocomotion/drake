@@ -14,10 +14,11 @@ if ! command -v brew &>/dev/null; then
   ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 fi
 
+brew update
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
 if [[ ! -f /usr/include/expat.h || ! -f /usr/include/zlib.h ]]; then
   xcode-select --install
 fi
 
-pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+/usr/local/opt/python@2/bin/pip2.7 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"

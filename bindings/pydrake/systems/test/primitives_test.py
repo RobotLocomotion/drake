@@ -22,7 +22,9 @@ from pydrake.systems.primitives import (
     IsObservable,
     ObservabilityMatrix,
     PassThrough,
+    Saturation,
     SignalLogger,
+    WrapToSystem,
 )
 
 
@@ -61,6 +63,8 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(t.shape[0] > 2)
         self.assertTrue(t.shape[0] == x.shape[1])
         self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
+
+        logger.reset()
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.
@@ -106,7 +110,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.time_period(), .1)
 
         context.FixInputPort(0, BasicVector([0]))
-        linearized = Linearize(system, context, 1e-6)
+        linearized = Linearize(system, context)
         self.assertTrue((linearized.A() == A).all())
         taylor = FirstOrderTaylorApproximation(system, context)
         self.assertTrue((taylor.y0() == y0).all())
@@ -135,6 +139,31 @@ class TestGeneral(unittest.TestCase):
         output_value = output.get_data(0)
         compare_value(self, output_value, model_value)
 
+    def test_saturation(self):
+        system = Saturation((0., -1., 3.), (1., 2., 4.))
+        context = system.CreateDefaultContext()
+        output = system.AllocateOutput(context)
 
-if __name__ == '__main__':
-    unittest.main()
+        def mytest(input, expected):
+            context.FixInputPort(0, BasicVector(input))
+            system.CalcOutput(context, output)
+            self.assertTrue(np.allclose(output.get_vector_data(
+                0).CopyToVector(), expected))
+
+        mytest((-5., 5., 4.), (0., 2., 4.))
+        mytest((.4, 0., 3.5), (.4, 0., 3.5))
+
+    def test_wrap_to_system(self):
+        system = WrapToSystem(2)
+        system.set_interval(1, 1., 2.)
+        context = system.CreateDefaultContext()
+        output = system.AllocateOutput(context)
+
+        def mytest(input, expected):
+            context.FixInputPort(0, BasicVector(input))
+            system.CalcOutput(context, output)
+            self.assertTrue(np.allclose(output.get_vector_data(
+                0).CopyToVector(), expected))
+
+        mytest((-1.5, 0.5), (-1.5, 1.5))
+        mytest((.2, .3), (.2, 1.3))

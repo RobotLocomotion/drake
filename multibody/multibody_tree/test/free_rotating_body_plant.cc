@@ -14,20 +14,15 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 template<typename T>
-FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J,
-                                                bool with_quaternion) :
-    I_(I), J_(J), with_quaternion_(with_quaternion) {
+FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) :
+    I_(I), J_(J) {
   BuildMultibodyTreeModel();
-  DRAKE_DEMAND(
-      (model_.get_num_positions() == 3 && !with_quaternion) ||
-      (model_.get_num_positions() == 4 && with_quaternion));
-  DRAKE_DEMAND(model_.get_num_velocities() == 3);
-  DRAKE_DEMAND(
-      (model_.get_num_states() == 6 && !with_quaternion) ||
-      (model_.get_num_states() == 7 && with_quaternion));
+  DRAKE_DEMAND(model_.num_positions() == 3);
+  DRAKE_DEMAND(model_.num_velocities() == 3);
+  DRAKE_DEMAND(model_.num_states() == 6);
   this->DeclareContinuousState(
-      model_.get_num_positions(),
-      model_.get_num_velocities(), 0 /* num_z */);
+      model_.num_positions(),
+      model_.num_velocities(), 0 /* num_z */);
 }
 
 template<typename T>
@@ -44,15 +39,9 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
 
   body_ = &model_.template AddBody<RigidBody>(M_Bcm);
 
-  if (with_quaternion_) {
-    quaternion_mobilizer_ =
-        &model_.template AddMobilizer<QuaternionMobilizer>(
-            model_.get_world_frame(), body_->get_body_frame());
-  } else {
-    space_xyx_mobilizer_ =
-        &model_.template AddMobilizer<SpaceXYZMobilizer>(
-            model_.get_world_frame(), body_->get_body_frame());
-  }
+  mobilizer_ =
+      &model_.template AddMobilizer<SpaceXYZMobilizer>(
+          model_.world_frame(), body_->body_frame());
 
   model_.Finalize();
 }
@@ -77,8 +66,8 @@ void FreeRotatingBodyPlant<T>::DoCalcTimeDerivatives(
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   MatrixX<T> M(nv, nv);
   model_.CalcMassMatrixViaInverseDynamics(context, &M);
@@ -95,7 +84,7 @@ void FreeRotatingBodyPlant<T>::DoCalcTimeDerivatives(
   VectorX<T> qdot(nq);
   model_.MapVelocityToQDot(context, v, &qdot);
 
-  VectorX<T> xdot(model_.get_num_states());
+  VectorX<T> xdot(model_.num_states());
 
   xdot << qdot, M.llt().solve(-C);
   derivatives->SetFromVector(xdot);
@@ -106,8 +95,8 @@ void FreeRotatingBodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
@@ -123,8 +112,8 @@ void FreeRotatingBodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  const int nq = model_.get_num_positions();
-  const int nv = model_.get_num_velocities();
+  const int nq = model_.num_positions();
+  const int nv = model_.num_velocities();
 
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);
@@ -140,32 +129,20 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   model_.SetDefaultState(context, state);
-  if (with_quaternion_) {
-    quaternion_mobilizer_->set_angular_velocity(
-        context, get_default_initial_angular_velocity(), state);
-  } else {
-    space_xyx_mobilizer_->set_angular_velocity(
-        context, get_default_initial_angular_velocity(), state);
-  }
+  mobilizer_->set_angular_velocity(
+      context, get_default_initial_angular_velocity(), state);
 }
 
 template<typename T>
 Vector3<T> FreeRotatingBodyPlant<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
-  if (with_quaternion_) {
-    return quaternion_mobilizer_->get_angular_velocity(context);
-  }
-  return space_xyx_mobilizer_->get_angular_velocity(context);
+  return mobilizer_->get_angular_velocity(context);
 }
 
 template<typename T>
 void FreeRotatingBodyPlant<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_WB) const {
-  if (with_quaternion_) {
-    quaternion_mobilizer_->set_angular_velocity(context, w_WB);
-  } else {
-    space_xyx_mobilizer_->set_angular_velocity(context, w_WB);
-  }
+  mobilizer_->set_angular_velocity(context, w_WB);
 }
 
 template<typename T>
@@ -173,7 +150,7 @@ Isometry3<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
-  return pc.get_X_WB(body_->get_node_index());
+  return pc.get_X_WB(body_->node_index());
 }
 
 template<typename T>
@@ -183,7 +160,7 @@ SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
   model_.CalcPositionKinematicsCache(context, &pc);
   VelocityKinematicsCache<T> vc(model_.get_topology());
   model_.CalcVelocityKinematicsCache(context, pc, &vc);
-  return vc.get_V_WB(body_->get_node_index());
+  return vc.get_V_WB(body_->node_index());
 }
 
 }  // namespace test

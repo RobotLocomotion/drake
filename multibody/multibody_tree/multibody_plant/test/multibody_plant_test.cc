@@ -10,35 +10,41 @@
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
+#include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/systems/framework/diagram_builder.h"
+#include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
-
-#include <iostream>
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
-namespace multibody {
-namespace multibody_plant {
-namespace {
 
 using Eigen::Matrix2d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::FrameId;
 using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometrySystem;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using multibody::benchmarks::pendulum::MakePendulumPlant;
+using multibody::benchmarks::pendulum::PendulumParameters;
 using systems::AbstractValue;
 using systems::Context;
 using systems::ContinuousState;
 using systems::DiagramBuilder;
 using systems::Diagram;
+using systems::LinearSystem;
+using systems::Linearize;
+
+namespace multibody {
+namespace multibody_plant {
+namespace {
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
@@ -47,7 +53,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const std::string kInvalidName = "InvalidName";
 
   const AcrobotParameters parameters;
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlant(parameters);
+  std::unique_ptr<MultibodyPlant<double>> plant =
+      MakeAcrobotPlant(parameters, true /* Make a finalized plant. */);
 
   // MakeAcrobotPlant() has already called Finalize() on the new acrobot plant.
   // Therefore attempting to call this method again will throw an exception.
@@ -58,6 +65,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_bodies(), 3);
   EXPECT_EQ(plant->num_joints(), 2);
   EXPECT_EQ(plant->num_actuators(), 1);
+  EXPECT_EQ(plant->num_actuated_dofs(), 1);
 
   // State size.
   EXPECT_EQ(plant->num_positions(), 2);
@@ -73,11 +81,14 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_TRUE(plant->HasJointNamed(parameters.elbow_joint_name()));
   EXPECT_FALSE(plant->HasJointNamed(kInvalidName));
 
+  EXPECT_TRUE(plant->HasJointActuatorNamed(parameters.actuator_name()));
+  EXPECT_FALSE(plant->HasJointActuatorNamed(kInvalidName));
+
   // Get links by name.
   const Body<double>& link1 = plant->GetBodyByName(parameters.link1_name());
-  EXPECT_EQ(link1.get_name(), parameters.link1_name());
+  EXPECT_EQ(link1.name(), parameters.link1_name());
   const Body<double>& link2 = plant->GetBodyByName(parameters.link2_name());
-  EXPECT_EQ(link2.get_name(), parameters.link2_name());
+  EXPECT_EQ(link2.name(), parameters.link2_name());
 
   // Attempting to retrieve a link that is not part of the model should throw
   // an exception.
@@ -86,28 +97,36 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Get joints by name.
   const Joint<double>& shoulder_joint =
       plant->GetJointByName(parameters.shoulder_joint_name());
-  EXPECT_EQ(shoulder_joint.get_name(), parameters.shoulder_joint_name());
+  EXPECT_EQ(shoulder_joint.name(), parameters.shoulder_joint_name());
   const Joint<double>& elbow_joint =
       plant->GetJointByName(parameters.elbow_joint_name());
-  EXPECT_EQ(elbow_joint.get_name(), parameters.elbow_joint_name());
+  EXPECT_EQ(elbow_joint.name(), parameters.elbow_joint_name());
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // Templatized version to obtain retrieve a particular known type of joint.
   const RevoluteJoint<double>& shoulder =
       plant->GetJointByName<RevoluteJoint>(parameters.shoulder_joint_name());
-  EXPECT_EQ(shoulder.get_name(), parameters.shoulder_joint_name());
+  EXPECT_EQ(shoulder.name(), parameters.shoulder_joint_name());
   const RevoluteJoint<double>& elbow =
       plant->GetJointByName<RevoluteJoint>(parameters.elbow_joint_name());
-  EXPECT_EQ(elbow.get_name(), parameters.elbow_joint_name());
+  EXPECT_EQ(elbow.name(), parameters.elbow_joint_name());
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
-  EXPECT_THROW(plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
-               std::logic_error);
-  EXPECT_THROW(plant->AddJoint<RevoluteJoint>(
-      "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
-               std::logic_error);
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "Post-finalize calls to '.*' are not allowed; "
+      "calls to this method must happen before Finalize\\(\\).");
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant->AddJoint<RevoluteJoint>(
+          "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "Post-finalize calls to '.*' are not allowed; "
+      "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
@@ -119,11 +138,33 @@ class AcrobotPlantTests : public ::testing::Test {
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
     geometry_system_ = builder.AddSystem<GeometrySystem>();
-    geometry_system_->set_name("geometry_system");
-    const AcrobotParameters acrobot_parameters;
-    plant_ = builder.AddSystem(MakeAcrobotPlant(parameters_, geometry_system_));
-    // Sanity check on the availability of the optional source id before using it.
-    DRAKE_DEMAND(!!plant_->get_source_id());
+    // Make a non-finalized plant so that we can tests methods with pre/post
+    // Finalize() conditions.
+    plant_ = builder.AddSystem(
+        MakeAcrobotPlant(parameters_, false, geometry_system_));
+    // Sanity check on the availability of the optional source id before using
+    // it.
+    DRAKE_DEMAND(plant_->get_source_id() != nullopt);
+
+    // Verify that methods with pre-Finalize() conditions throw accordingly.
+    DRAKE_EXPECT_ERROR_MESSAGE(
+        plant_->get_geometry_ids_output_port(),
+        std::logic_error,
+        /* Verify this method is throwing for the right reasons. */
+        "Pre-finalize calls to '.*' are not allowed; "
+        "you must call Finalize\\(\\) first.");
+
+    DRAKE_EXPECT_ERROR_MESSAGE(
+        plant_->get_geometry_poses_output_port(),
+        std::logic_error,
+        /* Verify this method is throwing for the right reasons. */
+        "Pre-finalize calls to '.*' are not allowed; "
+        "you must call Finalize\\(\\) first.");
+
+    // Finalize() the plant before accessing its ports for communicating with
+    // GeometrySystem.
+    plant_->Finalize();
+
     builder.Connect(
         plant_->get_geometry_ids_output_port(),
         geometry_system_->get_source_frame_id_port(
@@ -132,7 +173,6 @@ class AcrobotPlantTests : public ::testing::Test {
         plant_->get_geometry_poses_output_port(),
         geometry_system_->get_source_pose_port(
             plant_->get_source_id().value()));
-    builder.ExportInput(plant_->get_actuation_input_port());
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -143,14 +183,12 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_ = &plant_->GetJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
-    context_ = diagram_->CreateDefaultContext();
-    derivatives_ = diagram_->AllocateTimeDerivatives();
+    context_ = plant_->CreateDefaultContext();
+    derivatives_ = plant_->AllocateTimeDerivatives();
 
+    ASSERT_GT(plant_->num_actuators(), 0);
     input_port_ = &context_->FixInputPort(
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
-
-    plant_context_ = &diagram_->GetMutableSubsystemContext(
-        *plant_, context_.get());
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
@@ -162,16 +200,16 @@ class AcrobotPlantTests : public ::testing::Test {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
-    shoulder_->set_angle(plant_context_, theta1);
-    elbow_->set_angle(plant_context_, theta2);
-    shoulder_->set_angular_rate(plant_context_, theta1dot);
-    elbow_->set_angular_rate(plant_context_, theta2dot);
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angular_rate(context_.get(), theta1dot);
+    elbow_->set_angular_rate(context_.get(), theta2dot);
 
     // Fix input port to a value before computing anything. In this case, zero
     // actuation.
     input_port_->GetMutableVectorData<double>()->SetAtIndex(0, input_torque);
 
-    diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
+    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
     const VectorXd xdot = derivatives_->CopyToVector();
 
     // Now compute inverse dynamics using our benchmark:
@@ -193,14 +231,13 @@ class AcrobotPlantTests : public ::testing::Test {
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
-  MultibodyPlant<double>* plant_;
+  MultibodyPlant<double>* plant_{nullptr};
   // A GeometrySystem so that we can test geometry registration.
-  GeometrySystem<double>* geometry_system_;
+  GeometrySystem<double>* geometry_system_{nullptr};
   // The Diagram containing both the MultibodyPlant and the GeometrySystem.
   std::unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
-  Context<double>* plant_context_{nullptr};
   std::unique_ptr<ContinuousState<double>> derivatives_;
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
@@ -210,7 +247,7 @@ class AcrobotPlantTests : public ::testing::Test {
   // Input port for the actuation:
   systems::FreestandingInputPortValue* input_port_{nullptr};
 
-      // Reference benchmark for verification.
+  // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
       parameters_.m1(), parameters_.m2(),
@@ -243,15 +280,18 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       2.0);                     /* Actuation torque */
 }
 
-TEST_F(AcrobotPlantTests, VerifyGeometryRegistration) {
+// Verifies the process of geometry registration with a GeometrySystem for the
+// acrobot model.
+TEST_F(AcrobotPlantTests, GeometryRegistration) {
   EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
-  EXPECT_EQ(plant_->get_num_collision_geometries(), 0);
+  EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
 
+  // The default context gets initialized by a call to SetDefaultState(), which
+  // for a MultibodyPlant sets all revolute joints to have zero angles and zero
+  // angular velocity.
   std::unique_ptr<systems::Context<double>> context =
       plant_->CreateDefaultContext();
-  std::unique_ptr<systems::SystemOutput<double>> output =
-      plant_->AllocateOutput(*context);
 
   std::unique_ptr<AbstractValue> ids_value =
       plant_->get_geometry_ids_output_port().Allocate(*context);
@@ -268,23 +308,78 @@ TEST_F(AcrobotPlantTests, VerifyGeometryRegistration) {
   EXPECT_EQ(poses.get_source_id(), plant_->get_source_id());
   EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
 
-  //shoulder_->set_angle(context.get(), 0.0);
- // elbow_->set_angle(context.get(), 0.0);
-
-  PRINT_VARn(context->get_continuous_state_vector().CopyToVector());
-
+  // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
 
-  PRINT_VARn(poses.vector()[0].matrix());
-  PRINT_VARn(poses.vector()[1].matrix());
+  const MultibodyTree<double>& model = plant_->model();
+  std::vector<Isometry3<double >> X_WB_all;
+  model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  for (BodyIndex body_index(1);
+       body_index < plant_->num_bodies(); ++body_index) {
+    const FrameId frame_id = plant_->GetBodyFrameIdOrThrow(body_index);
+    const int id_index = ids.GetIndex(frame_id);
+    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
+    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
+                                kTolerance, MatrixCompareType::relative));
+  }
 
-#if 0
-  EXPECT_EQ(val->GetValueOrThrow<string>(), string("from calc_string"));
-  const AbstractValue& val_cached = port.Eval(context);
-  EXPECT_EQ(val_cached.GetValueOrThrow<string>(), string("from eval_string"));
-#endif
+  // GeometrySystem does not register a FrameId for the world. We use this fact
+  // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
+  // FrameId, even though in this model we register an anchored geometry to the
+  // world.
+  DRAKE_EXPECT_ERROR_MESSAGE(
+      plant_->GetBodyFrameIdOrThrow(world_index()),
+      std::logic_error,
+      /* Verify this method is throwing for the right reasons. */
+      "Body 'WorldBody' does not have geometry registered with it.");
 }
 
+GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+  PendulumParameters parameters;
+  std::unique_ptr<MultibodyPlant<double>> pendulum =
+      MakePendulumPlant(parameters);
+  const auto& pin =
+      pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
+  std::unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
+  context->FixInputPort(0, Vector1d{0.0});
+
+  // First we will linearize about the unstable fixed point with the pendulum
+  // in its inverted position.
+  pin.set_angle(context.get(), M_PI);
+  pin.set_angular_rate(context.get(), 0.0);
+
+  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+      Linearize(*pendulum, *context,
+                pendulum->get_actuation_input_port().get_index(),
+                systems::kNoOutput);
+
+  // Compute the expected solution by hand.
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+  A <<                            0.0, 1.0,
+      parameters.g() / parameters.l(), 0.0;
+  B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+
+  // Now we linearize about the stable fixed point with the pendulum in its
+  // downward position.
+  pin.set_angle(context.get(), 0.0);
+  pin.set_angular_rate(context.get(), 0.0);
+  linearized_pendulum = Linearize(
+      *pendulum, *context,
+      pendulum->get_actuation_input_port().get_index(), systems::kNoOutput);
+  // Compute the expected solution by hand.
+  A <<                             0.0, 1.0,
+      -parameters.g() / parameters.l(), 0.0;
+  B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+}
 
 }  // namespace
 }  // namespace multibody_plant

@@ -25,6 +25,31 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
   return false;
 }
 
+namespace {
+std::unique_ptr<MathematicalProgramSolverInterface> MakeSolver(
+    const SolverId& solver_id) {
+  if (solver_id == GurobiSolver::id() || solver_id == ScsSolver::id()) {
+    if (solver_id == GurobiSolver::id()) {
+      auto solver = std::make_unique<GurobiSolver>();
+      if (!solver->available()) {
+        throw std::runtime_error("Gurobi is unavailable.");
+      }
+      return solver;
+    } else {
+      auto solver = std::make_unique<ScsSolver>();
+      if (!solver->available()) {
+        throw std::runtime_error("Scs is unavailable.");
+      }
+      return solver;
+    }
+  } else {
+    throw std::runtime_error(fmt::format(
+        "MixedIntegerBranchAndBoundNode does not support solver {}.",
+        solver_id.name()));
+  }
+}
+}  // namespace
+
 MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
     const MathematicalProgram& prog,
     const std::list<symbolic::Variable>& binary_variables,
@@ -39,11 +64,6 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       solution_result_{SolutionResult::kUnknownError},
       optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown},
       solver_id_{solver_id} {
-  if (solver_id != GurobiSolver::id() && solver_id != ScsSolver::id()) {
-    throw std::runtime_error(fmt::format(
-        "MixedIntegerBranchAndBoundNode does not support solver {}.",
-        solver_id.name()));
-  }
   // Check if there are still binary variables.
   DRAKE_ASSERT(!MathProgHasBinaryVariables(*prog_));
   // Set Gurobi DualReductions to 0, to differentiate infeasible from unbounded.
@@ -54,6 +74,7 @@ bool MixedIntegerBranchAndBoundNode::IsRoot() const {
   return parent_ == nullptr;
 }
 
+namespace {
 // Replaces the variables bound with the constraint or cost with new variables.
 template <typename Constraint>
 Binding<Constraint> ReplaceBoundVariables(
@@ -65,7 +86,7 @@ Binding<Constraint> ReplaceBoundVariables(
   for (int i = 0; i < new_bound_vars.rows(); ++i) {
     new_bound_vars(i) = map_old_vars_to_new_vars.at(old_bound_vars(i).get_id());
   }
-  return Binding<Constraint>(binding.constraint(), new_bound_vars);
+  return Binding<Constraint>(binding.evaluator(), new_bound_vars);
 }
 
 // Adds a vector of costs to a mathematical program.
@@ -92,6 +113,15 @@ void AddVectorOfConstraintsToProgram(
         ReplaceBoundVariables(constraint, map_old_vars_to_new_vars));
   }
 }
+
+SolutionResult SolveProgramWithSolver(MathematicalProgram* prog,
+                                      const SolverId& solver_id) {
+  std::unique_ptr<MathematicalProgramSolverInterface> solver =
+      MakeSolver(solver_id);
+  DRAKE_ASSERT(solver.get());
+  return solver->Solve(*prog);
+}
+}  // namespace
 
 std::pair<std::unique_ptr<MixedIntegerBranchAndBoundNode>,
           std::unordered_map<symbolic::Variable::Id, symbolic::Variable>>
@@ -194,19 +224,7 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   }
   MixedIntegerBranchAndBoundNode* node = new MixedIntegerBranchAndBoundNode(
       new_prog, binary_variables_list, solver_id);
-  if (solver_id == GurobiSolver::id()) {
-    GurobiSolver gurobi_solver;
-    if (!gurobi_solver.available()) {
-      throw std::runtime_error("Gurobi is not available.");
-    }
-    node->solution_result_ = gurobi_solver.Solve(*(node->prog_));
-  } else if (solver_id == ScsSolver::id()) {
-    ScsSolver scs_solver;
-    if (!scs_solver.available()) {
-      throw std::runtime_error("Scs is not available.");
-    }
-    node->solution_result_ = scs_solver.Solve(*(node->prog_));
-  }
+  node->solution_result_ = SolveProgramWithSolver(node->prog_.get(), solver_id);
   if (node->solution_result_ == SolutionResult::kSolutionFound) {
     node->CheckOptimalSolutionIsIntegral();
   }
@@ -305,16 +323,10 @@ void MixedIntegerBranchAndBoundNode::Branch(
   right_child_->FixBinaryVariable(binary_variable, 1);
   left_child_->parent_ = this;
   right_child_->parent_ = this;
-  if (solver_id_ == GurobiSolver::id()) {
-    GurobiSolver gurobi_solver;
-    left_child_->solution_result_ = gurobi_solver.Solve(*(left_child_->prog_));
-    right_child_->solution_result_ =
-        gurobi_solver.Solve(*(right_child_->prog_));
-  } else if (solver_id_ == ScsSolver::id()) {
-    ScsSolver scs_solver;
-    left_child_->solution_result_ = scs_solver.Solve(*(left_child_->prog_));
-    right_child_->solution_result_ = scs_solver.Solve(*(right_child_->prog_));
-  }
+  left_child_->solution_result_ =
+      SolveProgramWithSolver(left_child_->prog_.get(), left_child_->solver_id_);
+  right_child_->solution_result_ = SolveProgramWithSolver(
+      right_child_->prog_.get(), right_child_->solver_id_);
   if (left_child_->solution_result_ == SolutionResult::kSolutionFound) {
     left_child_->CheckOptimalSolutionIsIntegral();
   }
@@ -345,10 +357,15 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
 }
 
 SolutionResult MixedIntegerBranchAndBound::Solve() {
+  // Call back on the root node.
+  NodeCallback(*root_);
   // First check the status of the root node. If the root node is infeasible,
   // then the MIP is infeasible.
   if (root_->solution_result() == SolutionResult::kInfeasibleConstraints) {
     return SolutionResult::kInfeasibleConstraints;
+  }
+  if (search_integral_solution_by_rounding_) {
+    SearchIntegralSolutionByRounding(*root_);
   }
   if (HasConverged()) {
     return SolutionResult::kSolutionFound;
@@ -361,7 +378,7 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
   // solution can be specified after the constructor call.
   if (root_->solution_result() == SolutionResult::kSolutionFound &&
       !root_->optimal_solution_is_integral()) {
-    SearchIntegralSolution(*root_);
+    SearchIntegralSolutionByRounding(*root_);
   }
   MixedIntegerBranchAndBoundNode* branching_node = PickBranchingNode();
   while (branching_node) {
@@ -387,6 +404,13 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
   }
   throw std::runtime_error(
       "Unknown result. The problem is not optimal, infeasible, nor unbounded.");
+}
+
+void MixedIntegerBranchAndBound::NodeCallback(
+    const MixedIntegerBranchAndBoundNode& node) {
+  if (node_callback_userfun_ != nullptr) {
+    node_callback_userfun_(node, this);
+  }
 }
 
 double MixedIntegerBranchAndBound::GetOptimalCost() const {
@@ -457,7 +481,7 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
       return PickDepthFirstNode();
     }
     case NodeSelectionMethod::kUserDefined: {
-      if (node_selection_userfun_) {
+      if (node_selection_userfun_ != nullptr) {
         auto node = node_selection_userfun_(*this);
         if (!node->IsLeaf() || IsLeafNodeFathomed(*node)) {
           throw std::runtime_error(
@@ -670,21 +694,40 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
       const Eigen::VectorXd x_sol =
           child->prog()->GetSolution(child->prog()->decision_variables());
       UpdateIntegralSolution(x_sol, child_node_optimal_cost);
-    } else {
-      SearchIntegralSolution(*child);
     }
+    if (search_integral_solution_by_rounding_) {
+      SearchIntegralSolutionByRounding(*child);
+    }
+    NodeCallback(*child);
   }
 }
 
 void MixedIntegerBranchAndBound::UpdateIntegralSolution(
     const Eigen::Ref<const Eigen::VectorXd>& solution, double cost) {
-  solutions_.emplace(cost, solution);
-  if (static_cast<int>(solutions_.size()) > max_num_solutions_) {
-    auto it = solutions_.end();
-    --it;
-    solutions_.erase(it);
+  // First make sure that this solution has not been found before. The solution
+  // could be found already when we search the integral solution in each node
+  // by rounding the un-fixed binary variables, or by some user callback
+  // procedure.
+  bool found_match = false;
+  const double tol{1E-6};
+  for (const auto& cost_solution : solutions_) {
+    // The same solution should have the same cost, up to some numerical
+    // tolerance.
+    found_match = std::abs(cost_solution.first - cost) < tol &&
+                  (cost_solution.second - solution).cwiseAbs().maxCoeff() < tol;
+    if (found_match) {
+      break;
+    }
   }
-  best_upper_bound_ = std::min(best_upper_bound_, solutions_.begin()->first);
+  if (!found_match) {
+    solutions_.emplace(cost, solution);
+    if (static_cast<int>(solutions_.size()) > max_num_solutions_) {
+      auto it = solutions_.end();
+      --it;
+      solutions_.erase(it);
+    }
+    best_upper_bound_ = std::min(best_upper_bound_, solutions_.begin()->first);
+  }
 }
 
 bool MixedIntegerBranchAndBound::HasConverged() const {
@@ -698,13 +741,38 @@ bool MixedIntegerBranchAndBound::HasConverged() const {
   return false;
 }
 
-void MixedIntegerBranchAndBound::SearchIntegralSolution(
+void MixedIntegerBranchAndBound::SearchIntegralSolutionByRounding(
     const MixedIntegerBranchAndBoundNode& node) {
-  // TODO(hongkai.dai): create a new program that fix the remaining binary
-  // variables to either 0 or 1, and solve for the continuous variables. If this
-  // optimization problem is feasible, then the optimal solution is a feasible
-  // solution to the MIP, and we get an upper bound on the MIP optimal cost.
-  unused(node);
+  // Only searches integral solution by rounding, if the optimization program
+  // in this node has an optimal solution, and that solution is non-integral.
+  if (node.solution_result() == SolutionResult::kSolutionFound &&
+      !node.optimal_solution_is_integral()) {
+    // Create a new program that fix the remaining binary variables to either 0
+    // or 1, and solve for the continuous variables. If this optimization
+    // problem is feasible, then the optimal solution is a feasible
+    // solution to the MIP, and we get an upper bound on the MIP optimal cost.
+    auto new_prog = node.prog()->Clone();
+    // Go through each remaining binary variables, and constrain them to either
+    // 0 or 1 by rounding the solution to the integer.
+    for (const auto& remaining_binary_variable :
+         node.remaining_binary_variables()) {
+      // Notice that roundoff_integer_val is of type double here. This is
+      // because AddBoundingBoxConstraint(...) requires bounds of type double.
+      const double roundoff_integer_val =
+          std::round(node.prog()->GetSolution(remaining_binary_variable));
+      new_prog->AddBoundingBoxConstraint(roundoff_integer_val,
+                                         roundoff_integer_val,
+                                         remaining_binary_variable);
+    }
+    const SolutionResult result =
+        SolveProgramWithSolver(new_prog.get(), node.solver_id());
+    if (result == SolutionResult::kSolutionFound) {
+      // Found integral solution.
+      UpdateIntegralSolution(
+          new_prog->GetSolution(new_prog->decision_variables()),
+          new_prog->GetOptimalCost());
+    }
+  }
 }
 }  // namespace solvers
 }  // namespace drake

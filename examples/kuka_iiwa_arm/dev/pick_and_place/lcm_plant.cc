@@ -76,9 +76,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     iiwa_instances->push_back(
         tree_builder->get_model_info_for_instance(robot_base_id));
     // Add the gripper.
-    auto frame_ee = tree_builder->tree().findFrame(
-        "iiwa_frame_ee", iiwa_instances->back().instance_id);
-    auto wsg_frame = frame_ee->Clone(frame_ee->get_mutable_rigid_body());
+    std::shared_ptr<RigidBodyFrame<double>> frame_ee =
+        tree_builder->tree().findFrame(
+            "iiwa_frame_ee", iiwa_instances->back().instance_id);
+    auto wsg_frame = std::make_shared<RigidBodyFrame<double>>(*frame_ee);
     wsg_frame->get_mutable_transform_to_body()->rotate(
         Eigen::AngleAxisd(-0.39269908, Eigen::Vector3d::UnitY()));
     wsg_frame->get_mutable_transform_to_body()->translate(

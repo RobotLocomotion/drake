@@ -10,19 +10,20 @@ import os
 import sys
 import unittest
 
-# Set on command-line to the location of drake_cc_googletest_main_test.
-_main_exe = None
-
 
 class TestGtestMain(unittest.TestCase):
+    def setUp(self):
+        self._main_exe, = sys.argv[1:]
+        self.assertTrue(
+            os.path.exists(self._main_exe),
+            "Could not find " + self._main_exe)
+
     def _check_call(self, args, expected_returncode=0):
         """Run _main_exe with the given args; return output.
         """
         try:
-            self.assertTrue(_main_exe is not None)
-            self.assertTrue(os.path.exists(_main_exe), _main_exe)
             output = subprocess.check_output(
-                [_main_exe] + args,
+                [self._main_exe] + args,
                 stderr=subprocess.STDOUT)
             returncode = 0
         except subprocess.CalledProcessError as e:
@@ -68,8 +69,3 @@ class TestGtestMain(unittest.TestCase):
         args.append("-spdlog_level=debug")
         output = self._check_call(args, expected_returncode=0)
         self.assertTrue(log_message in output, output)
-
-
-if __name__ == '__main__':
-    _main_exe = sys.argv.pop(1)
-    unittest.main()

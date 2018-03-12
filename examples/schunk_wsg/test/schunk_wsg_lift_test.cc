@@ -21,7 +21,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/sdf_parser.h"
@@ -57,6 +57,7 @@ using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
 using drake::systems::Context;
 using drake::systems::BasicVector;
+using drake::trajectories::PiecewisePolynomial;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
@@ -292,10 +293,10 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Stop gradually.
   lift_knots.push_back(Eigen::Vector2d(kLiftHeight, 0.));
-  PiecewisePolynomialTrajectory lift_trajectory(
+  PiecewisePolynomial<double> lift_trajectory =
       PiecewisePolynomial<double>::Cubic(
           lift_breaks, lift_knots, Eigen::Vector2d(0., 0.),
-          Eigen::Vector2d(0., 0.)));
+          Eigen::Vector2d(0., 0.));
   auto lift_source =
       builder.AddSystem<systems::TrajectorySource>(lift_trajectory);
   lift_source->set_name("lift_source");
@@ -335,8 +336,8 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   grip_knots.push_back(Vector1d(0));
   grip_knots.push_back(Vector1d(0));
   grip_knots.push_back(Vector1d(40));
-  PiecewisePolynomialTrajectory grip_trajectory(
-      PiecewisePolynomial<double>::FirstOrderHold(grip_breaks, grip_knots));
+  PiecewisePolynomial<double> grip_trajectory =
+      PiecewisePolynomial<double>::FirstOrderHold(grip_breaks, grip_knots);
   auto grip_source =
       builder.AddSystem<systems::TrajectorySource>(grip_trajectory);
   grip_source->set_name("grip_source");

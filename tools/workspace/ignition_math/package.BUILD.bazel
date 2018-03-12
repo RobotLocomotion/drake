@@ -22,6 +22,12 @@ load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 PROJECT_MAJOR = 4
 
 PROJECT_MINOR = 0
@@ -147,7 +153,7 @@ public_headers = public_headers_no_gen + [
 # upstream's explicitly listed sources plus private headers.  The explicitly
 # listed hdrs= matches upstream's public headers.
 cc_binary(
-    name = "libignition_math.so",
+    name = "libdrake_ignition_math4.so",
     srcs = [
         "src/Angle.cc",
         "src/Box.cc",
@@ -169,13 +175,17 @@ cc_binary(
     ] + private_headers + public_headers,
     copts = ["-fvisibility-inlines-hidden"],
     includes = ["include"],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_ignition_math4.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
 )
 
 cc_library(
     name = "ignition_math",
-    srcs = ["libignition_math.so"],
+    srcs = ["libdrake_ignition_math4.so"],
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
@@ -195,7 +205,7 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":libignition_math.so"],
+    targets = [":libdrake_ignition_math4.so"],
     hdrs = public_headers,
     hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],

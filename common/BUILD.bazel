@@ -9,7 +9,7 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -38,7 +38,8 @@ drake_cc_library(
         ":nice_type_name",
         ":number_traits",
         ":polynomial",
-        ":reinit_after_move",
+        ":reset_after_move",
+        ":reset_on_copy",
         ":scoped_singleton",
         ":sorted_vectors_have_intersection",
         ":symbolic",
@@ -325,8 +326,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "reinit_after_move",
-    hdrs = ["reinit_after_move.h"],
+    name = "reset_after_move",
+    hdrs = ["reset_after_move.h"],
+)
+
+drake_cc_library(
+    name = "reset_on_copy",
+    hdrs = ["reset_on_copy.h"],
 )
 
 drake_cc_library(
@@ -413,6 +419,7 @@ drake_py_binary(
 
 install(
     name = "install",
+    install_tests = [":test/resource_tool_installed_test.py"],
     targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for programs not in bin/, and including the workspace and/or package name
@@ -471,9 +478,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "reinit_after_move_test",
+    name = "reset_after_move_test",
     deps = [
-        ":reinit_after_move",
+        ":reset_after_move",
+    ],
+)
+
+drake_cc_googletest(
+    name = "reset_on_copy_test",
+    deps = [
+        ":reset_on_copy",
     ],
 )
 
@@ -573,6 +587,7 @@ drake_cc_googletest(
     name = "copyable_unique_ptr_test",
     deps = [
         ":copyable_unique_ptr",
+        "//common:unused",
         "//common/test_utilities:is_dynamic_castable",
     ],
 )
@@ -935,23 +950,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "drake_cc_googletest_main_test",
+    name = "drake_cc_googletest_main_test_device",
     args = ["--magic_number=1.0"],
 )
 
 # Run test/drake_cc_googletest_main_test.py, a unit test written in Python that
 # covers the test/drake_cc_googletest_main.cc software.
-drake_py_test(
-    name = "drake_cc_googletest_main_test_py",
-    srcs = ["test/drake_cc_googletest_main_test.py"],
-    args = ["$(location :drake_cc_googletest_main_test)"],
-    data = [":drake_cc_googletest_main_test"],
-    main = "test/drake_cc_googletest_main_test.py",
+drake_py_unittest(
+    name = "drake_cc_googletest_main_test",
+    args = ["$(location :drake_cc_googletest_main_test_device)"],
+    data = [":drake_cc_googletest_main_test_device"],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "cpplint_wrapper_test",
-    srcs = ["test/cpplint_wrapper_test.py"],
     args = [
         "$(location :cpplint_wrapper)",
         "$(location :eigen_types.h)",
@@ -963,9 +975,8 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "resource_tool_test",
-    srcs = ["test/resource_tool_test.py"],
     args = [
         "$(location :resource_tool)",
     ],
@@ -976,17 +987,6 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
-    name = "resource_tool_installed_test",
-    srcs = ["test/resource_tool_installed_test.py"],
-    args = [
-        "$(location :install)",
-    ],
-    data = [
-        ":install",
-    ],
-)
-
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
@@ -994,4 +994,8 @@ drake_py_test(
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/resource_tool_installed_test.py",
+    ],
+)

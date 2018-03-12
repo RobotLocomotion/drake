@@ -10,11 +10,38 @@ namespace multibody {
 template <typename T>
 JointActuator<T>::JointActuator(
     const std::string& name, const Joint<T>& joint)
-    : name_(name), joint_index_(joint.get_index()) {}
+    : name_(name), joint_index_(joint.index()) {}
 
 template <typename T>
 const Joint<T>& JointActuator<T>::joint() const {
   return this->get_parent_tree().get_joint(joint_index_);
+}
+
+template <typename T>
+void JointActuator<T>::AddInOneForce(
+    const systems::Context<T>& context,
+    int joint_dof,
+    const T& joint_tau,
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(0 <= joint_dof && joint_dof < joint().num_dofs());
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+  joint().AddInOneForce(context, joint_dof, joint_tau, forces);
+}
+
+template <typename T>
+void JointActuator<T>::set_actuation_vector(
+    const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const {
+  DRAKE_DEMAND(u != nullptr);
+  DRAKE_DEMAND(u->size() == this->get_parent_tree().num_actuated_dofs());
+  DRAKE_DEMAND(u_a.size() == joint().num_dofs());
+  u->segment(topology_.actuator_index_start, joint().num_dofs()) = u_a;
+}
+
+template <typename T>
+void JointActuator<T>::DoSetTopology(
+    const MultibodyTreeTopology& mbt_topology) {
+  topology_ = mbt_topology.get_joint_actuator(this->index());
 }
 
 template <typename T>

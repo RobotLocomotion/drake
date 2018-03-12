@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
 namespace manipulation {

@@ -13,6 +13,12 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 # Generates glob_opts.h based on the defines= we want in Drake.
 cmake_configure_file(
     name = "glob_opts",
@@ -21,10 +27,8 @@ cmake_configure_file(
     defines = [
         "PRINTING",
         "PROFILING",
-        "CTRLC",
         "DFLOAT",
         "DLONG",
-        "ENABLE_MKL_PARDISO",
     ] + select({
         "@drake//tools/cc_toolchain:apple": [
             "IS_MAC",
@@ -38,12 +42,8 @@ cmake_configure_file(
 )
 
 cc_binary(
-    name = "libosqp.so",
+    name = "libdrake_osqp.so",
     srcs = glob([
-        "lin_sys/*.c",
-        "lin_sys/*.h",
-        "lin_sys/direct/pardiso/*.c",
-        "lin_sys/direct/pardiso/*.h",
         "lin_sys/direct/suitesparse/*.c",
         "lin_sys/direct/suitesparse/*.h",
         "lin_sys/direct/suitesparse/amd/src/*.c",
@@ -61,13 +61,17 @@ cc_binary(
         "lin_sys/direct/suitesparse/amd/include",
         "lin_sys/direct/suitesparse/ldl/include",
     ],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_osqp.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = ["//visibility:private"],
 )
 
 cc_library(
     name = "osqp",
-    srcs = [":libosqp.so"],
+    srcs = [":libdrake_osqp.so"],
     hdrs = glob([
         "include/*.h",
     ]) + ["include/glob_opts.h"],
@@ -78,7 +82,7 @@ cc_library(
 
 install(
     name = "install",
-    targets = [":libosqp.so"],
+    targets = [":libdrake_osqp.so"],
     docs = [
         "LICENSE",
         "lin_sys/direct/suitesparse/ldl/LICENSE",

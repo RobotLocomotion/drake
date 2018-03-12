@@ -3,8 +3,7 @@
 
 load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
-# Internal helper; set up test given name and list of files. Will do nothing
-# if no files given.
+# Internal helper.
 def _python_lint(name_prefix, files, ignore):
     if ignore:
         ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
@@ -23,13 +22,13 @@ def _python_lint(name_prefix, files, ignore):
     )
 
     # Additional Drake lint.
-    native.py_test(
+    py_test_isolated(
         name = name_prefix + "_drakelint",
         size = "small",
-        srcs = ["//tools/lint:drakelint"],
+        srcs = ["@drake//tools/lint:drakelint"],
         data = files,
         args = locations,
-        main = "//tools/lint:drakelint.py",
+        main = "@drake//tools/lint:drakelint.py",
         tags = ["drakelint", "lint"]
     )
 

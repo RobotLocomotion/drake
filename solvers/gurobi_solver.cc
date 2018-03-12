@@ -286,8 +286,8 @@ int AddSecondOrderConeConstraints(
                second_order_cone_new_variable_indices.size());
   int second_order_cone_count = 0;
   for (const auto& binding : second_order_cone_constraints) {
-    const auto& A = binding.constraint()->A();
-    const auto& b = binding.constraint()->b();
+    const auto& A = binding.evaluator()->A();
+    const auto& b = binding.evaluator()->b();
 
     int num_x = A.cols();
     int num_z = A.rows();
@@ -389,7 +389,7 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
   double& constant_cost = *pconstant_cost;
   constant_cost = 0;
   for (const auto& binding : prog.quadratic_costs()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.evaluator();
     const int constraint_variable_dimension = binding.GetNumElements();
     const Eigen::MatrixXd& Q = constraint->Q();
     const Eigen::VectorXd& b = constraint->b();
@@ -431,7 +431,7 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
 
   // Add linear cost in prog.linear_costs() to the aggregated cost.
   for (const auto& binding : prog.linear_costs()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.evaluator();
     const auto& a = constraint->a();
     constant_cost += constraint->b();
 
@@ -493,7 +493,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
                              double sparseness_threshold) {
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.evaluator();
 
     const int error = AddLinearConstraint(
         prog, model, constraint->A(), constraint->lower_bound(),
@@ -505,7 +505,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   }
 
   for (const auto& binding : prog.linear_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.evaluator();
 
     const int error = AddLinearConstraint(
         prog, model, constraint->A(), constraint->lower_bound(),
@@ -567,7 +567,7 @@ void AddSecondOrderConeVariables(
   // accordingly.
   int lorentz_cone_count = 0;
   for (const auto& binding : second_order_cones) {
-    int num_new_lorentz_cone_var_i = binding.constraint()->A().rows();
+    int num_new_lorentz_cone_var_i = binding.evaluator()->A().rows();
     (*second_order_cone_variable_indices)[lorentz_cone_count].resize(
         num_new_lorentz_cone_var_i);
     for (int i = 0; i < num_new_lorentz_cone_var_i; ++i) {
@@ -651,7 +651,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   }
 
   for (const auto& binding : prog.bounding_box_constraints()) {
-    const auto& constraint = binding.constraint();
+    const auto& constraint = binding.evaluator();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
 

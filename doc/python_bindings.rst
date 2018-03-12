@@ -63,18 +63,19 @@ To check this:
 
 .. note::
 
-    If you are on Mac, you must ensure that you have Homebrew Python installed,
-    and are using ``python2`` from Homebrew Python to execute these scripts.
-    You may do this by either explicitly using ``python2`` on the command line,
-    or follow the instructions from ``brew info python``::
+    If you are using macOS, you must ensure that you are using the
+    ``python2.7`` executable located at
+    ``/usr/local/opt/python@2/bin/python2.7`` to run these scripts. For
+    convenience, you may modify your ``PATH`` by adding the following to
+    ``~/.bash_profile`` ::
 
-        This formula installs a python2 executable to /usr/local/bin.
-        If you wish to have this formula's python executable in your PATH then
-        add the following to ~/.bash_profile:
-          export PATH="/usr/local/opt/python/libexec/bin:$PATH"
+        export PATH="/usr/local/opt/python@2/bin:$PATH"
 
-    Once you have done this, if you would like to use ``jupyter`` then be sure to install it via ``pip install jupyter`` (*not* via Homebrew) to ensure that it uses the correct Python interpreter. 
-    
+    Once you have done this, if you would like to use ``jupyter`` then be sure
+    to install it via ``pip2.7 install jupyter`` (*not*
+    ``brew install jupyter``) to ensure that it uses the correct
+    ``PYTHONPATH``.
+
     ..
         Developers: Ensure this is synchronized with the steps in
         ``install_prereqs_user_environment.sh``.

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
@@ -33,6 +34,17 @@ GTEST_TEST(ContactDetailTests, PointContactDetailClone) {
   ASSERT_EQ(contact_force.get_force(), contact_copy.get_force());
   ASSERT_EQ(contact_force.get_torque(), contact_copy.get_torque());
   ASSERT_EQ(contact_force.get_normal(), contact_copy.get_normal());
+}
+
+GTEST_TEST(ContactDetailTests, AutoDiffTest) {
+  // Confirm that we can initialize an AutoDiffXd.
+  Vector3<double> point, normal, force, torque;
+  point << 1, 2, 3;
+  normal << 1, 0, 0;
+  force << 2, 0, 1;
+  torque << -1, -2, -3;
+  ContactForce<AutoDiffXd> contact_force(point, normal, force, torque);
+  PointContactDetail<AutoDiffXd> detail(contact_force);
 }
 
 }  // namespace

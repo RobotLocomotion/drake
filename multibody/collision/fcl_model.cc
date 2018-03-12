@@ -22,7 +22,7 @@ struct CollisionData {
   fcl::CollisionRequestd request;
 
   // Vector of distance results
-  std::vector<PointPair>* closest_points{};
+  std::vector<PointPair<double>>* closest_points{};
 };
 
 // Callback function for FCL's collide() function.
@@ -87,12 +87,12 @@ void FclModel::DoAddElement(const Element& element) {
 
   switch (element.getShape()) {
     case DrakeShapes::SPHERE: {
-      const auto sphere =
+      const auto& sphere =
           static_cast<const DrakeShapes::Sphere&>(element.getGeometry());
       fcl_geometry = std::make_shared<fcl::Sphered>(sphere.radius);
     } break;
     case DrakeShapes::CYLINDER: {
-      const auto cylinder =
+      const auto& cylinder =
           static_cast<const DrakeShapes::Cylinder&>(element.getGeometry());
       fcl_geometry =
           std::make_shared<fcl::Cylinderd>(cylinder.radius, cylinder.length);
@@ -143,16 +143,16 @@ bool FclModel::UpdateElementWorldTransform(ElementId id,
   return element_exists;
 }
 
-bool FclModel::ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     bool use_margins,
-                                     std::vector<PointPair>* closest_points) {
+bool FclModel::ClosestPointsAllToAll(
+    const std::vector<ElementId>& ids_to_check, bool use_margins,
+    std::vector<PointPair<double>>* closest_points) {
   drake::unused(ids_to_check, use_margins, closest_points);
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
 }
 
 bool FclModel::ComputeMaximumDepthCollisionPoints(
-    bool, std::vector<PointPair>* points) {
+    bool, std::vector<PointPair<double>>* points) {
   CollisionData collision_data;
   collision_data.closest_points = points;
   collision_data.request.enable_contact = true;
@@ -161,9 +161,9 @@ bool FclModel::ComputeMaximumDepthCollisionPoints(
   return true;
 }
 
-bool FclModel::ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     bool use_margins,
-                                     std::vector<PointPair>* closest_points) {
+bool FclModel::ClosestPointsPairwise(
+    const std::vector<ElementIdPair>& id_pairs, bool use_margins,
+    std::vector<PointPair<double>>* closest_points) {
   drake::unused(id_pairs, use_margins, closest_points);
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
@@ -171,7 +171,7 @@ bool FclModel::ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
 
 void FclModel::CollisionDetectFromPoints(
     const Eigen::Matrix3Xd& points, bool use_margins,
-    std::vector<PointPair>* closest_points) {
+    std::vector<PointPair<double>>* closest_points) {
   drake::unused(points, use_margins, closest_points);
   DRAKE_ABORT_MSG("Not implemented.");
 }

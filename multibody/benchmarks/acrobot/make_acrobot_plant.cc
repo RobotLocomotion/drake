@@ -26,10 +26,9 @@ using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeAcrobotPlant(
-    const AcrobotParameters& params,
+    const AcrobotParameters& params, bool finalize,
     geometry::GeometrySystem<double>* geometry_system) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
-  //plant->set_name("Acrobot");
 
   // COM's positions in each link (L1/L2) frame:
   // Frame L1's origin is located at the shoulder outboard frame.
@@ -57,6 +56,8 @@ MakeAcrobotPlant(
       params.link2_name(), M2_L2o);
 
   if (geometry_system != nullptr) {
+    plant->RegisterAsSourceForGeometrySystem(geometry_system);
+
     // Pose of the geometry for link 1 in the link's frame.
     const Isometry3d X_L1G1{
         Translation3d(-params.l1() / 2.0 * Vector3d::UnitZ())};
@@ -69,16 +70,18 @@ MakeAcrobotPlant(
     plant->RegisterVisualGeometry(
         link2, X_L2G2, Cylinder(params.r2(), params.l2()), geometry_system);
 
-    // Register some anchored geometry to the world.
-    plant->RegisterAnchoredVisualGeometry(
+    // Register some (anchored) geometry to the world.
+    plant->RegisterVisualGeometry(
+        plant->world_body(),
         Isometry3d::Identity(), /* X_WG */
-        Sphere(params.l1() / 8.0), geometry_system);
+        Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
+        geometry_system);
   }
 
   plant->AddJoint<RevoluteJoint>(
       params.shoulder_joint_name(),
       /* Shoulder inboard frame Si IS the the world frame W. */
-      plant->get_world_body(), {},
+      plant->world_body(), {},
       /* Shoulder outboard frame So IS frame L1. */
       link1, {},
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
@@ -101,7 +104,7 @@ MakeAcrobotPlant(
       -params.g() * Vector3d::UnitZ());
 
   // We are done creating the plant.
-  plant->Finalize();
+  if (finalize) plant->Finalize();
 
   return plant;
 }

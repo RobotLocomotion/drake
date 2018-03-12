@@ -43,7 +43,7 @@ class Frame : public FrameBase<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Frame)
 
   /// Returns a const reference to the body associated to this %Frame.
-  const Body<T>& get_body() const {
+  const Body<T>& body() const {
     return body_;
   }
 
@@ -111,8 +111,8 @@ class Frame : public FrameBase<T> {
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_frame(this->get_index());
-    DRAKE_ASSERT(topology_.index == this->get_index());
+    topology_ = tree_topology.get_frame(this->index());
+    DRAKE_ASSERT(topology_.index == this->index());
   }
 
   // The body associated with this frame.

@@ -72,7 +72,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       this_x(i) = tx(prog->FindDecisionVariableIndex(binding.variables()(i)));
     }
 
-    binding.constraint()->Eval(this_x, ty);
+    binding.evaluator()->Eval(this_x, ty);
 
     cost += ty(0).value();
     if (!grad.empty()) {
@@ -239,18 +239,18 @@ void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
   // Version of the wrapped constraint which refers only to equality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_eq(binding.constraint().get(), &binding.variables(),
+  WrappedConstraint wrapped_eq(binding.evaluator().get(), &binding.variables(),
                                &prog);
 
   // Version of the wrapped constraint which refers only to inequality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_in(binding.constraint().get(), &binding.variables(),
+  WrappedConstraint wrapped_in(binding.evaluator().get(), &binding.variables(),
                                &prog);
 
   bool is_pure_inequality = true;
-  const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
-  const Eigen::VectorXd& upper_bound = binding.constraint()->upper_bound();
+  const Eigen::VectorXd& lower_bound = binding.evaluator()->lower_bound();
+  const Eigen::VectorXd& upper_bound = binding.evaluator()->upper_bound();
   DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
   for (size_t i = 0; i < static_cast<size_t>(lower_bound.size()); i++) {
     if (lower_bound(i) == upper_bound(i)) {
@@ -301,10 +301,10 @@ bool IsVectorOfConstraintsSatisfiedAtSolution(
   for (const auto& binding : bindings) {
     const Eigen::VectorXd constraint_val = prog.EvalBindingAtSolution(binding);
     const int num_constraint = constraint_val.rows();
-    if (((constraint_val - binding.constraint()->lower_bound()).array() <
+    if (((constraint_val - binding.evaluator()->lower_bound()).array() <
          -Eigen::ArrayXd::Constant(num_constraint, tol))
             .any() ||
-        ((constraint_val - binding.constraint()->upper_bound()).array() >
+        ((constraint_val - binding.evaluator()->upper_bound()).array() >
          Eigen::ArrayXd::Constant(num_constraint, tol))
             .any()) {
       return false;
@@ -336,7 +336,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
 
   for (auto const& binding : prog.bounding_box_constraints()) {
-    const auto& c = binding.constraint();
+    const auto& c = binding.evaluator();
     const auto& lower_bound = c->lower_bound();
     const auto& upper_bound = c->upper_bound();
 

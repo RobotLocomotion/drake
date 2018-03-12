@@ -16,7 +16,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 
 package(default_visibility = [
@@ -110,7 +110,10 @@ drake_pybind_library(
 drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:cpp_template_pybind",
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+        "//bindings/pydrake/util:eigen_pybind",
     ],
     cc_so_name = "sensors",
     cc_srcs = ["sensors_py.cc"],
@@ -118,13 +121,16 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
         "//bindings/pydrake/util:cpp_template_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
 
 drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
     ],
     cc_so_name = "rendering",
@@ -178,7 +184,7 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "general_test",
     size = "small",
     deps = [
@@ -217,7 +223,7 @@ drake_pybind_library(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "lifetime_test",
     deps = [
         ":analysis_py",
@@ -227,7 +233,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "custom_test",
     size = "small",
     deps = [
@@ -238,7 +244,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "value_test",
     size = "small",
     deps = [
@@ -247,7 +253,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "controllers_test",
     size = "small",
     deps = [
@@ -256,7 +262,7 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "primitives_test",
     size = "small",
     deps = [
@@ -266,19 +272,23 @@ drake_py_test(
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "sensors_test",
     size = "small",
+    data = [
+        "//systems/sensors:test_models",
+    ],
     deps = [
         ":sensors_py",
     ],
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "rendering_test",
     size = "small",
     deps = [
         ":rendering_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
 )
 

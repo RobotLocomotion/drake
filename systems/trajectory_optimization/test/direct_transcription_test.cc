@@ -20,18 +20,6 @@ namespace {
 using symbolic::Variable;
 using symbolic::Expression;
 
-GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstructorThrows) {
-  // Construct a trivial continuous time system.
-  const Eigen::Matrix2d A = Eigen::Matrix2d::Identity();
-  const Eigen::Matrix<double, 2, 0> B;
-  const Eigen::Matrix<double, 0, 2> C;
-  const Eigen::Matrix<double, 0, 0> D;
-  LinearSystem<double> system(A, B, C, D);
-
-  const auto context = system.CreateDefaultContext();
-  EXPECT_THROW(DirectTranscription(&system, *context, 3), std::runtime_error);
-}
-
 namespace {
 
 template <typename T>
@@ -169,7 +157,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const Vector1d dynamic_constraint_val =
         prog.EvalBindingAtSolution(dynamic_constraints[i]) -
-        dynamic_constraints[i].constraint()->lower_bound();
+        dynamic_constraints[i].evaluator()->lower_bound();
     const Vector1d dynamic_constraint_expected =
         prog.GetSolution(prog.state(i + 1)) -
         system->A() * prog.GetSolution(prog.state(i)) -

@@ -78,17 +78,17 @@ TEST_F(KukaTest, FeasiblePostureTest) {
           pos_lb = body_pose.translation();
       const Eigen::Vector3d
           pos_ub = body_pose.translation();
-      body_position_constraint[body - 1].constraint()->UpdateLowerBound(pos_lb);
-      body_position_constraint[body - 1].constraint()->UpdateUpperBound(pos_ub);
+      body_position_constraint[body - 1].evaluator()->UpdateLowerBound(pos_lb);
+      body_position_constraint[body - 1].evaluator()->UpdateUpperBound(pos_ub);
       Eigen::Matrix<double, 9, 1> rotmat_lb_flat;
       Eigen::Matrix<double, 9, 1> rotmat_ub_flat;
       rotmat_lb_flat << body_pose.linear().col(0), body_pose.linear().col(1),
           body_pose.linear().col(2);
       rotmat_ub_flat << body_pose.linear().col(0), body_pose.linear().col(1),
           body_pose.linear().col(2);
-      body_orientation_constraint[body - 1].constraint()->UpdateLowerBound(
+      body_orientation_constraint[body - 1].evaluator()->UpdateLowerBound(
           rotmat_lb_flat);
-      body_orientation_constraint[body - 1].constraint()->UpdateUpperBound(
+      body_orientation_constraint[body - 1].evaluator()->UpdateUpperBound(
           rotmat_ub_flat);
     }
     solvers::GurobiSolver gurobi_solver;

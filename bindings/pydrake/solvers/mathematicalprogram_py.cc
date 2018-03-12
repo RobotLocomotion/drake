@@ -1,9 +1,9 @@
 #include <cstddef>
 #include <memory>
 
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/eigen.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -25,10 +25,12 @@ using solvers::Cost;
 using solvers::EvaluatorBase;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
+using solvers::LinearComplementarityConstraint;
 using solvers::LinearEqualityConstraint;
 using solvers::MathematicalProgram;
 using solvers::MathematicalProgramSolverInterface;
 using solvers::MatrixXDecisionVariable;
+using solvers::MatrixXIndeterminate;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::QuadraticCost;
 using solvers::SolutionResult;
@@ -36,9 +38,13 @@ using solvers::SolverId;
 using solvers::SolverType;
 using solvers::SolverTypeConverter;
 using solvers::VectorXDecisionVariable;
+using solvers::VectorXIndeterminate;
 using symbolic::Expression;
 using symbolic::Formula;
+using symbolic::Monomial;
+using symbolic::Polynomial;
 using symbolic::Variable;
+using symbolic::Variables;
 
 namespace {
 
@@ -66,9 +72,12 @@ auto RegisterBinding(py::handle* pscope,
   auto& prog_cls = *pprog_cls;
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
-  auto binding_cls = py::class_<B>(scope, pyname.c_str())
-    .def("constraint", &B::constraint)
-    .def("variables", &B::variables);
+  auto binding_cls =
+      py::class_<B>(scope, pyname.c_str())
+          .def("evaluator", &B::evaluator)
+          .def("constraint",
+               &B::evaluator)  // TODO(Eric.Cousineau) deprecate this function.
+          .def("variables", &B::variables);
   // Register overloads for MathematicalProgram class
   prog_cls
     .def("EvalBindingAtSolution",
@@ -84,6 +93,8 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   py::object variable =
     py::module::import("pydrake.symbolic").attr("Variable");
+  py::object variables =
+    py::module::import("pydrake.symbolic").attr("Variables");
   py::object expression =
     py::module::import("pydrake.symbolic").attr("Expression");
   py::object formula =
@@ -116,111 +127,144 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
     .value("kSnopt", SolverType::kSnopt);
 
   py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram");
-  prog_cls
-    .def(py::init<>())
-    .def("NewContinuousVariables",
-         static_cast<VectorXDecisionVariable
-         (MathematicalProgram::*)(
-             int,
-             const std::string&)
-         >(&MathematicalProgram::NewContinuousVariables),
-         py::arg("rows"),
-         py::arg("name") = "x")
-    .def("NewContinuousVariables",
-         static_cast<MatrixXDecisionVariable
-         (MathematicalProgram::*)(
-             int,
-             int,
-             const std::string&)
-         >(&MathematicalProgram::NewContinuousVariables),
-         py::arg("rows"),
-         py::arg("cols"),
-         py::arg("name") = "x")
-    .def("NewBinaryVariables",
-         static_cast<VectorXDecisionVariable
-         (MathematicalProgram::*)(
-             int,
-             const std::string&)
-         >(&MathematicalProgram::NewBinaryVariables),
-         py::arg("rows"),
-         py::arg("name") = "b")
-    .def("NewBinaryVariables",
-         py::overload_cast<int, int, const string&>(
-            &MathematicalProgram::NewBinaryVariables<Dynamic, Dynamic>),
-         py::arg("rows"),
-         py::arg("cols"),
-         py::arg("name") = "b")
-    .def("NewSymmetricContinuousVariables",
-         // `py::overload_cast` and `overload_cast_explict` struggle with
-         // overloads that compete with templated methods.
-         [](MathematicalProgram* self, int rows, const string& name) {
-           return self->NewSymmetricContinuousVariables(rows, name);
-         },
-         py::arg("rows"),
-         py::arg("name") = "Symmetric")
-    .def("AddLinearConstraint",
-         static_cast<Binding<LinearConstraint>
-         (MathematicalProgram::*)(
-             const Expression&,
-             double,
-             double)
-         >(&MathematicalProgram::AddLinearConstraint))
-    .def("AddLinearConstraint",
-         static_cast<Binding<LinearConstraint>
-         (MathematicalProgram::*)(
-             const Formula&)
-         >(&MathematicalProgram::AddLinearConstraint))
-    .def("AddPositiveSemidefiniteConstraint",
-         [](MathematicalProgram* self,
-            const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
-           return self->AddPositiveSemidefiniteConstraint(vars);
-         })
-    .def("AddLinearCost",
-         static_cast<Binding<LinearCost>
-         (MathematicalProgram::*)(
-          const Expression&)
-         >(&MathematicalProgram::AddLinearCost))
-    .def("AddQuadraticCost",
-         static_cast<Binding<QuadraticCost>
-         (MathematicalProgram::*)(
-             const Eigen::Ref<const Eigen::MatrixXd>&,
-             const Eigen::Ref<const Eigen::VectorXd>&,
-             const Eigen::Ref<const VectorXDecisionVariable>&)
-         >(&MathematicalProgram::AddQuadraticCost))
-    .def("AddQuadraticCost",
-         static_cast<Binding<QuadraticCost>
-         (MathematicalProgram::*)(
-             const Expression&)
-         >(&MathematicalProgram::AddQuadraticCost))
-    .def("Solve", &MathematicalProgram::Solve)
-    .def("GetSolverId", &MathematicalProgram::GetSolverId)
-    .def("linear_constraints", &MathematicalProgram::linear_constraints)
-    .def("linear_equality_constraints",
-         &MathematicalProgram::linear_equality_constraints)
-    .def("bounding_box_constraints",
-         &MathematicalProgram::bounding_box_constraints)
-    .def("linear_costs", &MathematicalProgram::linear_costs)
-    .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
-    .def("FindDecisionVariableIndex",
-         &MathematicalProgram::FindDecisionVariableIndex)
-    .def("num_vars", &MathematicalProgram::num_vars)
-    .def("GetSolution", [](const MathematicalProgram& prog,
-                            const Variable& var) {
-      return prog.GetSolution(var);
-    })
-    .def("GetSolution",
-         [](const MathematicalProgram& prog,
-            const VectorXDecisionVariable& var) {
-      return prog.GetSolution(var);
-    })
-    .def("GetSolution",
-         [](const MathematicalProgram& prog,
-            const MatrixXDecisionVariable& var) {
-      return prog.GetSolution(var);
-    })
-    .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
-    .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
-    .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
+  prog_cls.def(py::init<>())
+      .def("NewContinuousVariables",
+           static_cast<VectorXDecisionVariable(MathematicalProgram::*)(
+               int, const std::string&)>(
+               &MathematicalProgram::NewContinuousVariables),
+           py::arg("rows"), py::arg("name") = "x")
+      .def("NewContinuousVariables",
+           static_cast<MatrixXDecisionVariable(MathematicalProgram::*)(
+               int, int, const std::string&)>(
+               &MathematicalProgram::NewContinuousVariables),
+           py::arg("rows"), py::arg("cols"), py::arg("name") = "x")
+      .def("NewBinaryVariables",
+           static_cast<VectorXDecisionVariable(MathematicalProgram::*)(
+               int, const std::string&)>(
+               &MathematicalProgram::NewBinaryVariables),
+           py::arg("rows"), py::arg("name") = "b")
+      .def("NewBinaryVariables",
+           py::overload_cast<int, int, const string&>(
+               &MathematicalProgram::NewBinaryVariables<Dynamic, Dynamic>),
+           py::arg("rows"), py::arg("cols"), py::arg("name") = "b")
+      .def("NewSymmetricContinuousVariables",
+           // `py::overload_cast` and `overload_cast_explict` struggle with
+           // overloads that compete with templated methods.
+           [](MathematicalProgram* self, int rows, const string& name) {
+             return self->NewSymmetricContinuousVariables(rows, name);
+           },
+           py::arg("rows"), py::arg("name") = "Symmetric")
+      .def("NewFreePolynomial", &MathematicalProgram::NewFreePolynomial,
+           py::arg("indeterminates"), py::arg("deg"),
+           py::arg("coeff_name") = "a")
+      .def("NewSosPolynomial",
+           static_cast<
+               std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>> (
+                   MathematicalProgram::*)(
+                   const Eigen::Ref<const VectorX<Monomial>>&)>(
+               &MathematicalProgram::NewSosPolynomial))
+      .def("NewSosPolynomial",
+           static_cast<
+               std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>> (
+                   MathematicalProgram::*)(const Variables&, int)>(
+               &MathematicalProgram::NewSosPolynomial))
+      .def("NewIndeterminates",
+           static_cast<VectorXIndeterminate(MathematicalProgram::*)(
+               int, const std::string&)>(
+               &MathematicalProgram::NewIndeterminates),
+           py::arg("rows"), py::arg("name") = "x")
+      .def("NewIndeterminates",
+           static_cast<MatrixXIndeterminate(MathematicalProgram::*)(
+               int, int, const std::string&)>(
+               &MathematicalProgram::NewIndeterminates),
+           py::arg("rows"), py::arg("cols"), py::arg("name") = "X")
+      .def("AddLinearConstraint",
+           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+               const Expression&, double, double)>(
+               &MathematicalProgram::AddLinearConstraint))
+      .def("AddLinearConstraint",
+           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+               const Formula&)>(&MathematicalProgram::AddLinearConstraint))
+      .def("AddPositiveSemidefiniteConstraint",
+           [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
+             return self->AddPositiveSemidefiniteConstraint(vars);
+           })
+      .def("AddLinearComplementarityConstraint",
+           static_cast<Binding<LinearComplementarityConstraint> (
+           MathematicalProgram::*)(
+               const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&)>(
+               &MathematicalProgram::AddLinearComplementarityConstraint))
+      .def("AddPositiveSemidefiniteConstraint",
+           [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixX<Expression>>& e) {
+             return self->AddPositiveSemidefiniteConstraint(e);
+           })
+      .def("AddLinearCost",
+           static_cast<Binding<LinearCost> (MathematicalProgram::*)(
+               const Expression&)>(&MathematicalProgram::AddLinearCost))
+      .def("AddQuadraticCost",
+           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
+               const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&)>(
+               &MathematicalProgram::AddQuadraticCost))
+      .def("AddQuadraticCost",
+           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
+               const Expression&)>(&MathematicalProgram::AddQuadraticCost))
+      .def("AddSosConstraint",
+           static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+                                 Binding<LinearEqualityConstraint>> (
+               MathematicalProgram::*)(
+               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
+               &MathematicalProgram::AddSosConstraint))
+      .def("AddSosConstraint",
+           static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+                                 Binding<LinearEqualityConstraint>> (
+               MathematicalProgram::*)(const Polynomial&)>(
+               &MathematicalProgram::AddSosConstraint))
+      .def("AddSosConstraint",
+           static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+                                 Binding<LinearEqualityConstraint>> (
+               MathematicalProgram::*)(
+               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
+               &MathematicalProgram::AddSosConstraint))
+      .def("AddSosConstraint",
+           static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+                                 Binding<LinearEqualityConstraint>> (
+               MathematicalProgram::*)(const Expression&)>(
+               &MathematicalProgram::AddSosConstraint))
+      .def("Solve", &MathematicalProgram::Solve)
+      .def("GetSolverId", &MathematicalProgram::GetSolverId)
+      .def("linear_constraints", &MathematicalProgram::linear_constraints)
+      .def("linear_equality_constraints",
+           &MathematicalProgram::linear_equality_constraints)
+      .def("bounding_box_constraints",
+           &MathematicalProgram::bounding_box_constraints)
+      .def("linear_costs", &MathematicalProgram::linear_costs)
+      .def("quadratic_costs", &MathematicalProgram::quadratic_costs)
+      .def("FindDecisionVariableIndex",
+           &MathematicalProgram::FindDecisionVariableIndex)
+      .def("num_vars", &MathematicalProgram::num_vars)
+      .def("GetSolution",
+           [](const MathematicalProgram& prog, const Variable& var) {
+             return prog.GetSolution(var);
+           })
+      .def("GetSolution",
+           [](const MathematicalProgram& prog,
+              const VectorXDecisionVariable& var) {
+             return prog.GetSolution(var);
+           })
+      .def("GetSolution",
+           [](const MathematicalProgram& prog,
+              const MatrixXDecisionVariable& var) {
+             return prog.GetSolution(var);
+           })
+      .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
+      .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
+      .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
 
   py::enum_<SolutionResult>(m, "SolutionResult")
     .value("kSolutionFound", SolutionResult::kSolutionFound)
@@ -259,6 +303,10 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
              std::shared_ptr<PositiveSemidefiniteConstraint>>(
     m, "PositiveSemidefiniteConstraint");
 
+  py::class_<LinearComplementarityConstraint, Constraint,
+             std::shared_ptr<LinearComplementarityConstraint>>(
+      m, "LinearComplementarityConstraint");
+
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
@@ -266,6 +314,8 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                                          "BoundingBoxConstraint");
   RegisterBinding<PositiveSemidefiniteConstraint>(&m, &prog_cls,
     "PositiveSemidefiniteConstraint");
+  RegisterBinding<LinearComplementarityConstraint>(&m, &prog_cls,
+    "LinearComplementarityConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, std::shared_ptr<Cost>> cost(

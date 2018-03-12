@@ -2,11 +2,14 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def fmt_repository(name):
+def fmt_repository(
+        name,
+        mirrors = None):
     github_archive(
         name = name,
         repository = "fmtlib/fmt",
-        commit = "3.0.1",
-        sha256 = "dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad",  # noqa
+        commit = "4.1.0",
+        sha256 = "46628a2f068d0e33c716be0ed9dcae4370242df135aed663a180b9fd8e36733d",  # noqa
         build_file = "@drake//tools/workspace/fmt:package.BUILD.bazel",
+        mirrors = mirrors,
     )

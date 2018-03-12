@@ -46,7 +46,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @param[in] inboard_frame_F
   ///   the inboard frame F.
   /// @param[in] outboard_frame_M
-  ///   the outboard frame M which can move freely with respect to frame M.
+  ///   the outboard frame M which can move freely with respect to frame F.
   QuaternionFloatingMobilizer(const Frame<T>& inboard_frame_F,
                 const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
@@ -227,16 +227,16 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
   static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
-  // Helper to compute the kinematic map N(q) for which q̇ = N(q)v.
+  // Helper to compute the kinematic map N(q) from angular velocity to
+  // quaternion time derivative for which q̇_WB = N(q)⋅w_WB.
   // With L given by CalcLMatrix we have:
-  // N(q) = [L(q_FM/2) 0₄ₓ₃
-  //        [     0₃ₓ₃   I₃]
-  static Eigen::Matrix<T, 7, 6> CalcNMatrix(const Quaternion<T>& q);
-  // Helper to compute the kinematic map N⁺(q) for which v = N⁺(q)q̇.
+  // N(q) = L(q_FM/2)
+  static Eigen::Matrix<T, 4, 3> CalcNMatrix(const Quaternion<T>& q);
+  // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
+  // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
   // With L given by CalcLMatrix we have:
-  // N⁺(q) = [L(2 q_FM)ᵀ 0₃ₓ₃
-  //         [     0₃ₓ₄    I₃]
-  static Eigen::Matrix<T, 6, 7> CalcNplusMatrix(const Quaternion<T>& q);
+  // N⁺(q) = L(2 q_FM)ᵀ
+  static Eigen::Matrix<T, 3, 4> CalcNplusMatrix(const Quaternion<T>& q);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

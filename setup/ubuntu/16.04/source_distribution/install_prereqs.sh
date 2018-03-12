@@ -13,6 +13,15 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+apt install --no-install-recommends $(tr '\n' ' ' <<EOF
+wget
+EOF
+)
+
+wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
+echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu xenial main' > /etc/apt/sources.list.d/drake.list
+
+apt update
 apt install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
 
 dpkg_install_from_wget() {
@@ -55,6 +64,6 @@ dpkg_install_from_wget() {
 }
 
 dpkg_install_from_wget \
-  bazel 0.9.0 \
-  https://github.com/bazelbuild/bazel/releases/download/0.9.0/bazel_0.9.0-linux-x86_64.deb \
-  a600454ec218bffd1a1cea0f5bb511031081d23c4de15bfde674164dc2f9cd7f
+  bazel 0.10.1 \
+  https://github.com/bazelbuild/bazel/releases/download/0.10.1/bazel_0.10.1-linux-x86_64.deb \
+  28a9e614226ed4ac96ed4e9c0ddc59df2e8eadcfb11e0539c0e5aaead6c1ff2d
