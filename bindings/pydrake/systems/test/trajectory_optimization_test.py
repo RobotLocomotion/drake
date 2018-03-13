@@ -8,7 +8,8 @@ from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
-    DirectCollocation, DirectTranscription,
+    AddDirectCollocationConstraint, DirectCollocation,
+    DirectCollocationConstraint, DirectTranscription,
 )
 
 
@@ -50,6 +51,12 @@ class TestTrajectoryOptimization(unittest.TestCase):
         states = dircol.GetStateSamples()
         input_traj = dircol.ReconstructInputTrajectory()
         state_traj = dircol.ReconstructStateTrajectory()
+
+        constraint = DirectCollocationConstraint(plant, context)
+        AddDirectCollocationConstraint(constraint, dircol.timestep(0),
+                                       dircol.state(0), dircol.state(1),
+                                       dircol.input(0), dircol.input(1),
+                                       dircol)
 
     def test_direct_transcription(self):
         # Integrator.
