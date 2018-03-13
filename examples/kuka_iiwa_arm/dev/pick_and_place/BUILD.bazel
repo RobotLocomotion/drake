@@ -16,9 +16,13 @@ package(
 
 drake_cc_library(
     name = "lcm_plant",
-    srcs = ["lcm_plant.cc"],
+    srcs = [
+        "lcm_plant.cc",
+        "pick_and_place_simulation_helpers.cc",
+    ],
     hdrs = [
         "lcm_plant.h",
+        "pick_and_place_simulation_helpers.h",
     ],
     data = [
         "//examples/kuka_iiwa_arm:models",
