@@ -16,8 +16,12 @@ namespace systems {
 /// where f : t ⨯ x →  ℝ , t ∈ ℝ, x ∈ ℝ, 𝐤 ∈ ℝᵐ, along with an initial
 /// condition x(t₀; 𝐤) = x₀. The parameter vector 𝐤 allows for generic IVP
 /// definitions, which can later be solved for any instance of said vector.
+///
 /// Note the distinction from general initial value problems where
-/// f : t ⨯ x → ℝⁿ and x ∈ ℝⁿ, addressed by the class being wrapped.
+/// f : t ⨯ 𝐱 → ℝⁿ and 𝐱 ∈ ℝⁿ, addressed by the class being wrapped. While
+/// every scalar initial value problem could be written in vector form, this
+/// wrapper keeps both problem definition and solution in their scalar form
+/// with almost zero overhead, leading to clearer code if applicable.
 ///
 /// For further insight into its use, consider the following examples:
 ///

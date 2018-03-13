@@ -76,9 +76,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
         // solution for the scalar IVP described above, which is
         // Q(t; [Rs, Cs]) = 1/Rs * (τ²/ (1 + τ²) * e^(-t / τ) +
         //                  τ / √(1 + τ²) * sin(t - arctan(τ)))
-        // where τ = Rs * Cs for Q(t₀ = 0; [Rs, Cs]) = Q₀ = 0, i.e.
-        // zero initial conditions (provided as defaults at IVP
-        // construction above).
+        // where τ = Rs * Cs for Q(t₀ = 0; [Rs, Cs]) = Q₀ = 0.
         const double exact_solution = (
             tau_sq / (1. + tau_sq) * std::exp(-tf / tau)
             + tau / std::sqrt(1. + tau_sq)
