@@ -602,6 +602,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     model_->SetDefaultState(context, state);
   }
 
+  T CalcTotalEnergy(const systems::Context<T>& context) const;
+
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -638,6 +640,13 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  // Computes the total potential energy in the system. This potential energy
+  // includes the contribution of all force elements in the model that
+  // have a potential energy function.
+  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
+
+  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
 
   // Helper method to declare cache entries to be allocated in the context.
   void DeclareCacheEntries();

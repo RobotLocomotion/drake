@@ -779,6 +779,33 @@ T MultibodyTree<T>::CalcPotentialEnergy(
 }
 
 template <typename T>
+T MultibodyTree<T>::CalcKineticEnergy(
+    const systems::Context<T>& context) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  T kinetic_energy = 0.0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const Matrix3<T>& R_WB = pc.get_X_WB(body.node_index()).linear();
+    const SpatialInertia<T> M_Bo =
+        body.CalcSpatialInertiaInBodyFrame(mbt_context);
+    const SpatialInertia<T> M_Bo_W = M_Bo.ReExpress(R_WB);
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.node_index());
+    kinetic_energy +=
+        (V_WB.get_coeffs().transpose() * M_Bo_W.CopyToFullMatrix6() * V_WB.get_coeffs()).eval()[0];
+  }
+  return 0.5 * kinetic_energy;
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcTotalEnergy(
+    const systems::Context<T>& context) const {
+  return CalcPotentialEnergy(context) + CalcKineticEnergy(context);
+}
+
+template <typename T>
 T MultibodyTree<T>::DoCalcPotentialEnergy(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc) const {

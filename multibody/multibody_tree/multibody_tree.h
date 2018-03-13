@@ -1396,6 +1396,10 @@ class MultibodyTree {
   /// @see CalcPotentialEnergy()
   T CalcConservativePower(const systems::Context<T>& context) const;
 
+  T CalcKineticEnergy(const systems::Context<T>& context) const;
+
+  T CalcTotalEnergy(const systems::Context<T>& context) const;
+
   /// Performs the computation of the mass matrix `M(q)` of the model using
   /// inverse dynamics, where the generalized positions q are stored in
   /// `context`. See CalcInverseDynamics().

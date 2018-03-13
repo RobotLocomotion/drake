@@ -171,6 +171,27 @@ MultibodyPlant<T>::DoMakeLeafContext() const {
 }
 
 template<typename T>
+T MultibodyPlant<T>::DoCalcPotentialEnergy(
+    const systems::Context<T>& context) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return model_->CalcPotentialEnergy(context);
+}
+
+template<typename T>
+T MultibodyPlant<T>::DoCalcKineticEnergy(
+    const systems::Context<T>& context) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return model_->CalcKineticEnergy(context);
+}
+
+template<typename T>
+T MultibodyPlant<T>::CalcTotalEnergy(
+    const systems::Context<T>& context) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return model_->CalcTotalEnergy(context);
+}
+
+template<typename T>
 void MultibodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {

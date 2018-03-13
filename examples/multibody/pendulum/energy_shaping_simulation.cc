@@ -85,15 +85,13 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
     // Desired energy is slightly more than the energy at the top (want to pass
     // through the upright with non-zero velocity).
     const T desired_energy = 1.1 * params_.m() * params_.g() * params_.l();
-    // Current total energy (see PendulumPlant::CalcTotalEnergy).
-    //const T current_energy = model_->CalcTotalEnergy(*context_);
-    const T& theta = pin_->get_angle(*context_);
-    const T& thetadot = pin_->get_angular_rate(*context_);
-    const T current_energy =
-        0.5 * params_.m() * pow(params_.l() * thetadot, 2) -
-            params_.m() * params_.g() * params_.l() * cos(theta);
+//    const T current_energy =
+  //      0.5 * params_.m() * pow(params_.l() * thetadot, 2) -
+    //        params_.m() * params_.g() * params_.l() * cos(theta);
+    const T current_energy = model_->CalcTotalEnergy(*context_);
     const double kEnergyFeedbackGain = .1;
     // TODO(amcastro-tri): Add damping to the model.
+    const T& thetadot = pin_->get_angular_rate(*context_);
     const T tau =
         kEnergyFeedbackGain * thetadot * (desired_energy - current_energy);
     output->SetAtIndex(0, tau);
