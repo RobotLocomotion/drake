@@ -296,7 +296,8 @@ std::unique_ptr<RigidBodyTree<double>> BuildTree(
     grasp_frame->set_name(kGraspFrameName);
     // The gripper (and therfore the grasp frame) is rotated relative to the end
     // effector link.
-    const double grasp_frame_angular_offset{-M_PI / 8};
+    const double grasp_frame_angular_offset =
+        configuration.grasp_frame_angular_offset;
     // The grasp frame is located between the fingertips of the gripper, which
     // puts it grasp_frame_translational_offset from the origin of the
     // end-effector link.

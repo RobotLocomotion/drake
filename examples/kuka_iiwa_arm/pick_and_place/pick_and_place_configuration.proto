@@ -52,7 +52,7 @@ message ModelInstance {
     optional Pose pose = 3;
 }
 
-// Next ID: 6
+// Next ID: 7
 message PickAndPlaceTask {
     // The index of the robot arm to be used for this task.
     // DEFAULT: 0
@@ -69,6 +69,9 @@ message PickAndPlaceTask {
     // origin (position between the fingertips of the gripper).
     // DEFAULT: 0.19
     optional double grasp_frame_translational_offset = 5;
+    // The rotation of the gripper (and therfore the grasp frame)
+    // relative to the end effector link.
+    optional double grasp_frame_angular_offset = 6;
 }
 
 // Next ID: 5

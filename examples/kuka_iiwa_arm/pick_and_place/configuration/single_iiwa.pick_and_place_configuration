@@ -113,6 +113,8 @@ object {
 # effector is attached to.
 task {
   end_effector_name: "iiwa_link_ee"
+  # -pi / 8
+  grasp_frame_angular_offset: -0.39269908
 }
 
 # Contact parameters

@@ -123,6 +123,7 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
     planner_configuration_.end_effector_name = kEndEffectorName;
     planner_configuration_.target_dimensions = kTargetDimensions;
     planner_configuration_.num_tables = 2;
+    planner_configuration_.grasp_frame_angular_offset = -0.39269908;
   }
 
   void ValidateObjectStateAfterSingleMove() {
