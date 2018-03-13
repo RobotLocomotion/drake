@@ -29,6 +29,22 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "remote_tree_viewer_wrapper",
+    srcs = [
+        "remote_tree_viewer_wrapper.cc",
+        "json.hpp",
+    ],
+    hdrs = [
+        "remote_tree_viewer_wrapper.h",
+    ],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//lcm",
+        "//lcmtypes:viewer2_comms",
+    ],
+)
+
 drake_cc_googletest(
     name = "rod2d_time_stepping",
     data = [":models"],
