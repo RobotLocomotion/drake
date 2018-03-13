@@ -18,6 +18,7 @@ CXX_FLAGS = [
     "-Werror=ignored-qualifiers",
     "-Werror=old-style-cast",
     "-Werror=overloaded-virtual",
+    "-Werror=shadow",
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
@@ -26,7 +27,6 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=inconsistent-missing-override",
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
-    "-Werror=shadow",
     "-Werror=sign-compare",
 ]
 
@@ -40,8 +40,6 @@ GCC_FLAGS = CXX_FLAGS + [
     "-Werror=unused-but-set-parameter",
     # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
     "-Wno-missing-field-initializers",
-    # TODO(#2852) Turn on shadow checking for g++ once we use a version that
-    # fixes https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
 ]
 
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
