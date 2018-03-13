@@ -60,6 +60,31 @@ if(NOT APPLE)
   )
 endif()
 
+get_filename_component(PROJECT_BINARY_DIR_REALPATH
+  "${PROJECT_BINARY_DIR}" REALPATH
+)
+get_filename_component(PROJECT_SOURCE_DIR_REALPATH
+  "${PROJECT_SOURCE_DIR}" REALPATH
+)
+string(FIND "${PROJECT_BINARY_DIR_REALPATH}/" "${PROJECT_SOURCE_DIR_REALPATH}/"
+  STRING_FIND_RESULT_VARIABLE
+)
+
+if(STRING_FIND_RESULT_VARIABLE EQUAL 0)
+  if(APPLE)
+    set(BAZEL_OUTPUT_USER_ROOT "/var/tmp")
+  else()
+    set(BAZEL_OUTPUT_USER_ROOT "$ENV{HOME}/.cache/bazel")
+  endif()
+else()
+  set(BAZEL_OUTPUT_USER_ROOT "${PROJECT_BINARY_DIR}")
+endif()
+
+string(MD5 PROJECT_BINARY_DIR_MD5 "${PROJECT_BINARY_DIR_REALPATH}")
+set(BAZEL_OUTPUT_USER_ROOT
+  "${BAZEL_OUTPUT_USER_ROOT}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
+)
+
 configure_file(tools/cc_toolchain/bazel.rc.in bazel.rc @ONLY)
 
 set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
