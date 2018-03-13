@@ -69,6 +69,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            &MultipleShooting::ReconstructInputTrajectory)
       .def("ReconstructStateTrajectory",
            &MultipleShooting::ReconstructStateTrajectory);
+
   py::class_<DirectCollocation, MultipleShooting>(m, "DirectCollocation")
       .def(py::init<const systems::System<double>*,
                     const systems::Context<double>&, int, double, double>(),
@@ -78,6 +79,18 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            &DirectCollocation::ReconstructInputTrajectory)
       .def("ReconstructStateTrajectory",
            &DirectCollocation::ReconstructStateTrajectory);
+
+  py::class_<DirectCollocationConstraint, solvers::Constraint,
+             std::shared_ptr<DirectCollocationConstraint>>(
+      m, "DirectCollocationConstraint")
+      .def(py::init<const systems::System<double>&,
+                    const systems::Context<double>&>());
+
+  m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
+        py::arg("constraint"), py::arg("timestep"), py::arg
+            ("state"), py::arg("next_state"), py::arg("input"), py::arg
+            ("next_input"), py::arg("prog"));
+
   py::class_<DirectTranscription, MultipleShooting>(m, "DirectTranscription")
       .def(py::init<const systems::System<double>*,
                     const systems::Context<double>&, int>(),
