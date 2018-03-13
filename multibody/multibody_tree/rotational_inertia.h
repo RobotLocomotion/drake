@@ -64,7 +64,7 @@ namespace multibody {
 /// @note This class does not store the about-point nor the expressed-in frame,
 /// nor does this class help enforce consistency of the about-point or
 /// expressed-in frame. To help users of this class track the about-point and
-/// expressed-in frame. We strongly recommend the following notation.
+/// expressed-in frame, we strongly recommend the following notation.
 ///
 /// In typeset material, use the symbol @f$ [I^{S/P}]_E @f$ to represent the
 /// rotational inertia (inertia matrix) of a body (or composite body) S
@@ -82,9 +82,12 @@ namespace multibody {
 /// axes of inertia** so that the inertia matrix is diagonalized with elements
 /// called **principal moments of inertia**.
 ///
-/// @note Several methods in this class throw an std::logic_error exception for
+/// @note Several methods in this class throw a std::exception exception for
 /// invalid rotational inertia operations in debug releases only.  This provides
 /// speed in a release build while facilitating debugging in debug builds.
+/// In addition, these validity tests are only performed for scalar types for
+/// which drake::is_numeric<T> is `true`. For instance, validity checks are not
+/// performed when T is symbolic::Expression.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 /// Various methods in this class require numerical (not symbolic) data types.
@@ -92,6 +95,7 @@ namespace multibody {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
@@ -289,13 +293,13 @@ class RotationalInertia {
   }
 
   /// Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
-  /// In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
+  /// In debug builds, throws std::exception if `nonnegative_scalar` < 0.
   /// @param nonnegative_scalar Nonnegative scalar which multiplies `this`.
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since `this` has been multiplied by `nonnegative_scalar`.
   /// @see operator*(), operator*(const T&, const RotationalInertia<T>&).
   RotationalInertia<T>& operator*=(const T& nonnegative_scalar) {
-    DRAKE_ASSERT_VOID(ThrowIfMultiplyByNegativeScalar(nonnegative_scalar));
+    DRAKE_ASSERT(nonnegative_scalar >= 0);
     this->get_mutable_triangular_view() *= nonnegative_scalar;
     return *this;
   }
@@ -332,13 +336,13 @@ class RotationalInertia {
   }
 
   /// Divides `this` rotational inertia by a positive scalar (> 0).
-  /// In debug builds, throws std::logic_error if `positive_scalar` <= 0.
+  /// In debug builds, throws std::exception if `positive_scalar` <= 0.
   /// @param positive_scalar Positive scalar (> 0) which divides `this`.
   /// @return A reference to `this` rotational inertia. `this` changes
   ///         since `this` has been divided by `positive_scalar`.
   /// @see operator/().
   RotationalInertia<T>& operator/=(const T& positive_scalar) {
-    DRAKE_ASSERT_VOID(ThrowIfDivideByZeroOrNegativeScalar(positive_scalar));
+    DRAKE_ASSERT(positive_scalar > 0);
     this->get_mutable_triangular_view() /= positive_scalar;
     return *this;
   }
@@ -521,8 +525,6 @@ class RotationalInertia {
     throw std::logic_error(
         "RotationalInertia<T>::CouldBePhysicallyValid() only works with types "
         "that are drake::is_numeric.");
-    // Return something so that the compiler doesn't bark at us.
-    return decltype(T() < T())();
   }
 #endif
 
@@ -938,26 +940,6 @@ class RotationalInertia {
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
   ThrowIfNotPhysicallyValid() {}
-
-  // Throws an exception if a rotational inertia is multiplied by a negative
-  // number - which implies that the resulting rotational inertia is invalid.
-  static void ThrowIfMultiplyByNegativeScalar(const T& nonnegative_scalar) {
-    if (nonnegative_scalar < 0) {
-      throw std::logic_error("Error: Rotational inertia is multiplied by a "
-                             "negative number.");
-    }
-  }
-
-  // Throws an exception if a rotational inertia is divided by a non-positive
-  // number - which implies that the resulting rotational inertia is invalid.
-  static void ThrowIfDivideByZeroOrNegativeScalar(const T& positive_scalar) {
-    if (positive_scalar == 0)
-      throw std::logic_error("Error: Rotational inertia is divided by 0.");
-    if (positive_scalar < 0) {
-      throw std::logic_error("Error: Rotational inertia is divided by a "
-                             "negative number");
-    }
-  }
 
   // The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
   // inertia) and off-diagonal elements (products of inertia) are associated

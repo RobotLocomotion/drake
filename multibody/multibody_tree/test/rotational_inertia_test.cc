@@ -478,6 +478,16 @@ GTEST_TEST(RotationalInertia, MultiplicationWithScalarFromTheLeft) {
   const RotationalInertia<double> Ixs = I * scalar;
   EXPECT_EQ(Ixs.get_moments(), sxI.get_moments());
   EXPECT_EQ(Ixs.get_products(), sxI.get_products());
+
+  // Verify the scalar can be a variable symbolic expresion
+  const Variable a("a");  // A "variable" scalar.
+  const RotationalInertia<Expression> axI = a * I.cast<Expression>();
+  EXPECT_EQ(axI.get_moments(), a * m);
+  EXPECT_EQ(axI.get_products(), a * p);
+  // Multiplication by a scalar must be commutative.
+  const RotationalInertia<Expression> Ixa = I.cast<Expression>() * a;
+  EXPECT_EQ(Ixa.get_moments(), axI.get_moments());
+  EXPECT_EQ(Ixa.get_products(), axI.get_products());
 }
 
 // Test the correctness of:
@@ -508,6 +518,12 @@ GTEST_TEST(RotationalInertia, OperatorPlusEqual) {
   Ia /= scalar;
   EXPECT_EQ(Ia.get_moments(), m);
   EXPECT_EQ(Ia.get_products(), p);
+
+  // For symbolic::Expression.
+  const Variable a("a");  // A "variable" scalar.
+  const RotationalInertia<Expression> Ia_over_a = Ia.cast<Expression>() / a;
+  EXPECT_EQ(Ia_over_a.get_moments(), m / a);
+  EXPECT_EQ(Ia_over_a.get_products(), p / a);
 }
 
 // Test the shift operator to write into a stream.
