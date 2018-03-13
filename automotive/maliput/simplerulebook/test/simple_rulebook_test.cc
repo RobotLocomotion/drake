@@ -64,6 +64,24 @@ GTEST_TEST(SimpleRulebookTest, AddGetRemoveSpeedLimit) {
 }
 
 
+GTEST_TEST(SimpleRulebookTest, RemoveAll) {
+  SimpleRulebook dut;
+  dut.RemoveAll();  // I.e., should work on empty rulebook.
+  dut.AddRule(kRightOfWay);
+  dut.AddRule(kSpeedLimit);
+  dut.RemoveAll();
+  EXPECT_THROW(dut.GetRule(kRightOfWay.id()), std::out_of_range);
+  EXPECT_THROW(dut.RemoveRule(kRightOfWay.id()), std::runtime_error);
+  EXPECT_THROW(dut.GetRule(kSpeedLimit.id()), std::out_of_range);
+  EXPECT_THROW(dut.RemoveRule(kSpeedLimit.id()), std::runtime_error);
+  // Since the original rules are gone, it should be possible to re-add them.
+  dut.AddRule(kRightOfWay);
+  dut.AddRule(kSpeedLimit);
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(dut.GetRule(kRightOfWay.id()), kRightOfWay));
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(dut.GetRule(kSpeedLimit.id()), kSpeedLimit));
+}
+
+
 GTEST_TEST(SimpleRulebookTest, FindRules) {
   SimpleRulebook dut;
   dut.AddRule(kSpeedLimit);
