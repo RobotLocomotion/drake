@@ -32,7 +32,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-DEFINE_string(integration_scheme, "runge_kutta3",
+DEFINE_string(integration_scheme, "runge_kutta2",
               "Integration scheme to be used. Available options are:"
               "'runge_kutta2','runge_kutta3','implicit_euler','semi_explicit_euler'");
 
