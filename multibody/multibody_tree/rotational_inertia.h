@@ -82,9 +82,9 @@ namespace multibody {
 /// axes of inertia** so that the inertia matrix is diagonalized with elements
 /// called **principal moments of inertia**.
 ///
-/// @note Several methods in this class throw a std::exception exception for
-/// invalid rotational inertia operations in debug releases only.  This provides
-/// speed in a release build while facilitating debugging in debug builds.
+/// @note Several methods in this class throw a std::exception for invalid
+/// rotational inertia operations in debug releases only.  This provides speed
+/// in a release build while facilitating debugging in debug builds.
 /// In addition, these validity tests are only performed for scalar types for
 /// which drake::is_numeric<T> is `true`. For instance, validity checks are not
 /// performed when T is symbolic::Expression.
