@@ -95,6 +95,10 @@ class SystemPathnameInterface {
   /** Returns the full path name of this subsystem, starting at the root
   of the containing Diagram, with path name separators between segments. */
   virtual std::string GetSystemPathname() const = 0;
+
+ protected:
+  SystemPathnameInterface() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemPathnameInterface);
 };
 
 /** These dependency ticket numbers are common to all systems and contexts so

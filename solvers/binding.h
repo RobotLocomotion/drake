@@ -85,6 +85,13 @@ Binding<C> CreateBinding(const std::shared_ptr<C>& c, Args&&... args) {
   return Binding<C>(c, std::forward<Args>(args)...);
 }
 
+template <typename To, typename From>
+Binding<To> BindingDynamicCast(const Binding<From>& binding) {
+  auto constraint = std::dynamic_pointer_cast<To>(binding.evaluator());
+  DRAKE_DEMAND(constraint != nullptr);
+  return Binding<To>(constraint, binding.variables());
+}
+
 }  // namespace internal
 
 }  // namespace solvers

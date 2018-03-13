@@ -108,6 +108,22 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "rendering_py",
+    cc_deps = [
+        ":systems_pybind",
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
+    cc_so_name = "rendering",
+    cc_srcs = ["rendering_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
         "//bindings/pydrake/systems:systems_pybind",
@@ -128,18 +144,18 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
-    name = "rendering_py",
+    name = "trajectory_optimization_py",
     cc_deps = [
-        ":systems_pybind",
-        "//bindings/pydrake/util:eigen_geometry_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
     ],
-    cc_so_name = "rendering",
-    cc_srcs = ["rendering_py.cc"],
+    cc_so_name = "trajectory_optimization",
+    cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake/util:eigen_geometry_py",
+        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake:trajectories_py",
     ],
 )
 
@@ -157,6 +173,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":primitives_py",
     ":rendering_py",
     ":sensors_py",
+    ":trajectory_optimization_py",
 ]
 
 PY_LIBRARIES = [
@@ -273,6 +290,15 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "rendering_test",
+    size = "small",
+    deps = [
+        ":rendering_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+    ],
+)
+
+drake_py_unittest(
     name = "sensors_test",
     size = "small",
     data = [
@@ -284,11 +310,11 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "rendering_test",
+    name = "trajectory_optimization_test",
     size = "small",
     deps = [
-        ":rendering_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
+        ":trajectory_optimization_py",
+        "//bindings/pydrake/examples:pendulum_py",
     ],
 )
 
