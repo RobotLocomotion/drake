@@ -82,7 +82,7 @@ def _impl(repo_ctx):
 snopt_repository = repository_rule(
     attrs = {
         "remote": attr.string(default = "git@github.com:RobotLocomotion/snopt.git"),  # noqa
-        "commit": attr.string(default = "0f475624131c9ca4d5624e74c3f8273ccc926f9b"),  # noqa
+        "commit": attr.string(default = "c17db3769e59d4a8d651631d5d79641cecca0504"),  # noqa
         "use_drake_build_rules": attr.bool(default = True),
     },
     environ = ["SNOPT_PATH"],
