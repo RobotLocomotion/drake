@@ -14,28 +14,28 @@ load(
 CXX_FLAGS = [
     "-Werror=all",
     "-Werror=ignored-qualifiers",
-    "-Werror=overloaded-virtual",
     "-Werror=old-style-cast",
+    "-Werror=overloaded-virtual",
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang.
 CLANG_FLAGS = CXX_FLAGS + [
-    "-Werror=shadow",
     "-Werror=inconsistent-missing-override",
-    "-Werror=sign-compare",
-    "-Werror=return-stack-address",
     "-Werror=non-virtual-dtor",
+    "-Werror=return-stack-address",
+    "-Werror=shadow",
+    "-Werror=sign-compare",
 ]
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
 GCC_FLAGS = CXX_FLAGS + [
     "-Werror=extra",
-    "-Werror=return-local-addr",
-    "-Werror=non-virtual-dtor",
-    "-Werror=unused-but-set-parameter",
     "-Werror=logical-op",
+    "-Werror=non-virtual-dtor",
+    "-Werror=return-local-addr",
+    "-Werror=unused-but-set-parameter",
     # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
     "-Wno-missing-field-initializers",
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that
