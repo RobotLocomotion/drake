@@ -46,13 +46,13 @@ template <typename T> class SpatialVelocity;
 /// %SpatialMomentum object; they must be understood from context. It is the
 /// responsibility of the user to keep track of the about-point and the
 /// expressed-in frame. That is best accomplished through disciplined notation.
-/// In source code we use monogram notation where h is used to designate a
+/// In source code we use monogram notation where H is used to designate a
 /// spatial momentum quantity. We write a point P fixed to body (or frame) B as
 /// @f$B_P@f$ which appears in code and comments as `Bp`. Then we write as
-/// @f$[^Nh^{S/B_P}]_E@f$, which appears in code as `H_NBp_E`, the spatial
+/// @f$[^NH^{S/B_P}]_E@f$, which appears in code as `H_NBp_E`, the spatial
 /// momentum of a body B in a reference frame N, about a point P and, expressed
 /// in frame E. Very often the about-point will be the body origin `Bo`; if no
-/// point is shown the origin is understood, so `H_NB_E` means `H_NB_E`.
+/// point is shown the origin is understood, so `H_NB_E` means `H_NBo_E`.
 /// For a more detailed introduction on spatial vectors and the monogram
 /// notation please refer to section @ref multibody_spatial_vectors.
 ///
@@ -85,11 +85,11 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
 
   /// SpatialMomentum constructor from an Eigen expression that represents a
   /// six-dimensional vector.
-  /// This constructor will assert the size of h is six (6) at compile-time
+  /// This constructor will assert the size of H is six (6) at compile-time
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
   template <typename Derived>
-  explicit SpatialMomentum(const Eigen::MatrixBase<Derived>& h) : Base(h) {}
+  explicit SpatialMomentum(const Eigen::MatrixBase<Derived>& H) : Base(H) {}
 
   /// In-place shift of a %SpatialMomentum from one "about-point" to another.
   /// `this` spatial momentum `H_NSp_E` for a system S in a reference frame N
@@ -103,7 +103,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// <pre>
   ///   l_NSq  = l_NSp -  p_PQ x h_NSp
   ///   h_NSq = h_NSp,  i.e. the linear momentum about point Q is the
-  ///                          same as the linear momentum about point P.
+  ///                   same as the linear momentum about point P.
   /// </pre>
   /// where l and `h` represent the angular and linear momentum components
   /// respectively. Notice that spatial momenta shift in the same way as spatial
@@ -150,7 +150,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   ///
   /// @param[in] p_PQ_E
   ///   Shift vector from point P to point Q.
-  /// @retval F_Bq_E
+  /// @retval H_NSq_E
   ///   The equivalent shifted spatial momentum, now applied at point Q
   ///   rather than P.
   ///
