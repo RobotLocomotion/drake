@@ -167,11 +167,15 @@ object {
 # effector is attached to.
 task {
   end_effector_name: "iiwa_link_ee"
+  # -pi / 8
+  grasp_frame_angular_offset: -0.39269908
   robot_index: 0
   target_index: 0
 }
 task {
   end_effector_name: "iiwa_link_ee"
+  # -pi / 8
+  grasp_frame_angular_offset: -0.39269908
   robot_index: 1
   target_index: 1
 }

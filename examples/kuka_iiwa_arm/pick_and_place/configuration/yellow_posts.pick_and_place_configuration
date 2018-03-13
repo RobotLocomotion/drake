@@ -150,6 +150,8 @@ task {
   end_effector_name: "iiwa_link_ee"
   grip_force: 42
   grasp_frame_translational_offset: 0.191
+  # -pi / 8
+  grasp_frame_angular_offset: -0.39269908
 }
 
 # Contact parameters
