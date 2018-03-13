@@ -50,6 +50,10 @@ bool operator==(const IdVariant& lhs, const IdVariant& rhs) {
 // facilitating the lookup of rules by LaneSRange.
 class SimpleRulebook::RangeIndex {
  public:
+  void RemoveAll() {
+    map_.clear();
+  }
+
   void AddRule(const SpeedLimitRule& rule) {
     AddRange(rule.id(), rule.zone());
   }
@@ -158,6 +162,12 @@ void SimpleRulebook::RemoveAnyRule(const typename T::Id& id, IdIndex<T>* map) {
   DRAKE_THROW_UNLESS(map_result > 0);
 }
 
+
+void SimpleRulebook::RemoveAll() {
+  right_of_ways_.clear();
+  speed_limits_.clear();
+  index_->RemoveAll();
+}
 
 
 void SimpleRulebook::AddRule(const api::rules::RightOfWayRule& rule) {
