@@ -752,9 +752,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   for (int i = 0; i < nx; i++) {
     sol(i) = static_cast<double>(x[i]);
   }
-  prog.GetResultReportingInterface()->SetDecisionVariableValues(sol);
-  prog.GetResultReportingInterface()->SetOptimalCost(*F);
-  prog.GetResultReportingInterface()->SetSolverId(id());
+  prog.GetResultReportingInterface()->ReportDecisionVariableValues(sol);
+  prog.GetResultReportingInterface()->ReportOptimalCost(*F);
+  prog.GetResultReportingInterface()->ReportSolverId(id());
 
   // todo: extract the other useful quantities, too.
 
@@ -765,7 +765,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     if (info >= 11 && info <= 16) {
       return SolutionResult::kInfeasibleConstraints;
     } else if (info >= 20 && info <= 22) {
-      prog.GetResultReportingInterface()->SetOptimalCost(
+      prog.GetResultReportingInterface()->ReportOptimalCost(
           MathematicalProgram::kUnboundedCost);
       return SolutionResult::kUnbounded;
     } else if (info >= 30 && info <= 32) {

@@ -748,14 +748,14 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            prog.GetResultReportingInterface()->SetDecisionVariableValues(
+            prog.GetResultReportingInterface()->ReportDecisionVariableValues(
                 sol_vector);
           }
           MSKrealt optimal_cost;
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            prog.GetResultReportingInterface()->SetOptimalCost(optimal_cost);
+            prog.GetResultReportingInterface()->ReportOptimalCost(optimal_cost);
           }
           break;
         }
@@ -776,7 +776,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.GetResultReportingInterface()->SetSolverId(id());
+  prog.GetResultReportingInterface()->ReportSolverId(id());
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

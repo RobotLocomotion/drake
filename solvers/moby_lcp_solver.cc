@@ -217,7 +217,7 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.GetResultReportingInterface()->SetSolverId(MobyLcpSolverId::id());
+  prog.GetResultReportingInterface()->ReportSolverId(MobyLcpSolverId::id());
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
@@ -228,9 +228,9 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
     if (!solved) {
       return SolutionResult::kUnknownError;
     }
-    prog.GetResultReportingInterface()->SetDecisionVariableValues(
+    prog.GetResultReportingInterface()->ReportDecisionVariableValues(
         binding.variables(), constraint_solution);
-    prog.GetResultReportingInterface()->SetOptimalCost(0.0);
+    prog.GetResultReportingInterface()->ReportOptimalCost(0.0);
   }
   return SolutionResult::kSolutionFound;
 }

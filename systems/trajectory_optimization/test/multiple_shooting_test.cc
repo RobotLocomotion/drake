@@ -273,21 +273,21 @@ GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
   prog.SetInitialTrajectory(PiecewisePolynomial<double>(), traj1);
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  prog.GetResultReportingInterface()->SetDecisionVariableValues(
+  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
       prog.initial_guess());
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
 
   prog.SetInitialTrajectory(traj2, PiecewisePolynomial<double>());
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  prog.GetResultReportingInterface()->SetDecisionVariableValues(
+  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
       prog.initial_guess());
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 1.5, 3.0));
 
   prog.SetInitialTrajectory(traj1, traj1);
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  prog.GetResultReportingInterface()->SetDecisionVariableValues(
+  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
       prog.initial_guess());
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
 
@@ -315,7 +315,7 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
   }
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  prog.GetResultReportingInterface()->SetDecisionVariableValues(
+  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
       prog.initial_guess());
 
   EXPECT_TRUE(CompareMatrices(prog.GetSampleTimes(),

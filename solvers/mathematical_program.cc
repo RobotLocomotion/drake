@@ -141,6 +141,8 @@ MathematicalProgram::MathematicalProgram()
       osqp_solver_(new OsqpSolver()),
       scs_solver_(new ScsSolver()) {}
 
+MathematicalProgram::~MathematicalProgram() = default;
+
 MatrixXDecisionVariable MathematicalProgram::NewVariables(
     VarType type, int rows, int cols, bool is_symmetric,
     const vector<string>& names) {

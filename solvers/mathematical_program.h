@@ -307,7 +307,7 @@ class MathematicalProgram
       -std::numeric_limits<double>::infinity();
 
   MathematicalProgram();
-  virtual ~MathematicalProgram() {}
+  ~MathematicalProgram() override;
 
   /** Clones an optimization program.
    * The clone will be functionally equivalent to the source program with the
@@ -2519,56 +2519,33 @@ class MathematicalProgram
     return indeterminates_(i);
   }
 
+  /**
+   * Return the interface for the solver to report result. Only call this
+   * function inside a solver.
+   */
   MathematicalProgramResultReportingInterface* GetResultReportingInterface() {
     return this;
   }
 
  private:
-  /**
-   * Sets the ID of the solver that was used to solve this program.
-   */
-  void SetSolverId(SolverId solver_id) override { solver_id_ = solver_id; }
+  void ReportSolverId(SolverId solver_id) override { solver_id_ = solver_id; }
 
-  void SetOptimalCost(double optimal_cost) override {
+  void ReportOptimalCost(double optimal_cost) override {
     optimal_cost_ = optimal_cost;
   }
 
-  /**
-   * Setter for lower bound on optimal cost. This function is meant
-   * to be called by the appropriate solver, not by the user. It sets
-   * the lower bound of the cost found by the solver, during the optimization
-   * process. For example, for mixed-integer optimization, the branch-and-bound
-   * algorithm can find the lower bound of the optimal cost, during the
-   * branching process.
-   */
-  void SetLowerBoundCost(double lower_bound_cost) override {
+  void ReportLowerBoundCost(double lower_bound_cost) override {
     lower_bound_cost_ = lower_bound_cost;
   }
 
-  /**
-   * Sets the values of all decision variables, such that the value of
-   * \p decision_variables_(i) is \p values(i).
-   * @param values The values set to all the decision variables.
-   */
-  void SetDecisionVariableValues(
+  void ReportDecisionVariableValues(
       const Eigen::Ref<const Eigen::VectorXd>& values) override;
 
-  /**
-   * Sets the value of some decision variables, such that the value of
-   * \p variables(i) is \p values(i).
-   * @param variables The value of these decision variables will be set.
-   * @param values The values set to the decision variables.
-   */
-  void SetDecisionVariableValues(
+  void ReportDecisionVariableValues(
       const Eigen::Ref<const VectorXDecisionVariable>& variables,
       const Eigen::Ref<const Eigen::VectorXd>& values) override;
 
-  /**
-   * Sets the value of a single decision variable in the optimization program.
-   * @param var A decision variable in the program.
-   * @param value The value of that decision variable.
-   */
-  void SetDecisionVariableValue(const symbolic::Variable& var,
+  void ReportDecisionVariableValue(const symbolic::Variable& var,
                                 double value) override;
 
   // maps the ID of a symbolic variable to the index of the variable stored in

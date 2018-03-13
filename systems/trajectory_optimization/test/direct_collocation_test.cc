@@ -90,7 +90,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   // Sets all decision variables to trivial known values (1,2,3,...).
   // Pretends that the solver has solved the optimization problem, and set the
   // decision variable to some user-specified values.
-  prog.GetResultReportingInterface()->SetDecisionVariableValues(
+  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   const PiecewisePolynomial<double> input_spline =
@@ -254,15 +254,14 @@ GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {
   EXPECT_EQ(prog.generic_constraints().size(), 1);
 
   // qdot = 0, u = 0 should be a fixed point for any q.  Test a simple one.
-  // TODO(hongkai-dai): Don't SetDecisionVariableValues outside of the
-  // solvers.  See #8344.
-  prog.SetDecisionVariableValues(h, Vector1d{1.0});
-  prog.SetDecisionVariableValues(x0, Eigen::Vector2d{1., 0.});
-  prog.SetDecisionVariableValues(x1, Eigen::Vector2d{1., 0.});
-  prog.SetDecisionVariableValues(u0, Vector1d{0.});
-  prog.SetDecisionVariableValues(u1, Vector1d{0.});
+  prog.SetInitialGuess(h, Vector1d{1.0});
+  prog.SetInitialGuess(x0, Eigen::Vector2d{1., 0.});
+  prog.SetInitialGuess(x1, Eigen::Vector2d{1., 0.});
+  prog.SetInitialGuess(u0, Vector1d{0.});
+  prog.SetInitialGuess(u1, Vector1d{0.});
 
-  const Eigen::VectorXd val = prog.EvalBindingAtSolution(binding);
+  const Eigen::VectorXd val = prog.EvalBinding(
+      binding, prog.GetInitialGuess(prog.decision_variables()));
   EXPECT_EQ(val.size(), 2);
   EXPECT_TRUE(val.isZero());
 }

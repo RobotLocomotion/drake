@@ -49,15 +49,15 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   // least-squares solution
   const Eigen::VectorXd least_square_sol =
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
-  prog.GetResultReportingInterface()->SetDecisionVariableValues(
+  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
       least_square_sol);
 
-  prog.GetResultReportingInterface()->SetSolverId(id());
+  prog.GetResultReportingInterface()->ReportSolverId(id());
   if (beq.isApprox(Aeq * least_square_sol)) {
-    prog.GetResultReportingInterface()->SetOptimalCost(0.);
+    prog.GetResultReportingInterface()->ReportOptimalCost(0.);
     return SolutionResult::kSolutionFound;
   } else {
-    prog.GetResultReportingInterface()->SetOptimalCost(
+    prog.GetResultReportingInterface()->ReportOptimalCost(
         MathematicalProgram::kGlobalInfeasibleCost);
     return SolutionResult::kInfeasibleConstraints;
   }

@@ -66,7 +66,7 @@ void SetProgramSolutionVector(const std::vector<bool>& is_new_variable,
       k++;
     }
   }
-  prog->GetResultReportingInterface()->SetDecisionVariableValues(
+  prog->GetResultReportingInterface()->ReportDecisionVariableValues(
       *prog_sol_vector);
 }
 
@@ -780,13 +780,13 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
           break;
         }
         case GRB_UNBOUNDED: {
-          prog.GetResultReportingInterface()->SetOptimalCost(
+          prog.GetResultReportingInterface()->ReportOptimalCost(
               MathematicalProgram::kUnboundedCost);
           result = SolutionResult::kUnbounded;
           break;
         }
         case GRB_INFEASIBLE: {
-          prog.GetResultReportingInterface()->SetOptimalCost(
+          prog.GetResultReportingInterface()->ReportOptimalCost(
               MathematicalProgram::kGlobalInfeasibleCost);
           result = SolutionResult::kInfeasibleConstraints;
           break;
@@ -818,7 +818,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
 
       // Provide Gurobi's computed cost in addition to the constant cost.
-      prog.GetResultReportingInterface()->SetOptimalCost(optimal_cost +
+      prog.GetResultReportingInterface()->ReportOptimalCost(optimal_cost +
                                                          constant_cost);
 
       if (is_mip) {
@@ -830,13 +830,13 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
           drake::log()->error("GRB error {} getting lower bound: {}\n", error,
                               GRBgeterrormsg(GRBgetenv(model)));
         } else {
-          prog.GetResultReportingInterface()->SetLowerBoundCost(lower_bound);
+          prog.GetResultReportingInterface()->ReportLowerBoundCost(lower_bound);
         }
       }
     }
   }
 
-  prog.GetResultReportingInterface()->SetSolverId(id());
+  prog.GetResultReportingInterface()->ReportSolverId(id());
 
   GRBfreemodel(model);
   GRBfreeenv(env);
