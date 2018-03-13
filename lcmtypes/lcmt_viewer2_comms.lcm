@@ -1,6 +1,6 @@
 package drake;
 
-struct viewer2_comms
+struct lcmt_viewer2_comms
 {
   // The timestamp in microseconds
   int64_t utime;
