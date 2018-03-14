@@ -69,13 +69,7 @@ class TestSymbolicVariable(unittest.TestCase):
         self.assertEqual(str(x != y), "(x != y)")
 
     def test_repr(self):
-        self.assertEqual(str(x), "x")
-        self.assertEqual(str(y), "y")
-        self.assertEqual(str(x + y), "(x + y)")
-        self.assertEqual(str(x - y), "(x - y)")
-        self.assertEqual(str(x * y), "(x * y)")
-        self.assertEqual(str(x / y), "(x / y)")
-        self.assertEqual(str((x + y) * x), "(x * (x + y))")
+        self.assertEqual(repr(x), "Variable('x')")
 
     def test_simplify(self):
         self.assertEqual(str(0 * (x + y)), "0")
@@ -129,6 +123,10 @@ class TestSymbolicVariables(unittest.TestCase):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.to_string(), "{x, y, z}")
         self.assertEqual("{}".format(vars), "{x, y, z}")
+
+    def test_repr(self):
+        vars = sym.Variables([x, y, z])
+        self.assertEqual(repr(vars), '<Variables "{x, y, z}">')
 
     def test_insert1(self):
         vars = sym.Variables()
@@ -426,6 +424,9 @@ class TestSymbolicExpression(unittest.TestCase):
         e = x * x
         self.assertEqual(e.Differentiate(x), 2 * x)
 
+    def test_repr(self):
+        self.assertEqual(repr(e_x), '<Expression "x">')
+
 
 class TestSymbolicFormula(unittest.TestCase):
     def test_get_free_variables(self):
@@ -464,6 +465,9 @@ class TestSymbolicFormula(unittest.TestCase):
         ff = sym.Formula.False()
         self.assertEqual(x == x, tt)
         self.assertEqual(x != x, ff)
+
+    def test_repr(self):
+        self.assertEqual(repr(x > y), '<Formula "(x > y)">')
 
 
 class TestSymbolicMonomial(unittest.TestCase):
@@ -511,6 +515,10 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(str(m1), "x^2")
         m2 = m1 * sym.Monomial(y)
         self.assertEqual(str(m2), "x^2 * y")
+
+    def test_repr(self):
+        m = sym.Monomial(x, 2)
+        self.assertEqual(repr(m), '<Monomial "x^2">')
 
     def test_multiplication1(self):
         m1 = sym.Monomial(x, 2)
@@ -634,7 +642,7 @@ class TestSymbolicPolynomial(unittest.TestCase):
 
     def test_repr(self):
         p = sym.Polynomial()
-        self.assertEqual(str(p), "0")
+        self.assertEqual(repr(p), '<Polynomial "0">')
 
     def test_addition(self):
         p = sym.Polynomial()
