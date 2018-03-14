@@ -411,9 +411,9 @@ class SpatialInertia {
     const Vector3<T>& v_WP_E = V_WBp_E.translational();
     const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
     // Return (see class's documentation):
-    // ⌈ h_WB  ⌉   ⌈    I_Bp_E     | m * p_BoBcm× ⌉   ⌈ w_WB_E ⌉
-    // |       | = |               |              | * |        |
-    // ⌊ l_WBp ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊ v_WP_E ⌋
+    // ⌈ h_WB  ⌉   ⌈     I_Bp      | m * p_BoBcm× ⌉   ⌈ w_WB ⌉
+    // |       | = |               |              | * |      |
+    // ⌊ l_WBp ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊ v_WP ⌋
     return SpatialMomentum<T>(
         /* rotational */
         CalcRotationalInertia() * w_WB_E + mp_BoBcm_E.cross(v_WP_E),
