@@ -126,8 +126,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   using std::pow;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     EXPECT_EQ(
-        prog.EvalBinding(dynamic_constraints[i],
-                         prog.GetInitialGuess(prog.decision_variables()))[0],
+        prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
         prog.GetInitialGuess(prog.state(i + 1)[0]) -
             pow(prog.GetInitialGuess(prog.state(i)[0]), 3.0));
   }
@@ -159,8 +158,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
 
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const Vector1d dynamic_constraint_val =
-        prog.EvalBinding(dynamic_constraints[i],
-                         prog.GetInitialGuess(prog.decision_variables())) -
+        prog.EvalBindingAtInitialGuess(dynamic_constraints[i]) -
         dynamic_constraints[i].evaluator()->lower_bound();
     const Vector1d dynamic_constraint_expected =
         prog.GetInitialGuess(prog.state(i + 1)) -
@@ -209,8 +207,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
   const double kNumericalTolerance = 1e-10;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     EXPECT_TRUE(CompareMatrices(
-        prog.EvalBinding(dynamic_constraints[i],
-                         prog.GetInitialGuess(prog.decision_variables())),
+        prog.EvalBindingAtInitialGuess(dynamic_constraints[i]),
         prog.GetInitialGuess(prog.state(i + 1)) -
             A * prog.GetInitialGuess(prog.state(i)) -
             B * prog.GetInitialGuess(prog.input(i)),
@@ -270,8 +267,7 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const double t = system.time_period() * i;
     EXPECT_TRUE(CompareMatrices(
-        prog.EvalBinding(dynamic_constraints[i],
-                         prog.GetInitialGuess(prog.decision_variables())),
+        prog.EvalBindingAtInitialGuess(dynamic_constraints[i]),
         prog.GetInitialGuess(prog.state(i + 1)) -
             A.value(t) * prog.GetInitialGuess(prog.state(i)) -
             B.value(t) * prog.GetInitialGuess(prog.input(i)),
@@ -333,8 +329,7 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     // Checks that x[n+1] = kGain*x[n].
     EXPECT_EQ(
-        prog.EvalBinding(dynamic_constraints[i],
-                         prog.GetInitialGuess(prog.decision_variables()))[0],
+        prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
         prog.GetInitialGuess(prog.state(i + 1)[0]) -
             kGain * prog.GetInitialGuess(prog.state(i)[0]));
   }

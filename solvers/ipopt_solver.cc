@@ -386,7 +386,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  IpoptCalculatedQuantities* ip_cq) {
     unused(z_L, z_U, m, g, lambda, ip_data, ip_cq);
 
-    problem_->GetResultReportingInterface()->ReportSolverId(IpoptSolver::id());
+    problem_->result_reporting_interface().SetSolverId(IpoptSolver::id());
 
     switch (status) {
       case Ipopt::SUCCESS: {
@@ -420,9 +420,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     for (Index i = 0; i < n; i++) {
       solution(i) = x[i];
     }
-    problem_->GetResultReportingInterface()->ReportDecisionVariableValues(
+    problem_->result_reporting_interface().SetDecisionVariableValues(
         solution);
-    problem_->GetResultReportingInterface()->ReportOptimalCost(obj_value);
+    problem_->result_reporting_interface().SetOptimalCost(obj_value);
   }
 
   SolutionResult result() const { return result_; }

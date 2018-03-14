@@ -456,7 +456,7 @@ void ExtractSolution(MathematicalProgram* prog,
   // same variable as in `prog`. For semidefinite cones, the variable x is a
   // scaled version of the lower-triangular part of the variable in `prog`, with
   // a scaling factor of √2.
-  prog->GetResultReportingInterface()->ReportDecisionVariableValues(
+  prog->result_reporting_interface().SetDecisionVariableValues(
       Eigen::Map<Eigen::VectorXd>(scs_sol_vars.x, prog->num_vars()));
 }
 
@@ -621,17 +621,17 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
     sol_result = SolutionResult::kSolutionFound;
     ExtractSolution(&prog, *scs_sol);
-    prog.GetResultReportingInterface()->ReportOptimalCost(scs_info.pobj +
+    prog.result_reporting_interface().SetOptimalCost(scs_info.pobj +
                                                        cost_constant);
   } else if (scs_status == SCS_UNBOUNDED ||
              scs_status == SCS_UNBOUNDED_INACCURATE) {
     sol_result = SolutionResult::kUnbounded;
-    prog.GetResultReportingInterface()->ReportOptimalCost(
+    prog.result_reporting_interface().SetOptimalCost(
         MathematicalProgram::kUnboundedCost);
   } else if (scs_status == SCS_INFEASIBLE ||
              scs_status == SCS_INFEASIBLE_INACCURATE) {
     sol_result = SolutionResult::kInfeasibleConstraints;
-    prog.GetResultReportingInterface()->ReportOptimalCost(
+    prog.result_reporting_interface().SetOptimalCost(
         MathematicalProgram::kGlobalInfeasibleCost);
   }
   if (scs_status != SCS_SOLVED) {
@@ -643,7 +643,7 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   scs_free_data(scs_problem_data, cone);
   scs_free_sol(scs_sol);
 
-  prog.GetResultReportingInterface()->ReportSolverId(id());
+  prog.result_reporting_interface().SetSolverId(id());
   return sol_result;
 }
 }  // namespace solvers

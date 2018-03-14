@@ -73,8 +73,7 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
           Eigen::Map<Eigen::Matrix<double, 9, 1>> vecR(R.data(), R.size());
           prog.SetInitialGuessForAllVariables(vecR);
           for (const auto& b : bb_constraints) {
-            const Eigen::VectorXd x = prog.EvalBinding(
-                b, prog.GetInitialGuess(prog.decision_variables()));
+            const Eigen::VectorXd x = prog.EvalBindingAtInitialGuess(b);
             const Eigen::VectorXd& lb = b.evaluator()->lower_bound();
             const Eigen::VectorXd& ub = b.evaluator()->upper_bound();
             for (int i = 0; i < x.size(); i++) {

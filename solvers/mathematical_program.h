@@ -293,6 +293,14 @@ struct assert_if_is_constraint {
 };
 }  // namespace detail
 
+/**
+ * MathematicalProgram stores the decision variables, the constraints and costs
+ * of an optimization problem. The user can solve the problem by calling Solve()
+ * function, and obtain the results of the optimization.
+ *
+ * @note MathematicalProgram is a MathematicalProgramResultReportintInterface.
+ * The former overrides all the abstract virtual functions of the latter.
+ */
 class MathematicalProgram
     : private MathematicalProgramResultReportingInterface {
  public:
@@ -2409,13 +2417,6 @@ class MathematicalProgram
   std::vector<int> FindDecisionVariableIndices(
       const Eigen::Ref<const VectorXDecisionVariable>& vars) const;
 
-  /**
-   * Gets the solution of an Eigen matrix of decision variables.
-   * @tparam Derived An Eigen matrix containing Variable.
-   * @param var The decision variables.
-   * @return The value of the decision variable after solving the problem.
-   */
-
   /** Gets the number of indeterminates in the optimization program */
   int num_indeterminates() const { return indeterminates_.rows(); }
 
@@ -2488,17 +2489,22 @@ class MathematicalProgram
   }
 
   /**
-   * Evaluate the constraint in the Binding at the solution value.
-   * @return The value of the constraint in the binding.
-   * TODO(hongkai.dai): Do not use teample function, when the Binding is moved
-   * to a public class.
+   * Evaluates the evaluator in @p binding at the solution value.
+   * @return The value of @p binding in the binding.
    */
   template <typename C>
   Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {
-    Eigen::VectorXd val(binding.evaluator()->num_outputs());
-    Eigen::VectorXd binding_var_vals = GetSolution(binding.variables());
-    binding.evaluator()->Eval(binding_var_vals, val);
-    return val;
+    return EvalBinding(binding, Eigen::Map<const Eigen::VectorXd>(
+                                    x_values_.data(), num_vars()));
+  }
+
+  /**
+   * Evaluates the evaluator in @p binding at the initial guess.
+   * @return The value of @p binding at the initial guess.
+   */
+  template <typename C>
+  Eigen::VectorXd EvalBindingAtInitialGuess(const Binding<C>& binding) const {
+    return EvalBinding(binding, x_initial_guess_);
   }
 
   /** Getter for all decision variables in the program. */
@@ -2520,32 +2526,33 @@ class MathematicalProgram
   }
 
   /**
-   * Return the interface for the solver to report result. Only call this
-   * function inside a solver.
+   * Return the interface for the solver to report results. Only solver
+   * implementation should call this method (see
+   * MathematicalProgramResultReportingInterface for details).
    */
-  MathematicalProgramResultReportingInterface* GetResultReportingInterface() {
-    return this;
+  MathematicalProgramResultReportingInterface& result_reporting_interface() {
+    return *this;
   }
 
  private:
-  void ReportSolverId(SolverId solver_id) override { solver_id_ = solver_id; }
+  void SetSolverId(SolverId solver_id) override { solver_id_ = solver_id; }
 
-  void ReportOptimalCost(double optimal_cost) override {
+  void SetOptimalCost(double optimal_cost) override {
     optimal_cost_ = optimal_cost;
   }
 
-  void ReportLowerBoundCost(double lower_bound_cost) override {
+  void SetLowerBoundCost(double lower_bound_cost) override {
     lower_bound_cost_ = lower_bound_cost;
   }
 
-  void ReportDecisionVariableValues(
+  void SetDecisionVariableValues(
       const Eigen::Ref<const Eigen::VectorXd>& values) override;
 
-  void ReportDecisionVariableValues(
+  void SetDecisionVariableValues(
       const Eigen::Ref<const VectorXDecisionVariable>& variables,
       const Eigen::Ref<const Eigen::VectorXd>& values) override;
 
-  void ReportDecisionVariableValue(const symbolic::Variable& var,
+  void SetDecisionVariableValue(const symbolic::Variable& var,
                                 double value) override;
 
   // maps the ID of a symbolic variable to the index of the variable stored in

@@ -69,8 +69,7 @@ GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
     prog.SetInitialGuess(prog.state(i + 1), x1);
 
     EXPECT_TRUE(CompareMatrices(
-        prog.EvalBinding(binding,
-                         prog.GetInitialGuess(prog.decision_variables())),
+        prog.EvalBindingAtInitialGuess(binding),
         defect, 1e-6));
   }
 }
@@ -90,7 +89,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   // Sets all decision variables to trivial known values (1,2,3,...).
   // Pretends that the solver has solved the optimization problem, and set the
   // decision variable to some user-specified values.
-  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
+  prog.result_reporting_interface().SetDecisionVariableValues(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   const PiecewisePolynomial<double> input_spline =
@@ -260,8 +259,7 @@ GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {
   prog.SetInitialGuess(u0, Vector1d{0.});
   prog.SetInitialGuess(u1, Vector1d{0.});
 
-  const Eigen::VectorXd val = prog.EvalBinding(
-      binding, prog.GetInitialGuess(prog.decision_variables()));
+  const Eigen::VectorXd val = prog.EvalBindingAtInitialGuess(binding);
   EXPECT_EQ(val.size(), 2);
   EXPECT_TRUE(val.isZero());
 }

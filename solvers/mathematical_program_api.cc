@@ -49,12 +49,12 @@ size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   return it->second;
 }
 
-void MathematicalProgram::ReportDecisionVariableValues(
+void MathematicalProgram::SetDecisionVariableValues(
     const Eigen::Ref<const Eigen::VectorXd>& values) {
-  ReportDecisionVariableValues(decision_variables_, values);
+  SetDecisionVariableValues(decision_variables_, values);
 }
 
-void MathematicalProgram::ReportDecisionVariableValues(
+void MathematicalProgram::SetDecisionVariableValues(
     const Eigen::Ref<const VectorXDecisionVariable>& variables,
     const Eigen::Ref<const Eigen::VectorXd>& values) {
   DRAKE_ASSERT(values.rows() == variables.rows());
@@ -63,7 +63,7 @@ void MathematicalProgram::ReportDecisionVariableValues(
   }
 }
 
-void MathematicalProgram::ReportDecisionVariableValue(const Variable& var,
+void MathematicalProgram::SetDecisionVariableValue(const Variable& var,
                                                    double value) {
   x_values_[FindDecisionVariableIndex(var)] = value;
 }
