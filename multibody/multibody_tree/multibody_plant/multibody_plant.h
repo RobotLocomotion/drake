@@ -21,6 +21,13 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
+//#define PRINT_VARn(a) (void)a;
+//#define PRINT_VAR(a) (void)a;
+
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -330,6 +337,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   ///   element. It must be the case that
   ///   `JointType<T>(args)` is a valid constructor.
   /// @tparam ForceElementType The type of the ForceElement to add.
+  /// This method can only be called once for elements of type
+  /// UniformGravityFieldElement. That is, gravity can only be specified once.
   /// @returns A constant reference to the new ForceElement just added, of type
   ///   `ForceElementType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyPlant. It will remain valid for the lifetime of `this`
@@ -337,15 +346,21 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see The ForceElement class's documentation for further details on how a
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
+#ifdef DRAKE_DOXYGEN_CXX
+  const ForceElementType<T>&
+#else
   typename std::enable_if<!std::is_same<
       ForceElementType<T>,
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+#endif
   AddForceElement(Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
 
+  // SFINAE overload for ForceElementType = UniformGravityFieldElement.
+  // This allow us to keep track of the gravity field parameters.
   template<template<typename Scalar> class ForceElementType, typename... Args>
   typename std::enable_if<std::is_same<
       ForceElementType<T>,
@@ -359,18 +374,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     gravity_W_ = element.gravity_vector();
     return element;
   }
-
-#if 0
-  // Specialization of the general API of AddForceElement.
-  const UniformGravityFieldElement<T>&
-  AddUniformGravityField(const Vector3<double>& g_W) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    const auto& element =
-        model_->template AddForceElement<UniformGravityFieldElement>(g_W);
-    gravity_W_ = g_W;
-    return element;
-  }
-#endif
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
   /// `joint`.
@@ -902,6 +905,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 #undef DRAKE_MBP_THROW_IF_FINALIZED
 #undef DRAKE_MBP_THROW_IF_NOT_FINALIZED
 /// @endcond
+
+#undef PRINT_VARn
+#undef PRINT_VAR
 
 }  // namespace multibody_plant
 }  // namespace multibody
