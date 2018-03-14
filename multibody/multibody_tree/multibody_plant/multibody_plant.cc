@@ -46,12 +46,6 @@ using systems::BasicVector;
 using systems::Context;
 using systems::InputPortDescriptor;
 
-#include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-#define PRINT_VARn(a) (void)a;
-#define PRINT_VAR(a) (void)a;
-
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
@@ -250,8 +244,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
-  PRINT_VARn(M);
-
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
   // as output arrays. This means that both the array of applied body forces and
   // the array of applied generalized forces get overwritten on output. This is
@@ -275,21 +267,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
       &tau_array);
 
-  PRINT_VARn(tau_array.transpose());
-
   vdot = M.ldlt().solve(-tau_array);
-
-  // Compile time error: "The SparseCholesky module has nothing to offer in MPL2 only mode"
-  // You need to include: #include <Eigen/SparseCholesky>
-#if 0
-  const auto& Ms = M.sparseView();
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<T>, Eigen::Lower> solver;
-  solver.compute(Ms);
-  DRAKE_DEMAND(solver.info() == Eigen::Success);
-  vdot = solver.solve(-tau_array);
-#endif
-
-  PRINT_VARn(vdot.transpose());
 
   auto v = x.bottomRows(nv);
   VectorX<T> xdot(this->num_multibody_states());
@@ -367,7 +345,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
-  PRINT_VAR(penetrations.size());
   if (penetrations.size() > 0) {
     for (const auto& penetration : penetrations) {
       const GeometryId geometryA_id = penetration.id_A;
@@ -382,9 +359,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       // NOTE: for now assume this MBP is the only system connected to GS.
       BodyIndex bodyA_index = geometry_id_to_body_index_.at(penetration.id_A);
       BodyIndex bodyB_index = geometry_id_to_body_index_.at(penetration.id_B);
-
-      const Body<double>& bodyA = model().get_body(bodyA_index);
-      const Body<double>& bodyB = model().get_body(bodyB_index);
 
       BodyNodeIndex bodyA_node_index =
           model().get_body(bodyA_index).node_index();
@@ -427,16 +401,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       const double& k = contact_penalty_stiffness_;
       const double& d = contact_penalty_damping_;
       const double fn_AC = k * x * (1.0 + d * vn); // xdot = -vn
-
-      PRINT_VAR(bodyA.name());
-      PRINT_VAR(bodyB.name());
-      PRINT_VAR(x);
-      PRINT_VAR(nhat_BA_W.transpose());
-      PRINT_VAR(v_AcBc_W.transpose());
-      PRINT_VAR(vn);
-      PRINT_VAR(p_WCa.transpose());
-      PRINT_VAR(p_WCb.transpose());
-      PRINT_VAR(p_WC.transpose());
 
       if (fn_AC <= 0) continue;  // Continue with next point.
 

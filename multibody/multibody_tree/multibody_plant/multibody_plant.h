@@ -21,13 +21,6 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-//#define PRINT_VARn(a) (void)a;
-//#define PRINT_VAR(a) (void)a;
-
-
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -666,14 +659,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
-  void set_contact_penalty_stiffness(double k) {
-    contact_penalty_stiffness_ = k;
-  }
-
-  void set_contact_penalty_damping(double d) {
-    contact_penalty_damping_ = d;
-  }
-
   void set_penetration_allowance(double d) {
     contact_penetration_allowance_ = d;
     EstimatePenaltyMethodParameters();
@@ -905,9 +890,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 #undef DRAKE_MBP_THROW_IF_FINALIZED
 #undef DRAKE_MBP_THROW_IF_NOT_FINALIZED
 /// @endcond
-
-#undef PRINT_VARn
-#undef PRINT_VAR
 
 }  // namespace multibody_plant
 }  // namespace multibody

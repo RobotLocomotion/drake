@@ -150,9 +150,10 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// Creates a %Body with a BodyFrame associated with it.
   Body() : body_frame_(*this) {}
 
-  /// Creates a %Body named `name` with a BodyFrame associated with it.
-  explicit Body(const std::string& name, double default_mamss) :
-      name_(name), body_frame_(*this), default_mass_(default_mamss) {}
+  /// Creates a %Body named `name` with a given `default_mass` and a BodyFrame
+  /// associated with it.
+  explicit Body(const std::string& name, double default_mass) :
+      name_(name), body_frame_(*this), default_mass_(default_mass) {}
 
   /// Gets the `name` associated with `this` body.
   const std::string& name() const { return name_; }
@@ -176,6 +177,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return topology_.body_node;
   }
 
+  /// Returns the default mass (non Context dependent) for `this` body.
   double get_default_mass() const { return default_mass_; }
 
   /// Returns the mass of this body stored in `context`.
@@ -211,10 +213,6 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   }
 
  protected:
-  /// Allow subclasses to specify the body's default mass based off their
-  /// construction parameters.
-  void set_default_mass(double mass) { default_mass_ = mass; }
-
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// These methods are meant to be called by MultibodyTree::CloneToScalar()

@@ -140,14 +140,6 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-#if 0
-  const QuaternionFloatingMobilizer<double>& ball_mobilizer =
-      model.GetFreeBodyMobilizerOrThrow(plant.GetBodyByName("Ball"));
-
-  // Set initial angles. Velocities are left to the default zero values.
-  ball_mobilizer.set_position(&plant_context, Vector3d(0, 0, z0));
-#endif
-
   auto set_position = [&](
       const std::string& body_name, const Vector3d& p_WB) {
     const QuaternionFloatingMobilizer<double>& ball_mobilizer =
