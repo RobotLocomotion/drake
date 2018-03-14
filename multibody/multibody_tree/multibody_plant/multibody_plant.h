@@ -151,7 +151,7 @@ namespace multibody_plant {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class MultibodyPlant final : public systems::LeafSystem<T> {
+class MultibodyPlant : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
 
