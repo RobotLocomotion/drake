@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd"
+       name="cylinder">
+    <!--
+      This is a basic representation of the mug defined in:
+      https://github.awsinternal.tri.global/rick-cory/enabling-anzu/blob/evans_test/rand_obj_picking/models/mug/box_mug_visual_collision.urdf
+    -->
+<link name="base">
+    <inertial>
+        <origin xyz="0.01 0 0.05"/>
+        <mass value="0.094"/>
+        <inertia ixx="0.000156" ixy="0" ixz="0" iyy="0.000156" iyz="0" izz="0.00015"/>
+    </inertial>
+    <collision>
+        <origin xyz="0 0 0.05" rpy="0 0 0"/>
+        <geometry>
+            <cylinder length="0.1" radius="0.04"/>
+        </geometry>
+        <drake_compliance>
+            <youngs_modulus>5.0e10</youngs_modulus>
+        </drake_compliance>
+    </collision>
+    <visual>
+        <origin xyz="0 0 0.05" rpy="0 0 0"/>
+        <geometry>
+            <cylinder length="0.1" radius="0.04"/>
+        </geometry>
+    </visual>
+    <visual>
+        <origin xyz="0.055 0 0.05" rpy="0 0 0"/>
+        <geometry>
+            <box size="0.03 0.02 0.08"/>
+        </geometry>
+    </visual>
+</link>
+</robot>

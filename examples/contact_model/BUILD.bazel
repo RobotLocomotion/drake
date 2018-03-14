@@ -57,6 +57,33 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
+    name = "rigid_mug_gripper",
+    srcs = ["rigid_mug_gripper.cc"],
+    add_test_rule = 1,
+    data = [
+        "cylinder_mug.urdf",
+        "rigid_mug_gripper.urdf",
+        "//multibody:models",
+    ],
+    test_rule_args = [
+        " --sim_duration=0.01",
+        " --playback=false",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//lcm",
+        "//multibody:rigid_body_tree_construction",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//multibody/rigid_body_plant:contact_results_to_lcm",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis",
+        "//util",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "bowling_ball",
     srcs = ["bowling_ball.cc"],
     add_test_rule = 1,

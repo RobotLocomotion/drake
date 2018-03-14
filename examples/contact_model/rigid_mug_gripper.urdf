@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd"
+       name="gripper">
+    <!--
+      This is a very abstract representation of the schunk gripper. It
+      represents the *pads* of the gripper referenced in:
+      https://github.awsinternal.tri.global/rick-cory/enabling-anzu/blob/evans_test/rand_obj_picking/models/iiwa_description/schunk_wsg_50_ball_contact_with_pads.sdf
+
+      Essentially, it provides a single body to which collision elements,
+      representing the pads, will be afixed (see rigid_mug_gripper.cc).
+      Essentially, it provides a body with the (approximate) inertial properties
+      of the gripper. The exact values are unnecessary as the gripper is fixed
+      to the world.
+    -->
+    <link name="gripper_pads">
+        <inertial>
+            <mass value="0.99"/>
+            <inertia ixx="0.16" ixy="0" ixz="0" iyy="0.16" iyz="0" izz="0.16"/>
+        </inertial>
+    </link>
+</robot>
