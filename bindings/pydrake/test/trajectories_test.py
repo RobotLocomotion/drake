@@ -41,6 +41,6 @@ class TestTrajectories(unittest.TestCase):
         t = [0., 1., 2.]
         x = [[1., 2.], [3., 4.], [5., 6.]]
         # Just test the spelling for these.
-        pp = PiecewisePolynomial.Cubic(t, x)
         pp2 = PiecewisePolynomial.Cubic(t, x, x)
         pp3 = PiecewisePolynomial.Cubic(t, x, [0., 0.], [0., 0.])
+        pp4 = PiecewisePolynomial.Cubic(t, np.identity(3))

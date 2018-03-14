@@ -50,8 +50,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
 
   typedef Polynomial<T> PolynomialType;
-  typedef drake::MatrixX<PolynomialType> PolynomialMatrix;
-  typedef drake::MatrixX<T> CoefficientMatrix;
+  typedef MatrixX<PolynomialType> PolynomialMatrix;
+  typedef MatrixX<T> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
   // default constructor; just leaves segment_times and polynomials empty
@@ -214,6 +214,17 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   static PiecewisePolynomial<T> Cubic(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots);
+
+  /**
+   * Eigen version of Cubic(breaks, knots) where each column of knots is used
+   * as a knot point and  knots.cols() == breaks.size().
+   *
+   * @overloads PiecewisePolynomial<T> Cubic(breaks, knots)
+   */
+  static PiecewisePolynomial<T> Cubic(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& knots);
+
 
   /// Takes the derivative of this PiecewisePolynomial.
   /**
@@ -382,7 +393,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   static int SetupCubicSplineInteriorCoeffsLinearSystem(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots, int row, int col,
-      drake::MatrixX<T>* A, drake::VectorX<T>* b);
+      MatrixX<T>* A, VectorX<T>* b);
 
   // Computes the first derivative at the end point using a non-centered,
   // shape-preserving three-point formulae.

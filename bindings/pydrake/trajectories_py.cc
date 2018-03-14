@@ -57,8 +57,8 @@ PYBIND11_MODULE(trajectories, m) {
       .def_static(
           "Cubic",
           py::overload_cast<
-              const std::vector<double>&,
-              const std::vector<PiecewisePolynomial<T>::CoefficientMatrix>&>(
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const MatrixX<T>>&>(
               &PiecewisePolynomial<T>::Cubic),
           py::arg("breaks"), py::arg("knots"))
       .def("value", &PiecewisePolynomial<T>::value)

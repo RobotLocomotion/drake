@@ -500,6 +500,23 @@ GTEST_TEST(SplineTests, CubicSplineSize2) {
   EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
 }
 
+GTEST_TEST(SplineTests, CubicEigenTest) {
+  Eigen::Vector3d breaks{0., 1., 2.};
+  Eigen::Matrix3d knots = Eigen::Matrix3d::Identity();
+
+  PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Cubic
+      (breaks, knots);
+
+  EXPECT_EQ(spline.get_number_of_segments(), 2);
+  const double tol = 1e-12;
+  EXPECT_TRUE(
+      CompareMatrices(spline.value(0.), Eigen::Vector3d{1., 0., 0.}, tol));
+  EXPECT_TRUE(
+      CompareMatrices(spline.value(1.), Eigen::Vector3d{0., 1., 0.}, tol));
+  EXPECT_TRUE(
+      CompareMatrices(spline.value(2.), Eigen::Vector3d{0., 0., 1.}, tol));
+}
+
 template <typename CoefficientType>
 void TestThrows(const std::vector<double>& breaks,
                 const std::vector<MatrixX<CoefficientType>>& knots) {
