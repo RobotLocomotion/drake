@@ -73,8 +73,8 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_symbolic_qp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        prog.AddLinearConstraint(x[0] >= 1)
-        prog.AddLinearConstraint(x[1] >= 1)
+        prog.AddConstraint(x[0], 1., 100.)
+        prog.AddConstraint(x[1] >= 1)
         prog.AddQuadraticCost(x[0]**2 + x[1]**2)
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
@@ -233,3 +233,12 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         self.assertIsInstance(binding.evaluator(),
                               mp.LinearComplementarityConstraint)
+
+    def test_bounding_box(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        lb = [0., 0.]
+        ub = [1., 1.]
+        prog.AddBoundingBoxConstraint(lb, ub, x)
+        prog.AddBoundingBoxConstraint(0., 1., x[0])
+        prog.AddBoundingBoxConstraint(0., 1., x)

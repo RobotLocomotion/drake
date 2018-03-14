@@ -37,6 +37,7 @@ using solvers::SolutionResult;
 using solvers::SolverId;
 using solvers::SolverType;
 using solvers::SolverTypeConverter;
+using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 using solvers::VectorXIndeterminate;
 using symbolic::Expression;
@@ -159,13 +160,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
            py::arg("coeff_name") = "a")
       .def("NewSosPolynomial",
            static_cast<
-               std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>> (
+               std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>>(
                    MathematicalProgram::*)(
                    const Eigen::Ref<const VectorX<Monomial>>&)>(
                &MathematicalProgram::NewSosPolynomial))
       .def("NewSosPolynomial",
            static_cast<
-               std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>> (
+               std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>>(
                    MathematicalProgram::*)(const Variables&, int)>(
                &MathematicalProgram::NewSosPolynomial))
       .def("NewIndeterminates",
@@ -178,6 +179,30 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                int, int, const std::string&)>(
                &MathematicalProgram::NewIndeterminates),
            py::arg("rows"), py::arg("cols"), py::arg("name") = "X")
+      .def("AddBoundingBoxConstraint",
+           static_cast<Binding<BoundingBoxConstraint>(MathematicalProgram::*)(
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&) >
+           (&MathematicalProgram::AddBoundingBoxConstraint))
+      .def("AddBoundingBoxConstraint",
+           static_cast<Binding<BoundingBoxConstraint>(MathematicalProgram::*)(
+               double,
+               double,
+               const symbolic::Variable&) >
+           (&MathematicalProgram::AddBoundingBoxConstraint))
+      .def("AddBoundingBoxConstraint", [](MathematicalProgram* self, double lb,
+                                          double ub,
+               const Eigen::Ref<MatrixX<symbolic::Variable>>& vars) {
+             return self->AddBoundingBoxConstraint(lb, ub, vars);
+      })
+      .def("AddConstraint",
+           static_cast<Binding<Constraint> (MathematicalProgram::*)(
+               const Expression&, double, double)>(
+               &MathematicalProgram::AddConstraint))
+      .def("AddConstraint",
+           static_cast<Binding<Constraint> (MathematicalProgram::*)(
+               const Formula&)>(&MathematicalProgram::AddConstraint))
       .def("AddLinearConstraint",
            static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
                const Expression&, double, double)>(
@@ -192,7 +217,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
            })
       .def("AddLinearComplementarityConstraint",
            static_cast<Binding<LinearComplementarityConstraint> (
-           MathematicalProgram::*)(
+               MathematicalProgram::*)(
                const Eigen::Ref<const Eigen::MatrixXd>&,
                const Eigen::Ref<const Eigen::VectorXd>&,
                const Eigen::Ref<const VectorXDecisionVariable>&)>(
@@ -307,6 +332,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
              std::shared_ptr<LinearComplementarityConstraint>>(
       m, "LinearComplementarityConstraint");
 
+  RegisterBinding<Constraint>(&m, &prog_cls, "Constraint");
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");

@@ -14,7 +14,7 @@ Example:
         load("@drake//tools/workspace/python:repository.bzl", "python_repository")  # noqa
         python_repository(
             name = "foo",
-            version = "2.7",
+            version = "2",
         )
 
     BUILD:
@@ -26,7 +26,8 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
-    version: The version of Python headers and libraries to be found.
+    version: The major or major.minor version of Python headers and libraries
+    to be found.
 """
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
@@ -116,6 +117,6 @@ cc_library(
 
 python_repository = repository_rule(
     _impl,
-    attrs = {"version": attr.string(default = "2.7")},
+    attrs = {"version": attr.string(default = "2")},
     local = True,
 )

@@ -39,7 +39,10 @@ void DrakeLcm::StartReceiveThread() {
 }
 
 void DrakeLcm::StopReceiveThread() {
-  if (receive_thread_ != nullptr) receive_thread_->Stop();
+  if (receive_thread_ != nullptr) {
+    receive_thread_->Stop();
+    receive_thread_.reset();
+  }
 }
 
 ::lcm::LCM* DrakeLcm::get_lcm_instance() { return &lcm_; }

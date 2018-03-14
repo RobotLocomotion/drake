@@ -899,6 +899,9 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
 
+/// Returns the distinct variables in the matrix of expressions.
+Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);
+
 /// Checks if two Eigen::Matrix<Expression> @p m1 and @p m2 are structurally
 /// equal. That is, it returns true if and only if `m1(i, j)` is structurally
 /// equal to `m2(i, j)` for all `i`, `j`.
