@@ -12,6 +12,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 using std::default_random_engine;
+using Eigen::MatrixXd;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace trajectories {
@@ -498,6 +501,51 @@ GTEST_TEST(SplineTests, CubicSplineSize2) {
 
   // Calling Cubic(times, Y) with only 2 knots should not be allowed.
   EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
+}
+
+// Test that the Eigen API methods return the same results as the std::vector
+// versions.
+GTEST_TEST(SplineTests, EigenTest) {
+  const double tol = 1e-12;
+
+  Vector3d breaks_mat{0., 1., 2.};
+  std::vector<double> breaks_vec{0., 1., 2.};
+
+  Matrix3d knots_mat = Matrix3d::Identity();
+  std::vector<MatrixXd> knots_vec = {Vector3d{1., 0., 0.}, Vector3d{0., 1., 0.},
+                                     Vector3d{0., 0., 1.}};
+
+  // Keep the code cleaner below.
+  using PP = PiecewisePolynomial<double>;
+
+  EXPECT_TRUE(PP::ZeroOrderHold(breaks_mat, knots_mat)
+                  .isApprox(PP::ZeroOrderHold(breaks_vec, knots_vec), tol));
+
+  EXPECT_TRUE(PP::FirstOrderHold(breaks_mat, knots_mat)
+                  .isApprox(PP::FirstOrderHold(breaks_vec, knots_vec), tol));
+
+  EXPECT_TRUE(PP::Pchip(breaks_mat, knots_mat, false)
+                  .isApprox(PP::Pchip(breaks_vec, knots_vec, false), tol));
+
+  EXPECT_TRUE(PP::Pchip(breaks_mat, knots_mat, true)
+                  .isApprox(PP::Pchip(breaks_vec, knots_vec, true), tol));
+
+  EXPECT_TRUE(PP::Cubic(breaks_mat, knots_mat)
+                  .isApprox(PP::Cubic(breaks_vec, knots_vec), tol));
+
+  Matrix3d knots_dot_mat = 2. * Matrix3d::Identity();
+  std::vector<MatrixXd> knots_dot_vec = {
+      Vector3d{2., 0., 0.}, Vector3d{0., 2., 0.}, Vector3d{0., 0., 2.}};
+
+  EXPECT_TRUE(
+      PP::Cubic(breaks_mat, knots_mat, knots_dot_mat)
+          .isApprox(PP::Cubic(breaks_vec, knots_vec, knots_dot_vec), tol));
+
+  EXPECT_TRUE(
+      PP::Cubic(breaks_mat, knots_mat, knots_dot_vec[0], knots_dot_vec[2])
+          .isApprox(PP::Cubic(breaks_vec, knots_vec, knots_dot_vec[0],
+                              knots_dot_vec[2]),
+                    tol));
 }
 
 template <typename CoefficientType>

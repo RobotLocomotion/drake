@@ -40,7 +40,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dircol.AddDurationBounds(.3*21, 0.4*21)
         dircol.AddFinalCost(2*x.dot(x))
 
-        initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21], [[0], [0]])
+        initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
+                                                      np.zeros((1, 2)))
         initial_x = PiecewisePolynomial()
         dircol.SetInitialTrajectory(initial_u, initial_x)
 
@@ -81,7 +82,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dirtran.AddConstraintToAllKnotPoints(u[0] == 0)
         dirtran.AddFinalCost(2*x.dot(x))
 
-        initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21], [[0], [0]])
+        initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
+                                                      np.zeros((1, 2)))
         initial_x = PiecewisePolynomial()
         dirtran.SetInitialTrajectory(initial_u, initial_x)
 
