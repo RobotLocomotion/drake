@@ -15,7 +15,6 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -579,8 +578,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// actuators. See AddJointActuator() and num_actuators().
   const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
 
-  const systems::OutputPort<T>& get_state_output_port() const;
-
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
@@ -736,12 +733,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
         body_index_to_frame_id_.end();
   }
 
-  systems::State<T> AllocateStateOutput(
-      const systems::Context<T>& context) const;
-
-  void CopyStateOut(
-      const systems::Context<T>& context, systems::BasicVector<T>* state) const;
-
   // Helper method to declare output ports used by this plant to communicate
   // with a GeometrySystem.
   void DeclareGeometrySystemPorts();
@@ -813,9 +804,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   // Actuation input port:
   int actuation_port_{-1};
-
-  //
-  int state_output_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

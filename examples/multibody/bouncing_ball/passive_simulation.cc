@@ -12,6 +12,7 @@
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -30,9 +31,10 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-DEFINE_string(integration_scheme, "runge_kutta3",
-              "Integration scheme to be used. Available options are:"
-              "'runge_kutta3','implicit_euler','semi_explicit_euler'");
+DEFINE_string(integration_scheme, "runge_kutta2",
+              "Integration scheme to be used. Available options are: "
+              "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
+              "'implicit_euler'");
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
@@ -50,6 +52,7 @@ using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
 using drake::systems::rendering::PoseBundleToDrawMessage;
+using drake::systems::RungeKutta2Integrator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
 
@@ -59,8 +62,6 @@ int do_main() {
   GeometrySystem<double>& geometry_system =
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
-
-  const double simulation_time = 20.00;
 
   // Make the desired maximum time step a fraction of the simulation time.
   const double max_time_step = 1e-4;
@@ -171,6 +172,10 @@ int do_main() {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "runge_kutta2") {
+    integrator =
+        simulator.reset_integrator<RungeKutta2Integrator<double>>(
+            *diagram, max_time_step, &simulator.get_mutable_context());
   } else if (FLAGS_integration_scheme == "runge_kutta3") {
     integrator =
         simulator.reset_integrator<RungeKutta3Integrator<double>>(
@@ -193,7 +198,7 @@ int do_main() {
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(simulation_time);
+  simulator.StepTo(FLAGS_simulation_time);
 
   // Some sanity checks:
   if (FLAGS_integration_scheme == "semi_explicit_euler") {
@@ -209,14 +214,16 @@ int do_main() {
         integrator->get_largest_step_size_taken() <= 1.01 * max_time_step);
     DRAKE_DEMAND(integrator->get_smallest_adapted_step_size_taken() <=
         integrator->get_largest_step_size_taken());
-    DRAKE_DEMAND(
-        integrator->get_num_steps_taken() >= simulation_time / max_time_step);
+    DRAKE_DEMAND(integrator->get_num_steps_taken() >=
+        FLAGS_simulation_time / max_time_step);
   }
 
   // Checks for fixed time step integrators.
   if (integrator->get_fixed_step_mode()) {
+    const int kNumEvaluationsPerStep =
+        FLAGS_integration_scheme == "runge_kutta2"? 2 : 1;
     DRAKE_DEMAND(integrator->get_num_derivative_evaluations() ==
-        integrator->get_num_steps_taken());
+        integrator->get_num_steps_taken() * kNumEvaluationsPerStep);
     DRAKE_DEMAND(
         integrator->get_num_step_shrinkages_from_error_control() == 0);
   }

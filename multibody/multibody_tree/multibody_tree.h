@@ -18,7 +18,6 @@
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
-#include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
@@ -629,12 +628,6 @@ class MultibodyTree {
   /// Returns the number of actuators in the model.
   /// @see AddJointActuator().
   int num_actuators() const {
-    return static_cast<int>(owned_actuators_.size());
-  }
-
-  /// Returns the number of actuators in the model.
-  /// @see AddJointActuator().
-  int get_num_actuators() const {
     return static_cast<int>(owned_actuators_.size());
   }
 
