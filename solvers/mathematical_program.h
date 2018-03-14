@@ -2490,7 +2490,7 @@ class MathematicalProgram
 
   /**
    * Evaluates the evaluator in @p binding at the solution value.
-   * @return The value of @p binding in the binding.
+   * @return The value of @p binding at the solution value.
    */
   template <typename C>
   Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {

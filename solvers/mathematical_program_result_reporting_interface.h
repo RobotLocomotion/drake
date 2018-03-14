@@ -12,6 +12,15 @@ namespace internal {
  * results to MathematicalProgram.
  * The functions inside this class should only be called
  * from each solver class, instead of by users.
+ * We decide to pass the optimization results to the program using this
+ * interface class, and pass each piece of result information separatedly
+ * through individual functions (SetSolverId, SetOptimalCost, etc), instead of
+ * packing all the information into one struct, to be passed to
+ * MathematicalProgram from each solver. The reason is that the information to
+ * be passed depends on the outcome of the optimization. For example, when the
+ * problem is infeasible, we will not pass the value of each decision variables.
+ * So using an interface class to allows us to select more granularly which
+ * result information to be passed back to MathematicalProgram.
  */
 class MathematicalProgramResultReportingInterface {
  public:

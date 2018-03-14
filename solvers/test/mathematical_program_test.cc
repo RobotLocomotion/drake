@@ -401,7 +401,7 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
   const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
-  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
+  prog.result_reporting_interface().SetDecisionVariableValues(
       Vector3<double>::Zero());
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
@@ -422,7 +422,7 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
-  prog.GetResultReportingInterface()->ReportDecisionVariableValues(
+  prog.result_reporting_interface().SetDecisionVariableValues(
       Vector6<double>::Zero());
   VectorDecisionVariable<6> vars_expected;
   vars_expected << y, x0, x1, x2;
@@ -597,15 +597,13 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   Eigen::Vector4d x3_value(3, 4, 5, 6);
   Eigen::Vector4d x4_value = -x3_value;
   for (int i = 0; i < 3; ++i) {
-    prog.GetResultReportingInterface()->ReportDecisionVariableValues(
+    prog.result_reporting_interface().SetDecisionVariableValues(
         X1.col(i), X1_value.col(i));
-    prog.GetResultReportingInterface()->ReportDecisionVariableValues(
+    prog.result_reporting_interface().SetDecisionVariableValues(
         X2.col(i), X2_value.col(i));
   }
-  prog.GetResultReportingInterface()->ReportDecisionVariableValues(x3,
-                                                                   x3_value);
-  prog.GetResultReportingInterface()->ReportDecisionVariableValues(x4,
-                                                                   x4_value);
+  prog.result_reporting_interface().SetDecisionVariableValues(x3, x3_value);
+  prog.result_reporting_interface().SetDecisionVariableValues(x4, x4_value);
 
   CheckGetSolution(prog, X1, X1_value);
   CheckGetSolution(prog, X2, X2_value);
