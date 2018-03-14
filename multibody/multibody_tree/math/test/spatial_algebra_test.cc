@@ -743,30 +743,31 @@ TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
   EXPECT_EQ(Q_expected_string, Q_stream.str());
 }
 
-// SpatialVelocity specific unit tests.
+// Tests the dot product between spatial momentum and spatial velocity
+// quantities for a variety of scalar types.
 template <typename T>
 class MomentumDotVelocityTest : public ::testing::Test {
  public:
   // Useful typedefs when witting unit tests to access types.
   typedef T ScalarType;
  protected:
-  SpatialMomentum<T> H_WBp_{Vector3<T>{1, 2, 3}, Vector3<T>{4, 5, 6}};
+  SpatialMomentum<T> L_WBp_{Vector3<T>{1, 2, 3}, Vector3<T>{4, 5, 6}};
   SpatialVelocity<T> V_WBp_{Vector3<T>{7, 8, 9}, Vector3<T>{-1, -2, -3}};
   Vector3<T> p_PQ_{7, -3, 5};
 };
 TYPED_TEST_CASE(MomentumDotVelocityTest, ScalarTypes);
 
-// Verifies the result of the dot product of a spatial momentum H_WBp (of a body
+// Verifies the result of the dot product of a spatial momentum L_WBp (of a body
 // B in a frame W about a point P) with the spatial velocity V_WBp of frame Bp
 // (body frame B shifted to point P) in frame W, is independent of point P.
 TYPED_TEST(MomentumDotVelocityTest, InvariantUnderShiftOperation) {
   typedef typename TestFixture::ScalarType T;
-  const SpatialMomentum<T>& H_WBp = this->H_WBp_;
+  const SpatialMomentum<T>& L_WBp = this->L_WBp_;
   const SpatialVelocity<T>& V_WBp = this->V_WBp_;
   const Vector3<T>& p_PQ = this->p_PQ_;
-  const T HdotV_P = H_WBp.dot(V_WBp);
-  // Perform H_WBq.dot(V_WBq):
-  const T HdotV_Q = H_WBp.Shift(p_PQ).dot(V_WBp.Shift(p_PQ));
+  const T HdotV_P = L_WBp.dot(V_WBp);
+  // Perform L_WBq.dot(V_WBq):
+  const T HdotV_Q = L_WBp.Shift(p_PQ).dot(V_WBp.Shift(p_PQ));
   EXPECT_EQ(HdotV_P, HdotV_Q);
 }
 

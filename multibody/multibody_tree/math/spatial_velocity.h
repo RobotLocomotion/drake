@@ -217,20 +217,20 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// Given `this` spatial velocity `V_NBp_E` of rigid body B frame shifted to
   /// point P, measured in an inertial (or Newtonian) frame N and, expressed in
   /// a frame E this method computes the dot product with the spatial momentum
-  /// `H_NBp_E` of rigid body B, about point P and, expressed in the same frame
+  /// `L_NBp_E` of rigid body B, about point P and, expressed in the same frame
   /// E.
   /// This dot-product is twice the kinetic energy `K_NB` of body B in reference
   /// frame N. The kinetic energy `K_NB` is independent of the about-point P and
   /// so is this dot product. Therefore it is always true that:
   /// <pre>
-  ///   K_NB = 1/2 (H_NBp⋅V_NBp) = 1/2 (H_NBcm⋅V_NBcm)
+  ///   K_NB = 1/2 (L_NBp⋅V_NBp) = 1/2 (L_NBcm⋅V_NBcm)
   /// </pre>
-  /// where `H_NBcm` is the spatial momentum about the center of mass of body B
+  /// where `L_NBcm` is the spatial momentum about the center of mass of body B
   /// and `V_NBcm` is the spatial velocity of frame B shifted to its center of
   /// mass. The above is true due to how spatial momentum and velocity shift
   /// when changing point P, see SpatialMomentum::Shift() and
   /// SpatialVelocity::Shift().
-  T dot(const SpatialMomentum<T>& V_NBp_E) const;
+  T dot(const SpatialMomentum<T>& L_NBp_E) const;
 };
 
 /// Performs the addition of two spatial velocities. This operator

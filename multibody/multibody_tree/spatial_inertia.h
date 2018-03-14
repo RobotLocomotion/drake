@@ -391,29 +391,29 @@ class SpatialInertia {
   /// Multiplies `this` spatial inertia `M_BP_E` of a body B about a point P
   /// by the spatial velocity `V_WBp`, in a frame W, of the body frame B shifted
   /// to point P. Mathematically: <pre>
-  ///   H_WBp_E = M_BP_E * V_WBp_E
+  ///   L_WBp_E = M_BP_E * V_WBp_E
   /// </pre>
   /// or, in terms of its rotational and translational components (see this
   /// class's documentation for the block form of a rotational inertia): <pre>
-  ///   l_WB  = I_Bp * w_WB + m * p_BoBcm x v_WP
-  ///   h_WBp = -m * p_BoBcm x w_WB + m * v_WP
+  ///   h_WB  = I_Bp * w_WB + m * p_BoBcm x v_WP
+  ///   l_WBp = -m * p_BoBcm x w_WB + m * v_WP
   /// </pre>
   /// where `w_WB` and `v_WP` are the rotational and translational components of
-  /// the spatial velocity `V_WBp`, respectively and, `l_WB` and `h_WBp` are the
-  /// rotational and translational components of the spatial momentum `H_WBp`,
+  /// the spatial velocity `V_WBp`, respectively and, `h_WB` and `l_WBp` are the
+  /// angular and linear components of the spatial momentum `L_WBp`,
   /// respectively.
   ///
   /// @note
   /// It is possible to show that `M_BP_E.Shift(p_PQ_E) * V_WBp_E.Shift(p_PQ_E)`
-  /// exactly equals `H_WBp_E.Shift(p_PQ_E)`.
+  /// exactly equals `L_WBp_E.Shift(p_PQ_E)`.
   SpatialMomentum<T> operator*(const SpatialVelocity<T>& V_WBp_E) const {
     const Vector3<T>& w_WB_E = V_WBp_E.rotational();
     const Vector3<T>& v_WP_E = V_WBp_E.translational();
     const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
     // Return (see class's documentation):
-    // ⌈ l_WB  ⌉   ⌈    I_Bp_E     | m * p_BoBcm× ⌉   ⌈ w_WB_E ⌉
+    // ⌈ h_WB  ⌉   ⌈    I_Bp_E     | m * p_BoBcm× ⌉   ⌈ w_WB_E ⌉
     // |       | = |               |              | * |        |
-    // ⌊ h_WBp ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊ v_WP_E ⌋
+    // ⌊ l_WBp ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊ v_WP_E ⌋
     return SpatialMomentum<T>(
         /* rotational */
         CalcRotationalInertia() * w_WB_E + mp_BoBcm_E.cross(v_WP_E),

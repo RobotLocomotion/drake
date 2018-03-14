@@ -35,8 +35,8 @@ T SpatialMomentum<T>::dot(const SpatialVelocity<T>& V) const {
 }
 
 template <typename T>
-T SpatialVelocity<T>::dot(const SpatialMomentum<T>& H) const {
-  return H.dot(*this);  // dot-product is commutative.
+T SpatialVelocity<T>::dot(const SpatialMomentum<T>& L) const {
+  return L.dot(*this);  // dot-product is commutative.
 }
 
 }  // namespace multibody
