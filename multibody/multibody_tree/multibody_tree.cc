@@ -75,7 +75,7 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   const QuaternionFloatingMobilizer<T>* mobilizer =
       dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
           &get_mobilizer(body_topology.inboard_mobilizer));
-  // TODO: just do an if and throw with nice message.
+  // TODO(amcastro-tri): just do an if and throw with nice message.
   DRAKE_THROW_UNLESS(mobilizer != nullptr);
   return *mobilizer;
 }

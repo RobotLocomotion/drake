@@ -602,7 +602,7 @@ class MultibodyTree {
   // a mobilizer. The mobilizer is between each body and the world.
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // TODO: make it return a FloatingMobilizer from where
+  // TODO(amcastro-tri): make it return a FloatingMobilizer from where
   // QuaternionFloatingMobilizer and SpaceXYZFloatingMobilizer inherit.
   const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
       const Body<T>& body) const;

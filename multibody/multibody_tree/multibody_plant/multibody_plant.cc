@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -334,7 +335,8 @@ void MultibodyPlant<T>::EstimatePenaltyMethodParameters() {
 template<>
 void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<double>& context,
-    const PositionKinematicsCache<double>& pc, const VelocityKinematicsCache<double>& vc,
+    const PositionKinematicsCache<double>& pc,
+    const VelocityKinematicsCache<double>& vc,
     std::vector<SpatialForce<double>>* F_BBo_W_array) const {
   if (get_num_collision_geometries() == 0) return;
 
@@ -375,11 +377,13 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
 
       // Contact point position on body A.
-      const Vector3<double>& p_WAo = pc.get_X_WB(bodyA_node_index).translation();
+      const Vector3<double>& p_WAo =
+          pc.get_X_WB(bodyA_node_index).translation();
       const Vector3<double>& p_CoAo_W = p_WAo - p_WC;
 
       // Contact point position on body B.
-      const Vector3<double>& p_WBo = pc.get_X_WB(bodyB_node_index).translation();
+      const Vector3<double>& p_WBo =
+          pc.get_X_WB(bodyB_node_index).translation();
       const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
 
       // Separation velocity, > 0  if objects separate.
@@ -389,23 +393,19 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
           vc.get_V_WB(bodyB_node_index).Shift(-p_CoBo_W).translational();
       const Vector3<double> v_AcBc_W = v_WBc - v_WAc;
 
-      // xdot = vn > 0 ==> they are getting closer.
+      // if xdot = vn > 0 ==> they are getting closer.
       const double vn = v_AcBc_W.dot(nhat_BA_W);
-
-
-      // Penetration rate, > 0 implies increasing penetration.
-      //const T& xdot = -state.zdot();
-      //fC = k_ * x * (1.0 + d_ * xdot);
 
       // Magnitude of the normal force on body A at contact point C.
       const double& k = contact_penalty_stiffness_;
       const double& d = contact_penalty_damping_;
-      const double fn_AC = k * x * (1.0 + d * vn); // xdot = -vn
+      const double fn_AC = k * x * (1.0 + d * vn);
 
       if (fn_AC <= 0) continue;  // Continue with next point.
 
       // Spatial force on body A at C, expressed in the world frame W.
-      const SpatialForce<double> F_AC_W(Vector3<double>::Zero(), fn_AC * nhat_BA_W);
+      const SpatialForce<double> F_AC_W(Vector3<double>::Zero(),
+                                        fn_AC * nhat_BA_W);
 
       if (bodyA_index != world_index()) {
         // Spatial force on body A at Ao, expressed in W.
