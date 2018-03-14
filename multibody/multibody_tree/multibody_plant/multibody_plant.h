@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
@@ -336,11 +337,40 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// @see The ForceElement class's documentation for further details on how a
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
-  const ForceElementType<T>& AddForceElement(Args&&... args) {
+  typename std::enable_if<!std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+  AddForceElement(Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
+
+  template<template<typename Scalar> class ForceElementType, typename... Args>
+  typename std::enable_if<std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+  AddForceElement(Args&&... args) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DRAKE_DEMAND(!gravity_W_.has_value());
+    const auto& element =
+        model_->template AddForceElement<UniformGravityFieldElement>(
+            std::forward<Args>(args)...);
+    gravity_W_ = element.gravity_vector();
+    return element;
+  }
+
+#if 0
+  // Specialization of the general API of AddForceElement.
+  const UniformGravityFieldElement<T>&
+  AddUniformGravityField(const Vector3<double>& g_W) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    const auto& element =
+        model_->template AddForceElement<UniformGravityFieldElement>(g_W);
+    gravity_W_ = g_W;
+    return element;
+  }
+#endif
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
   /// `joint`.
@@ -641,6 +671,23 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     contact_penalty_damping_ = d;
   }
 
+  void set_penetration_allowance(double d) {
+    contact_penetration_allowance_ = d;
+    EstimatePenaltyMethodParameters();
+  }
+
+  /// Returns a time scale estimated based on the requested penetration
+  /// allowance set with set_penetration_allowance().
+  /// For the penalty method in use to enforce non-penetration this time scale
+  /// relates to the time it takes the two bodies to come into a relative stop,
+  /// when the relative normal velocity goes to zero.
+  /// If this time scale is used to estimate a simulation's time step, it is
+  /// recommended to choose a time step so that several steps fit in this time
+  /// scale.
+  double get_contact_penalty_method_time_scale() const {
+    return contact_penalty_method_time_scale_;
+  }
+
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
   /// @throws if called pre-finalize. See Finalize().
@@ -687,12 +734,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
-
-  void CalcAndAddContactForcesByPenaltyMethod(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -770,6 +811,22 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
         geometry_id_to_collision_index_.end();
   }
 
+  // Helper method to compute contact forces in the normal direction using a
+  // penalty method.
+  void CalcAndAddContactForcesByPenaltyMethod(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Based on the contact allowance specified by the user (a friendlier, more
+  // physically meaningful parameter), this method uses
+  // some heuristics to determine the penalty method coefficients.
+  // This heuristics includes, for instance, the weight of the bodies in the
+  // model. Future versions could also include energy estimates of maximum
+  // velocities,
+  void EstimatePenaltyMethodParameters();
+
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
@@ -791,6 +848,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // Rigid contact constraint parameters.
   double contact_penalty_stiffness_{0};
   double contact_penalty_damping_{0};
+  double contact_penetration_allowance_{0.001};  // Defaults to 1mm.
+  // An estimated time scale in which objects come to a relative stop during
+  // contact.
+  double contact_penalty_method_time_scale_{-1.0};
+  optional<Vector3<double>> gravity_W_;  // Needed to estimate weights.
 
   // Iteraion order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;

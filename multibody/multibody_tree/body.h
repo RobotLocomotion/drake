@@ -151,7 +151,8 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   Body() : body_frame_(*this) {}
 
   /// Creates a %Body named `name` with a BodyFrame associated with it.
-  explicit Body(const std::string& name) : name_(name), body_frame_(*this) {}
+  explicit Body(const std::string& name, double default_mamss) :
+      name_(name), body_frame_(*this), default_mass_(default_mamss) {}
 
   /// Gets the `name` associated with `this` body.
   const std::string& name() const { return name_; }
@@ -174,6 +175,8 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   BodyNodeIndex node_index() const {
     return topology_.body_node;
   }
+
+  double get_default_mass() const { return default_mass_; }
 
   /// Returns the mass of this body stored in `context`.
   virtual T get_mass(const MultibodyTreeContext<T> &context) const = 0;
@@ -208,6 +211,10 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   }
 
  protected:
+  /// Allow subclasses to specify the body's default mass based off their
+  /// construction parameters.
+  void set_default_mass(double mass) { default_mass_ = mass; }
+
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// These methods are meant to be called by MultibodyTree::CloneToScalar()
@@ -258,6 +265,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   // Body frame associated with this body.
   BodyFrame<T> body_frame_;
+
+  // The default (non context dependent) mass of the body.
+  double default_mass_{0.0};
 
   // The internal bookkeeping topology struct used by MultibodyTree.
   BodyTopology topology_;

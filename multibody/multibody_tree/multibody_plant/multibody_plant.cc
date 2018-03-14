@@ -195,6 +195,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (source_id_) DeclareGeometrySystemPorts();
   DeclareCacheEntries();
   geometry_system_ = nullptr;  // must not be used after Finalize().
+  if (get_num_collision_geometries() > 0) EstimatePenaltyMethodParameters();
 }
 
 template<typename T>
@@ -296,6 +297,60 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   model_->MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
   derivatives->SetFromVector(xdot);
+}
+
+template<typename T>
+void MultibodyPlant<T>::EstimatePenaltyMethodParameters() {
+  DRAKE_DEMAND(gravity_W_.has_value());
+
+  // Default to Earth's gravity for this estimation.
+  const double g = gravity_W_.has_value() ? gravity_W_->norm(): 9.81;
+
+  // The heuristics now is very simple. We should update it to:
+  //  - Only scan free bodies for weight.
+  //  - Consider an estimate of maximum velocities (context dependent).
+  // Right now we are being very conservative and use the maximum mass in the
+  // system.
+  double mass = 0.0;
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = model().get_body(body_index);
+    mass = std::max(mass, body.get_default_mass());
+  }
+  const double penetration_length = contact_penetration_allowance_;
+
+  // For now, we use the model for a critically damped spring mass oscillator
+  // to estimate these parameters: mẍ+cẋ+kx=mg
+  // Notice however that normal forces are computed according to: fₙ=kx(1+dẋ)
+  // which translate to a second order oscillator of the form:
+  // mẍ+(kdx)ẋ+kx=mg
+  // Therefore, for this more complex, non-linear, oscillator, we estimate the
+  // damping constant d using a time scale related to the free oscillation
+  // (omega below) and the requested penetration allowance as a lenght scale.
+
+  // We first estimate the stiffness based on static equilibrium.
+  const double stiffness = mass * g / penetration_length;
+  // Frequency associated with the stiffness above.
+  const double omega = sqrt(stiffness / mass);
+
+  // Estimated contact time scale. The relative velocity of objects coming into
+  // contact goes to zero in this time scale.
+  const double time_scale = 1.0 / omega;
+
+  // Damping ration for a critically damped model. We could allow users to set
+  // this. Right now, critically damp the normal direction.
+  // This corresponds to a non-penetraion constraint in the limit for
+  // contact_penetration_allowance_ goint to zero (no bounce off).
+  const double damping_ratio = 1.0;
+  // We form the damping (with units of 1/velocity) using dimensional analysis.
+  // Thus we use 1/omega for the time scale and penetration_length for the
+  // length scale. We then scale it by the damping ratio.
+  const double damping = damping_ratio * time_scale / penetration_length;
+
+  // Final parameters used in the penalty method:
+  contact_penalty_stiffness_ = stiffness;
+  contact_penalty_damping_ = damping;
+  // The time scale can be requested to hint the integrator's time step.
+  contact_penalty_method_time_scale_ = time_scale;
 }
 
 template<>

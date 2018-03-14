@@ -21,6 +21,14 @@
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
+
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
+//#define PRINT_VARn(a) (void)a;
+//#define PRINT_VAR(a) (void)a;
+
+
 namespace drake {
 namespace examples {
 namespace multibody {
@@ -63,9 +71,6 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  // Make the desired maximum time step a fraction of the simulation time.
-  const double max_time_step = 1e-4;
-
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
@@ -76,18 +81,19 @@ int do_main() {
   const double g = 9.81;        // m/s^2
   const double z0 = 0.3;        // Initial height.
 
-  const double penetration_length = 1.0e-3;
-  const double stiffness = mass * g / penetration_length;  // static equilibrium (under estimation)
-  const double omega = sqrt(stiffness / mass);  // frequency
-  const double damping_ratio = 1.0;  // not realy, but should be close.
-  const double damping = damping_ratio * (1.0/omega)/penetration_length; // Approx critically damped.
-
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeBouncingBallPlant(
           radius, mass, -g * Vector3d::UnitZ(), &geometry_system));
   const MultibodyTree<double>& model = plant.model();
-  plant.set_contact_penalty_stiffness(stiffness);
-  plant.set_contact_penalty_damping(damping);
+  // Set how much penetration (in meters) we are willing to accept.
+  plant.set_penetration_allowance(0.001);
+
+  // Hint the integrator's time step based on the contact time scale.
+  // A fraction of this time scale is used which is chosen so that the fixed
+  // time step integrators are stable.
+  const double max_time_step =
+      plant.get_contact_penalty_method_time_scale() / 30;
+  PRINT_VAR(max_time_step);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
