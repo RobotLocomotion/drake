@@ -1,6 +1,8 @@
 #include <map>
-#include <sstream>
+#include <string>
 
+#include "fmt/format.h"
+#include "fmt/ostream.h"
 #include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
@@ -12,22 +14,26 @@
 namespace drake {
 namespace pydrake {
 
+using std::map;
+using std::string;
+
 // TODO(eric.cousineau): Use py::self for operator overloads?
 PYBIND11_MODULE(_symbolic_py, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
-
-  using std::map;
-  using std::ostringstream;
 
   m.doc() =
       "Symbolic variable, variables, monomial, expression, polynomial, and "
       "formula";
 
   py::class_<Variable>(m, "Variable")
-      .def(py::init<const std::string&>())
+      .def(py::init<const string&>())
       .def("get_id", &Variable::get_id)
-      .def("__repr__", &Variable::to_string)
+      .def("__str__", &Variable::to_string)
+      .def("__repr__",
+           [](const Variable& self) {
+             return fmt::format("Variable('{}')", self.to_string());
+           })
       .def("__hash__",
            [](const Variable& self) { return std::hash<Variable>{}(self); })
       // Addition.
@@ -96,6 +102,11 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>())
       .def("size", &Variables::size)
       .def("empty", &Variables::empty)
+      .def("__str__", &Variables::to_string)
+      .def("__repr__",
+           [](const Variables& self) {
+             return fmt::format("<Variables \"{}\">", self);
+           })
       .def("to_string", &Variables::to_string)
       .def("__hash__",
            [](const Variables& self) { return std::hash<Variables>{}(self); })
@@ -128,7 +139,12 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::init<>())
       .def(py::init<double>())
       .def(py::init<const Variable&>())
-      .def("__repr__", &Expression::to_string)
+      .def("__str__", &Expression::to_string)
+      .def("__repr__",
+           [](const Expression& self) {
+             return fmt::format("<Expression \"{}\">", self.to_string());
+           })
+      .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)
       // Addition
       .def(py::self + py::self)
@@ -234,7 +250,37 @@ PYBIND11_MODULE(_symbolic_py, m) {
     return Jacobian(f, vars);
   });
 
-  py::class_<Formula>(m, "Formula").def("__repr__", &Formula::to_string);
+  py::class_<Formula>(m, "Formula")
+      .def("GetFreeVariables", &Formula::GetFreeVariables)
+      .def("EqualTo", &Formula::EqualTo)
+      .def("Substitute",
+           [](const Formula& self, const Variable& var, const Expression& e) {
+             return self.Substitute(var, e);
+           })
+      .def("Substitute",
+           [](const Formula& self, const Variable& var1, const Variable& var2) {
+             return self.Substitute(var1, var2);
+           })
+      .def("Substitute", [](const Formula& self, const Variable& var,
+                            const double c) { return self.Substitute(var, c); })
+      .def("Substitute",
+           [](const Formula& self, const Substitution& s) {
+             return self.Substitute(s);
+           })
+      .def("to_string", &Formula::to_string)
+      .def("__str__", &Formula::to_string)
+      .def("__repr__",
+           [](const Formula& self) {
+             return fmt::format("<Formula \"{}\">", self.to_string());
+           })
+      .def("__eq__", [](const Formula& self,
+                        const Formula& other) { return self.EqualTo(other); })
+      .def("__ne__", [](const Formula& self,
+                        const Formula& other) { return !self.EqualTo(other); })
+      .def("__hash__",
+           [](const Formula& self) { return std::hash<Formula>{}(self); })
+      .def_static("True", &Formula::True)
+      .def_static("False", &Formula::False);
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.
@@ -264,11 +310,11 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("__hash__",
            [](const Monomial& self) { return std::hash<Monomial>{}(self); })
       .def(py::self != py::self)
+      .def("__str__",
+           [](const Monomial& self) { return fmt::format("{}", self); })
       .def("__repr__",
            [](const Monomial& self) {
-             ostringstream oss;
-             oss << self;
-             return oss.str();
+             return fmt::format("<Monomial \"{}\">", self);
            })
       .def("GetVariables", &Monomial::GetVariables)
       .def("get_powers", &Monomial::get_powers, py_reference_internal)
@@ -325,11 +371,11 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::self != py::self)
       .def("__hash__",
            [](const Polynomial& self) { return std::hash<Polynomial>{}(self); })
+      .def("__str__",
+           [](const Polynomial& self) { return fmt::format("{}", self); })
       .def("__repr__",
            [](const Polynomial& self) {
-             ostringstream oss;
-             oss << self;
-             return oss.str();
+             return fmt::format("<Polynomial \"{}\">", self);
            })
       .def("__pow__",
            [](const Polynomial& self, const int n) { return pow(self, n); })
