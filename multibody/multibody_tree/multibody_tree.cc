@@ -51,8 +51,6 @@ MultibodyTree<T>::MultibodyTree() {
 
 template <typename T>
 void MultibodyTree<T>:: AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
-  // Do not call on not finalized tree, thought it should be a no-op in that
-  // case?
   DRAKE_DEMAND(!topology_is_valid());
   // Skip the world.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
@@ -70,13 +68,16 @@ template <typename T>
 const QuaternionFloatingMobilizer<T>&
 MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
     const Body<T>& body) const {
+  MBT_THROW_IF_NOT_FINALIZED
   DRAKE_DEMAND(body.index() != world_index());
   const BodyTopology& body_topology = get_topology().get_body(body.index());
   const QuaternionFloatingMobilizer<T>* mobilizer =
       dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
           &get_mobilizer(body_topology.inboard_mobilizer));
-  // TODO: just do an if and throw with nice message.
-  DRAKE_THROW_UNLESS(mobilizer != nullptr);
+  if (mobilizer == nullptr) {
+    throw std::logic_error(
+        "Body '" + body.name() + "' is not a free floating body.");
+  }
   return *mobilizer;
 }
 
@@ -159,8 +160,9 @@ void MultibodyTree<T>::Finalize() {
     internal::JointImplementationBuilder<T>::Build(joint.get(), this);
   }
   // It is VERY important to add quaternions if needed only AFTER joints had a
-  // chance to get implemented with mobilizers. Therefore, do not change this
-  // order!
+  // chance to get implemented with mobilizers. This is because joints's
+  // implementations change the topology of the tree. Therefore, do not change
+  // this order!
   AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
   FinalizeTopology();
   FinalizeInternals();

@@ -600,11 +600,20 @@ class MultibodyTree {
   }
 
   // This method adds a QuaternionFreeMobilizer to all bodies that do not have
-  // a mobilizer. The mobilizer is between each body and the world.
+  // a mobilizer. The mobilizer is between each body and the world. To be called
+  // at Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // TODO: make it return a FloatingMobilizer from where
-  // QuaternionFloatingMobilizer and SpaceXYZFloatingMobilizer inherit.
+  /// If `body` is a free body in the model, this method will return the
+  /// QuaternionFloatingMobilizer for the body. If the body is not free but it
+  /// is connected to the model by a Joint, this method will throw an exception.
+  /// The returned mobilizer provides a user-facing API to set the state for
+  /// this body including both pose and spatial velocity.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. It is possible however
+  /// to do this directly for free bodies and the QuaternionFloatingMobilizer
+  /// user-facing API allows us to do exactly that.
+  /// @throws std::logic_error if `body` is not free in the model.
   const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
       const Body<T>& body) const;
 
