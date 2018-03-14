@@ -20,99 +20,100 @@ e_y = sym.Expression(y)
 
 class TestSymbolicVariable(unittest.TestCase):
     def test_addition(self):
-        self.assertEqual(str(x + y), "(x + y)")
-        self.assertEqual(str(x + 1), "(1 + x)")
-        self.assertEqual(str(1 + x), "(1 + x)")
+        self.assertEqual(str(x + y), '<Expression "(x + y)">')
+        self.assertEqual(str(x + 1), '<Expression "(1 + x)">')
+        self.assertEqual(str(1 + x), '<Expression "(1 + x)">')
 
     def test_subtraction(self):
-        self.assertEqual(str(x - y), "(x - y)")
-        self.assertEqual(str(x - 1), "(-1 + x)")
-        self.assertEqual(str(1 - x), "(1 - x)")
+        self.assertEqual(str(x - y), '<Expression "(x - y)">')
+        self.assertEqual(str(x - 1), '<Expression "(-1 + x)">')
+        self.assertEqual(str(1 - x), '<Expression "(1 - x)">')
 
     def test_multiplication(self):
-        self.assertEqual(str(x * y), "(x * y)")
-        self.assertEqual(str(x * 1), "x")
-        self.assertEqual(str(1 * x), "x")
+        self.assertEqual(str(x * y), '<Expression "(x * y)">')
+        self.assertEqual(str(x * 1), '<Expression "x">')
+        self.assertEqual(str(1 * x), '<Expression "x">')
 
     def test_division(self):
-        self.assertEqual(str(x / y), "(x / y)")
-        self.assertEqual(str(x / 1), "x")
-        self.assertEqual(str(1 / x), "(1 / x)")
+        self.assertEqual(str(x / y), '<Expression "(x / y)">')
+        self.assertEqual(str(x / 1), '<Expression "x">')
+        self.assertEqual(str(1 / x), '<Expression "(1 / x)">')
 
     def test_unary_operators(self):
-        self.assertEqual(str(+x), "x")
-        self.assertEqual(str(-x), "(-1 * x)")
+        self.assertEqual(str(+x), '<Expression "x">')
+        self.assertEqual(str(-x), '<Expression "(-1 * x)">')
 
     def test_relational_operators(self):
         # Variable rop float
-        self.assertEqual(str(x >= 1), "(x >= 1)")
-        self.assertEqual(str(x > 1), "(x > 1)")
-        self.assertEqual(str(x <= 1), "(x <= 1)")
-        self.assertEqual(str(x < 1), "(x < 1)")
-        self.assertEqual(str(x == 1), "(x = 1)")
-        self.assertEqual(str(x != 1), "(x != 1)")
+        self.assertEqual(str(x >= 1), '<Formula "(x >= 1)">')
+        self.assertEqual(str(x > 1), '<Formula "(x > 1)">')
+        self.assertEqual(str(x <= 1), '<Formula "(x <= 1)">')
+        self.assertEqual(str(x < 1), '<Formula "(x < 1)">')
+        self.assertEqual(str(x == 1), '<Formula "(x = 1)">')
+        self.assertEqual(str(x != 1), '<Formula "(x != 1)">')
 
         # float rop Variable
-        self.assertEqual(str(1 < y), "(y > 1)")
-        self.assertEqual(str(1 <= y), "(y >= 1)")
-        self.assertEqual(str(1 > y), "(y < 1)")
-        self.assertEqual(str(1 >= y), "(y <= 1)")
-        self.assertEqual(str(1 == y), "(y = 1)")
-        self.assertEqual(str(1 != y), "(y != 1)")
+        self.assertEqual(str(1 < y), '<Formula "(y > 1)">')
+        self.assertEqual(str(1 <= y), '<Formula "(y >= 1)">')
+        self.assertEqual(str(1 > y), '<Formula "(y < 1)">')
+        self.assertEqual(str(1 >= y), '<Formula "(y <= 1)">')
+        self.assertEqual(str(1 == y), '<Formula "(y = 1)">')
+        self.assertEqual(str(1 != y), '<Formula "(y != 1)">')
 
         # Variable rop Variable
-        self.assertEqual(str(x < y), "(x < y)")
-        self.assertEqual(str(x <= y), "(x <= y)")
-        self.assertEqual(str(x > y), "(x > y)")
-        self.assertEqual(str(x >= y), "(x >= y)")
-        self.assertEqual(str(x == y), "(x = y)")
-        self.assertEqual(str(x != y), "(x != y)")
+        self.assertEqual(str(x < y), '<Formula "(x < y)">')
+        self.assertEqual(str(x <= y), '<Formula "(x <= y)">')
+        self.assertEqual(str(x > y), '<Formula "(x > y)">')
+        self.assertEqual(str(x >= y), '<Formula "(x >= y)">')
+        self.assertEqual(str(x == y), '<Formula "(x = y)">')
+        self.assertEqual(str(x != y), '<Formula "(x != y)">')
 
     def test_repr(self):
-        self.assertEqual(str(x), "x")
-        self.assertEqual(str(y), "y")
-        self.assertEqual(str(x + y), "(x + y)")
-        self.assertEqual(str(x - y), "(x - y)")
-        self.assertEqual(str(x * y), "(x * y)")
-        self.assertEqual(str(x / y), "(x / y)")
-        self.assertEqual(str((x + y) * x), "(x * (x + y))")
+        self.assertEqual(str(x), "Variable('x')")
+        self.assertEqual(str(y), "Variable('y')")
+        self.assertEqual(str(x + y), '<Expression "(x + y)">')
+        self.assertEqual(str(x - y), '<Expression "(x - y)">')
+        self.assertEqual(str(x * y), '<Expression "(x * y)">')
+        self.assertEqual(str(x / y), '<Expression "(x / y)">')
+        self.assertEqual(str((x + y) * x), '<Expression "(x * (x + y))">')
 
     def test_simplify(self):
-        self.assertEqual(str(0 * (x + y)), "0")
-        self.assertEqual(str(x + y - x - y), "0")
-        self.assertEqual(str(x / x - 1), "0")
-        self.assertEqual(str(x / x), "1")
+        self.assertEqual(str(0 * (x + y)), '<Expression "0">')
+        self.assertEqual(str(x + y - x - y), '<Expression "0">')
+        self.assertEqual(str(x / x - 1), '<Expression "0">')
+        self.assertEqual(str(x / x), '<Expression "1">')
 
     def test_expand(self):
         ex = 2 * (x + y)
-        self.assertEqual(str(ex), "(2 * (x + y))")
-        self.assertEqual(str(ex.Expand()), "(2 * x + 2 * y)")
+        self.assertEqual(str(ex), '<Expression "(2 * (x + y))">')
+        self.assertEqual(str(ex.Expand()), '<Expression "(2 * x + 2 * y)">')
 
     def test_pow(self):
-        self.assertEqual(str(x**2), "pow(x, 2)")
-        self.assertEqual(str(x**y), "pow(x, y)")
-        self.assertEqual(str((x + 1)**(y - 1)), "pow((1 + x), (-1 + y))")
+        self.assertEqual(str(x**2), '<Expression "pow(x, 2)">')
+        self.assertEqual(str(x**y), '<Expression "pow(x, y)">')
+        self.assertEqual(str((x + 1)**(y - 1)),
+                         '<Expression "pow((1 + x), (-1 + y))">')
 
     def test_neg(self):
-        self.assertEqual(str(-(x + 1)), "(-1 - x)")
+        self.assertEqual(str(-(x + 1)), '<Expression "(-1 - x)">')
 
     def test_logical(self):
         self.assertEqual(str(sym.logical_not(x == 0)),
-                         "!((x = 0))")
+                         '<Formula "!((x = 0))">')
 
         # Test single-operand logical statements
-        self.assertEqual(str(sym.logical_and(x >= 1)), "(x >= 1)")
-        self.assertEqual(str(sym.logical_or(x >= 1)), "(x >= 1)")
+        self.assertEqual(str(sym.logical_and(x >= 1)), '<Formula "(x >= 1)">')
+        self.assertEqual(str(sym.logical_or(x >= 1)), '<Formula "(x >= 1)">')
         # Test binary operand logical statements
         self.assertEqual(str(sym.logical_and(x >= 1, x <= 2)),
-                         "((x >= 1) and (x <= 2))")
+                         '<Formula "((x >= 1) and (x <= 2))">')
         self.assertEqual(str(sym.logical_or(x <= 1, x >= 2)),
-                         "((x >= 2) or (x <= 1))")
+                         '<Formula "((x >= 2) or (x <= 1))">')
         # Test multiple operand logical statements
         self.assertEqual(str(sym.logical_and(x >= 1, x <= 2, y == 2)),
-                         "((y = 2) and (x >= 1) and (x <= 2))")
+                         '<Formula "((y = 2) and (x >= 1) and (x <= 2))">')
         self.assertEqual(str(sym.logical_or(x >= 1, x <= 2, y == 2)),
-                         "((y = 2) or (x >= 1) or (x <= 2))")
+                         '<Formula "((y = 2) or (x >= 1) or (x <= 2))">')
 
 
 class TestSymbolicVariables(unittest.TestCase):
@@ -222,11 +223,11 @@ class TestSymbolicVariables(unittest.TestCase):
 
 class TestSymbolicExpression(unittest.TestCase):
     def test_addition(self):
-        self.assertEqual(str(e_x + e_y), "(x + y)")
-        self.assertEqual(str(e_x + y), "(x + y)")
-        self.assertEqual(str(e_x + 1), "(1 + x)")
-        self.assertEqual(str(x + e_y), "(x + y)")
-        self.assertEqual(str(1 + e_x), "(1 + x)")
+        self.assertEqual(str(e_x + e_y), '<Expression "(x + y)">')
+        self.assertEqual(str(e_x + y), '<Expression "(x + y)">')
+        self.assertEqual(str(e_x + 1), '<Expression "(1 + x)">')
+        self.assertEqual(str(x + e_y), '<Expression "(x + y)">')
+        self.assertEqual(str(1 + e_x), '<Expression "(1 + x)">')
 
     def test_addition_assign(self):
         e = x
@@ -238,11 +239,11 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(e, x + y + z + 1)
 
     def test_subtract(self):
-        self.assertEqual(str(e_x - e_y), "(x - y)")
-        self.assertEqual(str(e_x - y), "(x - y)")
-        self.assertEqual(str(e_x - 1), "(-1 + x)")
-        self.assertEqual(str(x - e_y), "(x - y)")
-        self.assertEqual(str(1 - e_x), "(1 - x)")
+        self.assertEqual((e_x - e_y).to_string(), "(x - y)")
+        self.assertEqual((e_x - y).to_string(), "(x - y)")
+        self.assertEqual((e_x - 1).to_string(), "(-1 + x)")
+        self.assertEqual((x - e_y).to_string(), "(x - y)")
+        self.assertEqual((1 - e_x).to_string(), "(1 - x)")
 
     def test_subtract_assign(self):
         e = x
@@ -254,11 +255,11 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(e, x - y - z - 1)
 
     def test_multiplication(self):
-        self.assertEqual(str(e_x * e_y), "(x * y)")
-        self.assertEqual(str(e_x * y), "(x * y)")
-        self.assertEqual(str(e_x * 1), "x")
-        self.assertEqual(str(x * e_y), "(x * y)")
-        self.assertEqual(str(1 * e_x), "x")
+        self.assertEqual((e_x * e_y).to_string(), "(x * y)")
+        self.assertEqual((e_x * y).to_string(), "(x * y)")
+        self.assertEqual((e_x * 1).to_string(), "x")
+        self.assertEqual((x * e_y).to_string(), "(x * y)")
+        self.assertEqual((1 * e_x).to_string(), "x")
 
     def test_multiplication_assign(self):
         e = x
@@ -270,11 +271,11 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(e, x * y * z)
 
     def test_division(self):
-        self.assertEqual(str(e_x / e_y), "(x / y)")
-        self.assertEqual(str(e_x / y), "(x / y)")
-        self.assertEqual(str(e_x / 1), "x")
-        self.assertEqual(str(x / e_y), "(x / y)")
-        self.assertEqual(str(1 / e_x), "(1 / x)")
+        self.assertEqual((e_x / e_y).to_string(), "(x / y)")
+        self.assertEqual((e_x / y).to_string(), "(x / y)")
+        self.assertEqual((e_x / 1).to_string(), "x")
+        self.assertEqual((x / e_y).to_string(), "(x / y)")
+        self.assertEqual((1 / e_x).to_string(), "(1 / x)")
 
     def test_division_assign(self):
         e = x
@@ -286,49 +287,49 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(e, x / y / z)
 
     def test_unary_operators(self):
-        self.assertEqual(str(+e_x), "x")
-        self.assertEqual(str(-e_x), "(-1 * x)")
+        self.assertEqual((+e_x).to_string(), "x")
+        self.assertEqual((-e_x).to_string(), "(-1 * x)")
 
     def test_relational_operators(self):
         # Expression rop Expression
-        self.assertEqual(str(e_x < e_y), "(x < y)")
-        self.assertEqual(str(e_x <= e_y), "(x <= y)")
-        self.assertEqual(str(e_x > e_y), "(x > y)")
-        self.assertEqual(str(e_x >= e_y), "(x >= y)")
-        self.assertEqual(str(e_x == e_y), "(x = y)")
-        self.assertEqual(str(e_x != e_y), "(x != y)")
+        self.assertEqual((e_x < e_y).to_string(), "(x < y)")
+        self.assertEqual((e_x <= e_y).to_string(), "(x <= y)")
+        self.assertEqual((e_x > e_y).to_string(), "(x > y)")
+        self.assertEqual((e_x >= e_y).to_string(), "(x >= y)")
+        self.assertEqual((e_x == e_y).to_string(), "(x = y)")
+        self.assertEqual((e_x != e_y).to_string(), "(x != y)")
 
         # Expression rop Variable
-        self.assertEqual(str(e_x < y), "(x < y)")
-        self.assertEqual(str(e_x <= y), "(x <= y)")
-        self.assertEqual(str(e_x > y), "(x > y)")
-        self.assertEqual(str(e_x >= y), "(x >= y)")
-        self.assertEqual(str(e_x == y), "(x = y)")
-        self.assertEqual(str(e_x != y), "(x != y)")
+        self.assertEqual((e_x < y).to_string(), "(x < y)")
+        self.assertEqual((e_x <= y).to_string(), "(x <= y)")
+        self.assertEqual((e_x > y).to_string(), "(x > y)")
+        self.assertEqual((e_x >= y).to_string(), "(x >= y)")
+        self.assertEqual((e_x == y).to_string(), "(x = y)")
+        self.assertEqual((e_x != y).to_string(), "(x != y)")
 
         # Variable rop Expression
-        self.assertEqual(str(x < e_y), "(x < y)")
-        self.assertEqual(str(x <= e_y), "(x <= y)")
-        self.assertEqual(str(x > e_y), "(x > y)")
-        self.assertEqual(str(x >= e_y), "(x >= y)")
-        self.assertEqual(str(x == e_y), "(x = y)")
-        self.assertEqual(str(x != e_y), "(x != y)")
+        self.assertEqual((x < e_y).to_string(), "(x < y)")
+        self.assertEqual((x <= e_y).to_string(), "(x <= y)")
+        self.assertEqual((x > e_y).to_string(), "(x > y)")
+        self.assertEqual((x >= e_y).to_string(), "(x >= y)")
+        self.assertEqual((x == e_y).to_string(), "(x = y)")
+        self.assertEqual((x != e_y).to_string(), "(x != y)")
 
         # Expression rop float
-        self.assertEqual(str(e_x < 1), "(x < 1)")
-        self.assertEqual(str(e_x <= 1), "(x <= 1)")
-        self.assertEqual(str(e_x > 1), "(x > 1)")
-        self.assertEqual(str(e_x >= 1), "(x >= 1)")
-        self.assertEqual(str(e_x == 1), "(x = 1)")
-        self.assertEqual(str(e_x != 1), "(x != 1)")
+        self.assertEqual((e_x < 1).to_string(), "(x < 1)")
+        self.assertEqual((e_x <= 1).to_string(), "(x <= 1)")
+        self.assertEqual((e_x > 1).to_string(), "(x > 1)")
+        self.assertEqual((e_x >= 1).to_string(), "(x >= 1)")
+        self.assertEqual((e_x == 1).to_string(), "(x = 1)")
+        self.assertEqual((e_x != 1).to_string(), "(x != 1)")
 
         # float rop Expression
-        self.assertEqual(str(1 < e_y), "(y > 1)")
-        self.assertEqual(str(1 <= e_y), "(y >= 1)")
-        self.assertEqual(str(1 > e_y), "(y < 1)")
-        self.assertEqual(str(1 >= e_y), "(y <= 1)")
-        self.assertEqual(str(1 == e_y), "(y = 1)")
-        self.assertEqual(str(1 != e_y), "(y != 1)")
+        self.assertEqual((1 < e_y).to_string(), "(y > 1)")
+        self.assertEqual((1 <= e_y).to_string(), "(y >= 1)")
+        self.assertEqual((1 > e_y).to_string(), "(y < 1)")
+        self.assertEqual((1 >= e_y).to_string(), "(y <= 1)")
+        self.assertEqual((1 == e_y).to_string(), "(y = 1)")
+        self.assertEqual((1 != e_y).to_string(), "(y != 1)")
 
     def test_functions_with_float(self):
         v_x = 1.0
@@ -358,47 +359,47 @@ class TestSymbolicExpression(unittest.TestCase):
           v_x if v_x > v_y else v_y)
 
     def test_functions_with_variable(self):
-        self.assertEqual(str(sym.abs(x)), "abs(x)")
-        self.assertEqual(str(sym.exp(x)), "exp(x)")
-        self.assertEqual(str(sym.sqrt(x)), "sqrt(x)")
-        self.assertEqual(str(sym.pow(x, y)), "pow(x, y)")
-        self.assertEqual(str(sym.sin(x)), "sin(x)")
-        self.assertEqual(str(sym.cos(x)), "cos(x)")
-        self.assertEqual(str(sym.tan(x)), "tan(x)")
-        self.assertEqual(str(sym.asin(x)), "asin(x)")
-        self.assertEqual(str(sym.acos(x)), "acos(x)")
-        self.assertEqual(str(sym.atan(x)), "atan(x)")
-        self.assertEqual(str(sym.atan2(x, y)), "atan2(x, y)")
-        self.assertEqual(str(sym.sinh(x)), "sinh(x)")
-        self.assertEqual(str(sym.cosh(x)), "cosh(x)")
-        self.assertEqual(str(sym.tanh(x)), "tanh(x)")
-        self.assertEqual(str(sym.min(x, y)), "min(x, y)")
-        self.assertEqual(str(sym.max(x, y)), "max(x, y)")
-        self.assertEqual(str(sym.ceil(x)), "ceil(x)")
-        self.assertEqual(str(sym.floor(x)), "floor(x)")
-        self.assertEqual(str(sym.if_then_else(x > y, x, y)),
+        self.assertEqual(sym.abs(x).to_string(), "abs(x)")
+        self.assertEqual(sym.exp(x).to_string(), "exp(x)")
+        self.assertEqual(sym.sqrt(x).to_string(), "sqrt(x)")
+        self.assertEqual(sym.pow(x, y).to_string(), "pow(x, y)")
+        self.assertEqual(sym.sin(x).to_string(), "sin(x)")
+        self.assertEqual(sym.cos(x).to_string(), "cos(x)")
+        self.assertEqual(sym.tan(x).to_string(), "tan(x)")
+        self.assertEqual(sym.asin(x).to_string(), "asin(x)")
+        self.assertEqual(sym.acos(x).to_string(), "acos(x)")
+        self.assertEqual(sym.atan(x).to_string(), "atan(x)")
+        self.assertEqual(sym.atan2(x, y).to_string(), "atan2(x, y)")
+        self.assertEqual(sym.sinh(x).to_string(), "sinh(x)")
+        self.assertEqual(sym.cosh(x).to_string(), "cosh(x)")
+        self.assertEqual(sym.tanh(x).to_string(), "tanh(x)")
+        self.assertEqual(sym.min(x, y).to_string(), "min(x, y)")
+        self.assertEqual(sym.max(x, y).to_string(), "max(x, y)")
+        self.assertEqual(sym.ceil(x).to_string(), "ceil(x)")
+        self.assertEqual(sym.floor(x).to_string(), "floor(x)")
+        self.assertEqual(sym.if_then_else(x > y, x, y).to_string(),
                          "(if (x > y) then x else y)")
 
     def test_functions_with_expression(self):
-        self.assertEqual(str(sym.abs(e_x)), "abs(x)")
-        self.assertEqual(str(sym.exp(e_x)), "exp(x)")
-        self.assertEqual(str(sym.sqrt(e_x)), "sqrt(x)")
-        self.assertEqual(str(sym.pow(e_x, e_y)), "pow(x, y)")
-        self.assertEqual(str(sym.sin(e_x)), "sin(x)")
-        self.assertEqual(str(sym.cos(e_x)), "cos(x)")
-        self.assertEqual(str(sym.tan(e_x)), "tan(x)")
-        self.assertEqual(str(sym.asin(e_x)), "asin(x)")
-        self.assertEqual(str(sym.acos(e_x)), "acos(x)")
-        self.assertEqual(str(sym.atan(e_x)), "atan(x)")
-        self.assertEqual(str(sym.atan2(e_x, e_y)), "atan2(x, y)")
-        self.assertEqual(str(sym.sinh(e_x)), "sinh(x)")
-        self.assertEqual(str(sym.cosh(e_x)), "cosh(x)")
-        self.assertEqual(str(sym.tanh(e_x)), "tanh(x)")
-        self.assertEqual(str(sym.min(e_x, e_y)), "min(x, y)")
-        self.assertEqual(str(sym.max(e_x, e_y)), "max(x, y)")
-        self.assertEqual(str(sym.ceil(e_x)), "ceil(x)")
-        self.assertEqual(str(sym.floor(e_x)), "floor(x)")
-        self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
+        self.assertEqual(sym.abs(e_x).to_string(), "abs(x)")
+        self.assertEqual(sym.exp(e_x).to_string(), "exp(x)")
+        self.assertEqual(sym.sqrt(e_x).to_string(), "sqrt(x)")
+        self.assertEqual(sym.pow(e_x, e_y).to_string(), "pow(x, y)")
+        self.assertEqual(sym.sin(e_x).to_string(), "sin(x)")
+        self.assertEqual(sym.cos(e_x).to_string(), "cos(x)")
+        self.assertEqual(sym.tan(e_x).to_string(), "tan(x)")
+        self.assertEqual(sym.asin(e_x).to_string(), "asin(x)")
+        self.assertEqual(sym.acos(e_x).to_string(), "acos(x)")
+        self.assertEqual(sym.atan(e_x).to_string(), "atan(x)")
+        self.assertEqual(sym.atan2(e_x, e_y).to_string(), "atan2(x, y)")
+        self.assertEqual(sym.sinh(e_x).to_string(), "sinh(x)")
+        self.assertEqual(sym.cosh(e_x).to_string(), "cosh(x)")
+        self.assertEqual(sym.tanh(e_x).to_string(), "tanh(x)")
+        self.assertEqual(sym.min(e_x, e_y).to_string(), "min(x, y)")
+        self.assertEqual(sym.max(e_x, e_y).to_string(), "max(x, y)")
+        self.assertEqual(sym.ceil(e_x).to_string(), "ceil(x)")
+        self.assertEqual(sym.floor(e_x).to_string(), "floor(x)")
+        self.assertEqual(sym.if_then_else(e_x > e_y, e_x, e_y).to_string(),
                          "(if (x > y) then x else y)")
 
     def test_non_method_jacobian(self):
@@ -446,7 +447,7 @@ class TestSymbolicFormula(unittest.TestCase):
     def test_to_string(self):
         f = x > y
         self.assertEqual(f.to_string(), "(x > y)")
-        self.assertEqual("{}".format(f), "(x > y)")
+        self.assertEqual("{}".format(f), '<Formula "(x > y)">')
 
     def test_equality_inequality_hash(self):
         f1 = x > y
@@ -508,9 +509,9 @@ class TestSymbolicMonomial(unittest.TestCase):
 
     def test_str(self):
         m1 = sym.Monomial(x, 2)
-        self.assertEqual(str(m1), "x^2")
+        self.assertEqual(str(m1), '<Monomial "x^2">')
         m2 = m1 * sym.Monomial(y)
-        self.assertEqual(str(m2), "x^2 * y")
+        self.assertEqual(str(m2), '<Monomial "x^2 * y">')
 
     def test_multiplication1(self):
         m1 = sym.Monomial(x, 2)
@@ -562,7 +563,7 @@ class TestSymbolicMonomial(unittest.TestCase):
     def test_to_expression(self):
         m = sym.Monomial(x, 3) * sym.Monomial(y)  # m = x³y
         e = m.ToExpression()
-        self.assertEqual(str(e), "(pow(x, 3) * y)")
+        self.assertEqual(str(e), '<Expression "(pow(x, 3) * y)">')
 
     def test_get_variables(self):
         m = sym.Monomial(x, 3) * sym.Monomial(y)  # m = x³y
@@ -634,7 +635,7 @@ class TestSymbolicPolynomial(unittest.TestCase):
 
     def test_repr(self):
         p = sym.Polynomial()
-        self.assertEqual(str(p), "0")
+        self.assertEqual(str(p), '<Polynomial "0">')
 
     def test_addition(self):
         p = sym.Polynomial()
