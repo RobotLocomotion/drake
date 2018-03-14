@@ -97,5 +97,14 @@ string drake::NiceTypeName::Canonicalize(const string& demangled) {
   return canonical;
 }
 
+string drake::NiceTypeName::RemoveNamespaces(const string& canonical) {
+  // Remove everything up to the last "::" that isn't part of a template
+  // argument. If the string ends with "::" we just return the last segment
+  // with the "::" following it. "(?=pattern)" is non-consuming lookahead.
+  static const never_destroyed<std::regex> regex{"^[^<>]*::(?=.)"};
+
+  return std::regex_replace(canonical, regex.access(), "");
+}
+
 }  // namespace drake
 

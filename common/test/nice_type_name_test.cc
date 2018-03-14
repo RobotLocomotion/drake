@@ -182,5 +182,20 @@ GTEST_TEST(NiceTypeNameTest, Expressions) {
             NiceTypeName::Get(base_uptr));
 }
 
+GTEST_TEST(NiceTypeNameTest, RemoveNamespaces) {
+  EXPECT_EQ(NiceTypeName::RemoveNamespaces("JustAPlainType"), "JustAPlainType");
+  EXPECT_EQ(
+      NiceTypeName::RemoveNamespaces("drake::nice_type_name_test::Derived"),
+      "Derived");
+  EXPECT_EQ(NiceTypeName::RemoveNamespaces(
+                "std::vector<std::string,std::allocator<std::string>>"),
+            "vector<std::string,std::allocator<std::string>>");
+
+  // Check behavior in odd cases.
+  EXPECT_EQ(NiceTypeName::RemoveNamespaces(""), "");
+  EXPECT_EQ(NiceTypeName::RemoveNamespaces("::"), "::");
+  EXPECT_EQ(NiceTypeName::RemoveNamespaces("blah::blah2::"), "blah2::");
+}
+
 }  // namespace
 }  // namespace drake
