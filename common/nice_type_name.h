@@ -81,6 +81,15 @@ class NiceTypeName {
   any platform. **/
   static std::string Canonicalize(const std::string& demangled_name);
 
+  /** Given a canonical type name that may include leading namespaces, remove
+  those namespaces. So for example `drake::systems::MyThing<internal::type>`
+  becomes `MyThing<internal::type>`. If the last segment ends in `::` we return
+  the original string unprocessed. Note that this is just string processing --
+  a segment that looks like a namespace textually will be treated like one, even
+  if it is really a class. So `drake::MyClass::Impl` will be reduced to `Impl`
+  while `drake::MyClass<T>::Impl` is reduced to `MyClass<T>::Impl`. */
+  static std::string RemoveNamespaces(const std::string& canonical_name);
+
  private:
   // No instances of this class should be created.
   NiceTypeName() = delete;
