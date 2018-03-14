@@ -50,8 +50,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
 
   typedef Polynomial<T> PolynomialType;
-  typedef drake::MatrixX<PolynomialType> PolynomialMatrix;
-  typedef drake::MatrixX<T> CoefficientMatrix;
+  typedef MatrixX<PolynomialType> PolynomialMatrix;
+  typedef MatrixX<T> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
   // default constructor; just leaves segment_times and polynomials empty
@@ -94,6 +94,17 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const std::vector<CoefficientMatrix>& knots);
 
   /**
+   * Eigen version of ZeroOrderHold(breaks, knots) where each column of knots
+   * is used as a knot point, and
+   *   knots.cols() == breaks.size().
+   *
+   * @overloads PiecewisePolynomial<T> ZeroOrderHold(breaks, knots)
+   */
+  static PiecewisePolynomial<T> ZeroOrderHold(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& knots);
+
+  /**
    * Constructs a piecewise linear PiecewisePolynomial.
    *
    * @throws std::runtime_error if
@@ -102,12 +113,20 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *    `knots` has inconsistent dimensions,
    *    `breaks` has length smaller than 2.
    */
-  // TODO(russt): Improve Eigen support.  Should have a version that
-  // accepts Eigen vectors instead of std::vector, and the
-  // CoefficientMatrix can be generalized to an Eigen::Ref.
   static PiecewisePolynomial<T> FirstOrderHold(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots);
+
+  /**
+   * Eigen version of FirstOrderHold(breaks, knots) where each column of knots
+   * is used as a knot point, and
+   *   knots.cols() == breaks.size().
+   *
+   * @overloads PiecewisePolynomial<T> FirstOrderHold(breaks, knots)
+   */
+  static PiecewisePolynomial<T> FirstOrderHold(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& knots);
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
@@ -151,6 +170,20 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       bool zero_end_point_derivatives = false);
 
   /**
+   * Eigen version of Pchip(breaks, knots, zero_end_point_derivatives)
+   * where each column of knots is used as a knot point, and
+   *   knots.cols() == breaks.size().
+   *
+   * @overloads PiecewisePolynomial<T> Pchip(breaks, knots,
+   * zero_end_point_derivatives)
+   */
+  static PiecewisePolynomial<T> Pchip(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& knots,
+      bool zero_end_point_derivatives = false);
+
+
+  /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
    * The PiecewisePolynomial is constructed such that the interior segments
    * have the same value, first and second derivatives at `breaks`.
@@ -172,6 +205,20 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const CoefficientMatrix& knot_dot_end);
 
   /**
+   * Eigen version of Cubic(breaks, knots, knots_dot_start, knots_dot_end)
+   * where each column of knots is used as a knot point, and
+   *   knots.cols() == breaks.size().
+   *
+   * @overloads PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot_start,
+   *   knots_dot_end)
+   */
+  static PiecewisePolynomial<T> Cubic(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& knots,
+      const Eigen::Ref<const VectorX<T>>& knots_dot_start,
+      const Eigen::Ref<const VectorX<T>>& knots_dot_end);
+
+  /**
    * Constructs a third order PiecewisePolynomial from `breaks`, `knots` and
    * `knots`dot.
    * Each segment is fully specified by @knots and @knot_dot at both ends.
@@ -189,6 +236,18 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots,
       const std::vector<CoefficientMatrix>& knots_dot);
+
+  /**
+   * Eigen version of Cubic(breaks, knots, knots_dot) where each column of knots
+   * and knots_dot are used as the knot point/derivative.
+   *   knots.cols() == knots_dot.cols() == breaks.size().
+   *
+   * @overloads PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot)
+   */
+  static PiecewisePolynomial<T> Cubic(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& knots,
+      const Eigen::Ref<const MatrixX<T>>& knots_dot);
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
@@ -214,6 +273,17 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   static PiecewisePolynomial<T> Cubic(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots);
+
+  /**
+   * Eigen version of Cubic(breaks, knots) where each column of knots is used
+   * as a knot point and  knots.cols() == breaks.size().
+   *
+   * @overloads PiecewisePolynomial<T> Cubic(breaks, knots)
+   */
+  static PiecewisePolynomial<T> Cubic(
+      const Eigen::Ref<const Eigen::VectorXd>& breaks,
+      const Eigen::Ref<const MatrixX<T>>& knots);
+
 
   /// Takes the derivative of this PiecewisePolynomial.
   /**
@@ -382,7 +452,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   static int SetupCubicSplineInteriorCoeffsLinearSystem(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots, int row, int col,
-      drake::MatrixX<T>* A, drake::VectorX<T>* b);
+      MatrixX<T>* A, VectorX<T>* b);
 
   // Computes the first derivative at the end point using a non-centered,
   // shape-preserving three-point formulae.
