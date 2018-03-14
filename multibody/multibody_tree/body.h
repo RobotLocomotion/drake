@@ -175,11 +175,6 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return topology_.body_node;
   }
 
-  /// (Advanced) Returns the topology information for this body. Most users
-  /// should not need to call this method since BodyTopology is an internal
-  /// bookkeeping detail.
-  const BodyTopology& get_topology() const { return topology_; }
-
   /// Returns the mass of this body stored in `context`.
   virtual T get_mass(const MultibodyTreeContext<T> &context) const = 0;
 

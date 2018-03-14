@@ -40,7 +40,6 @@ drake_cc_binary(
         ":make_bouncing_ball_plant",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
-        "//systems/analysis:fixed_step_implicit_euler_integrator",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",

@@ -12,7 +12,6 @@
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/fixed_step_implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -48,7 +47,6 @@ using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
 using drake::systems::ImplicitEulerIntegrator;
-using drake::systems::FixedStepImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
 using drake::systems::rendering::PoseBundleToDrawMessage;
@@ -171,8 +169,8 @@ int do_main() {
   systems::IntegratorBase<double>* integrator{nullptr};
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
-        simulator.reset_integrator<FixedStepImplicitEulerIntegrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
+        simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
+            *diagram, &simulator.get_mutable_context());
   } else if (FLAGS_integration_scheme == "runge_kutta3") {
     integrator =
         simulator.reset_integrator<RungeKutta3Integrator<double>>(
