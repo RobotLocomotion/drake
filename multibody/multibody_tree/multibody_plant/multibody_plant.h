@@ -478,6 +478,27 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<T>* geometry_system);
 
+  /// Registers geometry in a GeometrySystem with a given geometry::Shape to be
+  /// used for the contact modeling of a given `body`.
+  /// More than one geometry can be registered with a body, in which is case
+  /// the body's contact geometry is the union of all registerd geometries with
+  /// it.
+  ///
+  /// @param[in] body
+  ///   The body for which geometry is being registered.
+  /// @param[in] X_BG
+  ///   The fixed pose of the geometry frame G in the body frame B.
+  /// @param[in] shape
+  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
+  ///   geometry::Cylinder, etc.
+  /// @param[out] geometry_system
+  ///   A valid non nullptr to a GeometrySystem on which geometry will get
+  ///   registered.
+  /// @throws std::exception if `geometry_system` is the nullptr.
+  /// @throws std::exception if called post-finalize.
+  /// @throws std::exception if `geometry_system` does not correspond to the
+  /// same instance with which RegisterAsSourceForGeometrySystem() was called.
+  // TODO(amcastro-tri): Augment API to specify friction coefficients.
   void RegisterCollisionGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
@@ -491,24 +512,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return static_cast<int>(geometry_id_to_visual_index_.size());
   }
 
-  bool is_visual_geometry(geometry::GeometryId id) const {
-    return geometry_id_to_visual_index_.find(id) !=
-        geometry_id_to_visual_index_.end();
-  }
-
-  int get_visual_geometry_index(geometry::GeometryId id) const {
-    auto it = geometry_id_to_visual_index_.find(id);
-    if (it != geometry_id_to_visual_index_.end()) {
-      return it->second;
-    }
-    return -1;
-  }
-
-  bool is_collision_geometry(geometry::GeometryId id) const {
-    return geometry_id_to_collision_index_.find(id) !=
-        geometry_id_to_collision_index_.end();
-  }
-
+  /// Returns the number of geometries registered for contact modeling.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
   int get_num_collision_geometries() const {
     return geometry_id_to_collision_index_.size();
   }
@@ -529,18 +536,25 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return source_id_;
   }
 
+  /// Returns a constant reference to the input port used to perform geometric
+  /// queries on a GeometrySystem. See GeometrySystem::get_query_output_port().
+  /// @throws std::exception if this system was not registered with a
+  /// GeometrySystem.
+  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
 
   /// Returns the output port of frame id's used to communicate poses to a
   /// GeometrySystem.
-  /// @throws if this system was not registered with a GeometrySystem.
-  /// @throws if called pre-finalize. See Finalize().
+  /// @throws std::exception if this system was not registered with a
+  /// GeometrySystem.
+  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_ids_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// GeometrySystem.
-  /// @throws if this system did not register geometry with a GeometrySystem.
-  /// @throws if called pre-finalize. See Finalize().
+  /// @throws std::exception if this system was not registered with a
+  /// GeometrySystem.
+  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @}
 
@@ -749,6 +763,12 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
 
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
+
+  // Helper to evaluate if a GeometryId corresponds to a collision model.
+  bool is_collision_geometry(geometry::GeometryId id) const {
+    return geometry_id_to_collision_index_.find(id) !=
+        geometry_id_to_collision_index_.end();
+  }
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;

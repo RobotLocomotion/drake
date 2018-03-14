@@ -549,6 +549,7 @@ template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
 const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
@@ -556,12 +557,15 @@ template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
 template <typename T>
 const systems::InputPortDescriptor<T>&
 MultibodyPlant<T>::get_geometry_query_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_input_port(geometry_query_port_);
 }
 
