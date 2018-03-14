@@ -535,7 +535,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// actuators. See AddJointActuator() and num_actuators().
   const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
 
-  const systems::OutputPort<T>& get_state_output_port() const;
+  /// Returns a constant reference to the output port for the full continuous
+  /// state of the model.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_continuous_state_output_port() const;
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
@@ -668,10 +671,8 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
         body_index_to_frame_id_.end();
   }
 
-  systems::State<T> AllocateStateOutput(
-      const systems::Context<T>& context) const;
-
-  void CopyStateOut(
+  // Calc method for the continuous state vector output port.
+  void CopyContinuousStateOut(
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
   // Helper method to declare output ports used by this plant to communicate
@@ -730,11 +731,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // calls are performed on the same instance of GS.
   const geometry::GeometrySystem<T>* geometry_system_{nullptr};
 
-  // Actuation input port:
+  // Input/Output port indexes:
   int actuation_port_{-1};
-
-  //
-  int state_output_port_{-1};
+  int continuous_state_output_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

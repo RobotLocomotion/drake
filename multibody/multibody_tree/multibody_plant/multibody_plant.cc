@@ -259,23 +259,14 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
             systems::BasicVector<T>(num_actuated_dofs())).get_index();
   }
 
-#if 0
-  state_output_port_ =
-      this->DeclareAbstractOutputPort(
-          &MultibodyPlant::AllocateStateOutput,
-          &MultibodyPlant::CopyStateOut).get_index();
-#endif
-
-  state_output_port_ =
+  continuous_state_output_port_ =
       this->DeclareVectorOutputPort(
           BasicVector<T>(num_multibody_states()),
-          &MultibodyPlant::CopyStateOut).get_index();
-
-  // TODO(amcastro-tri): Declare output port for the state.
+          &MultibodyPlant::CopyContinuousStateOut).get_index();
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyStateOut(
+void MultibodyPlant<T>::CopyContinuousStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   state_vector->SetFrom(context.get_continuous_state_vector());
@@ -290,9 +281,10 @@ MultibodyPlant<T>::get_actuation_input_port() const {
 }
 
 template <typename T>
-const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_continuous_state_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(state_output_port_);
+  return this->get_output_port(continuous_state_output_port_);
 }
 
 template<typename T>
