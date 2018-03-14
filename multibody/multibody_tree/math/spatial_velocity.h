@@ -13,9 +13,6 @@ namespace multibody {
 // Forward declaration to define dot product with a spatial force.
 template <typename T> class SpatialForce;
 
-// Forward declaration to define dot product with a spatial momentum.
-template <typename T> class SpatialMomentum;
-
 /// This class is used to represent a _spatial velocity_ (also called a
 /// _twist_) that combines rotational (angular) and translational
 /// (linear) velocity components. Spatial velocities are 6-element
@@ -213,24 +210,6 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///          `this` spatial velocity is measured in an inertial frame I,
   ///          which cannot be enforced by this class.
   T dot(const SpatialForce<T>& F_Q_E) const;
-
-  /// Given `this` spatial velocity `V_NBp_E` of rigid body B frame shifted to
-  /// point P, measured in an inertial (or Newtonian) frame N and, expressed in
-  /// a frame E this method computes the dot product with the spatial momentum
-  /// `H_NBp_E` of rigid body B, about point P and, expressed in the same frame
-  /// E.
-  /// This dot-product is twice the kinetic energy `K_NB` of body B in reference
-  /// frame N. The kinetic energy `K_NB` is independent of the about-point P and
-  /// so is this dot product. Therefore it is always true that:
-  /// <pre>
-  ///   K_NB = 1/2 (H_NBp⋅V_NBp) = 1/2 (H_NBcm⋅V_NBcm)
-  /// </pre>
-  /// where `H_NBcm` is the spatial momentum about the center of mass of body B
-  /// and `V_NBcm` is the spatial velocity of frame B shifted to its center of
-  /// mass. The above is true due to how spatial momentum and velocity shift
-  /// when changing point P, see SpatialMomentum::Shift() and
-  /// SpatialVelocity::Shift().
-  T dot(const SpatialMomentum<T>& V_NBp_E) const;
 };
 
 /// Performs the addition of two spatial velocities. This operator

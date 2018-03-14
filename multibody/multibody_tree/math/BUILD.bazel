@@ -56,24 +56,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "spatial_momentum",
-    srcs = ["spatial_momentum.cc"],
-    hdrs = ["spatial_momentum.h"],
-    deps = [
-        ":spatial_vector",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "spatial_algebra",
     srcs = [],
     hdrs = ["spatial_algebra.h"],
     deps = [
         ":spatial_acceleration",
         ":spatial_force",
-        ":spatial_momentum",
         ":spatial_vector",
         ":spatial_velocity",
         "//drake/common:essential",

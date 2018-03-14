@@ -117,20 +117,6 @@ namespace multibody_plant {
 /// conditions should not change.
 /// @endcond
 ///
-/// @cond
-/// TODO(amcastro-tri): Add next section in future PR's as funcionality lands.
-/// @section computational_queries Performing computational queries
-/// Once a %MultibodyPlant model of a multibody system is created, a number of
-/// computational queries can be performed on a given Context:
-/// - CalcMassMatrix(): Computes the mass matrix of the system in `O(n²)`.
-/// - CalcInverseDynamics(): `O(n)` Newton-Euler recursive algorithm.
-/// - CalcForwardDynamics(): `O(n)` Articulated Body Inertia algorithm.
-/// - CalcPointsGeometricJacobianExpressedInWorld(): Jacobian matrix linearly
-///   relating a set of points' translational velocities to the system's
-///   generalized velocities.
-/// - Others...
-/// @endcond
-///
 /// <h3> References </h3>
 /// - [Featherstone 2008] Featherstone, R., 2008.
 ///     Rigid body dynamics algorithms. Springer.
@@ -602,8 +588,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     model_->SetDefaultState(context, state);
   }
 
-  T CalcTotalEnergy(const systems::Context<T>& context) const;
-
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -640,13 +624,6 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
-
-  // Computes the total potential energy in the system. This potential energy
-  // includes the contribution of all force elements in the model that
-  // have a potential energy function.
-  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
-
-  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
 
   // Helper method to declare cache entries to be allocated in the context.
   void DeclareCacheEntries();
