@@ -43,7 +43,7 @@ class MathematicalProgramResultReportingInterface {
    * @param value The value of the decision variable.
    */
   virtual void ReportDecisionVariableValue(const symbolic::Variable& var,
-                                        double value) = 0;
+                                           double value) = 0;
   /**
    * Reports the values of all decision variables, such that the value of
    * \p decision_variables_(i) is \p values(i).
