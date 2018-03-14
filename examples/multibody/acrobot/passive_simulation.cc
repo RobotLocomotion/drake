@@ -131,12 +131,6 @@ int do_main() {
       diagram->GetMutableSubsystemContext(acrobot, diagram_context.get());
 
   // Set initial angles. Velocities are left to the default zero values.
-  const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.shoulder_joint_name());
-  const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.elbow_joint_name());
   shoulder.set_angle(&acrobot_context, 1.0);
   elbow.set_angle(&acrobot_context, 1.0);
 
