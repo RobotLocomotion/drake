@@ -28,9 +28,9 @@ int DoMain() {
     xyz[2] *= z_size;
     pts.col(i) = xyz;
   }
-  rm.publishPointCloud(pts, {"test_pc"}, {{1, 0, 0}});
-  rm.publishLine(pts, {"test_line"});
-  rm.publishArrow(Eigen::Vector3d(0, 1, 0), Eigen::Vector3d(0, 1, 3),
+  rm.PublishPointCloud(pts, {"test_pc"}, {{1, 0, 0}});
+  rm.PublishLine(pts, {"test_line"});
+  rm.PublishArrow(Eigen::Vector3d(0, 1, 0), Eigen::Vector3d(0, 1, 3),
                   {"test_arrow"}, 0.01, 0.05, 0.05);
 
   const Eigen::Vector4d color_gray(0.7, 0.7, 0.7, 0.9);
@@ -39,25 +39,25 @@ int DoMain() {
   Eigen::Affine3d tf_box;
   tf_box.setIdentity();
   tf_box.translation()[1] = y_size * 2;
-  rm.publishGeometry(DrakeShapes::Box({x_size, y_size, z_size}), tf_box,
+  rm.PublishGeometry(DrakeShapes::Box({x_size, y_size, z_size}), tf_box,
                      color_gray, {"test_box"});
 
   Eigen::Affine3d tf_sphere;
   tf_sphere.setIdentity();
   tf_sphere.translation()[1] = y_size * 2 * 2;
-  rm.publishGeometry(DrakeShapes::Sphere(y_size), tf_sphere, color_gray,
+  rm.PublishGeometry(DrakeShapes::Sphere(y_size), tf_sphere, color_gray,
                      {"test_sphere"});
 
   Eigen::Affine3d tf_cylinder;
   tf_cylinder.setIdentity();
   tf_cylinder.translation()[1] = y_size * 2 * 3;
-  rm.publishGeometry(DrakeShapes::Cylinder(y_size, z_size), tf_cylinder,
+  rm.PublishGeometry(DrakeShapes::Cylinder(y_size, z_size), tf_cylinder,
                      color_gray, {"test_cylinder"});
 
   Eigen::Affine3d tf_capsule;
   tf_capsule.setIdentity();
   tf_capsule.translation()[1] = y_size * 2 * 4;
-  rm.publishGeometry(DrakeShapes::Capsule(y_size, z_size), tf_capsule,
+  rm.PublishGeometry(DrakeShapes::Capsule(y_size, z_size), tf_capsule,
                      color_gray, {"test_capsule"});
 
   RigidBodyTree<double> tree;
@@ -68,7 +68,7 @@ int DoMain() {
   Eigen::Affine3d tf_robot;
   tf_robot.setIdentity();
   tf_robot.translation()[1] = -y_size * 2;
-  rm.publishRigidBodyTree(tree, Eigen::VectorXd::Zero(tree.get_num_positions()),
+  rm.PublishRigidBodyTree(tree, Eigen::VectorXd::Zero(tree.get_num_positions()),
                           color_blue, {"test_robot"});
 
   return 0;

@@ -24,7 +24,7 @@ static double getUnixTime(void) {
 
 RemoteTreeViewerWrapper::RemoteTreeViewerWrapper() {}
 
-void RemoteTreeViewerWrapper::publishPointCloud(
+void RemoteTreeViewerWrapper::PublishPointCloud(
     const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path,
     const std::vector<std::vector<double>>& color) {
   long long int now = getUnixTime() * 1000 * 1000;
@@ -67,7 +67,7 @@ void RemoteTreeViewerWrapper::publishPointCloud(
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
 
-void RemoteTreeViewerWrapper::publishLine(
+void RemoteTreeViewerWrapper::PublishLine(
     const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path) {
   long long int now = getUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
@@ -102,7 +102,7 @@ void RemoteTreeViewerWrapper::publishLine(
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
 
-void RemoteTreeViewerWrapper::publishArrow(
+void RemoteTreeViewerWrapper::PublishArrow(
     const Eigen::Ref<const Eigen::Vector3d>& start,
     const Eigen::Ref<const Eigen::Vector3d>& end,
     const std::vector<std::string>& path, double radius, double head_radius,
@@ -144,7 +144,7 @@ void RemoteTreeViewerWrapper::publishArrow(
   // Use channel 0 for remote viewer communications.
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
-void RemoteTreeViewerWrapper::publishRawMesh(
+void RemoteTreeViewerWrapper::PublishRawMesh(
     const Eigen::Matrix3Xd& verts, const std::vector<Eigen::Vector3i>& tris,
     const std::vector<std::string>& path) {
   long long int now = getUnixTime() * 1000 * 1000;
@@ -183,7 +183,7 @@ void RemoteTreeViewerWrapper::publishRawMesh(
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
 
-void RemoteTreeViewerWrapper::publishRigidBodyTree(
+void RemoteTreeViewerWrapper::PublishRigidBodyTree(
     const RigidBodyTree<double>& tree, const Eigen::VectorXd& q,
     const Eigen::Vector4d& color, const std::vector<std::string>& path,
     bool visual) {
@@ -194,7 +194,7 @@ void RemoteTreeViewerWrapper::publishRigidBodyTree(
         if (element.hasGeometry()) {
           std::vector<std::string> full_name = path;
           full_name.push_back(body->get_name());
-          publishGeometry(element.getGeometry(),
+          PublishGeometry(element.getGeometry(),
                           tree.relativeTransform(kinematics_cache, 0,
                                                  body->get_body_index()) *
                               element.getLocalTransform(),
@@ -207,7 +207,7 @@ void RemoteTreeViewerWrapper::publishRigidBodyTree(
         if (element->hasGeometry()) {
           std::vector<std::string> full_name = path;
           full_name.push_back(body->get_name());
-          publishGeometry(element->getGeometry(),
+          PublishGeometry(element->getGeometry(),
                           tree.relativeTransform(kinematics_cache, 0,
                                                  body->get_body_index()) *
                               element->getLocalTransform(),
@@ -218,11 +218,11 @@ void RemoteTreeViewerWrapper::publishRigidBodyTree(
   }
 }
 
-void RemoteTreeViewerWrapper::publishRigidBody(
+void RemoteTreeViewerWrapper::PublishRigidBody(
     const RigidBody<double>& body, const Eigen::Affine3d& tf,
     const Eigen::Vector4d& color, const std::vector<std::string>& path) {}
 
-void RemoteTreeViewerWrapper::publishGeometry(
+void RemoteTreeViewerWrapper::PublishGeometry(
     const DrakeShapes::Geometry& geometry, const Eigen::Affine3d& tf,
     const Eigen::Vector4d& color, const std::vector<std::string>& path) {
   long long int now = getUnixTime() * 1000 * 1000;
@@ -231,7 +231,7 @@ void RemoteTreeViewerWrapper::publishGeometry(
   if (geometry.getShape() == DrakeShapes::MESH_POINTS) {
     Eigen::Matrix3Xd pts;
     geometry.getPoints(pts);
-    publishPointCloud(pts, path);
+    PublishPointCloud(pts, path);
   }
 
   // Extract std::vector-formatted translation and quaternion from the tf
