@@ -31,6 +31,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "remote_tree_viewer_wrapper",
+    visibility = ["//visibility:public"],
     srcs = [
         "remote_tree_viewer_wrapper.cc",
         "json.hpp",

@@ -28,8 +28,10 @@ int DoMain() {
     xyz[2] *= z_size;
     pts.col(i) = xyz;
   }
-  rm.publishPointCloud(pts, {"test_pc"});
+  rm.publishPointCloud(pts, {"test_pc"}, {{1, 0, 0}});
   rm.publishLine(pts, {"test_line"});
+  rm.publishArrow(Eigen::Vector3d(0, 1, 0), Eigen::Vector3d(0, 1, 3),
+                  {"test_arrow"}, 0.01, 0.05, 0.05);
 
   const Eigen::Vector4d color_gray(0.7, 0.7, 0.7, 0.9);
   const Eigen::Vector4d color_blue(0.3, 0.3, 1.0, 0.9);

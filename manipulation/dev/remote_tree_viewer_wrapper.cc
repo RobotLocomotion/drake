@@ -102,6 +102,48 @@ void RemoteTreeViewerWrapper::publishLine(
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
 
+void RemoteTreeViewerWrapper::publishArrow(
+    const Eigen::Ref<const Eigen::Vector3d>& start,
+    const Eigen::Ref<const Eigen::Vector3d>& end,
+    const std::vector<std::string>& path, double radius, double head_radius,
+    double head_length, const Eigen::Ref<const Eigen::Vector4d>& color) {
+  long long int now = getUnixTime() * 1000 * 1000;
+  // Format a JSON string for this pointcloud
+  json j = {{"timestamp", now},
+            {
+                "setgeometry",
+                {{{"path", path},
+                  {"geometry",
+                   {
+                       {"type", "line"},
+                       {"points", std::array<std::array<double, 3>, 2>()},
+                       {"color", std::array<double, 4>()},
+                   }}}},
+            },
+            {"settransform", json({})},
+            {"delete", json({})}};
+
+  // Push in the points and colors.
+  j["setgeometry"][0]["geometry"]["points"][0] = {start(0), start(1), start(2)};
+  j["setgeometry"][0]["geometry"]["points"][1] = {end(0), end(1), end(2)};
+  j["setgeometry"][0]["geometry"]["radius"] = radius;
+  j["setgeometry"][0]["geometry"]["end_head"] = true;
+  j["setgeometry"][0]["geometry"]["head_radius"] = head_radius;
+  j["setgeometry"][0]["geometry"]["head_length"] = head_length;
+  j["setgeometry"][0]["geometry"]["color"] = {color(0), color(1), color(2),
+                                              color(3)};
+
+  auto msg = lcmt_viewer2_comms();
+  msg.utime = now;
+  msg.format = "treeviewer_json";
+  msg.format_version_major = 1;
+  msg.format_version_minor = 0;
+  msg.data.clear();
+  for (auto& c : j.dump()) msg.data.push_back(c);
+  msg.num_bytes = j.dump().size();
+  // Use channel 0 for remote viewer communications.
+  lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
+}
 void RemoteTreeViewerWrapper::publishRawMesh(
     const Eigen::Matrix3Xd& verts, const std::vector<Eigen::Vector3i>& tris,
     const std::vector<std::string>& path) {
