@@ -67,6 +67,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_binary(
+    name = "remote_tree_viewer_wrapper_demo",
+    srcs = ["test/remote_tree_viewer_wrapper_demo.cc"],
+    deps = [
+        ":remote_tree_viewer_wrapper",
+        "//common:find_resource",
+        "//multibody/parsers:parsers",
+    ],
+)
+
 install_data()
 
 add_lint_tests()
