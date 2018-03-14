@@ -96,6 +96,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>())
       .def("size", &Variables::size)
       .def("empty", &Variables::empty)
+      .def("__repr__", &Variables::to_string)
       .def("to_string", &Variables::to_string)
       .def("__hash__",
            [](const Variables& self) { return std::hash<Variables>{}(self); })
@@ -234,7 +235,33 @@ PYBIND11_MODULE(_symbolic_py, m) {
     return Jacobian(f, vars);
   });
 
-  py::class_<Formula>(m, "Formula").def("__repr__", &Formula::to_string);
+  py::class_<Formula>(m, "Formula")
+      .def("GetFreeVariables", &Formula::GetFreeVariables)
+      .def("EqualTo", &Formula::EqualTo)
+      .def("Substitute",
+           [](const Formula& self, const Variable& var, const Expression& e) {
+             return self.Substitute(var, e);
+           })
+      .def("Substitute",
+           [](const Formula& self, const Variable& var1, const Variable& var2) {
+             return self.Substitute(var1, var2);
+           })
+      .def("Substitute", [](const Formula& self, const Variable& var,
+                            const double c) { return self.Substitute(var, c); })
+      .def("Substitute",
+           [](const Formula& self, const Substitution& s) {
+             return self.Substitute(s);
+           })
+      .def("to_string", &Formula::to_string)
+      .def("__repr__", &Formula::to_string)
+      .def("__eq__", [](const Formula& self,
+                        const Formula& other) { return self.EqualTo(other); })
+      .def("__ne__", [](const Formula& self,
+                        const Formula& other) { return !self.EqualTo(other); })
+      .def("__hash__",
+           [](const Formula& self) { return std::hash<Formula>{}(self); })
+      .def_static("True", &Formula::True)
+      .def_static("False", &Formula::False);
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.

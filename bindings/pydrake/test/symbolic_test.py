@@ -125,6 +125,11 @@ class TestSymbolicVariables(unittest.TestCase):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.size(), 3)
 
+    def test_to_string(self):
+        vars = sym.Variables([x, y, z])
+        self.assertEqual(vars.to_string(), "{x, y, z}")
+        self.assertEqual("{}".format(vars), "{x, y, z}")
+
     def test_insert1(self):
         vars = sym.Variables()
         vars.insert(x)
@@ -420,6 +425,45 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_differentiate(self):
         e = x * x
         self.assertEqual(e.Differentiate(x), 2 * x)
+
+
+class TestSymbolicFormula(unittest.TestCase):
+    def test_get_free_variables(self):
+        f = x > y
+        self.assertEqual(f.GetFreeVariables(), sym.Variables([x, y]))
+
+    def test_substitute_with_pair(self):
+        f = x > y
+        self.assertEqual(f.Substitute(y, y + 5), x > y + 5)
+        self.assertEqual(f.Substitute(y, z), x > z)
+        self.assertEqual(f.Substitute(y, 3), x > 3)
+
+    def test_substitute_with_dict(self):
+        f = x + y > z
+        self.assertEqual(f.Substitute({x: x + 2, y:  y + 3}),
+                         x + y + 5 > z)
+
+    def test_to_string(self):
+        f = x > y
+        self.assertEqual(f.to_string(), "(x > y)")
+        self.assertEqual("{}".format(f), "(x > y)")
+
+    def test_equality_inequality_hash(self):
+        f1 = x > y
+        f2 = x > y
+        f3 = x >= y
+        self.assertTrue(f1.EqualTo(f2))
+        self.assertEqual(hash(f1), hash(f2))
+        self.assertTrue(f1 == f2)
+        self.assertFalse(f1.EqualTo(f3))
+        self.assertNotEqual(hash(f1), hash(f3))
+        self.assertTrue(f1 != f3)
+
+    def test_static_true_false(self):
+        tt = sym.Formula.True()
+        ff = sym.Formula.False()
+        self.assertEqual(x == x, tt)
+        self.assertEqual(x != x, ff)
 
 
 class TestSymbolicMonomial(unittest.TestCase):
