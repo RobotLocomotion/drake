@@ -18,7 +18,6 @@
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
-#include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
@@ -599,11 +598,6 @@ class MultibodyTree {
     return *actuator;
   }
 
-  // This method adds a QuaternionFreeMobilizer to all bodies that do not have
-  // a mobilizer. The mobilizer is between each body and the world. To be called
-  // at Finalize().
-  void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
-
   /// If `body` is a free body in the model, this method will return the
   /// QuaternionFloatingMobilizer for the body. If the body is not free but it
   /// is connected to the model by a Joint, this method will throw an exception.
@@ -638,12 +632,6 @@ class MultibodyTree {
   /// Returns the number of actuators in the model.
   /// @see AddJointActuator().
   int num_actuators() const {
-    return static_cast<int>(owned_actuators_.size());
-  }
-
-  /// Returns the number of actuators in the model.
-  /// @see AddJointActuator().
-  int get_num_actuators() const {
     return static_cast<int>(owned_actuators_.size());
   }
 
@@ -1766,6 +1754,11 @@ class MultibodyTree {
   // This method will throw a std::logic_error if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
+
+  // Helper method to add a QuaternionFreeMobilizer to all bodies that do not
+  // have a mobilizer. The mobilizer is between each body and the world. To be
+  // called at Finalize().
+  void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
   // Helper method for throwing an exception if Finalize() has not been called
   // on this MultibodyTree model. The invoking method should pass it's name so

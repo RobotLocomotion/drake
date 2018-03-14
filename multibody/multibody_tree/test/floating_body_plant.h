@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
