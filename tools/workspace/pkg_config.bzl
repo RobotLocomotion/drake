@@ -128,9 +128,13 @@ def setup_pkg_config_repository(repository_ctx):
     # We process in reserve order to keep our loop index unchanged by a pop.
     for cflag in cflags:
         if cflag.startswith("-I"):
-            absolute_includes += [cflag[2:]]
+            value = cflag[2:]
+            if value not in absolute_includes:
+                absolute_includes.append(value)
         elif cflag.startswith("-D"):
-            defines += [cflag[2:]]
+            value = cflag[2:]
+            if value not in defines:
+                defines.append(value)
         elif cflag in [
                 "-frounding-math",
                 "-ffloat-store",

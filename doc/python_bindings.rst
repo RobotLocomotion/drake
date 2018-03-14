@@ -63,18 +63,12 @@ To check this:
 
 .. note::
 
-    If you are using macOS, you must ensure that you are using the
-    ``python2.7`` executable located at
-    ``/usr/local/opt/python@2/bin/python2.7`` to run these scripts. For
-    convenience, you may modify your ``PATH`` by adding the following to
-    ``~/.bash_profile`` ::
+    If you are using macOS, you must ensure that you are using the ``python2``
+    executable to run these scripts.
 
-        export PATH="/usr/local/opt/python@2/bin:$PATH"
-
-    Once you have done this, if you would like to use ``jupyter`` then be sure
-    to install it via ``pip2.7 install jupyter`` (*not*
-    ``brew install jupyter``) to ensure that it uses the correct
-    ``PYTHONPATH``.
+    If you would like to use ``jupyter``, then be sure to install it via
+    ``pip2 install jupyter`` (*not* ``brew install jupyter``) to ensure that it
+    uses the correct ``PYTHONPATH``.
 
     ..
         Developers: Ensure this is synchronized with the steps in
