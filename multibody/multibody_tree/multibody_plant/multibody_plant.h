@@ -15,7 +15,6 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -479,39 +478,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<T>* geometry_system);
 
-  void RegisterCollisionGeometry(
-      const Body<T>& body,
-      const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::GeometrySystem<T>* geometry_system);
-
   /// Returns the number of geometries registered for visualization.
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   int get_num_visual_geometries() const {
     return static_cast<int>(geometry_id_to_visual_index_.size());
-  }
-
-  bool is_visual_geometry(geometry::GeometryId id) const {
-    return geometry_id_to_visual_index_.find(id) !=
-        geometry_id_to_visual_index_.end();
-  }
-
-  int get_visual_geometry_index(geometry::GeometryId id) const {
-    auto it = geometry_id_to_visual_index_.find(id);
-    if (it != geometry_id_to_visual_index_.end()) {
-      return it->second;
-    }
-    return -1;
-  }
-
-  bool is_collision_geometry(geometry::GeometryId id) const {
-    return geometry_id_to_collision_index_.find(id) !=
-        geometry_id_to_collision_index_.end();
-  }
-
-  int get_num_collision_geometries() const {
-    return geometry_id_to_collision_index_.size();
   }
 
   /// @name Retrieving ports for communication with a GeometrySystem.
@@ -529,8 +501,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   optional<geometry::SourceId> get_source_id() const {
     return source_id_;
   }
-
-  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
 
   /// Returns the output port of frame id's used to communicate poses to a
   /// GeometrySystem.
@@ -579,8 +549,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// actuators. See AddJointActuator() and num_actuators().
   const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
 
-  const systems::OutputPort<T>& get_state_output_port() const;
-
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
@@ -621,14 +589,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::logic_error if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
-
-  void set_contact_penalty_stiffness(double k) {
-    contact_penalty_stiffness_ = k;
-  }
-
-  void set_contact_penalty_damping(double d) {
-    contact_penalty_damping_ = d;
-  }
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
@@ -676,12 +636,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
-
-  void CalcAndAddContactForcesByPenaltyMethod(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -736,12 +690,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
         body_index_to_frame_id_.end();
   }
 
-  systems::State<T> AllocateStateOutput(
-      const systems::Context<T>& context) const;
-
-  void CopyStateOut(
-      const systems::Context<T>& context, systems::BasicVector<T>* state) const;
-
   // Helper method to declare output ports used by this plant to communicate
   // with a GeometrySystem.
   void DeclareGeometrySystemPorts();
@@ -769,18 +717,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
-
-  // Map provided at construction that tells how bodies (referenced by name),
-  // map to frame ids.
-  std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
-
-
-  std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
-
-  // Rigid contact constraint parameters.
-  double contact_penalty_stiffness_{0};
-  double contact_penalty_damping_{0};
-
   // Iteraion order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
@@ -801,7 +737,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
 
   // Port handles for geometry:
-  int geometry_query_port_{-1};
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
 
@@ -813,9 +748,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Actuation input port:
   int actuation_port_{-1};
-
-  //
-  int state_output_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

@@ -1,6 +1,5 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
-//#include <Eigen/SparseCholesky>
 #include <memory>
 #include <vector>
 
@@ -30,9 +29,6 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::GeometrySystem;
-using geometry::PenetrationAsPointPair;
-using geometry::SourceId;
-using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::State;
 
@@ -46,12 +42,6 @@ using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
 using systems::InputPortDescriptor;
-
-#include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-#define PRINT_VARn(a) (void)a;
-#define PRINT_VAR(a) (void)a;
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant() :
@@ -113,32 +103,6 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
   }
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
-}
-
-template<typename T>
-void MultibodyPlant<T>::RegisterCollisionGeometry(
-    const Body<T>& body,
-    const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    geometry::GeometrySystem<T>* geometry_system) {
-  DRAKE_MBP_THROW_IF_FINALIZED();
-  DRAKE_THROW_UNLESS(geometry_system != nullptr);
-  DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  if (geometry_system != geometry_system_) {
-    throw std::logic_error(
-        "Geometry registration calls must be performed on the SAME instance of "
-        "GeometrySystem used on the first call to "
-        "RegisterAsSourceForGeometrySystem()");
-  }
-  GeometryId id;
-  // TODO(amcastro-tri): Consider doing this after finalize so that we can
-  // register anchored geometry on ANY body welded to the world.
-  if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, geometry_system);
-  } else {
-    id = RegisterGeometry(body, X_BG, shape, geometry_system);
-  }
-  const int collision_index = geometry_id_to_collision_index_.size();
-  geometry_id_to_collision_index_[id] = collision_index;
 }
 
 template<typename T>
@@ -250,8 +214,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
-  PRINT_VARn(M);
-
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
   // as output arrays. This means that both the array of applied body forces and
   // the array of applied generalized forces get overwritten on output. This is
@@ -263,11 +225,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
 
-  // Compute contact forces on each body by penalty method.
-  if (get_num_collision_geometries() > 0) {
-    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
-  }
-
   model_->CalcInverseDynamics(
       context, pc, vc, vdot,
       F_BBo_W_array, tau_array,
@@ -275,21 +232,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
       &tau_array);
 
-  PRINT_VARn(tau_array.transpose());
-
   vdot = M.ldlt().solve(-tau_array);
-
-  // Compile time error: "The SparseCholesky module has nothing to offer in MPL2 only mode"
-  // You need to include: #include <Eigen/SparseCholesky>
-#if 0
-  const auto& Ms = M.sparseView();
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<T>, Eigen::Lower> solver;
-  solver.compute(Ms);
-  DRAKE_DEMAND(solver.info() == Eigen::Success);
-  vdot = solver.solve(-tau_array);
-#endif
-
-  PRINT_VARn(vdot.transpose());
 
   auto v = x.bottomRows(nv);
   VectorX<T> xdot(this->num_multibody_states());
@@ -297,119 +240,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   model_->MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
   derivatives->SetFromVector(xdot);
-}
-
-template<>
-void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
-    const systems::Context<double>& context,
-    const PositionKinematicsCache<double>& pc, const VelocityKinematicsCache<double>& vc,
-    std::vector<SpatialForce<double>>* F_BBo_W_array) const {
-  if (get_num_collision_geometries() == 0) return;
-
-  const geometry::QueryObject<double>& query_object =
-      this->EvalAbstractInput(context, geometry_query_port_)
-          ->template GetValue<geometry::QueryObject<double>>();
-  (void) query_object;
-
-  std::vector<PenetrationAsPointPair<double>> penetrations =
-      query_object.ComputePointPairPenetration();
-  PRINT_VAR(penetrations.size());
-  if (penetrations.size() > 0) {
-    for (const auto& penetration : penetrations) {
-      const GeometryId geometryA_id = penetration.id_A;
-      const GeometryId geometryB_id = penetration.id_B;
-
-      // TODO(amcastro-tri): Request GeometrySystem to do this filtering for us
-      // when that capability lands.
-      if (!is_collision_geometry(geometryA_id) ||
-          !is_collision_geometry(geometryB_id))
-        continue;
-
-      // NOTE: for now assume this MBP is the only system connected to GS.
-      BodyIndex bodyA_index = geometry_id_to_body_index_.at(penetration.id_A);
-      BodyIndex bodyB_index = geometry_id_to_body_index_.at(penetration.id_B);
-
-      const Body<double>& bodyA = model().get_body(bodyA_index);
-      const Body<double>& bodyB = model().get_body(bodyB_index);
-
-      BodyNodeIndex bodyA_node_index =
-          model().get_body(bodyA_index).node_index();
-      BodyNodeIndex bodyB_node_index =
-          model().get_body(bodyB_index).node_index();
-
-      // Penetration depth, > 0 during penetration.
-      const double& x = penetration.depth;
-      const Vector3<double>& nhat_BA_W = penetration.nhat_BA_W;
-      const Vector3<double>& p_WCa = penetration.p_WCa;
-      const Vector3<double>& p_WCb = penetration.p_WCb;
-
-      // Contact point C.
-      const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
-
-      // Contact point position on body A.
-      const Vector3<double>& p_WAo = pc.get_X_WB(bodyA_node_index).translation();
-      const Vector3<double>& p_CoAo_W = p_WAo - p_WC;
-
-      // Contact point position on body B.
-      const Vector3<double>& p_WBo = pc.get_X_WB(bodyB_node_index).translation();
-      const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
-
-      // Separation velocity, > 0  if objects separate.
-      const Vector3<double> v_WAc =
-          vc.get_V_WB(bodyA_node_index).Shift(-p_CoAo_W).translational();
-      const Vector3<double> v_WBc =
-          vc.get_V_WB(bodyB_node_index).Shift(-p_CoBo_W).translational();
-      const Vector3<double> v_AcBc_W = v_WBc - v_WAc;
-
-      // xdot = vn > 0 ==> they are getting closer.
-      const double vn = v_AcBc_W.dot(nhat_BA_W);
-
-
-      // Penetration rate, > 0 implies increasing penetration.
-      //const T& xdot = -state.zdot();
-      //fC = k_ * x * (1.0 + d_ * xdot);
-
-      // Magnitude of the normal force on body A at contact point C.
-      const double& k = contact_penalty_stiffness_;
-      const double& d = contact_penalty_damping_;
-      const double fn_AC = k * x * (1.0 + d * vn); // xdot = -vn
-
-      PRINT_VAR(bodyA.name());
-      PRINT_VAR(bodyB.name());
-      PRINT_VAR(x);
-      PRINT_VAR(nhat_BA_W.transpose());
-      PRINT_VAR(v_AcBc_W.transpose());
-      PRINT_VAR(vn);
-      PRINT_VAR(p_WCa.transpose());
-      PRINT_VAR(p_WCb.transpose());
-      PRINT_VAR(p_WC.transpose());
-
-      if (fn_AC <= 0) continue;  // Continue with next point.
-
-      // Spatial force on body A at C, expressed in the world frame W.
-      const SpatialForce<double> F_AC_W(Vector3<double>::Zero(), fn_AC * nhat_BA_W);
-
-      if (bodyA_index != world_index()) {
-        // Spatial force on body A at Ao, expressed in W.
-        const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-        F_BBo_W_array->at(bodyA_index) += F_AAo_W;
-      }
-
-      if (bodyB_index != world_index()) {
-        // Spatial force on body B at Bo, expressed in W.
-        const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-        F_BBo_W_array->at(bodyB_index) += F_BBo_W;
-      }
-    }
-  }  // if (penetrations.size() > 0)
-}
-
-template<typename T>
-void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc, const VelocityKinematicsCache<T>& vc,
-    std::vector<SpatialForce<T>>* F_BBo_W_array) const {
-  DRAKE_ABORT_MSG("Only <double> is supported.");
 }
 
 template<typename T>
@@ -462,26 +292,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
             systems::BasicVector<T>(num_actuated_dofs())).get_index();
   }
 
-#if 0
-  state_output_port_ =
-      this->DeclareAbstractOutputPort(
-          &MultibodyPlant::AllocateStateOutput,
-          &MultibodyPlant::CopyStateOut).get_index();
-#endif
-
-  state_output_port_ =
-      this->DeclareVectorOutputPort(
-          BasicVector<T>(num_multibody_states()),
-          &MultibodyPlant::CopyStateOut).get_index();
-
   // TODO(amcastro-tri): Declare output port for the state.
-}
-
-template <typename T>
-void MultibodyPlant<T>::CopyStateOut(
-    const Context<T>& context, BasicVector<T>* state_vector) const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  state_vector->SetFrom(context.get_continuous_state_vector());
 }
 
 template <typename T>
@@ -492,15 +303,8 @@ MultibodyPlant<T>::get_actuation_input_port() const {
   return systems::System<T>::get_input_port(actuation_port_);
 }
 
-template <typename T>
-const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_output_port(state_output_port_);
-}
-
 template<typename T>
 void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
-  geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
   geometry_id_port_ =
       this->DeclareAbstractOutputPort(
           &MultibodyPlant::AllocateFrameIdOutput,
@@ -583,12 +387,6 @@ const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_output_port(geometry_pose_port_);
-}
-
-template <typename T>
-const systems::InputPortDescriptor<T>&
-MultibodyPlant<T>::get_geometry_query_input_port() const {
-  return systems::System<T>::get_input_port(geometry_query_port_);
 }
 
 template<typename T>
