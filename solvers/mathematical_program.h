@@ -302,7 +302,7 @@ struct assert_if_is_constraint {
  * The former overrides all the abstract virtual functions of the latter.
  */
 class MathematicalProgram
-    : private MathematicalProgramResultReportingInterface {
+    : private internal::MathematicalProgramResultReportingInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
   using VarType = symbolic::Variable::Type;

@@ -5,6 +5,7 @@
 
 namespace drake {
 namespace solvers {
+namespace internal {
 /**
  * Implementations of MathematicalProgramSolverInterface use this
  * MathematicalProgramResultReportingInterface to report the optimization
@@ -62,5 +63,6 @@ class MathematicalProgramResultReportingInterface {
       const Eigen::Ref<const VectorXDecisionVariable>& variables,
       const Eigen::Ref<const Eigen::VectorXd>& values) = 0;
 };
+}  // namespace internal
 }  // namespace solvers
 }  // namespace drake
