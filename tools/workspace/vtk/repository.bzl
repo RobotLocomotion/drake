@@ -8,7 +8,7 @@ unpacked. On macOS, VTK must be installed from the robotlocomotion/director tap
 (https://git.io/vN6ft) using Homebrew.
 
 Archive naming convention:
-    vtk-v<version>-qt-<qt version>-xenial-<arch>
+    vtk-v<version>-qt-<qt version>-xenial-<arch>[-<rebuild>]
 
 Build configuration:
     BUILD_TESTING=OFF
@@ -16,7 +16,6 @@ Build configuration:
     CMAKE_BUILD_TYPE=Release
     Module_vtkGUISupportQt=ON
     VTK_LEGACY_REMOVE=ON
-    VTK_OPENGL_HAS_OSMESA=ON
     VTK_QT_VERSION=5
     VTK_USE_SYSTEM_EXPAT=ON
     VTK_USE_SYSTEM_FREETYPE=ON
@@ -52,7 +51,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "8.1"
+VTK_MAJOR_MINOR_VERSION = "8.0"
 
 def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
                     header_only = False, linkopts = []):
@@ -111,8 +110,8 @@ def _impl(repository_ctx):
             VTK_MAJOR_MINOR_VERSION), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-v8.1.0-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "768faf503dc8b0ec78bbf159498d83ca36a0c5d2eefa8a981905feeca9eb6f0c"  # noqa
+            archive = "vtk-v8.0.1-qt-5.5.1-xenial-x86_64-1.tar.gz"
+            sha256 = "d6cb1b8cfe8d8b9abe400c39267954cbba5b12d4ff550d42a1fe695d3e01dc40"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -127,6 +126,8 @@ def _impl(repository_ctx):
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
+    file_content = "# -*- python -*-"
+
     # Note that we only create library targets for enough of VTK to support
     # those used directly or indirectly by Drake.
 
@@ -137,7 +138,7 @@ def _impl(repository_ctx):
     #   VTK/IO/XML/module.cmake
     #   VTK/IO/XMLParser/module.cmake
 
-    file_content = _vtk_cc_library(
+    file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkCommonColor",
         deps = [

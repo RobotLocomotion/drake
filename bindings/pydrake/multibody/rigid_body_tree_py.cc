@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
@@ -11,6 +12,8 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+
+using std::make_unique;
 
 namespace drake {
 namespace pydrake {
@@ -36,38 +39,37 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   // and `parsers` do not form a dependency cycle.
   py::class_<RigidBodyTree<double>>(m, "RigidBodyTree")
     .def(py::init<>())
-    .def("__init__",
-         [](RigidBodyTree<double> &instance,
-            const std::string& urdf_filename,
+    .def(py::init(
+         [](const std::string& urdf_filename,
             const PackageMap& pmap,
             FloatingBaseType floating_base_type
             ) {
-          new (&instance) RigidBodyTree<double>();
+          auto instance = make_unique<RigidBodyTree<double>>();
           drake::parsers::urdf::
             AddModelInstanceFromUrdfFileSearchingInRosPackages(
             urdf_filename,
             pmap,
             floating_base_type,
             nullptr,
-            &instance);
-        },
+            instance.get());
+          return instance;
+        }),
         py::arg("urdf_filename"),
         py::arg("package_map"),
         py::arg("floating_base_type") = FloatingBaseType::kRollPitchYaw)
-    .def("__init__",
-         [](RigidBodyTree<double> &instance,
-            const std::string& urdf_filename,
+    .def(py::init(
+         [](const std::string& urdf_filename,
             FloatingBaseType floating_base_type
             ) {
-          new (&instance) RigidBodyTree<double>();
+          auto instance = make_unique<RigidBodyTree<double>>();
           drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-            urdf_filename, floating_base_type, &instance);
-        },
+            urdf_filename, floating_base_type, instance.get());
+          return instance;
+        }),
         py::arg("urdf_filename"),
         py::arg("floating_base_type") = FloatingBaseType::kRollPitchYaw)
-    .def("__init__",
-         [](RigidBodyTree<double> &instance,
-            const std::string& urdf_filename,
+    .def(py::init(
+         [](const std::string& urdf_filename,
             const std::string& joint_type) {
             // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
             FloatingBaseType floating_base_type;
@@ -83,10 +85,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             } else {
               throw(std::invalid_argument("Joint type not supported"));
             }
-            new (&instance) RigidBodyTree<double>();
+            auto instance = make_unique<RigidBodyTree<double>>();
             drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-                urdf_filename, floating_base_type, &instance);
-        },
+                urdf_filename, floating_base_type, instance.get());
+            return instance;
+        }),
         py::arg("urdf_filename"), py::arg("joint_type") = "ROLLPITCHYAW"
       )
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {

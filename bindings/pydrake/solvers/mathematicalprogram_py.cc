@@ -76,9 +76,14 @@ auto RegisterBinding(py::handle* pscope,
   auto binding_cls =
       py::class_<B>(scope, pyname.c_str())
           .def("evaluator", &B::evaluator)
-          .def("constraint",
-               &B::evaluator)  // TODO(Eric.Cousineau) deprecate this function.
+          .def("constraint", &B::evaluator)
           .def("variables", &B::variables);
+  // Deprecate `constraint`.
+  py::module deprecation = py::module::import("pydrake.util.deprecation");
+  py::object deprecated = deprecation.attr("deprecated");
+  binding_cls.attr("constraint") =
+      deprecated("`constraint` is deprecated; please use `evaluator` instead.")
+      (binding_cls.attr("constraint"));
   // Register overloads for MathematicalProgram class
   prog_cls
     .def("EvalBindingAtSolution",
@@ -239,6 +244,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .def("AddQuadraticCost",
            static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
                const Expression&)>(&MathematicalProgram::AddQuadraticCost))
+      .def("AddQuadraticErrorCost",
+           overload_cast_explicit<Binding<QuadraticCost>,
+               const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&>(
+               &MathematicalProgram::AddQuadraticErrorCost),
+           py::arg("Q"), py::arg("x_desired"), py::arg("vars"))
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (

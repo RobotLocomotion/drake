@@ -41,7 +41,7 @@ drake_pybind_library(
     cc_srcs = ["common_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//bindings/pydrake/util:module_shim_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = [
         "__init__.py",
@@ -68,6 +68,16 @@ drake_pybind_library(
         "autodiffutils.py",
         "forwarddiff.py",
     ],
+)
+
+drake_pybind_library(
+    name = "automotive_py",
+    cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_so_name = "automotive",
+    cc_srcs = ["automotive_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 drake_py_library(
@@ -112,6 +122,7 @@ drake_pybind_library(
     name = "symbolic_py",
     cc_deps = [
         ":symbolic_types_pybind",
+        "@fmt",
     ],
     cc_srcs = ["symbolic_py.cc"],
     package_info = PACKAGE_INFO,
@@ -133,6 +144,7 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
+    ":automotive_py",
     ":common_py",
     ":lcm_py",
     ":math_py",
@@ -244,6 +256,18 @@ drake_py_unittest(
     name = "trajectories_test",
     size = "small",
     deps = [":trajectories_py"],
+)
+
+drake_py_unittest(
+    name = "automotive_test",
+    size = "small",
+    deps = [
+        ":automotive_py",
+        "//bindings/pydrake/maliput:api_py",
+        "//bindings/pydrake/maliput:dragway_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/systems",
+    ],
 )
 
 drake_py_unittest(

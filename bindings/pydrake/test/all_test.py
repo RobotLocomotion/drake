@@ -43,6 +43,8 @@ class TestAll(unittest.TestCase):
         expected_symbols = (
             # autodiffutils
             "AutoDiffXd",
+            # automotive
+            "SimpleCar",
             # common
             "AddResourceSearchPath",
             # forwarddiff
@@ -52,6 +54,11 @@ class TestAll(unittest.TestCase):
             # symbolic
             "Variable",
             "Expression",
+            # maliput
+            # - api
+            "RoadGeometry",
+            # - dragway
+            "create_dragway",
             # multibody
             # - parsers
             "PackageMap",
