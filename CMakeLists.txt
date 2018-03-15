@@ -14,8 +14,7 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
-# TODO(jamiesnape): Update to 0.10.1 after #8016 merges.
-find_package(Bazel 0.9.0 MODULE REQUIRED)
+find_package(Bazel 0.10.1 MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
 get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
