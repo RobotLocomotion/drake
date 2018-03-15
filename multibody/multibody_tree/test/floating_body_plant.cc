@@ -60,8 +60,8 @@ void AxiallySymmetricFreeBodyPlant<T>::SetDefaultState(
   DRAKE_DEMAND(state != nullptr);
   MultibodyPlant<T>::SetDefaultState(context, state);
   const SpatialVelocity<T> V_WB(
-      get_default_initial_angular_velocity().cast<T>(),
-      get_default_initial_translational_velocity().cast<T>());
+      get_default_initial_angular_velocity().template cast<T>(),
+      get_default_initial_translational_velocity().template cast<T>());
   this->model().SetFreeBodySpatialVelocityOrThrow(body(), V_WB, context, state);
 }
 
