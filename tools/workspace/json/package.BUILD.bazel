@@ -13,11 +13,8 @@ package(
 
 cc_library(
     name = "json",
-    hdrs = glob([
-        "single_include/nlohmann/json.hpp",
-    ]),
-    defines = ["JSON_HEADER_ONLY=1"],
-    includes = ["."],
+    hdrs = ["single_include/nlohmann/json.hpp"],
+    includes = ["single_include"],
 )
 
 CMAKE_PACKAGE = "json"
@@ -38,4 +35,5 @@ install(
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE.MIT"],
     deps = [":install_cmake_config"],
+    hdr_strip_prefix = ["single_include"],
 )

@@ -1,6 +1,5 @@
-#include "drake/manipulation/dev/remote_tree_viewer_wrapper.h"
-
 #include "drake/common/find_resource.h"
+#include "drake/manipulation/dev/remote_tree_viewer_wrapper.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -8,7 +7,8 @@ namespace drake {
 namespace manipulation {
 namespace dev {
 static inline double randrange(double min, double max) {
-  return (static_cast<double>(rand()) / RAND_MAX) * (max - min) + min;
+  unsigned int seed = 1;
+  return (static_cast<double>(rand_r(&seed)) / RAND_MAX) * (max - min) + min;
 }
 
 int DoMain() {

@@ -1,12 +1,13 @@
 #include "drake/manipulation/dev/remote_tree_viewer_wrapper.h"
 
 #include <unistd.h>
+
 #include <iostream>
 #include <random>
 #include <stdexcept>
 #include <string>
 
-#include "json/nlohmann/json.hpp"
+#include "nlohmann/json.hpp"
 
 #include "drake/lcmt_viewer2_comms.hpp"
 
@@ -28,7 +29,7 @@ RemoteTreeViewerWrapper::RemoteTreeViewerWrapper() {}
 void RemoteTreeViewerWrapper::PublishPointCloud(
     const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path,
     const std::vector<std::vector<double>>& color) {
-  long long int now = getUnixTime() * 1000 * 1000;
+  int64_t now = getUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
   json j = {
       {"timestamp", now},
@@ -70,7 +71,7 @@ void RemoteTreeViewerWrapper::PublishPointCloud(
 
 void RemoteTreeViewerWrapper::PublishLine(
     const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path) {
-  long long int now = getUnixTime() * 1000 * 1000;
+  int64_t now = getUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
   json j = {{"timestamp", now},
             {
@@ -108,7 +109,7 @@ void RemoteTreeViewerWrapper::PublishArrow(
     const Eigen::Ref<const Eigen::Vector3d>& end,
     const std::vector<std::string>& path, double radius, double head_radius,
     double head_length, const Eigen::Ref<const Eigen::Vector4d>& color) {
-  long long int now = getUnixTime() * 1000 * 1000;
+  int64_t now = getUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
   json j = {{"timestamp", now},
             {
@@ -148,7 +149,7 @@ void RemoteTreeViewerWrapper::PublishArrow(
 void RemoteTreeViewerWrapper::PublishRawMesh(
     const Eigen::Matrix3Xd& verts, const std::vector<Eigen::Vector3i>& tris,
     const std::vector<std::string>& path) {
-  long long int now = getUnixTime() * 1000 * 1000;
+  int64_t now = getUnixTime() * 1000 * 1000;
   json j = {{"timestamp", now},
             {
                 "setgeometry",
@@ -226,7 +227,7 @@ void RemoteTreeViewerWrapper::PublishRigidBody(
 void RemoteTreeViewerWrapper::PublishGeometry(
     const DrakeShapes::Geometry& geometry, const Eigen::Affine3d& tf,
     const Eigen::Vector4d& color, const std::vector<std::string>& path) {
-  long long int now = getUnixTime() * 1000 * 1000;
+  int64_t now = getUnixTime() * 1000 * 1000;
 
   // Short-circuit to points if the passed geometry is a set of mesh points
   if (geometry.getShape() == DrakeShapes::MESH_POINTS) {

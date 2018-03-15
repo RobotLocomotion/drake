@@ -31,13 +31,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "remote_tree_viewer_wrapper",
-    visibility = ["//visibility:public"],
     srcs = [
         "remote_tree_viewer_wrapper.cc",
     ],
     hdrs = [
         "remote_tree_viewer_wrapper.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//lcm",
@@ -74,7 +74,7 @@ drake_cc_binary(
     deps = [
         ":remote_tree_viewer_wrapper",
         "//common:find_resource",
-        "//multibody/parsers:parsers",
+        "//multibody/parsers",
     ],
 )
 
