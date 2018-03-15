@@ -250,3 +250,18 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
+
+    def test_pycost_and_pyconstraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+
+        def cost(x):
+            return (x[0]-1.)*(x[0]-1.)
+
+        def constraint(x):
+            return x
+
+        prog.AddCost(cost, x)
+        prog.AddConstraint(constraint, [0.], [2.], x)
+        prog.Solve()
+        self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)
