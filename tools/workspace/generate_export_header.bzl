@@ -40,7 +40,7 @@ def _generate_export_header_impl(ctx):
         "#endif",
     ]
 
-    ctx.file_action(output = output, content = "\n".join(content) + "\n")
+    ctx.actions.write(output = output, content = "\n".join(content) + "\n")
 
 # Defines the rule to generate_export_header.
 _generate_export_header_gen = rule(
