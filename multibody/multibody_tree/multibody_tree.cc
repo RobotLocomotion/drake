@@ -236,6 +236,45 @@ void MultibodyTree<T>::SetDefaultState(
 }
 
 template <typename T>
+void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
+    const Body<T>& body, const Isometry3<T>& X_WB,
+    systems::Context<T>* context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  SetFreeBodyPoseOrThrow(body, X_WB, *context, &context->get_mutable_state());
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
+    const Body<T>& body, const SpatialVelocity<T>& V_WB,
+    systems::Context<T>* context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  SetFreeBodySpatialVelocityOrThrow(
+      body, V_WB, *context, &context->get_mutable_state());
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
+    const Body<T>& body, const Isometry3<T>& X_WB,
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  mobilizer.set_quaternion(context, Quaternion<T>(X_WB.linear()), state);
+  mobilizer.set_position(context, X_WB.translation(), state);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
+    const Body<T>& body, const SpatialVelocity<T>& V_WB,
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  mobilizer.set_angular_velocity(context, V_WB.rotational(), state);
+  mobilizer.set_translational_velocity(context, V_WB.translational(), state);
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcAllBodyPosesInWorld(
     const systems::Context<T>& context,
     std::vector<Isometry3<T>>* X_WB) const {

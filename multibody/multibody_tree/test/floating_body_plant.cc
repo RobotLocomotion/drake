@@ -27,7 +27,6 @@ AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
   this->template AddForceElement<UniformGravityFieldElement>(
       -g_ * Vector3<double>::UnitZ());
   this->Finalize();
-  mobilizer_ = &this->model().GetFreeBodyMobilizerOrThrow(*body_);
 
   // Some sanity checks. By default MultibodyPlant uses a quternion free
   // mobilizer for bodies that are not connected by any joint.
@@ -60,22 +59,22 @@ void AxiallySymmetricFreeBodyPlant<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   MultibodyPlant<T>::SetDefaultState(context, state);
-  mobilizer_->set_angular_velocity(
-      context, get_default_initial_angular_velocity(), state);
-  mobilizer_->set_translational_velocity(
-      context, get_default_initial_translational_velocity(), state);
+  const SpatialVelocity<T> V_WB(
+      get_default_initial_angular_velocity().cast<T>(),
+      get_default_initial_translational_velocity().cast<T>());
+  this->model().SetFreeBodySpatialVelocityOrThrow(body(), V_WB, context, state);
 }
 
 template<typename T>
 Vector3<T> AxiallySymmetricFreeBodyPlant<T>::get_angular_velocity(
     const systems::Context<T>& context) const {
-  return mobilizer_->get_angular_velocity(context);
+  return CalcSpatialVelocityInWorldFrame(context).rotational();
 }
 
 template<typename T>
 Vector3<T> AxiallySymmetricFreeBodyPlant<T>::get_translational_velocity(
     const systems::Context<T>& context) const {
-  return mobilizer_->get_translational_velocity(context);
+  return CalcSpatialVelocityInWorldFrame(context).translational();
 }
 
 template<typename T>

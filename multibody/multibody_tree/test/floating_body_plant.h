@@ -86,9 +86,8 @@ class AxiallySymmetricFreeBodyPlant final :
   /// SetDefaultState(). Currently a non-zero value.
   static Vector3<double> get_default_initial_translational_velocity();
 
-  const QuaternionFloatingMobilizer<T>& mobilizer() const {
-    return *mobilizer_;
-  }
+  /// Returns a constant reference to the free body model of this plant.
+  const RigidBody<T>& body() const { return *body_; }
 
  private:
   double mass_{0};
@@ -96,7 +95,6 @@ class AxiallySymmetricFreeBodyPlant final :
   double J_{0};
   double g_{0};
   const RigidBody<T>* body_{nullptr};
-  const QuaternionFloatingMobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace test
