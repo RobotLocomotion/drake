@@ -48,6 +48,7 @@ DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
 using Eigen::AngleAxisd;
+using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::GeometrySystem;
@@ -140,28 +141,16 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  auto set_position = [&](
-      const std::string& body_name, const Vector3d& p_WB) {
-    const QuaternionFloatingMobilizer<double>& ball_mobilizer =
-        model.GetFreeBodyMobilizerOrThrow(plant.GetBodyByName(body_name));
-    ball_mobilizer.set_position(&plant_context, p_WB);
-  };
-
-  auto set_orientation = [&](
-      const std::string& body_name, const Matrix3d& R_WB) {
-    const QuaternionFloatingMobilizer<double>& ball_mobilizer =
-        model.GetFreeBodyMobilizerOrThrow(plant.GetBodyByName(body_name));
-    ball_mobilizer.SetFromRotationMatrix(&plant_context, R_WB);
-  };
-
   // Set at height z0 with random orientation.
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   model.SetDefaultContext(&plant_context);
-  set_position("Ball", Vector3d(0.0, 0.0, z0));
   Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
-  //set_orientation("Ball", R_WB * AngleAxisd(M_PI, Vector3d::UnitX()).matrix());
-  set_orientation("Ball", R_WB);
+  Isometry3d X_WB = Isometry3d::Identity();
+  X_WB.linear() = R_WB;
+  X_WB.translation() = Vector3d(0.0, 0.0, z0);
+  model.SetFreeBodyPoseOrThrow(
+      model.GetBodyByName("Ball"), X_WB, &plant_context);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 

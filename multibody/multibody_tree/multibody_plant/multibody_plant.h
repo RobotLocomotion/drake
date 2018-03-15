@@ -360,12 +360,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
   AddForceElement(Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    DRAKE_DEMAND(!gravity_W_.has_value());
-    const auto& element =
-        model_->template AddForceElement<UniformGravityFieldElement>(
+    DRAKE_DEMAND(!gravity_field_.has_value());
+    gravity_field_ =
+        &model_->template AddForceElement<UniformGravityFieldElement>(
             std::forward<Args>(args)...);
-    gravity_W_ = element.gravity_vector();
-    return element;
+    return *gravity_field_.value();
   }
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
@@ -660,7 +659,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void Finalize();
 
   void set_penetration_allowance(double d) {
-    contact_penetration_allowance_ = d;
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    penalty_method_contact_parameters_.contact_penetration_allowance = d;
     EstimatePenaltyMethodParameters();
   }
 
@@ -673,7 +673,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// recommended to choose a time step so that several steps fit in this time
   /// scale.
   double get_contact_penalty_method_time_scale() const {
-    return contact_penalty_method_time_scale_;
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return penalty_method_contact_parameters_.contact_penalty_method_time_scale;
   }
 
   /// Sets the state in `context` so that generalized positions and velocities
@@ -818,6 +819,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
+  // The gravity field force element.
+  optional<const UniformGravityFieldElement<T>*> gravity_field_;
+
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
@@ -833,14 +837,21 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
 
-  // Rigid contact constraint parameters.
-  double contact_penalty_stiffness_{0};
-  double contact_penalty_damping_{0};
-  double contact_penetration_allowance_{0.001};  // Defaults to 1mm.
-  // An estimated time scale in which objects come to a relative stop during
-  // contact.
-  double contact_penalty_method_time_scale_{-1.0};
-  optional<Vector3<double>> gravity_W_;  // Needed to estimate weights.
+  struct ContactByPenaltyMethodParameters {
+    // User provided penetration allowance. This plus the model's masses and
+    // energy allow us to estimate the penalty method coefficients.
+    double contact_penetration_allowance{0.001};  // Defaults to 1mm.
+    // Penalty method coefficients used to compute contact forces.
+    double contact_penalty_stiffness{0};
+    double contact_penalty_damping{0};
+    // An estimated time scale in which objects come to a relative stop during
+    // contact.
+    double contact_penalty_method_time_scale{-1.0};
+    // Acceleration of gravity in the model. Used to estimate penalty method
+    // constants from a static equilibrium analysis.
+    optional<double> gravity;
+  };
+  ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
   // Iteraion order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;

@@ -280,10 +280,9 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
 template<typename T>
 void MultibodyPlant<T>::EstimatePenaltyMethodParameters() {
-  DRAKE_DEMAND(gravity_W_.has_value());
-
   // Default to Earth's gravity for this estimation.
-  const double g = gravity_W_.has_value() ? gravity_W_->norm(): 9.81;
+  const double g = gravity_field_.has_value() ?
+                   gravity_field_.value()->gravity_vector().norm() : 9.81;
 
   // The heuristics now is very simple. We should update it to:
   //  - Only scan free bodies for weight.
@@ -295,7 +294,8 @@ void MultibodyPlant<T>::EstimatePenaltyMethodParameters() {
     const Body<T>& body = model().get_body(body_index);
     mass = std::max(mass, body.get_default_mass());
   }
-  const double penetration_length = contact_penetration_allowance_;
+  const double penetration_length =
+      penalty_method_contact_parameters_.contact_penetration_allowance;
 
   // For now, we use the model for a critically damped spring mass oscillator
   // to estimate these parameters: mẍ+cẋ+kx=mg
@@ -326,10 +326,11 @@ void MultibodyPlant<T>::EstimatePenaltyMethodParameters() {
   const double damping = damping_ratio * time_scale / penetration_length;
 
   // Final parameters used in the penalty method:
-  contact_penalty_stiffness_ = stiffness;
-  contact_penalty_damping_ = damping;
+  penalty_method_contact_parameters_.contact_penalty_stiffness = stiffness;
+  penalty_method_contact_parameters_.contact_penalty_damping = damping;
   // The time scale can be requested to hint the integrator's time step.
-  contact_penalty_method_time_scale_ = time_scale;
+  penalty_method_contact_parameters_.contact_penalty_method_time_scale =
+      time_scale;
 }
 
 template<>
@@ -397,8 +398,10 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       const double vn = v_AcBc_W.dot(nhat_BA_W);
 
       // Magnitude of the normal force on body A at contact point C.
-      const double& k = contact_penalty_stiffness_;
-      const double& d = contact_penalty_damping_;
+      const double k =
+          penalty_method_contact_parameters_.contact_penalty_stiffness;
+      const double d =
+          penalty_method_contact_parameters_.contact_penalty_damping;
       const double fn_AC = k * x * (1.0 + d * vn);
 
       if (fn_AC <= 0) continue;  // Continue with next point.
