@@ -24,7 +24,6 @@ namespace drake {
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix2d;
-using Eigen::Quaterniond;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
