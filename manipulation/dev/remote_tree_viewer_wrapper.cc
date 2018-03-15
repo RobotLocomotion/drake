@@ -16,7 +16,7 @@ using nlohmann::json;
 namespace drake {
 namespace manipulation {
 namespace dev {
-static double getUnixTime(void) {
+static double GetUnixTime(void) {
   struct timespec tv;
 
   if (clock_gettime(CLOCK_REALTIME, &tv) != 0) return 0;
@@ -26,10 +26,22 @@ static double getUnixTime(void) {
 
 RemoteTreeViewerWrapper::RemoteTreeViewerWrapper() {}
 
+void FillLcmView2CommsMessage(int64_t now, const json& j,
+                              lcmt_viewer2_comms* msg) {
+  msg->utime = now;
+  msg->format = "treeviewer_json";
+  msg->format_version_major = 1;
+  msg->format_version_minor = 0;
+  msg->data.clear();
+  const std::string j_dump = j.dump();
+  std::copy(j_dump.begin(), j_dump.end(), std::back_inserter(msg->data));
+  msg->num_bytes = j_dump.size();
+}
+
 void RemoteTreeViewerWrapper::PublishPointCloud(
     const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path,
     const std::vector<std::vector<double>>& color) {
-  int64_t now = getUnixTime() * 1000 * 1000;
+  int64_t now = GetUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
   json j = {
       {"timestamp", now},
@@ -58,20 +70,14 @@ void RemoteTreeViewerWrapper::PublishPointCloud(
   }
 
   auto msg = lcmt_viewer2_comms();
-  msg.utime = now;
-  msg.format = "treeviewer_json";
-  msg.format_version_major = 1;
-  msg.format_version_minor = 0;
-  msg.data.clear();
-  for (auto& c : j.dump()) msg.data.push_back(c);
-  msg.num_bytes = j.dump().size();
+  FillLcmView2CommsMessage(now, j, &msg);
   // Use channel 0 for remote viewer communications.
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
 
 void RemoteTreeViewerWrapper::PublishLine(
     const Eigen::Matrix3Xd& pts, const std::vector<std::string>& path) {
-  int64_t now = getUnixTime() * 1000 * 1000;
+  int64_t now = GetUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
   json j = {{"timestamp", now},
             {
@@ -93,13 +99,7 @@ void RemoteTreeViewerWrapper::PublishLine(
   }
 
   auto msg = lcmt_viewer2_comms();
-  msg.utime = now;
-  msg.format = "treeviewer_json";
-  msg.format_version_major = 1;
-  msg.format_version_minor = 0;
-  msg.data.clear();
-  for (auto& c : j.dump()) msg.data.push_back(c);
-  msg.num_bytes = j.dump().size();
+  FillLcmView2CommsMessage(now, j, &msg);
   // Use channel 0 for remote viewer communications.
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
@@ -109,7 +109,7 @@ void RemoteTreeViewerWrapper::PublishArrow(
     const Eigen::Ref<const Eigen::Vector3d>& end,
     const std::vector<std::string>& path, double radius, double head_radius,
     double head_length, const Eigen::Ref<const Eigen::Vector4d>& color) {
-  int64_t now = getUnixTime() * 1000 * 1000;
+  int64_t now = GetUnixTime() * 1000 * 1000;
   // Format a JSON string for this pointcloud
   json j = {{"timestamp", now},
             {
@@ -136,20 +136,14 @@ void RemoteTreeViewerWrapper::PublishArrow(
                                               color(3)};
 
   auto msg = lcmt_viewer2_comms();
-  msg.utime = now;
-  msg.format = "treeviewer_json";
-  msg.format_version_major = 1;
-  msg.format_version_minor = 0;
-  msg.data.clear();
-  for (auto& c : j.dump()) msg.data.push_back(c);
-  msg.num_bytes = j.dump().size();
+  FillLcmView2CommsMessage(now, j, &msg);
   // Use channel 0 for remote viewer communications.
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
 void RemoteTreeViewerWrapper::PublishRawMesh(
     const Eigen::Matrix3Xd& verts, const std::vector<Eigen::Vector3i>& tris,
     const std::vector<std::string>& path) {
-  int64_t now = getUnixTime() * 1000 * 1000;
+  int64_t now = GetUnixTime() * 1000 * 1000;
   json j = {{"timestamp", now},
             {
                 "setgeometry",
@@ -174,13 +168,7 @@ void RemoteTreeViewerWrapper::PublishRawMesh(
   }
 
   auto msg = lcmt_viewer2_comms();
-  msg.utime = now;
-  msg.format = "treeviewer_json";
-  msg.format_version_major = 1;
-  msg.format_version_minor = 0;
-  msg.data.clear();
-  for (auto& c : j.dump()) msg.data.push_back(c);
-  msg.num_bytes = j.dump().size();
+  FillLcmView2CommsMessage(now, j, &msg);
   // Use channel 0 for remote viewer communications.
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
@@ -227,7 +215,7 @@ void RemoteTreeViewerWrapper::PublishRigidBody(
 void RemoteTreeViewerWrapper::PublishGeometry(
     const DrakeShapes::Geometry& geometry, const Eigen::Affine3d& tf,
     const Eigen::Vector4d& color, const std::vector<std::string>& path) {
-  int64_t now = getUnixTime() * 1000 * 1000;
+  int64_t now = GetUnixTime() * 1000 * 1000;
 
   // Short-circuit to points if the passed geometry is a set of mesh points
   if (geometry.getShape() == DrakeShapes::MESH_POINTS) {
@@ -301,13 +289,7 @@ void RemoteTreeViewerWrapper::PublishGeometry(
   }
 
   auto msg = lcmt_viewer2_comms();
-  msg.utime = now;
-  msg.format = "treeviewer_json";
-  msg.format_version_major = 1;
-  msg.format_version_minor = 0;
-  msg.data.clear();
-  for (auto& c : j.dump()) msg.data.push_back(c);
-  msg.num_bytes = j.dump().size();
+  FillLcmView2CommsMessage(now, j, &msg);
   // Use channel 0 for remote viewer communications.
   lcm_.get_lcm_instance()->publish("DIRECTOR_TREE_VIEWER_REQUEST_<0>", &msg);
 }
