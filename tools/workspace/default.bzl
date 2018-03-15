@@ -124,7 +124,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
     if "json" not in excludes:
-        json_repository(name = "json")
+        json_repository(name = "json", mirrors = mirrors)
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
     if "lcm" not in excludes:
