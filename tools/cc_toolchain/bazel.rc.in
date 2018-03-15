@@ -12,4 +12,4 @@ build --host_cxxopt=@CMAKE_CXX14_STANDARD_COMPILE_OPTION@
 build --python_path=@PYTHON_EXECUTABLE@
 build --symlink_prefix=/
 
-startup --output_user_root=@BAZEL_OUTPUT_USER_ROOT@
+startup --output_base=@BAZEL_OUTPUT_BASE@
