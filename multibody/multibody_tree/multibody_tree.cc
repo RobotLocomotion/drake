@@ -19,7 +19,13 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
-#define MBT_THROW_IF_NOT_FINALIZED ThrowIfNotFinalized(__FUNCTION__);
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define DRAKE_MBT_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 namespace internal {
 template <typename T>
@@ -68,7 +74,7 @@ template <typename T>
 const QuaternionFloatingMobilizer<T>&
 MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
     const Body<T>& body) const {
-  MBT_THROW_IF_NOT_FINALIZED
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
   const BodyTopology& body_topology = get_topology().get_body(body.index());
   const QuaternionFloatingMobilizer<T>* mobilizer =
@@ -144,6 +150,7 @@ void MultibodyTree<T>::FinalizeInternals() {
 
 template <typename T>
 void MultibodyTree<T>::Finalize() {
+  DRAKE_MBT_THROW_IF_FINALIZED();
   // Create Joint objects's implementation. Joints are implemented using a
   // combination of MultibodyTree's building blocks such as Body, Mobilizer,
   // ForceElement and Constraint. For a same physical Joint, several
@@ -626,7 +633,7 @@ template <typename T>
 const Isometry3<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
-  MBT_THROW_IF_NOT_FINALIZED
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   body_B.HasThisParentTreeOrThrow(this);
   return EvalPositionKinematics(context).get_X_WB(body_B.node_index());
 }
@@ -635,7 +642,7 @@ template <typename T>
 const SpatialVelocity<T>& MultibodyTree<T>::EvalBodySpatialVelocityInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
-  MBT_THROW_IF_NOT_FINALIZED
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   body_B.HasThisParentTreeOrThrow(this);
   return EvalVelocityKinematics(context).get_V_WB(body_B.node_index());
 }
@@ -883,12 +890,20 @@ const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
 }
 
 template <typename T>
-void MultibodyTree<T>::ThrowIfNotFinalized(
-    const char* source_method) const {
+void MultibodyTree<T>::ThrowIfFinalized(const char* source_method) const {
+  if (topology_is_valid()) {
+    throw std::logic_error(
+        "Post-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; calls to this method must happen before Finalize().");
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
   if (!topology_is_valid()) {
     throw std::logic_error(
-        "The call to '" + std::string(source_method) + "' is invalid; "
-        " You must call Finalize() first. ");
+        "Pre-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; you must call Finalize() first.");
   }
 }
 

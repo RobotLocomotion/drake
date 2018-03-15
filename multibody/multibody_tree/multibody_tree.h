@@ -868,8 +868,7 @@ class MultibodyTree {
   /// is validated, meaning that the topology is up-to-date after this call.
   /// No more multibody tree elements can be added after a call to Finalize().
   ///
-  /// @throws std::logic_error If users attempt to call this method on an
-  ///         already finalized %MultibodyTree.
+  /// @throws std::exception if called post-finalize.
   // TODO(amcastro-tri): Consider making this method private and calling it
   // automatically when CreateDefaultContext() is called.
   void Finalize();
@@ -1760,8 +1759,13 @@ class MultibodyTree {
   // called at Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // Helper method for throwing an exception if Finalize() has not been called
-  // on this MultibodyTree model. The invoking method should pass it's name so
+  // Helper method for throwing an exception within public methods that should
+  // not be called post-finalize. The invoking method should pass its name so
+  // that the error message can include that detail.
+  void ThrowIfFinalized(const char* source_method) const;
+
+  // Helper method for throwing an exception within public methods that should
+  // not be called pre-finalize. The invoking method should pass it's name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
 
