@@ -110,7 +110,6 @@ dpkg_install_from_wget() {
   package="$1"
   version="$2"
   url="$3"
-  checksum="$4"
 
   # Skip the install if we're already at the exact version.
   installed=$(dpkg-query --showformat='${Version}\n' --show "${package}" 2>/dev/null || true)
@@ -133,11 +132,6 @@ dpkg_install_from_wget() {
   # Download and verify.
   tmpdeb="/tmp/${package}_${version}-amd64.deb"
   wget -O "${tmpdeb}" "${url}"
-  if echo "${checksum} ${tmpdeb}" | sha256sum -c -; then
-    echo  # Blank line between checkout output and dpkg output.
-  else
-    die "The ${package} deb does not have the expected SHA256.  Not installing."
-  fi
 
   # Install.
   dpkg -i "${tmpdeb}"
@@ -156,8 +150,7 @@ dpkg_install_from_wget \
 # run `apt source libibex-dev` to get the sources.
 dpkg_install_from_wget \
   ibex 2.6.3 \
-  https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files/libibex-dev_2.6.3.20171215122721.git2275df8f465a9db6a42d497ca322011ff2c6f8f7~16.04_amd64.deb \
-  7d76c4450921b83971006f01b3259c75cddc178bc7f4f8766f996df7763ed2b5
+  https://drake-apt.csail.mit.edu/pool/main/libi/libibex-dev/libibex-dev_2.6.3.20171215122721.git2275df8f465a9db6a42d497ca322011ff2c6f8f7~16.04_amd64.deb
 
 # Install dReal. See
 # https://github.com/dreal/dreal4/blob/master/README.md#build-debian-package for
