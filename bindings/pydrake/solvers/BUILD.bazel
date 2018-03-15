@@ -49,12 +49,14 @@ drake_pybind_library(
 drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
     py_srcs = ["mathematicalprogram.py"],
