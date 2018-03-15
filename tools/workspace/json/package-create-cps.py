@@ -1,11 +1,10 @@
 #!/usr/bin/env python2
 
-from drake.tools.install.cpsutils import read_version_defs
+from drake.tools.install.cpsutils import read_defs
 
-defs = read_version_defs("#define JSON_VERSION ([0-9]{1,2})([0-9]{2})([0-9]{2})$")
+defs = read_defs("#define\s+NLOHMANN_JSON_(VERSION_\w+)\s+([0-9]+)")
 
 # Skip leading zeros if any.
-print defs
 assert len(defs) == 3
 defs = dict([(k, int(v)) for k, v in defs.iteritems()])
 

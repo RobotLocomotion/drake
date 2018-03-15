@@ -34,7 +34,6 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     srcs = [
         "remote_tree_viewer_wrapper.cc",
-        "json.hpp",
     ],
     hdrs = [
         "remote_tree_viewer_wrapper.h",
@@ -43,6 +42,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//lcm",
         "//lcmtypes:viewer2_comms",
+        "@json",
     ],
 )
 

@@ -5,7 +5,8 @@
 #include <random>
 #include <stdexcept>
 #include <string>
-#include "json.hpp"
+
+#include "json/nlohmann/json.hpp"
 
 #include "drake/lcmt_viewer2_comms.hpp"
 
