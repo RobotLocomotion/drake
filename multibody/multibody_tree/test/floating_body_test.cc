@@ -265,9 +265,6 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
       kMass, kInertia, kInertia, acceleration_of_gravity);
-  //const QuaternionFloatingMobilizer<double>& mobilizer =
-    //  MultibodyTreeTester::get_floating_mobilizer(
-      //    free_body_plant.model(), free_body_plant.body());
   const MultibodyTree<double>& model = free_body_plant.model();
 
   std::unique_ptr<Context<double>> context =
