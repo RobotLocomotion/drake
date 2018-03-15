@@ -67,6 +67,9 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+        # Redundant cost just to check the spelling.
+        prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
+                                   x_desired=np.zeros(2))
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
