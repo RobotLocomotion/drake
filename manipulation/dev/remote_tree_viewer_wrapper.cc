@@ -2,6 +2,8 @@
 
 #include <unistd.h>
 
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <random>
 #include <stdexcept>
@@ -17,11 +19,9 @@ namespace drake {
 namespace manipulation {
 namespace dev {
 static double GetUnixTime(void) {
-  struct timespec tv;
-
-  if (clock_gettime(CLOCK_REALTIME, &tv) != 0) return 0;
-
-  return (tv.tv_sec + (tv.tv_nsec / 1000000000.0));
+  return std::chrono::duration_cast<std::chrono::seconds>(
+             std::chrono::system_clock::now().time_since_epoch())
+      .count();
 }
 
 RemoteTreeViewerWrapper::RemoteTreeViewerWrapper() {}
@@ -221,7 +221,8 @@ void RemoteTreeViewerWrapper::PublishGeometry(
   if (geometry.getShape() == DrakeShapes::MESH_POINTS) {
     Eigen::Matrix3Xd pts;
     geometry.getPoints(pts);
-    PublishPointCloud(pts, path);
+    pts = tf * pts;
+    return PublishPointCloud(pts, path, {{color[0], color[1], color[2]}});
   }
 
   // Extract std::vector-formatted translation and quaternion from the tf

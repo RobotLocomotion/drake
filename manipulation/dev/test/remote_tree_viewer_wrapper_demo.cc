@@ -1,3 +1,5 @@
+#include <random>
+
 #include "drake/common/find_resource.h"
 #include "drake/manipulation/dev/remote_tree_viewer_wrapper.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -6,11 +8,6 @@
 namespace drake {
 namespace manipulation {
 namespace dev {
-static inline double randrange(double min, double max) {
-  unsigned int seed = 1;
-  return (static_cast<double>(rand_r(&seed)) / RAND_MAX) * (max - min) + min;
-}
-
 int DoMain() {
   RemoteTreeViewerWrapper rm;
 
@@ -19,9 +16,11 @@ int DoMain() {
   double y_size = 2.0;
   double z_size = 1.0;
   Eigen::Matrix3Xd pts(3, n_points);
+  std::default_random_engine generator;
+  std::uniform_real_distribution<double> distribution(-1, 1);
   for (int i = 0; i < n_points; i++) {
-    Eigen::Vector3d xyz(randrange(-1.0, 1.0), randrange(-1.0, 1.0),
-                        randrange(-1.0, 1.0));
+    Eigen::Vector3d xyz(distribution(generator), distribution(generator),
+                        distribution(generator));
     xyz /= xyz.norm();
     xyz[0] *= x_size;
     xyz[1] *= y_size;
@@ -35,6 +34,12 @@ int DoMain() {
 
   const Eigen::Vector4d color_gray(0.7, 0.7, 0.7, 0.9);
   const Eigen::Vector4d color_blue(0.3, 0.3, 1.0, 0.9);
+
+  Eigen::Affine3d tf_mesh_pts;
+  tf_mesh_pts.setIdentity();
+  tf_mesh_pts.translation()(1) = 5;
+  rm.PublishGeometry(DrakeShapes::MeshPoints(pts), tf_mesh_pts, color_gray,
+                     {"test_mesh_points"});
 
   Eigen::Affine3d tf_box;
   tf_box.setIdentity();
