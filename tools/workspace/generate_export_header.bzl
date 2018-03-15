@@ -2,8 +2,8 @@
 
 def _make_identifier(s):
     result = ""
-    for c in s:
-        result += c if c.isalnum() else "_"
+    for i in range(len(s)):
+        result += s[i] if s[i].isalnum() else "_"
 
     return result
 
