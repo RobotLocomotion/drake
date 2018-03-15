@@ -658,6 +658,77 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
+  /// @name Contact by penalty method
+  ///
+  /// Currently %MultibodyPlant uses a rigid contact model that is, bodies in
+  /// the model are infinitely stiff or ideal rigid bodies. The mathematical
+  /// description of the rigid contact model requires the to include
+  /// non-penetration constraints among bodies in the formulation. There are
+  /// several numerical methods to impose and solve these constraints.
+  /// In a penalty method approach, we allow for a certain amount of
+  /// interpenetration and we compute contact forces according to a simple law
+  /// of the form: <pre>
+  ///   fₙ = k(1+dẋ)x
+  /// </pre>
+  /// where the normal contact force `fₙ` is made a continuous function of the
+  /// penetration distance x between the bodies (defined to be
+  /// positive when the bodies are in contact) and the penetration distance
+  /// rate ẋ (with ẋ > 0 meaning the penetration distance is increasing and
+  /// therefore the interpenetration between the bodies is also increasing).
+  /// k and d are the penalty method coefficients for stiffness and damping.
+  /// These are ad-hoc parameters which need to be tuned as the trade-off
+  /// between:
+  /// - The accuracy of the numerical approximation to rigid contact, which
+  ///   requires a stiffness that approaches infinity,
+  /// - and the computational cost of the numerical integration, which will
+  ///   require smaller time steps for stiffer systems.
+  ///
+  /// %MultibodyPlant will estimate the value of these constants based on some
+  /// heuristics based on a user-supplied "penetration allowance", see
+  /// set_penetration_allowance(). The penetration allowance is a number in
+  /// meters that specifies an order of magnitude to the average penetration
+  /// between bodies in the system that the user is willing to accept as
+  /// reasonable for the problem being solved. For instance, in the robotics
+  /// manipulation of ordinary daily objects the user might set this number to
+  /// say 1 millimeter. However, the user might want to increase it for the
+  /// simulation of heavy walking robots for which an allowance of 1
+  /// millimeter would result in a very stiff system.
+  /// %MultibodyPlant chooses the damping coefficient d to model inelastic
+  /// collisions and therefore sets it so that the penetration distance x
+  /// behaves as in a critically critically damped oscillator. That is, in the
+  /// limit to ideal rigid contact (very stiff penalty coefficient k or
+  /// equivalently the penetration allowance goes to zero), this method behaves
+  /// as a unilateral constraint on the penetration distance, which models
+  /// a perfect inelastic collision. For most applications, like for instace
+  /// manipulation and walking, this is the desired behavior.
+  ///
+  /// The penetration allowance provides a first, quick and reasonable
+  /// estimation of the penalty method parameters. However, users will want to
+  /// run their simulation a number of times and asses they are satisfied with
+  /// the level of inter-penetration actually observed in the simulation; if the
+  /// observed penetration is too large, the user will want to set a smaller
+  /// penetration allowance. If the system is too stiff and the time
+  /// integration requires very small time steps while at the same time the user
+  /// can afford larger inter-penetrations, the user will want to increase the
+  /// penetration allowance. Typically, the observed penetration will be
+  /// proportional to the penetration allowance. Thus scaling the penetration
+  /// allowance by say a factor of 0.5, would typically results in
+  /// inter-penetrations being reduced by the same factor of 0.5.
+  ///
+  /// For a given penetration allowance, the contact interaction that takes two
+  /// bodies with a non-zero approaching velocity to zero approaching velocity,
+  /// takes place in a finite amount of time (for ideal rigid contact this time
+  /// is zero.) A good estimate of this time period is given by a call to
+  /// get_contact_penalty_method_time_scale(). Users might want to query this
+  /// value to either set the maximum time step in error-controlled time
+  /// integration or to set the time step for fixed time step integration.
+  /// As a guidance, typical fixed time step integrators will become unstable
+  /// for time steps larger than about a tenth of this time scale.
+  /// @{
+
+  /// Sets the penetration allowance used to estimate the coefficients in the
+  /// penalty method used to impose non-penetration among bodies. Refer to the
+  /// section "Contact by penalty method" for ruther details.
   void set_penetration_allowance(double d) {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     penalty_method_contact_parameters_.contact_penetration_allowance = d;
@@ -671,11 +742,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// when the relative normal velocity goes to zero.
   /// If this time scale is used to estimate a simulation's time step, it is
   /// recommended to choose a time step so that several steps fit in this time
-  /// scale.
+  /// scale in order for the integrator to resolve this "numerically induced
+  /// dynamics" (this time scale is zero for ideal rigid contact.)
   double get_contact_penalty_method_time_scale() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return penalty_method_contact_parameters_.contact_penalty_method_time_scale;
   }
+  /// @}
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
@@ -834,14 +907,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // map to frame ids.
   std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
 
-
-  std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
-
+  // This struct contains the parameters to compute forces to enforce
+  // no-interpenetration between bodies by a penalty method.
   struct ContactByPenaltyMethodParameters {
     // User provided penetration allowance. This plus the model's masses and
     // energy allow us to estimate the penalty method coefficients.
     double contact_penetration_allowance{0.001};  // Defaults to 1mm.
     // Penalty method coefficients used to compute contact forces.
+    // TODO(amcastro-tri): consider having these per body. That would allow us
+    // for instance to calibrate the stiffness at the fingers (stiffness related
+    // to the weight of the objects being manipulated) of a walking robot (
+    // stiffness related to the weight of the entire robot) with the same
+    // penetration allowance.
     double contact_penalty_stiffness{0};
     double contact_penalty_damping{0};
     // An estimated time scale in which objects come to a relative stop during
@@ -871,6 +948,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // TODO(amcastro-tri): verify insertions were correct once visual_index gets
   // used with the landing of visual properties in GeometrySystem.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
+
+  // Maps a GeometryId with a collision index. This allows, for instance, to
+  // find out collision properties (such as friction coefficient) for a given
+  // geometry.
+  std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
 
   // Port handles for geometry:
   int geometry_query_port_{-1};
