@@ -14,8 +14,7 @@ package(
 cc_library(
     name = "json",
     hdrs = glob([
-        "nlohmann/*.cc",
-        "nlohmann/*.h",
+        "single_include/nlohmann/*.h",
     ]),
     defines = ["JSON_HEADER_ONLY=1"],
     includes = ["."],
@@ -26,6 +25,7 @@ CMAKE_PACKAGE = "json"
 cmake_config(
     package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/json:package-create-cps.py",
+    version_file = "single_include/nlohmann/json.hpp",
 )
 
 # Creates rule :install_cmake_config.
@@ -36,6 +36,6 @@ install(
     targets = [":json"],
     hdr_dest = "include/" + CMAKE_PACKAGE,
     guess_hdrs = "PACKAGE",
-    docs = ["LICENSE.rst"],
+    docs = ["LICENSE.MIT"],
     deps = [":install_cmake_config"],
 )

@@ -5,6 +5,7 @@ from drake.tools.install.cpsutils import read_version_defs
 defs = read_version_defs("#define JSON_VERSION ([0-9]{1,2})([0-9]{2})([0-9]{2})$")
 
 # Skip leading zeros if any.
+print defs
 assert len(defs) == 3
 defs = dict([(k, int(v)) for k, v in defs.iteritems()])
 
@@ -20,7 +21,7 @@ content = """
     "json-header-only": {
       "Type": "interface",
       "Definitions": ["JSON_HEADER_ONLY=1"],
-      "Includes": ["@prefix@/single_include/nlohmann"]
+      "Includes": ["@prefix@/include/json"]
     }
   }
 }
