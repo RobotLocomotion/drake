@@ -172,7 +172,7 @@ bool DependencyTracker::HasSubscriber(
 }
 
 void DependencyTracker::ThrowIfBadDependencyTracker(
-    const internal::SystemPathnameInterface* owning_subcontext,
+    const internal::ContextMessageInterface* owning_subcontext,
     const CacheEntryValue* cache_value) const {
   if (owning_subcontext_ == nullptr) {
     // Can't use FormatName() here because that depends on us having an owning
@@ -213,7 +213,7 @@ void DependencyTracker::ThrowIfBadDependencyTracker(
 void DependencyTracker::RepairTrackerPointers(
     const DependencyTracker& source,
     const DependencyTracker::PointerMap& tracker_map,
-    const internal::SystemPathnameInterface* owning_subcontext, Cache* cache) {
+    const internal::ContextMessageInterface* owning_subcontext, Cache* cache) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   DRAKE_DEMAND(cache != nullptr);
   owning_subcontext_ = owning_subcontext;
@@ -269,7 +269,7 @@ void DependencyGraph::AppendToTrackerPointerMap(
 void DependencyGraph::RepairTrackerPointers(
     const DependencyGraph& source,
     const DependencyTracker::PointerMap& tracker_map,
-    const internal::SystemPathnameInterface* owning_subcontext,
+    const internal::ContextMessageInterface* owning_subcontext,
     Cache* new_cache) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   owning_subcontext_ = owning_subcontext;

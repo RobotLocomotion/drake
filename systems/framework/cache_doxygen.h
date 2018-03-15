@@ -266,7 +266,7 @@ most-general method is:
       std::string                   description,
       CacheEntry::AllocCallback     alloc_function,
       CacheEntry::CalcCallback      calc_function,
-      std::vector<DependencyTicket> calc_prerequisites);
+      std::vector<DependencyTicket> prerequisites_of_calc_function);
 @endcode
 
 If no dependencies are listed the default is `{all_sources_ticket()}`. A cache

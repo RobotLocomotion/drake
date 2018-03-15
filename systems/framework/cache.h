@@ -385,7 +385,7 @@ class CacheEntryValue {
   @throws std::logic_error for anything that goes wrong, with an appropriate
                            explanatory message. */
   // These invariants hold for all CacheEntryValues except the dummy one.
-  void ThrowIfBadCacheEntryValue(const internal::SystemPathnameInterface*
+  void ThrowIfBadCacheEntryValue(const internal::ContextMessageInterface*
                                      owning_subcontext = nullptr) const;
 
   /** (Advanced) Disables caching for just this cache entry value. When
@@ -452,7 +452,7 @@ class CacheEntryValue {
   // description identical to the CacheEntry for which this is the value.
   CacheEntryValue(CacheIndex index, DependencyTicket ticket,
                   std::string description,
-                  const internal::SystemPathnameInterface* owning_subcontext,
+                  const internal::ContextMessageInterface* owning_subcontext,
                   std::unique_ptr<AbstractValue> initial_value)
       : cache_index_(index),
         ticket_(ticket),
@@ -470,7 +470,7 @@ class CacheEntryValue {
 
   // This is the post-copy cleanup method.
   void set_owning_subcontext(
-      const internal::SystemPathnameInterface* owning_subcontext) {
+      const internal::ContextMessageInterface* owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr);
     DRAKE_DEMAND(owning_subcontext_ == nullptr);
     owning_subcontext_ = owning_subcontext;
@@ -569,7 +569,7 @@ class CacheEntryValue {
 
   // Pointer to the system name service of the owning subcontext. Used for
   // error messages.
-  reset_on_copy<const internal::SystemPathnameInterface*>
+  reset_on_copy<const internal::ContextMessageInterface*>
       owning_subcontext_;
 
   // The value, its serial number, and its validity. The value is copyable so
@@ -599,7 +599,7 @@ class Cache {
 
   /** Constructor creates an empty cache referencing the system pathname
   service of its owning subcontext. The supplied pointer must not be null. */
-  explicit Cache(const internal::SystemPathnameInterface* owning_subcontext)
+  explicit Cache(const internal::ContextMessageInterface* owning_subcontext)
       : owning_subcontext_(owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr);
   }
@@ -690,11 +690,11 @@ class Cache {
   // those pointers. The supplied pointer must not be null, and there must not
   // already be an owning subcontext set here.
   void RepairCachePointers(
-      const internal::SystemPathnameInterface* owning_subcontext);
+      const internal::ContextMessageInterface* owning_subcontext);
 
   // The system name service of the subcontext that owns this cache. This should
   // not be copied since it would still refer to the source subcontext.
-  reset_on_copy<const internal::SystemPathnameInterface*>
+  reset_on_copy<const internal::ContextMessageInterface*>
       owning_subcontext_;
 
   // All CacheEntryValue objects, indexed by CacheIndex.

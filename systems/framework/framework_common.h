@@ -29,9 +29,6 @@ the corresponding CacheEntryValue in that System's Context. This is an index
 providing extremely fast constant-time access to both. */
 using CacheIndex = TypeSafeIndex<class CacheTag>;
 
-// TODO(sherm1) Reveal these when they are used.
-#ifndef DRAKE_DOXYGEN_CXX
-
 /** Serves as a local index for a child subsystem within a parent
 Diagram, or a child subcontext within a parent DiagramContext. A subsystem and
 its matching subcontext have the same %SubsystemIndex. Unique only
@@ -61,7 +58,6 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 /** Serves as the local index for abstract parameters within a given System
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
-#endif
 
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
@@ -76,29 +72,64 @@ rather depends on what it is connected to (not yet implemented). */
 constexpr int kAutoSize = -1;
 
 #ifndef DRAKE_DOXYGEN_CXX
+class ContextBase;
 namespace internal {
 
-/** Any class that can provide a System name and (for Diagrams) a subsystem
-path name should implement this interface. This is used by System and Context
-so that contained objects can provide helpful error messages and log
-diagnostics that identify the offending object within a diagram. (Diagram
-Systems and their Contexts have identical substructure.) Providing
-this as a separate interface allows us to avoid circular dependencies between
-the containers and their contained objects. */
-class SystemPathnameInterface {
+/** SystemBase should implement this interface so that its contained objects
+can provide helpful error messages and log diagnostics that identify the
+offending object within a diagram. Providing this as a separate interface allows
+us to avoid mutual dependencies between the containers and their contained
+objects, which allows us to put the contained objects in their own Bazel
+libraries. */
+class SystemMessageInterface {
  public:
-  virtual ~SystemPathnameInterface() = default;
+  virtual ~SystemMessageInterface() = default;
 
   /** Returns the simple name of this subsystem, with no path separators. */
-  virtual std::string GetSystemName() const = 0;
+  virtual const std::string& GetSystemName() const = 0;
 
-  /** Returns the full path name of this subsystem, starting at the root
-  of the containing Diagram, with path name separators between segments. */
+  /** Generates and returns the full path name of this subsystem, starting at
+  the root of the containing Diagram, with path name separators between
+  segments. */
+  virtual std::string GetSystemPathname() const = 0;
+
+  /** Returns the concrete type of this subsystem. This should be the
+  namespace-decorated human-readable name as returned by NiceTypeName. */
+  virtual std::string GetSystemType() const = 0;
+
+  /** Throws an std::logic_error if the given Context is incompatible with
+  this System; does nothing if `this` object is not a System. This is
+  likely to be _very_ expensive and should generally be done only in Debug
+  builds, like this:
+  @code
+     DRAKE_ASSERT_VOID(ThrowIfContextNotCompatible(context));
+  @endcode */
+  virtual void ThrowIfContextNotCompatible(const ContextBase&) const = 0;
+
+ protected:
+  SystemMessageInterface() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemMessageInterface);
+};
+
+/** ContextBase should implement this interface so that its contained objects
+can provide helpful error messages and log diagnostics that identify the
+offending object within a diagram. (Diagram Systems and their Contexts have
+identical substructure.) See SystemMessageInterface for motivation. */
+class ContextMessageInterface {
+ public:
+  virtual ~ContextMessageInterface() = default;
+
+  /** Returns the simple name of this subsystem, with no path separators. */
+  virtual const std::string& GetSystemName() const = 0;
+
+  /** Generates and returns the full path name of this subsystem, starting at
+  the root of the containing Diagram, with path name separators between
+  segments. */
   virtual std::string GetSystemPathname() const = 0;
 
  protected:
-  SystemPathnameInterface() = default;
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemPathnameInterface);
+  ContextMessageInterface() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContextMessageInterface);
 };
 
 /** These dependency ticket numbers are common to all systems and contexts so
@@ -116,11 +147,15 @@ enum BuiltInTicketNumbers {
   kXdTicket             =  7,
   kXaTicket             =  8,
   kXTicket              =  9,
-  kAllParametersTicket  = 10,
-  kAllInputPortsTicket  = 11,
-  kAllSourcesTicket     = 12,
-  kNextAvailableTicket  = kAllSourcesTicket+1
-  // TODO(sherm1) Add the rest of the built-in tickets here.
+  kConfigurationTicket  = 10,
+  kVelocityTicket       = 11,
+  kKinematicsTicket     = 12,
+  kAllParametersTicket  = 13,
+  kAllInputPortsTicket  = 14,
+  kAllSourcesTicket     = 15,
+  kXcdotTicket          = 16,
+  kXdhatTicket          = 17,
+  kNextAvailableTicket  = kXdhatTicket+1
 };
 
 }  // namespace internal
