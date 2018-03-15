@@ -1,0 +1,41 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "json",
+    hdrs = glob([
+        "nlohmann/*.cc",
+        "nlohmann/*.h",
+    ]),
+    defines = ["JSON_HEADER_ONLY=1"],
+    includes = ["."],
+)
+
+CMAKE_PACKAGE = "json"
+
+cmake_config(
+    package = CMAKE_PACKAGE,
+    script = "@drake//tools/workspace/json:package-create-cps.py",
+)
+
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
+
+install(
+    name = "install",
+    targets = [":json"],
+    hdr_dest = "include/" + CMAKE_PACKAGE,
+    guess_hdrs = "PACKAGE",
+    docs = ["LICENSE.rst"],
+    deps = [":install_cmake_config"],
+)
