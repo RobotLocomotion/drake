@@ -882,18 +882,40 @@ class MultibodyTree {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
 
+  /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
+  /// frame W.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allow us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
   void SetFreeBodyPoseOrThrow(
       const Body<T>& body, const Isometry3<T>& X_WB,
       systems::Context<T>* context) const;
 
+  /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
+  /// the world frame W.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allow us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
   void SetFreeBodySpatialVelocityOrThrow(
       const Body<T>& body, const SpatialVelocity<T>& V_WB,
       systems::Context<T>* context) const;
 
+  /// Alternative signature of SetFreeBodyPoseOrThrow() to store the pose
+  /// `X_WB` of `body` in the provided `state`.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
   void SetFreeBodyPoseOrThrow(
       const Body<T>& body, const Isometry3<T>& X_WB,
       const systems::Context<T>& context, systems::State<T>* state) const;
 
+  /// Alternative signature of SetFreeBodySpatialVelocityOrThrow() to store the
+  /// spatial velocity `V_WB` of `body` in the provided `state`.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
   void SetFreeBodySpatialVelocityOrThrow(
       const Body<T>& body, const SpatialVelocity<T>& V_WB,
       const systems::Context<T>& context, systems::State<T>* state) const;
@@ -1765,16 +1787,17 @@ class MultibodyTree {
   // called at Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  /// If `body` is a free body in the model, this method will return the
-  /// QuaternionFloatingMobilizer for the body. If the body is not free but it
-  /// is connected to the model by a Joint, this method will throw an exception.
-  /// The returned mobilizer provides a user-facing API to set the state for
-  /// this body including both pose and spatial velocity.
-  /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. It is possible however
-  /// to do this directly for free bodies and the QuaternionFloatingMobilizer
-  /// user-facing API allows us to do exactly that.
-  /// @throws std::logic_error if `body` is not free in the model.
+  // Helper method to access the mobilizer of a free body.
+  // If `body` is a free body in the model, this method will return the
+  // QuaternionFloatingMobilizer for the body. If the body is not free but it
+  // is connected to the model by a Joint, this method will throw an exception.
+  // The returned mobilizer provides a user-facing API to set the state for
+  // this body including both pose and spatial velocity.
+  // @note In general setting the pose and/or velocity of a body in the model
+  // would involve a complex inverse kinematics problem. It is possible however
+  // to do this directly for free bodies and the QuaternionFloatingMobilizer
+  // user-facing API allows us to do exactly that.
+  // @throws std::logic_error if `body` is not free in the model.
   const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
       const Body<T>& body) const;
 
