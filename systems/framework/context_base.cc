@@ -3,6 +3,8 @@
 #include <string>
 #include <typeinfo>
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace systems {
 
@@ -119,7 +121,46 @@ void ContextBase::CreateBuiltInTrackers() {
   all_sources_tracker.SubscribeToPrerequisite(&p_tracker);
   all_sources_tracker.SubscribeToPrerequisite(&u_tracker);
 
-  // TODO(sherm1) Add the rest of the built-in trackers here.
+  // Allocate kinematics trackers to provide a level of abstraction from the
+  // specific state variables that are used to represent configuration and
+  // rate of change of configuration. For example, a kinematics cache entry
+  // should depend on configuration regardless of whether we use continuous or
+  // discrete variables. And it should be possible to switch between continuous
+  // and discrete representations without having to change the specified
+  // dependency, which remains "configuration" either way.
+
+  // Should track changes to configuration regardless of how represented. The
+  // default is that the continuous "q" variables represent the configuration.
+  auto& configuration_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kConfigurationTicket), "configuration");
+  // This default subscription must be changed if configuration is not
+  // represented by q in this System.
+  configuration_tracker.SubscribeToPrerequisite(&q_tracker);
+
+  // Should track changes to configuration time rate of change (i.e., velocity)
+  // regardless of how represented. The default is that the continuous "v"
+  // variables represent the configuration rate of change.
+  auto& velocity_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kVelocityTicket), "velocity");
+  // This default subscription must be changed if velocity is not
+  // represented by v in this System.
+  velocity_tracker.SubscribeToPrerequisite(&v_tracker);
+
+  // This tracks configuration & velocity regardless of how represented.
+  auto& kinematics_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kKinematicsTicket), "kinematics");
+  kinematics_tracker.SubscribeToPrerequisite(&configuration_tracker);
+  kinematics_tracker.SubscribeToPrerequisite(&velocity_tracker);
+
+  auto& xcdot_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kXcdotTicket), "xcdot");
+  // TODO(sherm1) Connect to cache entry.
+  unused(xcdot_tracker);
+
+  auto& xdhat_tracker = graph.CreateNewDependencyTracker(
+      DependencyTicket(internal::kXdhatTicket), "xdhat");
+  // TODO(sherm1) Connect to cache entry.
+  unused(xdhat_tracker);
 }
 
 void ContextBase::BuildTrackerPointerMap(

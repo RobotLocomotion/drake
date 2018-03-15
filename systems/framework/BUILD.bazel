@@ -237,6 +237,33 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "cache_entry",
+    srcs = [
+        "cache_entry.cc",
+    ],
+    hdrs = [
+        "cache_entry.h",
+    ],
+    deps = [
+        ":context_base",
+    ],
+)
+
+drake_cc_library(
+    name = "framework_base",
+    srcs = [
+        "system_base.cc",
+    ],
+    hdrs = [
+        "system_base.h",
+    ],
+    deps = [
+        ":cache_entry",
+        ":context_base",
+    ],
+)
+
+drake_cc_library(
     name = "output_port_value",
     srcs = ["output_port_value.cc"],
     hdrs = ["output_port_value.h"],
@@ -502,7 +529,18 @@ drake_cc_googletest(
     deps = [
         ":cache_and_dependency_tracker",
         ":context_base",
+        "//drake/common",
+        "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cache_entry_test",
+    deps = [
+        ":cache_entry",
+        ":framework_base",
         "//drake/common:essential",
+        "//drake/common/test_utilities:expect_throws_message",
         "//drake/systems/framework/test_utilities",
     ],
 )

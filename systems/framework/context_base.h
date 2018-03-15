@@ -75,7 +75,10 @@ class ContextBase : public internal::SystemPathnameInterface {
   /** (Debugging) Returns the local name of the subsystem for which this is the
   Context. See GetSystemPathname() if you want the full name. */
   // TODO(sherm1) Replace with the real name.
-  std::string GetSystemName() const final { return "dummy"; }
+  const std::string& GetSystemName() const final {
+    static const never_destroyed<std::string> name("dummy");
+    return name.access();
+  }
 
   /** (Debugging) Returns the full pathname of the subsystem for which this is
   the Context. See get_system_pathname() if you want to the full name. */
