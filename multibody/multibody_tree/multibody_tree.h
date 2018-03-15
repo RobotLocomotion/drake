@@ -598,11 +598,6 @@ class MultibodyTree {
     return *actuator;
   }
 
-  // TODO(amcastro-tri): make it return a FloatingMobilizer from where
-  // QuaternionFloatingMobilizer and SpaceXYZFloatingMobilizer inherit.
-  const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
-      const Body<T>& body) const;
-
   /// @}
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
@@ -886,6 +881,22 @@ class MultibodyTree {
   /// Mobilizer::set_zero_configuration().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
+
+  void SetFreeBodyPoseOrThrow(
+      const Body<T>& body, const Isometry3<T>& X_WB,
+      systems::Context<T>* context) const;
+
+  void SetFreeBodySpatialVelocityOrThrow(
+      const Body<T>& body, const SpatialVelocity<T>& V_WB,
+      systems::Context<T>* context) const;
+
+  void SetFreeBodyPoseOrThrow(
+      const Body<T>& body, const Isometry3<T>& X_WB,
+      const systems::Context<T>& context, systems::State<T>* state) const;
+
+  void SetFreeBodySpatialVelocityOrThrow(
+      const Body<T>& body, const SpatialVelocity<T>& V_WB,
+      const systems::Context<T>& context, systems::State<T>* state) const;
 
   /// @name Kinematic computations
   /// Kinematics computations are concerned with the motion of bodies in the
@@ -1716,6 +1727,9 @@ class MultibodyTree {
   // private methods from MultibodyTree<T>.
   template <typename> friend class MultibodyTree;
 
+  // Friend class to facilitate testing.
+  friend class MultibodyTreeTester;
+
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(
       std::unique_ptr<JointType<T>> joint) {
@@ -1750,6 +1764,19 @@ class MultibodyTree {
   // have a mobilizer. The mobilizer is between each body and the world. To be
   // called at Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
+
+  /// If `body` is a free body in the model, this method will return the
+  /// QuaternionFloatingMobilizer for the body. If the body is not free but it
+  /// is connected to the model by a Joint, this method will throw an exception.
+  /// The returned mobilizer provides a user-facing API to set the state for
+  /// this body including both pose and spatial velocity.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. It is possible however
+  /// to do this directly for free bodies and the QuaternionFloatingMobilizer
+  /// user-facing API allows us to do exactly that.
+  /// @throws std::logic_error if `body` is not free in the model.
+  const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
+      const Body<T>& body) const;
 
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
