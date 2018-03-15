@@ -150,7 +150,7 @@ namespace multibody_plant {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class MultibodyPlant final : public systems::LeafSystem<T> {
+class MultibodyPlant : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
 
@@ -636,6 +636,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void DoMapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      systems::VectorBase<T>* generalized_velocity) const override;
+
+  void DoMapVelocityToQDot(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      systems::VectorBase<T>* qdot) const override;
 
   // Helper method to declare cache entries to be allocated in the context.
   void DeclareCacheEntries();

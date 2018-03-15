@@ -21,6 +21,8 @@
 
 namespace drake {
 
+using Eigen::AngleAxisd;
+using Eigen::Isometry3d;
 using Eigen::Matrix2d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -35,6 +37,7 @@ using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using systems::AbstractValue;
+using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::DiagramBuilder;
@@ -379,6 +382,50 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+}
+
+GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
+  MultibodyPlant<double> plant;
+  // This test is purely kinematic. Therefore we leave the spatial inertia
+  // initialized to garbage. It should not affect the results.
+  const RigidBody<double>& body =
+      plant.AddRigidBody("FreeBody", SpatialInertia<double>());
+  plant.Finalize();
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+
+  // Set an arbitrary pose of the body in the world.
+  const Vector3d p_WB(1, 2, 3);  // Position in world.
+  const Vector3d axis_W =        // Orientation in world.
+      (1.5 * Vector3d::UnitX() +
+       2.0 * Vector3d::UnitY() +
+       3.0 * Vector3d::UnitZ()).normalized();
+  Isometry3d X_WB = Isometry3d::Identity();
+  X_WB.linear() = AngleAxisd(M_PI / 3.0, axis_W).toRotationMatrix();
+  X_WB.translation() = p_WB;
+  plant.model().SetFreeBodyPoseOrThrow(body, X_WB, context.get());
+
+  // Set an arbitrary, non-zero, spatial velocity of B in W.
+  const SpatialVelocity<double> V_WB(Vector3d(1.0, 2.0, 3.0),
+                                     Vector3d(-1.0, 4.0, -0.5));
+  plant.model().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context.get());
+
+  // Use of MultibodyPlant's mapping to convert generalized velocities to time
+  // derivatives of generalized coordinates.
+  BasicVector<double> qdot(plant.num_positions());
+  BasicVector<double> v(plant.num_velocities());
+  ASSERT_EQ(qdot.size(), 7);
+  ASSERT_EQ(v.size(), 6);
+  v.SetFrom(context->get_continuous_state().get_generalized_velocity());
+  plant.MapVelocityToQDot(*context, v, &qdot);
+
+  // Mapping from qdot back to v should result in the original vector of
+  // generalized velocities. Verify this.
+  BasicVector<double> v_back(plant.num_velocities());
+  plant.MapQDotToVelocity(*context, qdot, &v_back);
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(
+      CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
 }
 
 }  // namespace

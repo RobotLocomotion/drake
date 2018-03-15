@@ -196,8 +196,7 @@ drake_cc_library(
     hdrs = ["test/floating_body_plant.h"],
     deps = [
         "//drake/common:default_scalars",
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
+        "//drake/multibody/multibody_tree/multibody_plant",
     ],
 )
 
