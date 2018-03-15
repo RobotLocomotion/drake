@@ -885,7 +885,7 @@ class MultibodyTree {
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
   /// frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allow us
+  /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
@@ -896,7 +896,7 @@ class MultibodyTree {
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allow us
+  /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
@@ -907,7 +907,7 @@ class MultibodyTree {
   /// Sets `sate` to store the pose `X_WB` of a given `body` B in the world
   /// frame W, for a given `context` of `this` model.
   /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allow us
+  /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
@@ -918,7 +918,7 @@ class MultibodyTree {
   /// Sets `state` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W, for a given `context` of `this` model.
   /// @note In general setting the pose and/or velocity of a body in the model
-  /// would involve a complex inverse kinematics problem. This method allow us
+  /// would involve a complex inverse kinematics problem. This method allows us
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
@@ -1818,7 +1818,7 @@ class MultibodyTree {
   void ThrowIfFinalized(const char* source_method) const;
 
   // Helper method for throwing an exception within public methods that should
-  // not be called pre-finalize. The invoking method should pass it's name so
+  // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
 
