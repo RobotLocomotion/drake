@@ -89,8 +89,8 @@ class AcrobotParameters {
   double b2() const { return b2_; }
   double g() const { return g_; }
   // Radii of the cylinders used for visualization.
-  // We make the second link slightly fatter so that we can see the difference
-  // when they are aligned, even if using the same colors.
+  // The second link is made slightly thicker so that the difference between the
+  // links can be seen when aligned.
   double r1() const { return 0.035; }
   double r2() const { return 0.07; }
 
