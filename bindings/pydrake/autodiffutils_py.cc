@@ -27,12 +27,7 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
   m.doc() = "Bindings for Eigen AutoDiff Scalars";
 
   py::class_<AutoDiffXd>(m, "AutoDiffXd")
-    .def("__init__",
-         [](AutoDiffXd& self,
-            double value,
-            const Eigen::VectorXd& derivatives) {
-           new (&self) AutoDiffXd(value, derivatives);
-         })
+    .def(py::init<const double&, const Eigen::VectorXd&>())
     .def("value", [](const AutoDiffXd& self) {
       return self.value();
     })
