@@ -431,9 +431,9 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
 template<typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc, const VelocityKinematicsCache<T>& vc,
-    std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+    const systems::Context<T>&,
+    const PositionKinematicsCache<T>&, const VelocityKinematicsCache<T>&,
+    std::vector<SpatialForce<T>>*) const {
   DRAKE_ABORT_MSG("Only <double> is supported.");
 }
 
