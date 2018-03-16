@@ -348,7 +348,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
   const geometry::QueryObject<double>& query_object =
       this->EvalAbstractInput(context, geometry_query_port_)
           ->template GetValue<geometry::QueryObject<double>>();
-  (void) query_object;
 
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
