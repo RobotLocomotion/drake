@@ -184,6 +184,11 @@ drake_py_unittest(
     deps = [":all_py"],
 )
 
+drake_py_unittest(
+    name = "autodiffutils_test",
+    deps = [":autodiffutils_py"],
+)
+
 # Test ODR (One Definition Rule).
 drake_pybind_library(
     name = "odr_test_module_py",
