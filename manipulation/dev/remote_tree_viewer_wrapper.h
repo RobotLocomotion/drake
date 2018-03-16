@@ -10,6 +10,12 @@
 namespace drake {
 namespace manipulation {
 namespace dev {
+/**
+ * To use RemoteTreeViewerWrapper, please download director from source
+ * https://github.com/RobotLocomotion/director, and build it from the source.
+ * The drake-visualizer binary shipped with Drake does NOT support Remote Tree
+ * Viewer.
+ */
 class RemoteTreeViewerWrapper {
  public:
   RemoteTreeViewerWrapper();
