@@ -178,39 +178,40 @@ void RemoteTreeViewerWrapper::PublishRigidBodyTree(
     const Eigen::Vector4d& color, const std::vector<std::string>& path,
     bool visual) {
   auto kinematics_cache = tree.doKinematics(q);
-  for (const auto& body : tree.get_bodies()) {
-    if (visual) {
-      for (const auto& element : body->get_visual_elements()) {
-        if (element.hasGeometry()) {
-          std::vector<std::string> full_name = path;
-          full_name.push_back(body->get_name());
-          PublishGeometry(element.getGeometry(),
-                          tree.relativeTransform(kinematics_cache, 0,
-                                                 body->get_body_index()) *
-                              element.getLocalTransform(),
-                          color, full_name);
-        }
-      }
-    } else {
-      for (const auto& collision_elem_id : body->get_collision_element_ids()) {
-        auto element = tree.FindCollisionElement(collision_elem_id);
-        if (element->hasGeometry()) {
-          std::vector<std::string> full_name = path;
-          full_name.push_back(body->get_name());
-          PublishGeometry(element->getGeometry(),
-                          tree.relativeTransform(kinematics_cache, 0,
-                                                 body->get_body_index()) *
-                              element->getLocalTransform(),
-                          color, full_name);
-        }
-      }
-    }
+  for (int i = 0; i < tree.get_num_bodies(); ++i) {
+    PublishRigidBody(
+        tree, i,
+        tree.relativeTransform(kinematics_cache, 0, i),
+        color, path, visual);
   }
 }
 
 void RemoteTreeViewerWrapper::PublishRigidBody(
-    const RigidBody<double>& body, const Eigen::Affine3d& tf,
-    const Eigen::Vector4d& color, const std::vector<std::string>& path) {}
+    const RigidBodyTree<double>& tree, int body_index,
+    const Eigen::Affine3d& tf, const Eigen::Vector4d& color,
+    const std::vector<std::string>& path, bool visual_flag) {
+  const auto& body = tree.get_body(body_index);
+  if (visual_flag) {
+    for (const auto& element : body.get_visual_elements()) {
+      if (element.hasGeometry()) {
+        std::vector<std::string> full_name = path;
+        full_name.push_back(body.get_name());
+        PublishGeometry(element.getGeometry(), tf * element.getLocalTransform(),
+                        color, full_name);
+      }
+    }
+  } else {
+    for (const auto& collision_elem_id : body.get_collision_element_ids()) {
+      auto element = tree.FindCollisionElement(collision_elem_id);
+      if (element->hasGeometry()) {
+        std::vector<std::string> full_name = path;
+        full_name.push_back(body.get_name());
+        PublishGeometry(element->getGeometry(),
+                        tf * element->getLocalTransform(), color, full_name);
+      }
+    }
+  }
+}
 
 void RemoteTreeViewerWrapper::PublishGeometry(
     const DrakeShapes::Geometry& geometry, const Eigen::Affine3d& tf,

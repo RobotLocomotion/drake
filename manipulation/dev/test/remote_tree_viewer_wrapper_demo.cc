@@ -76,6 +76,13 @@ int DoMain() {
   rm.PublishRigidBodyTree(tree, Eigen::VectorXd::Zero(tree.get_num_positions()),
                           color_blue, {"test_robot"});
 
+  Eigen::Affine3d tf_body;
+  tf_body.setIdentity();
+  tf_body.translation()[0] = 5;
+  rm.PublishRigidBody(tree, 1, tf_body, color_blue, {"test_body_visual"}, true);
+  rm.PublishRigidBody(tree, 1, tf_body, color_blue, {"test_body_collision"},
+                      false);
+
   return 0;
 }
 }  // namespace dev

@@ -36,9 +36,10 @@ class RemoteTreeViewerWrapper {
                             const Eigen::Vector4d& color,
                             const std::vector<std::string>& path,
                             bool visual = true);
-  void PublishRigidBody(const RigidBody<double>& body,
+  void PublishRigidBody(const RigidBodyTree<double>& tree, int body_index,
                         const Eigen::Affine3d& tf, const Eigen::Vector4d& color,
-                        const std::vector<std::string>& path);
+                        const std::vector<std::string>& path,
+                        bool visual = true);
   void PublishGeometry(const DrakeShapes::Geometry& geometry,
                        const Eigen::Affine3d& tf, const Eigen::Vector4d& color,
                        const std::vector<std::string>& path);
