@@ -108,7 +108,7 @@ def _lcmgen_impl(ctx):
         arguments = ["--java", "--jpath=" + outpath]
     else:
         fail("Unknown language")
-    ctx.action(
+    ctx.actions.run(
         inputs = ctx.files.lcm_srcs,
         outputs = ctx.outputs.outs,
         arguments = arguments + [
