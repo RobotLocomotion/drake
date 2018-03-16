@@ -737,7 +737,7 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
   auto delta_qu_QP_value = prog_QP.GetSolution(delta_qu_QP);
 
   // replace qu in the MIQP solution with the QP solution
-  if (result_QP == drake::solvers::kSolutionFound) {
+  if (result_QP == drake::solvers::SolutionResult::kSolutionFound) {
     for (int i = 0; i < nu_; i++) {
       delta_q_value(idx_qu_in_q_[i]) = delta_qu_QP_value(i);
     }
@@ -876,7 +876,7 @@ void QuasistaticSystem<Scalar>::StepForward(
   prog_->SetInitialGuess(z_gamma_, z_gamma_start_);
 
   const auto result = solver_.Solve(*prog_);
-  DRAKE_DEMAND(result == drake::solvers::kSolutionFound);
+  DRAKE_DEMAND(result == drake::solvers::SolutionResult::kSolutionFound);
 }
 
 template <class Scalar>

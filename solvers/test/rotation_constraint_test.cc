@@ -102,7 +102,7 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
   // R_desired is outside the unit ball.
   AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
   AddRotationMatrixSpectrahedralSdpConstraint(&prog, Rvar);
-  ASSERT_EQ(prog.Solve(), kSolutionFound);
+  ASSERT_EQ(prog.Solve(), SolutionResult::kSolutionFound);
 
   Matrix3d R = prog.GetSolution(Rvar);
 
@@ -150,7 +150,7 @@ GTEST_TEST(RotationTest, TestOrthonormal) {
   // R_desired is outside the unit ball.
   AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
   AddRotationMatrixOrthonormalSocpConstraint(&prog, Rvar);
-  ASSERT_EQ(prog.Solve(), kSolutionFound);
+  ASSERT_EQ(prog.Solve(), SolutionResult::kSolutionFound);
 
   Matrix3d R = prog.GetSolution(Rvar);
 
@@ -184,7 +184,7 @@ bool IsFeasibleCheck(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return (prog->Solve() == kSolutionFound);
+  return (prog->Solve() == SolutionResult::kSolutionFound);
 }
 
 GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {

@@ -10,18 +10,21 @@ namespace drake {
 namespace solvers {
 class MathematicalProgram;
 
-enum SolutionResult {
-  kSolutionFound = 0,           ///< Found the optimal solution.
-  kInvalidInput = -1,           ///< Invalid input.
-  kInfeasibleConstraints = -2,  ///< The primal is infeasible.
-  kUnbounded = -3,              ///< The primal is unbounded.
-  kUnknownError = -4,           ///< Unknown error.
-  kInfeasible_Or_Unbounded =
-      -5,                ///< The primal is either infeasible or unbounded.
-  kIterationLimit = -6,  ///< Reaches the iteration limits.
-  kDualInfeasible = -7,  ///< Dual problem is infeasible. In this case we cannot
-                         /// infer the status of the primal problem.
+enum class SolutionResult {
+  kSolutionFound,           ///< Found the optimal solution.
+  kInvalidInput,           ///< Invalid input.
+  kInfeasibleConstraints,  ///< The primal is infeasible.
+  kUnbounded,              ///< The primal is unbounded.
+  kUnknownError,           ///< Unknown error.
+  kInfeasible_Or_Unbounded,  ///< The primal is either infeasible or unbounded.
+  kIterationLimit,  ///< Reaches the iteration limits.
+  kDualInfeasible,  ///< Dual problem is infeasible. In this case we cannot
+                    /// infer the status of the primal problem.
 };
+
+std::string to_string(const SolutionResult& solution_result);
+std::ostream& operator<<(std::ostream& os,
+                         const SolutionResult& solution_result);
 
 /// Interface used by implementations of individual solvers.
 class MathematicalProgramSolverInterface {

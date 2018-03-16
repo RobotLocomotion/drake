@@ -2766,7 +2766,7 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
   prog.AddCost(x(0) + x(1));
   prog.SetInitialGuess(x, Vector2d{-.5, -.5});
   SolutionResult result = prog.Solve();
-  EXPECT_EQ(result, kSolutionFound);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(x),
                               Vector2d::Constant(-std::sqrt(2.)/2.), 1e-6));
 }

@@ -275,7 +275,7 @@ TEST_P(ArticulatedIcpTest, PositiveReturnsConvergenceTest) {
     // Solve.
     prog.SetInitialGuess(q_var, q);
     auto result = prog.Solve();
-    ASSERT_EQ(solvers::kSolutionFound, result);
+    ASSERT_EQ(solvers::SolutionResult::kSolutionFound, result);
 
     const double q_diff_norm = (q - q_init_).norm();
     if (q_diff_norm < q_diff_norm_min_) {
