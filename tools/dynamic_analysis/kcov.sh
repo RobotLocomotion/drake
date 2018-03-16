@@ -18,6 +18,7 @@ fi
 
 kcov \
     --include-path=$WORKSPACE \
+    --verify \
     --exclude-pattern=third_party \
     $WORKSPACE/bazel-kcov \
     --replace-src-path=/proc/self/cwd:$WORKSPACE \
