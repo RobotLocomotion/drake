@@ -2,9 +2,11 @@
 #include <memory>
 
 #include "pybind11/eigen.h"
+#include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
@@ -92,11 +94,68 @@ auto RegisterBinding(py::handle* pscope,
   return binding_cls;
 }
 
+class PyFunctionCost : public Cost {
+ public:
+  using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
+  using AutoDiffFunc = std::function<AutoDiffXd(const VectorX<AutoDiffXd>&)>;
+
+  PyFunctionCost(int num_vars, const py::function& func,
+                 const std::string& description)
+      : Cost(num_vars, description),
+        double_func_(py::cast<DoubleFunc>(func)),
+        autodiff_func_(py::cast<AutoDiffFunc>(func)) {}
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
+    y[0] = double_func_(x);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    y[0] = autodiff_func_(x);
+  }
+
+ private:
+  const DoubleFunc double_func_;
+  const AutoDiffFunc autodiff_func_;
+};
+
+class PyFunctionConstraint : public Constraint {
+ public:
+  using DoubleFunc = std::function<Eigen::VectorXd(const Eigen::VectorXd&)>;
+  using AutoDiffFunc =
+      std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>&)>;
+
+  PyFunctionConstraint(int num_vars, const py::function& func,
+                       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+                       const std::string& description)
+      : Constraint(lb.size(), num_vars, lb, ub, description),
+        double_func_(py::cast<DoubleFunc>(func)),
+        autodiff_func_(py::cast<AutoDiffFunc>(func)) {}
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
+    y = double_func_(x);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    y = autodiff_func_(x);
+  }
+
+ private:
+  const DoubleFunc double_func_;
+  const AutoDiffFunc autodiff_func_;
+};
+
 }  // namespace
 
 PYBIND11_MODULE(_mathematicalprogram_py, m) {
   m.doc() = "Drake MathematicalProgram Bindings";
 
+  py::module::import("pydrake.autodiffutils");
   py::object variable =
     py::module::import("pydrake.symbolic").attr("Variable");
   py::object variables =
@@ -201,6 +260,17 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                const Eigen::Ref<MatrixX<symbolic::Variable>>& vars) {
              return self->AddBoundingBoxConstraint(lb, ub, vars);
       })
+      .def("AddConstraint", [](
+          MathematicalProgram* self, py::function func,
+          const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+          const Eigen::Ref<const VectorXDecisionVariable>& vars,
+          std::string& description) {
+        return self->AddConstraint(
+            std::make_shared<PyFunctionConstraint>(vars.size(), func, lb, ub,
+                                                   description),
+            vars);
+      }, py::arg("func"), py::arg("vars"), py::arg("lb"), py::arg("ub"),
+           py::arg("description")="")
       .def("AddConstraint",
            static_cast<Binding<Constraint> (MathematicalProgram::*)(
                const Expression&, double, double)>(
@@ -232,6 +302,14 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
               const Eigen::Ref<const MatrixX<Expression>>& e) {
              return self->AddPositiveSemidefiniteConstraint(e);
            })
+      .def("AddCost", [](MathematicalProgram* self, py::function func,
+                         const Eigen::Ref<const VectorXDecisionVariable>& vars,
+                         std::string& description) {
+             return self->AddCost(
+                 std::make_shared<PyFunctionCost>(vars.size(), func,
+                                                  description),
+                 vars);
+           }, py::arg("func"), py::arg("vars"), py::arg("description")="")
       .def("AddLinearCost",
            static_cast<Binding<LinearCost> (MathematicalProgram::*)(
                const Expression&)>(&MathematicalProgram::AddLinearCost))
@@ -370,6 +448,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
     .def("b", &QuadraticCost::b)
     .def("c", &QuadraticCost::c);
 
+  RegisterBinding<Cost>(&m, &prog_cls, "Cost");
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
 }
