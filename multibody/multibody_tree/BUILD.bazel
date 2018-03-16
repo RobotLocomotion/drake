@@ -197,7 +197,6 @@ drake_cc_library(
     deps = [
         "//drake/common:default_scalars",
         "//drake/multibody/multibody_tree/multibody_plant",
-        "//drake/systems/framework",
     ],
 )
 
