@@ -37,6 +37,7 @@ sh_binary(
 sh_binary(
     name = "kcov",
     srcs = ["kcov.sh"],
+    data = ["@kcov//:kcov"],
 )
 
 sh_binary(

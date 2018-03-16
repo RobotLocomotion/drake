@@ -10,13 +10,15 @@ if [ ! -f "${WORKSPACE}/WORKSPACE" ]; then
   exit 1
 fi
 
-# Just in case, don't collect data from cpplint tests.
-if echo "$@" | grep -q _cpplint ; then
-    "$@"
-    exit $?
+# There must be kcov (it is declared as a "data = []" dependency for ":kcov"
+# in our BUILD file).
+KCOV="${PWD}/external/kcov/kcov"
+if [ ! -x "${KCOV}" ]; then
+  echo "Kcov binary not found at ${kcov}"
+  exit 1
 fi
 
-kcov \
+"$KCOV" \
     --include-path=$WORKSPACE \
     --exclude-pattern=third_party \
     $WORKSPACE/bazel-kcov \

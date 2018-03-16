@@ -1,4 +1,5 @@
 bash-completion
+binutils
 clang-4.0
 clang-format-4.0
 coinor-libclp-dev
@@ -11,6 +12,9 @@ graphviz
 kcov-34
 libblas-dev
 libbz2-dev
+libcurl3
+libdw1
+libelf1
 libexpat1-dev
 libfreetype6-dev
 libglib2.0-dev
@@ -48,5 +52,6 @@ python-pygame
 python-sphinx
 python-tk
 valgrind
+wget
 zip
 zlib1g-dev
