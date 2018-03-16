@@ -2,8 +2,10 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
+import math
 import numpy as np
 import pydrake.symbolic as sym
+import pydrake.math as dmath
 
 
 # Define global variables to make the tests less verbose.
@@ -16,6 +18,8 @@ b = sym.Variable("b")
 c = sym.Variable("c")
 e_x = sym.Expression(x)
 e_y = sym.Expression(y)
+
+# TODO(eric.cousnieau): Replace `sym` math functions with `dmath`.
 
 
 class TestSymbolicVariable(unittest.TestCase):
@@ -426,6 +430,45 @@ class TestSymbolicExpression(unittest.TestCase):
 
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
+
+    def test_backwards_compatibility(self):
+        unary = [
+            (dmath.abs, math.fabs),
+            (dmath.exp, math.exp),
+            (dmath.sqrt, math.sqrt),
+            (dmath.sin, math.sin),
+            (dmath.cos, math.cos),
+            (dmath.tan, math.tan),
+            (dmath.asin, math.asin),
+            (dmath.acos, math.acos),
+            (dmath.atan, math.atan),
+            (dmath.sinh, math.sinh),
+            (dmath.cosh, math.cosh),
+            (dmath.tanh, math.tanh),
+            (dmath.ceil, math.ceil),
+            (dmath.floor, math.floor),
+        ]
+        binary = [
+            (dmath.min, min),
+            (dmath.max, max),
+            (dmath.pow, pow),
+            (dmath.atan2, dmath.atan2),
+        ]
+        fx = 0.1
+        fy = 0.2
+        # Test both double and symbolic overloads.
+        for f_cpp, f_core in unary:
+            # Check backwards compatibility.
+            self.assertEquals(getattr(sym, f_cpp.__name__), f_cpp)
+            self.assertEquals(f_cpp(fx), f_core(fx))
+            self.assertIsInstance(f_cpp(fx), float)
+            self.assertIsInstance(f_cpp(x), sym.Expression)
+        for f_cpp, f_core in binary:
+            # Check backwards compatibility.
+            self.assertEquals(getattr(sym, f_cpp.__name__), f_cpp)
+            self.assertEquals(f_cpp(fx, fy), f_core(fx, fy))
+            self.assertIsInstance(f_cpp(fx, fy), float)
+            self.assertIsInstance(f_cpp(x, y), sym.Expression)
 
 
 class TestSymbolicFormula(unittest.TestCase):
