@@ -32,15 +32,15 @@ template <typename T> class SpatialVelocity;
 ///   h_NSp = ∫p_PQ(r) x v_NQ(r) ρ(r)d³r
 ///   l_NS = ∫v_NQ(r) ρ(r)d³r
 /// </pre>
-/// and in particular it also applies to rigid bodies.
+/// where `ρ(r)` is the density of the body at each material location `r`.
+/// In particular, the continuum version above also applies to rigid bodies.
 ///
 /// Spatial momenta are elements of F⁶ (see [Featherstone 2008]) that combine
 /// both rotational (angular momentum) and translational (linear momentum)
 /// components. Spatial momenta are 6-element quantities that are pairs of
 /// ordinary 3-vectors. Elements 0-2 are the angular momentum component while
 /// elements 3-5 are the linear momentum component. As with any other spatial
-/// vector, both vector components must be expressed
-/// in the same frame.
+/// vector, both vector components must be expressed in the same frame.
 ///
 /// Neither the expressed-in frame nor the about-point are stored with a
 /// %SpatialMomentum object; they must be understood from context. It is the
@@ -197,11 +197,11 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// product with the spatial velocity `V_NBp_E` of body B frame shifted to
   /// point P, measured in an inertial (or Newtonian) frame N and expressed in
   /// the same frame E in which the spatial momentum is expressed.
-  /// This dot-product is twice the kinetic energy `K_NB` of body B in reference
-  /// frame N. The kinetic energy `K_NB` is independent of the about-point P and
-  /// so is this dot product. Therefore it is always true that:
-  /// <pre>
-  ///   K_NB = 1/2 (L_NBp⋅V_NBp) = 1/2 (L_NBcm⋅V_NBcm)
+  /// This dot-product is twice the kinetic energy `ke_NB` of body B in
+  /// reference frame N. The kinetic energy `ke_NB` is independent of the
+  /// about-point P and so is this dot product. Therefore it is always true
+  /// that: <pre>
+  ///   ke_NB = 1/2 (L_NBp⋅V_NBp) = 1/2 (L_NBcm⋅V_NBcm)
   /// </pre>
   /// where `L_NBcm` is the spatial momentum about the center of mass of body B
   /// and `V_NBcm` is the spatial velocity of frame B shifted to its center of
@@ -216,7 +216,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
 /// and expressed in the same frame E.
 /// @retval Lc_NSp_E
 ///   The combined spatial momentum of system S from combining `L1_NSp_E`
-///   and `L2_NSp_E`, applied about the same point P and in the same
+///   and `L2_NSp_E`, applied about the same point P, and in the same
 ///   expressed-in frame E as the operand spatial momenta.
 template <typename T>
 inline SpatialMomentum<T> operator+(

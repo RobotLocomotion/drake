@@ -748,7 +748,7 @@ TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
 template <typename T>
 class MomentumDotVelocityTest : public ::testing::Test {
  public:
-  // Useful typedefs when witting unit tests to access types.
+  // Useful typedefs when witing unit tests to access types.
   typedef T ScalarType;
  protected:
   SpatialMomentum<T> L_WBp_{Vector3<T>{1, 2, 3}, Vector3<T>{4, 5, 6}};
@@ -765,10 +765,10 @@ TYPED_TEST(MomentumDotVelocityTest, InvariantUnderShiftOperation) {
   const SpatialMomentum<T>& L_WBp = this->L_WBp_;
   const SpatialVelocity<T>& V_WBp = this->V_WBp_;
   const Vector3<T>& p_PQ = this->p_PQ_;
-  const T HdotV_P = L_WBp.dot(V_WBp);
+  const T LdotV_P = L_WBp.dot(V_WBp);
   // Perform L_WBq.dot(V_WBq):
   const T HdotV_Q = L_WBp.Shift(p_PQ).dot(V_WBp.Shift(p_PQ));
-  EXPECT_EQ(HdotV_P, HdotV_Q);
+  EXPECT_EQ(LdotV_P, HdotV_Q);
 }
 
 }  // namespace
