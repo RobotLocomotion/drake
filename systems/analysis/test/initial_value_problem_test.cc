@@ -1,8 +1,12 @@
 #include "drake/systems/analysis/initial_value_problem.h"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/systems/analysis/initial_value_problem-inl.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -13,7 +17,7 @@ namespace systems {
 namespace {
 
 // Checks IVP solver usage with multiple integrators.
-GTEST_TEST(InitialValueProblemTest, UsingMultipleIntegrators) {
+GTEST_TEST(InitialValueProblemTest, SolutionUsingMultipleIntegrators) {
   // Accuracy upper bound, as not all the integrators used below support
   // error control.
   const double kAccuracy = 1e-2;
@@ -70,7 +74,7 @@ GTEST_TEST(InitialValueProblemTest, UsingMultipleIntegrators) {
 }
 
 // Validates preconditions when constructing any given IVP.
-GTEST_TEST(InitialValueProblemTest, ConstructorPreconditionValidation) {
+GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
   // Defines a generic ODE d𝐱/dt = -𝐱 + 𝐤, that does not
   // model (nor attempts to model) any physical process.
   const InitialValueProblem<double>::ODEFunction dummy_ode_function =
@@ -116,7 +120,7 @@ GTEST_TEST(InitialValueProblemTest, ConstructorPreconditionValidation) {
 }
 
 // Validates preconditions when solving any given IVP.
-GTEST_TEST(InitialValueProblemTest, SolvePreconditionValidation) {
+GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   // The initial time t₀, for IVP definition.
   const double kDefaultInitialTime = 0.0;
   // The initial state 𝐱₀, for IVP definition.
@@ -135,6 +139,13 @@ GTEST_TEST(InitialValueProblemTest, SolvePreconditionValidation) {
          const VectorX<double>& k) -> VectorX<double> {
         return -x + k;
       }, kDefaultValues);
+
+  // Instantiates a dummy approximation technique for test purposes only.
+  const InitialValueProblem<double>::ApproximationTechnique<void>
+      dummy_approximation_technique = [](
+          const std::vector<double>&,
+          const std::vector<VectorX<double>>&,
+          const std::vector<VectorX<double>>&) {};
 
   // Instantiates an invalid time for testing, i.e. a time to
   // solve for that's in the past with respect to the IVP initial
@@ -158,17 +169,22 @@ GTEST_TEST(InitialValueProblemTest, SolvePreconditionValidation) {
   const VectorX<double> kValidState = VectorX<double>::Constant(2, 1.0);
 
   EXPECT_THROW(ivp.Solve(kInvalidTime), std::logic_error);
-
+  EXPECT_THROW(ivp.Approximate(
+      dummy_approximation_technique, kInvalidTime), std::logic_error);
   {
     InitialValueProblem<double>::SpecifiedValues values;
     values.k = kInvalidParameters;
     EXPECT_THROW(ivp.Solve(kValidTime, values), std::logic_error);
+    EXPECT_THROW(ivp.Approximate(
+        dummy_approximation_technique, kValidTime, values), std::logic_error);
   }
 
   {
     InitialValueProblem<double>::SpecifiedValues values;
     values.k = kValidParameters;
     EXPECT_THROW(ivp.Solve(kInvalidTime, values), std::logic_error);
+    EXPECT_THROW(ivp.Approximate(
+        dummy_approximation_technique, kInvalidTime, values), std::logic_error);
   }
 
   {
@@ -176,6 +192,8 @@ GTEST_TEST(InitialValueProblemTest, SolvePreconditionValidation) {
     values.x0 = kInvalidState;
     values.k = kValidParameters;
     EXPECT_THROW(ivp.Solve(kValidTime, values), std::logic_error);
+    EXPECT_THROW(ivp.Approximate(
+        dummy_approximation_technique, kValidTime, values), std::logic_error);
   }
 
   {
@@ -183,6 +201,8 @@ GTEST_TEST(InitialValueProblemTest, SolvePreconditionValidation) {
     values.x0 = kValidState;
     values.k = kInvalidParameters;
     EXPECT_THROW(ivp.Solve(kValidTime, values), std::logic_error);
+    EXPECT_THROW(ivp.Approximate(
+        dummy_approximation_technique, kValidTime, values), std::logic_error);
   }
 
   {
@@ -190,6 +210,8 @@ GTEST_TEST(InitialValueProblemTest, SolvePreconditionValidation) {
     values.x0 = kValidState;
     values.k = kValidParameters;
     EXPECT_THROW(ivp.Solve(kInvalidTime, values), std::logic_error);
+    EXPECT_THROW(ivp.Approximate(
+        dummy_approximation_technique, kInvalidTime, values), std::logic_error);
   }
 }
 
@@ -203,8 +225,27 @@ class InitialValueProblemAccuracyTest
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
-  double integration_accuracy_;
+  double integration_accuracy_{0.};
 };
+
+using trajectories::PiecewisePolynomial;
+
+PiecewisePolynomial<double> CubicApproximationTechnique(
+    const std::vector<double>& t_sequence,
+    const std::vector<VectorX<double>>& x_sequence,
+    const std::vector<VectorX<double>>& dxdt_sequence) {
+  auto vector_to_matrix = [](const VectorX<double>& v) {
+    return (MatrixX<double>(v.size(), 1) << v).finished();
+  };
+  std::vector<MatrixX<double>> x_matrix_sequence(x_sequence.size());
+  std::transform(x_sequence.begin(), x_sequence.end(),
+                 x_matrix_sequence.begin(), vector_to_matrix);
+  std::vector<MatrixX<double>> dxdt_matrix_sequence(dxdt_sequence.size());
+  std::transform(dxdt_sequence.begin(), dxdt_sequence.end(),
+                 dxdt_matrix_sequence.begin(), vector_to_matrix);
+  return PiecewisePolynomial<double>::Cubic(
+      t_sequence, x_matrix_sequence, dxdt_matrix_sequence);
+}
 
 // Accuracy test of the solution for the momentum 𝐩 of a particle
 // with mass m travelling through a gas with dynamic viscosity μ,
@@ -212,8 +253,9 @@ class InitialValueProblemAccuracyTest
 TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
   // The initial time t₀.
   const double kInitialTime = 0.0;
-  // The initial velocity 𝐯₀ of the particle at time t₀.
-  const VectorX<double> kInitialParticleMomentum = VectorX<double>::Zero(3);
+  // The initial momentum 𝐩₀ of the particle at time t₀.
+  const VectorX<double> kInitialParticleMomentum = (
+      VectorX<double>(3) << -3.0, 1.0, 2.0).finished();
   // The mass m of the particle and the dynamic viscosity μ
   // of the gas.
   const double kDefaultGasViscosity = 0.1;
@@ -250,6 +292,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
   const double kTimeStep = 0.1;
 
   const double t0 = kInitialTime;
+  const double tf = kTotalTime;
   const VectorX<double>& p0 = kInitialParticleMomentum;
   for (double mu = kLowestGasViscosity; mu <= kHighestGasViscosity;
        mu += kGasViscosityStep) {
@@ -257,21 +300,33 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
          m += kParticleMassStep) {
       InitialValueProblem<double>::SpecifiedValues values;
       values.k = (VectorX<double>(2) << mu, m).finished();
+
+      const PiecewisePolynomial<double> particle_momentum_approx =
+          particle_momentum_ivp.Approximate<PiecewisePolynomial<double>>(
+              CubicApproximationTechnique, tf, values);
+
       for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
         // Tests are performed against the closed form
         // solution for the IVP described above, which is
         // 𝐩(t; [μ, m]) = 𝐩₀ * e^(-μ * (t - t₀) / m).
-        const VectorX<double> exact_solution =
-            p0 * std::exp(-mu * (t - t0) / m);
-        const VectorX<double> approximate_solution =
-            particle_momentum_ivp.Solve(t, values);
-        EXPECT_TRUE(CompareMatrices(
-            approximate_solution, exact_solution, integration_accuracy_))
+        const VectorX<double> solution = p0 * std::exp(-mu * (t - t0) / m);
+
+        EXPECT_TRUE(CompareMatrices(particle_momentum_ivp.Solve(t, values),
+                                    solution, integration_accuracy_))
             << "Failure solving d𝐩/dt = -μ * 𝐩/m"
             << " using 𝐩(" << t0 << "; [μ, m]) = " << p0
             << " for t = " << t << ", μ = " << mu
             << " and m = " << m << " to an accuracy of "
             << integration_accuracy_;
+
+        EXPECT_TRUE(CompareMatrices(particle_momentum_approx.value(t),
+                                    solution, integration_accuracy_))
+            << "Failure approximating the solution for d𝐩/dt = -μ * 𝐩/m"
+            << " using 𝐩(" << t0 << "; [μ, m]) = " << p0
+            << " for t = " << t << ", μ = " << mu
+            << " and m = " << m << " to an accuracy of "
+            << integration_accuracy_ << " with an Hermite cubic"
+            << " piecewise interpolator";
       }
     }
   }
@@ -279,7 +334,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
 
 // Accuracy test of the solution for the velocity 𝐯 of a particle
 // with mass m travelling through a gas with dynamic viscosity μ
-// and being pushed by constant force 𝐅, where
+// and being pushed by a constant force 𝐅, where
 // d𝐯/dt = (𝐅 - μ * 𝐯) / m and 𝐯(t₀; [m, μ]) = 𝐯₀.
 TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
   // The initial time t₀.
@@ -301,7 +356,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
   // Instantiates the particle velocity IVP.
   InitialValueProblem<double> particle_velocity_ivp(
       [&kPushingForce](const double& t, const VectorX<double>& v,
-         const VectorX<double>& k) -> VectorX<double> {
+                       const VectorX<double>& k) -> VectorX<double> {
         const double mu = k[0];
         const double m = k[1];
         const VectorX<double>& F = kPushingForce;
@@ -324,31 +379,46 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
   const double kTimeStep = 0.1;
 
   const double t0 = kInitialTime;
+  const double tf = kTotalTime;
+
   const VectorX<double>& F = kPushingForce;
   const VectorX<double>& v0 = kInitialParticleVelocity;
+
   for (double mu = kLowestGasViscosity; mu <= kHighestGasViscosity;
        mu += kGasViscosityStep) {
     for (double m = kLowestParticleMass; m <= kHighestParticleMass;
          m += kParticleMassStep) {
       InitialValueProblem<double>::SpecifiedValues values;
       values.k = (VectorX<double>(2) << mu, m).finished();
+
+      const PiecewisePolynomial<double> particle_velocity_approx =
+          particle_velocity_ivp.Approximate<PiecewisePolynomial<double>>(
+              CubicApproximationTechnique, tf, values);
+
       for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
         // Tests are performed against the closed form
         // solution for the IVP described above, which is
         // 𝐯(t; [μ, m]) = 𝐯₀ * e^(-μ * (t - t₀) / m) +
-        //                𝐅 / μ * (1 - e^(-μ * (t - t₀) / m)).
-        const VectorX<double> exact_solution =
+        //                𝐅 / μ * (1 - e^(-μ * (t - t₀) / m))
+        // with 𝐅 = (0., 1., 0.).
+        const VectorX<double> solution =
             v0 * std::exp(-mu * (t - t0) / m) +
             F / mu * (1. - std::exp(-mu * (t - t0) / m));
-        const VectorX<double> approximate_solution =
-            particle_velocity_ivp.Solve(t, values);
-        EXPECT_TRUE(CompareMatrices(
-            approximate_solution, exact_solution, integration_accuracy_))
+        EXPECT_TRUE(CompareMatrices(particle_velocity_ivp.Solve(t, values),
+                                    solution, integration_accuracy_))
             << "Failure solving d𝐯/dt = (-μ * 𝐯 + 𝐅) / m"
             << " using 𝐯(" << t0 << "; [μ, m]) = " << v0
             << " for t = " << t << ", μ = " << mu
             << ", m = " << m << "and 𝐅 = " << F
             << " to an accuracy of " << integration_accuracy_;
+
+        EXPECT_TRUE(CompareMatrices(particle_velocity_approx.value(t),
+                                    solution, integration_accuracy_))
+            << "Failure approximating the solution for d𝐯/dt = (-μ * 𝐯 + 𝐅) / m"
+            << " using 𝐯(" << t0 << "; [μ, m]) = " << v0 << " for t = " << t
+            << ", μ = " << mu << ", m = " << m << "and 𝐅 = " << F
+            << " to an accuracy of " << integration_accuracy_
+            << " with an Hermite cubic piecewise interpolator";
       }
     }
   }

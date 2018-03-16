@@ -1,7 +1,10 @@
 #pragma once
 
+#include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/systems/analysis/initial_value_problem.h"
 #include "drake/systems/analysis/runge_kutta3_integrator-inl.h"
@@ -106,8 +109,8 @@ const T InitialValueProblem<T>::kMaxStepSize = static_cast<T>(1e-1);
 
 template <typename T>
 InitialValueProblem<T>::InitialValueProblem(
-    const typename InitialValueProblem<T>::ODEFunction& ode_function,
-    const typename InitialValueProblem<T>::SpecifiedValues& default_values)
+    const ODEFunction& ode_function,
+    const SpecifiedValues& default_values)
     : default_values_(default_values),
       current_values_(default_values) {
   // Checks that preconditions are met.
@@ -143,70 +146,13 @@ InitialValueProblem<T>::InitialValueProblem(
 }
 
 template <typename T>
-VectorX<T> InitialValueProblem<T>::Solve(const T& tf,
-    const typename InitialValueProblem<T>::SpecifiedValues& values) const {
-  // Gets specified values to solve with, while checking
-  // that all preconditions hold.
-  const T t0 = values.t0.value_or(default_values_.t0.value());
-  if (tf < t0) {
-    throw std::logic_error("Cannot solve IVP for a time tf"
-                           " before the initial time t0.");
-  }
-  const VectorX<T> x0 = values.x0.value_or(default_values_.x0.value());
-  if (x0.size() != default_values_.x0.value().size()) {
-    throw std::logic_error("IVP initial state vector x0 is"
-                           " of the wrong dimension.");
-  }
-  const VectorX<T> k = values.k.value_or(default_values_.k.value());
-  if (k.size() != default_values_.k.value().size()) {
-    throw std::logic_error("IVP parameter vector k is "
-                           " of the wrong dimension");
-  }
-  // Performs cache invalidation and re-initializes both
-  // integrator and integration context if necessary.
-  if (t0 != current_values_.t0 ||
-      x0 != current_values_.x0 ||
-      k != current_values_.k ||
-      tf < context_->get_time()) {
-    // Sets context (initial) time.
-    context_->set_time(t0);
+VectorX<T> InitialValueProblem<T>::Solve(
+    const T& tf, const SpecifiedValues& values) const {
+  // Gets all values to solve with, either given or default, while
+  // checking that all preconditions hold.
+  const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
 
-    // Sets context (initial) state. This cast is safe because the
-    // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
-    // a BasicVector<T>, and the implementation deals with LeafSystem<T>
-    // instances only by design.
-    BasicVector<T>& state_vector = dynamic_cast<BasicVector<T>&>(
-        context_->get_mutable_continuous_state_vector());
-    state_vector.set_value(x0);
-
-    // Sets context parameters.
-    BasicVector<T>& parameter_vector =
-        context_->get_mutable_numeric_parameter(0);
-    parameter_vector.set_value(k);
-
-    // Keeps track of current step size and accuracy settings (regardless
-    // of whether these are actually used by the integrator instance or not).
-    const T max_step_size = integrator_->get_maximum_step_size();
-    const T initial_step_size = integrator_->get_initial_step_size_target();
-    const T target_accuracy = integrator_->get_target_accuracy();
-
-    // Resets the integrator internal state.
-    integrator_->Reset();
-
-    // Sets integrator settings again.
-    integrator_->set_maximum_step_size(max_step_size);
-    if (integrator_->supports_error_estimation()) {
-      // Specifies initial step and accuracy setting only if necessary.
-      integrator_->request_initial_step_size_target(initial_step_size);
-      integrator_->set_target_accuracy(target_accuracy);
-    }
-
-    // Keeps track of the current initial conditions and parameters
-    // for future cache invalidation.
-    current_values_.t0 = t0;
-    current_values_.x0 = x0;
-    current_values_.k = k;
-  }
+  MayResetCachedState(tf, safe_values);
 
   // Initializes integrator if necessary.
   if (!integrator_->is_initialized()) {
@@ -217,13 +163,156 @@ VectorX<T> InitialValueProblem<T>::Solve(const T& tf,
   integrator_->IntegrateWithMultipleSteps(
       tf - context_->get_time());
 
-  // Retrieves the system's state vector. This cast is safe because the
+  // Retrieves the state vector. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
   // a BasicVector<T>, and the implementation deals with LeafSystem<T>
   // instances only by design.
   const BasicVector<T>& state_vector = dynamic_cast<const BasicVector<T>&>(
       context_->get_continuous_state_vector());
   return state_vector.get_value();
+}
+
+template <typename T>
+void InitialValueProblem<T>::ResetCachedState(
+    const SpecifiedValues& values) const {
+  // Sets context (initial) time.
+  context_->set_time(values.t0.value());
+
+  // Sets context (initial) state. This cast is safe because the
+  // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
+  // a BasicVector<T>, and the implementation deals with LeafSystem<T>
+  // instances only by design.
+  BasicVector<T>& state_vector = dynamic_cast<BasicVector<T>&>(
+      context_->get_mutable_continuous_state_vector());
+  state_vector.set_value(values.x0.value());
+
+  // Sets context parameters.
+  BasicVector<T>& parameter_vector =
+      context_->get_mutable_numeric_parameter(0);
+  parameter_vector.set_value(values.k.value());
+
+  // Keeps track of current step size and accuracy settings (regardless
+  // of whether these are actually used by the integrator instance or not).
+  const T max_step_size = integrator_->get_maximum_step_size();
+  const T initial_step_size = integrator_->get_initial_step_size_target();
+  const T target_accuracy = integrator_->get_target_accuracy();
+
+  // Resets the integrator internal state.
+  integrator_->Reset();
+
+  // Sets integrator settings again.
+  integrator_->set_maximum_step_size(max_step_size);
+  if (integrator_->supports_error_estimation()) {
+    // Specifies initial step and accuracy setting only if necessary.
+    integrator_->request_initial_step_size_target(initial_step_size);
+    integrator_->set_target_accuracy(target_accuracy);
+  }
+  // Keeps track of the current initial conditions and parameters
+  // for future cache invalidation.
+  current_values_ = values;
+}
+
+template <typename T>
+void InitialValueProblem<T>::MayResetCachedState(
+    const T& tf, const SpecifiedValues& values) const {
+  if (values != current_values_ || tf < context_->get_time()) {
+    ResetCachedState(values);
+  }
+}
+
+template <typename T>
+typename InitialValueProblem<T>::SpecifiedValues
+InitialValueProblem<T>::SanitizeValuesOrThrow(
+    const T& tf, const SpecifiedValues& values) const {
+  SpecifiedValues safe_values;
+  safe_values.t0 = values.t0.has_value() ? values.t0 : default_values_.t0;
+  if (tf < safe_values.t0.value()) {
+    throw std::logic_error("Cannot solve IVP for a time"
+                           " before the initial condition.");
+  }
+  safe_values.x0 = values.x0.has_value() ? values.x0 : default_values_.x0;
+  if (safe_values.x0.value().size() != default_values_.x0.value().size()) {
+    throw std::logic_error("IVP initial state vector x0 is"
+                           " of the wrong dimension.");
+  }
+  safe_values.k = values.k.has_value() ? values.k : default_values_.k;
+  if (safe_values.k.value().size() != default_values_.k.value().size()) {
+    throw std::logic_error("IVP parameter vector k is "
+                           " of the wrong dimension");
+  }
+  return safe_values;
+}
+
+template <typename T>
+template <typename ApproximatingFn>
+ApproximatingFn InitialValueProblem<T>::Approximate(
+    const ApproximationTechnique<ApproximatingFn>& approximation_technique,
+    const T& tf, const SpecifiedValues& values) const {
+  // Gets all values to solve with, either given or default, while
+  // checking that all preconditions hold.
+  const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
+
+  // Unconditionally invalidates the cache. All integration steps are
+  // needed to make an approximation and those are not being cached
+  // across calls.
+  ResetCachedState(safe_values);
+
+  // Initializes integrator.
+  integrator_->Initialize();
+
+  // Allocates the sequences for time, state and state derivative with respect
+  // to time to be used in the approximation.
+  std::vector<T> t_sequence;
+  std::vector<VectorX<T>> x_sequence;
+  std::vector<VectorX<T>> dx_dt_sequence;
+
+  // Allocates system time derivatives representation.
+  std::unique_ptr<ContinuousState<T>> derivatives =
+      system_->AllocateTimeDerivatives();
+
+  const T final_time = tf;
+  while (true) {
+    // Adds the current time to the time sequence.
+    const T current_time = context_->get_time();
+    t_sequence.push_back(current_time);
+
+    // Retrieves the current state vector and adds it to the state
+    // sequence. This cast is safe because the ContinuousState<T> of a
+    // LeafSystem<T> is flat i.e. it is just a BasicVector<T>, and the
+    // implementation deals with LeafSystem<T> instances only by design.
+    const BasicVector<T>& state_vector = dynamic_cast<const BasicVector<T>&>(
+        context_->get_continuous_state_vector());
+    // Adds initial state to the corresponding sequence.
+    x_sequence.push_back(state_vector.get_value());
+
+    // Computes the state derivative with respect to time at the initial
+    // time and state.
+    system_->CalcTimeDerivatives(*context_, derivatives.get());
+
+    // Retrieves the current time derivatives vector and adds it
+    // to the sequence of state derivative with respect to time. This cast
+    // is safe because the ContinuousState<T> of a LeafSystem<T> is flat i.e.
+    // it is just a BasicVector<T>, and the implementation deals with
+    // LeafSystem<T> instances only by design.
+    const BasicVector<T>& initial_state_derivative_vector =
+        dynamic_cast<const BasicVector<T>&>(derivatives->get_vector());
+    // Adds initial state derivative to the corresponding sequence.
+    dx_dt_sequence.push_back(initial_state_derivative_vector.get_value());
+
+    // Computes remaining integration time.
+    const T time_left = final_time - current_time;
+    // Leaves loop if integration is complete.
+    if (time_left < std::numeric_limits<T>::epsilon()) break;
+
+    // Advances the IVP solution one step forward.
+    integrator_->IntegrateAtMost(
+        std::numeric_limits<T>::infinity(), std::numeric_limits<T>::infinity(),
+        std::min(time_left, integrator_->get_maximum_step_size()));
+  }
+
+  // Builds an approximating function by applying the given technique to
+  // the computed sequences.
+  return approximation_technique(t_sequence, x_sequence, dx_dt_sequence);
 }
 
 }  // namespace systems

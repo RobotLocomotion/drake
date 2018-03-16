@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
@@ -125,6 +126,25 @@ class AntiderivativeFunctionAccuracyTest
   double integration_accuracy_{0.};
 };
 
+using trajectories::PiecewisePolynomial;
+
+PiecewisePolynomial<double> CubicApproximationTechnique(
+    const std::vector<double>& t_sequence,
+    const std::vector<double>& x_sequence,
+    const std::vector<double>& dxdt_sequence) {
+  auto scalar_to_matrix = [](const double& v) {
+    return (MatrixX<double>(1, 1) << v).finished();
+  };
+  std::vector<MatrixX<double>> x_matrix_sequence(x_sequence.size());
+  std::transform(x_sequence.begin(), x_sequence.end(),
+                 x_matrix_sequence.begin(), scalar_to_matrix);
+  std::vector<MatrixX<double>> dxdt_matrix_sequence(dxdt_sequence.size());
+  std::transform(dxdt_sequence.begin(), dxdt_sequence.end(),
+                 dxdt_matrix_sequence.begin(), scalar_to_matrix);
+  return PiecewisePolynomial<double>::Cubic(
+      t_sequence, x_matrix_sequence, dxdt_matrix_sequence);
+}
+
 // Accuracy test for the numerical integration of ∫₀ᵘ xⁿ dx,
 // parameterized in its order n.
 TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
@@ -155,16 +175,28 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
   for (int n = kLowestOrder; n <= kHighestOrder; ++n) {
     AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = VectorX<double>::Constant(1, static_cast<double>(n)).eval();
+
+    PiecewisePolynomial<double> antiderivative_function_approximation =
+        antiderivative_function.Approximate<PiecewisePolynomial<double>>(
+            CubicApproximationTechnique, kArgIntervalUBound, values);
+
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
       // Tests are performed against the closed form solution of
       // the definite integral, which is (n + 1)⁻¹ uⁿ⁺¹.
-      const double exact_solution = std::pow(u, n + 1.) / (n + 1.);
+      const double solution = std::pow(u, n + 1.) / (n + 1.);
+
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
-                  exact_solution, integration_accuracy_)
+                  solution, integration_accuracy_)
           << "Failure integrating ∫₀ᵘ xⁿ dx for u = "
           << u << " and n = " << n << " to an accuracy of "
           << integration_accuracy_;
+
+      EXPECT_NEAR(antiderivative_function_approximation.scalarValue(u),
+                  solution, integration_accuracy_)
+          << "Failure approximating ∫₀ᵘ xⁿ dx for u = "
+          << u << " and n = " << n << " to an accuracy of "
+          << integration_accuracy_ << " with an Hermite cubic polynomial";
     }
   }
 }
@@ -201,14 +233,26 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
        a += kParamStep) {
     AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = VectorX<double>::Constant(1, a).eval();
+
+    PiecewisePolynomial<double> antiderivative_function_approximation =
+        antiderivative_function.Approximate<PiecewisePolynomial<double>>(
+            CubicApproximationTechnique, kArgIntervalUBound, values);
+
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
       // Tests are performed against the closed form solution of
       // the definite integral, which is a⁻¹ ln(cosh(a ⋅ u)).
-      const double exact_solution = std::log(std::cosh(a * u)) / a;
+      const double solution = std::log(std::cosh(a * u)) / a;
+
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
-                  exact_solution, integration_accuracy_)
+                  solution, integration_accuracy_)
           << "Failure integrating ∫₀ᵘ tanh(a⋅x) dx for"
+          << " u = " << u << " and a = " << a << " to an accuracy of "
+          << integration_accuracy_;
+
+      EXPECT_NEAR(antiderivative_function_approximation.scalarValue(u),
+                  solution, integration_accuracy_)
+          << "Failure approximating ∫₀ᵘ tanh(a⋅x) dx for"
           << " u = " << u << " and a = " << a << " to an accuracy of "
           << integration_accuracy_;
     }
@@ -254,15 +298,27 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
          b += k2ndPoleStep) {
       AntiderivativeFunction<double>::SpecifiedValues values;
       values.k = (VectorX<double>(2) << a, b).finished();
+
+      PiecewisePolynomial<double> antiderivative_function_approximation =
+          antiderivative_function.Approximate<PiecewisePolynomial<double>>(
+              CubicApproximationTechnique, kArgIntervalUBound, values);
+
       for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
            u += kArgStep) {
         // Tests are performed against the closed form solution of the definite
         // integral, which is (b - a)⁻¹ ln [(b / a) ⋅ (u + a) / (u + b)].
-        const double exact_solution =
+        const double solution =
             std::log((b / a) * ((u + a) / (u + b))) / (b - a);
+
         EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
-                    exact_solution, integration_accuracy_)
+                    solution, integration_accuracy_)
             << "Failure integrating ∫₀ᵘ [(x + a)⋅(x + b)]⁻¹ dx for"
+            << " u = " << u << ", a = " << a << "and b = " << b
+            << " to an accuracy of " << integration_accuracy_;
+
+        EXPECT_NEAR(antiderivative_function_approximation.scalarValue(u),
+                    solution, integration_accuracy_)
+            << "Failure approximating ∫₀ᵘ [(x + a)⋅(x + b)]⁻¹ dx for"
             << " u = " << u << ", a = " << a << "and b = " << b
             << " to an accuracy of " << integration_accuracy_;
       }
@@ -301,15 +357,27 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
        n += kParamStep) {
     AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = VectorX<double>::Constant(1, n).eval();
+
+    PiecewisePolynomial<double> antiderivative_function_approximation =
+        antiderivative_function.Approximate<PiecewisePolynomial<double>>(
+            CubicApproximationTechnique, kArgIntervalUBound, values);
+
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
       // Tests are performed against the closed form solution of the definite
       // integral, which is (u / n - 1 / n²) ⋅ e^(n ⋅ u) + 1 / n².
-      const double exact_solution =
+      const double solution =
           (u / n - 1. / (n * n)) * std::exp(n * u) + 1. / (n * n);
+
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
-                  exact_solution, integration_accuracy_)
+                  solution, integration_accuracy_)
           << "Failure integrating ∫₀ᵘ x eⁿˣ dx for"
+          << " u = " << u << " and n = " << n
+          << " to an accuracy of " << integration_accuracy_;
+
+      EXPECT_NEAR(antiderivative_function_approximation.scalarValue(u),
+                  solution, integration_accuracy_)
+          << "Failure approximating ∫₀ᵘ x eⁿˣ dx for"
           << " u = " << u << " and n = " << n
           << " to an accuracy of " << integration_accuracy_;
     }
@@ -347,15 +415,27 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
        a += kParamStep) {
     AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = VectorX<double>::Constant(1, a).eval();
+
+    PiecewisePolynomial<double> antiderivative_function_approximation =
+        antiderivative_function.Approximate<PiecewisePolynomial<double>>(
+            CubicApproximationTechnique, kArgIntervalUBound, values);
+
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
       // Tests are performed against the closed form solution of the definite
       // integral, which is -u ⋅ cos(a ⋅ u) / a + sin(a ⋅ u) / a².
-      const double exact_solution =
+      const double solution =
           -u * std::cos(a * u) / a + std::sin(a * u) / (a * a);
+
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
-                  exact_solution, integration_accuracy_)
+                  solution, integration_accuracy_)
           << "Failure integrating ∫₀ᵘ x⋅sin(a⋅x) dx for"
+          << " u = " << u << " and a = " << a << " to an accuracy of "
+          << integration_accuracy_;
+
+      EXPECT_NEAR(antiderivative_function_approximation.scalarValue(u),
+                  solution, integration_accuracy_)
+          << "Failure approximating ∫₀ᵘ x⋅sin(a⋅x) dx for"
           << " u = " << u << " and a = " << a << " to an accuracy of "
           << integration_accuracy_;
     }

@@ -2,9 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/scalar_initial_value_problem-inl.h"
 
 namespace drake {
 namespace systems {
@@ -68,7 +70,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
 }
 
 // Validates preconditions when constructing any given scalar IVP.
-GTEST_TEST(ScalarInitialValueProblemTest, ConstructorPreconditionValidation) {
+GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
   // Defines a generic ODE dx/dt = -x * t, that does not
   // model (nor attempts to model) any physical process.
   const ScalarInitialValueProblem<double>::
@@ -115,7 +117,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructorPreconditionValidation) {
 }
 
 // Validates preconditions when solving any given IVP.
-GTEST_TEST(ScalarInitialValueProblemTest, SolvePreconditionValidation) {
+GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
   // The initial time t₀, for IVP definition.
   const double kDefaultInitialTime = 0.0;
   // The initial state x₀, for IVP definition.
@@ -136,6 +138,12 @@ GTEST_TEST(ScalarInitialValueProblemTest, SolvePreconditionValidation) {
         return -x + k[0];
       }, kDefaultValues);
 
+  // Instantiates a dummy approximation technique for test purposes only.
+  const ScalarInitialValueProblem<double>::ApproximationTechnique<void>
+      dummy_approximation_technique = [](const std::vector<double>&,
+                                         const std::vector<double>&,
+                                         const std::vector<double>&) {};
+
   // Instantiates an invalid time for testing, i.e. a time to
   // solve for that's in the past with respect to the IVP initial
   // time.
@@ -152,17 +160,22 @@ GTEST_TEST(ScalarInitialValueProblemTest, SolvePreconditionValidation) {
   const VectorX<double> kValidParameters = VectorX<double>::Constant(2, 5.0);
 
   EXPECT_THROW(ivp.Solve(kInvalidTime), std::logic_error);
-
+  EXPECT_THROW(ivp.Approximate(
+      dummy_approximation_technique, kInvalidTime), std::logic_error);
   {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = kInvalidParameters;
     EXPECT_THROW(ivp.Solve(kValidTime, values), std::logic_error);
+    EXPECT_THROW(ivp.Approximate(
+        dummy_approximation_technique, kValidTime, values), std::logic_error);
   }
 
   {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = kValidParameters;
     EXPECT_THROW(ivp.Solve(kInvalidTime, values), std::logic_error);
+    EXPECT_THROW(ivp.Approximate(
+        dummy_approximation_technique, kInvalidTime, values), std::logic_error);
   }
 }
 
@@ -178,6 +191,25 @@ class ScalarInitialValueProblemAccuracyTest
   // evaluation in the relative tolerance sense.
   double integration_accuracy_{0.};
 };
+
+using trajectories::PiecewisePolynomial;
+
+PiecewisePolynomial<double> CubicApproximationTechnique(
+    const std::vector<double>& t_sequence,
+    const std::vector<double>& x_sequence,
+    const std::vector<double>& dxdt_sequence) {
+  auto scalar_to_matrix = [](const double& v) {
+    return (MatrixX<double>(1, 1) << v).finished();
+  };
+  std::vector<MatrixX<double>> x_matrix_sequence(x_sequence.size());
+  std::transform(x_sequence.begin(), x_sequence.end(),
+                 x_matrix_sequence.begin(), scalar_to_matrix);
+  std::vector<MatrixX<double>> dxdt_matrix_sequence(dxdt_sequence.size());
+  std::transform(dxdt_sequence.begin(), dxdt_sequence.end(),
+                 dxdt_matrix_sequence.begin(), scalar_to_matrix);
+  return PiecewisePolynomial<double>::Cubic(
+      t_sequence, x_matrix_sequence, dxdt_matrix_sequence);
+}
 
 // Accuracy test of the solution for the stored charge Q in an RC
 // series circuit excited by a sinusoidal voltage source E(t),
@@ -222,12 +254,19 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
   const double kTotalTime = 1.0;
   const double kTimeStep = 0.1;
 
+  const double Q0 = kInitialStoredCharge;
+  const double t0 = kInitialTime;
+  const double tf = kTotalTime;
   for (double Rs = kLowestResistance; Rs <= kHighestResistance ;
        Rs += kResistanceStep) {
     for (double Cs = kLowestCapacitance; Cs <= kHighestCapacitance ;
          Cs += kCapacitanceStep) {
       ScalarInitialValueProblem<double>::SpecifiedValues values;
       values.k = (VectorX<double>(2) << Rs, Cs).finished();
+
+      PiecewisePolynomial<double> stored_charge_approx =
+          stored_charge_ivp.Approximate<PiecewisePolynomial<double>>(
+              CubicApproximationTechnique, tf, values);
 
       const double tau = Rs * Cs;
       const double tau_sq = tau * tau;
@@ -237,17 +276,25 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
         // Q(t; [Rs, Cs]) = 1/Rs * (τ²/ (1 + τ²) * e^(-t / τ) +
         //                  τ / √(1 + τ²) * sin(t - arctan(τ)))
         // where τ = Rs * Cs for Q(t₀ = 0; [Rs, Cs]) = Q₀ = 0.
-        const double exact_solution = (
+        const double solution = (
             tau_sq / (1. + tau_sq) * std::exp(-t / tau)
             + tau / std::sqrt(1. + tau_sq)
             * std::sin(t - std::atan(tau))) / Rs;
         EXPECT_NEAR(stored_charge_ivp.Solve(t, values),
-                    exact_solution, integration_accuracy_)
+                    solution, integration_accuracy_)
             << "Failure solving dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
-            << kInitialTime << "; [Rs, Cs]) = " << kInitialStoredCharge
-            << " for t = " << t << ", Rs = " << Rs
-            << " and Cs = " << Cs << " with an accuracy of "
+            << t0 << "; [Rs, Cs]) = " << Q0 << " for t = " << t << ", Rs = "
+            << Rs << " and Cs = " << Cs << " to an accuracy of "
             << integration_accuracy_;
+
+        EXPECT_NEAR(stored_charge_approx.scalarValue(t),
+                    solution, integration_accuracy_)
+            << "Failure approximating the solution for"
+            << " dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
+            << t0 << "; [Rs, Cs]) = " << Q0 << " for t = " << t
+            << ", Rs = " << Rs << " and Cs = " << Cs
+            << " to an accuracy of " << integration_accuracy_
+            << " with an Hermite cubic piecewise interpolator";
       }
     }
   }
@@ -288,21 +335,37 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   const double kTotalTime = 1.0;
   const double kTimeStep = 0.1;
 
+  const double N0 = kInitialPopulation;
+  const double t0 = kInitialTime;
+  const double tf = kTotalTime;
   for (double r = kLowestMalthusParam; r <= kHighestMalthusParam;
        r += kMalthusParamStep) {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = VectorX<double>::Constant(1, r).eval();
+
+    PiecewisePolynomial<double> population_growth_approx =
+        population_growth_ivp.Approximate<PiecewisePolynomial<double>>(
+            CubicApproximationTechnique, tf, values);
+
     for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
       // Tests are performed against the closed form
       // solution for the IVP described above, which is
       // N(t; r) = N₀ * e^(r * t).
-      const double exact_solution = kInitialPopulation * std::exp(r * t);
-      EXPECT_NEAR(population_growth_ivp.Solve(t, values), exact_solution,
-                  integration_accuracy_)
+      const double solution = N0 * std::exp(r * t);
+      EXPECT_NEAR(population_growth_ivp.Solve(t, values),
+                  solution, integration_accuracy_)
           << "Failure solving dN/dt = r * N using N(t₀ = "
-          << kInitialTime << "; r) = " << kInitialPopulation
-          << " for t = " << t << " and r = " << r
-          << " to an accuracy of " << integration_accuracy_;
+          << t0 << "; r) = " << N0 << " for t = " << t
+          << " and r = " << r << " to an accuracy of "
+          << integration_accuracy_;
+
+      EXPECT_NEAR(population_growth_approx.scalarValue(t),
+                  solution, integration_accuracy_)
+          << "Failure approximating the solution for dN/dt = r * N"
+          << " using N(t₀ = " << t0 << "; r) = " << N0 << " for t = "
+          << t << " and r = " << r << " to an accuracy of "
+          << integration_accuracy_ << " with an Hermite cubic"
+          << " piecewise interpolator";
     }
   }
 }
