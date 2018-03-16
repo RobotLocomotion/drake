@@ -63,6 +63,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        ":math_py",
     ],
     py_srcs = [
         "autodiffutils.py",
