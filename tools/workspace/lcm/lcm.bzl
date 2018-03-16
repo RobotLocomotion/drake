@@ -137,9 +137,9 @@ _lcm_library_gen = rule(
 
 def lcm_cc_library(
         name,
-        lcm_srcs = None,
+        lcm_srcs = [],
         lcm_package = None,
-        lcm_structs = None,
+        lcm_structs = [],
         aggregate_hdr = None,
         aggregate_hdr_strip_prefix = ["**/include/"],
         **kwargs):
@@ -188,8 +188,14 @@ def lcm_cc_library(
             "hpp",
             aggregate_hdr_strip_prefix)
 
-    deps = depset(kwargs.pop('deps', [])) | ["@lcm"]
-    includes = depset(kwargs.pop('includes', [])) | ["."]
+    deps = kwargs.pop("deps", [])
+    if "@lcm" not in deps:
+        deps = deps + ["@lcm"]
+
+    includes = kwargs.pop("includes", [])
+    if "." not in includes:
+        includes = includes + ["."]
+
     native.cc_library(
         name = name,
         hdrs = outs,
@@ -202,10 +208,10 @@ def lcm_cc_library(
 
 def lcm_py_library(
         name,
-        imports = None,
-        lcm_srcs = None,
+        imports = [],
+        lcm_srcs = [],
         lcm_package = None,
-        lcm_structs = None,
+        lcm_structs = [],
         add_current_package_to_imports = True,
         extra_srcs = [],
         **kwargs):
@@ -241,7 +247,9 @@ def lcm_py_library(
         outs = outs)
 
     if add_current_package_to_imports:
-        imports = depset(imports or []) | ["."]
+        if "." not in imports:
+            imports = imports + ["."]
+
     native.py_library(
         name = name,
         srcs = outs + extra_srcs,
@@ -250,9 +258,9 @@ def lcm_py_library(
 
 def lcm_java_library(
         name,
-        lcm_srcs = None,
+        lcm_srcs = [],
         lcm_package = None,
-        lcm_structs = None,
+        lcm_structs = [],
         **kwargs):
     """Declares a java_library on message classes generated from `*.lcm` files.
 
@@ -273,7 +281,10 @@ def lcm_java_library(
         lcm_package = lcm_package,
         outs = outs)
 
-    deps = depset(kwargs.pop('deps', [])) | ["@lcm//:lcm-java"]
+    deps = kwargs.pop("deps", [])
+    if "@lcm//:lcm-java" not in deps:
+        deps = deps + ["@lcm//:lcm-java"]
+
     native.java_library(
         name = name,
         srcs = outs,
