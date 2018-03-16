@@ -30,7 +30,8 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 
   using Scalar = typename Derived::Scalar;
   const drake::math::RotationMatrix<Scalar> R((drake::Matrix3<Scalar>(M)));
-  return R.ToQuaternion();
+  const Eigen::Quaternion<Scalar> q = R.ToQuaternion();
+  return Vector4<Scalar>(q.w(), q.x(), q.y(), q.z());
 }
 
 /**
@@ -79,7 +80,6 @@ Vector4<typename Derived::Scalar> rotmat2quatOld(
   q /= scale;
   return q;
 }
-
 
 /**
  * Computes the angle axis representation from a rotation matrix.
