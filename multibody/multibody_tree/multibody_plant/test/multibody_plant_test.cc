@@ -44,6 +44,7 @@ using systems::DiagramBuilder;
 using systems::Diagram;
 using systems::LinearSystem;
 using systems::Linearize;
+using systems::VectorBase;
 
 namespace multibody {
 namespace multibody_plant {
@@ -159,6 +160,13 @@ class AcrobotPlantTests : public ::testing::Test {
 
     DRAKE_EXPECT_ERROR_MESSAGE(
         plant_->get_geometry_poses_output_port(),
+        std::logic_error,
+        /* Verify this method is throwing for the right reasons. */
+        "Pre-finalize calls to '.*' are not allowed; "
+        "you must call Finalize\\(\\) first.");
+
+    DRAKE_EXPECT_ERROR_MESSAGE(
+        plant_->get_continuous_state_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
         "Pre-finalize calls to '.*' are not allowed; "
@@ -382,6 +390,40 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+}
+
+TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
+  EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
+  EXPECT_TRUE(plant_->geometry_source_is_registered());
+  EXPECT_TRUE(plant_->get_source_id());
+
+  // The default context gets initialized by a call to SetDefaultState(), which
+  // for a MultibodyPlant sets all revolute joints to have zero angles and zero
+  // angular velocity.
+  std::unique_ptr<systems::Context<double>> context =
+      plant_->CreateDefaultContext();
+
+  // Set some non-zero state:
+  shoulder_->set_angle(context.get(), M_PI / 3.0);
+  elbow_->set_angle(context.get(), -0.2);
+  shoulder_->set_angular_rate(context.get(), -0.5);
+  elbow_->set_angular_rate(context.get(), 2.5);
+
+  std::unique_ptr<AbstractValue> state_value =
+      plant_->get_continuous_state_output_port().Allocate(*context);
+  EXPECT_NO_THROW(state_value->GetValueOrThrow<BasicVector<double>>());
+  const BasicVector<double>& state_out =
+      state_value->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_EQ(state_out.size(), plant_->num_multibody_states());
+
+  // Compute the poses for each geometry in the model.
+  plant_->get_continuous_state_output_port().Calc(*context, state_value.get());
+
+  // Get continuous state_out from context.
+  const VectorBase<double>& state = context->get_continuous_state_vector();
+
+  // Verify state_out indeed matches state.
+  EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
 }
 
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
