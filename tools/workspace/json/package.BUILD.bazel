@@ -30,10 +30,5 @@ install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
-    targets = [":json"],
-    hdr_dest = "include/" + CMAKE_PACKAGE,
-    hdr_strip_prefix = ["single_include"],
-    guess_hdrs = "PACKAGE",
     docs = ["LICENSE.MIT"],
-    deps = [":install_cmake_config"],
 )

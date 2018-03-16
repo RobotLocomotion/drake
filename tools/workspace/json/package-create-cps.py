@@ -19,7 +19,6 @@ content = """
   "Components": {
     "json-header-only": {
       "Type": "interface",
-      "Definitions": ["JSON_HEADER_ONLY=1"],
       "Includes": ["@prefix@/include/json"]
     }
   }
