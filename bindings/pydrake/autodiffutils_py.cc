@@ -76,6 +76,9 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
     }, py::is_operator())
     .def("__rtruediv__", [](const AutoDiffXd& self, double other) {
       return eval(other / self);
+    }, py::is_operator())
+    .def("__pow__", [](const AutoDiffXd& self, int power) {
+      return eval(pow(self, power));
     }, py::is_operator());
 }
 
