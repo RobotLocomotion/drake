@@ -22,6 +22,8 @@ namespace systems {
 /// every scalar initial value problem could be written in vector form, this
 /// wrapper keeps both problem definition and solution in their scalar form
 /// with almost zero overhead, leading to clearer code if applicable.
+/// Moreover, this scalar form facilitates single-dimensional quadrature
+/// using methods for solving initial value problems.
 ///
 /// For further insight into its use, consider the following examples:
 ///
