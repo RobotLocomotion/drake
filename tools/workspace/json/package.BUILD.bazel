@@ -2,9 +2,7 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
 )
 
 package(
@@ -16,17 +14,6 @@ cc_library(
     hdrs = ["single_include/nlohmann/json.hpp"],
     includes = ["single_include"],
 )
-
-CMAKE_PACKAGE = "json"
-
-cmake_config(
-    package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/json:package-create-cps.py",
-    version_file = "single_include/nlohmann/json.hpp",
-)
-
-# Creates rule :install_cmake_config.
-install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
