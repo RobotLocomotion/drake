@@ -748,7 +748,7 @@ TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
 template <typename T>
 class MomentumDotVelocityTest : public ::testing::Test {
  public:
-  // Useful typedefs when witing unit tests to access types.
+  // Useful typedefs when writing unit tests to access types.
   typedef T ScalarType;
  protected:
   SpatialMomentum<T> L_WBp_{Vector3<T>{1, 2, 3}, Vector3<T>{4, 5, 6}};
