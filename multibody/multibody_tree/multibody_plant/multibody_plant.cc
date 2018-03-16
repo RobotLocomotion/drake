@@ -284,6 +284,10 @@ void MultibodyPlant<T>::EstimatePenaltyMethodParameters() {
   const double g = gravity_field_.has_value() ?
                    gravity_field_.value()->gravity_vector().norm() : 9.81;
 
+  // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
+  // are several flying objects and fixed base robots (E.g.: manipulation
+  // cases.)
+
   // The heuristics now is very simple. We should update it to:
   //  - Only scan free bodies for weight.
   //  - Consider an estimate of maximum velocities (context dependent).

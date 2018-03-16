@@ -21,14 +21,6 @@
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
-
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-//#define PRINT_VARn(a) (void)a;
-//#define PRINT_VAR(a) (void)a;
-
-
 namespace drake {
 namespace examples {
 namespace multibody {
@@ -94,7 +86,6 @@ int do_main() {
   // time step integrators are stable.
   const double max_time_step =
       plant.get_contact_penalty_method_time_scale() / 30;
-  PRINT_VAR(max_time_step);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
