@@ -934,6 +934,7 @@ drake_cc_googletest(
     deps = [
         ":type_safe_index",
         ":unused",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

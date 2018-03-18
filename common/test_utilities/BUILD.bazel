@@ -27,6 +27,7 @@ drake_cc_library(
     deps = [
         ":eigen_geometry_compare",
         ":eigen_matrix_compare",
+        ":expect_throws_message",
         ":is_dynamic_castable",
         ":is_memcpy_movable",
         ":measure_execution",
@@ -57,6 +58,12 @@ drake_cc_library(
         "//common:essential",
         "@gtest//:without_main",
     ],
+)
+
+drake_cc_library(
+    name = "expect_throws_message",
+    testonly = 1,
+    hdrs = ["expect_throws_message.h"],
 )
 
 drake_cc_library(
