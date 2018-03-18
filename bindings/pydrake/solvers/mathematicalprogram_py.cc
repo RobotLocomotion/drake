@@ -389,7 +389,9 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
     .value("kUnbounded", SolutionResult::kUnbounded)
     .value("kUnknownError", SolutionResult::kUnknownError)
     .value("kInfeasible_Or_Unbounded",
-           SolutionResult::kInfeasible_Or_Unbounded);
+           SolutionResult::kInfeasible_Or_Unbounded)
+    .value("kIterationLimit", SolutionResult::kIterationLimit)
+    .value("kDualInfeasible", SolutionResult::kDualInfeasible);
 
   // TODO(eric.cousineau): Expose Eval() in a Python-friendly fashion.
   py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
