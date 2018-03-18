@@ -1990,6 +1990,11 @@ class MultibodyTree {
   // articulated body algorithm which depend only on generalized positions and
   // stores them in the articulated body inertia cache `abic`.
   //
+  // Note that because this method only depends on the generalized positions,
+  // computing forward dynamics with different forces under the same context
+  // would only require one call to this method but multiple evaluations of
+  // MultibodyTree::CalcArticulatedBodyAlgorithmCache().
+  //
   // These include:
   // - Articulated body inertia `P_B_W` of the body taken about Bo and
   //   expressed in W.
@@ -2015,7 +2020,7 @@ class MultibodyTree {
   // algorithm cache.
   //
   // These include:
-  // - The articulated body inertia residual force `zplus_PB_W` for this body
+  // - The articulated body inertia residual force `Zplus_PB_W` for this body
   //   projected across its inboard mobilizer to frame P.
   // - The Coriolis spatial acceleration `a_Bo_W` for this body due to the
   //   relative velocities of body B and body P.

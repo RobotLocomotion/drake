@@ -33,9 +33,9 @@ namespace multibody {
 /// allowed to have relative motions among them, there still is a linear
 /// relationship between the spatial force `F_BBo_W` applied on this body and
 /// the resulting acceleration `A_WB`: <pre>
-///   F_BBo_W = P_B_W * A_WB + z_Bo_W                                       (2)
+///   F_BBo_W = P_B_W * A_WB + Z_Bo_W                                       (2)
 /// </pre>
-/// where `P_B_W` is the articulated body inertia of body B and `z_Bo_W` is a
+/// where `P_B_W` is the articulated body inertia of body B and `Z_Bo_W` is a
 /// bias force that includes the gyroscopic and Coriolis forces and becomes zero
 /// when all body velocities and all applied generalized forces outboard
 /// from body B are zero [Jain 2010, §7.2.1]. The articulated body inertia

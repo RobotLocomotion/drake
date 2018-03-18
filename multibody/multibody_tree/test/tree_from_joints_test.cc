@@ -378,7 +378,7 @@ class PendulumTests : public ::testing::Test {
     Vector2d qddot;
     Vector2d qddot_expected;
 
-    // Test with no angular velocity.
+    // Set angular velocity.
     model_.shoulder().set_angular_rate(context_.get(), shoulder_rate);
     model_.elbow().set_angular_rate(context_.get(), elbow_rate);
 

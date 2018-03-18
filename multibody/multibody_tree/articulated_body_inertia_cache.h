@@ -131,7 +131,7 @@ class ArticulatedBodyInertiaCache {
     // should not be used.
     P_B_W_[world_index()] = ArticulatedBodyInertia<T>();
     Pplus_PB_W_[world_index()] = ArticulatedBodyInertia<T>();
-    // TODO(bobbyluig): Initialize LDLT at world index to NaNs.
+    // ldlt_D_B_[world_index()] = MatrixUpTo6<T>::Constant(6, 1, nan()).ldlt();
     g_PB_W_[world_index()] = Matrix6<T>::Constant(nan());
   }
 

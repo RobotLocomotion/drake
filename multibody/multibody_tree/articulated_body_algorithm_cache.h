@@ -17,7 +17,7 @@ namespace multibody {
 /// articulated body algorithm.
 ///
 /// Articulated body algorithm cache entries include:
-/// - The articulated body inertia residual force `zplus_PB_W` for this body
+/// - The articulated body inertia residual force `Zplus_PB_W` for this body
 ///   projected across its inboard mobilizer to frame P.
 /// - The Coriolis spatial acceleration `a_Bo_W` for this body due to the
 ///   relative velocities of body B and body P.
@@ -46,17 +46,17 @@ class ArticulatedBodyAlgorithmCache {
     Allocate();
   }
 
-  /// The articulated body inertia residual force `zplus_PB_W` for this body
+  /// The articulated body inertia residual force `Zplus_PB_W` for this body
   /// projected across its inboard mobilizer to frame P.
-  const SpatialForce<T>& get_zplus_PB_W(BodyNodeIndex body_node_index) const {
+  const SpatialForce<T>& get_Zplus_PB_W(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return zplus_PB_W_[body_node_index];
+    return Zplus_PB_W_[body_node_index];
   }
 
-  /// Mutable version of get_zplus_PB_W().
-  SpatialForce<T>& get_mutable_zplus_PB_W(BodyNodeIndex body_node_index) {
+  /// Mutable version of get_Zplus_PB_W().
+  SpatialForce<T>& get_mutable_Zplus_PB_W(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
-    return zplus_PB_W_[body_node_index];
+    return Zplus_PB_W_[body_node_index];
   }
 
   /// The Coriolis spatial acceleration `a_Bo_W` for this body due to the
@@ -98,7 +98,7 @@ class ArticulatedBodyAlgorithmCache {
 
   // Allocates resources for this articulated body cache.
   void Allocate() {
-    zplus_PB_W_.resize(num_nodes_);
+    Zplus_PB_W_.resize(num_nodes_);
     a_Bo_W_.resize(num_nodes_);
     e_B_.resize(num_nodes_);
   }
@@ -107,7 +107,7 @@ class ArticulatedBodyAlgorithmCache {
   int num_nodes_{0};
 
   // Pools indexed by BodyNodeIndex.
-  SpatialForce_PoolType zplus_PB_W_{};
+  SpatialForce_PoolType Zplus_PB_W_{};
   SpatialAcceleration_PoolType a_Bo_W_{};
   VectorUpTo6_PoolType e_B_{};
 };

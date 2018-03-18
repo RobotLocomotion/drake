@@ -906,9 +906,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //    expressed in world frame W.
     //  - Pplus_PB_W for the same articulated body inertia P_B_W but projected
     //    across B's inboard mobilizer to frame P so that instead of
-    //    F_Bo_W = P_B_W A_WB + z_Bo_W, we can write
-    //    F_Bo_W = Pplus_PB_W Aplus_WP + zplus_Bo_W where Aplus_WP is defined
-    //    in Section 6.2.2, Page 101 of [Jain 2010] and zplus_Bo_W is defined
+    //    F_Bo_W = P_B_W A_WB + Z_Bo_W, we can write
+    //    F_Bo_W = Pplus_PB_W A0_WPb + Zplus_Bo_W where A0_WPb is defined
+    //    in Section 6.2.2, Page 101 of [Jain 2010] and Zplus_Bo_W is defined
     //    in Section 6.3, Page 108 of [Jain 2010].
     //  - Φ(p_PQ) for Jain's rigid body transformation operator. In code,
     //    V_MQ = Φᵀ(p_PQ) V_MP is equivalent to V_MP.Shift(p_PQ).
@@ -1110,9 +1110,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //    expressed in world frame W.
     //  - a_Bo_W for the Coriolis spatial acceleration due to the relative
     //    velocities of body B and body P.
-    //  - z_Bo_W for the residual spatial force, such that we can write
-    //    F_Bo_W = P_B_W A_WB + z_Bo_W.
-    //  - zplus_PB_W for the articulated body inertia residual force but
+    //  - Z_Bo_W for the residual spatial force, such that we can write
+    //    F_Bo_W = P_B_W A_WB + Z_Bo_W.
+    //  - Zplus_PB_W for the articulated body inertia residual force but
     //    projected across B's inboard mobilizer to frame P.
     //    in Section 6.3, Page 108 of [Jain 2010]
     //  - Φ(p_PQ) for Jain's rigid body transformation operator. In code,
@@ -1127,10 +1127,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Given quantities relating to the articulated body inertia, we compute
     // the residual spatial force of the current body by summing
     // contributions from all its children with contributions from Coriolis
-    // acceleration, gyroscopic forces, and external forces.
-    //   z_Bo_W = Σᵢ(Φ(p_BCᵢ_W) zplus_BCᵢ_W)
+    // acceleration, gyroscopic forces, and external forces. See derivations
+    // in Section 6.3, Pages 107 - 108 of [Jain 2010].
+    //   Z_Bo_W = Σᵢ(Φ(p_BCᵢ_W) Zplus_BCᵢ_W)
     //            + P_B_W a_Bo_W + b_Bo_W - Fapplied_Bo_W
-    //          = Σᵢ(zplus_BCᵢb_W) + P_B_W a_Bo_W + b_Bo_W - Fapplied_Bo_W  (1)
+    //          = Σᵢ(Zplus_BCᵢb_W) + P_B_W a_Bo_W + b_Bo_W - Fapplied_Bo_W  (1)
     //
     // Note that this requires the computation of b_Bo_W and a_Bo_W. b_Bo_W
     // can be computed using CalcBodySpatialForceGivenItsSpatialAcceleration()
@@ -1150,12 +1151,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Using the residual spatial force, we compute the articulated body
     // inertia innovations generalized force as defined in Section 6.4.2, Pages
     // 112 - 113 of [Jain 2010].
-    //   e_B = tau_applied - H_PB_Wᵀ z_Bo_W                                 (4)
+    //   e_B = tau_applied - H_PB_Wᵀ Z_Bo_W                                 (4)
     //
     // Finally, we can compute the project articulated body inertia residual
     // force. Note that g_PB_W is the Kalman gain from the articulated body
     // inertia cache.
-    //   zplus_PB_W = z_B_W + g_PB_W e_B                                    (5)
+    //   Zplus_PB_W = Z_B_W + g_PB_W e_B                                    (5)
 
     // Body for this node.
     const Body<T>& body_B = body();
@@ -1216,6 +1217,11 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const SpatialVelocity<T>& V_FM = get_V_FM(vc);
 
     // Get Azero_PB_W by shifting and re-expressing Azero_FM.
+    // We want to compute A_PB = DtP(V_PB). Due to the fact that frames P and
+    // F and on the same rigid body, we have that V_PF = 0. Therefore, DtP(V_PB)
+    // = DtF(V_PB). We then recognize that V_PB = V_PFb + V_FMb + V_MB = V_FMb.
+    // Since M and B are also on the same rigid body, V_MB = 0. Together, we
+    // get that A_PB = DtF(V_FMb) = A_FM.Shift(p_MoBo, w_FM).
     const SpatialAcceleration<T> Azero_PB_W =
         R_WF * Azero_FM.Shift(p_MoBo_F, V_FM.rotational());
 
@@ -1238,8 +1244,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Get the articulated body inertia from cache.
     const ArticulatedBodyInertia<T>& P_B_W = get_P_B_W(abic);
 
-    // Compute the residual spatial force, z_Bo_W, according to (1).
-    SpatialForce<T> z_Bo_W = SpatialForce<T>(
+    // Compute the residual spatial force, Z_Bo_W, according to (1).
+    SpatialForce<T> Z_Bo_W = SpatialForce<T>(
         P_B_W * a_Bo_W.get_coeffs() + b_Bo_W.get_coeffs()
             - Fapplied_Bo_W.get_coeffs());
 
@@ -1252,28 +1258,28 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const Vector3<T> p_CoBo_B = -X_BC.translation();
       const Vector3<T> p_CoBo_W = R_WB * p_CoBo_B;
 
-      // Pull zplus_BC_W from cache (which is zplus_PB_W for child).
-      const SpatialForce<T>& zplus_BC_W = child->get_zplus_PB_W(*abac);
+      // Pull Zplus_BC_W from cache (which is Zplus_PB_W for child).
+      const SpatialForce<T>& Zplus_BC_W = child->get_Zplus_PB_W(*abac);
 
-      // Shift zplus_BC_W to zplus_BCb_W.
-      const SpatialForce<T> zplus_BCb_W = zplus_BC_W.Shift(p_CoBo_W);
+      // Shift Zplus_BC_W to Zplus_BCb_W.
+      const SpatialForce<T> Zplus_BCb_W = Zplus_BC_W.Shift(p_CoBo_W);
 
-      // Add zplus_BCb_W contribution to residual spatial force.
-      z_Bo_W += zplus_BCb_W;
+      // Add Zplus_BCb_W contribution to residual spatial force.
+      Z_Bo_W += Zplus_BCb_W;
     }
 
     // Compute the articulated body inertia innovations generalized force, e_B,
     // according to (4).
     VectorUpTo6<T>& e_B = get_mutable_e_B(abac);
-    e_B = tau_applied - H_PB_W.transpose() * z_Bo_W.get_coeffs();
+    e_B = tau_applied - H_PB_W.transpose() * Z_Bo_W.get_coeffs();
 
     // Get the Kalman gain from cache.
     const MatrixUpTo6<T>& g_PB_W = get_g_PB_W(abic);
 
     // Compute the projected articulated body residual spatial force,
-    // zplus_PB_W, according to (5).
-    get_mutable_zplus_PB_W(abac) = SpatialForce<T>(
-        z_Bo_W.get_coeffs() + g_PB_W * e_B);
+    // Zplus_PB_W, according to (5).
+    get_mutable_Zplus_PB_W(abac) = SpatialForce<T>(
+        Z_Bo_W.get_coeffs() + g_PB_W * e_B);
   }
 
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
@@ -1325,7 +1331,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Notation:
     //  - B body frame associated with this node.
     //  - P ("parent") body frame associated with this node's parent.
-    //  - Aplus_WP for the rigidly propagated spatial acceleration from the
+    //  - A0_WPb for the rigidly propagated spatial acceleration from the
     //    parent frame to body frame. This is equivalent to shifting A_WP with
     //    zero w_WP to the body frame.
     //  - Φ(p_PQ) for Jain's rigid body transformation operator. In code,
@@ -1337,26 +1343,25 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // parent.
     //
     // We first rigidly propagate the spatial acceleration of the parent to the
-    // body frame. Note that the world frame is assumed to have already been
-    // initialized with zero spatial acceleration. We define p_PoBo_W to be the
-    // shift vector from the parent origin to the body origin.
-    //   Aplus_WP = Φᵀ(p_PB) A_WP
+    // body frame. We define p_PoBo_W to be the shift vector from the parent
+    // origin to the body origin.
+    //   A0_WPb = Φᵀ(p_PB) A_WP
     //            = A_WP.Shift(p_PoBo_W, Vector3<T>::Zero())                (1)
     //
-    // Using Aplus_WP, we can compute the generalized acceleration for this
-    // body's mobilizer. Note that we assume that any gravity has already been
-    // incorporated as external forces in the previous pass of the articulated
-    // body algorithm. In addition, [Jain 2010] computes nu_B, the articulated
-    // body inertia innovations generalized acceleration, in the first pass,
-    // while we compute it here.
-    //   vdot = D_B⁻¹ e_B - g_PB_Wᵀ Aplus_WP
-    //        = nu_B - g_PB_Wᵀ Aplus_WP                                     (2)
+    // Using A0_WPb, we can compute the generalized acceleration for this body's
+    // mobilizer. Note that we assume that any external forces have already been
+    // incorporated in the previous pass of the articulated body algorithm. In
+    // addition, [Jain 2010] computes nu_B, the articulated body inertia
+    // innovations generalized acceleration, in the first pass, while we compute
+    // it here.
+    //   vdot = D_B⁻¹ e_B - g_PB_Wᵀ A0_WPb
+    //        = nu_B - g_PB_Wᵀ A0_WPb                                     (2)
     //
     // Finally, we can compute the spatial acceleration for the current body.
     // Instead of using SpatialAcceleration::ComposeWithMovingFrameAcceleration,
     // we can take advantage of the fact that Coriolis acceleration was already
     // computed in the first pass.
-    //   A_WB = Aplus_WP + H_PB_W vdot + a_Bo_W                             (3)
+    //   A_WB = A0_WPb + H_PB_W vdot + a_Bo_W                             (3)
 
     // Get the spatial acceleration of the parent.
     const SpatialAcceleration<T> A_WP = parent_node_->get_A_WB(*ac);
@@ -1370,19 +1375,19 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // acceleration.
     const VectorUpTo6<T> nu_B = get_ldlt_D_B(abic).solve(get_e_B(abac));
 
-    // Compute Aplus_WP using (1), but written out explicitly to skip
+    // Compute A0_WPb using (1), but written out explicitly to skip
     // unnecessary computation.
-    const SpatialAcceleration<T> Aplus_WP = SpatialAcceleration<T>(
+    const SpatialAcceleration<T> A0_WPb = SpatialAcceleration<T>(
         A_WP.rotational(),
         A_WP.translational() + A_WP.rotational().cross(p_PoBo_W));
 
     // Compute the generalized acceleration using (2).
     auto vmdot = get_mutable_accelerations(ac);
-    vmdot = nu_B - get_g_PB_W(abic).transpose() * Aplus_WP.get_coeffs();
+    vmdot = nu_B - get_g_PB_W(abic).transpose() * A0_WPb.get_coeffs();
 
     // Compute the spatial acceleration of the current body using (3).
     get_mutable_A_WB(ac) = SpatialAcceleration<T>(
-        Aplus_WP.get_coeffs() + H_PB_W * vmdot + get_a_Bo_W(abac).get_coeffs());
+        A0_WPb.get_coeffs() + H_PB_W * vmdot + get_a_Bo_W(abac).get_coeffs());
   }
 
  protected:
@@ -1619,17 +1624,17 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // ArticulatedBodyAlgorithmCache Accessors and Mutators.
 
   // Returns a const reference to the articulated body inertia residual force
-  // `zplus_PB_W` for this body projected across its inboard mobilizer to
+  // `Zplus_PB_W` for this body projected across its inboard mobilizer to
   // frame P.
-  const SpatialForce<T>& get_zplus_PB_W(
+  const SpatialForce<T>& get_Zplus_PB_W(
       const ArticulatedBodyAlgorithmCache<T>& abac) const {
-    return abac.get_zplus_PB_W(topology_.index);
+    return abac.get_Zplus_PB_W(topology_.index);
   }
 
-  // Mutable version of get_zplus_PB_W().
-  SpatialForce<T>& get_mutable_zplus_PB_W(
+  // Mutable version of get_Zplus_PB_W().
+  SpatialForce<T>& get_mutable_Zplus_PB_W(
       ArticulatedBodyAlgorithmCache<T>* abac) const {
-    return abac->get_mutable_zplus_PB_W(topology_.index);
+    return abac->get_mutable_Zplus_PB_W(topology_.index);
   }
 
   // Returns a const reference to the Coriolis spatial acceleration `a_Bo_W`
