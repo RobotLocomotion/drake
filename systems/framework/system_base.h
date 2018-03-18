@@ -29,9 +29,9 @@ class SystemBase : public internal::SystemPathnameInterface {
 
   virtual ~SystemBase();
 
-  /** Sets the name of the system. It is recommended that the name not include
-  the path delimiter character '/'. When creating a Diagram, names of sibling
-  subsystems should be unique. */
+  /** Sets the name of the system. Do not use the path delimiter character '/'
+  in the name. When creating a Diagram, names of sibling subsystems should be
+  unique. */
   // TODO(sherm1) Enforce reasonable naming policies.
   void set_name(const std::string& name) { name_ = name; }
 
@@ -50,10 +50,10 @@ class SystemBase : public internal::SystemPathnameInterface {
   human-readable string suitable for use in error messages. */
   std::string GetSystemType() const final { return NiceTypeName::Get(*this); }
 
-  /** Throws an std::logic_error if the given `context` is not compatible with
-  this System. Restrictions may vary for different systems; the error message
-  should explain. This can be an expensive check so you may want to limit it
-  to Debug builds. */
+  /** Throws an exception with an appropriate message if the given `context` is
+  not compatible with this System. Restrictions may vary for different systems;
+  the error message should explain. This can be an expensive check so you may
+  want to limit it to Debug builds. */
   void ThrowIfContextNotCompatible(const ContextBase& context) const final {
     CheckValidContext(context);
   }
@@ -434,8 +434,6 @@ class SystemBase : public internal::SystemPathnameInterface {
   virtual void DoCheckValidContext(const ContextBase&) const = 0;
 
  private:
-  void CreateSourceTrackers(ContextBase*) const;
-
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
 

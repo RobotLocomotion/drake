@@ -540,6 +540,7 @@ drake_cc_googletest(
         ":cache_entry",
         ":framework_base",
         "//drake/common:essential",
+        "//drake/common/test_utilities:expect_throws_message",
         "//drake/systems/framework/test_utilities",
     ],
 )

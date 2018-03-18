@@ -27,8 +27,9 @@ CacheEntryValue in the System's Context.
 like output ports and time derivatives, and may also be allocated by user code
 for other cached computations.
 
-A cache entry's value is always stored as an AbstractValue, though it is
-required to maintain the same underlying concrete type after allocation.
+A cache entry's value is always stored as an AbstractValue, which can hold a
+concrete value of any copyable type. However, once a value has been allocated
+using a particular concrete type, the type cannot be changed.
 
 %CacheEntry objects support four important operations:
 - Allocate() returns an object that can hold the cached value.
@@ -62,9 +63,17 @@ class CacheEntry {
   hold the result. The supplied calculator function must write to an
   AbstractValue of the same underlying concrete type as is returned by the
   allocator. The allocator function is not invoked here during construction of
-  the cache entry so it may depend on data that becomes available only after
-  completion of the containing System. The supplied prerequisite tickets are
-  interpreted as belonging to the same subsystem that owns this %CacheEntry. */
+  the cache entry. Instead allocation is deferred until the allocator can be
+  provided with a complete Context, which cannot occur until the full Diagram
+  containing this subsystem has been completed. That way the initial type, size,
+  or value can Context-dependent. The supplied prerequisite tickets are
+  interpreted as belonging to the same subsystem that owns this %CacheEntry.
+
+  The subsystem pointer must not be null, and the cache index and ticket must be
+  valid. The description is an arbitrary string not interpreted in any way by
+  Drake. */
+  // All the nontrivial parameters here are moved to the CacheEntry which is
+  // why they aren't references.
   CacheEntry(const internal::SystemPathnameInterface* owning_subsystem,
              CacheIndex index, DependencyTicket ticket, std::string description,
              AllocCallback alloc_function, CalcCallback calc_function,
@@ -77,17 +86,20 @@ class CacheEntry {
     return prerequisites_;
   }
 
-  ~CacheEntry();
-
-  /** Allocates a concrete object suitable for holding the value to be held in
-  this cache entry, and returns that as an AbstractValue. The returned object
-  will never be null. */
+  /** Invokes this cache entry's allocator function to allocate a concrete
+  object suitable for holding the value to be held in this cache entry, and
+  returns that as an AbstractValue. The returned object will never be null.
+  @pre `context` is a subcontext that is compatible with the subsystem that owns
+       this cache entry.
+  @throws std::logic_error if the allocator function returned null. */
   std::unique_ptr<AbstractValue> Allocate(const ContextBase& context) const;
 
   /** Unconditionally computes the value this cache entry should have given a
-  particular context, into an already-allocated object whose concrete type must
-  be exactly the same as the concrete type underlying the AbstractValue that is
-  returned by this entry's Allocate() method. */
+  particular context, into an already-allocated object.
+  @pre `context` is a subcontext that is compatible with the subsystem that owns
+       this cache entry.
+  @pre `value` is non null and has exactly the same concrete type as that of
+       the object returned by this entry's Allocate() method. */
   void Calc(const ContextBase& context, AbstractValue* value) const;
 
   /** Returns a reference to the up-to-date value of this cache entry contained
@@ -98,6 +110,8 @@ class CacheEntry {
   may be arbitrarily expensive, but this method is constant time and _very_ fast
   if the value is already up to date. If you are certain the value should be up
   to date already, you may use the Get() method instead.
+  @pre `context` is a subcontext that is compatible with the subsystem that owns
+       this cache entry.
   @throws std::logic_error if the value doesn't actually have type V. */
   template <typename ValueType>
   const ValueType& Eval(const ContextBase& context) const {
@@ -110,7 +124,9 @@ class CacheEntry {
   respect to its prerequisites, or if caching is disabled for this entry, the
   Calc() method above is used first to update the value before the reference is
   returned. This method is constant time and _very_ fast if the value doesn't
-  need to be recomputed. */
+  need to be recomputed.
+  @pre `context` is a subcontext that is compatible with the subsystem that owns
+       this cache entry. */
   // Keep this method as small as possible to encourage inlining; it gets
   // called *a lot*.
   const AbstractValue& EvalAbstract(const ContextBase& context) const {
@@ -123,6 +139,8 @@ class CacheEntry {
   contained in the given Context. You may not call this method if the value is
   not already up to date with respect to its prerequisites. This method is
   constant time and _very_ fast in all circumstances.
+  @pre `context` is a subcontext that is compatible with the subsystem that owns
+       this cache entry.
   @throws std::logic_error if the value is not up to date. */
   // Keep this method as small as possible to encourage inlining; it gets
   // called *a lot*.
@@ -139,6 +157,8 @@ class CacheEntry {
   value is not already up to date with respect to its prerequisites. This method
   is constant time and _very_ fast in all circumstances. It does not check
   whether caching is enabled for this cache entry.
+  @pre `context` is a subcontext that is compatible with the subsystem that owns
+       this cache entry.
   @throws std::logic_error if the value is not up to date. */
   // Keep this method as small as possible to encourage inlining; it gets
   // called *a lot*.
@@ -213,7 +233,7 @@ class CacheEntry {
 
   /** Returns the DependencyTicket used to register dependencies on the value
   of this %CacheEntry. This can also be used to locate the DependencyTracker
-  that manages dependencies at runtime for the associated %CacheEntryValue in
+  that manages dependencies at runtime for the associated CacheEntryValue in
   a Context. */
   DependencyTicket ticket() const { return ticket_; }
 

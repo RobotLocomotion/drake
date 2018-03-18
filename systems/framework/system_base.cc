@@ -34,9 +34,9 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
 
   // TODO(sherm1) Set context system name from GetSystemName().
 
-  // Add the independent-source trackers and wire them up appropriately. That
-  // includes input ports since their dependencies are external.
-  CreateSourceTrackers(&context);
+  // TODO(sherm1) Add the independent-source trackers and wire them up
+  // appropriately. That includes input ports since their dependencies are
+  // external.
 
   DependencyGraph& graph = context.get_mutable_dependency_graph();
 
@@ -72,15 +72,6 @@ void SystemBase::AcquireContextResources(ContextBase* context) const {
     CacheEntryValue& cache_value = cache.get_mutable_cache_entry_value(index);
     cache_value.SetInitialValue(entry.Allocate(*context));
   }
-}
-
-// Set up trackers for variable-numbered independent sources: discrete and
-// abstract state, numerical and abstract parameters, and input ports.
-// The generic trackers like "all parameters" are already present in the
-// supplied Context, but we have to subscribe them to the individual
-// elements now.
-void SystemBase::CreateSourceTrackers(ContextBase*) const {
-  // TODO(sherm1) Add this code.
 }
 
 }  // namespace systems

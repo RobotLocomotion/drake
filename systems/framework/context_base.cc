@@ -122,7 +122,7 @@ void ContextBase::CreateBuiltInTrackers() {
   all_sources_tracker.SubscribeToPrerequisite(&u_tracker);
 
   // Allocate kinematics trackers to provide a level of abstraction from the
-  // specific state variables that are use to represent configuration and
+  // specific state variables that are used to represent configuration and
   // rate of change of configuration. For example, a kinematics cache entry
   // should depend on configuration regardless of whether we use continuous or
   // discrete variables. And it should be possible to switch between continuous

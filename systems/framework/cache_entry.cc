@@ -26,8 +26,6 @@ CacheEntry::CacheEntry(
   DRAKE_DEMAND(owning_subsystem && alloc_function_ && calc_function_);
 }
 
-CacheEntry::~CacheEntry() {}
-
 std::unique_ptr<AbstractValue> CacheEntry::Allocate(
     const ContextBase& context) const {
   DRAKE_ASSERT_VOID(owning_subsystem_->ThrowIfContextNotCompatible(context));
@@ -50,6 +48,10 @@ void CacheEntry::Calc(const ContextBase& context,
 
 void CacheEntry::CheckValidAbstractValue(const ContextBase& context,
                                          const AbstractValue& proposed) const {
+  // TODO(sherm1) Consider whether we can depend on there already being an
+  //              object of this type in the context's CacheEntryValue so we
+  //              wouldn't have to allocate one here. If so could also store
+  //              a precomputed type_index there for further savings.
   auto good_ptr = Allocate(context);  // Very expensive!
   const AbstractValue& good = *good_ptr;
   if (typeid(proposed) != typeid(good)) {
@@ -61,7 +63,7 @@ void CacheEntry::CheckValidAbstractValue(const ContextBase& context,
 }
 
 std::string CacheEntry::FormatName(const char* api) const {
-  return "Subsystem " + owning_subsystem_->GetSystemPathname() + "(" +
+  return "Subsystem '" + owning_subsystem_->GetSystemPathname() + "' (" +
       NiceTypeName::RemoveNamespaces(owning_subsystem_->GetSystemType()) +
       "): CacheEntry[" + std::to_string(cache_index_) + "](" +
       description() + ")::" + api + "(): ";
