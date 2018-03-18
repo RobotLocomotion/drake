@@ -10,6 +10,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/bindings/pydrake/util/wrap_pybind.h"
 
 namespace drake {
 namespace pydrake {
@@ -146,6 +147,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)
+      .def("Evaluate", [](const Expression& self) { return self.Evaluate(); })
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -223,7 +225,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("Differentiate", &Expression::Differentiate)
       .def("Jacobian", &Expression::Jacobian);
 
-  m.def("log", &symbolic::log)
+  // TODO(eric.cousineau): Consider deprecating these methods?
+  auto math = py::module::import("pydrake.math");
+  MirrorDef(math, m)
+      .def("log", &symbolic::log)
       .def("abs", &symbolic::abs)
       .def("exp", &symbolic::exp)
       .def("sqrt", &symbolic::sqrt)
@@ -242,8 +247,9 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("min", &symbolic::min)
       .def("max", &symbolic::max)
       .def("ceil", &symbolic::ceil)
-      .def("floor", &symbolic::floor)
-      .def("if_then_else", &symbolic::if_then_else);
+      .def("floor", &symbolic::floor);
+
+  m.def("if_then_else", &symbolic::if_then_else);
 
   m.def("Jacobian", [](const Eigen::Ref<const VectorX<Expression>>& f,
                        const Eigen::Ref<const VectorX<Variable>>& vars) {

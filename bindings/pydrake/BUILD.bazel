@@ -123,12 +123,14 @@ drake_pybind_library(
     name = "symbolic_py",
     cc_deps = [
         ":symbolic_types_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
         "@fmt",
     ],
     cc_srcs = ["symbolic_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        ":math_py",
     ],
     py_srcs = ["symbolic.py"],
 )
