@@ -7,7 +7,7 @@ from pydrake.autodiffutils import AutoDiffXd
 
 import unittest
 import numpy as np
-from pydrake.math import sin, cos
+import pydrake.math as drake_math
 
 # Use convenience abbreviation.
 AD = AutoDiffXd
@@ -23,7 +23,9 @@ class TestAutoDiffXd(unittest.TestCase):
 
     def _compare_scalar(self, actual, expected):
         self.assertAlmostEquals(actual.value(), expected.value())
-        self.assertTrue((actual.derivatives() == expected.derivatives()).all())
+        self.assertTrue(
+            (actual.derivatives() == expected.derivatives()).all(),
+            (actual.derivatives(), expected.derivatives()))
 
     def test_scalar_math(self):
         a = AD(1, [1., 0])
@@ -45,5 +47,13 @@ class TestAutoDiffXd(unittest.TestCase):
         # Test autodiff overloads.
         # See `math_overloads_test` for more comprehensive checks.
         c = AD(0, [1., 0])
-        self._compare_scalar(sin(c), AD(0, [1, 0]))
-        self._compare_scalar(cos(c), AD(1, [0, 0]))
+        d = AD(1, [0, 1.])
+        self._compare_scalar(drake_math.sin(c), AD(0, [1, 0]))
+        self._compare_scalar(drake_math.cos(c), AD(1, [0, 0]))
+        self._compare_scalar(drake_math.tan(c), AD(0, [1, 0]))
+        self._compare_scalar(drake_math.asin(c), AD(0, [1, 0]))
+        self._compare_scalar(drake_math.acos(c), AD(np.pi / 2, [-1, 0]))
+        self._compare_scalar(drake_math.atan2(c, d), AD(0, [1, 0]))
+        self._compare_scalar(drake_math.sinh(c), AD(0, [1, 0]))
+        self._compare_scalar(drake_math.cosh(c), AD(1, [0, 0]))
+        self._compare_scalar(drake_math.tanh(c), AD(0, [1, 0]))
