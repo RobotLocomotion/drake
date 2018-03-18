@@ -26,8 +26,6 @@ CacheEntry::CacheEntry(
   DRAKE_DEMAND(owning_subsystem && alloc_function_ && calc_function_);
 }
 
-CacheEntry::~CacheEntry() {}
-
 std::unique_ptr<AbstractValue> CacheEntry::Allocate(
     const ContextBase& context) const {
   DRAKE_ASSERT_VOID(owning_subsystem_->ThrowIfContextNotCompatible(context));
@@ -61,7 +59,7 @@ void CacheEntry::CheckValidAbstractValue(const ContextBase& context,
 }
 
 std::string CacheEntry::FormatName(const char* api) const {
-  return "Subsystem " + owning_subsystem_->GetSystemPathname() + "(" +
+  return "Subsystem '" + owning_subsystem_->GetSystemPathname() + "' (" +
       NiceTypeName::RemoveNamespaces(owning_subsystem_->GetSystemType()) +
       "): CacheEntry[" + std::to_string(cache_index_) + "](" +
       description() + ")::" + api + "(): ";

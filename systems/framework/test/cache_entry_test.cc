@@ -59,12 +59,17 @@ class MyContextBase : public ContextBase {
 //     |  +--+---+                        +--------------+
 //     |     |
 //   +-v-----v---+    +--------------+    +--------------+
-//   |all sources+--->|    entry0    +---->    entry1    +
+//   |all_sources+--->|    entry0    +---->    entry1    +
 //   +-----------+    +------+-------+    +------+-------+
 //                           |                   |
 //                           |            +------v-------+
 //                           +------------>    entry2    +
 //                                        +--------------+
+//
+// Note that this diagram depicts DependencyTracker ("tracker") objects, not
+// cache entries. The boxes labeled "entry" correspond to cache entries; time,
+// xc, and all_sources are other dependency trackers that do not correspond to
+// any cache entries.
 //
 // The dependencies for all_sources are set up automatically during
 // Context construction; the others are set explicitly here.
@@ -168,6 +173,7 @@ class CacheEntryTest : public ::testing::Test {
         std::logic_error);
     cache_value(string_index_).mark_out_of_date();
     cache_value(string_index_).SetValueOrThrow<string>("initial");
+    EXPECT_EQ(cache_value(string_index_).GetValueOrThrow<string>(), "initial");
     EXPECT_FALSE(string_entry().is_out_of_date(context_));
 
     // vector_entry still invalid so we can only peek.
@@ -193,13 +199,6 @@ class CacheEntryTest : public ::testing::Test {
   const CacheEntry& string_entry() const { return system_.string_entry(); }
   const CacheEntry& vector_entry() const { return system_.vector_entry(); }
 
-  static CacheEntryValue& cache_value(CacheIndex index, Cache* cache) {
-    return cache->get_mutable_cache_entry_value(index);
-  }
-
-  CacheEntryValue& cache_value(CacheIndex index) {
-    return cache_value(index, &cache());
-  }
   DependencyTracker& tracker(CacheIndex index) {
     return tracker(cache_value(index).ticket());
   }
@@ -210,7 +209,6 @@ class CacheEntryTest : public ::testing::Test {
     tracker(index).NoteValueChange(event);
   }
 
-  Cache& cache() { return context_.get_mutable_cache(); }
   DependencyGraph& graph() {
     return context_.get_mutable_dependency_graph();
   }
@@ -224,58 +222,70 @@ class CacheEntryTest : public ::testing::Test {
   MyContextBase& context_ = dynamic_cast<MyContextBase&>(*context_base_);
   CacheIndex index0_, index1_, index2_;
   CacheIndex string_index_, vector_index_;
+
+ private:
+  CacheEntryValue& cache_value(CacheIndex index) {
+    return context_.get_mutable_cache().get_mutable_cache_entry_value(index);
+  }
 };
 
 // Test that the Get/Calc/Eval() methods work.
 TEST_F(CacheEntryTest, ValueMethodsWork) {
   CacheEntryValue& value0 = entry0().get_mutable_cache_entry_value(context_);
-  int64_t exp_serial_num = value0.serial_number();
+  int64_t expected_serial_num = value0.serial_number();
   EXPECT_EQ(entry0().Get<int>(context_), 3);
-  EXPECT_EQ(value0.serial_number(), exp_serial_num);  // No change.
+  EXPECT_EQ(value0.serial_number(), expected_serial_num);  // No change.
   EXPECT_EQ(entry0().Eval<int>(context_), 3);  // Up to date; shouldn't update.
-  EXPECT_EQ(value0.serial_number(), exp_serial_num);  // No change.
+  EXPECT_EQ(value0.serial_number(), expected_serial_num);  // No change.
   value0.mark_out_of_date();
   EXPECT_THROW(entry0().Get<int>(context_), std::logic_error);
   EXPECT_EQ(entry0().Eval<int>(context_), 99);  // Should update now.
-  ++exp_serial_num;
-  EXPECT_EQ(value0.serial_number(), exp_serial_num);  // Increased.
+  ++expected_serial_num;
+  EXPECT_EQ(value0.serial_number(), expected_serial_num);  // Increased.
 
   // EvalAbstract() should retrieve the same object as Eval() did.
-  const auto& abstract_value_eval = entry0().EvalAbstract(context_);
-  EXPECT_EQ(value0.serial_number(), exp_serial_num);  // No change.
+  const AbstractValue& abstract_value_eval = entry0().EvalAbstract(context_);
+  EXPECT_EQ(value0.serial_number(), expected_serial_num);  // No change.
   EXPECT_EQ(abstract_value_eval.GetValueOrThrow<int>(), 99);
 
   // GetAbstract() should return the same object as EvalAbstract().
-  const auto& abstract_value_get = entry0().GetAbstract(context_);
+  const AbstractValue& abstract_value_get = entry0().GetAbstract(context_);
   EXPECT_EQ(&abstract_value_get, &abstract_value_eval);
-  EXPECT_EQ(value0.serial_number(), exp_serial_num);  // No change.
+  EXPECT_EQ(value0.serial_number(), expected_serial_num);  // No change.
 
   CacheEntryValue& string_value =
       string_entry().get_mutable_cache_entry_value(context_);
-  exp_serial_num = string_value.serial_number();
+  expected_serial_num = string_value.serial_number();
   EXPECT_EQ(string_entry().Get<string>(context_), "initial");
-  EXPECT_EQ(string_value.serial_number(), exp_serial_num);  // No change.
+  EXPECT_EQ(string_value.serial_number(), expected_serial_num);  // No change.
 
   // Check that the Calc() method produces output but doesn't change the
   // stored value.
-  auto out = AbstractValue::Make<string>("something");
-  string_entry().Calc(context_, out.get());
+  std::unique_ptr<AbstractValue> out = AbstractValue::Make<string>("something");
+  string_entry().Calc(context_, &*out);
   EXPECT_EQ(out->GetValue<string>(), "calculated_result");
   EXPECT_EQ(string_entry().Get<string>(context_), "initial");
-  EXPECT_EQ(string_value.serial_number(), exp_serial_num);  // No change.
+  EXPECT_EQ(string_value.serial_number(), expected_serial_num);  // No change.
+
+  // In Debug we have an expensive check that the output type provided to
+  // Calc() has the right concrete type. Make sure it works.
+#ifdef DRAKE_ASSERT_IS_ARMED
+  auto bad_out = AbstractValue::Make<double>(3.14);
+  EXPECT_THROW(string_entry().Calc(context_, &*bad_out), std::logic_error);
+#endif
 
   // The value is currently marked up to date, so Eval does nothing.
-  const auto& result = string_entry().Eval<string>(context_);
+  const string& result = string_entry().Eval<string>(context_);
   EXPECT_EQ(result, "initial");
   // Force out-of-date.
   string_value.mark_out_of_date();
   EXPECT_THROW(string_entry().GetAbstract(context_), std::logic_error);
   EXPECT_THROW(string_entry().Get<string>(context_), std::logic_error);
-  (void)string_entry().Eval<string>(context_);
-  ++exp_serial_num;
+  string_entry().Eval<string>(context_);
+  ++expected_serial_num;
   EXPECT_FALSE(string_entry().is_out_of_date(context_));
   EXPECT_NO_THROW(string_entry().Get<string>(context_));
-  EXPECT_EQ(string_value.serial_number(), exp_serial_num);  // Updated once.
+  EXPECT_EQ(string_value.serial_number(), expected_serial_num);  // Updated.
 
   // The result reference was updated by the Eval().
   EXPECT_EQ(result, "calculated_result");
@@ -419,6 +429,8 @@ TEST_F(CacheEntryTest, VectorCacheEntryWorks) {
 
   // Force Eval to recalculate by pretending we modified a z, which should
   // invalidate this xc-dependent cache entry.
+  // Note: the change_event number just has to be unique from any others used
+  // on this context, doesn't have to be this particular value!
   context_.get_mutable_tracker(system_.z_ticket()).NoteValueChange(1001);
   EXPECT_TRUE(entry_value.is_out_of_date());
   const MyVector3d& contents2 = entry.Eval<MyVector3d>(context_);
@@ -459,6 +471,10 @@ TEST_F(CacheEntryTest, InvalidationIsRecursive) {
   EXPECT_EQ(3, entry0().Get<int>(context_));
   EXPECT_TRUE(entry1().is_out_of_date(context_));
   EXPECT_TRUE(entry2().is_out_of_date(context_));
+
+  // Shouldn't have leaked into independent entries.
+  EXPECT_FALSE(string_entry().is_out_of_date(context_));
+  EXPECT_FALSE(vector_entry().is_out_of_date(context_));
 }
 
 TEST_F(CacheEntryTest, Copy) {
@@ -484,6 +500,8 @@ TEST_F(CacheEntryTest, Copy) {
 
   // This should invalidate everything in the original cache, but nothing
   // in the copy.
+  // Note: the change_event number just has to be unique from any others used
+  // on this context, doesn't have to be this particular value!
   context_.get_tracker(system_.time_ticket()).NoteValueChange(10);
   EXPECT_TRUE(string_entry().is_out_of_date(context_));
   EXPECT_FALSE(string_entry().is_out_of_date(clone_context));
