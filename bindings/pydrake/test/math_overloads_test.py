@@ -71,7 +71,11 @@ class AutoDiffOverloads(Overloads):
             # Check backwards compatibility.
             assert hasattr(self.type, func.__name__)
             return True
-        return False
+        supported = [
+            "tan", "asin", "acos", "atan2",
+            "sinh", "cosh", "tanh",
+        ]
+        return func.__name__ in supported
 
     def to_float(self, y_type):
         return y_type.value()
