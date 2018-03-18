@@ -66,7 +66,11 @@ class AutoDiffOverloads(Overloads):
         backwards_compat = [
             "cos", "sin",
         ]
-        supported = backwards_compat
+        supported = backwards_compat + [
+            "log",
+            "tan", "asin", "acos", "atan2",
+            "sinh", "cosh", "tanh",
+        ]
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.
             assert hasattr(self.T, func.__name__)
