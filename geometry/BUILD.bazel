@@ -192,7 +192,7 @@ drake_cc_googletest(
     name = "frame_id_vector_test",
     deps = [
         ":frame_kinematics",
-        "//geometry/test_utilities",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -222,7 +222,6 @@ drake_cc_googletest(
     deps = [
         ":geometry_state",
         "//common/test_utilities",
-        "//geometry/test_utilities",
     ],
 )
 
@@ -231,7 +230,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_system",
         ":geometry_visualization",
-        "//geometry/test_utilities",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -244,7 +243,7 @@ drake_cc_googletest(
     name = "query_object_test",
     deps = [
         ":geometry_system",
-        "//geometry/test_utilities",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

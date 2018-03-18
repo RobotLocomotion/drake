@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/test_utilities/expect_error_message.h"
 
 namespace drake {
 namespace geometry {
@@ -55,12 +55,12 @@ GTEST_TEST(FrameIdVector, ConstructorWithDuplicates) {
   frames.push_back(frames[0]);
 
   // Case: Construct by copying frames.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       FrameIdVector(source_id, frames), std::logic_error,
       "Input vector of frame ids contains duplicates.");
 
   // Case: Construct by moving frames.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       FrameIdVector(source_id, move(frames)), std::logic_error,
       "Input vector of frame ids contains duplicates.");
 }
@@ -82,8 +82,8 @@ GTEST_TEST(FrameIdVector, AddingFramesSingle) {
   EXPECT_EQ(ids.get_frame_id(1), f1);
 
   // Case: Add single to non-empty (not unique).
-  EXPECT_ERROR_MESSAGE(ids.AddFrameId(f0), std::logic_error,
-                       "Id vector already contains frame id: \\d+.");
+  DRAKE_EXPECT_THROWS_MESSAGE(ids.AddFrameId(f0), std::logic_error,
+                             "Id vector already contains frame id: \\d+.");
 }
 
 // Tests the functionality for adding multiple frames to the set.
@@ -114,14 +114,14 @@ GTEST_TEST(FrameIdVector, AddingFramesMultiple) {
   }
 
   // Case: Add multiple to non-empty (non-unique result).
-  EXPECT_ERROR_MESSAGE(ids.AddFrameIds(duplicate), std::logic_error,
-                       "Id vector already contains frame id: \\d+.");
+  DRAKE_EXPECT_THROWS_MESSAGE(ids.AddFrameIds(duplicate), std::logic_error,
+                             "Id vector already contains frame id: \\d+.");
 
   // Case: Add vector of ids that do not duplicate previous contents but
   // contains duplicate values.
   FrameId new_id = FrameId::get_new_id();
   vector<FrameId> redundant{new_id, new_id};
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       ids.AddFrameIds(redundant), std::logic_error,
       "Input vector of frame ids contains duplicates.");
 }
@@ -136,8 +136,9 @@ GTEST_TEST(FrameIdVector, FrameLookup) {
   EXPECT_NO_THROW(index = ids.GetIndex(frames[expected_index]));
   EXPECT_EQ(index, expected_index);
 
-  EXPECT_ERROR_MESSAGE(ids.GetIndex(FrameId::get_new_id()), std::logic_error,
-                       "The given frame id \\(\\d+\\) is not in the set.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ids.GetIndex(FrameId::get_new_id()), std::logic_error,
+      "The given frame id \\(\\d+\\) is not in the set.");
 }
 
 }  // namespace

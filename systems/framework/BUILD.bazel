@@ -520,6 +520,7 @@ drake_cc_googletest(
     deps = [
         ":diagram_builder",
         "//drake/common:essential",
+        "//drake/common/test_utilities:expect_throws_message",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:demultiplexer",
