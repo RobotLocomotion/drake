@@ -53,9 +53,20 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
     // Add overloads for `sin` and `cos`.
     auto math = py::module::import("pydrake.math");
     math
+      .def("log", [](const AutoDiffXd& x) { return log(x); })
       .def("sin", [](const AutoDiffXd& x) { return sin(x); })
-      .def("cos", [](const AutoDiffXd& x) { return cos(x); });
-    // Re-define for backwards compatibility.
+      .def("cos", [](const AutoDiffXd& x) { return cos(x); })
+      .def("tan", [](const AutoDiffXd& x) { return tan(x); })
+      .def("asin", [](const AutoDiffXd& x) { return asin(x); })
+      .def("acos", [](const AutoDiffXd& x) { return acos(x); })
+      .def("atan2",
+           [](const AutoDiffXd& y, const AutoDiffXd& x) {
+             return atan2(y, x);
+           }, py::arg("y"), py::arg("x"))
+      .def("sinh", [](const AutoDiffXd& x) { return sinh(x); })
+      .def("cosh", [](const AutoDiffXd& x) { return cosh(x); })
+      .def("tanh", [](const AutoDiffXd& x) { return tanh(x); });
+    // Re-define a subset for backwards compatibility.
     autodiff
       .def("sin", [](const AutoDiffXd& x) { return sin(x); })
       .def("cos", [](const AutoDiffXd& x) { return cos(x); });
