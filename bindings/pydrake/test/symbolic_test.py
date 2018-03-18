@@ -2,8 +2,10 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
+import math
 import numpy as np
 import pydrake.symbolic as sym
+import pydrake.math as dmath
 
 
 # Define global variables to make the tests less verbose.
@@ -16,6 +18,8 @@ b = sym.Variable("b")
 c = sym.Variable("c")
 e_x = sym.Expression(x)
 e_y = sym.Expression(y)
+
+# TODO(eric.cousnieau): Replace `sym` math functions with `dmath`.
 
 
 class TestSymbolicVariable(unittest.TestCase):
