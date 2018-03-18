@@ -5,6 +5,8 @@ import unittest
 import numpy as np
 import pydrake.symbolic as sym
 
+# TODO(eric.cousineau): Replace usages of `sym` math functions with the
+# overloads from `pydrake.math`.
 
 # Define global variables to make the tests less verbose.
 x = sym.Variable("x")
