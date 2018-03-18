@@ -1,32 +1,23 @@
 #include "pybind11/eigen.h"
+#include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
+using Eigen::AutoDiffScalar;
 using std::sin;
 using std::cos;
 
 namespace drake {
 namespace pydrake {
 
-/**
- * Force Eigen to evaluate an autodiff expression. We need this function
- * because, for example, adding two Eigen::AutoDiffXd values produces an
- * Eigen::AutoDiffScalar<Eigen::CWiseBinaryOp> which cannot be returned to
- * python. This just forces an evaluation and conversion to AutoDiffXd which
- * would normally happen automatically in C++.
- */
-template <typename Derived>
-AutoDiffXd eval(const Eigen::AutoDiffScalar<Derived>& x) {
-  return AutoDiffXd(x.value(), x.derivatives());
-}
-
 PYBIND11_MODULE(_autodiffutils_py, m) {
   m.doc() = "Bindings for Eigen AutoDiff Scalars";
 
-  py::class_<AutoDiffXd>(m, "AutoDiffXd")
+  py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
+  autodiff
     .def(py::init<const double&, const Eigen::VectorXd&>())
     .def("value", [](const AutoDiffXd& self) {
       return self.value();
@@ -34,47 +25,32 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
     .def("derivatives", [](const AutoDiffXd& self) {
       return self.derivatives();
     })
-    .def("sin", [](const AutoDiffXd& self) { return eval(sin(self)); })
-    .def("cos", [](const AutoDiffXd& self) { return eval(cos(self)); })
-    .def("__add__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
-      return eval(self + other);
-    }, py::is_operator())
-    .def("__add__", [](const AutoDiffXd& self, double other) {
-      return eval(self + other);
-    }, py::is_operator())
-    .def("__radd__", [](const AutoDiffXd& self, double other) {
-      return eval(other + self);
-    }, py::is_operator())
-    .def("__sub__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
-      return eval(self - other);
-    }, py::is_operator())
-    .def("__sub__", [](const AutoDiffXd& self, double other) {
-      return eval(self - other);
-    }, py::is_operator())
-    .def("__rsub__", [](const AutoDiffXd& self, double other) {
-      return eval(other - self);
-    }, py::is_operator())
-    .def("__mul__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
-      return eval(self * other);
-    }, py::is_operator())
-    .def("__mul__", [](const AutoDiffXd& self, double other) {
-      return eval(self * other);
-    }, py::is_operator())
-    .def("__rmul__", [](const AutoDiffXd& self, double other) {
-      return eval(other * self);
-    }, py::is_operator())
-    .def("__truediv__", [](const AutoDiffXd& self, const AutoDiffXd& other) {
-      return eval(self / other);
-    }, py::is_operator())
-    .def("__truediv__", [](const AutoDiffXd& self, double other) {
-      return eval(self / other);
-    }, py::is_operator())
-    .def("__rtruediv__", [](const AutoDiffXd& self, double other) {
-      return eval(other / self);
-    }, py::is_operator())
-    .def("__pow__", [](const AutoDiffXd& self, int power) {
-      return eval(pow(self, power));
-    }, py::is_operator());
+    .def(py::self + py::self)
+    .def(py::self + double())
+    .def(double() + py::self)
+    .def(py::self - py::self)
+    .def(py::self - double())
+    .def(double() - py::self)
+    .def(py::self * py::self)
+    .def(py::self * double())
+    .def(double() * py::self)
+    .def(py::self / py::self)
+    .def(py::self / double())
+    .def(double() / py::self)
+    .def("__pow__",
+         [](const AutoDiffXd& base, int exponent) {
+           return pow(base, exponent);
+         }, py::is_operator());
+
+    // Add overloads for `sin` and `cos`.
+    auto math = py::module::import("pydrake.math");
+    math
+      .def("sin", [](const AutoDiffXd& x) { return sin(x); })
+      .def("cos", [](const AutoDiffXd& x) { return cos(x); });
+    // Re-define for backwards compatibility.
+    autodiff
+      .def("sin", [](const AutoDiffXd& x) { return sin(x); })
+      .def("cos", [](const AutoDiffXd& x) { return cos(x); });
 }
 
 }  // namespace pydrake

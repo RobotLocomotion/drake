@@ -1,19 +1,41 @@
-from __future__ import absolute_import, division, print_function
+from __future__ import print_function
+# N.B. We are purposely not importing `division` to test nominal Python2
+# behavior.
+
+import pydrake.autodiffutils as mut
+from pydrake.autodiffutils import AutoDiffXd
 
 import unittest
 import numpy as np
-from pydrake.autodiffutils import (AutoDiffXd)
+from pydrake.math import sin, cos
+
+# Use convenience abbreviation.
+AD = AutoDiffXd
 
 
 class TestAutoDiffXd(unittest.TestCase):
-    def test_div(self):
-        x = AutoDiffXd(1, [1., 0])
-        y = x/2.
-        self.assertAlmostEquals(y.value(), .5)
-        np.testing.assert_almost_equal(y.derivatives(), [.5, 0.])
+    def _compare_scalar(self, actual, expected):
+        self.assertAlmostEquals(actual.value(), expected.value())
+        self.assertTrue((actual.derivatives() == expected.derivatives()).all())
 
-    def test_pow(self):
-        x = AutoDiffXd(1., [1., 0., 0.])
-        y = x**2
-        self.assertAlmostEquals(y.value(), 1.)
-        np.testing.assert_almost_equal(y.derivatives(), [2., 0., 0.])
+    def test_scalar_math(self):
+        a = AD(1, [1., 0])
+        self._compare_scalar(a, a)
+        b = AD(2, [0, 1.])
+        self._compare_scalar(a + b, AD(3, [1, 1]))
+        self._compare_scalar(a + 1, AD(2, [1, 0]))
+        self._compare_scalar(1 + a, AD(2, [1, 0]))
+        self._compare_scalar(a - b, AD(-1, [1, -1]))
+        self._compare_scalar(a - 1, AD(0, [1, 0]))
+        self._compare_scalar(1 - a, AD(0, [-1, 0]))
+        self._compare_scalar(a * b, AD(2, [2, 1]))
+        self._compare_scalar(a * 2, AD(2, [2, 0]))
+        self._compare_scalar(2 * a, AD(2, [2, 0]))
+        self._compare_scalar(a / b, AD(1./2, [1./2, -1./4]))
+        self._compare_scalar(a / 2, AD(0.5, [0.5, 0]))
+        self._compare_scalar(2 / a, AD(2, [-2, 0]))
+        self._compare_scalar(a**2, AD(1, [2., 0]))
+        # Test autodiff overloads.
+        c = AD(0, [1., 0])
+        self._compare_scalar(sin(c), AD(0, [1, 0]))
+        self._compare_scalar(cos(c), AD(1, [0, 0]))
