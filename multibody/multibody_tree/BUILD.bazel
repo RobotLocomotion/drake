@@ -252,10 +252,9 @@ drake_cc_googletest(
     name = "multibody_tree_test",
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities",
         "//drake/multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
         "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
-        "//drake/multibody/multibody_tree/test_utilities:expect_error_message",
     ],
 )
 
