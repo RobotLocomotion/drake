@@ -419,10 +419,10 @@ class RotationMatrixConversionTests : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    setupQuaternionTestCases();
+    SetupQuaternionTestCases();
   }
 
-  void setupQuaternionTestCases() {
+  void SetupQuaternionTestCases() {
     // kSweepSize is an even number so that no samples are taken at zero. This
     // test scales as O(N^4) in sweep size, so be cautious about turning it up!
     const int kSweepSize = 6;
@@ -437,6 +437,9 @@ class RotationMatrixConversionTests : public ::testing::Test {
         for (int k = 0; k < qy.size(); ++k) {
           for (int l = 0; l < qz.size(); ++l) {
             Eigen::Quaterniond q(qw(i), qx(j), qy(k), qz(l));
+            // As long as q.norm() is reasonably far from 0 to avoid divide-by-
+            // zero, normalize q so it becomes a valid quaterion (i.e., so that
+            // after normalization, q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1).
             if (q.norm() > 1E-3) {
               q.normalize();
               quaternion_test_cases_.push_back(q);

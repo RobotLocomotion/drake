@@ -63,7 +63,11 @@ void ViewerDrawTranslator::Serialize(double time,
     auto transform = tree_.relativeTransform(cache, 0, i);
     // TODO(mitiguy) when issue #8368 is resolved, change the next line so it
     // instead uses the method drake::math::RotationMatrix::ToQuaternion().
+    // Suppress deprecation warning for rotmat2quatOld.
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     auto quat = drake::math::rotmat2quatOld(transform.linear());
+    #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     std::vector<float>& position = message.position[i];
 
     auto translation = transform.translation();

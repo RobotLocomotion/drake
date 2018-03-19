@@ -34,17 +34,9 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   return Vector4<Scalar>(q.w(), q.x(), q.y(), q.z());
 }
 
-/**
- * Computes one of the quaternion from a rotation matrix.
- * This implementation is adapted from simbody
- * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
- * Notice that there are two quaternions corresponding to the same rotation,
- * namely `q` and `-q` represent the same rotation.
- * @param M A 3 x 3 rotation matrix.
- * @return a 4 x 1 unit length vector, the quaternion corresponding to the
- * rotation matrix.
- */
+/// (Deprecated), use @ref math::RotationMatrix::ToQuaternion
 template <typename Derived>
+DRAKE_DEPRECATED("Deprecated, use @ref math::RotationMatrix::ToQuaternion")
 Vector4<typename Derived::Scalar> rotmat2quatOld(
     const Eigen::MatrixBase<Derived>& M) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
