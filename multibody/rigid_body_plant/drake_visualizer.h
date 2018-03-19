@@ -108,9 +108,12 @@ class DrakeVisualizer : public LeafSystem<double> {
   void PlaybackTrajectory(
       const trajectories::PiecewisePolynomial<double>& input_trajectory) const;
 
-  // Publishes a lcmt_viewer_load_robot message containing a description
-  // of what should be visualized. The message is intended to be received by the
-  // Drake Visualizer.
+  /**
+   * Publishes a lcmt_viewer_load_robot message containing a description
+   * of what should be visualized. The message is intended to be received by the
+   * Drake Visualizer. When a DrakeVisualizer is simulated, this method is
+   * called automatically during the initialization phase.
+   */
   void PublishLoadRobot() const;
 
  private:
