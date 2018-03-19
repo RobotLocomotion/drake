@@ -43,6 +43,7 @@ class TestAutoDiffXd(unittest.TestCase):
         self._compare_scalar(2 / a, AD(2, [-2, 0]))
         self._compare_scalar(a**2, AD(1, [2., 0]))
         # Test autodiff overloads.
+        # See `math_overloads_test` for more comprehensive checks.
         c = AD(0, [1., 0])
         self._compare_scalar(sin(c), AD(0, [1, 0]))
         self._compare_scalar(cos(c), AD(1, [0, 0]))
