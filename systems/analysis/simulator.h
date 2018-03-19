@@ -743,7 +743,7 @@ void Simulator<T>::IsolateWitnessTriggers(
     bool trigger = false;
     for (size_t i = 0; i < witnesses.size(); ++i) {
       wc[i] = get_system().CalcWitnessValue(context, *witnesses[i]);
-      if (witnesses[i]->should_trigger(w0[i], wc[i]))
+      if (ExtractBoolOrThrow(witnesses[i]->should_trigger(w0[i], wc[i])))
         trigger = true;
     }
 
@@ -768,7 +768,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   // Determine the set of triggered witnesses.
   triggered_witnesses->clear();
   for (size_t i = 0; i < witnesses.size(); ++i) {
-    if (witnesses[i]->should_trigger(w0[i], wc[i]))
+    if (ExtractBoolOrThrow(witnesses[i]->should_trigger(w0[i], wc[i])))
       triggered_witnesses->push_back(witnesses[i]);
   }
 }
@@ -829,9 +829,10 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   triggered_witnesses_.clear();
   bool witness_triggered = false;
   for (size_t i =0; i < witness_functions.size() && !witness_triggered; ++i) {
-      if (witness_functions[i]->should_trigger(w0_[i], wf_[i])) {
-        witness_triggered = true;
-        triggered_witnesses_.push_back(witness_functions[i]);
+    if (ExtractBoolOrThrow(
+            witness_functions[i]->should_trigger(w0_[i], wf_[i]))) {
+      witness_triggered = true;
+      triggered_witnesses_.push_back(witness_functions[i]);
       }
   }
 
