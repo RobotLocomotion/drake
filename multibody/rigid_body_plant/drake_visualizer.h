@@ -108,6 +108,11 @@ class DrakeVisualizer : public LeafSystem<double> {
   void PlaybackTrajectory(
       const trajectories::PiecewisePolynomial<double>& input_trajectory) const;
 
+  // Publishes a lcmt_viewer_load_robot message containing a description
+  // of what should be visualized. The message is intended to be received by the
+  // Drake Visualizer.
+  void PublishLoadRobot() const;
+
  private:
   // TODO(siyuan): Split DoPublish into individual callbacks for different
   // events. Since the desired behaviors for different triggers are exclusive.
@@ -117,11 +122,6 @@ class DrakeVisualizer : public LeafSystem<double> {
   void DoPublish(const systems::Context<double>& context,
                  const std::vector<const PublishEvent<double>*>& events)
                  const override;
-
-  // Publishes a lcmt_viewer_load_robot message containing a description
-  // of what should be visualized. The message is intended to be received by the
-  // Drake Visualizer.
-  void PublishLoadRobot() const;
 
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.
