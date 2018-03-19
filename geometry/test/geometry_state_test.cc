@@ -9,11 +9,11 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/test_utilities/expect_error_message.h"
 
 namespace drake {
 namespace geometry {
@@ -221,17 +221,16 @@ class GeometryStateTest : public ::testing::Test {
   void AssertSingleTreeCleared() {
     // Confirms frames have been cleared.
     for (int f = 0; f < kFrameCount; ++f) {
-      EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(frames_[f],
-                                                           source_id_),
-                           std::logic_error,
-                           "Referenced frame \\d+ has not been registered.");
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          geometry_state_.BelongsToSource(frames_[f], source_id_),
+          std::logic_error, "Referenced frame \\d+ has not been registered.");
     }
     // Confirms geometries have been cleared.
     for (int g = 0; g < kFrameCount * kGeometryCount; ++g) {
-      EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(geometries_[g],
-                                                           source_id_),
-                           std::logic_error,
-                           "Referenced geometry \\d+ has not been registered.");
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          geometry_state_.BelongsToSource(geometries_[g], source_id_),
+          std::logic_error,
+          "Referenced geometry \\d+ has not been registered.");
     }
     EXPECT_EQ(gs_tester_.get_source_frame_id_map().at(source_id_).size(), 0);
     EXPECT_EQ(gs_tester_.get_source_frame_id_map().size(), 1);
@@ -311,15 +310,14 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
   EXPECT_EQ(geometry_state_.get_source_name(s_id), name);
 
   // Case: User-specified name duplicates previously registered name.
-  EXPECT_ERROR_MESSAGE(
-      geometry_state_.RegisterNewSource(name),
-      std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RegisterNewSource(name), std::logic_error,
       "Registering new source with duplicate name: Unique.");
 
   // Case: query with invalid source id.
-  EXPECT_ERROR_MESSAGE(geometry_state_.get_source_name(SourceId::get_new_id()),
-                       std::logic_error,
-                       "Querying source name for an invalid source id: \\d+.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.get_source_name(SourceId::get_new_id()), std::logic_error,
+      "Querying source name for an invalid source id: \\d+.");
 }
 
 // Tests the geometry statistics values. It uses the single-source tree to
@@ -516,9 +514,9 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
 // with meaningful message.
 TEST_F(GeometryStateTest, AddFrameToInvalidSource) {
   SourceId s_id = SourceId::get_new_id();  // This is not a registered source.
-  ASSERT_ERROR_MESSAGE(geometry_state_.RegisterFrame(s_id, *frame_.get()),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
+  DRAKE_ASSERT_THROWS_MESSAGE(
+      geometry_state_.RegisterFrame(s_id, *frame_.get()), std::logic_error,
+      "Referenced geometry source \\d+ is not registered.");
 }
 
 // Tests that a frame added to a valid source appears in the source's frames.
@@ -598,10 +596,10 @@ TEST_F(GeometryStateTest, AddFrameOnFrame) {
 TEST_F(GeometryStateTest, AddFrameWithDuplicateId) {
   SourceId s_id = NewSource();
   FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_.get());
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterFrame(s_id, *frame_), std::logic_error,
       "Registering frame with an id that has already been registered: \\d+");
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterFrame(s_id, f_id, *frame_), std::logic_error,
       "Registering frame with an id that has already been registered: \\d+");
 }
@@ -645,7 +643,7 @@ TEST_F(GeometryStateTest, RegisterDuplicateGeometry) {
   FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
   auto instance_copy = make_unique<GeometryInstance>(*instance_);
   geometry_state_.RegisterGeometry(s_id, f_id, move(instance_));
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterGeometry(s_id, f_id, move(instance_copy)),
       std::logic_error,
       "Registering geometry with an id that has already been registered: \\d+");
@@ -655,10 +653,9 @@ TEST_F(GeometryStateTest, RegisterDuplicateGeometry) {
 TEST_F(GeometryStateTest, RegisterGeometryMissingSource) {
   SourceId s_id = SourceId::get_new_id();
   FrameId f_id = FrameId::get_new_id();
-  EXPECT_ERROR_MESSAGE(geometry_state_.RegisterGeometry(s_id, f_id,
-                                                        move(instance_)),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_)),
+      std::logic_error, "Referenced geometry source \\d+ is not registered.");
 }
 
 // Tests registration of geometry on valid source and non-existent frame.
@@ -666,11 +663,11 @@ TEST_F(GeometryStateTest, RegisterGeometryMissingFrame) {
   SourceId s_id = NewSource();
 
   FrameId f_id = FrameId::get_new_id();
-  EXPECT_ERROR_MESSAGE(geometry_state_.RegisterGeometry(s_id, f_id,
-                                                        move(instance_)),
-                       std::logic_error,
-                       "Referenced frame \\d+ for source \\d+\\,"
-                           " but the frame doesn't belong to the source.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_)),
+      std::logic_error,
+      "Referenced frame \\d+ for source \\d+\\,"
+      " but the frame doesn't belong to the source.");
 }
 
 // Tests error resulting from passing a null GeometryInstance.
@@ -678,7 +675,7 @@ TEST_F(GeometryStateTest, RegisterNullGeometry) {
   SourceId s_id = NewSource();
   FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
   unique_ptr<GeometryInstance> null_geometry;
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterGeometry(s_id, f_id, move(null_geometry)),
       std::logic_error,
       "Registering null geometry to frame \\d+, on source \\d+.");
@@ -735,7 +732,7 @@ TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
   auto instance =
       make_unique<GeometryInstance>(pose, unique_ptr<Shape>(new Sphere(1)));
   GeometryId junk_id = GeometryId::get_new_id();
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterGeometryWithParent(s_id, junk_id, move(instance)),
       std::logic_error,
       "Referenced geometry \\d+ has not been registered.");
@@ -745,7 +742,7 @@ TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
 TEST_F(GeometryStateTest, RegisterNullGeometryonGeometry) {
   SourceId s_id = SetUpSingleSourceTree();
   unique_ptr<GeometryInstance> instance;
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterGeometryWithParent(s_id, geometries_[0],
                                                  move(instance)),
       std::logic_error,
@@ -769,7 +766,7 @@ TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
   SourceId s_id = NewSource();
   auto instance_copy = make_unique<GeometryInstance>(*instance_);
   geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_));
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_copy)),
       std::logic_error,
       "Registering anchored geometry with an id that has already been "
@@ -781,7 +778,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometryInvalidSource) {
   Isometry3<double> pose = Isometry3<double>::Identity();
   auto instance = make_unique<GeometryInstance>(
       pose, unique_ptr<Shape>(new Sphere(1)));
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
                                                move(instance)),
       std::logic_error,
@@ -792,7 +789,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometryInvalidSource) {
 // as anchored geometry.
 TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
   unique_ptr<GeometryInstance> instance;
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
                                                move(instance)),
       std::logic_error,
@@ -803,11 +800,11 @@ TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
 // identifier. The basic behavior is tested implicitly in other tests because
 // they rely on them to validate state.
 TEST_F(GeometryStateTest, GetPoseForBadGeometryId) {
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetPoseInFrame(GeometryId::get_new_id()),
       std::logic_error,
       "Referenced geometry \\d+ has not been registered.");
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetPoseInParent(GeometryId::get_new_id()),
       std::logic_error,
       "Referenced geometry \\d+ has not been registered.");
@@ -820,32 +817,27 @@ TEST_F(GeometryStateTest, GetPoseForBadGeometryId) {
 TEST_F(GeometryStateTest, SourceOwnershipInvalidSource) {
   SourceId source_id = SourceId::get_new_id();
   // Invalid frame/geometry ids.
-  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(FrameId::get_new_id(),
-                                                       source_id),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
-  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(GeometryId::get_new_id(),
-                                                       source_id),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.BelongsToSource(FrameId::get_new_id(), source_id),
+      std::logic_error, "Referenced geometry source \\d+ is not registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.BelongsToSource(GeometryId::get_new_id(), source_id),
+      std::logic_error, "Referenced geometry source \\d+ is not registered.");
   SetUpSingleSourceTree();
   GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
       source_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                     std::unique_ptr<Shape>(new Sphere(1))));
   // Valid frame/geometry ids.
-  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(frames_[0],
-                                                       source_id),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
-  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(geometries_[0],
-                                                       source_id),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
-  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(anchored_id,
-                                                       source_id),
-                       std::logic_error,
-                       "Referenced geometry source \\d+ is not registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.BelongsToSource(frames_[0], source_id), std::logic_error,
+      "Referenced geometry source \\d+ is not registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.BelongsToSource(geometries_[0], source_id),
+      std::logic_error, "Referenced geometry source \\d+ is not registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.BelongsToSource(anchored_id, source_id), std::logic_error,
+      "Referenced geometry source \\d+ is not registered.");
 }
 
 // This tests the source ownership functionality for frames - a function which
@@ -853,10 +845,9 @@ TEST_F(GeometryStateTest, SourceOwnershipInvalidSource) {
 TEST_F(GeometryStateTest, SourceOwnershipFrameId) {
   SourceId s_id = SetUpSingleSourceTree();
   // Test for invalid frame.
-  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(FrameId::get_new_id(),
-                                                       s_id),
-                       std::logic_error,
-                       "Referenced frame \\d+ has not been registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.BelongsToSource(FrameId::get_new_id(), s_id),
+      std::logic_error, "Referenced frame \\d+ has not been registered.");
   // Test for valid frame.
   EXPECT_TRUE(geometry_state_.BelongsToSource(frames_[0], s_id));
 }
@@ -872,10 +863,9 @@ TEST_F(GeometryStateTest, SourceOwnershipGeometryId) {
           Isometry3<double>::Identity(),
           std::unique_ptr<Shape>(new Sphere(1))));
   // Test for invalid geometry.
-  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(GeometryId::get_new_id(),
-                                                       s_id),
-                       std::logic_error,
-                       "Referenced geometry \\d+ has not been registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.BelongsToSource(GeometryId::get_new_id(), s_id),
+      std::logic_error, "Referenced geometry \\d+ has not been registered.");
   // Test for valid geometry.
   EXPECT_TRUE(geometry_state_.BelongsToSource(geometries_[0], s_id));
   EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id, s_id));
@@ -884,9 +874,9 @@ TEST_F(GeometryStateTest, SourceOwnershipGeometryId) {
 // This confirms the failure state of calling GeometryState::GetFrameId with a
 // bad geometry identifier.
 TEST_F(GeometryStateTest, GetFrameIdFromBadId) {
-  EXPECT_ERROR_MESSAGE(geometry_state_.GetFrameId(GeometryId::get_new_id()),
-                       std::logic_error,
-                       "Referenced geometry \\d+ has not been registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetFrameId(GeometryId::get_new_id()), std::logic_error,
+      "Referenced geometry \\d+ has not been registered.");
 }
 
 // Tests the validation of the set of ids provided.
@@ -899,31 +889,31 @@ TEST_F(GeometryStateTest, ValidateFrameIdVector) {
 
   // Case: Set has *extra* frame.
   frame_set.AddFrameId(FrameId::get_new_id());
-  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFrameIds(frame_set),
-                       std::logic_error,
-                       "Disagreement in expected number of frames \\(\\d+\\)"
-                       " and the given number of frames \\(\\d+\\).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gs_tester_.ValidateFrameIds(frame_set), std::logic_error,
+      "Disagreement in expected number of frames \\(\\d+\\)"
+      " and the given number of frames \\(\\d+\\).");
 
   // Case: Right number, wrong frames.
   FrameIdVector frame_set_2(s_id);
   for (size_t i = 0; i < frames_.size(); ++i) {
     frame_set_2.AddFrameId(FrameId::get_new_id());
   }
-  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFrameIds(frame_set_2),
-                       std::logic_error,
-                       "Frame id provided in kinematics data \\(\\d+\\) does "
-                       "not belong to the source \\(\\d+\\). At least one "
-                       "required frame id is also missing.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gs_tester_.ValidateFrameIds(frame_set_2), std::logic_error,
+      "Frame id provided in kinematics data \\(\\d+\\) does "
+      "not belong to the source \\(\\d+\\). At least one "
+      "required frame id is also missing.");
 
   // Case: Too few frames.
   FrameIdVector frame_set_3(s_id);
   for (size_t i = 0; i < frames_.size() - 1; ++i) {
     frame_set_3.AddFrameId(frames_[i]);
   }
-  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFrameIds(frame_set_3),
-                       std::logic_error,
-                       "Disagreement in expected number of frames \\(\\d+\\)"
-                       " and the given number of frames \\(\\d+\\).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gs_tester_.ValidateFrameIds(frame_set_3), std::logic_error,
+      "Disagreement in expected number of frames \\(\\d+\\)"
+      " and the given number of frames \\(\\d+\\).");
 }
 
 // Tests validation of kinematics pose data against ids.
@@ -942,7 +932,7 @@ TEST_F(GeometryStateTest, ValidateFramePoses) {
 
   // Case: Too many pose values.
   poses.mutable_vector().push_back(Isometry3<double>::Identity());
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       gs_tester_.ValidateFramePoses(frame_set, poses),
       std::logic_error,
       "Different number of ids and poses. \\d+ ids and \\d+ poses.");
@@ -950,18 +940,18 @@ TEST_F(GeometryStateTest, ValidateFramePoses) {
   // Case: Too few pose values.
   poses.mutable_vector().pop_back();
   poses.mutable_vector().pop_back();
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       gs_tester_.ValidateFramePoses(frame_set, poses),
       std::logic_error,
       "Different number of ids and poses. \\d+ ids and \\d+ poses.");
 
   // Case: mis-matched source ids.
   FramePoseVector<double> poses2(SourceId::get_new_id(), pose_source);
-  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFramePoses(frame_set, poses2),
-                       std::logic_error,
-                       "Error setting poses for given ids; the ids and poses "
-                           "belong to different geometry sources \\(\\d+ and "
-                           "\\d+, respectively\\).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gs_tester_.ValidateFramePoses(frame_set, poses2), std::logic_error,
+      "Error setting poses for given ids; the ids and poses "
+      "belong to different geometry sources \\(\\d+ and "
+      "\\d+, respectively\\).");
 }
 
 // Tests the GeometryState::SetFramePoses() method. This doesn't test
@@ -1030,15 +1020,15 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
 
   // Query frame group.
   EXPECT_EQ(geometry_state_.get_frame_group(frames_[0]), 0);
-  EXPECT_ERROR_MESSAGE(geometry_state_.get_frame_group(FrameId::get_new_id()),
-                       std::logic_error,
-                       "No frame group available for invalid frame id: \\d+");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.get_frame_group(FrameId::get_new_id()), std::logic_error,
+      "No frame group available for invalid frame id: \\d+");
 
   // Query frame name.
   EXPECT_EQ(geometry_state_.get_frame_name(frames_[0]), "f0");
-  EXPECT_ERROR_MESSAGE(geometry_state_.get_frame_name(FrameId::get_new_id()),
-                       std::logic_error,
-                       "No frame name available for invalid frame id: \\d+");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.get_frame_name(FrameId::get_new_id()), std::logic_error,
+      "No frame name available for invalid frame id: \\d+");
 
   // Set the frame poses to query geometry and frame poses.
   FrameIdVector ids(s_id, frames_);
@@ -1048,24 +1038,24 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   EXPECT_TRUE(
       CompareMatrices(geometry_state_.get_pose_in_world(frames_[0]).matrix(),
                       X_WF_[0].matrix()));
-  EXPECT_ERROR_MESSAGE(geometry_state_.get_pose_in_world(FrameId::get_new_id()),
-                       std::logic_error,
-                       "No world pose available for invalid frame id: \\d+");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.get_pose_in_world(FrameId::get_new_id()),
+      std::logic_error, "No world pose available for invalid frame id: \\d+");
 
   // This assumes that geometry parent belongs to frame 0.
   Isometry3<double> geometry_pose = X_WF_[0] * X_FG_[0];
   EXPECT_TRUE(CompareMatrices(
       geometry_state_.get_pose_in_world(geometries_[0]).matrix(),
       geometry_pose.matrix()));
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.get_pose_in_world(GeometryId::get_new_id()),
       std::logic_error,
       "No world pose available for invalid geometry id: \\d+");
 
-  EXPECT_TRUE(CompareMatrices(
-      geometry_state_.get_pose_in_parent(frames_[0]).matrix(),
-      X_PF_[0].matrix()));
-  EXPECT_ERROR_MESSAGE(
+  EXPECT_TRUE(
+      CompareMatrices(geometry_state_.get_pose_in_parent(frames_[0]).matrix(),
+                      X_PF_[0].matrix()));
+  DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.get_pose_in_parent(FrameId::get_new_id()),
       std::logic_error, "No pose available for invalid frame id: \\d+");
 }

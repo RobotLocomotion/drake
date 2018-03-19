@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -15,16 +16,6 @@
 namespace drake {
 namespace systems {
 namespace {
-
-#define EXPECT_ERROR_MESSAGE(expression, exception, reg_exp) \
-try { \
-  expression; \
-  GTEST_NONFATAL_FAILURE_("\t" #expression " failed to throw " #exception); \
-} catch (const exception& err) { \
-  auto matcher = [](const char* s, const std::string& re) { \
-    return std::regex_match(s, std::regex(re.c_str())); }; \
-  EXPECT_PRED2(matcher, err.what(), reg_exp); \
-}
 
 // Tests ::empty().
 GTEST_TEST(DiagramBuilderTest, Empty) {
@@ -85,10 +76,10 @@ GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   adder->set_name(name);
   // Connect the output port to the input port.
   builder.Connect(adder->get_output_port(), adder->get_input_port(0));
-  EXPECT_ERROR_MESSAGE(builder.Build(), std::runtime_error,
-                       "Algebraic loop detected in DiagramBuilder:\n"
-                       "\\s+" + name + ":Out\\(0\\).*\n."
-                       "\\s*" + name + ":In\\(0\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
+                             "Algebraic loop detected in DiagramBuilder:\n"
+                             "\\s+" + name + ":Out\\(0\\).*\n."
+                             "\\s*" + name + ":In\\(0\\)");
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
@@ -142,10 +133,10 @@ GTEST_TEST(DiagramBuilderTest, CycleAtLoopPortLevel) {
   const std::string name{"echo"};
   echo->set_name(name);
   builder.Connect(echo->get_echo_output_port(), echo->get_vec_input_port());
-  EXPECT_ERROR_MESSAGE(builder.Build(), std::runtime_error,
-                       "Algebraic loop detected in DiagramBuilder:\n"
-                           "\\s+" + name + ":Out\\(0\\).*\n."
-                           "\\s*" + name + ":In\\(0\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
+                             "Algebraic loop detected in DiagramBuilder:\n"
+                             "\\s+" + name + ":Out\\(0\\).*\n."
+                             "\\s*" + name + ":In\\(0\\)");
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
