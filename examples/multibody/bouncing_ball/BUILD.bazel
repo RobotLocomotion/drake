@@ -23,8 +23,6 @@ drake_cc_library(
         "//geometry:geometry_system",
         "//math:geometric_transform",
         "//multibody/multibody_tree/multibody_plant",
-        #        "//systems/framework",
-        #       "//systems/framework:leaf_system",
     ],
 )
 

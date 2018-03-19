@@ -7,7 +7,6 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
-using geometry::Cylinder;
 using geometry::GeometrySystem;
 using geometry::Sphere;
 using geometry::HalfSpace;

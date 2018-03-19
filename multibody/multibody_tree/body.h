@@ -177,7 +177,11 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return topology_.body_node;
   }
 
-  /// Returns the default mass (non Context dependent) for `this` body.
+  /// Returns the default mass (not Context dependent) for `this` body.
+  /// In general, the mass for a body can be a parameter of the model that can
+  /// be retrieved with the method get_mass(). When the mass of a body is a
+  /// parameter, the value returned by get_default_mass() is used to initialize
+  /// the mass parameter in the context.
   double get_default_mass() const { return default_mass_; }
 
   /// Returns the mass of this body stored in `context`.

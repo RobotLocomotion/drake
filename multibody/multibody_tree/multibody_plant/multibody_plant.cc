@@ -291,7 +291,7 @@ void MultibodyPlant<T>::EstimatePenaltyMethodParameters(
   // are several flying objects and fixed base robots (E.g.: manipulation
   // cases.)
 
-  // The heuristics now is very simple. We should update it to:
+  // The heuristic now is very simple. We should update it to:
   //  - Only scan free bodies for weight.
   //  - Consider an estimate of maximum velocities (context dependent).
   // Right now we are being very conservative and use the maximum mass in the
@@ -302,14 +302,14 @@ void MultibodyPlant<T>::EstimatePenaltyMethodParameters(
     mass = std::max(mass, body.get_default_mass());
   }
 
-  // For now, we use the model for a critically damped spring mass oscillator
+  // For now, we use the model of a critically damped spring mass oscillator
   // to estimate these parameters: mẍ+cẋ+kx=mg
   // Notice however that normal forces are computed according to: fₙ=kx(1+dẋ)
   // which translate to a second order oscillator of the form:
   // mẍ+(kdx)ẋ+kx=mg
   // Therefore, for this more complex, non-linear, oscillator, we estimate the
   // damping constant d using a time scale related to the free oscillation
-  // (omega below) and the requested penetration allowance as a lenght scale.
+  // (omega below) and the requested penetration allowance as a length scale.
 
   // We first estimate the stiffness based on static equilibrium.
   const double stiffness = mass * g / penetration_allowance;
@@ -320,7 +320,7 @@ void MultibodyPlant<T>::EstimatePenaltyMethodParameters(
   // contact goes to zero in this time scale.
   const double time_scale = 1.0 / omega;
 
-  // Damping ration for a critically damped model. We could allow users to set
+  // Damping ratio for a critically damped model. We could allow users to set
   // this. Right now, critically damp the normal direction.
   // This corresponds to a non-penetraion constraint in the limit for
   // contact_penetration_allowance_ goint to zero (no bounce off).
@@ -351,79 +351,78 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
-  if (penetrations.size() > 0) {
-    for (const auto& penetration : penetrations) {
-      const GeometryId geometryA_id = penetration.id_A;
-      const GeometryId geometryB_id = penetration.id_B;
+  for (const auto& penetration : penetrations) {
+    const GeometryId geometryA_id = penetration.id_A;
+    const GeometryId geometryB_id = penetration.id_B;
 
-      // TODO(amcastro-tri): Request GeometrySystem to do this filtering for us
-      // when that capability lands.
-      if (!is_collision_geometry(geometryA_id) ||
-          !is_collision_geometry(geometryB_id))
-        continue;
+    // TODO(amcastro-tri): Request GeometrySystem to do this filtering for us
+    // when that capability lands.
+    // TODO(amcastro-tri): consider allowing this id's to belong to a third
+    // external system when they correspond to anchored geometry.
+    if (!is_collision_geometry(geometryA_id) ||
+        !is_collision_geometry(geometryB_id))
+      continue;
 
-      // NOTE: for now assume this MBP is the only system connected to GS.
-      BodyIndex bodyA_index = geometry_id_to_body_index_.at(penetration.id_A);
-      BodyIndex bodyB_index = geometry_id_to_body_index_.at(penetration.id_B);
+    BodyIndex bodyA_index = geometry_id_to_body_index_.at(penetration.id_A);
+    BodyIndex bodyB_index = geometry_id_to_body_index_.at(penetration.id_B);
 
-      BodyNodeIndex bodyA_node_index =
-          model().get_body(bodyA_index).node_index();
-      BodyNodeIndex bodyB_node_index =
-          model().get_body(bodyB_index).node_index();
+    BodyNodeIndex bodyA_node_index =
+        model().get_body(bodyA_index).node_index();
+    BodyNodeIndex bodyB_node_index =
+        model().get_body(bodyB_index).node_index();
 
-      // Penetration depth, > 0 during penetration.
-      const double& x = penetration.depth;
-      const Vector3<double>& nhat_BA_W = penetration.nhat_BA_W;
-      const Vector3<double>& p_WCa = penetration.p_WCa;
-      const Vector3<double>& p_WCb = penetration.p_WCb;
+    // Penetration depth, > 0 during penetration.
+    const double &x = penetration.depth;
+    const Vector3<double> &nhat_BA_W = penetration.nhat_BA_W;
+    const Vector3<double> &p_WCa = penetration.p_WCa;
+    const Vector3<double> &p_WCb = penetration.p_WCb;
 
-      // Contact point C.
-      const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
+    // Contact point C.
+    const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
 
-      // Contact point position on body A.
-      const Vector3<double>& p_WAo =
-          pc.get_X_WB(bodyA_node_index).translation();
-      const Vector3<double>& p_CoAo_W = p_WAo - p_WC;
+    // Contact point position on body A.
+    const Vector3<double> &p_WAo =
+        pc.get_X_WB(bodyA_node_index).translation();
+    const Vector3<double> &p_CoAo_W = p_WAo - p_WC;
 
-      // Contact point position on body B.
-      const Vector3<double>& p_WBo =
-          pc.get_X_WB(bodyB_node_index).translation();
-      const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
+    // Contact point position on body B.
+    const Vector3<double> &p_WBo =
+        pc.get_X_WB(bodyB_node_index).translation();
+    const Vector3<double> &p_CoBo_W = p_WBo - p_WC;
 
-      // Separation velocity, > 0  if objects separate.
-      const Vector3<double> v_WAc =
-          vc.get_V_WB(bodyA_node_index).Shift(-p_CoAo_W).translational();
-      const Vector3<double> v_WBc =
-          vc.get_V_WB(bodyB_node_index).Shift(-p_CoBo_W).translational();
-      const Vector3<double> v_AcBc_W = v_WBc - v_WAc;
+    // Separation velocity, > 0  if objects separate.
+    const Vector3<double> v_WAc =
+        vc.get_V_WB(bodyA_node_index).Shift(-p_CoAo_W).translational();
+    const Vector3<double> v_WBc =
+        vc.get_V_WB(bodyB_node_index).Shift(-p_CoBo_W).translational();
+    const Vector3<double> v_AcBc_W = v_WBc - v_WAc;
 
-      // if xdot = vn > 0 ==> they are getting closer.
-      const double vn = v_AcBc_W.dot(nhat_BA_W);
+    // if xdot = vn > 0 ==> they are getting closer.
+    const double vn = v_AcBc_W.dot(nhat_BA_W);
 
-      // Magnitude of the normal force on body A at contact point C.
-      const double k = penalty_method_contact_parameters_.stiffness;
-      const double d = penalty_method_contact_parameters_.damping;
-      const double fn_AC = k * x * (1.0 + d * vn);
+    // Magnitude of the normal force on body A at contact point C.
+    const double k = penalty_method_contact_parameters_.stiffness;
+    const double d = penalty_method_contact_parameters_.damping;
+    const double fn_AC = k * x * (1.0 + d * vn);
 
-      if (fn_AC <= 0) continue;  // Continue with next point.
+    if (fn_AC <= 0) continue;  // Continue with next point.
 
-      // Spatial force on body A at C, expressed in the world frame W.
-      const SpatialForce<double> F_AC_W(Vector3<double>::Zero(),
-                                        fn_AC * nhat_BA_W);
+    // Spatial force on body A at C, expressed in the world frame W.
+    const SpatialForce<double> F_AC_W(Vector3<double>::Zero(),
+                                      fn_AC * nhat_BA_W);
 
-      if (bodyA_index != world_index()) {
-        // Spatial force on body A at Ao, expressed in W.
-        const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-        F_BBo_W_array->at(bodyA_index) += F_AAo_W;
-      }
-
-      if (bodyB_index != world_index()) {
-        // Spatial force on body B at Bo, expressed in W.
-        const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-        F_BBo_W_array->at(bodyB_index) += F_BBo_W;
-      }
+    if (bodyA_index != world_index()) {
+      // Spatial force on body A at Ao, expressed in W.
+      const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
+      F_BBo_W_array->at(bodyA_index) += F_AAo_W;
     }
-  }  // if (penetrations.size() > 0)
+
+    if (bodyB_index != world_index()) {
+      // Spatial force on body B at Bo, expressed in W.
+      const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
+      F_BBo_W_array->at(bodyB_index) += F_BBo_W;
+    }
+  }
 }
 
 template<typename T>
