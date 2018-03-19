@@ -2529,8 +2529,8 @@ class MathematicalProgram {
    */
   // This method should be called by the derived classes of
   // MathematicalProgramSolverInterface, which is not a friend class of
-  // MathematicalProgram, as we want to encapsulate the private members of
-  // MathematicalProgram.
+  // MathematicalProgram, as we do not want to leak any of the internal details
+  // of MathematicalProgram.
   void SetSolverResult(const SolverResult& solver_result);
 
  private:
