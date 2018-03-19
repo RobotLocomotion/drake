@@ -33,6 +33,7 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
       return py::str("<AutoDiffXd {} nderiv={}>").format(
           self.value(), self.derivatives().size());
     })
+    // Arithmetic
     .def(py::self + py::self)
     .def(py::self + double())
     .def(double() + py::self)
@@ -45,6 +46,20 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
     .def(py::self / py::self)
     .def(py::self / double())
     .def(double() / py::self)
+    // Logical comparison
+    .def(py::self == py::self)
+    .def(py::self == double())
+    .def(py::self != py::self)
+    .def(py::self != double())
+    .def(py::self < py::self)
+    .def(py::self < double())
+    .def(py::self <= py::self)
+    .def(py::self <= double())
+    .def(py::self > py::self)
+    .def(py::self > double())
+    .def(py::self >= py::self)
+    .def(py::self >= double())
+    // Additional math
     .def("__pow__",
          [](const AutoDiffXd& base, int exponent) {
            return pow(base, exponent);
