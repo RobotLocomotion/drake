@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "drake/common/drake_bool.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/event_collection.h"
 
@@ -145,13 +146,13 @@ class WitnessFunction {
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
-  decltype(T() < T()) should_trigger(const T& w0, const T& wf) const {
+  bool_t<T> should_trigger(const T& w0, const T& wf) const {
     WitnessFunctionDirection dtype = get_dir_type();
 
     const T zero(0);
     switch (dtype) {
       case WitnessFunctionDirection::kNone:
-        return (T(0) > T(0));
+        return false;
 
       case WitnessFunctionDirection::kPositiveThenNonPositive:
         return (w0 > zero && wf <= zero);
