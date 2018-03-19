@@ -14,6 +14,13 @@ AD = AutoDiffXd
 
 
 class TestAutoDiffXd(unittest.TestCase):
+    def test_api(self):
+        a = AD(1, [1., 0])
+        self.assertEquals(a.value(), 1.)
+        self.assertTrue((a.derivatives() == [1., 0]).all())
+        self.assertEquals(str(a), "AD{1.0, nderiv=2}")
+        self.assertEquals(repr(a), "<AutoDiffXd 1.0 nderiv=2>")
+
     def _compare_scalar(self, actual, expected):
         self.assertAlmostEquals(actual.value(), expected.value())
         self.assertTrue((actual.derivatives() == expected.derivatives()).all())

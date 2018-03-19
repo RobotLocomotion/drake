@@ -25,6 +25,14 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
     .def("derivatives", [](const AutoDiffXd& self) {
       return self.derivatives();
     })
+    .def("__str__", [](const AutoDiffXd& self) {
+      return py::str("AD{{{}, nderiv={}}}").format(
+          self.value(), self.derivatives().size());
+    })
+    .def("__repr__", [](const AutoDiffXd& self) {
+      return py::str("<AutoDiffXd {} nderiv={}>").format(
+          self.value(), self.derivatives().size());
+    })
     .def(py::self + py::self)
     .def(py::self + double())
     .def(double() + py::self)
