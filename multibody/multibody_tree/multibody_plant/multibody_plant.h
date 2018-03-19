@@ -729,10 +729,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Sets the penetration allowance used to estimate the coefficients in the
   /// penalty method used to impose non-penetration among bodies. Refer to the
   /// section "Contact by penalty method" for ruther details.
-  void set_penetration_allowance(double d) {
+  void set_penetration_allowance(double penetration_allowance = 0.001) {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    penalty_method_contact_parameters_.contact_penetration_allowance = d;
-    EstimatePenaltyMethodParameters();
+    EstimatePenaltyMethodParameters(penetration_allowance);
   }
 
   /// Returns a time scale estimated based on the requested penetration
@@ -746,7 +745,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// dynamics" (this time scale is zero for ideal rigid contact.)
   double get_contact_penalty_method_time_scale() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return penalty_method_contact_parameters_.contact_penalty_method_time_scale;
+    return penalty_method_contact_parameters_.time_scale;
   }
   /// @}
 
@@ -887,7 +886,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // This heuristics includes, for instance, the weight of the bodies in the
   // model. Future versions could also include energy estimates of maximum
   // velocities,
-  void EstimatePenaltyMethodParameters();
+  void EstimatePenaltyMethodParameters(double penetration_allowance);
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
@@ -910,20 +909,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // This struct contains the parameters to compute forces to enforce
   // no-interpenetration between bodies by a penalty method.
   struct ContactByPenaltyMethodParameters {
-    // User provided penetration allowance. This plus the model's masses and
-    // energy allow us to estimate the penalty method coefficients.
-    double contact_penetration_allowance{0.001};  // Defaults to 1mm.
     // Penalty method coefficients used to compute contact forces.
     // TODO(amcastro-tri): consider having these per body. That would allow us
     // for instance to calibrate the stiffness at the fingers (stiffness related
     // to the weight of the objects being manipulated) of a walking robot (
     // stiffness related to the weight of the entire robot) with the same
     // penetration allowance.
-    double contact_penalty_stiffness{0};
-    double contact_penalty_damping{0};
+    double stiffness{0};
+    double damping{0};
     // An estimated time scale in which objects come to a relative stop during
     // contact.
-    double contact_penalty_method_time_scale{-1.0};
+    double time_scale{-1.0};
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
     optional<double> gravity;
