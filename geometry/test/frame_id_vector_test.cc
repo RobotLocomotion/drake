@@ -55,12 +55,12 @@ GTEST_TEST(FrameIdVector, ConstructorWithDuplicates) {
   frames.push_back(frames[0]);
 
   // Case: Construct by copying frames.
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       FrameIdVector(source_id, frames), std::logic_error,
       "Input vector of frame ids contains duplicates.");
 
   // Case: Construct by moving frames.
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       FrameIdVector(source_id, move(frames)), std::logic_error,
       "Input vector of frame ids contains duplicates.");
 }
@@ -82,7 +82,7 @@ GTEST_TEST(FrameIdVector, AddingFramesSingle) {
   EXPECT_EQ(ids.get_frame_id(1), f1);
 
   // Case: Add single to non-empty (not unique).
-  DRAKE_EXPECT_ERROR_MESSAGE(ids.AddFrameId(f0), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(ids.AddFrameId(f0), std::logic_error,
                              "Id vector already contains frame id: \\d+.");
 }
 
@@ -114,14 +114,14 @@ GTEST_TEST(FrameIdVector, AddingFramesMultiple) {
   }
 
   // Case: Add multiple to non-empty (non-unique result).
-  DRAKE_EXPECT_ERROR_MESSAGE(ids.AddFrameIds(duplicate), std::logic_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(ids.AddFrameIds(duplicate), std::logic_error,
                              "Id vector already contains frame id: \\d+.");
 
   // Case: Add vector of ids that do not duplicate previous contents but
   // contains duplicate values.
   FrameId new_id = FrameId::get_new_id();
   vector<FrameId> redundant{new_id, new_id};
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       ids.AddFrameIds(redundant), std::logic_error,
       "Input vector of frame ids contains duplicates.");
 }
@@ -136,7 +136,7 @@ GTEST_TEST(FrameIdVector, FrameLookup) {
   EXPECT_NO_THROW(index = ids.GetIndex(frames[expected_index]));
   EXPECT_EQ(index, expected_index);
 
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       ids.GetIndex(FrameId::get_new_id()), std::logic_error,
       "The given frame id \\(\\d+\\) is not in the set.");
 }

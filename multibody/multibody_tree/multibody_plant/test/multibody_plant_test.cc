@@ -118,13 +118,13 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
           "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
       std::logic_error,
@@ -151,21 +151,21 @@ class AcrobotPlantTests : public ::testing::Test {
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
     // Verify that methods with pre-Finalize() conditions throw accordingly.
-    DRAKE_EXPECT_ERROR_MESSAGE(
+    DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_geometry_ids_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
 
-    DRAKE_EXPECT_ERROR_MESSAGE(
+    DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_geometry_poses_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
 
-    DRAKE_EXPECT_ERROR_MESSAGE(
+    DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_continuous_state_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
@@ -340,7 +340,7 @@ TEST_F(AcrobotPlantTests, GeometryRegistration) {
   // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
   // FrameId, even though in this model we register an anchored geometry to the
   // world.
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant_->GetBodyFrameIdOrThrow(world_index()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */

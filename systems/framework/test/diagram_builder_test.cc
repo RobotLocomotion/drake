@@ -76,7 +76,7 @@ GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   adder->set_name(name);
   // Connect the output port to the input port.
   builder.Connect(adder->get_output_port(), adder->get_input_port(0));
-  DRAKE_EXPECT_ERROR_MESSAGE(builder.Build(), std::runtime_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
                              "Algebraic loop detected in DiagramBuilder:\n"
                              "\\s+" + name + ":Out\\(0\\).*\n."
                              "\\s*" + name + ":In\\(0\\)");
@@ -133,7 +133,7 @@ GTEST_TEST(DiagramBuilderTest, CycleAtLoopPortLevel) {
   const std::string name{"echo"};
   echo->set_name(name);
   builder.Connect(echo->get_echo_output_port(), echo->get_vec_input_port());
-  DRAKE_EXPECT_ERROR_MESSAGE(builder.Build(), std::runtime_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
                              "Algebraic loop detected in DiagramBuilder:\n"
                              "\\s+" + name + ":Out\\(0\\).*\n."
                              "\\s*" + name + ":In\\(0\\)");
