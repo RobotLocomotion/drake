@@ -48,6 +48,7 @@ struct GurobiCallbackInformation {
   Eigen::VectorXd prog_sol_vector;
   GurobiSolver::MipNodeCallbackFunction mip_node_callback;
   GurobiSolver::MipSolCallbackFunction mip_sol_callback;
+  SolverResult solver_result{GurobiSolver::id()};
 };
 
 // Utility that, given a raw Gurobi solution vector, a container
@@ -106,9 +107,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
     SetProgramSolutionVector(callback_info->is_new_variable,
                              callback_info->solver_sol_vector,
                              &(callback_info->prog_sol_vector));
-    SolverResult solver_result(GurobiSolver::id());
-    solver_result.set_decision_variable_values(callback_info->prog_sol_vector);
-    callback_info->prog->SetSolverResult(solver_result);
+    callback_info->solver_result.set_decision_variable_values(
+        callback_info->prog_sol_vector);
 
     GurobiSolver::SolveStatusInfo solve_status =
         GetGurobiSolveStatus(cbdata, where);
@@ -137,10 +137,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
       SetProgramSolutionVector(callback_info->is_new_variable,
                                callback_info->solver_sol_vector,
                                &(callback_info->prog_sol_vector));
-      SolverResult solver_result(GurobiSolver::id());
-      solver_result.set_decision_variable_values(
+      callback_info->solver_result.set_decision_variable_values(
           callback_info->prog_sol_vector);
-      callback_info->prog->SetSolverResult(solver_result);
 
       GurobiSolver::SolveStatusInfo solve_status =
           GetGurobiSolveStatus(cbdata, where);
@@ -769,7 +767,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // If any error exists so far, it's from calling GRBoptimize.
   // TODO(naveenoid) : Properly handle Gurobi specific error.
   // message.
-  SolverResult solver_result(id());
+  SolverResult& solver_result = callback_info.solver_result;
   if (error) {
     solution_result = SolutionResult::kInvalidInput;
     drake::log()->info("Gurobi returns code {}, with message \"{}\".\n", error,

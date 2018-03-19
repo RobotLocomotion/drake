@@ -408,7 +408,8 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
   const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
-  SolverResult solver_result(SnoptSolver::id());
+  const SolverId dummy_solver_id("dummy");
+  SolverResult solver_result(dummy_solver_id);
   solver_result.set_decision_variable_values(Vector3<double>(1, 2, 3));
   prog.SetSolverResult(solver_result);
   for (int i = 0; i < 3; ++i) {
