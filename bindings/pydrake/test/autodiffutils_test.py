@@ -27,10 +27,20 @@ class TestAutoDiffXd(unittest.TestCase):
             (actual.derivatives() == expected.derivatives()).all(),
             (actual.derivatives(), expected.derivatives()))
 
+    def _check_logical(self, func, a, b, expect):
+        # Test overloads which have the same return values for:
+        # - f(AutoDiffXd, AutoDiffXd)
+        # - f(AutoDiffXd, float)
+        # - f(float, AutoDiffXd)
+        self.assertEquals(func(a, b), expect)
+        self.assertEquals(func(a, b.value()), expect)
+        self.assertEquals(func(a.value(), b), expect)
+
     def test_scalar_math(self):
         a = AD(1, [1., 0])
         self._compare_scalar(a, a)
         b = AD(2, [0, 1.])
+        # Arithmetic
         self._compare_scalar(a + b, AD(3, [1, 1]))
         self._compare_scalar(a + 1, AD(2, [1, 0]))
         self._compare_scalar(1 + a, AD(2, [1, 0]))
@@ -43,6 +53,15 @@ class TestAutoDiffXd(unittest.TestCase):
         self._compare_scalar(a / b, AD(1./2, [1./2, -1./4]))
         self._compare_scalar(a / 2, AD(0.5, [0.5, 0]))
         self._compare_scalar(2 / a, AD(2, [-2, 0]))
+        # Logical
+        af = a.value()
+        self._check_logical(lambda x, y: x == y, a, a, True)
+        self._check_logical(lambda x, y: x != y, a, a, False)
+        self._check_logical(lambda x, y: x < y, a, b, True)
+        self._check_logical(lambda x, y: x <= y, a, b, True)
+        self._check_logical(lambda x, y: x > y, a, b, False)
+        self._check_logical(lambda x, y: x >= y, a, b, False)
+        # Additional math
         self._compare_scalar(a**2, AD(1, [2., 0]))
         # Test autodiff overloads.
         # See `math_overloads_test` for more comprehensive checks.
