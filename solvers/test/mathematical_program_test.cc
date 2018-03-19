@@ -401,9 +401,11 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
   const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
-  prog.SetDecisionVariableValues(Vector3<double>::Zero());
+  SolverResult solver_result(SnoptSolver::id());
+  solver_result.set_decision_variable_values(Vector3<double>(1, 2, 3));
+  prog.SetSolverResult(solver_result);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
+    EXPECT_EQ(prog.GetSolution(vars_expected(i)), i + 1);
     EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
   }
 }
@@ -421,7 +423,9 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
-  prog.SetDecisionVariableValues(Vector6<double>::Zero());
+  SolverResult solver_result(SnoptSolver::id());
+  solver_result.set_decision_variable_values(Vector6<double>::Zero());
+  prog.SetSolverResult(solver_result);
   VectorDecisionVariable<6> vars_expected;
   vars_expected << y, x0, x1, x2;
   for (int i = 0; i < 6; ++i) {
@@ -594,12 +598,27 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   X2_value = -X1_value;
   Eigen::Vector4d x3_value(3, 4, 5, 6);
   Eigen::Vector4d x4_value = -x3_value;
-  for (int i = 0; i < 3; ++i) {
-    prog.SetDecisionVariableValues(X1.col(i), X1_value.col(i));
-    prog.SetDecisionVariableValues(X2.col(i), X2_value.col(i));
-  }
-  prog.SetDecisionVariableValues(x3, x3_value);
-  prog.SetDecisionVariableValues(x4, x4_value);
+
+  Eigen::VectorXd x_val(prog.num_vars());
+  auto SetDecisionVariableValue = [&prog, &x_val](
+      const Eigen::Ref<const MatrixXDecisionVariable>& variable,
+      const Eigen::Ref<const Eigen::MatrixXd>& val) {
+    for (int i = 0; i < variable.rows(); ++i) {
+      for (int j = 0; j < variable.cols(); ++j) {
+        const int variable_index =
+            prog.FindDecisionVariableIndex(variable(i, j));
+        x_val(variable_index) = val(i, j);
+      }
+    }
+  };
+  SetDecisionVariableValue(X1, X1_value);
+  SetDecisionVariableValue(X2, X2_value);
+  SetDecisionVariableValue(x3, x3_value);
+  SetDecisionVariableValue(x4, x4_value);
+
+  SolverResult solver_result(SnoptSolver::id());
+  solver_result.set_decision_variable_values(x_val);
+  prog.SetSolverResult(solver_result);
 
   CheckGetSolution(prog, X1, X1_value);
   CheckGetSolution(prog, X2, X2_value);

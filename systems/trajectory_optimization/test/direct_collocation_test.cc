@@ -8,6 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -62,11 +63,11 @@ GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const auto& binding = collocation_constraints[i];
 
-    prog.SetDecisionVariableValues(prog.timestep(i), Vector1d(kTimeStep));
-    prog.SetDecisionVariableValues(prog.input(i), u0);
-    prog.SetDecisionVariableValues(prog.input(i + 1), u1);
-    prog.SetDecisionVariableValues(prog.state(i), x0);
-    prog.SetDecisionVariableValues(prog.state(i + 1), x1);
+    prog.SetInitialGuess(prog.timestep(i), Vector1d(kTimeStep));
+    prog.SetInitialGuess(prog.input(i), u0);
+    prog.SetInitialGuess(prog.input(i + 1), u1);
+    prog.SetInitialGuess(prog.state(i), x0);
+    prog.SetInitialGuess(prog.state(i + 1), x1);
 
     EXPECT_TRUE(
         CompareMatrices(prog.EvalBindingAtSolution(binding), defect, 1e-6));
@@ -86,8 +87,12 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
                          kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
-  prog.SetDecisionVariableValues(
+  // Pretends that the solver has solved the optimization problem, and set the
+  // decision variable to some user-specified values.
+  solvers::SolverResult solver_result(solvers::IpoptSolver::id());
+  solver_result.set_decision_variable_values(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
+  prog.SetSolverResult(solver_result);
 
   const PiecewisePolynomial<double> input_spline =
       prog.ReconstructInputTrajectory();
@@ -250,15 +255,13 @@ GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {
   EXPECT_EQ(prog.generic_constraints().size(), 1);
 
   // qdot = 0, u = 0 should be a fixed point for any q.  Test a simple one.
-  // TODO(hongkai-dai): Don't SetDecisionVariableValues outside of the
-  // solvers.  See #8344.
-  prog.SetDecisionVariableValues(h, Vector1d{1.0});
-  prog.SetDecisionVariableValues(x0, Eigen::Vector2d{1., 0.});
-  prog.SetDecisionVariableValues(x1, Eigen::Vector2d{1., 0.});
-  prog.SetDecisionVariableValues(u0, Vector1d{0.});
-  prog.SetDecisionVariableValues(u1, Vector1d{0.});
+  prog.SetInitialGuess(h, Vector1d{1.0});
+  prog.SetInitialGuess(x0, Eigen::Vector2d{1., 0.});
+  prog.SetInitialGuess(x1, Eigen::Vector2d{1., 0.});
+  prog.SetInitialGuess(u0, Vector1d{0.});
+  prog.SetInitialGuess(u1, Vector1d{0.});
 
-  const Eigen::VectorXd val = prog.EvalBindingAtSolution(binding);
+  const Eigen::VectorXd val = prog.EvalBindingAtInitialGuess(binding);
   EXPECT_EQ(val.size(), 2);
   EXPECT_TRUE(val.isZero());
 }

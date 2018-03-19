@@ -292,6 +292,11 @@ struct assert_if_is_constraint {
 };
 }  // namespace detail
 
+/**
+ * MathematicalProgram stores the decision variables, the constraints and costs
+ * of an optimization problem. The user can solve the problem by calling Solve()
+ * function, and obtain the results of the optimization.
+ */
 class MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
@@ -305,7 +310,7 @@ class MathematicalProgram {
       -std::numeric_limits<double>::infinity();
 
   MathematicalProgram();
-  virtual ~MathematicalProgram() {}
+  virtual ~MathematicalProgram();
 
   /** Clones an optimization program.
    * The clone will be functionally equivalent to the source program with the
@@ -603,7 +608,6 @@ class MathematicalProgram {
   symbolic::Polynomial NewFreePolynomial(
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name = "a");
-
 
   /** Returns a pair of a SOS polynomial p = mᵀQm and a PSD constraint for
    * a new coefficients matrix Q, where m is the @p monomial basis.
@@ -2187,31 +2191,6 @@ class MathematicalProgram {
   }
 
   /**
-   * Sets the values of all decision variables, such that the value of
-   * \p decision_variables_(i) is \p values(i).
-   * @param values The values set to all the decision variables.
-   */
-  void SetDecisionVariableValues(
-      const Eigen::Ref<const Eigen::VectorXd>& values);
-
-  /**
-   * Sets the value of some decision variables, such that the value of
-   * \p variables(i) is \p values(i).
-   * @param variables The value of these decision variables will be set.
-   * @param values The values set to the decision variables.
-   */
-  void SetDecisionVariableValues(
-      const Eigen::Ref<const VectorXDecisionVariable>& variables,
-      const Eigen::Ref<const Eigen::VectorXd>& values);
-
-  /**
-   * Sets the value of a single decision variable in the optimization program.
-   * @param var A decision variable in the program.
-   * @param value The value of that decision variable.
-   */
-  void SetDecisionVariableValue(const symbolic::Variable& var, double value);
-
-  /**
    * Set an option for a particular solver.  This interface does not
    * do any verification of solver parameters beyond what an
    * individual solver does for itself.  It does not even verify that
@@ -2265,11 +2244,6 @@ class MathematicalProgram {
   }
 
   /**
-   * Sets the ID of the solver that was used to solve this program.
-   */
-  void SetSolverId(SolverId solver_id) { solver_id_ = solver_id; }
-
-  /**
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
@@ -2287,24 +2261,11 @@ class MathematicalProgram {
    */
   double GetOptimalCost() const { return optimal_cost_; }
 
-  void SetOptimalCost(double optimal_cost) { optimal_cost_ = optimal_cost; }
-
   /**
    * Getter for lower bound on optimal cost. Defaults to -Infinity
    * if a lower bound has not been found.
    */
   double GetLowerBoundCost() const { return lower_bound_cost_; }
-  /**
-   * Setter for lower bound on optimal cost. This function is meant
-   * to be called by the appropriate solver, not by the user. It sets
-   * the lower bound of the cost found by the solver, during the optimization
-   * process. For example, for mixed-integer optimization, the branch-and-bound
-   * algorithm can find the lower bound of the optimal cost, during the
-   * branching process.
-   */
-  void SetLowerBoundCost(double lower_bound_cost) {
-    lower_bound_cost_ = lower_bound_cost;
-  }
 
   /**
    * Getter for all generic costs.
@@ -2452,13 +2413,6 @@ class MathematicalProgram {
   std::vector<int> FindDecisionVariableIndices(
       const Eigen::Ref<const VectorXDecisionVariable>& vars) const;
 
-  /**
-   * Gets the solution of an Eigen matrix of decision variables.
-   * @tparam Derived An Eigen matrix containing Variable.
-   * @param var The decision variables.
-   * @return The value of the decision variable after solving the problem.
-   */
-
   /** Gets the number of indeterminates in the optimization program */
   int num_indeterminates() const { return indeterminates_.rows(); }
 
@@ -2531,17 +2485,21 @@ class MathematicalProgram {
   }
 
   /**
-   * Evaluate the constraint in the Binding at the solution value.
-   * @return The value of the constraint in the binding.
-   * TODO(hongkai.dai): Do not use teample function, when the Binding is moved
-   * to a public class.
+   * Evaluates the evaluator in @p binding at the solution value.
+   * @return The value of @p binding at the solution value.
    */
   template <typename C>
   Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {
-    Eigen::VectorXd val(binding.evaluator()->num_outputs());
-    Eigen::VectorXd binding_var_vals = GetSolution(binding.variables());
-    binding.evaluator()->Eval(binding_var_vals, val);
-    return val;
+    return EvalBinding(binding, x_values_);
+  }
+
+  /**
+   * Evaluates the evaluator in @p binding at the initial guess.
+   * @return The value of @p binding at the initial guess.
+   */
+  template <typename C>
+  Eigen::VectorXd EvalBindingAtInitialGuess(const Binding<C>& binding) const {
+    return EvalBinding(binding, x_initial_guess_);
   }
 
   /** Getter for all decision variables in the program. */
@@ -2561,6 +2519,19 @@ class MathematicalProgram {
   const symbolic::Variable& indeterminate(int i) const {
     return indeterminates_(i);
   }
+
+  /**
+   * Solver reports its result back to MathematicalProgram, by passing the
+   * struct solver_result, which contains the solver result.
+   * @note This method should only be called by each solver, after it solves the
+   * optimization problem stored in MathematicalProgram. The user should NOT
+   * call this method.
+   */
+  // This method should be called by the derived classes of
+  // MathematicalProgramSolverInterface, which is not a friend class of
+  // MathematicalProgram, as we want to encapsulate the private members of
+  // MathematicalProgram.
+  void SetSolverResult(const SolverResult& solver_result);
 
  private:
   // maps the ID of a symbolic variable to the index of the variable stored in
@@ -2599,7 +2570,7 @@ class MathematicalProgram {
       linear_complementarity_constraints_;
 
   Eigen::VectorXd x_initial_guess_;
-  std::vector<double> x_values_;
+  Eigen::VectorXd x_values_;
   std::shared_ptr<SolverData> solver_data_;
   optional<SolverId> solver_id_;
   double optimal_cost_{};
@@ -2653,7 +2624,8 @@ class MathematicalProgram {
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     decision_variables_.conservativeResize(num_vars() + num_new_vars,
                                            Eigen::NoChange);
-    x_values_.resize(num_vars() + num_new_vars, NAN);
+    x_values_.conservativeResize(num_vars());
+    x_values_.tail(num_new_vars).fill(std::numeric_limits<double>::quiet_NaN());
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
