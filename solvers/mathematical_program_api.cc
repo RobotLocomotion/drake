@@ -55,12 +55,19 @@ void MathematicalProgram::SetSolverResult(const SolverResult& solver_result) {
     DRAKE_DEMAND(solver_result.decision_variable_values()->rows() ==
                  num_vars());
     x_values_ = *(solver_result.decision_variable_values());
+  } else {
+    x_values_ = Eigen::VectorXd::Constant(
+        num_vars(), std::numeric_limits<double>::quiet_NaN());
   }
   if (solver_result.optimal_cost()) {
     optimal_cost_ = *(solver_result.optimal_cost());
+  } else {
+    optimal_cost_ = std::numeric_limits<double>::quiet_NaN();
   }
   if (solver_result.optimal_cost_lower_bound()) {
     lower_bound_cost_ = *(solver_result.optimal_cost_lower_bound());
+  } else {
+    lower_bound_cost_ = optimal_cost_;
   }
 }
 

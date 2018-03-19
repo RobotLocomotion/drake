@@ -115,18 +115,11 @@ bool is_satisfied(AttributesSet required, AttributesSet available) {
 }
 }  // namespace
 
-enum {
-  INITIAL_VARIABLE_ALLOCATION_NUM = 100
-};  // not const static int because the VectorXd constructor takes a reference
-// to int so it is odr-used (see
-// https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
-
 constexpr double MathematicalProgram::kGlobalInfeasibleCost;
 constexpr double MathematicalProgram::kUnboundedCost;
 
 MathematicalProgram::MathematicalProgram()
-    : x_initial_guess_(
-          static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
+    : x_initial_guess_(0),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
       lower_bound_cost_(-numeric_limits<double>::infinity()),
       required_capabilities_(kNoCapabilities),
@@ -188,14 +181,9 @@ void MathematicalProgram::AddDecisionVariables(
   decision_variables_.conservativeResize(num_existing_decision_vars +
                                          decision_variables.rows());
   decision_variables_.tail(decision_variables.rows()) = decision_variables;
-  x_values_.conservativeResize(num_existing_decision_vars +
-                               decision_variables.rows());
-  x_values_.tail(decision_variables.rows())
-      .fill(std::numeric_limits<double>::quiet_NaN());
-  x_initial_guess_.conservativeResize(num_existing_decision_vars +
-                                      decision_variables.rows());
-  x_initial_guess_.tail(decision_variables.rows())
-      .fill(std::numeric_limits<double>::quiet_NaN());
+  MathematicalProgram::AppendNanToEnd(decision_variables.rows(), &x_values_);
+  MathematicalProgram::AppendNanToEnd(decision_variables.rows(),
+                                      &x_initial_guess_);
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
@@ -827,5 +815,9 @@ SolutionResult MathematicalProgram::Solve() {
   }
 }
 
+void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
+  v->conservativeResize(v->rows() + new_var_size);
+  v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
+}
 }  // namespace solvers
 }  // namespace drake

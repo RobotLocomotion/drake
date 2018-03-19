@@ -273,7 +273,8 @@ GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
   prog.SetInitialTrajectory(PiecewisePolynomial<double>(), traj1);
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  solvers::SolverResult solver_result(solvers::OsqpSolver::id());
+  const solvers::SolverId dummy_solver_id("dummy");
+  solvers::SolverResult solver_result(dummy_solver_id);
   solver_result.set_decision_variable_values(prog.initial_guess());
   prog.SetSolverResult(solver_result);
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
@@ -316,7 +317,8 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
   }
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  solvers::SolverResult solver_result(solvers::OsqpSolver::id());
+  const solvers::SolverId dummy_solver_id("dummy");
+  solvers::SolverResult solver_result(dummy_solver_id);
   solver_result.set_decision_variable_values(prog.initial_guess());
   prog.SetSolverResult(solver_result);
 

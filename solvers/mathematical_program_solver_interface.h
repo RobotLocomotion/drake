@@ -27,7 +27,8 @@ enum SolutionResult {
 };
 
 /**
- * The class implementations of the class use to report their results to the
+ * This class is used by implementations of the class
+ * MathematicalProgramSolverInterface to report their results to the
  * mathematical program. It is guaranteed to have a defined solver id; all other
  * fields can be left undefined. Reading those values should be guarded by a
  * test on whether the field has been defined.
@@ -40,6 +41,11 @@ class SolverResult {
 
   const SolverId& solver_id() const { return solver_id_; }
 
+  /**
+   * Sets the decision variable values for ALL variables in the mathematical
+   * program, such that MathematicalProgram::decision_variables_(i) will have
+   * value `values(i)`.
+   */
   void set_decision_variable_values(
       const Eigen::Ref<const Eigen::VectorXd>& values) {
     decision_variable_values_.reset();
@@ -50,10 +56,18 @@ class SolverResult {
     return decision_variable_values_;
   }
 
+  /**
+   * Sets the optimal cost stored in MathematicalProgram.
+   */
   void set_optimal_cost(double optimal_cost) { optimal_cost_ = optimal_cost; }
 
   const optional<double>& optimal_cost() const { return optimal_cost_; }
 
+  /**
+   * Sets the lower bound of the optimal cost, stored in MathematicalProgram.
+   * Some problems, such as mixed-integer convex program, can find a lower bound
+   * of its optimal cost, before finding the global optimal.
+   */
   void set_optimal_cost_lower_bound(double val) {
     optimal_cost_lower_bound_ = val;
   }

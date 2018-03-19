@@ -89,7 +89,8 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   // Sets all decision variables to trivial known values (1,2,3,...).
   // Pretends that the solver has solved the optimization problem, and set the
   // decision variable to some user-specified values.
-  solvers::SolverResult solver_result(solvers::IpoptSolver::id());
+  const solvers::SolverId dummy_solver_id("dummy");
+  solvers::SolverResult solver_result(dummy_solver_id);
   solver_result.set_decision_variable_values(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
   prog.SetSolverResult(solver_result);

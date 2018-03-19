@@ -2522,7 +2522,7 @@ class MathematicalProgram {
 
   /**
    * Solver reports its result back to MathematicalProgram, by passing the
-   * struct solver_result, which contains the solver result.
+   * solver_result, which contains the solver result.
    * @note This method should only be called by each solver, after it solves the
    * optimization problem stored in MathematicalProgram. The user should NOT
    * call this method.
@@ -2534,6 +2534,7 @@ class MathematicalProgram {
   void SetSolverResult(const SolverResult& solver_result);
 
  private:
+  static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
@@ -2624,8 +2625,7 @@ class MathematicalProgram {
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     decision_variables_.conservativeResize(num_vars() + num_new_vars,
                                            Eigen::NoChange);
-    x_values_.conservativeResize(num_vars());
-    x_values_.tail(num_new_vars).fill(std::numeric_limits<double>::quiet_NaN());
+    MathematicalProgram::AppendNanToEnd(num_new_vars, &x_values_);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
@@ -2661,9 +2661,7 @@ class MathematicalProgram {
       }
     }
 
-    x_initial_guess_.conservativeResize(num_vars());
-    x_initial_guess_.tail(num_new_vars)
-        .fill(std::numeric_limits<double>::quiet_NaN());
+    MathematicalProgram::AppendNanToEnd(num_new_vars, &x_initial_guess_);
   }
 
   MatrixXDecisionVariable NewVariables(VarType type, int rows, int cols,

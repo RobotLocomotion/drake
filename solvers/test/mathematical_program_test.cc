@@ -180,6 +180,13 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
   }
 }
 
+GTEST_TEST(testMathematicalProgram, testConstructor) {
+  MathematicalProgram prog;
+  EXPECT_EQ(prog.initial_guess().rows(), 0);
+  EXPECT_EQ(prog.num_vars(), 0);
+  EXPECT_EQ(prog.GetSolution(prog.decision_variables()).rows(), 0);
+}
+
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
@@ -2788,6 +2795,50 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
   EXPECT_EQ(result, kSolutionFound);
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(x),
                               Vector2d::Constant(-std::sqrt(2.)/2.), 1e-6));
+}
+
+GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Pretend the problem has been solved.
+  const SolverId dummy_solver_id("dummy");
+
+  // Only set the solver ID in solver_result.
+  SolverResult solver_result(dummy_solver_id);
+
+  prog.SetSolverResult(solver_result);
+  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id);
+  // The decision variables, optimal cost, and lower bound should all be NaN.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetSolution(x),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
+  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
+
+  // Sets the variable values, the optimal cost, and lower bound cost.
+  const Eigen::Vector2d x_val(1, 2);
+  const double cost{1.0};
+  const double lower_bound_cost{1.0};
+  solver_result.set_decision_variable_values(x_val);
+  solver_result.set_optimal_cost(cost);
+  solver_result.set_optimal_cost_lower_bound(lower_bound_cost);
+  prog.SetSolverResult(solver_result);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_val));
+  EXPECT_EQ(prog.GetOptimalCost(), cost);
+  EXPECT_EQ(prog.GetLowerBoundCost(), lower_bound_cost);
+
+  // Now create a new solver_result.
+  const SolverId dummy_solver_id2("dummy2");
+  SolverResult solver_result2(dummy_solver_id2);
+  prog.SetSolverResult(solver_result2);
+  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id2);
+  // The decision variables, optimal cost, and lower bound should all be NaN.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetSolution(x),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
+  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 }
 
 }  // namespace test
