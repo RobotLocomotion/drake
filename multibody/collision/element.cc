@@ -48,8 +48,10 @@ void Element::set_body(const RigidBody<double> *body) { body_ = body; }
 bool Element::CanCollideWith(const Element* other) const {
   // Determines if the elements filter each other via filter *groups*. The
   // pair is *excluded* from consideration if this element's group is ignored
-  // by the other, or the other's group is ignored by this element.
+  // by the other, or the other's group is ignored by this element. Pairs
+  // consisting of two anchored geometries are also explicitly excluded.
   bool excluded =
+      (is_anchored() && other->is_anchored()) ||
       (collision_filter_group_ & other->collision_filter_ignores_).any() ||
       (other->collision_filter_group_ & collision_filter_ignores_).any();
   if (!excluded) {
