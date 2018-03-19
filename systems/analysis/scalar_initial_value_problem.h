@@ -25,7 +25,8 @@ namespace systems {
 /// Moreover, this scalar form facilitates single-dimensional quadrature
 /// using methods for solving initial value problems.
 ///
-/// For further insight into its use, consider the following examples:
+/// For further insight into its use, consider the following examples of scalar
+/// IVPs:
 ///
 /// - The population growth of an hypothetical bacteria colony is described
 ///   by dN/dt = r * N. The colony has N₀ subjects at time t₀. In this
