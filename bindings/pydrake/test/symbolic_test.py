@@ -429,6 +429,9 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
 
+    # See `math_overloads_test` for more comprehensive checks on math
+    # functions.
+
 
 class TestSymbolicFormula(unittest.TestCase):
     def test_get_free_variables(self):

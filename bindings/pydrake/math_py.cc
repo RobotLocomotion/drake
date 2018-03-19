@@ -59,6 +59,7 @@ PYBIND11_MODULE(math, m) {
   // when modules are loaded. However, there should not be ambiguous implicit
   // conversions between autodiff and symbolic, and double overloads should
   // always occur first, so it shouldn't be a problem.
+  // See `math_overloads_test`, which tests this specifically.
   m
       .def("log", [](double x) { return log(x); })
       .def("abs", [](double x) { return fabs(x); })
