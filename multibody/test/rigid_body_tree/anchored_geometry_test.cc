@@ -38,6 +38,19 @@ void ExpectAnchored(RigidBody<double>* body, size_t collision_element_num,
   }
 }
 
+// Utility function for asserting that no pairs of collision elements on two
+// bodies are checked for collisions.
+void ExpectAllPairsIgnored(RigidBody<double>* first_body,
+                           RigidBody<double>* second_body) {
+  for (auto first_itr = first_body->collision_elements_begin();
+       first_itr != first_body->collision_elements_end(); ++first_itr) {
+    for (auto second_itr = second_body->collision_elements_begin();
+         second_itr != second_body->collision_elements_end(); ++second_itr) {
+      EXPECT_FALSE((*first_itr)->CanCollideWith(*second_itr));
+    }
+  }
+}
+
 // Confirms that parentless links, which are specified to be *fixed* to the
 // world by the parser, are marked as anchored from SDF file.
 GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
@@ -166,6 +179,30 @@ GTEST_TEST(ByHandAnchoredGeometry, WorldCollisionElementIsAnchored) {
   tree.compile();
 
   ExpectAnchored(&world, 1, true);
+}
+
+// Tests that anchored collision geometries are not checked against each other.
+GTEST_TEST(AnchoredElementsIgnoreEachOther, AnchoredElementsIgnoreEachOther) {
+  RigidBodyTree<double> tree;
+  const int first_model_instance_id =
+      AddModelInstanceFromUrdfFileToWorld(
+          FindResourceOrThrow("drake/multibody/test/rigid_body_tree/"
+                              "anchored_fixed_to_parent.urdf"),
+          drake::multibody::joints::kFixed, &tree)
+          .begin()
+          ->second;
+  const int second_model_instance_id =
+      AddModelInstanceFromUrdfFileToWorld(
+          FindResourceOrThrow("drake/multibody/test/rigid_body_tree/"
+                              "anchored_fixed_to_parent.urdf"),
+          drake::multibody::joints::kFixed, &tree)
+          .begin()
+          ->second;
+  auto body1 = tree.FindBody("parentless_body", "", first_model_instance_id);
+  ExpectAnchored(body1, 1, true);
+  auto body2 = tree.FindBody("parentless_body", "", second_model_instance_id);
+  ExpectAnchored(body2, 1, true);
+  ExpectAllPairsIgnored(body1, body2);
 }
 
 }  // namespace
