@@ -141,6 +141,8 @@ MathematicalProgram::MathematicalProgram()
       osqp_solver_(new OsqpSolver()),
       scs_solver_(new ScsSolver()) {}
 
+MathematicalProgram::~MathematicalProgram() = default;
+
 MatrixXDecisionVariable MathematicalProgram::NewVariables(
     VarType type, int rows, int cols, bool is_symmetric,
     const vector<string>& names) {
@@ -186,7 +188,10 @@ void MathematicalProgram::AddDecisionVariables(
   decision_variables_.conservativeResize(num_existing_decision_vars +
                                          decision_variables.rows());
   decision_variables_.tail(decision_variables.rows()) = decision_variables;
-  x_values_.resize(num_existing_decision_vars + decision_variables.rows(), NAN);
+  x_values_.conservativeResize(num_existing_decision_vars +
+                               decision_variables.rows());
+  x_values_.tail(decision_variables.rows())
+      .fill(std::numeric_limits<double>::quiet_NaN());
   x_initial_guess_.conservativeResize(num_existing_decision_vars +
                                       decision_variables.rows());
   x_initial_guess_.tail(decision_variables.rows())

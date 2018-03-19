@@ -297,9 +297,11 @@ void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
 template <typename Binding>
 bool IsVectorOfConstraintsSatisfiedAtSolution(
     const MathematicalProgram& prog, const std::vector<Binding>& bindings,
+    const Eigen::Ref<const Eigen::VectorXd>& decision_variable_values,
     double tol) {
   for (const auto& binding : bindings) {
-    const Eigen::VectorXd constraint_val = prog.EvalBindingAtSolution(binding);
+    const Eigen::VectorXd constraint_val =
+        prog.EvalBinding(binding, decision_variable_values);
     const int num_constraint = constraint_val.rows();
     if (((constraint_val - binding.evaluator()->lower_bound()).array() <
          -Eigen::ArrayXd::Constant(num_constraint, tol))
@@ -397,6 +399,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   double minf = 0;
   const double kUnboundedTol = -1E30;
+  SolverResult solver_result(id());
   try {
     const nlopt::result nlopt_result = opt.optimize(x, minf);
     if (nlopt_result == nlopt::SUCCESS ||
@@ -405,11 +408,8 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         nlopt_result == nlopt::FTOL_REACHED ||
         nlopt_result == nlopt::MAXEVAL_REACHED ||
         nlopt_result == nlopt::MAXTIME_REACHED) {
-      Eigen::VectorXd sol(x.size());
-      for (int i = 0; i < nx; i++) {
-        sol(i) = x[i];
-      }
-      prog.SetDecisionVariableValues(sol);
+      solver_result.set_decision_variable_values(
+          Eigen::Map<Eigen::VectorXd>(x.data(), nx));
     }
     switch (nlopt_result) {
       case nlopt::SUCCESS:
@@ -423,9 +423,11 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         // TODO(hongkai.dai) Allow the user to set this tolerance.
         bool all_constraints_satisfied = true;
         auto constraint_test = [&prog, constraint_tol,
-                                &all_constraints_satisfied](auto constraints) {
+                                &all_constraints_satisfied,
+                                &solver_result](auto constraints) {
           all_constraints_satisfied &= IsVectorOfConstraintsSatisfiedAtSolution(
-              prog, constraints, constraint_tol);
+              prog, constraints,
+              solver_result.decision_variable_values().value(), constraint_tol);
         };
         constraint_test(prog.generic_constraints());
         constraint_test(prog.bounding_box_constraints());
@@ -476,8 +478,8 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     result = SolutionResult::kUnknownError;
   }
 
-  prog.SetOptimalCost(minf);
-  prog.SetSolverId(id());
+  solver_result.set_optimal_cost(minf);
+  prog.SetSolverResult(solver_result);
   return result;
 }
 
