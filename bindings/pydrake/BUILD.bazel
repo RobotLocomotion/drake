@@ -255,6 +255,16 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "math_overloads_test",
+    size = "small",
+    deps = [
+        ":autodiffutils_py",
+        ":math_py",
+        ":symbolic_py",
+    ],
+)
+
+drake_py_unittest(
     name = "symbolic_test",
     size = "small",
     deps = [":symbolic_py"],
