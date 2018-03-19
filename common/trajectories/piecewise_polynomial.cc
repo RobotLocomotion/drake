@@ -441,7 +441,7 @@ static int sign(T val, T tol) {
 // See equation (2.10) in the following reference for more details.
 // http://www.mi.sanu.ac.rs/~gvm/radovi/mon.pdf
 template <typename T>
-drake::MatrixX<T>
+MatrixX<T>
 PiecewisePolynomial<T>::ComputePchipEndSlope(
     double dt0, double dt1, const CoefficientMatrix& slope0,
     const CoefficientMatrix& slope1) {
@@ -600,8 +600,8 @@ int PiecewisePolynomial<T>::
         const std::vector<double>& breaks,
         const std::vector<CoefficientMatrix>& knots,
         int row, int col,
-        drake::MatrixX<T>* A,
-        drake::VectorX<T>* b) {
+        MatrixX<T>* A,
+        VectorX<T>* b) {
   const std::vector<double>& times = breaks;
   const std::vector<CoefficientMatrix>& Y = knots;
   int N = static_cast<int>(times.size());
@@ -613,8 +613,8 @@ int PiecewisePolynomial<T>::
   DRAKE_DEMAND(b->rows() == 4 * (N - 1));
 
   int row_idx = 0;
-  drake::MatrixX<T>& Aref = *A;
-  drake::VectorX<T>& bref = *b;
+  MatrixX<T>& Aref = *A;
+  VectorX<T>& bref = *b;
 
   for (int i = 0; i < N - 1; ++i) {
     double dt = times[i + 1] - times[i];
@@ -692,9 +692,9 @@ PiecewisePolynomial<T>::Cubic(
     polynomials[i].resize(rows, cols);
   }
 
-  drake::MatrixX<T> A(4 * (N - 1), 4 * (N - 1));
-  drake::VectorX<T> b(4 * (N - 1));
-  drake::VectorX<T> solution;
+  MatrixX<T> A(4 * (N - 1), 4 * (N - 1));
+  VectorX<T> b(4 * (N - 1));
+  VectorX<T> solution;
 
   A.setZero();
   b.setZero();
@@ -750,9 +750,9 @@ PiecewisePolynomial<T>::Cubic(
     polynomials[i].resize(rows, cols);
   }
 
-  drake::MatrixX<T> A(4 * (N - 1), 4 * (N - 1));
-  drake::VectorX<T> b(4 * (N - 1));
-  drake::VectorX<T> solution;
+  MatrixX<T> A(4 * (N - 1), 4 * (N - 1));
+  VectorX<T> b(4 * (N - 1));
+  VectorX<T> solution;
 
   A.setZero();
   b.setZero();
@@ -795,6 +795,86 @@ PiecewisePolynomial<T>::Cubic(
   return PiecewisePolynomial<T>(polynomials, times);
 }
 
+namespace {
+
+// Helper method to go from the Eigen entry points to the std::vector versions.
+// Copies each column of mat to an element of the returned std::vector.
+template <typename T>
+std::vector<MatrixX<T>> ColsToStdVector(
+    const Eigen::Ref<const MatrixX<T>>& mat) {
+  std::vector<MatrixX<T>> vec(mat.cols());
+  for (int i=0; i < mat.cols(); i++) {
+    vec[i] = mat.col(i);
+  }
+  return vec;
+}
+
+}  // end namespace
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::ZeroOrderHold(
+    const Eigen::Ref<const Eigen::VectorXd>& breaks,
+    const Eigen::Ref<const MatrixX<T>>& knots) {
+  DRAKE_DEMAND(knots.cols() == breaks.size());
+  std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
+  return PiecewisePolynomial<T>::ZeroOrderHold(my_breaks,
+                                               ColsToStdVector(knots));
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::FirstOrderHold(
+    const Eigen::Ref<const Eigen::VectorXd>& breaks,
+    const Eigen::Ref<const MatrixX<T>>& knots) {
+  DRAKE_DEMAND(knots.cols() == breaks.size());
+  std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
+  return PiecewisePolynomial<T>::FirstOrderHold(my_breaks,
+                                                ColsToStdVector(knots));
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::Pchip(
+    const Eigen::Ref<const Eigen::VectorXd>& breaks,
+    const Eigen::Ref<const MatrixX<T>>& knots,
+    bool zero_end_point_derivatives) {
+  DRAKE_DEMAND(knots.cols() == breaks.size());
+  std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
+  return PiecewisePolynomial<T>::Pchip(
+      my_breaks, ColsToStdVector(knots), zero_end_point_derivatives);
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::Cubic(
+    const Eigen::Ref<const Eigen::VectorXd>& breaks,
+    const Eigen::Ref<const MatrixX<T>>& knots,
+    const Eigen::Ref<const VectorX<T>>& knots_dot_start,
+    const Eigen::Ref<const VectorX<T>>& knots_dot_end) {
+  DRAKE_DEMAND(knots.cols() == breaks.size());
+  std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
+  return PiecewisePolynomial<T>::Cubic(my_breaks, ColsToStdVector(knots),
+                                       knots_dot_start.eval(),
+                                       knots_dot_end.eval());
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::Cubic(
+    const Eigen::Ref<const Eigen::VectorXd>& breaks,
+    const Eigen::Ref<const MatrixX<T>>& knots,
+    const Eigen::Ref<const MatrixX<T>>& knots_dot) {
+  DRAKE_DEMAND(knots.cols() == breaks.size());
+  std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
+  return PiecewisePolynomial<T>::Cubic(my_breaks, ColsToStdVector(knots),
+                                       ColsToStdVector(knots_dot));
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::Cubic(
+    const Eigen::Ref<const Eigen::VectorXd>& breaks,
+    const Eigen::Ref<const MatrixX<T>>& knots) {
+  DRAKE_DEMAND(knots.cols() == breaks.size());
+  std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
+  return PiecewisePolynomial<T>::Cubic(my_breaks, ColsToStdVector(knots));
+}
+
 // Computes the cubic spline coefficients based on the given values and first
 // derivatives at both end points.
 template <typename T>
@@ -810,7 +890,7 @@ Eigen::Matrix<T, 4, 1> PiecewisePolynomial<T>::ComputeCubicSplineCoeffs(
   T common = (yd1 - c3 - 2. / dt * (y1 - c4 - dt * c3));
   T c1 = 1. / dt2 * common;
   T c2 = 1. / dt2 * (y1 - c4 - dt * c3 - dt * common);
-  return drake::Vector4<T>(c4, c3, c2, c1);
+  return Vector4<T>(c4, c3, c2, c1);
 }
 
 // Explicit instantiations.

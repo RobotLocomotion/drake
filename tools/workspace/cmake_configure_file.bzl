@@ -10,7 +10,7 @@ def _cmake_configure_file_impl(ctx):
         arguments += ["-D" + item]
     for item in ctx.files.cmakelists:
         arguments += ["--cmakelists", item.path]
-    ctx.action(
+    ctx.actions.run(
         inputs = [ctx.file.src] + ctx.files.cmakelists,
         outputs = [ctx.outputs.out],
         arguments = arguments,

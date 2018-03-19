@@ -20,7 +20,7 @@ class TestTrajectories(unittest.TestCase):
         np.testing.assert_equal(x, pp.value(11.))
 
     def test_zero_order_hold(self):
-        x = [[1., 2.], [3., 4.], [5., 6.]]
+        x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], x)
         np.testing.assert_equal(np.array([[1.], [2.]]), pp.value(.5))
         self.assertEqual(pp.get_number_of_segments(), 2)
@@ -33,14 +33,14 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.get_segment_times(), [0., 1., 2.])
 
     def test_first_order_hold(self):
-        x = [[1., 2.], [3., 4.], [5., 6.]]
+        x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         np.testing.assert_equal(np.array([[2.], [3.]]), pp.value(.5))
 
     def test_cubic(self):
         t = [0., 1., 2.]
-        x = [[1., 2.], [3., 4.], [5., 6.]]
+        x = np.diag((4., 5., 6.))
         # Just test the spelling for these.
-        pp = PiecewisePolynomial.Cubic(t, x)
-        pp2 = PiecewisePolynomial.Cubic(t, x, x)
-        pp3 = PiecewisePolynomial.Cubic(t, x, [0., 0.], [0., 0.])
+        pp1 = PiecewisePolynomial.Cubic(t, x)
+        pp2 = PiecewisePolynomial.Cubic(t, x, np.identity(3))
+        pp3 = PiecewisePolynomial.Cubic(t, x, [0., 0., 0.], [0., 0., 0.])

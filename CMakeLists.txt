@@ -84,24 +84,24 @@ string(FIND "${PROJECT_BINARY_DIR_REALPATH}/" "${PROJECT_SOURCE_DIR_REALPATH}/"
 )
 
 if(STRING_FIND_RESULT_VARIABLE EQUAL 0)
-  # The --output_user_root cannot be within the WORKSPACE (a subdirectory of
+  # The --output_base cannot be within the WORKSPACE (a subdirectory of
   # PROJECT_SOURCE_DIR), so fallback to the using the same parent directory
-  # that bazel uses by default for its --output_user_root.
+  # that bazel uses by default for its --output_base.
   if(APPLE)
-    set(BAZEL_OUTPUT_USER_ROOT "/var/tmp")
+    set(BAZEL_OUTPUT_BASE "/var/tmp")
   else()
-    set(BAZEL_OUTPUT_USER_ROOT "$ENV{HOME}/.cache/bazel")
+    set(BAZEL_OUTPUT_BASE "$ENV{HOME}/.cache/bazel")
   endif()
 else()
-  set(BAZEL_OUTPUT_USER_ROOT "${PROJECT_BINARY_DIR}")
+  set(BAZEL_OUTPUT_BASE "${PROJECT_BINARY_DIR}")
 endif()
 
 # Compute the MD5 of the PROJECT_BINARY_DIR rather than the WORKSPACE
 # (PROJECT_SOURCE_DIR) to avoid colliding with the directory that bazel uses by
 # default.
 string(MD5 PROJECT_BINARY_DIR_MD5 "${PROJECT_BINARY_DIR_REALPATH}")
-set(BAZEL_OUTPUT_USER_ROOT
-  "${BAZEL_OUTPUT_USER_ROOT}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
+set(BAZEL_OUTPUT_BASE
+  "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
 configure_file(tools/cc_toolchain/bazel.rc.in bazel.rc @ONLY)

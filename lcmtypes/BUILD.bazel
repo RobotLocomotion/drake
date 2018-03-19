@@ -277,6 +277,14 @@ drake_lcm_cc_library(
     ],
 )
 
+drake_lcm_cc_library(
+    name = "viewer2_comms",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_viewer2_comms.lcm",
+    ],
+)
+
 # TODO(jwnimmer-tri) Many more C++ messages are missing ...
 
 drake_lcm_py_library(
@@ -328,6 +336,7 @@ DRAKE_LCMTYPES = [
     ":schunk",
     ":support_data",
     ":viewer",
+    ":viewer2_comms",
     ":whole_body_data",
     ":zmp_data",
     ":zmp_com_observer_state",

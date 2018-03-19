@@ -1,10 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
 import unittest
+import warnings
 
 
 class TestAll(unittest.TestCase):
     # N.B. Synchronize code snippests with `doc/python_bindings.rst`.
+    def test_no_import_warnings(self):
+        """Ensures that we have no warnings (primarily from `pybind11`) when
+        importing `pydrake.all`."""
+        # Ensure that we haven't imported anything from `pydrake`.
+        self.assertTrue("pydrake" not in sys.modules)
+        # - While this may be redundant, let's do it for good measure.
+        self.assertTrue("pydrake.all" not in sys.modules)
+        # Enable *all* warnings, and ensure that we don't trigger them.
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", Warning)
+            import pydrake.all
+            self.assertEquals(len(w), 0)
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow

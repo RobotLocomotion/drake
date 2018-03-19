@@ -152,7 +152,6 @@ void MultibodyPlant<T>::Finalize() {
   FinalizePlantOnly();
 }
 
-
 template<typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateAndPorts();
@@ -244,6 +243,40 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
+void MultibodyPlant<T>::DoMapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    systems::VectorBase<T>* generalized_velocity) const {
+  const int nq = model_->num_positions();
+  const int nv = model_->num_velocities();
+
+  DRAKE_ASSERT(qdot.size() == nq);
+  DRAKE_DEMAND(generalized_velocity != nullptr);
+  DRAKE_DEMAND(generalized_velocity->size() == nv);
+
+  VectorX<T> v(nv);
+  model_->MapQDotToVelocity(context, qdot, &v);
+  generalized_velocity->SetFromVector(v);
+}
+
+template<typename T>
+void MultibodyPlant<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+    systems::VectorBase<T>* positions_derivative) const {
+  const int nq = model_->num_positions();
+  const int nv = model_->num_velocities();
+
+  DRAKE_ASSERT(generalized_velocity.size() == nv);
+  DRAKE_DEMAND(positions_derivative != nullptr);
+  DRAKE_DEMAND(positions_derivative->size() == nq);
+
+  VectorX<T> qdot(nq);
+  model_->MapVelocityToQDot(context, generalized_velocity, &qdot);
+  positions_derivative->SetFromVector(qdot);
+}
+
+template<typename T>
 void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
@@ -259,7 +292,17 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
             systems::BasicVector<T>(num_actuated_dofs())).get_index();
   }
 
-  // TODO(amcastro-tri): Declare output port for the state.
+  continuous_state_output_port_ =
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(num_multibody_states()),
+          &MultibodyPlant::CopyContinuousStateOut).get_index();
+}
+
+template <typename T>
+void MultibodyPlant<T>::CopyContinuousStateOut(
+    const Context<T>& context, BasicVector<T>* state_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  state_vector->SetFrom(context.get_continuous_state_vector());
 }
 
 template <typename T>
@@ -268,6 +311,13 @@ MultibodyPlant<T>::get_actuation_input_port() const {
   DRAKE_THROW_UNLESS(is_finalized());
   DRAKE_THROW_UNLESS(num_actuators() > 0);
   return systems::System<T>::get_input_port(actuation_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_continuous_state_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(continuous_state_output_port_);
 }
 
 template<typename T>
