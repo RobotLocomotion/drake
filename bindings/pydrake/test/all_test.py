@@ -18,7 +18,7 @@ class TestAll(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", Warning)
             import pydrake.all
-            self.assertEquals(len(w), 0)
+            self.assertEquals(len(w), 0, "\n".join(map(str, w)))
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
