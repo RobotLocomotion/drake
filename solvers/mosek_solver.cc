@@ -721,6 +721,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
+  SolverResult solver_result(id());
   // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
   // Mosek parameter are added by enum, not by string.
   if (rescode == MSK_RES_OK) {
@@ -750,13 +751,13 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            prog.SetDecisionVariableValues(sol_vector);
+            solver_result.set_decision_variable_values(sol_vector);
           }
           MSKrealt optimal_cost;
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            prog.SetOptimalCost(optimal_cost);
+            solver_result.set_optimal_cost(optimal_cost);
           }
           break;
         }
@@ -777,7 +778,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverId(id());
+  prog.SetSolverResult(solver_result);
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }
