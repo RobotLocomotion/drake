@@ -63,6 +63,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        ":math_py",
     ],
     py_srcs = [
         "autodiffutils.py",
@@ -122,12 +123,14 @@ drake_pybind_library(
     name = "symbolic_py",
     cc_deps = [
         ":symbolic_types_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
         "@fmt",
     ],
     cc_srcs = ["symbolic_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        ":math_py",
     ],
     py_srcs = ["symbolic.py"],
 )
@@ -248,6 +251,16 @@ drake_py_unittest(
     size = "small",
     deps = [
         ":math_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "math_overloads_test",
+    size = "small",
+    deps = [
+        ":autodiffutils_py",
+        ":math_py",
+        ":symbolic_py",
     ],
 )
 
