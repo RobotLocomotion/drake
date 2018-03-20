@@ -451,16 +451,6 @@ std::string Scs_return_info(scs_int scs_status) {
   }
 }
 
-void ExtractSolution(MathematicalProgram* prog,
-                     const SCS_SOL_VARS& scs_sol_vars) {
-  // For zero, positive or second-order cones, the primal variable x is the
-  // same variable as in `prog`. For semidefinite cones, the variable x is a
-  // scaled version of the lower-triangular part of the variable in `prog`, with
-  // a scaling factor of √2.
-  prog->SetDecisionVariableValues(
-      Eigen::Map<Eigen::VectorXd>(scs_sol_vars.x, prog->num_vars()));
-}
-
 void SetScsProblemData(int A_row_count, int num_vars,
                        const Eigen::SparseMatrix<double>& A,
                        const std::vector<double>& b,
@@ -618,19 +608,22 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
 
   scs_int scs_status = scs(scs_problem_data, cone, scs_sol, &scs_info);
 
-  SolutionResult sol_result{SolutionResult::kUnknownError};
+  SolutionResult solution_result{SolutionResult::kUnknownError};
+  SolverResult solver_result(id());
   if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
-    sol_result = SolutionResult::kSolutionFound;
-    ExtractSolution(&prog, *scs_sol);
-    prog.SetOptimalCost(scs_info.pobj + cost_constant);
+    solution_result = SolutionResult::kSolutionFound;
+    solver_result.set_decision_variable_values(
+        (Eigen::Map<VectorX<scs_float>>(scs_sol->x, prog.num_vars()))
+            .cast<double>());
+    solver_result.set_optimal_cost(scs_info.pobj + cost_constant);
   } else if (scs_status == SCS_UNBOUNDED ||
              scs_status == SCS_UNBOUNDED_INACCURATE) {
-    sol_result = SolutionResult::kUnbounded;
-    prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
+    solution_result = SolutionResult::kUnbounded;
+    solver_result.set_optimal_cost(MathematicalProgram::kUnboundedCost);
   } else if (scs_status == SCS_INFEASIBLE ||
              scs_status == SCS_INFEASIBLE_INACCURATE) {
-    sol_result = SolutionResult::kInfeasibleConstraints;
-    prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+    solution_result = SolutionResult::kInfeasibleConstraints;
+    solver_result.set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
   }
   if (scs_status != SCS_SOLVED) {
     drake::log()->info("SCS returns code {}, with message \"{}\".\n",
@@ -641,8 +634,8 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   scs_free_data(scs_problem_data, cone);
   scs_free_sol(scs_sol);
 
-  prog.SetSolverId(id());
-  return sol_result;
+  prog.SetSolverResult(solver_result);
+  return solution_result;
 }
 }  // namespace solvers
 }  // namespace drake

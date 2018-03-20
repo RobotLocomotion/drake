@@ -7,11 +7,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/test_utilities/expect_error_message.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 
@@ -92,7 +92,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
     const Body<T>& link = model.GetBodyByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetBodyByName(kInvalidName), std::logic_error,
       "There is no body named '.*' in the model.");
 
@@ -101,7 +101,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
     const Joint<T>& joint = model.GetJointByName(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
   }
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointByName(kInvalidName), std::logic_error,
       "There is no joint named '.*' in the model.");
 
@@ -111,7 +111,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
         model.template GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
   }
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model.template GetJointByName<RevoluteJoint>(kInvalidName),
       std::logic_error, "There is no joint named '.*' in the model.");
 
@@ -121,7 +121,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
         model.GetJointActuatorByName(actuator_name);
     EXPECT_EQ(actuator.name(), actuator_name);
   }
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model.GetJointActuatorByName(kInvalidName), std::logic_error,
       "There is no joint actuator named '.*' in the model.");
 
@@ -153,7 +153,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
 
   // Attempt to add a body having the same name as a body already part of the
   // model. This is not allowed and an exception should be thrown.
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddRigidBody("iiwa_link_5", SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
@@ -162,7 +162,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
 
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddJoint<RevoluteJoint>(
           "iiwa_joint_4",
           /* Dummy frame definitions. Not relevant for this test. */
@@ -176,7 +176,7 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
 
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
-  DRAKE_EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddJointActuator(
           "iiwa_actuator_4",
           model->GetJointByName("iiwa_joint_4")),

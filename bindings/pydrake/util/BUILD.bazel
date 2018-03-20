@@ -43,6 +43,12 @@ drake_cc_library(
     hdrs = ["wrap_function.h"],
 )
 
+drake_cc_library(
+    name = "wrap_pybind",
+    hdrs = ["wrap_pybind.h"],
+    deps = [":wrap_function"],
+)
+
 # This is a pure-python, standalone library SET.
 # Keep this away from `common_py` to simplify test dependencies.
 drake_py_library(

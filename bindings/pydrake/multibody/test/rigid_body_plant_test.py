@@ -187,3 +187,5 @@ class TestRigidBodyPlant(unittest.TestCase):
         context.set_time(0.01)
         viz.Publish(context)
         viz.ReplayCachedSimulation()
+        # - Check that PublishLoadRobot can be called.
+        viz.PublishLoadRobot()

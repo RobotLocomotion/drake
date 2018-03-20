@@ -5,6 +5,8 @@ import unittest
 import numpy as np
 import pydrake.symbolic as sym
 
+# TODO(eric.cousineau): Replace usages of `sym` math functions with the
+# overloads from `pydrake.math`.
 
 # Define global variables to make the tests less verbose.
 x = sym.Variable("x")
@@ -426,6 +428,9 @@ class TestSymbolicExpression(unittest.TestCase):
 
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
+
+    # See `math_overloads_test` for more comprehensive checks on math
+    # functions.
 
 
 class TestSymbolicFormula(unittest.TestCase):

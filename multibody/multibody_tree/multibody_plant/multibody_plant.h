@@ -118,20 +118,6 @@ namespace multibody_plant {
 /// conditions should not change.
 /// @endcond
 ///
-/// @cond
-/// TODO(amcastro-tri): Add next section in future PR's as funcionality lands.
-/// @section computational_queries Performing computational queries
-/// Once a %MultibodyPlant model of a multibody system is created, a number of
-/// computational queries can be performed on a given Context:
-/// - CalcMassMatrix(): Computes the mass matrix of the system in `O(n²)`.
-/// - CalcInverseDynamics(): `O(n)` Newton-Euler recursive algorithm.
-/// - CalcForwardDynamics(): `O(n)` Articulated Body Inertia algorithm.
-/// - CalcPointsGeometricJacobianExpressedInWorld(): Jacobian matrix linearly
-///   relating a set of points' translational velocities to the system's
-///   generalized velocities.
-/// - Others...
-/// @endcond
-///
 /// <h3> References </h3>
 /// - [Featherstone 2008] Featherstone, R., 2008.
 ///     Rigid body dynamics algorithms. Springer.
@@ -619,6 +605,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// actuators. See AddJointActuator() and num_actuators().
   const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
 
+  /// Returns a constant reference to the output port for the full continuous
+  /// state of the model.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_continuous_state_output_port() const;
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
@@ -867,6 +858,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
         body_index_to_frame_id_.end();
   }
 
+  // Calc method for the continuous state vector output port.
+  void CopyContinuousStateOut(
+      const systems::Context<T>& context, systems::BasicVector<T>* state) const;
+
   // Helper method to declare output ports used by this plant to communicate
   // with a GeometrySystem.
   void DeclareGeometrySystemPorts();
@@ -970,8 +965,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // calls are performed on the same instance of GS.
   const geometry::GeometrySystem<T>* geometry_system_{nullptr};
 
-  // Actuation input port:
+  // Input/Output port indexes:
   int actuation_port_{-1};
+  int continuous_state_output_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

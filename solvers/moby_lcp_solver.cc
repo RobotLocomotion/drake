@@ -215,8 +215,9 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverId(MobyLcpSolverId::id());
+  SolverResult solver_result(MobyLcpSolverId::id());
 
+  Eigen::VectorXd x_sol(prog.num_vars());
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =
@@ -224,11 +225,18 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
     bool solved = SolveLcpLemkeRegularized(
         constraint->M(), constraint->q(), &constraint_solution);
     if (!solved) {
+      prog.SetSolverResult(solver_result);
       return SolutionResult::kUnknownError;
     }
-    prog.SetDecisionVariableValues(binding.variables(), constraint_solution);
-    prog.SetOptimalCost(0.0);
+    for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {
+      const int variable_index =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
+      x_sol(variable_index) = constraint_solution(i);
+    }
+    solver_result.set_optimal_cost(0.0);
   }
+  solver_result.set_decision_variable_values(x_sol);
+  prog.SetSolverResult(solver_result);
   return SolutionResult::kSolutionFound;
 }
 
