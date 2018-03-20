@@ -23,7 +23,7 @@ std::string to_string(SolutionResult solution_result) {
   }
   // The following lines should not be reached, we add this line due to a defect
   // in the compiler.
-  return "Should not reach here";
+  throw std::runtime_error("Should not reach here");
 }
 
 std::ostream& operator<<(std::ostream& os, SolutionResult solution_result) {
