@@ -150,22 +150,32 @@ struct SNOPTData : public MathematicalProgram::SolverData {
 };
 
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d, MathematicalProgram const* current_problem) : D(d) {
-    // Use the minimum default allocation needed by snInit.  The +1
-    // added to snopt_mincw is to make room for the instance pointer.
-    D.min_alloc_w(snopt_mincw + 1, snopt_miniw * 1000, snopt_minrw * 1000);
+  SNOPTRun(SNOPTData& d, MathematicalProgram const* current_problem,
+           std::unordered_set<int> const* cost_gradient_indices)
+      : D(d) {
+    // Use the minimum default allocation needed by snInit.  The +2
+    // added to snopt_mincw is to make room for the instance pointer and the
+    // pointer to the cost gradient sparsity pattern.
+    D.min_alloc_w(snopt_mincw + 2, snopt_miniw * 1000, snopt_minrw * 1000);
 
     snInit();
 
     // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
-    // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
+    // workspace.  We are then allowed to use cw(snopt_mincw+2:maxcu), as
     // expressed in Fortran array slicing.  Use the space to pass our problem
-    // instance pointer to our userfun.
-    snSeti("User character workspace", snopt_mincw + 1);
+    // instance pointer and cost sparsity pattern to our userfun.
+    snSeti("User character workspace", snopt_mincw + 2);
     {
       char const* const pcp = reinterpret_cast<char*>(&current_problem);
       char* const cu_cp = d.cw.data() + 8 * snopt_mincw;
       std::copy(pcp, pcp + sizeof(current_problem), cu_cp);
+
+      const char* const p_cost_gradient_indices =
+          reinterpret_cast<char*>(&cost_gradient_indices);
+      char* const cu_cost_gradient_indices = cu_cp + sizeof(current_problem);
+      std::copy(p_cost_gradient_indices,
+                p_cost_gradient_indices + sizeof(cost_gradient_indices),
+                cu_cost_gradient_indices);
     }
   }
 
@@ -309,7 +319,7 @@ void EvaluateNonlinearConstraints(
  * Loops through each cost stored in MathematicalProgram, and obtain the indices
  * of the non-zero gradient, in the summed cost.
  */
-std::unordered_set<int> UpdateCostNonzeroGradients(
+std::unordered_set<int> GetCostNonzeroGradientIndices(
     const MathematicalProgram& prog) {
   std::unordered_set<int> cost_gradient_indices;
   cost_gradient_indices.reserve(prog.num_vars());
@@ -322,9 +332,10 @@ std::unordered_set<int> UpdateCostNonzeroGradients(
   return cost_gradient_indices;
 }
 
-void EvaluateAllCosts(const MathematicalProgram& prog, snopt::doublereal F[],
-                      snopt::doublereal G[], size_t* grad_index,
-                      const Eigen::VectorXd& xvec) {
+void EvaluateAllCosts(const MathematicalProgram& prog,
+                      const std::unordered_set<int>& cost_gradient_indices,
+                      snopt::doublereal F[], snopt::doublereal G[],
+                      size_t* grad_index, const Eigen::VectorXd& xvec) {
   // evaluate cost
   Eigen::VectorXd this_x;
   AutoDiffVecXd ty(1);
@@ -349,7 +360,7 @@ void EvaluateAllCosts(const MathematicalProgram& prog, snopt::doublereal F[],
           static_cast<snopt::doublereal>(ty(0).derivatives()(j));
     }
   }
-  for (const auto cost_gradient_index : UpdateCostNonzeroGradients(prog)) {
+  for (const auto cost_gradient_index : cost_gradient_indices) {
     G[*grad_index] = cost_gradient[cost_gradient_index];
     ++(*grad_index);
   }
@@ -365,10 +376,19 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
   MathematicalProgram const* current_problem = NULL;
+  std::unordered_set<int> const* cost_gradient_indices = NULL;
   {
     char* const pcp = reinterpret_cast<char*>(&current_problem);
     char const* const cu_cp = cu + 8 * snopt_mincw;
     std::copy(cu_cp, cu_cp + sizeof(current_problem), pcp);
+
+    char* const pcost_gradient_indices =
+        reinterpret_cast<char*>(&cost_gradient_indices);
+    char const* const cu_cost_gradient_indices =
+        cu_cp + sizeof(current_problem);
+    std::copy(cu_cost_gradient_indices,
+              cu_cost_gradient_indices + sizeof(cost_gradient_indices),
+              pcost_gradient_indices);
   }
 
   snopt::integer i;
@@ -382,7 +402,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
   size_t grad_index = 0;
 
-  EvaluateAllCosts(*current_problem, F, G, &grad_index, xvec);
+  EvaluateAllCosts(*current_problem, *cost_gradient_indices, F, G, &grad_index,
+                   xvec);
 
   // The constraint index starts at 1 because the cost is the
   // first row.
@@ -579,7 +600,9 @@ bool SnoptSolver::available() const { return true; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
-  SNOPTRun cur(*d, &prog);
+  const std::unordered_set<int> cost_gradient_indices =
+      GetCostNonzeroGradientIndices(prog);
+  SNOPTRun cur(*d, &prog, &cost_gradient_indices);
 
   snopt::integer nx = prog.num_vars();
   d->min_alloc_x(nx);
@@ -625,8 +648,6 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  const std::unordered_set<int> cost_gradient_indices =
-      UpdateCostNonzeroGradients(prog);
 
   int num_nonlinear_constraints = 0;
   int max_num_gradients = cost_gradient_indices.size();
