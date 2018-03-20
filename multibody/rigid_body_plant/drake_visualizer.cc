@@ -63,7 +63,8 @@ void DrakeVisualizer::ReplayCachedSimulation() const {
     for (int c : included_times) {
       knots.push_back(sample_data.col(c));
     }
-    auto func = PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
+    auto func =
+        trajectories::PiecewisePolynomial<double>::ZeroOrderHold(breaks, knots);
 
     PlaybackTrajectory(func);
   } else {
@@ -75,17 +76,17 @@ void DrakeVisualizer::ReplayCachedSimulation() const {
 }
 
 void DrakeVisualizer::PlaybackTrajectory(
-    const PiecewisePolynomial<double>& input_trajectory) const {
+    const trajectories::PiecewisePolynomial<double>& input_trajectory) const {
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;
 
   // Target frame length at 60 Hz playback rate.
   const double kFrameLength = 1 / 60.0;
-  double sim_time = input_trajectory.getStartTime();
+  double sim_time = input_trajectory.start_time();
   TimePoint prev_time = Clock::now();
   BasicVector<double> data(log_->get_input_size());
-  while (sim_time < input_trajectory.getEndTime()) {
+  while (sim_time < input_trajectory.end_time()) {
     data.set_value(input_trajectory.value(sim_time));
 
     // Translates the input vector into an array of bytes representing an LCM
@@ -106,7 +107,7 @@ void DrakeVisualizer::PlaybackTrajectory(
 
   // Final evaluation is at the final time stamp, guaranteeing the final state
   // is visualized.
-  data.set_value(input_trajectory.value(input_trajectory.getEndTime()));
+  data.set_value(input_trajectory.value(input_trajectory.end_time()));
   std::vector<uint8_t> message_bytes;
   draw_message_translator_.Serialize(sim_time, data, &message_bytes);
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),

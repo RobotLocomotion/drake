@@ -22,6 +22,9 @@ using drake::solvers::SolutionResult;
 namespace drake {
 namespace examples {
 namespace pendulum {
+
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 DEFINE_double(target_realtime_rate, 1.0,
@@ -38,10 +41,10 @@ int DoMain() {
 
   const int kNumTimeSamples = 21;
   const double kMinimumTimeStep = 0.2;
-  const double kMaximumSampleTime = 0.5;
+  const double kMaximumTimeStep = 0.5;
   systems::trajectory_optimization::DirectCollocation dircol(
       pendulum.get(), *context, kNumTimeSamples, kMinimumTimeStep,
-      kMaximumSampleTime);
+      kMaximumTimeStep);
 
   dircol.AddEqualTimeIntervalsConstraints();
 
@@ -76,9 +79,9 @@ int DoMain() {
     return 1;
   }
 
-  const PiecewisePolynomialTrajectory pp_traj =
+  const PiecewisePolynomial<double> pp_traj =
       dircol.ReconstructInputTrajectory();
-  const PiecewisePolynomialTrajectory pp_xtraj =
+  const PiecewisePolynomial<double> pp_xtraj =
       dircol.ReconstructStateTrajectory();
   auto input_trajectory = builder.AddSystem<systems::TrajectorySource>(pp_traj);
   input_trajectory->set_name("input trajectory");
@@ -117,7 +120,7 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(pp_xtraj.get_end_time());
+  simulator.StepTo(pp_xtraj.end_time());
 
   const auto& pendulum_state =
       PendulumPlant<double>::get_state(diagram->GetSubsystemContext(

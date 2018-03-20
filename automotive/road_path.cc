@@ -18,6 +18,7 @@ using maliput::api::Lane;
 using maliput::api::LaneEnd;
 using maliput::api::LaneEndSet;
 using maliput::api::RoadGeometry;
+using trajectories::PiecewisePolynomial;
 
 template <typename T>
 RoadPath<T>::RoadPath(const LaneDirection& initial_lane_direction,

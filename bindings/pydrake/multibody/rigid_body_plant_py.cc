@@ -2,12 +2,16 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 using std::unique_ptr;
 using std::vector;
 
 namespace drake {
+
+using drake::lcm::DrakeLcmInterface;
+
 namespace pydrake {
 
 PYBIND11_MODULE(rigid_body_plant, m) {
@@ -15,6 +19,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   using namespace drake::systems;
 
   // Ensure we have bindings for dependencies.
+  py::module::import("pydrake.lcm");
   py::module::import("pydrake.multibody.rigid_body_tree");
   py::module::import("pydrake.systems.framework");
 
@@ -158,6 +163,24 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              py::keep_alive<0, 2>())
         .def("is_state_discrete", &Class::is_state_discrete)
         .def("get_time_step", &Class::get_time_step);
+  }
+
+  {
+    using Class = DrakeVisualizer;
+    py::class_<Class, LeafSystem<T>>(m, "DrakeVisualizer")
+        .def(py::init<const RigidBodyTree<T>&, DrakeLcmInterface*, bool>(),
+             py::arg("tree"), py::arg("lcm"),
+             py::arg("enable_playback") = false,
+             // Keep alive, reference: `this` keeps `tree` alive.
+             py::keep_alive<1, 2>(),
+             // Keep alive, reference: `this` keeps `lcm` alive.
+             py::keep_alive<1, 3>())
+        .def("set_publish_period", &Class::set_publish_period,
+             py::arg("period"))
+        .def("ReplayCachedSimulation", &Class::ReplayCachedSimulation)
+        .def("PublishLoadRobot", &Class::PublishLoadRobot);
+    // TODO(eric.cousineau): Bind `PlaybackTrajectory` when
+    // `PiecewisePolynomial` has bindings.
   }
 }
 

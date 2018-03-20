@@ -10,7 +10,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -137,7 +136,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
       // For now, non-linear constraints can be added by users by simply adding
       // the constraint manually for each
       // time index in a loop.
-      AddLinearConstraint(SubstitutePlaceholderVariables(f, i));
+      AddConstraint(SubstitutePlaceholderVariables(f, i));
     }
   }
 
@@ -203,8 +202,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// different start and end times.
   // TODO(russt): Consider taking the actual breakpoints from
   // traj_init_{u,x} iff they match the number of sample times.
-  void SetInitialTrajectory(const PiecewisePolynomial<double>& traj_init_u,
-                            const PiecewisePolynomial<double>& traj_init_x);
+  void SetInitialTrajectory(
+      const trajectories::PiecewisePolynomial<double>& traj_init_u,
+      const trajectories::PiecewisePolynomial<double>& traj_init_x);
 
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
@@ -220,11 +220,13 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Gets the input trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  virtual PiecewisePolynomialTrajectory ReconstructInputTrajectory() const = 0;
+  virtual trajectories::PiecewisePolynomial<double>
+  ReconstructInputTrajectory() const = 0;
 
   /// Gets the state trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const = 0;
+  virtual trajectories::PiecewisePolynomial<double>
+  ReconstructStateTrajectory() const = 0;
 
   double fixed_timestep() const {
     DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);

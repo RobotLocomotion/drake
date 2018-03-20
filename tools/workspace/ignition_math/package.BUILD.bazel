@@ -22,6 +22,12 @@ load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 PROJECT_MAJOR = 4
 
 PROJECT_MINOR = 0
@@ -169,6 +175,10 @@ cc_binary(
     ] + private_headers + public_headers,
     copts = ["-fvisibility-inlines-hidden"],
     includes = ["include"],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_ignition_math4.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
 )

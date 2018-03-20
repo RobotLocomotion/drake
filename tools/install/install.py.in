@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import argparse
 import collections
@@ -19,6 +19,27 @@ list_only = False
 # as a suffix (e.g. my_lib.so.x.y.z).
 dylib_match = r"(.*\.so)(\.\d+)*$|(.*\.dylib)$"
 
+
+def is_relative_link(filepath):
+    """Find if a file is a relative link.
+
+    Bazel paths are assumed to always be absolute. If path is not absolute,
+    the file is a link we want to keep.
+
+    If the given `filepath` is not a link, the function returns `None`. If the
+    given `filepath` is a link, the result will depend if the link is absolute
+    or relative. The function is called recursively. If the result is not a
+    link, `None` is returned. If the link is relative, the relative link is
+    returned.
+    """
+    if os.path.islink(filepath):
+        link = os.readlink(filepath)
+        if not os.path.isabs(link):
+            return link
+        else:
+            return is_relative_link(link)
+    else:
+        return None
 
 def find_binary_executables():
     """Finds installed files that are binary executables to fix them up later.
@@ -59,6 +80,19 @@ def needs_install(src, dst):
     return True
 
 
+def copy_or_link(src, dst):
+    """Copy file if it is not a relative link or recreate the symlink in `dst`.
+
+    Copy the input file to the destination if it is not a relative link. If the
+    file is a relative link, create a similar link in the destination folder.
+    """
+    relative_link = is_relative_link(src)
+    if relative_link:
+        os.symlink(relative_link, dst)
+    else:
+        shutil.copy2(src,dst)
+
+
 def install(src, dst):
     global subdirs
 
@@ -82,7 +116,7 @@ def install(src, dst):
         print("-- Installing: {}".format(dst_full))
         if os.path.exists(dst_full):
             os.remove(dst_full)
-        shutil.copy2(src, dst_full)
+        copy_or_link(src, dst_full)
         installed = True
     else:
         print("-- Up-to-date: {}".format(dst_full))
@@ -120,17 +154,25 @@ def fix_rpaths_and_strip():
     fix_files = [(k, files_to_fix_up[k][0])
                  for k in files_to_fix_up.keys() if files_to_fix_up[k][1]]
     for basename, dst_full in fix_files:
+        if os.path.islink(dst_full):
+            # Skip files that are links. However, they need to be in the
+            # dictionary to fixup other library and executable paths.
+            continue
         # Enable write permissions to allow modification.
         os.chmod(dst_full, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
                  stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         if sys.platform == "darwin":
-            macos_fix_rpaths(basename, dst_full)
+            # From the manual for BSD `strip`: for dynamic shared libraries,
+            # the maximum level of stripping is usually -x (to remove all
+            # non-global symbols).
             check_call(['strip', '-x', dst_full])
+            macos_fix_rpaths(basename, dst_full)
         else:
+            # Strip before running `patchelf`. Trying to strip after patching
+            # the files is likely going to create the following error:
+            # 'Not enough room for program headers, try linking with -N'
+            check_call(['strip', dst_full])
             linux_fix_rpaths(dst_full)
-            # TODO(jamiesnape): Strip binaries on Linux once issues with
-            # versioned shared libraries are resolved.
-            # check_call(['strip', dst_full])
 
 
 def macos_fix_rpaths(basename, dst_full):

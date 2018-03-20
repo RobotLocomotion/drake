@@ -12,6 +12,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -21,31 +22,6 @@ namespace {
 using std::regex;
 using std::regex_match;
 using std::move;
-
-#ifdef DRAKE_ASSERT_IS_DISARMED
-// With assertion disarmed, expect no exception.
-#define EXPECT_ERROR_MESSAGE_IF_ARMED(expression, reg_exp) \
-do {\
-  EXPECT_NO_THROW(expression); \
-} while (0)
-
-#else
-// Helper macro for "expecting" an exception but *also* testing the error
-// message against the provided regular expression.
-
-#define EXPECT_ERROR_MESSAGE_IF_ARMED(expression, reg_exp) \
-do {\
-  try { \
-    expression; \
-    GTEST_NONFATAL_FAILURE_("\t" #expression \
-        " failed to throw std::runtime_error."); \
-  } catch (const std::runtime_error& err) { \
-    auto matcher = [](const char* s, const char* re) { \
-      return regex_match(s, regex(re)); }; \
-    EXPECT_PRED2(matcher, err.what(), reg_exp); \
-  } \
-} while (0)
-#endif
 
 // Create dummy index types to exercise the functionality
 using AIndex = TypeSafeIndex<class A>;
@@ -63,10 +39,11 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   EXPECT_FALSE(index2.is_valid());
 
   // Construction with invalid index.
-  AIndex invalid;                           // Default constructor.
+  AIndex invalid;  // Default constructor.
   EXPECT_FALSE(invalid.is_valid());
-  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex(-1),
-                                "Explicitly constructing an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      AIndex(-1), std::runtime_error,
+      "Explicitly constructing an invalid index.+");
   EXPECT_NO_THROW(unused(AIndex(invalid)));  // Copy construct invalid index.
 }
 
@@ -92,8 +69,8 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   AIndex index4;
   index4 = 17;
   EXPECT_EQ(index4, 17);
-  EXPECT_ERROR_MESSAGE_IF_ARMED(index4 = -3,
-                                "Assigning an invalid int.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(index4 = -3, std::runtime_error,
+                                      "Assigning an invalid int.+");
 
   // Assignment involving invalid indices.
 
@@ -141,8 +118,9 @@ GTEST_TEST(TypeSafeIndex, ConversionToInt) {
   EXPECT_EQ(four, index);
 
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(static_cast<int>(invalid)),
-                                "Converting to an int.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(static_cast<int>(invalid)),
+                                      std::runtime_error,
+                                      "Converting to an int.+");
 }
 
 // Tests valid comparisons of like-typed index instances.
@@ -173,30 +151,42 @@ GTEST_TEST(TypeSafeIndex, InvalidIndexComparisonOperators) {
   AIndex invalid;
 
   // Comparison operators.
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid == valid),
-                                "Testing == with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid == invalid),
-                                "Testing == with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid != valid),
-                                "Testing != with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid != invalid),
-                                "Testing != with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid < valid),
-                                "Testing < with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid < invalid),
-                                "Testing < with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid <= valid),
-                                "Testing <= with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid <= invalid),
-                                "Testing <= with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid > valid),
-                                "Testing > with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid > invalid),
-                                "Testing > with invalid RHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(invalid >= valid),
-                                "Testing >= with invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(unused(valid >= invalid),
-                                "Testing >= with invalid RHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid == valid),
+                                      std::runtime_error,
+                                      "Testing == with invalid LHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid == invalid),
+                                      std::runtime_error,
+                                      "Testing == with invalid RHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid != valid),
+                                      std::runtime_error,
+                                      "Testing != with invalid LHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid != invalid),
+                                      std::runtime_error,
+                                      "Testing != with invalid RHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid < valid),
+                                      std::runtime_error,
+                                      "Testing < with invalid LHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid < invalid),
+                                      std::runtime_error,
+                                      "Testing < with invalid RHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid <= valid),
+                                      std::runtime_error,
+                                      "Testing <= with invalid LHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid <= invalid),
+                                      std::runtime_error,
+                                      "Testing <= with invalid RHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid > valid),
+                                      std::runtime_error,
+                                      "Testing > with invalid LHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid > invalid),
+                                      std::runtime_error,
+                                      "Testing > with invalid RHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(invalid >= valid),
+                                      std::runtime_error,
+                                      "Testing >= with invalid LHS.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(unused(valid >= invalid),
+                                      std::runtime_error,
+                                      "Testing >= with invalid RHS.+");
 }
 
 // Tests the prefix increment behavior.
@@ -210,12 +200,13 @@ GTEST_TEST(TypeSafeIndex, PrefixIncrement) {
   // In Debug builds, some increment operations will throw.
   // Overflow produces an invalid index.
   AIndex max_index(std::numeric_limits<int>::max());
-  EXPECT_ERROR_MESSAGE_IF_ARMED(++max_index,
-                                "Pre-incrementing produced an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      ++max_index, std::runtime_error,
+      "Pre-incrementing produced an invalid index.+");
   // Increment invalid index.
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(++invalid,
-                                "Pre-incrementing an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(++invalid, std::runtime_error,
+                                      "Pre-incrementing an invalid index.+");
 }
 
 // Tests the postfix increment behavior.
@@ -229,12 +220,13 @@ GTEST_TEST(TypeSafeIndex, PostfixIncrement) {
   // In Debug builds, some increment operations will throw.
   // Overflow produces an invalid index.
   AIndex max_index(std::numeric_limits<int>::max());
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      max_index++, "Post-incrementing produced an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      max_index++, std::runtime_error,
+      "Post-incrementing produced an invalid index.+");
   // Increment invalid index.
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      invalid++, "Post-incrementing an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(invalid++, std::runtime_error,
+                                      "Post-incrementing an invalid index.+");
 }
 
 // Tests the prefix decrement behavior.
@@ -246,10 +238,11 @@ GTEST_TEST(TypeSafeIndex, PrefixDecrement) {
   EXPECT_EQ(index_minus, AIndex(7));
   // In Debug builds decrements leading to a negative result will throw.
   AIndex about_to_be_negative_index(0);
-  EXPECT_ERROR_MESSAGE_IF_ARMED(--about_to_be_negative_index,
-                                "Pre-decrementing produced an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      --AIndex(), "Pre-decrementing an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      --about_to_be_negative_index, std::runtime_error,
+      "Pre-decrementing produced an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(--AIndex(), std::runtime_error,
+                                      "Pre-decrementing an invalid index.+");
 }
 
 // Tests the postfix decrement behavior.
@@ -261,11 +254,11 @@ GTEST_TEST(TypeSafeIndex, PostfixDecrement) {
   EXPECT_EQ(index_minus, AIndex(8));
   // In Debug builds decrements leading to a negative result will throw.
   AIndex about_to_be_negative_index(0);
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      about_to_be_negative_index--,
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      about_to_be_negative_index--, std::runtime_error,
       "Post-decrementing produced an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(AIndex()--,
-                                "Post-decrementing an invalid index.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(AIndex()--, std::runtime_error,
+                                      "Post-decrementing an invalid index.+");
 }
 
 // Tests integer addition and subtraction.
@@ -293,24 +286,24 @@ GTEST_TEST(TypeSafeIndex, InPlaceAddition) {
 
   // In-place with an int.
   AIndex about_to_be_negative_index(7);
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      about_to_be_negative_index += (-9),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      about_to_be_negative_index += (-9), std::runtime_error,
       "In-place addition with an int produced an invalid index.+");
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      invalid += 1,
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      invalid += 1, std::runtime_error,
       "In-place addition with an int on an invalid index.+");
 
   // In-place with an index.
   AIndex max_index(std::numeric_limits<int>::max());
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      max_index += AIndex(1),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      max_index += AIndex(1), std::runtime_error,
       "In-place addition with another index produced an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      invalid += AIndex(1),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      invalid += AIndex(1), std::runtime_error,
       "In-place addition with another index invalid LHS.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      index += invalid,
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      index += invalid, std::runtime_error,
       "In-place addition with another index invalid RHS.+");
 }
 
@@ -326,25 +319,25 @@ GTEST_TEST(TypeSafeIndex, InPlaceSubtract) {
 
   // In-place with an int.
   AIndex about_to_be_negative_index(0);
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      about_to_be_negative_index -= 7,
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      about_to_be_negative_index -= 7, std::runtime_error,
       "In-place subtraction with an int produced an invalid index.+");
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      invalid -= -3,
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      invalid -= -3, std::runtime_error,
       "In-place subtraction with an int on an invalid index.+");
 
   // In-place with an index.
   about_to_be_negative_index = 0;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      about_to_be_negative_index -= AIndex(1),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      about_to_be_negative_index -= AIndex(1), std::runtime_error,
       "In-place subtraction with another index produced an invalid index.+");
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      invalid -= AIndex(1),
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      invalid -= AIndex(1), std::runtime_error,
       "In-place subtraction with another index invalid LHS.+");
   about_to_be_negative_index = 0;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(
-      about_to_be_negative_index -= invalid,
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      about_to_be_negative_index -= invalid, std::runtime_error,
       "In-place subtraction with another index invalid RHS.+");
 }
 
@@ -356,8 +349,8 @@ GTEST_TEST(TypeSafeIndex, StreamInsertion) {
   EXPECT_EQ(stream.str(), "8");
 
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(stream << invalid,
-                                "Converting to an int.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(stream << invalid, std::runtime_error,
+                                      "Converting to an int.+");
 }
 
 // Tests conversion to string via std::to_string function.
@@ -367,8 +360,8 @@ GTEST_TEST(TypeSafeIndex, ToString) {
   EXPECT_EQ(std::to_string(index), std::to_string(value));
 
   AIndex invalid;
-  EXPECT_ERROR_MESSAGE_IF_ARMED(std::to_string(invalid),
-                                "Converting to an int.+");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      std::to_string(invalid), std::runtime_error, "Converting to an int.+");
 }
 
 // Verifies that it is not possible to convert between two different

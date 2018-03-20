@@ -28,10 +28,7 @@ struct DynamicProgrammingOptions {
   /// ensure that all values are in the range [low, high).  The classic example
   /// is for angles that are wrapped around at 2π.
   struct PeriodicBoundaryCondition {
-    PeriodicBoundaryCondition(int state_index, double low, double high) :
-      state_index(state_index), low(low), high(high) {
-      DRAKE_DEMAND(low < high);
-    }
+    PeriodicBoundaryCondition(int state_index, double low, double high);
     int state_index{-1};
     double low{0.};
     double high{2.*M_PI};

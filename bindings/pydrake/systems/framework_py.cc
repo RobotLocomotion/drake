@@ -303,7 +303,10 @@ PYBIND11_MODULE(framework, m) {
           // casting this using `py::str` does not work, but directly
           // calling the Python function (`str_py`) does.
           return str_py(self->GetGraphvizString());
-        });
+        })
+    // Events.
+    .def("Publish",
+         overload_cast_explicit<void, const Context<T>&>(&System<T>::Publish));
 
   // Don't use a const-rvalue as a function handle parameter, as pybind11 wants
   // to copy it?
@@ -479,7 +482,8 @@ PYBIND11_MODULE(framework, m) {
   py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
 
   py::class_<OutputPort<T>>(m, "OutputPort")
-    .def("size", &OutputPort<T>::size);
+    .def("size", &OutputPort<T>::size)
+    .def("get_index", &OutputPort<T>::get_index);
 
   py::class_<SystemOutput<T>> system_output(m, "SystemOutput");
   DefClone(&system_output);
@@ -491,7 +495,9 @@ PYBIND11_MODULE(framework, m) {
          py_reference_internal);
 
   py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor")
-    .def("size", &InputPortDescriptor<T>::size);
+    .def("size", &InputPortDescriptor<T>::size)
+    .def("get_data_type", &InputPortDescriptor<T>::get_data_type)
+    .def("get_index", &InputPortDescriptor<T>::get_index);
 
   // Value types.
   py::class_<VectorBase<T>>(m, "VectorBase")

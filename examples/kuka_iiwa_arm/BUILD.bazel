@@ -13,6 +13,10 @@ load(
 )
 load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
+)
 
 package(
     default_visibility = [":__subpackages__"],
@@ -29,7 +33,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//common:find_resource",
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
         "//multibody/parsers",
@@ -46,7 +50,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree",
@@ -242,6 +246,11 @@ sh_test(
 # This examples needs to be install for external projects such as Spartan.
 install(
     name = "install",
+    install_tests = [
+        ":test/iiwa_wsg_simulation_installed_test.py",
+        ":test/kuka_plan_runner_installed_test.py",
+        ":test/kuka_simulation_installed_test.py",
+    ],
     targets = [
         ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
@@ -271,17 +280,10 @@ install(
     ],
 )
 
-# Run the installed flavor of the kuka simulation, to make sure it can locate
-# its resources, etc.  TODO(jwnimmer-tri) Refactor installed-test phrasing to
-# be more compact, convenient, and efficient such as #7774 proposes.
-drake_py_unittest(
-    name = "kuka_simulation_installed_test",
-    size = "small",
-    timeout = "long",
-    data = ["//:install"],
-    deps = [
-        "//tools/install:install_test_helper",
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/iiwa_wsg_simulation_installed_test.py",
+        ":test/kuka_plan_runner_installed_test.py",
+        ":test/kuka_simulation_installed_test.py",
     ],
 )
-
-add_lint_tests()

@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
 
 /** A scalar multi-variate polynomial containing sines and cosines.
@@ -42,8 +43,10 @@
  * enforced programmatically; TODO(ggould-tri) fix this in the future.
  */
 template <typename _CoefficientType = double>
-class TrigPoly {
+class TrigPoly final {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TrigPoly)
+
   typedef _CoefficientType CoefficientType;
   typedef Polynomial<CoefficientType> PolyType;
   typedef typename PolyType::VarType VarType;
@@ -115,7 +118,7 @@ class TrigPoly {
     sin_cos_map_[q.GetSimpleVariable()] = sc;
   }
 
-  virtual ~TrigPoly() {}
+  ~TrigPoly() = default;
 
   /// Returns the underlying Polynomial for this TrigPoly.
   const PolyType& poly(void) const { return poly_; }

@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
@@ -11,17 +12,18 @@ namespace lcm {
 DrakeMockLcm::DrakeMockLcm() {}
 
 void DrakeMockLcm::StartReceiveThread() {
-  DRAKE_DEMAND(!receive_thread_started_);
+  DRAKE_THROW_UNLESS(!receive_thread_started_);
   receive_thread_started_ = true;
 }
 
 void DrakeMockLcm::StopReceiveThread() {
-  DRAKE_DEMAND(receive_thread_started_);
+  DRAKE_THROW_UNLESS(receive_thread_started_);
   receive_thread_started_ = false;
 }
 
 void DrakeMockLcm::Publish(const std::string& channel, const void* data,
                            int data_size, double) {
+  DRAKE_THROW_UNLESS(!channel.empty());
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
     last_published_messages_[channel] = LastPublishedMessage();
@@ -57,6 +59,7 @@ const std::vector<uint8_t>& DrakeMockLcm::get_last_published_message(
 
 void DrakeMockLcm::Subscribe(const std::string& channel,
                              DrakeLcmMessageHandlerInterface* handler) {
+  DRAKE_THROW_UNLESS(!channel.empty());
   if (subscriptions_.find(channel) == subscriptions_.end()) {
     subscriptions_[channel] = handler;
   } else {

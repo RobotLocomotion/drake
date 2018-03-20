@@ -144,10 +144,20 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   void get_input_port(int) = delete;
 
   /**
-   * Blocks the caller until @p old_message_count is different from the
-   * internal message counter, and the internal message counter is returned.
+   * Blocks the caller until its internal message count exceeds
+   * `old_message_count`.
+   * @param old_message_count Internal message counter.
+   * @param message If non-null, will return the received message.
+   * @pre If `message` is specified, this system must be abstract-valued.
    */
-  int WaitForMessage(int old_message_count) const;
+  int WaitForMessage(
+      int old_message_count, AbstractValue* message = nullptr) const;
+
+  /**
+   * Returns the internal message counter. Meant to be used with
+   * `WaitForMessage`.
+   */
+  int GetInternalMessageCount() const;
 
   /**
    * Returns the message counter stored in @p context.

@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_constraint.h"

@@ -263,6 +263,24 @@ class DependencyTracker {
   }
   //@}
 
+  /** @name                Testing/debugging utilities
+  Methods used in test cases or for debugging. */
+  //@{
+
+  /** Throws an std::logic_error if there is something clearly wrong with this
+  %DependencyTracker object. If the owning subcontext is known, provide a
+  pointer to it here and we'll check that this tracker agrees. If you know which
+  cache entry is supposed to be associated with this tracker, supply a pointer
+  to that and we'll check it (trackers that are not associated with a real cache
+  entry are still associated with the CacheEntryValue::dummy()). In addition we
+  check for other internal inconsistencies.
+  @throws std::logic_error for anything that goes wrong, with an appropriate
+                           explanatory message. */
+  void ThrowIfBadDependencyTracker(
+      const internal::SystemPathnameInterface* owning_subcontext = nullptr,
+      const CacheEntryValue* cache_value = nullptr) const;
+  //@}
+
  private:
   friend class DependencyGraph;
 
@@ -306,7 +324,8 @@ class DependencyTracker {
   // Assumes `this` tracker is a recent clone containing no pointers, sets
   // the pointers here to addresses corresponding to those in the source
   // tracker, with the help of the given map. It is a fatal error if any needed
-  // pointer is not present in the map.
+  // pointer is not present in the map. Performs a sanity check that the
+  // resulting tracker looks reasonable.
   void RepairTrackerPointers(
       const DependencyTracker& source,
       const DependencyTracker::PointerMap& tracker_map,
@@ -333,6 +352,11 @@ class DependencyTracker {
   std::string GetSystemPathname() const {
     DRAKE_DEMAND(owning_subcontext_!= nullptr);
     return owning_subcontext_->GetSystemPathname();
+  }
+
+  // Provides an identifying prefix for error messages.
+  std::string FormatName(const char* api) const {
+    return "DependencyTracker(" + GetPathDescription() + ")::" + api + "(): ";
   }
 
   // This tracker's index within its owning DependencyGraph.

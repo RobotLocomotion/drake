@@ -29,7 +29,9 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   // Instantiates the Device Under Test (DUT).
   DrakeMockLcm dut;
 
+  EXPECT_FALSE(dut.IsReceiveThreadRunning());
   dut.StartReceiveThread();
+  EXPECT_TRUE(dut.IsReceiveThreadRunning());
   dut.Publish(channel_name, &message_bytes[0], message_size);
 
   // Verifies that the message was "published".
@@ -38,6 +40,8 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
 
   EXPECT_EQ(message_size, static_cast<int>(published_message_bytes.size()));
   EXPECT_EQ(message_bytes, published_message_bytes);
+  dut.StopReceiveThread();
+  EXPECT_FALSE(dut.IsReceiveThreadRunning());
 }
 
 // Tests DrakeMockLcm::DecodeLastPublishedMessageAs() using an lcmt_drake_signal
@@ -227,6 +231,16 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
   // Verifies that the message was not received via loopback.
   EXPECT_NE(kChannelName, handler.get_channel());
   EXPECT_NE(kMessageSize, handler.get_buffer_size());
+}
+
+GTEST_TEST(DrakeMockLcmTest, EmptyChannelTest) {
+  DrakeMockLcm dut;
+
+  MockMessageHandler handler;
+  EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
+
+  const uint8_t buffer{};
+  EXPECT_THROW(dut.Publish("", &buffer, 1), std::exception);
 }
 
 }  // namespace

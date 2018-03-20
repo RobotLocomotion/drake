@@ -6,7 +6,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_value.h"
@@ -17,6 +16,9 @@ using std::make_unique;
 
 namespace drake {
 namespace systems {
+
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 class TrajectorySourceTest : public ::testing::Test {
@@ -24,7 +26,7 @@ class TrajectorySourceTest : public ::testing::Test {
   const size_t kDerivativeOrder = 5;
 
   void Reset(PiecewisePolynomial<double> pp) {
-    kppTraj_ = make_unique<PiecewisePolynomialTrajectory>(pp);
+    kppTraj_ = make_unique<PiecewisePolynomial<double>>(pp);
     source_ = make_unique<TrajectorySource<double>>(*kppTraj_, kDerivativeOrder,
                                                     true);
     context_ = source_->CreateDefaultContext();
@@ -32,7 +34,7 @@ class TrajectorySourceTest : public ::testing::Test {
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
-  std::unique_ptr<PiecewisePolynomialTrajectory> kppTraj_;
+  std::unique_ptr<PiecewisePolynomial<double>> kppTraj_;
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -62,7 +64,7 @@ TEST_F(TrajectorySourceTest, OutputTest) {
 
   for (size_t i = 1; i <= kDerivativeOrder; ++i) {
     EXPECT_TRUE(
-        CompareMatrices(kppTraj_->derivative(i)->value(kTestTime),
+        CompareMatrices(kppTraj_->derivative(i).value(kTestTime),
                         output_vector->get_value().segment(len * i, len), 1e-10,
                         MatrixCompareType::absolute));
   }

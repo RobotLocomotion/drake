@@ -22,6 +22,12 @@ load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 PROJECT_NAME = "ignition-rndf"
 
 PROJECT_MAJOR = 0
@@ -143,6 +149,10 @@ cc_binary(
         "-w",
     ],
     includes = ["include"],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_ignition_rndf0.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
     deps = [

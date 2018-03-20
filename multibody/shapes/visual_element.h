@@ -7,7 +7,7 @@
 
 namespace DrakeShapes {
 
-class VisualElement : public Element {
+class VisualElement final : public Element {
  public:
   explicit VisualElement(const Eigen::Isometry3d& T_element_to_local);
 
@@ -20,7 +20,13 @@ class VisualElement : public Element {
                 const Eigen::Isometry3d& T_element_to_local,
                 const Eigen::Vector4d& material);
 
-  virtual ~VisualElement() {}
+  /** Copy constructor for use by, e.g., std::vector. */
+  VisualElement(const VisualElement&) = default;
+  void operator=(const VisualElement&) = delete;
+  VisualElement(VisualElement&&) = delete;
+  void operator=(VisualElement&&) = delete;
+
+  ~VisualElement() override = default;
 
   /**
   * Sets the element's material color, in RGBA format.

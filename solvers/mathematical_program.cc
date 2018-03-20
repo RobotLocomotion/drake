@@ -115,18 +115,11 @@ bool is_satisfied(AttributesSet required, AttributesSet available) {
 }
 }  // namespace
 
-enum {
-  INITIAL_VARIABLE_ALLOCATION_NUM = 100
-};  // not const static int because the VectorXd constructor takes a reference
-// to int so it is odr-used (see
-// https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
-
 constexpr double MathematicalProgram::kGlobalInfeasibleCost;
 constexpr double MathematicalProgram::kUnboundedCost;
 
 MathematicalProgram::MathematicalProgram()
-    : x_initial_guess_(
-          static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
+    : x_initial_guess_(0),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
       lower_bound_cost_(-numeric_limits<double>::infinity()),
       required_capabilities_(kNoCapabilities),
@@ -140,6 +133,8 @@ MathematicalProgram::MathematicalProgram()
       mosek_solver_(new MosekSolver()),
       osqp_solver_(new OsqpSolver()),
       scs_solver_(new ScsSolver()) {}
+
+MathematicalProgram::~MathematicalProgram() = default;
 
 MatrixXDecisionVariable MathematicalProgram::NewVariables(
     VarType type, int rows, int cols, bool is_symmetric,
@@ -186,11 +181,8 @@ void MathematicalProgram::AddDecisionVariables(
   decision_variables_.conservativeResize(num_existing_decision_vars +
                                          decision_variables.rows());
   decision_variables_.tail(decision_variables.rows()) = decision_variables;
-  x_values_.resize(num_existing_decision_vars + decision_variables.rows(), NAN);
-  x_initial_guess_.conservativeResize(num_existing_decision_vars +
-                                      decision_variables.rows());
-  x_initial_guess_.tail(decision_variables.rows())
-      .fill(std::numeric_limits<double>::quiet_NaN());
+  AppendNanToEnd(decision_variables.rows(), &x_values_);
+  AppendNanToEnd(decision_variables.rows(), &x_initial_guess_);
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
@@ -296,24 +288,13 @@ void MathematicalProgram::AddIndeterminates(
   indeterminates_.tail(new_indeterminates.rows()) = new_indeterminates;
 }
 
-namespace {
-
-template <typename To, typename From>
-Binding<To> BindingDynamicCast(const Binding<From>& binding) {
-  auto constraint = std::dynamic_pointer_cast<To>(binding.evaluator());
-  DRAKE_DEMAND(constraint != nullptr);
-  return Binding<To>(constraint, binding.variables());
-}
-
-}  // anonymous namespace
-
 Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   // See AddCost(const Binding<Constraint>&) for explanation
   Cost* cost = binding.evaluator().get();
   if (dynamic_cast<QuadraticCost*>(cost)) {
-    return AddCost(BindingDynamicCast<QuadraticCost>(binding));
+    return AddCost(internal::BindingDynamicCast<QuadraticCost>(binding));
   } else if (dynamic_cast<LinearCost*>(cost)) {
-    return AddCost(BindingDynamicCast<LinearCost>(binding));
+    return AddCost(internal::BindingDynamicCast<LinearCost>(binding));
   } else {
     CheckBinding(binding);
     required_capabilities_ |= kGenericCost;
@@ -381,7 +362,7 @@ Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
 Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
     const Expression& e) {
   auto binding = AddCost(internal::ParsePolynomialCost(e));
-  return BindingDynamicCast<PolynomialCost>(binding);
+  return internal::BindingDynamicCast<PolynomialCost>(binding);
 }
 
 Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
@@ -404,17 +385,20 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   // incorrect) container.
   if (dynamic_cast<LinearMatrixInequalityConstraint*>(constraint)) {
     return AddConstraint(
-        BindingDynamicCast<LinearMatrixInequalityConstraint>(binding));
+        internal::BindingDynamicCast<LinearMatrixInequalityConstraint>(
+            binding));
   } else if (dynamic_cast<PositiveSemidefiniteConstraint*>(constraint)) {
     return AddConstraint(
-        BindingDynamicCast<PositiveSemidefiniteConstraint>(binding));
+        internal::BindingDynamicCast<PositiveSemidefiniteConstraint>(binding));
   } else if (dynamic_cast<RotatedLorentzConeConstraint*>(constraint)) {
     return AddConstraint(
-        BindingDynamicCast<RotatedLorentzConeConstraint>(binding));
+        internal::BindingDynamicCast<RotatedLorentzConeConstraint>(binding));
   } else if (dynamic_cast<LorentzConeConstraint*>(constraint)) {
-    return AddConstraint(BindingDynamicCast<LorentzConeConstraint>(binding));
+    return AddConstraint(
+        internal::BindingDynamicCast<LorentzConeConstraint>(binding));
   } else if (dynamic_cast<LinearConstraint*>(constraint)) {
-    return AddConstraint(BindingDynamicCast<LinearConstraint>(binding));
+    return AddConstraint(
+        internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
     CheckBinding(binding);
     required_capabilities_ |= kGenericConstraint;
@@ -423,38 +407,84 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   }
 }
 
+Binding<Constraint> MathematicalProgram::AddConstraint(const Expression& e,
+                                                       const double lb,
+                                                       const double ub) {
+  return AddConstraint(internal::ParseConstraint(e, lb, ub));
+}
+
+Binding<Constraint> MathematicalProgram::AddConstraint(
+    const Eigen::Ref<const VectorX<Expression>>& v,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub) {
+  return AddConstraint(internal::ParseConstraint(v, lb, ub));
+}
+
+Binding<Constraint> MathematicalProgram::AddConstraint(
+    const set<Formula>& formulas) {
+  return AddConstraint(internal::ParseConstraint(formulas));
+}
+
+Binding<Constraint> MathematicalProgram::AddConstraint(const Formula& f) {
+  return AddConstraint(internal::ParseConstraint(f));
+}
+
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Expression& e, const double lb, const double ub) {
-  return AddConstraint(internal::ParseLinearConstraint(e, lb, ub));
+  Binding<Constraint> binding = internal::ParseConstraint(e, lb, ub);
+  Constraint* constraint = binding.evaluator().get();
+  if (dynamic_cast<LinearConstraint*>(constraint)) {
+    return AddConstraint(
+        internal::BindingDynamicCast<LinearConstraint>(binding));
+  } else {
+    std::stringstream oss;
+    oss << "Expression " << e << " is non-linear.";
+    throw std::runtime_error(oss.str());
+  }
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  return AddConstraint(internal::ParseLinearConstraint(v, lb, ub));
-}
-
-Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const set<Formula>& formulas) {
-  return AddConstraint(internal::ParseLinearConstraint(formulas));
+  Binding<Constraint> binding = internal::ParseConstraint(v, lb, ub);
+  Constraint* constraint = binding.evaluator().get();
+  if (dynamic_cast<LinearConstraint*>(constraint)) {
+    return AddConstraint(
+        internal::BindingDynamicCast<LinearConstraint>(binding));
+  } else {
+    std::stringstream oss;
+    oss << "Expression " << v << " is non-linear.";
+    throw std::runtime_error(oss.str());
+  }
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Formula& f) {
-  return AddConstraint(internal::ParseLinearConstraint(f));
+  Binding<Constraint> binding = internal::ParseConstraint(f);
+  Constraint* constraint = binding.evaluator().get();
+  if (dynamic_cast<LinearConstraint*>(constraint)) {
+    return AddConstraint(
+        internal::BindingDynamicCast<LinearConstraint>(binding));
+  } else {
+    std::stringstream oss;
+    oss << "Formula " << f << " is non-linear.";
+    throw std::runtime_error(oss.str());
+  }
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearConstraint>& binding) {
-  // Because the ParseLinearConstraint methods can return instances of
+  // Because the ParseConstraint methods can return instances of
   // LinearEqualityConstraint or BoundingBoxConstraint, do a dynamic check
   // here.
   LinearConstraint* constraint = binding.evaluator().get();
   if (dynamic_cast<BoundingBoxConstraint*>(constraint)) {
-    return AddConstraint(BindingDynamicCast<BoundingBoxConstraint>(binding));
+    return AddConstraint(
+        internal::BindingDynamicCast<BoundingBoxConstraint>(binding));
   } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
-    return AddConstraint(BindingDynamicCast<LinearEqualityConstraint>(binding));
+    return AddConstraint(
+        internal::BindingDynamicCast<LinearEqualityConstraint>(binding));
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
@@ -695,8 +725,8 @@ MathematicalProgram::AddSosConstraint(
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
-  return AddSosConstraint(p,
-                          MonomialBasis(p.indeterminates(), p.TotalDegree()/2));
+  return AddSosConstraint(
+      p, MonomialBasis(p.indeterminates(), p.TotalDegree() / 2));
 }
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
@@ -705,7 +735,7 @@ MathematicalProgram::AddSosConstraint(
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{indeterminates_}},
-                           monomial_basis);
+      monomial_basis);
 }
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
@@ -784,5 +814,9 @@ SolutionResult MathematicalProgram::Solve() {
   }
 }
 
+void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
+  v->conservativeResize(v->rows() + new_var_size);
+  v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
+}
 }  // namespace solvers
 }  // namespace drake

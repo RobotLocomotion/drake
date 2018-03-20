@@ -55,6 +55,15 @@ template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
   DRAKE_THROW_UNLESS(other.is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
+  // Copy of all members related with geometry registration.
+  source_id_ = other.source_id_;
+  body_index_to_frame_id_ = other.body_index_to_frame_id_;
+  geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+  geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
+  // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize() on
+  // the new MultibodyTree on U. Therefore we only Finilize the plant's
+  // internals (and not the MultibodyTree).
+  FinalizePlantOnly();
 }
 
 template <typename T>
@@ -140,6 +149,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
   model_->Finalize();
+  FinalizePlantOnly();
+}
+
+template<typename T>
+void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateAndPorts();
   // Only declare ports to communicate with a GeometrySystem if the plant is
   // provided with a valid source id.
@@ -229,6 +243,40 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
+void MultibodyPlant<T>::DoMapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    systems::VectorBase<T>* generalized_velocity) const {
+  const int nq = model_->num_positions();
+  const int nv = model_->num_velocities();
+
+  DRAKE_ASSERT(qdot.size() == nq);
+  DRAKE_DEMAND(generalized_velocity != nullptr);
+  DRAKE_DEMAND(generalized_velocity->size() == nv);
+
+  VectorX<T> v(nv);
+  model_->MapQDotToVelocity(context, qdot, &v);
+  generalized_velocity->SetFromVector(v);
+}
+
+template<typename T>
+void MultibodyPlant<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+    systems::VectorBase<T>* positions_derivative) const {
+  const int nq = model_->num_positions();
+  const int nv = model_->num_velocities();
+
+  DRAKE_ASSERT(generalized_velocity.size() == nv);
+  DRAKE_DEMAND(positions_derivative != nullptr);
+  DRAKE_DEMAND(positions_derivative->size() == nq);
+
+  VectorX<T> qdot(nq);
+  model_->MapVelocityToQDot(context, generalized_velocity, &qdot);
+  positions_derivative->SetFromVector(qdot);
+}
+
+template<typename T>
 void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
@@ -244,7 +292,17 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
             systems::BasicVector<T>(num_actuated_dofs())).get_index();
   }
 
-  // TODO(amcastro-tri): Declare output port for the state.
+  continuous_state_output_port_ =
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(num_multibody_states()),
+          &MultibodyPlant::CopyContinuousStateOut).get_index();
+}
+
+template <typename T>
+void MultibodyPlant<T>::CopyContinuousStateOut(
+    const Context<T>& context, BasicVector<T>* state_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  state_vector->SetFrom(context.get_continuous_state_vector());
 }
 
 template <typename T>
@@ -253,6 +311,13 @@ MultibodyPlant<T>::get_actuation_input_port() const {
   DRAKE_THROW_UNLESS(is_finalized());
   DRAKE_THROW_UNLESS(num_actuators() > 0);
   return systems::System<T>::get_input_port(actuation_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_continuous_state_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(continuous_state_output_port_);
 }
 
 template<typename T>

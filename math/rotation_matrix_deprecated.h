@@ -15,10 +15,10 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
@@ -197,43 +197,47 @@ VectorX<typename Derived::Scalar> rotmat2Representation(
   }
 }
 
-/// (Deprecated), use @ref multibody::RotationMatrix::MakeXRotation
+/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation
 template <typename T>
 Matrix3<T> XRotation(const T& theta) {
-  return drake::multibody::RotationMatrix<T>::MakeXRotation(theta).matrix();
+  return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref multibody::RotationMatrix::MakeYRotation
+/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation
 template <typename T>
 Matrix3<T> YRotation(const T& theta) {
-  return drake::multibody::RotationMatrix<T>::MakeYRotation(theta).matrix();
+  return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref multibody::RotationMatrix::MakeZRotation
+/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation
 template <typename T>
 Matrix3<T> ZRotation(const T& theta) {
-  return drake::multibody::RotationMatrix<T>::MakeZRotation(theta).matrix();
+  return drake::math::RotationMatrix<T>::MakeZRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref multibody::RotationMatrix::ProjectToRotationMatrix
-// TODO(Mitiguy) Remove this method (replace calls to this method).
+/// (Deprecated), use @ref math::RotationMatrix::ProjectToRotationMatrix
+// TODO(mitiguy) This code was deprecated on March 9, 2018.
+// Delete this code in accordance with issue #8323.
 template <typename Derived>
+DRAKE_DEPRECATED("Use RotationMatrix::ProjectToRotationMatrix().")
 Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
     const Eigen::MatrixBase<Derived>& M) {
   using Scalar = typename Derived::Scalar;
   const drake::Matrix3<Scalar> R = M;
-  return drake::multibody::RotationMatrix<Scalar>::ProjectToRotationMatrix(R,
+  return drake::math::RotationMatrix<Scalar>::ProjectToRotationMatrix(R,
       nullptr).matrix();
 }
 
-/// (Deprecated), use @ref multibody::RotationMatrix::ProjectToRotationMatrix
-// TODO(Mitiguy) Remove this method (replace calls to this method).
+/// (Deprecated), use @ref math::RotationMatrix::ProjectToRotationMatrix
+// TODO(mitiguy) This code was deprecated on March 9, 2018.
+// Delete this code in accordance with issue #8323.
 template <typename Derived>
+DRAKE_DEPRECATED("Use RotationMatrix::ProjectToRotationMatrix().")
 Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
     const Eigen::MatrixBase<Derived>& M) {
   using Scalar = typename Derived::Scalar;
   const drake::Matrix3<Scalar> R = M;
-  return drake::multibody::RotationMatrix<Scalar>::ProjectToRotationMatrix(R,
+  return drake::math::RotationMatrix<Scalar>::ProjectToRotationMatrix(R,
          nullptr).matrix();
 }
 

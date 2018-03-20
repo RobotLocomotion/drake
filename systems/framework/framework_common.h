@@ -95,6 +95,10 @@ class SystemPathnameInterface {
   /** Returns the full path name of this subsystem, starting at the root
   of the containing Diagram, with path name separators between segments. */
   virtual std::string GetSystemPathname() const = 0;
+
+ protected:
+  SystemPathnameInterface() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemPathnameInterface);
 };
 
 /** These dependency ticket numbers are common to all systems and contexts so
@@ -104,8 +108,19 @@ entries are allocated beginning with kNextAvailableTicket defined below. */
 enum BuiltInTicketNumbers {
   kNothingTicket        =  0,
   kTimeTicket           =  1,
-  // TODO(sherm1) Add in the rest of the built-in tickets here.
-  kNextAvailableTicket  = kTimeTicket + 1
+  kAccuracyTicket       =  2,
+  kQTicket              =  3,
+  kVTicket              =  4,
+  kZTicket              =  5,
+  kXcTicket             =  6,
+  kXdTicket             =  7,
+  kXaTicket             =  8,
+  kXTicket              =  9,
+  kAllParametersTicket  = 10,
+  kAllInputPortsTicket  = 11,
+  kAllSourcesTicket     = 12,
+  kNextAvailableTicket  = kAllSourcesTicket+1
+  // TODO(sherm1) Add the rest of the built-in tickets here.
 };
 
 }  // namespace internal
