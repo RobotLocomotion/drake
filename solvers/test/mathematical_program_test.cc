@@ -627,6 +627,7 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
 
   const SolverId dummy_solver_id("dummy");
   SolverResult solver_result(dummy_solver_id);
+  solver_result.set_decision_variable_values(x_val);
   prog.SetSolverResult(solver_result);
 
   CheckGetSolution(prog, X1, X1_value);

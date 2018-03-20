@@ -70,7 +70,7 @@ GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
     prog.SetInitialGuess(prog.state(i + 1), x1);
 
     EXPECT_TRUE(
-        CompareMatrices(prog.EvalBindingAtSolution(binding), defect, 1e-6));
+        CompareMatrices(prog.EvalBindingAtInitialGuess(binding), defect, 1e-6));
   }
 }
 
