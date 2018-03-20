@@ -431,8 +431,7 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
-  const SolverId dummy_solver_id("dummy");
-  SolverResult solver_result(dummy_solver_id);
+  SolverResult solver_result(SolverId("dummy"));
   solver_result.set_decision_variable_values(Vector6<double>::Zero());
   prog.SetSolverResult(solver_result);
   VectorDecisionVariable<6> vars_expected;
@@ -625,8 +624,7 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   SetDecisionVariableValue(x3, x3_value);
   SetDecisionVariableValue(x4, x4_value);
 
-  const SolverId dummy_solver_id("dummy");
-  SolverResult solver_result(dummy_solver_id);
+  SolverResult solver_result(SolverId("dummy"));
   solver_result.set_decision_variable_values(x_val);
   prog.SetSolverResult(solver_result);
 

@@ -139,7 +139,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
                                callback_info->solver_sol_vector,
                                &(callback_info->prog_sol_vector));
       SolverResult solver_result(GurobiSolver::id());
-      solver_result.set_decision_variable_values(callback_info->prog_sol_vector);
+      solver_result.set_decision_variable_values(
+          callback_info->prog_sol_vector);
       callback_info->prog->SetSolverResult(solver_result);
 
       GurobiSolver::SolveStatusInfo solve_status =
