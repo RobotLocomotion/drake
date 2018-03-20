@@ -268,7 +268,10 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // Body frame associated with this body.
   BodyFrame<T> body_frame_;
 
-  // The default (non context dependent) mass of the body.
+  // In general, the mass of a body can be a constant property of the body or a
+  // Parameter of the model. The default mass value is directly reported by
+  // get_default_mass() in the former case and used to initialize the mass
+  // Parameter in the Context in the latter case.
   double default_mass_{0.0};
 
   // The internal bookkeeping topology struct used by MultibodyTree.

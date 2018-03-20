@@ -281,8 +281,9 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
-void MultibodyPlant<T>::EstimatePenaltyMethodParameters(
+void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   // Default to Earth's gravity for this estimation.
   const double g = gravity_field_.has_value() ?
                    gravity_field_.value()->gravity_vector().norm() : 9.81;

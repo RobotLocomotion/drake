@@ -689,7 +689,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// estimating them manually can be cumbersome since in general they will
   /// depend on the scale of the problem including masses, speeds and even
   /// body sizes. However, %MultibodyPlant aids the estimation of these
-  /// coefficients based on some heuristics function of a user-supplied
+  /// coefficients using a heuristic function based on a user-supplied
   /// "penetration allowance", see set_penetration_allowance(). The penetration
   /// allowance is a number in meters that specifies the order of magnitude of
   /// the average penetration between bodies in the system that the user is
@@ -699,14 +699,15 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// increase it for the simulation of heavy walking robots for which an
   /// allowance of 1 millimeter would result in a very stiff system.
   ///
-  /// %MultibodyPlant chooses the damping coefficient d to model inelastic
-  /// collisions and therefore sets it so that the penetration distance x
-  /// behaves as a critically critically damped oscillator. That is, at the
-  /// limit of ideal rigid contact (very stiff penalty coefficient k or
-  /// equivalently the penetration allowance goes to zero), this method behaves
-  /// as a unilateral constraint on the penetration distance, which models
-  /// a perfect inelastic collision. For most applications, such as manipulation
-  /// and walking, this is the desired behavior.
+  /// As for the damping coefficient in the simple law above, %MultibodyPlant
+  /// chooses the damping coefficient d to model inelastic collisions and
+  /// therefore sets it so that the penetration distance x behaves as a
+  /// critically damped oscillator. That is, at the limit of ideal rigid contact
+  /// (very stiff penalty coefficient k or equivalently the penetration
+  /// allowance goes to zero), this method behaves as a unilateral constraint on
+  /// the penetration distance, which models a perfect inelastic collision. For
+  /// most applications, such as manipulation and walking, this is the desired
+  /// behavior.
   ///
   /// When set_penetration_allowance() is called, %MultibodyPlant will estimate
   /// reasonable penalty method coefficients as a function of the input
@@ -741,25 +742,25 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// penalty method used to impose non-penetration among bodies. Refer to the
   /// section @ref mbp_penalty_method "Contact by penalty method" for further
   /// details.
-  void set_penetration_allowance(double penetration_allowance = 0.001) {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    EstimatePenaltyMethodParameters(penetration_allowance);
-  }
+  void set_penetration_allowance(double penetration_allowance = 0.001);
 
-  /// Returns a time-scale estimate based on the requested penetration
-  /// allowance set with set_penetration_allowance().
+  /// Returns a time-scale `tc` estimate based on the requested penetration
+  /// allowance δ set with set_penetration_allowance().
   /// For the penalty method in use to enforce non-penetration, this time scale
-  /// relates to the time it takes two bodies to come to a relative stop,
-  /// when the relative normal velocity goes to zero.
+  /// relates to the time it takes the relative normal velocity between two
+  /// bodies to go to zero.
   /// If this time scale is used to estimate a simulation's time step, it is
   /// recommended to choose a time step so that several steps fit in this time
   /// scale in order for the integrator to resolve this "numerically induced
   /// dynamics" (this time scale is zero for ideal rigid contact.)
   /// Another factor to take into account for setting up the simulation's time
-  /// step is the speed of the objects in your simulation. If the temporal
-  /// dynamics introduced by objects moving at large speeds is smaller than this
-  /// time scale, the simulation time step will need to be smaller in order to
-  /// resolve the dynamics of the problem.
+  /// step is the speed of the objects in your simulation. If `vn` represents a
+  /// reference velocity scale for the normal relative velocity between bodies,
+  /// the new time scale `tn = δ / vn` represents the time
+  /// it would take for the distance between two bodies approaching with
+  /// relative normal velocity `vn` to decrease by the penetration_allowance δ.
+  /// In this case a user should choose a time step for simulation that can
+  /// resolve the smallest of the two time scales `tc` and `tn`.
   double get_contact_penalty_method_time_scale() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return penalty_method_contact_parameters_.time_scale;
@@ -895,14 +896,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
-
-  // Based on the contact allowance specified by the user (a friendlier, more
-  // physically meaningful parameter), this method uses
-  // some heuristics to determine the penalty method coefficients.
-  // This heuristics includes, for instance, the weight of the bodies in the
-  // model. Future versions could also include energy estimates of maximum
-  // velocities,
-  void EstimatePenaltyMethodParameters(double penetration_allowance);
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
