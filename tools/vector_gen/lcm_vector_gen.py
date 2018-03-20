@@ -235,7 +235,7 @@ GET_COORDINATE_NAMES = """
 
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
-  decltype(T() < T()) IsValid() const {
+  Bool<T> IsValid() const {
     using std::isnan;
     auto result = (T(0) == T(0));
 """
@@ -328,6 +328,7 @@ VECTOR_HH_PREAMBLE = """
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_bool.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
