@@ -58,7 +58,7 @@ bool AreQuaternionsForSameOrientation(const Vector4d& q1, const Vector4d& q2,
                                       double precision = 1E-12) {
   // The same orientation is described by both a quaternion and the negative of
   // that quaternion.
-  return q1.isApprox(q2, precision) | q1.isApprox(-q2, precision);
+  return q1.isApprox(q2, precision) || q1.isApprox(-q2, precision);
 }
 Quaterniond BodyZYXAnglesToEigenQuaternion(const Vector3d bodyZYX_angles) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''.

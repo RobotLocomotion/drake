@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/math/quaternion.h"
+
 namespace drake {
 namespace math {
 namespace {
@@ -411,6 +413,59 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   }
 }
 
+class RotationMatrixConversionTests : public ::testing::Test {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ protected:
+  void SetUp() override {
+    SetupQuaternionTestCases();
+  }
+
+  void SetupQuaternionTestCases() {
+    // kSweepSize is an even number so that no samples are taken at zero. This
+    // test scales as O(N^4) in sweep size, so be cautious about turning it up!
+    const int kSweepSize = 6;
+
+    // Set up a variety of general tests for quaternions.
+    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    for (int i = 0; i < qw.size(); ++i) {
+      for (int j = 0; j < qx.size(); ++j) {
+        for (int k = 0; k < qy.size(); ++k) {
+          for (int l = 0; l < qz.size(); ++l) {
+            Eigen::Quaterniond q(qw(i), qx(j), qy(k), qz(l));
+            // As long as q.norm() is reasonably far from 0 to avoid divide-by-
+            // zero, normalize q so it becomes a valid quaterion (i.e., so that
+            // after normalization, q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1).
+            if (q.norm() > 1E-3) {
+              q.normalize();
+              quaternion_test_cases_.push_back(q);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  std::vector<Eigen::Quaterniond> quaternion_test_cases_;
+};
+
+TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionViceVersa) {
+  const double tolerance = 40 * kEpsilon;
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    // Step 1: Convert the quaternion qi to a 3x3 matrix mi.
+    // Step 2: Construct a RotationMatrix Ri from the 3x3 matrix.
+    // Step 3: Convert rotation matrix Ri to a quaternion q_expected.
+    // Step 4: Ensure qi and q_expected represent the same orientation.
+    const Matrix3d mi = qi.toRotationMatrix();
+    const RotationMatrix<double> Ri(mi);
+    const Eigen::Quaterniond q_expected = Ri.ToQuaternion();
+    EXPECT_TRUE(AreQuaternionsEqualForOrientation(qi, q_expected, tolerance));
+  }
+}
 
 }  // namespace
 }  // namespace math

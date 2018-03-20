@@ -61,7 +61,13 @@ void ViewerDrawTranslator::Serialize(double time,
   // Saves the poses of each body in the lcmt_viewer_draw message.
   for (size_t i = 0; i < tree_.get_bodies().size(); ++i) {
     auto transform = tree_.relativeTransform(cache, 0, i);
-    auto quat = drake::math::rotmat2quat(transform.linear());
+    // TODO(mitiguy) when issue #8368 is resolved, change the next line so it
+    // instead uses the method drake::math::RotationMatrix::ToQuaternion().
+    // Suppress deprecation warning for rotmat2quatOld.
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    auto quat = drake::math::rotmat2quatOld(transform.linear());
+    #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     std::vector<float>& position = message.position[i];
 
     auto translation = transform.translation();
