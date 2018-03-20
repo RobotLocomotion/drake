@@ -467,6 +467,27 @@ TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionViceVersa) {
   }
 }
 
+TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    // Compute the rotation matrix using Eigen's geometry module.
+    // Compare that result with the corresponding RotationMatrix constructor.
+    const Matrix3d m_expected = qi.toRotationMatrix();
+    const RotationMatrix<double> R_expected(m_expected);
+    const RotationMatrix<double> R(qi);
+    EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 40 * kEpsilon));
+#ifdef DRAKE_ASSERT_IS_ARMED
+    // A bad quaternion should throw an exception.
+    const double delta = 900 * kEpsilon;
+    const double w = qi.w() + (qi.w() > 0 ? 1 : -1) * delta;
+    const double x = qi.x() + (qi.x() > 0 ? 1 : -1) * delta;
+    const double y = qi.y() + (qi.y() > 0 ? 1 : -1) * delta;
+    const double z = qi.z() + (qi.z() > 0 ? 1 : -1) * delta;
+    const Eigen::Quaterniond q_bad(w, x, y, z);
+    EXPECT_THROW(const RotationMatrix<double> R_bad(q_bad), std::logic_error);
+#endif
+  }
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

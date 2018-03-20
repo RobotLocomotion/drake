@@ -53,6 +53,18 @@ class RotationMatrix {
 #endif
   }
 
+  /// Constructs a %RotationMatrix from a Quaternion.
+  /// @param[in] quaternion a unit-length quaternion [quaternion.norm() ≈ 1].
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `quaternion` fails IsValid(R).  For example, an
+  /// exception will be thrown if quaternion.norm() ≠ 1.
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
+    R_AB_ = quaternion.toRotationMatrix();
+#ifdef DRAKE_ASSERT_IS_ARMED
+    ThrowIfNotValid(R_AB_);
+#endif
+  }
+
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   /// @param[in] theta radian measure of rotation angle about Ax.
