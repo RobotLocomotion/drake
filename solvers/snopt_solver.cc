@@ -625,7 +625,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  const std::unordered_set<int> cost_gradient_indices = UpdateCostNonzeroGradients(prog);
+  const std::unordered_set<int> cost_gradient_indices =
+      UpdateCostNonzeroGradients(prog);
 
   int num_nonlinear_constraints = 0;
   int max_num_gradients = cost_gradient_indices.size();
