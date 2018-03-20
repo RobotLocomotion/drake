@@ -832,7 +832,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverId(id());
+  prog.SetSolverId(id(), CreatePassKey());
 
   GRBfreemodel(model);
   GRBfreeenv(env);

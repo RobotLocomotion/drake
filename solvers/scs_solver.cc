@@ -641,7 +641,7 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   scs_free_data(scs_problem_data, cone);
   scs_free_sol(scs_sol);
 
-  prog.SetSolverId(id());
+  prog.SetSolverId(id(), CreatePassKey());
   return sol_result;
 }
 }  // namespace solvers

@@ -25,6 +25,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/unused.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -2266,8 +2267,22 @@ class MathematicalProgram {
 
   /**
    * Sets the ID of the solver that was used to solve this program.
+   * @note This method is only meant to be called by the solver, as a child
+   * class of MathematicalProgramSolverInterface. If you want to solve the 
+   * program using a specific solver, do
+   * \code{cc}
+   * solver.Solve(program);
+   * \endcode
+   *
+   * We use the passkey idiom to restrict that this function can only be called
+   * inside MathematicalProgramSolverInterface. Notice that MathematicalProgramKey
+   * has a private constructor, and it is a friend of
+   * MathematicalProgramSolverInterface.
    */
-  void SetSolverId(SolverId solver_id) { solver_id_ = solver_id; }
+  void SetSolverId(const SolverId id, const MathematicalProgramKey& key) {
+    unused(key);
+    solver_id_ = id;
+  }
 
   /**
    * Returns the ID of the solver that was used to solve this program.

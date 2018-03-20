@@ -265,7 +265,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     }
   }
   prog.SetOptimalCost(optimal_cost);
-  prog.SetSolverId(id());
+
+  prog.SetSolverId(id(), CreatePassKey());
   // Make sure solver_result is set.
   DRAKE_DEMAND(!!solver_result);
   return *solver_result;
