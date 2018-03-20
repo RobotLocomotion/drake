@@ -309,22 +309,22 @@ void EvaluateNonlinearConstraints(
  * Loops through each cost stored in MathematicalProgram, and obtain the indices
  * of the non-zero gradient, in the summed cost.
  */
-std::unordered_set<int> UpdateCostNonzeroGradients(const MathematicalProgram& prog) {
+std::unordered_set<int> UpdateCostNonzeroGradients(
+    const MathematicalProgram& prog) {
   std::unordered_set<int> cost_gradient_indices;
   cost_gradient_indices.reserve(prog.num_vars());
   for (const auto& cost : prog.GetAllCosts()) {
-    for (int i = 0;  i < static_cast<int>(cost.GetNumElements()); ++i) {
-      cost_gradient_indices.insert(prog.FindDecisionVariableIndex(cost.variables()(i)));
+    for (int i = 0; i < static_cast<int>(cost.GetNumElements()); ++i) {
+      cost_gradient_indices.insert(
+          prog.FindDecisionVariableIndex(cost.variables()(i)));
     }
   }
   return cost_gradient_indices;
 }
 
-void EvaluateAllCosts(
-    const MathematicalProgram& prog,
-    snopt::doublereal F[],
-    snopt::doublereal G[], size_t* grad_index,
-    const Eigen::VectorXd& xvec) {
+void EvaluateAllCosts(const MathematicalProgram& prog, snopt::doublereal F[],
+                      snopt::doublereal G[], size_t* grad_index,
+                      const Eigen::VectorXd& xvec) {
   // evaluate cost
   Eigen::VectorXd this_x;
   AutoDiffVecXd ty(1);
@@ -345,7 +345,8 @@ void EvaluateAllCosts(
 
     for (int j = 0; j < num_v_variables; ++j) {
       size_t vj_index = prog.FindDecisionVariableIndex(binding.variables()(j));
-      cost_gradient[vj_index] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+      cost_gradient[vj_index] +=
+          static_cast<snopt::doublereal>(ty(0).derivatives()(j));
     }
   }
   for (const auto cost_gradient_index : UpdateCostNonzeroGradients(prog)) {
