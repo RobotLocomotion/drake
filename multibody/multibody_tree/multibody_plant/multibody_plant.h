@@ -735,23 +735,25 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// details.
   void set_penetration_allowance(double penetration_allowance = 0.001);
 
-  /// Returns a time-scale `tc` estimate based on the requested penetration
+  /// Returns a time-scale estimate `tc` based on the requested penetration
   /// allowance δ set with set_penetration_allowance().
   /// For the penalty method in use to enforce non-penetration, this time scale
   /// relates to the time it takes the relative normal velocity between two
-  /// bodies to go to zero.
-  /// If this time scale is used to estimate a simulation's time step, it is
-  /// recommended to choose a time step so that several steps fit in this time
-  /// scale in order for the integrator to resolve this "numerically induced
-  /// dynamics" (this time scale is zero for ideal rigid contact.)
+  /// bodies to go to zero. This time scale `tc` is artificially introduced by
+  /// the penalty method and goes to zero in the limit to ideal rigid contact.
+  /// Since numerical integration methods for continuum systems must be able to
+  /// resolve a system's dynamics, the time step used by an integrator must in
+  /// general be much smaller than the time scale `tc`. How much smaller will
+  /// depend on the details of the problem and the convergence characteristics
+  /// of the integrator and should be tuned appropriately.
   /// Another factor to take into account for setting up the simulation's time
   /// step is the speed of the objects in your simulation. If `vn` represents a
   /// reference velocity scale for the normal relative velocity between bodies,
-  /// the new time scale `tn = δ / vn` represents the time
-  /// it would take for the distance between two bodies approaching with
-  /// relative normal velocity `vn` to decrease by the penetration_allowance δ.
-  /// In this case a user should choose a time step for simulation that can
-  /// resolve the smallest of the two time scales `tc` and `tn`.
+  /// the new time scale `tn = δ / vn` represents the time it would take for the
+  /// distance between two bodies approaching with relative normal velocity `vn`
+  /// to decrease by the penetration_allowance δ. In this case a user should
+  /// choose a time step for simulation that can resolve the smallest of the two
+  /// time scales `tc` and `tn`.
   double get_contact_penalty_method_time_scale() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return penalty_method_contact_parameters_.time_scale;
