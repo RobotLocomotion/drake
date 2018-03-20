@@ -150,9 +150,9 @@ struct SNOPTData : public MathematicalProgram::SolverData {
 };
 
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d, MathematicalProgram const* current_problem,
+  SNOPTRun(SNOPTData* d, MathematicalProgram const* current_problem,
            std::unordered_set<int> const* cost_gradient_indices)
-      : D(d) {
+      : D(*d) {
     // Use the minimum default allocation needed by snInit.  The +2
     // added to snopt_mincw is to make room for the instance pointer and the
     // pointer to the cost gradient sparsity pattern.
@@ -167,7 +167,7 @@ struct SNOPTRun {
     snSeti("User character workspace", snopt_mincw + 2);
     {
       char const* const pcp = reinterpret_cast<char*>(&current_problem);
-      char* const cu_cp = d.cw.data() + 8 * snopt_mincw;
+      char* const cu_cp = d->cw.data() + 8 * snopt_mincw;
       std::copy(pcp, pcp + sizeof(current_problem), cu_cp);
 
       const char* const p_cost_gradient_indices =
@@ -602,7 +602,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   const std::unordered_set<int> cost_gradient_indices =
       GetCostNonzeroGradientIndices(prog);
-  SNOPTRun cur(*d, &prog, &cost_gradient_indices);
+  SNOPTRun cur(d.get(), &prog, &cost_gradient_indices);
 
   snopt::integer nx = prog.num_vars();
   d->min_alloc_x(nx);
