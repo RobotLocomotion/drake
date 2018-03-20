@@ -26,6 +26,9 @@ enum SolutionResult {
                          /// infer the status of the primal problem.
 };
 
+std::string to_string(SolutionResult solution_result);
+std::ostream& operator<<(std::ostream& os, SolutionResult solution_result);
+
 /**
  * This class is used by implementations of the class
  * MathematicalProgramSolverInterface to report their results to the
