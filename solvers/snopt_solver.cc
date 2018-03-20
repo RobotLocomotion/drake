@@ -6,6 +6,7 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -304,6 +305,55 @@ void EvaluateNonlinearConstraints(
   }
 }
 
+/*
+ * Loops through each cost stored in MathematicalProgram, and obtain the indices
+ * of the non-zero gradient, in the summed cost.
+ */
+std::unordered_set<int> UpdateCostNonzeroGradients(const MathematicalProgram& prog) {
+  std::unordered_set<int> cost_gradient_indices;
+  cost_gradient_indices.reserve(prog.num_vars());
+  for (const auto& cost : prog.GetAllCosts()) {
+    for (int i = 0;  i < static_cast<int>(cost.GetNumElements()); ++i) {
+      cost_gradient_indices.insert(prog.FindDecisionVariableIndex(cost.variables()(i)));
+    }
+  }
+  return cost_gradient_indices;
+}
+
+void EvaluateAllCosts(
+    const MathematicalProgram& prog,
+    snopt::doublereal F[],
+    snopt::doublereal G[], size_t* grad_index,
+    const Eigen::VectorXd& xvec) {
+  // evaluate cost
+  Eigen::VectorXd this_x;
+  AutoDiffVecXd ty(1);
+
+  std::vector<snopt::doublereal> cost_gradient(prog.num_vars(), 0);
+  for (auto const& binding : prog.GetAllCosts()) {
+    auto const& obj = binding.evaluator();
+
+    int num_v_variables = binding.GetNumElements();
+    this_x.resize(num_v_variables);
+    for (int j = 0; j < num_v_variables; ++j) {
+      this_x(j) = xvec(prog.FindDecisionVariableIndex(binding.variables()(j)));
+    }
+
+    obj->Eval(math::initializeAutoDiff(this_x), ty);
+
+    F[0] += static_cast<snopt::doublereal>(ty(0).value());
+
+    for (int j = 0; j < num_v_variables; ++j) {
+      size_t vj_index = prog.FindDecisionVariableIndex(binding.variables()(j));
+      cost_gradient[vj_index] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+    }
+  }
+  for (const auto cost_gradient_index : UpdateCostNonzeroGradients(prog)) {
+    G[*grad_index] = cost_gradient[cost_gradient_index];
+    ++(*grad_index);
+  }
+}
+
 int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::doublereal x[], snopt::integer* needF,
                   snopt::integer* neF, snopt::doublereal F[],
@@ -329,36 +379,14 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   F[0] = 0.0;
   memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
-  // evaluate cost
-  Eigen::VectorXd this_x;
-  AutoDiffVecXd ty(1);
+  size_t grad_index = 0;
 
-  for (auto const& binding : current_problem->GetAllCosts()) {
-    auto const& obj = binding.evaluator();
-
-    int num_v_variables = binding.GetNumElements();
-    this_x.resize(num_v_variables);
-    for (int j = 0; j < num_v_variables; ++j) {
-      this_x(j) = xvec(
-          current_problem->FindDecisionVariableIndex(binding.variables()(j)));
-    }
-
-    obj->Eval(math::initializeAutoDiff(this_x), ty);
-
-    F[0] += static_cast<snopt::doublereal>(ty(0).value());
-
-    for (int j = 0; j < num_v_variables; ++j) {
-      size_t vj_index =
-          current_problem->FindDecisionVariableIndex(binding.variables()(j));
-      G[vj_index] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
-    }
-  }
+  EvaluateAllCosts(*current_problem, F, G, &grad_index, xvec);
 
   // The constraint index starts at 1 because the cost is the
   // first row.
   size_t constraint_index = 1;
   // The gradient_index also starts after the cost.
-  size_t grad_index = *n;
   EvaluateNonlinearConstraints(*current_problem,
                                current_problem->generic_constraints(), F, G,
                                &constraint_index, &grad_index, xvec);
@@ -596,7 +624,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  int num_nonlinear_constraints = 0, max_num_gradients = nx;
+  const std::unordered_set<int> cost_gradient_indices = UpdateCostNonzeroGradients(prog);
+
+  int num_nonlinear_constraints = 0;
+  int max_num_gradients = cost_gradient_indices.size();
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
@@ -637,12 +668,14 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   d->min_alloc_G(lenG);
   snopt::integer* iGfun = d->iGfun.data();
   snopt::integer* jGvar = d->jGvar.data();
-  for (snopt::integer i = 0; i < nx; i++) {
-    iGfun[i] = 1;
-    jGvar[i] = i + 1;
+  size_t grad_index = 0;
+  for (const auto cost_gradient_index : cost_gradient_indices) {
+    iGfun[grad_index] = 1;
+    jGvar[grad_index] = cost_gradient_index + 1;
+    ++grad_index;
   }
 
-  size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
+  size_t constraint_index = 1;  // constraint index starts at 1
                                                  // because the cost is the
                                                  // first row
   UpdateConstraintBoundsAndGradients(prog, prog.generic_constraints(), Flow,
