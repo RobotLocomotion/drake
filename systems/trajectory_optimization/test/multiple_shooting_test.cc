@@ -271,15 +271,24 @@ GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
 
   // If one is empty, uses the duration.
   prog.SetInitialTrajectory(PiecewisePolynomial<double>(), traj1);
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  prog.result_reporting_interface().SetDecisionVariableValues(
+      prog.initial_guess());
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
 
   prog.SetInitialTrajectory(traj2, PiecewisePolynomial<double>());
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  prog.result_reporting_interface().SetDecisionVariableValues(
+      prog.initial_guess());
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 1.5, 3.0));
 
   prog.SetInitialTrajectory(traj1, traj1);
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  prog.result_reporting_interface().SetDecisionVariableValues(
+      prog.initial_guess());
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
 
   // Throws if trajectories don't match.
@@ -304,7 +313,10 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
     prog.SetInitialGuess(prog.input(i), input_trajectory.col(i));
     prog.SetInitialGuess(prog.state(i), state_trajectory.col(i));
   }
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  prog.result_reporting_interface().SetDecisionVariableValues(
+      prog.initial_guess());
 
   EXPECT_TRUE(CompareMatrices(prog.GetSampleTimes(),
                               Eigen::Vector2d(0.0, kFixedTimeStep), 0.0));

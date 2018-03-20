@@ -245,7 +245,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     solver_result = SolveUnconstrainedQP(G, c, feasibility_tol, &x);
   }
 
-  prog.SetDecisionVariableValues(x);
+  prog.result_reporting_interface().SetDecisionVariableValues(x);
   double optimal_cost{};
   switch (solver_result.value()) {
     case SolutionResult::kSolutionFound: {
@@ -264,8 +264,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       optimal_cost = NAN;
     }
   }
-  prog.SetOptimalCost(optimal_cost);
-  prog.SetSolverId(id());
+  prog.result_reporting_interface().SetOptimalCost(optimal_cost);
+  prog.result_reporting_interface().SetSolverId(id());
   // Make sure solver_result is set.
   DRAKE_DEMAND(!!solver_result);
   return *solver_result;

@@ -66,7 +66,8 @@ void SetProgramSolutionVector(const std::vector<bool>& is_new_variable,
       k++;
     }
   }
-  prog->SetDecisionVariableValues(*prog_sol_vector);
+  prog->result_reporting_interface().SetDecisionVariableValues(
+      *prog_sol_vector);
 }
 
 // Utility to extract Gurobi solve status information into
@@ -779,12 +780,14 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
           break;
         }
         case GRB_UNBOUNDED: {
-          prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
+          prog.result_reporting_interface().SetOptimalCost(
+              MathematicalProgram::kUnboundedCost);
           result = SolutionResult::kUnbounded;
           break;
         }
         case GRB_INFEASIBLE: {
-          prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+          prog.result_reporting_interface().SetOptimalCost(
+              MathematicalProgram::kGlobalInfeasibleCost);
           result = SolutionResult::kInfeasibleConstraints;
           break;
         }
@@ -815,7 +818,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
 
       // Provide Gurobi's computed cost in addition to the constant cost.
-      prog.SetOptimalCost(optimal_cost + constant_cost);
+      prog.result_reporting_interface().SetOptimalCost(optimal_cost +
+                                                         constant_cost);
 
       if (is_mip) {
         // If the problem is a mixed-integer optimization program, provide
@@ -826,13 +830,13 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
           drake::log()->error("GRB error {} getting lower bound: {}\n", error,
                               GRBgeterrormsg(GRBgetenv(model)));
         } else {
-          prog.SetLowerBoundCost(lower_bound);
+          prog.result_reporting_interface().SetLowerBoundCost(lower_bound);
         }
       }
     }
   }
 
-  prog.SetSolverId(id());
+  prog.result_reporting_interface().SetSolverId(id());
 
   GRBfreemodel(model);
   GRBfreeenv(env);

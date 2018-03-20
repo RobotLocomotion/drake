@@ -409,7 +409,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
       for (int i = 0; i < nx; i++) {
         sol(i) = x[i];
       }
-      prog.SetDecisionVariableValues(sol);
+      prog.result_reporting_interface().SetDecisionVariableValues(sol);
     }
     switch (nlopt_result) {
       case nlopt::SUCCESS:
@@ -476,8 +476,8 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     result = SolutionResult::kUnknownError;
   }
 
-  prog.SetOptimalCost(minf);
-  prog.SetSolverId(id());
+  prog.result_reporting_interface().SetOptimalCost(minf);
+  prog.result_reporting_interface().SetSolverId(id());
   return result;
 }
 

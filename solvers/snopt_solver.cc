@@ -184,9 +184,9 @@ struct SNOPTRun {
     DRAKE_DEMAND(!opt.empty());
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
-    snopt::snseti_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
-                   &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
-                   opt_len, 8 * D.lencw);
+    snopt::snseti_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw, opt_len,
+                   8 * D.lencw);
     return err;
   }
 
@@ -195,9 +195,9 @@ struct SNOPTRun {
     DRAKE_DEMAND(!opt.empty());
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
-    snopt::snsetr_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
-                   &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
-                   opt_len, 8 * D.lencw);
+    snopt::snsetr_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw, opt_len,
+                   8 * D.lencw);
     return err;
   }
 
@@ -738,10 +738,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   snopt::integer info;
   snopt::snopta_(
       &Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob,
-      reinterpret_cast<snopt::U_fp>(&snopt_userfun),
-      iAfun, jAvar, &lenA, &lenA, A, iGfun, jGvar, &lenG, &lenG, xlow, xupp,
-      xnames, Flow, Fupp, Fnames, x, xstate, xmul, F, Fstate, Fmul, &info,
-      &mincw, &miniw, &minrw, &nS, &nInf, &sInf,
+      reinterpret_cast<snopt::U_fp>(&snopt_userfun), iAfun, jAvar, &lenA, &lenA,
+      A, iGfun, jGvar, &lenG, &lenG, xlow, xupp, xnames, Flow, Fupp, Fnames, x,
+      xstate, xmul, F, Fstate, Fmul, &info, &mincw, &miniw, &minrw, &nS, &nInf,
+      &sInf,
       // Pass the snopt workspace as the user workspace.  We already set
       // the maxcu option to reserve some of it for our user code.
       d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
@@ -752,9 +752,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   for (int i = 0; i < nx; i++) {
     sol(i) = static_cast<double>(x[i]);
   }
-  prog.SetDecisionVariableValues(sol);
-  prog.SetOptimalCost(*F);
-  prog.SetSolverId(id());
+  prog.result_reporting_interface().SetDecisionVariableValues(sol);
+  prog.result_reporting_interface().SetOptimalCost(*F);
+  prog.result_reporting_interface().SetSolverId(id());
 
   // todo: extract the other useful quantities, too.
 
@@ -765,7 +765,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     if (info >= 11 && info <= 16) {
       return SolutionResult::kInfeasibleConstraints;
     } else if (info >= 20 && info <= 22) {
-      prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
+      prog.result_reporting_interface().SetOptimalCost(
+          MathematicalProgram::kUnboundedCost);
       return SolutionResult::kUnbounded;
     } else if (info >= 30 && info <= 32) {
       return SolutionResult::kIterationLimit;

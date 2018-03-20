@@ -49,21 +49,21 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   // least-squares solution
   const Eigen::VectorXd least_square_sol =
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
-  prog.SetDecisionVariableValues(least_square_sol);
+  prog.result_reporting_interface().SetDecisionVariableValues(
+      least_square_sol);
 
-  prog.SetSolverId(id());
+  prog.result_reporting_interface().SetSolverId(id());
   if (beq.isApprox(Aeq * least_square_sol)) {
-    prog.SetOptimalCost(0.);
+    prog.result_reporting_interface().SetOptimalCost(0.);
     return SolutionResult::kSolutionFound;
   } else {
-    prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+    prog.result_reporting_interface().SetOptimalCost(
+        MathematicalProgram::kGlobalInfeasibleCost);
     return SolutionResult::kInfeasibleConstraints;
   }
 }
 
-SolverId LinearSystemSolver::solver_id() const {
-  return id();
-}
+SolverId LinearSystemSolver::solver_id() const { return id(); }
 
 SolverId LinearSystemSolver::id() {
   static const never_destroyed<SolverId> singleton{"Linear system"};
