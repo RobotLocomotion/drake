@@ -181,9 +181,8 @@ void MathematicalProgram::AddDecisionVariables(
   decision_variables_.conservativeResize(num_existing_decision_vars +
                                          decision_variables.rows());
   decision_variables_.tail(decision_variables.rows()) = decision_variables;
-  MathematicalProgram::AppendNanToEnd(decision_variables.rows(), &x_values_);
-  MathematicalProgram::AppendNanToEnd(decision_variables.rows(),
-                                      &x_initial_guess_);
+  AppendNanToEnd(decision_variables.rows(), &x_values_);
+  AppendNanToEnd(decision_variables.rows(), &x_initial_guess_);
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomial(

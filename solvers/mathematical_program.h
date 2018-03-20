@@ -2625,7 +2625,7 @@ class MathematicalProgram {
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     decision_variables_.conservativeResize(num_vars() + num_new_vars,
                                            Eigen::NoChange);
-    MathematicalProgram::AppendNanToEnd(num_new_vars, &x_values_);
+    AppendNanToEnd(num_new_vars, &x_values_);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
@@ -2661,7 +2661,7 @@ class MathematicalProgram {
       }
     }
 
-    MathematicalProgram::AppendNanToEnd(num_new_vars, &x_initial_guess_);
+    AppendNanToEnd(num_new_vars, &x_initial_guess_);
   }
 
   MatrixXDecisionVariable NewVariables(VarType type, int rows, int cols,
