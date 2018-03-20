@@ -2,6 +2,8 @@
 
 #include <type_traits>
 
+#include "drake/common/autodiff.h"
+#include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 
@@ -33,7 +35,6 @@ namespace drake {
 /// }
 /// @endcode
 ///
-/// TODO(soonho-tri): Make cond compatible with Bool.
 template <typename T>
 class Bool {
  public:
@@ -67,6 +68,25 @@ class Bool {
 template <typename T>
 bool ExtractBoolOrThrow(const Bool<T>& b) {
   return bool{b.value()};
+}
+
+/// Allows users to use `if_then_else` with a conditional of `Bool<T>` type in
+/// addition to `Bool<T>::value_type`.
+///
+/// Note that we need to have `#include "drake/common/autodiff.h"` atop this
+/// file because, in case of T = AutoDiffXd, this template function calls
+/// another template function defined in common/autodiff.h. See
+/// https://clang.llvm.org/compatibility.html#dep_lookup for more information.
+template <typename T>
+T if_then_else(const Bool<T>& b, const T& v_then, const T& v_else) {
+  return if_then_else(b.value(), v_then, v_else);
+}
+
+/// Allows users to use `cond` with conditionals of `Bool<T>` type in addition
+/// to `Bool<T>::value_type`.
+template <typename T, typename... Rest>
+T cond(const Bool<T>& b, const T& e_then, Rest... rest) {
+  return cond(b.value(), e_then, rest...);
 }
 
 namespace assert {

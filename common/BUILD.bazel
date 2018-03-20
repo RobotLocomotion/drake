@@ -27,6 +27,7 @@ drake_cc_library(
         ":cond",
         ":copyable_unique_ptr",
         ":double",
+        ":drake_bool",
         ":drake_path",
         ":dummy_value",
         ":essential",
@@ -64,7 +65,6 @@ drake_cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_assertion_error.h",
-        "drake_bool.h",
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_optional.h",
@@ -88,6 +88,16 @@ drake_cc_library(
     hdrs = ["cond.h"],
     deps = [
         ":double",
+    ],
+)
+
+drake_cc_library(
+    name = "drake_bool",
+    hdrs = ["drake_bool.h"],
+    deps = [
+        ":autodiff",
+        ":cond",
+        ":essential",
     ],
 )
 
@@ -198,6 +208,7 @@ drake_cc_library(
     ],
     deps = [
         ":cond",
+        ":drake_bool",
         ":dummy_value",
         ":essential",
         ":extract_double",
@@ -481,8 +492,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_bool_test",
     deps = [
-        ":autodiff",
-        ":essential",
+        ":drake_bool",
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",
     ],
