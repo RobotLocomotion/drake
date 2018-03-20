@@ -5,11 +5,11 @@
 namespace drake {
 namespace math {
 
-/// Computes the unique stabilizing solution X to the continuous-time algebraic
+/// Computes the unique stabilizing solution S to the continuous-time algebraic
 /// Riccati equation:
 ///
 /// @verbatim
-///  S'A + A'S - S B inv(R) B' S + Q = 0
+///  S A + A' S - S B inv(R) B' S + Q = 0
 /// @endverbatim
 ///
 /// @throws std::runtime_error if R is not positive definite.
