@@ -387,11 +387,12 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
   const RoadNetworkType road_network_type = DetermineRoadNetworkType();
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
-      std::make_unique<lcm::DrakeLcm>());
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  auto& lcm = dynamic_cast<drake::lcm::DrakeLcm&>(*simulator->get_lcm());
   const maliput::api::RoadGeometry* road_geometry =
       AddTerrain(road_network_type, simulator.get());
   AddVehicles(road_network_type, road_geometry, simulator.get());
+  lcm.StartReceiveThread();
   simulator->Start(FLAGS_target_realtime_rate);
   simulator->StepBy(FLAGS_simulation_sec);
   return 0;
