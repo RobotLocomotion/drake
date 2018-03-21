@@ -24,8 +24,6 @@ using drake::log;
 namespace drake {
 namespace solvers {
 
-namespace {
-
 template <>
 SolutionResult
     UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
