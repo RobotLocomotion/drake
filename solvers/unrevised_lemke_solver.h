@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -46,7 +48,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   /// all strictly semimonotone matrices, all P-matrices, and all strictly
   /// copositive matrices. Lemke's Algorithm is described in [Cottle 1992],
-  /// Section 4.4. 
+  /// Section 4.4.
   ///
   /// Although this solver is theoretically guaranteed to give a solution to
   /// the LCPs described above, cycling from degeneracy could cause the solver
@@ -67,10 +69,6 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   /// @param[in] zero_tol The tolerance for testing against zero. If the
   ///            tolerance is negative (default) the solver will determine a
   ///            generally reasonable tolerance.
-  /// @param[in] piv_tol The tolerance for testing against zero, specifically
-  ///            used for the purpose of finding variables for pivoting. If the
-  ///            tolerance is negative (default) the solver will determine a
-  ///            generally reasonable tolerance.
   /// @returns `true` if the solver **believes** it has computed a solution
   ///          (which it determines by the ability to "pivot out" the
   ///          "artificial" variable (see [Cottle 1992]) and `false` otherwise.
@@ -82,7 +80,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   /// * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
   ///                      Complementarity Problem. Academic Press, 1992.
   bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q,
-                     VectorX<T>* z, int* num_pivots, const T& piv_tol = T(-1),
+                     VectorX<T>* z, int* num_pivots,
                      const T& zero_tol = T(-1)) const;
 
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
@@ -143,6 +141,19 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
     bool z{true};        // Is this a z variable or a w variable?
     int index{-1};       // Index of the variable in the problem, 0...n. Index 0
                          // with z=true corresponds to the artificial variable.
+
+    bool operator<(const LCPVariable& v) const {
+      if (!z && v.z) {
+        return true;
+      } else {
+        if (z && !v.z) {
+          return false;
+        }
+
+        // Both variables are z or both are w.
+        return index < v.index;
+      }
+    }
   };
 
   static bool IsEachUnique(const std::vector<LCPVariable>& vars);
@@ -154,6 +165,50 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       const LCPVariable& query,
       const std::vector<LCPVariable>& indep_variables);
   void DetermineIndexSets() const;
+
+  typedef std::vector<LCPVariable> LCPVariableVector;
+
+  // Structure for mapping a vector of independent variables to a selection
+  // index.
+  class LCPVariableVectorComparator {
+   public:
+    // This does a lexicographic comparison, using z variables first and then
+    // w variables.
+    bool operator()(
+        const LCPVariableVector& v1, const LCPVariableVector& v2) const {
+      DRAKE_DEMAND(v1.size() == v2.size());
+
+      // Copy the vectors.
+      sorted1_ = v1;
+      sorted2_ = v2;
+
+      // Determine the variables in sorted order because we want to consider
+      // all permutations of a set of variables as the same.
+      std::sort(sorted1_.begin(), sorted1_.end());
+      std::sort(sorted2_.begin(), sorted2_.end());
+
+      // Now do a lexicographic comparison.
+      for (int i = 0; i < static_cast<int>(v1.size()); ++i) {
+        if (v1[i] < v2[i]) {
+          return true;
+        } else {
+          if (v2[i] < v1[i])
+            return false;
+        }
+      }
+
+      // If still here, they're equal.
+      return false;
+    }
+
+   private:
+    // Two temporary vectors for storing sorted versions of vectors.
+    mutable LCPVariableVector sorted1_, sorted2_;
+  };
+
+  // Maps the independent variables to the selection taken to prevent cycling.
+  mutable std::map<LCPVariableVector, int, LCPVariableVectorComparator>
+      selections_;
 
   // These temporary matrices and vectors are members to facilitate minimizing
   // memory allocations/deallocations. Changing their value between invocations
