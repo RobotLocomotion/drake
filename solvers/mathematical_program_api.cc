@@ -16,6 +16,8 @@ using std::runtime_error;
 
 using symbolic::Variable;
 
+MathematicalProgram::~MathematicalProgram() = default;
+
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
