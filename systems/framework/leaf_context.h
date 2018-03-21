@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
@@ -18,20 +17,21 @@
 namespace drake {
 namespace systems {
 
-/// %LeafContext is a container for all of the data necessary to uniquely
-/// determine the computations performed by a leaf System. Specifically, a
-/// %LeafContext contains and owns the State, and also contains (but does not
-/// own) pointers to the value sources for Inputs, as well as the simulation
-/// time and the cache.
+/// %LeafContext contains all prerequisite data necessary to uniquely determine
+/// the results of computations performed by the associated LeafSystem.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
-// TODO(david-german-tri): Manage cache invalidation.
 template <typename T>
 class LeafContext : public Context<T> {
  public:
-  // LeafContext objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafContext)
+  /// @name  Does not allow copy, move, or assignment.
+  //@{
+  // Copy constructor is protected for use in implementing Clone().
+  LeafContext(LeafContext&&) = delete;
+  LeafContext& operator=(const LeafContext&) = delete;
+  LeafContext& operator=(LeafContext&&) = delete;
+  //@}
 
   LeafContext()
       : state_(std::make_unique<State<T>>()),
@@ -82,36 +82,38 @@ class LeafContext : public Context<T> {
   }
 
  protected:
-  /// The caller owns the returned memory.
-  Context<T>* DoClone() const override {
-    LeafContext<T>* clone = new LeafContext<T>();
-
+  /// Protected copy constructor takes care of the local data members and
+  /// all base class members, but doesn't update base class pointers so is
+  /// not a complete copy.
+  LeafContext(const LeafContext& source) : Context<T>(source) {
     // Make a deep copy of the state.
-    clone->state_ = this->CloneState();
+    state_ = source.CloneState();
 
     // Make deep copies of the parameters.
-    clone->set_parameters(parameters_->Clone());
+    set_parameters(source.parameters_->Clone());
 
     // Make deep copies of the inputs into FreestandingInputPortValues.
     // TODO(david-german-tri): Preserve version numbers as well.
-    for (const auto& port : this->input_values_) {
+    for (const auto& port : source.input_values_) {
       if (port == nullptr) {
-        clone->input_values_.emplace_back(nullptr);
+        input_values_.emplace_back(nullptr);
       } else {
-        clone->input_values_.emplace_back(new FreestandingInputPortValue(
+        input_values_.emplace_back(new FreestandingInputPortValue(
             port->get_abstract_data()->Clone()));
       }
     }
 
-    // Make deep copies of everything else using the default copy constructors.
-    *clone->get_mutable_step_info() = this->get_step_info();
-    clone->set_accuracy(this->get_accuracy());
-    return clone;
+    // Everything else was handled by the Context<T> copy constructor.
   }
 
-  /// The caller owns the returned memory.
-  State<T>* DoCloneState() const override {
-    State<T>* clone = new State<T>();
+  /// Derived classes should reimplement and replace this; don't recursively
+  /// invoke it.
+  std::unique_ptr<ContextBase> DoCloneWithoutPointers() const override {
+    return std::unique_ptr<ContextBase>(new LeafContext<T>(*this));
+  }
+
+  std::unique_ptr<State<T>> DoCloneState() const override {
+    auto clone = std::make_unique<State<T>>();
 
     // Make a deep copy of the continuous state using BasicVector::Clone().
     const ContinuousState<T>& xc = this->get_continuous_state();

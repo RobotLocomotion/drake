@@ -44,10 +44,6 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> AllocateContext() const override {
-    return nullptr;
-  }
-
   std::unique_ptr<CompositeEventCollection<double>>
   AllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<double>>();
@@ -212,6 +208,10 @@ class TestSystem : public System<double> {
   }
 
  private:
+  std::unique_ptr<ContextBase> DoMakeContext() const override {
+    return std::make_unique<LeafContext<double>>();
+  }
+
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
   mutable std::vector<int> published_numbers_;
@@ -465,7 +465,7 @@ class ValueIOTestSystem : public System<T> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const override {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     context->SetNumInputPorts(this->get_num_input_ports());
     return std::move(context);
