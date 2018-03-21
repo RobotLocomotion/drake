@@ -81,7 +81,7 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * @throws std::logic_error if this instance is not constructed in read-only
    * mode.
    */
-  double GetNextMessageTime() const override;
+  double GetNextMessageTime() const;
 
   /**
    * Let `MSG` be the next message event in the log, if @p current_time matches
@@ -94,7 +94,7 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * @throws std::logic_error if this instance is not constructed in read-only
    * mode.
    */
-  void DispatchMessageAndAdvanceLog(double current_time) override;
+  void DispatchMessageAndAdvanceLog(double current_time);
 
   /**
    * Returns true if this instance is constructed in write-only mode.

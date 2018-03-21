@@ -4,6 +4,7 @@
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_log_playback_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -133,6 +134,7 @@ void CheckLog() {
   drake::lcm::DrakeLcmLog r_log("test.log", false);
 
   DiagramBuilder<double> builder;
+  builder.AddSystem<LcmLogPlaybackSystem>(&r_log);
   auto sub0 = builder.AddSystem(
       LcmSubscriberSystem::Make<lcmt_drake_signal>("Ch0", &r_log));
   sub0->set_name("sub0");

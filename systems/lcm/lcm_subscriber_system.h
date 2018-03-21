@@ -37,6 +37,10 @@ namespace lcm {
  * operations are taken care of by the Simulator. On the other hand, the user
  * needs to manually replicate this process without the Simulator.
  *
+ * If LCM service in use is a drake::lcm::DrakeLcmLog (not live operation),
+ * then see drake::systems::lcm::LcmLogPlaybackSystem for a helper to advance
+ * the log cursor in concert with the simulation.
+ *
  * @ingroup message_passing
  */
 class LcmSubscriberSystem : public LeafSystem<double>,
@@ -243,8 +247,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // A message counter that's incremented every time the handler is called.
   int received_message_count_{0};
-
-  drake::lcm::DrakeLcmInterface* lcm_interface_;
 };
 
 }  // namespace lcm
