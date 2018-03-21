@@ -178,7 +178,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/rigid_body_plant:frame_visualizer",
     "//multibody/rigid_body_plant:rigid_body_plant",
     "//multibody/rigid_body_plant:rigid_body_plant_bridge",
-    "//multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
     "//multibody/shapes:shapes",
     "//multibody:approximate_ik",
     "//multibody:global_inverse_kinematics",
