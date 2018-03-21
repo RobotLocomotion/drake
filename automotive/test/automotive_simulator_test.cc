@@ -58,6 +58,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // Set up a basic simulation with just a Prius SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
+
   const int id = simulator->AddPriusSimpleCar("Foo", kCommandChannelName);
   EXPECT_EQ(id, 0);
 
@@ -129,6 +131,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
 GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
   const double kX{10};
   const double kY{5.5};
   const double kHeading{M_PI_2};
@@ -161,6 +164,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   // Set up a basic simulation with a MOBIL- and IDM-controlled SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
   lcm::DrakeMockLcm* lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
   ASSERT_NE(lcm, nullptr);
@@ -235,6 +239,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   // stationary. They both follow a straight 100 m long line.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
   const int id1 = simulator->AddPriusTrajectoryCar("alice", curve, 1.0, 0.0);
   const int id2 = simulator->AddPriusTrajectoryCar("bob", curve, 0.0, 0.0);
   EXPECT_EQ(id1, 0);
@@ -428,6 +433,7 @@ std::unique_ptr<AutomotiveSimulator<double>> MakeWithIdmCarAndDecoy(
 GTEST_TEST(AutomotiveSimulatorTest, TestIdmControlledSimpleCar) {
   auto simulator =
       MakeWithIdmCarAndDecoy(std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
@@ -489,6 +495,7 @@ double GetPosition(const lcmt_viewer_draw& message, double y) {
 GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
   lcm::DrakeMockLcm* lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
   ASSERT_NE(lcm, nullptr);
@@ -590,6 +597,7 @@ bool ContainsWorld(const lcmt_viewer_load_robot& message) {
 GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
 
   simulator->AddPriusSimpleCar("Model1", "Channel1");
   simulator->AddPriusSimpleCar("Model2", "Channel2");
@@ -636,6 +644,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
 GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
 
   EXPECT_NO_THROW(simulator->AddPriusSimpleCar("Model1", "Channel1"));
   EXPECT_THROW(simulator->AddPriusSimpleCar("Model1", "foo"),
@@ -685,6 +694,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
 GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
 
   const MaliputRailcarParams<double> params;
   const maliput::api::RoadGeometry* road = simulator->SetRoadGeometry(
@@ -713,6 +723,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
 GTEST_TEST(AutomotiveSimulatorTest, TestRailcarVelocityOutput) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  simulator->get_lcm()->StartReceiveThread();
 
   const MaliputRailcarParams<double> params;
   const maliput::api::RoadGeometry* road =
