@@ -1,0 +1,39 @@
+--- unrevised_lemke_solver.cc
++++ unrevised_lemke_solver.cc
+@@ -147,9 +147,9 @@ bool ValidateIndices(
+ // the "covering vector"), to a target matrix, `out`. This template approach
+ // allows selecting parts of both sparse and dense matrices for input; only
+ // a dense matrix is returned. Since the matrix to be copied looks like this:
+-// | 1 in |
+-// selecting column 0, will copy a vector of ones and selecting column i, for
+-// i > 0, will copy column i - 1 of `in`.
++// | in 1 |
++// selecting column n, will copy a vector of ones and selecting column i, for
++// i, will copy column i of `in`.
+ template <typename Derived, typename T>
+ void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
+                      const std::vector<int>& rows,
+@@ -180,9 +180,9 @@ void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
+ // the "covering vector"), to a target matrix, `out`. This template approach
+ // allows selecting parts of both sparse and dense matrices for input; only
+ // a dense matrix is returned. Since the matrix to be copied looks like this:
+-// | 1 in |
+-// selecting column 0, will return a vector of ones and selecting column i, for
+-// i > 0, will return column i - 1 of `in`.
++// | in 1 |
++// selecting column n, will return a vector of ones and selecting column i, for
++// i, will return column i of `in`.
+ template <typename Derived, typename T>
+ void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
+                                  const std::vector<int>& rows,
+@@ -498,8 +501,9 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
+     int gamma = 0;
+     for (int i = 0; i < static_cast<int>(indep_variables_.size()); ++i) {
+       if (!indep_variables_[i].z) {
+-        if (indep_variables_[i].index < indep_variables_[driving_index].index)
++        if (indep_variables_[i].index < indep_variables_[driving_index].index) {
+           ++gamma;
++        } 
+       }
+     }
+ 
