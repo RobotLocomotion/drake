@@ -206,6 +206,16 @@ SolutionResult
   return SolutionResult::kUnknownError;
 }
 
+template <>
+SolutionResult
+    UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
+// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
+    MathematicalProgram&) const {
+DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
+"MathematicalProgram while templatized as an AutoDiff");
+return SolutionResult::kUnknownError;
+}
+
 // TODO(edrumwri): Break the following code out into a special
 // MobyLcpMathematicalProgram class.
 template <typename T>
@@ -796,6 +806,8 @@ SolverId UnrevisedLemkeSolverId::id() {
 template class UnrevisedLemkeSolver<double>;
 template class
     solvers::UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
+template class
+    solvers::UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>;
 
 }  // namespace solvers
 }  // namespace drake
