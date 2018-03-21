@@ -98,7 +98,7 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  SolverResult solver_result(UnrevisedLemkeSolverId::id());
+  SolverResult solver_result(UnrevisedLemkeSolver::id());
 
   // Create a dummy variable for the number of pivots used.
   int num_pivots = 0;
@@ -140,10 +140,11 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
 template <typename T>
 SolverId UnrevisedLemkeSolver<T>::solver_id() const {
-  return UnrevisedLemkeSolverId::id();
+  return UnrevisedLemkeSolver::id();
 }
 
-SolverId UnrevisedLemkeSolverId::id() {
+template <class T>
+SolverId UnrevisedLemkeSolver<T>::id() {
   static const never_destroyed<SolverId> singleton{"Unrevised Lemke"};
   return singleton.access();
 }

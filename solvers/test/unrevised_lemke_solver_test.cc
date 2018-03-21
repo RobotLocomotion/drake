@@ -64,18 +64,8 @@ GTEST_TEST(testUnrevisedLCP, testCycling) {
 
 GTEST_TEST(testUnrevisedLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
-  // clang-format off
-  M <<
-      1, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 2, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 3, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 4, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 5, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 6, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 7, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 8, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 9;
-  // clang-format on
+  M = (Eigen::Matrix<double, 9, 1>() << 1, 2, 3, 4, 5, 6, 7, 8, 9).
+      finished().asDiagonal();
 
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
