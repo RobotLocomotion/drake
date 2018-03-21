@@ -308,6 +308,7 @@ drake_cc_library(
     srcs = ["context.cc"],
     hdrs = ["context.h"],
     deps = [
+        ":context_base",
         ":input_port_evaluator_interface",
         ":input_port_value",
         ":parameters",
@@ -346,7 +347,7 @@ drake_cc_library(
     deps = [
         ":context",
         ":event_collection",
-        ":framework_common",
+        ":system_base",
         ":system_constraint",
         ":system_scalar_converter",
         ":value",
