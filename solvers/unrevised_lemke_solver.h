@@ -177,4 +177,3 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
 
 }  // end namespace solvers
 }  // end namespace drake
-
