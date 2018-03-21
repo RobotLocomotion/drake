@@ -37,12 +37,6 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   auto w_log = std::make_unique<DrakeLcmLog>("test.log", true);
   const std::string channel_name("test_channel");
 
-  EXPECT_FALSE(w_log->IsReceiveThreadRunning());
-  w_log->StartReceiveThread();
-  EXPECT_TRUE(w_log->IsReceiveThreadRunning());
-  w_log->StopReceiveThread();
-  EXPECT_FALSE(w_log->IsReceiveThreadRunning());
-
   drake::lcmt_drake_signal msg;
   msg.dim = 1;
   msg.val.push_back(0.1);
