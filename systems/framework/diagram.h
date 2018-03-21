@@ -280,21 +280,25 @@ class Diagram : public System<T>,
         std::move(subevents));
   }
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_systems);
 
-    // Add each constituent system to the Context.
+    // Recursively construct each constituent system and its subsystems,
+    // then add to this diagram Context.
     for (int i = 0; i < num_systems; ++i) {
       const System<T>* const sys = registered_systems_[i].get();
-      auto subcontext = sys->AllocateContext();
+      std::unique_ptr<ContextBase> subcontext_base = sys->MakeContext();
+      std::unique_ptr<Context<T>> subcontext(
+          dynamic_cast<Context<T>*>(subcontext_base.release()));
+      DRAKE_DEMAND(subcontext != nullptr);
       auto suboutput = sys->AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
     }
 
     // Wire up the Diagram-internal inputs and outputs.
-    for (const auto& connection : dependency_graph_) {
+    for (const auto& connection : connection_map_) {
       const PortIdentifier& src = connection.second;
       const PortIdentifier& dest = connection.first;
       context->Connect(ConvertToContextPortIdentifier(src),
@@ -308,7 +312,42 @@ class Diagram : public System<T>,
 
     context->MakeState();
     context->MakeParameters();
+
     return std::move(context);
+  }
+
+  // Given a fully-populated diagram context created by MakeContext(), set up
+  // the inter-subcontext dependencies for input and output ports.
+  void DoMakeContextConnections(ContextBase* context_base) const final {
+    auto context = dynamic_cast<DiagramContext<T>*>(context_base);
+
+    // Give all our subsystems a chance to set up their inter-subcontext
+    // dependencies if they are diagrams. Traversal order doesn't matter here.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      Context<T>& subcontext = context->GetMutableSubsystemContext(i);
+      sys.MakeContextConnections(&subcontext);
+    }
+
+    // TODO(sherm1) Move connection code here once outputs have been moved
+    //              into the context.
+  }
+
+  // Creates the diagram's composite data structures that collect its
+  // subsystems' resources.
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto context = dynamic_cast<DiagramContext<T>*>(context_base);
+
+    // Depth-first acquisition of resources to make sure leaf resources are
+    // there before we collect them.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      Context<T>& subcontext = context->GetMutableSubsystemContext(i);
+      sys.AcquireContextResources(&subcontext);
+    }
+
+    // TODO(sherm1) Move resource allocation (e.g. states, parameters)
+    //              here (currently must be done earlier for output allocation).
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -666,7 +705,7 @@ class Diagram : public System<T>,
       subsystem->GetGraphvizFragment(dot);
     }
     // -- Add the connections as edges.
-    for (const auto& edge : dependency_graph_) {
+    for (const auto& edge : connection_map_) {
       const PortIdentifier& src = edge.second;
       const System<T>* src_sys = src.first;
       const PortIdentifier& dest = edge.first;
@@ -738,8 +777,8 @@ class Diagram : public System<T>,
     const bool is_exported = (external_it != input_port_ids_.end());
 
     // Find if this input port is connected to an output port.
-    const auto upstream_it = dependency_graph_.find(id);
-    const bool is_connected = (upstream_it != dependency_graph_.end());
+    const auto upstream_it = connection_map_.find(id);
+    const bool is_connected = (upstream_it != connection_map_.end());
 
     DRAKE_DEMAND(is_exported ^ is_connected);
 
@@ -1115,8 +1154,8 @@ class Diagram : public System<T>,
             // We've found an intermediate input port has a direct-feedthrough
             // path to the output_port. Add the upstream output port (if there
             // is one) to the active set.
-            auto it = dependency_graph_.find(curr_input_id);
-            if (it != dependency_graph_.end()) {
+            auto it = connection_map_.find(curr_input_id);
+            if (it != connection_map_.end()) {
               const PortIdentifier& upstream_output = it->second;
               active_set.insert(upstream_output);
             }
@@ -1243,26 +1282,26 @@ class Diagram : public System<T>,
     }
   }
 
-  /// Tries to recursively find @p target_system's BaseStuff
-  /// (context / state / etc). nullptr is returned if @p target_system is not
-  /// a subsystem of this diagram. This template function should only be used
-  /// to reduce code repetition for DoGetMutableTargetSystemContext(),
-  /// DoGetTargetSystemContext(), DoGetMutableTargetSystemState(), and
-  /// DoGetTargetSystemState().
-  /// @param target_system The sub system of interest.
-  /// @param my_stuff BaseStuff that's associated with this diagram.
-  /// @param recursive_getter A member function of System that returns sub
-  /// context or state. Should be one of the four functions listed above.
-  /// @param get_child_stuff A member function of DiagramContext or DiagramState
-  /// that returns context or state given the index of the subsystem.
-  ///
-  /// @tparam BaseStuff Can be Context<T>, const Context<T>, State<T> and
-  /// const State<T>.
-  /// @tparam DerivedStuff Can be DiagramContext<T>,
-  /// const DiagramContext<T>, DiagramState<T> and const DiagramState<T>.
-  ///
-  /// @pre @p target_system cannot be `this`. The caller should check for this
-  /// edge case.
+  // Tries to recursively find @p target_system's BaseStuff
+  // (context / state / etc). nullptr is returned if @p target_system is not
+  // a subsystem of this diagram. This template function should only be used
+  // to reduce code repetition for DoGetMutableTargetSystemContext(),
+  // DoGetTargetSystemContext(), DoGetMutableTargetSystemState(), and
+  // DoGetTargetSystemState().
+  // @param target_system The subsystem of interest.
+  // @param my_stuff BaseStuff that's associated with this diagram.
+  // @param recursive_getter A member function of System that returns sub
+  // context or state. Should be one of the four functions listed above.
+  // @param get_child_stuff A member function of DiagramContext or DiagramState
+  // that returns context or state given the index of the subsystem.
+  //
+  // @tparam BaseStuff Can be Context<T>, const Context<T>, State<T> and
+  // const State<T>.
+  // @tparam DerivedStuff Can be DiagramContext<T>,
+  // const DiagramContext<T>, DiagramState<T> and const DiagramState<T>.
+  //
+  // @pre @p target_system cannot be `this`. The caller should check for this
+  // edge case.
   template <typename BaseStuff, typename DerivedStuff>
   BaseStuff* GetSubsystemStuff(
       const System<T>& target_system, BaseStuff* my_stuff,
@@ -1299,10 +1338,10 @@ class Diagram : public System<T>,
     return nullptr;
   }
 
-  /// Uses this Diagram<T> to manufacture a Diagram<NewType>::Blueprint,
-  /// using system scalar conversion.
-  ///
-  /// @tparam NewType The scalar type to which to convert.
+  // Uses this Diagram<T> to manufacture a Diagram<NewType>::Blueprint,
+  // using system scalar conversion.
+  //
+  // @tparam NewType The scalar type to which to convert.
   template <typename NewType>
   std::unique_ptr<typename Diagram<NewType>::Blueprint> ConvertScalarType()
       const {
@@ -1335,7 +1374,7 @@ class Diagram : public System<T>,
       blueprint->output_port_ids.emplace_back(new_system, port);
     }
     // Make all the connections.
-    for (const auto& edge : dependency_graph_) {
+    for (const auto& edge : connection_map_) {
       const PortIdentifier& old_dest = edge.first;
       const System<NewType>* const dest_system = old_to_new_map[old_dest.first];
       const int dest_port = old_dest.second;
@@ -1348,7 +1387,7 @@ class Diagram : public System<T>,
       const typename Diagram<NewType>::PortIdentifier new_src{src_system,
                                                               src_port};
 
-      blueprint->dependency_graph[new_dest] = new_src;
+      blueprint->connection_map[new_dest] = new_src;
     }
     // Move the new systems into the blueprint.
     blueprint->systems = std::move(new_systems);
@@ -1468,7 +1507,7 @@ class Diagram : public System<T>,
     // A map from the input ports of constituent systems to the output ports
     // on which they depend. This graph is possibly cyclic, but must not
     // contain an algebraic loop.
-    std::map<PortIdentifier, PortIdentifier> dependency_graph;
+    std::map<PortIdentifier, PortIdentifier> connection_map;
     // All of the systems to be included in the diagram.
     std::vector<std::unique_ptr<System<T>>> systems;
   };
@@ -1488,7 +1527,7 @@ class Diagram : public System<T>,
     DRAKE_DEMAND(registered_systems_.empty());
 
     // Copy the data from the blueprint into private member variables.
-    dependency_graph_ = std::move(blueprint->dependency_graph);
+    connection_map_ = std::move(blueprint->connection_map);
     input_port_ids_ = std::move(blueprint->input_port_ids);
     output_port_ids_ = std::move(blueprint->output_port_ids);
     registered_systems_ = std::move(blueprint->systems);
@@ -1518,7 +1557,7 @@ class Diagram : public System<T>,
 
     // Every system must appear exactly once.
     DRAKE_DEMAND(registered_systems_.size() == system_index_map_.size());
-    // Every port named in the dependency_graph_ must actually exist.
+    // Every port named in the connection_map_ must actually exist.
     DRAKE_ASSERT(PortsAreValid());
     // Every subsystem must have a unique name.
     DRAKE_THROW_UNLESS(NamesAreUniqueAndNonEmpty());
@@ -1633,9 +1672,9 @@ class Diagram : public System<T>,
     }
   }
 
-  // Returns true if every port mentioned in the dependency_graph_ exists.
+  // Returns true if every port mentioned in the connection_map_ exists.
   bool PortsAreValid() const {
-    for (const auto& entry : dependency_graph_) {
+    for (const auto& entry : connection_map_) {
       const PortIdentifier& dest = entry.first;
       const PortIdentifier& src = entry.second;
       if (dest.second < 0 || dest.second >= dest.first->get_num_input_ports()) {
@@ -1678,7 +1717,7 @@ class Diagram : public System<T>,
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.
-  std::map<PortIdentifier, PortIdentifier> dependency_graph_;
+  std::map<PortIdentifier, PortIdentifier> connection_map_;
 
   // The Systems in this Diagram, which are owned by this Diagram, in the order
   // they were registered.

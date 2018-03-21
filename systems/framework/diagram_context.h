@@ -117,7 +117,13 @@ class DiagramState : public State<T> {
 template <typename T>
 class DiagramContext : public Context<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContext)
+  /// @name  Does not allow copy, move, or assignment.
+  //@{
+  // Copy constructor is protected for use in implementing Clone().
+  DiagramContext(DiagramContext&&) = delete;
+  DiagramContext& operator=(const DiagramContext&) = delete;
+  DiagramContext& operator=(DiagramContext&&) = delete;
+  //@}
 
   typedef int SystemIndex;
   typedef int PortIndex;
@@ -185,7 +191,7 @@ class DiagramContext : public Context<T> {
                                   std::move(input_port));
 
     // Remember the graph structure. We need it in DoClone().
-    dependency_graph_[dest] = src;
+    connection_map_[dest] = src;
   }
 
   /// Generates the state vector for the entire diagram by wrapping the states
@@ -292,46 +298,50 @@ class DiagramContext : public Context<T> {
   }
 
  protected:
-  /// The caller owns the returned memory.
-  DiagramContext<T>* DoClone() const override {
-    DRAKE_ASSERT(contexts_.size() == outputs_.size());
-    DiagramContext<T>* clone = new DiagramContext(num_subsystems());
-
+  /// Protected copy constructor takes care of the local data members and
+  /// all base class members, but doesn't update base class pointers so is
+  /// not a complete copy.
+  DiagramContext(const DiagramContext& source)
+      : Context<T>(source),
+        outputs_(source.num_subsystems()),
+        contexts_(source.num_subsystems()),
+        state_(std::make_unique<DiagramState<T>>(source.num_subsystems())) {
     // Clone all the subsystem contexts and outputs.
-    for (int i = 0; i < num_subsystems(); ++i) {
-      DRAKE_DEMAND(contexts_[i] != nullptr);
-      DRAKE_DEMAND(outputs_[i] != nullptr);
+    for (SubsystemIndex i(0); i < source.num_subsystems(); ++i) {
+      DRAKE_DEMAND(source.contexts_[i] != nullptr);
+      DRAKE_DEMAND(source.outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
       // appears on each of its input ports into a FreestandingInputPortValue.
-      clone->AddSystem(i, contexts_[i]->Clone(), outputs_[i]->Clone());
+      AddSystem(i, source.contexts_[i]->CloneWithoutPointers(),
+                source.outputs_[i]->Clone());
     }
 
     // Build a superstate over the subsystem contexts.
-    clone->MakeState();
+    MakeState();
 
-    // Build a superparameters over the subsystem contexts.
-    clone->MakeParameters();
+    // Build superparameters over the subsystem contexts.
+    MakeParameters();
 
     // Clone the internal graph structure. After this is done, the clone will
     // still have FreestandingInputPortValues at the inputs to the Diagram
     // itself, but all of the intermediate nodes will have
     // DependentInputPortValues.
-    for (const auto& connection : dependency_graph_) {
+    for (const auto& connection : source.connection_map_) {
       const PortIdentifier& src = connection.second;
       const PortIdentifier& dest = connection.first;
-      clone->Connect(src, dest);
+      Connect(src, dest);
     }
 
     // Clone the external input structure.
-    for (const PortIdentifier& id : input_ids_) {
-      clone->ExportInput(id);
+    for (const PortIdentifier& id : source.input_ids_) {
+      ExportInput(id);
     }
 
-    // Make deep copies of everything else using the default copy constructors.
-    clone->set_accuracy(this->get_accuracy());
-    *clone->get_mutable_step_info() = this->get_step_info();
+    // Everything else was handled by the Context<T> copy constructor.
+  }
 
-    return clone;
+  std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
+    return std::unique_ptr<ContextBase>(new DiagramContext<T>(*this));
   }
 
   /// The caller owns the returned memory.
@@ -385,7 +395,7 @@ class DiagramContext : public Context<T> {
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.
-  std::map<PortIdentifier, PortIdentifier> dependency_graph_;
+  std::map<PortIdentifier, PortIdentifier> connection_map_;
 
   // The internal state of the Diagram, which includes all its subsystem states.
   std::unique_ptr<DiagramState<T>> state_;

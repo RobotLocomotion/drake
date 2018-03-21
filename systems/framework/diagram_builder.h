@@ -133,7 +133,7 @@ class DiagramBuilder {
     ThrowIfInputAlreadyWired(dest_id);
     ThrowIfSystemNotRegistered(&src.get_system());
     ThrowIfSystemNotRegistered(dest.get_system());
-    dependency_graph_[dest_id] = src_id;
+    connection_map_[dest_id] = src_id;
   }
 
   /// Declares that sole input port on the @p dest system is connected to sole
@@ -202,7 +202,7 @@ class DiagramBuilder {
   typedef typename Diagram<T>::PortIdentifier PortIdentifier;
 
   void ThrowIfInputAlreadyWired(const PortIdentifier& id) const {
-    if (dependency_graph_.find(id) != dependency_graph_.end() ||
+    if (connection_map_.find(id) != connection_map_.end() ||
         diagram_input_set_.find(id) != diagram_input_set_.end()) {
       throw std::logic_error("Input port is already wired.");
     }
@@ -278,7 +278,7 @@ class DiagramBuilder {
 
     // Populate the node set from the connections (and define the edges implied
     // by those connections).
-    for (const auto& connection : dependency_graph_) {
+    for (const auto& connection : connection_map_) {
       // Dependency graph is a mapping from the destination of the connection
       // to what it *depends on* (the source).
       const PortIdentifier& src = connection.second;
@@ -349,7 +349,7 @@ class DiagramBuilder {
     auto blueprint = std::make_unique<typename Diagram<T>::Blueprint>();
     blueprint->input_port_ids = input_port_ids_;
     blueprint->output_port_ids = output_port_ids_;
-    blueprint->dependency_graph = dependency_graph_;
+    blueprint->connection_map = connection_map_;
     blueprint->systems = std::move(registered_systems_);
 
     return blueprint;
@@ -364,7 +364,7 @@ class DiagramBuilder {
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.
-  std::map<PortIdentifier, PortIdentifier> dependency_graph_;
+  std::map<PortIdentifier, PortIdentifier> connection_map_;
 
   // A mirror on the systems in the diagram. Should have the same values as
   // registered_systems_. Used for fast membership queries.
