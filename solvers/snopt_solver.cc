@@ -6,6 +6,7 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -148,23 +149,35 @@ struct SNOPTData : public MathematicalProgram::SolverData {
   }
 };
 
+// This struct is used for passing additional info to the snopt_userfun, which
+// evaluates the value and gradient of the cost and constraints. Apart from the
+// standard information such as decision variable values, snopt_userfun could
+// rely on additional information such as the cost gradient sparsity pattern.
+struct SnoptUserFunInfo {
+  const MathematicalProgram* prog_;
+  const std::unordered_set<int>* cost_gradient_indices_;
+};
+
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d, MathematicalProgram const* current_problem) : D(d) {
+  SNOPTRun(SNOPTData* d, SnoptUserFunInfo const* snopt_userfun_info) : D(*d) {
     // Use the minimum default allocation needed by snInit.  The +1
-    // added to snopt_mincw is to make room for the instance pointer.
+    // added to snopt_mincw is to make room for the pointer to SnoptUserFunInfo.
     D.min_alloc_w(snopt_mincw + 1, snopt_miniw * 1000, snopt_minrw * 1000);
 
     snInit();
 
     // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
     // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
-    // expressed in Fortran array slicing.  Use the space to pass our problem
-    // instance pointer to our userfun.
+    // expressed in Fortran array slicing.  Use the space to pass the pointer
+    // to SnoptUserFunInfo.
     snSeti("User character workspace", snopt_mincw + 1);
     {
-      char const* const pcp = reinterpret_cast<char*>(&current_problem);
-      char* const cu_cp = d.cw.data() + 8 * snopt_mincw;
-      std::copy(pcp, pcp + sizeof(current_problem), cu_cp);
+      char const* const p_snopt_userfun_info =
+          reinterpret_cast<char*>(&snopt_userfun_info);
+      char* const cu_snopt_userfun_info = d->cw.data() + 8 * snopt_mincw;
+      std::copy(p_snopt_userfun_info,
+                p_snopt_userfun_info + sizeof(snopt_userfun_info),
+                cu_snopt_userfun_info);
     }
   }
 
@@ -304,6 +317,57 @@ void EvaluateNonlinearConstraints(
   }
 }
 
+/*
+ * Loops through each cost stored in MathematicalProgram, and obtain the indices
+ * of the non-zero gradient, in the summed cost.
+ */
+std::unordered_set<int> GetCostNonzeroGradientIndices(
+    const MathematicalProgram& prog) {
+  std::unordered_set<int> cost_gradient_indices;
+  cost_gradient_indices.reserve(prog.num_vars());
+  for (const auto& cost : prog.GetAllCosts()) {
+    for (int i = 0; i < static_cast<int>(cost.GetNumElements()); ++i) {
+      cost_gradient_indices.insert(
+          prog.FindDecisionVariableIndex(cost.variables()(i)));
+    }
+  }
+  return cost_gradient_indices;
+}
+
+void EvaluateAllCosts(const MathematicalProgram& prog,
+                      const std::unordered_set<int>& cost_gradient_indices,
+                      snopt::doublereal F[], snopt::doublereal G[],
+                      size_t* grad_index, const Eigen::VectorXd& xvec) {
+  // evaluate cost
+  Eigen::VectorXd this_x;
+  AutoDiffVecXd ty(1);
+
+  std::vector<snopt::doublereal> cost_gradient(prog.num_vars(), 0);
+  for (auto const& binding : prog.GetAllCosts()) {
+    auto const& obj = binding.evaluator();
+
+    int num_v_variables = binding.GetNumElements();
+    this_x.resize(num_v_variables);
+    for (int j = 0; j < num_v_variables; ++j) {
+      this_x(j) = xvec(prog.FindDecisionVariableIndex(binding.variables()(j)));
+    }
+
+    obj->Eval(math::initializeAutoDiff(this_x), ty);
+
+    F[0] += static_cast<snopt::doublereal>(ty(0).value());
+
+    for (int j = 0; j < num_v_variables; ++j) {
+      size_t vj_index = prog.FindDecisionVariableIndex(binding.variables()(j));
+      cost_gradient[vj_index] +=
+          static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+    }
+  }
+  for (const auto cost_gradient_index : cost_gradient_indices) {
+    G[*grad_index] = cost_gradient[cost_gradient_index];
+    ++(*grad_index);
+  }
+}
+
 int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::doublereal x[], snopt::integer* needF,
                   snopt::integer* neF, snopt::doublereal F[],
@@ -313,12 +377,18 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::doublereal ru[], snopt::integer* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
-  MathematicalProgram const* current_problem = NULL;
+  SnoptUserFunInfo const* snopt_userfun_info = NULL;
   {
-    char* const pcp = reinterpret_cast<char*>(&current_problem);
-    char const* const cu_cp = cu + 8 * snopt_mincw;
-    std::copy(cu_cp, cu_cp + sizeof(current_problem), pcp);
+    char* const p_snopt_userfun_info =
+        reinterpret_cast<char*>(&snopt_userfun_info);
+    char const* const cu_snopt_userfun_info = cu + 8 * snopt_mincw;
+    std::copy(cu_snopt_userfun_info,
+              cu_snopt_userfun_info + sizeof(snopt_userfun_info),
+              p_snopt_userfun_info);
   }
+  MathematicalProgram const* current_problem = snopt_userfun_info->prog_;
+  std::unordered_set<int> const* cost_gradient_indices =
+      snopt_userfun_info->cost_gradient_indices_;
 
   snopt::integer i;
   Eigen::VectorXd xvec(*n);
@@ -329,36 +399,15 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   F[0] = 0.0;
   memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
-  // evaluate cost
-  Eigen::VectorXd this_x;
-  AutoDiffVecXd ty(1);
+  size_t grad_index = 0;
 
-  for (auto const& binding : current_problem->GetAllCosts()) {
-    auto const& obj = binding.evaluator();
-
-    int num_v_variables = binding.GetNumElements();
-    this_x.resize(num_v_variables);
-    for (int j = 0; j < num_v_variables; ++j) {
-      this_x(j) = xvec(
-          current_problem->FindDecisionVariableIndex(binding.variables()(j)));
-    }
-
-    obj->Eval(math::initializeAutoDiff(this_x), ty);
-
-    F[0] += static_cast<snopt::doublereal>(ty(0).value());
-
-    for (int j = 0; j < num_v_variables; ++j) {
-      size_t vj_index =
-          current_problem->FindDecisionVariableIndex(binding.variables()(j));
-      G[vj_index] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
-    }
-  }
+  EvaluateAllCosts(*current_problem, *cost_gradient_indices, F, G, &grad_index,
+                   xvec);
 
   // The constraint index starts at 1 because the cost is the
   // first row.
   size_t constraint_index = 1;
   // The gradient_index also starts after the cost.
-  size_t grad_index = *n;
   EvaluateNonlinearConstraints(*current_problem,
                                current_problem->generic_constraints(), F, G,
                                &constraint_index, &grad_index, xvec);
@@ -550,7 +599,12 @@ bool SnoptSolver::available() const { return true; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
-  SNOPTRun cur(*d, &prog);
+  const std::unordered_set<int> cost_gradient_indices =
+      GetCostNonzeroGradientIndices(prog);
+  SnoptUserFunInfo snopt_userfun_info;
+  snopt_userfun_info.prog_ = &prog;
+  snopt_userfun_info.cost_gradient_indices_ = &cost_gradient_indices;
+  SNOPTRun cur(d.get(), &snopt_userfun_info);
 
   snopt::integer nx = prog.num_vars();
   d->min_alloc_x(nx);
@@ -596,7 +650,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  int num_nonlinear_constraints = 0, max_num_gradients = nx;
+
+  int num_nonlinear_constraints = 0;
+  int max_num_gradients = cost_gradient_indices.size();
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
@@ -637,12 +693,14 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   d->min_alloc_G(lenG);
   snopt::integer* iGfun = d->iGfun.data();
   snopt::integer* jGvar = d->jGvar.data();
-  for (snopt::integer i = 0; i < nx; i++) {
-    iGfun[i] = 1;
-    jGvar[i] = i + 1;
+  size_t grad_index = 0;
+  for (const auto cost_gradient_index : cost_gradient_indices) {
+    iGfun[grad_index] = 1;
+    jGvar[grad_index] = cost_gradient_index + 1;
+    ++grad_index;
   }
 
-  size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
+  size_t constraint_index = 1;  // constraint index starts at 1
                                                  // because the cost is the
                                                  // first row
   UpdateConstraintBoundsAndGradients(prog, prog.generic_constraints(), Flow,
