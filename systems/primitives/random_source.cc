@@ -34,7 +34,7 @@ int AddRandomInputs(double sampling_interval_sec,
       typedef typename Diagram<double>::PortIdentifier PortIdentifier;
       // Check if the input is already wired up.
       PortIdentifier id{port.get_system(), port.get_index()};
-      if (builder->dependency_graph_.count(id) > 0 ||
+      if (builder->connection_map_.count(id) > 0 ||
           builder->diagram_input_set_.count(id) > 0) {
         continue;
       }

@@ -267,14 +267,49 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   }
 }
 
-/// ExampleDiagram has the following structure:
-/// adder0_: (input0_ + input1_) -> A
-/// adder1_: (A + input2_)       -> B, output 0
-/// adder2_: (A + B)             -> output 1
-/// integrator1_: A              -> C
-/// integrator2_: C              -> output 2
-/// It also uses an StatelessSystem to verify Diagram's ability to retrieve
-/// witness functions from its subsystems.
+/* ExampleDiagram has the following structure:
+adder0_: (input0_ + input1_) -> A
+adder1_: (A + input2_)       -> B, output 0
+adder2_: (A + B)             -> output 1
+integrator1_: A              -> C
+integrator2_: C              -> output 2
+It also uses an StatelessSystem to verify Diagram's ability to retrieve
+witness functions from its subsystems.
+
+             +----------------------------------------------------------+
+             |                                                          |
+             |  +--------+                       +------------------------->
+1, 2, 4  +------>        |                       |                   B  | y0
+          u0 |  | Adder0 | A  +-----------+      |                      |
+             |  |        +-+--> u0        |      |                      |
+8, 16, 32+------>        | |  |           |      |                      |
+          u1 |  +--------+ |  | Adder1    |  B   |       +-----------+  |
+             |             |  |           +------+-------> u1        |  |
+64, 128, 256 |             |  |           | 73,146,292   |           |  |
+         +--------------------> u1        |              | Adder2    |  |
+          u2 |             |  +-----------+              |           +----->
+             |             |                 A           |           |  | y1
+             |             +-----------------------------> u0        |  |
+             |             |     9, 18, 36               +-----------+  |  82
+             |             |                                            | 164
+             |             |                                            | 328
+             |             |                                            |
+             |             |  +------------+             +-----------+  |
+             |             |  |            |             |           |  |
+             |           A |  |            |     C       |           |  |
+             |             +--> Integ0     +-------------> Integ1    +----->
+             |                |            |             |           |  | y2
+             |                |  3, 9, 27  |             |81,243,729 |  |
+             |                +------------+             +-----------+  |
+             |                                                          |
+             |  +----------------+            +-------------------+     |
+             |  |                |            |    ConstantVector |     |
+             |  |  Stateless     |            |    or             |     |
+             |  |                |            |    DoubleOnly     |     |
+             |  +----------------+            +-------------------+     |
+             |                                                          |
+             +----------------------------------------------------------|
+*/
 class ExampleDiagram : public Diagram<double> {
  public:
   explicit ExampleDiagram(
@@ -819,7 +854,7 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output1 = output0 + 8 + 64 = 656
   //   output2 = 9 (state of integrator1_)
 
-  // So, the outputs of subsytem1_, and thus of the whole diagram, are:
+  // So, the outputs of subsystem1_, and thus of the whole diagram, are:
   //   output0 = 584 + 656 + 9 = 1249
   //   output1 = output0 + 584 + 656 = 2489
   //   output2 = 81 (state of integrator1_)
