@@ -149,33 +149,35 @@ struct SNOPTData : public MathematicalProgram::SolverData {
   }
 };
 
+// This struct is used for passing additional info to the snopt_userfun, which
+// evaluates the value and gradient of the cost and constraints. Apart from the
+// standard information such as decision variable values, snopt_userfun could
+// rely on additional information such as the cost gradient sparsity pattern.
+struct SnoptUserFunInfo {
+  const MathematicalProgram* prog_;
+  const std::unordered_set<int>* cost_gradient_indices_;
+};
+
 struct SNOPTRun {
-  SNOPTRun(SNOPTData* d, MathematicalProgram const* current_problem,
-           std::unordered_set<int> const* cost_gradient_indices)
-      : D(*d) {
-    // Use the minimum default allocation needed by snInit.  The +2
-    // added to snopt_mincw is to make room for the instance pointer and the
-    // pointer to the cost gradient sparsity pattern.
-    D.min_alloc_w(snopt_mincw + 2, snopt_miniw * 1000, snopt_minrw * 1000);
+  SNOPTRun(SNOPTData* d, SnoptUserFunInfo const* snopt_userfun_info) : D(*d) {
+    // Use the minimum default allocation needed by snInit.  The +1
+    // added to snopt_mincw is to make room for the pointer to SnoptUserFunInfo.
+    D.min_alloc_w(snopt_mincw + 1, snopt_miniw * 1000, snopt_minrw * 1000);
 
     snInit();
 
     // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
-    // workspace.  We are then allowed to use cw(snopt_mincw+2:maxcu), as
-    // expressed in Fortran array slicing.  Use the space to pass our problem
-    // instance pointer and cost sparsity pattern to our userfun.
-    snSeti("User character workspace", snopt_mincw + 2);
+    // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
+    // expressed in Fortran array slicing.  Use the space to pass the pointer
+    // to SnoptUserFunInfo.
+    snSeti("User character workspace", snopt_mincw + 1);
     {
-      char const* const pcp = reinterpret_cast<char*>(&current_problem);
-      char* const cu_cp = d->cw.data() + 8 * snopt_mincw;
-      std::copy(pcp, pcp + sizeof(current_problem), cu_cp);
-
-      const char* const p_cost_gradient_indices =
-          reinterpret_cast<char*>(&cost_gradient_indices);
-      char* const cu_cost_gradient_indices = cu_cp + sizeof(current_problem);
-      std::copy(p_cost_gradient_indices,
-                p_cost_gradient_indices + sizeof(cost_gradient_indices),
-                cu_cost_gradient_indices);
+      char const* const p_snopt_userfun_info =
+          reinterpret_cast<char*>(&snopt_userfun_info);
+      char* const cu_snopt_userfun_info = d->cw.data() + 8 * snopt_mincw;
+      std::copy(p_snopt_userfun_info,
+                p_snopt_userfun_info + sizeof(snopt_userfun_info),
+                cu_snopt_userfun_info);
     }
   }
 
@@ -375,21 +377,18 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::doublereal ru[], snopt::integer* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
-  MathematicalProgram const* current_problem = NULL;
-  std::unordered_set<int> const* cost_gradient_indices = NULL;
+  SnoptUserFunInfo const* snopt_userfun_info = NULL;
   {
-    char* const pcp = reinterpret_cast<char*>(&current_problem);
-    char const* const cu_cp = cu + 8 * snopt_mincw;
-    std::copy(cu_cp, cu_cp + sizeof(current_problem), pcp);
-
-    char* const pcost_gradient_indices =
-        reinterpret_cast<char*>(&cost_gradient_indices);
-    char const* const cu_cost_gradient_indices =
-        cu_cp + sizeof(current_problem);
-    std::copy(cu_cost_gradient_indices,
-              cu_cost_gradient_indices + sizeof(cost_gradient_indices),
-              pcost_gradient_indices);
+    char* const p_snopt_userfun_info =
+        reinterpret_cast<char*>(&snopt_userfun_info);
+    char const* const cu_snopt_userfun_info = cu + 8 * snopt_mincw;
+    std::copy(cu_snopt_userfun_info,
+              cu_snopt_userfun_info + sizeof(snopt_userfun_info),
+              p_snopt_userfun_info);
   }
+  MathematicalProgram const* current_problem = snopt_userfun_info->prog_;
+  std::unordered_set<int> const* cost_gradient_indices =
+      snopt_userfun_info->cost_gradient_indices_;
 
   snopt::integer i;
   Eigen::VectorXd xvec(*n);
@@ -602,7 +601,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   const std::unordered_set<int> cost_gradient_indices =
       GetCostNonzeroGradientIndices(prog);
-  SNOPTRun cur(d.get(), &prog, &cost_gradient_indices);
+  SnoptUserFunInfo snopt_userfun_info;
+  snopt_userfun_info.prog_ = &prog;
+  snopt_userfun_info.cost_gradient_indices_ = &cost_gradient_indices;
+  SNOPTRun cur(d.get(), &snopt_userfun_info);
 
   snopt::integer nx = prog.num_vars();
   d->min_alloc_x(nx);
