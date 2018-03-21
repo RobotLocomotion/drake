@@ -85,6 +85,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
+
+  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  static SolverId id();
 };
 
 }  // end namespace solvers

@@ -11,8 +11,6 @@ namespace drake {
 namespace solvers {
 namespace {
 
-const double epsilon = 1e-6;
-
 // Run the solver and test against the expected result.
 template <typename Derived>
 void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
@@ -224,7 +222,7 @@ GTEST_TEST(testUnrevisedLCP, testEmpty) {
 
   int num_pivots;
   bool result = l.SolveLcpLemke(empty_M, empty_q, &z, &num_pivots);
-  EXPECT_TRUE(result);
+  EXPECT_FALSE(result);
   EXPECT_EQ(z.size(), 0);
 }
 
