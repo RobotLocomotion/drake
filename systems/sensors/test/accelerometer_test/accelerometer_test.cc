@@ -6,7 +6,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -141,9 +140,7 @@ GTEST_TEST(TestAccelerometer, TestFreeFall_VariousTranslations) {
 // Tests the accelerometer using a non-identity sensor frame that's attached
 // to a swinging pendulum. This also tests Accelerometer::AttachAccelerometer().
 GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
-  ::drake::lcm::DrakeMockLcm lcm;
-  lcm.EnableLoopBack();
-  AccelerometerExampleDiagram diagram(&lcm);
+  AccelerometerExampleDiagram diagram;
   diagram.Initialize();
 
   // Prepares to integrate.
