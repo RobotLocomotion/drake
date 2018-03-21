@@ -93,6 +93,25 @@ TEST_F(BoolTestDouble, Cond) {
   EXPECT_EQ(v_false, 0);
 }
 
+TEST_F(BoolTestDouble, LogicalOperators) {
+  EXPECT_TRUE((b_true_ && b_true_).value());
+  EXPECT_FALSE((b_false_ && b_true_).value());
+  EXPECT_FALSE((b_true_ && b_false_).value());
+  EXPECT_FALSE((b_false_ && b_false_).value());
+  EXPECT_FALSE((b_true_ && false).value());
+  EXPECT_FALSE((false && b_true_).value());
+
+  EXPECT_TRUE((b_true_ || b_true_).value());
+  EXPECT_TRUE((b_false_ || b_true_).value());
+  EXPECT_TRUE((b_true_ || b_false_).value());
+  EXPECT_FALSE((b_false_ || b_false_).value());
+  EXPECT_TRUE((b_false_ || true).value());
+  EXPECT_TRUE((true || b_false_).value());
+
+  EXPECT_FALSE((!b_true_).value());
+  EXPECT_TRUE((!b_false_).value());
+}
+
 // -------------------
 // Case T = AutoDiffXd
 // -------------------
@@ -133,6 +152,25 @@ TEST_F(BoolTestAutoDiffXd, Cond) {
   const AutoDiffXd v_false{cond(b_false_, x_, y_)};
   EXPECT_EQ(v_true, x_);
   EXPECT_EQ(v_false, y_);
+}
+
+TEST_F(BoolTestAutoDiffXd, LogicalOperators) {
+  EXPECT_TRUE((b_true_ && b_true_).value());
+  EXPECT_FALSE((b_false_ && b_true_).value());
+  EXPECT_FALSE((b_true_ && b_false_).value());
+  EXPECT_FALSE((b_false_ && b_false_).value());
+  EXPECT_FALSE((b_true_ && (x_ > y_)).value());
+  EXPECT_FALSE(((x_ > y_) && b_true_).value());
+
+  EXPECT_TRUE((b_true_ || b_true_).value());
+  EXPECT_TRUE((b_false_ || b_true_).value());
+  EXPECT_TRUE((b_true_ || b_false_).value());
+  EXPECT_FALSE((b_false_ || b_false_).value());
+  EXPECT_TRUE((b_false_ || (x_ < y_)).value());
+  EXPECT_TRUE(((x_ < y_) || b_false_).value());
+
+  EXPECT_FALSE((!b_true_).value());
+  EXPECT_TRUE((!b_false_).value());
 }
 
 // -----------------------------
@@ -212,6 +250,23 @@ TEST_F(BoolTestSymbolic, Cond) {
 
   env[x_] = 0.5;
   EXPECT_PRED2(ExprEqual, e.Evaluate(env), 0.0);
+}
+
+TEST_F(BoolTestSymbolic, LogicalOperators) {
+  const Formula f1{x_ > 0};
+  const Formula f2{y_ > 0};
+  const Bool<Expression> b1{f1};
+  const Bool<Expression> b2{f2};
+
+  EXPECT_PRED2(FormulaEqual, (b1 && b2).value(), f1 && f2);
+  EXPECT_PRED2(FormulaEqual, (b1 && f2).value(), f1 && f2);
+  EXPECT_PRED2(FormulaEqual, (f1 && b2).value(), f1 && f2);
+
+  EXPECT_PRED2(FormulaEqual, (b1 || b2).value(), f1 || f2);
+  EXPECT_PRED2(FormulaEqual, (b1 || f2).value(), f1 || f2);
+  EXPECT_PRED2(FormulaEqual, (f1 || b2).value(), f1 || f2);
+
+  EXPECT_PRED2(FormulaEqual, (!b1).value(), !f1);
 }
 
 }  // namespace drake
