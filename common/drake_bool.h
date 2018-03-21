@@ -59,6 +59,21 @@ class Bool {
   /// Returns a copy of its value.
   value_type value() const { return value_; }
 
+  /// Provides logical AND operator (&&).
+  ///
+  /// @note We define this operator in the class as a friend function so that
+  /// implicit conversion works as expected (i.e. Bool<T> &&
+  /// Bool<T>::value_type). See item 46 of Effective C++ (3rd ed.) for more
+  /// information.
+  friend Bool<T> operator&&(const Bool<T>& b1, const Bool<T>& b2) {
+    return Bool<T>{b1.value() && b2.value()};
+  }
+
+  /// Provides logical OR operator (||).
+  friend Bool<T> operator||(const Bool<T>& b1, const Bool<T>& b2) {
+    return Bool<T>{b1.value() || b2.value()};
+  }
+
  private:
   value_type value_{};
 };
@@ -68,6 +83,12 @@ class Bool {
 template <typename T>
 bool ExtractBoolOrThrow(const Bool<T>& b) {
   return bool{b.value()};
+}
+
+/// Provides logical NOT operator (!).
+template <typename T>
+Bool<T> operator!(const Bool<T>& b) {
+  return Bool<T>{!b.value()};
 }
 
 /// Allows users to use `if_then_else` with a conditional of `Bool<T>` type in
