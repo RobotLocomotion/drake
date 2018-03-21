@@ -1,4 +1,4 @@
-#include "drake/systems/framework/cache.h"
+#include "drake/systems/framework/cache_entry.h"
 
 // Tests the System (const) side of caching, which consists of a CacheEntry
 // objects that can be provided automatically or defined by users. When a
@@ -138,6 +138,7 @@ class MySystemBase final : public SystemBase {
   }
 
   void DoCheckValidContext(const ContextBase&) const override {}
+  void DoAcquireContextResources(ContextBase* context) const override {}
 
   const CacheEntry& entry0_;
   const CacheEntry& entry1_;

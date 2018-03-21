@@ -3,9 +3,9 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
+#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/parameters.h"
@@ -26,21 +26,48 @@ struct StepInfo {
   T time_sec{0.0};
 };
 
-/// Context is an abstract base class template that represents all
-/// the inputs to a System: time, state, and input vectors. The framework
-/// provides two concrete subclasses of Context: LeafContext (for
-/// leaf Systems) and DiagramContext (for composite Systems). Users are
-/// discouraged from creating additional subclasses.
+/// %Context is an abstract class template that represents all the typed
+/// values that are used in a System's computations: time, and numerical state,
+/// input ports, and parameters. There are also type-erased abstract state
+/// variables, input ports, and parameters, and a double accuracy setting. The
+/// framework provides two concrete subclasses of %Context: LeafContext (for
+/// leaf Systems) and DiagramContext (for composite System Diagrams). Users are
+/// forbidden to extend DiagramContext and are discouraged from subclassing
+/// LeafContext.
 ///
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
-class Context {
+class Context : public ContextBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Context)
+  /// @name  Does not allow copy, move, or assignment.
+  //@{
+  // Copy constructor is protected for use in implementing Clone().
+  Context(Context&&) = delete;
+  Context& operator=(const Context&) = delete;
+  Context& operator=(Context&&) = delete;
+  //@}
 
-  Context() = default;
-  virtual ~Context() = default;
+  /// Returns a deep copy of this Context.
+  // This is just an intentional shadowing of the base class method to return
+  // a more convenient type.
+  std::unique_ptr<Context<T>> Clone() const {
+    auto clone_base = ContextBase::Clone();
+    return std::unique_ptr<Context<T>>(
+        dynamic_cast<Context<T>*>(clone_base.release()));
+  }
+
+  /// (Internal use only) Clones a context but without any of its internal
+  /// pointers.
+  // This is just an intentional shadowing of the base
+  // class method to return a more convenient type.
+  std::unique_ptr<Context<T>> CloneWithoutPointers() const {
+    auto clone_base = ContextBase::CloneWithoutPointers();
+    return std::unique_ptr<Context<T>>(
+        dynamic_cast<Context<T>*>(clone_base.release()));
+  }
+
+  ~Context() override;
 
   // =========================================================================
   // Accessors and Mutators for Time.
@@ -404,13 +431,6 @@ class Context {
   // =========================================================================
   // Miscellaneous Public Methods
 
-  /// Returns a deep copy of this Context. The clone's input ports will
-  /// hold deep copies of the data that appears on this context's input ports
-  /// at the time the clone is created.
-  std::unique_ptr<Context<T>> Clone() const {
-    return std::unique_ptr<Context<T>>(DoClone());
-  }
-
   /// Returns a deep copy of this Context's State.
   std::unique_ptr<State<T>> CloneState() const {
     return std::unique_ptr<State<T>>(DoCloneState());
@@ -463,8 +483,14 @@ class Context {
   }
 
  protected:
-  /// Contains the return-type-covariant implementation of Clone().
-  virtual Context<T>* DoClone() const = 0;
+  Context() = default;
+
+  /// Copy constructor takes care of base class and `Context<T>` data members.
+  /// Derived classes must implement copy constructors that delegate to this
+  /// one for use in their DoCloneWithoutPointers() implementations.
+  // Default implementation invokes the base class copy constructor and then
+  // the local member copy constructors.
+  Context(const Context<T>&) = default;
 
   /// Contains the return-type-covariant implementation of CloneState().
   virtual State<T>* DoCloneState() const = 0;
@@ -513,7 +539,7 @@ class Context {
   // The context of the enclosing Diagram, used in EvalInputPort.
   // This pointer MUST be treated as a black box. If you call any substantive
   // methods on it, you are probably making a mistake.
-  const Context<T>* parent_ = nullptr;
+  reset_on_copy<const Context<T>*> parent_;
 };
 
 }  // namespace systems

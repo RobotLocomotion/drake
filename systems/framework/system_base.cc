@@ -25,7 +25,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   return new_entry;
 }
 
-std::unique_ptr<ContextBase> SystemBase::AllocateContext() const {
+std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   // Derived class creates the concrete Context object, which already contains
   // all the well-known trackers (the ones with fixed tickets).
   std::unique_ptr<ContextBase> context_ptr = DoMakeContext();
@@ -50,21 +50,29 @@ std::unique_ptr<ContextBase> SystemBase::AllocateContext() const {
   for (CacheIndex index(0); index < num_cache_entries(); ++index) {
     const CacheEntry& entry = get_cache_entry(index);
     cache.CreateNewCacheEntryValue(entry.cache_index(), entry.ticket(),
-        entry.description(), entry.prerequisites(), &graph);
+                                   entry.description(), entry.prerequisites(),
+                                   &graph);
   }
 
   // TODO(sherm1) Create the output port trackers yᵢ here.
 
-  // TODO(sherm1) Move this to the AcquireContextResources phase.
+  return context_ptr;
+}
+
+void SystemBase::AcquireContextResources(ContextBase* context) const {
+  DRAKE_DEMAND(context != nullptr);
+  // Let the derived class acquire its needed resources and validate
+  // that it can handle a System with this structure.
+  DoAcquireContextResources(&*context);
+
   // We now have a complete Context. We can allocate space for cache entry
   // values using the allocators, which require a context.
+  Cache& cache = context->get_mutable_cache();
   for (CacheIndex index(0); index < num_cache_entries(); ++index) {
     const CacheEntry& entry = get_cache_entry(index);
     CacheEntryValue& cache_value = cache.get_mutable_cache_entry_value(index);
-    cache_value.SetInitialValue(entry.Allocate(context));
+    cache_value.SetInitialValue(entry.Allocate(*context));
   }
-
-  return context_ptr;
 }
 
 }  // namespace systems

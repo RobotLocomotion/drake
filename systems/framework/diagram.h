@@ -281,19 +281,24 @@ class Diagram : public System<T>,
         std::move(subevents));
   }
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_systems);
 
-    // Add each constituent system to the Context.
+    // Recursively construct each constituent system and its subsystems,
+    // then add to this diagram Context.
     for (SubsystemIndex i(0); i < num_systems; ++i) {
       const System<T>* const sys = registered_systems_[i].get();
-      auto subcontext = sys->AllocateContext();
+      std::unique_ptr<ContextBase> subcontext_base = sys->MakeContext();
+      std::unique_ptr<Context<T>> subcontext(
+          dynamic_cast<Context<T>*>(subcontext_base.release()));
+      DRAKE_DEMAND(subcontext != nullptr);
       auto suboutput = sys->AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
     }
 
+    // TODO(sherm1) Move to separate interconnection phase.
     // Wire up the Diagram-internal inputs and outputs.
     for (const auto& connection : connection_map_) {
       const OutputPortLocator& src = connection.second;
@@ -307,9 +312,28 @@ class Diagram : public System<T>,
       context->ExportInput(ConvertToContextPortIdentifier(id));
     }
 
+    // TODO(sherm1) Move to final resource allocation phase.
     context->MakeState();
     context->MakeParameters();
+
     return std::move(context);
+  }
+
+  // Creates the diagram's composite data structures that collect its
+  // subsystems' resources.
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto context = dynamic_cast<DiagramContext<T>*>(context_base);
+
+    // Depth-first acquisition of resources to make sure leaf resources are
+    // there before we collect them.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      Context<T>& subcontext = context->GetMutableSubsystemContext(i);
+      sys.AcquireContextResources(&subcontext);
+    }
+
+    // TODO(sherm1) Move resource allocation (e.g. states, parameters)
+    //              here (currently must be done earlier for output allocation).
   }
 
   void SetDefaultState(const Context<T>& context,

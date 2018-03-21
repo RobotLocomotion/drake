@@ -61,8 +61,15 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns a Context suitable for use with this System. Context resources
   are allocated based on resource requests that were made during System
   construction. */
-  // TODO(sherm1) Split this into phases as needed for caching.
-  std::unique_ptr<ContextBase> AllocateContext() const;
+  // ContextBase resources are added directly; derived classes
+  // are asked to add theirs via DoAcquireContextResources(). Derived classes
+  // also provide the concrete Context object and may reject the final result
+  // if they impose restrictions on the kind of System they support.
+  std::unique_ptr<ContextBase> AllocateContext() const {
+    std::unique_ptr<ContextBase> context = MakeContext();
+    AcquireContextResources(context.get());
+    return context;
+  }
 
   /** Returns the number nc of cache entries currently allocated in this System.
   These are indexed from 0 to nc-1. */
@@ -422,15 +429,29 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
+  // Obtains a context of the right concrete type, with all internal trackers
+  // allocated and port wiring set up.
+  std::unique_ptr<ContextBase> MakeContext() const;
+
+  // Allocates additional context resources if needed, and validates that the
+  // supplied context is acceptable.
+  void AcquireContextResources(ContextBase* context) const;
+
  protected:
   SystemBase() = default;
 
   /** Derived class implementations should allocate a suitable
   default-constructed Context, with default-constructed subcontexts for
   diagrams. The base class allocates trackers for known resources and
-  intra-subcontext dependencies. No inter-subcontext dependencies should be
-  made in this step. */
+  intra-subcontext dependencies. */
   virtual std::unique_ptr<ContextBase> DoMakeContext() const = 0;
+
+  /** Derived classes should override to complete resource allocation, and to
+  validate that the Context resource collection is acceptable. The
+  supplied Context is the one returned earlier from DoMakeContext(), with all
+  base class resources allocated. The supplied context is guaranteed to be
+  non-null; you don't need to error-check that. */
+  virtual void DoAcquireContextResources(ContextBase* context) const = 0;
 
   /** Derived classes must implement this to verify that the supplied
   context is suitable, and throw an exception if not. */
