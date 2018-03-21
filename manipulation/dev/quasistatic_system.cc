@@ -482,8 +482,8 @@ void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhi(
   Jf_half.resize(nc * 2, nq_tree);
 
   MatrixX<Scalar> Jv = J * tree_->GetVelocityToQDotMapping(cache);
-  DRAKE_ASSERT(Jv.cols() == 3 * nc);
-  DRAKE_ASSERT(Jv.rows() == nv_tree);
+  DRAKE_ASSERT(Jv.cols() == nv_tree);
+  DRAKE_ASSERT(Jv.rows() == 3 * nc);
 
   int idx_first = 0;
   int idx_tangent = 0;
@@ -727,7 +727,7 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
     }
   }
 
-  prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_, 0), delta_qu_QP);
+  prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_), delta_qu_QP);
 
   // solve QP
   prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
