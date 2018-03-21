@@ -209,19 +209,25 @@ class Diagram : public System<T>,
         std::move(subevents));
   }
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_systems);
 
-    // Add each constituent system to the Context.
+    // Recursively construct each constituent system and its subsystems,
+    // then add to this diagram Context.
     for (SubsystemIndex i(0); i < num_systems; ++i) {
-      const System<T>* const sys = registered_systems_[i].get();
-      auto subcontext = sys->AllocateContext();
-      auto suboutput = sys->AllocateOutput(*subcontext);
+      const System<T>& sys = *registered_systems_[i];
+      std::unique_ptr<ContextBase> subcontext_base =
+          SystemBase::MakeContext(sys);
+      std::unique_ptr<Context<T>> subcontext(
+          dynamic_cast<Context<T>*>(subcontext_base.release()));
+      DRAKE_DEMAND(subcontext != nullptr);
+      auto suboutput = sys.AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
     }
 
+    // TODO(sherm1) Move to separate interconnection phase.
     // Wire up the Diagram-internal inputs and outputs.
     for (const auto& connection : connection_map_) {
       const OutputPortLocator& src = connection.second;
@@ -235,9 +241,24 @@ class Diagram : public System<T>,
       context->ExportInput(ConvertToContextPortIdentifier(id));
     }
 
+    // TODO(sherm1) Move to final resource allocation phase.
     context->MakeState();
     context->MakeParameters();
+
     return std::move(context);
+  }
+
+  // Permits child Systems to take a look at the completed Context to see
+  // if they have any objections.
+  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
+    auto& context = dynamic_cast<const DiagramContext<T>&>(context_base);
+
+    // Depth-first validation of Context to make sure restrictions are met.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      const Context<T>& subcontext = context.GetSubsystemContext(i);
+      SystemBase::ValidateAllocatedContext(sys, subcontext);
+    }
   }
 
   void SetDefaultState(const Context<T>& context,
