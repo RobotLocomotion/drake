@@ -117,16 +117,6 @@ class DrakeLcmLog : public DrakeLcmInterface {
     return static_cast<uint64_t>(sec * 1e6);
   }
 
-  void StartReceiveThread() override {
-    receive_thread_started_ = true;
-  }
-  void StopReceiveThread() override {
-    receive_thread_started_ = false;
-  }
-  bool IsReceiveThreadRunning() const override {
-    return receive_thread_started_;
-  }
-
  private:
   const bool is_write_;
   const bool overwrite_publish_time_with_system_clock_;
@@ -137,7 +127,6 @@ class DrakeLcmLog : public DrakeLcmInterface {
   mutable std::mutex mutex_;
   std::unique_ptr<::lcm::LogFile> log_;
   const ::lcm::LogEvent* next_event_{nullptr};
-  std::atomic<bool> receive_thread_started_{false};
 };
 
 }  // namespace lcm

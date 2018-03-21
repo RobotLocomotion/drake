@@ -14,9 +14,7 @@ PYBIND11_MODULE(lcm, m) {
 
   {
     using Class = DrakeLcmInterface;
-    py::class_<Class>(m, "DrakeLcmInterface")
-        .def("StartReceiveThread", &Class::StartReceiveThread)
-        .def("StopReceiveThread", &Class::StopReceiveThread);
+    py::class_<Class>(m, "DrakeLcmInterface");
     // TODO(eric.cousineau): Add remaining methods.
     // TODO(eric.cousineau): Allow virtual overrides in Python.
   }
@@ -24,7 +22,9 @@ PYBIND11_MODULE(lcm, m) {
   {
     using Class = DrakeLcm;
     py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm")
-        .def(py::init<>());
+        .def(py::init<>())
+        .def("StartReceiveThread", &Class::StartReceiveThread)
+        .def("StopReceiveThread", &Class::StopReceiveThread);
     // TODO(eric.cousineau): Add remaining methods.
   }
 

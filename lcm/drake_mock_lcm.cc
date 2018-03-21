@@ -11,15 +11,6 @@ namespace lcm {
 
 DrakeMockLcm::DrakeMockLcm() {}
 
-void DrakeMockLcm::StartReceiveThread() {
-  DRAKE_THROW_UNLESS(!receive_thread_started_);
-  receive_thread_started_ = true;
-}
-
-void DrakeMockLcm::StopReceiveThread() {
-  DRAKE_THROW_UNLESS(receive_thread_started_);
-  receive_thread_started_ = false;
-}
 
 void DrakeMockLcm::Publish(const std::string& channel, const void* data,
                            int data_size, double) {
@@ -72,15 +63,13 @@ void DrakeMockLcm::Subscribe(const std::string& channel,
 
 void DrakeMockLcm::InduceSubscriberCallback(const std::string& channel,
                                             const void* data, int data_size) {
-  if (receive_thread_started_) {
-    if (subscriptions_.find(channel) == subscriptions_.end()) {
-      throw std::runtime_error(
-          "DrakeMockLcm::InduceSubscriberCallback: No "
-          "subscription to channel \"" +
-          channel + "\".");
-    } else {
-      subscriptions_[channel]->HandleMessage(channel, data, data_size);
-    }
+  if (subscriptions_.find(channel) == subscriptions_.end()) {
+    throw std::runtime_error(
+        "DrakeMockLcm::InduceSubscriberCallback: No "
+        "subscription to channel \"" +
+        channel + "\".");
+  } else {
+    subscriptions_[channel]->HandleMessage(channel, data, data_size);
   }
 }
 

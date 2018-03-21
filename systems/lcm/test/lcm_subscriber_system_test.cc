@@ -98,7 +98,6 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // "device under test".
   LcmSubscriberSystem dut(channel_name, translator, &lcm);
 
-  lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
 }
 
@@ -126,7 +125,6 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // "device under test".
   LcmSubscriberSystem dut(channel_name, dictionary, &lcm);
 
-  lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
 }
 
@@ -155,7 +153,6 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // MockLcm produces a sample message.
-  lcm.StartReceiveThread();
   SampleData sample_data;
   sample_data.MockPublish(&lcm, channel_name);
 
@@ -175,7 +172,6 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
 
   // Start device under test, with background LCM thread running.
   auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
-  lcm.StartReceiveThread();
 
   SampleData sample_data;
 
@@ -282,7 +278,6 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   CustomDrakeSignalTranslator translator;
   drake::lcm::DrakeMockLcm lcm;
   LcmSubscriberSystem dut(kChannelName, translator, &lcm);
-  lcm.StartReceiveThread();
 
   // Create a data-filled vector.
   typedef CustomDrakeSignalTranslator::CustomVector CustomVector;
