@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
@@ -55,6 +56,10 @@ namespace systems {
 ///   - RigidBodyTree<T>::get_num_velocities()
 ///   - RigidBodyTree<T>::get_position_name()
 ///   - RigidBodyTree<T>::get_velocity_name()
+///
+/// - state_derivative_output_port(): A vector-valued port containing the time
+///   derivative `xcdot` of the state vector.  The order of indices within the
+///   vector is identical to state_output_port() as explained above.
 ///
 /// - kinematics_results_output_port(): An abstract-valued port containing a
 ///   KinematicsResults object allowing access to the results from kinematics
@@ -328,6 +333,14 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(state_output_port_index_);
   }
 
+  /// Returns the plant-centric state derivative output port. The size of
+  /// this port is equal to get_num_states().
+  /// @pre This %RigidBodyPlant is using continuous-time dynamics.
+  const OutputPort<T>& state_derivative_output_port() const {
+    DRAKE_DEMAND(state_derivative_output_port_index_.has_value());
+    return System<T>::get_output_port(*state_derivative_output_port_index_);
+  }
+
   /// Returns the output port containing the state of a
   /// particular model with instance ID equal to `model_instance_id`. Throws a
   /// std::runtime_error if `model_instance_id` does not exist. This method can
@@ -469,6 +482,9 @@ class RigidBodyPlant : public LeafSystem<T> {
   void CopyStateToOutput(const Context<T>& context,
                          BasicVector<T>* state_output_vector) const;
 
+  void CalcStateDerivativeOutput(const Context<T>& context,
+                                 BasicVector<T>*) const;
+
   void CalcInstanceOutput(int instance_id,
                           const Context<T>& context,
                           BasicVector<T>* instance_output) const;
@@ -527,6 +543,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   multibody::constraint::ConstraintSolver<double> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
+  optional<OutputPortIndex> state_derivative_output_port_index_;
   OutputPortIndex kinematics_output_port_index_{};
   OutputPortIndex contact_output_port_index_{};
 
