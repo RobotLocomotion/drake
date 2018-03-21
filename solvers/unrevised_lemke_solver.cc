@@ -127,10 +127,10 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
 }
 
 template <typename T>
-bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
-                                     const VectorX<T>& q, VectorX<T>* z,
+bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>&,
+                                     const VectorX<T>&, VectorX<T>* z,
                                      int* num_pivots,
-                                     const T& zero_tol) const {
+                                     const T&) const {
   DRAKE_DEMAND(num_pivots);
 
   // Note: when the solver returns `false`, z is required to be set to zero.
