@@ -194,6 +194,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":symbolic_extraction",
+        ":unrevised_lemke_solver",
         "//common:autodiff",
         "//common:essential",
         "//common:number_traits",
@@ -442,6 +443,16 @@ drake_cc_library(
     deps = [
         ":mathematical_program_api",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "unrevised_lemke_solver",
+    srcs = ["unrevised_lemke_solver.cc"],
+    hdrs = ["unrevised_lemke_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common:essential",
     ],
 )
 
@@ -934,6 +945,15 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unrevised_lemke_solver_test",
+    deps = [
+        ":mathematical_program",
+        ":unrevised_lemke_solver",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
