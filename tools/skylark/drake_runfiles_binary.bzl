@@ -32,10 +32,10 @@ export DRAKE_BAZEL_RUNFILES="${{runfiles_dir}}"
 target_path="${{runfiles_dir}}/{target_relpath}"
 exec "${{target_path}}" "$@"
 """.format(**info)
-    ctx.file_action(
+    ctx.actions.write(
         output = ctx.outputs.executable,
         content = content,
-        executable = True,
+        is_executable = True,
     )
     return [DefaultInfo(
         runfiles = ctx.runfiles(

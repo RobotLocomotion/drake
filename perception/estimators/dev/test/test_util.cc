@@ -210,7 +210,8 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       // R_WmB does not precisely belong to O(3) given that its entries are
       // only specified with 6 digits of precision. Therefore we project it
       // onto O(3) before using it:
-      X_WmB.linear() = math::ProjectMatToOrthonormalMat(R_WmB);
+      X_WmB.linear() =
+          math::RotationMatrix<double>::ProjectToRotationMatrix(R_WmB).matrix();
       X_WmB.translation() << -0.026111, 0.0496843, 0.548844;
 
       setup->X_WB = X_WmB;

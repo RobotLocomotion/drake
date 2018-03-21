@@ -2,19 +2,25 @@ import numpy as np
 import os
 import unittest
 
-from pydrake import getDrakePath
-from pydrake.multibody.rigid_body_tree import RigidBodyTree, FloatingBaseType
-
 import pydrake.multibody.rigid_body_plant as mut
+
+from pydrake.common import FindResourceOrThrow
+from pydrake.lcm import DrakeMockLcm
+from pydrake.systems.framework import BasicVector
+from pydrake.multibody.rigid_body_tree import RigidBodyTree, FloatingBaseType
 
 
 class TestRigidBodyPlant(unittest.TestCase):
-    def test_api(self):
-        urdf_path = os.path.join(
-            getDrakePath(), "examples/pendulum/Pendulum.urdf")
-        for is_discrete in [False, True]:
-            tree = RigidBodyTree(
+    def _make_tree(self):
+        urdf_path = FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf")
+        tree = RigidBodyTree(
                 urdf_path, floating_base_type=FloatingBaseType.kFixed)
+        return tree
+
+    def test_api(self):
+        for is_discrete in [False, True]:
+            tree = self._make_tree()
             if is_discrete:
                 timestep = 0.1
                 plant = mut.RigidBodyPlant(tree, timestep)
@@ -164,3 +170,22 @@ class TestRigidBodyPlant(unittest.TestCase):
         # Test basic errors.
         with self.assertRaises(RuntimeError):
             material.set_friction(0.3, 0.4)
+
+    def test_drake_visualizer_api(self):
+        tree = self._make_tree()
+        lcm = DrakeMockLcm()
+        # Test for existence.
+        viz = mut.DrakeVisualizer(tree=tree, lcm=lcm, enable_playback=True)
+        viz.set_publish_period(period=0.01)
+        # - Force publish to ensure we have enough knot points.
+        context = viz.CreateDefaultContext()
+        x0 = np.zeros(tree.get_num_positions() + tree.get_num_velocities())
+        context.FixInputPort(0, BasicVector(x0))
+        context.set_time(0.)
+        viz.Publish(context)
+        # Use a small time period, since it uses realtime playback.
+        context.set_time(0.01)
+        viz.Publish(context)
+        viz.ReplayCachedSimulation()
+        # - Check that PublishLoadRobot can be called.
+        viz.PublishLoadRobot()

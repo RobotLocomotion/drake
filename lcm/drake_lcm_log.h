@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -115,9 +116,6 @@ class DrakeLcmLog : public DrakeLcmInterface {
   uint64_t second_to_timestamp(double sec) const {
     return static_cast<uint64_t>(sec * 1e6);
   }
-
-  void StartReceiveThread() override {}
-  void StopReceiveThread() override {}
 
  private:
   const bool is_write_;

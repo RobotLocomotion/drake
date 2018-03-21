@@ -1,18 +1,18 @@
+#!/usr/bin/env python2
+
 import os
 import subprocess
 import unittest
 import install_test_helper
 
 
-class TestCommonInstall(unittest.TestCase):
-    def testInstall(self):
-        tmp_folder = "tmp"
-        result = install_test_helper.install(tmp_folder,
-                                             ['bin', 'lib', 'share'])
-        self.assertEqual(None, result)
-        executable_folder = os.path.join(tmp_folder, "bin")
+class TestLcmSpy(unittest.TestCase):
+    def test_install(self):
+        # Get install directory.
+        install_dir = install_test_helper.get_install_dir()
+        executable_folder = os.path.join(install_dir, "bin")
         try:
-            subprocess.check_output(
+            install_test_helper.check_output(
                 [os.path.join(executable_folder, "drake-lcm-spy"), "--help"],
                 stderr=subprocess.STDOUT
                 )

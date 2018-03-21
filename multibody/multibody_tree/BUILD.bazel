@@ -114,7 +114,6 @@ drake_cc_library(
         ":spatial_inertia",
         "//drake/common:autodiff",
         "//drake/math:geometric_transform",
-        "//drake/multibody/multibody_tree/math:rotation_matrix",
     ],
 )
 
@@ -197,8 +196,7 @@ drake_cc_library(
     hdrs = ["test/floating_body_plant.h"],
     deps = [
         "//drake/common:default_scalars",
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
+        "//drake/multibody/multibody_tree/multibody_plant",
     ],
 )
 
@@ -254,10 +252,9 @@ drake_cc_googletest(
     name = "multibody_tree_test",
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities",
         "//drake/multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
         "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
-        "//drake/multibody/multibody_tree/test_utilities:expect_error_message",
     ],
 )
 

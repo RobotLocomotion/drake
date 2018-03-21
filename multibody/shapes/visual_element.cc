@@ -1,11 +1,15 @@
 #include "drake/multibody/shapes/visual_element.h"
 
 namespace DrakeShapes {
-// VisualElement::VisualElement(unique_ptr<Geometry> geometry,
-// const Matrix4d& T_element_to_local,
-// const Vector4d& material)
-//: Element(move(geometry), T_element_to_local), material(material)
-//{}
+
+VisualElement::VisualElement(const Eigen::Isometry3d& T_element_to_local_in)
+    : Element(T_element_to_local_in),
+      material(Eigen::Vector4d(0.7, 0.7, 0.7, 1)) {}
+
+VisualElement::VisualElement(const Geometry& geometry_in,
+                             const Eigen::Isometry3d& T_element_to_local_in,
+                             const Eigen::Vector4d& material_in)
+    : Element(geometry_in, T_element_to_local_in), material(material_in) {}
 
 void VisualElement::setMaterial(const Eigen::Vector4d& material_in) {
   material = material_in;

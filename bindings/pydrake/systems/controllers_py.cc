@@ -75,6 +75,16 @@ PYBIND11_MODULE(controllers, m) {
         py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
         py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero());
 
+  m.def("DiscreteTimeLinearQuadraticRegulator",
+        [](const Eigen::Ref<const Eigen::MatrixXd>& A,
+           const Eigen::Ref<const Eigen::MatrixXd>& B,
+           const Eigen::Ref<const Eigen::MatrixXd>& Q,
+           const Eigen::Ref<const Eigen::MatrixXd>& R) {
+          auto result = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R);
+          return std::make_pair(result.K, result.S);
+        },
+        py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"));
+
   m.def("LinearQuadraticRegulator",
         py::overload_cast<const systems::LinearSystem<double>&,
                           const Eigen::Ref<const Eigen::MatrixXd>&,

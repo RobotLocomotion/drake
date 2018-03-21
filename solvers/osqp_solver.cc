@@ -26,7 +26,7 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
 
     // Add quadratic_cost.Q to the Hessian P.
     const std::vector<Eigen::Triplet<double>> Qi_triplets =
-        math::SparseMatrixToTriplets(quadratic_cost.constraint()->Q());
+        math::SparseMatrixToTriplets(quadratic_cost.evaluator()->Q());
     P_triplets.reserve(P_triplets.size() + Qi_triplets.size());
     for (int i = 0; i < static_cast<int>(Qi_triplets.size()); ++i) {
       P_triplets.emplace_back(x_indices[Qi_triplets[i].row()],
@@ -36,11 +36,11 @@ void ParseQuadraticCosts(const MathematicalProgram& prog,
 
     // Add quadratic_cost.b to the linear cost term q.
     for (int i = 0; i < x.rows(); ++i) {
-      q->at(x_indices[i]) += quadratic_cost.constraint()->b()(i);
+      q->at(x_indices[i]) += quadratic_cost.evaluator()->b()(i);
     }
 
     // Add quadratic_cost.c to constant term
-    *constant_cost_term += quadratic_cost.constraint()->c();
+    *constant_cost_term += quadratic_cost.evaluator()->c();
   }
   P->resize(prog.num_vars(), prog.num_vars());
   P->setFromTriplets(P_triplets.begin(), P_triplets.end());
@@ -55,14 +55,14 @@ void ParseLinearCosts(const MathematicalProgram& prog, std::vector<c_float>* q,
   for (const auto& linear_cost : prog.linear_costs()) {
     for (int i = 0; i < static_cast<int>(linear_cost.GetNumElements()); ++i) {
       // Append the linear cost term to q.
-      if (linear_cost.constraint()->a()(i) != 0) {
+      if (linear_cost.evaluator()->a()(i) != 0) {
         const int x_index =
             prog.FindDecisionVariableIndex(linear_cost.variables()(i));
-        q->at(x_index) += linear_cost.constraint()->a()(i);
+        q->at(x_index) += linear_cost.evaluator()->a()(i);
       }
     }
     // Add the constant cost term to constant_cost_term.
-    *constant_cost_term += linear_cost.constraint()->b();
+    *constant_cost_term += linear_cost.evaluator()->b();
   }
 }
 
@@ -90,19 +90,19 @@ void ParseLinearConstraints(const MathematicalProgram& prog,
     const std::vector<int> x_indices =
         prog.FindDecisionVariableIndices(constraint.variables());
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
-        math::SparseMatrixToTriplets(constraint.constraint()->A());
+        math::SparseMatrixToTriplets(constraint.evaluator()->A());
     // Append constraint.A to osqp A.
     for (const auto& Ai_triplet : Ai_triplets) {
       A_triplets->emplace_back(*num_A_rows + Ai_triplet.row(),
                                x_indices[Ai_triplet.col()],
                                static_cast<c_float>(Ai_triplet.value()));
     }
-    const int num_Ai_rows = constraint.constraint()->num_constraints();
+    const int num_Ai_rows = constraint.evaluator()->num_constraints();
     l->reserve(l->size() + num_Ai_rows);
     u->reserve(u->size() + num_Ai_rows);
     for (int i = 0; i < num_Ai_rows; ++i) {
-      l->push_back(ConvertInfinity(constraint.constraint()->lower_bound()(i)));
-      u->push_back(ConvertInfinity(constraint.constraint()->upper_bound()(i)));
+      l->push_back(ConvertInfinity(constraint.evaluator()->lower_bound()(i)));
+      u->push_back(ConvertInfinity(constraint.evaluator()->upper_bound()(i)));
     }
     *num_A_rows += num_Ai_rows;
   }
@@ -121,12 +121,12 @@ void ParseBoundingBoxConstraints(
           prog.FindDecisionVariableIndex(constraint.variables()(i)),
           static_cast<c_float>(1));
     }
-    const int num_Ai_rows = constraint.constraint()->num_constraints();
+    const int num_Ai_rows = constraint.evaluator()->num_constraints();
     l->reserve(l->size() + num_Ai_rows);
     u->reserve(u->size() + num_Ai_rows);
     for (int i = 0; i < num_Ai_rows; ++i) {
-      l->push_back(ConvertInfinity(constraint.constraint()->lower_bound()(i)));
-      u->push_back(ConvertInfinity(constraint.constraint()->upper_bound()(i)));
+      l->push_back(ConvertInfinity(constraint.evaluator()->lower_bound()(i)));
+      u->push_back(ConvertInfinity(constraint.evaluator()->upper_bound()(i)));
     }
     *num_A_rows += num_Ai_rows;
   }
@@ -254,6 +254,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_int osqp_exitflag = osqp_solve(work);
 
   SolutionResult solution_result;
+  SolverResult solver_result(id());
   if (osqp_exitflag) {
     solution_result = SolutionResult::kInvalidInput;
   } else {
@@ -262,15 +263,17 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
       case OSQP_SOLVED_INACCURATE: {
         const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
             work->solution->x, prog.num_vars());
-        prog.SetDecisionVariableValues(osqp_sol.cast<double>());
-        prog.SetOptimalCost(work->info->obj_val + constant_cost_term);
+        solver_result.set_decision_variable_values(osqp_sol.cast<double>());
+        solver_result.set_optimal_cost(work->info->obj_val +
+                                       constant_cost_term);
         solution_result = SolutionResult::kSolutionFound;
         break;
       }
       case OSQP_PRIMAL_INFEASIBLE:
       case OSQP_PRIMAL_INFEASIBLE_INACCURATE: {
         solution_result = SolutionResult::kInfeasibleConstraints;
-        prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+        solver_result.set_optimal_cost(
+            MathematicalProgram::kGlobalInfeasibleCost);
         break;
       }
       case OSQP_DUAL_INFEASIBLE:
@@ -299,7 +302,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_free(data);
   c_free(settings);
 
-  prog.SetSolverId(id());
+  prog.SetSolverResult(solver_result);
   return solution_result;
 }
 }  // namespace solvers

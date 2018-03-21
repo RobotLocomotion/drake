@@ -24,9 +24,12 @@ class ClockWitness : public WitnessFunction<T> {
 
   explicit ClockWitness(
       double trigger_time,
-      const System<T>& system,
+      const System<T>* system,
       const WitnessFunctionDirection& dir_type) :
-        WitnessFunction<T>(system, dir_type),
+        WitnessFunction<T>(
+            system,
+            dir_type,
+            std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness)),
         trigger_time_(trigger_time) {
   }
 
@@ -35,13 +38,8 @@ class ClockWitness : public WitnessFunction<T> {
 
  protected:
   // The witness function is the time value itself plus the offset value.
-  T DoEvaluate(const Context<T>& context) const override {
+  T DoCalcWitnessValue(const Context<T>& context) const override {
     return context.get_time() - trigger_time_;
-  }
-
-  void DoAddEvent(CompositeEventCollection<T>* events) const override {
-    events->add_publish_event(std::make_unique<PublishEvent<T>>(
-        Event<T>::TriggerType::kWitness));
   }
 
  private:
@@ -57,7 +55,7 @@ class StatelessSystem final : public LeafSystem<T> {
 
   StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
       : LeafSystem<T>(SystemTypeTag<analysis_test::StatelessSystem>{}) {
-    witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
+    witness_ = std::make_unique<ClockWitness<T>>(offset, this, dir_type);
   }
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.

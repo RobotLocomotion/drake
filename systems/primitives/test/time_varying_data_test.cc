@@ -21,14 +21,14 @@ GTEST_TEST(TimeVaryingData, LinearConstructorWithEigenVectors) {
       LinearTimeVaryingData(mat_data.Avec, mat_data.Bvec, mat_data.Cvec,
                             mat_data.Dvec, test::kDiscreteTimeStep);
 
-  PiecewisePolynomialTrajectory zero_f0_trajectory(
+  PiecewisePolynomial<double> zero_f0_trajectory(
       internal::MakeZeroedPiecewisePolynomial(
-          ppt_data.A.get_piecewise_polynomial()));
-  PiecewisePolynomialTrajectory zero_y0_trajectory(
+          ppt_data.A));
+  PiecewisePolynomial<double> zero_y0_trajectory(
       internal::MakeZeroedPiecewisePolynomial(
-          ppt_data.C.get_piecewise_polynomial()));
+          ppt_data.C));
   for (const double t :
-       ppt_data.A.get_piecewise_polynomial().getSegmentTimes()) {
+       ppt_data.A.get_segment_times()) {
     EXPECT_TRUE(CompareMatrices(dut_from_vec.A.value(t), ppt_data.A.value(t)));
     EXPECT_TRUE(CompareMatrices(dut_from_vec.B.value(t), ppt_data.B.value(t)));
     EXPECT_TRUE(
@@ -56,14 +56,14 @@ GTEST_TEST(TimeVaryingData, LinearConstructorWithPiecewisePolynomials) {
                             PiecewisePolynomial<double>::FirstOrderHold(
                                 mat_data.times, mat_data.Dvec));
 
-  PiecewisePolynomialTrajectory zero_f0_trajectory(
+  PiecewisePolynomial<double> zero_f0_trajectory(
       internal::MakeZeroedPiecewisePolynomial(
-          ppt_data.A.get_piecewise_polynomial()));
-  PiecewisePolynomialTrajectory zero_y0_trajectory(
+          ppt_data.A));
+  PiecewisePolynomial<double> zero_y0_trajectory(
       internal::MakeZeroedPiecewisePolynomial(
-          ppt_data.C.get_piecewise_polynomial()));
+          ppt_data.C));
   for (const double t :
-       ppt_data.A.get_piecewise_polynomial().getSegmentTimes()) {
+       ppt_data.A.get_segment_times()) {
     EXPECT_TRUE(CompareMatrices(dut_from_pp.A.value(t), ppt_data.A.value(t)));
     EXPECT_TRUE(CompareMatrices(dut_from_pp.B.value(t), ppt_data.B.value(t)));
     EXPECT_TRUE(
@@ -82,14 +82,14 @@ GTEST_TEST(TimeVaryingData, AffineConstructorWithEigenVectors) {
   // Construct an affine TimeVaryingData struct from
   // PiecewisePolynomialTrajectories.
   const TimeVaryingData dut_from_vec =
-      TimeVaryingData(ppt_data.A.get_piecewise_polynomial(),
-                      ppt_data.B.get_piecewise_polynomial(),
-                      ppt_data.f0.get_piecewise_polynomial(),
-                      ppt_data.C.get_piecewise_polynomial(),
-                      ppt_data.D.get_piecewise_polynomial(),
-                      ppt_data.y0.get_piecewise_polynomial());
+      TimeVaryingData(ppt_data.A,
+                      ppt_data.B,
+                      ppt_data.f0,
+                      ppt_data.C,
+                      ppt_data.D,
+                      ppt_data.y0);
   for (const double t :
-       ppt_data.A.get_piecewise_polynomial().getSegmentTimes()) {
+       ppt_data.A.get_segment_times()) {
     EXPECT_TRUE(CompareMatrices(dut_from_vec.A.value(t), ppt_data.A.value(t)));
     EXPECT_TRUE(CompareMatrices(dut_from_vec.B.value(t), ppt_data.B.value(t)));
     EXPECT_TRUE(
@@ -121,7 +121,7 @@ GTEST_TEST(TimeVaryingData, AffineConstructorWithPiecewisePolynomials) {
                       PiecewisePolynomial<double>::FirstOrderHold(
                           mat_data.times, mat_data.y0vec));
   for (const double t :
-       ppt_data.A.get_piecewise_polynomial().getSegmentTimes()) {
+       ppt_data.A.get_segment_times()) {
     EXPECT_TRUE(CompareMatrices(dut_from_pp.A.value(t), ppt_data.A.value(t)));
     EXPECT_TRUE(CompareMatrices(dut_from_pp.B.value(t), ppt_data.B.value(t)));
     EXPECT_TRUE(CompareMatrices(dut_from_pp.f0.value(t), ppt_data.f0.value(t)));

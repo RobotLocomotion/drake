@@ -2,8 +2,8 @@
 
 def _make_identifier(s):
     result = ""
-    for c in s:
-        result += c if c.isalnum() else "_"
+    for i in range(len(s)):
+        result += s[i] if s[i].isalnum() else "_"
 
     return result
 
@@ -40,7 +40,7 @@ def _generate_export_header_impl(ctx):
         "#endif",
     ]
 
-    ctx.file_action(output = output, content = "\n".join(content) + "\n")
+    ctx.actions.write(output = output, content = "\n".join(content) + "\n")
 
 # Defines the rule to generate_export_header.
 _generate_export_header_gen = rule(

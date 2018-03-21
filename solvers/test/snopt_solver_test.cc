@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -93,6 +94,41 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
   result = solver.Solve(prog);
   EXPECT_TRUE(spruce::path(print_file).exists());
+}
+
+GTEST_TEST(SnoptTest, TestSparseCost) {
+  // Test nonlinear optimization problem, whose cost has sparse gradient.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  // No cost, just constraint.
+  prog.AddLinearConstraint(x(0) + x(1) + x(2) == 1);
+
+  SnoptSolver solver;
+  auto solution_result = solver.Solve(prog);
+  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double tol{1E-5};
+  EXPECT_NEAR(prog.GetSolution(x).sum(), 1, tol);
+  EXPECT_EQ(prog.GetOptimalCost(), 0);
+
+  // Add a cost on x(1) only
+  // min x(1) * x(1).
+  // s.t x(0) + x(1) + x(2) = 1
+  prog.AddQuadraticCost(x(1) * x(1));
+  solution_result = solver.Solve(prog);
+  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  EXPECT_NEAR(prog.GetSolution(x(1)), 0, tol);
+  EXPECT_NEAR(prog.GetSolution(x).sum(), 1, tol);
+  EXPECT_NEAR(prog.GetOptimalCost(), 0, tol);
+
+  // Add another cost on x(1) and x(2)
+  // min x(1) * x(1) + 2 * x(1) + x(2) * x(2) - 2 * x(2) + 1
+  // s.t x(0) + x(1) + x(2) = 1
+  prog.AddQuadraticCost(2 * x(1) + x(2) * x(2) - 2 * x(2) + 1);
+  solution_result = solver.Solve(prog);
+  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  EXPECT_TRUE(
+      CompareMatrices(prog.GetSolution(x), Eigen::Vector3d(1, -1, 1), tol));
+  EXPECT_NEAR(prog.GetOptimalCost(), -1, tol);
 }
 }  // namespace test
 }  // namespace solvers

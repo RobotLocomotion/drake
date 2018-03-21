@@ -29,7 +29,6 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   // Instantiates the Device Under Test (DUT).
   DrakeMockLcm dut;
 
-  dut.StartReceiveThread();
   dut.Publish(channel_name, &message_bytes[0], message_size);
 
   // Verifies that the message was "published".
@@ -58,7 +57,6 @@ GTEST_TEST(DrakeMockLcmTest, DecodeLastPublishedMessageAsTest) {
 
   // Instantiates the Device Under Test (DUT).
   DrakeMockLcm dut;
-  dut.StartReceiveThread();
   dut.Publish(channel_name, &message_bytes[0], message_size);
 
   // Verifies that the message was "published".
@@ -124,7 +122,6 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
   // Instantiates a message handler.
   MockMessageHandler handler;
 
-  dut.StartReceiveThread();
   dut.Subscribe(kChannelName, &handler);
 
   // Defines a fake serialized message.
@@ -142,23 +139,6 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
 
   const vector<uint8_t>& received_bytes = handler.get_buffer();
   EXPECT_EQ(message_bytes, received_bytes);
-
-  dut.StopReceiveThread();
-
-  // Verifies that no more messages are received by subscribers after the
-  // receive thread is stopped.
-  vector<uint8_t> message_bytes2;
-  message_bytes2.push_back(128);
-
-  dut.InduceSubscriberCallback("foo_channel", &message_bytes2[0],
-      message_bytes2.size());
-
-  // Verifies that the original message is returned, not the one that was
-  // sent after the receive thread was stopped.
-  EXPECT_EQ(kChannelName, handler.get_channel());
-  EXPECT_EQ(kMessageSize, handler.get_buffer_size());
-  const vector<uint8_t>& received_bytes2 = handler.get_buffer();
-  EXPECT_EQ(message_bytes, received_bytes2);
 }
 
 // Tests DrakeMockLcm's ability to "publish" and "subscribe" to an LCM channel
@@ -176,7 +156,6 @@ GTEST_TEST(DrakeMockLcmTest, WithLoopbackTest) {
   // Instantiates a message handler.
   MockMessageHandler handler;
 
-  dut.StartReceiveThread();
   dut.Subscribe(kChannelName, &handler);
 
   // Defines a fake serialized message.
@@ -211,7 +190,6 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
   // Instantiates a message handler.
   MockMessageHandler handler;
 
-  dut.StartReceiveThread();
   dut.Subscribe(kChannelName, &handler);
 
   // Defines a fake serialized message.
@@ -227,6 +205,16 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
   // Verifies that the message was not received via loopback.
   EXPECT_NE(kChannelName, handler.get_channel());
   EXPECT_NE(kMessageSize, handler.get_buffer_size());
+}
+
+GTEST_TEST(DrakeMockLcmTest, EmptyChannelTest) {
+  DrakeMockLcm dut;
+
+  MockMessageHandler handler;
+  EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
+
+  const uint8_t buffer{};
+  EXPECT_THROW(dut.Publish("", &buffer, 1), std::exception);
 }
 
 }  // namespace

@@ -27,6 +27,7 @@ drake_cc_library(
         ":cond",
         ":copyable_unique_ptr",
         ":double",
+        ":drake_bool",
         ":drake_path",
         ":dummy_value",
         ":essential",
@@ -87,6 +88,16 @@ drake_cc_library(
     hdrs = ["cond.h"],
     deps = [
         ":double",
+    ],
+)
+
+drake_cc_library(
+    name = "drake_bool",
+    hdrs = ["drake_bool.h"],
+    deps = [
+        ":autodiff",
+        ":cond",
+        ":essential",
     ],
 )
 
@@ -197,6 +208,7 @@ drake_cc_library(
     ],
     deps = [
         ":cond",
+        ":drake_bool",
         ":dummy_value",
         ":essential",
         ":extract_double",
@@ -419,6 +431,7 @@ drake_py_binary(
 
 install(
     name = "install",
+    install_tests = [":test/resource_tool_installed_test.py"],
     targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for programs not in bin/, and including the workspace and/or package name
@@ -473,6 +486,15 @@ drake_cc_googletest(
         ":essential",
         ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_bool_test",
+    deps = [
+        ":drake_bool",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -586,6 +608,7 @@ drake_cc_googletest(
     name = "copyable_unique_ptr_test",
     deps = [
         ":copyable_unique_ptr",
+        "//common:unused",
         "//common/test_utilities:is_dynamic_castable",
     ],
 )
@@ -932,6 +955,7 @@ drake_cc_googletest(
     deps = [
         ":type_safe_index",
         ":unused",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -985,16 +1009,6 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "resource_tool_installed_test",
-    args = [
-        "$(location :install)",
-    ],
-    data = [
-        ":install",
-    ],
-)
-
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
@@ -1002,4 +1016,8 @@ drake_py_unittest(
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/resource_tool_installed_test.py",
+    ],
+)

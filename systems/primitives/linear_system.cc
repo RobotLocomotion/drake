@@ -99,10 +99,10 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   double time_period = 0.0;
   if (has_only_discrete_states_contained_in_one_group) {
-    optional<Event<double>::PeriodicAttribute> periodic_attr =
+    optional<PeriodicEventData> periodic_data =
         system.GetUniquePeriodicDiscreteUpdateAttribute();
-    DRAKE_THROW_UNLESS(static_cast<bool>(periodic_attr));
-    time_period = periodic_attr->period_sec;
+    DRAKE_THROW_UNLESS(static_cast<bool>(periodic_data));
+    time_period = periodic_data->period_sec();
   }
 
   // Create an autodiff version of the system.

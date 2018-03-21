@@ -38,10 +38,13 @@ drake_cc_library(
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
     deps = [
+        ":decision_variable",
         ":evaluator_base",
+        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//common:symbolic",
         "//math:matrix_util",
     ],
 )
@@ -1129,6 +1132,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "solver_type_converter_test",
     deps = [
+        ":mathematical_program",
         ":solver_type_converter",
     ],
 )

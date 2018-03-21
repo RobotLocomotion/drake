@@ -10,13 +10,20 @@ namespace rendering {
 template <typename T> constexpr int PoseVector<T>::kSize;
 
 template <typename T>
-PoseVector<T>::PoseVector() : BasicVector<T>(kSize) {
-  set_translation(Eigen::Translation<T, 3>::Identity());
-  set_rotation(Eigen::Quaternion<T>::Identity());
-}
+PoseVector<T>::PoseVector()
+    : PoseVector<T>::PoseVector(Eigen::Quaternion<T>::Identity(),
+                                Eigen::Translation<T, 3>::Identity()) {}
 
 template <typename T>
 PoseVector<T>::~PoseVector() {}
+
+template <typename T>
+PoseVector<T>::PoseVector(const Eigen::Quaternion<T>& rotation,
+                          const Eigen::Translation<T, 3>& translation)
+    : BasicVector<T>(kSize) {
+  set_rotation(rotation);
+  set_translation(translation);
+}
 
 template <typename T>
 Isometry3<T> PoseVector<T>::get_isometry() const {

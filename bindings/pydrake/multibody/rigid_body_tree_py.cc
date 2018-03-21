@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
@@ -12,6 +13,8 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 
+using std::make_unique;
+
 namespace drake {
 namespace pydrake {
 
@@ -21,9 +24,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   using drake::multibody::joints::FloatingBaseType;
   using drake::parsers::PackageMap;
   namespace sdf = drake::parsers::sdf;
+  using std::shared_ptr;
 
   py::module::import("pydrake.multibody.parsers");
   py::module::import("pydrake.multibody.shapes");
+  py::module::import("pydrake.util.eigen_geometry");
 
   py::enum_<FloatingBaseType>(m, "FloatingBaseType")
     .value("kFixed", FloatingBaseType::kFixed)
@@ -34,38 +39,37 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   // and `parsers` do not form a dependency cycle.
   py::class_<RigidBodyTree<double>>(m, "RigidBodyTree")
     .def(py::init<>())
-    .def("__init__",
-         [](RigidBodyTree<double> &instance,
-            const std::string& urdf_filename,
+    .def(py::init(
+         [](const std::string& urdf_filename,
             const PackageMap& pmap,
             FloatingBaseType floating_base_type
             ) {
-          new (&instance) RigidBodyTree<double>();
+          auto instance = make_unique<RigidBodyTree<double>>();
           drake::parsers::urdf::
             AddModelInstanceFromUrdfFileSearchingInRosPackages(
             urdf_filename,
             pmap,
             floating_base_type,
             nullptr,
-            &instance);
-        },
+            instance.get());
+          return instance;
+        }),
         py::arg("urdf_filename"),
         py::arg("package_map"),
         py::arg("floating_base_type") = FloatingBaseType::kRollPitchYaw)
-    .def("__init__",
-         [](RigidBodyTree<double> &instance,
-            const std::string& urdf_filename,
+    .def(py::init(
+         [](const std::string& urdf_filename,
             FloatingBaseType floating_base_type
             ) {
-          new (&instance) RigidBodyTree<double>();
+          auto instance = make_unique<RigidBodyTree<double>>();
           drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-            urdf_filename, floating_base_type, &instance);
-        },
+            urdf_filename, floating_base_type, instance.get());
+          return instance;
+        }),
         py::arg("urdf_filename"),
         py::arg("floating_base_type") = FloatingBaseType::kRollPitchYaw)
-    .def("__init__",
-         [](RigidBodyTree<double> &instance,
-            const std::string& urdf_filename,
+    .def(py::init(
+         [](const std::string& urdf_filename,
             const std::string& joint_type) {
             // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
             FloatingBaseType floating_base_type;
@@ -81,10 +85,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             } else {
               throw(std::invalid_argument("Joint type not supported"));
             }
-            new (&instance) RigidBodyTree<double>();
+            auto instance = make_unique<RigidBodyTree<double>>();
             drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-                urdf_filename, floating_base_type, &instance);
-        },
+                urdf_filename, floating_base_type, instance.get());
+            return instance;
+        }),
         py::arg("urdf_filename"), py::arg("joint_type") = "ROLLPITCHYAW"
       )
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {
@@ -207,7 +212,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          [](const RigidBodyTree<double>* self, const VectorX<double>& v) {
            return self->frictionTorques(v);
          })
-    .def_readonly("B", &RigidBodyTree<double>::B);
+    .def_readonly("B", &RigidBodyTree<double>::B)
+    .def_readonly("joint_limit_min", &RigidBodyTree<double>::joint_limit_min)
+    .def_readonly("joint_limit_max", &RigidBodyTree<double>::joint_limit_max);
 
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
@@ -219,24 +226,45 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_visual_elements", &RigidBody<double>::get_visual_elements);
 
   py::class_<RigidBodyFrame<double>,
-             std::shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
-    .def(py::init<const std::string&,
-                  RigidBody<double>*,
-                  const Eigen::VectorXd&,
-                  const Eigen::VectorXd& >())
+             shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
+    .def(
+        py::init<
+            const std::string&,
+            RigidBody<double>*,
+            const Eigen::VectorXd&,
+            const Eigen::VectorXd&>(),
+        py::arg("name"), py::arg("body"),
+        py::arg("xyz") = Eigen::Vector3d::Zero(),
+        py::arg("rpy") = Eigen::Vector3d::Zero())
+    .def(
+        py::init<
+            const std::string&,
+            RigidBody<double>*,
+            const Eigen::Isometry3d&>(),
+        py::arg("name"), py::arg("body"),
+        py::arg("transform_to_body"))
+    .def("get_name", &RigidBodyFrame<double>::get_name)
     .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index);
 
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
-        &drake::parsers::urdf::\
-          AddModelInstanceFromUrdfStringSearchingInRosPackages);
+        py::overload_cast<const std::string&, const PackageMap&,
+                          const std::string&, const FloatingBaseType,
+                          shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &parsers::urdf::
+                AddModelInstanceFromUrdfStringSearchingInRosPackages));
   m.def("AddModelInstancesFromSdfString",
-        &sdf::AddModelInstancesFromSdfString);
+        py::overload_cast<const std::string&, const FloatingBaseType,
+                          shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &sdf::AddModelInstancesFromSdfString));
   m.def("AddModelInstancesFromSdfStringSearchingInRosPackages",
-        &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages),
-  m.def("AddFlatTerrainToWorld",
-        &drake::multibody::AddFlatTerrainToWorld,
-        py::arg("tree"),
-        py::arg("box_size") = 1000,
+        py::overload_cast<
+            const std::string&, const PackageMap&, const FloatingBaseType,
+            shared_ptr<RigidBodyFrame<double>>, RigidBodyTree<double>*>(
+            &sdf::AddModelInstancesFromSdfStringSearchingInRosPackages)),
+  m.def("AddFlatTerrainToWorld", &multibody::AddFlatTerrainToWorld,
+        py::arg("tree"), py::arg("box_size") = 1000,
         py::arg("box_depth") = 10);
 }
 

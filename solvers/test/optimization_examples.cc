@@ -105,7 +105,7 @@ LinearSystemExample1::LinearSystemExample1()
   x_ = prog_->NewContinuousVariables<4>();
   b_ = Vector4d::Random();
   con_ = prog_->AddLinearEqualityConstraint(Matrix4d::Identity(), b_, x_)
-              .constraint();
+              .evaluator();
   prog_->SetInitialGuessForAllVariables(Vector4d::Zero());
 }
 

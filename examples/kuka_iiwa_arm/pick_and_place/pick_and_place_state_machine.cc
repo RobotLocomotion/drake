@@ -23,6 +23,7 @@ namespace pick_and_place {
 namespace {
 
 using manipulation::util::WorldSimTreeBuilder;
+using trajectories::PiecewisePolynomial;
 
 const char kGraspFrameName[] = "grasp_frame";
 
@@ -825,7 +826,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         std::vector<VectorX<double>> q;
         PiecewisePolynomial<double>& q_traj =
             interpolation_result_map_->at(state_);
-        const std::vector<double>& times{q_traj.getSegmentTimes()};
+        const std::vector<double>& times{q_traj.get_segment_times()};
         q.reserve(times.size());
         for (double t : times) {
           q.push_back(q_traj.value(t));

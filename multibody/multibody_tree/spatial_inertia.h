@@ -388,6 +388,40 @@ class SpatialInertia {
         alpha_WB_E.cross(mp_BoBcm_E) + get_mass() * a_WBo_E);
   }
 
+  /// Multiplies `this` spatial inertia `M_BP_E` of a body B about a point P
+  /// by the spatial velocity `V_WBp`, in a frame W, of the body frame B shifted
+  /// to point P. Mathematically: <pre>
+  ///   L_WBp_E = M_BP_E * V_WBp_E
+  /// </pre>
+  /// or, in terms of its rotational and translational components (see this
+  /// class's documentation for the block form of a rotational inertia): <pre>
+  ///   h_WB  = I_Bp * w_WB + m * p_BoBcm x v_WP
+  ///   l_WBp = -m * p_BoBcm x w_WB + m * v_WP
+  /// </pre>
+  /// where `w_WB` and `v_WP` are the rotational and translational components of
+  /// the spatial velocity `V_WBp`, respectively and, `h_WB` and `l_WBp` are the
+  /// angular and linear components of the spatial momentum `L_WBp`,
+  /// respectively.
+  ///
+  /// @note
+  /// It is possible to show that `M_BP_E.Shift(p_PQ_E) * V_WBp_E.Shift(p_PQ_E)`
+  /// exactly equals `L_WBp_E.Shift(p_PQ_E)`.
+  SpatialMomentum<T> operator*(const SpatialVelocity<T>& V_WBp_E) const {
+    const Vector3<T>& w_WB_E = V_WBp_E.rotational();
+    const Vector3<T>& v_WP_E = V_WBp_E.translational();
+    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+    // Return (see class's documentation):
+    // ⌈ h_WB  ⌉   ⌈     I_Bp      | m * p_BoBcm× ⌉   ⌈ w_WB ⌉
+    // |       | = |               |              | * |      |
+    // ⌊ l_WBp ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊ v_WP ⌋
+    return SpatialMomentum<T>(
+        /* rotational */
+        CalcRotationalInertia() * w_WB_E + mp_BoBcm_E.cross(v_WP_E),
+        /* translational: notice the order of the cross product is the reversed
+         * of the documentation above and thus no minus sign is needed. */
+        w_WB_E.cross(mp_BoBcm_E) + get_mass() * v_WP_E);
+  }
+
  private:
   // Helper method for NaN initialization.
   static constexpr T nan() {

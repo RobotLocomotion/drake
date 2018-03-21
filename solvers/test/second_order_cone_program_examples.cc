@@ -71,13 +71,13 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
   VectorX<symbolic::Expression> lorentz_expr2(1 + R2_.cols());
   lorentz_expr1 << t_(0), R1_.transpose() * a_;
   lorentz_expr2 << t_(1), R2_.transpose() * a_;
-  prog_.AddLorentzConeConstraint(lorentz_expr1).constraint();
-  prog_.AddLorentzConeConstraint(lorentz_expr2).constraint();
+  prog_.AddLorentzConeConstraint(lorentz_expr1).evaluator();
+  prog_.AddLorentzConeConstraint(lorentz_expr2).evaluator();
   // a'*(x2 - x1) = 1
   prog_.AddLinearEqualityConstraint((x2_ - x1_).transpose(), 1.0, a_);
 
   // Add cost
-  auto cost = prog_.AddLinearCost(Eigen::Vector2d(1.0, 1.0), t_).constraint();
+  auto cost = prog_.AddLinearCost(Eigen::Vector2d(1.0, 1.0), t_).evaluator();
 }
 
 void TestEllipsoidsSeparation::SolveAndCheckSolution(
