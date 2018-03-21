@@ -22,19 +22,12 @@ using parsers::ModelInstanceIdTable;
 using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 
 namespace systems {
-
-using lcm::LcmSubscriberSystem;
-using lcm::LcmtDrakeSignalTranslator;
-
 namespace sensors {
 
-AccelerometerExampleDiagram::AccelerometerExampleDiagram(
-    ::drake::lcm::DrakeLcmInterface* lcm)
-    : lcm_(lcm) {
+AccelerometerExampleDiagram::AccelerometerExampleDiagram() {
   const std::string model_file_name =
       FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
   const std::string model_name = "Pendulum";
-  const std::string xdot_channel_name = "xdot_channel";
 
   auto tree = make_unique<RigidBodyTree<double>>();
   tree_ = tree.get();
@@ -56,17 +49,8 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
       tree->FindBody("arm"), sensor_frame_transform);
   tree->addFrame(sensor_frame_);
 
-  plant_ = builder_.template AddSystem<RigidBodyPlantThatPublishesXdot<double>>(
-      move(tree), xdot_channel_name, lcm_);
+  plant_ = builder_.template AddSystem<RigidBodyPlant<double>>(move(tree));
   plant_->set_name("plant");
-  xdot_hack_ = builder_.template AddSystem<AccelerometerXdotHack>(
-    plant_->get_num_states());
-  xdot_hack_->set_name("xdot_hack");
-  translator_ =
-      make_unique<LcmtDrakeSignalTranslator>(plant_->get_num_states());
-  lcm_subscriber_ = builder_.template AddSystem<LcmSubscriberSystem>(
-      xdot_channel_name, *translator_, lcm_);
-  lcm_subscriber_->set_name("lcm_subscriber");
 
   accelerometer_ = Accelerometer::AttachAccelerometer(
       "my accelerometer", *sensor_frame_, *plant_, true /* include_gravity */,
@@ -81,15 +65,13 @@ AccelerometerExampleDiagram::AccelerometerExampleDiagram(
           VectorX<double>::Zero(plant_->actuator_command_input_port().size()));
   constant_zero_source->set_name("zero");
 
-  builder_.Connect(lcm_subscriber_->get_output_port(),
-                   xdot_hack_->get_input_port());
-  builder_.Connect(xdot_hack_->get_output_port(),
-                   accelerometer_->get_plant_state_derivative_input_port());
   builder_.Connect(constant_zero_source->get_output_port(),
                    plant_->actuator_command_input_port());
   builder_.Connect(plant_->state_output_port(),
                    logger_->get_plant_state_input_port());
-  builder_.Connect(xdot_hack_->get_output_port(),
+  builder_.Connect(plant_->state_derivative_output_port(),
+                   accelerometer_->get_plant_state_derivative_input_port());
+  builder_.Connect(plant_->state_derivative_output_port(),
                    logger_->get_plant_state_derivative_input_port());
   builder_.Connect(accelerometer_->get_output_port(),
                    logger_->get_acceleration_input_port());
@@ -107,7 +89,6 @@ void AccelerometerExampleDiagram::Initialize(
   }
 
   builder_.BuildInto(this);
-  lcm_->StartReceiveThread();
 }
 
 void AccelerometerExampleDiagram::SetInitialState(Context<double>* context,

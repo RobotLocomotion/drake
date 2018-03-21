@@ -115,21 +115,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "rigid_body_plant_that_publishes_xdot",
-    srcs = [
-        "rigid_body_plant_that_publishes_xdot.cc",
-    ],
-    hdrs = [
-        "rigid_body_plant_that_publishes_xdot.h",
-    ],
-    deps = [
-        ":rigid_body_plant",
-        "//drake/lcm",
-        "//drake/lcmtypes:drake_signal",
-    ],
-)
-
-drake_cc_library(
     name = "drake_visualizer",
     srcs = [
         "drake_visualizer.cc",
@@ -283,20 +268,6 @@ drake_cc_googletest(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/systems/primitives:linear_system",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rigid_body_plant_that_publishes_xdot_test",
-    data = [
-        "//drake/multibody:models",
-    ],
-    deps = [
-        ":rigid_body_plant_that_publishes_xdot",
-        "//drake/common:find_resource",
-        "//drake/lcm:lcmt_drake_signal_utils",
-        "//drake/lcm:mock",
-        "//drake/multibody/parsers",
     ],
 )
 
