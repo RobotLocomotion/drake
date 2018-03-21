@@ -289,10 +289,8 @@ class DiagramBuilder {
     for (const auto& connection : connection_map_) {
       // Dependency graph is a mapping from the destination of the connection
       // to what it *depends on* (the source).
-      const PortIdentifier src(connection.second.first,
-                               connection.second.second);
-      const PortIdentifier dest(connection.first.first,
-                                connection.first.second);
+      const PortIdentifier& src = connection.second;
+      const PortIdentifier& dest = connection.first;
       PortIdentifier encoded_src{src.first, output_to_key(src.second)};
       nodes.insert(encoded_src);
       nodes.insert(dest);

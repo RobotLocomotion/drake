@@ -4,10 +4,14 @@
 #include <ios>
 #include <regex>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
+
+template <typename T>
+System<T>::~System() {}
 
 std::string SystemImpl::GetMemoryObjectName(
     const std::string& nice_type_name, int64_t address) {
@@ -28,6 +32,11 @@ std::string SystemImpl::GetMemoryObjectName(
   result << default_name << '@' << setfill('0') << setw(16) << hex << address;
   return result.str();
 }
+
+// The Vector2/3 instantiations here are for the benefit of some
+// older unit tests but are not otherwise advertised.
+template class System<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
+template class System<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
 
 }  // namespace systems
 }  // namespace drake
