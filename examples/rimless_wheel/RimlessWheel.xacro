@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd"
+ xmlns:xacro="http://ros.org/wiki/xacro" name="RimlessWheel">
+
+  <xacro:property name="m" value="1" />
+  <!-- I have to add rotational inertia about the COM to the model to have a well-defined flight phase, even though the ideal rimless wheel model does not have it. -->
+  <xacro:property name="I" value="1" />
+  <xacro:property name="l" value="1" />
+  <xacro:property name="alpha" value="0.3927" />
+
+  <link name="hub" >
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="1"  ixy="0"  ixz="0" iyy="${I}" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin rpy="1.5708 0 0" />
+      <geometry>
+        <cylinder radius=".2" length=".2"/>
+      </geometry>
+    </visual>
+    <sensor type="imu">
+      <pose xyz="0 0 0" rpy="0 0 0"/>
+    </sensor>
+  </link>
+
+  <xacro:macro name="leg" params="n">
+    <link name="spoke${n}">
+      <visual>
+      	<origin xyz="0 0 ${-l/2}" rpy="0 0 0" />
+	      <geometry>
+	        <cylinder radius="0.0075" length="${l}"/>
+      	</geometry>
+        <material>
+          <color rgba=".7 .7 .7 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${-l}" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="spoke${n}_weld" type="fixed">
+      <origin xyz="0 0 0" rpy="0 ${(n-1)*2*alpha} 0" />
+      <parent link="hub"/>
+      <child link="spoke${n}"/>
+    </joint>
+  </xacro:macro>
+  
+  <xacro:leg n="1" />
+  <xacro:leg n="2" />
+  <xacro:leg n="3" />
+  <xacro:leg n="4" />
+  <xacro:leg n="5" />
+  <xacro:leg n="6" />
+  <xacro:leg n="7" />
+  <xacro:leg n="8" />
+
+</robot>
