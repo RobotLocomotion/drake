@@ -199,6 +199,12 @@ drake_py_unittest(
     deps = [":all_py"],
 )
 
+drake_py_library(
+    name = "algebra_test_util_py",
+    testonly = 1,
+    srcs = ["test/algebra_test_util.py"],
+)
+
 drake_py_unittest(
     name = "autodiffutils_test",
     deps = [":autodiffutils_py"],
