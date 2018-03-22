@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/initial_value_problem.h"
 
@@ -58,107 +59,69 @@ class ScalarInitialValueProblem {
   typedef std::function<T(const T& t, const T& x,
                           const VectorX<T>& k)> ScalarODEFunction;
 
-  /// Constructs a scalar IVP described by the given @p scalar_ode_function,
-  /// using the given @p default_initial_time and @p default_initial_state as
-  /// initial conditions, and parameterized with @p default_parameters by
-  /// default. Defaults are later used to solve the IVP when the corresponding
-  /// argument is left unspecified.
+  /// A collection of values i.e. initial time t₀, initial state x₀
+  /// and parameters vector 𝐤.to further specify the ODE system (in
+  /// order to become a scalar initial value problem).
+  struct SpecifiedValues {
+    /// Default constructor, leaving all values unspecified.
+    SpecifiedValues() = default;
+
+    /// Constructor specifying all values.
+    ///
+    /// @param t0_in Specified initial time t₀.
+    /// @param x0_in Specified initial state x₀.
+    /// @param k_in Specified parameter vector 𝐤.
+    SpecifiedValues(const optional<T>& t0_in,
+                    const optional<T>& x0_in,
+                    const optional<VectorX<T>>& k_in)
+        : t0(t0_in), x0(x0_in), k(k_in) {}
+
+    optional<T> t0;  ///< The initial time t₀ for the IVP.
+    optional<T> x0;  ///< The initial state x₀ for the IVP.
+    optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
+  };
+
+  /// Constructs an scalar IVP described by the given @p scalar_ode_function,
+  /// using given @p default_values.t0 and @p default_values.x0 as initial
+  /// conditions, and parameterized with @p default_values.k by default.
   ///
-  /// @param scalar_ode_function The scalar ODE function f(t, x; 𝐤) that
-  ///                            describes the state evolution over time.
-  /// @param default_initial_time The default initial time t₀.
-  /// @param default_initial_state The default initial state x₀.
-  /// @param default_parameters The default parameter vector 𝐤₀.
+  /// @param scalar_ode_function The ODE function f(t, x; 𝐤) that describes the
+  ///                            state evolution over time.
+  /// @param default_values The values specified by default for this IVP, i.e.
+  ///                       default initial time t₀ ∈ ℝ and state x₀ ∈ ℝ, and
+  ///                       default parameter vector 𝐤 ∈ ℝᵐ.
+  /// @pre An initial time @p default_values.t0 is provided.
+  /// @pre An initial state @p default_values.x0 is provided.
+  /// @pre An parameter vector @p default_values.k is provided.
+  /// @throw std::logic_error if preconditions are not met.
   ScalarInitialValueProblem(const ScalarODEFunction& scalar_ode_function,
-                            const T& default_initial_time,
-                            const T& default_initial_state,
-                            const VectorX<T>& default_parameters);
-
-  /// Solves the IVP for the given time @p tf, using the default parameters
-  /// vector 𝐤₀ and default initial conditions (t₀, x₀) specified at
-  /// construction.
-  ///
-  /// @param tf The time to solve the IVP for.
-  /// @return The IVP solution x(@p tf; 𝐤) for x(t₀; 𝐤₀) = x₀.
-  /// @pre The time @p tf must be larger than or equal to the default initial
-  ///      time t₀ specified at construction.
-  /// @throw std::logic_error if preconditions are not met.
-  T Solve(const T& tf) const {
-    const VectorX<T> solution =
-        this->vector_ivp_->Solve(tf);
-    return solution[0];
+                            const SpecifiedValues& default_values) {
+    // Wraps the given scalar ODE function as a vector ODE function.
+    typename InitialValueProblem<T>::ODEFunction ode_function =
+        [scalar_ode_function](const T& t, const VectorX<T>& x,
+                              const VectorX<T>& k) -> VectorX<T> {
+      return VectorX<T>::Constant(1, scalar_ode_function(t, x[0], k));
+    };
+    // Instantiates the vector initial value problem.
+    vector_ivp_ = std::make_unique<InitialValueProblem<T>>(
+        ode_function, ToVectorIVPSpecifiedValues(default_values));
   }
 
-  /// Solves the IVP for the given time @p tf, starting at the given initial
-  /// time @p t0, using default parameter vector 𝐤₀ and default initial state
-  /// x₀ specified at construction.
-  ///
-  /// @param t0 The initial time for the IVP.
-  /// @param tf The time to solve the IVP for.
-  /// @return The IVP solution x(@p tf; 𝐤₀) for x(@p t0; 𝐤₀) = x₀.
-  /// @pre The time @p tf must be larger than or equal to the initial time
-  ///      @p t0.
-  /// @throw std::logic_error if preconditions are not met.
-  T Solve(const T& t0, const T& tf) const {
-    const VectorX<T> solution =
-        this->vector_ivp_->Solve(t0, tf);
-    return solution[0];
-  }
-
-  /// Solves the IVP for the given time @p tf using the given parameter vector
-  /// @p k and default initial conditions (t₀, x₀) specified at construction.
+  /// Solves the IVP for time @p tf, using the initial time t₀, initial state
+  /// x₀ and parameter vector 𝐤 present in @p values, falling back to the ones
+  /// given on construction if not given.
   ///
   /// @param tf The time to solve the IVP for.
-  /// @param k The parameters vector for the IVP.
-  /// @return The IVP solution x(@p tf; @p k) for x(t₀; @p k) = x₀.
-  /// @pre The time @p tf must be larger than or equal to the default initial
-  ///      time t₀ specified at construction.
-  /// @pre The dimension of @p k must match that of the default parameters
-  ///      vector 𝐤₀ specified at construction.
+  /// @param values The specified values for the IVP.
+  /// @return The IVP solution x(@p tf; 𝐤) for x(t₀; 𝐤) = x₀.
+  /// @pre Given @p tf must be larger than or equal to the specified initial
+  ///      time t₀ (either given or default).
+  /// @pre If given, the dimension of the parameter vector @p values.k
+  ///      must match that of the parameter vector in the default specified
+  ///      values given on construction.
   /// @throw std::logic_error if preconditions are not met.
-  T Solve(const T& tf, const VectorX<T>& k) const {
-    const VectorX<T> solution =
-        this->vector_ivp_->Solve(tf, k);
-    return solution[0];
-  }
-
-  /// Solves the IVP for the given time @p tf using the given parameter
-  /// vector @p k and starting at time @p t0 with the default initial state
-  /// x₀ specified at construction.
-  ///
-  /// @param t0 The initial time for the IVP.
-  /// @param tf The time to solve the IVP for.
-  /// @param k The parameter vector for the IVP.
-  /// @return The IVP solution x(@p tf; @p k) for x(@p t0; @p k) = x₀.
-  /// @pre The time @p tf must be larger than or equal to the initial time
-  ///      @p t0.
-  /// @pre The dimension of @p k must match that of the default parameter
-  ///      vector 𝐤₀ given on construction.
-  /// @throw std::logic_error if preconditions are not met.
-  T Solve(const T& t0, const T& tf, const VectorX<T>& k) const {
-    const VectorX<T> solution =
-        this->vector_ivp_->Solve(t0, tf, k);
-    return solution[0];
-  }
-
-  /// Solves the IVP for the given time @p tf using the given parameter
-  /// vector @p k and given initial conditions (@p t0, @p x0).
-  ///
-  /// @param t0 The initial time for the IVP.
-  /// @param tf The time to solve the IVP for.
-  /// @param x0 The initial state of the IVP.
-  /// @param k The parameter vector for the IVP.
-  /// @return The IVP solution x(@p tf; @p k) for x(@p t0; @p k) = @p x0.
-  /// @pre The time @p tf must be larger than or equal to the initial time
-  ///      @p t0.
-  /// @pre The dimension of @p k must match that of the default parameter
-  ///      vector 𝐤₀ specified at construction.
-  /// @throw std::logic_error if preconditions are not met.
-  T Solve(const T& t0, const T& x0,
-                 const T& tf, const VectorX<T>& k) const {
-    const VectorX<T> solution = this->vector_ivp_->Solve(
-        t0, VectorX<T>::Constant(1, x0), tf, k);
-    return solution[0];
+  T Solve(const T& tf, const SpecifiedValues& values = {}) const {
+    return this->vector_ivp_->Solve(tf, ToVectorIVPSpecifiedValues(values))[0];
   }
 
   /// Resets the internal integrator instance.
@@ -177,7 +140,7 @@ class ScalarInitialValueProblem {
   ///          ScalarInitialValueProblem::get_mutable_integrator().
   template <typename I, typename... Args>
   I* reset_integrator(Args&&... args) {
-    return vector_ivp_->template reset_integrator(
+    return vector_ivp_->template reset_integrator<I>(
         std::forward<Args>(args)...);
   }
 
@@ -192,6 +155,19 @@ class ScalarInitialValueProblem {
   }
 
  private:
+  // Transforms given scalar IVP specified @p values into vector
+  // IVP specified values.
+  static typename InitialValueProblem<T>::SpecifiedValues
+  ToVectorIVPSpecifiedValues(const SpecifiedValues& values) {
+    typename InitialValueProblem<T>::SpecifiedValues vector_ivp_values;
+    vector_ivp_values.k = values.k;
+    vector_ivp_values.t0 = values.t0;
+    if (values.x0) {
+      vector_ivp_values.x0 = VectorX<T>::Constant(1, values.x0.value()).eval();
+    }
+    return vector_ivp_values;
+  }
+
   // Vector IVP representation of this scalar IVP.
   std::unique_ptr<InitialValueProblem<T>> vector_ivp_;
 };

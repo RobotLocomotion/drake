@@ -123,7 +123,6 @@ drake_cc_library(
     ],
     hdrs = [
         "scalar_initial_value_problem.h",
-        "scalar_initial_value_problem-inl.h",
     ],
     deps = [
         ":initial_value_problem",
