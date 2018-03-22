@@ -659,6 +659,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hash_test",
+    deps = [
+        ":hash",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_less_than_comparable_test",
     deps = [
         ":is_less_than_comparable",
