@@ -179,12 +179,8 @@ void DispatchLoadMessage(const GeometryState<double>& state) {
   }
 
   // Send a load message.
-  const int message_length = message.getEncodedSize();
-  std::vector<uint8_t> message_bytes(message_length);
-  message.encode(message_bytes.data(), 0, message_length);
   DrakeLcm lcm;
-  lcm.Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(),
-              message_bytes.size());
+  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
 void DispatchLoadMessage(const GeometrySystem<double>& system) {

@@ -28,7 +28,7 @@ class TestHandler : public DrakeLcmMessageHandlerInterface {
 
  private:
   const std::string name_;
-  MsgType msg_;
+  MsgType msg_{};
 };
 
 // Generates a log file using the write-only interface, then plays it back
@@ -37,18 +37,14 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   auto w_log = std::make_unique<DrakeLcmLog>("test.log", true);
   const std::string channel_name("test_channel");
 
-  drake::lcmt_drake_signal msg;
+  drake::lcmt_drake_signal msg{};
   msg.dim = 1;
   msg.val.push_back(0.1);
   msg.coord.push_back("test");
   msg.timestamp = 1234;
 
-  std::vector<uint8_t> buffer(msg.getEncodedSize());
-  EXPECT_EQ(msg.encode(&buffer[0], 0, msg.getEncodedSize()),
-            msg.getEncodedSize());
-
   const double log_time = 111;
-  w_log->Publish(channel_name, buffer.data(), buffer.size(), log_time);
+  Publish(w_log.get(), channel_name, msg, log_time);
   // Finish writing.
   w_log.reset();
 

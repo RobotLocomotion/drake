@@ -43,7 +43,7 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
 // message.
 GTEST_TEST(DrakeMockLcmTest, DecodeLastPublishedMessageAsTest) {
   const string channel_name = "DecodeLastPublishedMessageAsTestChannel";
-  lcmt_drake_signal original_message;
+  lcmt_drake_signal original_message{};
   original_message.dim = 1;
   original_message.val.push_back(3.14);
   original_message.coord.push_back("foo");
@@ -213,8 +213,8 @@ GTEST_TEST(DrakeMockLcmTest, EmptyChannelTest) {
   MockMessageHandler handler;
   EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
 
-  const uint8_t buffer{};
-  EXPECT_THROW(dut.Publish("", &buffer, 1), std::exception);
+  lcmt_drake_signal message{};
+  EXPECT_THROW(Publish(&dut, "", message), std::exception);
 }
 
 }  // namespace

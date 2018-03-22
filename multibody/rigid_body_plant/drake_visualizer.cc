@@ -96,7 +96,7 @@ void DrakeVisualizer::PlaybackTrajectory(
 
     // Publishes onto the specified LCM channel.
     lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
-                  message_bytes.size());
+                  message_bytes.size(), sim_time);
 
     const TimePoint earliest_next_frame = prev_time + Duration(kFrameLength);
     std::this_thread::sleep_until(earliest_next_frame);
@@ -111,7 +111,7 @@ void DrakeVisualizer::PlaybackTrajectory(
   std::vector<uint8_t> message_bytes;
   draw_message_translator_.Serialize(sim_time, data, &message_bytes);
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
-                message_bytes.size());
+                message_bytes.size(), sim_time);
 }
 
 void DrakeVisualizer::DoPublish(
@@ -140,17 +140,11 @@ void DrakeVisualizer::DoPublish(
 
   // Publishes onto the specified LCM channel.
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
-                message_bytes.size());
+                message_bytes.size(), context.get_time());
 }
 
 void DrakeVisualizer::PublishLoadRobot() const {
-  const int lcm_message_length = load_message_.getEncodedSize();
-  std::vector<uint8_t> lcm_message_bytes{};
-  lcm_message_bytes.resize(lcm_message_length);
-  load_message_.encode(lcm_message_bytes.data(), 0, lcm_message_length);
-
-  lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", lcm_message_bytes.data(),
-                lcm_message_length);
+  drake::lcm::Publish(lcm_, "DRAKE_VIEWER_LOAD_ROBOT", load_message_);
 }
 
 }  // namespace systems

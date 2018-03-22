@@ -239,9 +239,7 @@ void PointCloudVisualizer::PublishCloud(const Matrix3Xd& points,
                                  const string& suffix) {
   bot_core::pointcloud_t pt_msg{};
   PointCloudToLcm(points, &pt_msg);
-  vector<uint8_t> bytes(pt_msg.getEncodedSize());
-  pt_msg.encode(bytes.data(), 0, bytes.size());
-  lcm_.Publish("DRAKE_POINTCLOUD_" + suffix, bytes.data(), bytes.size());
+  Publish(&lcm_, "DRAKE_POINTCLOUD_" + suffix, pt_msg);
 }
 
 void PointCloudVisualizer::PublishFrames(
@@ -267,9 +265,7 @@ void PointCloudVisualizer::PublishFrames(
     msg.quaternion[i][2] = quat.y();
     msg.quaternion[i][3] = quat.z();
   }
-  vector<uint8_t> bytes(msg.getEncodedSize());
-  msg.encode(bytes.data(), 0, bytes.size());
-  lcm_.Publish("DRAKE_DRAW_FRAMES", bytes.data(), bytes.size());
+  Publish(&lcm_, "DRAKE_DRAW_FRAMES", msg);
 }
 
 }  // namespace estimators
