@@ -37,6 +37,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__hash__",
            [](const Variable& self) { return std::hash<Variable>{}(self); })
+      .def("__copy__",
+           [](const Variable& self) -> Variable {
+             return self;
+           })
       // Addition.
       .def(py::self + py::self)
       .def(py::self + double())
@@ -144,6 +148,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("__repr__",
            [](const Expression& self) {
              return fmt::format("<Expression \"{}\">", self.to_string());
+           })
+      .def("__copy__",
+           [](const Expression& self) -> Expression {
+             return self;
            })
       .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)

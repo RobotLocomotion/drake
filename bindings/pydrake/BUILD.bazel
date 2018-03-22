@@ -208,8 +208,8 @@ drake_py_library(
 drake_py_unittest(
     name = "autodiffutils_test",
     deps = [
-        ":autodiffutils_py",
         ":algebra_test_util_py",
+        ":autodiffutils_py",
     ],
 )
 
@@ -277,7 +277,10 @@ drake_py_unittest(
 drake_py_unittest(
     name = "symbolic_test",
     size = "small",
-    deps = [":symbolic_py"],
+    deps = [
+        ":algebra_test_util_py",
+        ":symbolic_py",
+    ],
 )
 
 drake_py_unittest(
