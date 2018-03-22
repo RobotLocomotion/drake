@@ -85,6 +85,11 @@ if __name__ == '__main__':
         help="Enable source tracing. `none` implies no tracing, `user` " +
              "implies tracing user code, and `sys` implies tracing all " +
              "code. Default is `none`.")
+    parser.add_argument(
+        "--nostdout_to_stderr", action="store_true",
+        help="Do not pipe stdout to stderr. When running from the Bazel " +
+             "client (non-batch), output may be mixed, so piping makes " +
+             "the output more readable.")
     args, remaining = parser.parse_known_args()
     sys.argv = sys.argv[:1] + remaining
 
@@ -96,6 +101,9 @@ if __name__ == '__main__':
 
         # Delegate the rest to unittest.
         unittest.main(module=test_name, argv=unittest_argv)
+
+    if not args.nostdout_to_stderr:
+        sys.stdout = sys.stderr
 
     if args.trace != "none":
         if args.trace == "user":
