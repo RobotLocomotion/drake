@@ -90,7 +90,7 @@ class MySystemBase final : public SystemBase {
   MySystemBase()
         // 1. Use the most general method, taking free functions. Unspecified
         //    prerequisites should default to all_sources_ticket().
-      : entry0_(DeclareCacheEntry("entry0", Alloc3, Calc99, {})),
+      : entry0_(DeclareCacheEntry("entry0", Alloc3, Calc99)),
         // 2. Use the method that takes two member functions.
         entry1_(DeclareCacheEntry("entry1", &MySystemBase::MakeInt1,
                                   &MySystemBase::CalcInt98,
@@ -162,6 +162,22 @@ GTEST_TEST(CacheEntryAllocTest, BadAllocGetsCaught) {
                               ".*MySystemBase"
                               ".*bad alloc entry"
                               ".*allocator returned a nullptr.*");
+}
+
+// Leaving out prerequisites altogether defaults to all sources and is fine
+// (that default is tested for entry0 in SetUp() below). Explicitly specifying
+// an empty list is forbidden -- the proper syntax for saying there are no
+// dependencies is `{nothing_ticket()}`.
+GTEST_TEST(CacheEntryAllocTest, EmptyPrerequisiteListForbidden) {
+  MySystemBase system;
+  EXPECT_NO_THROW(
+      system.DeclareCacheEntry("default prerequisites", Alloc3, Calc99));
+  EXPECT_NO_THROW(system.DeclareCacheEntry("no prerequisites", Alloc3, Calc99,
+                                           {system.nothing_ticket()}));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system.DeclareCacheEntry("empty prerequisites", Alloc3, Calc99, {}),
+      std::logic_error,
+      ".*[Cc]annot create.*empty prerequisites.*nothing_ticket.*");
 }
 
 // Allocate a System and Context and provide some convenience methods.

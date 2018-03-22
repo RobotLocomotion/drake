@@ -14,16 +14,23 @@ CacheEntry::CacheEntry(
     const internal::SystemPathnameInterface* owning_subsystem, CacheIndex index,
     DependencyTicket ticket, std::string description,
     AllocCallback alloc_function, CalcCallback calc_function,
-    std::vector<DependencyTicket> prerequisites)
-    : owning_subsystem_(owning_subsystem),  // Must not be null.
-      cache_index_(index),  // Must be valid.
-      ticket_(ticket),      // Must be valid.
+    std::vector<DependencyTicket> calc_prerequisites)
+    : owning_subsystem_(owning_subsystem),
+      cache_index_(index),
+      ticket_(ticket),
       description_(std::move(description)),
       alloc_function_(std::move(alloc_function)),
       calc_function_(std::move(calc_function)),
-      prerequisites_(std::move(prerequisites)) {
+      calc_prerequisites_(std::move(calc_prerequisites)) {
   DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
   DRAKE_DEMAND(owning_subsystem && alloc_function_ && calc_function_);
+
+  if (calc_prerequisites_.empty()) {
+    throw std::logic_error(FormatName("CacheEntry") +
+      "Cannot create a CacheEntry with an empty prerequisites list. If the "
+      "Calc() function really has no dependencies, list 'nothing_ticket()' as "
+      "its sole prerequisite.");
+  }
 }
 
 std::unique_ptr<AbstractValue> CacheEntry::Allocate(

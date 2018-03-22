@@ -14,8 +14,8 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, CacheEntry::AllocCallback alloc_function,
     CacheEntry::CalcCallback calc_function,
     std::vector<DependencyTicket> calc_prerequisites) {
-  if (calc_prerequisites.empty())
-    calc_prerequisites.push_back(all_sources_ticket());
+  // If the prerequisite list is empty the CacheEntry constructor will throw
+  // a logic error.
   const CacheIndex index(num_cache_entries());
   const DependencyTicket ticket(assign_next_dependency_ticket());
   cache_entries_.emplace_back(std::make_unique<CacheEntry>(

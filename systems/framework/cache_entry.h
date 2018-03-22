@@ -14,9 +14,6 @@
 namespace drake {
 namespace systems {
 
-class ContextBase;
-class SystemBase;
-
 /** A %CacheEntry belongs to a System and represents the properties of one of
 that System's cached computations. %CacheEntry objects are assigned CacheIndex
 values in the order they are declared; these are unique within a single System
@@ -56,8 +53,12 @@ class CacheEntry {
   using CalcCallback = std::function<void(const ContextBase&, AbstractValue*)>;
 
   /** (Advanced) Constructs a cache entry within a System and specifies the
-  resources it needs. This is intended only for use by the framework which
-  provides much nicer APIs for end users.
+  resources it needs.
+
+  This method is intended only for use by the framework which provides much
+  nicer APIs for end users. See
+  @ref DeclareCacheEntry_documentation "DeclareCacheEntry" for the
+  user-facing API documentation.
 
   The supplied allocator must return a suitable AbstractValue in which to
   hold the result. The supplied calculator function must write to an
@@ -69,21 +70,27 @@ class CacheEntry {
   or value can Context-dependent. The supplied prerequisite tickets are
   interpreted as belonging to the same subsystem that owns this %CacheEntry.
 
-  The subsystem pointer must not be null, and the cache index and ticket must be
-  valid. The description is an arbitrary string not interpreted in any way by
-  Drake. */
+  The list of prerequisites cannot be empty -- a cache entry that really has
+  no prerequisites must say so explicitly by providing a list containing only
+  `nothing_ticket()` as a prerequisite. The subsystem pointer must not be null,
+  and the cache index and ticket must be valid. The description is an arbitrary
+  string not interpreted in any way by Drake.
+
+  @throws std::logic_error if the prerequisite list is empty.
+
+  @see drake::systems::SystemBase::DeclareCacheEntry() */
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.
   CacheEntry(const internal::SystemPathnameInterface* owning_subsystem,
              CacheIndex index, DependencyTicket ticket, std::string description,
              AllocCallback alloc_function, CalcCallback calc_function,
-             std::vector<DependencyTicket> prerequisites);
+             std::vector<DependencyTicket> calc_prerequisites);
 
   /** Returns a reference to the list of prerequisites needed by this cache
   entry's Calc() function. These are all within the same subsystem that
   owns this %CacheEntry. */
   const std::vector<DependencyTicket>& prerequisites() const {
-    return prerequisites_;
+    return calc_prerequisites_;
   }
 
   /** Invokes this cache entry's allocator function to allocate a concrete
@@ -285,22 +292,22 @@ class CacheEntry {
   // Provides an identifying prefix for error messages.
   std::string FormatName(const char* api) const;
 
-  const internal::SystemPathnameInterface* owning_subsystem_{};
+  const internal::SystemPathnameInterface* const owning_subsystem_;
   const CacheIndex cache_index_;
   const DependencyTicket ticket_;
 
   // A human-readable description of this cache entry. Not interpreted by code
   // but useful for error messages.
-  std::string description_;
+  const std::string description_;
 
-  AllocCallback alloc_function_;
-  CalcCallback calc_function_;
+  const AllocCallback alloc_function_;
+  const CalcCallback calc_function_;
 
   // The list of prerequisites for the calc_function. Whenever one of these
   // changes, the cache value must be recalculated. Note that all possible
   // prerequisites are internal to the containing subsystem, so the ticket
   // alone is a unique specification of a prerequisite.
-  std::vector<DependencyTicket> prerequisites_;
+  const std::vector<DependencyTicket> calc_prerequisites_;
 };
 
 }  // namespace systems

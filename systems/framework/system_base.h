@@ -27,7 +27,7 @@ class SystemBase : public internal::SystemPathnameInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBase)
 
-  virtual ~SystemBase();
+  ~SystemBase() override;
 
   /** Sets the name of the system. Do not use the path delimiter character '/'
   in the name. When creating a Diagram, names of sibling subsystems should be
@@ -86,16 +86,62 @@ class SystemBase : public internal::SystemPathnameInterface {
 
   //============================================================================
   /** @name                    Declare cache entries
-  Methods in this section are used by derived classes to declare cache
-  entries for their own internal computations. (Other cache entries are
-  provided automatically for well-known computations such as output ports
-  and time derivatives.) Cache entries may contain values of any type,
-  however the type for any particular cache entry is fixed after first
-  allocation. Every cache entry must have an _allocator_ function and
-  a _calculator_ function. The allocator returns an object suitable for
-  holding a value of the cache entry. The calculator uses the contents of
-  a given Context to produce the cache entry's value, which is placed in
-  an object of the type returned by the allocator.
+  @anchor DeclareCacheEntry_documentation
+
+  Methods in this section are used by derived classes to declare cache entries
+  for their own internal computations. (Other cache entries are provided
+  automatically for well-known computations such as output ports and time
+  derivatives.) Cache entries may contain values of any type, however the type
+  for any particular cache entry is fixed after first allocation. Every cache
+  entry must have an _allocator_ function `Alloc()` and a _calculator_ function
+  `Calc()`. `Alloc()` returns an object suitable for holding a value of the
+  cache entry. `Calc()` uses the contents of a given Context to produce the
+  cache entry's value, which is placed in an object of the type returned by
+  `Alloc()`.
+
+  <h4>Prerequisites</h4>
+
+  Correct runtime caching behavior depends critically on understanding the
+  dependencies of the cache entry's `Calc()` function (we call those
+  "prerequisites"). If none of the prerequisites has changed since the last
+  time `Calc()` was invoked to set the cache entry's value, then we don't need
+  to perform a potentially expensive recalculation. On the other hand, if any
+  of the prerequisites has changed then the current value is invalid and must
+  not be used without first recomputing.
+
+  Currently it is not possible for Drake to infer prerequisites accurately and
+  automatically from inspection of the `Calc()` implementation. Therefore,
+  if you don't say otherwise, Drake will assume `Calc()` is dependent
+  on all value sources in the Context, including time, state, input ports,
+  parameters, and accuracy. That means the cache entry's value will be '
+  considered invalid if _any_ of those sources has changed since the last time
+  the value was calculated. That is safe, but can result in more computation
+  than necessary. If you know that your `Calc()` method has fewer prerequisites,
+  you may say so by providing an explicit list in the `calc_prerequisites`
+  parameter. Every possible prerequisite has a DependencyTicket ("ticket"), and
+  the list should consist of tickets. For example, if your calculator depends
+  only on time (e.g. `Calc(context)` is `sin(context.get_time())`) then you
+  would specify `calc_prerequisites={time_ticket()}` here. See
+  @ref DependencyTicket_documentation "Dependency tickets" for a list of the
+  possible tickets and what they mean.
+
+  @warning It is critical that the prerequisite list you supply be accurate, or
+  at least conservative, for correct functioning of the caching system. Drake
+  cannot currently detect that a `Calc()` function accesses an undeclared
+  prerequisite. Even assuming you have correctly listed the prerequisites, you
+  should include a prominent comment in every `Calc()` implementation noting
+  that if the implementation is changed then the prerequisite list must be
+  updated correspondingly.
+
+  A technique you can use to ensure that prerequisites have been properly
+  specified is to make use of the Context's
+  @ref drake::systems::ContextBase::DisableCaching "DisableCaching()"
+  method, which causes cache values to be recalculated unconditionally. You
+  should get identical results with caching enabled or disabled, with speed
+  being the only difference.
+  @see drake::systems::ContextBase::DisableCaching()
+
+  <h4>Which signature to use?</h4>
 
   Although the allocator and calculator functions ultimately satisfy generic
   function signatures defined in CacheEntry, we provide a variety
@@ -122,8 +168,8 @@ class SystemBase : public internal::SystemPathnameInterface {
   CacheIndex and DependencyTicket, which can be obtained from the returned
   %CacheEntry. The function signatures here are:
   @code
-  std::unique_ptr<AbstractValue> Alloc(const ContextBase&);
-  void Calc(const ContextBase&, AbstractValue*);
+    std::unique_ptr<AbstractValue> Alloc(const ContextBase&);
+    void Calc(const ContextBase&, AbstractValue*);
   @endcode
   where the AbstractValue objects must resolve to the same concrete type.
 
@@ -142,10 +188,11 @@ class SystemBase : public internal::SystemPathnameInterface {
   @param[in] calc_prerequisites
     Provides the DependencyTicket list containing a ticket for _every_ Context
     value on which `calc_function` may depend when it computes its result.
-    Defaults to `{all_sources_ticket()}` if missing or empty. If the cache value
+    Defaults to `{all_sources_ticket()}` if unspecified. If the cache value
     is truly independent of the Context (rare!) say so explicitly by providing
-    the list `{nothing_ticket()}`.
-  @returns a const reference to the newly-created %CacheEntry. */
+    the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
+  @returns a const reference to the newly-created %CacheEntry.
+  @throws std::logic_error if given an explicitly empty prerequisite list. */
   const CacheEntry& DeclareCacheEntry(
       std::string description, CacheEntry::AllocCallback alloc_function,
       CacheEntry::CalcCallback calc_function,
@@ -161,7 +208,8 @@ class SystemBase : public internal::SystemPathnameInterface {
   derived from `ContextBase`, and `ValueType` is any concrete type such that
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
   arguments will be deduced and do not need to be specified. See the first
-  DeclareCacheEntry() signature above for more information about the parameters.
+  DeclareCacheEntry() signature above for more information about the parameters
+  and behavior.
   @see drake::systems::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -181,7 +229,7 @@ class SystemBase : public internal::SystemPathnameInterface {
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
   arguments will be deduced and do not need to be specified.
   See the first DeclareCacheEntry() signature above for more information about
-  the parameters.
+  the parameters and behavior.
   @see drake::systems::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
@@ -202,7 +250,7 @@ class SystemBase : public internal::SystemPathnameInterface {
   `Value<ValueType>{}` (value initialized so numerical types will be zeroed in
   the model). (The method name is arbitrary.) Template arguments will be
   deduced and do not need to be specified. See the first DeclareCacheEntry()
-  signature above for more information about the parameters.
+  signature above for more information about the parameters and behavior.
 
   @note The default constructor will be called once immediately to create a
   model value, and subsequent allocations will just copy the model value without
@@ -233,7 +281,9 @@ class SystemBase : public internal::SystemPathnameInterface {
   }
 
   //============================================================================
-  /** @name                     Dependency Tickets
+  /** @name                     Dependency tickets
+  @anchor DependencyTicket_documentation
+
   Use these tickets to declare well-known sources as prerequisites of a
   downstream computation such as an output port, derivative, update, or cache
   entry. The ticket numbers for these sources are the same for all subsystems.
@@ -379,7 +429,7 @@ class SystemBase : public internal::SystemPathnameInterface {
   }
   //@}
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // Obtains a context of the right concrete type, with all internal trackers
   // allocated and internal wiring set up.
   std::unique_ptr<ContextBase> MakeContext() const;
@@ -400,7 +450,7 @@ class SystemBase : public internal::SystemPathnameInterface {
   DependencyTicket assign_next_dependency_ticket() {
     return next_available_ticket_++;
   }
-  #endif  // DRAKE_DOXYGEN_CXX
+#endif  // DRAKE_DOXYGEN_CXX
 
  protected:
   SystemBase() = default;

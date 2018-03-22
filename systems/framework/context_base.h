@@ -38,7 +38,7 @@ class ContextBase : public internal::SystemPathnameInterface {
   /** Creates an identical copy of the concrete context object. */
   std::unique_ptr<ContextBase> Clone() const;
 
-  virtual ~ContextBase();
+  ~ContextBase() override;
 
   /** (Debugging) Disables caching recursively for this context
   and all its subcontexts. Disabling forces every `Eval()` method to perform a
