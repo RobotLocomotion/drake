@@ -89,12 +89,19 @@ if __name__ == '__main__':
         "--trace", type=str, choices=["none", "user", "sys"], default="none",
         help="Enable source tracing. `none` implies no tracing, `user` " +
              "implies tracing user code, and `sys` implies tracing all code.")
+    parser.add_argument(
+        "--stdout_to_stderr", action="store_true",
+        help="Pipe stdout to stderr. When running from the Bazel client " +
+             "(non-batch), output may be mixed. This streamlines the output.")
     args, remaining = parser.parse_known_args()
     sys.argv = sys.argv[:1] + remaining
 
     def run():
         # Delegate the rest to unittest.
         unittest.main(module=test_name, argv=unittest_argv)
+
+    if args.stdout_to_stderr:
+        sys.stdout = sys.stderr
 
     if args.trace != "none":
         if args.trace == "user":
