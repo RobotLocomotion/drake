@@ -39,8 +39,9 @@ def _drake_pybind_cc_binary(
         name = name,
         # This is how you tell Bazel to link in a shared library.
         srcs = srcs + ["//tools/install/libdrake:libdrake.so"],
-        # These copts are per pybind11 deficiencies.
         copts = [
+            "-fvisibility=hidden",
+            # The following copts are per pybind11 deficiencies.
             "-Wno-#warnings",
             "-Wno-cpp",
             "-Wno-unknown-warning-option",
