@@ -14,9 +14,6 @@
 namespace drake {
 namespace systems {
 
-class ContextBase;
-class SystemBase;
-
 /** A %CacheEntry belongs to a System and represents the properties of one of
 that System's cached computations. %CacheEntry objects are assigned CacheIndex
 values in the order they are declared; these are unique within a single System
@@ -56,8 +53,12 @@ class CacheEntry {
   using CalcCallback = std::function<void(const ContextBase&, AbstractValue*)>;
 
   /** (Advanced) Constructs a cache entry within a System and specifies the
-  resources it needs. This is intended only for use by the framework which
-  provides much nicer APIs for end users.
+  resources it needs.
+
+  This method is intended only for use by the framework which provides much
+  nicer APIs for end users. See
+  @ref DeclareCacheEntry_documentation "DeclareCacheEntry" for the
+  user-facing API documentation.
 
   The supplied allocator must return a suitable AbstractValue in which to
   hold the result. The supplied calculator function must write to an
@@ -71,7 +72,8 @@ class CacheEntry {
 
   The subsystem pointer must not be null, and the cache index and ticket must be
   valid. The description is an arbitrary string not interpreted in any way by
-  Drake. */
+  Drake.
+  @see drake::systems::SystemBase::DeclareCacheEntry() */
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.
   CacheEntry(const internal::SystemPathnameInterface* owning_subsystem,

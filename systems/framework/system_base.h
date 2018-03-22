@@ -86,6 +86,8 @@ class SystemBase : public internal::SystemPathnameInterface {
 
   //============================================================================
   /** @name                    Declare cache entries
+  @anchor DeclareCacheEntry_documentation
+
   Methods in this section are used by derived classes to declare cache
   entries for their own internal computations. (Other cache entries are
   provided automatically for well-known computations such as output ports
