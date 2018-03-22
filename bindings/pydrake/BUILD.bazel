@@ -58,6 +58,7 @@ drake_pybind_library(
     name = "autodiffutils_py",
     cc_deps = [
         ":autodiff_types_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
     package_info = PACKAGE_INFO,

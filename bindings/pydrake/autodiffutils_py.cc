@@ -5,6 +5,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/util/wrap_pybind.h"
 
 using Eigen::AutoDiffScalar;
 using std::sin;
@@ -67,7 +68,7 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
 
     // Add overloads for `sin` and `cos`.
     auto math = py::module::import("pydrake.math");
-    math
+    MirrorDef<py::module, decltype(autodiff)>(&math, &autodiff)
       .def("log", [](const AutoDiffXd& x) { return log(x); })
       .def("sin", [](const AutoDiffXd& x) { return sin(x); })
       .def("cos", [](const AutoDiffXd& x) { return cos(x); })
@@ -77,14 +78,14 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
       .def("atan2",
            [](const AutoDiffXd& y, const AutoDiffXd& x) {
              return atan2(y, x);
-           }, py::arg("y"), py::arg("x"))
+           })
       .def("sinh", [](const AutoDiffXd& x) { return sinh(x); })
       .def("cosh", [](const AutoDiffXd& x) { return cosh(x); })
       .def("tanh", [](const AutoDiffXd& x) { return tanh(x); });
-    // Re-define a subset for backwards compatibility.
-    autodiff
-      .def("sin", [](const AutoDiffXd& x) { return sin(x); })
-      .def("cos", [](const AutoDiffXd& x) { return cos(x); });
+    // Mirror for numpy.
+    autodiff.attr("arcsin") = autodiff.attr("asin");
+    autodiff.attr("arccos") = autodiff.attr("acos");
+    autodiff.attr("arctan2") = autodiff.attr("atan2");
 }
 
 }  // namespace pydrake
