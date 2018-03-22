@@ -12,7 +12,7 @@ namespace solvers {
 namespace {
 
 // Floating point comparison tolerance.
-const double epsilon = 1e-15;
+const double epsilon = 5e-14;
 
 // Run the solver and test against the expected result.
 template <typename Derived>

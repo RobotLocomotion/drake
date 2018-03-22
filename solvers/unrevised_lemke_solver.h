@@ -126,7 +126,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
         const LCPVariableVector& v1, const LCPVariableVector& v2) const {
       DRAKE_DEMAND(v1.size() == v2.size());
 
-      // Copy the vectors. 
+      // Copy the vectors.
       sorted1_ = v1;
       sorted2_ = v2;
 
@@ -134,7 +134,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       // all permutations of a set of variables as the same.
       std::sort(sorted1_.begin(), sorted1_.end());
       std::sort(sorted2_.begin(), sorted2_.end());
- 
+
       // Now do a lexicographic comparison.
       for (int i = 0; i < static_cast<int>(v1.size()); ++i) {
         if (v1[i] < v2[i]) {
@@ -146,7 +146,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       }
 
       // If still here, they're equal.
-      return false; 
+      return false;
     }
 
    private:
