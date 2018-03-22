@@ -45,8 +45,7 @@ SolutionResult
 template <typename T>
 // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
 SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
-  // TODO(ggould-tri) This solver currently imposes restrictions that its
-  // problem:
+  // This solver imposes restrictions that its problem:
   //
   // (1) Contains only linear complementarity constraints,
   // (2) Has no element of any decision variable appear in more than one
@@ -91,11 +90,6 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   // If any is infeasible, returns false and does not alter the decision
   // variables.
   //
-  // TODO(ggould-tri) This could also be solved by constructing a single large
-  // square matrix and vector, and then copying the elements of the individual
-  // Ms and qs into the appropriate places.  That would be equivalent to this
-  // implementation but might perform better if the solver were to parallelize
-  // internally.
 
   // We don't actually indicate different results.
   SolverResult solver_result(UnrevisedLemkeSolver::id());

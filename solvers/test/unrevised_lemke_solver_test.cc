@@ -26,24 +26,6 @@ void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   ASSERT_FALSE(result);
 }
 
-GTEST_TEST(testUnrevisedLCP, testCottle) {
-  Eigen::Matrix<double, 3, 3> M;
-
-  // clang-format off
-  M <<
-    0, -1, 2,
-    2, 0, -2,
-    -1, 1, 0;
-  // clang-format on
-
-  Eigen::Matrix<double, 3, 1> q;
-  q << -3, 6, -1;
-
-  Eigen::VectorXd expected_z(3);
-  expected_z << 0, 1, 3;
-  runLCP(M, q, expected_z);
-}
-
 GTEST_TEST(testUnrevisedLCP, testCycling) {
   Eigen::Matrix<double, 3, 3> M;
 
