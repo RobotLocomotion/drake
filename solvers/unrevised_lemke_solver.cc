@@ -26,6 +26,8 @@ namespace solvers {
 
 namespace {
 
+// Linear system solver class that allows the LCP solver to function even
+// when built to support AutoDiff types.
 template <class T>
 class LinearSolver {
  public:
@@ -92,10 +94,10 @@ MatrixX<double> LinearSolver<double>::Solve(
   return lu_.solve(m);
 }
 
+// Checks whether z = 0 solves the LCP.
 template <typename Scalar>
 bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
                        VectorX<Scalar>* z) {
-  // see whether trivial solution exists
   if (q.minCoeff() > -zero_tol) {
     z->resize(n);
     z->fill(0);
@@ -175,7 +177,8 @@ void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
   }
 }
 
-// TODO(sammy-tri) this could also use a more efficient implementation.
+// Utility function for copying selected rows of the column vector `in` to
+// the vector `out`, which is resized as necessary.
 template <typename T>
 void SelectSubVector(const VectorX<T>& in,
                      const std::vector<int>& rows, VectorX<T>* out) {
@@ -186,6 +189,9 @@ void SelectSubVector(const VectorX<T>& in,
   }
 }
 
+// Utility function for copying the vector `v_sub` to selected rows of the
+// column vector `v`. Asserts that the size of `v_sub` is equal to the size of
+// `indices`.
 template <typename T>
 void SetSubVector(const std::vector<int>& indices, const VectorX<T>& v_sub,
                   VectorX<T>* v) {
@@ -193,7 +199,6 @@ void SetSubVector(const std::vector<int>& indices, const VectorX<T>& v_sub,
   for (size_t i = 0; i < indices.size(); ++i)
     (*v)[indices[i]] = v_sub[i];
 }
-
 }  // anonymous namespace
 
 template <>
@@ -409,6 +414,7 @@ bool UnrevisedLemkeSolver<T>::IsEachUnique(
   }) == vars_copy.end());
 }
 
+// Performs the pivoting operation.
 template <typename T>
 void UnrevisedLemkeSolver<T>::LemkePivot(
     const MatrixX<T>& M,
@@ -418,7 +424,7 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
     VectorX<T>* q_prime) const {
   DRAKE_DEMAND(q_prime);
 
-  const int kArtificial = M.rows();
+  const int kArtificial = M.rows();  // Artificial variable index.
 
   // Verify that each member in the independent and dependent sets is unique.
   DRAKE_ASSERT(IsEachUnique(indep_variables_));
@@ -458,7 +464,6 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
   // Set the components of q'.
   SetSubVector(index_sets_.beta_prime, q_prime_beta_prime_, q_prime);
   SetSubVector(index_sets_.bar_alpha_prime, q_prime_bar_alpha_prime_, q_prime);
-
   DRAKE_SPDLOG_DEBUG(log(), "q': {}", q_prime->transpose());
 
   // If it is not necessary to compute the column of M, quit now.
@@ -570,7 +575,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       "q: {}, ", M, q.transpose());
 
   const int n = q.size();
-  const int max_pivots = std::min(1000, 50 * n);
+  const int max_pivots = 50 * n;
 
   if (M.rows() != n || M.cols() != n)
     throw std::logic_error("M's dimensions do not match that of q.");
