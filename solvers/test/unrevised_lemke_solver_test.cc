@@ -11,12 +11,9 @@ namespace drake {
 namespace solvers {
 namespace {
 
-const double epsilon = 1e-6;
-
-/// Run all non-regularized solvers.  If @p expected_z is an empty
-/// vector, outputs will only be compared against each other.
+// Run the solver and test against the expected result.
 template <typename Derived>
-void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
+void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
                  const Eigen::VectorXd& expected_z_in) {
   UnrevisedLemkeSolver<double> l;
 
@@ -110,78 +107,21 @@ GTEST_TEST(testUnrevisedLCP, testCycling) {
 
   Eigen::VectorXd expected_z(3);
   expected_z << 1.0/3, 1.0/3, 1.0/3;
-  RunBasicLcp(M, q, expected_z);
+  runLCP(M, q, expected_z);
 }
 
 GTEST_TEST(testUnrevisedLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
-  // clang-format off
-  M <<
-      1, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 2, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 3, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 4, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 5, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 6, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 7, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 8, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 9;
-  // clang-format on
+  M = (Eigen::Matrix<double, 9, 1>() << 1, 2, 3, 4, 5, 6, 7, 8, 9).
+      finished().asDiagonal();
 
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
 
   Eigen::VectorXd expected_z(9);
   expected_z << 1, 1.0/2, 1.0/3, 1.0/4, 1.0/5, 1.0/6, 1.0/7, 1.0/8, 1.0/9;
-  RunBasicLcp(M, q, expected_z);
-
-  // Mangle the input matrix so that some regularization occurs.
-  M(0, 8) = 10;
-  RunRegularizedLcp(M, q, expected_z);
+  runLCP(M, q, expected_z);
 }
-
-/*
-GTEST_TEST(testUnrevisedLCP, testAutoDiffTrivial) {
-  typedef Eigen::AutoDiffScalar<Vector1d> Scalar;
-  Eigen::Matrix<Scalar, 9, 9> M;
-  // clang-format off
-  M <<
-      1, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 2, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 3, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 4, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 5, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 6, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 7, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 8, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 9;
-  // clang-format on
-
-  // Set the LCP vector and indicate that we are interested in how the solution
-  // changes as the first element changes.
-  VectorX<Scalar> q(9);
-  q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
-  q(0).derivatives()(0) = 1;
-  VectorX<Scalar> lemke_z;
-
-  // Attempt to compute the solution using both "fast" and Lemke algorithms.
-  UnrevisedLemkeSolver<Scalar> l;
-  int num_pivots;
-  bool result = l.SolveLcpLemke(M, q, &lemke_z, &num_pivots);
-  EXPECT_TRUE(result);
-
-  // Since the LCP matrix is diagonal and the first number is 1.0, a unit
-  // increase in q(0) will result in a unit decrease in z(0).
-  const double tol = std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(lemke_z(0).value(), 1.0, tol);
-  EXPECT_NEAR(lemke_z(0).derivatives()(0), -1, tol);
-
-  // Mangle the input matrix so that some regularization occurs.
-  lemke_z.setZero();
-  M(0, 8) = 10;
-  result = l.SolveLcpLemkeRegularized(M, q, &lemke_z);
-}
-*/
 
 GTEST_TEST(testUnrevisedLCP, testProblem1) {
   // Problem from example 10.2.1 in "Handbook of Test Problems in
@@ -263,7 +203,7 @@ GTEST_TEST(testUnrevisedLCP, testProblem4) {
 
   UnrevisedLemkeSolver<double> l;
 
-// TODO(sammy-tri) the Lemke solvers find no solution at all, however.
+  // The Lemke solvers find no solution at all.
   int num_pivots;
   bool result = l.SolveLcpLemke(M, q, &z, &num_pivots);
   EXPECT_FALSE(result);
@@ -322,11 +262,6 @@ GTEST_TEST(testUnrevisedLCP, testEmpty) {
   bool result = l.SolveLcpLemke(empty_M, empty_q, &z, &num_pivots);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
-/*
-  result = l.SolveLcpLemkeRegularized(empty_M, empty_q, &z);
-  EXPECT_TRUE(result);
-  EXPECT_EQ(z.size(), 0);
-*/
 }
 
 // Verifies that z is zero on LCP solver failure.
@@ -348,10 +283,6 @@ GTEST_TEST(testUnrevisedLCP, testFailure) {
   ASSERT_EQ(z.size(), neg_q.size());
   EXPECT_EQ(z[0], 0.0);
   EXPECT_FALSE(constraint.CheckSatisfied(z));
-
-  // Note: we do not test regularized solvers here, as we're specifically
-  // interested in algorithm failure and the regularized solvers are designed
-  // not to fail.
 }
 
 }  // namespace

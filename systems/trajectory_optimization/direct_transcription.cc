@@ -16,6 +16,8 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 class DiscreteTimeSystemConstraint : public solvers::Constraint {
@@ -95,15 +97,22 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
   AutoDiffXd evaluation_time_{0};
 };
 
+double get_period(const System<double>* system) {
+  optional<PeriodicEventData> periodic_data =
+      system->GetUniquePeriodicDiscreteUpdateAttribute();
+  DRAKE_DEMAND(periodic_data.has_value());
+  DRAKE_DEMAND(periodic_data->offset_sec() == 0.0);
+  return periodic_data->period_sec();
+}
+
 }  // end namespace
 
 DirectTranscription::DirectTranscription(const System<double>* system,
                                          const Context<double>& context,
                                          int num_time_samples)
-    : MultipleShooting(system->get_num_total_inputs(),
-                       context.get_num_total_states(), num_time_samples,
-                       0.1),  // TODO(russt): Replace this with the actual
-                              // sample time of the discrete update (#6878).
+    : MultipleShooting(
+          system->get_num_total_inputs(), context.get_num_total_states(),
+          num_time_samples, get_period(system)),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
@@ -171,7 +180,8 @@ void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   }
 }
 
-PiecewisePolynomialTrajectory DirectTranscription::ReconstructInputTrajectory()
+PiecewisePolynomial<double>
+DirectTranscription::ReconstructInputTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -182,11 +192,10 @@ PiecewisePolynomialTrajectory DirectTranscription::ReconstructInputTrajectory()
     inputs[i] = GetSolution(input(i));
   }
   // TODO(russt): Implement DTTrajectories and return one of those instead.
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs));
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
 }
 
-PiecewisePolynomialTrajectory DirectTranscription::ReconstructStateTrajectory()
+PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
@@ -197,8 +206,7 @@ PiecewisePolynomialTrajectory DirectTranscription::ReconstructStateTrajectory()
     states[i] = GetSolution(state(i));
   }
   // TODO(russt): Implement DTTrajectories and return one of those instead.
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states));
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
 }
 
 bool DirectTranscription::AddSymbolicDynamicConstraints(
@@ -277,11 +285,7 @@ void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
 
 void DirectTranscription::ValidateSystem(const System<double>& system,
                                          const Context<double>& context) {
-  DRAKE_THROW_UNLESS(context.has_only_discrete_state());
-
-  // TODO(russt): Check that the system has ONLY simple periodic updates
-  // (#6878).
-
+  DRAKE_DEMAND(context.has_only_discrete_state());
   DRAKE_DEMAND(context.get_num_discrete_state_groups() == 1);
   DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);

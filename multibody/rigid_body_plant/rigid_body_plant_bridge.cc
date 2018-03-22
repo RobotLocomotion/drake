@@ -94,19 +94,20 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
         const DrakeShapes::Geometry& geometry = visual_element.getGeometry();
         switch (visual_element.getShape()) {
           case DrakeShapes::SPHERE: {
-            auto sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
+            const auto& sphere =
+                dynamic_cast<const DrakeShapes::Sphere&>(geometry);
             shape = std::make_unique<Sphere>(sphere.radius);
             break;
           }
           case DrakeShapes::CYLINDER: {
-            auto cylinder =
+            const auto& cylinder =
                 dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
             shape =
                 std::make_unique<Cylinder>(cylinder.radius, cylinder.length);
             break;
           }
           case DrakeShapes::MESH: {
-            auto mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
+            const auto& mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
             if (mesh.uri_.find("package://") == 0) {
               shape = std::make_unique<Mesh>(mesh.uri_);
             } else {

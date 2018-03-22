@@ -120,8 +120,9 @@ AddRelaxNonConvexQuadraticConstraintInTrustRegion(
                               upper_bound);
     Vector2<symbolic::Expression> linear_expr(2 * x0.dot(nonzero_Q * x) - z(0),
                                               p.dot(y) + z_coeff * z(0));
-    Binding<LinearConstraint> linear_constraint = prog->AddConstraint(
-        internal::ParseLinearConstraint(linear_expr, linear_lb, linear_ub));
+    Binding<LinearConstraint> linear_constraint =
+        prog->AddConstraint(internal::BindingDynamicCast<LinearConstraint>(
+            internal::ParseConstraint(linear_expr, linear_lb, linear_ub)));
     std::vector<Binding<RotatedLorentzConeConstraint>> lorentz_cones{
         {lorentz_cone1}};
     return std::make_tuple(linear_constraint, lorentz_cones, z);
@@ -139,8 +140,8 @@ AddRelaxNonConvexQuadraticConstraintInTrustRegion(
                                   -x0.dot(Q1 * x0) + trust_region_gap,
                                   -x0.dot(Q2 * x0) + trust_region_gap);
   Binding<LinearConstraint> linear_constraint =
-      prog->AddConstraint(internal::ParseLinearConstraint(
-          linear_expressions, linear_lb, linear_ub));
+      prog->AddConstraint(internal::BindingDynamicCast<LinearConstraint>(
+          internal::ParseConstraint(linear_expressions, linear_lb, linear_ub)));
 
   const Eigen::MatrixXd A1 =
       math::DecomposePSDmatrixIntoXtransposeTimesX(Q1, psd_tol);

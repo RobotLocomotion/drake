@@ -49,8 +49,6 @@ string ShapeToString(Shape ss) {
 
 Geometry::Geometry() : shape(UNKNOWN) {}
 
-Geometry::Geometry(const Geometry& other) { shape = other.getShape(); }
-
 Geometry::Geometry(Shape shape_in) : shape(shape_in) {}
 
 Shape Geometry::getShape() const { return shape; }

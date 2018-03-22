@@ -43,11 +43,14 @@ def _check_includes(filename):
 
 
 def _check_shebang(filename):
-    """Return 0 if the filename's executable bit is consistent with the presence of
-    a shebang line, and 1 otherwise."""
+    """Return 0 if the filename's executable bit is consistent with the
+    presence of a shebang line and the shebang line is in the whitelist of
+    acceptable shebang lines, and 1 otherwise.
+    """
     is_executable = os.access(filename, os.X_OK)
     with open(filename, 'r') as file:
-        has_shebang = file.readline().startswith("#!")
+        shebang = file.readline().rstrip("\n")
+        has_shebang = shebang.startswith("#!")
     if is_executable and not has_shebang:
         print("error: {} is executable but lacks a shebang".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))
@@ -55,6 +58,19 @@ def _check_shebang(filename):
     if has_shebang and not is_executable:
         print("error: {} has a shebang but is not executable".format(filename))
         print("note: fix by removing the first line of the file")
+        return 1
+    shebang_whitelist = {
+        "bash": "#!/bin/bash",
+        "directorPython": "#!/usr/bin/env directorPython",
+        "python": "#!/usr/bin/env python2"
+    }
+    if has_shebang and shebang not in shebang_whitelist.values():
+        print(("error: shebang '{}' in the file '{}' is not in the shebang "
+              "whitelist").format(shebang, filename))
+        for hint, replacement_shebang in shebang_whitelist.iteritems():
+            if hint in shebang:
+                print(("note: fix by replacing the shebang with "
+                      "'{}'").format(replacement_shebang))
         return 1
     return 0
 
@@ -68,7 +84,7 @@ def main():
     for filename in sys.argv[1:]:
         print("drakelint.py: Linting " + filename)
         total_errors += _check_invalid_line_endings(filename)
-        if filename.endswith(".py"):
+        if not filename.endswith((".cc", ".cpp", ".h")):
             # TODO(jwnimmer-tri) We should enable this check for C++ files
             # also, but that runs into some struggle with genfiles.
             total_errors += _check_shebang(filename)

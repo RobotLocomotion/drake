@@ -70,6 +70,17 @@ void RigidBodyPlant<T>::initialize() {
       this->DeclareVectorOutputPort(BasicVector<T>(get_num_states()),
                                     &RigidBodyPlant::CopyStateToOutput)
           .get_index();
+  if (is_state_discrete()) {
+    // TODO(jwnimmer-tri) Add an implementation of the state derivative output
+    // port that works in timestepping mode.  For now, we just disable the port
+    // entirely and have a cautionary API comment on its accessor.
+  } else {
+    state_derivative_output_port_index_ =
+        this->DeclareVectorOutputPort(
+            BasicVector<T>(get_num_states()),
+            &RigidBodyPlant::CalcStateDerivativeOutput)
+        .get_index();
+  }
   ExportModelInstanceCentricPorts();
   // Declares an abstract valued output port for kinematics results.
   kinematics_output_port_index_ =
@@ -476,6 +487,15 @@ void RigidBodyPlant<T>::CopyStateToOutput(const Context<T>& context,
                             : context.get_continuous_state().CopyToVector();
 
   state_output_vector->get_mutable_value() = state_vector;
+}
+
+template <typename T>
+void RigidBodyPlant<T>::CalcStateDerivativeOutput(
+    const Context<T>& context,
+    BasicVector<T>* output) const {
+  unique_ptr<ContinuousState<T>> derivatives = this->AllocateTimeDerivatives();
+  this->CalcTimeDerivatives(context, derivatives.get());
+  output->SetFrom(derivatives->get_vector());
 }
 
 // Updates one model-instance-centric state output port.

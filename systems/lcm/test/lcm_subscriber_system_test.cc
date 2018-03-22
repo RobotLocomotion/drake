@@ -1,6 +1,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 #include <array>
+#include <future>
 
 #include <gtest/gtest.h>
 
@@ -97,7 +98,6 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // "device under test".
   LcmSubscriberSystem dut(channel_name, translator, &lcm);
 
-  lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
 }
 
@@ -125,9 +125,20 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // "device under test".
   LcmSubscriberSystem dut(channel_name, dictionary, &lcm);
 
-  lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
 }
+
+struct SampleData {
+  const lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
+
+  void MockPublish(
+      drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) {
+    const int num_bytes = value.getEncodedSize();
+    std::vector<uint8_t> buffer(num_bytes);
+    value.encode(buffer.data(), 0, num_bytes);
+    lcm->InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
+  }
+};
 
 // Tests LcmSubscriberSystem using a Serializer.
 GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
@@ -142,29 +153,59 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // MockLcm produces a sample message.
-  lcm.StartReceiveThread();
-  const lcmt_drake_signal sample_data{
-      2,
-      {
-          1.0, 2.0,
-      },
-      {
-          "x", "y",
-      },
-      12345,
-  };
-  const int num_bytes = sample_data.getEncodedSize();
-  std::vector<uint8_t> buffer(num_bytes);
-  sample_data.encode(buffer.data(), 0, num_bytes);
-  lcm.InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
+  SampleData sample_data;
+  sample_data.MockPublish(&lcm, channel_name);
 
   // Verifies that the dut produces the output message.
   EvalOutputHelper(*dut, context.get(), output.get());
 
   const AbstractValue* abstract_value = output->get_data(0);
   ASSERT_NE(abstract_value, nullptr);
-  const auto& value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
-  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data));
+  auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
+GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
+  // Ensure that `WaitForMessage` works as expected.
+  drake::lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+
+  // Start device under test, with background LCM thread running.
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+
+  SampleData sample_data;
+
+  // Use simple atomic rather than condition variables, as it simplifies this
+  // implementation.
+  std::atomic<bool> started{};
+  auto wait = [&]() {
+    while (!started.load()) {}
+  };
+
+  // Test explicit value.
+  started = false;
+  auto future_count = std::async(std::launch::async, [&]() {
+    EXPECT_EQ(dut->GetInternalMessageCount(), 0);
+    started = true;
+    return dut->WaitForMessage(0);
+  });
+  wait();
+  sample_data.MockPublish(&lcm, channel_name);
+  EXPECT_GE(future_count.get(), 1);
+
+  // Test implicit value, retrieving message as well.
+  started = false;
+  auto future_message = std::async(std::launch::async, [&]() {
+    int old_count = dut->GetInternalMessageCount();
+    started = true;
+    Value<lcmt_drake_signal> message;
+    dut->WaitForMessage(old_count, &message);
+    return message.get_value();
+  });
+  wait();
+  sample_data.MockPublish(&lcm, channel_name);
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
+      future_message.get(), sample_data.value));
 }
 
 // A lcmt_drake_signal translator that preserves coordinate names.
@@ -237,7 +278,6 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   CustomDrakeSignalTranslator translator;
   drake::lcm::DrakeMockLcm lcm;
   LcmSubscriberSystem dut(kChannelName, translator, &lcm);
-  lcm.StartReceiveThread();
 
   // Create a data-filled vector.
   typedef CustomDrakeSignalTranslator::CustomVector CustomVector;

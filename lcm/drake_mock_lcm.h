@@ -36,10 +36,6 @@ class DrakeMockLcm : public DrakeLcmInterface {
    */
   void EnableLoopBack() { enable_loop_back_ = true; }
 
-  void StartReceiveThread() override;
-
-  void StopReceiveThread() override;
-
   void Publish(const std::string& channel, const void* data,
                int data_size, double time_sec = 0) override;
 
@@ -101,9 +97,8 @@ class DrakeMockLcm : public DrakeLcmInterface {
                  DrakeLcmMessageHandlerInterface* handler) override;
 
   /**
-   * Fakes a callback. This will only work if StartReceivedThread() was already
-   * called, otherwise this method will do nothing. The callback is executed by
-   * the same thread as the one calling this method.
+   * Fakes a callback. The callback is executed by the same thread as the one
+   * calling this method.
    *
    * @param[in] channel The channel on which to publish the message.
    *
@@ -117,7 +112,6 @@ class DrakeMockLcm : public DrakeLcmInterface {
 
  private:
   bool enable_loop_back_{false};
-  bool receive_thread_started_{false};
 
   struct LastPublishedMessage {
     std::vector<uint8_t> data{};

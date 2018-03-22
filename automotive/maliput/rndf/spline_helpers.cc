@@ -16,6 +16,8 @@ namespace drake {
 namespace maliput {
 namespace rndf {
 
+using trajectories::PiecewisePolynomial;
+
 // The InverseFunctionInterpolator holds a graph structure where each node
 // is a linear interpolant. The graph has kFunctionPartitionTreeDegree on each
 // level and the depth is controlled by kFunctionPartitionTreeMaxDepth. These

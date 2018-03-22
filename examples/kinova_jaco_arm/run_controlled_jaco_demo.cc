@@ -12,7 +12,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -39,10 +39,12 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
+using trajectories::PiecewisePolynomial;
+
 const char* kRelUrdfPath =
     "drake/manipulation/models/jaco_description/urdf/j2n6s300.urdf";
 
-std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
+PiecewisePolynomial<double> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kRelUrdfPath), multibody::joints::kFixed, tree.get());
@@ -145,8 +147,7 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
     knots[i] = q_sol.col(i);
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(
-      PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots));
+  return PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots);
 }
 
 int DoMain() {
@@ -155,7 +156,7 @@ int DoMain() {
   drake::lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
   systems::RigidBodyPlant<double>* plant = nullptr;
-  std::unique_ptr<PiecewisePolynomialTrajectory> trajectory = MakePlan();
+  PiecewisePolynomial<double> trajectory = MakePlan();
 
   {
     auto tree = make_unique<RigidBodyTree<double>>();
@@ -188,7 +189,7 @@ int DoMain() {
 
   // Adds a trajectory source for desired state.
   auto traj_src = builder.AddSystem<systems::TrajectorySource<double>>(
-      *trajectory, 1 /* outputs q + v */);
+      trajectory, 1 /* outputs q + v */);
   traj_src->set_name("trajectory_source");
 
   builder.Connect(traj_src->get_output_port(),

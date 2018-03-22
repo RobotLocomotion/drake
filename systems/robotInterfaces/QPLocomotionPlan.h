@@ -23,7 +23,7 @@ class QuadraticLyapunovFunction {
   // TODO(tkoolen): more functionality
  private:
   Eigen::MatrixXd S_;
-  ExponentialPlusPiecewisePolynomial<double> s1_;
+  drake::trajectories::ExponentialPlusPiecewisePolynomial<double> s1_;
 
  public:
   QuadraticLyapunovFunction() {}
@@ -31,15 +31,17 @@ class QuadraticLyapunovFunction {
   template <typename DerivedS>
   QuadraticLyapunovFunction(
       const Eigen::MatrixBase<DerivedS>& S,
-      const ExponentialPlusPiecewisePolynomial<double>& s1)
+      const drake::trajectories::ExponentialPlusPiecewisePolynomial<double>& s1)
       : S_(S), s1_(s1) {}
 
   const Eigen::MatrixXd& getS() const { return S_; }
 
-  const ExponentialPlusPiecewisePolynomial<double>& getS1() const {
+  const drake::trajectories::ExponentialPlusPiecewisePolynomial<double>& getS1()
+      const {
     return s1_;
   }
-  void setS1(const ExponentialPlusPiecewisePolynomial<double>& new_s1) {
+  void setS1(const drake::trajectories::ExponentialPlusPiecewisePolynomial<
+             double>& new_s1) {
     s1_ = new_s1;
   }
 };
@@ -84,12 +86,12 @@ struct QPLocomotionPlanSettings {
   double early_contact_allowed_fraction;
 
   std::vector<BodyMotionData> body_motions;
-  PiecewisePolynomial<double> zmp_trajectory;
+  drake::trajectories::PiecewisePolynomial<double> zmp_trajectory;
   TVLQRData zmp_data;
   Eigen::MatrixXd D_control;
   QuadraticLyapunovFunction V;
-  PiecewisePolynomial<double> q_traj;
-  ExponentialPlusPiecewisePolynomial<double> com_traj;
+  drake::trajectories::PiecewisePolynomial<double> q_traj;
+  drake::trajectories::ExponentialPlusPiecewisePolynomial<double> com_traj;
 
   std::string gain_set;
   double mu;
@@ -180,7 +182,7 @@ class QPLocomotionPlan {
   std::map<Side, bool> toe_off_active_;
   std::map<Side, bool> knee_pd_active_;
   std::map<Side, KneeSettings> knee_pd_settings_;
-  PiecewisePolynomial<double> shifted_zmp_trajectory_;
+  drake::trajectories::PiecewisePolynomial<double> shifted_zmp_trajectory_;
 
   /*
    * when the plan says a given body is in support, require the controller to

@@ -20,6 +20,7 @@ drake_cc_library(
         "road_geometry.h",
         "rules/regions.h",
         "rules/right_of_way_rule.h",
+        "rules/road_rulebook.h",
         "rules/speed_limit_rule.h",
         "segment.h",
         "type_specific_identifier.h",
@@ -60,6 +61,7 @@ drake_cc_googletest(
     srcs = [
         "test/rules_regions_test.cc",
         "test/rules_right_of_way_test.cc",
+        "test/rules_road_rulebook_test.cc",
         "test/rules_speed_limit_test.cc",
     ],
     deps = [

@@ -5,6 +5,8 @@ import unittest
 import numpy as np
 import pydrake.symbolic as sym
 
+# TODO(eric.cousineau): Replace usages of `sym` math functions with the
+# overloads from `pydrake.math`.
 
 # Define global variables to make the tests less verbose.
 x = sym.Variable("x")
@@ -69,13 +71,7 @@ class TestSymbolicVariable(unittest.TestCase):
         self.assertEqual(str(x != y), "(x != y)")
 
     def test_repr(self):
-        self.assertEqual(str(x), "x")
-        self.assertEqual(str(y), "y")
-        self.assertEqual(str(x + y), "(x + y)")
-        self.assertEqual(str(x - y), "(x - y)")
-        self.assertEqual(str(x * y), "(x * y)")
-        self.assertEqual(str(x / y), "(x / y)")
-        self.assertEqual(str((x + y) * x), "(x * (x + y))")
+        self.assertEqual(repr(x), "Variable('x')")
 
     def test_simplify(self):
         self.assertEqual(str(0 * (x + y)), "0")
@@ -124,6 +120,15 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_constructor_list(self):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.size(), 3)
+
+    def test_to_string(self):
+        vars = sym.Variables([x, y, z])
+        self.assertEqual(vars.to_string(), "{x, y, z}")
+        self.assertEqual("{}".format(vars), "{x, y, z}")
+
+    def test_repr(self):
+        vars = sym.Variables([x, y, z])
+        self.assertEqual(repr(vars), '<Variables "{x, y, z}">')
 
     def test_insert1(self):
         vars = sym.Variables()
@@ -396,7 +401,7 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
                          "(if (x > y) then x else y)")
 
-    def test_jacobian(self):
+    def test_non_method_jacobian(self):
         # Jacobian([x * cos(y), x * sin(y), x ** 2], [x, y]) returns
         # the following 3x2 matrix:
         #
@@ -410,6 +415,64 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(J[0, 1], - x * sym.sin(y))
         self.assertEqual(J[1, 1], x * sym.cos(y))
         self.assertEqual(J[2, 1], 0)
+
+    def test_method_jacobian(self):
+        # (x * cos(y)).Jacobian([x, y]) returns [cos(y), -x * sin(y)].
+        J = (x * sym.cos(y)).Jacobian([x, y])
+        self.assertEqual(J[0], sym.cos(y))
+        self.assertEqual(J[1], -x * sym.sin(y))
+
+    def test_differentiate(self):
+        e = x * x
+        self.assertEqual(e.Differentiate(x), 2 * x)
+
+    def test_repr(self):
+        self.assertEqual(repr(e_x), '<Expression "x">')
+
+    # See `math_overloads_test` for more comprehensive checks on math
+    # functions.
+
+
+class TestSymbolicFormula(unittest.TestCase):
+    def test_get_free_variables(self):
+        f = x > y
+        self.assertEqual(f.GetFreeVariables(), sym.Variables([x, y]))
+
+    def test_substitute_with_pair(self):
+        f = x > y
+        self.assertEqual(f.Substitute(y, y + 5), x > y + 5)
+        self.assertEqual(f.Substitute(y, z), x > z)
+        self.assertEqual(f.Substitute(y, 3), x > 3)
+
+    def test_substitute_with_dict(self):
+        f = x + y > z
+        self.assertEqual(f.Substitute({x: x + 2, y:  y + 3}),
+                         x + y + 5 > z)
+
+    def test_to_string(self):
+        f = x > y
+        self.assertEqual(f.to_string(), "(x > y)")
+        self.assertEqual("{}".format(f), "(x > y)")
+
+    def test_equality_inequality_hash(self):
+        f1 = x > y
+        f2 = x > y
+        f3 = x >= y
+        self.assertTrue(f1.EqualTo(f2))
+        self.assertEqual(hash(f1), hash(f2))
+        self.assertTrue(f1 == f2)
+        self.assertFalse(f1.EqualTo(f3))
+        self.assertNotEqual(hash(f1), hash(f3))
+        self.assertTrue(f1 != f3)
+
+    def test_static_true_false(self):
+        tt = sym.Formula.True()
+        ff = sym.Formula.False()
+        self.assertEqual(x == x, tt)
+        self.assertEqual(x != x, ff)
+
+    def test_repr(self):
+        self.assertEqual(repr(x > y), '<Formula "(x > y)">')
 
 
 class TestSymbolicMonomial(unittest.TestCase):
@@ -457,6 +520,10 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(str(m1), "x^2")
         m2 = m1 * sym.Monomial(y)
         self.assertEqual(str(m2), "x^2 * y")
+
+    def test_repr(self):
+        m = sym.Monomial(x, 2)
+        self.assertEqual(repr(m), '<Monomial "x^2">')
 
     def test_multiplication1(self):
         m1 = sym.Monomial(x, 2)
@@ -580,7 +647,7 @@ class TestSymbolicPolynomial(unittest.TestCase):
 
     def test_repr(self):
         p = sym.Polynomial()
-        self.assertEqual(str(p), "0")
+        self.assertEqual(repr(p), '<Polynomial "0">')
 
     def test_addition(self):
         p = sym.Polynomial()
@@ -651,3 +718,12 @@ class TestSymbolicPolynomial(unittest.TestCase):
         J = p.Jacobian([x, y])
         self.assertEqual(J[0], p_dx)
         self.assertEqual(J[1], p_dy)
+
+    def test_hash(self):
+        p1 = sym.Polynomial(x * x, [x])
+        p2 = sym.Polynomial(x * x, [x])
+        self.assertEqual(p1, p2)
+        self.assertEqual(hash(p1), hash(p2))
+        p1 += 1
+        self.assertNotEqual(p1, p2)
+        self.assertNotEqual(hash(p1), hash(p2))

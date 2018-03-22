@@ -1,47 +1,46 @@
+#!/usr/bin/env python2
+
 """Performs tests for resource_tool as used _after_ installation.
 """
 
 import os
-import shutil
-import subprocess
-import sys
 import unittest
+import sys
+
+import install_test_helper
 
 
 class TestResourceTool(unittest.TestCase):
-    def setUp(self):
-        self._install_exe, = sys.argv[1:]
-        self.assertTrue(
-            os.path.exists(self._install_exe),
-            "Could not find " + self._install_exe)
-
     def test_install_and_run(self):
-        # Install into a temporary directory.
-        os.mkdir("tmp")
-        subprocess.check_call(
-            [self._install_exe,
-             os.path.abspath("tmp"),
-             ])
-
+        install_dir = install_test_helper.get_install_dir()
+        resource_subfolder = "share/drake/"
+        installed_sentinel = os.path.join(install_dir,
+                                          resource_subfolder,
+                                          ".drake-find_resource-sentinel")
+        # Verifies that the sentinel file exists in the installed directory.
+        # If it has been removed, we need to update this test.
+        self.assertTrue(os.path.isfile(installed_sentinel))
         # Create a resource in the temporary directory.
-        os.makedirs("tmp/share/drake/common/test")
-        with open("tmp/share/drake/common/test/tmp_resource", "w") as f:
-            f.write("tmp_resource")
+        tmp_dir = install_test_helper.create_temporary_dir()
 
-        # Remove the un-installed copy, so we _know_ it won't be used.
-        content_test_folder = os.listdir(os.getcwd())
-        content_test_folder.remove("tmp")
-        for element in content_test_folder:
-            if os.path.isdir(element):
-                shutil.rmtree(element)
-            else:
-                os.remove(element)
-        self.assertEqual(os.listdir(os.getcwd()), ["tmp"])
+        resource_folder = os.path.join(tmp_dir, resource_subfolder)
+        test_folder = os.path.join(resource_folder, "common/test")
+        os.makedirs(test_folder)
+        # Create sentinel file.
+        sentinel = os.path.join(resource_folder,
+                                os.path.basename(installed_sentinel))
+        os.symlink(installed_sentinel, sentinel)
+        # Create resource file.
+        resource = os.path.join(test_folder, "tmp_resource")
+        resource_data = "tmp_resource"
+        with open(resource, "w") as f:
+            f.write(resource_data)
 
         # Cross-check the resource root environment variable name.
         env_name = "DRAKE_RESOURCE_ROOT"
-        resource_tool = "tmp/share/drake/common/resource_tool"
-        output_name = subprocess.check_output(
+        resource_tool = os.path.join(
+            install_dir, "share/drake/common/resource_tool")
+        output_name = install_test_helper.check_output(
             [resource_tool,
              "--print_resource_root_environment_variable_name",
              ],
@@ -50,8 +49,8 @@ class TestResourceTool(unittest.TestCase):
 
         # Use the installed resource_tool to find a resource.
         tool_env = dict(os.environ)
-        tool_env[env_name] = "tmp/share"
-        absolute_path = subprocess.check_output(
+        tool_env[env_name] = os.path.join(tmp_dir, "share")
+        absolute_path = install_test_helper.check_output(
             [resource_tool,
              "--print_resource_path",
              "drake/common/test/tmp_resource",
@@ -59,16 +58,21 @@ class TestResourceTool(unittest.TestCase):
             env=tool_env,
             ).strip()
         with open(absolute_path, 'r') as data:
-            self.assertEqual(data.read(), "tmp_resource")
+            self.assertEqual(data.read(), resource_data)
 
-        # Remove environment variable.
-        absolute_path = subprocess.check_output(
+        # Use --add_resource_search_path instead of environment variable
+        # to find resources.
+        absolute_path = install_test_helper.check_output(
             [resource_tool,
              "--print_resource_path",
              "drake/common/test/tmp_resource",
              "--add_resource_search_path",
-             "tmp/share",
+             os.path.join(tmp_dir, "share"),
              ],
             ).strip()
         with open(absolute_path, 'r') as data:
-            self.assertEqual(data.read(), "tmp_resource")
+            self.assertEqual(data.read(), resource_data)
+
+
+if __name__ == '__main__':
+    unittest.main()

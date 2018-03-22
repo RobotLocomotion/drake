@@ -19,30 +19,10 @@ class DrakeLcmInterface {
   virtual ~DrakeLcmInterface() = default;
 
   /**
-   * Starts the receive thread. This must be called for subscribers to receive
-   * any messages.
-   *
-   * @pre StartReceiveThread() was not called.
-   */
-  virtual void StartReceiveThread() = 0;
-
-  /**
-   * Stops the receive thread. This must be called prior to any subscribers
-   * being destroyed. Note that the receive thread will be automatically stopped
-   * by this class's destructor, so usage of this method will be extremely rare.
-   * It will only be needed if this class's instance and the subscribers to LCM
-   * channels are owned by different classes. In such a scenario, this method
-   * can be used to ensure the receive thread is destroyed before the
-   * subscribers are destroyed.
-   *
-   * @pre StartReceiveThread() was called.
-   */
-  virtual void StopReceiveThread() = 0;
-
-  /**
    * Publishes an LCM message on channel @p channel.
    *
    * @param[in] channel The channel on which to publish the message.
+   * Must not be the empty string.
    *
    * @param[in] data A buffer containing the serialized bytes of the message to
    * publish.
@@ -61,6 +41,7 @@ class DrakeLcmInterface {
    * channel @p channel.
    *
    * @param[in] channel The channel to subscribe to.
+   * Must not be the empty string.
    *
    * @param[in] handler A class instance whose callback method will be invoked.
    */

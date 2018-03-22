@@ -20,34 +20,61 @@ drake_cc_library(
         "quasistatic_system.h",
     ],
     deps = [
-        "//drake/math:geometric_transform",
-        "//drake/multibody:kinematics_cache",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/solvers:mathematical_program",
-        "//drake/systems/controllers:control_util",
-        "//drake/systems/framework:leaf_system",
+        "//math:geometric_transform",
+        "//multibody:kinematics_cache",
+        "//multibody:rigid_body_tree",
+        "//solvers:mathematical_program",
+        "//systems/controllers:control_util",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "remote_tree_viewer_wrapper",
+    srcs = [
+        "remote_tree_viewer_wrapper.cc",
+    ],
+    hdrs = [
+        "remote_tree_viewer_wrapper.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lcm",
+        "//lcmtypes:viewer2_comms",
+        "//multibody:rigid_body_tree",
+        "@json",
     ],
 )
 
 drake_cc_googletest(
     name = "rod2d_time_stepping",
     data = [":models"],
-    tags = gurobi_test_tags() + ["manual"],
+    tags = gurobi_test_tags(),
     deps = [
         ":quasistatic_system",
-        "//drake/common",
-        "//drake/common:find_resource",
-        "//drake/lcm",
-        "//drake/manipulation/util:world_sim_tree_builder",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:diagram",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:matrix_gain",
-        "//drake/systems/primitives:signal_logger",
+        "//common",
+        "//common:find_resource",
+        "//lcm",
+        "//manipulation/util:world_sim_tree_builder",
+        "//multibody:rigid_body_tree",
+        "//multibody/joints",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:matrix_gain",
+        "//systems/primitives:signal_logger",
+    ],
+)
+
+drake_cc_binary(
+    name = "remote_tree_viewer_wrapper_demo",
+    srcs = ["test/remote_tree_viewer_wrapper_demo.cc"],
+    deps = [
+        ":remote_tree_viewer_wrapper",
+        "//common:find_resource",
+        "//multibody/parsers",
     ],
 )
 

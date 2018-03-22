@@ -17,6 +17,8 @@ using systems::controllers::plan_eval::ContactState;
 using systems::controllers::qp_inverse_dynamics::ParamSet;
 using systems::controllers::qp_inverse_dynamics::QpInput;
 using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewiseQuaternionSlerp;
 
 template <typename T>
 void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(

@@ -209,20 +209,16 @@ SolutionResult
 template <>
 SolutionResult
     UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
-// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
     MathematicalProgram&) const {
-DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
-"MathematicalProgram while templatized as an AutoDiff");
-return SolutionResult::kUnknownError;
+  DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
+                  "MathematicalProgram while templatized as an AutoDiff");
+  return SolutionResult::kUnknownError;
 }
 
-// TODO(edrumwri): Break the following code out into a special
-// MobyLcpMathematicalProgram class.
 template <typename T>
 // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
 SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
-  // TODO(ggould-tri) This solver currently imposes restrictions that its
-  // problem:
+  // This solver imposes restrictions that its problem:
   //
   // (1) Contains only linear complementarity constraints,
   // (2) Has no element of any decision variable appear in more than one
@@ -267,27 +263,30 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   // If any is infeasible, returns false and does not alter the decision
   // variables.
   //
-  // TODO(ggould-tri) This could also be solved by constructing a single large
-  // square matrix and vector, and then copying the elements of the individual
-  // Ms and qs into the appropriate places.  That would be equivalent to this
-  // implementation but might perform better if the solver were to parallelize
-  // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverId(UnrevisedLemkeSolverId::id());
+  SolverResult solver_result(UnrevisedLemkeSolver::id());
 
+  // Create a dummy variable for the number of pivots used.
+  int num_pivots = 0;
+
+  Eigen::VectorXd x_sol(prog.num_vars());
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =
         binding.evaluator();
-    int unused;
-    bool solved = SolveLcpLemkeRegularized(
-        constraint->M(), constraint->q(), &constraint_solution, &unused);
+    bool solved = SolveLcpLemke(
+        constraint->M(), constraint->q(), &constraint_solution, &num_pivots);
     if (!solved) {
+      prog.SetSolverResult(solver_result);
       return SolutionResult::kUnknownError;
     }
-    prog.SetDecisionVariableValues(binding.variables(), constraint_solution);
-    prog.SetOptimalCost(0.0);
+    for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {
+      const int variable_index =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
+      x_sol(variable_index) = constraint_solution(i);
+    }
+    solver_result.set_optimal_cost(0.0);
   }
   return SolutionResult::kSolutionFound;
 }
@@ -794,10 +793,11 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
 
 template <typename T>
 SolverId UnrevisedLemkeSolver<T>::solver_id() const {
-  return UnrevisedLemkeSolverId::id();
+  return UnrevisedLemkeSolver::id();
 }
 
-SolverId UnrevisedLemkeSolverId::id() {
+template <class T>
+SolverId UnrevisedLemkeSolver<T>::id() {
   static const never_destroyed<SolverId> singleton{"Unrevised Lemke"};
   return singleton.access();
 }

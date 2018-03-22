@@ -25,6 +25,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/test/generic_trivial_constraints.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -177,6 +178,13 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
                 MathematicalProgram::VarType::CONTINUOUS);
     }
   }
+}
+
+GTEST_TEST(testMathematicalProgram, testConstructor) {
+  MathematicalProgram prog;
+  EXPECT_EQ(prog.initial_guess().rows(), 0);
+  EXPECT_EQ(prog.num_vars(), 0);
+  EXPECT_EQ(prog.GetSolution(prog.decision_variables()).rows(), 0);
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
@@ -400,9 +408,11 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
   const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
-  prog.SetDecisionVariableValues(Vector3<double>::Zero());
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(Vector3<double>(1, 2, 3));
+  prog.SetSolverResult(solver_result);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
+    EXPECT_EQ(prog.GetSolution(vars_expected(i)), i + 1);
     EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
   }
 }
@@ -420,7 +430,9 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
-  prog.SetDecisionVariableValues(Vector6<double>::Zero());
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(Vector6<double>::Zero());
+  prog.SetSolverResult(solver_result);
   VectorDecisionVariable<6> vars_expected;
   vars_expected << y, x0, x1, x2;
   for (int i = 0; i < 6; ++i) {
@@ -593,12 +605,27 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   X2_value = -X1_value;
   Eigen::Vector4d x3_value(3, 4, 5, 6);
   Eigen::Vector4d x4_value = -x3_value;
-  for (int i = 0; i < 3; ++i) {
-    prog.SetDecisionVariableValues(X1.col(i), X1_value.col(i));
-    prog.SetDecisionVariableValues(X2.col(i), X2_value.col(i));
-  }
-  prog.SetDecisionVariableValues(x3, x3_value);
-  prog.SetDecisionVariableValues(x4, x4_value);
+
+  Eigen::VectorXd x_val(prog.num_vars());
+  auto SetDecisionVariableValue = [&prog, &x_val](
+      const Eigen::Ref<const MatrixXDecisionVariable>& variable,
+      const Eigen::Ref<const Eigen::MatrixXd>& val) {
+    for (int i = 0; i < variable.rows(); ++i) {
+      for (int j = 0; j < variable.cols(); ++j) {
+        const int variable_index =
+            prog.FindDecisionVariableIndex(variable(i, j));
+        x_val(variable_index) = val(i, j);
+      }
+    }
+  };
+  SetDecisionVariableValue(X1, X1_value);
+  SetDecisionVariableValue(X2, X2_value);
+  SetDecisionVariableValue(x3, x3_value);
+  SetDecisionVariableValue(x4, x4_value);
+
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(x_val);
+  prog.SetSolverResult(solver_result);
 
   CheckGetSolution(prog, X1, X1_value);
   CheckGetSolution(prog, X2, X2_value);
@@ -2744,6 +2771,76 @@ GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
   EXPECT_THROW(prog.SetInitialGuess(y, 1), std::runtime_error);
   EXPECT_THROW(prog.GetInitialGuess(y), std::runtime_error);
 }
+
+GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
+  // min ∑ x , subject to x'x = 1.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddConstraint(x.transpose()*x == 1.);
+
+  if (SnoptSolver().available()) {
+    // Add equivalent constraints using all of the other entry points.
+    // Note: restricted to SNOPT because IPOPT complains about the redundant
+    // constraints.
+    prog.AddConstraint(x.transpose()*x >= 1.);
+    prog.AddConstraint(x.transpose()*x <= 1.);
+    prog.AddConstraint((x.transpose()*x)(0), 1., 1.);
+    prog.AddConstraint(x.transpose()*x, Vector1d{1.}, Vector1d{1.});
+  }
+
+  prog.AddCost(x(0) + x(1));
+  prog.SetInitialGuess(x, Vector2d{-.5, -.5});
+  SolutionResult result = prog.Solve();
+  EXPECT_EQ(result, kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x),
+                              Vector2d::Constant(-std::sqrt(2.)/2.), 1e-6));
+}
+
+GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Pretend the problem has been solved.
+  const SolverId dummy_solver_id("dummy");
+
+  // Only set the solver ID in solver_result.
+  SolverResult solver_result(dummy_solver_id);
+
+  prog.SetSolverResult(solver_result);
+  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id);
+  // The decision variables, optimal cost, and lower bound should all be NaN.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetSolution(x),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
+  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
+
+  // Sets the variable values, the optimal cost, and lower bound cost.
+  const Eigen::Vector2d x_val(1, 2);
+  const double cost{1.0};
+  const double lower_bound_cost{1.0};
+  solver_result.set_decision_variable_values(x_val);
+  solver_result.set_optimal_cost(cost);
+  solver_result.set_optimal_cost_lower_bound(lower_bound_cost);
+  prog.SetSolverResult(solver_result);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_val));
+  EXPECT_EQ(prog.GetOptimalCost(), cost);
+  EXPECT_EQ(prog.GetLowerBoundCost(), lower_bound_cost);
+
+  // Now create a new solver_result.
+  const SolverId dummy_solver_id2("dummy2");
+  SolverResult solver_result2(dummy_solver_id2);
+  prog.SetSolverResult(solver_result2);
+  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id2);
+  // The decision variables, optimal cost, and lower bound should all be NaN.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetSolution(x),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
+  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

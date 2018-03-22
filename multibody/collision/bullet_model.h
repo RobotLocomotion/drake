@@ -46,11 +46,6 @@ struct BulletCollisionWorldWrapper {
 class UnknownShapeException : public std::runtime_error {
  public:
   explicit UnknownShapeException(DrakeShapes::Shape shape);
-  virtual const char* what() const throw();
-  virtual ~UnknownShapeException() throw() {}
-
- private:
-  std::string shape_name_;
 };
 
 class BulletModel : public Model {

@@ -117,20 +117,6 @@ namespace multibody_plant {
 /// conditions should not change.
 /// @endcond
 ///
-/// @cond
-/// TODO(amcastro-tri): Add next section in future PR's as funcionality lands.
-/// @section computational_queries Performing computational queries
-/// Once a %MultibodyPlant model of a multibody system is created, a number of
-/// computational queries can be performed on a given Context:
-/// - CalcMassMatrix(): Computes the mass matrix of the system in `O(n²)`.
-/// - CalcInverseDynamics(): `O(n)` Newton-Euler recursive algorithm.
-/// - CalcForwardDynamics(): `O(n)` Articulated Body Inertia algorithm.
-/// - CalcPointsGeometricJacobianExpressedInWorld(): Jacobian matrix linearly
-///   relating a set of points' translational velocities to the system's
-///   generalized velocities.
-/// - Others...
-/// @endcond
-///
 /// <h3> References </h3>
 /// - [Featherstone 2008] Featherstone, R., 2008.
 ///     Rigid body dynamics algorithms. Springer.
@@ -150,7 +136,7 @@ namespace multibody_plant {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class MultibodyPlant final : public systems::LeafSystem<T> {
+class MultibodyPlant : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
 
@@ -549,6 +535,11 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   /// actuators. See AddJointActuator() and num_actuators().
   const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
 
+  /// Returns a constant reference to the output port for the full continuous
+  /// state of the model.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_continuous_state_output_port() const;
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
@@ -615,6 +606,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
 
+  // Helper method that is used to finalize the plant's internals after
+  // MultibodyTree::Finalize() was called.
+  void FinalizePlantOnly();
+
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
@@ -632,6 +627,16 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void DoMapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      systems::VectorBase<T>* generalized_velocity) const override;
+
+  void DoMapVelocityToQDot(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      systems::VectorBase<T>* qdot) const override;
 
   // Helper method to declare cache entries to be allocated in the context.
   void DeclareCacheEntries();
@@ -675,6 +680,10 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
     return body_index_to_frame_id_.find(body.index()) !=
         body_index_to_frame_id_.end();
   }
+
+  // Calc method for the continuous state vector output port.
+  void CopyContinuousStateOut(
+      const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
   // Helper method to declare output ports used by this plant to communicate
   // with a GeometrySystem.
@@ -732,8 +741,9 @@ class MultibodyPlant final : public systems::LeafSystem<T> {
   // calls are performed on the same instance of GS.
   const geometry::GeometrySystem<T>* geometry_system_{nullptr};
 
-  // Actuation input port:
+  // Input/Output port indexes:
   int actuation_port_{-1};
+  int continuous_state_output_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

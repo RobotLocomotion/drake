@@ -83,7 +83,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   // TODO(sam.creasey) I'd prefer to store the trajectory as
   // discrete state, but unfortunately that's not currently possible
   // as DiscreteValues may only contain BasicVector.
-  mutable std::unique_ptr<Trajectory> trajectory_;
+  mutable std::unique_ptr<trajectories::Trajectory<double>> trajectory_;
 };
 
 /// Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This

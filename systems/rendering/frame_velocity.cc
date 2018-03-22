@@ -10,12 +10,18 @@ namespace rendering {
 template <typename T> constexpr int FrameVelocity<T>::kSize;
 
 template <typename T>
-FrameVelocity<T>::FrameVelocity() : BasicVector<T>(kSize) {
-  this->set_value(Vector6<T>::Zero());
-}
+FrameVelocity<T>::FrameVelocity()
+    : FrameVelocity<T>::FrameVelocity(
+          multibody::SpatialVelocity<T>(Vector6<T>::Zero())) {}
 
 template <typename T>
 FrameVelocity<T>::~FrameVelocity() {}
+
+template <typename T>
+FrameVelocity<T>::FrameVelocity(const multibody::SpatialVelocity<T>& velocity)
+    : BasicVector<T>(kSize) {
+  set_velocity(velocity);
+}
 
 template <typename T>
 FrameVelocity<T>::FrameVelocity(const FrameVelocity<T>& other)

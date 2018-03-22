@@ -13,6 +13,12 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+DynamicProgrammingOptions::PeriodicBoundaryCondition::PeriodicBoundaryCondition(
+    int state_index_in, double low_in, double high_in)
+    : state_index(state_index_in), low(low_in), high(high_in) {
+  DRAKE_DEMAND(low_in < high_in);
+}
+
 std::pair<std::unique_ptr<BarycentricMeshSystem<double>>, Eigen::RowVectorXd>
 FittedValueIteration(
     Simulator<double>* simulator,
@@ -241,7 +247,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
   const solvers::SolutionResult result = prog.Solve();
   if (result != solvers::SolutionResult::kSolutionFound) {
     drake::log()->error("No solution found.  SolutionResult = " +
-                        std::to_string(result));
+                        to_string(result));
   }
   drake::log()->info("Done solving linear program.");
 

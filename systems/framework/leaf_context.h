@@ -99,14 +99,13 @@ class LeafContext : public Context<T> {
         clone->input_values_.emplace_back(nullptr);
       } else {
         clone->input_values_.emplace_back(new FreestandingInputPortValue(
-            port->template get_abstract_data()->Clone()));
+            port->get_abstract_data()->Clone()));
       }
     }
 
     // Make deep copies of everything else using the default copy constructors.
     *clone->get_mutable_step_info() = this->get_step_info();
     clone->set_accuracy(this->get_accuracy());
-    clone->cache_ = this->cache_;
     return clone;
   }
 
@@ -151,11 +150,6 @@ class LeafContext : public Context<T> {
 
   // The parameters of the system.
   std::unique_ptr<Parameters<T>> parameters_;
-
-  // The cache. The System may insert arbitrary key-value pairs, and configure
-  // invalidation on a per-entry basis.
-  // TODO(sherm1) This is non-functional here. Fix that!
-  mutable Cache cache_;
 };
 
 }  // namespace systems

@@ -1,9 +1,12 @@
 from __future__ import print_function, absolute_import
 
-import unittest
-import numpy as np
-import pydrake
 from pydrake.solvers import mathematicalprogram as mp
+
+import numpy as np
+import unittest
+import warnings
+
+import pydrake
 import pydrake.symbolic as sym
 
 
@@ -64,6 +67,9 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+        # Redundant cost just to check the spelling.
+        prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
+                                   x_desired=np.zeros(2))
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
@@ -73,8 +79,8 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_symbolic_qp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        prog.AddLinearConstraint(x[0] >= 1)
-        prog.AddLinearConstraint(x[1] >= 1)
+        prog.AddConstraint(x[0], 1., 100.)
+        prog.AddConstraint(x[1] >= 1)
         prog.AddQuadraticCost(x[0]**2 + x[1]**2)
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
@@ -147,6 +153,11 @@ class TestMathematicalProgram(unittest.TestCase):
 
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+
+        # Test deprecated method.
+        with warnings.catch_warnings(record=True) as w:
+            c = binding.constraint()
+            self.assertEquals(len(w), 1)
 
     def test_eval_binding(self):
         qp = TestQP()
@@ -233,3 +244,27 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         self.assertIsInstance(binding.evaluator(),
                               mp.LinearComplementarityConstraint)
+
+    def test_bounding_box(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+        lb = [0., 0.]
+        ub = [1., 1.]
+        prog.AddBoundingBoxConstraint(lb, ub, x)
+        prog.AddBoundingBoxConstraint(0., 1., x[0])
+        prog.AddBoundingBoxConstraint(0., 1., x)
+
+    def test_pycost_and_pyconstraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+
+        def cost(x):
+            return (x[0]-1.)*(x[0]-1.)
+
+        def constraint(x):
+            return x
+
+        prog.AddCost(cost, x)
+        prog.AddConstraint(constraint, [0.], [2.], x)
+        prog.Solve()
+        self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)

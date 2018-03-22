@@ -582,18 +582,22 @@ bool Polynomial::EqualTo(const Polynomial& p) const {
   return monomial_to_coefficient_map_ == p.monomial_to_coefficient_map();
 }
 
-Formula Polynomial::operator==(Polynomial p) const {
-  // 1) Update p' = p - (this polynomial).
-  // 2) Extract the condition where p' is zero.
+Formula Polynomial::operator==(const Polynomial& p) const {
+  // 1) Let diff = p - (this polynomial).
+  // 2) Extract the condition where diff is zero.
   //    That is, all coefficients should be zero.
-  p -= *this;
+  const Polynomial diff{p - *this};
   Formula ret{Formula::True()};
   for (const pair<Monomial, Expression>& item :
-       p.monomial_to_coefficient_map_) {
+       diff.monomial_to_coefficient_map_) {
     const Expression& coeff{item.second};
     ret = ret && (coeff == 0.0);
   }
   return ret;
+}
+
+Formula Polynomial::operator!=(const Polynomial& p) const {
+  return !(*this == p);
 }
 
 Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {

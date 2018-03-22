@@ -70,7 +70,7 @@ def _vector_gen_outs(srcs, kind):
 
 def _vector_gen_impl(ctx):
     """The implementation actions to invoke vector_gen."""
-    ctx.action(
+    ctx.actions.run(
         inputs = ctx.files.srcs,
         outputs = ctx.outputs.outs,
         arguments = [

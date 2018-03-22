@@ -25,10 +25,10 @@ Eigen::Isometry3d ComputePcaBodyPose(const Matrix3Xd& y_W) {
   Matrix3d R_WB = eig.eigenvectors();
   R_WB.col(0).swap(R_WB.col(2));
   if (R_WB.determinant() < 0) {
-    // Only swap the z-axes if the rotation matrix constructed directly
-    // from eigenvalues is degenerate. This should happen most of the time,
-    // but there are edge cases where the eigenvalues will be non-degenerate.
-    // This provides a more stable/predictable result than `ProjectMatToRotMat`.
+    // Only swap the z-axes if the rotation matrix constructed directly from
+    // eigenvalues is degenerate. This should happen most of the time, but there
+    // are edge cases where the eigenvalues are non-degenerate. This provides
+    // a more stable/predictable result than `ProjectToRotationMatrix()`.
     // TODO(eric.cousineau): Check degenerate case (with PCA on blue funnel)
     // using different SO3 projection techniques.
     R_WB.col(2) *= -1;
@@ -58,7 +58,8 @@ Eigen::Isometry3d ComputeSvdBodyPose(const Matrix3Xd& p_B,
   // Compute SVD decomposition to reduce to a proper SO(3) basis.
   Eigen::Isometry3d X_BW;
   X_BW.setIdentity();
-  X_BW.linear() = math::ProjectMatToRotMat(W_py);
+  X_BW.linear() =
+      math::RotationMatrix<double>::ProjectToRotationMatrix(W_py).matrix();
   X_BW.translation() = p_B_mean - X_BW.linear() * y_W_mean;
   return X_BW.inverse();
 }

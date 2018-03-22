@@ -257,25 +257,25 @@ void BulletModel::DoAddElement(const Element& element) {
     std::unique_ptr<btCollisionShape> bt_shape_no_margin;
     switch (element.getShape()) {
       case DrakeShapes::BOX: {
-        const auto box =
+        const auto& box =
             static_cast<const DrakeShapes::Box&>(element.getGeometry());
         bt_shape = newBulletBoxShape(box, true);
         bt_shape_no_margin = newBulletBoxShape(box, false);
       } break;
       case DrakeShapes::SPHERE: {
-        const auto sphere = static_cast<const DrakeShapes::Sphere&>(
+        const auto& sphere = static_cast<const DrakeShapes::Sphere&>(
             element.getGeometry());
         bt_shape = newBulletSphereShape(sphere, true);
         bt_shape_no_margin = newBulletSphereShape(sphere, false);
       } break;
       case DrakeShapes::CYLINDER: {
-        const auto cylinder = static_cast<const DrakeShapes::Cylinder&>(
+        const auto& cylinder = static_cast<const DrakeShapes::Cylinder&>(
             element.getGeometry());
         bt_shape = newBulletCylinderShape(cylinder, true);
         bt_shape_no_margin = newBulletCylinderShape(cylinder, false);
       } break;
       case DrakeShapes::MESH: {
-        const auto mesh =
+        const auto& mesh =
             static_cast<const DrakeShapes::Mesh&>(element.getGeometry());
         if (element.is_anchored()) {
           // Meshes are only allowed for anchored geometry.
@@ -287,13 +287,13 @@ void BulletModel::DoAddElement(const Element& element) {
         }
       } break;
       case DrakeShapes::MESH_POINTS: {
-        const auto mesh = static_cast<const DrakeShapes::MeshPoints&>(
+        const auto& mesh = static_cast<const DrakeShapes::MeshPoints&>(
             element.getGeometry());
         bt_shape = newBulletMeshPointsShape(mesh, true);
         bt_shape_no_margin = newBulletMeshPointsShape(mesh, false);
       } break;
       case DrakeShapes::CAPSULE: {
-        const auto capsule = static_cast<const DrakeShapes::Capsule&>(
+        const auto& capsule = static_cast<const DrakeShapes::Capsule&>(
             element.getGeometry());
         bt_shape = newBulletCapsuleShape(capsule, true);
         bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
@@ -900,17 +900,9 @@ BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {
 }
 
 UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape)
-    : runtime_error("") {
-  std::ostringstream ostr;
-  ostr << shape;
-  this->shape_name_ = ostr.str();
-}
-
-const char* UnknownShapeException::what() const throw() {
-  return ("Unknown collision shape: " + shape_name_ +
-          ". Ignoring this collision element")
-      .c_str();
-}
+    : runtime_error("Unknown collision shape: " +
+                    DrakeShapes::ShapeToString(shape) +
+                    ". Ignoring this collision element.") {}
 
 }  // namespace collision
 }  // namespace multibody
