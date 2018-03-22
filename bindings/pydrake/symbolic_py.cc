@@ -227,7 +227,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
 
   // TODO(eric.cousineau): Consider deprecating these methods?
   auto math = py::module::import("pydrake.math");
-  MirrorDef(math, m)
+  MirrorDef<py::module, py::module>(&math, &m)
       .def("log", &symbolic::log)
       .def("abs", &symbolic::abs)
       .def("exp", &symbolic::exp)
