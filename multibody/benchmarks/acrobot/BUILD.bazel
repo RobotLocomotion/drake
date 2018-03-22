@@ -30,13 +30,16 @@ drake_cc_library(
     name = "make_acrobot_plant",
     srcs = [
         "make_acrobot_plant.cc",
+        "make_acrobot_plant_sdf.cc",
     ],
     hdrs = [
         "make_acrobot_plant.h",
+        "make_acrobot_plant_sdf.h",
     ],
     deps = [
         "//geometry:geometry_system",
         "//multibody/multibody_tree/multibody_plant",
+        "@sdformat",
     ],
 )
 

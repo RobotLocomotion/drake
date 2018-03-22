@@ -42,4 +42,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "multibody_plant_sdf_test",
+    deps = [
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
 add_lint_tests()
