@@ -1,0 +1,83 @@
+#pragma once
+
+#include <string>
+
+namespace drake {
+namespace multibody {
+namespace benchmarks {
+
+// SDF version of an acrobot model.
+static std::string acrobotSdf =
+"<?xml version='1.0' ?>"
+"<sdf version='1.6'>"
+"  <model name='acrobot'>"
+"    <link name='Link1'>"
+"      <pose>0 0 3.0 -1.5708 0 0</pose>"
+"      <inertial>"
+"        <pose>0 0 0.5 0 0 0</pose>"
+"        <mass>1.0</mass>"
+"      </inertial>"
+"      <visual name='cylinder'>"
+"        <pose>0 0 0.5 0 0 0</pose>"
+"        <geometry>"
+"          <cylinder>"
+"            <radius>0.1</radius>"
+"            <length>1.0</length>"
+"          </cylinder>"
+"        </geometry>"
+"      </visual>"
+"      <collision name='cylinder'>"
+"        <pose>0 0 0.5 0 0 0</pose>"
+"        <geometry>"
+"          <cylinder>"
+"            <radius>0.1</radius>"
+"            <length>1.0</length>"
+"          </cylinder>"
+"        </geometry>"
+"      </collision>"
+"    </link>"
+"    <link name='Link2'>"
+"      <pose>0.25 1.0 2.1 -2 0 0</pose>"
+"      <inertial>"
+"        <pose>0 0 0.5 0 0 0</pose>"
+"        <mass>1.0</mass>"
+"      </inertial>"
+"      <visual name='cylinder'>"
+"        <pose>0 0 0.5 0 0 0</pose>"
+"        <geometry>"
+"          <cylinder>"
+"            <radius>0.1</radius>"
+"            <length>1.0</length>"
+"          </cylinder>"
+"        </geometry>"
+"      </visual>"
+"      <collision name='cylinder'>"
+"        <pose>0 0 0.5 0 0 0</pose>"
+"        <geometry>"
+"          <cylinder>"
+"            <radius>0.1</radius>"
+"            <length>1.0</length>"
+"          </cylinder>"
+"        </geometry>"
+"      </collision>"
+"    </link>"
+"    <joint name='ShoulderJoint' type='revolute'>"
+"      <parent>world</parent>"
+"      <child>Link1</child>"
+"      <axis>"
+"        <xyz>1.0 0 0</xyz>"
+"      </axis>"
+"    </joint>"
+"    <joint name='ElbowJoint' type='revolute'>"
+"      <parent>Link1</parent>"
+"      <child>Link2</child>"
+"      <axis>"
+"        <xyz>1.0 0 0</xyz>"
+"      </axis>"
+"    </joint>"
+"  </model>"
+"</sdf>";
+
+}  // namespace benchmarks
+}  // namespace multibody
+}  // namespace drake

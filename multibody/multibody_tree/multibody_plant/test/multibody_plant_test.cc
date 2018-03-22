@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
+#include "drake/multibody/benchmarks/acrobot/make_acrobot_plant_sdf.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -34,6 +35,7 @@ using geometry::GeometrySystem;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using multibody::benchmarks::acrobot::MakeAcrobotPlantSdf;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using systems::AbstractValue;
@@ -468,6 +470,51 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
+}
+
+// This test creates a simple model for an acrobot from an SDF file using
+// MultibodyPlant and verifies a number of invariants such as that body and
+// joint models were properly added and the model sizes.
+GTEST_TEST(MultibodyPlant, SimpleModelCreationSdf) {
+  const std::string kInvalidName = "InvalidName";
+  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlantSdf(true);
+
+  // MakePlantSdf() has already called Finalize() on the new acrobot
+  // plant. Therefore attempting to call this method again will throw an
+  // exception. Verify this.
+  EXPECT_THROW(plant->Finalize(), std::logic_error);
+
+  // Model Size. Counting the world body, there should be three bodies.
+  EXPECT_EQ(3, plant->num_bodies());
+  EXPECT_EQ(2, plant->num_joints());
+  EXPECT_EQ(1, plant->num_actuators());
+  EXPECT_EQ(1, plant->num_actuated_dofs());
+
+  // State size.
+  EXPECT_EQ(plant->num_positions(), 2);
+  EXPECT_EQ(plant->num_velocities(), 2);
+  EXPECT_EQ(plant->num_multibody_states(), 4);
+
+  EXPECT_TRUE(plant->HasJointNamed("ShoulderJoint"));
+  EXPECT_TRUE(plant->HasJointNamed("ElbowJoint"));
+  EXPECT_FALSE(plant->HasJointNamed(kInvalidName));
+
+  // Get links by name.
+  const Body<double>& link1 = plant->GetBodyByName("Link1");
+  EXPECT_EQ(link1.name(), "Link1");
+  const Body<double>& link2 = plant->GetBodyByName("Link2");
+  EXPECT_EQ(link2.name(), "Link2");
+
+  // Attempting to retrieve a link that is not part of the model should throw
+  // an exception.
+  EXPECT_THROW(plant->GetBodyByName(kInvalidName), std::logic_error);
+
+  // Get joints by name.
+  const Joint<double>& shoulder_joint = plant->GetJointByName("ShoulderJoint");
+  EXPECT_EQ(shoulder_joint.name(), "ShoulderJoint");
+  const Joint<double>& elbow_joint = plant->GetJointByName("ElbowJoint");
+  EXPECT_EQ(elbow_joint.name(), "ElbowJoint");
+  EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 }
 
 }  // namespace
