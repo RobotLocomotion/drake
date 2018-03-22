@@ -14,7 +14,6 @@ In particular, these examples have not yet been re-implemented in the new
 framework:
 
  - Airplane2D
- - CartPole
  - CompassGait
  - DubinsCar
  - FurutaPendulum
@@ -26,8 +25,6 @@ framework:
  - PlanarMonopodHopper
  - PlanarNLink
  - Quadrotor2D
- - RimlessWheel
- - SimpleDoublePendulum
  - SimplePulleys
  - SpringLoadedInvertedPendulum
  - Strandbeest
@@ -36,7 +33,6 @@ framework:
  - Wingeron
  - ZMP
  - grasping
- - mass_spring_damper
 
 To view the original implementation of these examples, you'll need to consult
 the above link.
