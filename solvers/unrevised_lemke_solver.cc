@@ -779,18 +779,6 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   return false;
 }
 
-template <class T>
-bool UnrevisedLemkeSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
-                              const VectorX<T>& q, VectorX<T>* z,
-                              int* num_pivots,
-                              int min_exp, int step_exp,
-                              int max_exp, const T& piv_tol,
-                              const T& zero_tol) const {
-  DRAKE_ABORT();
-  return true;
-}
-
-
 template <typename T>
 SolverId UnrevisedLemkeSolver<T>::solver_id() const {
   return UnrevisedLemkeSolver::id();

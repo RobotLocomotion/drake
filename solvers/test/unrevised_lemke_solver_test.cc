@@ -11,6 +11,9 @@ namespace drake {
 namespace solvers {
 namespace {
 
+// Floating point comparison tolerance.
+const double epsilon = 1e-15;
+
 // Run the solver and test against the expected result.
 template <typename Derived>
 void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
