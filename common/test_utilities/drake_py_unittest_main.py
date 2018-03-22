@@ -3,10 +3,12 @@ use by the drake_py_unittest macro defined in //tools/skylark:drake_py.bzl and
 should NOT be called directly by anything else.
 """
 
+import argparse
 import imp
 import os
 import re
 import sys
+import trace
 import unittest
 
 if __name__ == '__main__':
@@ -69,6 +71,9 @@ if __name__ == '__main__':
     index = 1
     while index < len(sys.argv):
         arg = sys.argv[index]
+        if arg == "--":
+            sys.argv.pop(index)
+            break
         if arg in known_unittest_args or any([
                 arg.startswith(clazz) for clazz in test_class_guesses]):
             unittest_argv.append(arg)
@@ -76,5 +81,27 @@ if __name__ == '__main__':
             continue
         index += 1
 
-    # Delegate the rest to unittest.
-    unittest.main(module=test_name, argv=unittest_argv)
+    # Custom flags.
+    # N.B. To see this help from `bazel run`, you need to double-up on
+    # `--`. For example: `bazel run :named_test -- -- --help`
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--trace", type=str, choices=["none", "user", "sys"], default="none",
+        help="Enable source tracing. `none` implies no tracing, `user` " +
+             "implies tracing user code, and `sys` implies tracing all code.")
+    args, remaining = parser.parse_known_args()
+    sys.argv = sys.argv[:1] + remaining
+
+    def run():
+        # Delegate the rest to unittest.
+        unittest.main(module=test_name, argv=unittest_argv)
+
+    if args.trace != "none":
+        if args.trace == "user":
+            ignoredirs = sys.path
+        else:
+            ignoredirs = []
+        tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredirs)
+        tracer.run('run()')
+    else:
+        run()
