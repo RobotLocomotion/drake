@@ -736,7 +736,7 @@ drake_cc_googletest(
         ":branch_and_bound",
         ":mathematical_program_test_util",
         ":mixed_integer_optimization_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1038,7 +1038,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":osqp_solver",
         ":quadratic_program_examples",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
