@@ -14,13 +14,11 @@ namespace {
 // Run the solver and test against the expected result.
 template <typename Derived>
 void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
-                 const Eigen::VectorXd& expected_z_in) {
+            const Eigen::VectorXd& expected_z_in) {
   UnrevisedLemkeSolver<double> l;
 
   Eigen::VectorXd expected_z = expected_z_in;
 
-  // NOTE: We don't necessarily expect the unregularized fast solver to succeed,
-  //       hence we don't test the result.
   Eigen::VectorXd lemke_z;
   int num_pivots;
   bool result = l.SolveLcpLemke(M, q, &lemke_z, &num_pivots);
@@ -28,68 +26,6 @@ void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
   EXPECT_GT(num_pivots, 0);
-}
-
-/// Run all regularized solvers.  If @p expected_z is an empty
-/// vector, outputs will only be compared against each other.
-template <typename Derived>
-void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
-                       const Eigen::VectorXd& q,
-                       const Eigen::VectorXd& expected_z_in) {
-/*
-  UnrevisedLemkeSolver<double> l;
-  l.SetLoggingEnabled(verbose);
-
-  Eigen::VectorXd expected_z = expected_z_in;
-
-  Eigen::VectorXd fast_z;
-  bool result = l.SolveLcpFastRegularized(M, q, &fast_z);
-  if (expected_z.size() == 0) {
-    expected_z = fast_z;
-  } else {
-    if (expect_fast_pass) {
-      ASSERT_TRUE(result);
-      EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon,
-                                  MatrixCompareType::absolute))
-          << "expected: " << expected_z << " actual " << fast_z << std::endl;
-    } else {
-      EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon,
-                                   MatrixCompareType::absolute));
-    }
-  }
-
-  Eigen::VectorXd lemke_z;
-  result = l.SolveLcpLemkeRegularized(M, q, &lemke_z);
-  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
-*/
-}
-
-/// Run all solvers.  If @p expected_z is an empty
-/// vector, outputs will only be compared against each other.
-template <typename Derived>
-void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
-            const Eigen::VectorXd& expected_z_in) {
-  RunBasicLcp(M, q, expected_z_in);
-  RunRegularizedLcp(M, q, expected_z_in);
-}
-
-GTEST_TEST(testUnrevisedLCP, testCottle) {
-  Eigen::Matrix<double, 3, 3> M;
-
-  // clang-format off
-  M <<
-    0, -1, 2,
-    2, 0, -2,
-    -1, 1, 0;
-  // clang-format on
-
-  Eigen::Matrix<double, 3, 1> q;
-  q << -3, 6, -1;
-
-  Eigen::VectorXd expected_z(3);
-  expected_z << 0, 1, 3;
-  RunBasicLcp(M, q, expected_z);
 }
 
 GTEST_TEST(testUnrevisedLCP, testCycling) {
