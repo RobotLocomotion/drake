@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 
 /// @defgroup hash_append hash_append generic hashing
@@ -124,6 +125,29 @@ void hash_append(
   hash_append(hasher, item.first);
   hash_append(hasher, item.second);
 }
+
+/// Provides @ref hash_append for drake::optional.
+///
+/// Note that `std::hash<std::optional<T>>` provides the peculiar invariant
+/// that the hash of an `optional` bearing a value `v` shall evaluate to the
+/// same hash as that of the value `v` itself.  Hash operations implemented
+/// with this `hash_append` do *not* provide that invariant.
+//
+// NB:  In general, implementations of `hash_append` for drake types belong
+//      with the definitions of their respective drake types, not here.
+//
+//      However, since `drake::optional` is more or less an alias for an
+//      STL type, and in particular since `drake_optional.h` is included
+//      in the ":essential" library, and `hash.h` is not, this is the
+//      better location for this definition.
+template <class HashAlgorithm, class T>
+void hash_append(
+    HashAlgorithm& hasher, const drake::optional<T>& item) noexcept {
+  if (item) {
+    hash_append(hasher, *item);
+  }
+  hash_append(hasher, item.has_value());
+};
 
 /// Provides @ref hash_append for a range, as given by two iterators.
 template <class HashAlgorithm, class Iter>
