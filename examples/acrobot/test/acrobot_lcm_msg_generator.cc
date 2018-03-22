@@ -63,10 +63,8 @@ int DoMain() {
 
   const std::string channel_x = "acrobot_xhat";
   const std::string channel_u = "acrobot_u";
-  lcmt_acrobot_x msg_x;
-  lcmt_acrobot_u msg_u;
-  std::vector<uint8_t> buffer_x(msg_x.getEncodedSize());
-  std::vector<uint8_t> buffer_u(msg_u.getEncodedSize());
+  lcmt_acrobot_x msg_x{};
+  lcmt_acrobot_u msg_u{};
 
   MessageHandler handler;
   lcm.Subscribe(channel_x, &handler);
@@ -79,9 +77,7 @@ int DoMain() {
     msg_x.theta2 = t * M_PI / 6;
     msg_x.theta1Dot = std::sin(msg_x.theta1);
     msg_x.theta2Dot = std::cos(msg_x.theta2);
-
-    msg_x.encode(&buffer_x[0], 0, msg_x.getEncodedSize());
-    lcm.Publish(channel_x, &buffer_x[0], msg_x.getEncodedSize());
+    Publish(&lcm, channel_x, msg_x);
 
     // Publishes msg_u using received msg_x.
     if (handler.get_receive_channel() == channel_x) {
@@ -92,8 +88,7 @@ int DoMain() {
       msg_u.tau = received_msg.theta1 + received_msg.theta2;
 
       // Publish msg_u.
-      msg_u.encode(&buffer_u[0], 0, msg_u.getEncodedSize());
-      lcm.Publish(channel_u, &buffer_u[0], msg_u.getEncodedSize());
+      Publish(&lcm, channel_u, msg_u);
     }
     sleep_for(milliseconds(500));
     t++;

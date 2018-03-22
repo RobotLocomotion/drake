@@ -1,9 +1,13 @@
 #pragma once
 
+#include <cstdint>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
+#include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
@@ -63,6 +67,32 @@ class DrakeLcmInterface {
     return std::numeric_limits<double>::infinity();
   }
 };
+
+/**
+ * Publishes an LCM message on channel @p channel.
+ *
+ * @param lcm The LCM service on which to publish the message.
+ * Must not be null.
+ *
+ * @param channel The channel on which to publish the message.
+ * Must not be the empty string.
+ *
+ * @param message The message to publish.
+ *
+ * @param time_sec Time in seconds when the publish event occurred.
+ * If unknown, use the default value of drake::nullopt.
+ */
+template <typename Message>
+void Publish(DrakeLcmInterface* lcm, const std::string& channel,
+             const Message& message, optional<double> time_sec = {}) {
+  DRAKE_THROW_UNLESS(lcm != nullptr);
+  const int num_bytes = message.getEncodedSize();
+  DRAKE_THROW_UNLESS(num_bytes >= 0);
+  const size_t size_bytes = static_cast<size_t>(num_bytes);
+  std::vector<uint8_t> bytes(size_bytes);
+  message.encode(bytes.data(), 0, num_bytes);
+  lcm->Publish(channel, bytes.data(), num_bytes, time_sec.value_or(0.0));
+}
 
 }  // namespace lcm
 }  // namespace drake
