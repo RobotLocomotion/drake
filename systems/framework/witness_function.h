@@ -93,8 +93,13 @@ class WitnessFunction {
 
   virtual ~WitnessFunction() {}
 
+  /** Signature of a function suitable for calculating a value of a particular
+  witness function. */
+  using CalcCallback = std::function<T(const Context<T>&)>;
+
   /// Constructs the witness function with the pointer to the given non-null
-  /// System, with the given direction type, and with no event type.
+  /// System, with the given direction type and specified calculation function,
+  /// and with no event type.
   /// @note Constructing a witness function with no corresponding event forces
   ///       Simulator's integration of an ODE to halt at the witness isolation
   ///       time. For example, isolating a function's minimum or maximum values
@@ -104,25 +109,31 @@ class WitnessFunction {
   /// @warning the pointer to the System must be valid as long or longer than
   /// the lifetime of the witness function.
   WitnessFunction(const System<T>* system,
-                  const WitnessFunctionDirection& dtype) :
-                  system_(system), dir_type_(dtype) { DRAKE_DEMAND(system); }
+                  const WitnessFunctionDirection& dtype,
+                  CalcCallback calc_function) :
+                  system_(system), dir_type_(dtype) {
+    DRAKE_DEMAND(system);
+    set_calculation_function(calc_function);
+  }
 
   /// Constructs the witness function with the pointer to the given non-null
-  /// System, with the given direction type, and with a unique pointer to the
-  /// event that is to be dispatched when this witness function triggers.
-  /// Example events are publish, discrete variable update, unrestricted update
-  /// events.
+  /// System, with the given direction type and specified calculation function,
+  /// and with a unique pointer to the event that is to be dispatched when this
+  /// witness function triggers. Example events are publish, discrete variable
+  /// update, unrestricted update events.
   /// @tparam EventType a class derived from Event<T>
   /// @warning the pointer to the System must be valid as long or longer than
   /// the lifetime of the witness function.
   template <class EventType>
   WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype,
+                  CalcCallback calc_function,
                   std::unique_ptr<EventType> e) :
                   system_(system), dir_type_(dtype) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
         "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
+    set_calculation_function(calc_function);
     event_ = std::move(e);
   }
 
@@ -137,7 +148,15 @@ class WitnessFunction {
   WitnessFunctionDirection get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
-  T CalcWitnessValue(const Context <T>& context) const;
+  T CalcWitnessValue(const Context <T>& context) const {
+    if (calc_function_) {
+      calc_function_(context);
+    } else {
+      throw std::logic_error("WitnessFunction::CalcWitnessValue(): " +
+          get_name() +
+          " had no calculation function available.");
+    }
+  }
 
   /// Gets a reference to the System used by this witness function.
   const System<T>& get_system() const { return *system_; }
@@ -183,16 +202,13 @@ class WitnessFunction {
   /// function triggers.
   Event<T>* get_mutable_event() { return event_.get(); }
 
- protected:
-  /// Derived classes will implement this function to evaluate the witness
-  /// function at the given context.
-  /// @param context an already-validated Context
-  virtual T DoCalcWitnessValue(const Context <T>& context) const = 0;
-
-  // The name of this witness function.
-  std::string name_;
-
  private:
+  // Sets or replaces the calculation function for this witness function, using
+  // a function that returns a value of type T.
+  void set_calculation_function(CalcCallback calc_function) {
+    calc_function_ = calc_function;
+  }
+
   // A reference to the system.
   const System<T>* system_{nullptr};
 
@@ -201,6 +217,12 @@ class WitnessFunction {
 
   // Unique pointer to the event.
   std::unique_ptr<Event<T>> event_;
+
+  // The name of this witness function.
+  std::string name_;
+
+  // The witness function calculation.
+  CalcCallback calc_function_;
 };
 
 }  // namespace systems
