@@ -93,6 +93,16 @@ class BouncingBallTest : public ::testing::Test {
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
+GTEST_TEST(BouncingBall, AutoDiff) {
+  BouncingBall<AutoDiffXd> ad_plant;
+}
+
+TEST_F(BouncingBallTest, Transmogrification) {
+  std::unique_ptr<BouncingBall<AutoDiffXd>> ad_plant =
+      systems::System<double>::ToAutoDiffXd(*dut_);
+  ASSERT_NE(nullptr, ad_plant);
+}
+
 TEST_F(BouncingBallTest, Topology) {
   ASSERT_EQ(0, dut_->get_num_input_ports());
 

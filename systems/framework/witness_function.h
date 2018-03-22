@@ -34,7 +34,7 @@ enum class WitnessFunctionDirection {
   kCrossesZero,
 };
 
-/// Abstract class that describes a function that is able to help determine
+/// Class that stores a function that is able to help determine
 /// the time and state at which a simulation should be halted, which may be
 /// done for any number of purposes, including publishing or state
 /// reinitialization (i.e., event handling).
@@ -108,12 +108,13 @@ class WitnessFunction {
   ///       value is present in the discretized trajectory.
   /// @warning the pointer to the System must be valid as long or longer than
   /// the lifetime of the witness function.
+  template <class MySystem>
   WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype,
-                  CalcCallback calc_function) :
+                  T (MySystem::*calc)(const Context<T>&) const) :
                   system_(system), dir_type_(dtype) {
     DRAKE_DEMAND(system);
-    set_calculation_function(calc_function);
+    set_calculation_function(calc);
   }
 
   /// Constructs the witness function with the pointer to the given non-null
@@ -124,16 +125,16 @@ class WitnessFunction {
   /// @tparam EventType a class derived from Event<T>
   /// @warning the pointer to the System must be valid as long or longer than
   /// the lifetime of the witness function.
-  template <class EventType>
+  template <class EventType, class MySystem>
   WitnessFunction(const System<T>* system,
                   const WitnessFunctionDirection& dtype,
-                  CalcCallback calc_function,
+                  T (MySystem::*calc)(const Context<T>&) const,
                   std::unique_ptr<EventType> e) :
                   system_(system), dir_type_(dtype) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
         "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
-    set_calculation_function(calc_function);
+    set_calculation_function(calc);
     event_ = std::move(e);
   }
 
@@ -149,13 +150,13 @@ class WitnessFunction {
 
   /// Evaluates the witness function at the given context.
   T CalcWitnessValue(const Context <T>& context) const {
-    if (calc_function_) {
-      calc_function_(context);
-    } else {
+    DRAKE_ASSERT_VOID(system_->CheckValidContext(context));
+    if (!calc_function_) {
       throw std::logic_error("WitnessFunction::CalcWitnessValue(): " +
           get_name() +
           " had no calculation function available.");
     }
+    return calc_function_(context);
   }
 
   /// Gets a reference to the System used by this witness function.
@@ -205,8 +206,12 @@ class WitnessFunction {
  private:
   // Sets or replaces the calculation function for this witness function, using
   // a function that returns a value of type T.
-  void set_calculation_function(CalcCallback calc_function) {
-    calc_function_ = calc_function;
+  template <class MySystem>
+  void set_calculation_function(T (MySystem::*calc)(const Context<T>&) const) {
+    calc_function_ = [this, calc](const Context<T>& context) {
+      auto system_ptr = dynamic_cast<const MySystem*>(system_);
+      return (system_ptr->*calc)(context);
+    };
   }
 
   // A reference to the system.
@@ -221,7 +226,7 @@ class WitnessFunction {
   // The name of this witness function.
   std::string name_;
 
-  // The witness function calculation.
+  // The witness function calculation function pointer.
   CalcCallback calc_function_;
 };
 

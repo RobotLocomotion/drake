@@ -27,8 +27,10 @@ namespace bouncing_ball {
 /// Outputs: vertical position (state index 0) and velocity (state index 1) in
 /// units of m and m/s, respectively.
 template <typename T>
-class BouncingBall : public systems::LeafSystem<T> {
+class BouncingBall final : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBall);
+
   BouncingBall() {
     // Two state variables: q and v.
     this->DeclareContinuousState(1, 1, 0);
@@ -38,11 +40,16 @@ class BouncingBall : public systems::LeafSystem<T> {
                                   &BouncingBall::CopyStateOut);
 
     // Declare the witness function.
-    signed_distance_witness_ = this->DeclareWitnessFunction(
+    signed_distance_witness_ = std::make_unique<systems::WitnessFunction<T>>(
+        this,
         systems::WitnessFunctionDirection::kPositiveThenNonPositive,
-        std::make_unique<systems::UnrestrictedUpdateEvent<T>>(),
-        &BouncingBall::CalcSignedDistance);
+        &BouncingBall::CalcSignedDistance,
+        std::make_unique<systems::UnrestrictedUpdateEvent<T>>());
   }
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit BouncingBall(const BouncingBall<U>&) : BouncingBall<T>() {}
 
   /// Gets the signed acceleration due to gravity. Since initial positions
   /// correspond to heights, acceleration should be negative.
@@ -130,13 +137,14 @@ class BouncingBall : public systems::LeafSystem<T> {
       const systems::Context<T>&,
       std::vector<const systems::WitnessFunction<T>*>* witnesses)
       const override {
-    witnesses->push_back(signed_distance_witness_);
+    witnesses->push_back(signed_distance_witness_.get());
   }
 
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
 
-  // The system stores its witness function internally.
-  SignedDistanceWitnessFunction* signed_distance_witness_{nullptr};
+  // The witness function for computing the signed distance between the ball
+  // and the ground.
+  std::unique_ptr<systems::WitnessFunction<T>> signed_distance_witness_;
 };
 
 }  // namespace bouncing_ball
