@@ -17,10 +17,6 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-// TODO(liang.fok): xdot is coming from LCM and must be wired separately.
-// Once RigidBodyPlant is able to output `xdot`, update this accelerometer to
-// use it. See #4105 and #2890.
-
 /// A simulated ideal accelerometer that measures the linear acceleration of a
 /// frame associated with a RigidBodyPlant.
 ///

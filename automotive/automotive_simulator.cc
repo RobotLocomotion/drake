@@ -605,7 +605,6 @@ void AutomotiveSimulator<T>::Start(
 
   if (lcm_) {
     TransmitLoadMessage();
-    lcm_->StartReceiveThread();
   }
 
   simulator_->set_target_realtime_rate(target_realtime_rate);

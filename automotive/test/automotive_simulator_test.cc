@@ -58,6 +58,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // Set up a basic simulation with just a Prius SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+
   const int id = simulator->AddPriusSimpleCar("Foo", kCommandChannelName);
   EXPECT_EQ(id, 0);
 

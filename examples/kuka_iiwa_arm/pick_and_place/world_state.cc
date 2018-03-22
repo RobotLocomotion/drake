@@ -9,20 +9,14 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
-WorldState::WorldState(const std::string& iiwa_model_absolute_path,
-                       const std::string& end_effector_name, int num_tables,
+WorldState::WorldState(int num_tables,
                        const Vector3<double>& object_dimensions)
-    : iiwa_model_absolute_path_(iiwa_model_absolute_path),
-      end_effector_name_(end_effector_name),
-      object_dimensions_(object_dimensions) {
-  DRAKE_THROW_UNLESS(iiwa_model_absolute_path.at(0) == '/');
+    : object_dimensions_(object_dimensions) {
 
   iiwa_time_ = -1;
   iiwa_base_ = Isometry3<double>::Identity();
-  iiwa_end_effector_pose_ = Isometry3<double>::Identity();
   iiwa_q_ = VectorX<double>::Zero(kIiwaArmNumJoints);
   iiwa_v_ = VectorX<double>::Zero(kIiwaArmNumJoints);
-  iiwa_end_effector_vel_.setZero();
   table_poses_.resize(num_tables, Isometry3<double>::Identity());
 
   wsg_time_ = -1;
@@ -40,19 +34,6 @@ WorldState::~WorldState() { }
 void WorldState::HandleIiwaStatus(const lcmt_iiwa_status& iiwa_msg,
                                   const Isometry3<double>& iiwa_base) {
   iiwa_base_ = iiwa_base;
-  if (iiwa_time_ == -1) {
-    auto base_frame = std::allocate_shared<RigidBodyFrame<double>>(
-        Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
-        iiwa_base_);
-
-    auto mutable_iiwa = std::make_shared<RigidBodyTree<double>>();
-    parsers::urdf::AddModelInstanceFromUrdfFile(
-        iiwa_model_absolute_path_,
-        multibody::joints::kFixed, base_frame,
-        mutable_iiwa.get());
-    iiwa_ = mutable_iiwa;
-    end_effector_ = iiwa_->FindBody(end_effector_name_);
-  }
 
   iiwa_time_ = iiwa_msg.utime / 1e6;
 
@@ -65,13 +46,6 @@ void WorldState::HandleIiwaStatus(const lcmt_iiwa_status& iiwa_msg,
     iiwa_v_[i] = iiwa_msg.joint_velocity_estimated[i];
     iiwa_q_[i] = iiwa_msg.joint_position_measured[i];
   }
-
-  KinematicsCache<double> cache = iiwa_->doKinematics(iiwa_q_, iiwa_v_, true);
-
-  iiwa_end_effector_pose_ =
-      iiwa_->CalcBodyPoseInWorldFrame(cache, *end_effector_);
-  iiwa_end_effector_vel_ =
-      iiwa_->CalcBodySpatialVelocityInWorldFrame(cache, *end_effector_);
 }
 
 void WorldState::HandleWsgStatus(const lcmt_schunk_wsg_status& wsg_msg) {
