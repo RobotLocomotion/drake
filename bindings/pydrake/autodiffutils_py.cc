@@ -66,7 +66,7 @@ PYBIND11_MODULE(_autodiffutils_py, m) {
            return pow(base, exponent);
          }, py::is_operator());
 
-    // Add overloads for `sin` and `cos`.
+    // Add overloads for `math` functions.
     auto math = py::module::import("pydrake.math");
     MirrorDef<py::module, decltype(autodiff)>(&math, &autodiff)
       .def("log", [](const AutoDiffXd& x) { return log(x); })
