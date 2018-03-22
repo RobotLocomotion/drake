@@ -5,6 +5,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/SparseCore>
@@ -85,23 +86,47 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   };
 
   // A structure for holding a linear complementarity problem variable.
-  struct LCPVariable {
-    bool z{true};        // Is this a z variable or a w variable?
-    int index{-1};       // Index of the variable in the problem, 0...n. n
-                         // indicates that the variable is artificial.
+  class LCPVariable {
+   public:
+    LCPVariable() {}
+    LCPVariable(bool z, int index) : z_{z}, index_{index} {}
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LCPVariable)
 
+    bool z() const { return z_; }
+    int index() const { return index_; }
+
+    // Gets the complement of this variable.
+    LCPVariable Complement() const {
+      LCPVariable comp;
+      comp.z_ = !z_;
+      comp.index_ = index_;
+      return comp;
+    }
+
+    // Compares two LCP variables for equality.
+    bool operator==(const LCPVariable& v) const {
+      return (z_ == v.z_ && index_ == v.index_);
+    }
+
+    // Comparison operator for using LCPVariable as a key.
     bool operator<(const LCPVariable& v) const {
-      if (!z && v.z) {
+      if (index_ < v.index_) {
         return true;
       } else {
-        if (z && !v.z) {
+        if (index_ > v.index_) {
           return false;
+        } else {
+          // If here, the indices are equal. We will arbitrarily order w before
+          // z (alphabetical ordering).
+          return (!z_ && v.z_);
         }
-
-        // Both variables are z or both are w.
-        return index < v.index;
       }
     }
+
+   private:
+    bool z_{true};        // Is this a z variable or a w variable?
+    int index_{-1};       // Index of the variable in the problem, 0...n. n
+                          // indicates that the variable is artificial.
   };
 
   static bool IsEachUnique(const std::vector<LCPVariable>& vars);
@@ -109,10 +134,14 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       int driving_index, VectorX<T>* M_bar_col, VectorX<T>* q_bar) const;
   void ConstructLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
       int artificial_index, VectorX<T>* z) const;
-  static int FindComplementIndex(
+  int FindComplementIndex(
       const LCPVariable& query,
-      const std::vector<LCPVariable>& indep_variables);
+      const std::vector<LCPVariable>& indep_variables) const;
   void DetermineIndexSets() const;
+  void DetermineIndexSetsHelper(
+      const std::vector<LCPVariable>& variables, bool z,
+      std::vector<int>* variable_set,
+      std::vector<int>* variable_set_prime) const;
 
   typedef std::vector<LCPVariable> LCPVariableVector;
 
@@ -153,6 +182,13 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
     // Two temporary vectors for storing sorted versions of vectors.
     mutable LCPVariableVector sorted1_, sorted2_;
   };
+
+  // Temporary variable for determining index sets.
+  mutable std::vector<std::pair<int, int>> variable_and_array_indices_;
+
+  // Mapping from an LCP variable to the index of that variable in
+  // indep_variables.
+  mutable std::map<LCPVariable, int> indep_variables_indices_;
 
   // Maps the independent variables to the selection taken to prevent cycling.
   mutable std::map<LCPVariableVector, int, LCPVariableVectorComparator>
