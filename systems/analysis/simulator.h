@@ -664,7 +664,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 
   // Integration with error control isolation window determination.
   if (!accuracy) {
-    throw std::logic_error("Integrator is not operating in fixed step mode"
+    throw std::logic_error("Integrator is not operating in fixed step mode "
                                "and accuracy is not set in the context.");
   }
 
