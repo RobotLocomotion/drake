@@ -277,7 +277,10 @@ drake_py_unittest(
 drake_py_unittest(
     name = "symbolic_test",
     size = "small",
-    deps = [":symbolic_py"],
+    deps = [
+        ":algebra_test_util_py",
+        ":symbolic_py",
+    ],
 )
 
 drake_py_unittest(
