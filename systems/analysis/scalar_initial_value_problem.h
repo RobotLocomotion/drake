@@ -124,7 +124,8 @@ class ScalarInitialValueProblem {
     return this->vector_ivp_->Solve(tf, ToVectorIVPSpecifiedValues(values))[0];
   }
 
-  /// Resets the internal integrator instance.
+  /// Resets the internal integrator instance by in-place
+  /// construction of the given integrator type.
   ///
   /// A usage example is shown below.
   /// @code{.cpp}
@@ -133,14 +134,15 @@ class ScalarInitialValueProblem {
   ///
   /// @param args The integrator type-specific arguments.
   /// @return The new integrator instance.
-  /// @tparam I The integrator type, which must be an IntegratorBase subclass.
+  /// @tparam Integrator The integrator type, which must be an
+  ///                    IntegratorBase subclass.
   /// @tparam Args The integrator specific argument types.
   /// @warning This operation invalidates pointers returned by
   ///          ScalarInitialValueProblem::get_integrator() and
   ///          ScalarInitialValueProblem::get_mutable_integrator().
-  template <typename I, typename... Args>
-  I* reset_integrator(Args&&... args) {
-    return vector_ivp_->template reset_integrator<I>(
+  template <typename Integrator, typename... Args>
+  Integrator* reset_integrator(Args&&... args) {
+    return vector_ivp_->template reset_integrator<Integrator>(
         std::forward<Args>(args)...);
   }
 

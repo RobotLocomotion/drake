@@ -69,56 +69,53 @@ GTEST_TEST(InitialValueProblemTest, UsingMultipleIntegrators) {
       k2 + (x0 - k2) * std::exp(-(t2 - t0)), kAccuracy));
 }
 
-// Validates preconditions enforcement when constructing any given IVP.
+// Validates preconditions when constructing any given IVP.
 GTEST_TEST(InitialValueProblemTest, ConstructorPreconditionValidation) {
+  // Defines a generic ODE d𝐱/dt = -𝐱 + 𝐤, that does not
+  // model (nor attempts to model) any physical process.
+  const InitialValueProblem<double>::ODEFunction dummy_ode_function =
+      [](const double& t, const VectorX<double>& x,
+         const VectorX<double>& k) -> VectorX<double> {
+    unused(k);
+    return -x * t;
+  };
+
   EXPECT_THROW({
-      const InitialValueProblem<double>::SpecifiedValues no_values;
+      const InitialValueProblem<double>::
+          SpecifiedValues no_values;
       const InitialValueProblem<double> ivp(
-          [](const double& t, const VectorX<double>& x,
-             const VectorX<double>& k) -> VectorX<double> {
-            unused(k);
-            return -x * t;
-          }, no_values);
+          dummy_ode_function, no_values);
     }, std::logic_error);
 
   EXPECT_THROW({
-      InitialValueProblem<double>::SpecifiedValues values_without_t0;
+      InitialValueProblem<double>::
+          SpecifiedValues values_without_t0;
       values_without_t0.k = VectorX<double>();
       values_without_t0.x0 = VectorX<double>::Zero(2).eval();
       const InitialValueProblem<double> ivp(
-          [](const double& t, const VectorX<double>& x,
-             const VectorX<double>& k) -> VectorX<double> {
-            unused(k);
-            return -x * t;
-          }, values_without_t0);
+          dummy_ode_function, values_without_t0);
     }, std::logic_error);
 
   EXPECT_THROW({
-      InitialValueProblem<double>::SpecifiedValues values_without_x0;
+      InitialValueProblem<double>::
+          SpecifiedValues values_without_x0;
       values_without_x0.t0 = 0.0;
       values_without_x0.k = VectorX<double>();
       const InitialValueProblem<double> ivp(
-          [](const double& t, const VectorX<double>& x,
-             const VectorX<double>& k) -> VectorX<double> {
-            unused(k);
-            return -x * t;
-          }, values_without_x0);
+          dummy_ode_function, values_without_x0);
     }, std::logic_error);
 
   EXPECT_THROW({
-      InitialValueProblem<double>::SpecifiedValues values_without_k;
+      InitialValueProblem<double>::
+          SpecifiedValues values_without_k;
       values_without_k.t0 = 0.0;
       values_without_k.x0 = VectorX<double>();
       const InitialValueProblem<double> ivp(
-          [](const double& t, const VectorX<double>& x,
-             const VectorX<double>& k) -> VectorX<double> {
-            unused(k);
-            return -x * t;
-          }, values_without_k);
+          dummy_ode_function, values_without_k);
     }, std::logic_error);
 }
 
-// Validates preconditions enforcement when solving any given IVP.
+// Validates preconditions when solving any given IVP.
 GTEST_TEST(InitialValueProblemTest, SolvePreconditionValidation) {
   // The initial time t₀, for IVP definition.
   const double kDefaultInitialTime = 0.0;

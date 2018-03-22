@@ -67,56 +67,54 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
       k2[0] + (x0 - k2[0]) * std::exp(-(t2 - t0)), kAccuracy);
 }
 
-// Validates preconditions enforcement when constructing any given scalar IVP.
+// Validates preconditions when constructing any given scalar IVP.
 GTEST_TEST(ScalarInitialValueProblemTest, ConstructorPreconditionValidation) {
+  // Defines a generic ODE dx/dt = -x * t, that does not
+  // model (nor attempts to model) any physical process.
+  const ScalarInitialValueProblem<double>::
+      ScalarODEFunction dummy_scalar_ode_function =
+      [](const double& t, const double& x,
+         const VectorX<double>& k) -> double {
+    unused(k);
+    return -x * t;
+  };
+
   EXPECT_THROW({
-      const ScalarInitialValueProblem<double>::SpecifiedValues no_values;
+      const ScalarInitialValueProblem<double>::
+          SpecifiedValues no_values;
       const ScalarInitialValueProblem<double> ivp(
-          [](const double& t, const double& x,
-             const VectorX<double>& k) -> double {
-            unused(k);
-            return -x * t;
-          }, no_values);
+          dummy_scalar_ode_function, no_values);
     }, std::logic_error);
 
   EXPECT_THROW({
-      ScalarInitialValueProblem<double>::SpecifiedValues values_without_t0;
+      ScalarInitialValueProblem<double>::
+          SpecifiedValues values_without_t0;
       values_without_t0.k = VectorX<double>();
       values_without_t0.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
-          [](const double& t, const double& x,
-             const VectorX<double>& k) -> double {
-            unused(k);
-            return -x * t;
-          }, values_without_t0);
+          dummy_scalar_ode_function, values_without_t0);
     }, std::logic_error);
 
   EXPECT_THROW({
-      ScalarInitialValueProblem<double>::SpecifiedValues values_without_x0;
+      ScalarInitialValueProblem<double>::
+          SpecifiedValues values_without_x0;
       values_without_x0.t0 = 0.0;
       values_without_x0.k = VectorX<double>();
       const ScalarInitialValueProblem<double> ivp(
-          [](const double& t, const double& x,
-             const VectorX<double>& k) -> double {
-            unused(k);
-            return -x * t;
-          }, values_without_x0);
+          dummy_scalar_ode_function, values_without_x0);
     }, std::logic_error);
 
   EXPECT_THROW({
-      ScalarInitialValueProblem<double>::SpecifiedValues values_without_k;
+      ScalarInitialValueProblem<double>::
+          SpecifiedValues values_without_k;
       values_without_k.t0 = 0.0;
       values_without_k.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
-          [](const double& t, const double& x,
-             const VectorX<double>& k) -> double {
-            unused(k);
-            return -x * t;
-          }, values_without_k);
+          dummy_scalar_ode_function, values_without_k);
     }, std::logic_error);
 }
 
-// Validates preconditions enforcement when solving any given IVP.
+// Validates preconditions when solving any given IVP.
 GTEST_TEST(ScalarInitialValueProblemTest, SolvePreconditionValidation) {
   // The initial time t₀, for IVP definition.
   const double kDefaultInitialTime = 0.0;

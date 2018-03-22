@@ -122,7 +122,8 @@ class InitialValueProblem {
   /// @throw std::logic_error if preconditions are not met.
   VectorX<T> Solve(const T& tf, const SpecifiedValues& values = {}) const;
 
-  /// Resets the internal integrator instance.
+  /// Resets the internal integrator instance by in-place
+  /// construction of the given integrator type.
   ///
   /// A usage example is shown below.
   /// @code{.cpp}
@@ -131,16 +132,18 @@ class InitialValueProblem {
   ///
   /// @param args The integrator type-specific arguments.
   /// @return The new integrator instance.
-  /// @tparam I The integrator type, which must be an IntegratorBase subclass.
+  /// @tparam Integrator The integrator type, which must be an
+  ///         IntegratorBase subclass.
   /// @tparam Args The integrator specific argument types.
   /// @warning This operation invalidates pointers returned by
   ///          InitialValueProblem::get_integrator() and
   ///          InitialValueProblem::get_mutable_integrator().
-  template <typename I, typename... Args>
-  I* reset_integrator(Args&&... args) {
-    integrator_ = std::make_unique<I>(*system_, std::forward<Args>(args)...);
+  template <typename Integrator, typename... Args>
+  Integrator* reset_integrator(Args&&... args) {
+    integrator_ = std::make_unique<Integrator>(
+        *system_, std::forward<Args>(args)...);
     integrator_->reset_context(context_.get());
-    return static_cast<I*>(integrator_.get());
+    return static_cast<Integrator*>(integrator_.get());
   }
 
   /// Gets a pointer to the internal integrator instance.
