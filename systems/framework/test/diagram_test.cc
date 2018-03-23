@@ -438,9 +438,6 @@ TEST_F(DiagramTest, Witness) {
 
   // Stateless function always returns the ClockWitness.
   ASSERT_EQ(wf.size(), 1);
-  EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
-      wf.front()));
-
   EXPECT_LT(diagram_->CalcWitnessValue(*context_, *wf.front()), 0);
 }
 
