@@ -374,22 +374,22 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
     // Penetration depth, > 0 during penetration.
     const double &x = penetration.depth;
-    const Vector3<double> &nhat_BA_W = penetration.nhat_BA_W;
-    const Vector3<double> &p_WCa = penetration.p_WCa;
-    const Vector3<double> &p_WCb = penetration.p_WCb;
+    const Vector3<double>& nhat_BA_W = penetration.nhat_BA_W;
+    const Vector3<double>& p_WCa = penetration.p_WCa;
+    const Vector3<double>& p_WCb = penetration.p_WCb;
 
     // Contact point C.
     const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
 
     // Contact point position on body A.
-    const Vector3<double> &p_WAo =
+    const Vector3<double>& p_WAo =
         pc.get_X_WB(bodyA_node_index).translation();
-    const Vector3<double> &p_CoAo_W = p_WAo - p_WC;
+    const Vector3<double>& p_CoAo_W = p_WAo - p_WC;
 
     // Contact point position on body B.
-    const Vector3<double> &p_WBo =
+    const Vector3<double>& p_WBo =
         pc.get_X_WB(bodyB_node_index).translation();
-    const Vector3<double> &p_CoBo_W = p_WBo - p_WC;
+    const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
 
     // Separation velocity, > 0  if objects separate.
     const Vector3<double> v_WAc =
