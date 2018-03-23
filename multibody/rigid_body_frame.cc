@@ -81,4 +81,3 @@ void RigidBodyFrame<T>::set_transform_to_body(const Eigen::Isometry3d&
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyFrame<double>;
 template class RigidBodyFrame<drake::AutoDiffXd>;
-template class RigidBodyFrame<drake::AutoDiffUpTo73d>;

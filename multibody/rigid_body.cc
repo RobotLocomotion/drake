@@ -319,5 +319,4 @@ ostream& operator<<(ostream& out, const RigidBody<double>& b) {
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBody<double>;
-template class RigidBody<drake::AutoDiffUpTo73d>;
 template class RigidBody<drake::AutoDiffXd>;

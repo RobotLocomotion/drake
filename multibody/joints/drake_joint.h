@@ -72,15 +72,6 @@ class DrakeJoint {
   static const int MAX_NUM_VELOCITIES = 6;
 
   /**
-   * Defines the maximum automatic differentiation data type size a joint can
-   * have.
-   */
-  typedef Eigen::AutoDiffScalar<
-      Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>>
-      AutoDiffFixedMaxSize;  // 73 is number of states of quat-parameterized
-                             // Atlas
-
-  /**
    * A constructor for use by concrete joints to define the joint's name, fixed
    * frame, and number of degrees of freedom.
    *
@@ -205,8 +196,6 @@ class DrakeJoint {
   virtual const Eigen::VectorXd& get_joint_limit_dissipation() const;
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
-
-  POSITION_AND_VELOCITY_DEPENDENT_METHODS(AutoDiffFixedMaxSize)
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(
       Eigen::AutoDiffScalar<Eigen::VectorXd>)

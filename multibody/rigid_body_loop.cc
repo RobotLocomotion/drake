@@ -23,4 +23,3 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop<double>& obj) {
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyLoop<double>;
 template class RigidBodyLoop<drake::AutoDiffXd>;
-template class RigidBodyLoop<drake::AutoDiffUpTo73d>;
