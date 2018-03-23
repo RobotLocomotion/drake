@@ -84,8 +84,7 @@ namespace multibody_plant {
 ///
 /// All modeling elements **must** be added pre-finalize.
 ///
-/// @section mbp_geometry_registration
-/// Registering geometry with a GeometrySystem
+/// @section geometry_registration Registering geometry with a GeometrySystem
 ///
 /// %MultibodyPlant users can register geometry with a GeometrySystem for
 /// essentially two purposes; a) visualization and, b) contact modeling.
@@ -97,9 +96,24 @@ namespace multibody_plant {
 /// plant will have assigned a valid geometry::SourceId.
 /// At Finalize(), %MultibodyPlant will declare input/output ports as
 /// appropriate to communicate with the GeometrySystem instance on which
-/// registrations took place.
+/// registrations took place. All geometry registration **must** be performed
+/// pre-finalize.
 ///
-/// All geometry registration **must** be performed pre-finalize.
+/// If %MultibodyPlant registers geometry with a GeometrySystem via calls to
+/// RegisterCollisionGeometry(), an input port for geometric queries will be
+/// declared at Finalize() time, see get_geometry_query_input_port(). Users must
+/// connect this input port to the output port for geometric queries of the
+/// GeometrySystem used for registration, which can be obtained with
+/// GeometrySystem::get_query_output_port().
+/// In summary, if %MultibodyPlant registers collision geometry, the setup
+/// process will include:
+/// 1. Call to RegisterAsSourceForGeometrySystem().
+/// 2. Calls to RegisterCollisionGeometry(), as many as needed.
+/// 3. Call to Finalize(), user is done specifying the model.
+/// 4. Connect GeometrySystem::get_query_output_port() to
+///    get_geometry_query_input_port().
+/// Refer to the documentation provided in each of the methods above for further
+/// details.
 ///
 /// @section Finalize() stage
 ///
@@ -551,6 +565,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   /// Returns a constant reference to the input port used to perform geometric
   /// queries on a GeometrySystem. See GeometrySystem::get_query_output_port().
+  /// Refer to section @ref geometry_registration of this class's
+  /// documentation for further details on collision geometry registration and
+  /// connection with a GeometrySystem.
   /// @throws std::exception if this system was not registered with a
   /// GeometrySystem.
   /// @throws std::exception if called pre-finalize. See Finalize().
