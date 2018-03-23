@@ -64,6 +64,11 @@ def _impl(repository_ctx):
 
     file_content = """# -*- python -*-
 
+licenses([
+    "notice",  # Apache-2.0 AND BSD-3-Clause
+    "restricted",  # LGPL-2.1+
+])
+
 py_library(
     name = "drake_visualizer_python_deps",
     deps = [

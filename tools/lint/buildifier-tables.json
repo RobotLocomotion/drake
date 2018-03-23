@@ -42,6 +42,7 @@
     "new_local_repository.path":                300,
     "new_local_repository.build_file_content":  360,
 
+    "pkg_config_repository.licenses":         100,
     "pkg_config_repository.atleast_version":  200,
     "pkg_config_repository.static":           201,
     "pkg_config_repository.pkg_config_paths": 202,
