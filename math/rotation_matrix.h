@@ -523,10 +523,10 @@ class RotationMatrix {
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
   static void ThrowIfNotValid(const Matrix3<T>& R) {
-    // if (!Eigen::isfinite(R.array()))
-    if (!R.allFinite())
-      throw std::logic_error(
-        "Error: Rotation matrix contains an element that is infinity or NAN.");
+    // TODO(mitiguy) Uncomment the next lines when quat2rotmat is removed.
+    // if (!R.allFinite())
+    //  throw std::logic_error(
+    //   "Error: Rotation matrix contains an element that is infinity or NAN.");
     if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
       throw std::logic_error("Error: Rotation matrix is not orthonormal.");
     if (R.determinant() < 0)
