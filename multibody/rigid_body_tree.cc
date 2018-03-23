@@ -2346,12 +2346,13 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree<T>::frictionTorques(
 }
 
 template <typename T>
-template <typename Scalar, typename DerivedPoints>
+template <typename Scalar, typename PointScalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
-RigidBodyTree<T>::transformPointsJacobian(
+RigidBodyTree<T>::DoTransformPointsJacobian(
     const KinematicsCache<Scalar>& cache,
-    const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
-    int to_body_or_frame_ind, bool in_terms_of_qdot) const {
+    const Eigen::Ref<const Matrix3X<PointScalar>>& points,
+    int from_body_or_frame_ind, int to_body_or_frame_ind,
+    bool in_terms_of_qdot) const {
   CheckCacheValidity(cache);
   int cols = in_terms_of_qdot ? num_positions_ : num_velocities_;
   int npoints = static_cast<int>(points.cols());
@@ -2462,12 +2463,12 @@ RigidBodyTree<T>::forwardKinPositionGradient(
 }
 
 template <typename T>
-template <typename Scalar, typename DerivedPoints>
+template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
-RigidBodyTree<T>::transformPointsJacobianDotTimesV(
+RigidBodyTree<T>::DoTransformPointsJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache,
-    const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
-    int to_body_or_frame_ind) const {
+    const Eigen::Ref<const Eigen::Matrix3Xd>& points,
+    int from_body_or_frame_ind, int to_body_or_frame_ind) const {
   CheckCacheValidity(cache);
   cache.checkCachedKinematicsSettings(true, true,
                                       "transformPointsJacobianDotTimesV");
@@ -2978,7 +2979,7 @@ RigidBodyTree<T>::positionConstraintsJacobian(
   for (size_t i = 0; i < loops.size(); ++i) {
     // position constraint
     ret.template middleRows<3>(6 * i) = transformPointsJacobian(
-        cache, Vector3<Scalar>::Zero(), loops[i].frameA_->get_frame_index(),
+        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
     // second position constraint (to constrain orientation)
     ret.template middleRows<3>(6 * i + 3) =
@@ -3001,11 +3002,11 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
   for (size_t i = 0; i < loops.size(); ++i) {
     // position constraint
     ret.template middleRows<3>(6 * i) = transformPointsJacobianDotTimesV(
-        cache, Vector3<Scalar>::Zero(), loops[i].frameA_->get_frame_index(),
+        cache, Vector3d::Zero(), loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index());
     // second position constraint (to constrain orientation)
     ret.template middleRows<3>(6 * i + 3) = transformPointsJacobianDotTimesV(
-        cache, loops[i].axis_.template cast<Scalar>(),
+        cache, loops[i].axis_,
         loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index());
   }
@@ -3429,22 +3430,15 @@ template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMa
 template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::Map<MatrixXd const>>(const KinematicsCache<double>&, const Eigen::MatrixBase<Eigen::Map<MatrixXd const>>&);  // NOLINT
 template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::Map<MatrixXd      >>(const KinematicsCache<double>&, const Eigen::MatrixBase<Eigen::Map<MatrixXd      >>&);  // NOLINT
 
-// Explicit template instantiations for transformPointsJacobian.
-template MatrixX<AutoDiffXd     > RigidBodyTree<double         >::transformPointsJacobian<AutoDiffXd     , Matrix3X<AutoDiffXd                               >>(KinematicsCache<AutoDiffXd     > const&, Eigen::MatrixBase<Matrix3X<AutoDiffXd                               >> const&, int, int, bool) const;  // NOLINT
-template MatrixXd                 RigidBodyTree<double         >::transformPointsJacobian<double         , Matrix3Xd                                          >(KinematicsCache<double         > const&, Eigen::MatrixBase<Matrix3Xd                                          > const&, int, int, bool) const;  // NOLINT
-template MatrixX<AutoDiffXd     > RigidBodyTree<double         >::transformPointsJacobian<AutoDiffXd     , Vector3<AutoDiffXd                                >>(KinematicsCache<AutoDiffXd     > const&, Eigen::MatrixBase<Vector3<AutoDiffXd                                >> const&, int, int, bool) const;  // NOLINT
-template MatrixXd                 RigidBodyTree<double         >::transformPointsJacobian<double         , Vector3d                                           >(KinematicsCache<double         > const&, Eigen::MatrixBase<Vector3d                                           > const&, int, int, bool) const;  // NOLINT
-template MatrixX<AutoDiffXd     > RigidBodyTree<AutoDiffXd     >::transformPointsJacobian<AutoDiffXd     , Eigen::Block<Matrix3X<AutoDiffXd     >, 3, 1, true>>(KinematicsCache<AutoDiffXd     > const&, Eigen::MatrixBase<Eigen::Block<Matrix3X<AutoDiffXd     >, 3, 1, true>> const&, int, int, bool) const;  // NOLINT
-template MatrixXd                 RigidBodyTree<double         >::transformPointsJacobian<double         , Eigen::Block<Matrix3Xd, 3, 1, true                >>(KinematicsCache<double         > const&, Eigen::MatrixBase<Eigen::Block<Matrix3Xd, 3, 1, true                >> const&, int, int, bool) const;  // NOLINT
+// Explicit template instantiations for DoTransformPointsJacobian.
+template MatrixX<double    > RigidBodyTree<double    >::DoTransformPointsJacobian<double    , double    >(const KinematicsCache<double    >&, const Eigen::Ref<const Matrix3X<double    >>&, int, int, bool) const;  // NOLINT
+template MatrixX<AutoDiffXd> RigidBodyTree<double    >::DoTransformPointsJacobian<AutoDiffXd, double    >(const KinematicsCache<AutoDiffXd>&, const Eigen::Ref<const Matrix3X<double    >>&, int, int, bool) const;  // NOLINT
+template MatrixX<AutoDiffXd> RigidBodyTree<double    >::DoTransformPointsJacobian<AutoDiffXd, AutoDiffXd>(const KinematicsCache<AutoDiffXd>&, const Eigen::Ref<const Matrix3X<AutoDiffXd>>&, int, int, bool) const;  // NOLINT
+template MatrixX<AutoDiffXd> RigidBodyTree<AutoDiffXd>::DoTransformPointsJacobian<AutoDiffXd, AutoDiffXd>(const KinematicsCache<AutoDiffXd>&, const Eigen::Ref<const Matrix3X<AutoDiffXd>>&, int, int, bool) const;  // NOLINT
 
-template MatrixX<AutoDiffXd     > RigidBodyTree<double         >::transformPointsJacobian<AutoDiffXd     , Eigen::Map<Matrix3X<AutoDiffXd             > const>>(KinematicsCache<AutoDiffXd     > const&, Eigen::MatrixBase<Eigen::Map<Matrix3X<AutoDiffXd             > const>> const&, int, int, bool) const;  // NOLINT
-template MatrixXd                 RigidBodyTree<double         >::transformPointsJacobian<double         , Eigen::Map<Matrix3Xd                         const>>(KinematicsCache<double         > const&, Eigen::MatrixBase<Eigen::Map<Matrix3Xd                         const>> const&, int, int, bool) const;  // NOLINT
-
-// Explicit template instantiations for transformPointsJacobianDotTimesV.
-template VectorXd                 RigidBodyTree<double>::transformPointsJacobianDotTimesV<double         , Matrix3Xd                  >(KinematicsCache<double         > const&, Eigen::MatrixBase<Matrix3Xd                  > const&, int, int) const;  // NOLINT
-template VectorXd                 RigidBodyTree<double>::transformPointsJacobianDotTimesV<double         , Vector3d                   >(KinematicsCache<double         > const&, Eigen::MatrixBase<Vector3d                   > const&, int, int) const;  // NOLINT
-template VectorX<AutoDiffXd     > RigidBodyTree<double>::transformPointsJacobianDotTimesV<AutoDiffXd     , Eigen::Map<Matrix3Xd const>>(KinematicsCache<AutoDiffXd     > const&, Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;  // NOLINT
-template VectorXd                 RigidBodyTree<double>::transformPointsJacobianDotTimesV<double         , Eigen::Map<Matrix3Xd const>>(KinematicsCache<double         > const&, Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;  // NOLINT
+// Explicit template instantiations for DoTransformPointsJacobianDotTimesV.
+template VectorX<AutoDiffXd>      RigidBodyTree<double>::DoTransformPointsJacobianDotTimesV<AutoDiffXd     >(const KinematicsCache<AutoDiffXd     >&, const Eigen::Ref<const Matrix3Xd>&, int, int) const;  // NOLINT
+template VectorX<double>          RigidBodyTree<double>::DoTransformPointsJacobianDotTimesV<double         >(const KinematicsCache<double         >&, const Eigen::Ref<const Matrix3Xd>&, int, int) const;  // NOLINT
 
 // Explicit template instantiations for relativeQuaternionJacobian.
 template Matrix4Xd                 RigidBodyTree<double>::relativeQuaternionJacobian<double         >(KinematicsCache<double         > const&, int, int, bool) const;  // NOLINT
