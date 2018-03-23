@@ -161,6 +161,14 @@ class CompositeSystem : public LogisticSystem {
       std::make_unique<PublishEvent<double>>());
   }
 
+  WitnessFunction<double>* get_logistic_witness() const {
+    return logistic_witness_.get();
+  }
+
+  WitnessFunction<double>* get_clock_witness() const {
+    return clock_witness_.get();
+  }
+
  protected:
   void DoGetWitnessFunctions(
       const Context<double>&,
@@ -444,11 +452,9 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   ASSERT_EQ(triggers.size(), 2);
 
   // Check that the witnesses triggered in the order we expect.
-/*
-  EXPECT_TRUE(is_dynamic_castable<const LogisticWitness>(
-      triggers.front().second));
-  EXPECT_TRUE(is_dynamic_castable<const ClockWitness>(triggers.back().second));
-*/
+  EXPECT_EQ(system.get_logistic_witness(), triggers.front().second);
+  EXPECT_EQ(system.get_clock_witness(), triggers.back().second);
+
   // We expect that the clock witness will trigger second at a time of ~1s.
   EXPECT_NEAR(triggers.back().first, trigger_time, tol);
 }
